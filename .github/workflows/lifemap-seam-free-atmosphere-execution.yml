@@ -1,0 +1,144 @@
+name: Life Map seam-free atmosphere execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-six-fix-clean-v3-20260718
+    paths:
+      - .github/workflows/lifemap-seam-free-atmosphere-execution.yml
+      - scripts/one-shot-lifemap-seam-free-atmosphere.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-seam-free-atmosphere-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: 446ad71737d25d3f3b80436d4110c19dae5e63f6
+  SOURCE_BRANCH: exec/lifemap-seam-free-atmosphere-20260718
+  PRODUCT_BRANCH: product/canonical-six-fix-clean-v3-20260718
+
+jobs:
+  correct-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/lifemap-seam-free-atmosphere-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact isolated head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove exact authority and apply bounded seam repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_head="$(git rev-parse HEAD)"
+          expected_head="${{ github.event.pull_request.head.sha }}"
+          test "$actual_head" = "$expected_head"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          actual_files="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
+          expected_files="$(printf '%s\n' .github/workflows/lifemap-seam-free-atmosphere-execution.yml scripts/one-shot-lifemap-seam-free-atmosphere.mjs | sort)"
+          printf 'Execution files:\n%s\n' "$actual_files"
+          test "$actual_files" = "$expected_files"
+          node scripts/one-shot-lifemap-seam-free-atmosphere.mjs 2>&1 | tee /tmp/lifemap-seam-free-apply.log
+          git diff --check
+          product_files="$(git diff --name-only | sort)"
+          expected_product_files="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
+          printf 'Product files:\n%s\n' "$product_files"
+          test "$product_files" = "$expected_product_files"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run Life Map material contract
+        run: corepack pnpm --dir urai-tier1 exec node --test tests/lifemap-visual-material-contract.test.mjs
+
+      - name: Run full source contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/lifemap-seam-free-unit.log
+
+      - name: Typecheck exact candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/lifemap-seam-free-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/lifemap-seam-free-build.log
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install exact Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run Life Map accessibility regression
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts accessibility-performance-lifemap-independent.spec.ts --project=chromium 2>&1 | tee /tmp/lifemap-seam-free-accessibility.log
+
+      - name: Capture exact visual artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-seam-free-artifact
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-seam-free-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/lifemap-seam-free-artifact \
+          URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
+            node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee /tmp/lifemap-seam-free-capture.log
+
+      - name: Publish one clean two-file product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-seam-clean/urai-tier1/src/components/lifemap /tmp/lifemap-seam-clean/urai-tier1/tests
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/lifemap-seam-clean/urai-tier1/src/components/lifemap/
+          cp urai-tier1/tests/lifemap-visual-material-contract.test.mjs /tmp/lifemap-seam-clean/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/lifemap-seam-clean/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/lifemap-seam-clean/urai-tier1/tests/lifemap-visual-material-contract.test.mjs urai-tier1/tests/
+          git diff --check
+          actual_files="$(git diff --name-only | sort)"
+          expected_files="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
+          test "$actual_files" = "$expected_files"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): remove rectangular atmosphere planes"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          git rev-parse HEAD | tee /tmp/lifemap-seam-free-product-sha.log
+
+      - name: Retain exact seam-removal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-seam-free-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-seam-free-*.log
+            /tmp/lifemap-seam-free-artifact
+          if-no-files-found: ignore
+          retention-days: 90
