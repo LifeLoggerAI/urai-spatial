@@ -19,6 +19,12 @@ replaceOnce(
   `  const selectNode = useCallback((node: LifeMapNode) => {\n    document.querySelectorAll<HTMLDetailsElement>(".life-map-accessibility-menu").forEach((controls) => {\n      controls.open = false;\n      controls.removeAttribute("open");\n    });\n    setSelectedId(node.id);`,
 )
 
+replaceOnce(
+  scenePath,
+  `  }, [manifestId, router]);\n\n  const recenter = useCallback(() => {`,
+  `  }, [manifestId, router]);\n\n  useEffect(() => {\n    if (!selectedId) return;\n    const frame = window.requestAnimationFrame(() => {\n      document.querySelectorAll<HTMLDetailsElement>(".life-map-accessibility-menu").forEach((controls) => {\n        controls.open = false;\n        controls.removeAttribute("open");\n      });\n    });\n    return () => window.cancelAnimationFrame(frame);\n  }, [selectedId]);\n\n  const recenter = useCallback(() => {`,
+)
+
 const source = read(testPath)
 const marker = "test('LifeMap selection closes semantic controls without a body observer'"
 if (source.includes(marker)) throw new Error('Control-close contract already exists')
@@ -27,6 +33,8 @@ const contract = [
   '  assert.match(source, /querySelectorAll<HTMLDetailsElement>\\(\"\\.life-map-accessibility-menu\"\\)/)',
   '  assert.match(source, /controls\\.open = false/)',
   '  assert.match(source, /controls\\.removeAttribute\\(\"open\"\\)/)',
+  '  assert.match(source, /requestAnimationFrame\\(\\(\\) =>/)',
+  '  assert.match(source, /cancelAnimationFrame\\(frame\\)/)',
   '  assert.doesNotMatch(source, /MutationObserver/)',
   '})',
 ].join('\n')
