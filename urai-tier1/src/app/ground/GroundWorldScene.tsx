@@ -3,49 +3,38 @@
 import { PerspectiveCamera, Stars } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { DESTINATIONS, type GroundDestination } from './GroundWorldModel'
 import { WorldEnvelope } from './GroundWorldEnvironment'
 import { Corridor, DestinationArchitecture } from './GroundWorldStructures'
 
 function CameraRig({ active }: { active: GroundDestination | null }) {
-  const { camera, size } = useThree()
+  const { size } = useThree()
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null)
   const target = useMemo(() => new THREE.Vector3(), [])
   const look = useMemo(() => new THREE.Vector3(), [])
 
   useFrame((_, delta) => {
+    if (!cameraRef.current) return
     target.set(...(active?.camera ?? (size.width < 700 ? [0, 2.2, 7.4] : [0, 2.4, 8.6])))
     look.set(...(active?.lookAt ?? [0, 1.45, -10.5]))
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, target.x, 4.2, delta)
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, target.y, 4.2, delta)
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, target.z, 4.2, delta)
-    camera.lookAt(look)
+    cameraRef.current.position.x = THREE.MathUtils.damp(cameraRef.current.position.x, target.x, 4.2, delta)
+    cameraRef.current.position.y = THREE.MathUtils.damp(cameraRef.current.position.y, target.y, 4.2, delta)
+    cameraRef.current.position.z = THREE.MathUtils.damp(cameraRef.current.position.z, target.z, 4.2, delta)
+    cameraRef.current.lookAt(look)
   })
 
-  return <PerspectiveCamera makeDefault position={[0, 2.4, 8.6]} fov={size.width < 700 ? 63 : 52} near={0.08} far={140} />
+  return <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 2.4, 8.6]} fov={size.width < 700 ? 63 : 52} near={0.08} far={140} />
 }
 
-function WorkforcePresence({ destination, index }: { destination: GroundDestination; index: number }) {
+function WorkforcePresence({ destination, index, prefersReducedMotion }: { destination: GroundDestination; index: number; prefersReducedMotion: boolean }) {
   const group = useRef<THREE.Group>(null)
-  const prefersReducedMotion = useRef(false)
   const color = useMemo(() => new THREE.Color(destination.color), [destination.color])
   const opacity = destination.workforceState === 'revoked' ? 0.18 : destination.workforceState === 'blocked' ? 0.38 : 0.78
 
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => { prefersReducedMotion.current = query.matches }
-    update()
-    if (typeof query.addEventListener === 'function') query.addEventListener('change', update)
-    else query.addListener(update)
-    return () => {
-      if (typeof query.removeEventListener === 'function') query.removeEventListener('change', update)
-      else query.removeListener(update)
-    }
-  }, [])
-
   useFrame(({ clock }) => {
-    if (!group.current || prefersReducedMotion.current) return
+    if (!group.current || prefersReducedMotion) return
     const time = clock.elapsedTime * 0.18 + index * 0.8
     group.current.position.x = destination.position[0] * 0.8 + Math.sin(time) * 0.3
     group.current.position.z = destination.position[2] + 1.4 + Math.cos(time) * 0.22
@@ -79,6 +68,20 @@ function WorkforcePresence({ destination, index }: { destination: GroundDestinat
 }
 
 export function GroundScene({ active, onSelect }: { active: GroundDestination | null; onSelect: (destination: GroundDestination) => void }) {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => setPrefersReducedMotion(query.matches)
+    update()
+    if (typeof query.addEventListener === 'function') query.addEventListener('change', update)
+    else query.addListener(update)
+    return () => {
+      if (typeof query.removeEventListener === 'function') query.removeEventListener('change', update)
+      else query.removeListener(update)
+    }
+  }, [])
+
   return (
     <>
       <color attach="background" args={['#010712']} />
@@ -95,7 +98,7 @@ export function GroundScene({ active, onSelect }: { active: GroundDestination | 
       <WorldEnvelope />
       {DESTINATIONS.map((destination) => <Corridor key={`path-${destination.id}`} destination={destination} />)}
       {DESTINATIONS.map((destination, index) => <DestinationArchitecture key={destination.id} destination={destination} variant={index} active={active?.id === destination.id} onSelect={() => onSelect(destination)} />)}
-      {DESTINATIONS.slice(0, 8).map((destination, index) => <WorkforcePresence key={`worker-${destination.id}`} destination={destination} index={index} />)}
+      {DESTINATIONS.slice(0, 8).map((destination, index) => <WorkforcePresence key={`worker-${destination.id}`} destination={destination} index={index} prefersReducedMotion={prefersReducedMotion} />)}
       <EffectComposer>
         <Bloom intensity={0.72} luminanceThreshold={0.16} luminanceSmoothing={0.36} />
         <Vignette eskil={false} offset={0.16} darkness={0.42} />
