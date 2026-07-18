@@ -77,6 +77,7 @@ export type SelectedMemory = {
   emotionalArc: string[]
   sourceMedia: SelectedMemoryMedia[]
   privacy: SelectedMemoryPrivacy
+  replayAvailable: boolean
   replayManifest: SelectedMemoryReplayManifest
   narrator: {
     focus: string
@@ -135,6 +136,7 @@ export function buildExplicitDemoMemory(id: string): SelectedMemory {
     emotionalArc: ['arrival', 'recognition', 'return'],
     sourceMedia: [],
     privacy: 'private',
+    replayAvailable: true,
     replayManifest: {
       id: 'demo-manifest',
       version: 1,
@@ -223,6 +225,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind, url, caption: stringValue(value.caption) ?? undefined }] : []
       }) : [],
       privacy,
+      replayAvailable: true,
       replayManifest: {
         id: replayId,
         version: numberValue(replay?.version, 1),
