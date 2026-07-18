@@ -1,25 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-
-const LIFE_MAP_CONTROL_SELECTOR = [
-  '.life-map-accessibility-menu',
-  '.life-map-recovery',
-  '.life-map-memory-portals',
-  '.life-map-embodied-controls',
-  '.life-map-movement-help',
-].join(', ')
-
-const CONTROL_GESTURE_EVENTS = [
-  'wheel',
-  'pointerdown',
-  'pointermove',
-  'pointerup',
-  'pointercancel',
-  'touchstart',
-  'touchmove',
-  'touchend',
-] as const
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 
 const SELECTED_MEMORY_QUERY_KEY = 'memoryId'
 const ROUTE_ACTION_LABELS = new Set(['Enter Focus', 'Replay', 'Overview', 'Ground', 'Home'])
@@ -65,34 +46,9 @@ export function LifeMapIndependentInputBoundary() {
   const [announcement, setAnnouncement] = useState('Life Map ready. Move through depth or select a memory constellation.')
 
   useEffect(() => {
-    const attached = new Set<HTMLElement>()
-    const stopCameraGesture = (event: Event) => event.stopPropagation()
-
-    const removeGestureBoundary = (element: HTMLElement) => {
-      CONTROL_GESTURE_EVENTS.forEach((eventName) => {
-        element.removeEventListener(eventName, stopCameraGesture)
-      })
-      attached.delete(element)
-    }
-
     const keepSelectedControlsOpen = () => {
       const menu = document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')
       if (menu && selectedMemoryIsActive()) menu.open = true
-    }
-
-    const attach = () => {
-      attached.forEach((element) => {
-        if (!document.contains(element)) removeGestureBoundary(element)
-      })
-
-      document.querySelectorAll<HTMLElement>(LIFE_MAP_CONTROL_SELECTOR).forEach((element) => {
-        if (attached.has(element)) return
-        attached.add(element)
-        CONTROL_GESTURE_EVENTS.forEach((eventName) => {
-          element.addEventListener(eventName, stopCameraGesture, { passive: true })
-        })
-      })
-      keepSelectedControlsOpen()
     }
 
     const cycleMemory = (direction: -1 | 1) => {
@@ -193,20 +149,14 @@ export function LifeMapIndependentInputBoundary() {
       if (command === 'overview') overview()
     }
 
-    attach()
-    const observer = new MutationObserver(attach)
-    observer.observe(document.body, { childList: true, subtree: true })
     document.addEventListener('click', onClickCapture, true)
     window.addEventListener('keydown', onKeyDownCapture, true)
     window.addEventListener('urai:life-map-movement', onCommand as EventListener)
 
     return () => {
-      observer.disconnect()
       document.removeEventListener('click', onClickCapture, true)
       window.removeEventListener('keydown', onKeyDownCapture, true)
       window.removeEventListener('urai:life-map-movement', onCommand as EventListener)
-      attached.forEach(removeGestureBoundary)
-      attached.clear()
     }
   }, [])
 
@@ -214,14 +164,26 @@ export function LifeMapIndependentInputBoundary() {
     window.dispatchEvent(new CustomEvent('urai:life-map-movement', { detail: { action } }))
   }
 
+  const stopCameraGesture = (event: SyntheticEvent) => event.stopPropagation()
+  const gestureBoundary = {
+    onWheel: stopCameraGesture,
+    onPointerDown: stopCameraGesture,
+    onPointerMove: stopCameraGesture,
+    onPointerUp: stopCameraGesture,
+    onPointerCancel: stopCameraGesture,
+    onTouchStart: stopCameraGesture,
+    onTouchMove: stopCameraGesture,
+    onTouchEnd: stopCameraGesture,
+  }
+
   return (
     <>
-      <details className="life-map-movement-help" data-movement-ui="true">
+      <details className="life-map-movement-help" data-movement-ui="true" {...gestureBoundary}>
         <summary>Move through Life Map</summary>
         <p>Life Map uses controlled spatial travel rather than walking. Glide through depth, step between constellations, drag to turn, and reset to overview whenever orientation is unclear.</p>
         <span>W/S or ↑/↓ move through depth. A/D, Q/E, or ←/→ glide between memories. Drag turns. Wheel approaches or retreats. R, O, or Home returns to overview.</span>
       </details>
-      <div className="life-map-embodied-controls" data-movement-ui="true" role="group" aria-label="Life Map spatial movement controls">
+      <div className="life-map-embodied-controls" data-movement-ui="true" role="group" aria-label="Life Map spatial movement controls" {...gestureBoundary}>
         <button type="button" onClick={() => command('previous')} aria-label="Glide to previous memory">←</button>
         <button type="button" onClick={() => command('deeper')} aria-label="Glide deeper into the memory field">＋</button>
         <button type="button" onClick={() => command('retreat')} aria-label="Retreat toward overview">−</button>
