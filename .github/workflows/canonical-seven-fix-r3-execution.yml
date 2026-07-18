@@ -68,9 +68,13 @@ jobs:
 
       - name: Build exact candidate
         shell: bash
+        env:
+          URAI_FIREBASE_STATIC_EXPORT: "true"
         run: |
           set -o pipefail
           corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/canonical-seven-fix-build.log
+          test -f urai-tier1/out/home/index.html
+          test -f urai-tier1/out/life-map/index.html
 
       - name: Install Chromium
         run: corepack pnpm exec playwright install --with-deps chromium
