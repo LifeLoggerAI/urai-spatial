@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   repair:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - name: Checkout exact branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -26,8 +27,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "fbc9b63129563a477b6a478b5bf527617711b530"
+          test "$(git rev-parse HEAD^)" = "a16fad8163443c44d33a0e41b191f4d2e62d722f"
           test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/lifemap-authored-asset-owner-repair.yml"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
 
       - name: Apply authored-asset-first compositing repair
         shell: bash
@@ -84,10 +105,8 @@ jobs:
           PY
 
           git diff --check
-          cd urai-tier1
-          node --test tests/lifemap-scene-behavior.test.mjs
-          corepack pnpm run typecheck
-          cd ..
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          pnpm --dir urai-tier1 run typecheck
 
       - name: Commit repair and remove one-shot workflow
         shell: bash
