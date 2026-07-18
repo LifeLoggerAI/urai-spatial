@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const smoke = fs.readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
+const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mjs', 'utf8')
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
 const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
 
@@ -41,6 +42,13 @@ const liveGroundMarkers = [
   ['URAI Ground embodied private infrastructure', ground],
 ]
 
+const liveGroundVisualCopy = [
+  'URAI Ground',
+  'Private infrastructure, embodied.',
+  'Reception',
+  'Archive',
+]
+
 test('post-deploy Ground smoke remains tied to the embodied destination world', () => {
   for (const marker of expectedGroundMarkers) {
     assert.ok(ground.includes(marker), `missing embodied Ground marker: ${marker}`)
@@ -53,6 +61,15 @@ test('post-deploy Ground smoke remains tied to the embodied destination world', 
 
   assert.match(smoke, /\['\/ground', \['walkable-first-person-ground-layer'/)
   assert.match(smoke, /\['Street-level city world'\]/)
+})
+
+test('Ground screenshot audit requires current visible world copy', () => {
+  for (const copy of liveGroundVisualCopy) {
+    assert.ok(ground.includes(copy), `Ground source owner is missing current visual copy: ${copy}`)
+    assert.ok(visualAudit.includes(`'${copy}'`), `visual audit is missing current Ground copy: ${copy}`)
+  }
+  assert.ok(!visualAudit.includes("'PRIVATE COUNCIL'"))
+  assert.ok(!visualAudit.includes("'Nothing acts without you'"))
 })
 
 test('obsolete Ground copy is rejected rather than required by the source owner', () => {
