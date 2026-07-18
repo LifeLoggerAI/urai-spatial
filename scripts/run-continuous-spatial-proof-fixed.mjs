@@ -117,10 +117,32 @@ if (!source.includes('singleSelectedActionOwner')) {
   )
 }
 
+if (!source.includes('route.explicitDemo')) {
+  replaceRequired(
+    'selected-memory disclosed fixture route',
+    /id: 'life-map-selected',\s*path: '\/life-map\/\?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',/,
+    `id: 'life-map-selected',
+    explicitDemo: true,
+    path: '/life-map/?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1',`,
+  )
+  replaceRequired(
+    'selected-memory disclosed fixture initialization',
+    /try \{\s*const response = await page\.goto\(url, \{ waitUntil: 'domcontentloaded', timeout: 60_000 \}\)/,
+    `try {
+    if (route.explicitDemo) {
+      await page.addInitScript(() => {
+        window.localStorage.setItem('urai:lifeMapDemoMode', 'true')
+        window.localStorage.removeItem('urai:userId')
+      })
+    }
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })`,
+  )
+}
+
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)
