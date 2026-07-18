@@ -1,0 +1,221 @@
+name: Trusted canonical six-fix repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - feat/home-ground-lifemap-art-bible-convergence-20260718
+    paths:
+      - docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trusted-canonical-six-fix-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'fix/canonical-six-fix-direct-1d172afd-20260718' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/canonical-six-fix-direct-1d172afd-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Guard exact starting tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "1d172afdce8ce1e0b70152b62892dace4cf06fab"
+
+      - name: Apply six bounded repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          function replaceOnce(path, before, after) {
+            const source = fs.readFileSync(path, 'utf8')
+            const matches = source.split(before).length - 1
+            if (matches !== 1) throw new Error(`${path}: expected one match, found ${matches}`)
+            fs.writeFileSync(path, source.replace(before, after))
+          }
+
+          const lifeMap = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
+          const home = 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
+          const ground = 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
+          const navigation = 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
+
+          replaceOnce(
+            lifeMap,
+            `  const textureResolution = selected
+    ? profile.tier === "high" ? 512 : 384
+    : overview
+      ? profile.tier === "high" ? 128 : 96
+      : related
+        ? profile.tier === "high" ? 224 : 160
+        : 80;`,
+            `  const textureResolution = selected
+    ? profile.tier === "high" ? 512 : 384
+    : profile.tier === "high" ? 128 : 96;`
+          )
+
+          replaceOnce(
+            home,
+            `    update()
+    media.addEventListener?.('change', update)
+    return () => media.removeEventListener?.('change', update)`,
+            `    update()
+    if (media.addEventListener) {
+      media.addEventListener('change', update)
+      return () => media.removeEventListener('change', update)
+    }
+    media.addListener(update)
+    return () => media.removeListener(update)`
+          )
+
+          replaceOnce(
+            ground,
+            `    update();
+    query.addEventListener?.("change", update);
+    return () => query.removeEventListener?.("change", update);`,
+            `    update();
+    if (query.addEventListener) {
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }
+    query.addListener(update);
+    return () => query.removeListener(update);`
+          )
+
+          replaceOnce(
+            navigation,
+            `  const damping = requested.lengthSq() > 0 ? acceleration : deceleration
+  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, delta)
+  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, delta)
+
+  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, Math.min(delta, 0.05))`,
+            `  const damping = requested.lengthSq() > 0 ? acceleration : deceleration
+  const clampedDelta = Math.min(delta, 0.05)
+  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, clampedDelta)
+  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, clampedDelta)
+
+  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, clampedDelta)`
+          )
+
+          replaceOnce(
+            ground,
+            `              const target = event.currentTarget;
+              target.scrollIntoView({ block: "nearest", inline: "center" });
+              window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "center" }));`,
+            `              const target = event.currentTarget;
+              const reveal = () => target.scrollIntoView({ block: "nearest", inline: "center" });
+              reveal();
+              window.requestAnimationFrame(reveal);
+              window.setTimeout(reveal, reducedMotion ? 0 : 260);`
+          )
+
+          replaceOnce(
+            ground,
+            `.ground-destination-compass :is(a,button):hover,.ground-destination-compass :is(a,button):focus-visible,.ground-destination-compass :is(a,button)[aria-current]{max-width:220px;border-color:rgba(207,250,254,.72);background:linear-gradient(180deg,rgba(20,57,79,.92),rgba(5,22,35,.9));color:#fff;outline:3px solid rgba(255,255,255,.9);outline-offset:2px;transform:translateY(-2px)}`,
+            `.ground-destination-compass :is(a,button):hover,.ground-destination-compass :is(a,button):focus-visible,.ground-destination-compass :is(a,button)[aria-current]{max-width:220px;border-color:rgba(207,250,254,.72);background:linear-gradient(180deg,rgba(20,57,79,.92),rgba(5,22,35,.9));color:#fff;outline:3px solid rgba(255,255,255,.9);outline-offset:2px;transform:translateY(-2px)}
+        .ground-destination-compass :is(a,button):focus-visible{transition:none!important}`
+          )
+
+          replaceOnce(
+            lifeMap,
+            `  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);`,
+            `  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overviewIdentityRef = useRef<string | null>(null);
+  const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);`
+          )
+
+          replaceOnce(
+            lifeMap,
+            `  useEffect(() => {
+    if (!queryNodeId || !nodes.length) return;
+    const node = nodes.find((candidate) => candidate.id === queryNodeId);
+    if (!node) return;
+    setSelectedId(node.id);
+    setCameraIntent(cameraForNode(node));
+    setNarratorText(narrationForNode(node).text);
+  }, [nodes, queryNodeId]);`,
+            `  useEffect(() => {
+    if (!queryNodeId || !nodes.length) return;
+    if (overviewIdentityRef.current === queryNodeId && selectedId === null) return;
+    const node = nodes.find((candidate) => candidate.id === queryNodeId);
+    if (!node) return;
+    overviewIdentityRef.current = null;
+    setSelectedId(node.id);
+    setCameraIntent(cameraForNode(node));
+    setNarratorText(narrationForNode(node).text);
+  }, [nodes, queryNodeId, selectedId]);`
+          )
+
+          replaceOnce(
+            lifeMap,
+            `  const selectNode = useCallback((node: LifeMapNode) => {
+    setSelectedId(node.id);`,
+            `  const selectNode = useCallback((node: LifeMapNode) => {
+    overviewIdentityRef.current = null;
+    setSelectedId(node.id);`
+          )
+
+          replaceOnce(
+            lifeMap,
+            `  const recenter = useCallback(() => {
+    setSelectedId(null);
+    setCameraIntent(OVERVIEW_CAMERA);
+    setNarratorText("Back to the whole private constellation. Select any star to enter it.");
+    router.replace("/life-map", { scroll: false });
+  }, [router]);`,
+            `  const recenter = useCallback(() => {
+    overviewIdentityRef.current = selectedId;
+    setSelectedId(null);
+    setCameraIntent(OVERVIEW_CAMERA);
+    setNarratorText("Back to the whole private constellation. Select any star to enter it.");
+    const next = new URLSearchParams();
+    if (selectedId) next.set("memoryId", selectedId);
+    next.set("manifestId", manifestId);
+    router.replace(\`/life-map?\${next.toString()}\`, { scroll: false });
+  }, [manifestId, router, selectedId]);`
+          )
+          NODE
+
+      - name: Validate bounded product diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          expected=(
+            urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx
+            urai-tier1/src/app/GroundSpatialWorldClean.tsx
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+            urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx
+          )
+          test "${#changed[@]}" -eq "${#expected[@]}"
+          diff -u <(printf '%s\n' "${expected[@]}") <(printf '%s\n' "${changed[@]}")
+          grep -Fq 'const clampedDelta = Math.min(delta, 0.05)' urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx
+          grep -Fq 'media.addListener(update)' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx
+          grep -Fq 'query.addListener(update);' urai-tier1/src/app/GroundSpatialWorldClean.tsx
+          grep -Fq 'window.setTimeout(reveal, reducedMotion ? 0 : 260);' urai-tier1/src/app/GroundSpatialWorldClean.tsx
+          grep -Fq 'overviewIdentityRef.current = selectedId;' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+          grep -Fq 'next.set("memoryId", selectedId);' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+
+      - name: Commit repaired product tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx
+          git commit -m 'fix(spatial): close canonical accessibility and motion defects'
+          git push origin HEAD:fix/canonical-six-fix-direct-1d172afd-20260718
