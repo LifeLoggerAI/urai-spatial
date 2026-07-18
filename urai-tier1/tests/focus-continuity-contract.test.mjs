@@ -8,6 +8,7 @@ import {
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
+const explicitDemo = read('src/spatial/memory/explicitDemoMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
 
 
@@ -41,11 +42,33 @@ test('Focus resolves only explicit demo prefixes or an already-enabled sample co
   assert.match(hook, /getDoc\(doc\(getFirebaseDb\(\), 'users', user\.uid, 'memories', memoryId\)\)/)
 })
 
+test('Focus reacts to primitive URL identity without memoizing a stale params object', () => {
+  assert.match(hook, /const search = typeof window === 'undefined' \? '' : window\.location\.search/)
+  assert.match(hook, /new URLSearchParams\(search\)/)
+  assert.match(hook, /new URLSearchParams\(typeof window === 'undefined' \? search : window\.location\.search\)/)
+  assert.doesNotMatch(hook, /useMemo/)
+  assert.doesNotMatch(hook, /\[manifestId, memoryId, params, rawMemoryId\]/)
+})
+
+test('demo-mode storage is best effort and cannot crash private Focus resolution', () => {
+  assert.match(explicitDemo, /try \{/)
+  assert.match(explicitDemo, /window\.localStorage\.getItem\('urai:lifeMapDemoMode'\)/)
+  assert.match(explicitDemo, /catch \{\s*return false\s*\}/s)
+})
+
 test('Focus carries exact identity into Replay and raw star identity back to Life Map', () => {
   assert.match(focus, /memoryId: memory\.id/)
   assert.match(focus, /manifestId: memory\.replayManifest\.id/)
   assert.match(focus, /node: memory\.star\.id/)
   assert.match(focus, /new URLSearchParams\(\{ node: memory\.star\.id, from: 'focus-return' \}\)/)
   assert.match(focus, /destination: 'life-map'/)
+  assert.match(focus, /context: \{\s*memoryId: memory\.star\.id,/s)
   assert.match(focus, /destination: 'replay'/)
+})
+
+test('Focus tolerates older records with omitted media, people, fog, or reflection fields', () => {
+  assert.match(focus, /memory\?\.sourceMedia\?\.find/)
+  assert.match(focus, /memory\.people\?\.filter\(Boolean\)/)
+  assert.match(focus, /memory\.visuals\.fog \?\? 0/)
+  assert.match(focus, /memory\.visuals\.reflection \?\? 0/)
 })
