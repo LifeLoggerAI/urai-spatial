@@ -13,6 +13,7 @@ import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemoryResult } from '@/spatial/memory/selectedMemoryContract'
 import styles from './FocusChamber.module.css'
+import landscapeStyles from './FocusChamberLandscape.module.css'
 
 const DEMO_FOCUS_HREF = '/focus?memoryId=demo%3Aquiet-reset&node=quiet-reset&manifestId=replay-recovery-thread&demo=1&from=focus-recovery'
 
@@ -256,14 +257,14 @@ export default function FocusChamberClient() {
         <p id="focus-memory-summary" className={styles.summary}>{memory.summary}</p>
       </header>
 
-      <section className={styles.chamber} aria-label={`Memory chamber for ${memory.title}`}>
-        <div className={styles.shell} data-material={memory.star.material} aria-hidden="true">
+      <section className={`${styles.chamber} ${landscapeStyles.chamber}`} aria-label={`Memory chamber for ${memory.title}`}>
+        <div className={`${styles.shell} ${landscapeStyles.shell}`} data-material={memory.star.material} aria-hidden="true">
           <span className={styles.shellOuter} />
           <span className={styles.shellMiddle} />
           <span className={styles.shellInner} />
         </div>
 
-        <figure className={styles.memoryPortal} data-media-state={mediaState}>
+        <figure className={`${styles.memoryPortal} ${landscapeStyles.memoryPortal}`} data-media-state={mediaState}>
           <div className={styles.portalLight} aria-hidden="true" />
           {media && mediaState !== 'failed' ? (
             <img
@@ -282,7 +283,7 @@ export default function FocusChamberClient() {
         </figure>
 
         <button
-          className={styles.replayPortal}
+          className={`${styles.replayPortal} ${landscapeStyles.replayPortal}`}
           type="button"
           onClick={enterReplay}
           disabled={!replayAvailable}
