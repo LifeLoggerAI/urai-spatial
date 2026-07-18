@@ -567,7 +567,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
       <div className="urai-home-spatial-thresholds" data-testid="urai-home-threshold-controls" aria-label="Home world thresholds">
         <button
           type="button"
-          className="urai-home-spatial-portal-label urai-home-spatial-portal-label--ground"
+          className="urai-home-spatial-threshold urai-home-spatial-threshold--ground"
           aria-label="Open the ground and descend into Hidden Infrastructure"
           onClick={() => travel('infrastructure-hub')}
         >
@@ -576,7 +576,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
         </button>
         <button
           type="button"
-          className="urai-home-spatial-portal-label urai-home-spatial-portal-label--sky"
+          className="urai-home-spatial-threshold urai-home-spatial-threshold--sky"
           aria-label="Open the Life Map and ascend into Memory Sky"
           onClick={() => travel('life-map')}
         >
