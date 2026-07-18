@@ -58,6 +58,15 @@ if (!source.includes('sceneLabelRetired')) {
   )
 }
 
+if (!source.includes("rail.locator('button[data-ground-control]')")) {
+  replaceRequired(
+    'Ground destination control verifier',
+    /const railLinks = rail\.locator\('a'\)\s*const navigationPillsStyled = await railLinks\.count\(\) === 5 && await railLinks\.first\(\)\.evaluate\(\(node\) => \{/,
+    `const railLinks = rail.locator('button[data-ground-control]')
+      const navigationPillsStyled = await railLinks.count() === 12 && await railLinks.first().evaluate((node) => {`,
+  )
+}
+
 if (!source.includes('activeGroundLinkSuppressed')) {
   replaceRequired(
     'Ground verifier',
