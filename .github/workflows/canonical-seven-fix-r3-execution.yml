@@ -73,13 +73,13 @@ jobs:
           corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/canonical-seven-fix-build.log
 
       - name: Install Chromium
-        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
 
       - name: Verify exact prior accessibility failures
         shell: bash
         run: |
           set -o pipefail
-          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-seven-fix-browser.log
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-seven-fix-browser.log
 
       - name: Publish one clean eight-file product commit
         id: publish
