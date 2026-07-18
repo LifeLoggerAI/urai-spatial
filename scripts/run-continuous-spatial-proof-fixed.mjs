@@ -93,6 +93,31 @@ if (!source.includes('unselectedActionControlsAbsent')) {
   )
 }
 
+if (!source.includes('authoredVisualSpineVisible')) {
+  replaceRequired(
+    'Life Map authored visual owner verifier',
+    /const overlayOpacities = await page\.locator\('\[data-testid="urai-r3f-canonical-lifemap"\] > div\[aria-hidden="true"\]'\)\.evaluateAll\(\(nodes\) => nodes\.map\(\(node\) => Number\.parseFloat\(getComputedStyle\(node\)\.opacity \|\| '1'\)\)\)/,
+    `const overlayOpacities = await page.locator('[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"]:not(.life-map-visual-spine)').evaluateAll((nodes) => nodes.map((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')))
+      const authoredVisualSpine = page.locator('[data-life-map-visual-owner="authored-deep-field"]').first()
+      const authoredVisualSpineVisible = await authoredVisualSpine.count() === 1 && await authoredVisualSpine.evaluate((node) => {
+        const style = getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
+        return style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') >= 0.8
+          && style.backgroundImage !== 'none'
+          && rect.width >= window.innerWidth * 0.9
+          && rect.height >= window.innerHeight * 0.9
+      })`,
+  )
+  replaceRequired(
+    'Life Map authored visual owner receipt',
+    /providerVeilSuppressed: overlayOpacities\.length === 0 \|\| overlayOpacities\.every\(\(opacity\) => opacity <= 0\.02\),/,
+    `providerVeilSuppressed: overlayOpacities.length === 0 || overlayOpacities.every((opacity) => opacity <= 0.02),
+        authoredVisualSpineVisible,`,
+  )
+}
+
 if (!source.includes('singleSelectedActionOwner')) {
   replaceRequired(
     'selected-memory controls',
@@ -117,10 +142,34 @@ if (!source.includes('singleSelectedActionOwner')) {
   )
 }
 
+if (!source.includes('selectedCinematicSurfaceVisible')) {
+  replaceRequired(
+    'selected-memory cinematic visual proof',
+    /const canvas = await canvasEvidence\(page, '\[data-testid="urai-true-3d-life-map"\] canvas'\)\s*return \{\s*firstSpatialFrameMarked,/,
+    `const selectedCinematic = page.locator('[data-life-map-selected-visual="authored-memory-surface"]').first()
+      const selectedCinematicSurfaceVisible = await selectedCinematic.count() === 1 && await selectedCinematic.evaluate((node) => {
+        const style = getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
+        return style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') >= 0.8
+          && rect.width >= Math.min(window.innerWidth * 0.42, 320)
+          && rect.height >= Math.min(window.innerHeight * 0.28, 220)
+      })
+      const semanticDrawer = page.locator('.life-map-accessibility-menu').first()
+      const semanticDrawerClosed = await semanticDrawer.count() === 1 && await semanticDrawer.evaluate((node) => !node.open)
+      const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
+      return {
+        firstSpatialFrameMarked,
+        selectedCinematicSurfaceVisible,
+        semanticDrawerClosed,`,
+  )
+}
+
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)
