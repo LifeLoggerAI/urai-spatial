@@ -32,6 +32,7 @@ concurrency:
 env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
   PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
 
 jobs:
   browser-proof:
