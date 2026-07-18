@@ -47,6 +47,11 @@ export function PersistentWorldCompanion() {
     setOpen(false)
   }, [])
 
+  const toggleCompanion = useCallback(() => {
+    if (open) closeCompanion(true)
+    else setOpen(true)
+  }, [closeCompanion, open])
+
   useEffect(() => {
     const openCompanion = () => setOpen(true)
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
@@ -172,9 +177,12 @@ export function PersistentWorldCompanion() {
         aria-controls="urai-world-companion-menu"
         data-world-target="orb-controls"
         data-urai-audit-action="orb-controls"
-        onClick={() => {
-          if (open) closeCompanion(true)
-          else setOpen(true)
+        onClick={toggleCompanion}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return
+          event.preventDefault()
+          event.stopPropagation()
+          toggleCompanion()
         }}
       >
         <span aria-hidden="true" />
