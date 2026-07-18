@@ -142,12 +142,22 @@ const routes = [
       })
 
       const firstHomeFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-home-spatial-frame').length > 0)
+      const mobileControlsDoNotOverlapPrompt = await page.evaluate(() => {
+        if (window.innerWidth > 700) return true
+        const prompt = document.querySelector('.urai-home-movement-prompt')
+        const pad = document.querySelector('.urai-mobile-movement')
+        if (!prompt || !pad) return false
+        const promptRect = prompt.getBoundingClientRect()
+        const padRect = pad.getBoundingClientRect()
+        return promptRect.bottom <= padRect.top - 12
+      })
       const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
       return {
         runtimeMounted: runtime === 1,
         oldWorldHidden,
         legacyControlsSuppressed: legacyControlsVisible === 0,
         firstHomeFrameMarked,
+        mobileControlsDoNotOverlapPrompt,
         authoredSceneMounted,
         thresholdLabelsVisible,
         permanentFeatureShortcutsAbsent,
