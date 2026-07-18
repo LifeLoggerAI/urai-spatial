@@ -1,0 +1,147 @@
+name: Life Map remove layout starfield R3 execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-seven-fix-clean-r3-20260718
+    paths:
+      - .github/workflows/lifemap-remove-layout-starfield-r3-execution.yml
+      - scripts/one-shot-lifemap-remove-layout-starfield-r3.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-remove-layout-starfield-r3-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: 2ed4c16ab48451bb8912bb32810949f3e4314567
+  SOURCE_BRANCH: exec/lifemap-remove-layout-starfield-r3-b725855f
+
+jobs:
+  remove-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/lifemap-remove-layout-starfield-r3-b725855f'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact execution head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove authority and apply bounded single-owner repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          actual="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
+          expected="$(printf '%s\n' .github/workflows/lifemap-remove-layout-starfield-r3-execution.yml scripts/one-shot-lifemap-remove-layout-starfield-r3.mjs | sort)"
+          printf 'Execution files:\n%s\n' "$actual"
+          test "$actual" = "$expected"
+          node scripts/one-shot-lifemap-remove-layout-starfield-r3.mjs 2>&1 | tee /tmp/lifemap-remove-layout-starfield-r3-apply.log
+          git diff --check
+          actual_product="$(git diff --name-only | sort)"
+          expected_product="$(printf '%s\n' urai-tier1/src/app/life-map/layout.tsx urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs urai-tier1/tests/spatial-missing-resource-diagnostic-contract.test.mjs | sort)"
+          printf 'Product files:\n%s\n' "$actual_product"
+          test "$actual_product" = "$expected_product"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run exact repaired contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm --dir urai-tier1 exec node --test tests/home-ground-lifemap-art-bible-contract.test.mjs tests/spatial-missing-resource-diagnostic-contract.test.mjs
+
+      - name: Run full source contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/lifemap-remove-layout-starfield-r3-unit.log
+
+      - name: Typecheck exact candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/lifemap-remove-layout-starfield-r3-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/lifemap-remove-layout-starfield-r3-build.log
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install exact Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run Life Map accessibility regression
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts accessibility-performance-lifemap-independent.spec.ts --project=chromium 2>&1 | tee /tmp/lifemap-remove-layout-starfield-r3-accessibility.log
+
+      - name: Capture exact visual artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-remove-layout-starfield-r3-artifact
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-remove-layout-starfield-r3-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/lifemap-remove-layout-starfield-r3-artifact \
+          URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
+            node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee /tmp/lifemap-remove-layout-starfield-r3-capture.log
+
+      - name: Publish clean three-file child branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXECUTION_HEAD="${{ github.event.pull_request.head.sha }}"
+          mkdir -p /tmp/lifemap-layout-r3-clean/urai-tier1/src/app/life-map /tmp/lifemap-layout-r3-clean/urai-tier1/tests
+          cp urai-tier1/src/app/life-map/layout.tsx /tmp/lifemap-layout-r3-clean/urai-tier1/src/app/life-map/
+          cp urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs /tmp/lifemap-layout-r3-clean/urai-tier1/tests/
+          cp urai-tier1/tests/spatial-missing-resource-diagnostic-contract.test.mjs /tmp/lifemap-layout-r3-clean/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/lifemap-layout-r3-clean/urai-tier1/src/app/life-map/layout.tsx urai-tier1/src/app/life-map/
+          cp /tmp/lifemap-layout-r3-clean/urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs urai-tier1/tests/
+          cp /tmp/lifemap-layout-r3-clean/urai-tier1/tests/spatial-missing-resource-diagnostic-contract.test.mjs urai-tier1/tests/
+          git diff --check
+          actual="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' urai-tier1/src/app/life-map/layout.tsx urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs urai-tier1/tests/spatial-missing-resource-diagnostic-contract.test.mjs | sort)"
+          test "$actual" = "$expected"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): enforce one route visual owner"
+          git push --force-with-lease=refs/heads/$SOURCE_BRANCH:$EXECUTION_HEAD origin HEAD:refs/heads/$SOURCE_BRANCH
+          git rev-parse HEAD | tee /tmp/lifemap-remove-layout-starfield-r3-product-sha.log
+
+      - name: Retain exact R3 layout-removal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-remove-layout-starfield-r3-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-remove-layout-starfield-r3-*.log
+            /tmp/lifemap-remove-layout-starfield-r3-artifact
+          if-no-files-found: ignore
+          retention-days: 90
