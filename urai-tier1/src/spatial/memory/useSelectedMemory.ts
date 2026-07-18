@@ -27,6 +27,11 @@ function unavailable(message: string): SelectedMemoryResult {
   return { status: 'unavailable', memory: null, message }
 }
 
+function isReplayRoute() {
+  if (typeof window === 'undefined') return false
+  return window.location.pathname.replace(/\/+$/, '') === '/replay'
+}
+
 export function useSelectedMemory(): SelectedMemoryResult {
   const [search, setSearch] = useState(() => typeof window === 'undefined' ? '' : window.location.search)
   const currentParams = new URLSearchParams(search)
@@ -72,7 +77,11 @@ export function useSelectedMemory(): SelectedMemoryResult {
 
     if (explicitDemo) {
       const memory = buildNamedExplicitDemoMemory(memoryId)
-      if (manifestId && memory.replayManifest.id !== manifestId) {
+      if (isReplayRoute() && !memory.replayAvailable) {
+        setResult(unavailable('Replay is unavailable for this memory. Return to Focus or choose a replayable memory from the Life Map.'))
+        return () => { cancelled = true }
+      }
+      if (isReplayRoute() && manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'This Replay link belongs to a different demonstration memory. Return to the Life Map and choose the memory again.' })
         return () => { cancelled = true }
       }
