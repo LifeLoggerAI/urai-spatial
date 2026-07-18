@@ -1,11 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
+const FOCUS_DEMO_PATH = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const REPLAY_DEMO_PATH = '/replay?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+
 const routes = [
   { name: 'home', path: '/' },
   { name: 'ground', path: '/ground' },
   { name: 'life-map', path: '/life-map' },
-  { name: 'focus', path: '/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
-  { name: 'replay', path: '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
+  { name: 'focus', path: FOCUS_DEMO_PATH },
+  { name: 'replay', path: REPLAY_DEMO_PATH },
 ] as const
 
 const interactiveSelector = [
@@ -73,8 +76,10 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
     const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
-    await page.goto('/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
-    const focusTargets = await targetSize(page, '.artifact, .unwind, .focusState button')
+    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    const focusChamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
+    await expect(focusChamber).toBeVisible()
+    const focusTargets = await targetSize(page, '[data-testid="urai-final-focus-chamber"] button:not([disabled])')
 
     expect(companionTargets.length).toBeGreaterThan(0)
     expect(focusTargets.length).toBeGreaterThan(0)
