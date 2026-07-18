@@ -52,7 +52,7 @@ test('legacy selected-memory card remains unmounted and cannot compete visually'
   assert.doesNotMatch(canonical, /import LifeMapDeepLinkControls/)
 })
 
-test('selected mode raises the spatial realm above the authored overview artwork', () => {
+test('selected mode raises the spatial realm and keeps its portals inside the viewport', () => {
   assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
   assert.match(selectedCinematic, /data-life-map-mode='selected'/)
   assert.match(selectedCinematic, /> \.life-map-independent-realm/)
@@ -61,6 +61,8 @@ test('selected mode raises the spatial realm above the authored overview artwork
   assert.match(selectedCinematic, /opacity: \.04 !important/)
   assert.match(selectedCinematic, /\.life-map-memory-portals/)
   assert.match(selectedCinematic, /z-index: 90/)
+  assert.match(selectedCinematic, /translateY\(clamp\(-280px, -26vh, -160px\)\)/)
+  assert.match(selectedCinematic, /max-width: calc\(100vw - 16px\)/)
 })
 
 test('schema-7 selected route requires visible spatial Focus and Replay portals', () => {
