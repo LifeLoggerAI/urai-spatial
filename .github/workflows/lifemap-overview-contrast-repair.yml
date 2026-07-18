@@ -1,0 +1,80 @@
+name: Life Map overview contrast repair
+
+on:
+  push:
+    branches:
+      - fix/lifemap-compact-overview-891c1b9f
+    paths:
+      - .github/workflows/lifemap-overview-contrast-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-overview-contrast-repair
+  cancel-in-progress: false
+
+env:
+  CLEAN_BASE: 891c1b9ffb8f7c1828af30e6ba8091b5ea08436c
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/lifemap-compact-overview-891c1b9f
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Prove bounded authority and apply repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/lifemap-overview-contrast-repair.yml scripts/apply-lifemap-overview-contrast.mjs | sort)"
+          node scripts/apply-lifemap-overview-contrast.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.17.1
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install exact dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Life Map contract
+        run: node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
+
+      - name: Verify focused product suites
+        run: pnpm --dir urai-tier1 test
+
+      - name: Typecheck
+        run: pnpm --dir urai-tier1 typecheck
+
+      - name: Build exact static candidate
+        run: |
+          pnpm --dir urai-tier1 build:static
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Commit clean product repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/lifemap-overview-contrast-repair.yml scripts/apply-lifemap-overview-contrast.mjs
+          test "$(git diff --name-only "$CLEAN_BASE" | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(lifemap): replace pale overview slabs with compact memory apertures"
+          git push origin HEAD:fix/lifemap-compact-overview-891c1b9f
