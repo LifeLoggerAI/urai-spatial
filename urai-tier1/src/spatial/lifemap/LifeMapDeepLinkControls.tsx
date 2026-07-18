@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function safeToken(value: string | null, fallback = '') {
@@ -22,6 +23,12 @@ export default function LifeMapDeepLinkControls() {
   const searchParams = useSearchParams()
   const memoryId = safeToken(searchParams.get('memoryId') ?? searchParams.get('node'))
 
+  useEffect(() => {
+    if (!memoryId) return
+    const controls = document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')
+    controls?.removeAttribute('open')
+  }, [memoryId])
+
   if (!memoryId) return null
 
   const manifestId = safeToken(searchParams.get('manifestId'), 'replay-recovery-thread')
@@ -36,25 +43,43 @@ export default function LifeMapDeepLinkControls() {
   }
 
   return (
-    <aside
-      className="urai-lifemap-deep-link-controls"
-      data-testid="urai-lifemap-selected-memory-controls"
-      data-memory-id={memoryId}
-      data-manifest-id={manifestId}
-      aria-label={`Selected memory: ${title}`}
-      aria-live="polite"
-    >
-      <p className="urai-lifemap-deep-link-controls__eyebrow">Selected memory</p>
-      <strong className="urai-lifemap-deep-link-controls__title">{title}</strong>
-      <span className="urai-lifemap-deep-link-controls__detail">Continue directly into this memory or replay its cinematic thread.</span>
-      <div className="urai-lifemap-deep-link-controls__actions">
-        <button type="button" onClick={() => router.push(destination('focus'))}>
-          Enter Focus
-        </button>
-        <button type="button" onClick={() => router.push(destination('replay'))}>
-          Replay
-        </button>
+    <>
+      <div
+        className="urai-lifemap-selected-visual"
+        data-life-map-selected-visual="authored-memory-surface"
+        data-memory-id={memoryId}
+        aria-hidden="true"
+      >
+        <div className="urai-lifemap-selected-visual__halo" />
+        <div className="urai-lifemap-selected-visual__frame">
+          <div className="urai-lifemap-selected-visual__copy">
+            <span>Memory in focus</span>
+            <strong>{title}</strong>
+            <i>Private cinematic surface · identity preserved</i>
+          </div>
+        </div>
       </div>
-    </aside>
+      <aside
+        className="urai-lifemap-deep-link-controls"
+        data-testid="urai-lifemap-selected-memory-controls"
+        data-selected-memory-panel="diegetic"
+        data-memory-id={memoryId}
+        data-manifest-id={manifestId}
+        aria-label={`Selected memory: ${title}`}
+        aria-live="polite"
+      >
+        <p className="urai-lifemap-deep-link-controls__eyebrow">Selected memory</p>
+        <strong className="urai-lifemap-deep-link-controls__title">{title}</strong>
+        <span className="urai-lifemap-deep-link-controls__detail">Continue directly into this memory or replay its cinematic thread.</span>
+        <div className="urai-lifemap-deep-link-controls__actions">
+          <button type="button" onClick={() => router.push(destination('focus'))}>
+            Enter Focus
+          </button>
+          <button type="button" onClick={() => router.push(destination('replay'))}>
+            Replay
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }
