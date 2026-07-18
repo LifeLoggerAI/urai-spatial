@@ -19,7 +19,9 @@ import './embodiedExplorationLayout.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  const showWorldCompanion = world.destination !== 'life-map'
+  // Embodied Home owns its physical, approachable Orb. Mounting the persistent
+  // companion there would create a second Orb and two competing control owners.
+  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'home'
 
   return (
     <div
