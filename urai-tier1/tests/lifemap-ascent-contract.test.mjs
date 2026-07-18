@@ -41,10 +41,14 @@ test('ascent transition has a bounded timer and reduced-motion escape hatch', ()
   assert.match(transitionCss, /uraiCanonSkyGateIgnites/)
 })
 
-test('destination becomes interactive as the final adaptive galaxy owner', () => {
+test('destination becomes interactive through visible Life Map-owned controls', () => {
   assert.match(sceneSource, /onPointerMove/)
   assert.match(sceneSource, /onPointerDown/)
   assert.match(sceneSource, /onWheel/)
-  assert.match(sceneSource, /aria-label="URAI Life Map route portals"/)
+  assert.match(sceneSource, /className="life-map-accessibility-menu"/)
+  assert.match(sceneSource, /<summary>Map controls<\/summary>/)
   assert.match(sceneSource, /Enter Focus/)
+  assert.match(sceneSource, /router\.push\("\/ground"\)/)
+  assert.match(sceneSource, /router\.push\("\/home"\)/)
+  assert.doesNotMatch(sceneSource, /Orb companion/)
 })
