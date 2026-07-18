@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# One-shot production convergence trigger for main@8d13766a5603e67971852fd880b6f3ba309f9d55 after merged Life Map canon PR #728.
+# One-shot production convergence retrigger for canonical main@1770a4967e7501d82d55385c9584a8f24231eced after the first receipt dispatcher did not register.
 
 on:
   push:
