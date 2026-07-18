@@ -51,6 +51,11 @@ replaceExactlyOnce(
   '          opacity={texture ? selected ? 1 : overview ? 0.82 : related ? 0.42 : 0.11 : 0}',
   'transparent-fallback-opacity',
 )
+replaceExactlyOnce(
+  '  assert.match(adaptiveLifeMap, /opacity=\\{texture \\? visibleOpacity : 0\\}/)',
+  '  assert.match(adaptiveLifeMap, /opacity=\\{texture \\? selected \\? 1 : overview \\? 0\\.82 : related \\? 0\\.42 : 0\\.11 : 0\\}/)',
+  'final-transparent-fallback-contract',
+)
 
 fs.writeFileSync(path, source)
 console.log('Patched the isolated memory-lens applicator deterministically.')
