@@ -108,3 +108,10 @@ replaceOnce(navigation,
   velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, clampedDelta)
 
   const next = MOTION_NEXT.copy(position).addScaledVector(velocity, clampedDelta)`)
+
+const sourceContract = 'urai-tier1/tests/accessibility-performance-source-contract.test.mjs'
+replaceOnce(sourceContract,
+String.raw`  requireNormalizedPattern(ground, /event\.currentTarget\.scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'center',?\s*\}\)/, 'Ground focus must remain visible without depending on formatting')`,
+`  requireText(ground, 'event.currentTarget.scrollIntoView')
+  requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
+  requireNormalizedPattern(ground, /inline:\s*'center'/, 'Ground focus reveal must center the destination inline')`)
