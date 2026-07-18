@@ -13,6 +13,12 @@ function replaceRequired(label, pattern, replacement) {
   source = source.replace(pattern, replacement)
 }
 
+replaceRequired(
+  'selected-memory proof identity',
+  /path: '\/life-map\/\?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'/,
+  "path: '/life-map/?memoryId=memory-thread&manifestId=replay-recovery-thread&node=memory-thread&demo=1'",
+)
+
 if (!source.includes("const selectedControl = page.getByRole('button', { name: 'Enter Focus' }).first()")) {
   replaceRequired(
     'selected-memory chooser',
@@ -64,7 +70,7 @@ if (!source.includes('activeGroundLinkSuppressed')) {
     /const activeGroundLink = rail\.locator\('a\[aria-current="page"\]'\)\s*const activeGroundLinkVisible = await activeGroundLink\.count\(\) === 1 && await activeGroundLink\.isVisible\(\)\s*const canvas = await canvasEvidence\(page, '\.ground-spatial-root canvas'\)\s*return \{ providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas\.canvasSized, \.\.\.canvas \}/,
     `const activeGroundLink = rail.locator('a[aria-current="page"]')
       const activeGroundLinkSuppressed = await visibleElementCount(activeGroundLink) === 0
-      const groundRouteOwned = new URL(page.url()).pathname.replace(/\\\/$/, '') === '/ground'
+      const groundRouteOwned = new URL(page.url()).pathname.replace(/\/$/, '') === '/ground'
       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
       return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkSuppressed, groundRouteOwned, canvasSized: canvas.canvasSized, ...canvas }`,
   )
