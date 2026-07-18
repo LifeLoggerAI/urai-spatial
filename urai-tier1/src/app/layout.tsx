@@ -1,4 +1,3 @@
-import UraiFinalAssetSpineSceneLayer from './UraiFinalAssetSpineSceneLayer'
 import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
@@ -38,7 +37,6 @@ import './aaa-real-world-final-pass.css'
 import './urai-canon-camera-transitions.css'
 import './aaa-interaction-final-hotfix.css'
 import './aaa-live-visual-proof-polish.css'
-import UraiCinematicBackdrop from './UraiCinematicBackdrop'
 import UraiAAAARoutePolish from './UraiAAAARoutePolish'
 import './urai-aaaa-final-pass.css'
 import './urai-proof-machine.css'
@@ -90,8 +88,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <WorldRuntimeBoundary>
           <UraiAAAARoutePolish />
-          <UraiCinematicBackdrop />
-          <UraiFinalAssetSpineSceneLayer />
           <UraiFinalAssetSpineBridge />
           {children}
           <UraiAutonomousV1Layer />
