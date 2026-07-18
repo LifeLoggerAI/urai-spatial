@@ -1,0 +1,116 @@
+name: One-shot synthesized review repair
+
+on:
+  pull_request:
+    branches:
+      - fix/canonical-synth-review-91fc14be-20260718
+    paths:
+      - docs/verification/TRIGGER_SYNTHESIZED_REVIEW_REPAIR.md
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout synthesized product branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/canonical-synth-review-91fc14be-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply bounded confirmed review fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs')
+          function replaceOnce(path, before, after) {
+            const source = fs.readFileSync(path, 'utf8')
+            const matches = source.split(before).length - 1
+            if (matches !== 1) throw new Error(`${path}: expected one match, found ${matches}`)
+            fs.writeFileSync(path, source.replace(before, after))
+          }
+
+          replaceOnce(
+            'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx',
+            `  const textureResolution = selected
+    ? profile.tier === "high" ? 512 : 384
+    : overview
+      ? profile.tier === "high" ? 128 : 96
+      : related
+        ? profile.tier === "high" ? 224 : 160
+        : 80;`,
+            `  const textureResolution = selected
+    ? profile.tier === "high" ? 512 : 384
+    : profile.tier === "high" ? 128 : 96;`
+          )
+
+          replaceOnce(
+            'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx',
+            `    update()
+    media.addEventListener?.('change', update)
+    return () => media.removeEventListener?.('change', update)`,
+            `    update()
+    if (media.addEventListener) {
+      media.addEventListener('change', update)
+      return () => media.removeEventListener('change', update)
+    }
+    media.addListener(update)
+    return () => media.removeListener(update)`
+          )
+
+          replaceOnce(
+            'urai-tier1/src/app/GroundSpatialWorldClean.tsx',
+            `    update();
+    query.addEventListener?.("change", update);
+    return () => query.removeEventListener?.("change", update);`,
+            `    update();
+    if (query.addEventListener) {
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }
+    query.addListener(update);
+    return () => query.removeListener(update);`
+          )
+
+          replaceOnce(
+            'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx',
+            `  const damping = requested.lengthSq() > 0 ? acceleration : deceleration
+  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, delta)
+  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, delta)
+
+  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, Math.min(delta, 0.05))`,
+            `  const damping = requested.lengthSq() > 0 ? acceleration : deceleration
+  const clampedDelta = Math.min(delta, 0.05)
+  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, clampedDelta)
+  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, clampedDelta)
+
+  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, clampedDelta)`
+          )
+          NODE
+
+      - name: Prove synthesized contracts and self-remove
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq ': profile.tier === "high" ? 128 : 96;' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+          grep -Fq "media.addListener(update)" urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx
+          grep -Fq "query.addListener(update);" urai-tier1/src/app/GroundSpatialWorldClean.tsx
+          grep -Fq "const clampedDelta = Math.min(delta, 0.05)" urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx
+          grep -Fq "bottom:max(202px,calc(env(safe-area-inset-bottom) + 192px))" urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx
+          grep -Fq "mobileControlsDoNotOverlapPrompt" scripts/capture-continuous-spatial-proof.mjs
+          git diff --check
+          rm .github/workflows/one-shot-synthesized-review-repair.yml
+
+      - name: Commit clean synthesized product tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(spatial): synthesize mobile and review repairs'
+          git push origin HEAD:fix/canonical-synth-review-91fc14be-20260718
