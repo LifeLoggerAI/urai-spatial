@@ -6,53 +6,51 @@ import test from 'node:test'
 const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
 
-const controls = read('src/spatial/lifemap/LifeMapDeepLinkControls.tsx')
+const legacyControls = read('src/spatial/lifemap/LifeMapDeepLinkControls.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
-const css = read('src/app/continuous-spatial-proof-defects.css')
+const adaptive = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
 const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
 
-test('canonical Life Map mounts selected-memory controls inside Suspense', () => {
-  assert.match(canonical, /LifeMapDeepLinkControls/)
+test('canonical Life Map has one selected-memory owner inside the spatial lens scene', () => {
   assert.match(canonical, /<LifeMapRouteBoundary \/>/)
-  assert.match(canonical, /<LifeMapDeepLinkControls \/>/)
   assert.match(canonical, /<Suspense/)
+  assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
+  assert.doesNotMatch(canonical, /LifeMapDeepLinkControls|urai-lifemap-deep-link-controls/)
+  assert.match(adaptive, /className="life-map-memory-portals"/)
+  assert.match(adaptive, /onClick=\{\(\) => onEnterFocus\(node\)\}/)
+  assert.match(adaptive, /onClick=\{\(\) => onEnterReplay\(node\)\}/)
 })
 
-test('memoryId and node deep links preserve exact identity across Focus and Replay', () => {
-  assert.match(controls, /function safeToken/)
-  assert.match(controls, /slice\(0, 120\)/)
-  assert.match(controls, /\^\[A-Za-z0-9\._:-\]\+\$/)
-  assert.match(controls, /safeToken\(searchParams\.get\('memoryId'\) \?\? searchParams\.get\('node'\)\)/)
-  assert.match(controls, /safeToken\(searchParams\.get\('manifestId'\), 'replay-recovery-thread'\)/)
-  assert.match(controls, /data-testid="urai-lifemap-selected-memory-controls"/)
-  assert.match(controls, /data-memory-id=\{memoryId\}/)
-  assert.match(controls, /data-manifest-id=\{manifestId\}/)
-  assert.match(controls, /query\.set\('memoryId', memoryId\)/)
-  assert.match(controls, /query\.set\('manifestId', manifestId\)/)
-  assert.match(controls, /query\.set\('node', memoryId\)/)
-  assert.match(controls, /query\.set\('from', 'life-map-selected-memory'\)/)
-  assert.match(controls, /router\.push\(destination\('focus'\)\)/)
-  assert.match(controls, /router\.push\(destination\('replay'\)\)/)
-  assert.match(controls, />\s*Enter Focus\s*</)
-  assert.match(controls, />\s*Replay\s*</)
+test('selected-memory identity and Focus Replay destinations remain owned by the spatial scene', () => {
+  assert.match(adaptive, /function safeToken/)
+  assert.match(adaptive, /slice\(0, 120\)/)
+  assert.match(adaptive, /const queryNodeId = safeToken\(params\.get\("node"\) \|\| params\.get\("nodeId"\) \|\| params\.get\("memoryId"\)\)/)
+  assert.match(adaptive, /const manifestId = safeToken\(params\.get\("manifestId"\), DEFAULT_MANIFEST_ID\)/)
+  assert.match(adaptive, /next\.set\("memoryId", node\.id\)/)
+  assert.match(adaptive, /next\.set\("manifestId", manifestId\)/)
+  assert.match(adaptive, /next\.set\("node", node\.id\)/)
+  assert.match(adaptive, /next\.set\("returnNode", node\.id\)/)
+  assert.match(adaptive, /next\.set\("lifeMapOrigin"/)
+  assert.match(adaptive, /return `\/\$\{route\}\?\$\{next\.toString\(\)\}`/)
+  assert.match(adaptive, />Enter Focus<\/button>/)
+  assert.match(adaptive, />Replay<\/button>/)
 })
 
-test('Overview preserves identity but suppresses selected-memory semantics', () => {
-  assert.match(controls, /const overviewRequested = searchParams\.get\('overview'\) === '1'/)
-  assert.match(controls, /if \(!memoryId \|\| overviewRequested\) return null/)
+test('Overview preserves identity while suppressing selected spatial portals', () => {
+  assert.match(adaptive, /const overviewRequested = params\.get\("overview"\) === "1"/)
+  assert.match(adaptive, /overviewRequested \? null : queryNodeId/)
+  assert.match(adaptive, /\{selected \? \(/)
+  assert.match(adaptive, /className="life-map-memory-portals"/)
 })
 
-test('selected-memory controls are visible, responsive and keyboard focused', () => {
-  assert.match(css, /\.urai-lifemap-deep-link-controls \{/)
-  assert.match(css, /z-index: 80/)
-  assert.match(css, /width: min\(320px, calc\(100vw - 40px\)\)/)
-  assert.match(css, /\.urai-lifemap-deep-link-controls__actions button/)
-  assert.match(css, /min-height: 38px/)
-  assert.match(css, /button:focus-visible/)
-  assert.match(css, /@media \(max-width: 760px\)/)
+test('legacy selected-memory card remains unmounted and cannot compete visually', () => {
+  assert.match(legacyControls, /data-testid="urai-lifemap-selected-memory-controls"/)
+  assert.match(legacyControls, /Continue directly into this memory/)
+  assert.doesNotMatch(canonical, /<LifeMapDeepLinkControls \/>/)
+  assert.doesNotMatch(canonical, /import LifeMapDeepLinkControls/)
 })
 
-test('schema-7 selected route still requires visible Focus and Replay controls', () => {
+test('schema-7 selected route requires visible spatial Focus and Replay portals', () => {
   assert.match(proof, /id: 'life-map-selected'/)
   assert.match(proof, /getByRole\('button', \{ name: 'Enter Focus' \}\)/)
   assert.match(proof, /getByRole\('button', \{ name: 'Replay' \}\)/)
