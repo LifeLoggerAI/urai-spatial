@@ -36,3 +36,11 @@ test('Life Map atmosphere cannot use viewport-scale translucent planes', () => {
   assert.match(scene, /color="#b177ff" intensity=\{0\.2\} distance=\{15\}/)
   assert.match(scene, /color="#fff1bd" intensity=\{0\.12\} distance=\{11\}/)
 })
+
+test('Life Map suppresses retired global body atmosphere overlays', () => {
+  assert.match(proofCss, /html\.urai-route-life-map body::before,\s*html\.urai-route-life-map body::after/)
+  assert.match(proofCss, /content:\s*none !important/)
+  assert.match(proofCss, /display:\s*none !important/)
+  assert.match(proofCss, /background:\s*none !important/)
+  assert.match(proofCss, /mix-blend-mode:\s*normal !important/)
+})

@@ -310,3 +310,15 @@ body:has([data-testid="urai-true-3d-life-map"]) {
     transform: none;
   }
 }
+
+/* Life Map owns its atmosphere. Retired global body effects created a visible
+   horizontal compositing band over the canonical authored and WebGL layers. */
+html.urai-route-life-map body::before,
+html.urai-route-life-map body::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  filter: none !important;
+  opacity: 0 !important;
+  mix-blend-mode: normal !important;
+}
