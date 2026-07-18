@@ -2,7 +2,8 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import HomeSpatialCanvas, { useWebGLAvailable } from './HomeSpatialCanvas'
+import EmbodiedHomeSpatialCanvas from './EmbodiedHomeSpatialCanvas'
+import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 
@@ -103,15 +104,16 @@ export default function HomeSpatialRuntimeLayer() {
     <section
       ref={runtimeRef}
       className="urai-home-spatial-runtime-layer"
-      data-urai-home-runtime="one-continuous-webgl-world"
+      data-urai-home-runtime="embodied-continuous-webgl-world"
+      data-home-exploration="walkable"
       data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
       aria-label="URAI living spatial Home"
     >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
-      <HomeSpatialCanvas key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
+      <EmbodiedHomeSpatialCanvas key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
       <style jsx global>{`
         .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
-          filter: brightness(1.34) saturate(1.2) contrast(1.02);
+          filter: brightness(1.22) saturate(1.14) contrast(1.02);
         }
       `}</style>
     </section>
