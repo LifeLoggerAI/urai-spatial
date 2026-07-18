@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: pr793-review-fixes-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   CLEAN_BASE: 88efc0e0600c921f6b88facdfd0386026685b108
