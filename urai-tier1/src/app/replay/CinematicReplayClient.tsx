@@ -47,7 +47,8 @@ export default function CinematicReplayClient() {
     setOperations(local)
     readAuthenticatedReplayServerState(memory.ownerId, memory.id).then((server) => {
       if (!activeRequest) return
-      const merged = { saved: server.saved || local.saved, hidden: server.hidden || local.hidden, correction: server.correction ?? local.correction, pending: local.pending, audit: [...server.audit, ...local.audit.filter((item) => !server.audit.some((entry) => entry.id === item.id))].slice(-100) }
+      const current = readReplayOperationState(window.localStorage, memory.ownerId, memory.id)
+      const merged = { saved: server.saved || current.saved, hidden: server.hidden || current.hidden, correction: server.correction ?? current.correction, pending: current.pending, audit: [...server.audit, ...current.audit.filter((item) => !server.audit.some((entry) => entry.id === item.id))].slice(-100) }
       writeReplayOperationState(window.localStorage, memory.ownerId, memory.id, merged)
       setOperations(merged)
     }).catch(() => undefined)
@@ -69,6 +70,7 @@ export default function CinematicReplayClient() {
       }
     }
     window.addEventListener('online', retry)
+    if (navigator.onLine) void retry()
     return () => {
       activeRequest = false
       window.removeEventListener('online', retry)
