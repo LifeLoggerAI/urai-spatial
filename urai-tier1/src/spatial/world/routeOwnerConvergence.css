@@ -21,9 +21,34 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   height: 100svh !important;
 }
 
-/* Home owns one authored sanctuary Orb. The generic dock must never duplicate it. */
-.urai-world-runtime[data-world-destination='home'] .urai-world-companion {
+/* Home keeps the companion controller and menu, but the authored sanctuary image
+ * owns the only visible Orb. The generic button becomes a transparent accessible
+ * hit target aligned over that Orb and retains a visible keyboard focus ring. */
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:hover,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion[data-open='true'] .urai-world-companion__orb {
+  position: fixed !important;
+  left: 50% !important;
+  top: 55% !important;
+  width: 96px !important;
+  height: 96px !important;
+  transform: translate(-50%, -50%) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb::before,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb::after,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb span {
+  content: none !important;
   display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:focus-visible {
+  outline: 3px solid rgba(224,255,255,.96) !important;
+  outline-offset: 8px !important;
 }
 
 /* Ground is a realm, not a miniature dashboard. Route chrome remains available
