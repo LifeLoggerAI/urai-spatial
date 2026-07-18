@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "mode": "rehearsal",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "assetId": "spatial-particle-atlas-v1",
+  "canonicalPath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+  "bytes": 622,
+  "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+  "fallback": "shader-point-particles",
+  "license": "URAI Labs internal production asset",
+  "producer": "URAI deterministic candidate forge",
+  "reviewer": "governed-promotion-rehearsal",
+  "reviewedAt": "2026-07-17T19:45:00-05:00",
+  "promote": false,
+  "humanReviewApproved": false,
+  "fallbackVerified": true,
+  "routeConsumptionVerified": true,
+  "licenseApproved": true,
+  "optimizationVerified": true,
+  "visualProofVerified": false,
+  "exactHeadChecksPassed": true,
+  "notes": "Fail-closed low-risk rehearsal only. This decision does not promote the asset or change its manifest release state."
+}
