@@ -68,12 +68,16 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.getByRole('button', { name: /open orb travel controls/i })
     await expect(orb).toBeVisible()
+    await expect(orb).toBeEnabled()
     await orb.click()
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
     const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
     await page.goto('/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
     const focusTargets = await targetSize(page, '.artifact, .unwind, .focusState button')
 
+    expect(companionTargets.length).toBeGreaterThan(0)
+    expect(focusTargets.length).toBeGreaterThan(0)
     const failures = [...companionTargets, ...focusTargets].filter(({ width, height }) => width < 48 || height < 48)
     await test.info().attach('serialized-target-size-report.json', { body: JSON.stringify({ companionTargets, focusTargets, failures }, null, 2), contentType: 'application/json' })
     expect(failures).toEqual([])
@@ -82,8 +86,10 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.getByRole('button', { name: /open orb travel controls/i })
+    await expect(orb).toBeEnabled()
     await orb.focus()
     await orb.press('Enter')
+    await expect(orb).toHaveAttribute('aria-expanded', 'true')
     const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
     await expect(firstDestination).toBeFocused()
     await page.keyboard.press('Escape')
