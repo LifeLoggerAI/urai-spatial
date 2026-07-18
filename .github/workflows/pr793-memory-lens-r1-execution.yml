@@ -76,8 +76,35 @@ jobs:
           git checkout --detach "$PRODUCT_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
           node /tmp/apply-pr793-memory-lens-redesign.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('urai-tier1/tests/lifemap-scene-behavior.test.mjs')
+          source = path.read_text()
+          old = """  assert.match(source, /:\\s*80;\\s*const \\[texture, setTexture\\] = useState<THREE\\.CanvasTexture \\| null>\\(null\\)/, 'Non-related memories must use the smallest allocation before commit-phase texture state.')
+  assert.ok(source.includes('const nextTexture = createMemorySurface(node, textureResolution)'), 'Texture creation must occur inside the committed effect lifecycle.')
+  assert.ok(source.includes('setTexture(nextTexture)'), 'Committed textures must enter React state only after creation.')
+  assert.ok(source.includes('window.requestAnimationFrame(() => nextTexture?.dispose())'), 'Replaced textures must remain alive through the replacement commit and paint.')
+  assert.doesNotMatch(source, /return \\(\\) => nextTexture\\?\\.dispose\\(\\)/, 'Texture cleanup must not dispose the previous texture synchronously before replacement paint.')
+  assert.ok(source.includes('if (!/^[0-9a-f]{6}$/i.test(normalized))'), 'Invalid aura metadata must fall back before RGB bitwise conversion.')
+  assert.ok(source.includes('return `rgba(138, 223, 255, ${alpha})`'), 'Invalid aura metadata must use the canonical cyan fallback.')
+  assert.doesNotMatch(source, /useMemo\\(\\(\\) => createMemorySurface/, 'CanvasTexture allocation must never occur during render.')
+"""
+          new = """  assert.match(source, /:\\s*80;\\s*const texture = useMemo\\(\\(\\) => createMemorySurface\\(node, textureResolution\\)/, 'Non-related memories must retain the smallest allocation under synchronous texture ownership.')
+  assert.ok(source.includes('const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution])'), 'Texture creation must be memoized by node and allocation tier.')
+  assert.doesNotMatch(source, /setTexture\\(|useState<THREE\\.CanvasTexture \\| null>/, 'Synchronous texture ownership must not use delayed React texture state.')
+  assert.ok(source.includes('const dispose = () => texture?.dispose()'), 'Texture replacements must retain deterministic disposal ownership.')
+  assert.ok(source.includes('window.requestAnimationFrame(dispose)'), 'Replaced textures must remain alive through the replacement paint.')
+  assert.ok(source.includes('if (!/^[0-9a-f]{6}$/i.test(normalized))'), 'Invalid aura metadata must fall back before RGB bitwise conversion.')
+  assert.ok(source.includes('return `rgba(138, 223, 255, ${alpha})`'), 'Invalid aura metadata must use the canonical cyan fallback.')
+  assert.match(source, /useMemo\\(\\(\\) => createMemorySurface/, 'CanvasTexture allocation must use bounded synchronous memoization.')
+"""
+          if source.count(old) != 1:
+              raise SystemExit(f'texture contract target count={source.count(old)}')
+          path.write_text(source.replace(old, new, 1))
+          PY
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
 
       - name: Install exact dependencies
         shell: bash
@@ -116,14 +143,14 @@ jobs:
           set -o pipefail
           corepack pnpm exec playwright test --config=playwright.accessibility.config.ts --project=chromium urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts 2>&1 | tee /tmp/pr793-memory-lens-browser.log
 
-      - name: Publish clean six-file memory-lens redesign
+      - name: Publish clean seven-file memory-lens redesign
         id: publish
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$PRODUCT_BASE"
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
