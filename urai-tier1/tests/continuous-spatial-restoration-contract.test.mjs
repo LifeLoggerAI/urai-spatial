@@ -38,23 +38,12 @@ test('app template mounts the restored WebGL owners without redirecting certifie
 
 test('Home is a premium coherent world with aspect-aware framing and one canonical Ground gateway', () => {
   for (const marker of [
-    'CameraRig',
-    'LivingGround',
-    'HorizonMonoliths',
-    'FirstHomeFrame',
-    'OrbitControls',
-    'Stars',
-    'useWebGLAvailable',
-    'cachedWebGLAvailable',
-    'data-home-spatial-renderer="webgl"',
-    'data-home-spatial-geometry="terrain-orb-ground-gateway"',
-    'data-tier0-ground-gateway="true"',
-    'data-testid="urai-home-living-ground"',
-    'data-testid="urai-home-horizontal-plaza"',
-    'data-testid="urai-home-horizon-architecture"',
-    'data-testid="urai-home-webgl-orb"',
-    'urai:first-home-spatial-frame',
-    'toneMappingExposure = 1.22',
+    'CameraRig', 'LivingGround', 'HorizonMonoliths', 'FirstHomeFrame', 'OrbitControls', 'Stars',
+    'useWebGLAvailable', 'cachedWebGLAvailable', 'data-home-spatial-renderer="webgl"',
+    'data-home-spatial-geometry="terrain-orb-ground-gateway"', 'data-tier0-ground-gateway="true"',
+    'data-testid="urai-home-living-ground"', 'data-testid="urai-home-horizontal-plaza"',
+    'data-testid="urai-home-horizon-architecture"', 'data-testid="urai-home-webgl-orb"',
+    'urai:first-home-spatial-frame', 'toneMappingExposure = 1.22',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.doesNotMatch(canvas, /tap the ground to enter below/i)
@@ -119,81 +108,45 @@ test('Home visual overrides remain scoped to the active WebGL runtime and remove
   assert.match(structuralCss, /display: none !important/)
 })
 
-test('Ground is a six-chamber private workforce world rather than an anonymous runway', () => {
+test('Ground is an embodied private workforce world with explicit destinations and service state', () => {
   for (const marker of [
-    'const GROUND_DISTRICTS',
-    "id: 'reception'",
-    "id: 'sanctuary'",
-    "id: 'council'",
-    "id: 'logistics'",
-    "id: 'wellness'",
-    "id: 'archive'",
-    'Reception',
-    'Privacy Sanctuary',
-    'Council Table',
-    'Logistics',
-    'Wellness',
-    'Archive',
-    'GroundDistrict',
-    'WorkforceAvatar',
-    'CouncilPlaza',
-    'GroundPaths',
-    'data-ground-district',
-    'data-ground-workforce-avatar',
-    'data-testid="urai-ground-council-plaza"',
-    'data-testid="urai-ground-private-workforce-world"',
-    'Your private workforce.',
-    'Nothing acts without you.',
-  ]) assert.ok(groundWorld.includes(marker), `missing Ground workforce marker: ${marker}`)
+    'const DESTINATIONS', "id: 'reception'", "id: 'privacy'", "id: 'council'", "id: 'logistics'",
+    "id: 'wellness'", "id: 'archive'", "id: 'mirror'", "id: 'passport'", "id: 'consent'",
+    "id: 'atlas'", "id: 'focus'", "id: 'replay'", 'GroundDestination', 'WorkforcePresence',
+    'DestinationArchitecture', 'Corridor', 'CameraRig', 'data-ground-destination', 'data-workforce-state',
+    'data-service-availability', 'data-testid="urai-ground-private-workforce-world"', 'capsuleGeometry',
+    'DESTINATIONS.map', 'DESTINATIONS.slice(0, 8).map', "availability: 'degraded'", "workforceState: 'blocked'",
+  ]) assert.ok(groundWorld.includes(marker), `missing Ground embodied-world marker: ${marker}`)
 
   assert.doesNotMatch(groundWorld, /function GroundPin/)
   assert.doesNotMatch(groundWorld, /<GroundPin/)
-  assert.match(groundWorld, /GROUND_DISTRICTS\.map/)
-  assert.match(groundWorld, /WORKFORCE\.map/)
-  assert.match(groundWorld, /ground-district-label/)
-  assert.match(groundWorld, /capsuleGeometry/)
+  assert.doesNotMatch(groundWorld, /OrbitControls/)
 })
 
-test('Ground navigation remains contained, touch-safe and exposes the active route', () => {
-  assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
-  assert.match(groundWorld, /const groundActiveLinkStyle: CSSProperties/)
-  assert.match(groundWorld, /display: 'inline-flex'/)
-  assert.match(groundWorld, /whiteSpace: 'nowrap'/)
-  assert.match(groundWorld, /aria-current=\{active \? 'page' : undefined\}/)
-  assert.match(groundWorld, /style=\{active \? groundActiveLinkStyle : groundLinkStyle\}/)
-  assert.match(groundWorld, /max-width:calc\(100vw - 28px\)/)
+test('Ground navigation remains contained, keyboard-operable and exposes active destination state', () => {
+  assert.match(groundWorld, /className="ground-destination-compass(?: ground-rail)?"/)
+  assert.match(groundWorld, /aria-current=\{activeId === destination\.id \? 'location' : undefined\}/)
+  assert.match(groundWorld, /onKeyDown=\{\(event\) => \{/)
+  assert.match(groundWorld, /event\.key === 'Escape'/)
+  assert.match(groundWorld, /event\.key === 'Enter'/)
+  assert.match(groundWorld, /event\.key === 'ArrowRight' \|\| event\.key === 'ArrowDown'/)
+  assert.match(groundWorld, /event\.key === 'ArrowLeft' \|\| event\.key === 'ArrowUp'/)
+  assert.match(groundWorld, /min-height:44px/)
+  assert.match(groundWorld, /overflow-x:auto/)
   assert.match(groundWorld, /scrollbar-width:none/)
-  assert.match(structuralCss, /\.ground-rail a/)
+  assert.match(groundWorld, /max\(12px,env\(safe-area-inset-left\)\)/)
+  assert.match(groundWorld, /aria-label.*destination\.label/s)
 })
 
 test('exact-head browser proof stays deterministic, diagnostic and fallback-safe', () => {
   for (const marker of [
-    "schemaVersion: 'urai-continuous-spatial-visual-proof-7'",
-    'home-no-webgl-fallback',
-    'patchedGetContext',
-    'probeWebGL',
-    'WEBGL_debug_renderer_info',
-    'waitForFirstSpatialFrame',
-    'waitForStableAnimationFrames',
-    'urai:first-spatial-frame',
-    'urai:first-home-spatial-frame',
-    'firstHomeFrameMarked',
-    'canvasEvidence',
-    'visibleElementCount',
-    'sceneLabelsRendered',
-    'portalShortcutsVisible',
-    'portalShortcutsStyled',
-    'navigationPillsStyled',
-    'activeGroundLinkVisible',
-    'navigationRailContained',
-    'life-map-selected',
-    'selectedMemoryControlsVisible',
-    '--enable-unsafe-swiftshader',
-    'runtimeAbsent',
-    'fallbackOwnerVisible',
-    'fallbackActionVisible',
-    'desktop-no-webgl',
-    'receipt.json',
+    "schemaVersion: 'urai-continuous-spatial-visual-proof-7'", 'home-no-webgl-fallback', 'patchedGetContext',
+    'probeWebGL', 'WEBGL_debug_renderer_info', 'waitForFirstSpatialFrame', 'waitForStableAnimationFrames',
+    'urai:first-spatial-frame', 'urai:first-home-spatial-frame', 'firstHomeFrameMarked', 'canvasEvidence',
+    'visibleElementCount', 'sceneLabelsRendered', 'portalShortcutsVisible', 'portalShortcutsStyled',
+    'navigationPillsStyled', 'activeGroundLinkVisible', 'navigationRailContained', 'life-map-selected',
+    'selectedMemoryControlsVisible', '--enable-unsafe-swiftshader', 'runtimeAbsent', 'fallbackOwnerVisible',
+    'fallbackActionVisible', 'desktop-no-webgl', 'receipt.json',
   ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
 
   assert.doesNotMatch(proof, /waitForTimeout/)
