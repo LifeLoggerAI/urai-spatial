@@ -124,6 +124,7 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
       summary: 'A disclosed demonstration of a quiet reset after sustained pressure. This is not personal data.',
       emotionalState: 'relief',
       emotionalArc: ['pressure', 'permission', 'reset', 'return'],
+      replayAvailable: true,
       replayManifest: {
         ...memory.replayManifest,
         id: QUIET_RESET_MANIFEST_ID,
@@ -149,6 +150,7 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
 
   const fixture = SAMPLE_MEMORY_CATALOG[key]
   if (!fixture) return memory
+  const replayAvailable = explicitDemoReplayAvailable(key)
 
   return {
     ...memory,
@@ -156,13 +158,22 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
     summary: fixture.summary,
     emotionalState: fixture.emotionalState,
     emotionalArc: fixture.emotionalArc,
-    replayManifest: {
-      ...memory.replayManifest,
-      id: QUIET_RESET_MANIFEST_ID,
-    },
+    replayAvailable,
+    replayManifest: replayAvailable
+      ? {
+          ...memory.replayManifest,
+          id: QUIET_RESET_MANIFEST_ID,
+        }
+      : {
+          id: 'replay-unavailable',
+          version: 1,
+          durationMs: 0,
+          segments: [],
+          transcript: `Replay is unavailable for the disclosed ${fixture.title.toLowerCase()} fixture.`,
+        },
     narrator: {
       focus: fixture.summary.replace(' This is not personal data.', ''),
-      replay: explicitDemoReplayAvailable(key)
+      replay: replayAvailable
         ? `Enter the disclosed ${fixture.title.toLowerCase()} demonstration more deeply.`
         : `Replay is unavailable for this disclosed ${fixture.title.toLowerCase()} fixture.`,
     },
