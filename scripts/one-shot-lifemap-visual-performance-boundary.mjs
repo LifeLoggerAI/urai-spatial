@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
 
 const replaceOnce = (path, before, after) => {
   const source = fs.readFileSync(path, 'utf8')
@@ -21,3 +22,9 @@ replaceOnce(
   `  assert.match(controls, /new MutationObserver\\(closeSemanticDrawers\\)/)`,
   `  assert.match(controls, /requestAnimationFrame\\(closeSemanticDrawers\\)/)\n  assert.doesNotMatch(controls, /MutationObserver|observer\\.observe|document\\.body/, 'Selected-memory controls must not install a body-wide DOM observer')`,
 )
+
+const changed = execFileSync('git', ['diff', '--name-only'], { encoding: 'utf8' }).trim().split('\n').filter(Boolean).sort()
+console.log('visual_correction_changed_files_begin')
+for (const path of changed) console.log(path)
+console.log('visual_correction_changed_files_end')
+execFileSync('git', ['diff', '--check'], { stdio: 'inherit' })
