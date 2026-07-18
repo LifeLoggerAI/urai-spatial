@@ -27,6 +27,9 @@ const LifeMapRouteBoundary = dynamic(() => import("@/components/lifemap/LifeMapR
 export default function SpatialLifeMapCanonical() {
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} aria-label="URAI canonical spatial Life Map" style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: "#01030a" }}>
     <Suspense fallback={<LifeMapLoading label="Preserving your map while the spatial field opens" />}><LifeMapRouteBoundary /><LifeMapDeepLinkControls /></Suspense>
-    <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none", backgroundImage: assetCssStack(lifeMapAssets.primary), backgroundSize: "cover", backgroundPosition: "center", mixBlendMode: "screen", opacity: .08 }} />
+    <picture aria-hidden="true" data-life-map-authored-universe="primary" style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none", mixBlendMode: "screen", opacity: .78 }}>
+      <source media="(max-width: 700px)" srcSet={lifeMapAssets.mobile.src} />
+      <img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", filter: "saturate(1.12) contrast(1.06) brightness(.9)" }} />
+    </picture>
   </section>;
 }
