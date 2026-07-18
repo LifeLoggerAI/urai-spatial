@@ -6,6 +6,7 @@
   "canonicalPath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
   "bytes": 622,
   "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+  "source": "URAI deterministic candidate forge",
   "fallback": "shader-point-particles",
   "license": "URAI Labs internal production asset",
   "producer": "URAI deterministic candidate forge",
