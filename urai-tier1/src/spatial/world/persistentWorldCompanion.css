@@ -62,6 +62,40 @@
   outline-offset: 6px;
 }
 
+/* Home already renders the one visible Orb inside the authored Three.js sanctuary.
+   This DOM button is the accessible focus/click anchor for that same Orb and menu,
+   not a second visual companion. */
+.urai-world-companion[data-home-physical-orb-anchor='true'] {
+  left: 63%;
+  bottom: 49%;
+  transform: translate(-50%, 50%);
+}
+
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb::before,
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb::after,
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb span {
+  display: none;
+}
+
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb:hover,
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb:focus-visible,
+.urai-world-companion[data-home-physical-orb-anchor='true'][data-open='true'] .urai-world-companion__orb {
+  transform: none;
+  box-shadow: none;
+}
+
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__orb:focus-visible {
+  background: rgba(207,250,254,.08);
+  outline: 3px solid rgba(224,255,255,.96);
+  outline-offset: 4px;
+}
+
 .urai-world-companion__menu {
   width: min(620px, calc(100vw - 24px));
   max-height: min(68svh, 520px);
@@ -86,6 +120,17 @@
   visibility: visible;
   pointer-events: auto;
   transition: opacity 180ms ease, transform 180ms ease, visibility 0s step-start;
+}
+
+.urai-world-companion[data-home-physical-orb-anchor='true'] .urai-world-companion__menu {
+  position: fixed;
+  left: 50%;
+  bottom: max(92px, calc(env(safe-area-inset-bottom) + 80px));
+  transform: translate(-50%, 12px) scale(.96);
+}
+
+.urai-world-companion[data-home-physical-orb-anchor='true'][data-open='true'] .urai-world-companion__menu {
+  transform: translate(-50%, 0) scale(1);
 }
 
 .urai-world-companion__menu p {
@@ -160,6 +205,10 @@
   animation: urai-world-orb-travel 900ms ease-in-out infinite alternate;
 }
 
+.urai-world-companion[data-home-physical-orb-anchor='true'][data-phase]:not([data-phase='idle']) .urai-world-companion__orb {
+  animation: none;
+}
+
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-card,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-status,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-pins,
@@ -214,6 +263,10 @@
   .urai-world-companion__orb { width: 56px; height: 56px; }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
+  .urai-world-companion[data-home-physical-orb-anchor='true'] {
+    left: 65%;
+    bottom: 50%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
