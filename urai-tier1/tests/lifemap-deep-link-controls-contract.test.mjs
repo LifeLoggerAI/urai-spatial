@@ -10,6 +10,7 @@ const controls = read('src/spatial/lifemap/LifeMapDeepLinkControls.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const css = read('src/app/continuous-spatial-proof-defects.css')
 const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
+const proofWrapper = read('../scripts/run-continuous-spatial-proof-fixed.mjs')
 
 test('canonical Life Map mounts semantic memory controls inside Suspense', () => {
   assert.match(canonical, /LifeMapDeepLinkControls/)
@@ -68,4 +69,14 @@ test('selected-memory controls retain visible Focus and gated Replay doorways', 
   assert.match(proof, /getByRole\('button', \{ name: 'Replay' \}\)/)
   assert.match(proof, /selectedMemoryControlsVisible/)
   assert.match(proof, /replayControlVisible/)
+})
+
+test('visual proof initializes the disclosed Life Map fixture before measuring selected controls', () => {
+  assert.match(proofWrapper, /explicitDemo: true/)
+  assert.match(proofWrapper, /memoryId=demo%3Aquiet-reset/)
+  assert.match(proofWrapper, /demo=1/)
+  assert.match(proofWrapper, /route\.explicitDemo/)
+  assert.match(proofWrapper, /localStorage\.setItem\('urai:lifeMapDemoMode', 'true'\)/)
+  assert.match(proofWrapper, /localStorage\.removeItem\('urai:userId'\)/)
+  assert.match(proofWrapper, /urai-continuous-spatial-visual-proof-13/)
 })
