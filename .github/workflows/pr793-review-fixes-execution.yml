@@ -45,7 +45,7 @@ jobs:
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/pr793-review-fixes-execution.yml scripts/apply-pr793-review-fixes.mjs | sort)"
           node scripts/apply-pr793-review-fixes.mjs
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
 
       - name: Install exact dependencies
         shell: bash
@@ -85,7 +85,7 @@ jobs:
           set -o pipefail
           corepack pnpm exec playwright test --config=playwright.accessibility.config.ts --project=chromium urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts 2>&1 | tee /tmp/pr793-review-browser.log
 
-      - name: Publish clean six-file review repair
+      - name: Publish clean seven-file review repair
         id: publish
         shell: bash
         run: |
@@ -95,6 +95,7 @@ jobs:
           cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/pr793-fixes/urai-tier1/src/components/lifemap/
           cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/pr793-fixes/urai-tier1/src/spatial/navigation/
           cp urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx /tmp/pr793-fixes/urai-tier1/src/spatial/world/
+          cp urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts /tmp/pr793-fixes/urai-tier1/tests/
           cp urai-tier1/tests/embodied-exploration-contract.test.mjs /tmp/pr793-fixes/urai-tier1/tests/
           cp urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs /tmp/pr793-fixes/urai-tier1/tests/
           git checkout --detach "$CLEAN_BASE"
@@ -102,10 +103,11 @@ jobs:
           cp /tmp/pr793-fixes/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
           cp /tmp/pr793-fixes/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
           cp /tmp/pr793-fixes/urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/
+          cp /tmp/pr793-fixes/urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/
           cp /tmp/pr793-fixes/urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/
           cp /tmp/pr793-fixes/urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
