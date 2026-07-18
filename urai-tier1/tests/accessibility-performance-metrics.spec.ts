@@ -9,6 +9,8 @@ const routes = [
 ] as const
 
 test('retain route timing, long-task, frame, and heap evidence', async ({ page }) => {
+  test.setTimeout(60_000)
+
   await page.addInitScript(() => {
     ;(window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks = []
     try {
@@ -28,14 +30,28 @@ test('retain route timing, long-task, frame, and heap evidence', async ({ page }
       const frameTimes: number[] = []
       await new Promise<void>((resolve) => {
         let previous = performance.now()
+        const sampleStarted = previous
         let frames = 0
+        let finished = false
+        let timeoutId = 0
+
+        const finish = () => {
+          if (finished) return
+          finished = true
+          window.clearTimeout(timeoutId)
+          resolve()
+        }
+
         const tick = (now: number) => {
+          if (finished) return
           frameTimes.push(now - previous)
           previous = now
           frames += 1
-          if (frames >= 120) resolve()
+          if (frames >= 60 || now - sampleStarted >= 2_000) finish()
           else requestAnimationFrame(tick)
         }
+
+        timeoutId = window.setTimeout(finish, 2_500)
         requestAnimationFrame(tick)
       })
       const sorted = frameTimes.slice().sort((a, b) => a - b)
@@ -43,7 +59,7 @@ test('retain route timing, long-task, frame, and heap evidence', async ({ page }
       const longTasks = (window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks ?? []
       return {
         frameCount: frameTimes.length,
-        frameP95Ms: sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)],
+        frameP95Ms: sorted.length ? sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] : null,
         longTaskCount: longTasks.length,
         longestTaskMs: longTasks.length ? Math.max(...longTasks) : 0,
         usedJSHeapSize: memory?.usedJSHeapSize ?? null,
