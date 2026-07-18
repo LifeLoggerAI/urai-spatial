@@ -10,6 +10,21 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
+function selectedMemoryControls(page: Page) {
+  return page.getByTestId('urai-lifemap-selected-memory-controls')
+}
+
+function demoMemoryUrl(overview = false) {
+  const query = new URLSearchParams({
+    memoryId: 'memory-thread',
+    manifestId: 'replay-recovery-thread',
+    node: 'memory-thread',
+    demo: '1',
+  })
+  if (overview) query.set('overview', '1')
+  return `/life-map?${query.toString()}`
+}
+
 test.describe('Life Map independent realm runtime evidence', () => {
   test('Life Map does not mount the Home companion visually, semantically, or in the tab sequence', async ({ page }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
@@ -66,7 +81,38 @@ test.describe('Life Map independent realm runtime evidence', () => {
     expect(new URL(page.url()).searchParams.get('lifeMapOrigin')).toBeTruthy()
   })
 
+  test('Overview preserves memory identity while removing selected visual and semantic state across refresh and history', async ({ page }) => {
+    await enableExplicitLifeMapDemo(page)
+
+    await page.goto(demoMemoryUrl(false), { waitUntil: 'domcontentloaded' })
+    await expect(selectedMemoryControls(page)).toBeVisible({ timeout: 15_000 })
+    await expect(selectedMemoryControls(page).getByRole('button', { name: 'Enter Focus' })).toBeVisible()
+    await expect(selectedMemoryControls(page).getByRole('button', { name: 'Replay' })).toBeVisible()
+
+    await page.goto(demoMemoryUrl(true), { waitUntil: 'domcontentloaded' })
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
+    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(selectedMemoryControls(page)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Enter Focus' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Replay' })).toHaveCount(0)
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
+    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(selectedMemoryControls(page)).toHaveCount(0)
+
+    await page.goBack({ waitUntil: 'domcontentloaded' })
+    expect(new URL(page.url()).searchParams.get('overview')).toBeNull()
+    await expect(selectedMemoryControls(page)).toBeVisible({ timeout: 15_000 })
+
+    await page.goForward({ waitUntil: 'domcontentloaded' })
+    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
+    await expect(selectedMemoryControls(page)).toHaveCount(0)
+  })
+
   test('mobile viewports contain the independent navigation layer without horizontal overflow', async ({ page }) => {
+    await enableExplicitLifeMapDemo(page)
     const viewports = [
       { width: 360, height: 800 },
       { width: 393, height: 873 },
@@ -76,9 +122,12 @@ test.describe('Life Map independent realm runtime evidence', () => {
 
     for (const viewport of viewports) {
       await page.setViewportSize(viewport)
-      await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+      await page.goto(demoMemoryUrl(true), { waitUntil: 'domcontentloaded' })
       await expect(page.locator('.life-map-independent-realm')).toBeVisible()
       await expect(page.locator('.urai-world-companion')).toHaveCount(0)
+      await expect(selectedMemoryControls(page)).toHaveCount(0)
+      expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
+      expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
 
       const layout = await page.evaluate(() => {
         const summary = document.querySelector('.life-map-accessibility-menu summary')?.getBoundingClientRect()
@@ -118,5 +167,12 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     await expect(page.getByRole('status').filter({ hasText: /Returned to Life Map overview/i })).toBeVisible()
     expect(new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
+    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(selectedMemoryControls(page)).toHaveCount(0)
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
+    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(selectedMemoryControls(page)).toHaveCount(0)
   })
 })
