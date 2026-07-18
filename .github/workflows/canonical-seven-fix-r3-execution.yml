@@ -45,7 +45,7 @@ jobs:
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/canonical-seven-fix-r3-execution.yml scripts/one-shot-seven-fix-r3.mjs | sort)"
           node scripts/one-shot-seven-fix-r3.mjs
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/persistent-world-doorway-regression.test.mjs | sort)"
 
       - name: Install exact dependencies
         shell: bash
@@ -81,7 +81,7 @@ jobs:
           set -o pipefail
           corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-seven-fix-browser.log
 
-      - name: Publish one clean seven-file product commit
+      - name: Publish one clean eight-file product commit
         id: publish
         shell: bash
         run: |
@@ -94,6 +94,7 @@ jobs:
           cp urai-tier1/tests/accessibility-performance-source-contract.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
           cp urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
           cp urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
+          cp urai-tier1/tests/persistent-world-doorway-regression.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
           git checkout --detach "$CLEAN_BASE"
           cp /tmp/urai-seven-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
           cp /tmp/urai-seven-fix/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
@@ -102,8 +103,9 @@ jobs:
           cp /tmp/urai-seven-fix/urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/
           cp /tmp/urai-seven-fix/urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/
           cp /tmp/urai-seven-fix/urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/
+          cp /tmp/urai-seven-fix/urai-tier1/tests/persistent-world-doorway-regression.test.mjs urai-tier1/tests/
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/persistent-world-doorway-regression.test.mjs | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
