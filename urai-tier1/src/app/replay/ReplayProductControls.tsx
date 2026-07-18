@@ -34,14 +34,15 @@ function safeWriteDraft(ownerId: string, memoryId: string, value: string) {
 
 function mergeState(local: ReplayOperationState, server: ReplayServerState): ReplayOperationState {
   const serverIds = new Set(server.audit.map((entry) => entry.id))
-  return {
+  const base: ReplayOperationState = {
     saved: server.saved,
     hidden: server.hidden,
     correction: server.correction,
-    pending: local.pending,
+    pending: [],
     audit: [...server.audit, ...local.audit.filter((entry) => !serverIds.has(entry.id))].slice(-100),
     error: local.error,
   }
+  return local.pending.reduce((state, operation) => applyReplayOperation(state, operation), base)
 }
 
 function operationLabel(operation: ReplayOperation, pending: boolean) {
@@ -67,7 +68,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
 
   useEffect(() => {
     let cancelled = false
-    if (memory.demo) {
+    if (!mutable) {
       setOperations(emptyState())
       setStatus('Demo Replay controls are read-only.')
       return () => { cancelled = true }
@@ -91,7 +92,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
       })
 
     return () => { cancelled = true }
-  }, [identity, memory.demo, memory.id, memory.ownerId])
+  }, [identity, memory.demo, memory.id, memory.ownerId, mutable])
 
   const retryPending = useCallback(async () => {
     if (!mutable) return
