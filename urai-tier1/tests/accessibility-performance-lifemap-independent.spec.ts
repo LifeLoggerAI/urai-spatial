@@ -11,7 +11,7 @@ function normalizedPathname(url: string) {
 }
 
 function selectedMemoryControls(page: Page) {
-  return page.getByTestId('urai-lifemap-selected-memory-controls')
+  return page.locator('.life-map-memory-portals')
 }
 
 function demoMemoryUrl(overview = false) {
