@@ -148,7 +148,7 @@ export default function FocusChamberClient() {
   const result = useSelectedMemory()
   const memory = result.memory
   const mainRef = useRef<HTMLElement>(null)
-  const media = memory?.sourceMedia.find((item) => item.kind === 'image')
+  const media = memory?.sourceMedia?.find((item) => item.kind === 'image')
   const [mediaState, setMediaState] = useState<MediaState>(media ? 'loading' : 'absent')
 
   useEffect(() => {
@@ -202,6 +202,10 @@ export default function FocusChamberClient() {
       href: lifeMapHref,
       entryPortal: 'focus-return-threshold',
       cameraCheckpoint: `life-map:${memory.star.id}`,
+      context: {
+        memoryId: memory.star.id,
+        privacyMode: memory.privacy === 'private' ? 'held-private' : 'private',
+      },
     })
   }, [lifeMapHref, memory])
 
@@ -209,7 +213,7 @@ export default function FocusChamberClient() {
 
   const people = memory.privacy === 'hidden'
     ? 'Held private'
-    : memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'
+    : memory.people?.filter(Boolean).map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'
   const place = memory.privacy === 'hidden' ? 'Held private' : memory.place?.label ?? 'Not recorded'
   const replayAvailable = memory.replayManifest.segments.length > 0 && memory.replayManifest.durationMs > 0
   const style = {
@@ -218,8 +222,8 @@ export default function FocusChamberClient() {
     '--focus-sky': memory.visuals.sky,
     '--focus-ground': memory.visuals.ground,
     '--focus-fallback': assetCssStack(focusAssets.primary),
-    '--focus-fog': String(memory.visuals.fog),
-    '--focus-reflection': String(memory.visuals.reflection),
+    '--focus-fog': String(memory.visuals.fog ?? 0),
+    '--focus-reflection': String(memory.visuals.reflection ?? 0),
   } as CSSProperties
 
   return (
@@ -282,6 +286,7 @@ export default function FocusChamberClient() {
           type="button"
           onClick={enterReplay}
           disabled={!replayAvailable}
+          aria-label={`Open Replay for ${memory.title}`}
           aria-describedby="focus-replay-description"
         >
           <span className={styles.replayPulse} aria-hidden="true" />
