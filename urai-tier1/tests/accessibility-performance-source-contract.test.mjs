@@ -6,8 +6,9 @@ import { fileURLToPath } from 'node:url'
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const read = (relativePath) => fs.readFileSync(path.resolve(testDirectory, '..', relativePath), 'utf8')
+const requireText = (source, marker, message = marker) => assert.equal(source.includes(marker), true, message)
 
-test('accessibility and performance evidence lane preserves required source contracts', () => {
+test('accessibility and performance implementation contracts are present', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
@@ -17,15 +18,45 @@ test('accessibility and performance evidence lane preserves required source cont
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
 
-  assert.match(reducedMotion, /prefers-reduced-motion\s*:\s*reduce/)
-  assert.match(reducedMotion, /addEventListener\?\.\(\s*['"`]change['"`]\s*,\s*update\s*\)/)
-  assert.match(reducedMotion, /removeEventListener\?\.\(\s*['"`]change['"`]\s*,\s*update\s*\)/)
+  requireText(reducedMotion, 'prefers-reduced-motion: reduce')
+  requireText(reducedMotion, "addEventListener?.('change', update)")
+  requireText(reducedMotion, "removeEventListener?.('change', update)")
 
-  assert.match(adaptiveQuality, /saveData/)
-  assert.match(adaptiveQuality, /deviceMemory/)
-  assert.match(adaptiveQuality, /effectiveType/)
-  assert.match(adaptiveQuality, /visibilitychange/)
-  assert.match(adaptiveQuality, /markFirstSpatialFrame/)
+  for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) {
+    requireText(adaptiveQuality, marker)
+  }
 
-  assert.match(companion, /aria-label=\{open\s*\?\s*['"]Close Orb travel controls['"]\s*:\s*['"]Open Orb travel controls['"]\}/)
-  assert.match
+  requireText(companion, "open ? 'Close Orb travel controls' : 'Open Orb travel controls'")
+  requireText(companion, 'aria-expanded={open}')
+  requireText(companion, 'aria-controls="urai-world-companion-menu"')
+  requireText(companion, 'inert={!open ? true : undefined}')
+  requireText(companion, 'firstControl?.focus()')
+  requireText(companion, 'orbRef.current?.focus()')
+  requireText(companion, "event.key !== 'Escape'")
+  requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
+  requireText(companion, 'aria-label="Return through the world"')
+
+  requireText(companionCss, 'width: 64px;')
+  requireText(companionCss, 'height: 64px;')
+  requireText(companionCss, 'min-height: 48px;')
+  requireText(companionCss, 'min-width: 48px;')
+  requireText(companionCss, 'env(safe-area-inset-bottom)')
+  requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
+
+  requireText(homeCanvas, "canvas.getContext('webgl2') ?? canvas.getContext('webgl')")
+  requireText(homeFallback, 'data-testid="urai-home-accessible-fallback"')
+  requireText(homeFallback, '<HomeSpatialWorldFinal />')
+  requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
+  requireText(homeRuntime, "addEventListener('webglcontextrestored', onContextRestored)")
+  requireText(homeRuntime, 'recoveryAttemptsRef.current >= 1')
+  requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
+  requireText(homeRuntime, 'role="status"')
+
+  requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+  assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
+  requireText(focus, 'min-height:48px')
+  requireText(focus, 'env(safe-area-inset-left)')
+  requireText(focus, 'env(safe-area-inset-right)')
+  requireText(focus, 'env(safe-area-inset-bottom)')
+  requireText(focus, '@media(prefers-reduced-motion:reduce)')
+})
