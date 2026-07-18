@@ -1,0 +1,91 @@
+name: Life Map WebGL owner diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-six-fix-clean-v3-20260718
+    paths:
+      - .github/workflows/lifemap-webgl-owner-diagnostic.yml
+      - scripts/one-shot-lifemap-webgl-owner-diagnostic.mjs
+      - scripts/capture-lifemap-webgl-owner.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifemap-webgl-owner-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: a9462be8b4f6c6b982804fbb2ee71aa5a30150bc
+
+jobs:
+  isolate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'diag/lifemap-webgl-owner-a9462be8'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout exact diagnostic head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Prove diagnostic scope and apply query toggles
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          actual="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
+          expected="$(printf '%s\n' .github/workflows/lifemap-webgl-owner-diagnostic.yml scripts/capture-lifemap-webgl-owner.mjs scripts/one-shot-lifemap-webgl-owner-diagnostic.mjs | sort)"
+          printf '%s\n' "$actual"
+          test "$actual" = "$expected"
+          node scripts/one-shot-lifemap-webgl-owner-diagnostic.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Typecheck diagnostic candidate
+        run: corepack pnpm --dir urai-tier1 typecheck
+
+      - name: Build exact static candidate
+        run: corepack pnpm build:static
+
+      - name: Install Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Capture WebGL owner variants
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-webgl-owner
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-webgl-owner-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/lifemap-webgl-owner \
+            node scripts/capture-lifemap-webgl-owner.mjs
+
+      - name: Retain WebGL owner variants
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-webgl-owner-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-webgl-owner
+            /tmp/lifemap-webgl-owner-http.log
+          if-no-files-found: error
+          retention-days: 30
