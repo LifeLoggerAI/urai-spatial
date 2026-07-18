@@ -123,7 +123,7 @@ if (!source.includes('route.explicitDemo')) {
     /id: 'life-map-selected',\s*path: '\/life-map\/\?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',/,
     `id: 'life-map-selected',
     explicitDemo: true,
-    path: '/life-map/?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1',`,
+    path: '/life-map/?memoryId=demo%3Amemory-thread&manifestId=replay-recovery-thread&node=memory-thread&demo=1',`,
   )
   replaceRequired(
     'selected-memory disclosed fixture initialization',
@@ -142,7 +142,7 @@ if (!source.includes('route.explicitDemo')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-14'",
 )
 
 await writeFile(patchedPath, source)
