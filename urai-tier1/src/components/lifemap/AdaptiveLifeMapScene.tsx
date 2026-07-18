@@ -649,7 +649,7 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
         scale={[scale * 1.12, scale * 1.12, 1]}
       >
         <planeGeometry args={[1.42, 1.42, 1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 1 : related ? 0.88 : 0.42} toneMapped={false} />
+        <meshBasicMaterial map={texture ?? undefined} color={texture ? "#ffffff" : "#06101f"} transparent opacity={texture ? (selected ? 1 : related ? 0.88 : 0.42) : (selected ? 0.68 : related ? 0.3 : 0.12)} toneMapped={false} />
       </mesh>
 
       <mesh position={[0, 0, -0.045]} scale={[scale * 1.27, scale * 1.27, 1]}>
@@ -668,11 +668,11 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
 
       <mesh position={[-scale * 0.86, scale * 0.52, -0.08]} rotation={[0, 0, -0.24]} scale={[scale * 0.34, scale * 0.18, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 0.52 : related ? 0.2 : 0.04} depthWrite={false} />
+        <meshBasicMaterial map={texture ?? undefined} color={texture ? "#ffffff" : "#06101f"} transparent opacity={texture ? (selected ? 0.52 : related ? 0.2 : 0.04) : 0} depthWrite={false} />
       </mesh>
       <mesh position={[scale * 0.82, -scale * 0.46, -0.1]} rotation={[0, 0, 0.2]} scale={[scale * 0.28, scale * 0.22, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 0.42 : related ? 0.16 : 0.03} depthWrite={false} />
+        <meshBasicMaterial map={texture ?? undefined} color={texture ? "#ffffff" : "#06101f"} transparent opacity={texture ? (selected ? 0.42 : related ? 0.16 : 0.03) : 0} depthWrite={false} />
       </mesh>
 
       {node.privacyLevel === "hidden" || node.locked ? (
