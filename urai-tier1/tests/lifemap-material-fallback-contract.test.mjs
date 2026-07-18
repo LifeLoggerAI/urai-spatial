@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+// Exact-head recertification anchor: fallback materials remain dark until textures exist.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const source = fs.readFileSync(
   path.join(here, "../src/components/lifemap/AdaptiveLifeMapScene.tsx"),
