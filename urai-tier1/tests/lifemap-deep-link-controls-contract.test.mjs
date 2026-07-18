@@ -26,11 +26,12 @@ test('semantic memory rail preserves durable private and disclosed-demo identity
   assert.match(controls, /function safeToken/)
   assert.match(controls, /slice\(0, 120\)/)
   assert.match(controls, /\^\[A-Za-z0-9\._:-\]\+\$/)
-  assert.match(controls, /useLifeMapEvents\(\)/)
+  assert.match(controls, /const requestedDemo = searchParams\.get\('demo'\) === '1'/)
+  assert.match(controls, /useLifeMapEvents\(requestedDemo \? 'demo-user' : undefined\)/)
   assert.match(controls, /rawNodeId/)
-  assert.match(controls, /usingSeedData \? `demo:\$\{node\.id\}` : node\.id/)
+  assert.match(controls, /disclosedDemo \? `demo:\$\{selectedNode\.id\}` : selectedNode\.id/)
   assert.match(controls, /query\.set\('memoryId', memoryId\)/)
-  assert.match(controls, /query\.set\('manifestId', manifestId\)/)
+  assert.match(controls, /if \(manifestId\) query\.set\('manifestId', manifestId\)/)
   assert.match(controls, /query\.set\('node', nodeId\)/)
   assert.match(controls, /query\.set\('from', 'life-map-selected-memory'\)/)
   assert.match(controls, /if \(demo\) query\.set\('demo', '1'\)/)
@@ -56,7 +57,7 @@ test('Life Map-owned controls remain visible and keyboard operable without the H
 test('selected-memory controls retain visible Focus and gated Replay doorways', () => {
   assert.match(controls, /data-testid="urai-lifemap-selected-memory-controls"/)
   assert.match(controls, /data-memory-id=\{memoryId\}/)
-  assert.match(controls, /data-manifest-id=\{manifestId\}/)
+  assert.match(controls, /data-manifest-id=\{manifestId \|\| undefined\}/)
   assert.match(controls, /router\.push\(destination\('focus'\)\)/)
   assert.match(controls, /router\.push\(destination\('replay'\)\)/)
   assert.match(controls, /disabled=\{!replayAvailable\}/)
@@ -69,6 +70,15 @@ test('selected-memory controls retain visible Focus and gated Replay doorways', 
   assert.match(proof, /getByRole\('button', \{ name: 'Replay' \}\)/)
   assert.match(proof, /selectedMemoryControlsVisible/)
   assert.match(proof, /replayControlVisible/)
+})
+
+test('selecting a different node replaces stale demo manifests and omits unknown private manifests', () => {
+  assert.match(controls, /function disclosedDemoManifestId\(node: LifeMapNode\)/)
+  assert.match(controls, /DEMO_REPLAY_MANIFEST_ID/)
+  assert.match(controls, /DEMO_REPLAY_UNAVAILABLE_ID/)
+  assert.match(controls, /const selectedManifestId = demoSelection \? disclosedDemoManifestId\(node\) : ''/)
+  assert.match(controls, /if \(selectedManifestId\) query\.set\('manifestId', selectedManifestId\)/)
+  assert.doesNotMatch(controls, /query\.set\('manifestId', requestedManifestId\)/)
 })
 
 test('visual proof initializes a real disclosed Life Map node before measuring selected controls', () => {
