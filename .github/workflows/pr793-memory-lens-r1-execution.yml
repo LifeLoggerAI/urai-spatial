@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/pr793-memory-lens-r1-execution.yml
       - scripts/apply-pr793-memory-lens-redesign.mjs
+      - scripts/reconcile-pr793-memory-lens-contract.mjs
 
 permissions:
   contents: write
@@ -44,8 +45,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$SOURCE_BASE" HEAD)" = "$SOURCE_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          test "$(git diff --name-only "$PRODUCT_TREE_BASE" HEAD | sort)" = "$(printf '%s\n' .github/workflows/pr793-memory-lens-r1-execution.yml scripts/apply-pr793-memory-lens-redesign.mjs | sort)"
+          test "$(git diff --name-only "$PRODUCT_TREE_BASE" HEAD | sort)" = "$(printf '%s\n' .github/workflows/pr793-memory-lens-r1-execution.yml scripts/apply-pr793-memory-lens-redesign.mjs scripts/reconcile-pr793-memory-lens-contract.mjs | sort)"
           cp scripts/apply-pr793-memory-lens-redesign.mjs /tmp/apply-pr793-memory-lens-redesign.mjs
+          cp scripts/reconcile-pr793-memory-lens-contract.mjs /tmp/reconcile-pr793-memory-lens-contract.mjs
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -78,35 +80,7 @@ jobs:
           git checkout --detach "$product_base"
           test -z "$(git status --porcelain --untracked-files=all)"
           node /tmp/apply-pr793-memory-lens-redesign.mjs
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('urai-tier1/tests/lifemap-scene-behavior.test.mjs')
-          source = path.read_text()
-          old = """  assert.match(source, /:\s*80;\s*const \[texture, setTexture\] = useState<THREE\.CanvasTexture \| null>\(null\)/, 'Non-related memories must use the smallest allocation before commit-phase texture state.')
-  assert.ok(source.includes('const nextTexture = createMemorySurface(node, textureResolution)'), 'Texture creation must occur inside the committed effect lifecycle.')
-  assert.ok(source.includes('setTexture(nextTexture)'), 'Committed textures must enter React state only after creation.')
-  assert.ok(source.includes('window.requestAnimationFrame(() => nextTexture?.dispose())'), 'Replaced textures must remain alive through the replacement commit and paint.')
-  assert.doesNotMatch(source, /return \(\) => nextTexture\?\.dispose\(\)/, 'Texture cleanup must not dispose the previous texture synchronously before replacement paint.')
-  assert.ok(source.includes('if (!/^[0-9a-f]{6}$/i.test(normalized))'), 'Invalid aura metadata must fall back before RGB bitwise conversion.')
-  assert.ok(source.includes('return `rgba(138, 223, 255, ${alpha})`'), 'Invalid aura metadata must use the canonical cyan fallback.')
-  assert.doesNotMatch(source, /useMemo\(\(\) => createMemorySurface/, 'CanvasTexture allocation must never occur during render.')
-"""
-          new = """  assert.match(source, /:\s*80;\s*const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/, 'Non-related memories must retain the smallest allocation under synchronous texture ownership.')
-  assert.ok(source.includes('const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution])'), 'Texture creation must be memoized by node and allocation tier.')
-  assert.doesNotMatch(source, /setTexture\(|useState<THREE\.CanvasTexture \| null>/, 'Synchronous texture ownership must not use delayed React texture state.')
-  assert.ok(source.includes('const dispose = () => texture?.dispose()'), 'Texture replacements must retain deterministic disposal ownership.')
-  assert.ok(source.includes('window.requestAnimationFrame(dispose)'), 'Replaced textures must remain alive through the replacement paint.')
-  assert.ok(source.includes('opacity={texture ? visibleOpacity : 0}'), 'Unavailable textures must remain transparent rather than exposing a white fallback.')
-  assert.ok(source.includes('name="life-map-memory-lens-hit-target"'), 'Memory lenses must retain a stable transparent interaction target.')
-  assert.ok(source.includes('if (!/^[0-9a-f]{6}$/i.test(normalized))'), 'Invalid aura metadata must fall back before RGB bitwise conversion.')
-  assert.ok(source.includes('return `rgba(138, 223, 255, ${alpha})`'), 'Invalid aura metadata must use the canonical cyan fallback.')
-  assert.match(source, /useMemo\(\(\) => createMemorySurface/, 'CanvasTexture allocation must use bounded synchronous memoization.')
-"""
-          if source.count(old) != 1:
-              raise SystemExit(f'texture contract target count={source.count(old)}')
-          path.write_text(source.replace(old, new, 1))
-          PY
+          node /tmp/reconcile-pr793-memory-lens-contract.mjs
           git diff --check
           test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
 
