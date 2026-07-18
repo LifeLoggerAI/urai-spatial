@@ -28,6 +28,13 @@ async function disableWebGL(page: Page) {
   })
 }
 
+async function targetSize(page: Page, selector: string) {
+  return page.locator(selector).evaluateAll((elements) => elements
+    .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+    .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+    .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100 })))
+}
+
 test.describe('URAI accessibility and performance evidence', () => {
   test('all visible interactive controls have accessible names', async ({ page }) => {
     const report: Array<{ route: string; unnamed: string[] }> = []
@@ -54,21 +61,32 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(report.flatMap((entry) => entry.unnamed)).toEqual([])
   })
 
-  test('primary visible targets meet 48 CSS pixel minimum', async ({ page }) => {
-    test.fixme(true, 'Serialized target-size failures are tracked in issue #696; remove fixme only after exact-head owner fix and proof.')
-    const report: Array<{ route: string; failures: Array<{ html: string; width: number; height: number }> }> = []
-    for (const route of routes) {
-      await page.setViewportSize({ width: 393, height: 873 })
-      await page.goto(route.path, { waitUntil: 'domcontentloaded' })
-      const failures = await page.locator(interactiveSelector).evaluateAll((elements) => elements
-        .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
-        .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
-        .filter(({ rect }) => rect.width < 48 || rect.height < 48)
-        .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100 })))
-      report.push({ route: route.name, failures })
-    }
-    await test.info().attach('target-size-report.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' })
-    expect(report.flatMap((entry) => entry.failures)).toEqual([])
+  test('serialized Orb and Focus targets meet 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 873 })
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const orb = page.getByRole('button', { name: /open orb travel controls/i })
+    await expect(orb).toBeVisible()
+    await orb.click()
+    const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
+
+    await page.goto('/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
+    const focusTargets = await targetSize(page, '.artifact, .unwind, .focusState button')
+
+    const failures = [...companionTargets, ...focusTargets].filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('serialized-target-size-report.json', { body: JSON.stringify({ companionTargets, focusTargets, failures }, null, 2), contentType: 'application/json' })
+    expect(failures).toEqual([])
+  })
+
+  test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const orb = page.getByRole('button', { name: /open orb travel controls/i })
+    await orb.focus()
+    await orb.press('Enter')
+    const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
+    await expect(firstDestination).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('button', { name: /open orb travel controls/i })).toBeFocused()
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')
   })
 
   test('reduced motion removes active CSS animations from primary controls', async ({ page }) => {
@@ -110,26 +128,32 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(report.flatMap((entry) => entry.clipped)).toEqual([])
   })
 
-  test('no-WebGL mode exposes a meaningful keyboard-operable fallback', async ({ page }) => {
-    test.fixme(true, 'Home runtime currently suppresses the WebGL layer without a dedicated fallback; owner handoff is recorded by the source contract and PR.')
+  test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
     await disableWebGL(page)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const fallback = page.getByRole('region', { name: /spatial home fallback/i })
+    const fallback = page.getByTestId('urai-home-accessible-fallback')
     await expect(fallback).toBeVisible()
-    await expect(fallback.getByRole('button')).toHaveCount(2)
+    await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
+    await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
+    await expect(fallback.getByRole('button', { name: /open urai orb companion/i })).toBeVisible()
   })
 
-  test('WebGL context loss is bounded and does not reset the route', async ({ page }) => {
-    test.fixme(true, 'Context-loss recovery requires exact owner implementation and cannot be patched from this lane.')
+  test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const before = page.url()
-    await page.locator('canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
-    await expect(page.getByRole('status')).toContainText(/restor|recover/i)
-    await page.locator('canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextrestored')))
+    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible()
+    await page.locator('.urai-home-spatial-runtime-layer canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
+    await expect(page.getByRole('status')).toContainText(/restor/i)
+    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible()
+    await expect.poll(() => page.url()).toBe(before)
+
+    await page.locator('.urai-home-spatial-runtime-layer canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
+    await expect(page.locator('[data-urai-home-runtime="accessible-fallback-after-renderer-failure"]')).toBeVisible()
+    await expect(page.getByRole('status')).toContainText(/could not recover/i)
     await expect.poll(() => page.url()).toBe(before)
   })
 
-  test('offline transition is announced and recovery stays on the same route', async ({ page, context }) => {
+  test('offline transition recovery stays on the same route', async ({ page, context }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
     const before = page.url()
     await context.setOffline(true)
