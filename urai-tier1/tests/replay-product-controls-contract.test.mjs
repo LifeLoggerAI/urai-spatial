@@ -18,6 +18,12 @@ test('Replay exposes visible Save Hide Correct and account-scoped history contro
   assert.match(client, /prefers-reduced-motion:reduce/)
 })
 
+test('Replay preserves the canonical playback proof surface', () => {
+  assert.match(client, /className="playback" aria-label="Replay controls"/)
+  assert.match(client, /aria-label=\{playing \? 'Pause replay' : 'Play replay'\}/)
+  assert.match(client, /aria-label=\{`Replay timeline, \$\{percent\} percent complete`\}/)
+})
+
 test('Replay queues offline work and retries without duplicate operation ids', () => {
   assert.match(client, /if \(!navigator\.onLine\)/)
   assert.match(client, /applyReplayOperation/)
