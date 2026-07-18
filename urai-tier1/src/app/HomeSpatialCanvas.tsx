@@ -117,7 +117,11 @@ function useHomeProfile() {
   useEffect(() => {
     const refresh = () => setProfile(readProfile())
     refresh()
-    window.sessionStorage.setItem('urai:home:visited', 'true')
+    try {
+      window.sessionStorage.setItem('urai:home:visited', 'true')
+    } catch {
+      // Restricted storage must not prevent Home state listeners from registering.
+    }
     window.addEventListener('storage', refresh)
     window.addEventListener('urai:home-world-state', refresh as EventListener)
     return () => {
