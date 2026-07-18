@@ -50,6 +50,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     const explicitDemo = isExplicitDemoRequest(params)
+      || (memoryId.startsWith('demo:') && isKnownExplicitDemoMemoryId(memoryId))
       || (explicitDemoModeEnabled() && isKnownExplicitDemoMemoryId(memoryId))
 
     if (explicitDemo) {
