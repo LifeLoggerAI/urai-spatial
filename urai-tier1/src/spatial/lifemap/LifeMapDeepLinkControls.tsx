@@ -110,40 +110,47 @@ export default function LifeMapDeepLinkControls() {
             : selectedNode?.summary ?? 'Choose a memory with touch, pointer, or keyboard. Life Map owns this navigation; the Home Orb does not enter this realm.'}
       </span>
 
-      <div
-        role="list"
+      <ul
         aria-label="Available memories"
-        style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBlock: 4, scrollbarWidth: 'thin' }}
+        style={{
+          display: 'flex',
+          gap: 8,
+          margin: 0,
+          padding: '4px 0',
+          overflowX: 'auto',
+          listStyle: 'none',
+          scrollbarWidth: 'thin',
+        }}
       >
         {nodes.map((node) => {
           const selected = node.id === nodeId
           return (
-            <button
-              key={node.id}
-              type="button"
-              role="listitem"
-              aria-pressed={selected}
-              onClick={() => selectNode(node)}
-              style={{
-                minHeight: 48,
-                minWidth: 112,
-                padding: '10px 14px',
-                border: selected ? '1px solid rgba(207,250,254,.9)' : '1px solid rgba(207,250,254,.22)',
-                borderRadius: 999,
-                color: selected ? '#06111f' : '#effdff',
-                background: selected ? '#cffafe' : 'rgba(255,255,255,.07)',
-                font: 'inherit',
-                fontSize: 11,
-                fontWeight: 900,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {node.title}
-            </button>
+            <li key={node.id}>
+              <button
+                type="button"
+                aria-pressed={selected}
+                onClick={() => selectNode(node)}
+                style={{
+                  minHeight: 48,
+                  minWidth: 112,
+                  padding: '10px 14px',
+                  border: selected ? '1px solid rgba(207,250,254,.9)' : '1px solid rgba(207,250,254,.22)',
+                  borderRadius: 999,
+                  color: selected ? '#06111f' : '#effdff',
+                  background: selected ? '#cffafe' : 'rgba(255,255,255,.07)',
+                  font: 'inherit',
+                  fontSize: 11,
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {node.title}
+              </button>
+            </li>
           )
         })}
-      </div>
+      </ul>
 
       {selectedNode ? (
         <SelectedMemoryActions
