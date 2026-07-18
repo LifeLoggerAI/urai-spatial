@@ -35,7 +35,11 @@ test('memoryId and node deep links preserve exact identity across Focus and Repl
   assert.match(controls, /router\.push\(destination\('replay'\)\)/)
   assert.match(controls, />\s*Enter Focus\s*</)
   assert.match(controls, />\s*Replay\s*</)
-  assert.match(controls, /if \(!memoryId\) return null/)
+})
+
+test('Overview preserves identity but suppresses selected-memory semantics', () => {
+  assert.match(controls, /const overviewRequested = searchParams\.get\('overview'\) === '1'/)
+  assert.match(controls, /if \(!memoryId \|\| overviewRequested\) return null/)
 })
 
 test('selected-memory controls are visible, responsive and keyboard focused', () => {
