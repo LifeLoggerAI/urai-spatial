@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: default Playwright project 2026-07-18T18:35:00Z
+# trigger: exact-head concurrency 2026-07-18T18:40:00Z
 
 on:
   pull_request:
@@ -15,8 +15,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: canonical-six-fix-isolated-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  group: canonical-six-fix-isolated-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
 
 env:
   CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
