@@ -42,6 +42,10 @@ const ORB_POSITION = new THREE.Vector3(2.45, 1.55, -1.15)
 const AVATAR_POSITION = new THREE.Vector3(-2.2, 0, -0.25)
 const GROUND_GATE_POSITION = new THREE.Vector3(0, 0, -8.7)
 const LIFE_MAP_POSITION = new THREE.Vector3(0, 0, -5.45)
+const HOME_OBSTACLES = [
+  { x: AVATAR_POSITION.x, z: AVATAR_POSITION.z, radius: 0.95 },
+  { x: ORB_POSITION.x, z: ORB_POSITION.z, radius: 0.82 },
+]
 
 function useMediaPreference(query: string) {
   const [matches, setMatches] = useState(false)
@@ -215,20 +219,21 @@ function PlayerCamera({
       acceleration: reducedMotion ? 14 : 7,
       deceleration: reducedMotion ? 18 : 9,
       bounds: HOME_BOUNDS,
-      obstacles: [
-        { x: AVATAR_POSITION.x, z: AVATAR_POSITION.z, radius: 0.95 },
-        { x: ORB_POSITION.x, z: ORB_POSITION.z, radius: 0.82 },
-      ],
+      obstacles: HOME_OBSTACLES,
     })
 
-    const candidates: Array<[NearbyHomeTarget, number]> = [
-      ['orb', distance2D(position.current, ORB_POSITION)],
-      ['avatar', distance2D(position.current, AVATAR_POSITION)],
-      ['ground', distance2D(position.current, GROUND_GATE_POSITION)],
-      ['life-map', distance2D(position.current, LIFE_MAP_POSITION)],
-    ]
-    candidates.sort((a, b) => a[1] - b[1])
-    const nextNearby = candidates[0][1] < (candidates[0][0] === 'ground' ? 1.9 : 1.65) ? candidates[0][0] : null
+    const dOrb = distance2D(position.current, ORB_POSITION)
+    const dAvatar = distance2D(position.current, AVATAR_POSITION)
+    const dGround = distance2D(position.current, GROUND_GATE_POSITION)
+    const dLifeMap = distance2D(position.current, LIFE_MAP_POSITION)
+    let minTarget: NearbyHomeTarget = null
+    let minDistance = Number.POSITIVE_INFINITY
+    if (dOrb < minDistance) { minDistance = dOrb; minTarget = 'orb' }
+    if (dAvatar < minDistance) { minDistance = dAvatar; minTarget = 'avatar' }
+    if (dGround < minDistance) { minDistance = dGround; minTarget = 'ground' }
+    if (dLifeMap < minDistance) { minDistance = dLifeMap; minTarget = 'life-map' }
+
+    const nextNearby = minTarget && minDistance < (minTarget === 'ground' ? 1.9 : 1.65) ? minTarget : null
     nearby.current = nextNearby
     if (nextNearby !== lastNearby.current) {
       lastNearby.current = nextNearby
@@ -370,9 +375,9 @@ export default function EmbodiedHomeSpatialCanvas({ onOrbOpen, webglAvailable }:
       <MovementHelp realm="Home" summary="Walk slowly through the sanctuary. Approach the Orb, embodied self, Ground doorway, or Life Map threshold." controls="WASD or arrows move. Click ground to walk. Drag to look. Enter interacts. R resets orientation. No pointer lock." />
       <MobileMovementPad input={input} label="Home movement controls" />
       <nav className="urai-home-direct-controls" data-movement-ui="true" aria-label="Direct Home destinations">
-        <button type="button" onClick={onOrbOpen}>Orb</button>
-        <button type="button" onClick={() => travel('infrastructure-hub')}>Ground</button>
-        <button type="button" onClick={() => travel('life-map')}>Life Map</button>
+        <button type="button" aria-label="Open Orb directly" onClick={onOrbOpen}>Orb</button>
+        <button type="button" aria-label="Open Ground directly" onClick={() => travel('infrastructure-hub')}>Ground</button>
+        <button type="button" aria-label="Open Life Map directly" onClick={() => travel('life-map')}>Life Map</button>
       </nav>
       <style jsx>{`
         .urai-home-embodied-shell{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;isolation:isolate;background:#01050d}.urai-home-embodied-shell[data-home-camera-mode='look']{cursor:grabbing}
