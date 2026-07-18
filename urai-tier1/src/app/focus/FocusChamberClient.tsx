@@ -15,6 +15,7 @@ import type { SelectedMemoryResult } from '@/spatial/memory/selectedMemoryContra
 import styles from './FocusChamber.module.css'
 import landscapeStyles from './FocusChamberLandscape.module.css'
 import cinematicStyles from './FocusChamberCinematic.module.css'
+import targetGuardStyles from './FocusChamberTargetGuard.module.css'
 
 const DEMO_FOCUS_HREF = '/focus?memoryId=demo%3Aquiet-reset&node=quiet-reset&manifestId=replay-recovery-thread&demo=1&from=focus-recovery'
 
@@ -248,7 +249,7 @@ export default function FocusChamberClient() {
     <main
       ref={mainRef}
       tabIndex={-1}
-      className={`${styles.world} ${cinematicStyles.cinematic}`}
+      className={`${styles.world} ${cinematicStyles.cinematic} ${targetGuardStyles.focusTargetGuard}`}
       style={style}
       data-testid="urai-final-focus-chamber"
       data-memory-status={result.status}
