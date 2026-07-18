@@ -32,6 +32,8 @@ for (const asset of launch.assets) {
 }
 
 for (const pattern of haptics.patterns) {
+  requireCondition(Array.isArray(pattern.vibrationMs) && pattern.vibrationMs.length > 0, `haptic ${pattern.id} vibrationMs must be a non-empty array`)
+  requireCondition(Array.isArray(pattern.intensity) && pattern.intensity.length === pattern.vibrationMs.length, `haptic ${pattern.id} intensity and vibrationMs must have matching lengths`)
   const total = pattern.vibrationMs.reduce((sum, value) => sum + value, 0)
   const pulseCount = Math.ceil(pattern.vibrationMs.length / 2)
   requireCondition(total <= haptics.policy.maxPatternDurationMs, `haptic ${pattern.id} exceeds total duration cap`)
@@ -40,10 +42,16 @@ for (const pattern of haptics.patterns) {
   requireCondition(pattern.intensity.every((value) => value >= 0 && value <= 1), `haptic ${pattern.id} intensity is outside 0..1`)
 }
 
+const audioIds = new Set()
+const audioPaths = new Set()
 for (const cue of audio.cues) {
+  requireCondition(!audioIds.has(cue.id), `duplicate audio cue id: ${cue.id}`)
+  requireCondition(!audioPaths.has(cue.candidatePath), `duplicate audio cue path: ${cue.candidatePath}`)
   requireCondition(Boolean(cue.caption), `audio cue ${cue.id} requires caption metadata`)
   requireCondition(cue.fallback === 'silence' || cue.fallback === 'none', `audio cue ${cue.id} has an unsupported fallback`)
   requireCondition(cue.maxBytes > 0, `audio cue ${cue.id} requires a positive byte budget`)
+  audioIds.add(cue.id)
+  audioPaths.add(cue.candidatePath)
 }
 
 for (const path of [
