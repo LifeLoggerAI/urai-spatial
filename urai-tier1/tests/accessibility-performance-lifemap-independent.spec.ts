@@ -166,8 +166,8 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await page.keyboard.press('Escape')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     await expect(page.getByRole('status').filter({ hasText: /Returned to Life Map overview/i })).toBeVisible()
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
-    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
+    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(selectedMemoryControls(page)).toHaveCount(0)
 
     await page.reload({ waitUntil: 'domcontentloaded' })
