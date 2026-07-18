@@ -76,8 +76,26 @@ jobs:
           git checkout --detach "$product_base"
           test -z "$(git status --porcelain --untracked-files=all)"
           node /tmp/apply-pr793-memory-lens-redesign.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('urai-tier1/tests/lifemap-scene-behavior.test.mjs')
+          source = path.read_text()
+          start_marker = r"  assert.match(source, /:\s*80;\s*const \[texture, setTexture\] = useState<THREE\.CanvasTexture \| null>\(null\)/"
+          end_marker = "  assert.ok(source.includes('if (!/^[0-9a-f]{6}$/i.test(normalized))')"
+          start = source.index(start_marker)
+          end = source.index(end_marker, start)
+          replacement = r"""  assert.match(source, /:\s*80;\s*const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\), \[node, textureResolution\]\)/, 'Non-related memories must use the smallest allocation before synchronous texture ownership.')
+          assert.ok(source.includes('const dispose = () => texture?.dispose()'), 'Synchronous textures must retain deterministic disposal ownership.')
+          assert.ok(source.includes('window.requestAnimationFrame(dispose)'), 'Replaced textures must remain alive through replacement paint before disposal.')
+          assert.ok(source.includes('opacity={texture ? visibleOpacity : 0}'), 'Unavailable client textures must stay transparent instead of exposing a white material fallback.')
+          assert.ok(source.includes('name="life-map-memory-lens-hit-target"'), 'Each memory must retain a stable transparent interaction target.')
+          assert.doesNotMatch(source, /useState<THREE\.CanvasTexture \| null>|setTexture\(/, 'Memory textures must not expose an asynchronous blank-material frame.')
+          assert.match(source, /useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/, 'CanvasTexture allocation must be synchronously available to the first committed material render.')
+          """
+          path.write_text(source[:start] + replacement + source[end:])
+          PY
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
 
       - name: Install exact dependencies
         shell: bash
@@ -116,14 +134,14 @@ jobs:
           set -o pipefail
           corepack pnpm exec playwright test --config=playwright.accessibility.config.ts --project=chromium urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts 2>&1 | tee /tmp/pr793-memory-lens-browser.log
 
-      - name: Publish clean six-file memory-lens redesign
+      - name: Publish clean seven-file memory-lens redesign
         id: publish
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$PRODUCT_BASE"
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
