@@ -68,11 +68,11 @@ jobs:
           set -o pipefail
           corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/canonical-six-fix-typecheck.log
 
-      - name: Build exact candidate
+      - name: Build exact static candidate
         shell: bash
         run: |
           set -o pipefail
-          corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/canonical-six-fix-build.log
+          corepack pnpm build:static 2>&1 | tee /tmp/canonical-six-fix-build.log
 
       - name: Install Chromium
         run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
