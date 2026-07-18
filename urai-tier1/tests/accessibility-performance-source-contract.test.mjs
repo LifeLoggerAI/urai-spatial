@@ -19,6 +19,7 @@ test('accessibility and performance implementation contracts are present', () =>
   const focus = read('src/app/focus/FocusChamberClient.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
+  const accessibilityEvidence = read('tests/accessibility-performance-evidence.spec.ts')
 
   requireText(reducedMotion, 'prefers-reduced-motion: reduce')
   requireText(reducedMotion, "addEventListener?.('change', update)")
@@ -76,7 +77,20 @@ test('accessibility and performance implementation contracts are present', () =>
     'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024',
     'JOURNEY_CYCLES = 5',
     "serverMode: 'static-export'",
+    "WEBGL_debug_renderer_info",
+    "NOT_AVAILABLE_HARDWARE_RENDERER",
+    "hardwareAcceleration",
   ]) {
     requireText(performanceMetrics, marker)
+  }
+
+  for (const marker of [
+    '[data-urai-audit-action="orb-controls"]',
+    'toHaveAccessibleName(/close orb travel controls/i)',
+    'hasScrollableAncestor',
+    'scrollableGroundRail',
+    'focusContainment.filter',
+  ]) {
+    requireText(accessibilityEvidence, marker)
   }
 })
