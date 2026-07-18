@@ -488,11 +488,20 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
   const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => {
     const ascending = destination === 'life-map'
     setMode(ascending ? 'ascending' : 'descending')
+    if (ascending) {
+      requestUraiWorldTravel({
+        destination: 'life-map',
+        href: '/life-map?from=home-sky',
+        entryPortal: 'home-sky',
+        cameraCheckpoint: 'home-sky-ascent',
+      })
+      return
+    }
     requestUraiWorldTravel({
-      destination,
-      href: ascending ? '/life-map?from=home-sky' : '/ground?from=home',
-      entryPortal: ascending ? 'home-sky' : 'home-ground',
-      cameraCheckpoint: ascending ? 'home-sky-ascent' : 'home-ground-descent',
+      destination: 'infrastructure-hub',
+      href: '/ground/',
+      entryPortal: 'home-ground',
+      cameraCheckpoint: 'home-ground-descent',
     })
   }, [])
 
