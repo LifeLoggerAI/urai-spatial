@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/pr793-memory-lens-r1-execution.yml
       - scripts/apply-pr793-memory-lens-redesign.mjs
+      - scripts/patch-pr793-memory-lens-applicator.mjs
       - scripts/reconcile-pr793-memory-lens-contract.mjs
 
 permissions:
@@ -45,35 +46,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$SOURCE_BASE" HEAD)" = "$SOURCE_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          test "$(git diff --name-only "$PRODUCT_TREE_BASE" HEAD | sort)" = "$(printf '%s\n' .github/workflows/pr793-memory-lens-r1-execution.yml scripts/apply-pr793-memory-lens-redesign.mjs scripts/reconcile-pr793-memory-lens-contract.mjs | sort)"
+          test "$(git diff --name-only "$PRODUCT_TREE_BASE" HEAD | sort)" = "$(printf '%s\n' .github/workflows/pr793-memory-lens-r1-execution.yml scripts/apply-pr793-memory-lens-redesign.mjs scripts/patch-pr793-memory-lens-applicator.mjs scripts/reconcile-pr793-memory-lens-contract.mjs | sort)"
           cp scripts/apply-pr793-memory-lens-redesign.mjs /tmp/apply-pr793-memory-lens-redesign.mjs
+          cp scripts/patch-pr793-memory-lens-applicator.mjs /tmp/patch-pr793-memory-lens-applicator.mjs
           cp scripts/reconcile-pr793-memory-lens-contract.mjs /tmp/reconcile-pr793-memory-lens-contract.mjs
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('/tmp/apply-pr793-memory-lens-redesign.mjs')
-          source = path.read_text()
-          pattern = re.compile(r"(?m)^(\s*)if \(menu\) menu\.open = true\n\1window\.setTimeout\(keepSelectedControlsOpen, 0\)")
-          source, click_count = pattern.subn(
-              lambda match: f"{match.group(1)}if (menu) menu.open = true\n{match.group(1)}queueMicrotask(keepSelectedControlsOpen)\n{match.group(1)}window.setTimeout(keepSelectedControlsOpen, 0)",
-              source,
-              count=1,
-          )
-          old_call = "replaceOnce(boundary, '      queueMicrotask(keepSelectedControlsOpen)\\n', '')"
-          new_call = """replaceOnce(
-            boundary,
-            `      queueMicrotask(keepSelectedControlsOpen)\n      return true\n`,
-            `      return true\n`,
-          )"""
-          cycle_count = source.count(old_call)
-          if click_count != 1:
-              raise SystemExit(f'click-selection applicator target count={click_count}')
-          if cycle_count != 1:
-              raise SystemExit(f'cycle-selection applicator target count={cycle_count}')
-          source = source.replace(old_call, new_call, 1)
-          path.write_text(source)
-          PY
+          node /tmp/patch-pr793-memory-lens-applicator.mjs
           product_base="$(git rev-parse origin/$PRODUCT_BRANCH)"
           test -n "$product_base"
           echo "PRODUCT_BASE=$product_base" >> "$GITHUB_ENV"
