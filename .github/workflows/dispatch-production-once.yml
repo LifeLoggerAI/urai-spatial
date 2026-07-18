@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# One-shot production convergence trigger for main@8c67abad4ad7181ac4a904f0e379a0e348655e9f after merged PR #675.
+# One-shot production convergence trigger for main@fc2339ce8d7b890f9086a20b8f55bd5ddb49d727 after merged PR #706.
 
 on:
   push:
