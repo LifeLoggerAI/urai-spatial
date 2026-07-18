@@ -15,6 +15,7 @@ import './lifeMapConvergence.css'
 import './routeOwnerConvergence.css'
 import './secondaryRealmConvergence.css'
 import './lifeMapIndependentInteraction.css'
+import './embodiedExplorationLayout.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
