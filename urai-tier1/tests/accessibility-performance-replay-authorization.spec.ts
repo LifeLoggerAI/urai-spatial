@@ -35,4 +35,19 @@ test.describe('Replay authorization boundary', () => {
       await expect(page.getByRole('button', { name: /play replay|pause replay/i })).toHaveCount(0)
     })
   }
+
+  test('returning from a raw demo Replay denial preserves disclosed demo mode', async ({ page }) => {
+    await page.goto(REPLAY_LOCKED_PATH, { waitUntil: 'domcontentloaded' })
+    const replay = page.getByTestId('cinematic-replay-client')
+    await expect(replay).toHaveAttribute('data-memory-status', 'unavailable')
+    await replay.getByRole('button', { name: /return to focus/i }).click()
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return `${url.pathname.replace(/\/+$/, '')}?${url.searchParams.toString()}`
+    }, { timeout: 10_000 }).toContain('/focus?')
+    await expect.poll(() => new URL(page.url()).searchParams.get('demo'), { timeout: 10_000 }).toBe('1')
+    const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
+    await expect(chamber).toBeVisible({ timeout: 10_000 })
+    await expect(chamber).toHaveAttribute('data-memory-id', 'demo:forecast-path')
+  })
 })
