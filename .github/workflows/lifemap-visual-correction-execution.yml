@@ -1,0 +1,136 @@
+name: Life Map visual correction execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-six-fix-clean-v3-20260718
+    paths:
+      - .github/workflows/lifemap-visual-correction-execution.yml
+      - scripts/one-shot-lifemap-visual-correction.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-visual-correction-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: ac1a43d7cd5e2b057116a22830ed20a2199f568b
+  SOURCE_BRANCH: exec/lifemap-visual-correction-v1-20260718
+  PRODUCT_BRANCH: product/canonical-six-fix-clean-v3-20260718
+
+jobs:
+  correct-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/lifemap-visual-correction-v1-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact isolated head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove exact authority and apply bounded visual correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/lifemap-visual-correction-execution.yml scripts/one-shot-lifemap-visual-correction.mjs | sort)"
+          node scripts/one-shot-lifemap-visual-correction.mjs 2>&1 | tee /tmp/lifemap-visual-correction-apply.log
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx urai-tier1/src/spatial/world/lifeMapIndependentInteraction.css urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run full source contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/lifemap-visual-correction-unit.log
+
+      - name: Typecheck exact candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/lifemap-visual-correction-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/lifemap-visual-correction-build.log
+
+      - name: Install exact Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run Life Map accessibility regression
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts accessibility-performance-lifemap-independent.spec.ts --project=chromium 2>&1 | tee /tmp/lifemap-visual-correction-accessibility.log
+
+      - name: Capture exact visual artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-visual-correction-artifact
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-visual-correction-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/lifemap-visual-correction-artifact \
+          URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
+            node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee /tmp/lifemap-visual-correction-capture.log
+
+      - name: Publish one clean five-file product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-clean/urai-tier1/src/app /tmp/lifemap-clean/urai-tier1/src/components/lifemap /tmp/lifemap-clean/urai-tier1/src/spatial/lifemap /tmp/lifemap-clean/urai-tier1/src/spatial/world /tmp/lifemap-clean/urai-tier1/tests
+          cp urai-tier1/src/app/continuous-spatial-proof-defects.css /tmp/lifemap-clean/urai-tier1/src/app/
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/lifemap-clean/urai-tier1/src/components/lifemap/
+          cp urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx /tmp/lifemap-clean/urai-tier1/src/spatial/lifemap/
+          cp urai-tier1/src/spatial/world/lifeMapIndependentInteraction.css /tmp/lifemap-clean/urai-tier1/src/spatial/world/
+          cp urai-tier1/tests/lifemap-visual-material-contract.test.mjs /tmp/lifemap-clean/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/lifemap-clean/urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/app/
+          cp /tmp/lifemap-clean/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/lifemap-clean/urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx urai-tier1/src/spatial/lifemap/
+          cp /tmp/lifemap-clean/urai-tier1/src/spatial/world/lifeMapIndependentInteraction.css urai-tier1/src/spatial/world/
+          cp /tmp/lifemap-clean/urai-tier1/tests/lifemap-visual-material-contract.test.mjs urai-tier1/tests/
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx urai-tier1/src/spatial/world/lifeMapIndependentInteraction.css urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): eliminate blank memory planes and restore selected surface"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          git rev-parse HEAD | tee /tmp/lifemap-visual-correction-product-sha.log
+
+      - name: Retain exact visual correction evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-visual-correction-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-visual-correction-*.log
+            /tmp/lifemap-visual-correction-artifact
+          if-no-files-found: ignore
+          retention-days: 90
