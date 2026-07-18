@@ -35,10 +35,18 @@ test('LifeMap memory surfaces scale by quality and state without leaking replace
   assert.match(source, /selected\s*\?\s*profile\.tier === "high"\s*\?\s*512\s*:\s*384/, 'Only selected memories may receive the high-resolution profile allocation.')
   assert.match(source, /overview\s*\?\s*profile\.tier === "high"\s*\?\s*128\s*:\s*96/, 'Overview memories must use small textures.')
   assert.match(source, /related\s*\?\s*profile\.tier === "high"\s*\?\s*224\s*:\s*160/, 'Related memories must use medium textures.')
-  assert.match(source, /:\s*80;\s*const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/, 'Non-related memories must use the smallest allocation.')
-  assert.ok(source.includes('[node, textureResolution]'), 'Texture replacement must track both memory identity and allocation profile.')
-  assert.ok(source.includes('useEffect(() => () => texture?.dispose(), [texture])'), 'Every replaced or unmounted CanvasTexture must be disposed.')
+  assert.match(source, /:\s*80;\s*const \[texture, setTexture\] = useState<THREE\.CanvasTexture \| null>\(null\)/, 'Non-related memories must use the smallest allocation before commit-phase texture state.')
+  assert.ok(source.includes('const nextTexture = createMemorySurface(node, textureResolution)'), 'Texture creation must occur inside the committed effect lifecycle.')
+  assert.ok(source.includes('setTexture(nextTexture)'), 'Committed textures must enter React state only after creation.')
+  assert.ok(source.includes('return () => nextTexture?.dispose()'), 'Every replaced or unmounted CanvasTexture must be disposed.')
+  assert.doesNotMatch(source, /useMemo\(\(\) => createMemorySurface/, 'CanvasTexture allocation must never occur during render.')
   assert.doesNotMatch(source, /canvas\.width\s*=\s*768|canvas\.height\s*=\s*768/, 'The active owner must not eagerly allocate 768px textures for every memory.')
+})
+
+test('LifeMap temporal paths use declarative R3F geometry ownership', () => {
+  assert.ok(source.includes('<tubeGeometry args={[curve, 72, active ? 0.012 : 0.005, 6, false]} />'), 'Temporal path geometry must be declarative so R3F owns disposal.')
+  assert.doesNotMatch(source, /new THREE\.TubeGeometry/, 'TubeGeometry must not be allocated during React render.')
+  assert.doesNotMatch(source, /tube\.dispose\(\)/, 'Manual disposal must not compete with declarative R3F ownership.')
 })
 
 test('LifeMap memories route into Focus and Replay with selected identity', () => {
