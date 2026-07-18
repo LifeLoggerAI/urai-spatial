@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
@@ -27,13 +27,11 @@ function unavailable(message: string): SelectedMemoryResult {
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const params = useMemo(() => {
-    if (typeof window === 'undefined') return new URLSearchParams()
-    return new URLSearchParams(window.location.search)
-  }, [])
-  const rawMemoryId = params.get('memoryId') ?? params.get('node')
+  const search = typeof window === 'undefined' ? '' : window.location.search
+  const currentParams = new URLSearchParams(search)
+  const rawMemoryId = currentParams.get('memoryId') ?? currentParams.get('node')
   const memoryId = sanitizeMemoryId(rawMemoryId)
-  const manifestId = sanitizeMemoryId(params.get('manifestId'))
+  const manifestId = sanitizeMemoryId(currentParams.get('manifestId'))
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
 
   useEffect(() => {
@@ -49,6 +47,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       return () => { cancelled = true }
     }
 
+    const params = new URLSearchParams(typeof window === 'undefined' ? search : window.location.search)
     const explicitDemo = isExplicitDemoRequest(params)
       || (memoryId.startsWith('demo:') && isKnownExplicitDemoMemoryId(memoryId))
       || (explicitDemoModeEnabled() && isKnownExplicitDemoMemoryId(memoryId))
@@ -105,7 +104,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       cancelled = true
       unsubscribe()
     }
-  }, [manifestId, memoryId, params, rawMemoryId])
+  }, [manifestId, memoryId, rawMemoryId, search])
 
   return result
 }
