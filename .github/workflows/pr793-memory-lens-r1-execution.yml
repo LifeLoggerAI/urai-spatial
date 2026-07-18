@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_BASE: 7a7ce6583d8d65a82b6b0d3d86c799296f4b4168
+  SOURCE_BASE: d54ac27578b4d1399c87211ffbffd9e58f82f82a
   PRODUCT_BASE: d54ac27578b4d1399c87211ffbffd9e58f82f82a
   SOURCE_BRANCH: exec/pr793-memory-lens-r1-20260718
   PRODUCT_BRANCH: product/canonical-seven-fix-clean-r3-20260718
@@ -51,13 +51,13 @@ jobs:
           path = Path('/tmp/apply-pr793-memory-lens-redesign.mjs')
           source = path.read_text()
           old_block = """        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
-                  if (menu) menu.open = true
-                  window.setTimeout(keepSelectedControlsOpen, 0)
+                   if (menu) menu.open = true
+                   window.setTimeout(keepSelectedControlsOpen, 0)
           """
           new_block = """        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
-                  if (menu) menu.open = true
-                  queueMicrotask(keepSelectedControlsOpen)
-                  window.setTimeout(keepSelectedControlsOpen, 0)
+                   if (menu) menu.open = true
+                   queueMicrotask(keepSelectedControlsOpen)
+                   window.setTimeout(keepSelectedControlsOpen, 0)
           """
           old_call = "replaceOnce(boundary, '      queueMicrotask(keepSelectedControlsOpen)\\n', '')"
           new_call = """replaceOnce(
