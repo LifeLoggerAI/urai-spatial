@@ -40,9 +40,11 @@ test('the full journey participates in one persistent world model', () => {
   assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
 })
 
-test('one persistent Orb owns all canonical travel and Home opens that same companion', () => {
+test('the persistent Orb owns world travel while Focus and Life Map remain companion-free', () => {
   assert.match(shell, /PersistentWorldCompanion/)
   assert.match(shell, /<PersistentWorldCompanion\s*\/>/)
+  assert.match(shell, /COMPANION_FREE_DESTINATIONS = new Set\(\['life-map', 'focus'\]\)/)
+  assert.match(shell, /!COMPANION_FREE_DESTINATIONS\.has\(world\.destination\)/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /SECONDARY_DESTINATIONS/)
   for (const destination of canonicalDestinations) {
@@ -102,8 +104,11 @@ test('canonical route clients own Focus and Replay without the legacy autonomous
   assert.match(focusClient, /data-testid="urai-final-focus-chamber"/)
   assert.match(focusClient, /useSelectedMemory\(\)/)
   assert.match(focusClient, /requestUraiWorldTravel/)
-  assert.match(focusClient, /requestUraiWorldReturn/)
-  assert.doesNotMatch(focusClient, /uraiAutoFocus|quiet-reset|replay-recovery-thread/)
+  assert.match(focusClient, /destination: 'replay'/)
+  assert.match(focusClient, /destination: 'life-map'/)
+  assert.match(focusClient, /data-orb-owner="none"/)
+  assert.match(focusClient, /const DEMO_FOCUS_HREF = '[^']*demo=1[^']*'/)
+  assert.doesNotMatch(focusClient, /uraiAutoFocus/)
   assert.match(replayClient, /data-testid="cinematic-replay-client"/)
   assert.match(replayClient, /useSelectedMemory\(\)/)
   assert.match(replayClient, /requestUraiWorldReturn/)
