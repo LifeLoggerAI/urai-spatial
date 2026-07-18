@@ -21,6 +21,7 @@ test('accessibility and performance implementation contracts are present', () =>
   const focusCss = read('src/app/focus/FocusChamber.module.css')
   const cinematicFocusCss = read('src/app/focus/FocusChamberCinematic.module.css')
   const landscapeFocusCss = read('src/app/focus/FocusChamberLandscape.module.css')
+  const targetGuardFocusCss = read('src/app/focus/FocusChamberTargetGuard.module.css')
   const accessibilityWorkflow = read('../.github/workflows/accessibility-performance-evidence.yml')
   const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
@@ -76,6 +77,8 @@ test('accessibility and performance implementation contracts are present', () =>
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   requireText(focus, 'data-orb-owner="none"')
+  requireText(focus, "import targetGuardStyles from './FocusChamberTargetGuard.module.css'")
+  requireText(focus, 'targetGuardStyles.focusTargetGuard')
   assert.equal(focusCss.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focusCss, 'min-height: 48px;')
   requireText(focusCss, 'env(safe-area-inset-left)')
@@ -86,11 +89,15 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(cinematicFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
   assert.equal(cinematicFocusCss.includes('min-height: 44px;'), false, 'Short-landscape Focus controls must retain 48px targets')
   requireText(cinematicFocusCss, ".cinematic details summary {\n    min-height: 48px;")
+  requireText(targetGuardFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
+  requireText(targetGuardFocusCss, '.focusTargetGuard details summary')
+  requireText(targetGuardFocusCss, 'min-height: 48px;')
   requireText(landscapeFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
   for (const workflowPath of [
     'urai-tier1/src/app/focus/FocusChamber.module.css',
     'urai-tier1/src/app/focus/FocusChamberCinematic.module.css',
     'urai-tier1/src/app/focus/FocusChamberLandscape.module.css',
+    'urai-tier1/src/app/focus/FocusChamberTargetGuard.module.css',
     'urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx',
     'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx',
     'urai-tier1/src/spatial/memory/selectedMemoryContract.ts',
