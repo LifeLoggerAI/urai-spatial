@@ -13,6 +13,7 @@ on:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'playwright.accessibility.config.ts'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
+      - 'urai-tier1/tests/accessibility-performance-*.test.mjs'
       - 'urai-tier1/tests/focus-continuity-contract.test.mjs'
       - 'urai-tier1/tests/selected-memory-production-contract.test.mjs'
       - 'urai-tier1/scripts/run-unit-contract-tests*.mjs'
