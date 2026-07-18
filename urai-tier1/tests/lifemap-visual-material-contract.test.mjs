@@ -6,6 +6,7 @@ const scene = fs.readFileSync('src/components/lifemap/AdaptiveLifeMapScene.tsx',
 const controls = fs.readFileSync('src/spatial/lifemap/LifeMapDeepLinkControls.tsx', 'utf8')
 const interactionCss = fs.readFileSync('src/spatial/world/lifeMapIndependentInteraction.css', 'utf8')
 const proofCss = fs.readFileSync('src/app/continuous-spatial-proof-defects.css', 'utf8')
+const routeLayout = fs.readFileSync('src/app/life-map/layout.tsx', 'utf8')
 
 test('pending memory textures cannot render default white planes', () => {
   assert.match(scene, /const textureKey = texture\?\.uuid/)
@@ -51,4 +52,9 @@ test('Life Map removes the retired multi-overlay finishing stack', () => {
   assert.match(proofCss, /html\.urai-route-life-map \.life-map-cosmic-wash,[\s\S]*html\.urai-route-life-map \.life-map-depth-vignette/)
   assert.match(proofCss, /display:\s*none !important/)
   assert.match(proofCss, /background:\s*none !important/)
+})
+
+test('Life Map route layout cannot mount a second starfield owner', () => {
+  assert.doesNotMatch(routeLayout, /lifemap-starfield-shell/, 'The route layout must not add a legacy starfield outside the canonical realm')
+  assert.match(routeLayout, /return children/, 'The Life Map layout must pass the canonical owner through directly')
 })
