@@ -119,4 +119,22 @@ String.raw`  requireText(ground, 'event.currentTarget.scrollIntoView')
 const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
 replaceOnce(restorationContract,
 String.raw`  assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)`,
-String.raw`  assert.match(layer, /data-urai-home-runtime="embodied-continuous-webgl-world"/)`)
+String.raw`  assert.match(layer, /data-urai-home-runtime="embodied-continuous-webgl-world"/)
+  assert.match(layer, /data-home-exploration="walkable"/)`)
+replaceOnce(restorationContract,
+String.raw`  assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)`,
+String.raw`  assert.match(layer, /EmbodiedHomeSpatialCanvas/)
+  assert.match(layer, /import \{ useWebGLAvailable \} from '.\/HomeSpatialCanvas'/)`)
+replaceOnce(restorationContract,
+String.raw`  assert.match(groundCanonical, /window\.addEventListener\('keydown',\s*handleKeyDown\)/)
+  assert.match(groundCanonical, /window\.removeEventListener\('keydown',\s*handleKeyDown\)/)
+  assert.match(groundCanonical, /event\.key\s*===\s*'Escape'/)
+  assert.match(groundCanonical, /event\.key\s*===\s*'Enter'/)
+  assert.match(groundCanonical, /event\.key\s*===\s*'ArrowRight'\s*\|\|\s*event\.key\s*===\s*'ArrowDown'/)
+  assert.match(groundCanonical, /event\.key\s*===\s*'ArrowLeft'\s*\|\|\s*event\.key\s*===\s*'ArrowUp'/)`,
+`  assert.ok(includesCanonical(groundWorld, 'useMovementInput({'))
+  assert.ok(includesCanonical(groundWorld, 'onEscape: () => {'))
+  assert.ok(includesCanonical(groundWorld, 'onInteract: () => {'))
+  assert.ok(includesCanonical(groundWorld, 'onReset: resetOrientation'))
+  assert.ok(includesCanonical(groundWorld, '<MobileMovementPad'))
+  assert.ok(includesCanonical(groundWorld, 'Escape returns Home.'))`)
