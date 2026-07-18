@@ -176,3 +176,18 @@ const lifeMapBehaviorContract = 'urai-tier1/tests/lifemap-scene-behavior.test.mj
   )
   write(lifeMapBehaviorContract, lines.join('\n'))
 }
+
+const doorwayContract = 'urai-tier1/tests/persistent-world-doorway-regression.test.mjs'
+replaceOnce(doorwayContract,
+String.raw`  assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
+  assert.match(visualAudit, /summary:has-text\("Map controls"\)/)
+  assert.match(visualAudit, /\.life-map-accessibility-menu button/)
+  assert.match(visualAudit, /check\.name !== 'life-map-to-focus'/)
+  assert.match(visualAudit, /Open Orb travel controls/)
+  assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)`,
+String.raw`  assert.match(visualAudit, /button\[data-world-target=\\"focus\\"\]/)
+  assert.match(visualAudit, /a\[data-urai-audit-action=\\"life-map-focus\\"\]/)
+  assert.match(visualAudit, /let found = await firstVisible\(page, check\.selectors\)/)
+  assert.doesNotMatch(visualAudit, /check\.name/)
+  assert.match(visualAudit, /Open Orb travel controls/)
+  assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)`)
