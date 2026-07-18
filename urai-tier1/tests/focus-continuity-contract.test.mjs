@@ -10,6 +10,8 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const explicitDemo = read('src/spatial/memory/explicitDemoMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
+const worldState = read('src/spatial/world/WorldStateProvider.tsx')
+const worldTransition = read('src/spatial/world/WorldTransitionController.tsx')
 
 
 test('known Life Map sample identities resolve to disclosed canonical demo memories', () => {
@@ -35,8 +37,9 @@ test('the canonical Quiet Reset fixture keeps exact Focus and Replay identity', 
   assert.equal(memory.replayManifest.segments.length, 4)
 })
 
-test('Focus resolves only explicit demo prefixes or an already-enabled sample constellation', () => {
+test('Focus resolves only disclosed demo requests, known demo prefixes, or an enabled sample constellation', () => {
   assert.match(hook, /isExplicitDemoRequest\(params\)/)
+  assert.match(hook, /params\.get\('demo'\) === '1' && isKnownExplicitDemoMemoryId\(memoryId\)/)
   assert.match(hook, /memoryId\.startsWith\('demo:'\)/)
   assert.match(hook, /explicitDemoModeEnabled\(\) && isKnownExplicitDemoMemoryId\(memoryId\)/)
   assert.match(hook, /getDoc\(doc\(getFirebaseDb\(\), 'users', user\.uid, 'memories', memoryId\)\)/)
@@ -51,6 +54,15 @@ test('Focus subscribes to direct, history, and same-path world-location identity
   assert.match(hook, /setSearch\(new URL\(event\.detail\.href, window\.location\.origin\)\.search\)/)
   assert.doesNotMatch(hook, /useMemo/)
   assert.doesNotMatch(hook, /\[manifestId, memoryId, params, rawMemoryId\]/)
+})
+
+test('same-path Focus travel returns the world phase to idle without destroying return history', () => {
+  assert.match(worldState, /const destinationChanged = state\.world\.destination !== action\.request\.destination/)
+  assert.match(worldState, /previousDestination: destinationChanged \? state\.world\.destination : state\.world\.previousDestination/)
+  assert.match(worldTransition, /const \{ world, phase, beginTravel, cancelTransition \} = useUraiWorldState\(\)/)
+  assert.match(worldTransition, /const cancelTransitionRef = useRef\(cancelTransition\)/)
+  assert.match(worldTransition, /const samePath = new URL\(href, window\.location\.origin\)\.pathname === window\.location\.pathname/)
+  assert.match(worldTransition, /if \(samePath\) cancelTransitionRef\.current\(\)/)
 })
 
 test('demo-mode storage is best effort and cannot crash private Focus resolution', () => {
