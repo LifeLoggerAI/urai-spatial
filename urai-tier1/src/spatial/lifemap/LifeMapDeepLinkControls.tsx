@@ -4,6 +4,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 import type { LifeMapNode } from '@/components/lifemap/lifeMapData'
 
+const DEMO_REPLAY_MANIFEST_ID = 'replay-recovery-thread'
+const DEMO_REPLAY_UNAVAILABLE_ID = 'replay-unavailable'
+
 function safeToken(value: string | null, fallback = '') {
   if (!value) return fallback
   const normalized = value.trim().slice(0, 120)
@@ -22,6 +25,12 @@ function memoryTitle(memoryId: string) {
     .join(' ')
 }
 
+function disclosedDemoManifestId(node: LifeMapNode) {
+  return node.replayAvailable && !node.locked
+    ? DEMO_REPLAY_MANIFEST_ID
+    : DEMO_REPLAY_UNAVAILABLE_ID
+}
+
 type SelectedMemoryActionsProps = {
   memoryId: string
   nodeId: string
@@ -37,7 +46,7 @@ function SelectedMemoryActions({ memoryId, nodeId, manifestId, demo, replayAvail
   const destination = (route: 'focus' | 'replay') => {
     const query = new URLSearchParams()
     query.set('memoryId', memoryId)
-    query.set('manifestId', manifestId)
+    if (manifestId) query.set('manifestId', manifestId)
     query.set('node', nodeId)
     query.set('from', 'life-map-selected-memory')
     if (demo) query.set('demo', '1')
@@ -71,24 +80,31 @@ function SelectedMemoryActions({ memoryId, nodeId, manifestId, demo, replayAvail
 export default function LifeMapDeepLinkControls() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { nodes, loading, error, usingSeedData } = useLifeMapEvents()
   const requestedMemoryId = safeToken(searchParams.get('memoryId') ?? searchParams.get('node'))
   const requestedNodeId = safeToken(searchParams.get('node')) || rawNodeId(requestedMemoryId)
-  const manifestId = safeToken(searchParams.get('manifestId'), 'replay-recovery-thread')
+  const requestedManifestId = safeToken(searchParams.get('manifestId'))
+  const requestedDemo = searchParams.get('demo') === '1'
+  const { nodes, loading, error, usingSeedData } = useLifeMapEvents(requestedDemo ? 'demo-user' : undefined)
   const selectedNode = nodes.find((node) => node.id === requestedNodeId) ?? null
+  const disclosedDemo = requestedDemo || usingSeedData
   const memoryId = selectedNode
-    ? (usingSeedData ? `demo:${selectedNode.id}` : selectedNode.id)
+    ? (disclosedDemo ? `demo:${selectedNode.id}` : selectedNode.id)
     : requestedMemoryId
   const nodeId = selectedNode?.id ?? requestedNodeId
+  const manifestId = selectedNode && disclosedDemo
+    ? disclosedDemoManifestId(selectedNode)
+    : requestedManifestId
   const title = selectedNode?.title ?? (memoryId ? memoryTitle(memoryId) : 'Choose a memory')
 
   const selectNode = (node: LifeMapNode) => {
     const query = new URLSearchParams()
-    query.set('memoryId', usingSeedData ? `demo:${node.id}` : node.id)
-    query.set('manifestId', manifestId)
+    const demoSelection = requestedDemo || usingSeedData
+    query.set('memoryId', demoSelection ? `demo:${node.id}` : node.id)
+    const selectedManifestId = demoSelection ? disclosedDemoManifestId(node) : ''
+    if (selectedManifestId) query.set('manifestId', selectedManifestId)
     query.set('node', node.id)
     query.set('from', 'semantic-life-map')
-    if (usingSeedData) query.set('demo', '1')
+    if (demoSelection) query.set('demo', '1')
     router.replace(`/life-map?${query.toString()}`, { scroll: false })
   }
 
@@ -97,7 +113,7 @@ export default function LifeMapDeepLinkControls() {
       className="urai-lifemap-deep-link-controls"
       data-testid="urai-lifemap-selected-memory-controls"
       data-memory-id={memoryId}
-      data-manifest-id={manifestId}
+      data-manifest-id={manifestId || undefined}
       data-life-map-owner="independent"
       aria-label="Semantic Life Map"
       aria-live="polite"
@@ -160,7 +176,7 @@ export default function LifeMapDeepLinkControls() {
           memoryId={memoryId}
           nodeId={selectedNode.id}
           manifestId={manifestId}
-          demo={usingSeedData || memoryId.startsWith('demo:')}
+          demo={disclosedDemo || memoryId.startsWith('demo:')}
           replayAvailable={selectedNode.replayAvailable && !selectedNode.locked}
         />
       ) : null}
