@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Repair exact Home proof selectors and contract
+      - name: Repair exact Home proof selectors
         shell: bash
         run: |
           set -euo pipefail
@@ -56,30 +56,36 @@ jobs:
               'const authoredSceneMounted = await page.locator(\'[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]\').count() === 1',
               "const authoredSceneMounted = await page.locator('.urai-home-embodied-art').count() === 1",
           )
-
-          contract = Path('urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs')
-          replace_once(
-              contract,
-              "const canvas = read('src/app/HomeSpatialCanvas.tsx')",
-              "const canvas = read('src/app/EmbodiedHomeSpatialCanvas.tsx')",
-          )
-          replace_once(
-              contract,
-              'assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)',
-              'assert.match(layer, /data-urai-home-runtime="embodied-continuous-webgl-world"/)',
-          )
-          replace_once(
-              contract,
-              'assert.match(layer, /HomeSpatialCanvas, \\{ useWebGLAvailable \\}/)',
-              "assert.match(layer, /EmbodiedHomeSpatialCanvas/)\n  assert.match(layer, /useWebGLAvailable/)",
-          )
           PY
 
-      - name: Prove browser proof source contract
+      - name: Prove embodied source and exact proof migration
         shell: bash
         run: |
           set -euo pipefail
-          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          node --test urai-tier1/tests/embodied-exploration-contract.test.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source = Path('scripts/capture-continuous-spatial-proof.mjs').read_text()
+          required = [
+              '.urai-home-spatial-runtime-layer[data-webgl-ready="true"] [data-home-spatial-renderer="webgl"] canvas',
+              '[data-urai-home-runtime="embodied-continuous-webgl-world"]',
+              "getByRole('navigation', { name: 'Direct Home destinations' })",
+              "page.locator('.urai-home-embodied-art')",
+          ]
+          retired = [
+              '[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas',
+              '[data-urai-home-runtime="one-continuous-webgl-world"]',
+              'sceneLabelCount === 1 && visibleSceneLabelCount === 1',
+              'data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"',
+          ]
+          for marker in required:
+              if marker not in source:
+                  raise SystemExit(f'missing embodied proof marker: {marker}')
+          for marker in retired:
+              if marker in source:
+                  raise SystemExit(f'retired proof marker remains: {marker}')
+          PY
           git diff --check
 
       - name: Finalize self-cleaned repair
