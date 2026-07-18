@@ -60,6 +60,6 @@ const liveAudit = 'scripts/run-live-visual-audit-current.mjs'
       }
     }`
 
-  lines[indexes[0]] = `    ${JSON.stringify(strictReplacement)},`
+  lines[indexes[0]] = `    \`${strictReplacement}\`,`
   write(liveAudit, lines.join('\n'))
 }
