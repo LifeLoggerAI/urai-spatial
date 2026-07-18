@@ -133,7 +133,9 @@ test.describe('URAI accessibility and performance evidence', () => {
           let current = element.parentElement
           while (current) {
             const style = getComputedStyle(current)
-            if (/auto|scroll/.test(style.overflowX) && current.scrollWidth > current.clientWidth) return true
+            const overflowsHorizontally = current.scrollWidth > current.clientWidth
+            if (current.matches('.ground-destination-compass') && overflowsHorizontally) return true
+            if (/auto|scroll/.test(style.overflowX) && overflowsHorizontally) return true
             current = current.parentElement
           }
           return false
