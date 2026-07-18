@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const read = (relativePath) => fs.readFileSync(path.resolve(testDirectory, '..', relativePath), 'utf8')
 const requireText = (source, marker, message = marker) => assert.equal(source.includes(marker), true, message)
+const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
+const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
 
 test('accessibility and performance implementation contracts are present', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
@@ -56,7 +58,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companionCss, 'env(safe-area-inset-bottom)')
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
 
-  requireText(homeCanvas, "canvas.getContext('webgl2') ?? canvas.getContext('webgl')")
+  requireNormalizedPattern(homeCanvas, /canvas\.getContext\('webgl2'\)\s*\?\?\s*canvas\.getContext\('webgl'\)/, 'Home must test WebGL2 and WebGL capability')
   requireText(homeFallback, 'data-testid="urai-home-accessible-fallback"')
   requireText(homeFallback, '<HomeSpatialWorldFinal />')
   requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
@@ -65,7 +67,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
   requireText(homeRuntime, 'role="status"')
 
-  requireText(ground, "event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' })")
+  requireNormalizedPattern(ground, /event\.currentTarget\.scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'center',?\s*\}\)/, 'Ground focus must remain visible without depending on formatting')
   assert.equal(ground.includes('min-height:44px'), false, 'Ground destinations must not retain 44px targets')
   requireText(ground, 'min-height:48px')
 
@@ -85,9 +87,9 @@ test('accessibility and performance implementation contracts are present', () =>
     'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024',
     'JOURNEY_CYCLES = 5',
     "serverMode: 'static-export'",
-    "WEBGL_debug_renderer_info",
-    "NOT_AVAILABLE_HARDWARE_RENDERER",
-    "hardwareAcceleration",
+    'WEBGL_debug_renderer_info',
+    'NOT_AVAILABLE_HARDWARE_RENDERER',
+    'hardwareAcceleration',
   ]) {
     requireText(performanceMetrics, marker)
   }

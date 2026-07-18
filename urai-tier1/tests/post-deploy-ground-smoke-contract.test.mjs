@@ -6,6 +6,9 @@ const smoke = fs.readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
 const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mjs', 'utf8')
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
 const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
+const groundModel = fs.readFileSync('src/app/ground/GroundWorldModel.ts', 'utf8')
+const groundGraph = `${ground}\n${groundModel}`
+const canonicalGround = ground.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ').trim()
 
 const obsoleteTitle = 'Street-level city world'
 const retiredSmokeCopy = [
@@ -51,7 +54,7 @@ const liveGroundVisualCopy = [
 
 test('post-deploy Ground smoke remains tied to the embodied destination world', () => {
   for (const marker of expectedGroundMarkers) {
-    assert.ok(ground.includes(marker), `missing embodied Ground marker: ${marker}`)
+    assert.ok(groundGraph.includes(marker), `missing embodied Ground marker: ${marker}`)
   }
 
   for (const [marker, sourceOwner] of liveGroundMarkers) {
@@ -65,7 +68,7 @@ test('post-deploy Ground smoke remains tied to the embodied destination world', 
 
 test('Ground screenshot audit requires current visible world copy', () => {
   for (const copy of liveGroundVisualCopy) {
-    assert.ok(ground.includes(copy), `Ground source owner is missing current visual copy: ${copy}`)
+    assert.ok(groundGraph.includes(copy), `Ground source graph is missing current visual copy: ${copy}`)
     assert.ok(visualAudit.includes(`'${copy}'`), `visual audit is missing current Ground copy: ${copy}`)
   }
   assert.ok(!visualAudit.includes("'PRIVATE COUNCIL'"))
@@ -73,19 +76,19 @@ test('Ground screenshot audit requires current visible world copy', () => {
 })
 
 test('obsolete Ground copy is rejected rather than required by the source owner', () => {
-  assert.doesNotMatch(ground, new RegExp(obsoleteTitle))
+  assert.doesNotMatch(groundGraph, new RegExp(obsoleteTitle))
   for (const copy of retiredSmokeCopy) {
-    assert.ok(!ground.includes(copy), `retired Ground copy returned to the source owner: ${copy}`)
+    assert.ok(!groundGraph.includes(copy), `retired Ground copy returned to the source graph: ${copy}`)
     assert.ok(!smoke.includes(`'${copy}'`), `post-deploy smoke still requires retired Ground copy: ${copy}`)
   }
-  assert.match(ground, /DESTINATIONS\.map/)
-  assert.match(ground, /WorkforcePresence/)
-  assert.match(ground, /DestinationArchitecture/)
-  assert.match(ground, /Corridor/)
-  assert.match(ground, /aria-current=\{activeId === destination\.id \? 'location' : undefined\}/)
-  assert.match(ground, /min-height:48px/)
-  assert.doesNotMatch(ground, /min-height:44px/)
-  assert.match(ground, /scrollIntoView\(\{ block: 'nearest', inline: 'center' \}\)/)
-  assert.match(ground, /overflow-x:auto/)
-  assert.match(ground, /safe-area-inset-bottom/)
+  assert.match(canonicalGround, /DESTINATIONS\.map/)
+  assert.match(canonicalGround, /WorkforcePresence/)
+  assert.match(canonicalGround, /DestinationArchitecture/)
+  assert.match(canonicalGround, /Corridor/)
+  assert.match(canonicalGround, /aria-current=\{activeId\s*===\s*destination\.id\s*\?\s*'location'\s*:\s*undefined\}/)
+  assert.match(canonicalGround, /min-height:48px/)
+  assert.doesNotMatch(canonicalGround, /min-height:44px/)
+  assert.match(canonicalGround, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'center',?\s*\}\)/)
+  assert.match(canonicalGround, /overflow-x:auto/)
+  assert.match(canonicalGround, /safe-area-inset-bottom/)
 })

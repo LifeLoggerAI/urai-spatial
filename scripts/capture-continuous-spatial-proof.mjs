@@ -117,10 +117,11 @@ const routes = [
       ].join(','))
       const legacyControlsVisible = await visibleElementCount(legacyControls)
 
-      const sceneLabels = page.locator('.urai-home-spatial-portal-label')
+      const sceneLabels = page.locator('.urai-home-spatial-threshold')
       const sceneLabelCount = await sceneLabels.count()
       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
+      const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
+      const authoredSceneMounted = await page.locator('[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]').count() === 1
 
       const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
       const portalShortcutCount = await portalShortcuts.count()
@@ -133,6 +134,12 @@ const routes = [
         const style = getComputedStyle(node)
         return !node.disabled && style.pointerEvents !== 'none'
       })
+      const skyGateway = page.getByRole('button', { name: 'Open the Life Map and ascend into Memory Sky' })
+      const canonicalSkyGatewayVisible = await skyGateway.count() === 1 && await skyGateway.isVisible()
+      const canonicalSkyGatewayInteractive = canonicalSkyGatewayVisible && await skyGateway.evaluate((node) => {
+        const style = getComputedStyle(node)
+        return !node.disabled && style.pointerEvents !== 'none'
+      })
 
       const firstHomeFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-home-spatial-frame').length > 0)
       const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
@@ -141,10 +148,13 @@ const routes = [
         oldWorldHidden,
         legacyControlsSuppressed: legacyControlsVisible === 0,
         firstHomeFrameMarked,
-        orbLabelVisible,
+        authoredSceneMounted,
+        thresholdLabelsVisible,
         permanentFeatureShortcutsAbsent,
         canonicalGroundGatewayVisible,
         canonicalGroundGatewayInteractive,
+        canonicalSkyGatewayVisible,
+        canonicalSkyGatewayInteractive,
         canvasSized: canvas.canvasSized,
         sceneLabelCount,
         visibleSceneLabelCount,
