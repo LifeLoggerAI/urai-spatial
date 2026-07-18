@@ -21,7 +21,7 @@ async function enableLifeMapDemo(page: Page) {
 }
 
 test.describe('Embodied exploration runtime evidence', () => {
-  test('Home supports calm keyboard walking, drag-look ownership, direct access, and no pointer lock', async ({ page }) => {
+  test('Home walks and exposes one physical Orb with an accessible travel menu', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
 
@@ -30,15 +30,35 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
     await expect(page.locator('[data-testid="urai-home-walkable-surface"]')).toHaveCount(1)
+    await expect(page.locator('[data-testid="urai-home-webgl-orb"]')).toHaveCount(1)
+
+    const companion = page.locator('.urai-world-companion')
+    await expect(companion).toHaveAttribute('data-home-physical-orb-anchor', 'true')
+    const orbMenuTrigger = page.getByRole('button', { name: 'Open Orb travel controls', exact: true })
+    await expect(orbMenuTrigger).toBeVisible()
+    await expect(orbMenuTrigger).toHaveAttribute('data-visual-orb-owner', 'physical-home-orb')
+    const visualStyle = await orbMenuTrigger.evaluate((element) => {
+      const style = window.getComputedStyle(element)
+      return { backgroundImage: style.backgroundImage, boxShadow: style.boxShadow, borderColor: style.borderColor }
+    })
+    expect(visualStyle.backgroundImage).toBe('none')
+    expect(visualStyle.boxShadow).toBe('none')
+    expect(visualStyle.borderColor).toMatch(/rgba\(0, 0, 0, 0\)|transparent/)
+
+    await orbMenuTrigger.click()
+    const menu = page.locator('#urai-world-companion-menu')
+    await expect(menu).toHaveAttribute('aria-hidden', 'false')
+    await expect(menu.getByRole('button', { name: 'Life Map', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
 
     const before = await home.evaluate((element) => element.style.getPropertyValue('--home-walk-z'))
     await holdKey(page, 'w', 650)
     await expect.poll(() => home.evaluate((element) => element.style.getPropertyValue('--home-walk-z'))).not.toBe(before)
 
     const direct = page.getByRole('navigation', { name: 'Direct Home destinations' })
-    await expect(direct.getByRole('button', { name: 'Orb' })).toBeVisible()
-    await expect(direct.getByRole('button', { name: 'Ground' })).toBeVisible()
-    await expect(direct.getByRole('button', { name: 'Life Map' })).toBeVisible()
+    await expect(direct.getByRole('button', { name: 'Open Orb directly', exact: true })).toBeVisible()
+    await expect(direct.getByRole('button', { name: 'Open Ground directly', exact: true })).toBeVisible()
+    await expect(direct.getByRole('button', { name: 'Open Life Map directly', exact: true })).toBeVisible()
 
     const help = page.getByText('Move through Home', { exact: true })
     await expect(help).toBeVisible()
