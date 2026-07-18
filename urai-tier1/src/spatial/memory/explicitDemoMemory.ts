@@ -99,7 +99,11 @@ export function isKnownExplicitDemoMemoryId(id: string | null | undefined) {
 export function explicitDemoModeEnabled() {
   if (process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true') return true
   if (typeof window === 'undefined') return false
-  return window.localStorage.getItem('urai:lifeMapDemoMode') === 'true'
+  try {
+    return window.localStorage.getItem('urai:lifeMapDemoMode') === 'true'
+  } catch {
+    return false
+  }
 }
 
 export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
