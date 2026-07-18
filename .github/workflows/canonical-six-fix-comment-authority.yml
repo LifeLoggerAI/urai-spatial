@@ -14,12 +14,12 @@ concurrency:
 
 jobs:
   repair:
-    if: github.event.issue.number == 788 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-six-fix-384fd963'
+    if: github.event.issue.number == 788 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-six-fix-800abcf6'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
-      EXPECTED_HEAD: 384fd9633de1b705107b2988d776fe4d30c2af7f
+      EXPECTED_HEAD: 800abcf692e4745a5f263309dee9234d00d5d8c9
       TARGET_BRANCH: fix/canonical-six-fix-direct-1d172afd-20260718
     steps:
       - name: Checkout exact isolated repair head
@@ -109,5 +109,5 @@ jobs:
               ['browser', '${{ steps.browser.outcome }}'],
               ['publish', '${{ steps.publish.outcome }}']
             ];
-            const body = ['Canonical six-fix authority receipt for `384fd9633de1b705107b2988d776fe4d30c2af7f`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
+            const body = ['Canonical six-fix authority receipt for `800abcf692e4745a5f263309dee9234d00d5d8c9`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 788, body });
