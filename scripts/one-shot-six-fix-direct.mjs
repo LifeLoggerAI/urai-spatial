@@ -124,7 +124,7 @@ String.raw`  assert.match(layer, /data-urai-home-runtime="embodied-continuous-we
 replaceOnce(restorationContract,
 String.raw`  assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)`,
 String.raw`  assert.match(layer, /EmbodiedHomeSpatialCanvas/)
-  assert.match(layer, /import \{ useWebGLAvailable \} from '.\/HomeSpatialCanvas'/)`)
+  assert.match(layer, /import \{ useWebGLAvailable \} from '\.\/HomeSpatialCanvas'/)`)
 replaceOnce(restorationContract,
 String.raw`  assert.match(groundCanonical, /window\.addEventListener\('keydown',\s*handleKeyDown\)/)
   assert.match(groundCanonical, /window\.removeEventListener\('keydown',\s*handleKeyDown\)/)
@@ -138,3 +138,6 @@ String.raw`  assert.match(groundCanonical, /window\.addEventListener\('keydown',
   assert.ok(includesCanonical(groundWorld, 'onReset: resetOrientation'))
   assert.ok(includesCanonical(groundWorld, '<MobileMovementPad'))
   assert.ok(includesCanonical(groundWorld, 'Escape returns Home.'))`)
+replaceOnce(restorationContract,
+String.raw`  assert.match(proof, /page\.locator\('\.urai-home-spatial-threshold'\)/)`,
+String.raw`  assert.match(proof, /getByRole\('navigation', \{ name: 'Direct Home destinations' \}\)/)`)
