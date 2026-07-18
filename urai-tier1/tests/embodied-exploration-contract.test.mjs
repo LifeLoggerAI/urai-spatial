@@ -44,7 +44,7 @@ test('shared movement kernel owns stable input listeners, calm motion, boundarie
   assert.doesNotMatch(kernel, /sprint|jump|crouch/i)
 })
 
-test('Home is an inhabitable sanctuary with allocation-free proximity checks and direct access parity', () => {
+test('Home is an inhabitable sanctuary with one physical Orb and direct access parity', () => {
   assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
   assert.match(home, /aria-label="Open Life Map directly"/)
@@ -53,6 +53,9 @@ test('Home is an inhabitable sanctuary with allocation-free proximity checks and
   assert.match(home, /data-home-movement="walk-keyboard-click-touch"/)
   assert.match(home, /data-home-pointer-lock="false"/)
   assert.match(home, /home-walkable-sanctuary-floor/)
+  assert.match(home, /data-testid="urai-home-webgl-orb"/)
+  assert.match(worldShell, /world\.destination !== 'life-map' && world\.destination !== 'home'/)
+  assert.doesNotMatch(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'\s*$/m)
   assert.match(home, /walkTarget\.current = new THREE\.Vector3/)
   assert.match(home, /HOME_BOUNDS/)
   assert.match(home, /HOME_OBSTACLES/)
