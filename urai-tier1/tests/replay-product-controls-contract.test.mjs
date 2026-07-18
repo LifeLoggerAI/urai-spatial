@@ -34,6 +34,9 @@ test('Replay ignores stale authenticated reads and retries after a memory switch
   assert.ok((client.match(/if \(!activeRequest\) return/g) ?? []).length >= 2)
   assert.match(client, /activeRequest = false\s*\n\s*window\.removeEventListener\('online', retry\)/)
   assert.match(client, /operations\.correction\?\.nextValue \?\? memory\.summary \?\? ''/)
+  assert.match(client, /const current = readReplayOperationState\(window\.localStorage, memory\.ownerId, memory\.id\)/)
+  assert.match(client, /pending: current\.pending/)
+  assert.match(client, /if \(navigator\.onLine\) void retry\(\)/)
 })
 
 test('Replay persistence requires authenticated ownership and uses an existing protected collection', () => {
