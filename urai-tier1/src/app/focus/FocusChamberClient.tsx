@@ -297,15 +297,21 @@ export default function FocusChamberClient() {
         </button>
       </section>
 
-      <aside className={styles.meaning} aria-label="Memory details">
-        <p>{memory.narrator.focus}</p>
-        <dl>
-          <div><dt>Emotion</dt><dd>{memory.emotionalState || 'Not recorded'}</dd></div>
-          <div><dt>Place</dt><dd>{place}</dd></div>
-          <div><dt>People</dt><dd>{people}</dd></div>
-          <div><dt>Privacy</dt><dd>{memory.privacy}</dd></div>
-        </dl>
-      </aside>
+      <details className={styles.meaning}>
+        <summary>
+          <span>Memory details</span>
+          <strong>{memory.privacy === 'hidden' ? 'Held private' : memory.emotionalState || memory.privacy}</strong>
+        </summary>
+        <div className={styles.meaningPanel}>
+          <p>{memory.narrator.focus}</p>
+          <dl>
+            <div><dt>Emotion</dt><dd>{memory.emotionalState || 'Not recorded'}</dd></div>
+            <div><dt>Place</dt><dd>{place}</dd></div>
+            <div><dt>People</dt><dd>{people}</dd></div>
+            <div><dt>Privacy</dt><dd>{memory.privacy}</dd></div>
+          </dl>
+        </div>
+      </details>
 
       <nav className={styles.navigation} aria-label="Focus navigation">
         <button type="button" onClick={returnToLifeMap}>← Return to Life Map</button>
