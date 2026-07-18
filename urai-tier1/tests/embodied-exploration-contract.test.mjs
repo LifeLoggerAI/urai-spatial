@@ -13,6 +13,7 @@ const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
 const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
+const routeOwnerCss = read('src/spatial/world/routeOwnerConvergence.css')
 const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
 
 test('shared movement kernel owns stable input listeners, calm motion, boundaries and collision', () => {
@@ -46,10 +47,14 @@ test('shared movement kernel owns stable input listeners, calm motion, boundarie
   assert.doesNotMatch(kernel, /sprint|jump|crouch/i)
 })
 
-test('Home has one visible physical Orb with the shared travel menu anchored to it', () => {
+test('Home has one authored visible Orb with transparent physical and semantic interaction owners', () => {
   assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
   assert.match(home, /data-testid="urai-home-webgl-orb"/)
+  assert.match(home, /name="home-authored-orb-physical-hit-target"/)
+  assert.match(home, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.15\)/)
+  assert.match(home, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+  assert.doesNotMatch(home, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(worldShell, /const anchorToPhysicalHomeOrb = world\.destination === 'home'/)
   assert.match(worldShell, /<PersistentWorldCompanion anchorToPhysicalHomeOrb=\{anchorToPhysicalHomeOrb\}/)
@@ -60,6 +65,8 @@ test('Home has one visible physical Orb with the shared travel menu anchored to 
   assert.match(companionCss, /data-home-physical-orb-anchor='true'[\s\S]*background: transparent/)
   assert.match(companionCss, /data-home-physical-orb-anchor='true'[\s\S]*box-shadow: none/)
   assert.match(companionCss, /data-home-physical-orb-anchor='true'[\s\S]*\.urai-world-companion__orb::before[\s\S]*display: none/)
+  assert.match(routeOwnerCss, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb[\s\S]*background:\s*transparent\s*!important/)
+  assert.match(routeOwnerCss, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(worldShell, /world\.destination !== 'life-map' && world\.destination !== 'home'/)
   assert.match(home, /aria-label="Open Life Map directly"/)
   assert.match(home, /aria-label="Open Ground directly"/)
