@@ -12,6 +12,7 @@ test('accessibility and performance implementation contracts are present', () =>
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
   const adaptiveQuality = read('src/spatial/performance/useAdaptiveSpatialQuality.ts')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
+  const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
   const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
@@ -45,6 +46,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
+  requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
+  requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
 
   requireText(companionCss, 'width: 64px;')
   requireText(companionCss, 'height: 64px;')
