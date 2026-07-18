@@ -26,7 +26,7 @@ for (const asset of launch.assets) {
   requireCondition(!paths.has(asset.fixedPath), `duplicate launch asset path: ${asset.fixedPath}`)
   requireCondition(Boolean(asset.fallback), `launch asset ${asset.id} must retain a fallback`)
   requireCondition(Boolean(asset.license) && !/unknown/i.test(asset.license), `launch asset ${asset.id} must have a known license`)
-  requireCondition(asset.releaseState !== 'ready', `launch asset ${asset.id} may not be marked ready by the preparation lane`)
+  requireCondition(asset.releaseState !== 'ready' && asset.releaseState !== 'production-ready', `launch asset ${asset.id} may not be marked ready or production-ready by the preparation lane`)
   ids.add(asset.id)
   paths.add(asset.fixedPath)
 }
