@@ -25,7 +25,7 @@ function parseState(value: unknown): ReplayServerState {
   }
 }
 
-const safeDocumentToken = (value: string) => value.replaceAll(':', '_')
+const safeDocumentToken = (value: string) => encodeURIComponent(value)
 const stateDocumentId = (memoryId: string) => `state-${safeDocumentToken(memoryId)}`
 const operationDocumentId = (operationId: string) => `operation-${safeDocumentToken(operationId)}`
 
