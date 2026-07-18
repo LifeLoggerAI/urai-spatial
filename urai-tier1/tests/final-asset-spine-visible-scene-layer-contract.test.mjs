@@ -15,7 +15,7 @@ test('final asset spine remains an evidence bridge, not a visible route owner', 
   assert.doesNotMatch(layout, /<UraiFinalAssetSpineSceneLayer\s*\/>/)
   assert.match(layout, /<UraiFinalAssetSpineBridge\s*\/>/)
   assert.match(bridge, /data-urai-final-asset-spine="runtime-consumed"/)
-  assert.match(bridge, /position:\s*'fixed'/)
+  assert.match(bridge, /position:\s*['"]fixed['"]/)
   assert.match(bridge, /width:\s*1/)
   assert.match(bridge, /height:\s*1/)
   assert.match(bridge, /opacity:\s*0/)
