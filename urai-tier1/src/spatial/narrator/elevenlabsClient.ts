@@ -1,3 +1,5 @@
+import { getAuth } from "firebase/auth";
+import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
 import type { NarratorLine } from "./narratorTypes";
 
 const memoryCache = new Map<string, Blob>();
@@ -12,50 +14,43 @@ function hashLine(line: NarratorLine): string {
   return `urai-narrator-${Math.abs(hash).toString(36)}`;
 }
 
-async function blobFromCache(key: string): Promise<Blob | null> {
-  if (typeof caches === "undefined") return null;
-  try {
-    const cache = await caches.open("urai-narrator-audio-v1");
-    const match = await cache.match(key);
-    return match ? await match.blob() : null;
-  } catch {
-    return null;
-  }
-}
+export async function requestNarratorAudio(
+  line: NarratorLine,
+  signal?: AbortSignal,
+  externalProcessingConsent = false,
+): Promise<Blob | null> {
+  // Provider narration remains disabled until the current user explicitly opts
+  // into sending this text to the configured external voice processor.
+  if (!externalProcessingConsent || !firebasePublicEnvReady) return null;
 
-async function saveBlobToCache(key: string, blob: Blob): Promise<void> {
-  if (typeof caches === "undefined") return;
-  try {
-    const cache = await caches.open("urai-narrator-audio-v1");
-    await cache.put(key, new Response(blob, { headers: { "Content-Type": "audio/mpeg" } }));
-  } catch {
-    // noop fallback
-  }
-}
+  const user = getAuth(app).currentUser;
+  if (!user) return null;
+  const token = await user.getIdToken();
+  if (!token) return null;
 
-export async function requestNarratorAudio(line: NarratorLine, signal?: AbortSignal): Promise<Blob | null> {
   const key = hashLine(line);
   const mem = memoryCache.get(key);
   if (mem) return mem;
-
-  const cached = await blobFromCache(key);
-  if (cached) {
-    memoryCache.set(key, cached);
-    return cached;
-  }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const res = await fetch("/api/urai/narrator/elevenlabs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         signal,
-        body: JSON.stringify({ text: line.text, voiceId: line.voiceId, tone: line.tone }),
+        body: JSON.stringify({
+          text: line.text,
+          voiceId: line.voiceId,
+          tone: line.tone,
+          externalProcessingConsent: true,
+        }),
       });
       if (!res.ok) throw new Error(`Narrator audio request failed: ${res.status}`);
       const blob = await res.blob();
       memoryCache.set(key, blob);
-      await saveBlobToCache(key, blob);
       return blob;
     } catch (err) {
       if (signal?.aborted) return null;
