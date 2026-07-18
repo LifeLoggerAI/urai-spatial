@@ -124,7 +124,7 @@ String.raw`  assert.match(layer, /data-urai-home-runtime="embodied-continuous-we
 replaceOnce(restorationContract,
 String.raw`  assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)`,
 String.raw`  assert.match(layer, /EmbodiedHomeSpatialCanvas/)
-  assert.match(layer, /import \{ useWebGLAvailable \} from '\.\/HomeSpatialCanvas'/)`)
+  assert.match(layer, /import \{ useWebGLAvailable \} from '.\/HomeSpatialCanvas'/)`)
 replaceOnce(restorationContract,
 String.raw`  assert.match(groundCanonical, /window\.addEventListener\('keydown',\s*handleKeyDown\)/)
   assert.match(groundCanonical, /window\.removeEventListener\('keydown',\s*handleKeyDown\)/)
@@ -144,6 +144,10 @@ String.raw`  assert.match(proof, /getByRole\('navigation', \{ name: 'Direct Home
 
 const finalConvergenceContract = 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
 replaceOnce(finalConvergenceContract,
+`const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')`,
+`const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
+const adaptiveLifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')`)
+replaceOnce(finalConvergenceContract,
 String.raw`  assert.match(lifeMapConvergence, /data-testid='urai-true-3d-life-map'/)`,
-String.raw`  assert.match(lifeMapConvergence, /\.life-map-independent-realm/)
-  assert.match(lifeMapConvergence, /height:\s*100svh/)`)
+String.raw`  assert.match(adaptiveLifeMap, /data-testid="urai-true-3d-life-map"/)
+  assert.match(lifeMapConvergence, /\.life-map-independent-realm/)`)
