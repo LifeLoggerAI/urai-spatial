@@ -13,7 +13,7 @@ const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
 const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
 
-test('shared movement kernel owns calm keyboard, touch, damping, boundaries and collision', () => {
+test('shared movement kernel owns stable input listeners, calm motion, boundaries and collision', () => {
   for (const marker of [
     'KeyW', 'KeyA', 'KeyS', 'KeyD',
     'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight',
@@ -24,27 +24,42 @@ test('shared movement kernel owns calm keyboard, touch, damping, boundaries and 
     'MobileMovementPad',
     'MovementHelp',
     'arrivalRadius',
+    'callbacksRef',
+    'MOTION_REQUESTED',
+    'MOTION_FORWARD',
+    'MOTION_RIGHT',
+    'MOTION_NEXT',
   ]) assert.match(kernel, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.match(kernel, /callbacksRef\.current = \{ onEscape, onInteract, onReset \}/)
+  assert.match(kernel, /\}, \[enabled\]\)/)
+  assert.match(kernel, /const requested = MOTION_REQUESTED\.set\(0, 0, 0\)/)
+  assert.match(kernel, /const next = MOTION_NEXT\.copy\(position\)/)
   assert.match(kernel, /target\.current = null/)
   assert.match(kernel, /next\.x = THREE\.MathUtils\.clamp/)
   assert.match(kernel, /next\.z = THREE\.MathUtils\.clamp/)
   assert.match(kernel, /distance >= obstacle\.radius/)
+  assert.doesNotMatch(kernel, /useEffect\([\s\S]*?\}, \[enabled, onEscape, onInteract, onReset\]\)/)
+  assert.doesNotMatch(kernel, /const requested = new THREE\.Vector3\(\)/)
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY/)
   assert.doesNotMatch(kernel, /sprint|jump|crouch/i)
 })
 
-test('Home is an inhabitable sanctuary with physical approach and direct access parity', () => {
+test('Home is an inhabitable sanctuary with allocation-free proximity checks and direct access parity', () => {
   assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
-  assert.match(homeRuntime, /Open Life Map directly/)
-  assert.match(homeRuntime, /Open Ground directly/)
-  assert.match(homeRuntime, /Open Orb directly/)
+  assert.match(home, /aria-label="Open Life Map directly"/)
+  assert.match(home, /aria-label="Open Ground directly"/)
+  assert.match(home, /aria-label="Open Orb directly"/)
   assert.match(home, /data-home-movement="walk-keyboard-click-touch"/)
   assert.match(home, /data-home-pointer-lock="false"/)
   assert.match(home, /home-walkable-sanctuary-floor/)
   assert.match(home, /walkTarget\.current = new THREE\.Vector3/)
   assert.match(home, /HOME_BOUNDS/)
-  assert.match(home, /obstacles:\s*\[/)
+  assert.match(home, /HOME_OBSTACLES/)
+  assert.match(home, /const dOrb = distance2D/)
+  assert.match(home, /let minDistance = Number\.POSITIVE_INFINITY/)
+  assert.doesNotMatch(home, /const candidates:/)
+  assert.doesNotMatch(home, /candidates\.sort/)
   assert.match(home, /nearby\.current === 'orb'/)
   assert.match(home, /nearby\.current === 'avatar'/)
   assert.match(home, /nearby\.current === 'ground'/)
@@ -56,7 +71,7 @@ test('Home is an inhabitable sanctuary with physical approach and direct access 
   assert.doesNotMatch(home, /requestPointerLock|sprint|jump|crouch/i)
 })
 
-test('Ground is walkable infrastructure with paths, Nexus, chamber thresholds and semantic fast travel', () => {
+test('Ground is walkable infrastructure with memoized paths and collision ownership', () => {
   assert.match(ground, /EmbodiedGroundScene/)
   assert.match(ground, /data-ground-exploration="walkable"/)
   assert.match(ground, /data-ground-pointer-lock="false"/)
@@ -69,7 +84,11 @@ test('Ground is walkable infrastructure with paths, Nexus, chamber thresholds an
   assert.match(groundScene, /ground-central-nexus/)
   assert.match(groundScene, /ground-enterable-threshold-/)
   assert.match(groundScene, /ground-workforce-and-council-presences/)
-  assert.match(groundScene, /DESTINATIONS\.map\(\(destination\) => \(\{ x: destination\.position\[0\]/)
+  assert.match(groundScene, /const GROUND_OBSTACLES = DESTINATIONS\.map/)
+  assert.match(groundScene, /const \{ paths, mainPoints \} = useMemo/)
+  assert.match(groundScene, /<Line points=\{mainPoints\}/)
+  assert.match(groundScene, /obstacles: GROUND_OBSTACLES/)
+  assert.doesNotMatch(groundScene, /obstacles: DESTINATIONS\.map/)
   assert.match(groundScene, /destination\.workforceState === 'blocked'/)
   assert.match(groundScene, /destination\.availability === 'offline'/)
   assert.match(groundScene, /Press Enter or tap again to cross the threshold/)
