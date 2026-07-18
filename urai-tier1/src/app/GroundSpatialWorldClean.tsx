@@ -47,15 +47,24 @@ export default function GroundSpatialWorldClean() {
     return clearNavigationTimer
   }, [clearNavigationTimer])
 
-  const artStyle = {
-    '--ground-provider-desktop': assetCssStack(groundAssets.primary),
-    '--ground-provider-mobile': assetCssStack(groundAssets.mobile),
-  } as CSSProperties
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target instanceof HTMLElement ? event.target : null
+      const interactiveTarget = Boolean(target?.closest('a,button,input,textarea,select,[contenteditable="true"]'))
 
-  return (
-    <main className="ground-spatial-root" style={artStyle} aria-label="URAI Ground embodied private infrastructure" data-testid="urai-ground-private-workforce-world" tabIndex={0} onKeyDown={(event) => {
-      if (event.key === 'Escape') { clearNavigationTimer(); setActiveId(null); router.push('/home?returnFrom=ground') }
-      if (event.key === 'Enter' && active) navigate(active)
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        clearNavigationTimer()
+        setActiveId(null)
+        router.push('/home?returnFrom=ground')
+        return
+      }
+      if (event.key === 'Enter' && active && !interactiveTarget) {
+        event.preventDefault()
+        navigate(active)
+        return
+      }
+      if (interactiveTarget) return
       if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
         event.preventDefault()
         const currentIndex = DESTINATIONS.findIndex((destination) => destination.id === activeId)
@@ -68,7 +77,19 @@ export default function GroundSpatialWorldClean() {
         const nextIndex = currentIndex === -1 ? DESTINATIONS.length - 1 : (currentIndex - 1 + DESTINATIONS.length) % DESTINATIONS.length
         setActiveId(DESTINATIONS[nextIndex].id)
       }
-    }}>
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [active, activeId, clearNavigationTimer, navigate, router])
+
+  const artStyle = {
+    '--ground-provider-desktop': assetCssStack(groundAssets.primary),
+    '--ground-provider-mobile': assetCssStack(groundAssets.mobile),
+  } as CSSProperties
+
+  return (
+    <main className="ground-spatial-root" style={artStyle} aria-label="URAI Ground embodied private infrastructure" data-testid="urai-ground-private-workforce-world">
       <div className="ground-authored-art" aria-hidden="true" />
       <div className="ground-atmosphere" aria-hidden="true" />
       <div className="ground-title" aria-hidden="true"><span>URAI Ground</span><strong>Private infrastructure, embodied.</strong></div>
