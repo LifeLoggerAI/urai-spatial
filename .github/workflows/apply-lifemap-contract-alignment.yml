@@ -1,0 +1,91 @@
+name: Apply Life Map contract alignment
+
+on:
+  push:
+    branches:
+      - automation/lifemap-contract-alignment-20260718
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-contract-alignment-20260718
+  cancel-in-progress: false
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact Life Map child
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/life-map-independent-universe-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify unchanged authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='dd214b7b9b6b2e750c0cd343c1ec35cfa15638e4'
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$expected" || { echo "Refusing to patch moved head: $actual"; exit 1; }
+          test "$(git status --porcelain)" = ""
+
+      - name: Align semantic marker and current-canon contracts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          scene_path = Path('urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx')
+          scene = scene_path.read_text()
+          scene = replace_once(
+              scene,
+              '<details className="life-map-accessibility-menu">',
+              '<details className="life-map-accessibility-menu" aria-label="URAI Life Map route portals">',
+              'semantic Life Map portal label',
+          )
+          scene_path.write_text(scene)
+
+          trust_path = Path('urai-tier1/tests/lifemap-trust-loop.test.mjs')
+          trust = trust_path.read_text()
+          trust = replace_once(
+              trust,
+              "const universeSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapUniverseData.ts', import.meta.url), 'utf8')\n",
+              "const universeSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapUniverseData.ts', import.meta.url), 'utf8')\nconst convergenceCss = readFileSync(new URL('../src/spatial/world/lifeMapConvergence.css', import.meta.url), 'utf8')\n",
+              'Life Map CSS source registration',
+          )
+          trust = replace_once(
+              trust,
+              '''test('final galaxy keeps private selected-star state inside the route owner', () => {\n  assert.ok(sceneSource.includes('const [selectedId, setSelectedId]'))\n  assert.ok(sceneSource.includes('const selectedNode = useMemo'))\n  assert.ok(sceneSource.includes('The Life Map is open. Select a star'))\n  assert.ok(sceneSource.includes('Orb companion'))\n  assert.ok(sceneSource.includes('private memories awake'))\n})''',
+              '''test('final galaxy keeps private selected-star state and truth boundaries inside the route owner', () => {\n  assert.ok(sceneSource.includes('const [selectedId, setSelectedId]'))\n  assert.ok(sceneSource.includes('const selectedNode = useMemo'))\n  assert.ok(sceneSource.includes('The Life Map is open. Select a star'))\n  assert.ok(!sceneSource.includes('Orb companion'))\n  assert.ok(sceneSource.includes('data-home-companion-owned="false"'))\n  assert.ok(sceneSource.includes('data-life-map-source={usingSeedData ? "explicit-sample" : "private"}'))\n  assert.ok(sceneSource.includes('Sample constellation · not your memories'))\n})''',
+              'private selected-star current-canon contract',
+          )
+          trust = replace_once(
+              trust,
+              '''test('mobile dock remains stacked above route navigation', () => {\n  assert.ok(sceneSource.includes('bottom-20 left-1/2 z-30'))\n  assert.ok(sceneSource.includes('bottom-4 left-1/2 z-20'))\n  assert.ok(sceneSource.includes('w-[min(540px,calc(100vw-34px))]'))\n  assert.ok(sceneSource.includes('max-w-[calc(100vw-24px)]'))\n})''',
+              '''test('mobile Life Map controls retain safe-area containment and explicit stacking', () => {\n  assert.match(convergenceCss, /\\.life-map-accessibility-menu\\s*\\{[\\s\\S]*?z-index:\\s*28;/)\n  assert.match(convergenceCss, /top:\\s*max\\(14px, env\\(safe-area-inset-top\\)\\)/)\n  assert.match(convergenceCss, /right:\\s*max\\(14px, env\\(safe-area-inset-right\\)\\)/)\n  assert.match(convergenceCss, /\\.life-map-memory-portals\\s*\\{[\\s\\S]*?max-width:\\s*min\\(320px, calc\\(100vw - 32px\\)\\);/)\n  assert.match(convergenceCss, /@media \\(max-width: 760px\\)/)\n  assert.match(convergenceCss, /\\.life-map-memory-portals button[\\s\\S]*?min-height:\\s*42px;/)\n  assert.match(convergenceCss, /env\\(safe-area-inset-bottom\\)/)\n})''',
+              'mobile safe-area current-canon contract',
+          )
+          trust_path.write_text(trust)
+          PY
+
+          git diff --check
+          git diff --stat
+
+      - name: Commit bounded alignment
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-trust-loop.test.mjs
+          git commit -m 'Align Life Map contracts with Orb-free route owner'
+          git push origin HEAD:fix/life-map-independent-universe-20260718
