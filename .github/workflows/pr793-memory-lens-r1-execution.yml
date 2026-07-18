@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: pr793-memory-lens-r2-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   SOURCE_BASE: 50e5e883ebea050c30795e0ff934860b7caf567f
