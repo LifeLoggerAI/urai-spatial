@@ -95,10 +95,14 @@ test.describe('Embodied exploration runtime evidence', () => {
 
     await page.keyboard.press('d')
     await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
+    const selectedMemoryId = new URL(page.url()).searchParams.get('memoryId')
+    expect(selectedMemoryId).toBeTruthy()
     await expect(page.locator('.life-map-memory-portals')).toBeVisible()
 
     await page.keyboard.press('r')
-    await expect.poll(() => normalizedPathname(page.url()) + new URL(page.url()).search).toBe('/life-map')
+    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
+    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
     await expect(page.getByRole('status').filter({ hasText: /whole private constellation/i })).toBeVisible()
 
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
