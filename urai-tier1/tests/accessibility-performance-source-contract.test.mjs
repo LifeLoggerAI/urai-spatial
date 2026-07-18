@@ -84,6 +84,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(focusCss, '@media (prefers-reduced-motion: reduce)')
   requireText(cinematicFocusCss, '@media (prefers-reduced-motion: reduce)')
   requireText(cinematicFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
+  assert.equal(cinematicFocusCss.includes('min-height: 44px;'), false, 'Short-landscape Focus controls must retain 48px targets')
+  requireText(cinematicFocusCss, ".cinematic details summary {\n    min-height: 48px;")
   requireText(landscapeFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
   for (const workflowPath of [
     'urai-tier1/src/app/focus/FocusChamber.module.css',
@@ -92,8 +94,10 @@ test('accessibility and performance implementation contracts are present', () =>
     'urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx',
     'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx',
     'urai-tier1/src/spatial/memory/selectedMemoryContract.ts',
+    'urai-tier1/src/spatial/world/UraiWorldShell.tsx',
     'urai-tier1/src/spatial/world/WorldStateProvider.tsx',
     'urai-tier1/src/spatial/world/WorldTransitionController.tsx',
+    'urai-tier1/src/spatial/world/worldEvents.ts',
   ]) {
     requireText(accessibilityWorkflow, workflowPath, `Accessibility evidence must trigger for ${workflowPath}`)
   }
