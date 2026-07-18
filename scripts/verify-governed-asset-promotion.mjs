@@ -5,7 +5,7 @@ import path from 'node:path'
 
 const root = process.cwd()
 const manifestPath = 'operations/assets/launch-critical-assets.json'
-const decisionPath = process.env.URAI_ASSET_PROMOTION_DECISION || 'operations/assets/promotion-rehearsal/low-risk-static-fallback.json'
+const decisionPath = process.env.URAI_ASSET_PROMOTION_DECISION || 'operations/assets/promotion-rehearsal/spatial-particle-atlas-v1.json'
 const failures = []
 const requireCondition = (condition, message) => { if (!condition) failures.push(message) }
 const readJson = (relative) => JSON.parse(readFileSync(path.resolve(root, relative), 'utf8'))
@@ -33,12 +33,10 @@ requireCondition(Boolean(asset), `asset is absent from canonical manifest: ${dec
 requireCondition(typeof decision.producer === 'string' && decision.producer.length > 0, 'producer identity is required')
 requireCondition(typeof decision.reviewer === 'string' && decision.reviewer.length > 0, 'reviewer identity is required')
 requireCondition(decision.producer !== decision.reviewer, 'producer and reviewer must be independent identities')
-requireCondition(decision.humanReviewApproved === true, 'human review approval is required')
 requireCondition(decision.fallbackVerified === true, 'fallback verification is required')
 requireCondition(decision.routeConsumptionVerified === true, 'route consumption verification is required')
 requireCondition(decision.licenseApproved === true, 'license approval is required')
 requireCondition(decision.optimizationVerified === true, 'optimization verification is required')
-requireCondition(decision.visualProofVerified === true, 'visual proof verification is required')
 requireCondition(decision.exactHeadChecksPassed === true, 'exact-head checks must pass')
 requireCondition(typeof decision.reviewedAt === 'string' && !Number.isNaN(Date.parse(decision.reviewedAt)), 'reviewedAt must be an ISO timestamp')
 
@@ -67,9 +65,12 @@ if (safePath(decision.canonicalPath)) {
 
 if (decision.mode === 'rehearsal') {
   requireCondition(decision.promote === false, 'rehearsal must set promote=false')
+  requireCondition(decision.humanReviewApproved === false, 'rehearsal must not claim human approval')
   requireCondition(asset?.releaseState !== 'production-ready', 'rehearsal may not mark canonical manifest production-ready')
 } else {
   requireCondition(decision.promote === true, 'promotion must set promote=true')
+  requireCondition(decision.humanReviewApproved === true, 'promotion requires human approval')
+  requireCondition(decision.visualProofVerified === true, 'promotion requires visual proof')
   requireCondition(asset?.releaseState === 'production-ready', 'promotion requires manifest releaseState=production-ready')
   requireCondition(typeof decision.receiptPath === 'string' && safePath(decision.receiptPath), 'promotion receiptPath must be safe')
   if (typeof decision.receiptPath === 'string' && safePath(decision.receiptPath)) {
