@@ -1,0 +1,61 @@
+/* Final composition order for the authored Life Map.
+ * The live R3F field remains interactive and visible, but it screen-composites
+ * over the provider-authored memory universe instead of obscuring it with black
+ * route overlays and prototype slabs.
+ */
+
+[data-testid='urai-r3f-canonical-lifemap'][data-life-map-active-visual='authored-memory-universe']
+  main[data-testid='urai-true-3d-life-map'] {
+  background: transparent !important;
+  mix-blend-mode: screen !important;
+}
+
+[data-testid='urai-r3f-canonical-lifemap'][data-life-map-active-visual='authored-memory-universe']
+  main[data-testid='urai-true-3d-life-map']
+  .life-map-cosmic-wash {
+  opacity: .48 !important;
+  background:
+    radial-gradient(circle at 22% 28%, rgba(72, 214, 255, .09), transparent 28%),
+    radial-gradient(circle at 76% 42%, rgba(159, 92, 255, .08), transparent 32%),
+    transparent !important;
+  mix-blend-mode: screen !important;
+}
+
+[data-testid='urai-r3f-canonical-lifemap'][data-life-map-active-visual='authored-memory-universe']
+  main[data-testid='urai-true-3d-life-map']
+  .life-map-depth-vignette {
+  opacity: .16 !important;
+  mix-blend-mode: screen !important;
+}
+
+[data-testid='urai-r3f-canonical-lifemap'][data-life-map-active-visual='authored-memory-universe']
+  main[data-testid='urai-true-3d-life-map']
+  .life-map-parallax-layer {
+  mix-blend-mode: screen !important;
+}
+
+[data-testid='urai-r3f-canonical-lifemap'][data-life-map-active-visual='authored-memory-universe']
+  main[data-testid='urai-true-3d-life-map']
+  canvas {
+  opacity: .52 !important;
+  background: transparent !important;
+  mix-blend-mode: screen !important;
+  filter: brightness(1.42) saturate(1.32) contrast(1.04) !important;
+}
+
+@media (max-width: 760px) {
+  [data-testid='urai-r3f-canonical-lifemap'][data-life-map-active-visual='authored-memory-universe']
+    main[data-testid='urai-true-3d-life-map']
+    canvas {
+    opacity: .42 !important;
+  }
+
+  .urai-lifemap-deep-link-controls {
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  [data-testid='urai-true-3d-life-map'] .life-map-whisper {
+    bottom: max(128px, calc(env(safe-area-inset-bottom) + 118px)) !important;
+    opacity: .72;
+  }
+}
