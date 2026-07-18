@@ -68,6 +68,13 @@ test('same-path Focus travel normalizes static-export slashes and returns the wo
   assert.match(worldTransition, /if \(samePath\) cancelTransitionRef\.current\(\)/)
 })
 
+test('world travel preserves disclosed demo mode across Replay return paths', () => {
+  assert.match(worldTransition, /const CONTEXT_KEYS = \[/)
+  assert.match(worldTransition, /'demo',/)
+  assert.match(worldTransition, /if \(!target\.searchParams\.has\(key\) && current\.has\(key\)\)/)
+  assert.match(worldTransition, /target\.searchParams\.set\(key, current\.get\(key\) \?\? ''\)/)
+})
+
 test('demo-mode storage is best effort and cannot crash private Focus resolution', () => {
   assert.match(explicitDemo, /try \{/)
   assert.match(explicitDemo, /window\.localStorage\.getItem\('urai:lifeMapDemoMode'\)/)
