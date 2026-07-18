@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url'
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const read = (relativePath) => fs.readFileSync(path.resolve(testDirectory, '..', relativePath), 'utf8')
 const requireText = (source, marker, message = marker) => assert.equal(source.includes(marker), true, message)
+const normalizeSource = (source) => source.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ')
+const requireNormalizedPattern = (source, pattern, message) => assert.match(normalizeSource(source), pattern, message)
 
 test('accessibility and performance implementation contracts are present', () => {
   const reducedMotion = read('src/spatial/hooks/useReducedMotion.ts')
@@ -14,7 +16,9 @@ test('accessibility and performance implementation contracts are present', () =>
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
   const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
-  const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
+  const routeOwnerCss = read('src/spatial/world/routeOwnerConvergence.css')
+  const homeCapability = read('src/app/HomeSpatialCanvas.tsx')
+  const embodiedHome = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
@@ -48,6 +52,16 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, 'aria-label="Return through the world"')
   requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
   requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
+  requireText(routeOwnerCss, ".urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb")
+  requireText(routeOwnerCss, 'background: transparent !important;')
+  requireText(routeOwnerCss, 'box-shadow: none !important;')
+  requireText(routeOwnerCss, 'width: 96px !important;')
+  requireText(routeOwnerCss, 'height: 96px !important;')
+  requireText(routeOwnerCss, "data-open='true'] .urai-world-companion__orb")
+  requireText(routeOwnerCss, 'position: relative !important;')
+  requireText(routeOwnerCss, 'left: auto !important;')
+  requireText(routeOwnerCss, 'top: auto !important;')
+  requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
 
   requireText(companionCss, 'width: 64px;')
   requireText(companionCss, 'height: 64px;')
@@ -56,7 +70,12 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companionCss, 'env(safe-area-inset-bottom)')
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
 
-  requireText(homeCanvas, "canvas.getContext('webgl2') ?? canvas.getContext('webgl')")
+  requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
+  requireText(homeRuntime, 'EmbodiedHomeSpatialCanvas')
+  requireText(embodiedHome, 'name="home-authored-orb-physical-hit-target"')
+  requireText(embodiedHome, 'const ORB_POSITION = new THREE.Vector3(0, 1.55, -1.15)')
+  requireText(embodiedHome, '<meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />')
+  assert.doesNotMatch(embodiedHome, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/, 'Embodied Home must not paint a second Orb over the authored sanctuary Orb')
   requireText(homeFallback, 'data-testid="urai-home-accessible-fallback"')
   requireText(homeFallback, '<HomeSpatialWorldFinal />')
   requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
@@ -65,9 +84,14 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
   requireText(homeRuntime, 'role="status"')
 
-  requireText(ground, "event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' })")
+  requireText(ground, 'event.currentTarget.scrollIntoView')
+  requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
+  requireNormalizedPattern(ground, /inline:\s*'center'/, 'Ground focus reveal must center the destination inline')
   assert.equal(ground.includes('min-height:44px'), false, 'Ground destinations must not retain 44px targets')
   requireText(ground, 'min-height:48px')
+  assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
+  requireText(routeOwnerCss, 'max-width: 100vw !important;')
+  requireText(routeOwnerCss, 'max-height: 100svh !important;')
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
@@ -85,9 +109,9 @@ test('accessibility and performance implementation contracts are present', () =>
     'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024',
     'JOURNEY_CYCLES = 5',
     "serverMode: 'static-export'",
-    "WEBGL_debug_renderer_info",
-    "NOT_AVAILABLE_HARDWARE_RENDERER",
-    "hardwareAcceleration",
+    'WEBGL_debug_renderer_info',
+    'NOT_AVAILABLE_HARDWARE_RENDERER',
+    'hardwareAcceleration',
   ]) {
     requireText(performanceMetrics, marker)
   }

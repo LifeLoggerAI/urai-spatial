@@ -35,7 +35,27 @@ const replacements = new Map([
   ],
   [
     '    const found = await firstVisible(page, check.selectors)',
-    "    let found = await firstVisible(page, check.selectors)\n    if (!found) {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
+    `    let found = await firstVisible(page, check.selectors)
+    if (!found && check.name === 'life-map-to-focus') {
+      const mapControls = page.locator('summary:has-text("Map controls")')
+      if (await mapControls.isVisible({ timeout: 1200 }).catch(() => false)) {
+        await mapControls.click({ timeout: 10000 })
+        const firstMemory = page.locator('.life-map-accessibility-menu button').filter({ hasNotText: /Enter Focus|Replay|Overview|Ground|Home/i }).first()
+        if (await firstMemory.isVisible({ timeout: 1200 }).catch(() => false)) {
+          await firstMemory.click({ timeout: 10000 })
+          await page.waitForTimeout(350)
+          found = await firstVisible(page, check.selectors)
+        }
+      }
+    }
+    if (!found && check.name !== 'life-map-to-focus') {
+      const orb = page.locator('button[aria-label="Open Orb travel controls"]')
+      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {
+        await orb.click({ timeout: 10000 })
+        await page.waitForTimeout(250)
+        found = await firstVisible(page, check.selectors)
+      }
+    }`,
   ],
   [
     '      const action = await clickOrFollowHref(page, found.locator)',

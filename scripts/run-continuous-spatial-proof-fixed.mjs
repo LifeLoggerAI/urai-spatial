@@ -38,7 +38,7 @@ if (!source.includes("const selectedControl = page.getByRole('button', { name: '
   )
 }
 
-if (!source.includes('sceneLabelRetired')) {
+if (!source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVisible')) {
   replaceRequired(
     'Home verifier',
     /const sceneLabels = page\.locator\('\.urai-home-spatial-portal-label'\)\s*const sceneLabelCount = await sceneLabels\.count\(\)\s*const visibleSceneLabelCount = await visibleElementCount\(sceneLabels\)\s*const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1/,
