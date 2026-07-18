@@ -2,6 +2,10 @@
   min-width: 0;
 }
 
+:global([data-testid="urai-final-focus-chamber"][data-memory-status] > section[role]) {
+  background: transparent;
+}
+
 @media (orientation: landscape) and (max-height: 520px) {
   .focusTargetGuard details summary {
     min-height: 48px;
