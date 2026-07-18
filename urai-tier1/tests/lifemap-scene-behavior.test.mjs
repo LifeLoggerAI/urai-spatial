@@ -9,6 +9,7 @@ const source = fs.readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMa
 const convergenceCss = fs.readFileSync(new URL('../src/spatial/world/lifeMapConvergence.css', import.meta.url), 'utf8')
 const interactionCss = fs.readFileSync(new URL('../src/spatial/world/lifeMapIndependentInteraction.css', import.meta.url), 'utf8')
 const eventSource = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
+const visualWorkflow = fs.readFileSync(new URL('../../.github/workflows/continuous-spatial-visual-proof.yml', import.meta.url), 'utf8')
 
 test('LifeMap route uses the final canonical adaptive scene chain', () => {
   assert.match(page, /SpatialLifeMapCanonical/, 'Life Map route must render SpatialLifeMapCanonical.')
@@ -85,6 +86,7 @@ test('LifeMap visual language is layered, authored, adaptive, mobile-safe, and n
   assert.match(convergenceCss, /100svh/, 'Life Map must own the full viewport.')
   assert.match(convergenceCss, /@media \(max-width: 430px\)/, 'Life Map must preserve an explicit narrow-phone composition.')
   assert.match(convergenceCss, /prefers-reduced-motion: reduce/, 'Life Map must preserve a reduced-motion equivalent.')
+  assert.ok(visualWorkflow.includes("NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'"), 'Retained visual proof must render explicit sample memories instead of an empty signed-out field.')
 })
 
 test('LifeMap wheel input, independent controls, and WebGL lifecycle remain production-safe', () => {
@@ -101,6 +103,7 @@ test('LifeMap wheel input, independent controls, and WebGL lifecycle remain prod
   assert.ok(source.includes('Life Map protected mode'), 'Context loss must preserve an operable semantic experience.')
   assert.match(interactionCss, /\.life-map-canvas[\s\S]*touch-action:\s*none/, 'Camera gestures must stay on the visual field.')
   assert.match(interactionCss, /\.life-map-accessibility-menu[\s\S]*touch-action:\s*pan-y/, 'The non-Orb controls layer must remain independently scrollable.')
+  assert.match(interactionCss, /life-map-accessibility-menu:not\(\[open\]\) > div[\s\S]*display:\s*none\s*!important/, 'Map controls must stay closed until the user explicitly opens details.')
   assert.match(interactionCss, /life-map-whisper[\s\S]*display:\s*block\s*!important/, 'Life Map narration must override obsolete route-level suppression.')
   assert.ok(source.includes('data-life-map-whisper="true"'), 'Narration must expose the exact override marker and live-region owner.')
   assert.ok(source.includes('event.stopImmediatePropagation()'), 'Life Map Escape must stop the shell listener on the same event.')
