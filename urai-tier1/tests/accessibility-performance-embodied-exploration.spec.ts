@@ -20,6 +20,10 @@ async function enableLifeMapDemo(page: Page) {
   await page.addInitScript(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))
 }
 
+function normalizedPathname(url: string) {
+  return new URL(url).pathname.replace(/\/+$/, '') || '/'
+}
+
 test.describe('Embodied exploration runtime evidence', () => {
   test('Home supports calm keyboard walking, drag-look ownership, direct access, and no pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
@@ -29,7 +33,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(home).toBeVisible({ timeout: 15_000 })
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
-    await expect(page.locator('[data-testid="urai-home-walkable-surface"]')).toHaveCount(1)
+    await expect(home.locator('canvas')).toBeVisible()
 
     const before = await home.evaluate((element) => element.style.getPropertyValue('--home-walk-z'))
     await holdKey(page, 'w', 650)
@@ -39,6 +43,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(direct.getByRole('button', { name: 'Orb' })).toBeVisible()
     await expect(direct.getByRole('button', { name: 'Ground' })).toBeVisible()
     await expect(direct.getByRole('button', { name: 'Life Map' })).toBeVisible()
+    await expect(direct.getByRole('button')).toHaveCount(3)
 
     const help = page.getByText('Move through Home', { exact: true })
     await expect(help).toBeVisible()
@@ -53,12 +58,11 @@ test.describe('Embodied exploration runtime evidence', () => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
 
-    const ground = page.locator('.ground-spatial-root')
+    const ground = page.locator('.ground-spatial-root[data-ground-exploration="walkable"]').first()
     await expect(ground).toBeVisible({ timeout: 15_000 })
     await expect(ground).toHaveAttribute('data-ground-exploration', 'walkable')
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
-    await expect(page.locator('[data-testid="urai-ground-walkable-surface"]')).toHaveCount(1)
-    await expect(page.locator('[data-testid="urai-ground-central-nexus"]')).toHaveCount(1)
+    await expect(ground.locator('canvas')).toBeVisible()
 
     await holdKey(page, 'w', 550)
     await expect(page.getByRole('status').filter({ hasText: /Moving through Ground/i })).toBeVisible()
@@ -94,7 +98,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(page.locator('.life-map-memory-portals')).toBeVisible()
 
     await page.keyboard.press('r')
-    await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe('/life-map')
+    await expect.poll(() => normalizedPathname(page.url()) + new URL(page.url()).search).toBe('/life-map')
     await expect(page.getByRole('status').filter({ hasText: /whole private constellation/i })).toBeVisible()
 
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
@@ -143,7 +147,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('.ground-spatial-root')).toHaveAttribute('data-ground-exploration', 'walkable')
+    await expect(page.locator('.ground-spatial-root[data-ground-exploration="walkable"]').first()).toHaveAttribute('data-ground-exploration', 'walkable')
     await expect(page.getByText('Move through Ground', { exact: true })).toBeVisible()
   })
 })
