@@ -33,6 +33,10 @@ test('AdaptiveLifeMapScene preserves authored memory artifacts and selected-memo
 
 test('LifeMap memory surfaces scale by quality and state without leaking replaced textures', () => {
   assert.ok(source.includes('function createMemorySurface(node: LifeMapNode, resolution: number)'), 'Memory surfaces must accept an explicit allocation size.')
+  assert.ok(source.includes('const compact = resolution < 192'), 'Low-resolution memories must use a compact visual mode.')
+  assert.ok(source.includes('compact ? "rgba(1,5,16,.98)"'), 'Compact memories must begin from a dark spatial field rather than a pale slab.')
+  assert.ok(source.includes('if (!compact)'), 'Compact memories must not downsample title-card text into blank-looking rectangles.')
+  assert.ok(source.includes('overview ? breath * 0.72'), 'Overview memories must remain subordinate to the galaxy.')
   assert.ok(source.includes('const designScale = resolution / 768'), 'Scaled surfaces must preserve the authored 768-coordinate drawing system.')
   assert.ok(source.includes('ctx.scale(designScale, designScale)'), 'The 2D drawing context must be scaled rather than rewriting art coordinates.')
   assert.match(source, /selected\s*\?\s*profile\.tier === "high"\s*\?\s*512\s*:\s*384/, 'Only selected memories may receive the high-resolution profile allocation.')

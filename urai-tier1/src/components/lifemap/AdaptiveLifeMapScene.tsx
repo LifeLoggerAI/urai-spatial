@@ -136,10 +136,11 @@ function createMemorySurface(node: LifeMapNode, resolution: number) {
   const designScale = resolution / 768;
   ctx.scale(designScale, designScale);
   const aura = node.aura || "#8adfff";
+  const compact = resolution < 192;
   const deep = ctx.createLinearGradient(80, 40, 688, 728);
-  deep.addColorStop(0, "rgba(230,250,255,.96)");
-  deep.addColorStop(0.08, hexToRgba(aura, 0.92));
-  deep.addColorStop(0.46, "rgba(8,20,48,.98)");
+  deep.addColorStop(0, compact ? "rgba(1,5,16,.98)" : "rgba(230,250,255,.96)");
+  deep.addColorStop(0.08, hexToRgba(aura, compact ? 0.26 : 0.92));
+  deep.addColorStop(0.46, compact ? "rgba(3,12,28,.99)" : "rgba(8,20,48,.98)");
   deep.addColorStop(1, "rgba(1,4,14,.99)");
 
   roundedRect(ctx, 52, 52, 664, 664, 78);
@@ -161,7 +162,7 @@ function createMemorySurface(node: LifeMapNode, resolution: number) {
     const x = 80 + ((Math.sin(index * 17.13 + node.id.length) * 0.5 + 0.5) * 610);
     const y = 80 + ((Math.cos(index * 11.71 + node.title.length) * 0.5 + 0.5) * 560);
     const radius = 1.2 + (index % 5) * 0.55;
-    ctx.fillStyle = index % 4 === 0 ? "rgba(255,255,255,.78)" : hexToRgba(aura, 0.48);
+    ctx.fillStyle = index % 4 === 0 ? compact ? "rgba(255,255,255,.38)" : "rgba(255,255,255,.78)" : hexToRgba(aura, compact ? 0.32 : 0.48);
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -252,23 +253,25 @@ function createMemorySurface(node: LifeMapNode, resolution: number) {
   ctx.fillStyle = lower;
   ctx.fillRect(64, 420, 640, 284);
 
-  ctx.fillStyle = "rgba(235,250,255,.72)";
-  ctx.font = "700 22px system-ui, sans-serif";
-  ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), 108, 552);
+  if (!compact) {
+    ctx.fillStyle = "rgba(235,250,255,.72)";
+    ctx.font = "700 22px system-ui, sans-serif";
+    ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), 108, 552);
 
-  ctx.fillStyle = "rgba(255,255,255,.98)";
-  ctx.font = "800 40px system-ui, sans-serif";
-  const title = node.title.length > 28 ? `${node.title.slice(0, 26)}…` : node.title;
-  ctx.fillText(title, 108, 608);
+    ctx.fillStyle = "rgba(255,255,255,.98)";
+    ctx.font = "800 40px system-ui, sans-serif";
+    const title = node.title.length > 28 ? `${node.title.slice(0, 26)}…` : node.title;
+    ctx.fillText(title, 108, 608);
 
-  ctx.fillStyle = "rgba(219,241,255,.72)";
-  ctx.font = "600 22px system-ui, sans-serif";
-  ctx.fillText(node.dateLabel, 108, 648);
+    ctx.fillStyle = "rgba(219,241,255,.72)";
+    ctx.font = "600 22px system-ui, sans-serif";
+    ctx.fillText(node.dateLabel, 108, 648);
+  }
 
   ctx.restore();
 
   roundedRect(ctx, 52, 52, 664, 664, 78);
-  ctx.strokeStyle = "rgba(235,252,255,.42)";
+  ctx.strokeStyle = compact ? hexToRgba(aura, 0.58) : "rgba(235,252,255,.42)";
   ctx.lineWidth = 5;
   ctx.stroke();
 
@@ -629,10 +632,10 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
     group.current.quaternion.slerp(camera.quaternion, profile.reducedMotion ? 1 : 0.075);
     if (!profile.reducedMotion && profile.documentVisible) {
       const breath = 1 + Math.sin(clock.elapsedTime * (0.52 + node.intensity) + node.position[0]) * 0.026;
-      group.current.scale.setScalar(selected ? breath * 1.26 : related ? breath : breath * 0.78);
+      group.current.scale.setScalar(selected ? breath * 1.26 : overview ? breath * 0.72 : related ? breath : breath * 0.72);
       group.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.22 + node.position[2]) * 0.035;
     }
-    if (glass.current) glass.current.opacity = selected ? 0.34 : related ? 0.16 : 0.06;
+    if (glass.current) glass.current.opacity = selected ? 0.34 : overview ? 0.06 : related ? 0.16 : 0.05;
   });
 
   const choose = (event: ThreeEvent<MouseEvent>) => {
@@ -649,7 +652,7 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
         scale={[scale * 1.12, scale * 1.12, 1]}
       >
         <planeGeometry args={[1.42, 1.42, 1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 1 : related ? 0.88 : 0.42} toneMapped={false} />
+        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 1 : overview ? 0.68 : related ? 0.88 : 0.42} toneMapped={false} />
       </mesh>
 
       <mesh position={[0, 0, -0.045]} scale={[scale * 1.27, scale * 1.27, 1]}>
