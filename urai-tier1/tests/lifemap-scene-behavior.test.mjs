@@ -59,9 +59,13 @@ test('LifeMap memories route into Focus and Replay with selected identity', () =
   assert.ok(source.includes('router.replace(`/life-map?${next.toString()}`'), 'Selection must remain inside Life Map before explicit navigation.')
 })
 
-test('LifeMap visual language is layered, adaptive, mobile-safe, and not primitive-only', () => {
+test('LifeMap visual language is layered, authored, adaptive, mobile-safe, and not primitive-only', () => {
   assert.ok(canonical.includes('lifeMapAssets.primary'), 'Life Map must use the registered primary asset stack.')
-  assert.ok(canonical.includes('assetCssStack'), 'Life Map must render the canonical asset stack.')
+  assert.ok(canonical.includes('assetCssStack'), 'Life Map must render the canonical fallback asset stack.')
+  assert.ok(canonical.includes('data-life-map-authored-universe="primary"'), 'The authored galaxy must remain an explicit visible owner.')
+  assert.ok(canonical.includes('lifeMapAssets.mobile.src'), 'The visible universe must switch to the registered mobile crop.')
+  assert.ok(canonical.includes('mixBlendMode: "screen"'), 'The authored universe must blend over dark WebGL geometry instead of being erased by it.')
+  assert.ok(canonical.includes('opacity: .78'), 'The authored universe must not regress to a nearly invisible decorative tint.')
   assert.ok(source.includes('<Canvas'), 'Life Map must keep the true R3F canvas.')
   assert.ok(source.includes('useAdaptiveSpatialQuality'), 'Life Map must adapt rendering quality and reduced motion.')
   assert.ok(source.includes('<ContinuityNexus'), 'Life Map must use an asymmetric continuity structure rather than the Home Orb.')
