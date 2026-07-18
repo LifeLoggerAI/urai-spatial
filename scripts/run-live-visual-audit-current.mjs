@@ -34,6 +34,10 @@ const replacements = new Map([
     `start: '/focus?${demoMemoryQuery}',`,
   ],
   [
+    '  const startUrl = absolute(check.start)',
+    "  if (check.name === 'life-map-to-focus') {\n    await page.addInitScript(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))\n  }\n\n  const startUrl = absolute(check.start)",
+  ],
+  [
     '    const found = await firstVisible(page, check.selectors)',
     "    let found = await firstVisible(page, check.selectors)\n    if (!found && check.name === 'life-map-to-focus') {\n      const semanticStar = page.locator('[aria-label=\"Semantic Life Map\"] button').first()\n      if (await semanticStar.count()) {\n        await semanticStar.click({ force: true, timeout: 10000 })\n        await page.waitForTimeout(450)\n        found = await firstVisible(page, check.selectors)\n      }\n    }\n    if (!found && check.name !== 'life-map-to-focus') {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
   ],
