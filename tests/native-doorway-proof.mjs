@@ -32,6 +32,10 @@ async function resolveTarget(page, doorway, method) {
   const orb = page.getByRole('button', { name: 'Open Orb travel controls', exact: true })
   await orb.waitFor({ state: 'visible', timeout: 15000 })
   await activate(orb, method)
+  await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'attached', timeout: 15000 })
+  if (method === 'keyboard') {
+    await page.waitForFunction(() => Boolean(document.activeElement?.closest('#urai-world-companion-menu')), null, { timeout: 15000 })
+  }
 
   const destination = page.getByRole('button', { name: doorway.name, exact: true })
   await destination.waitFor({ state: 'visible', timeout: 15000 })
