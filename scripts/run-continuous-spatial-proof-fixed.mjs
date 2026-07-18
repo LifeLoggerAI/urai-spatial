@@ -117,10 +117,90 @@ if (!source.includes('singleSelectedActionOwner')) {
   )
 }
 
+if (!source.includes("lifeMapMode: 'explicit-sample'")) {
+  replaceRequired(
+    'Life Map sample overview mode',
+    /id: 'life-map',\s*path: '\/life-map\/',/,
+    `id: 'life-map',
+    lifeMapMode: 'explicit-sample',
+    path: '/life-map/',`,
+  )
+  replaceRequired(
+    'Life Map sample selected mode',
+    /id: 'life-map-selected',\s*path: '\/life-map\/\?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',/,
+    `id: 'life-map-selected',
+    lifeMapMode: 'explicit-sample',
+    path: '/life-map/',`,
+  )
+  replaceRequired(
+    'Life Map private unavailable route',
+    /\n\]\n\nawait mkdir\(outputDir, \{ recursive: true \}\)/,
+    `,
+  {
+    id: 'life-map-private-unavailable',
+    lifeMapMode: 'private-unavailable',
+    path: '/life-map/',
+    ready: '[data-testid="urai-true-3d-life-map"] canvas',
+    waitForScene: waitForFirstSpatialFrame,
+    verify: async (page) => {
+      const canvasVisible = await page.locator('[data-testid="urai-true-3d-life-map"] canvas').first().isVisible()
+      const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
+      return { canvasVisible, canvasSized: canvas.canvasSized, ...canvas }
+    },
+  },
+]
+
+await mkdir(outputDir, { recursive: true })`,
+  )
+  replaceRequired(
+    'Life Map mode receipt',
+    /viewport: viewportId,\s*url,/,
+    `viewport: viewportId,
+    lifeMapMode: route.lifeMapMode || null,
+    url,`,
+  )
+  replaceRequired(
+    'Life Map browser state setup',
+    /\s*try \{\s*const response = await page\.goto\(url, \{ waitUntil: 'domcontentloaded', timeout: 60_000 \}\)/,
+    `
+  try {
+    if (route.lifeMapMode === 'explicit-sample') {
+      await page.addInitScript(() => {
+        window.localStorage.setItem('urai:lifeMapDemoMode', 'true')
+        window.localStorage.removeItem('urai:userId')
+      })
+    } else if (route.lifeMapMode === 'private-unavailable') {
+      await page.addInitScript(() => {
+        window.localStorage.removeItem('urai:lifeMapDemoMode')
+        window.localStorage.removeItem('urai:userId')
+      })
+    }
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })`,
+  )
+  replaceRequired(
+    'Life Map state-specific verification',
+    /capture\.verification = await route\.verify\(page\)\s*await takeScreenshot/,
+    `capture.verification = await route.verify(page)
+    if (route.lifeMapMode === 'explicit-sample') {
+      const root = page.locator('[data-testid="urai-true-3d-life-map"]').first()
+      capture.verification.explicitSampleSource = await root.getAttribute('data-life-map-source') === 'explicit-sample'
+      capture.verification.sampleDisclosureVisible = await visibleElementCount(page.locator('.life-map-sample-boundary')) === 1
+      capture.verification.sampleMemoryControlsPresent = await page.locator('.life-map-accessibility-menu button').count() >= 8
+    } else if (route.lifeMapMode === 'private-unavailable') {
+      const root = page.locator('[data-testid="urai-true-3d-life-map"]').first()
+      const whisper = await page.locator('.life-map-whisper').innerText()
+      capture.verification.privateSource = await root.getAttribute('data-life-map-source') === 'private'
+      capture.verification.sampleDisclosureAbsent = await page.locator('.life-map-sample-boundary').count() === 0
+      capture.verification.privateUnavailableVisible = whisper.includes('Private constellation unavailable')
+    }
+    await takeScreenshot`,
+  )
+}
+
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)
