@@ -1,4 +1,5 @@
 name: Canonical six-fix isolated execution
+# trigger: isolated canonical execution 2026-07-18T17:25:00Z
 
 on:
   pull_request:
