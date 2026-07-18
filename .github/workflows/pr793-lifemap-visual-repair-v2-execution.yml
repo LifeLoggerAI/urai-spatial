@@ -1,0 +1,132 @@
+name: PR 793 Life Map visual repair v2 execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-seven-fix-clean-r3-20260718
+    paths:
+      - .github/workflows/pr793-lifemap-visual-repair-v2-execution.yml
+      - scripts/one-shot-pr793-lifemap-visual-repair.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr793-lifemap-visual-repair-v2-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: 50e5e883ebea050c30795e0ff934860b7caf567f
+  SOURCE_BRANCH: exec/pr793-lifemap-visual-repair-v2-20260718
+  PRODUCT_BRANCH: product/canonical-seven-fix-clean-r3-20260718
+
+jobs:
+  repair-test-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/pr793-lifemap-visual-repair-v2-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout exact isolated head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove authority and apply bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          expected_exec="$(printf '%s\n' .github/workflows/pr793-lifemap-visual-repair-v2-execution.yml scripts/one-shot-pr793-lifemap-visual-repair.mjs | sort)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$expected_exec"
+          node scripts/one-shot-pr793-lifemap-visual-repair.mjs 2>&1 | tee /tmp/pr793-lifemap-visual-v2-apply.log
+          git diff --check
+          expected_product="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$expected_product"
+
+      - name: Install exact dependencies
+        run: |
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run full unit contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/pr793-lifemap-visual-v2-unit.log
+
+      - name: Typecheck exact candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/pr793-lifemap-visual-v2-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/pr793-lifemap-visual-v2-build.log
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install exact Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run Life Map browser regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts accessibility-performance-lifemap-independent.spec.ts --project=chromium 2>&1 | tee /tmp/pr793-lifemap-visual-v2-browser.log
+
+      - name: Capture exact visual proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr793-lifemap-visual-v2-artifact
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/pr793-lifemap-visual-v2-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/pr793-lifemap-visual-v2-artifact \
+          URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
+            node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee /tmp/pr793-lifemap-visual-v2-capture.log
+
+      - name: Publish one clean two-file product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr793-lifemap-v2-clean/urai-tier1/src/components/lifemap /tmp/pr793-lifemap-v2-clean/urai-tier1/tests
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/pr793-lifemap-v2-clean/urai-tier1/src/components/lifemap/
+          cp urai-tier1/tests/lifemap-scene-behavior.test.mjs /tmp/pr793-lifemap-v2-clean/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/pr793-lifemap-v2-clean/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/pr793-lifemap-v2-clean/urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/
+          git diff --check
+          expected_product="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$expected_product"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): replace debug nexus with authored continuity threads"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          git rev-parse HEAD | tee /tmp/pr793-lifemap-visual-v2-product-sha.log
+
+      - name: Retain exact repair evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr793-lifemap-visual-repair-v2-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/pr793-lifemap-visual-v2-*.log
+            /tmp/pr793-lifemap-visual-v2-artifact
+          if-no-files-found: ignore
+          retention-days: 90
