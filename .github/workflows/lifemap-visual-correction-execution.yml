@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/lifemap-visual-correction-execution.yml
       - scripts/one-shot-lifemap-visual-correction.mjs
+      - scripts/one-shot-lifemap-visual-performance-boundary.mjs
 
 permissions:
   contents: write
@@ -42,8 +43,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/lifemap-visual-correction-execution.yml scripts/one-shot-lifemap-visual-correction.mjs | sort)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/lifemap-visual-correction-execution.yml scripts/one-shot-lifemap-visual-correction.mjs scripts/one-shot-lifemap-visual-performance-boundary.mjs | sort)"
           node scripts/one-shot-lifemap-visual-correction.mjs 2>&1 | tee /tmp/lifemap-visual-correction-apply.log
+          node scripts/one-shot-lifemap-visual-performance-boundary.mjs 2>&1 | tee -a /tmp/lifemap-visual-correction-apply.log
           git diff --check
           test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx urai-tier1/src/spatial/world/lifeMapIndependentInteraction.css urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
 
@@ -71,6 +73,7 @@ jobs:
         run: |
           set -o pipefail
           corepack pnpm build:static 2>&1 | tee /tmp/lifemap-visual-correction-build.log
+          test -f urai-tier1/out/life-map/index.html
 
       - name: Install exact Chromium
         run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
