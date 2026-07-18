@@ -58,7 +58,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companionCss, 'env(safe-area-inset-bottom)')
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
 
-  requireNormalizedPattern(homeCanvas, /canvas\.getContext\('webgl2'\)\s*\?\?\s*canvas\.getContext\('webgl'\)/, 'Home must test WebGL2 and WebGL capability')
+  requireNormalizedPattern(homeCanvas, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
   requireText(homeFallback, 'data-testid="urai-home-accessible-fallback"')
   requireText(homeFallback, '<HomeSpatialWorldFinal />')
   requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
