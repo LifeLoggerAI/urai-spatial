@@ -34,6 +34,9 @@ test('shared movement kernel owns calm keyboard, touch, damping, boundaries and 
 test('Home is an inhabitable sanctuary with physical approach and direct access parity', () => {
   assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
+  assert.match(homeRuntime, /Open Life Map directly/)
+  assert.match(homeRuntime, /Open Ground directly/)
+  assert.match(homeRuntime, /Open Orb directly/)
   assert.match(home, /data-home-movement="walk-keyboard-click-touch"/)
   assert.match(home, /data-home-pointer-lock="false"/)
   assert.match(home, /home-walkable-sanctuary-floor/)
