@@ -110,6 +110,13 @@ function normalizePath(value) {
   return value === '/' ? '/' : value.replace(/\/+$/, '') || '/'
 }
 
+function artifactSafeFilename(value) {
+  return value
+    .replace(/[<>:"/\\|?*=&\u0000-\u001F]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'root'
+}
+
 function sortedSearchEntries(value) {
   return [...new URL(value).searchParams.entries()].sort(([leftKey, leftValue], [rightKey, rightValue]) =>
     leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
@@ -355,7 +362,7 @@ async function runReleaseControlSmoke() {
         if (identityCheck) await verifyHydratedIdentity(page, identityCheck, profileName)
         const html = await page.content()
         if (!html.includes(expectedSha)) throw new Error(`Hydrated browser route ${route} is missing exact release SHA on ${profileName}`)
-        const filename = `${profileName}-${route.replace(/[/?=&]+/g, '-').replace(/^-|-$/g, '') || 'root'}.png`
+        const filename = `${profileName}-${artifactSafeFilename(route)}.png`
         await page.screenshot({ path: `${out}/${filename}`, fullPage: true, animations: 'disabled' })
         report.screenshots.push(filename)
       }
