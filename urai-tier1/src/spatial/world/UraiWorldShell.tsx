@@ -18,7 +18,7 @@ import './lifeMapIndependentInteraction.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  const showWorldCompanion = world.destination !== 'life-map'
+  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'home'
 
   return (
     <div
