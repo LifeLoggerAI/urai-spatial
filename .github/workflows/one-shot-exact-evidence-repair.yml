@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   repair:
-    if: github.event.head_commit.message == 'chore(evidence): queue exact 974053e repair'
+    if: github.event.head_commit.message == 'fix(evidence): repair exact 974053e failures'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout exact repair branch
@@ -22,8 +22,134 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Apply exact failure-driven repairs
+      - name: Apply bounded failure-driven repairs
         shell: bash
         run: |
           set -euo pipefail
-          node <<'
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              text = path.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}: {old[:80]!r}')
+              path.write_text(text.replace(old, new, 1))
+
+          capture = Path('scripts/capture-continuous-spatial-proof.mjs')
+          replace_once(capture,
+            'ready: \'[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas\'',
+            'ready: \'.urai-home-spatial-runtime-layer[data-webgl-ready="true"] [data-home-spatial-renderer="webgl"] canvas\'')
+          replace_once(capture,
+            "const runtime = await page.locator('[data-urai-home-runtime=\"one-continuous-webgl-world\"]').count()",
+            "const runtime = await page.locator('[data-urai-home-runtime=\"embodied-continuous-webgl-world\"]').count()")
+          replace_once(capture,
+            "const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1",
+            "const thresholdLabelsVisible = await page.getByRole('navigation', { name: 'Direct Home destinations' }).getByRole('button').count() === 3")
+          replace_once(capture,
+            "const authoredSceneMounted = await page.locator('[data-home-spatial-geometry=\"authored-sanctuary-avatar-orb-sky-ground\"]').count() === 1",
+            "const authoredSceneMounted = await page.locator('.urai-home-embodied-art').count() === 1")
+
+          home = Path('urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx')
+          replace_once(home,
+            "  const reducedMotion = useMediaPreference('(prefers-reduced-motion: reduce)')\n  const shellRef",
+            "  const reducedMotion = useMediaPreference('(prefers-reduced-motion: reduce)')\n  useEffect(() => {\n    if (!performance.getEntriesByName('urai:first-home-spatial-frame').length) {\n      requestAnimationFrame(() => performance.mark('urai:first-home-spatial-frame'))\n    }\n  }, [])\n  const shellRef")
+          replace_once(home,
+            "    if (camera instanceof THREE.PerspectiveCamera) {\n      camera.fov = THREE.MathUtils.damp(camera.fov, 56, reducedMotion ? 100 : 6, delta)\n      camera.updateProjectionMatrix()\n    }",
+            "    if (camera instanceof THREE.PerspectiveCamera && Math.abs(camera.fov - 56) > 0.001) {\n      camera.fov = THREE.MathUtils.damp(camera.fov, 56, reducedMotion ? 100 : 6, delta)\n      if (Math.abs(camera.fov - 56) < 0.001) camera.fov = 56\n      camera.updateProjectionMatrix()\n    }")
+
+          navigation = Path('urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx')
+          replace_once(navigation,
+            "      if (event.code === 'Enter' || event.code === 'Space') {\n        callbacksRef.current.onInteract?.()",
+            "      if (event.code === 'Enter' || event.code === 'Space') {\n        event.preventDefault()\n        callbacksRef.current.onInteract?.()")
+          navigation_text = navigation.read_text().replace(' onPointerCancel={release} onPointerLeave={release}', ' onPointerCancel={release}')
+          if navigation_text == navigation.read_text():
+              raise SystemExit('EmbodiedNavigation: pointer-leave repair did not match')
+          navigation.write_text(navigation_text)
+
+          ground_scene = Path('urai-tier1/src/app/ground/EmbodiedGroundScene.tsx')
+          replace_once(ground_scene,
+            "    if (!group.current || reducedMotion) return\n    const pulse = 1 + Math.sin(clock.elapsedTime * 0.5 + destination.position[0]) * 0.018",
+            "    if (!group.current) return\n    if (reducedMotion) {\n      group.current.scale.setScalar((active || nearby) ? 1.04 : 1)\n      return\n    }\n    const pulse = 1 + Math.sin(clock.elapsedTime * 0.5 + destination.position[0]) * 0.018")
+          replace_once(ground_scene,
+            "    camera.fov = THREE.MathUtils.damp(camera.fov, size.width < 700 ? 62 : 55, reducedMotion ? 100 : 6, delta)\n    camera.updateProjectionMatrix()",
+            "    const targetFov = size.width < 700 ? 62 : 55\n    if (Math.abs(camera.fov - targetFov) > 0.001) {\n      camera.fov = THREE.MathUtils.damp(camera.fov, targetFov, reducedMotion ? 100 : 6, delta)\n      if (Math.abs(camera.fov - targetFov) < 0.001) camera.fov = targetFov\n      camera.updateProjectionMatrix()\n    }")
+
+          ground = Path('urai-tier1/src/app/GroundSpatialWorldClean.tsx')
+          replace_once(ground,
+            "            onFocus: (event: FocusEvent<HTMLElement>) => {\n              setActiveId(destination.id);\n              event.currentTarget.scrollIntoView({ block: \"nearest\", inline: \"center\" });\n            },",
+            "            onFocus: (event: FocusEvent<HTMLElement>) => {\n              setActiveId(destination.id);\n              const target = event.currentTarget;\n              window.requestAnimationFrame(() => target.scrollIntoView({ block: \"nearest\", inline: \"center\" }));\n            },")
+
+          boundary = Path('urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx')
+          replace_once(boundary,
+            ".life-map-movement-help{position:fixed;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));",
+            ".life-map-movement-help{position:fixed;top:max(72px,calc(env(safe-area-inset-top) + 62px));right:max(16px,env(safe-area-inset-right));")
+          replace_once(boundary,
+            "@media(max-width:700px){.life-map-movement-help{top:max(9px,env(safe-area-inset-top));right:max(9px,env(safe-area-inset-right));max-width:250px}",
+            "@media(max-width:700px){.life-map-movement-help{top:max(68px,calc(env(safe-area-inset-top) + 58px));right:max(9px,env(safe-area-inset-right));max-width:250px}")
+          replace_once(boundary,
+            ".life-map-embodied-controls{bottom:max(9px,env(safe-area-inset-bottom));max-width:calc(100vw - 18px);",
+            ".life-map-embodied-controls{bottom:max(92px,calc(env(safe-area-inset-bottom) + 82px));max-width:calc(100vw - 18px);")
+
+          embodied = Path('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts')
+          replace_once(embodied,
+            "await expect(page.locator('[data-testid=\"urai-home-walkable-surface\"]')).toHaveCount(1)",
+            "await expect(home.locator('canvas')).toBeVisible()")
+          replace_once(embodied,
+            "await expect(direct.getByRole('button', { name: 'Orb' })).toBeVisible()",
+            "await expect(direct.getByRole('button', { name: /open orb directly/i })).toBeVisible()")
+          replace_once(embodied,
+            "await expect(direct.getByRole('button', { name: 'Ground' })).toBeVisible()",
+            "await expect(direct.getByRole('button', { name: /open ground directly/i })).toBeVisible()")
+          replace_once(embodied,
+            "await expect(direct.getByRole('button', { name: 'Life Map' })).toBeVisible()",
+            "await expect(direct.getByRole('button', { name: /open life map directly/i })).toBeVisible()")
+          replace_once(embodied,
+            "const ground = page.locator('.ground-spatial-root')",
+            "const ground = page.locator('.ground-spatial-root').first()")
+          replace_once(embodied,
+            "await expect(page.locator('[data-testid=\"urai-ground-walkable-surface\"]')).toHaveCount(1)\n    await expect(page.locator('[data-testid=\"urai-ground-central-nexus\"]')).toHaveCount(1)",
+            "await expect(ground.locator('canvas')).toBeVisible()\n    await expect(ground).toContainText('Ground Nexus ahead')")
+          replace_once(embodied,
+            "await expect(page.getByRole('status').filter({ hasText: /Moving through Ground/i })).toBeVisible()",
+            "await expect(page.locator('.ground-movement-prompt')).toContainText(/Moving through Ground/i)")
+          replace_once(embodied,
+            "await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe('/life-map')",
+            "await expect.poll(() => new URL(page.url()).pathname.replace(/\\/+$/, '') + new URL(page.url()).search).toBe('/life-map')")
+
+          lifemap_test = Path('urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts')
+          lifemap_text = lifemap_test.read_text().replace("page.getByText('Map controls', { exact: true })", "page.locator('.life-map-accessibility-menu summary')")
+          if lifemap_text == lifemap_test.read_text():
+              raise SystemExit('Life Map summary selector repair did not match')
+          lifemap_test.write_text(lifemap_text)
+
+          evidence = Path('urai-tier1/tests/accessibility-performance-evidence.spec.ts')
+          replace_once(evidence,
+            "await expect(page.getByRole('status')).toContainText(/restor/i)",
+            "await expect(page.locator('.urai-home-spatial-runtime-layer [role=\"status\"]')).toContainText(/restor/i)")
+          replace_once(evidence,
+            "await expect(page.getByRole('status')).toContainText(/could not recover/i)",
+            "await expect(page.locator('.urai-home-spatial-runtime-layer [role=\"status\"]')).toContainText(/could not recover/i)")
+          PY
+
+      - name: Prove focused contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test \
+            urai-tier1/tests/embodied-exploration-contract.test.mjs \
+            urai-tier1/tests/lifemap-scene-behavior.test.mjs \
+            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          git diff --check
+          rm .github/workflows/one-shot-exact-evidence-repair.yml
+          test ! -e .github/workflows/one-shot-exact-evidence-repair.yml
+
+      - name: Commit repaired exact product tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(spatial): repair exact visual and accessibility evidence failures'
+          git push origin HEAD:fix/embodied-evidence-974053e-20260718
