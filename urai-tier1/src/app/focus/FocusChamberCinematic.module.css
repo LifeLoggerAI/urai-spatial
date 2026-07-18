@@ -80,6 +80,7 @@
   border: 1px solid color-mix(in srgb, var(--focus-light) 24%, transparent);
   background: radial-gradient(circle, transparent 0 43%, color-mix(in srgb, var(--focus-accent) 16%, transparent) 64%, transparent 72%);
   box-shadow: 0 0 34px var(--focus-accent), inset 0 0 28px color-mix(in srgb, var(--focus-accent) 12%, transparent);
+  animation: cinematicReplayBreathe 4.2s ease-in-out infinite;
 }
 
 .cinematic button[aria-describedby='focus-replay-description'] small,
@@ -227,6 +228,13 @@
 .recoveryCinematic section[role] > p:nth-of-type(2) {
   max-width: 50ch;
   color: rgba(239, 250, 255, .84);
+}
+
+@keyframes cinematicReplayBreathe {
+  50% {
+    transform: scale(1.08);
+    opacity: .76;
+  }
 }
 
 @media (max-width: 980px) {
