@@ -148,3 +148,17 @@ replaceOnce(finalConvergenceContract,
 String.raw`  assert.match(lifeMapConvergence, /aria-label='URAI Life Map route portals'/)`,
 String.raw`  assert.match(adaptiveLifeMap, />Ground<\/button>/)
   assert.match(adaptiveLifeMap, />Home<\/button>/)`)
+
+const doorwayContract = 'urai-tier1/tests/persistent-world-doorway-regression.test.mjs'
+replaceOnce(doorwayContract,
+String.raw`  assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
+  assert.match(visualAudit, /summary:has-text\("Map controls"\)/)
+  assert.match(visualAudit, /\.life-map-accessibility-menu button/)
+  assert.match(visualAudit, /check\.name !== 'life-map-to-focus'/)
+  assert.match(visualAudit, /Open Orb travel controls/)
+  assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)`,
+String.raw`  assert.match(visualAudit, /data-world-target=\\"focus\\"/)
+  assert.match(visualAudit, /firstVisible\(page, check\.selectors\)/)
+  assert.match(visualAudit, /Open Orb travel controls/)
+  assert.match(visualAudit, /clickOrFollowHref\(page, found\.locator\)/)
+  assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)`)
