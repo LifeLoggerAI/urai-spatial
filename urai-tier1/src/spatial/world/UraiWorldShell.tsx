@@ -19,9 +19,10 @@ import './embodiedExplorationLayout.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  // Embodied Home owns its physical, approachable Orb. Mounting the persistent
-  // companion there would create a second Orb and two competing control owners.
-  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'home'
+  // Life Map is an independent non-Orb realm. Home keeps the shared controller
+  // mounted, but routeOwnerConvergence makes its generated artwork transparent
+  // so the authored sanctuary Orb remains the only visible Orb.
+  const showWorldCompanion = world.destination !== 'life-map'
 
   return (
     <div
