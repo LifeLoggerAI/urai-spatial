@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: strict Orb-free doorway proof 2026-07-18T18:30:00Z
+# trigger: default Playwright project 2026-07-18T18:35:00Z
 
 on:
   pull_request:
@@ -90,7 +90,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-six-fix-browser.log
+          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-six-fix-browser.log
 
       - name: Publish one clean ten-file product commit
         id: publish
