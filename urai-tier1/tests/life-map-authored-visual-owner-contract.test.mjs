@@ -7,6 +7,7 @@ const selected = fs.readFileSync('src/spatial/lifemap/LifeMapDeepLinkControls.ts
 const globalProofCss = fs.readFileSync('src/app/continuous-spatial-proof-defects.css', 'utf8')
 const interactionCss = fs.readFileSync('src/spatial/world/lifeMapIndependentInteraction.css', 'utf8')
 const authoredVisualCss = fs.readFileSync('src/spatial/world/lifeMapAuthoredVisual.css', 'utf8')
+const authoredCompositeCss = fs.readFileSync('src/spatial/world/lifeMapAuthoredComposite.css', 'utf8')
 const worldShell = fs.readFileSync('src/spatial/world/UraiWorldShell.tsx', 'utf8')
 
 test('Life Map active owner is an authored memory universe rather than a black debug canvas', () => {
@@ -24,11 +25,15 @@ test('Life Map active owner is an authored memory universe rather than a black d
 
   assert.match(canonical, /VISUAL_MEMORIES[\s\S]*Relationship[\s\S]*Place[\s\S]*Turning point[\s\S]*Ritual[\s\S]*Recovery[\s\S]*Deep time/)
   assert.match(worldShell, /import '\.\/lifeMapAuthoredVisual\.css'/)
+  assert.match(worldShell, /import '\.\/lifeMapAuthoredComposite\.css'/)
   assert.match(authoredVisualCss, /data-life-map-active-visual='authored-memory-universe'/)
   assert.match(authoredVisualCss, /\.life-map-visual-spine\s*\{[\s\S]*?background-image:[\s\S]*?var\(--life-map-authored-world\)/)
   assert.match(authoredVisualCss, /\.life-map-memory-window\s*\{[\s\S]*?position:\s*absolute/)
   assert.match(authoredVisualCss, /@media \(max-width: 760px\)/)
   assert.match(authoredVisualCss, /@media \(prefers-reduced-motion: reduce\)/)
+  assert.match(authoredCompositeCss, /main\[data-testid='urai-true-3d-life-map'\][\s\S]*?mix-blend-mode:\s*screen\s*!important/)
+  assert.match(authoredCompositeCss, /canvas[\s\S]*?opacity:\s*\.52\s*!important[\s\S]*?mix-blend-mode:\s*screen\s*!important/)
+  assert.match(authoredCompositeCss, /\.life-map-depth-vignette[\s\S]*?opacity:\s*\.16\s*!important/)
   assert.doesNotMatch(canonical, /zIndex:\s*60[\s\S]*opacity:\s*\.08/)
 })
 
