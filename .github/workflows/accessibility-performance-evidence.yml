@@ -13,8 +13,15 @@ on:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'playwright.accessibility.config.ts'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
+      - 'urai-tier1/tests/accessibility-performance-*.test.mjs'
+      - 'urai-tier1/tests/focus-continuity-contract.test.mjs'
+      - 'urai-tier1/tests/selected-memory-production-contract.test.mjs'
+      - 'urai-tier1/scripts/run-unit-contract-tests*.mjs'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+      - 'urai-tier1/src/app/focus/FocusChamber.module.css'
+      - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
       - 'urai-tier1/src/spatial/world/persistentWorldCompanion.css'
 
@@ -32,7 +39,7 @@ env:
 jobs:
   evidence:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -68,10 +75,22 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Typecheck and build exact candidate
+      - name: Run focused unit and contract suite
+        shell: bash
         run: |
-          pnpm --dir urai-tier1 typecheck
-          pnpm build:static
+          set -euo pipefail
+          mkdir -p artifacts/accessibility-performance
+          pnpm --dir urai-tier1 test:unit \
+            2>&1 | tee artifacts/accessibility-performance/unit-contracts.log
+
+      - name: Typecheck and build exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 typecheck \
+            2>&1 | tee artifacts/accessibility-performance/typecheck.log
+          pnpm build:static \
+            2>&1 | tee artifacts/accessibility-performance/static-build.log
 
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium

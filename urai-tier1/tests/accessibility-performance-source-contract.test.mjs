@@ -18,6 +18,7 @@ test('accessibility and performance implementation contracts are present', () =>
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
+  const focusCss = read('src/app/focus/FocusChamber.module.css')
   const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
@@ -46,7 +47,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
-  requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
+  requireText(worldShell, "const COMPANION_FREE_DESTINATIONS = new Set(['life-map', 'focus'])")
+  requireText(worldShell, 'const showWorldCompanion = !COMPANION_FREE_DESTINATIONS.has(world.destination)')
   requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
 
   requireText(companionCss, 'width: 64px;')
@@ -70,12 +72,13 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(ground, 'min-height:48px')
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
-  assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
-  requireText(focus, 'min-height:48px')
-  requireText(focus, 'env(safe-area-inset-left)')
-  requireText(focus, 'env(safe-area-inset-right)')
-  requireText(focus, 'env(safe-area-inset-bottom)')
-  requireText(focus, '@media(prefers-reduced-motion:reduce)')
+  requireText(focus, 'data-orb-owner="none"')
+  assert.equal(focusCss.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
+  requireText(focusCss, 'min-height: 48px;')
+  requireText(focusCss, 'env(safe-area-inset-left)')
+  requireText(focusCss, 'env(safe-area-inset-right)')
+  requireText(focusCss, 'env(safe-area-inset-bottom)')
+  requireText(focusCss, '@media (prefers-reduced-motion: reduce)')
 
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
@@ -85,9 +88,9 @@ test('accessibility and performance implementation contracts are present', () =>
     'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024',
     'JOURNEY_CYCLES = 5',
     "serverMode: 'static-export'",
-    "WEBGL_debug_renderer_info",
-    "NOT_AVAILABLE_HARDWARE_RENDERER",
-    "hardwareAcceleration",
+    'WEBGL_debug_renderer_info',
+    'NOT_AVAILABLE_HARDWARE_RENDERER',
+    'hardwareAcceleration',
   ]) {
     requireText(performanceMetrics, marker)
   }

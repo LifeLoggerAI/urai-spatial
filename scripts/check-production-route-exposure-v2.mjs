@@ -59,8 +59,9 @@ requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', [
   "destination: 'replay'",
   "entryPortal: 'focus-memory-aperture'",
   'replayManifestId: memory.replayManifest.id',
-  'requestUraiWorldReturn()',
-  'aria-label={`Open Replay for ${memory.title}`}',
+  "destination: 'life-map'",
+  'data-orb-owner="none"',
+  'aria-describedby="focus-replay-description"',
 ])
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
 

@@ -13,7 +13,7 @@ const replacements = new Map([
   ["markers: ['Your real life has a place', 'private operating world']", "markers: ['URAI Ground', 'Private infrastructure, embodied.', 'Reception', 'Archive']"],
   ["markers: ['Life Map', 'Wheel', 'Drag', 'memory star']", "markers: ['URAI destination life-map.', 'World layer infrastructure-world.']"],
   ["route: '/focus?memoryId=quiet-reset',", `route: '/focus?${demoMemoryQuery}',`],
-  ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']"],
+  ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['The Quiet Reset', 'A disclosed demonstration of a quiet reset after sustained pressure.', 'Enter Replay']"],
   ["route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',", `route: '/replay?${demoMemoryQuery}',`],
   ["markers: ['World online', 'Route matrix', 'Tracked']", "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']"],
   ["markers: ['Step inside the Life Map', 'Quest', 'manual']", "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']"],
@@ -35,7 +35,7 @@ const replacements = new Map([
   ],
   [
     '    const found = await firstVisible(page, check.selectors)',
-    "    let found = await firstVisible(page, check.selectors)\n    if (!found) {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
+    "    if (check.name === 'life-map-to-focus') {\n      await page.evaluate(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))\n      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 })\n      await settle(page)\n    }\n    let found = await firstVisible(page, check.selectors)\n    if (!found && check.name === 'life-map-to-focus') {\n      const semanticStar = page.locator('[aria-label=\"Semantic Life Map\"] button').first()\n      if (await semanticStar.count()) {\n        await semanticStar.click({ force: true, timeout: 10000 })\n        await page.waitForTimeout(450)\n        found = await firstVisible(page, check.selectors)\n      }\n    }\n    if (!found && check.name !== 'life-map-to-focus') {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
   ],
   [
     '      const action = await clickOrFollowHref(page, found.locator)',

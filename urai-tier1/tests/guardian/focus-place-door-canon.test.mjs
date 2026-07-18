@@ -26,12 +26,14 @@ assert.match(door, /enterPlaceHref/, "FocusPlaceDoor must use enterPlaceHref.");
 assert.match(focusPage, /FocusChamberClient/, "Focus route must render the final focus chamber client owner.");
 assert.match(focusClient, /useSelectedMemory\(\)/, "Final Focus chamber must resolve the authenticated selected-memory contract.");
 assert.match(focusClient, /aria-label={`Open Replay for \${memory\.title}`}/, "Final Focus chamber must expose an accessible Replay portal action.");
-assert.match(focusClient, /requestUraiWorldTravel\(\{/, "Final Focus chamber must enter Replay through persistent world travel.");
+assert.match(focusClient, /requestUraiWorldTravel\(\{/, "Final Focus chamber must use persistent world travel.");
 assert.match(focusClient, /destination: 'replay'/, "Final Focus chamber must target the Replay destination.");
 assert.match(focusClient, /replayManifestId: memory\.replayManifest\.id/, "Final Focus chamber must preserve replay manifest identity.");
-assert.match(focusClient, /new URLSearchParams\(\{ memoryId: memory\.id, manifestId: memory\.replayManifest\.id, node: memory\.star\.id, from: 'focus-artifact' \}\)/, "Final Focus chamber must preserve selected memory identity in its Replay route.");
+assert.match(focusClient, /new URLSearchParams\(\{\s*memoryId: memory\.id,\s*manifestId: memory\.replayManifest\.id,\s*node: memory\.star\.id,\s*from: 'focus-memory-aperture',\s*\}\)/s, "Final Focus chamber must preserve selected memory identity in its Replay route.");
 assert.match(focusClient, /if \(!memory \|\| !replayHref\) return/, "Final Focus chamber must fail closed before Replay when no authorized memory exists.");
-assert.match(focusClient, /requestUraiWorldReturn\(\)/, "Final Focus chamber must retain deterministic world return.");
+assert.match(focusClient, /destination: 'life-map'/, "Final Focus chamber must return through the Life Map destination.");
+assert.match(focusClient, /context: \{\s*memoryId: memory\.star\.id,/s, "Final Focus chamber must restore the raw Life Map star identity.");
+assert.match(focusClient, /data-orb-owner="none"/, "Final Focus chamber must remain companion-free.");
 assert.match(memoryStar, /canEnterMemoryPlace/, "Memory star schema must define canEnterMemoryPlace.");
 
-console.log("URAI focus place doorway canon passed: place door remains available and authenticated Focus uses the selected-memory Replay portal contract.");
+console.log("URAI focus place doorway canon passed: place door remains available and authenticated Focus preserves exact Replay and Life Map identity.");

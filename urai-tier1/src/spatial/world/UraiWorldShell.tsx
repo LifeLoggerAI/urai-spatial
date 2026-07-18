@@ -14,9 +14,11 @@ import './lifeMapConvergence.css'
 import './routeOwnerConvergence.css'
 import './secondaryRealmConvergence.css'
 
+const COMPANION_FREE_DESTINATIONS = new Set(['life-map', 'focus'])
+
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  const showWorldCompanion = world.destination !== 'life-map'
+  const showWorldCompanion = !COMPANION_FREE_DESTINATIONS.has(world.destination)
 
   return (
     <div

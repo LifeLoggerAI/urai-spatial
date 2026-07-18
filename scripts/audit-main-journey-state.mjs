@@ -17,6 +17,8 @@ function read(relativePath) {
 const focusRoute = read('urai-tier1/src/app/focus/page.tsx')
 const focusClient = read('urai-tier1/src/app/focus/FocusChamberClient.tsx')
 const selectedMemoryHook = read('urai-tier1/src/spatial/memory/useSelectedMemory.ts')
+const worldEvents = read('urai-tier1/src/spatial/world/worldEvents.ts')
+const worldTransition = read('urai-tier1/src/spatial/world/WorldTransitionController.tsx')
 const replayClient = read('urai-tier1/src/app/replay/CinematicReplayClient.tsx')
 const replayRoute = read('urai-tier1/src/app/replay/page.tsx')
 
@@ -33,22 +35,33 @@ requireMatch('Replay route', replayRoute, /CinematicReplayClient/)
 requireMatch('Focus authenticated memory authority', focusClient, /useSelectedMemory\(\)/)
 requireMatch('Replay authenticated memory authority', replayClient, /useSelectedMemory\(\)/)
 
-for (const token of ['memoryId', 'manifestId']) {
-  requireMatch(`Selected-memory hook reads ${token}`, selectedMemoryHook, new RegExp(`params\\.get\\('${token}'\\)`))
-}
-requireMatch('Selected-memory hook accepts Life Map node identity', selectedMemoryHook, /params\.get\('memoryId'\) \?\? params\.get\('node'\)/)
+requireMatch('Selected-memory hook reads memory identity', selectedMemoryHook, /currentParams\.get\('memoryId'\) \?\? currentParams\.get\('node'\)/)
+requireMatch('Selected-memory hook reads manifest identity', selectedMemoryHook, /currentParams\.get\('manifestId'\)/)
+requireMatch('Selected-memory hook subscribes to exact world locations', selectedMemoryHook, /URAI_WORLD_LOCATION_EVENT/)
+requireMatch('Selected-memory hook subscribes to browser history', selectedMemoryHook, /addEventListener\('popstate', syncFromWindow\)/)
 requireMatch('Selected-memory manifest identity check', selectedMemoryHook, /parsed\.memory\.replayManifest\.id !== manifestId/)
+requireMatch('World events publish location changes', worldEvents, /announceUraiWorldLocation/)
+requireMatch('World transition announces final href', worldTransition, /announceUraiWorldLocation\(href\)/)
 
-requireMatch('Focus forwards complete selected identity', focusClient, /new URLSearchParams\(\{ memoryId: memory\.id, manifestId: memory\.replayManifest\.id, node: memory\.star\.id, from: 'focus-artifact' \}\)/)
+for (const pattern of [
+  /memoryId: memory\.id/,
+  /manifestId: memory\.replayManifest\.id/,
+  /node: memory\.star\.id/,
+  /from: 'focus-memory-aperture'/,
+]) {
+  requireMatch('Focus forwards complete selected identity', focusClient, pattern)
+}
 requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
 requireMatch('Focus Replay portal accessibility', focusClient, /aria-label={`Open Replay for \${memory\.title}`}/)
 requireMatch('Focus fails closed without authorized memory', focusClient, /if \(!memory \|\| !replayHref\) return/)
-requireMatch('Focus deterministic world return', focusClient, /requestUraiWorldReturn\(\)/)
+requireMatch('Focus direct Life Map return', focusClient, /destination: 'life-map'/)
+requireMatch('Focus raw-star return context', focusClient, /memoryId: memory\.star\.id/)
 requireMatch('Focus DOM memory identity', focusClient, /data-memory-id=\{memory\.id\}/)
 requireMatch('Focus DOM star identity', focusClient, /data-star-id=\{memory\.star\.id\}/)
 requireMatch('Focus DOM manifest identity', focusClient, /data-manifest-id=\{memory\.replayManifest\.id\}/)
+requireMatch('Focus owns no persistent Orb', focusClient, /data-orb-owner="none"/)
 
 requireMatch('Replay deterministic world return', replayClient, /requestUraiWorldReturn\(\)/)
 requireMatch('Replay Escape return', replayClient, /event\.key === 'Escape'/)
@@ -66,7 +79,7 @@ forbidMatch('Replay client', replayClient, /window\.location\.assign/)
 
 const result = {
   ok: failures.length === 0,
-  contract: 'home-life-map-focus-replay-return-v5',
+  contract: 'home-life-map-focus-replay-return-v6',
   requiredState: ['memoryId', 'manifestId', 'node'],
   failures,
 }

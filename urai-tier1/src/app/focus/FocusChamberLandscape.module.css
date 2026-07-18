@@ -1,0 +1,35 @@
+@media (orientation: landscape) and (max-height: 520px) {
+  .chamber {
+    inset: 4svh max(12px, env(safe-area-inset-right)) 12svh 24vw;
+    grid-template-columns: minmax(170px, 1fr) minmax(190px, 32vw);
+    gap: 12px;
+    place-items: center;
+  }
+
+  .shell {
+    left: 30%;
+    width: min(58vh, 350px);
+  }
+
+  .memoryPortal {
+    grid-column: 1;
+    width: min(48vh, 300px, 100%);
+    justify-self: center;
+  }
+
+  .replayPortal {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    grid-column: 2;
+    width: min(290px, 100%);
+    max-width: 100%;
+    transform: none;
+    justify-self: end;
+  }
+
+  .replayPortal:hover:not(:disabled) {
+    transform: translateY(-4px) scale(1.015);
+  }
+}
