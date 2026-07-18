@@ -117,7 +117,7 @@ const routes = [
       ].join(','))
       const legacyControlsVisible = await visibleElementCount(legacyControls)
 
-      const sceneLabels = page.locator('.urai-home-spatial-portal-label')
+      const sceneLabels = page.locator('.urai-home-spatial-threshold')
       const sceneLabelCount = await sceneLabels.count()
       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
       const thresholdLabelsVisible = sceneLabelCount === 2 && visibleSceneLabelCount === 2
