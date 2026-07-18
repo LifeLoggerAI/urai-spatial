@@ -104,10 +104,10 @@ const routes = [
   {
     id: 'home',
     path: '/home/',
-    ready: '[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas',
+    ready: '.urai-home-spatial-runtime-layer[data-webgl-ready="true"] [data-home-spatial-renderer="webgl"] canvas',
     waitForScene: waitForStableAnimationFrames,
     verify: async (page) => {
-      const runtime = await page.locator('[data-urai-home-runtime="one-continuous-webgl-world"]').count()
+      const runtime = await page.locator('[data-urai-home-runtime="embodied-continuous-webgl-world"]').count()
       const oldWorldHidden = await visibleElementCount(page.locator('.urai-genesis-home__world')) === 0
       const legacyControls = page.locator([
         '.urai-home-spatial-world-final .urai-genesis-home__threshold-gate',
@@ -117,24 +117,24 @@ const routes = [
       ].join(','))
       const legacyControlsVisible = await visibleElementCount(legacyControls)
 
-      const sceneLabels = page.locator('.urai-home-spatial-threshold')
-      const sceneLabelCount = await sceneLabels.count()
-      const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
-      const authoredSceneMounted = await page.locator('[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]').count() === 1
+      const directDestinations = page.getByRole('navigation', { name: 'Direct Home destinations' }).getByRole('button')
+      const sceneLabelCount = await directDestinations.count()
+      const visibleSceneLabelCount = await visibleElementCount(directDestinations)
+      const thresholdLabelsVisible = sceneLabelCount === 3 && visibleSceneLabelCount === 3
+      const authoredSceneMounted = await page.locator('.urai-home-embodied-art').count() === 1
 
       const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
       const portalShortcutCount = await portalShortcuts.count()
       const visiblePortalShortcutCount = await visibleElementCount(portalShortcuts)
       const permanentFeatureShortcutsAbsent = portalShortcutCount === 0 && visiblePortalShortcutCount === 0
 
-      const gateway = page.getByRole('button', { name: 'Open the ground and descend into Hidden Infrastructure' })
+      const gateway = page.getByRole('button', { name: 'Open Ground directly' })
       const canonicalGroundGatewayVisible = await gateway.count() === 1 && await gateway.isVisible()
       const canonicalGroundGatewayInteractive = canonicalGroundGatewayVisible && await gateway.evaluate((node) => {
         const style = getComputedStyle(node)
         return !node.disabled && style.pointerEvents !== 'none'
       })
-      const skyGateway = page.getByRole('button', { name: 'Open the Life Map and ascend into Memory Sky' })
+      const skyGateway = page.getByRole('button', { name: 'Open Life Map directly' })
       const canonicalSkyGatewayVisible = await skyGateway.count() === 1 && await skyGateway.isVisible()
       const canonicalSkyGatewayInteractive = canonicalSkyGatewayVisible && await skyGateway.evaluate((node) => {
         const style = getComputedStyle(node)

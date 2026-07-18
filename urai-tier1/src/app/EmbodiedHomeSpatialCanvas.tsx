@@ -276,6 +276,11 @@ function HomeScene(props: HomeSceneProps) {
 
 export default function EmbodiedHomeSpatialCanvas({ onOrbOpen, webglAvailable }: EmbodiedHomeSpatialCanvasProps) {
   const reducedMotion = useMediaPreference('(prefers-reduced-motion: reduce)')
+  useEffect(() => {
+    if (!performance.getEntriesByName('urai:first-home-spatial-frame').length) {
+      requestAnimationFrame(() => performance.mark('urai:first-home-spatial-frame'))
+    }
+  }, [])
   const shellRef = useRef<HTMLDivElement | null>(null)
   const yaw = useRef(0)
   const pitch = useRef(-0.04)
