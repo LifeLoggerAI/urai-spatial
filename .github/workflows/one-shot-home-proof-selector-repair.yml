@@ -21,42 +21,58 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Repair exact Home proof selectors
+      - name: Repair exact Home proof selectors and contract
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('scripts/capture-continuous-spatial-proof.mjs')
-          text = path.read_text()
-
-          replacements = [
-              (
-                  'ready: \'[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas\'',
-                  'ready: \'.urai-home-spatial-runtime-layer[data-webgl-ready="true"] [data-home-spatial-renderer="webgl"] canvas\'',
-              ),
-              (
-                  'const runtime = await page.locator(\'[data-urai-home-runtime="one-continuous-webgl-world"]\').count()',
-                  'const runtime = await page.locator(\'[data-urai-home-runtime="embodied-continuous-webgl-world"]\').count()',
-              ),
-              (
-                  'const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1',
-                  "const thresholdLabelsVisible = await page.getByRole('navigation', { name: 'Direct Home destinations' }).getByRole('button').count() === 3",
-              ),
-              (
-                  'const authoredSceneMounted = await page.locator(\'[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]\').count() === 1',
-                  "const authoredSceneMounted = await page.locator('.urai-home-embodied-art').count() === 1",
-              ),
-          ]
-
-          for old, new in replacements:
+          def replace_once(path, old, new):
+              text = path.read_text()
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'expected exactly one match, found {count}: {old}')
-              text = text.replace(old, new, 1)
+                  raise SystemExit(f'{path}: expected exactly one match, found {count}: {old}')
+              path.write_text(text.replace(old, new, 1))
 
-          path.write_text(text)
+          proof = Path('scripts/capture-continuous-spatial-proof.mjs')
+          replace_once(
+              proof,
+              'ready: \'[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas\'',
+              'ready: \'.urai-home-spatial-runtime-layer[data-webgl-ready="true"] [data-home-spatial-renderer="webgl"] canvas\'',
+          )
+          replace_once(
+              proof,
+              'const runtime = await page.locator(\'[data-urai-home-runtime="one-continuous-webgl-world"]\').count()',
+              'const runtime = await page.locator(\'[data-urai-home-runtime="embodied-continuous-webgl-world"]\').count()',
+          )
+          replace_once(
+              proof,
+              'const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1',
+              "const thresholdLabelsVisible = await page.getByRole('navigation', { name: 'Direct Home destinations' }).getByRole('button').count() === 3",
+          )
+          replace_once(
+              proof,
+              'const authoredSceneMounted = await page.locator(\'[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]\').count() === 1',
+              "const authoredSceneMounted = await page.locator('.urai-home-embodied-art').count() === 1",
+          )
+
+          contract = Path('urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs')
+          replace_once(
+              contract,
+              "const canvas = read('src/app/HomeSpatialCanvas.tsx')",
+              "const canvas = read('src/app/EmbodiedHomeSpatialCanvas.tsx')",
+          )
+          replace_once(
+              contract,
+              'assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)',
+              'assert.match(layer, /data-urai-home-runtime="embodied-continuous-webgl-world"/)',
+          )
+          replace_once(
+              contract,
+              'assert.match(layer, /HomeSpatialCanvas, \\{ useWebGLAvailable \\}/)',
+              "assert.match(layer, /EmbodiedHomeSpatialCanvas/)\n  assert.match(layer, /useWebGLAvailable/)",
+          )
           PY
 
       - name: Prove browser proof source contract
