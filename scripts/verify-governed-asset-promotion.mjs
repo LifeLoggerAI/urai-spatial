@@ -10,10 +10,11 @@ const failures = []
 const requireCondition = (condition, message) => { if (!condition) failures.push(message) }
 const readJson = (relative) => JSON.parse(readFileSync(path.resolve(root, relative), 'utf8'))
 const sha256 = (buffer) => createHash('sha256').update(buffer).digest('hex')
-const safePath = (value) => Boolean(value) && !value.startsWith('/') && !value.includes('\\') && path.posix.normalize(value) === value && value.split('/').every((segment) => segment && segment !== '.' && segment !== '..')
+const safePath = (value) => typeof value === 'string' && value.length > 0 && !value.startsWith('/') && !value.includes('\\\\') && path.posix.normalize(value) === value && value.split('/').every((segment) => segment && segment !== '.' && segment !== '..')
 
 requireCondition(existsSync(path.resolve(root, manifestPath)), `missing canonical manifest: ${manifestPath}`)
-requireCondition(existsSync(path.resolve(root, decisionPath)), `missing promotion decision: ${decisionPath}`)
+requireCondition(safePath(decisionPath), 'promotion decision path is unsafe')
+if (safePath(decisionPath)) requireCondition(existsSync(path.resolve(root, decisionPath)), `missing promotion decision: ${decisionPath}`)
 if (failures.length) {
   console.error('GOVERNED_ASSET_PROMOTION=RED')
   failures.forEach((failure) => console.error(`- ${failure}`))
@@ -43,6 +44,8 @@ requireCondition(typeof decision.reviewedAt === 'string' && !Number.isNaN(Date.p
 if (asset) {
   requireCondition(decision.canonicalPath === asset.fixedPath, 'decision canonicalPath must equal the manifest fixedPath')
   requireCondition(safePath(decision.canonicalPath), 'canonicalPath is unsafe')
+  requireCondition(typeof decision.source === 'string' && decision.source.length > 0, 'decision source is required')
+  requireCondition(decision.source === asset.source, 'decision source must equal the canonical manifest source')
   requireCondition(decision.fallback === asset.fallback, 'decision fallback must equal the canonical manifest fallback')
   requireCondition(decision.license === asset.license, 'decision license must equal the canonical manifest license')
   requireCondition(asset.releaseState === 'pending-final-review' || asset.releaseState === 'production-ready', `unsupported manifest releaseState: ${asset.releaseState}`)
@@ -54,12 +57,16 @@ if (safePath(decision.canonicalPath)) {
   requireCondition(existsSync(absolute), `promoted asset does not exist: ${decision.canonicalPath}`)
   if (existsSync(absolute)) {
     const stat = lstatSync(absolute)
-    requireCondition(!stat.isSymbolicLink(), 'promoted asset may not be a symlink')
-    requireCondition(stat.isFile(), 'promoted asset must be a regular file')
-    const buffer = readFileSync(absolute)
-    requireCondition(Number.isInteger(decision.bytes) && decision.bytes === buffer.length, `byte mismatch expected=${decision.bytes} actual=${buffer.length}`)
-    requireCondition(/^[0-9a-f]{64}$/.test(String(decision.sha256 || '')), 'decision SHA-256 is invalid')
-    requireCondition(decision.sha256 === sha256(buffer), 'decision SHA-256 does not match asset bytes')
+    const isSymlink = stat.isSymbolicLink()
+    const isFile = stat.isFile()
+    requireCondition(!isSymlink, 'promoted asset may not be a symlink')
+    requireCondition(isFile, 'promoted asset must be a regular file')
+    if (isFile && !isSymlink) {
+      const buffer = readFileSync(absolute)
+      requireCondition(Number.isInteger(decision.bytes) && decision.bytes === buffer.length, `byte mismatch expected=${decision.bytes} actual=${buffer.length}`)
+      requireCondition(/^[0-9a-f]{64}$/.test(String(decision.sha256 || '')), 'decision SHA-256 is invalid')
+      requireCondition(decision.sha256 === sha256(buffer), 'decision SHA-256 does not match asset bytes')
+    }
   }
 }
 
