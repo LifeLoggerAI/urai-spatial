@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: guarded clean product publication 2026-07-18T18:20:00Z
+# trigger: guarded fast-forward publication 2026-07-18T18:25:00Z
 
 on:
   pull_request:
@@ -125,11 +125,8 @@ jobs:
           git add -A
           git commit -m "fix(spatial): close bounded accessibility and runtime defects"
           remote_sha="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
-          if [ -n "$remote_sha" ]; then
-            git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$remote_sha origin HEAD:refs/heads/$PRODUCT_BRANCH
-          else
-            git push origin HEAD:refs/heads/$PRODUCT_BRANCH
-          fi
+          test "$remote_sha" = "$CLEAN_BASE"
+          git push origin HEAD:refs/heads/$PRODUCT_BRANCH
           echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Retain exact verification diagnostics
