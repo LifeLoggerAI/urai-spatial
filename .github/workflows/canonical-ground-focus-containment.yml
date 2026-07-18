@@ -1,0 +1,106 @@
+name: Canonical Ground focus containment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-six-fix-clean-v3-20260718
+    paths:
+      - .github/workflows/canonical-ground-focus-containment.yml
+      - scripts/one-shot-ground-focus-containment.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canonical-ground-focus-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  PRODUCT_BASE: ac1a43d7cd5e2b057116a22830ed20a2199f568b
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/canonical-ground-focus-containment-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply bounded two-file repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$PRODUCT_BASE" HEAD)" = "$PRODUCT_BASE"
+          test "$(git diff --name-only "$PRODUCT_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/canonical-ground-focus-containment.yml scripts/one-shot-ground-focus-containment.mjs | sort)"
+          node scripts/one-shot-ground-focus-containment.mjs 2>&1 | tee /tmp/ground-focus-apply.log
+          rm .github/workflows/canonical-ground-focus-containment.yml scripts/one-shot-ground-focus-containment.mjs
+          git diff --check
+          test "$(git diff --name-only "$PRODUCT_BASE" | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Unit contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/ground-focus-unit.log
+
+      - name: Typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/ground-focus-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/ground-focus-build.log
+          test -f urai-tier1/out/ground/index.html
+
+      - name: Install Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Prove mobile containment and reduced motion
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test \
+            --config=playwright.accessibility.config.ts \
+            accessibility-performance-evidence.spec.ts \
+            accessibility-performance-lifemap-independent.spec.ts \
+            --project=chromium \
+            --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" \
+            2>&1 | tee /tmp/ground-focus-browser.log
+
+      - name: Publish exact two-file repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(ground): keep focused destinations fully contained"
+          git push --force-with-lease=refs/heads/${{ github.head_ref }}:${{ github.event.pull_request.head.sha }} origin HEAD:refs/heads/${{ github.head_ref }}
+
+      - name: Retain exact diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: canonical-ground-focus-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: /tmp/ground-focus-*.log
+          if-no-files-found: ignore
+          retention-days: 90
