@@ -424,10 +424,6 @@ function ContinuityNexus({ profile }: { profile: SpatialQualityProfile }) {
           />
         </mesh>
       ))}
-      <mesh position={[0.08, 0.08, 0.18]} rotation={[0, 0.12, 0]}>
-        <planeGeometry args={[2.6, 4.5]} />
-        <meshBasicMaterial color="#90f5ff" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
       <pointLight position={[0.08, 0.4, 1.2]} color="#9ff7ff" intensity={1.1} distance={8} />
     </group>
   );
@@ -543,18 +539,9 @@ function EmotionalWeather({ profile }: { profile: SpatialQualityProfile }) {
 
   return (
     <group ref={group} position={[0, 0.3, -8]} name="life-map-emotional-weather">
-      <mesh position={[-3.4, 1.1, -0.8]} rotation={[0.18, -0.28, 0.12]}>
-        <planeGeometry args={[9.2, 4.8]} />
-        <meshBasicMaterial color="#4fdfff" transparent opacity={0.026} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh position={[3.5, -0.4, -1.8]} rotation={[-0.12, 0.32, -0.18]}>
-        <planeGeometry args={[10.8, 5.6]} />
-        <meshBasicMaterial color="#b177ff" transparent opacity={0.035} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh position={[0.8, 2.4, -4.2]} rotation={[0.14, 0.08, 0.2]}>
-        <planeGeometry args={[8.4, 3.2]} />
-        <meshBasicMaterial color="#fff1bd" transparent opacity={0.018} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
+      <pointLight position={[-3.4, 1.1, -0.8]} color="#4fdfff" intensity={0.24} distance={13} decay={2} />
+      <pointLight position={[3.5, -0.4, -1.8]} color="#b177ff" intensity={0.2} distance={15} decay={2} />
+      <pointLight position={[0.8, 2.4, -4.2]} color="#fff1bd" intensity={0.12} distance={11} decay={2} />
     </group>
   );
 }

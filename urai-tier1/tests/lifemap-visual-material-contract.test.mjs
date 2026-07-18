@@ -27,3 +27,12 @@ test('selected memory closes semantic drawers and owns a cinematic surface', () 
   assert.match(proofCss, /\.urai-lifemap-selected-visual__frame/)
   assert.match(proofCss, /@media \(max-width: 760px\)/)
 })
+
+test('Life Map atmosphere cannot use viewport-scale translucent planes', () => {
+  assert.doesNotMatch(scene, /<planeGeometry args=\{\[2\.6, 4\.5\]\}/, 'Continuity Nexus must not mount a rectangular glow sheet')
+  assert.doesNotMatch(scene, /<planeGeometry args=\{\[(?:9\.2, 4\.8|10\.8, 5\.6|8\.4, 3\.2)\]\}/, 'Emotional weather must not use viewport-scale additive planes')
+  assert.match(scene, /name="life-map-emotional-weather"/)
+  assert.match(scene, /color="#4fdfff" intensity=\{0\.24\} distance=\{13\}/)
+  assert.match(scene, /color="#b177ff" intensity=\{0\.2\} distance=\{15\}/)
+  assert.match(scene, /color="#fff1bd" intensity=\{0\.12\} distance=\{11\}/)
+})
