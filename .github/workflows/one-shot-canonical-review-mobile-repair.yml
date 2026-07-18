@@ -148,3 +148,5 @@ jobs:
           git add -A
           git commit -m 'fix(spatial): consolidate review and mobile evidence repairs'
           git push origin HEAD:fix/canonical-review-mobile-a7146e3c-20260718
+
+# trigger nonce: 2026-07-18T10:10Z
