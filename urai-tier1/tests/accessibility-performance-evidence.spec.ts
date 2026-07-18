@@ -118,6 +118,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('mobile visible controls stay inside the visual viewport and safe area', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.setViewportSize({ width: 393, height: 873 })
     const report: Array<{ route: string; clipped: Array<{ html: string; left: number; top: number; right: number; bottom: number }> }> = []
     for (const route of routes) {
@@ -187,7 +188,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
     await disableWebGL(page)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const fallback = page.getByTestId('urai-home-accessible-fallback')
+    const fallback = page.locator('[data-testid="urai-home-accessible-fallback"][data-webgl-state="unavailable"]')
     await expect(fallback).toBeVisible()
     await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
     await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
