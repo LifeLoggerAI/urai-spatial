@@ -89,6 +89,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireNormalizedPattern(ground, /inline:\s*'center'/, 'Ground focus reveal must center the destination inline')
   assert.equal(ground.includes('min-height:44px'), false, 'Ground destinations must not retain 44px targets')
   requireText(ground, 'min-height:48px')
+  assert.doesNotMatch(ground, /transition:max-width/, 'Ground focus expansion must be synchronous before scroll containment is measured')
+  assert.doesNotMatch(ground, /transition:opacity \.16s ease,max-width/, 'Ground destination labels must not expand width after focus scrolling')
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
