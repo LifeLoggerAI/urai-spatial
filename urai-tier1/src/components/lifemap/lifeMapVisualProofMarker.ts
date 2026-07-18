@@ -5,4 +5,5 @@ export const lifeMapVisualProofMarker = Object.freeze({
   selectedMemory: 'cinematic-surface',
   homeOrbMounted: false,
   exactHeadProofRequired: true,
+  proofDispatch: 'temporary-main-target-draft-only',
 })
