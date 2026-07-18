@@ -19,10 +19,10 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm --dir urai-tier1 exec next dev --hostname 127.0.0.1 --port 3000',
-    url: 'http://127.0.0.1:3000',
+    command: 'python3 -m http.server 3000 --bind 127.0.0.1 --directory urai-tier1/out',
+    url: 'http://127.0.0.1:3000/home/',
     reuseExistingServer: false,
-    timeout: 180000,
+    timeout: 30000,
   },
   projects: [
     {
