@@ -5,6 +5,7 @@ import test from 'node:test'
 const canonical = fs.readFileSync('src/spatial/lifemap/SpatialLifeMapCanonical.tsx', 'utf8')
 const selected = fs.readFileSync('src/spatial/lifemap/LifeMapDeepLinkControls.tsx', 'utf8')
 const globalProofCss = fs.readFileSync('src/app/continuous-spatial-proof-defects.css', 'utf8')
+const interactionCss = fs.readFileSync('src/spatial/world/lifeMapIndependentInteraction.css', 'utf8')
 
 test('Life Map active owner is an authored memory universe rather than a black debug canvas', () => {
   for (const marker of [
@@ -45,6 +46,8 @@ test('selected memory becomes a visible cinematic surface without leaving contro
     "controls?.removeAttribute('open')",
   ]) assert.ok(selected.includes(marker), `missing selected-memory visual marker: ${marker}`)
 
+  assert.match(interactionCss, /\.life-map-accessibility-menu:not\(\[open\]\)\s*>\s*div\s*\{[\s\S]*?display:\s*none\s*!important/)
+  assert.match(interactionCss, /\.life-map-accessibility-menu\[open\]\s*>\s*div\s*\{[\s\S]*?display:\s*grid\s*!important/)
   assert.match(selected, /Enter Focus/)
   assert.match(selected, /Replay/)
   assert.doesNotMatch(selected, /Orb companion|PersistentWorldCompanion|home orb/i)
