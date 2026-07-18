@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
+  announceUraiWorldLocation,
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
 } from './worldEvents'
@@ -113,6 +114,7 @@ export function WorldTransitionController() {
 
     const href = buildTravelHref(request)
     timer.current = window.setTimeout(() => {
+      announceUraiWorldLocation(href)
       router.push(href)
       timer.current = null
     }, transitionDuration(request.destination))
