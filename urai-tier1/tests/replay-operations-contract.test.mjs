@@ -159,3 +159,23 @@ test('restricted or full storage does not crash replay operations or erase succe
   assert.equal(result.pending.length, 0)
   assert.equal(result.audit.length, 1)
 })
+
+test('hide operations can be reversed deterministically without deleting the memory', () => {
+  const hidden = applyReplayOperation(emptyState(), { ...baseOperation, id: 'op-hide', kind: 'hide', hidden: true })
+  assert.equal(hidden.hidden, true)
+  const restored = applyReplayOperation(hidden, { ...baseOperation, id: 'op-unhide', kind: 'hide', hidden: false })
+  assert.equal(restored.hidden, false)
+  assert.deepEqual(restored.audit.map((entry) => entry.id), ['op-hide', 'op-unhide'])
+})
+
+test('untrusted storage rejects non-boolean hide targets', () => {
+  const storage = memoryStorage()
+  storage.setItem('urai-replay-operations-v1:owner-1:memory-1', JSON.stringify({
+    saved: false,
+    hidden: true,
+    pending: [{ ...baseOperation, id: 'bad-hide', kind: 'hide', hidden: 'yes' }],
+    audit: [],
+  }))
+  const state = readReplayOperationState(storage, 'owner-1', 'memory-1')
+  assert.deepEqual(state.pending, [])
+})

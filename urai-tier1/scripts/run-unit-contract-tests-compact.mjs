@@ -27,6 +27,7 @@ const tests = [
   'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/replay-operations-contract.test.mjs',
+  'tests/replay-product-controls-contract.test.mjs',
   'tests/replay-mobile-control-clearance-contract.test.mjs',
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
