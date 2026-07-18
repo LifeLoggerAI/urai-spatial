@@ -144,12 +144,11 @@ function WalkingPresence({ destination, index, reducedMotion }: { destination: G
     group.current.position.y = reducedMotion ? 0 : Math.abs(Math.sin(progress * Math.PI * 8)) * 0.025
     group.current.lookAt(end)
   })
-  const color = new THREE.Color(destination.color)
   const opacity = destination.workforceState === 'blocked' ? 0.42 : 0.72
   return (
     <group ref={group} data-ground-workforce-avatar="walking" userData={{ workforceState: destination.workforceState }}>
-      <mesh position={[0, 1.38, 0]} castShadow><sphereGeometry args={[0.16, 16, 16]} /><meshStandardMaterial color="#e7f7fb" emissive={color} emissiveIntensity={0.28} transparent opacity={opacity} /></mesh>
-      <mesh position={[0, 0.82, 0]} castShadow><capsuleGeometry args={[0.21, 0.72, 6, 12]} /><meshStandardMaterial color="#0e1a25" emissive={color} emissiveIntensity={0.18} roughness={0.52} metalness={0.28} transparent opacity={opacity} /></mesh>
+      <mesh position={[0, 1.38, 0]} castShadow><sphereGeometry args={[0.16, 16, 16]} /><meshStandardMaterial color="#e7f7fb" emissive={destination.color} emissiveIntensity={0.28} transparent opacity={opacity} /></mesh>
+      <mesh position={[0, 0.82, 0]} castShadow><capsuleGeometry args={[0.21, 0.72, 6, 12]} /><meshStandardMaterial color="#0e1a25" emissive={destination.color} emissiveIntensity={0.18} roughness={0.52} metalness={0.28} transparent opacity={opacity} /></mesh>
     </group>
   )
 }
@@ -183,13 +182,12 @@ function Corridor({ destination }: { destination: GroundDestination }) {
 }
 
 function DestinationArchitecture({ destination, active, onSelect }: { destination: GroundDestination; active: boolean; onSelect: () => void }) {
-  const color = new THREE.Color(destination.color)
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect() }
   return (
     <group position={destination.position} data-ground-destination={destination.id} userData={{ serviceAvailability: destination.availability }}>
-      <mesh position={[0, 1.55, 0]} castShadow receiveShadow onClick={activate} onPointerEnter={() => { document.body.style.cursor = 'pointer' }} onPointerLeave={() => { document.body.style.cursor = 'default' }}><boxGeometry args={[3.7, 3.2, 1.25]} /><meshPhysicalMaterial color="#10212d" emissive={color} emissiveIntensity={active ? 0.26 : 0.08} roughness={0.42} metalness={0.44} clearcoat={0.34} /></mesh>
-      <mesh position={[0, 1.22, 0.66]} castShadow onClick={activate}><boxGeometry args={[1.5, 2.35, 0.18]} /><meshStandardMaterial color="#020712" emissive={color} emissiveIntensity={active ? 0.7 : 0.24} roughness={0.24} metalness={0.62} /></mesh>
-      <mesh position={[0, 3.35, 0]}><torusGeometry args={[0.68, 0.06, 10, 48]} /><meshBasicMaterial color={color} transparent opacity={active ? 0.9 : 0.42} toneMapped={false} /></mesh>
+      <mesh position={[0, 1.55, 0]} castShadow receiveShadow onClick={activate} onPointerEnter={() => { document.body.style.cursor = 'pointer' }} onPointerLeave={() => { document.body.style.cursor = 'default' }}><boxGeometry args={[3.7, 3.2, 1.25]} /><meshPhysicalMaterial color="#10212d" emissive={destination.color} emissiveIntensity={active ? 0.26 : 0.08} roughness={0.42} metalness={0.44} clearcoat={0.34} /></mesh>
+      <mesh position={[0, 1.22, 0.66]} castShadow onClick={activate}><boxGeometry args={[1.5, 2.35, 0.18]} /><meshStandardMaterial color="#020712" emissive={destination.color} emissiveIntensity={active ? 0.7 : 0.24} roughness={0.24} metalness={0.62} /></mesh>
+      <mesh position={[0, 3.35, 0]}><torusGeometry args={[0.68, 0.06, 10, 48]} /><meshBasicMaterial color={destination.color} transparent opacity={active ? 0.9 : 0.42} toneMapped={false} /></mesh>
       {active && <Html position={[0, 3.95, 0]} center distanceFactor={11}><div className="ground-active-label"><strong>{destination.label}</strong><span>{destination.detail}</span><em>{STATE_LABEL[destination.workforceState]} · {destination.availability}</em></div></Html>}
     </group>
   )
@@ -238,12 +236,12 @@ export default function GroundSpatialWorldClean() {
   const hrefFor = useCallback((destination: GroundDestination) => {
     if (destination.href) return destination.href
     if (destination.worldDestination === 'focus' || destination.worldDestination === 'replay') {
-      const memoryId = world.memoryId ?? 'demo:ground-memory'
-      const manifestId = world.replayManifestId ?? 'demo-manifest'
-      return `/${destination.worldDestination}?demo=${world.memoryId ? '0' : '1'}&memoryId=${encodeURIComponent(memoryId)}&manifestId=${encodeURIComponent(manifestId)}&from=ground`
+      const memoryId = world?.memoryId ?? 'demo:ground-memory'
+      const manifestId = world?.replayManifestId ?? 'demo-manifest'
+      return `/${destination.worldDestination}?demo=${world?.memoryId ? '0' : '1'}&memoryId=${encodeURIComponent(memoryId)}&manifestId=${encodeURIComponent(manifestId)}&from=ground`
     }
     return `/ground?district=${destination.id}`
-  }, [world.memoryId, world.replayManifestId])
+  }, [world?.memoryId, world?.replayManifestId])
 
   const activate = useCallback((destination: GroundDestination) => {
     setActiveId(destination.id)
@@ -258,12 +256,12 @@ export default function GroundSpatialWorldClean() {
       entryPortal: destination.entryPortal,
       cameraCheckpoint: destination.cameraCheckpoint,
       context: {
-        memoryId: world.memoryId,
-        threadId: world.threadId,
-        personId: world.personId,
-        placeId: world.placeId,
-        replayManifestId: world.replayManifestId,
-        privacyMode: world.privacyMode,
+        memoryId: world?.memoryId,
+        threadId: world?.threadId,
+        personId: world?.personId,
+        placeId: world?.placeId,
+        replayManifestId: world?.replayManifestId,
+        privacyMode: world?.privacyMode,
       },
     })
   }, [hrefFor, world])
@@ -298,8 +296,8 @@ export default function GroundSpatialWorldClean() {
       {webglAvailable === null && <div className="ground-loader" role="status">Opening URAI Ground</div>}
       {showFallback ? <GroundFallback onTravel={activate} /> : webglAvailable && <Suspense fallback={<div className="ground-loader" role="status">Opening URAI Ground</div>}><Canvas shadows={quality !== 'mobile'} dpr={quality === 'mobile' ? [1, 1.2] : quality === 'high' ? [1, 1.75] : [1, 1.5]} gl={{ antialias: quality !== 'mobile', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }} onPointerMissed={() => preview(DESTINATIONS[0])}><GroundScene active={active} onSelect={activate} reducedMotion={reducedMotion} quality={quality} onContextLost={setContextLost} /></Canvas></Suspense>}
       <nav className="ground-destination-compass ground-rail" aria-label="Ground destinations" onKeyDown={(event) => {
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); moveSelection(1); document.querySelector<HTMLElement>(`[data-ground-control="${DESTINATIONS[(DESTINATIONS.findIndex((item) => item.id === activeId) + 1) % DESTINATIONS.length].id}"]`)?.focus() }
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); moveSelection(-1); document.querySelector<HTMLElement>(`[data-ground-control="${DESTINATIONS[(DESTINATIONS.findIndex((item) => item.id === activeId) - 1 + DESTINATIONS.length) % DESTINATIONS.length].id}"]`)?.focus() }
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); event.stopPropagation(); moveSelection(1); document.querySelector<HTMLElement>(`[data-ground-control="${DESTINATIONS[(DESTINATIONS.findIndex((item) => item.id === activeId) + 1) % DESTINATIONS.length].id}"]`)?.focus() }
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); event.stopPropagation(); moveSelection(-1); document.querySelector<HTMLElement>(`[data-ground-control="${DESTINATIONS[(DESTINATIONS.findIndex((item) => item.id === activeId) - 1 + DESTINATIONS.length) % DESTINATIONS.length].id}"]`)?.focus() }
       }}>{DESTINATIONS.map((destination) => <button key={destination.id} type="button" data-ground-control={destination.id} data-ground-destination={destination.id} data-workforce-state={destination.workforceState} data-service-availability={destination.availability} aria-current={activeId === destination.id ? 'location' : undefined} aria-label={`${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`} onFocus={() => preview(destination)} onMouseEnter={() => preview(destination)} onClick={() => activate(destination)}><span aria-hidden="true" style={{ background: destination.color }} /><strong>{destination.label}</strong></button>)}</nav>
       <button className="ground-return" type="button" onClick={() => requestUraiWorldReturn()} aria-label="Return from Ground">Return</button>
       <p className="ground-sr-only" aria-live="polite">{announcement}</p>
