@@ -27,9 +27,10 @@ type SelectedMemoryActionsProps = {
   nodeId: string
   manifestId: string
   demo: boolean
+  replayAvailable: boolean
 }
 
-function SelectedMemoryActions({ memoryId, nodeId, manifestId, demo }: SelectedMemoryActionsProps) {
+function SelectedMemoryActions({ memoryId, nodeId, manifestId, demo, replayAvailable }: SelectedMemoryActionsProps) {
   const router = useRouter()
   if (!memoryId) return null
 
@@ -57,9 +58,11 @@ function SelectedMemoryActions({ memoryId, nodeId, manifestId, demo }: SelectedM
         type="button"
         data-urai-audit-action="life-map-replay"
         onClick={() => router.push(destination('replay'))}
+        disabled={!replayAvailable}
+        aria-label={replayAvailable ? 'Replay' : 'Replay unavailable for this memory'}
         style={{ minHeight: 48 }}
       >
-        Replay
+        {replayAvailable ? 'Replay' : 'Replay unavailable'}
       </button>
     </div>
   )
@@ -158,6 +161,7 @@ export default function LifeMapDeepLinkControls() {
           nodeId={selectedNode.id}
           manifestId={manifestId}
           demo={usingSeedData || memoryId.startsWith('demo:')}
+          replayAvailable={selectedNode.replayAvailable && !selectedNode.locked}
         />
       ) : null}
     </aside>
