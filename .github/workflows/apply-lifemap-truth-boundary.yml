@@ -1,0 +1,79 @@
+name: Apply Life Map truth boundary
+
+on:
+  push:
+    branches:
+      - automation/lifemap-truth-boundary-20260718
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-truth-boundary-20260718
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact Life Map child
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/life-map-independent-universe-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify unchanged authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='405189ef89ea2cf29b0c55eef428cc5086bd7e04'
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$expected" || { echo "Refusing to patch moved head: $actual"; exit 1; }
+          test "$(git status --porcelain)" = ""
+
+      - name: Repair sample and private-unavailability truth states
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          scene_path = Path('urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx')
+          scene = scene_path.read_text()
+          scene = replace_once(
+              scene,
+              '<p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? "Protected sample field" : "Private constellation"}</p>',
+              '<p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? (usingSeedData ? "Protected sample field" : "Private memories unavailable") : usingSeedData ? "Sample constellation" : "Private constellation"}</p>',
+              'Life Map live-region truth state',
+          )
+          scene_path.write_text(scene)
+
+          test_path = Path('urai-tier1/tests/lifemap-scene-behavior.test.mjs')
+          tests = test_path.read_text()
+          tests = replace_once(
+              tests,
+              '''test('LifeMap never lets sample data impersonate private memory', () => {\n  assert.ok(source.includes('data-life-map-source={usingSeedData ? "explicit-sample" : "private"}'))\n  assert.ok(source.includes('Sample constellation · not your memories'))\n  assert.ok(eventSource.includes('explicitDemoEnabled'))''',
+              '''test('LifeMap never lets sample data impersonate private memory', () => {\n  assert.ok(source.includes('data-life-map-source={usingSeedData ? "explicit-sample" : "private"}'))\n  assert.ok(source.includes('Sample constellation · not your memories'))\n  assert.ok(source.includes('usingSeedData ? "Protected sample field" : "Private memories unavailable"'))\n  assert.ok(source.includes('usingSeedData ? "Sample constellation" : "Private constellation"'))\n  assert.ok(eventSource.includes('explicitDemoEnabled'))''',
+              'Life Map truth-state regression contract',
+          )
+          test_path.write_text(tests)
+          PY
+
+          git diff --check
+          git diff --stat
+
+      - name: Commit exact truth-boundary repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          git commit -m 'Fix Life Map sample and private error truth states'
+          git push origin HEAD:fix/life-map-independent-universe-20260718
