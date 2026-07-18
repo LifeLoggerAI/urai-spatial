@@ -141,3 +141,9 @@ String.raw`  assert.match(groundCanonical, /window\.addEventListener\('keydown',
 replaceOnce(restorationContract,
 String.raw`  assert.match(proof, /page\.locator\('\.urai-home-spatial-threshold'\)/)`,
 String.raw`  assert.match(proof, /getByRole\('navigation', \{ name: 'Direct Home destinations' \}\)/)`)
+
+const finalConvergenceContract = 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
+replaceOnce(finalConvergenceContract,
+String.raw`  assert.match(lifeMapConvergence, /data-testid='urai-true-3d-life-map'/)`,
+String.raw`  assert.match(lifeMapConvergence, /\.life-map-independent-realm/)
+  assert.match(lifeMapConvergence, /height:\s*100svh/)`)
