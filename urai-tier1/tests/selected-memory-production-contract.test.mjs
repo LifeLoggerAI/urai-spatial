@@ -31,6 +31,19 @@ test('demo memory is explicit, bounded to known identities, and visibly disclose
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
+test('locked and non-replayable demo memories fail closed in UI and direct routes', () => {
+  assert.match(contract, /replayAvailable: boolean/)
+  assert.match(demoMemory, /NON_REPLAYABLE_SAMPLE_IDS/)
+  assert.match(demoMemory, /explicitDemoReplayAvailable/)
+  assert.match(demoMemory, /id: 'replay-unavailable'/)
+  assert.match(demoMemory, /durationMs: 0/)
+  assert.match(demoMemory, /segments: \[\]/)
+  assert.match(hook, /isReplayRoute\(\) && !memory\.replayAvailable/)
+  assert.match(hook, /Replay is unavailable for this memory/)
+  assert.match(focus, /memory\.replayManifest\.segments\.length > 0/)
+  assert.match(focus, /disabled=\{!replayAvailable\}/)
+})
+
 test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () => {
   for (const state of ['unavailable', 'deleted', 'unauthorized', 'corrupt']) assert.match(contract, new RegExp(`'${state}'`))
   assert.match(contract, /ownerId !== expectedOwnerId/)
