@@ -2,7 +2,7 @@
 
 - Product tree authority: `80687ea8de3a95d4cba769b6e05d8bd5dd868f4b`
 - Frozen implementation PR: #761
-- Verification-only PR: #759
+- Verification-only PR: #766
 - Purpose: provide a unique verification commit so GitHub concurrency groups do not cancel main-target accessibility, visual, performance, and release-readiness evidence.
 - Product/runtime source difference from the frozen implementation: none.
 - This documentation-only file has no application import, build input, deployment authority, provider authority, or production mutation.
