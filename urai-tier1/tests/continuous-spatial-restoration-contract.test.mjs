@@ -32,7 +32,8 @@ const homeOwner = read('src/app/FinalHomeThreshold.tsx')
 const groundOwner = read('src/app/ground/page.tsx')
 const groundWorld = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
-const groundSourceGraph = `${groundWorld}\n${groundModel}`
+const groundScene = read('src/app/ground/GroundWorldScene.tsx')
+const groundSourceGraph = `${groundWorld}\n${groundModel}\n${groundScene}`
 const groundCanonical = canonicalSource(groundWorld)
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
@@ -49,31 +50,36 @@ test('app template mounts the restored WebGL owners without redirecting certifie
   assert.doesNotMatch(layer, /pathname === ['"]\/focus['"]|pathname === ['"]\/replay['"]/)
 })
 
-test('Home is an authored sanctuary with adaptive framing and canonical Ground and Life Map thresholds', () => {
+test('Home is an authored sanctuary with transparent depth and canonical Ground and Life Map thresholds', () => {
   for (const marker of [
-    'CameraRig', 'SanctuaryFloor', 'SanctuaryGardens', 'HorizonArchitecture', 'EmbodiedAvatar',
+    'CameraRig', 'SanctuaryFloor', 'SanctuaryGardens', 'EmbodiedAvatar',
     'RelationshipPresences', 'FirstHomeFrame', 'FrameScheduler', 'Stars',
     'useWebGLAvailable', 'cachedWebGLAvailable', 'data-home-spatial-renderer="webgl"',
-    'data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"', 'data-tier0-ground-gateway="true"',
-    'data-testid="urai-home-authored-sanctuary"', 'data-testid="urai-home-sculpted-gardens"',
-    'data-testid="urai-home-embodied-avatar"', 'data-testid="urai-home-horizon-architecture"',
+    'data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"',
+    'data-home-visual-owner="authored-provider-art"', 'data-home-no-finite-horizon-band="true"',
+    'data-tier0-ground-gateway="true"', 'data-testid="urai-home-authored-sanctuary"',
+    'data-testid="urai-home-sculpted-gardens"', 'data-testid="urai-home-embodied-avatar"',
     'data-testid="urai-home-webgl-orb"', 'data-testid="urai-home-threshold-controls"',
-    'urai:first-home-spatial-frame', 'toneMappingExposure = 1.08',
+    'urai:first-home-spatial-frame', 'toneMappingExposure = 1.02',
+    'assetCssStack(homeAssets.primary)', 'assetCssStack(homeAssets.mobile)',
+    'urai-home-authored-environment', 'gl.setClearColor(0x000000, 0)',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.doesNotMatch(canvas, /tap the ground to enter below/i)
-  assert.match(canvas, /data-tier0-ground-gateway="true"/)
   assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
   assert.match(canvas, /const mobile = size\.width < 720/)
   assert.match(canvas, /const compact = size\.height < 650/)
-  assert.match(canvas, /if \(mobile\) cameraBase\.set\(0, compact \? 5\.9 : 6\.7, compact \? 15\.6 : 17\.6\)/)
-  assert.match(canvas, /else cameraBase\.set\(0, 5\.15, 13\.4\)/)
-  assert.match(canvas, /const nextFov = mobile \? \(compact \? 58 : 54\) : 48/)
-  assert.match(canvas, /<planeGeometry args=\{\[160, 160, 1, 1\]\}/)
-  assert.doesNotMatch(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
-  assert.doesNotMatch(canvas, /<circleGeometry args=\{\[13\.5, 128\]\}/)
+  assert.match(canvas, /if \(mobile\) cameraBase\.set\(0, compact \? 4\.9 : 5\.6, compact \? 14\.2 : 15\.8\)/)
+  assert.match(canvas, /else cameraBase\.set\(0, 4\.45, 12\.6\)/)
+  assert.match(canvas, /camera\.fov = THREE\.MathUtils\.lerp\(camera\.fov, mobile \? 52 : 45, easing\)/)
+  assert.match(canvas, /alpha:\s*true/)
+  assert.match(canvas, /premultipliedAlpha:\s*false/)
+  assert.doesNotMatch(canvas, /<color attach="background"/)
+  assert.doesNotMatch(canvas, /<planeGeometry args=\{\[160, 160/)
+  assert.doesNotMatch(canvas, /HorizonArchitecture/)
+  assert.doesNotMatch(canvas, /<torusGeometry/)
   assert.doesNotMatch(canvas, /function Tree|const TREES|OrbitControls/)
   assert.doesNotMatch(canvas, /const portals/)
   assert.doesNotMatch(canvas, /portals\.map/)
@@ -117,22 +123,29 @@ test('Home visual overrides remain scoped to the active WebGL runtime and remove
   assert.match(structuralCss, /display: none !important/)
 })
 
-test('Ground is an embodied private workforce world with explicit destinations and service state', () => {
+test('Ground is an authored private workforce world with explicit truthful destinations', () => {
   for (const marker of [
     'const DESTINATIONS', "id: 'reception'", "id: 'privacy'", "id: 'council'", "id: 'logistics'",
     "id: 'wellness'", "id: 'archive'", "id: 'mirror'", "id: 'passport'", "id: 'consent'",
-    "id: 'atlas'", "id: 'focus'", "id: 'replay'", 'GroundDestination', 'WorkforcePresence',
-    'DestinationArchitecture', 'Corridor', 'CameraRig', 'data-ground-destination', 'data-workforce-state',
-    'data-service-availability', 'data-testid="urai-ground-private-workforce-world"', 'capsuleGeometry',
-    'DESTINATIONS.map', 'DESTINATIONS.slice(0, 8).map', "availability: 'degraded'", "workforceState: 'blocked'",
+    "id: 'atlas'", "id: 'focus'", "id: 'replay'", 'GroundDestination', 'DestinationBeacon',
+    'WorkforceSignals', 'CameraRig', 'data-ground-destination', 'data-workforce-state',
+    'data-service-availability', 'data-testid="urai-ground-private-workforce-world"',
+    'data-ground-visual-owner="authored-provider-art"', 'data-ground-no-compositing-bands="true"',
+    'ground-authored-beacon-', 'ground-workforce-presence-signals', 'DESTINATIONS.map',
+    "availability: 'degraded'", "workforceState: 'blocked'", 'gl.setClearColor(0x000000, 0)',
   ]) assert.ok(includesCanonical(groundSourceGraph, marker), `missing Ground embodied-world marker: ${marker}`)
+
+  assert.doesNotMatch(groundScene, /WorldEnvelope|LayeredTerraces|InitialOverlook/)
+  assert.doesNotMatch(groundScene, /<boxGeometry/)
+  assert.doesNotMatch(groundScene, /EffectComposer|Bloom|Vignette/)
+  assert.doesNotMatch(groundScene, /<color attach="background"/)
   assert.doesNotMatch(groundCanonical, /function\s+GroundPin/)
   assert.doesNotMatch(groundCanonical, /<GroundPin/)
   assert.doesNotMatch(groundCanonical, /OrbitControls/)
 })
 
 test('Ground navigation remains contained, keyboard-operable and exposes active destination state', () => {
-  assert.match(groundCanonical, /className='ground-destination-compass(?: ground-rail)?'/)
+  assert.match(groundCanonical, /className='ground-destination-compass ground-rail'/)
   assert.match(groundCanonical, /aria-current=\{activeId\s*===\s*destination\.id\s*\?\s*'location'\s*:\s*undefined\}/)
   assert.match(groundCanonical, /window\.addEventListener\('keydown',\s*handleKeyDown\)/)
   assert.match(groundCanonical, /window\.removeEventListener\('keydown',\s*handleKeyDown\)/)
@@ -185,8 +198,13 @@ test('Life Map true 3D owner and Canvas wrapper remain full viewport', () => {
   assert.match(structuralCss, /height: 100% !important/)
 })
 
-test('flat route-image veils remain suppressed while Ground and Life Map canvases own the scene', () => {
+test('legacy route-image veils remain suppressed while authored Home and Ground owners stay visible', () => {
   assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
+  assert.match(groundWorld, /\.ground-authored-art\{[^}]*opacity:\.94/s)
+  assert.match(groundWorld, /var\(--ground-provider-desktop\)/)
+  assert.match(groundWorld, /var\(--ground-provider-mobile\)/)
+  assert.match(canvas, /var\(--home-authored-desktop\)/)
+  assert.match(canvas, /var\(--home-authored-mobile\)/)
   assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
   assert.match(css, /data-testid="urai-true-3d-life-map"/)
   assert.match(css, /\.urai-cinematic-backdrop/)
