@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: isolated canonical execution diagnostics 2026-07-18T17:30:00Z
+# trigger: isolated canonical execution diagnostics 2026-07-18T17:35:00Z
 
 on:
   pull_request:
@@ -12,8 +12,6 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 concurrency:
   group: canonical-six-fix-isolated-${{ github.event.pull_request.number }}
@@ -124,23 +122,3 @@ jobs:
           path: /tmp/canonical-six-fix-*.log
           if-no-files-found: ignore
           retention-days: 90
-
-      - name: Post exact execution receipt
-        if: always()
-        uses: actions/github-script@60a0d83039c74aee543508d2ffcb1c3799cdea
-        with:
-          script: |
-            const rows = [
-              ['checkout', '${{ steps.checkout.outcome }}'],
-              ['repair', '${{ steps.repair.outcome }}'],
-              ['install', '${{ steps.install.outcome }}'],
-              ['unit', '${{ steps.unit.outcome }}'],
-              ['typecheck', '${{ steps.typecheck.outcome }}'],
-              ['build', '${{ steps.build.outcome }}'],
-              ['chromium', '${{ steps.chromium.outcome }}'],
-              ['browser', '${{ steps.browser.outcome }}'],
-              ['publish', '${{ steps.publish.outcome }}']
-            ];
-            const product = '${{ steps.publish.outputs.product_sha }}' || 'not-published';
-            const body = ['Canonical six-fix isolated execution receipt.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), `- product SHA: ${product}`, '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
