@@ -11,38 +11,70 @@ const groundScene = read('src/app/ground/GroundWorldScene.tsx')
 const groundStructures = read('src/app/ground/GroundWorldStructures.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
-test('Home is one authored inhabitable threshold with Ground below and Life Map above', () => {
+test('Home is an authored inhabitable threshold with transparent spatial interaction', () => {
   for (const marker of [
+    'assetCssStack(homeAssets.primary)',
+    'assetCssStack(homeAssets.mobile)',
     'SanctuaryFloor',
     'SanctuaryGardens',
-    'HorizonArchitecture',
     'EmbodiedAvatar',
     'RelationshipPresences',
     'FrameScheduler',
     'data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"',
+    'data-home-visual-owner="authored-provider-art"',
+    'data-home-no-finite-horizon-band="true"',
     'data-testid="urai-home-authored-sanctuary"',
     'data-testid="urai-home-sculpted-gardens"',
     'data-testid="urai-home-embodied-avatar"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-threshold-controls"',
     'aria-label="Open the Life Map and ascend into Memory Sky"',
+    'urai-home-authored-environment',
   ]) assert.ok(home.includes(marker), `missing Home convergence marker: ${marker}`)
+
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(home, /<planeGeometry args=\{\[160, 160, 1, 1\]\}/)
+  assert.match(home, /gl=\{\{[^}]*alpha:\s*true[^}]*premultipliedAlpha:\s*false/s)
+  assert.match(home, /gl\.setClearColor\(0x000000, 0\)/)
+  assert.match(home, /var\(--home-authored-desktop\)/)
+  assert.match(home, /var\(--home-authored-mobile\)/)
+  assert.doesNotMatch(home, /<color attach="background"/)
+  assert.doesNotMatch(home, /<planeGeometry args=\{\[160, 160/)
+  assert.doesNotMatch(home, /HorizonArchitecture/)
+  assert.doesNotMatch(home, /<torusGeometry/)
   assert.doesNotMatch(home, /function Tree|const TREES|OrbitControls/)
   assert.doesNotMatch(home, /EffectComposer|Bloom|Vignette/)
 })
 
-test('Ground is layered, partially revealed, state truthful, and architecturally differentiated', () => {
-  for (const marker of ['GroundNexus', 'LayeredTerraces', 'InitialOverlook', 'urai-ground-central-nexus', 'urai-ground-layered-terraces', 'urai-ground-arrival-overlook']) assert.ok(groundScene.includes(marker), `missing Ground spatial marker: ${marker}`)
+test('Ground uses authored infrastructure art with transparent truthful beacons', () => {
+  for (const marker of [
+    'data-ground-visual-owner="authored-provider-art"',
+    'data-ground-no-compositing-bands="true"',
+    'assetCssStack(groundAssets.primary)',
+    'assetCssStack(groundAssets.mobile)',
+    'GroundNexus',
+    'DestinationBeacon',
+    'WorkforceSignals',
+    'ground-authored-beacon-',
+    'ground-workforce-presence-signals',
+    'urai-ground-central-nexus',
+  ]) assert.ok(groundOwner.includes(marker) || groundScene.includes(marker), `missing Ground authored-owner marker: ${marker}`)
+
   for (const form of ['pavilion', 'sanctuary', 'council', 'transit', 'restorative', 'archive', 'reflection', 'vault', 'observatory', 'aperture', 'theater']) assert.ok(groundModel.includes(`"${form}"`) || groundModel.includes(`'${form}'`), `missing Ground chamber form: ${form}`)
   for (const signature of ['Arrival Horizon', 'Boundary Model', 'Decision Field', 'Movement Table', 'Quiet Pool', 'Provenance Spine', 'Many-Sided Mirror', 'Sovereignty Ledger', 'Consent Thread', 'Relational Weather Field', 'Memory Aperture', 'Replay Gate']) assert.ok(groundModel.includes(signature), `missing chamber signature: ${signature}`)
+
   assert.match(groundStructures, /destination\.workforceState === ['"]blocked['"]/)
   assert.match(groundStructures, /destination\.workforceState === ['"]awaiting-owner-approval['"]/)
   assert.match(groundStructures, /ownerBoundary/)
   assert.match(groundOwner, /data-ground-layer/)
   assert.match(groundOwner, /max-width:\s*48px/)
   assert.match(groundOwner, /aria-label.*emotionalSentence/s)
+  assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*true[^}]*premultipliedAlpha:\s*false/s)
+  assert.match(groundOwner, /gl\.setClearColor\(0x000000, 0\)/)
+  assert.match(groundOwner, /opacity:\.94/)
+  assert.doesNotMatch(groundScene, /<color attach="background"/)
+  assert.doesNotMatch(groundScene, /WorldEnvelope|LayeredTerraces|InitialOverlook/)
+  assert.doesNotMatch(groundScene, /EffectComposer|Bloom|Vignette/)
+  assert.doesNotMatch(groundScene, /<boxGeometry/)
 })
 
 test('Life Map loading and reduced capability remain authored private experiences', () => {
