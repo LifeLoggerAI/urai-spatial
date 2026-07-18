@@ -1,11 +1,13 @@
 name: One-shot bounded six-fix direct repair
 
 on:
-  push:
+  pull_request:
+    types: [synchronize]
     branches:
-      - fix/canonical-six-fix-direct-1d172afd-20260718
+      - feat/home-ground-lifemap-art-bible-convergence-20260718
     paths:
       - .github/workflows/one-shot-six-fix-direct.yml
+      - docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md
 
 permissions:
   contents: write
@@ -16,13 +18,17 @@ concurrency:
 
 jobs:
   repair:
+    if: github.event.pull_request.number == 788 && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/canonical-six-fix-direct-1d172afd-20260718'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+      TARGET_BRANCH: fix/canonical-six-fix-direct-1d172afd-20260718
     steps:
       - name: Checkout exact trigger head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.EXPECTED_HEAD }}
           fetch-depth: 0
           persist-credentials: true
       - name: Setup pnpm
@@ -38,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           git merge-base --is-ancestor 1d172afdce8ce1e0b70152b62892dace4cf06fab HEAD
           test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab...HEAD | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md scripts/one-shot-six-fix-direct.mjs | sort)"
           node scripts/one-shot-six-fix-direct.mjs
@@ -56,14 +62,24 @@ jobs:
       - name: Focused browser evidence
         run: |
           pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent"
-      - name: Prove bounded final tree and commit
+      - name: Prove bounded final tree and rewrite branch
         shell: bash
         run: |
           set -euo pipefail
-          rm .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml scripts/one-shot-six-fix-direct.mjs docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md
-          test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
+          mkdir -p /tmp/urai-six-fix/urai-tier1/src/app /tmp/urai-six-fix/urai-tier1/src/components/lifemap /tmp/urai-six-fix/urai-tier1/src/spatial/navigation
+          cp urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx /tmp/urai-six-fix/urai-tier1/src/app/
+          cp urai-tier1/src/app/GroundSpatialWorldClean.tsx /tmp/urai-six-fix/urai-tier1/src/app/
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/urai-six-fix/urai-tier1/src/components/lifemap/
+          cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/
+          git checkout --detach 1d172afdce8ce1e0b70152b62892dace4cf06fab
+          cp /tmp/urai-six-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
+          cp /tmp/urai-six-fix/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
+          cp /tmp/urai-six-fix/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git commit -m "fix(spatial): close bounded accessibility and runtime defects"
-          git push origin HEAD:fix/canonical-six-fix-direct-1d172afd-20260718
+          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
