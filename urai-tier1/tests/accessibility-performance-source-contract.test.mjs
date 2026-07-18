@@ -47,7 +47,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
-  requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
+  requireText(worldShell, "const COMPANION_FREE_DESTINATIONS = new Set(['life-map', 'focus'])")
+  requireText(worldShell, 'const showWorldCompanion = !COMPANION_FREE_DESTINATIONS.has(world.destination)')
   requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
 
   requireText(companionCss, 'width: 64px;')
@@ -71,6 +72,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(ground, 'min-height:48px')
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
+  requireText(focus, 'data-orb-owner="none"')
   assert.equal(focusCss.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focusCss, 'min-height: 48px;')
   requireText(focusCss, 'env(safe-area-inset-left)')
