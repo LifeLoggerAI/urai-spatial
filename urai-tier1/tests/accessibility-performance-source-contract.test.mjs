@@ -19,6 +19,9 @@ test('accessibility and performance implementation contracts are present', () =>
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
   const focusCss = read('src/app/focus/FocusChamber.module.css')
+  const cinematicFocusCss = read('src/app/focus/FocusChamberCinematic.module.css')
+  const landscapeFocusCss = read('src/app/focus/FocusChamberLandscape.module.css')
+  const accessibilityWorkflow = read('../.github/workflows/accessibility-performance-evidence.yml')
   const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
@@ -79,6 +82,18 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(focusCss, 'env(safe-area-inset-right)')
   requireText(focusCss, 'env(safe-area-inset-bottom)')
   requireText(focusCss, '@media (prefers-reduced-motion: reduce)')
+  requireText(cinematicFocusCss, '@media (prefers-reduced-motion: reduce)')
+  requireText(cinematicFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
+  requireText(landscapeFocusCss, '@media (orientation: landscape) and (max-height: 520px)')
+  for (const workflowPath of [
+    'urai-tier1/src/app/focus/FocusChamber.module.css',
+    'urai-tier1/src/app/focus/FocusChamberCinematic.module.css',
+    'urai-tier1/src/app/focus/FocusChamberLandscape.module.css',
+    'urai-tier1/src/spatial/world/WorldStateProvider.tsx',
+    'urai-tier1/src/spatial/world/WorldTransitionController.tsx',
+  ]) {
+    requireText(accessibilityWorkflow, workflowPath, `Accessibility evidence must trigger for ${workflowPath}`)
+  }
 
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
@@ -101,6 +116,8 @@ test('accessibility and performance implementation contracts are present', () =>
     'hasScrollableAncestor',
     'scrollableGroundRail',
     'focusContainment.filter',
+    "toHaveAttribute('data-phase', 'idle')",
+    "page.keyboard.press('Escape')",
   ]) {
     requireText(accessibilityEvidence, marker)
   }
