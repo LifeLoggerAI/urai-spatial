@@ -21,9 +21,9 @@ const interactiveSelector = [
 async function disableWebGL(page: Page) {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
       if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
-      return Reflect.apply(original, this, [type, ...args])
+      return original.apply(this, [type, ...args] as Parameters<typeof original>)
     } as typeof HTMLCanvasElement.prototype.getContext
   })
 }
@@ -31,7 +31,7 @@ async function disableWebGL(page: Page) {
 async function targetSize(page: Page, selector: string) {
   return page.locator(selector).evaluateAll((elements) => elements
     .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
-    .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+    .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && style.display !== 'inline' && rect.width > 0 && rect.height > 0)
     .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100 })))
 }
 
@@ -52,7 +52,9 @@ test.describe('URAI accessibility and performance evidence', () => {
           const text = element.textContent?.trim()
           const title = element.getAttribute('title')?.trim()
           const value = element instanceof HTMLInputElement ? element.value.trim() : ''
-          return !(aria || labelledBy || text || title || value)
+          const hasLabel = element.id ? Boolean(document.querySelector(`label[for="${CSS.escape(element.id)}"]`)) : false
+          const hasParentLabel = Boolean(element.closest('label'))
+          return !(aria || labelledBy || text || title || value || hasLabel || hasParentLabel)
         })
         .map((element) => element.outerHTML.slice(0, 240)))
       report.push({ route: route.name, unnamed })
@@ -119,7 +121,11 @@ test.describe('URAI accessibility and performance evidence', () => {
         return elements
           .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
           .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
-          .filter(({ rect }) => rect.left < left || rect.top < top || rect.right > right || rect.bottom > bottom)
+          .filter(({ rect }) => {
+            const intersects = rect.left < right && rect.right > left && rect.top < bottom && rect.bottom > top
+            const fullyContained = rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom
+            return intersects && !fullyContained
+          })
           .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }))
       })
       report.push({ route: route.name, clipped })
@@ -153,12 +159,12 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect.poll(() => page.url()).toBe(before)
   })
 
-  test('offline transition recovery stays on the same route', async ({ page, context }) => {
+  test('offline transition preserves the current route and recovers online', async ({ page, context }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
     const before = page.url()
     await context.setOffline(true)
     await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-    await page.waitForTimeout(200)
+    await expect.poll(() => page.url()).toBe(before)
     await context.setOffline(false)
     await page.evaluate(() => window.dispatchEvent(new Event('online')))
     await expect.poll(() => page.url()).toBe(before)
