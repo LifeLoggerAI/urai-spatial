@@ -2,6 +2,7 @@ import { buildExplicitDemoMemory, type SelectedMemory } from './selectedMemoryCo
 
 const QUIET_RESET_ID = 'quiet-reset'
 const QUIET_RESET_MANIFEST_ID = 'replay-recovery-thread'
+const NON_REPLAYABLE_SAMPLE_IDS = new Set(['ritual-marker', 'forecast-path', 'legacy-thread'])
 
 const SAMPLE_MEMORY_CATALOG: Record<string, {
   title: string
@@ -96,6 +97,11 @@ export function isKnownExplicitDemoMemoryId(id: string | null | undefined) {
   return key === QUIET_RESET_ID || Object.hasOwn(SAMPLE_MEMORY_CATALOG, key)
 }
 
+export function explicitDemoReplayAvailable(id: string | null | undefined) {
+  if (!id || !isKnownExplicitDemoMemoryId(id)) return false
+  return !NON_REPLAYABLE_SAMPLE_IDS.has(stripDemoPrefix(id))
+}
+
 export function explicitDemoModeEnabled() {
   if (process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true') return true
   if (typeof window === 'undefined') return false
@@ -156,7 +162,9 @@ export function buildNamedExplicitDemoMemory(id: string): SelectedMemory {
     },
     narrator: {
       focus: fixture.summary.replace(' This is not personal data.', ''),
-      replay: `Enter the disclosed ${fixture.title.toLowerCase()} demonstration more deeply.`,
+      replay: explicitDemoReplayAvailable(key)
+        ? `Enter the disclosed ${fixture.title.toLowerCase()} demonstration more deeply.`
+        : `Replay is unavailable for this disclosed ${fixture.title.toLowerCase()} fixture.`,
     },
     star: {
       ...memory.star,
