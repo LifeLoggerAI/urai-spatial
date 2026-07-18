@@ -10,14 +10,22 @@ const source = fs.readFileSync(
   "utf8",
 );
 
-test("Life Map contains untextured first paint behind an authored loading surface", () => {
+test("Life Map reveals only after pixel-clean texture evidence or semantic recovery", () => {
   assert.match(source, /data-life-map-prepaint-boundary="true"/);
   assert.match(source, /data-life-map-surface-ready=\{surfaceReady \? 'true' : 'false'\}/);
+  assert.match(source, /data-life-map-readiness-method=\{readinessMethod\}/);
   assert.match(source, /aria-hidden=\{!surfaceReady\}/);
   assert.match(source, /visibility: surfaceReady \? 'visible' : 'hidden'/);
   assert.match(source, /pointerEvents: surfaceReady \? 'auto' : 'none'/);
-  assert.match(source, /window\.requestAnimationFrame/);
-  assert.match(source, /window\.setTimeout\(\(\) => setSurfaceReady\(true\), 120\)/);
+  assert.match(source, /canvas\.getContext\('webgl2'\) \|\| canvas\.getContext\('webgl'\)/);
+  assert.match(source, /gl\.readPixels/);
+  assert.match(source, /BRIGHT_NEUTRAL_LIMIT = 0\.015/);
+  assert.match(source, /REQUIRED_STABLE_SAMPLES = 2/);
+  assert.match(source, /sample\.brightNeutralRatio < BRIGHT_NEUTRAL_LIMIT/);
+  assert.match(source, /sample\.litRatio > MIN_LIT_RATIO/);
+  assert.match(source, /reveal\('pixel-proof'\)/);
+  assert.match(source, /reveal\('semantic-recovery'\)/);
+  assert.equal(source.includes("setSurfaceReady(true), 120"), false);
   assert.match(source, /Opening constellation…/);
   assert.match(source, /<AdaptiveLifeMapScene key=\{`\$\{identity\}:\$\{revision\}`\} \/>/);
 });
