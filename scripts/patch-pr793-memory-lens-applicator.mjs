@@ -32,7 +32,7 @@ const oldTextureBlock = [
 ].join('\n')
 const newTextureBlock = [
   '  const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution]);',
-  '  const textureKey = texture?.uuid || `fallback-${node.id}-${textureResolution}`;',
+  '  const textureKey = texture?.uuid || "pending";',
   '  const scale = 0.58 + node.intensity * 0.2;',
 ].join('\n')
 replaceExactlyOnce(oldTextureBlock, newTextureBlock, 'texture-key')
