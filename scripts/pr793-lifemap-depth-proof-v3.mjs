@@ -7,6 +7,7 @@ function once(p,a,b){const s=read(p),i=s.indexOf(a);if(i<0||s.indexOf(a,i+a.leng
 
 once(capture,"    path: '/life-map/',","    path: '/life-map/?demo=1',")
 once(capture,"    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',","    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1',")
+once(sceneTest,"assert.ok(source.includes('useLifeMapEvents()'), 'Life Map must load private or explicit sample-backed memory nodes.')","assert.ok(source.includes('useLifeMapEvents(requestedDemo ? \"demo-user\" : undefined)'), 'Life Map must keep private loading by default and enable sample nodes only for explicit demo URLs.')")
 once(sceneTest,"assert.ok(canonical.includes('data-life-map-authored-universe=\"primary\"'), 'The authored galaxy must remain an explicit visible owner.')","assert.ok(canonical.includes('data-life-map-authored-universe=\"atmospheric\"'), 'The governed provider art must remain only an atmospheric owner.')")
 once(sceneTest,"assert.ok(canonical.includes('opacity: .78'), 'The authored universe must not regress to a nearly invisible decorative tint.')","assert.ok(canonical.includes('opacity: .22'), 'The provider art must remain atmospheric rather than veiling the R3F world.')")
 const source=read(sceneTest),marker="test('LifeMap depth composition contains no block or plane veil owners'"
