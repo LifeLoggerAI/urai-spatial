@@ -31,12 +31,16 @@ jobs:
     name: Verify 53 assets and publish independent ledger
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
-      - name: Checkout exact candidate
+      - name: Checkout exact candidate head
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Node 24
         uses: actions/setup-node@v4
@@ -49,13 +53,17 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts
           git rev-parse HEAD | tee artifacts/exact-head.txt
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          printf '%s\n' "${CANDIDATE_SHA}" | tee artifacts/expected-head.txt
+          test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
 
-      - name: Verify producer handoff contract
+      - name: Verify producer contract and registry boundary
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/verify_asset_factory_v1_handoff.py | tee artifacts/producer-handoff-verification.log
+          python3 scripts/verify_asset_factory_v1_handoff.py \
+            --contract-only \
+            --report artifacts/producer-handoff-verification.json \
+            | tee artifacts/producer-handoff-verification.log
 
       - name: Generate independent byte hash dimension and consumption ledger
         shell: bash
@@ -86,7 +94,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: asset-pack-independent-ledger-${{ github.sha }}
+          name: asset-pack-independent-ledger-${{ env.CANDIDATE_SHA }}
           path: artifacts/
           if-no-files-found: error
           retention-days: 90
