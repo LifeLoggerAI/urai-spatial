@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - fix/canonical-review-mobile-a7146e3c-20260718
+  pull_request:
+    branches:
+      - feat/home-ground-lifemap-art-bible-convergence-20260718
+    paths:
+      - .github/workflows/one-shot-canonical-review-mobile-repair.yml
 
 permissions:
   contents: write
