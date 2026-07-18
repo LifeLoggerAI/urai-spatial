@@ -22,17 +22,35 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 }
 
 /* Home keeps the companion controller and menu, but the authored sanctuary image
- * owns the only visible Orb. The generic button becomes a transparent accessible
- * hit target aligned over that Orb and retains a visible keyboard focus ring. */
+ * owns the only visible Orb. While closed, the generic button is a transparent
+ * accessible hit target aligned over that Orb. */
 .urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb,
-.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:hover,
-.urai-world-runtime[data-world-destination='home'] .urai-world-companion[data-open='true'] .urai-world-companion__orb {
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:hover {
   position: fixed !important;
   left: 50% !important;
   top: 55% !important;
   width: 96px !important;
   height: 96px !important;
   transform: translate(-50%, -50%) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Once open, return the transparent controller to its normal grid position below
+ * the menu. This preserves a pointer-close target without covering destination
+ * buttons such as Life Map. */
+.urai-world-runtime[data-world-destination='home']
+  .urai-world-companion[data-open='true'] .urai-world-companion__orb,
+.urai-world-runtime[data-world-destination='home']
+  .urai-world-companion[data-open='true'] .urai-world-companion__orb:hover {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  width: 64px !important;
+  height: 64px !important;
+  transform: none !important;
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
