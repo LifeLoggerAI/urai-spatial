@@ -1,0 +1,29 @@
+name: One-shot exact evidence repair
+
+on:
+  push:
+    branches:
+      - fix/embodied-evidence-974053e-20260718
+    paths:
+      - .github/workflows/one-shot-exact-evidence-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.head_commit.message == 'chore(evidence): queue exact 974053e repair'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/embodied-evidence-974053e-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply exact failure-driven repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'
