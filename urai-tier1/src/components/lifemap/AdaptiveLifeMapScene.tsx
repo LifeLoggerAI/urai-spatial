@@ -573,9 +573,6 @@ function MemoryPath({ from, to, active, profile }: {
     middle.z -= 0.55 + Math.abs(start.z - end.z) * 0.08;
     return new THREE.CatmullRomCurve3([start, middle, end]);
   }, [from, to]);
-  const tube = useMemo(() => new THREE.TubeGeometry(curve, 72, active ? 0.012 : 0.005, 6, false), [active, curve]);
-
-  useEffect(() => () => tube.dispose(), [tube]);
 
   useFrame(({ clock }) => {
     if (!pulse.current || !active || profile.reducedMotion || !profile.documentVisible) return;
@@ -585,7 +582,8 @@ function MemoryPath({ from, to, active, profile }: {
 
   return (
     <group name="life-map-temporal-path">
-      <mesh geometry={tube}>
+      <mesh>
+        <tubeGeometry args={[curve, 72, active ? 0.012 : 0.005, 6, false]} />
         <meshBasicMaterial color={active ? "#a5f7ff" : "#24344d"} transparent opacity={active ? 0.38 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh ref={pulse} visible={active && !profile.reducedMotion}>
@@ -614,10 +612,14 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
       : related
         ? profile.tier === "high" ? 224 : 160
         : 80;
-  const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution]);
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const scale = 0.72 + node.intensity * 0.24;
 
-  useEffect(() => () => texture?.dispose(), [texture]);
+  useEffect(() => {
+    const nextTexture = createMemorySurface(node, textureResolution);
+    setTexture(nextTexture);
+    return () => nextTexture?.dispose();
+  }, [node, textureResolution]);
 
   useFrame(({ clock }) => {
     if (!group.current) return;
