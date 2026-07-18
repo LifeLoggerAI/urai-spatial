@@ -34,6 +34,7 @@ const newTextureBlock = [
   '  const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution]);',
   '  const textureKey = texture?.uuid || "pending";',
   '  const scale = 0.58 + node.intensity * 0.2;',
+  '  const visibleOpacity = selected ? 1 : overview ? 0.82 : related ? 0.42 : 0.11;',
 ].join('\n')
 replaceExactlyOnce(oldTextureBlock, newTextureBlock, 'texture-key')
 replaceExactlyOnce(
@@ -46,22 +47,6 @@ replaceExactlyOnce(
   '          color={texture ? "#ffffff" : "#071425"}',
   'transparent-fallback-color',
 )
-replaceExactlyOnce(
-  '          opacity={texture ? visibleOpacity : 0}',
-  '          opacity={texture ? selected ? 1 : overview ? 0.82 : related ? 0.42 : 0.11 : 0}',
-  'transparent-fallback-opacity',
-)
-
-const lines = source.split('\n')
-let assertionCount = 0
-for (let index = 0; index < lines.length; index += 1) {
-  if (lines[index].includes('assert.match(adaptiveLifeMap, /opacity=') && lines[index].includes('visibleOpacity')) {
-    lines[index] = String.raw`  assert.match(adaptiveLifeMap, /opacity=\\{texture \\? selected \\? 1 : overview \\? 0\\.82 : related \\? 0\\.42 : 0\\.11 : 0\\}/)`
-    assertionCount += 1
-  }
-}
-if (assertionCount !== 1) throw new Error(`Expected one final opacity assertion, found ${assertionCount}`)
-source = lines.join('\n')
 
 fs.writeFileSync(path, source)
 console.log('Patched the isolated memory-lens applicator deterministically.')
