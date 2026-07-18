@@ -22,7 +22,7 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 }
 
 /* Ground is a realm, not a miniature dashboard. Route chrome remains available
- * through the Home companion outside Life Map; the environment receives the viewport. */
+ * through the Home companion outside Life Map; the environment receives the entire viewport. */
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root {
   width: 100vw !important;
   height: 100svh !important;
@@ -84,5 +84,44 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   .urai-world-runtime[data-world-destination='replay'] .replaySpatialCaption {
     bottom: 29svh !important;
     width: calc(100vw - 36px) !important;
+  }
+
+  .urai-world-runtime[data-world-destination='replay'] .replayUnwind {
+    bottom: max(18px, env(safe-area-inset-bottom)) !important;
+    left: 12px !important;
+    max-width: 124px;
+  }
+
+  .urai-world-runtime[data-world-destination='replay'] .urai-world-companion {
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    z-index: 35 !important;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
+    transform: scale(1.22) translateY(-1.5svh);
+    transform-origin: 50% 54%;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label {
+    min-width: 104px !important;
+    padding: 7px 8px !important;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label strong {
+    font-size: 9px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .urai-world-runtime[data-world-destination='replay'] [data-testid='urai-replay-meta-panel'] {
+    max-height: 39svh !important;
+  }
+
+  .urai-world-runtime[data-world-destination='replay'] .replaySpatialCaption {
+    bottom: 31svh !important;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
+    transform: scale(1.3) translateY(-2svh);
   }
 }

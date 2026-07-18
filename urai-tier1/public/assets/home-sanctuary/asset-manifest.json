@@ -4,60 +4,60 @@
     "repository": "LifeLoggerAI/urai-spatial",
     "runtimeRoot": "urai-tier1",
     "owner": "URAI Labs",
-    "license": "Proprietary work-for-hire and original in-house procedural implementation",
+    "license": "Repository-controlled URAI route artwork and original in-house runtime implementation",
     "externalAttributionRequired": false
   },
-  "status": "in-house-authored-procedural-production-candidate",
+  "status": "authored-asset-first-production-candidate",
   "assets": [
     {
-      "id": "sanctuary-floor",
-      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "id": "home-authored-desktop",
+      "source": "public/assets/urai/home/home-threshold-main.webp with home-threshold-fallback.svg",
       "creator": "URAI Labs",
-      "runtimePurpose": "Reflective obsidian platform, moon-silver ring system, radial energy paths and Orb socket",
-      "format": "runtime geometry",
+      "runtimePurpose": "Primary full-viewport Home sanctuary, horizon, environmental storytelling, and threshold composition",
+      "format": "WebP with SVG fallback",
       "textureDimensions": null,
-      "polygonBudget": 11000,
-      "deviceTierBehavior": "Shared geometry; antialiasing, DPR and shadow resolution adapt by tier",
+      "polygonBudget": 0,
+      "deviceTierBehavior": "Desktop and larger viewports use the primary route artwork through the canonical asset registry",
       "temporary": false
     },
     {
-      "id": "embodied-avatar",
-      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "id": "home-authored-mobile",
+      "source": "public/assets/urai/home/home-threshold-mobile.webp with home-threshold-fallback.svg",
       "creator": "URAI Labs",
-      "runtimePurpose": "Abstract full-body symbolic user presence, breathing state and emotional aura",
-      "format": "runtime geometry",
+      "runtimePurpose": "Mobile-safe Home sanctuary crop preserving the same world ownership and thresholds",
+      "format": "WebP with SVG fallback",
       "textureDimensions": null,
-      "polygonBudget": 9000,
-      "deviceTierBehavior": "Same semantic silhouette at every tier; motion respects reduced-motion preference",
+      "polygonBudget": 0,
+      "deviceTierBehavior": "Selected below 700px and composed around mobile safe areas",
       "temporary": false
     },
     {
-      "id": "orb-companion",
-      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "id": "transparent-spatial-depth-layer",
+      "source": "HomeSpatialCanvas.tsx transparent React Three Fiber interaction layer",
       "creator": "URAI Labs",
-      "runtimePurpose": "Sole visible Home companion and direct interaction owner",
-      "format": "runtime geometry",
+      "runtimePurpose": "Camera parallax, sky and Ground hit regions, relationship depth lights, embodied self, and first-frame evidence without repainting the authored world",
+      "format": "runtime geometry with transparent WebGL canvas",
       "textureDimensions": null,
-      "polygonBudget": 12000,
-      "deviceTierBehavior": "Same hit target and state owner at every tier",
+      "polygonBudget": 5200,
+      "deviceTierBehavior": "DPR and star count adapt by tier; motion respects reduced-motion preference",
       "temporary": false
     },
     {
-      "id": "horizon-architecture",
-      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "id": "home-only-orb-companion",
+      "source": "HomeSpatialCanvas.tsx compact glass sphere and aura",
       "creator": "URAI Labs",
-      "runtimePurpose": "Reachable landmark silhouettes and sanctuary depth",
+      "runtimePurpose": "Small Home-owned companion and direct interaction owner without a Saturn-like ring system",
       "format": "runtime geometry",
       "textureDimensions": null,
-      "polygonBudget": 7000,
-      "deviceTierBehavior": "Shared across tiers with adaptive shadows",
+      "polygonBudget": 5200,
+      "deviceTierBehavior": "Same semantic hit owner at every tier; hidden from Life Map by destination ownership",
       "temporary": false
     },
     {
       "id": "layered-2d-fallback",
       "source": "HomeSanctuaryFallback.tsx and home-sanctuary-final.css",
       "creator": "URAI Labs",
-      "runtimePurpose": "No-WebGL, context-loss and reduced graphics sanctuary preserving identical actions",
+      "runtimePurpose": "No-WebGL, context-loss, and reduced-graphics sanctuary preserving identical actions",
       "format": "HTML and CSS gradients",
       "textureDimensions": null,
       "polygonBudget": 0,
@@ -81,7 +81,5 @@
     "longTaskMsMaximum": 200,
     "requiredMissingAssets": 0
   },
-  "externalArtBoundary": "No third-party, scraped, watermarked or unverifiable asset is used by this candidate. Future artist-authored GLB or KTX2 replacement must preserve this manifest, prove ownership, and pass exact-head visual and performance gates before promotion."
+  "externalArtBoundary": "No third-party, scraped, watermarked, or unverifiable asset is introduced by this candidate. Any future GLB, KTX2, image, or video replacement must preserve this manifest, prove ownership, and pass exact-head visual, accessibility, privacy, and performance gates before promotion."
 }
-
-

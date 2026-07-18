@@ -37,6 +37,8 @@ test('Home is an authored inhabitable threshold with transparent spatial interac
   assert.match(home, /gl\.setClearColor\(0x000000, 0\)/)
   assert.match(home, /var\(--home-authored-desktop\)/)
   assert.match(home, /var\(--home-authored-mobile\)/)
+  assert.match(home, /refresh\(\)\s*try\s*\{\s*window\.sessionStorage\.setItem\('urai:home:visited', 'true'\)\s*\}\s*catch\s*\{[\s\S]*?\}\s*window\.addEventListener\('storage', refresh\)/)
+  assert.match(home, /window\.addEventListener\('urai:home-world-state', refresh as EventListener\)/)
   assert.doesNotMatch(home, /<color attach="background"/)
   assert.doesNotMatch(home, /<planeGeometry args=\{\[160, 160/)
   assert.doesNotMatch(home, /HorizonArchitecture/)
