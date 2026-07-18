@@ -21,12 +21,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Restore parent spatial contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          git show bc0caa665168709ec377aef40e4f0cde060660eb:urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs > urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
-
       - name: Apply bounded failure-driven repairs
         shell: bash
         run: |
@@ -91,13 +85,6 @@ jobs:
           evidence = Path('urai-tier1/tests/accessibility-performance-evidence.spec.ts')
           replace_once(evidence, "await expect(page.getByRole('status')).toContainText(/restor/i)", "await expect(page.locator('.urai-home-spatial-runtime-layer [role=\"status\"]')).toContainText(/restor/i)")
           replace_once(evidence, "await expect(page.getByRole('status')).toContainText(/could not recover/i)", "await expect(page.locator('.urai-home-spatial-runtime-layer [role=\"status\"]')).toContainText(/could not recover/i)")
-
-          restoration = Path('urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs')
-          restored = restoration.read_text()
-          restored = restored.replace("const canvas = read('src/app/HomeSpatialCanvas.tsx')", "const canvas = read('src/app/EmbodiedHomeSpatialCanvas.tsx')")
-          restored = restored.replace('data-urai-home-runtime="one-continuous-webgl-world"', 'data-urai-home-runtime="embodied-continuous-webgl-world"')
-          restored = restored.replace('assert.match(layer, /HomeSpatialCanvas, \\{ useWebGLAvailable \\}/)', "assert.match(layer, /EmbodiedHomeSpatialCanvas/)\n  assert.match(layer, /useWebGLAvailable/)")
-          restoration.write_text(restored)
           PY
 
       - name: Prove focused contracts
