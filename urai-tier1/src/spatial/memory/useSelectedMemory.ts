@@ -66,6 +66,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
 
     const params = new URLSearchParams(search)
     const explicitDemo = isExplicitDemoRequest(params)
+      || (params.get('demo') === '1' && isKnownExplicitDemoMemoryId(memoryId))
       || (memoryId.startsWith('demo:') && isKnownExplicitDemoMemoryId(memoryId))
       || (explicitDemoModeEnabled() && isKnownExplicitDemoMemoryId(memoryId))
 
