@@ -38,6 +38,7 @@ test('correction workflow preserves original history and unsent owner-scoped dra
   assert.match(controls, /Original: \{String\(item\.correction\.previousValue \?\? ''\)\}/)
   assert.match(controls, /Corrected: \{String\(item\.correction\.nextValue \?\? ''\)\}/)
   assert.match(controls, /urai-replay-correction-draft-v1:/)
+  assert.match(controls, /encodeURIComponent\(ownerId\).*encodeURIComponent\(memoryId\)/)
   assert.match(controls, /Keep draft and close/)
   assert.match(controls, /maxLength=\{1000\}/)
   assert.doesNotMatch(controls, /String\([^)]*\?\? undefined\)/)
@@ -53,8 +54,14 @@ test('authenticated persistence is owner-scoped idempotent transactional and acc
   assert.match(transport, /outcome: duplicate \? 'already-applied' : 'committed'/)
   assert.match(transport, /runTransaction/)
   assert.match(transport, /serverTimestamp\(\)/)
+  assert.match(transport, /safeDocumentToken = \(value: string\) => encodeURIComponent\(value\)/)
   assert.match(transport, /requireAuthenticatedOwner\(operation\.ownerId\)/g)
   assert.match(controls, /activeIdentity\.current !== requestedIdentity/)
+  assert.match(controls, /const current = readReplayOperationState\(window\.localStorage, memory\.ownerId, memory\.id\)/)
+  assert.match(controls, /mergeState\(current, server\)/)
+  assert.match(controls, /const applyIfCurrent = \(state: ReplayOperationState\)/)
+  assert.match(controls, /onOptimistic: applyIfCurrent/)
+  assert.match(controls, /onSettled: applyIfCurrent/)
 })
 
 test('Firestore and local queues cannot cross account ownership boundaries', () => {
