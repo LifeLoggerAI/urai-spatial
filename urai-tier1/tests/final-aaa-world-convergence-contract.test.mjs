@@ -158,6 +158,9 @@ test('mobile safe area, scroll containment, and reduced motion remain explicit',
 test('Life Map renders synchronous luminous lenses with dominant selected mode', () => {
   assert.match(adaptiveLifeMap, /memoryLensPath/)
   assert.match(adaptiveLifeMap, /const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/)
+  assert.match(adaptiveLifeMap, /const textureKey = texture\?\.uuid/)
+  assert.match(adaptiveLifeMap, /key=\{textureKey \+ "-main"\}/)
+  assert.match(adaptiveLifeMap, /color=\{texture \? "#ffffff" : "#071425"\}/)
   assert.match(adaptiveLifeMap, /data-life-map-memory-contract="synchronous-luminous-memory-lenses"/)
   assert.match(adaptiveLifeMap, /data-life-map-mode=\{selectedNode \? "selected" : "overview"\}/)
   assert.match(adaptiveLifeMap, /data-selected=\{selectedNode \? "true" : "false"\}/)
