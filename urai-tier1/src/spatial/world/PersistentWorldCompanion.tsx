@@ -28,6 +28,7 @@ const SECONDARY_DESTINATIONS: readonly UraiDestination[] = [
 export function PersistentWorldCompanion() {
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
@@ -45,6 +46,10 @@ export function PersistentWorldCompanion() {
   const closeCompanion = useCallback((restoreFocus = true) => {
     restoreFocusRef.current = restoreFocus
     setOpen(false)
+  }, [])
+
+  useEffect(() => {
+    setHydrated(true)
   }, [])
 
   const toggleCompanion = useCallback(() => {
@@ -124,7 +129,7 @@ export function PersistentWorldCompanion() {
     <button
       key={destination.id}
       type="button"
-      disabled={phase !== 'idle'}
+      disabled={!hydrated || phase !== 'idle'}
       data-active={destination.id === world.destination ? 'true' : 'false'}
       data-world-target={destination.id}
       aria-current={destination.id === world.destination ? 'page' : undefined}
@@ -160,7 +165,7 @@ export function PersistentWorldCompanion() {
             type="button"
             className="urai-world-companion__return"
             aria-label="Return through the world"
-            disabled={phase !== 'idle'}
+            disabled={!hydrated || phase !== 'idle'}
             data-return="true"
             onClick={returnThroughWorld}
           >
@@ -177,6 +182,7 @@ export function PersistentWorldCompanion() {
         aria-controls="urai-world-companion-menu"
         data-world-target="orb-controls"
         data-urai-audit-action="orb-controls"
+        disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
         onKeyDown={(event) => {
           if (event.key !== 'Enter' && event.key !== ' ') return
