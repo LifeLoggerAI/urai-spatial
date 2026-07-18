@@ -28,6 +28,10 @@ function dateLabel(value: string) {
   }
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]'))
+}
+
 function recoveryCopy(result: SelectedMemoryResult) {
   const message = result.message.toLowerCase()
   if (result.status === 'loading') {
@@ -210,6 +214,18 @@ export default function FocusChamberClient() {
       },
     })
   }, [lifeMapHref, memory])
+
+  useEffect(() => {
+    if (!memory) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || isEditableTarget(event.target)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      returnToLifeMap()
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [memory, returnToLifeMap])
 
   if (!memory) return <FocusRecovery result={result} />
 
