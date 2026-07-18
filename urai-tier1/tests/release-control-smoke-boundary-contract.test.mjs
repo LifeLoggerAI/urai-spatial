@@ -40,3 +40,10 @@ test('browser console, page, and blocked-network evidence fail the retained rece
   assert.match(source, /urai-release-control-smoke-5/)
   assert.match(source, /if \(failures\.length\) throw new Error/)
 })
+
+test('browser screenshot filenames remain portable GitHub artifact paths', () => {
+  assert.ok(source.includes('function artifactSafeFilename(value)'))
+  assert.ok(source.includes(".replace(/[<>:\"/\\\\|?*=&\\u0000-\\u001F]+/g, '-')"))
+  assert.ok(source.includes('artifactSafeFilename(route)'))
+  assert.ok(!source.includes("route.replace(/[/?=&]+/g"))
+})
