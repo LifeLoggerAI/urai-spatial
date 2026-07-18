@@ -14,13 +14,13 @@ concurrency:
 
 jobs:
   repair:
-    if: github.event.issue.number == 788 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-six-fix-800abcf6'
+    if: github.event.issue.number == 788 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-six-fix-99117734'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
-      EXPECTED_HEAD: 800abcf692e4745a5f263309dee9234d00d5d8c9
-      TARGET_BRANCH: fix/canonical-six-fix-direct-1d172afd-20260718
+      EXPECTED_HEAD: 99117734727d8cb1156662233042cc11bd72fb7a
+      TARGET_BRANCH: exec/canonical-six-fix-product-r2-20260718
     steps:
       - name: Checkout exact isolated repair head
         id: checkout
@@ -39,7 +39,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md scripts/one-shot-six-fix-direct.mjs | sort)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' scripts/one-shot-six-fix-direct.mjs | sort)"
           node scripts/one-shot-six-fix-direct.mjs
           git diff --check
           test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
@@ -109,5 +109,5 @@ jobs:
               ['browser', '${{ steps.browser.outcome }}'],
               ['publish', '${{ steps.publish.outcome }}']
             ];
-            const body = ['Canonical six-fix authority receipt for `800abcf692e4745a5f263309dee9234d00d5d8c9`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
+            const body = ['Canonical six-fix authority receipt for `99117734727d8cb1156662233042cc11bd72fb7a`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 788, body });
