@@ -17,6 +17,8 @@ test('accessibility and performance implementation contracts are present', () =>
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
+  const playwrightConfig = read('../playwright.accessibility.config.ts')
+  const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
 
   requireText(reducedMotion, 'prefers-reduced-motion: reduce')
   requireText(reducedMotion, "addEventListener?.('change', update)")
@@ -65,4 +67,16 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(focus, 'env(safe-area-inset-right)')
   requireText(focus, 'env(safe-area-inset-bottom)')
   requireText(focus, '@media(prefers-reduced-motion:reduce)')
+
+  requireText(playwrightConfig, 'python3 -m http.server 3000')
+  assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
+  for (const marker of [
+    'DESKTOP_FRAME_P95_BUDGET_MS = 20',
+    'MOBILE_FRAME_P95_BUDGET_MS = 33.3',
+    'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024',
+    'JOURNEY_CYCLES = 5',
+    "serverMode: 'static-export'",
+  ]) {
+    requireText(performanceMetrics, marker)
+  }
 })
