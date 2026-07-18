@@ -91,3 +91,10 @@ replaceOnce(
   `  assert.match(adaptiveLifeMap, /className="life-map-accessibility-menu"/)\n  assert.match(adaptiveLifeMap, />Ground<\\/button>/)`,
   `  assert.match(adaptiveLifeMap, /className="life-map-accessibility-menu"/)\n  assert.match(adaptiveLifeMap, /overviewRequested \\? null : queryNodeId/)\n  assert.match(adaptiveLifeMap, /overviewRequested \\? OVERVIEW_CAMERA/)\n  assert.match(adaptiveLifeMap, /data-life-map-overview-control="true"/)\n  assert.match(adaptiveLifeMap, /urai:life-map-overview/)\n  assert.match(adaptiveLifeMap, />Ground<\\/button>/)`,
 )
+
+const embodiedBrowser = 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'
+replaceOnce(
+  embodiedBrowser,
+  `    await page.keyboard.press('r')\n    await expect.poll(() => normalizedPathname(page.url()) + new URL(page.url()).search).toBe('/life-map')\n    await expect(page.getByRole('status').filter({ hasText: /whole private constellation/i })).toBeVisible()`,
+  `    await page.keyboard.press('r')\n    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')\n    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')\n    await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()\n    await expect(page.locator('.life-map-memory-portals')).toHaveCount(0)\n    await page.reload({ waitUntil: 'domcontentloaded' })\n    await expect(page.locator('.life-map-independent-realm')).toBeVisible({ timeout: 15_000 })\n    await expect(page.locator('.life-map-memory-portals')).toHaveCount(0)\n    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')\n    await expect(page.getByRole('status').filter({ hasText: /whole private constellation/i })).toBeVisible()`,
+)
