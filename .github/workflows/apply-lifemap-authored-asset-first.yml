@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected='d28ecd9e2314973cf912d37203a2ba4eef054eb2'
+          expected='fbc9b63129563a477b6a478b5bf527617711b530'
           actual="$(git rev-parse HEAD)"
           test "$actual" = "$expected" || { echo "Refusing to patch moved head: $actual"; exit 1; }
           test "$(git status --porcelain)" = ""
@@ -78,13 +78,15 @@ jobs:
 
           css_path = Path('urai-tier1/src/spatial/world/lifeMapConvergence.css')
           css = css_path.read_text()
+          if '.life-map-authored-universe {' in css:
+              raise SystemExit('authored universe CSS already exists')
           css += '''\n\n/* Authored galaxy owns the visible frame. WebGL supplies transparent depth, stars, and interaction. */\n.life-map-authored-universe {\n  position: absolute;\n  inset: -2%;\n  z-index: 0;\n  pointer-events: none;\n  background-image:\n    linear-gradient(180deg, rgba(1, 3, 10, .08), rgba(1, 3, 10, .3)),\n    url('/assets/urai/life-map/life-map-galaxy-main.webp'),\n    url('/assets/urai/life-map/life-map-galaxy-fallback.svg');\n  background-size: cover, cover, cover;\n  background-position: center, center, center;\n  background-repeat: no-repeat;\n  filter: saturate(1.12) contrast(1.06) brightness(.78);\n  transform: scale(1.025);\n}\n\n.life-map-cosmic-wash {\n  z-index: 1;\n  opacity: .58;\n  mix-blend-mode: screen;\n}\n\n.life-map-independent-realm > canvas.life-map-canvas {\n  z-index: 2;\n  opacity: .9;\n  mix-blend-mode: screen;\n}\n\n.life-map-depth-vignette {\n  z-index: 3;\n  background:\n    linear-gradient(180deg, rgba(0, 0, 0, .18), transparent 18%, transparent 76%, rgba(0, 0, 0, .42)),\n    radial-gradient(ellipse at 50% 48%, transparent 0 51%, rgba(0, 0, 0, .54) 100%);\n}\n\n@media (max-width: 700px) {\n  .life-map-authored-universe {\n    inset: -1%;\n    background-image:\n      linear-gradient(180deg, rgba(1, 3, 10, .06), rgba(1, 3, 10, .26)),\n      url('/assets/urai/life-map/life-map-galaxy-mobile.webp'),\n      url('/assets/urai/life-map/life-map-galaxy-fallback.svg');\n    background-position: center, center, center;\n    filter: saturate(1.08) contrast(1.04) brightness(.82);\n    transform: scale(1.015);\n  }\n\n  .life-map-independent-realm > canvas.life-map-canvas {\n    opacity: .84;\n  }\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .life-map-authored-universe {\n    transform: none;\n  }\n}\n'''
           css_path.write_text(css)
 
           contract_path = Path('urai-tier1/tests/lifemap-scene-behavior.test.mjs')
           contract = contract_path.read_text()
           anchor = "  assert.ok(source.includes('data-home-companion-owned=\"false\"'))\n"
-          replacement = anchor + "  assert.ok(source.includes('className=\"life-map-authored-universe\"'))\n  assert.ok(source.includes('alpha: true'))\n  assert.ok(source.includes('gl.setClearColor(0x01030a, 0)'))\n  assert.ok(!source.includes('<color attach=\"background\"'))\n  assert.ok(source.includes('Your private memories are unavailable. No sample memories are shown.'))\n  assert.ok(cssSource.includes('life-map-galaxy-main.webp'))\n  assert.ok(cssSource.includes('life-map-galaxy-mobile.webp'))\n  assert.ok(cssSource.includes('mix-blend-mode: screen'))\n"
+          replacement = anchor + "  assert.ok(source.includes('className=\"life-map-authored-universe\"'))\n  assert.ok(source.includes('alpha: true'))\n  assert.ok(source.includes('gl.setClearColor(0x01030a, 0)'))\n  assert.ok(!source.includes('<color attach=\"background\"'))\n  assert.ok(source.includes('Your private memories are unavailable. No sample memories are shown.'))\n  assert.ok(convergenceCss.includes('life-map-galaxy-main.webp'))\n  assert.ok(convergenceCss.includes('life-map-galaxy-mobile.webp'))\n  assert.ok(convergenceCss.includes('mix-blend-mode: screen'))\n"
           contract = replace_once(contract, anchor, replacement, 'authored asset first contracts')
           contract_path.write_text(contract)
           PY
@@ -103,3 +105,5 @@ jobs:
                   urai-tier1/tests/lifemap-scene-behavior.test.mjs
           git commit -m 'Make authored Life Map galaxy the visible world owner'
           git push origin HEAD:fix/life-map-independent-final-0deeba-20260718
+
+# exact-head trigger 2026-07-18T07:24Z
