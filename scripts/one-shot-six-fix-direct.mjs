@@ -94,6 +94,12 @@ replaceOnce(ground,
 replaceOnce(ground,
 `touch-action:pan-x}`,
 `touch-action:pan-x;scroll-padding-inline:12px}`)
+replaceOnce(ground,
+`transition:max-width .22s ease,border-color .18s ease,background .18s ease,transform .18s ease,color .18s ease`,
+`transition:border-color .18s ease,background .18s ease,transform .18s ease,color .18s ease`)
+replaceOnce(ground,
+`transition:opacity .16s ease,max-width .22s ease`,
+`transition:opacity .16s ease`)
 
 const navigation = 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
 replaceOnce(navigation,
@@ -115,6 +121,11 @@ String.raw`  requireNormalizedPattern(ground, /event\.currentTarget\.scrollIntoV
 String.raw`  requireText(ground, 'event.currentTarget.scrollIntoView')
   requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
   requireNormalizedPattern(ground, /inline:\s*'center'/, 'Ground focus reveal must center the destination inline')`)
+replaceOnce(sourceContract,
+`  requireText(ground, 'min-height:48px')`,
+`  requireText(ground, 'min-height:48px')
+  assert.doesNotMatch(ground, /transition:max-width/, 'Ground focus expansion must be synchronous before scroll containment is measured')
+  assert.doesNotMatch(ground, /transition:opacity \.16s ease,max-width/, 'Ground destination labels must not expand width after focus scrolling')`)
 
 const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
 replaceOnce(restorationContract,
