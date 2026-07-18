@@ -33,6 +33,14 @@ test('browser evidence blocks service workers and aborts cross-origin requests b
   assert.match(source, /Blocked cross-origin browser requests/)
 })
 
+test('retained evidence filenames are portable across artifact filesystems', () => {
+  assert.match(source, /function safeEvidenceFilename/)
+  assert.match(source, /replace\(\/\[\^a-zA-Z0-9\._-\]\+\/g, '-'\)/)
+  assert.match(source, /safeEvidenceFilename\(profileName\)/)
+  assert.match(source, /safeEvidenceFilename\(route\)/)
+  assert.doesNotMatch(source, /route\.replace\(\/\[\/\?=&\]\+\/g/)
+})
+
 test('browser console, page, and blocked-network evidence fail the retained receipt', () => {
   assert.match(source, /page\.on\('pageerror'/)
   assert.match(source, /message\.type\(\) === 'error'/)
