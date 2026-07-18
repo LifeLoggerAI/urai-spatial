@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CLEAN_BASE: f9e03c97acbf9d9667e499b602fb2c520a54b356
+  CLEAN_BASE: f8f85245f2b398fcdaa5e298305941910c7890bb
   SOURCE_BRANCH: exec/lifemap-visual-correction-v2-20260718
   PRODUCT_BRANCH: product/canonical-six-fix-clean-v3-20260718
 
