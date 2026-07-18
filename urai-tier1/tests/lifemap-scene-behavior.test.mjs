@@ -88,11 +88,14 @@ test('LifeMap wheel input, independent controls, and WebGL lifecycle remain prod
   assert.match(interactionCss, /\.life-map-accessibility-menu[\s\S]*touch-action:\s*pan-y/, 'The non-Orb controls layer must remain independently scrollable.')
   assert.match(interactionCss, /life-map-whisper[\s\S]*display:\s*block\s*!important/, 'Life Map narration must override obsolete route-level suppression.')
   assert.ok(source.includes('data-life-map-whisper="true"'), 'Narration must expose the exact override marker and live-region owner.')
+  assert.ok(source.includes('event.stopImmediatePropagation()'), 'Life Map Escape must stop the shell listener on the same event.')
+  assert.ok(source.includes('addEventListener("keydown", onKeyDown, true)'), 'Life Map Escape must capture before the shell bubble listener.')
 })
 
 test('LifeMap never lets sample data impersonate private memory', () => {
   assert.ok(source.includes('data-life-map-source={usingSeedData ? "explicit-sample" : "private"}'))
   assert.ok(source.includes('Sample constellation · not your memories'))
+  assert.ok(source.includes('error ? usingSeedData ? "Protected sample field" : "Private constellation unavailable"'), 'Unavailable private data must never be described as sample data.')
   assert.ok(eventSource.includes('explicitDemoEnabled'))
   assert.ok(eventSource.includes('sourceMode: LifeMapSourceMode'))
   assert.ok(eventSource.includes('"explicit-demo"'))
