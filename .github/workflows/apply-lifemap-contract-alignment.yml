@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected='dd214b7b9b6b2e750c0cd343c1ec35cfa15638e4'
+          expected='d7effcbf8b86862c72994b25c5919862c6570fef'
           actual="$(git rev-parse HEAD)"
           test "$actual" = "$expected" || { echo "Refusing to patch moved head: $actual"; exit 1; }
           test "$(git status --porcelain)" = ""
