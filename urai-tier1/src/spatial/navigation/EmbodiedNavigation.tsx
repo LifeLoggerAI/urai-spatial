@@ -75,6 +75,7 @@ export function useMovementInput({
         return
       }
       if (event.code === 'Enter' || event.code === 'Space') {
+        event.preventDefault()
         callbacksRef.current.onInteract?.()
         return
       }
