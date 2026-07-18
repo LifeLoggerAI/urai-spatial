@@ -19,6 +19,7 @@ const CONTEXT_KEYS = [
   'placeId',
   'manifestId',
   'privacyMode',
+  'demo',
 ] as const
 
 function prefersReducedMotion() {
