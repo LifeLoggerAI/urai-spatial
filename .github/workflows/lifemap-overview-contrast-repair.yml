@@ -67,7 +67,7 @@ jobs:
 
       - name: Build exact static candidate
         run: |
-          pnpm --dir urai-tier1 build:static
+          pnpm build:static
           test -f urai-tier1/out/life-map/index.html
 
       - name: Commit clean product repair
