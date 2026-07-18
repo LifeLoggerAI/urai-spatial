@@ -1,0 +1,86 @@
+name: Life Map layer isolation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-six-fix-clean-v3-20260718
+    paths:
+      - .github/workflows/lifemap-layer-isolation.yml
+      - scripts/capture-lifemap-layer-isolation.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifemap-layer-isolation-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: 64dbdca922a3115b9c1148ddde08f4f7a3f137cb
+
+jobs:
+  isolate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'diag/lifemap-layer-isolation-64dbdca9'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact diagnostic head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Prove diagnostic-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          actual="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
+          expected="$(printf '%s\n' .github/workflows/lifemap-layer-isolation.yml scripts/capture-lifemap-layer-isolation.mjs | sort)"
+          printf '%s\n' "$actual"
+          test "$actual" = "$expected"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Build exact static candidate
+        run: corepack pnpm build:static
+
+      - name: Install Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Capture isolated layers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-layer-isolation
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-layer-isolation-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/lifemap-layer-isolation \
+            node scripts/capture-lifemap-layer-isolation.mjs
+
+      - name: Retain isolated layers and governed assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-layer-isolation-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-layer-isolation
+            /tmp/lifemap-layer-isolation-http.log
+            urai-tier1/public/assets/urai/life-map/life-map-galaxy-main.webp
+            urai-tier1/public/assets/urai/life-map/life-map-galaxy-mobile.webp
+          if-no-files-found: error
+          retention-days: 30
