@@ -42,10 +42,13 @@ test('Focus resolves only explicit demo prefixes or an already-enabled sample co
   assert.match(hook, /getDoc\(doc\(getFirebaseDb\(\), 'users', user\.uid, 'memories', memoryId\)\)/)
 })
 
-test('Focus reacts to primitive URL identity without memoizing a stale params object', () => {
-  assert.match(hook, /const search = typeof window === 'undefined' \? '' : window\.location\.search/)
-  assert.match(hook, /new URLSearchParams\(search\)/)
-  assert.match(hook, /new URLSearchParams\(typeof window === 'undefined' \? search : window\.location\.search\)/)
+test('Focus subscribes to direct, history, and same-path world-location identity changes', () => {
+  assert.match(hook, /const \[search, setSearch\] = useState\(\(\) => typeof window === 'undefined' \? '' : window\.location\.search\)/)
+  assert.match(hook, /const currentParams = new URLSearchParams\(search\)/)
+  assert.match(hook, /window\.addEventListener\('popstate', syncFromWindow\)/)
+  assert.match(hook, /window\.addEventListener\('pageshow', syncFromWindow\)/)
+  assert.match(hook, /window\.addEventListener\(URAI_WORLD_LOCATION_EVENT, syncFromWorldTravel\)/)
+  assert.match(hook, /setSearch\(new URL\(event\.detail\.href, window\.location\.origin\)\.search\)/)
   assert.doesNotMatch(hook, /useMemo/)
   assert.doesNotMatch(hook, /\[manifestId, memoryId, params, rawMemoryId\]/)
 })
