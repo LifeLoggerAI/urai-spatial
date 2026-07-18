@@ -109,6 +109,7 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
   }
 
   if (action.type === 'BEGIN_TRAVEL') {
+    const destinationChanged = state.world.destination !== action.request.destination
     return {
       ...state,
       phase: action.phase,
@@ -116,7 +117,7 @@ function reducer(state: RuntimeState, action: RuntimeAction): RuntimeState {
       world: {
         ...state.world,
         ...action.request.context,
-        previousDestination: state.world.destination,
+        previousDestination: destinationChanged ? state.world.destination : state.world.previousDestination,
         layer: 'transition',
         entryPortal: action.request.entryPortal ?? state.world.entryPortal,
         cameraCheckpoint: action.request.cameraCheckpoint ?? state.world.cameraCheckpoint,
