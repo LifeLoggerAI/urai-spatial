@@ -15,6 +15,9 @@ test('LifeMap route uses the final canonical adaptive scene chain', () => {
   assert.doesNotMatch(page, /RealLifeMapGalaxy|LifeMapScene/, 'Life Map route must not revert to retired direct owners.')
   assert.match(canonical, /LifeMapRouteBoundary/, 'Canonical owner must keep the route boundary.')
   assert.match(boundary, /AdaptiveLifeMapScene/, 'Route boundary must render the adaptive R3F scene.')
+  assert.ok(canonical.includes('data-life-map-fallback-escape="world-return"'), 'The loading/restoration fallback must expose its Escape ownership.')
+  assert.ok(canonical.includes('requestUraiWorldReturn()'), 'Fallback Escape must use the canonical reverse-travel event.')
+  assert.ok(canonical.includes('window.addEventListener("keydown", onKeyDown, true)'), 'Fallback Escape must capture before the global bubble listener.')
 })
 
 test('AdaptiveLifeMapScene preserves authored memory artifacts and selected-memory camera travel', () => {
@@ -59,9 +62,13 @@ test('LifeMap memories route into Focus and Replay with selected identity', () =
   assert.ok(source.includes('router.replace(`/life-map?${next.toString()}`'), 'Selection must remain inside Life Map before explicit navigation.')
 })
 
-test('LifeMap visual language is layered, adaptive, mobile-safe, and not primitive-only', () => {
+test('LifeMap visual language is layered, authored, adaptive, mobile-safe, and not primitive-only', () => {
   assert.ok(canonical.includes('lifeMapAssets.primary'), 'Life Map must use the registered primary asset stack.')
-  assert.ok(canonical.includes('assetCssStack'), 'Life Map must render the canonical asset stack.')
+  assert.ok(canonical.includes('assetCssStack'), 'Life Map must render the canonical fallback asset stack.')
+  assert.ok(canonical.includes('data-life-map-authored-universe="primary"'), 'The authored galaxy must remain an explicit visible owner.')
+  assert.ok(canonical.includes('lifeMapAssets.mobile.src'), 'The visible universe must switch to the registered mobile crop.')
+  assert.ok(canonical.includes('mixBlendMode: "screen"'), 'The authored universe must blend over dark WebGL geometry instead of being erased by it.')
+  assert.ok(canonical.includes('opacity: .78'), 'The authored universe must not regress to a nearly invisible decorative tint.')
   assert.ok(source.includes('<Canvas'), 'Life Map must keep the true R3F canvas.')
   assert.ok(source.includes('useAdaptiveSpatialQuality'), 'Life Map must adapt rendering quality and reduced motion.')
   assert.ok(source.includes('<ContinuityNexus'), 'Life Map must use an asymmetric continuity structure rather than the Home Orb.')

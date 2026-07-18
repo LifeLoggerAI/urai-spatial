@@ -23,6 +23,12 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Author CSS must not override the native closed state of details. */
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-accessibility-menu:not([open]) > div {
+  display: none !important;
+}
+
 /* This intentionally overrides the obsolete generic polite-region suppression in
  * routeOwnerConvergence.css. Life Map narration belongs to the independent realm,
  * is not an Orb surface, and must remain visible and announced. */
