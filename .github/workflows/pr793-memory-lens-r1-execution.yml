@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pr793-memory-lens-r2-${{ github.event.pull_request.number }}
+  group: pr793-memory-lens-r2-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 env:
