@@ -10,6 +10,7 @@ const convergenceCss = fs.readFileSync(new URL('../src/spatial/world/lifeMapConv
 const interactionCss = fs.readFileSync(new URL('../src/spatial/world/lifeMapIndependentInteraction.css', import.meta.url), 'utf8')
 const eventSource = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
 const visualWorkflow = fs.readFileSync(new URL('../../.github/workflows/continuous-spatial-visual-proof.yml', import.meta.url), 'utf8')
+const visualRunner = fs.readFileSync(new URL('../../scripts/run-continuous-spatial-proof-fixed.mjs', import.meta.url), 'utf8')
 
 test('LifeMap route uses the final canonical adaptive scene chain', () => {
   assert.match(page, /SpatialLifeMapCanonical/, 'Life Map route must render SpatialLifeMapCanonical.')
@@ -86,7 +87,11 @@ test('LifeMap visual language is layered, authored, adaptive, mobile-safe, and n
   assert.match(convergenceCss, /100svh/, 'Life Map must own the full viewport.')
   assert.match(convergenceCss, /@media \(max-width: 430px\)/, 'Life Map must preserve an explicit narrow-phone composition.')
   assert.match(convergenceCss, /prefers-reduced-motion: reduce/, 'Life Map must preserve a reduced-motion equivalent.')
-  assert.ok(visualWorkflow.includes("NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'"), 'Retained visual proof must render explicit sample memories instead of an empty signed-out field.')
+  assert.doesNotMatch(visualWorkflow, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/, 'Visual proof must not globally change the runtime into sample mode.')
+  assert.ok(visualRunner.includes("lifeMapMode: 'explicit-sample'"), 'Visual proof must explicitly disclose populated sample captures.')
+  assert.ok(visualRunner.includes("lifeMapMode: 'private-unavailable'"), 'Visual proof must separately retain the private unavailable state.')
+  assert.ok(visualRunner.includes("window.localStorage.setItem('urai:lifeMapDemoMode', 'true')"), 'Sample mode must be browser-context scoped.')
+  assert.ok(visualRunner.includes("window.localStorage.removeItem('urai:lifeMapDemoMode')"), 'Private proof must clear sample mode before navigation.')
 })
 
 test('LifeMap wheel input, independent controls, and WebGL lifecycle remain production-safe', () => {
