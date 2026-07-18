@@ -178,16 +178,20 @@ const lifeMapBehaviorContract = 'urai-tier1/tests/lifemap-scene-behavior.test.mj
 }
 
 const doorwayContract = 'urai-tier1/tests/persistent-world-doorway-regression.test.mjs'
-replaceOnce(doorwayContract,
-String.raw`  assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
-  assert.match(visualAudit, /summary:has-text\("Map controls"\)/)
-  assert.match(visualAudit, /\.life-map-accessibility-menu button/)
-  assert.match(visualAudit, /check\.name !== 'life-map-to-focus'/)
-  assert.match(visualAudit, /Open Orb travel controls/)
-  assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)`,
-String.raw`  assert.match(visualAudit, /button\[data-world-target=\\"focus\\"\]/)
-  assert.match(visualAudit, /a\[data-urai-audit-action=\\"life-map-focus\\"\]/)
-  assert.match(visualAudit, /let found = await firstVisible\(page, check\.selectors\)/)
-  assert.doesNotMatch(visualAudit, /check\.name/)
-  assert.match(visualAudit, /Open Orb travel controls/)
-  assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)`)
+{
+  const source = read(doorwayContract)
+  const lines = source.split('\n')
+  const start = lines.findIndex((line) => line.includes("check\\.name === 'life-map-to-focus'"))
+  const end = lines.findIndex((line, index) => index >= start && line.includes('waitForURL'))
+  if (start < 0 || end < start) throw new Error(`Expected legacy visual-audit assertions not found in ${doorwayContract}`)
+  lines.splice(start, end - start + 1,
+    `  assert.match(visualAudit, /const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset/)`,
+    `  assert.match(visualAudit, /button\\[data-world-target=\\\\"focus\\\\"\\]/)`,
+    `  assert.match(visualAudit, /a\\[data-urai-audit-action=\\\\"life-map-focus\\\\"\\]/)`,
+    `  assert.match(visualAudit, /let found = await firstVisible\\(page, check\\.selectors\\)/)`,
+    `  assert.match(visualAudit, /Open Orb travel controls/)`,
+    `  assert.match(visualAudit, /waitForURL\\(\\(url\\) => url\\.toString\\(\\)\\.includes\\(check\\.expected\\), \\{ timeout: 7000 \\}\\)/)`,
+    `  assert.match(visualAudit, /source = source\\.replaceAll\\(before, after\\)/)`,
+  )
+  write(doorwayContract, lines.join('\n'))
+}
