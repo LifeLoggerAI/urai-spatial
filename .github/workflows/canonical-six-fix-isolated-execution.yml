@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: guarded fast-forward publication 2026-07-18T18:25:00Z
+# trigger: synchronous Ground focus containment 2026-07-18T18:30:00Z
 
 on:
   pull_request:
@@ -98,6 +98,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          expected_paths="$(printf '%s\n' scripts/run-live-visual-audit-current.mjs urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
           mkdir -p /tmp/urai-six-fix/scripts /tmp/urai-six-fix/urai-tier1/src/app /tmp/urai-six-fix/urai-tier1/src/components/lifemap /tmp/urai-six-fix/urai-tier1/src/spatial/navigation /tmp/urai-six-fix/urai-tier1/tests
           cp scripts/run-live-visual-audit-current.mjs /tmp/urai-six-fix/scripts/
           cp urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx /tmp/urai-six-fix/urai-tier1/src/app/
@@ -119,14 +120,21 @@ jobs:
           cp /tmp/urai-six-fix/urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/
           cp /tmp/urai-six-fix/urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/run-live-visual-audit-current.mjs urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$expected_paths"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git commit -m "fix(spatial): close bounded accessibility and runtime defects"
           remote_sha="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
-          test "$remote_sha" = "$CLEAN_BASE"
-          git push origin HEAD:refs/heads/$PRODUCT_BRANCH
+          if [ -n "$remote_sha" ]; then
+            git cat-file -e "$remote_sha^{commit}" 2>/dev/null || git fetch --no-tags origin "$remote_sha"
+            test "$(git merge-base "$CLEAN_BASE" "$remote_sha")" = "$CLEAN_BASE"
+            test "$(git rev-list --count "$CLEAN_BASE..$remote_sha")" = "1"
+            test "$(git diff --name-only "$CLEAN_BASE...$remote_sha" | sort)" = "$expected_paths"
+            git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$remote_sha origin HEAD:refs/heads/$PRODUCT_BRANCH
+          else
+            git push origin HEAD:refs/heads/$PRODUCT_BRANCH
+          fi
           echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Retain exact verification diagnostics
