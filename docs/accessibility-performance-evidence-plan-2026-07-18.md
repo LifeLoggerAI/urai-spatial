@@ -31,15 +31,16 @@ This lane owns diagnostics, isolated tests, evidence manifests, performance budg
 | Context loss | Dispatch loss/restore events and verify stable state, no duplicate loops, bounded recovery | Trace/log report | Persistent-world owner if required |
 | Slow network | Exercise offline and recovery states | Network assertions | Resource/component owner |
 | Mobile safe areas | Verify controls and captions remain inside visual viewport and safe-area bounds | Geometry report | Visual/component owner |
-| Performance | Gate production static-export frame, long-task, and five-cycle heap measurements | Machine-readable manifests | Performance lane |
+| Performance | Measure the production static export, record renderer identity, enforce frame/long-task budgets only on a proven hardware renderer, and always gate five-cycle heap growth | Machine-readable manifests | Performance lane |
 | Browser/device matrix | Record exact environment and evidence status without converting emulation into physical proof | `docs/evidence/accessibility-performance-browser-device-matrix.json` | Independent reviewer/device owner |
 
 ## Budgets
 
-- Desktop automated release gate: p95 steady-state frame time <= 20ms on the GitHub Chromium runner (a scheduler-tolerant 60 FPS gate; nominal frame interval is 16.7ms).
-- Mobile-viewport automated release gate: p95 steady-state frame time <= 33.3ms.
-- Steady-state per-route sample: at least 90 frames, no more than one long task, and no task longer than 100ms.
-- Five complete route-journey cycles per desktop/mobile profile: JavaScript heap growth <= 32 MiB.
+- Hardware desktop reference: p95 steady-state frame time <= 20ms (a scheduler-tolerant 60 FPS gate; nominal frame interval is 16.7ms).
+- Hardware mobile-viewport reference: p95 steady-state frame time <= 33.3ms.
+- On a proven hardware renderer, each route must capture at least 90 frames, no more than one steady-state long task, and no task longer than 100ms.
+- The workflow must record the unmasked renderer and vendor. SwiftShader, llvmpipe, Microsoft Basic Render, another software renderer, or unavailable renderer identity produces `NOT_AVAILABLE_HARDWARE_RENDERER`; it may retain diagnostics but must not claim the absolute frame/long-task budgets passed.
+- Five complete route-journey cycles per desktop/mobile profile always gate JavaScript heap growth <= 32 MiB.
 - Performance evidence must run against the exact production static export; a development server is prohibited.
 - No duplicate renderer, listener, timer, or animation-loop accumulation after context loss/recovery.
 - Primary interactive targets: >= 48x48 CSS pixels in all supported states.
@@ -54,7 +55,7 @@ corepack pnpm build:static
 corepack pnpm exec playwright test --config playwright.accessibility.config.ts
 ```
 
-The browser command requires the static export, repository runtime dependencies, and Playwright Chromium installation. Mobile automation is viewport evidence, not a substitute for physical-device or assistive-technology checks.
+The browser command requires the static export, repository runtime dependencies, and Playwright Chromium installation. The evidence records whether absolute performance budgets were enforced or unavailable because the runner exposed no hardware renderer. Mobile automation is viewport evidence, not a substitute for physical-device, hardware-performance, or assistive-technology checks.
 
 ## Serialized handoff procedure
 
