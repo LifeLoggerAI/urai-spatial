@@ -44,7 +44,30 @@ test.describe('URAI visual ownership and containment evidence', () => {
     expect(evidence.afterDisplay).toBe('none')
 
     await orb.click()
-    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
+    const menu = page.locator('#urai-world-companion-menu')
+    await expect(menu).toHaveAttribute('aria-hidden', 'false')
+    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
+
+    const openLayout = await page.evaluate(() => {
+      const controller = document.querySelector<HTMLElement>('[data-urai-audit-action="orb-controls"]')?.getBoundingClientRect()
+      const destination = [...document.querySelectorAll<HTMLButtonElement>('#urai-world-companion-menu button')]
+        .find((button) => button.textContent?.trim() === 'Life Map')
+        ?.getBoundingClientRect()
+      if (!controller || !destination) return null
+      return {
+        controller: { left: controller.left, top: controller.top, right: controller.right, bottom: controller.bottom },
+        destination: { left: destination.left, top: destination.top, right: destination.right, bottom: destination.bottom },
+      }
+    })
+    expect(openLayout).not.toBeNull()
+    const overlaps = openLayout!.controller.left < openLayout!.destination.right
+      && openLayout!.controller.right > openLayout!.destination.left
+      && openLayout!.controller.top < openLayout!.destination.bottom
+      && openLayout!.controller.bottom > openLayout!.destination.top
+    expect(overlaps).toBe(false)
+
+    await page.getByRole('button', { name: 'Life Map', exact: true }).click()
+    await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
   })
 
   test('Ground WebGL canvas remains inside a narrow mobile viewport', async ({ page }) => {
