@@ -71,12 +71,14 @@ test('selected-memory controls retain visible Focus and gated Replay doorways', 
   assert.match(proof, /replayControlVisible/)
 })
 
-test('visual proof initializes the disclosed Life Map fixture before measuring selected controls', () => {
+test('visual proof initializes a real disclosed Life Map node before measuring selected controls', () => {
   assert.match(proofWrapper, /explicitDemo: true/)
-  assert.match(proofWrapper, /memoryId=demo%3Aquiet-reset/)
+  assert.match(proofWrapper, /memoryId=demo%3Amemory-thread/)
+  assert.match(proofWrapper, /node=memory-thread/)
   assert.match(proofWrapper, /demo=1/)
+  assert.doesNotMatch(proofWrapper, /memoryId=demo%3Aquiet-reset/)
   assert.match(proofWrapper, /route\.explicitDemo/)
   assert.match(proofWrapper, /localStorage\.setItem\('urai:lifeMapDemoMode', 'true'\)/)
   assert.match(proofWrapper, /localStorage\.removeItem\('urai:userId'\)/)
-  assert.match(proofWrapper, /urai-continuous-spatial-visual-proof-13/)
+  assert.match(proofWrapper, /urai-continuous-spatial-visual-proof-14/)
 })
