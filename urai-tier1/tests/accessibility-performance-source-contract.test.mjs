@@ -17,6 +17,7 @@ test('accessibility and performance implementation contracts are present', () =>
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
+  const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
   const accessibilityEvidence = read('tests/accessibility-performance-evidence.spec.ts')
@@ -60,6 +61,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeRuntime, 'recoveryAttemptsRef.current >= 1')
   requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
   requireText(homeRuntime, 'role="status"')
+
+  requireText(ground, "event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' })")
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
