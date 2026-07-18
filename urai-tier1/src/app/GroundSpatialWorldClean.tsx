@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber'
 import { useRouter } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type FocusEvent } from 'react'
 import { assetCssStack, groundAssets } from '@/spatial/assets/uraiAssets'
 import { DESTINATIONS, STATE_LABEL, type GroundDestination } from './ground/GroundWorldModel'
 import { GroundScene } from './ground/GroundWorldScene'
@@ -99,7 +99,17 @@ export default function GroundSpatialWorldClean() {
         </Canvas>
       </Suspense>
       <nav className="ground-destination-compass ground-rail" aria-label="Ground destinations">{DESTINATIONS.map((destination, index) => {
-        const shared = { 'data-ground-destination': destination.id, 'data-workforce-state': destination.workforceState, 'data-service-availability': destination.availability, 'aria-label': `${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`, onFocus: () => setActiveId(destination.id), onMouseEnter: () => setActiveId(destination.id) }
+        const shared = {
+          'data-ground-destination': destination.id,
+          'data-workforce-state': destination.workforceState,
+          'data-service-availability': destination.availability,
+          'aria-label': `${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`,
+          onFocus: (event: FocusEvent<HTMLElement>) => {
+            setActiveId(destination.id)
+            event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' })
+          },
+          onMouseEnter: () => setActiveId(destination.id),
+        }
         const content = <><span aria-hidden="true" style={{ background: destination.color }} /><strong>{destination.label}</strong></>
         if (index < 5) return <a key={destination.id} href={destination.href} aria-current={activeId === destination.id ? 'page' : undefined} {...shared} onClick={(event) => { event.preventDefault(); navigate(destination) }}>{content}</a>
         return <button key={destination.id} type="button" aria-current={activeId === destination.id ? 'location' : undefined} {...shared} onClick={() => navigate(destination)}>{content}</button>
