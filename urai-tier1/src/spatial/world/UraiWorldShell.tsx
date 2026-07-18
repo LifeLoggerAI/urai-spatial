@@ -19,9 +19,8 @@ import './embodiedExplorationLayout.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  // Embodied Home owns its physical, approachable Orb. Mounting the persistent
-  // companion there would create a second Orb and two competing control owners.
-  const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'home'
+  const showWorldCompanion = world.destination !== 'life-map'
+  const anchorToPhysicalHomeOrb = world.destination === 'home'
 
   return (
     <div
@@ -33,12 +32,13 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-entry-portal={world.entryPortal ?? ''}
       data-camera-checkpoint={world.cameraCheckpoint ?? ''}
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
+      data-home-orb-menu-owner={anchorToPhysicalHomeOrb ? 'physical-home-orb' : ''}
     >
       <PersistentRealmAtmosphere />
       {children}
       <GroundGateway />
       {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
-      {showWorldCompanion ? <PersistentWorldCompanion /> : null}
+      {showWorldCompanion ? <PersistentWorldCompanion anchorToPhysicalHomeOrb={anchorToPhysicalHomeOrb} /> : null}
       <WorldTransitionController />
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         URAI destination {world.destination}. World layer {world.layer}.
