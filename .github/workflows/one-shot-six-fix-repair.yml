@@ -1,0 +1,64 @@
+name: One-shot bounded six-fix repair
+
+on:
+  push:
+    branches:
+      - fix/canonical-synth-review-91fc14be-20260718
+    paths:
+      - .github/workflows/one-shot-six-fix-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-six-fix-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/canonical-synth-review-91fc14be-20260718
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.17.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Guard clean base and apply repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 1d172afdce8ce1e0b70152b62892dace4cf06fab HEAD
+          test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab...HEAD | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-repair.yml scripts/one-shot-six-fix-repair.mjs | sort)"
+          node scripts/one-shot-six-fix-repair.mjs
+          git diff --check
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Unit contracts
+        run: pnpm --dir urai-tier1 test
+      - name: Typecheck
+        run: pnpm --dir urai-tier1 typecheck
+      - name: Build exact candidate
+        run: pnpm --dir urai-tier1 build
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Focused browser evidence
+        run: |
+          pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent"
+      - name: Prove bounded final tree and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/one-shot-six-fix-repair.yml scripts/one-shot-six-fix-repair.mjs
+          test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(spatial): close bounded accessibility and runtime defects"
+          git push origin HEAD:fix/canonical-synth-review-91fc14be-20260718
