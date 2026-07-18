@@ -25,6 +25,11 @@ type EmbodiedGroundSceneProps = {
 const GROUND_SPAWN = new THREE.Vector3(0, 0, 8.2)
 const GROUND_BOUNDS = { minX: -13, maxX: 13, minZ: -33.2, maxZ: 9 }
 const NEXUS = new THREE.Vector3(0, 0, -10.5)
+const GROUND_OBSTACLES = DESTINATIONS.map((destination) => ({
+  x: destination.position[0],
+  z: destination.position[2],
+  radius: destination.id === 'council' ? 1.65 : 1.35,
+}))
 
 function approachPoint(destination: GroundDestination) {
   const target = new THREE.Vector3(...destination.position)
@@ -52,19 +57,26 @@ function WalkableGround({ walkTarget }: { walkTarget: MutableRefObject<THREE.Vec
 }
 
 function GroundPaths() {
-  const paths = useMemo(() => DESTINATIONS.map((destination) => {
-    const destinationPoint = new THREE.Vector3(...destination.position)
-    const midpoint = destination.layer === 'deep'
-      ? new THREE.Vector3(destinationPoint.x * 0.35, 0.02, -20.5)
-      : destination.layer === 'continuity'
-        ? new THREE.Vector3(destinationPoint.x * 0.3, 0.02, -15.4)
-        : NEXUS.clone().setY(0.02)
-    return { destination, points: [GROUND_SPAWN.clone().setY(0.02), NEXUS.clone().setY(0.02), midpoint, destinationPoint.clone().setY(0.02)] }
-  }), [])
+  const { paths, mainPoints } = useMemo(() => {
+    const main = [GROUND_SPAWN.clone().setY(0.025), NEXUS.clone().setY(0.025)]
+    const mapped = DESTINATIONS.map((destination) => {
+      const destinationPoint = new THREE.Vector3(...destination.position)
+      const midpoint = destination.layer === 'deep'
+        ? new THREE.Vector3(destinationPoint.x * 0.35, 0.02, -20.5)
+        : destination.layer === 'continuity'
+          ? new THREE.Vector3(destinationPoint.x * 0.3, 0.02, -15.4)
+          : NEXUS.clone().setY(0.02)
+      return {
+        destination,
+        points: [GROUND_SPAWN.clone().setY(0.02), NEXUS.clone().setY(0.02), midpoint, destinationPoint.clone().setY(0.02)],
+      }
+    })
+    return { paths: mapped, mainPoints: main }
+  }, [])
 
   return (
     <group name="ground-walkable-path-network">
-      <Line points={[GROUND_SPAWN.clone().setY(0.025), NEXUS.clone().setY(0.025)]} color="#a5f3fc" transparent opacity={0.34} lineWidth={1.2} />
+      <Line points={mainPoints} color="#a5f3fc" transparent opacity={0.34} lineWidth={1.2} />
       {paths.map(({ destination, points }) => (
         <Line key={destination.id} points={points} color={destination.color} transparent opacity={destination.availability === 'offline' ? 0.05 : destination.workforceState === 'blocked' ? 0.12 : 0.22} lineWidth={destination.ownerBoundary ? 1.5 : 1} dashed={destination.workforceState === 'blocked'} dashSize={0.25} gapSize={0.22} />
       ))}
@@ -203,7 +215,7 @@ function GroundPlayerCamera({
       acceleration: reducedMotion ? 14 : 7,
       deceleration: reducedMotion ? 18 : 9,
       bounds: GROUND_BOUNDS,
-      obstacles: DESTINATIONS.map((destination) => ({ x: destination.position[0], z: destination.position[2], radius: destination.id === 'council' ? 1.65 : 1.35 })),
+      obstacles: GROUND_OBSTACLES,
       arrivalRadius: 0.34,
     })
 
