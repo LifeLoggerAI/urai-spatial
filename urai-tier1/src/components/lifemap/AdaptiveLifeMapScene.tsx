@@ -880,11 +880,12 @@ export default function AdaptiveLifeMapScene() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
+      event.stopImmediatePropagation();
       if (selectedId) recenter();
       else router.push("/home");
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [recenter, router, selectedId]);
 
   useEffect(() => {
@@ -1046,7 +1047,7 @@ export default function AdaptiveLifeMapScene() {
       ) : null}
 
       <section className="life-map-whisper" data-life-map-whisper="true" aria-live="polite" aria-atomic="true">
-        <p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? "Protected sample field" : "Private constellation"}</p>
+        <p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? usingSeedData ? "Protected sample field" : "Private constellation unavailable" : "Private constellation"}</p>
         <span>{narratorText}</span>
       </section>
 
