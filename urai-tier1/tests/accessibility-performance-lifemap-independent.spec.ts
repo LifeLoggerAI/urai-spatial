@@ -6,6 +6,10 @@ async function enableExplicitLifeMapDemo(page: Page) {
   })
 }
 
+function normalizedPathname(url: string) {
+  return new URL(url).pathname.replace(/\/+$/, '') || '/'
+}
+
 test.describe('Life Map independent realm runtime evidence', () => {
   test('Life Map does not mount the Home companion visually, semantically, or in the tab sequence', async ({ page }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
@@ -56,7 +60,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     const focus = menu.getByRole('button', { name: 'Enter Focus' })
     await expect(focus).toBeVisible()
     await focus.click()
-    await expect.poll(() => new URL(page.url()).pathname).toBe('/focus')
+    await expect.poll(() => normalizedPathname(page.url())).toBe('/focus')
     expect(new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
     expect(new URL(page.url()).searchParams.get('returnNode')).toBe(selectedMemoryId)
     expect(new URL(page.url()).searchParams.get('lifeMapOrigin')).toBeTruthy()
@@ -107,6 +111,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await firstMemory.click()
     await expect.poll(() => page.url()).toContain('memoryId=')
     await page.keyboard.press('Escape')
-    await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe('/life-map')
+    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
+    expect(new URL(page.url()).search).toBe('')
   })
 })
