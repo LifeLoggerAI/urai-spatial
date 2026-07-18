@@ -1,0 +1,92 @@
+name: Asset Pack Independent Ledger
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/reconcile-asset-pack-independent-ledger.mjs'
+      - 'scripts/verify_asset_factory_v1_handoff.py'
+      - 'urai-tier1/public/assets/urai/**'
+      - 'urai-tier1/src/**'
+      - '.github/workflows/asset-pack-independent-ledger.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/reconcile-asset-pack-independent-ledger.mjs'
+      - 'scripts/verify_asset_factory_v1_handoff.py'
+      - 'urai-tier1/public/assets/urai/**'
+      - 'urai-tier1/src/**'
+      - '.github/workflows/asset-pack-independent-ledger.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asset-pack-independent-ledger-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reconcile:
+    name: Verify 53 assets and publish independent ledger
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Record exact head
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          git rev-parse HEAD | tee artifacts/exact-head.txt
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+
+      - name: Verify producer handoff contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_asset_factory_v1_handoff.py | tee artifacts/producer-handoff-verification.log
+
+      - name: Generate independent byte hash dimension and consumption ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/reconcile-asset-pack-independent-ledger.mjs \
+            --check \
+            --out artifacts/asset-pack-independent-ledger.json \
+            --csv artifacts/asset-pack-independent-ledger.csv \
+            | tee artifacts/asset-pack-independent-ledger-summary.json
+
+      - name: Prove no promotion or provider execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const ledger = JSON.parse(fs.readFileSync('artifacts/asset-pack-independent-ledger.json', 'utf8'))
+          if (ledger.policy.providerCallsMade !== 0) throw new Error('Provider calls must remain zero.')
+          if (ledger.policy.providerSpendUsd !== 0) throw new Error('Provider spend must remain zero.')
+          if (ledger.policy.productionDeploymentPerformed !== false) throw new Error('Deployment must remain false.')
+          if (ledger.policy.promotionAuthorized !== false) throw new Error('Promotion must remain false.')
+          if (ledger.summary.promotionAuthorizedCount !== 0) throw new Error('No asset may be promoted by this ledger.')
+          if (ledger.summary.pendingHumanVisualDecisions !== 53) throw new Error('All 53 independent visual decisions must remain pending.')
+          NODE
+
+      - name: Upload exact-head independent ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-pack-independent-ledger-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
