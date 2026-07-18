@@ -126,7 +126,8 @@ test('Ground is an embodied private workforce world with explicit destinations a
 test('Ground navigation remains contained, keyboard-operable and exposes active destination state', () => {
   assert.match(groundWorld, /className="ground-destination-compass(?: ground-rail)?"/)
   assert.match(groundWorld, /aria-current=\{activeId === destination\.id \? 'location' : undefined\}/)
-  assert.match(groundWorld, /onKeyDown=\{\(event\) => \{/)
+  assert.match(groundWorld, /window\.addEventListener\('keydown', handleKeyDown\)/)
+  assert.match(groundWorld, /window\.removeEventListener\('keydown', handleKeyDown\)/)
   assert.match(groundWorld, /event\.key === 'Escape'/)
   assert.match(groundWorld, /event\.key === 'Enter'/)
   assert.match(groundWorld, /event\.key === 'ArrowRight' \|\| event\.key === 'ArrowDown'/)
