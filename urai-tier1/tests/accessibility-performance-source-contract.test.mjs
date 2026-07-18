@@ -89,6 +89,8 @@ test('accessibility and performance implementation contracts are present', () =>
     'urai-tier1/src/app/focus/FocusChamber.module.css',
     'urai-tier1/src/app/focus/FocusChamberCinematic.module.css',
     'urai-tier1/src/app/focus/FocusChamberLandscape.module.css',
+    'urai-tier1/src/spatial/lifemap/LifeMapDeepLinkControls.tsx',
+    'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx',
     'urai-tier1/src/spatial/memory/selectedMemoryContract.ts',
     'urai-tier1/src/spatial/world/WorldStateProvider.tsx',
     'urai-tier1/src/spatial/world/WorldTransitionController.tsx',
