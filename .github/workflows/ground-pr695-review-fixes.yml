@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "7ebfb438d93c483fb0b659956b3215191eda0ee6"
+          test "$(git rev-parse HEAD^)" = "4505c86d5fb4679e767279a570e8038ab7228c3a"
           python3 - <<'PY'
           from pathlib import Path
           import re
