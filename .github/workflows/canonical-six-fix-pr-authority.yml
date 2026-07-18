@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 60
     env:
       CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
-      EXPECTED_HEAD: f1baa278023efa4cb8aea03fbf9ee36b5120ca8f
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
       TARGET_BRANCH: fix/canonical-six-fix-direct-1d172afd-20260718
     steps:
       - name: Checkout exact isolated repair head
@@ -38,6 +38,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md scripts/one-shot-six-fix-direct.mjs | sort)"
           node scripts/one-shot-six-fix-direct.mjs
           git diff --check
           mapfile -t changed < <(git diff --name-only | sort)
