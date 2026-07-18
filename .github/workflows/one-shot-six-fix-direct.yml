@@ -17,11 +17,12 @@ concurrency:
 jobs:
   repair:
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
-      - name: Checkout exact direct repair branch
+      - name: Checkout exact trigger head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: fix/canonical-six-fix-direct-1d172afd-20260718
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: true
       - name: Setup pnpm
@@ -37,8 +38,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
           git merge-base --is-ancestor 1d172afdce8ce1e0b70152b62892dace4cf06fab HEAD
-          test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab...HEAD | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-direct.yml docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md scripts/one-shot-six-fix-direct.mjs | sort)"
+          test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab...HEAD | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md scripts/one-shot-six-fix-direct.mjs | sort)"
           node scripts/one-shot-six-fix-direct.mjs
           git diff --check
       - name: Install exact lockfile
@@ -58,7 +60,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm .github/workflows/one-shot-six-fix-direct.yml scripts/one-shot-six-fix-direct.mjs docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md
+          rm .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml scripts/one-shot-six-fix-direct.mjs docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md
           test "$(git diff --name-only 1d172afdce8ce1e0b70152b62892dace4cf06fab | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
