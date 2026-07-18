@@ -51,11 +51,17 @@ replaceExactlyOnce(
   '          opacity={texture ? selected ? 1 : overview ? 0.82 : related ? 0.42 : 0.11 : 0}',
   'transparent-fallback-opacity',
 )
-replaceExactlyOnce(
-  '  assert.match(adaptiveLifeMap, /opacity=\\{texture \\? visibleOpacity : 0\\}/)',
-  '  assert.match(adaptiveLifeMap, /opacity=\\{texture \\? selected \\? 1 : overview \\? 0\\.82 : related \\? 0\\.42 : 0\\.11 : 0\\}/)',
-  'final-transparent-fallback-contract',
-)
+
+const lines = source.split('\n')
+let assertionCount = 0
+for (let index = 0; index < lines.length; index += 1) {
+  if (lines[index].includes('assert.match(adaptiveLifeMap, /opacity=') && lines[index].includes('visibleOpacity')) {
+    lines[index] = String.raw`  assert.match(adaptiveLifeMap, /opacity=\\{texture \\? selected \\? 1 : overview \\? 0\\.82 : related \\? 0\\.42 : 0\\.11 : 0\\}/)`
+    assertionCount += 1
+  }
+}
+if (assertionCount !== 1) throw new Error(`Expected one final opacity assertion, found ${assertionCount}`)
+source = lines.join('\n')
 
 fs.writeFileSync(path, source)
 console.log('Patched the isolated memory-lens applicator deterministically.')
