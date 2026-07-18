@@ -67,7 +67,7 @@ const skipTypecheck = args.has('--skip-typecheck')
 const routeExpectations = [
   { route: '/', markers: ['Own your life', 'Step inside yourself'] },
   { route: '/home', markers: ['Own your life', 'Step inside yourself'] },
-  { route: '/ground', markers: ['Your private workforce.', 'RECEPTION', 'ARCHIVE'] },
+  { route: '/ground', markers: ['URAI Ground', 'Private infrastructure, embodied.', 'Reception', 'Archive'] },
   { route: '/life-map', markers: ['Step inside the map.', 'Focus and Replay keep the same memory identity'] },
   { route: '/focus?memoryId=quiet-reset', markers: ['The Quiet Reset', 'The moment pressure became permission to begin again.'] },
   { route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread', markers: ['Replay the thread', 'Film beats'] },
