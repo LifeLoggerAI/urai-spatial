@@ -63,6 +63,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
   const mutable = !memory.demo && memory.authorization === 'owner'
   const identity = `${memory.ownerId}:${memory.id}`
   const activeIdentity = useRef(identity)
+  const operationVersion = useRef(0)
   activeIdentity.current = identity
   const transport = useMemo(() => createAuthenticatedReplayTransport(), [])
 
@@ -78,9 +79,10 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     setOperations(local)
     setStatus(local.pending.length ? `${local.pending.length} change${local.pending.length === 1 ? '' : 's'} waiting to sync.` : 'Replay controls ready.')
 
+    const requestedVersion = operationVersion.current
     readAuthenticatedReplayServerState(memory.ownerId, memory.id)
       .then((server) => {
-        if (cancelled || activeIdentity.current !== identity) return
+        if (cancelled || activeIdentity.current !== identity || operationVersion.current !== requestedVersion) return
         const current = readReplayOperationState(window.localStorage, memory.ownerId, memory.id)
         const merged = mergeState(current, server)
         writeReplayOperationState(window.localStorage, memory.ownerId, memory.id, merged)
@@ -88,7 +90,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
         setStatus(merged.pending.length ? `${merged.pending.length} change${merged.pending.length === 1 ? '' : 's'} waiting to sync.` : 'Replay changes are synchronized.')
       })
       .catch((error) => {
-        if (cancelled || activeIdentity.current !== identity) return
+        if (cancelled || activeIdentity.current !== identity || operationVersion.current !== requestedVersion) return
         setStatus(error instanceof Error ? error.message : 'Replay history could not be loaded.')
       })
 
@@ -97,6 +99,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
 
   const retryPending = useCallback(async () => {
     if (!mutable) return
+    operationVersion.current += 1
     const requestedIdentity = identity
     setStatus('Retrying pending Replay changes…')
     const next = await flushReplayOperationQueue({
@@ -127,6 +130,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
       return false
     }
 
+    operationVersion.current += 1
     const requestedIdentity = identity
     const operation: ReplayOperation = {
       id: crypto.randomUUID(),
