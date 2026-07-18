@@ -41,7 +41,7 @@ for (let index = 0; index < lines.length; index += 1) {
     lines[index] = '  assert.match(source, /key=\\{textureKey \\+ "-main"\\}/)'
     keyAssertionCount += 1
   }
-  if (lines[index].includes('assert.match(source, /opacity=') && lines[index].includes('texture ? selected')) {
+  if (lines[index].includes('assert.match(source, /opacity=') && (lines[index].includes('selected') || lines[index].includes('visibleOpacity'))) {
     lines[index] = '  assert.match(source, /opacity=\\{texture \\? visibleOpacity : 0\\}/)'
     opacityAssertionCount += 1
   }
@@ -50,7 +50,7 @@ if (keyAssertionCount !== 1) {
   throw new Error(`Expected one texture remount assertion, found ${keyAssertionCount}`)
 }
 if (opacityAssertionCount !== 1) {
-  throw new Error(`Expected one legacy opacity assertion, found ${opacityAssertionCount}`)
+  throw new Error(`Expected one source-level opacity assertion, found ${opacityAssertionCount}`)
 }
 fs.writeFileSync(path, lines.join('\n'))
 
@@ -66,11 +66,14 @@ const explicitFocusBlock = `    if (!(await menu.evaluate((element) => (element 
     const focus = menu.getByRole('button', { name: 'Enter Focus' })
     await expect(focus).toBeVisible()
     await focus.click()`
-const focusCount = browser.split(focusBlock).length - 1
-if (focusCount !== 1) {
-  throw new Error(`Expected one keyboard Focus continuation block, found ${focusCount}`)
+if (browser.includes(focusBlock)) {
+  if (browser.split(focusBlock).length - 1 !== 1) {
+    throw new Error('Keyboard Focus continuation block was duplicated')
+  }
+  browser = browser.replace(focusBlock, explicitFocusBlock)
+} else if (!browser.includes(explicitFocusBlock)) {
+  throw new Error('Neither implicit nor explicit keyboard Focus continuation block was found')
 }
-browser = browser.replace(focusBlock, explicitFocusBlock)
 fs.writeFileSync(browserPath, browser)
 
 console.log('Reconciled synchronous Life Map texture, remount, opacity, and explicit semantic-control contracts.')
