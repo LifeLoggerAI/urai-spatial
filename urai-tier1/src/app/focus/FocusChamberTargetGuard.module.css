@@ -2,7 +2,7 @@
   min-width: 0;
 }
 
-:global([data-testid="urai-final-focus-chamber"][data-memory-status] > section[role]) {
+.focusTargetGuard > section[role] {
   background: transparent;
 }
 
