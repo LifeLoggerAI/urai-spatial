@@ -9,6 +9,8 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const legacyControls = read('src/spatial/lifemap/LifeMapDeepLinkControls.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const adaptive = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const shell = read('src/spatial/world/UraiWorldShell.tsx')
+const selectedCinematic = read('src/spatial/world/lifeMapSelectedCinematic.css')
 const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
 
 test('canonical Life Map has one selected-memory owner inside the spatial lens scene', () => {
@@ -48,6 +50,17 @@ test('legacy selected-memory card remains unmounted and cannot compete visually'
   assert.match(legacyControls, /Continue directly into this memory/)
   assert.doesNotMatch(canonical, /<LifeMapDeepLinkControls \/>/)
   assert.doesNotMatch(canonical, /import LifeMapDeepLinkControls/)
+})
+
+test('selected mode raises the spatial realm above the authored overview artwork', () => {
+  assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
+  assert.match(selectedCinematic, /data-life-map-mode='selected'/)
+  assert.match(selectedCinematic, /> \.life-map-independent-realm/)
+  assert.match(selectedCinematic, /z-index: 70/)
+  assert.match(selectedCinematic, /data-life-map-authored-universe='primary'/)
+  assert.match(selectedCinematic, /opacity: \.04 !important/)
+  assert.match(selectedCinematic, /\.life-map-memory-portals/)
+  assert.match(selectedCinematic, /z-index: 90/)
 })
 
 test('schema-7 selected route requires visible spatial Focus and Replay portals', () => {
