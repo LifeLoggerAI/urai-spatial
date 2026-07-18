@@ -26,8 +26,25 @@ export default function LifeMapDeepLinkControls() {
 
   useEffect(() => {
     if (!memoryId) return
-    const controls = document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')
-    controls?.removeAttribute('open')
+
+    const closeSemanticDrawers = () => {
+      document.querySelectorAll<HTMLDetailsElement>('.life-map-accessibility-menu').forEach((controls) => {
+        controls.removeAttribute('open')
+        controls.open = false
+      })
+    }
+
+    closeSemanticDrawers()
+    const frame = window.requestAnimationFrame(closeSemanticDrawers)
+    const timer = window.setTimeout(closeSemanticDrawers, 240)
+    const observer = new MutationObserver(closeSemanticDrawers)
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+      observer.disconnect()
+    }
   }, [memoryId])
 
   if (!memoryId) return null
