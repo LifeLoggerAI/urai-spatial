@@ -17,6 +17,7 @@ test('accessibility and performance implementation contracts are present', () =>
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
+  const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const playwrightConfig = read('../playwright.accessibility.config.ts')
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
   const accessibilityEvidence = read('tests/accessibility-performance-evidence.spec.ts')
@@ -68,6 +69,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(focus, 'env(safe-area-inset-right)')
   requireText(focus, 'env(safe-area-inset-bottom)')
   requireText(focus, '@media(prefers-reduced-motion:reduce)')
+
+  requireText(ground, "scrollIntoView({ block: 'nearest', inline: 'nearest' })")
 
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
