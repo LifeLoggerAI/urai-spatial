@@ -31,6 +31,11 @@ function transitionDuration(destination: UraiDestination) {
   return 1100
 }
 
+function normalizePathname(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, '')
+  return normalized || '/'
+}
+
 function buildTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
   if (typeof window === 'undefined') return request.href ?? definition.href
@@ -115,7 +120,8 @@ export function WorldTransitionController() {
     }
 
     const href = buildTravelHref(request)
-    const samePath = new URL(href, window.location.origin).pathname === window.location.pathname
+    const targetPathname = new URL(href, window.location.origin).pathname
+    const samePath = normalizePathname(targetPathname) === normalizePathname(window.location.pathname)
     timer.current = window.setTimeout(() => {
       announceUraiWorldLocation(href)
       router.push(href)
