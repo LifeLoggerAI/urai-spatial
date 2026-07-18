@@ -11,6 +11,7 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
+const routeOwner = read('src/spatial/world/routeOwnerConvergence.css')
 const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
 
 test('shared movement kernel owns stable input listeners, calm motion, boundaries and collision', () => {
@@ -44,7 +45,7 @@ test('shared movement kernel owns stable input listeners, calm motion, boundarie
   assert.doesNotMatch(kernel, /sprint|jump|crouch/i)
 })
 
-test('Home is an inhabitable sanctuary with one physical Orb and direct access parity', () => {
+test('Home is inhabitable with one authored Orb plus physical and direct access parity', () => {
   assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
   assert.match(home, /aria-label="Open Life Map directly"/)
@@ -53,9 +54,16 @@ test('Home is an inhabitable sanctuary with one physical Orb and direct access p
   assert.match(home, /data-home-movement="walk-keyboard-click-touch"/)
   assert.match(home, /data-home-pointer-lock="false"/)
   assert.match(home, /home-walkable-sanctuary-floor/)
+  assert.match(home, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.15\)/)
+  assert.match(home, /name="home-authored-orb-physical-hit-target"/)
   assert.match(home, /data-testid="urai-home-webgl-orb"/)
-  assert.match(worldShell, /world\.destination !== 'life-map' && world\.destination !== 'home'/)
-  assert.doesNotMatch(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'\s*$/m)
+  assert.match(home, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+  assert.doesNotMatch(home, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/)
+  assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
+  assert.doesNotMatch(worldShell, /world\.destination !== 'life-map' && world\.destination !== 'home'/)
+  assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
+  assert.match(routeOwner, /background:\s*transparent\s*!important/)
+  assert.match(routeOwner, /box-shadow:\s*none\s*!important/)
   assert.match(home, /walkTarget\.current = new THREE\.Vector3/)
   assert.match(home, /HOME_BOUNDS/)
   assert.match(home, /HOME_OBSTACLES/)
