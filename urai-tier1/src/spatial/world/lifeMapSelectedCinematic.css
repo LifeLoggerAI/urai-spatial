@@ -20,6 +20,8 @@
 .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
   position: relative;
   z-index: 90;
+  transform: translateY(clamp(-280px, -26vh, -160px));
+  will-change: transform;
 }
 
 @media (max-width: 760px) {
@@ -31,5 +33,9 @@
 @media (prefers-reduced-motion: reduce) {
   [data-testid='urai-r3f-canonical-lifemap'] > [data-life-map-authored-universe='primary'] {
     transition: none;
+  }
+
+  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
+    will-change: auto;
   }
 }
