@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: semantic Ground focus contract repair 2026-07-18T17:40:00Z
+# trigger: embodied restoration contract migration 2026-07-18T17:50:00Z
 
 on:
   pull_request:
@@ -48,7 +48,7 @@ jobs:
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/canonical-six-fix-isolated-execution.yml scripts/one-shot-six-fix-direct.mjs | sort)"
           node scripts/one-shot-six-fix-direct.mjs
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs | sort)"
 
       - name: Install exact dependencies
         id: install
@@ -90,7 +90,7 @@ jobs:
           set -o pipefail
           corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-six-fix-browser.log
 
-      - name: Publish one clean five-file product commit
+      - name: Publish one clean six-file product commit
         id: publish
         shell: bash
         run: |
@@ -101,14 +101,16 @@ jobs:
           cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/urai-six-fix/urai-tier1/src/components/lifemap/
           cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/
           cp urai-tier1/tests/accessibility-performance-source-contract.test.mjs /tmp/urai-six-fix/urai-tier1/tests/
+          cp urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs /tmp/urai-six-fix/urai-tier1/tests/
           git checkout --detach "$CLEAN_BASE"
           cp /tmp/urai-six-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
           cp /tmp/urai-six-fix/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
           cp /tmp/urai-six-fix/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
           cp /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
           cp /tmp/urai-six-fix/urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/
+          cp /tmp/urai-six-fix/urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
