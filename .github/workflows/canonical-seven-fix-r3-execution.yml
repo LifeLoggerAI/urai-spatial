@@ -1,0 +1,121 @@
+name: Canonical seven-fix R3 execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - feat/home-ground-lifemap-art-bible-convergence-20260718
+    paths:
+      - .github/workflows/canonical-seven-fix-r3-execution.yml
+      - scripts/one-shot-seven-fix-r3.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canonical-seven-fix-r3-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
+  SOURCE_BRANCH: exec/canonical-seven-fix-r3-20260718
+  PRODUCT_BRANCH: product/canonical-seven-fix-clean-r3-20260718
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/canonical-seven-fix-r3-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact isolated head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove exact authority and apply bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/canonical-seven-fix-r3-execution.yml scripts/one-shot-seven-fix-r3.mjs | sort)"
+          node scripts/one-shot-seven-fix-r3.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Unit contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/canonical-seven-fix-unit.log
+
+      - name: Typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/canonical-seven-fix-typecheck.log
+
+      - name: Build exact candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/canonical-seven-fix-build.log
+
+      - name: Install Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Verify exact prior accessibility failures
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-seven-fix-browser.log
+
+      - name: Publish one clean seven-file product commit
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/urai-seven-fix/urai-tier1/src/app /tmp/urai-seven-fix/urai-tier1/src/components/lifemap /tmp/urai-seven-fix/urai-tier1/src/spatial/navigation /tmp/urai-seven-fix/urai-tier1/tests
+          cp urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx /tmp/urai-seven-fix/urai-tier1/src/app/
+          cp urai-tier1/src/app/GroundSpatialWorldClean.tsx /tmp/urai-seven-fix/urai-tier1/src/app/
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/urai-seven-fix/urai-tier1/src/components/lifemap/
+          cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/urai-seven-fix/urai-tier1/src/spatial/navigation/
+          cp urai-tier1/tests/accessibility-performance-source-contract.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
+          cp urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
+          cp urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs /tmp/urai-seven-fix/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/urai-seven-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
+          cp /tmp/urai-seven-fix/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
+          cp /tmp/urai-seven-fix/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/urai-seven-fix/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
+          cp /tmp/urai-seven-fix/urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/
+          cp /tmp/urai-seven-fix/urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/
+          cp /tmp/urai-seven-fix/urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(spatial): close bounded accessibility and runtime defects"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Retain exact verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: canonical-seven-fix-r3-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: /tmp/canonical-seven-fix-*.log
+          if-no-files-found: ignore
+          retention-days: 90
