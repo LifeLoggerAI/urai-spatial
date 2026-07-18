@@ -88,6 +88,17 @@ test.describe('URAI accessibility and performance evidence', () => {
     expect(failures).toEqual([])
   })
 
+  test('Focus and Life Map remain companion-free on direct entry', async ({ page }) => {
+    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')).toBeVisible()
+    await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="urai-final-focus-chamber"]')).toHaveAttribute('data-orb-owner', 'none')
+
+    await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('[data-testid="urai-true-3d-life-map"]')).toBeVisible()
+    await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
+  })
+
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.locator('[data-urai-audit-action="orb-controls"]')
