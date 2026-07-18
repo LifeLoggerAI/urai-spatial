@@ -57,6 +57,10 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(routeOwnerCss, 'box-shadow: none !important;')
   requireText(routeOwnerCss, 'width: 96px !important;')
   requireText(routeOwnerCss, 'height: 96px !important;')
+  requireText(routeOwnerCss, "data-open='true'] .urai-world-companion__orb")
+  requireText(routeOwnerCss, 'position: relative !important;')
+  requireText(routeOwnerCss, 'left: auto !important;')
+  requireText(routeOwnerCss, 'top: auto !important;')
   requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
 
   requireText(companionCss, 'width: 64px;')
