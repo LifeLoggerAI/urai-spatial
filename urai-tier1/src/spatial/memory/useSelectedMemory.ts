@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { URAI_WORLD_LOCATION_EVENT } from '@/spatial/world/worldEvents'
 import {
   buildNamedExplicitDemoMemory,
   explicitDemoModeEnabled,
@@ -27,12 +28,28 @@ function unavailable(message: string): SelectedMemoryResult {
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const search = typeof window === 'undefined' ? '' : window.location.search
+  const [search, setSearch] = useState(() => typeof window === 'undefined' ? '' : window.location.search)
   const currentParams = new URLSearchParams(search)
   const rawMemoryId = currentParams.get('memoryId') ?? currentParams.get('node')
   const memoryId = sanitizeMemoryId(rawMemoryId)
   const manifestId = sanitizeMemoryId(currentParams.get('manifestId'))
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
+
+  useEffect(() => {
+    const syncFromWindow = () => setSearch(window.location.search)
+    const syncFromWorldTravel = (event: WindowEventMap[typeof URAI_WORLD_LOCATION_EVENT]) => {
+      setSearch(new URL(event.detail.href, window.location.origin).search)
+    }
+
+    window.addEventListener('popstate', syncFromWindow)
+    window.addEventListener('pageshow', syncFromWindow)
+    window.addEventListener(URAI_WORLD_LOCATION_EVENT, syncFromWorldTravel)
+    return () => {
+      window.removeEventListener('popstate', syncFromWindow)
+      window.removeEventListener('pageshow', syncFromWindow)
+      window.removeEventListener(URAI_WORLD_LOCATION_EVENT, syncFromWorldTravel)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -47,7 +64,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       return () => { cancelled = true }
     }
 
-    const params = new URLSearchParams(typeof window === 'undefined' ? search : window.location.search)
+    const params = new URLSearchParams(search)
     const explicitDemo = isExplicitDemoRequest(params)
       || (memoryId.startsWith('demo:') && isKnownExplicitDemoMemoryId(memoryId))
       || (explicitDemoModeEnabled() && isKnownExplicitDemoMemoryId(memoryId))
