@@ -1,5 +1,6 @@
 name: One-shot canonical accessibility and review repair
 # Safe workflow-only retrigger; product files remain unchanged until all gates pass.
+# PR #787 synchronization trigger.
 
 on:
   push:
