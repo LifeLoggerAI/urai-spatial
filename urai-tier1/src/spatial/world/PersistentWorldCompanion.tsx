@@ -25,7 +25,11 @@ const SECONDARY_DESTINATIONS: readonly UraiDestination[] = [
   'location-map',
 ]
 
-export function PersistentWorldCompanion() {
+type PersistentWorldCompanionProps = {
+  anchorToPhysicalHomeOrb?: boolean
+}
+
+export function PersistentWorldCompanion({ anchorToPhysicalHomeOrb = false }: PersistentWorldCompanionProps) {
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -145,6 +149,7 @@ export function PersistentWorldCompanion() {
       data-open={open ? 'true' : 'false'}
       data-phase={phase}
       data-destination={world.destination}
+      data-home-physical-orb-anchor={anchorToPhysicalHomeOrb ? 'true' : 'false'}
     >
       <div
         ref={menuRef}
@@ -182,6 +187,7 @@ export function PersistentWorldCompanion() {
         aria-controls="urai-world-companion-menu"
         data-world-target="orb-controls"
         data-urai-audit-action="orb-controls"
+        data-visual-orb-owner={anchorToPhysicalHomeOrb ? 'physical-home-orb' : 'persistent-companion'}
         disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
         onKeyDown={(event) => {
@@ -191,7 +197,7 @@ export function PersistentWorldCompanion() {
           toggleCompanion()
         }}
       >
-        <span aria-hidden="true" />
+        {anchorToPhysicalHomeOrb ? null : <span aria-hidden="true" />}
       </button>
     </aside>
   )
