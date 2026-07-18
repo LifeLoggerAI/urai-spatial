@@ -1,0 +1,40 @@
+/* Realm-specific mobile composition for embodied controls. Movement UI must not obscure canonical titles, safety navigation, or touch pads. */
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-movement-help {
+    top: max(118px, calc(env(safe-area-inset-top) + 108px));
+    right: max(9px, env(safe-area-inset-right));
+    max-width: 210px;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-movement-prompt {
+    bottom: max(238px, calc(env(safe-area-inset-bottom) + 228px));
+  }
+
+  .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
+    top: max(78px, calc(env(safe-area-inset-top) + 68px));
+    right: max(9px, env(safe-area-inset-right));
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 420px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-title {
+    max-width: calc(100vw - 32px);
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-title strong {
+    max-width: 330px;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
+    max-width: min(210px, calc(100vw - 18px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-world-runtime .urai-movement-help,
+  .urai-world-runtime .life-map-movement-help,
+  .urai-world-runtime .ground-movement-prompt {
+    transition: none !important;
+  }
+}
