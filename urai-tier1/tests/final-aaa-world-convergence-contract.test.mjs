@@ -154,3 +154,17 @@ test('mobile safe area, scroll containment, and reduced motion remain explicit',
   assert.match(chrome, /prefers-reduced-motion: reduce/)
   assert.match(lifeMapConvergence, /prefers-reduced-motion: reduce/)
 })
+
+test('Life Map renders synchronous luminous lenses with dominant selected mode', () => {
+  assert.match(adaptiveLifeMap, /memoryLensPath/)
+  assert.match(adaptiveLifeMap, /const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/)
+  assert.match(adaptiveLifeMap, /data-life-map-memory-contract="synchronous-luminous-memory-lenses"/)
+  assert.match(adaptiveLifeMap, /data-life-map-mode=\{selectedNode \? "selected" : "overview"\}/)
+  assert.match(adaptiveLifeMap, /data-selected=\{selectedNode \? "true" : "false"\}/)
+  assert.match(adaptiveLifeMap, /name="life-map-memory-lens-hit-target"/)
+  assert.match(adaptiveLifeMap, /opacity=\{texture \? visibleOpacity : 0\}/)
+  assert.doesNotMatch(adaptiveLifeMap, /useState<THREE\.CanvasTexture \| null>|setTexture\(|map=\{texture \?\? undefined\}/)
+  assert.match(lifeMapConvergence, /AAA MEMORY LENS SELECTION CONVERGENCE/)
+  assert.match(lifeMapConvergence, /data-life-map-mode='selected'/)
+  assert.match(lifeMapConvergence, /life-map-whisper\[data-selected='true'\]/)
+})

@@ -411,3 +411,81 @@
     transition-duration: .001ms !important;
   }
 }
+
+/* AAA MEMORY LENS SELECTION CONVERGENCE */
+.life-map-independent-realm[data-life-map-mode='selected'] .life-map-depth-vignette {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .48), transparent 20%, transparent 70%, rgba(0, 0, 0, .72)),
+    radial-gradient(ellipse at 50% 46%, transparent 0 24%, rgba(0, 0, 0, .2) 48%, rgba(0, 0, 0, .82) 100%);
+}
+
+.life-map-whisper {
+  transition: left .4s ease, bottom .4s ease, width .4s ease, transform .4s ease, background .4s ease, border-color .4s ease;
+}
+
+.life-map-whisper[data-selected='true'] {
+  left: 50%;
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 86px));
+  width: min(760px, calc(100vw - 160px));
+  transform: translateX(-50%);
+  padding: 18px 24px 20px;
+  border-left: 0;
+  text-align: center;
+  color: rgba(236, 249, 255, .82);
+  background: radial-gradient(ellipse at 50% 100%, rgba(41, 159, 196, .18), rgba(1, 5, 16, .3) 54%, transparent 78%);
+  text-shadow: 0 12px 42px rgba(0, 0, 0, .92);
+}
+
+.life-map-whisper[data-selected='true'] p {
+  color: #f7fdff;
+  font-size: clamp(15px, 2.1vw, 24px);
+  letter-spacing: .11em;
+}
+
+.life-map-whisper[data-selected='true'] span {
+  max-width: 620px;
+  margin: 8px auto 0;
+  color: rgba(219, 242, 255, .74);
+  font-size: clamp(11px, 1.2vw, 14px);
+  line-height: 1.55;
+}
+
+.life-map-memory-portals {
+  padding: 7px;
+  border-color: rgba(211, 250, 255, .24);
+  background: linear-gradient(180deg, rgba(5, 20, 36, .78), rgba(1, 6, 18, .72));
+  box-shadow: 0 20px 74px rgba(0, 0, 0, .62), 0 0 62px rgba(93, 225, 255, .18);
+}
+
+.life-map-memory-portals button {
+  min-height: 44px;
+  padding: 0 15px;
+}
+
+@media (max-width: 760px) {
+  .life-map-whisper[data-selected='true'] {
+    bottom: max(78px, calc(env(safe-area-inset-bottom) + 68px));
+    width: calc(100vw - 24px);
+    padding: 12px 14px 14px;
+  }
+
+  .life-map-whisper[data-selected='true'] p {
+    font-size: 14px;
+  }
+
+  .life-map-whisper[data-selected='true'] span {
+    max-width: 100%;
+    font-size: 10px;
+    -webkit-line-clamp: 2;
+  }
+
+  .life-map-memory-portals {
+    max-width: calc(100vw - 18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-map-whisper {
+    transition: none;
+  }
+}

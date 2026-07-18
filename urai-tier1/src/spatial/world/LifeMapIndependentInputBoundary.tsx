@@ -50,12 +50,6 @@ function memoryButtons() {
     .filter((button) => !ROUTE_ACTION_LABELS.has(button.textContent?.trim() || ''))
 }
 
-function ensureMapControlsOpen() {
-  const menu = document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')
-  if (menu) menu.open = true
-  return menu
-}
-
 function glideDepth(deltaY: number) {
   const realm = document.querySelector<HTMLElement>('.life-map-independent-realm')
   if (!realm) return false
@@ -78,11 +72,6 @@ export function LifeMapIndependentInputBoundary() {
       attached.delete(element)
     }
 
-    const keepSelectedControlsOpen = () => {
-      const menu = document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')
-      if (menu && selectedMemoryIsActive()) menu.open = true
-    }
-
     const attach = () => {
       const detached = [...attached].filter((element) => !document.contains(element))
       detached.forEach((element) => {
@@ -97,11 +86,9 @@ export function LifeMapIndependentInputBoundary() {
           element.addEventListener(eventName, stopCameraGesture, { passive: true })
         })
       })
-      keepSelectedControlsOpen()
     }
 
     const cycleMemory = (direction: -1 | 1) => {
-      ensureMapControlsOpen()
       const buttons = memoryButtons()
       if (!buttons.length) return false
       indexRef.current = indexRef.current < 0
@@ -110,7 +97,6 @@ export function LifeMapIndependentInputBoundary() {
       const next = buttons[indexRef.current]
       next.click()
       setAnnouncement(`${direction > 0 ? 'Gliding forward' : 'Gliding back'} to ${next.textContent?.split(':')[0]?.trim() || 'memory'}.`)
-      queueMicrotask(keepSelectedControlsOpen)
       return true
     }
 
@@ -134,10 +120,6 @@ export function LifeMapIndependentInputBoundary() {
         const buttons = memoryButtons()
         const index = buttons.indexOf(button)
         if (index >= 0) indexRef.current = index
-        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
-        if (menu) menu.open = true
-        queueMicrotask(keepSelectedControlsOpen)
-        window.setTimeout(keepSelectedControlsOpen, 0)
       }
     }
 

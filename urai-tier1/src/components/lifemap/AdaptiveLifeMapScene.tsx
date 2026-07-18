@@ -101,17 +101,6 @@ function titleize(value: string) {
     .join(" ");
 }
 
-function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
-  const r = Math.min(radius, width / 2, height / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + width, y, x + width, y + height, r);
-  ctx.arcTo(x + width, y + height, x, y + height, r);
-  ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
-  ctx.closePath();
-}
-
 function hexToRgba(hex: string, alpha: number) {
   const value = hex.replace("#", "");
   const normalized = value.length === 3 ? value.split("").map((part) => part + part).join("") : value.padEnd(6, "0").slice(0, 6);
@@ -121,6 +110,27 @@ function hexToRgba(hex: string, alpha: number) {
   const green = (number >> 8) & 255;
   const blue = number & 255;
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function memoryLensPath(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  outerRadius: number,
+  innerRadius: number,
+  points = 12,
+  phase = 0,
+) {
+  ctx.beginPath();
+  for (let index = 0; index < points * 2; index += 1) {
+    const radius = index % 2 === 0 ? outerRadius : innerRadius;
+    const angle = phase - Math.PI / 2 + (index * Math.PI) / points;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius;
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
 }
 
 function createMemorySurface(node: LifeMapNode, resolution: number) {
@@ -135,33 +145,50 @@ function createMemorySurface(node: LifeMapNode, resolution: number) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const designScale = resolution / 768;
   ctx.scale(designScale, designScale);
-  const aura = node.aura || "#8adfff";
-  const deep = ctx.createLinearGradient(80, 40, 688, 728);
-  deep.addColorStop(0, "rgba(230,250,255,.96)");
-  deep.addColorStop(0.08, hexToRgba(aura, 0.92));
-  deep.addColorStop(0.46, "rgba(8,20,48,.98)");
-  deep.addColorStop(1, "rgba(1,4,14,.99)");
 
-  roundedRect(ctx, 52, 52, 664, 664, 78);
+  const centerX = 384;
+  const centerY = 352;
+  const outerRadius = 306;
+  const innerRadius = 270;
+  const aura = node.aura || "#8adfff";
+  const phase = ((node.id.length + node.title.length) % 12) * 0.025;
+
+  const auraGlow = ctx.createRadialGradient(centerX, centerY, 54, centerX, centerY, 372);
+  auraGlow.addColorStop(0, hexToRgba(aura, 0.2));
+  auraGlow.addColorStop(0.58, hexToRgba(aura, 0.1));
+  auraGlow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = auraGlow;
+  ctx.fillRect(0, 0, 768, 768);
+
+  const deep = ctx.createRadialGradient(322, 252, 18, centerX, centerY, 340);
+  deep.addColorStop(0, "rgba(218,250,255,.92)");
+  deep.addColorStop(0.08, hexToRgba(aura, 0.84));
+  deep.addColorStop(0.34, "rgba(12,34,63,.98)");
+  deep.addColorStop(0.72, "rgba(4,12,31,.99)");
+  deep.addColorStop(1, "rgba(1,3,12,1)");
+
+  memoryLensPath(ctx, centerX, centerY, outerRadius, innerRadius, 12, phase);
   ctx.fillStyle = deep;
   ctx.fill();
 
   ctx.save();
-  roundedRect(ctx, 64, 64, 640, 640, 68);
+  memoryLensPath(ctx, centerX, centerY, outerRadius - 14, innerRadius - 16, 12, phase);
   ctx.clip();
 
-  const horizon = ctx.createLinearGradient(0, 180, 0, 650);
-  horizon.addColorStop(0, "rgba(255,255,255,.03)");
-  horizon.addColorStop(0.5, hexToRgba(aura, 0.12));
-  horizon.addColorStop(1, "rgba(0,0,0,.72)");
+  const horizon = ctx.createLinearGradient(0, 118, 0, 670);
+  horizon.addColorStop(0, "rgba(255,255,255,.055)");
+  horizon.addColorStop(0.46, hexToRgba(aura, 0.08));
+  horizon.addColorStop(1, "rgba(0,0,0,.84)");
   ctx.fillStyle = horizon;
-  ctx.fillRect(64, 64, 640, 640);
+  ctx.fillRect(64, 54, 640, 650);
 
-  for (let index = 0; index < 48; index += 1) {
-    const x = 80 + ((Math.sin(index * 17.13 + node.id.length) * 0.5 + 0.5) * 610);
-    const y = 80 + ((Math.cos(index * 11.71 + node.title.length) * 0.5 + 0.5) * 560);
-    const radius = 1.2 + (index % 5) * 0.55;
-    ctx.fillStyle = index % 4 === 0 ? "rgba(255,255,255,.78)" : hexToRgba(aura, 0.48);
+  for (let index = 0; index < 64; index += 1) {
+    const angle = index * 2.399963229728653 + node.id.length * 0.17;
+    const radial = 44 + ((index * 47) % 245);
+    const x = centerX + Math.cos(angle) * radial;
+    const y = centerY + Math.sin(angle * 1.13) * radial * 0.78;
+    const radius = 1.1 + (index % 5) * 0.62;
+    ctx.fillStyle = index % 5 === 0 ? "rgba(255,255,255,.86)" : hexToRgba(aura, 0.38 + (index % 3) * 0.08);
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -169,112 +196,121 @@ function createMemorySurface(node: LifeMapNode, resolution: number) {
 
   ctx.globalCompositeOperation = "screen";
   if (node.type === "relationship") {
-    ctx.fillStyle = "rgba(245,252,255,.7)";
+    ctx.fillStyle = "rgba(245,252,255,.62)";
     ctx.beginPath();
-    ctx.arc(286, 328, 64, 0, Math.PI * 2);
-    ctx.arc(494, 300, 72, 0, Math.PI * 2);
+    ctx.arc(300, 314, 58, 0, Math.PI * 2);
+    ctx.arc(474, 292, 66, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(aura, 0.74);
+    ctx.strokeStyle = hexToRgba(aura, 0.72);
     ctx.lineWidth = 9;
     ctx.beginPath();
-    ctx.moveTo(340, 316);
-    ctx.bezierCurveTo(382, 250, 438, 382, 456, 322);
+    ctx.moveTo(350, 306);
+    ctx.bezierCurveTo(382, 258, 430, 360, 446, 310);
     ctx.stroke();
   } else if (node.type === "threshold") {
-    ctx.fillStyle = hexToRgba(aura, 0.4);
+    ctx.fillStyle = hexToRgba(aura, 0.34);
     ctx.beginPath();
-    ctx.moveTo(382, 142);
-    ctx.lineTo(586, 520);
-    ctx.lineTo(182, 520);
+    ctx.moveTo(384, 130);
+    ctx.lineTo(554, 468);
+    ctx.lineTo(214, 468);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,.58)";
-    ctx.fillRect(366, 252, 34, 274);
+    ctx.fillStyle = "rgba(255,255,255,.54)";
+    ctx.fillRect(370, 246, 28, 240);
   } else if (node.type === "ritual") {
-    ctx.strokeStyle = hexToRgba(aura, 0.68);
+    ctx.strokeStyle = hexToRgba(aura, 0.64);
     ctx.lineWidth = 8;
     for (let ring = 0; ring < 4; ring += 1) {
       ctx.beginPath();
-      ctx.ellipse(384, 380, 96 + ring * 58, 30 + ring * 14, -0.08, 0, Math.PI * 2);
+      ctx.ellipse(centerX, 350, 92 + ring * 46, 26 + ring * 12, -0.08, 0, Math.PI * 2);
       ctx.stroke();
     }
   } else if (node.type === "recovery") {
-    ctx.strokeStyle = hexToRgba(aura, 0.78);
+    ctx.strokeStyle = hexToRgba(aura, 0.74);
     ctx.lineWidth = 7;
     for (let arc = 0; arc < 5; arc += 1) {
       ctx.beginPath();
-      ctx.arc(384, 430, 58 + arc * 48, Math.PI * 1.06, Math.PI * 1.94);
+      ctx.arc(centerX, 396, 54 + arc * 42, Math.PI * 1.06, Math.PI * 1.94);
       ctx.stroke();
     }
-    ctx.fillStyle = "rgba(245,255,255,.7)";
+    ctx.fillStyle = "rgba(245,255,255,.68)";
     ctx.beginPath();
-    ctx.arc(384, 360, 58, 0, Math.PI * 2);
+    ctx.arc(centerX, 334, 54, 0, Math.PI * 2);
     ctx.fill();
   } else if (node.type === "forecast") {
-    ctx.strokeStyle = hexToRgba(aura, 0.66);
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = hexToRgba(aura, 0.68);
+    ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.moveTo(170, 500);
-    ctx.bezierCurveTo(260, 420, 330, 464, 404, 350);
-    ctx.bezierCurveTo(486, 230, 552, 300, 624, 190);
+    ctx.moveTo(192, 470);
+    ctx.bezierCurveTo(270, 408, 336, 450, 402, 342);
+    ctx.bezierCurveTo(478, 220, 544, 286, 602, 176);
     ctx.stroke();
   } else if (node.type === "legacy") {
-    ctx.fillStyle = "rgba(3,9,24,.72)";
-    for (let slab = 0; slab < 5; slab += 1) {
-      const inset = slab * 32;
-      roundedRect(ctx, 176 + inset, 172 + inset * 0.55, 416 - inset * 2, 318 - inset, 24);
-      ctx.fill();
-      ctx.strokeStyle = hexToRgba(aura, 0.34 + slab * 0.06);
+    ctx.fillStyle = "rgba(3,9,24,.66)";
+    for (let layer = 0; layer < 5; layer += 1) {
+      const inset = layer * 28;
+      ctx.fillRect(210 + inset, 190 + inset * 0.52, 348 - inset * 2, 252 - inset);
+      ctx.strokeStyle = hexToRgba(aura, 0.3 + layer * 0.06);
       ctx.lineWidth = 4;
-      ctx.stroke();
+      ctx.strokeRect(210 + inset, 190 + inset * 0.52, 348 - inset * 2, 252 - inset);
     }
   } else {
-    const glow = ctx.createRadialGradient(330, 292, 18, 384, 372, 280);
-    glow.addColorStop(0, "rgba(255,255,255,.86)");
-    glow.addColorStop(0.22, hexToRgba(aura, 0.66));
+    const glow = ctx.createRadialGradient(334, 278, 16, centerX, 344, 250);
+    glow.addColorStop(0, "rgba(255,255,255,.84)");
+    glow.addColorStop(0.24, hexToRgba(aura, 0.62));
     glow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = glow;
-    ctx.fillRect(92, 92, 584, 540);
+    ctx.fillRect(112, 92, 544, 494);
 
     ctx.strokeStyle = "rgba(235,251,255,.48)";
     ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.moveTo(170, 490);
-    ctx.bezierCurveTo(258, 420, 318, 520, 408, 438);
-    ctx.bezierCurveTo(480, 374, 548, 408, 618, 326);
+    ctx.moveTo(184, 456);
+    ctx.bezierCurveTo(260, 390, 326, 486, 408, 412);
+    ctx.bezierCurveTo(476, 352, 542, 384, 600, 306);
     ctx.stroke();
   }
 
   ctx.globalCompositeOperation = "source-over";
-  const lower = ctx.createLinearGradient(0, 440, 0, 704);
+  const lower = ctx.createLinearGradient(0, 422, 0, 650);
   lower.addColorStop(0, "rgba(1,5,16,0)");
-  lower.addColorStop(1, "rgba(1,5,16,.92)");
+  lower.addColorStop(1, "rgba(1,5,16,.9)");
   ctx.fillStyle = lower;
-  ctx.fillRect(64, 420, 640, 284);
+  ctx.fillRect(94, 402, 580, 260);
 
-  ctx.fillStyle = "rgba(235,250,255,.72)";
-  ctx.font = "700 22px system-ui, sans-serif";
-  ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), 108, 552);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(216,247,255,.7)";
+  ctx.font = "800 19px system-ui, sans-serif";
+  ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), centerX, 528);
 
   ctx.fillStyle = "rgba(255,255,255,.98)";
-  ctx.font = "800 40px system-ui, sans-serif";
-  const title = node.title.length > 28 ? `${node.title.slice(0, 26)}…` : node.title;
-  ctx.fillText(title, 108, 608);
+  ctx.font = "800 34px system-ui, sans-serif";
+  const title = node.title.length > 26 ? `${node.title.slice(0, 24)}…` : node.title;
+  ctx.fillText(title, centerX, 574);
 
-  ctx.fillStyle = "rgba(219,241,255,.72)";
-  ctx.font = "600 22px system-ui, sans-serif";
-  ctx.fillText(node.dateLabel, 108, 648);
-
+  ctx.fillStyle = "rgba(219,241,255,.7)";
+  ctx.font = "650 20px system-ui, sans-serif";
+  ctx.fillText(node.dateLabel, centerX, 610);
   ctx.restore();
 
-  roundedRect(ctx, 52, 52, 664, 664, 78);
-  ctx.strokeStyle = "rgba(235,252,255,.42)";
+  memoryLensPath(ctx, centerX, centerY, outerRadius, innerRadius, 12, phase);
+  ctx.strokeStyle = "rgba(225,251,255,.5)";
   ctx.lineWidth = 5;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, innerRadius - 18, 0, Math.PI * 2);
+  ctx.strokeStyle = hexToRgba(aura, 0.24);
+  ctx.lineWidth = 3;
   ctx.stroke();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = resolution >= 384 ? 8 : 4;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = resolution >= 128;
+  texture.premultiplyAlpha = true;
   texture.needsUpdate = true;
   return texture;
 }
@@ -643,7 +679,7 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
   onSelect: (node: LifeMapNode) => void;
 } & MemoryPortalHandlers) {
   const group = useRef<THREE.Group>(null);
-  const glass = useRef<THREE.MeshPhysicalMaterial>(null);
+  const lens = useRef<THREE.MeshPhysicalMaterial>(null);
   const { camera } = useThree();
   const textureResolution = selected
     ? profile.tier === "high" ? 512 : 384
@@ -652,31 +688,32 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
       : related
         ? profile.tier === "high" ? 224 : 160
         : 80;
-  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
-  const scale = 0.72 + node.intensity * 0.24;
-  const textureKey = texture?.uuid ?? `pending-${node.id}-${textureResolution}`;
+  const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution]);
+  const textureKey = texture?.uuid || "pending";
+  const scale = 0.58 + node.intensity * 0.2;
+  const visibleOpacity = selected ? 1 : overview ? 0.82 : related ? 0.42 : 0.11;
 
-  useEffect(() => {
-    const nextTexture = createMemorySurface(node, textureResolution);
-    setTexture(nextTexture);
-    return () => {
-      if (typeof window === "undefined") {
-        nextTexture?.dispose();
-        return;
-      }
-      window.requestAnimationFrame(() => nextTexture?.dispose());
-    };
-  }, [node, textureResolution]);
+  useEffect(() => () => {
+    const dispose = () => texture?.dispose();
+    if (typeof window === "undefined") dispose();
+    else window.requestAnimationFrame(dispose);
+  }, [texture]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     if (!group.current) return;
-    group.current.quaternion.slerp(camera.quaternion, profile.reducedMotion ? 1 : 0.075);
+    group.current.quaternion.slerp(camera.quaternion, profile.reducedMotion ? 1 : 0.085);
+    const targetScale = selected ? 1.82 : overview ? 0.92 : related ? 0.76 : 0.56;
+    const nextScale = profile.reducedMotion
+      ? targetScale
+      : THREE.MathUtils.damp(group.current.scale.x, targetScale, 4.8, delta);
+    group.current.scale.setScalar(nextScale);
     if (!profile.reducedMotion && profile.documentVisible) {
-      const breath = 1 + Math.sin(clock.elapsedTime * (0.52 + node.intensity) + node.position[0]) * 0.026;
-      group.current.scale.setScalar(selected ? breath * 1.26 : related ? breath : breath * 0.78);
-      group.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.22 + node.position[2]) * 0.035;
+      const breath = Math.sin(clock.elapsedTime * (0.44 + node.intensity) + node.position[0]) * (selected ? 0.032 : 0.018);
+      group.current.scale.multiplyScalar(1 + breath);
+      group.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.2 + node.position[2]) * 0.045;
+      group.current.rotation.z = Math.sin(clock.elapsedTime * 0.08 + node.position[0]) * (selected ? 0.018 : 0.008);
     }
-    if (glass.current) glass.current.opacity = selected ? 0.34 : related ? 0.16 : 0.06;
+    if (lens.current) lens.current.opacity = selected ? 0.3 : overview ? 0.12 : related ? 0.07 : 0.025;
   });
 
   const choose = (event: ThreeEvent<MouseEvent>) => {
@@ -685,73 +722,78 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
   };
 
   return (
-    <group ref={group} position={node.position} name={`life-map-memory-artifact-${node.type}`}>
+    <group ref={group} position={node.position} name={`life-map-memory-lens-${node.type}`}>
       <mesh
+        name="life-map-memory-lens-hit-target"
         onClick={choose}
         onPointerOver={() => { document.body.style.cursor = "pointer"; }}
         onPointerOut={() => { document.body.style.cursor = ""; }}
-        scale={[scale * 1.12, scale * 1.12, 1]}
+        scale={[scale * 1.62, scale * 1.62, 1]}
       >
-        <planeGeometry args={[1.42, 1.42, 1, 1]} />
+        <circleGeometry args={[0.82, 56]} />
+        <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
+      </mesh>
+
+      {selected ? Array.from({ length: 6 }, (_, index) => (
+        <mesh key={index} position={[0, 0, -0.14]} rotation={[0, 0, (Math.PI / 6) * index]} scale={[scale * 0.035, scale * 2.8, 1]}>
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial color={node.aura} transparent opacity={0.16} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      )) : null}
+
+      <mesh position={[0, 0, -0.12]} scale={[scale * 1.66, scale * 1.66, 1]}>
+        <circleGeometry args={[0.86, 64]} />
+        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.2 : overview ? 0.075 : related ? 0.04 : 0.012} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      <mesh key={textureKey + "-main"} scale={[scale * 1.5, scale * 1.5, 1]}>
+        <planeGeometry args={[1.74, 1.74, 1, 1]} />
         <meshBasicMaterial
-          key={`${textureKey}-main`}
-          map={texture ?? undefined}
+          map={texture || undefined}
           color={texture ? "#ffffff" : "#071425"}
           transparent
-          opacity={texture ? selected ? 1 : related ? 0.88 : 0.42 : 0.1}
+          opacity={texture ? visibleOpacity : 0}
           toneMapped={false}
-          depthWrite={false}
+          depthWrite={selected}
         />
       </mesh>
 
-      <mesh position={[0, 0, -0.045]} scale={[scale * 1.27, scale * 1.27, 1]}>
-        <planeGeometry args={[1.42, 1.42]} />
+      <mesh position={[0, 0, -0.055]} scale={[scale * 1.36, scale * 1.36, 1]}>
+        <circleGeometry args={[0.84, 64]} />
         <meshPhysicalMaterial
-          ref={glass}
+          ref={lens}
           color={node.aura}
           transparent
-          opacity={selected ? 0.34 : 0.12}
-          roughness={0.08}
-          metalness={0.12}
-          transmission={0.36}
+          opacity={selected ? 0.3 : 0.08}
+          roughness={0.06}
+          metalness={0.08}
+          transmission={0.48}
+          thickness={0.26}
           depthWrite={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
 
-      <mesh position={[-scale * 0.86, scale * 0.52, -0.08]} rotation={[0, 0, -0.24]} scale={[scale * 0.34, scale * 0.18, 1]}>
+      <mesh position={[-scale * 0.78, scale * 0.52, -0.09]} rotation={[0, 0, -0.42]} scale={[scale * 0.26, scale * 0.08, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial
-          key={`${textureKey}-left`}
-          map={texture ?? undefined}
-          color={texture ? "#ffffff" : "#071425"}
-          transparent
-          opacity={texture ? selected ? 0.52 : related ? 0.2 : 0.04 : 0}
-          toneMapped={false}
-          depthWrite={false}
-        />
+        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.34 : related ? 0.08 : 0.015} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-      <mesh position={[scale * 0.82, -scale * 0.46, -0.1]} rotation={[0, 0, 0.2]} scale={[scale * 0.28, scale * 0.22, 1]}>
+      <mesh position={[scale * 0.76, -scale * 0.48, -0.1]} rotation={[0, 0, 0.36]} scale={[scale * 0.22, scale * 0.065, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial
-          key={`${textureKey}-right`}
-          map={texture ?? undefined}
-          color={texture ? "#ffffff" : "#071425"}
-          transparent
-          opacity={texture ? selected ? 0.42 : related ? 0.16 : 0.03 : 0}
-          toneMapped={false}
-          depthWrite={false}
-        />
+        <meshBasicMaterial color="#dffcff" transparent opacity={selected ? 0.28 : related ? 0.06 : 0.012} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
+
+      {selected ? <pointLight color={node.aura} intensity={1.35} distance={7} decay={2} position={[0, 0.15, 0.7]} /> : null}
 
       {node.privacyLevel === "hidden" || node.locked ? (
-        <mesh position={[0, 0, 0.08]} scale={[scale * 1.18, scale * 1.18, 1]}>
-          <planeGeometry args={[1.42, 1.42]} />
-          <meshBasicMaterial color="#01040a" transparent opacity={0.52} depthWrite={false} />
+        <mesh position={[0, 0, 0.08]} scale={[scale * 1.3, scale * 1.3, 1]}>
+          <circleGeometry args={[0.84, 64]} />
+          <meshBasicMaterial color="#01040a" transparent opacity={0.58} depthWrite={false} />
         </mesh>
       ) : null}
 
       {selected ? (
-        <Html distanceFactor={8.6} position={[0, -scale * 1.18, 0.12]} center zIndexRange={[90, 30]}>
+        <Html distanceFactor={8.2} position={[0, -scale * 1.48, 0.16]} center zIndexRange={[90, 30]}>
           <div className="life-map-memory-portals" onPointerDown={(event) => event.stopPropagation()}>
             <button type="button" onClick={() => onEnterFocus(node)}>Enter Focus</button>
             <button type="button" onClick={() => onEnterReplay(node)} disabled={!node.replayAvailable || node.locked}>Replay</button>
@@ -1064,6 +1106,7 @@ export default function AdaptiveLifeMapScene() {
       data-spatial-visible={profile.documentVisible ? "true" : "false"}
       data-webgl-state={webglState}
       data-life-map-source={usingSeedData ? "explicit-sample" : "private"}
+      data-life-map-mode={selectedNode ? "selected" : "overview"}
       data-home-companion-owned="false"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -1074,7 +1117,7 @@ export default function AdaptiveLifeMapScene() {
       <div
         className="sr-only"
         data-life-map-layer-contract="near middle far"
-        data-life-map-memory-contract="authored-media-surfaces"
+        data-life-map-memory-contract="synchronous-luminous-memory-lenses"
         data-life-map-companion-contract="home-companion-unmounted"
       >
         Life Map independent memory universe
@@ -1131,7 +1174,7 @@ export default function AdaptiveLifeMapScene() {
         </section>
       ) : null}
 
-      <section className="life-map-whisper" data-life-map-whisper="true" aria-live="polite" aria-atomic="true">
+      <section className="life-map-whisper" data-life-map-whisper="true" data-selected={selectedNode ? "true" : "false"} aria-live="polite" aria-atomic="true">
         <p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? usingSeedData ? "Protected sample field" : "Private constellation unavailable" : "Private constellation"}</p>
         <span>{narratorText}</span>
       </section>

@@ -95,6 +95,9 @@ test.describe('Embodied exploration runtime evidence', () => {
 
     await page.keyboard.press('d')
     await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
+    await expect(page.locator('.life-map-independent-realm')).toHaveAttribute('data-life-map-mode', 'selected')
+    await expect(page.locator('.life-map-whisper')).toHaveAttribute('data-selected', 'true')
+    await expect(page.locator('.life-map-accessibility-menu')).not.toHaveAttribute('open', '')
     await expect(page.locator('.life-map-memory-portals')).toBeVisible()
 
     await page.keyboard.press('r')

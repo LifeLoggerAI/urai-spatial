@@ -72,6 +72,10 @@ test.describe('Life Map independent realm runtime evidence', () => {
     expect(selectedMemoryId).toBeTruthy()
     await expect(page.locator('.life-map-whisper')).toContainText((firstLabel || '').split(':')[0].trim())
 
+    if (!(await menu.evaluate((element) => (element as HTMLDetailsElement).open))) {
+      await controls.press('Enter')
+    }
+    await expect(menu).toHaveAttribute('open', '')
     const focus = menu.getByRole('button', { name: 'Enter Focus' })
     await expect(focus).toBeVisible()
     await focus.click()

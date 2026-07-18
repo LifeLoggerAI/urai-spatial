@@ -146,3 +146,9 @@ test('embodied movement never removes essential exits or semantic controls', () 
   assert.match(lifeMapBoundary, /params\.get\('overview'\) === '1'/)
   assert.match(worldShell, /embodiedExplorationLayout\.css/)
 })
+
+test('synchronous luminous memory lenses do not force duplicate selected panels', () => {
+  assert.match(lifeMapBoundary, /function memoryButtons\(\)/)
+  assert.doesNotMatch(lifeMapBoundary, /keepSelectedControlsOpen|ensureMapControlsOpen|menu\.open = true/)
+  assert.match(lifeMapBoundary, /selectedMemoryIsActive/)
+})
