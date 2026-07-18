@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: strict nine-file publication 2026-07-18T18:55:00Z
+# trigger: exact static browser candidate 2026-07-18T18:16:00Z
 
 on:
   pull_request:
@@ -74,12 +74,13 @@ jobs:
           set -o pipefail
           corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/canonical-six-fix-typecheck.log
 
-      - name: Build exact candidate
+      - name: Build exact static candidate
         id: build
         shell: bash
         run: |
           set -o pipefail
-          corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/canonical-six-fix-build.log
+          corepack pnpm build:static 2>&1 | tee /tmp/canonical-six-fix-build.log
+          test -f urai-tier1/out/home/index.html
 
       - name: Install Chromium
         id: chromium
