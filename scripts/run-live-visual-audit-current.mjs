@@ -10,7 +10,7 @@ const generatedPath = join(scriptDir, `.live-visual-audit-current-${process.pid}
 const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 const replacements = new Map([
   ["markers: ['Own your life', 'Step inside yourself']", "markers: ['ENTER BELOW', 'URAI destination home. World layer living-world.']"],
-  ["markers: ['Your real life has a place', 'private operating world']", "markers: ['PRIVATE COUNCIL', 'Nothing acts without you', 'RECEPTION']"],
+  ["markers: ['Your real life has a place', 'private operating world']", "markers: ['URAI Ground', 'Private infrastructure, embodied.', 'Reception', 'Archive']"],
   ["markers: ['Life Map', 'Wheel', 'Drag', 'memory star']", "markers: ['URAI destination life-map.', 'World layer infrastructure-world.']"],
   ["route: '/focus?memoryId=quiet-reset',", `route: '/focus?${demoMemoryQuery}',`],
   ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']"],
