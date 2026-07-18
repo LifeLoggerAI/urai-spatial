@@ -163,4 +163,21 @@ replaceOnce(
 const testMarker = "test('LifeMap visual correction removes debug slabs and remounts authored textures'"
 const testSource = read(testPath)
 if (testSource.includes(testMarker)) throw new Error('Visual repair contract already exists')
-write(testPath, `${testSource.trimEnd()}\n\ntest('LifeMap visual correction removes debug slabs and remounts authored textures', () => {\n  const nexusStart = source.indexOf('function ContinuityNexus')\n  const nexusEnd = source.indexOf('function ChapterRegions', nexusStart)\n  const nexus = source.slice(nexusStart, nexusEnd)\n  assert.match(nexus, /life-map-continuity-thread/)\n  assert.match(nexus, /life-map-continuity-anchor/)\n  assert.match(nexus, /CatmullRomCurve3/)\n  assert.doesNotMatch(nexus, /boxGeometry|planeGeometry/)\n  assert.doesNotMatch(nexus, /#5ce8ff|#90f5ff/)\n  assert.match(source, /const textureKey = texture\\?\\.uuid/)\n  assert.match(source, /key=\\{\\`\\$\\{textureKey\\}-main\\`\\}/)\n  assert.match(source, /color=\\{texture \\? \"#ffffff\" : \"#071425\"\\}/)\n  assert.match(source, /opacity=\\{texture \\? selected \\? 1/)\n  assert.doesNotMatch(source, /<meshBasicMaterial map=\\{texture \\?\\? undefined\\} transparent opacity=/)\n})\n`)
+const contract = [
+  "test('LifeMap visual correction removes debug slabs and remounts authored textures', () => {",
+  "  const nexusStart = source.indexOf('function ContinuityNexus')",
+  "  const nexusEnd = source.indexOf('function ChapterRegions', nexusStart)",
+  '  const nexus = source.slice(nexusStart, nexusEnd)',
+  '  assert.match(nexus, /life-map-continuity-thread/)',
+  '  assert.match(nexus, /life-map-continuity-anchor/)',
+  '  assert.match(nexus, /CatmullRomCurve3/)',
+  '  assert.doesNotMatch(nexus, /boxGeometry|planeGeometry/)',
+  '  assert.doesNotMatch(nexus, /#5ce8ff|#90f5ff/)',
+  '  assert.match(source, /const textureKey = texture\\?\\.uuid/)',
+  "  assert.match(source, /key=\\{`\\$\\{textureKey\\}-main`\\}/)",
+  '  assert.match(source, /color=\\{texture \\? "#ffffff" : "#071425"\\}/)',
+  '  assert.match(source, /opacity=\\{texture \\? selected \\? 1/)',
+  '  assert.doesNotMatch(source, /<meshBasicMaterial map=\\{texture \\?\\? undefined\\} transparent opacity=/)',
+  '})',
+]
+write(testPath, `${testSource.trimEnd()}\n\n${contract.join('\n')}\n`)
