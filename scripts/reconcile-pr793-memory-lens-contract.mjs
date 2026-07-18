@@ -52,6 +52,25 @@ if (keyAssertionCount !== 1) {
 if (opacityAssertionCount !== 1) {
   throw new Error(`Expected one legacy opacity assertion, found ${opacityAssertionCount}`)
 }
-
 fs.writeFileSync(path, lines.join('\n'))
-console.log('Reconciled synchronous Life Map texture ownership, remount, and opacity contracts.')
+
+const browserPath = 'urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts'
+let browser = fs.readFileSync(browserPath, 'utf8')
+const focusBlock = `    const focus = menu.getByRole('button', { name: 'Enter Focus' })
+    await expect(focus).toBeVisible()
+    await focus.click()`
+const explicitFocusBlock = `    if (!(await menu.evaluate((element) => (element as HTMLDetailsElement).open))) {
+      await controls.press('Enter')
+    }
+    await expect(menu).toHaveAttribute('open', '')
+    const focus = menu.getByRole('button', { name: 'Enter Focus' })
+    await expect(focus).toBeVisible()
+    await focus.click()`
+const focusCount = browser.split(focusBlock).length - 1
+if (focusCount !== 1) {
+  throw new Error(`Expected one keyboard Focus continuation block, found ${focusCount}`)
+}
+browser = browser.replace(focusBlock, explicitFocusBlock)
+fs.writeFileSync(browserPath, browser)
+
+console.log('Reconciled synchronous Life Map texture, remount, opacity, and explicit semantic-control contracts.')
