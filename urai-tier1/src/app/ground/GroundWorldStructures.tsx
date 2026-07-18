@@ -2,7 +2,7 @@
 
 import { Html } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { STATE_LABEL, type GroundDestination } from './GroundWorldModel'
 
@@ -69,13 +69,23 @@ export function DestinationArchitecture({ destination, active, onSelect, variant
   const width = 3.15 + (variant % 3) * 0.32
   const height = 2.45 + (variant % 2) * 0.38
 
+  useEffect(() => () => {
+    document.body.style.cursor = ''
+  }, [])
+
   return (
-    <group position={destination.position} userData={{ groundDestination: destination.id, serviceAvailability: destination.availability }}>
+    <group
+      position={destination.position}
+      userData={{ groundDestination: destination.id, serviceAvailability: destination.availability }}
+      onClick={activate}
+      onPointerEnter={() => { document.body.style.cursor = 'pointer' }}
+      onPointerLeave={() => { document.body.style.cursor = '' }}
+    >
       <mesh position={[0, 0.12, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[2.35, 2.65, 0.28, 8]} />
         <meshPhysicalMaterial color="#0b1721" emissive={color} emissiveIntensity={active ? 0.2 : 0.05} roughness={0.42} metalness={0.56} clearcoat={0.38} />
       </mesh>
-      <mesh position={[0, height * 0.5 + 0.3, 0]} castShadow receiveShadow onClick={activate} onPointerEnter={() => { document.body.style.cursor = 'pointer' }} onPointerLeave={() => { document.body.style.cursor = '' }}>
+      <mesh position={[0, height * 0.5 + 0.3, 0]} castShadow receiveShadow>
         <boxGeometry args={[width, height, 1.45]} />
         <meshPhysicalMaterial color="#10222f" emissive={color} emissiveIntensity={active ? 0.38 : 0.1} roughness={0.28} metalness={0.62} clearcoat={0.62} />
       </mesh>
@@ -85,7 +95,7 @@ export function DestinationArchitecture({ destination, active, onSelect, variant
           <mesh position={[0, height * 0.42, 0]}><sphereGeometry args={[0.15, 18, 18]} /><meshBasicMaterial color={color} transparent opacity={active ? 0.95 : 0.52} toneMapped={false} /></mesh>
         </group>
       ))}
-      <mesh position={[0, height * 0.48 + 0.22, 0.78]} castShadow onClick={activate}>
+      <mesh position={[0, height * 0.48 + 0.22, 0.78]} castShadow>
         <boxGeometry args={[width * 0.54, height * 0.74, 0.14]} />
         <meshPhysicalMaterial color="#02070d" emissive={color} emissiveIntensity={active ? 1.1 : 0.42} roughness={0.14} metalness={0.75} clearcoat={0.85} />
       </mesh>
