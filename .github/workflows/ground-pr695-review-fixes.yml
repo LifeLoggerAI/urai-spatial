@@ -1,0 +1,94 @@
+name: Ground PR 695 review fixes
+
+on:
+  push:
+    branches:
+      - agent/ground-embodied-current-main-aaa
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ground-pr695-review-fixes
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact branch head
+        uses: actions/checkout@v4
+        with:
+          ref: agent/ground-embodied-current-main-aaa
+          fetch-depth: 2
+
+      - name: Apply and verify review fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "7ebfb438d93c483fb0b659956b3215191eda0ee6"
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('urai-tier1/src/app/GroundSpatialWorldClean.tsx')
+          source = path.read_text()
+
+          needle = '  const color = new THREE.Color(destination.color)\n'
+          if source.count(needle) != 2:
+              raise SystemExit(f'expected 2 destination color allocations, found {source.count(needle)}')
+          source = source.replace(needle, '')
+
+          if source.count('emissive={color}') != 4:
+              raise SystemExit(f'expected 4 emissive color props, found {source.count("emissive={color}")}')
+          source = source.replace('emissive={color}', 'emissive={destination.color}')
+
+          if source.count('color={color}') != 1:
+              raise SystemExit(f'expected 1 color prop, found {source.count("color={color}")}')
+          source = source.replace('color={color}', 'color={destination.color}')
+
+          for field in ('memoryId', 'replayManifestId', 'threadId', 'personId', 'placeId', 'privacyMode'):
+              source = source.replace(f'world.{field}', f'world?.{field}')
+
+          source, count = re.subn(
+              r'event\.preventDefault\(\)(\s*)moveSelection',
+              r'event.preventDefault()\1event.stopPropagation()\1moveSelection',
+              source,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit(f'expected one nested navigation handler fix, found {count}')
+
+          required = (
+              'event.stopPropagation()',
+              'emissive={destination.color}',
+              'color={destination.color}',
+              'world?.memoryId',
+              'world?.replayManifestId',
+              'world?.threadId',
+              'world?.personId',
+              'world?.placeId',
+              'world?.privacyMode',
+          )
+          missing = [token for token in required if token not in source]
+          if missing:
+              raise SystemExit(f'missing expected fixes: {missing}')
+          if 'new THREE.Color(destination.color)' in source:
+              raise SystemExit('destination color allocation remains')
+
+          path.write_text(source)
+          PY
+
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          node --test urai-tier1/tests/post-deploy-ground-smoke-contract.test.mjs
+
+      - name: Commit fixes and remove workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/ground-pr695-review-fixes.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add urai-tier1/src/app/GroundSpatialWorldClean.tsx .github/workflows/ground-pr695-review-fixes.yml
+          git commit -m "Address Ground review feedback"
+          git push origin HEAD:agent/ground-embodied-current-main-aaa
