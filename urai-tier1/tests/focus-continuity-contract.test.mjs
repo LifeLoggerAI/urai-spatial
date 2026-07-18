@@ -62,7 +62,7 @@ test('same-path Focus travel normalizes static-export slashes and returns the wo
   assert.match(worldTransition, /const \{ world, phase, beginTravel, cancelTransition \} = useUraiWorldState\(\)/)
   assert.match(worldTransition, /const cancelTransitionRef = useRef\(cancelTransition\)/)
   assert.match(worldTransition, /function normalizePathname\(pathname: string\)/)
-  assert.match(worldTransition, /pathname\.replace\(\/\\\/\+\$\/, ''\)/)
+  assert.equal(worldTransition.includes("const normalized = pathname.replace(/\\/+$/, '')"), true)
   assert.match(worldTransition, /const targetPathname = new URL\(href, window\.location\.origin\)\.pathname/)
   assert.match(worldTransition, /normalizePathname\(targetPathname\) === normalizePathname\(window\.location\.pathname\)/)
   assert.match(worldTransition, /if \(samePath\) cancelTransitionRef\.current\(\)/)
