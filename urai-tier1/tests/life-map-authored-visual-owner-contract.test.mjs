@@ -6,6 +6,8 @@ const canonical = fs.readFileSync('src/spatial/lifemap/SpatialLifeMapCanonical.t
 const selected = fs.readFileSync('src/spatial/lifemap/LifeMapDeepLinkControls.tsx', 'utf8')
 const globalProofCss = fs.readFileSync('src/app/continuous-spatial-proof-defects.css', 'utf8')
 const interactionCss = fs.readFileSync('src/spatial/world/lifeMapIndependentInteraction.css', 'utf8')
+const authoredVisualCss = fs.readFileSync('src/spatial/world/lifeMapAuthoredVisual.css', 'utf8')
+const worldShell = fs.readFileSync('src/spatial/world/UraiWorldShell.tsx', 'utf8')
 
 test('Life Map active owner is an authored memory universe rather than a black debug canvas', () => {
   for (const marker of [
@@ -21,8 +23,12 @@ test('Life Map active owner is an authored memory universe rather than a black d
   ]) assert.ok(canonical.includes(marker), `missing authored Life Map visual marker: ${marker}`)
 
   assert.match(canonical, /VISUAL_MEMORIES[\s\S]*Relationship[\s\S]*Place[\s\S]*Turning point[\s\S]*Ritual[\s\S]*Recovery[\s\S]*Deep time/)
-  assert.match(canonical, /@media\(max-width:760px\)/)
-  assert.match(canonical, /@media\(prefers-reduced-motion:reduce\)/)
+  assert.match(worldShell, /import '\.\/lifeMapAuthoredVisual\.css'/)
+  assert.match(authoredVisualCss, /data-life-map-active-visual='authored-memory-universe'/)
+  assert.match(authoredVisualCss, /\.life-map-visual-spine\s*\{[\s\S]*?background-image:[\s\S]*?var\(--life-map-authored-world\)/)
+  assert.match(authoredVisualCss, /\.life-map-memory-window\s*\{[\s\S]*?position:\s*absolute/)
+  assert.match(authoredVisualCss, /@media \(max-width: 760px\)/)
+  assert.match(authoredVisualCss, /@media \(prefers-reduced-motion: reduce\)/)
   assert.doesNotMatch(canonical, /zIndex:\s*60[\s\S]*opacity:\s*\.08/)
 })
 
@@ -42,8 +48,10 @@ test('selected memory becomes a visible cinematic surface without leaving contro
     'urai-lifemap-selected-visual__frame',
     'Memory in focus',
     'Private cinematic surface · identity preserved',
-    "document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')",
-    "controls?.removeAttribute('open')",
+    "document.querySelectorAll<HTMLDetailsElement>('.life-map-accessibility-menu')",
+    "controls.removeAttribute('open')",
+    'controls.open = false',
+    'new MutationObserver(closeSemanticDrawers)',
   ]) assert.ok(selected.includes(marker), `missing selected-memory visual marker: ${marker}`)
 
   assert.match(interactionCss, /\.life-map-accessibility-menu:not\(\[open\]\)\s*>\s*div\s*\{[\s\S]*?display:\s*none\s*!important/)
