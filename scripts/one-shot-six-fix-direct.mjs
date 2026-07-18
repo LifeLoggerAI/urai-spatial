@@ -124,7 +124,7 @@ String.raw`  assert.match(layer, /data-urai-home-runtime="embodied-continuous-we
 replaceOnce(restorationContract,
 String.raw`  assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)`,
 String.raw`  assert.match(layer, /EmbodiedHomeSpatialCanvas/)
-  assert.match(layer, /import \{ useWebGLAvailable \} from '\.\/HomeSpatialCanvas'/)`)
+  assert.match(layer, /import \{ useWebGLAvailable \} from '.\/HomeSpatialCanvas'/)`)
 replaceOnce(restorationContract,
 String.raw`  assert.match(groundCanonical, /window\.addEventListener\('keydown',\s*handleKeyDown\)/)
   assert.match(groundCanonical, /window\.removeEventListener\('keydown',\s*handleKeyDown\)/)
@@ -161,8 +161,18 @@ String.raw`  assert.match(adaptiveLifeMap, />Ground<\/button>/)
   assert.match(adaptiveLifeMap, />Home<\/button>/)`)
 
 const lifeMapBehaviorContract = 'urai-tier1/tests/lifemap-scene-behavior.test.mjs'
-replaceOnce(lifeMapBehaviorContract,
-String.raw`  assert.match(source, /overview\s*\?\s*profile\.tier === "high"\s*\?\s*128\s*:\s*96/, 'Overview memories must use small textures.')
-  assert.match(source, /related\s*\?\s*profile\.tier === "high"\s*\?\s*224\s*:\s*160/, 'Related memories must use medium textures.')
-  assert.match(source, /:\s*80;\s*const \[texture, setTexture\] = useState<THREE\.CanvasTexture \| null>\(null\)/, 'Non-related memories must use the smallest allocation before commit-phase texture state.')`,
-String.raw`  assert.match(source, /:\s*profile\.tier === "high"\s*\?\s*128\s*:\s*96;\s*const \[texture, setTexture\] = useState<THREE\.CanvasTexture \| null>\(null\)/, 'Every non-selected memory must use one bounded low-resolution allocation before commit-phase texture state.')`)
+{
+  const source = read(lifeMapBehaviorContract)
+  const lines = source.split('\n')
+  const start = lines.findIndex((line) => line.includes('Overview memories must use small textures.'))
+  const end = lines.findIndex((line) => line.includes('Non-related memories must use the smallest allocation before commit-phase texture state.'))
+  if (start < 0 || end < start) throw new Error(`Expected legacy texture assertions not found in ${lifeMapBehaviorContract}`)
+  const legacyCount = lines.filter((line) => line.includes('Overview memories must use small textures.') || line.includes('Related memories must use medium textures.') || line.includes('Non-related memories must use the smallest allocation before commit-phase texture state.')).length
+  if (legacyCount !== 3) throw new Error(`Expected exactly three legacy texture assertions in ${lifeMapBehaviorContract}`)
+  lines.splice(start, end - start + 1,
+    `  assert.match(source, /:\\s*profile\\.tier === "high"\\s*\\?\\s*128\\s*:\\s*96;/, 'Every unselected memory must use the bounded small texture allocation.')`,
+    `  assert.doesNotMatch(source, /related\\s*\\?\\s*profile\\.tier === "high"\\s*\\?\\s*224\\s*:\\s*160/, 'Unselected memories must not retain a separate medium allocation tier.')`,
+    `  assert.doesNotMatch(source, /:\\s*80;/, 'Unselected memories must use one quality-bounded allocation rather than a hidden fourth tier.')`,
+  )
+  write(lifeMapBehaviorContract, lines.join('\n'))
+}
