@@ -85,10 +85,6 @@ jobs:
           evidence = Path('urai-tier1/tests/accessibility-performance-evidence.spec.ts')
           replace_once(evidence, "await expect(page.getByRole('status')).toContainText(/restor/i)", "await expect(page.locator('.urai-home-spatial-runtime-layer [role=\"status\"]')).toContainText(/restor/i)")
           replace_once(evidence, "await expect(page.getByRole('status')).toContainText(/could not recover/i)", "await expect(page.locator('.urai-home-spatial-runtime-layer [role=\"status\"]')).toContainText(/could not recover/i)")
-
-          restoration = Path('urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs')
-          replace_once(restoration, 'assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)', 'assert.match(layer, /data-urai-home-runtime="embodied-continuous-webgl-world"/)')
-          replace_once(restoration, 'assert.match(layer, /HomeSpatialCanvas, \\{ useWebGLAvailable \\}/)', 'assert.match(layer, /EmbodiedHomeSpatialCanvas/)\n  assert.match(layer, /useWebGLAvailable/)')
           PY
 
       - name: Prove focused contracts
