@@ -7,7 +7,6 @@ body:has(.urai-home-spatial-runtime-layer) {
   overflow: hidden !important;
   background: #07111c !important;
 }
-
 body:has(.urai-home-spatial-runtime-layer) .urai-cinematic-backdrop,
 body:has(.urai-home-spatial-runtime-layer) .urai-final-asset-spine-scene-layer,
 body:has(.ground-spatial-root) .urai-cinematic-backdrop,
@@ -40,6 +39,13 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
 .urai-home-spatial-canvas-shell {
   touch-action: none;
   user-select: none;
+}
+
+.urai-home-spatial-thresholds {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
 }
 
 .urai-home-spatial-canvas-loading {
@@ -77,6 +83,7 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
 }
 
 .urai-home-spatial-portal-label {
+  position: absolute;
   display: grid;
   gap: 2px;
   min-width: 112px;
@@ -90,7 +97,18 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   text-align: center;
   cursor: pointer;
+  pointer-events: auto;
   transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.urai-home-spatial-portal-label--ground {
+  left: clamp(18px, 4vw, 58px);
+  bottom: clamp(84px, 13svh, 126px);
+}
+
+.urai-home-spatial-portal-label--sky {
+  right: clamp(18px, 4vw, 58px);
+  top: clamp(92px, 15svh, 142px);
 }
 
 .urai-home-spatial-portal-label strong {
@@ -273,6 +291,16 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   .urai-home-spatial-portal-label {
     min-width: 88px;
     padding: 6px 8px;
+  }
+
+  .urai-home-spatial-portal-label--ground {
+    left: 14px;
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 74px));
+  }
+
+  .urai-home-spatial-portal-label--sky {
+    right: 14px;
+    top: max(82px, calc(env(safe-area-inset-top) + 64px));
   }
 
   .urai-home-spatial-portal-label span {

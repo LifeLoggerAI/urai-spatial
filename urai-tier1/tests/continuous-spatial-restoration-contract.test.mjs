@@ -36,14 +36,16 @@ test('app template mounts the restored WebGL owners without redirecting certifie
   assert.doesNotMatch(layer, /pathname === '\/focus'|pathname === '\/replay'/)
 })
 
-test('Home is a premium coherent world with aspect-aware framing and one canonical Ground gateway', () => {
+test('Home is an authored sanctuary with adaptive framing and canonical Ground and Life Map thresholds', () => {
   for (const marker of [
-    'CameraRig', 'LivingGround', 'HorizonMonoliths', 'FirstHomeFrame', 'OrbitControls', 'Stars',
+    'CameraRig', 'SanctuaryFloor', 'SanctuaryGardens', 'HorizonArchitecture', 'EmbodiedAvatar',
+    'RelationshipPresences', 'FirstHomeFrame', 'FrameScheduler', 'Stars',
     'useWebGLAvailable', 'cachedWebGLAvailable', 'data-home-spatial-renderer="webgl"',
-    'data-home-spatial-geometry="terrain-orb-ground-gateway"', 'data-tier0-ground-gateway="true"',
-    'data-testid="urai-home-living-ground"', 'data-testid="urai-home-horizontal-plaza"',
-    'data-testid="urai-home-horizon-architecture"', 'data-testid="urai-home-webgl-orb"',
-    'urai:first-home-spatial-frame', 'toneMappingExposure = 1.22',
+    'data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"', 'data-tier0-ground-gateway="true"',
+    'data-testid="urai-home-authored-sanctuary"', 'data-testid="urai-home-sculpted-gardens"',
+    'data-testid="urai-home-embodied-avatar"', 'data-testid="urai-home-horizon-architecture"',
+    'data-testid="urai-home-webgl-orb"', 'data-testid="urai-home-threshold-controls"',
+    'urai:first-home-spatial-frame', 'toneMappingExposure = 1.08',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.doesNotMatch(canvas, /tap the ground to enter below/i)
@@ -52,35 +54,29 @@ test('Home is a premium coherent world with aspect-aware framing and one canonic
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
   assert.match(canvas, /const mobile = size\.width < 720/)
+  assert.match(canvas, /const compact = size\.height < 650/)
+  assert.match(canvas, /if \(mobile\) cameraBase\.set\(0, compact \? 5\.9 : 6\.7, compact \? 15\.6 : 17\.6\)/)
+  assert.match(canvas, /else cameraBase\.set\(0, 5\.15, 13\.4\)/)
+  assert.match(canvas, /const nextFov = mobile \? \(compact \? 58 : 54\) : 48/)
 
-  const positionMatch = canvas.match(/camera\.position\.set\(0, mobile \? ([\d.]+) : ([\d.]+), mobile \? ([\d.]+) : ([\d.]+)\)/)
-  assert.ok(positionMatch, 'camera must define explicit mobile and desktop height and distance')
-  const [, mobileHeight, desktopHeight, mobileDistance, desktopDistance] = positionMatch.map(Number)
-  assert.ok(mobileHeight > desktopHeight, 'mobile camera must rise to keep the Orb, plaza and horizon visible')
-  assert.ok(mobileDistance > desktopDistance, 'mobile camera must pull back instead of cropping the spatial world')
-  assert.ok(mobileDistance <= 26, 'mobile camera must remain close enough to preserve meaningful world scale')
-
-  const fovMatch = canvas.match(/camera\.fov = mobile \? ([\d.]+) : ([\d.]+)/)
-  assert.ok(fovMatch, 'camera must define explicit mobile and desktop fields of view')
-  const [, mobileFov, desktopFov] = fovMatch.map(Number)
-  assert.ok(mobileFov >= desktopFov, 'mobile field of view must not be narrower than desktop')
-  assert.ok(mobileFov <= 68, 'mobile field of view must avoid excessive wide-angle distortion')
-
-  assert.match(canvas, /camera\.lookAt\(0, 1\.4, -2\.35\)/)
-  assert.match(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
-  assert.doesNotMatch(canvas, /<circleGeometry args=\{\[18, 128\]\}/)
+  assert.match(canvas, /<planeGeometry args=\{\[160, 160, 1, 1\]\}/)
+  assert.doesNotMatch(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
+  assert.doesNotMatch(canvas, /<circleGeometry args=\{\[13\.5, 128\]\}/)
+  assert.doesNotMatch(canvas, /function Tree|const TREES|OrbitControls/)
   assert.doesNotMatch(canvas, /const portals/)
   assert.doesNotMatch(canvas, /portals\.map/)
   assert.doesNotMatch(canvas, /data-urai-home-portal/)
   assert.doesNotMatch(canvas, /id: 'mirror'|id: 'passport'|id: 'xr'/)
-  assert.match(canvas, /HorizonMonoliths/)
+  assert.match(canvas, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
+  assert.match(canvas, /aria-label="Open the Life Map and ascend into Memory Sky"/)
+  assert.doesNotMatch(canvas, /onContextLost/)
   assert.doesNotMatch(canvas, /EffectComposer|Bloom|Vignette/)
 })
 
 test('Home keeps one accessible persistent companion plus first-frame evidence and defensive browser cleanup', () => {
-  assert.match(canvas, /typeof query\.addEventListener === 'function'/)
-  assert.match(canvas, /query\.addListener\(update\)/)
-  assert.match(canvas, /query\.removeListener\(update\)/)
+  assert.match(canvas, /typeof media\.addEventListener === 'function'/)
+  assert.match(canvas, /media\.addListener\(update\)/)
+  assert.match(canvas, /media\.removeListener\(update\)/)
   assert.match(canvas, /document\.body\.style\.cursor = 'default'/)
   assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
   assert.match(layer, /requestUraiWorldOrbOpen/)
