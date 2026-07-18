@@ -34,6 +34,13 @@ const MOVEMENT_KEYS = new Set([
   'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight',
 ])
 
+// The motion kernel is called once per rendered frame. Reusing scratch vectors keeps
+// locomotion allocation-free while the active realm owns the only motion call.
+const MOTION_REQUESTED = new THREE.Vector3()
+const MOTION_FORWARD = new THREE.Vector3()
+const MOTION_RIGHT = new THREE.Vector3()
+const MOTION_NEXT = new THREE.Vector3()
+
 function isEditableTarget(target: EventTarget | null) {
   return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"],button,a,summary'))
 }
@@ -52,6 +59,11 @@ export function useMovementInput({
   const keys = useRef(new Set<string>())
   const virtualX = useRef(0)
   const virtualZ = useRef(0)
+  const callbacksRef = useRef({ onEscape, onInteract, onReset })
+
+  useEffect(() => {
+    callbacksRef.current = { onEscape, onInteract, onReset }
+  }, [onEscape, onInteract, onReset])
 
   useEffect(() => {
     if (!enabled) return
@@ -63,14 +75,14 @@ export function useMovementInput({
         return
       }
       if (event.code === 'Enter' || event.code === 'Space') {
-        onInteract?.()
+        callbacksRef.current.onInteract?.()
         return
       }
       if (event.code === 'KeyR') {
-        onReset?.()
+        callbacksRef.current.onReset?.()
         return
       }
-      if (event.code === 'Escape') onEscape?.()
+      if (event.code === 'Escape') callbacksRef.current.onEscape?.()
     }
     const onKeyUp = (event: KeyboardEvent) => {
       keys.current.delete(event.code)
@@ -91,7 +103,7 @@ export function useMovementInput({
       document.removeEventListener('visibilitychange', clear)
       clear()
     }
-  }, [enabled, onEscape, onInteract, onReset])
+  }, [enabled])
 
   return { keys, virtualX, virtualZ }
 }
@@ -187,11 +199,11 @@ export function stepEmbodiedMotion({
     - (input.keys.current.has('KeyA') || input.keys.current.has('ArrowLeft') ? 1 : 0)
     + input.virtualX.current
 
-  const requested = new THREE.Vector3()
+  const requested = MOTION_REQUESTED.set(0, 0, 0)
   if (Math.abs(forwardInput) > 0.01 || Math.abs(strafeInput) > 0.01) {
     target.current = null
-    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw))
-    const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw))
+    const forward = MOTION_FORWARD.set(-Math.sin(yaw), 0, -Math.cos(yaw))
+    const right = MOTION_RIGHT.set(Math.cos(yaw), 0, -Math.sin(yaw))
     requested.addScaledVector(forward, forwardInput).addScaledVector(right, strafeInput)
   } else if (target.current) {
     requested.copy(target.current).sub(position).setY(0)
@@ -206,7 +218,7 @@ export function stepEmbodiedMotion({
   velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, delta)
   velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, delta)
 
-  const next = position.clone().addScaledVector(velocity, Math.min(delta, 0.05))
+  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, Math.min(delta, 0.05))
   next.x = THREE.MathUtils.clamp(next.x, bounds.minX, bounds.maxX)
   next.z = THREE.MathUtils.clamp(next.z, bounds.minZ, bounds.maxZ)
 
