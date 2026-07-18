@@ -322,3 +322,27 @@ html.urai-route-life-map body::after {
   opacity: 0 !important;
   mix-blend-mode: normal !important;
 }
+
+/* Canonical Life Map owns one authored image layer and one WebGL layer.
+   Retired finishing-wall pseudo images, wash, and vignette produced a hard
+   cross-viewport boundary when composited together. */
+html.urai-route-life-map [data-testid="urai-r3f-canonical-lifemap"] {
+  background: transparent !important;
+}
+
+html.urai-route-life-map [data-testid="urai-r3f-canonical-lifemap"]::before,
+html.urai-route-life-map [data-testid="urai-r3f-canonical-lifemap"]::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  filter: none !important;
+  opacity: 0 !important;
+  mix-blend-mode: normal !important;
+}
+
+html.urai-route-life-map .life-map-cosmic-wash,
+html.urai-route-life-map .life-map-depth-vignette {
+  display: none !important;
+  background: none !important;
+  opacity: 0 !important;
+}

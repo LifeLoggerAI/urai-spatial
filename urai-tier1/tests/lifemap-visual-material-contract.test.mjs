@@ -44,3 +44,11 @@ test('Life Map suppresses retired global body atmosphere overlays', () => {
   assert.match(proofCss, /background:\s*none !important/)
   assert.match(proofCss, /mix-blend-mode:\s*normal !important/)
 })
+
+test('Life Map removes the retired multi-overlay finishing stack', () => {
+  assert.match(proofCss, /html\.urai-route-life-map \[data-testid="urai-r3f-canonical-lifemap"\] \{[\s\S]*background:\s*transparent !important/)
+  assert.match(proofCss, /\[data-testid="urai-r3f-canonical-lifemap"\]::before,[\s\S]*\[data-testid="urai-r3f-canonical-lifemap"\]::after/)
+  assert.match(proofCss, /html\.urai-route-life-map \.life-map-cosmic-wash,[\s\S]*html\.urai-route-life-map \.life-map-depth-vignette/)
+  assert.match(proofCss, /display:\s*none !important/)
+  assert.match(proofCss, /background:\s*none !important/)
+})
