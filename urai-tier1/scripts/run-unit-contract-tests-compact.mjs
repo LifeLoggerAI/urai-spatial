@@ -6,6 +6,7 @@ const tests = [
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
+  'tests/accessibility-performance-source-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/continuous-spatial-restoration-contract.test.mjs',
   'tests/exact-static-release-contract.test.mjs',
