@@ -1,6 +1,9 @@
 name: One-shot review performance compatibility repair
 
 on:
+  push:
+    branches:
+      - fix/review-performance-compat-9bc8ea90-20260718
   pull_request:
     branches:
       - feat/home-ground-lifemap-art-bible-convergence-20260718
