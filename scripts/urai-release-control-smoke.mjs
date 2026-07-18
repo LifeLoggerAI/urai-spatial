@@ -115,6 +115,10 @@ function sortedSearchEntries(value) {
     leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
 }
 
+function safeEvidenceFilename(value) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'root'
+}
+
 async function runReleaseControlSmoke() {
   const base = (process.env.URAI_LIVE_BASE_URL || 'https://urai.app').trim().replace(/\/$/, '')
   const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
@@ -355,7 +359,7 @@ async function runReleaseControlSmoke() {
         if (identityCheck) await verifyHydratedIdentity(page, identityCheck, profileName)
         const html = await page.content()
         if (!html.includes(expectedSha)) throw new Error(`Hydrated browser route ${route} is missing exact release SHA on ${profileName}`)
-        const filename = `${profileName}-${route.replace(/[/?=&]+/g, '-').replace(/^-|-$/g, '') || 'root'}.png`
+        const filename = `${safeEvidenceFilename(profileName)}-${safeEvidenceFilename(route)}.png`
         await page.screenshot({ path: `${out}/${filename}`, fullPage: true, animations: 'disabled' })
         report.screenshots.push(filename)
       }
