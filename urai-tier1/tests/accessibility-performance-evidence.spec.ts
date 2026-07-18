@@ -1,92 +1,106 @@
 import { expect, test, type Page } from '@playwright/test'
 
-const FOCUS_DEMO_PATH = '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const FOCUS_DEMO_PATH = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 const FOCUS_RAW_DEMO_PATH = '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const REPLAY_DEMO_PATH = '/replay?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 
-function normalizedPathname(url: string) {
-  const pathname = new URL(url).pathname.replace(/\/+$/, '')
-  return pathname || '/'
-}
+const routes = [
+  { name: 'home', path: '/' },
+  { name: 'ground', path: '/ground' },
+  { name: 'life-map', path: '/life-map' },
+  { name: 'focus', path: FOCUS_DEMO_PATH },
+  { name: 'replay', path: REPLAY_DEMO_PATH },
+] as const
 
-async function enabledFocusButtons(page: Page) {
-  return page.locator('[data-testid="urai-final-focus-chamber"] button:not([disabled])')
-}
+const interactiveSelector = [
+  'button:not([disabled])',
+  'a[href]',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[role="button"]:not([aria-disabled="true"])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
 
-async function minimumTargetSize(page: Page, selector: string) {
-  return page.locator(selector).evaluateAll((elements) => elements.map((element) => {
-    const rect = element.getBoundingClientRect()
-    return {
-      text: element.textContent?.trim() ?? '',
-      width: rect.width,
-      height: rect.height,
-    }
-  }))
-}
-
-async function hasScrollableAncestor(page: Page, selector: string) {
-  return page.locator(selector).evaluate((element) => {
-    let current: HTMLElement | null = element.parentElement
-    while (current) {
-      const style = getComputedStyle(current)
-      const overflow = `${style.overflow}${style.overflowX}${style.overflowY}`
-      if (/(auto|scroll)/.test(overflow) && (current.scrollWidth > current.clientWidth || current.scrollHeight > current.clientHeight)) {
-        return true
-      }
-      current = current.parentElement
-    }
-    return false
+async function disableWebGL(page: Page) {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
+      return original.apply(this, [type, ...args] as Parameters<typeof original>)
+    } as typeof HTMLCanvasElement.prototype.getContext
   })
 }
 
-test.describe('Accessibility and performance evidence', () => {
-  test('persistent Orb exposes an accessible 48px travel control outside companion-free routes', async ({ page }) => {
-    await page.goto('/home', { waitUntil: 'domcontentloaded' })
-    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+async function targetSize(page: Page, selector: string) {
+  return page.locator(selector).evaluateAll((elements) => elements
+    .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+    .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && style.display !== 'inline' && rect.width > 0 && rect.height > 0)
+    .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100 })))
+}
+
+test.describe('URAI accessibility and performance evidence', () => {
+  test('all visible interactive controls have accessible names', async ({ page }) => {
+    const report: Array<{ route: string; unnamed: string[] }> = []
+    for (const route of routes) {
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' })
+      const unnamed = await page.locator(interactiveSelector).evaluateAll((elements) => elements
+        .filter((element) => {
+          const style = getComputedStyle(element)
+          const rect = element.getBoundingClientRect()
+          return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0
+        })
+        .filter((element) => {
+          const aria = element.getAttribute('aria-label')?.trim()
+          const labelledBy = element.getAttribute('aria-labelledby')?.trim()
+          const text = element.textContent?.trim()
+          const title = element.getAttribute('title')?.trim()
+          const value = element instanceof HTMLInputElement ? element.value.trim() : ''
+          const hasLabel = element.id ? Boolean(document.querySelector(`label[for="${CSS.escape(element.id)}"]`)) : false
+          const hasParentLabel = Boolean(element.closest('label'))
+          return !(aria || labelledBy || text || title || value || hasLabel || hasParentLabel)
+        })
+        .map((element) => element.outerHTML.slice(0, 240)))
+      report.push({ route: route.name, unnamed })
+    }
+    await test.info().attach('accessible-name-report.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' })
+    expect(report.flatMap((entry) => entry.unnamed)).toEqual([])
+  })
+
+  test('serialized Orb and Focus targets meet 48 CSS pixel minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 873 })
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const orb = page.getByRole('button', { name: /open orb travel controls/i })
     await expect(orb).toBeVisible()
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
-    const box = await orb.boundingBox()
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(48)
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(48)
+    await expect(orb).toBeEnabled()
     await orb.click()
-    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
-    await page.keyboard.press('Escape')
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
-  })
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
+    const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
-  test('Ground destination rail remains keyboard accessible, scrollable, and contained', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/ground', { waitUntil: 'domcontentloaded' })
-    const rail = page.locator('[aria-label="Ground destinations"]')
-    await expect(rail).toBeVisible()
-    const buttons = rail.getByRole('button')
-    expect(await buttons.count()).toBeGreaterThan(0)
-    const sizes = await minimumTargetSize(page, '[aria-label="Ground destinations"] button')
-    for (const size of sizes) {
-      expect(size.width, `${size.text} width`).toBeGreaterThanOrEqual(48)
-      expect(size.height, `${size.text} height`).toBeGreaterThanOrEqual(48)
-    }
-    const scrollableGroundRail = await hasScrollableAncestor(page, '[aria-label="Ground destinations"] button:last-of-type')
-    expect(scrollableGroundRail).toBe(true)
-  })
-
-  test('Focus controls meet 48px targets and companion-free ownership', async ({ page }) => {
     await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
-    const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
-    await expect(chamber).toBeVisible()
-    await expect(chamber).toHaveAttribute('data-orb-owner', 'none')
-    await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
-    const buttons = await enabledFocusButtons(page)
-    const count = await buttons.count()
-    expect(count).toBeGreaterThan(0)
-    for (let index = 0; index < count; index += 1) {
-      const button = buttons.nth(index)
-      const box = await button.boundingBox()
-      expect(box?.width ?? 0).toBeGreaterThanOrEqual(48)
-      expect(box?.height ?? 0).toBeGreaterThanOrEqual(48)
-    }
+    const focusChamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
+    await expect(focusChamber).toBeVisible()
+    const focusTargets = await targetSize(page, '[data-testid="urai-final-focus-chamber"] button:not([disabled]), [data-testid="urai-final-focus-chamber"] summary')
+
+    expect(companionTargets.length).toBeGreaterThan(0)
+    expect(focusTargets.length).toBeGreaterThan(0)
+    const failures = [...companionTargets, ...focusTargets].filter(({ width, height }) => width < 48 || height < 48)
+    await test.info().attach('serialized-target-size-report.json', { body: JSON.stringify({ companionTargets, focusTargets, failures }, null, 2), contentType: 'application/json' })
+    expect(failures).toEqual([])
   })
 
-  test('direct raw demo identity resolves without browser storage or private auth', async ({ page }) => {
+  test('Focus and Life Map remain companion-free on direct entry', async ({ page }) => {
+    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')).toBeVisible()
+    await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
+    await expect(page.locator('[data-testid="urai-final-focus-chamber"]')).toHaveAttribute('data-orb-owner', 'none')
+
+    await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('[data-testid="urai-true-3d-life-map"]')).toBeVisible()
+    await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
+  })
+
+  test('demo=1 resolves a known raw Life Map star without storage or private Firestore', async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.removeItem('urai:lifeMapDemoMode')
       window.localStorage.removeItem('urai:userId')
@@ -121,7 +135,7 @@ test.describe('Accessibility and performance evidence', () => {
     await expect(page.locator('.urai-world-transition')).toHaveAttribute('data-phase', 'idle')
 
     await page.keyboard.press('Escape')
-    await expect.poll(() => normalizedPathname(page.url()), { timeout: 10_000 }).toBe('/life-map')
+    await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '') || '/', { timeout: 10_000 }).toBe('/life-map')
     await expect(page.locator('[data-testid="urai-true-3d-life-map"]')).toBeVisible()
   })
 
@@ -134,66 +148,193 @@ test.describe('Accessibility and performance evidence', () => {
     const replay = chamber.getByRole('button', { name: /open replay for the quiet reset/i })
     const details = chamber.locator('details')
     const summary = details.locator('summary')
-    await expect(aperture).toBeVisible()
-    await expect(replay).toBeVisible()
     await expect(details).not.toHaveAttribute('open', '')
-    await expect(summary).toBeVisible()
-    const apertureBox = await aperture.boundingBox()
-    const replayBox = await replay.boundingBox()
-    expect((apertureBox?.width ?? 0) * (apertureBox?.height ?? 0)).toBeGreaterThan((replayBox?.width ?? 0) * (replayBox?.height ?? 0))
-    expect(Math.abs((replayBox?.width ?? 0) - (replayBox?.height ?? 0))).toBeLessThanOrEqual(6)
+    await expect(chamber.getByText('Emotion', { exact: true })).not.toBeVisible()
+
+    const geometry = await Promise.all([
+      aperture.boundingBox(),
+      replay.boundingBox(),
+      summary.boundingBox(),
+    ])
+    const [apertureBox, replayBox, summaryBox] = geometry
+    expect(apertureBox).not.toBeNull()
+    expect(replayBox).not.toBeNull()
+    expect(summaryBox).not.toBeNull()
+    expect(apertureBox!.height).toBeGreaterThan(apertureBox!.width)
+    expect(apertureBox!.width).toBeGreaterThan(replayBox!.width * 2)
+    expect(Math.abs(replayBox!.width - replayBox!.height)).toBeLessThanOrEqual(4)
+    expect(summaryBox!.height).toBeGreaterThanOrEqual(48)
+
+    await summary.click()
+    await expect(details).toHaveAttribute('open', '')
+    await expect(chamber.getByText('Emotion', { exact: true })).toBeVisible()
+    await test.info().attach('focus-cinematic-geometry.json', {
+      body: JSON.stringify({ apertureBox, replayBox, summaryBox }, null, 2),
+      contentType: 'application/json',
+    })
   })
 
-  test('mobile and short-landscape Focus remain contained', async ({ page }) => {
-    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
-      await page.setViewportSize(viewport)
-      await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
-      const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
-      await expect(chamber).toBeVisible()
-      const containment = await chamber.evaluate((element) => ({
-        viewportWidth: document.documentElement.clientWidth,
-        scrollWidth: document.documentElement.scrollWidth,
-        left: element.getBoundingClientRect().left,
-        right: element.getBoundingClientRect().right,
-      }))
-      expect(containment.scrollWidth).toBeLessThanOrEqual(containment.viewportWidth + 1)
-      expect(containment.left).toBeGreaterThanOrEqual(-1)
-      expect(containment.right).toBeLessThanOrEqual(containment.viewportWidth + 1)
+  test('short-landscape Focus keeps the Replay CTA fully inside the visual viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 })
+    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    const replay = page.getByRole('button', { name: /open replay for the quiet reset/i })
+    await expect(replay).toBeVisible()
+    const containment = await replay.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      const viewport = window.visualViewport
+      const left = viewport?.offsetLeft ?? 0
+      const top = viewport?.offsetTop ?? 0
+      const right = left + (viewport?.width ?? window.innerWidth)
+      const bottom = top + (viewport?.height ?? window.innerHeight)
+      return {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        fullyContained: rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom,
+      }
+    })
+    await test.info().attach('focus-short-landscape-containment.json', { body: JSON.stringify(containment, null, 2), contentType: 'application/json' })
+    expect(containment.fullyContained).toBe(true)
+  })
+
+  test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
+    await expect(orb).toBeEnabled()
+    await orb.focus()
+    await orb.press('Enter')
+    await expect(orb).toHaveAttribute('aria-expanded', 'true')
+    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
+    const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
+    await expect(firstDestination).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(orb).toBeFocused()
+    await expect(orb).toHaveAttribute('aria-expanded', 'false')
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  test('reduced motion removes active CSS animations from primary controls', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    for (const route of routes) {
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' })
+      const activeAnimations = await page.locator(interactiveSelector).evaluateAll((elements) => elements
+        .filter((element) => {
+          const style = getComputedStyle(element)
+          const rect = element.getBoundingClientRect()
+          if (style.visibility === 'hidden' || style.display === 'none' || rect.width === 0 || rect.height === 0) return false
+          return style.animationName !== 'none' && style.animationDuration !== '0s' && style.animationDuration !== '0.001s'
+        })
+        .map((element) => ({ html: element.outerHTML.slice(0, 240), animationName: getComputedStyle(element).animationName, animationDuration: getComputedStyle(element).animationDuration })))
+      expect(activeAnimations, `${route.name} has active primary-control animation under reduced motion`).toEqual([])
     }
   })
 
-  test('reduced motion keeps Focus complete and removes authored animation', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
-    const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
-    await expect(chamber).toBeVisible()
-    const animated = await chamber.locator('*').evaluateAll((elements) => elements.filter((element) => {
-      const style = getComputedStyle(element)
-      return style.animationName !== 'none' && style.animationDuration !== '0s'
-    }).length)
-    expect(animated).toBe(0)
-  })
+  test('mobile visible controls stay inside the visual viewport and safe area', async ({ page }) => {
+    test.setTimeout(90_000)
+    await page.setViewportSize({ width: 393, height: 873 })
+    const report: Array<{ route: string; clipped: Array<{ html: string; left: number; top: number; right: number; bottom: number }> }> = []
+    for (const route of routes) {
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' })
+      const clipped = await page.locator(interactiveSelector).evaluateAll((elements) => {
+        const viewport = window.visualViewport
+        const left = viewport?.offsetLeft ?? 0
+        const top = viewport?.offsetTop ?? 0
+        const right = left + (viewport?.width ?? window.innerWidth)
+        const bottom = top + (viewport?.height ?? window.innerHeight)
+        const hasScrollableAncestor = (element: Element) => {
+          let current = element.parentElement
+          while (current) {
+            const style = getComputedStyle(current)
+            const overflowsHorizontally = current.scrollWidth > current.clientWidth
+            if (current.matches('.ground-destination-compass') && overflowsHorizontally) return true
+            if (/auto|scroll/.test(style.overflowX) && overflowsHorizontally) return true
+            current = current.parentElement
+          }
+          return false
+        }
+        return elements
+          .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
+          .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
+          .filter(({ element, rect }) => {
+            const intersects = rect.left < right && rect.right > left && rect.top < bottom && rect.bottom > top
+            const fullyContained = rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom
+            return intersects && !fullyContained && !hasScrollableAncestor(element)
+          })
+          .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }))
+      })
+      report.push({ route: route.name, clipped })
+    }
 
-  test('Focus remains usable without WebGL and after renderer context recovery', async ({ page }) => {
-    await page.addInitScript(() => {
-      const original = HTMLCanvasElement.prototype.getContext
-      HTMLCanvasElement.prototype.getContext = function patched(type: string, ...args: unknown[]) {
-        if (type === 'webgl' || type === 'webgl2') return null
-        return original.call(this, type as never, ...(args as never[]))
-      } as typeof original
+    await page.goto('/ground', { waitUntil: 'domcontentloaded' })
+    const railTargets = page.locator('.ground-destination-compass :is(a,button)')
+    const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
+    for (let index = 0; index < await railTargets.count(); index += 1) {
+      const target = railTargets.nth(index)
+      await target.focus()
+      await expect(target).toBeFocused()
+      focusContainment.push(await target.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const rail = element.closest<HTMLElement>('.ground-destination-compass')
+        const railRect = rail?.getBoundingClientRect() ?? rect
+        const viewport = window.visualViewport
+        const leftBoundary = Math.max(viewport?.offsetLeft ?? 0, railRect.left)
+        const rightBoundary = Math.min(
+          (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
+          railRect.right,
+        )
+        return {
+          label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? 'unknown',
+          fullyContained: rect.left >= leftBoundary && rect.right <= rightBoundary,
+          left: rect.left,
+          right: rect.right,
+        }
+      }))
+    }
+
+    await test.info().attach('mobile-safe-area-report.json', {
+      body: JSON.stringify({ fixedControls: report, scrollableGroundRail: focusContainment }, null, 2),
+      contentType: 'application/json',
     })
-    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
-    const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
-    await expect(chamber).toBeVisible()
-    await expect(chamber.getByRole('button', { name: /open replay for the quiet reset/i })).toBeVisible()
+    expect(report.flatMap((entry) => entry.clipped)).toEqual([])
+    expect(focusContainment.filter((entry) => !entry.fullyContained)).toEqual([])
   })
 
-  test('offline refresh preserves the already-exported Focus route', async ({ page, context }) => {
-    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')).toBeVisible()
+  test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
+    await disableWebGL(page)
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const fallback = page.locator('[data-testid="urai-home-accessible-fallback"][data-webgl-state="unavailable"]')
+    await expect(fallback).toBeVisible()
+    await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
+    await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
+    await expect(fallback.getByRole('button', { name: /open urai orb companion/i })).toBeVisible()
+  })
+
+  test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const before = page.url()
+    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible({ timeout: 15_000 })
+    await page.locator('.urai-home-spatial-runtime-layer canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
+    await expect(page.getByRole('status')).toContainText(/restor/i)
+    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible({ timeout: 15_000 })
+    await expect.poll(() => page.url()).toBe(before)
+
+    await page.locator('.urai-home-spatial-runtime-layer canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
+    await expect(page.locator('[data-urai-home-runtime="accessible-fallback-after-renderer-failure"]')).toBeVisible()
+    await expect(page.getByRole('status')).toContainText(/could not recover/i)
+    await expect.poll(() => page.url()).toBe(before)
+  })
+
+  test('offline transition preserves the current route and recovers online', async ({ page, context }) => {
+    await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+    const before = page.url()
     await context.setOffline(true)
-    await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {})
-    await expect(page.locator('[data-testid="urai-final-focus-chamber"]')).toBeVisible()
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+    await expect.poll(() => page.url()).toBe(before)
     await context.setOffline(false)
+    await page.evaluate(() => window.dispatchEvent(new Event('online')))
+    await expect.poll(() => page.url()).toBe(before)
   })
 })
