@@ -10,6 +10,8 @@ const home = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')
+const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
+const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
 
 test('shared movement kernel owns calm keyboard, touch, damping, boundaries and collision', () => {
   for (const marker of [
@@ -71,6 +73,8 @@ test('Ground is walkable infrastructure with paths, Nexus, chamber thresholds an
   assert.match(groundScene, /destination\.workforceState === 'blocked'/)
   assert.match(groundScene, /destination\.availability === 'offline'/)
   assert.match(groundScene, /Press Enter or tap again to cross the threshold/)
+  assert.match(embodiedLayout, /data-world-destination='infrastructure-hub'[\s\S]*\.urai-movement-help[\s\S]*top: max\(118px/)
+  assert.match(embodiedLayout, /\.ground-movement-prompt[\s\S]*bottom: max\(238px/)
   assert.doesNotMatch(groundScene, /requestPointerLock|sprint|jump|crouch/i)
 })
 
@@ -89,6 +93,7 @@ test('Life Map keeps its independent non-Orb movement language and orientation r
   assert.match(lifeMapBoundary, /aria-live="polite"/)
   assert.match(lifeMapBoundary, /life-map-accessibility-menu/)
   assert.match(lifeMapBoundary, /life-map-memory-portals/)
+  assert.match(embodiedLayout, /data-world-destination='life-map'[\s\S]*\.life-map-movement-help[\s\S]*top: max\(78px/)
   assert.doesNotMatch(lifeMapBoundary, /Orb companion|PersistentWorldCompanion|requestPointerLock/)
 })
 
@@ -99,4 +104,5 @@ test('embodied movement never removes essential exits or semantic controls', () 
   assert.match(ground, /destination\.href/)
   assert.match(lifeMapBoundary, /ROUTE_ACTION_LABELS = new Set\(\['Enter Focus', 'Replay', 'Overview', 'Ground', 'Home'\]\)/)
   assert.match(lifeMapBoundary, /findOverviewButton/)
+  assert.match(worldShell, /embodiedExplorationLayout\.css/)
 })
