@@ -46,6 +46,8 @@ const HOME_OBSTACLES = [
   { x: AVATAR_POSITION.x, z: AVATAR_POSITION.z, radius: 0.95 },
   { x: ORB_POSITION.x, z: ORB_POSITION.z, radius: 0.82 },
 ]
+const HOME_FOV = 56
+const PROJECTION_EPSILON = 0.001
 
 function useMediaPreference(query: string) {
   const [matches, setMatches] = useState(false)
@@ -106,7 +108,7 @@ function HomeOrb({ walkTarget, nearby, onOrbOpen }: {
   return (
     <group position={ORB_POSITION} name="home-authored-orb-physical-hit-target" data-testid="urai-home-webgl-orb">
       <mesh onClick={activate}>
-        <sphereGeometry args={[0.82, 24, 24]} />
+        <sphereGeometry args={[0.5, 20, 20]} />
         <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
       </mesh>
     </group>
@@ -239,8 +241,11 @@ function PlayerCamera({
     camera.lookAt(lookAt.current)
 
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = THREE.MathUtils.damp(camera.fov, 56, reducedMotion ? 100 : 6, delta)
-      camera.updateProjectionMatrix()
+      const nextFov = THREE.MathUtils.damp(camera.fov, HOME_FOV, reducedMotion ? 100 : 6, delta)
+      if (Math.abs(nextFov - camera.fov) > PROJECTION_EPSILON) {
+        camera.fov = nextFov
+        camera.updateProjectionMatrix()
+      }
     }
 
     const shell = shellRef.current
@@ -337,7 +342,7 @@ export default function EmbodiedHomeSpatialCanvas({ onOrbOpen, webglAvailable }:
         className="urai-home-spatial-canvas urai-home-embodied-canvas"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
         dpr={[1, 1.5]}
-        camera={{ position: [0, 1.68, 7.4], fov: 56, near: 0.08, far: 150 }}
+        camera={{ position: [0, 1.68, 7.4], fov: HOME_FOV, near: 0.08, far: 150 }}
         gl={{ antialias: true, alpha: true, premultipliedAlpha: false, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace
