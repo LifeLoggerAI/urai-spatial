@@ -33,6 +33,9 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, 'firstControl?.focus()')
   requireText(companion, 'orbRef.current?.focus()')
   requireText(companion, "event.key !== 'Escape'")
+  requireText(companion, "event.key !== 'Enter' && event.key !== ' '")
+  requireText(companion, 'event.stopPropagation()')
+  requireText(companion, 'onClick={toggleCompanion}')
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
 
