@@ -48,18 +48,91 @@ try {
     })
     await shot('webgl-only')
 
-    await page.evaluate(() => {
+    const diagnostics = await page.evaluate(({ width, height }) => {
       document.querySelectorAll('canvas').forEach((node) => { node.style.visibility = 'hidden' })
-    })
-    await shot('dom-only')
 
-    const styles = await page.evaluate(() => ({
-      bodyBefore: getComputedStyle(document.body, '::before').cssText,
-      bodyAfter: getComputedStyle(document.body, '::after').cssText,
-      cosmic: document.querySelector('.life-map-cosmic-wash') instanceof HTMLElement ? getComputedStyle(document.querySelector('.life-map-cosmic-wash')).cssText : '',
-      vignette: document.querySelector('.life-map-depth-vignette') instanceof HTMLElement ? getComputedStyle(document.querySelector('.life-map-depth-vignette')).cssText : '',
-    }))
-    await fs.writeFile(path.join(outputDir, `lifemap-${viewport.name}-computed.json`), JSON.stringify(styles, null, 2))
+      const selectStyle = (style) => ({
+        display: style.display,
+        visibility: style.visibility,
+        position: style.position,
+        inset: style.inset,
+        top: style.top,
+        bottom: style.bottom,
+        width: style.width,
+        height: style.height,
+        zIndex: style.zIndex,
+        opacity: style.opacity,
+        background: style.background,
+        backgroundImage: style.backgroundImage,
+        backgroundColor: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        filter: style.filter,
+        backdropFilter: style.backdropFilter,
+        mixBlendMode: style.mixBlendMode,
+        content: style.content,
+      })
+
+      const summarize = (element) => {
+        const rect = element.getBoundingClientRect()
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className: typeof element.className === 'string' ? element.className : '',
+          testId: element.getAttribute('data-testid'),
+          rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+          style: selectStyle(getComputedStyle(element)),
+          before: selectStyle(getComputedStyle(element, '::before')),
+          after: selectStyle(getComputedStyle(element, '::after')),
+        }
+      }
+
+      const points = [
+        { name: 'above-band', x: Math.round(width * 0.5), y: Math.round(height * 0.40) },
+        { name: 'on-band', x: Math.round(width * 0.5), y: Math.round(height * 0.42) },
+        { name: 'below-band', x: Math.round(width * 0.5), y: Math.round(height * 0.44) },
+      ]
+
+      const stacks = points.map((point) => ({
+        ...point,
+        elements: document.elementsFromPoint(point.x, point.y).map(summarize),
+      }))
+
+      const candidateRules = []
+      const inspectRules = (rules, href, media = '') => {
+        for (const rule of rules) {
+          if (rule instanceof CSSStyleRule) {
+            const text = rule.cssText
+            if (/life-map|lifemap|urai-route-life-map|::before|::after|body\s*[,{]/i.test(rule.selectorText) && /background|box-shadow|filter|opacity|height|inset|position/i.test(text)) {
+              candidateRules.push({ href, media, selector: rule.selectorText, cssText: text })
+            }
+          } else if ('cssRules' in rule) {
+            try {
+              inspectRules(rule.cssRules, href, rule.conditionText || media)
+            } catch {
+              // Ignore inaccessible nested rules.
+            }
+          }
+        }
+      }
+
+      for (const sheet of document.styleSheets) {
+        try {
+          inspectRules(sheet.cssRules, sheet.href || 'inline')
+        } catch {
+          // Same-origin build styles are readable; ignore anything else.
+        }
+      }
+
+      return {
+        stacks,
+        candidateRules,
+        htmlClasses: document.documentElement.className,
+        bodyClasses: document.body.className,
+      }
+    }, { width: viewport.width, height: viewport.height })
+
+    await shot('dom-only')
+    await fs.writeFile(path.join(outputDir, `lifemap-${viewport.name}-diagnostics.json`), JSON.stringify(diagnostics, null, 2))
     await page.close()
   }
 } finally {
