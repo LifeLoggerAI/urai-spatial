@@ -1,0 +1,35 @@
+/* Selected memory must be owned by the interactive spatial lens, not the overview artwork. */
+[data-testid='urai-r3f-canonical-lifemap'] > [data-life-map-authored-universe='primary'] {
+  transition: opacity .48s ease, filter .48s ease, transform .48s ease;
+}
+
+[data-testid='urai-r3f-canonical-lifemap']:has(.life-map-independent-realm[data-life-map-mode='selected'])
+  > .life-map-independent-realm {
+  position: relative;
+  z-index: 70;
+}
+
+[data-testid='urai-r3f-canonical-lifemap']:has(.life-map-independent-realm[data-life-map-mode='selected'])
+  > [data-life-map-authored-universe='primary'] {
+  z-index: 1 !important;
+  opacity: .04 !important;
+  filter: saturate(.58) contrast(1.08) brightness(.34) blur(1.5px);
+  transform: scale(1.025);
+}
+
+.life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
+  position: relative;
+  z-index: 90;
+}
+
+@media (max-width: 760px) {
+  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
+    max-width: calc(100vw - 16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-testid='urai-r3f-canonical-lifemap'] > [data-life-map-authored-universe='primary'] {
+    transition: none;
+  }
+}
