@@ -82,15 +82,17 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
 
 export function WorldTransitionController() {
   const router = useRouter()
-  const { world, phase, beginTravel } = useUraiWorldState()
+  const { world, phase, beginTravel, cancelTransition } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
+  const cancelTransitionRef = useRef(cancelTransition)
 
   useEffect(() => { worldRef.current = world }, [world])
   useEffect(() => { phaseRef.current = phase }, [phase])
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
+  useEffect(() => { cancelTransitionRef.current = cancelTransition }, [cancelTransition])
 
   const clearTimer = useCallback(() => {
     if (timer.current === null) return
@@ -113,9 +115,11 @@ export function WorldTransitionController() {
     }
 
     const href = buildTravelHref(request)
+    const samePath = new URL(href, window.location.origin).pathname === window.location.pathname
     timer.current = window.setTimeout(() => {
       announceUraiWorldLocation(href)
       router.push(href)
+      if (samePath) cancelTransitionRef.current()
       timer.current = null
     }, transitionDuration(request.destination))
   }, [clearTimer, router])
