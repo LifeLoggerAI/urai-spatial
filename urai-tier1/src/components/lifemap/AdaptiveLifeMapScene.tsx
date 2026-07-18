@@ -821,8 +821,8 @@ export default function AdaptiveLifeMapScene() {
   const queryNodeId = safeToken(params.get("node") || params.get("nodeId") || params.get("memoryId"));
   const overviewRequested = params.get("overview") === "1";
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-  const [selectedId, setSelectedId] = useState<string | null>(() => queryNodeId || initial.current?.selectedId || null);
-  const [cameraIntent, setCameraIntent] = useState<CameraIntent>(() => initial.current?.cameraIntent || OVERVIEW_CAMERA);
+  const [selectedId, setSelectedId] = useState<string | null>(() => overviewRequested ? null : queryNodeId || initial.current?.selectedId || null);
+  const [cameraIntent, setCameraIntent] = useState<CameraIntent>(() => overviewRequested ? OVERVIEW_CAMERA : initial.current?.cameraIntent || OVERVIEW_CAMERA);
   const [narratorText, setNarratorText] = useState("The Life Map is open. Select a star to move inside the memory field.");
   const [webglState, setWebglState] = useState<WebGLState>("starting");
   const mainRef = useRef<HTMLElement>(null);
@@ -882,6 +882,12 @@ export default function AdaptiveLifeMapScene() {
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [manifestId, queryNodeId, router, selectedId]);
+
+  useEffect(() => {
+    const onOverviewRequest = () => recenter();
+    window.addEventListener("urai:life-map-overview", onOverviewRequest);
+    return () => window.removeEventListener("urai:life-map-overview", onOverviewRequest);
+  }, [recenter]);
 
   const enterFocus = useCallback((node: LifeMapNode) => {
     router.push(identityHref("focus", node));
@@ -1083,9 +1089,9 @@ export default function AdaptiveLifeMapScene() {
             <>
               <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))}>Enter Focus</button>
               <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} disabled={!selectedNode.replayAvailable || selectedNode.locked}>Replay</button>
-              <button type="button" onClick={recenter}>Overview</button>
             </>
           ) : null}
+          <button type="button" data-life-map-overview-control="true" onClick={recenter}>Overview</button>
           <button type="button" onClick={() => router.push("/ground")}>Ground</button>
           <button type="button" onClick={() => router.push("/home")}>Home</button>
         </div>

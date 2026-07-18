@@ -83,7 +83,12 @@ export function useMovementInput({
         callbacksRef.current.onReset?.()
         return
       }
-      if (event.code === 'Escape') callbacksRef.current.onEscape?.()
+      if (event.code === 'Escape' && callbacksRef.current.onEscape) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        callbacksRef.current.onEscape()
+        return
+      }
     }
     const onKeyUp = (event: KeyboardEvent) => {
       keys.current.delete(event.code)
@@ -93,12 +98,12 @@ export function useMovementInput({
       virtualX.current = 0
       virtualZ.current = 0
     }
-    window.addEventListener('keydown', onKeyDown, { passive: false })
+    window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('blur', clear)
     document.addEventListener('visibilitychange', clear)
     return () => {
-      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keydown', onKeyDown, true)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', clear)
       document.removeEventListener('visibilitychange', clear)

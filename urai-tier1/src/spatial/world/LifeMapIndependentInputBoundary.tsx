@@ -33,13 +33,16 @@ function isEditableTarget(target: EventTarget | null) {
 }
 
 function selectedMemoryIsActive() {
-  return new URLSearchParams(window.location.search).has(SELECTED_MEMORY_QUERY_KEY)
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('overview') === '1') return false
+  return params.has(SELECTED_MEMORY_QUERY_KEY)
     || Boolean(document.querySelector('.life-map-memory-portals'))
 }
 
 function findOverviewButton() {
-  return [...document.querySelectorAll<HTMLButtonElement>('.life-map-accessibility-menu button')]
-    .find((button) => button.textContent?.trim() === 'Overview')
+  return document.querySelector<HTMLButtonElement>('[data-life-map-overview-control="true"]')
+    ?? [...document.querySelectorAll<HTMLButtonElement>('.life-map-accessibility-menu button')]
+      .find((button) => button.textContent?.trim() === 'Overview')
 }
 
 function memoryButtons() {
@@ -113,8 +116,8 @@ export function LifeMapIndependentInputBoundary() {
 
     const overview = () => {
       const button = findOverviewButton()
-      if (!button) return false
-      button.click()
+      if (button) button.click()
+      else window.dispatchEvent(new CustomEvent('urai:life-map-overview'))
       indexRef.current = -1
       setAnnouncement('Returned to the whole private constellation.')
       return true
