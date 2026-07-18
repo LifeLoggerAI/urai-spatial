@@ -16,6 +16,7 @@ import './secondaryRealmConvergence.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
+  const showWorldCompanion = world.destination !== 'life-map'
 
   return (
     <div
@@ -30,7 +31,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       <PersistentRealmAtmosphere />
       {children}
       <GroundGateway />
-      <PersistentWorldCompanion />
+      {showWorldCompanion ? <PersistentWorldCompanion /> : null}
       <WorldTransitionController />
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         URAI destination {world.destination}. World layer {world.layer}.
