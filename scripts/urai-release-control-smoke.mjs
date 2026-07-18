@@ -130,11 +130,12 @@ async function runReleaseControlSmoke() {
 
   const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/mirror', '/passport', '/privacy-controls', '/location-map', '/status']
   const identity = {
-    memoryId: 'release-control-memory',
-    manifestId: 'release-control-manifest',
-    node: 'release-control-node',
+    memoryId: 'demo:quiet-reset',
+    manifestId: 'replay-recovery-thread',
+    node: 'quiet-reset',
   }
   const requiredQueryTokens = [
+    'demo=1',
     `memoryId=${identity.memoryId}`,
     `manifestId=${identity.manifestId}`,
     `node=${identity.node}`,
