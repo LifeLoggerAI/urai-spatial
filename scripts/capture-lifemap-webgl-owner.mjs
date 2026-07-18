@@ -7,6 +7,10 @@ const outputDir = process.env.URAI_PROOF_DIR || '/tmp/lifemap-webgl-owner'
 const variants = [
   'full',
   'minimal',
+  'blank',
+  'no-fog',
+  'no-stars',
+  'no-parallax',
   'no-post',
   'no-weather',
   'no-nexus',
