@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: bounded Life Map texture contract 2026-07-18T18:00:00Z
+# trigger: bounded Life Map texture contract 2026-07-18T18:05:00Z
 
 on:
   pull_request:
@@ -47,20 +47,6 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=all)"
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/canonical-six-fix-isolated-execution.yml scripts/one-shot-six-fix-direct.mjs | sort)"
           node scripts/one-shot-six-fix-direct.mjs
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs'
-          const path = 'urai-tier1/tests/lifemap-scene-behavior.test.mjs'
-          const source = fs.readFileSync(path, 'utf8')
-          const before = `  assert.match(source, /overview\\s*\\?\\s*profile\\.tier === "high"\\s*\\?\\s*128\\s*:\\s*96/, 'Overview memories must use small textures.')
-          assert.match(source, /related\\s*\\?\\s*profile\\.tier === "high"\\s*\\?\\s*224\\s*:\\s*160/, 'Related memories must use medium textures.')
-          assert.match(source, /:\\s*80;\\s*const \\[texture, setTexture\\] = useState<THREE\\.CanvasTexture \\| null>\\(null\\)/, 'Non-related memories must use the smallest allocation before commit-phase texture state.')`
-          const after = `  assert.match(source, /:\\s*profile\\.tier === "high"\\s*\\?\\s*128\\s*:\\s*96;/, 'Every unselected memory must use the bounded small texture allocation.')
-          assert.doesNotMatch(source, /related\\s*\\?\\s*profile\\.tier === "high"\\s*\\?\\s*224\\s*:\\s*160/, 'Unselected memories must not retain a separate medium allocation tier.')
-          assert.doesNotMatch(source, /:\\s*80;/, 'Unselected memories must use the single quality-bounded allocation rather than a hidden fourth tier.')`
-          if (!source.includes(before)) throw new Error('Expected legacy Life Map texture contract was not found')
-          if (source.indexOf(before) !== source.lastIndexOf(before)) throw new Error('Legacy Life Map texture contract was duplicated')
-          fs.writeFileSync(path, source.replace(before, after))
-          NODE
           git diff --check
           test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
 
