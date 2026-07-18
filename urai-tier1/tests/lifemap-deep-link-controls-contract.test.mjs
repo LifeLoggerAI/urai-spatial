@@ -52,14 +52,17 @@ test('Life Map-owned controls remain visible and keyboard operable without the H
   assert.match(css, /button:focus-visible/)
 })
 
-test('selected-memory controls retain visible Focus and Replay doorways', () => {
+test('selected-memory controls retain visible Focus and gated Replay doorways', () => {
   assert.match(controls, /data-testid="urai-lifemap-selected-memory-controls"/)
   assert.match(controls, /data-memory-id=\{memoryId\}/)
   assert.match(controls, /data-manifest-id=\{manifestId\}/)
   assert.match(controls, /router\.push\(destination\('focus'\)\)/)
   assert.match(controls, /router\.push\(destination\('replay'\)\)/)
+  assert.match(controls, /disabled=\{!replayAvailable\}/)
+  assert.match(controls, /aria-label=\{replayAvailable \? 'Replay' : 'Replay unavailable for this memory'\}/)
+  assert.match(controls, /replayAvailable=\{selectedNode\.replayAvailable && !selectedNode\.locked\}/)
   assert.match(controls, />\s*Enter Focus\s*</)
-  assert.match(controls, />\s*Replay\s*</)
+  assert.match(controls, /\{replayAvailable \? 'Replay' : 'Replay unavailable'\}/)
   assert.match(proof, /id: 'life-map-selected'/)
   assert.match(proof, /getByRole\('button', \{ name: 'Enter Focus' \}\)/)
   assert.match(proof, /getByRole\('button', \{ name: 'Replay' \}\)/)
