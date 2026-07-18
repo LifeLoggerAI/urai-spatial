@@ -79,7 +79,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
     const focusChamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
     await expect(focusChamber).toBeVisible()
-    const focusTargets = await targetSize(page, '[data-testid="urai-final-focus-chamber"] button:not([disabled])')
+    const focusTargets = await targetSize(page, '[data-testid="urai-final-focus-chamber"] button:not([disabled]), [data-testid="urai-final-focus-chamber"] summary')
 
     expect(companionTargets.length).toBeGreaterThan(0)
     expect(focusTargets.length).toBeGreaterThan(0)
@@ -103,9 +103,57 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.goto('/focus', { waitUntil: 'domcontentloaded' })
     const recovery = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="unavailable"]')
     await expect(recovery).toBeVisible()
+    const recoverySurface = await recovery.locator('section[role="alert"]').evaluate((element) => {
+      const style = getComputedStyle(element)
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderTopWidth: style.borderTopWidth,
+        boxShadow: style.boxShadow,
+      }
+    })
+    expect(recoverySurface.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+    expect(recoverySurface.backgroundImage).toBe('none')
+    expect(recoverySurface.borderTopWidth).toBe('0px')
+    expect(recoverySurface.boxShadow).toBe('none')
     await recovery.getByRole('button', { name: /open disclosed demo/i }).click()
     await expect(page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')).toBeVisible({ timeout: 10_000 })
     await expect.poll(() => page.url()).toContain('memoryId=demo%3Aquiet-reset')
+  })
+
+  test('Focus keeps the aperture dominant, Replay spatial, and metadata progressive', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
+    await expect(chamber).toBeVisible()
+    const aperture = chamber.locator('figure')
+    const replay = chamber.getByRole('button', { name: /open replay for the quiet reset/i })
+    const details = chamber.locator('details')
+    const summary = details.locator('summary')
+    await expect(details).not.toHaveAttribute('open', '')
+    await expect(chamber.getByText('Emotion', { exact: true })).not.toBeVisible()
+
+    const geometry = await Promise.all([
+      aperture.boundingBox(),
+      replay.boundingBox(),
+      summary.boundingBox(),
+    ])
+    const [apertureBox, replayBox, summaryBox] = geometry
+    expect(apertureBox).not.toBeNull()
+    expect(replayBox).not.toBeNull()
+    expect(summaryBox).not.toBeNull()
+    expect(apertureBox!.height).toBeGreaterThan(apertureBox!.width)
+    expect(apertureBox!.width).toBeGreaterThan(replayBox!.width * 2)
+    expect(Math.abs(replayBox!.width - replayBox!.height)).toBeLessThanOrEqual(4)
+    expect(summaryBox!.height).toBeGreaterThanOrEqual(48)
+
+    await summary.click()
+    await expect(details).toHaveAttribute('open', '')
+    await expect(chamber.getByText('Emotion', { exact: true })).toBeVisible()
+    await test.info().attach('focus-cinematic-geometry.json', {
+      body: JSON.stringify({ apertureBox, replayBox, summaryBox }, null, 2),
+      contentType: 'application/json',
+    })
   })
 
   test('short-landscape Focus keeps the Replay CTA fully inside the visual viewport', async ({ page }) => {
