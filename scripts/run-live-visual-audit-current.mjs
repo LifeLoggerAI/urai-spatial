@@ -35,7 +35,50 @@ const replacements = new Map([
   ],
   [
     '    const found = await firstVisible(page, check.selectors)',
-    "    let found = await firstVisible(page, check.selectors)\n    if (!found) {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
+    `    if (check.name === 'life-map-to-focus') {
+      const controls = page.locator('details.life-map-accessibility-menu').first()
+      await controls.waitFor({ state: 'visible', timeout: 10000 })
+      if ((await controls.getAttribute('open')) === null) {
+        await controls.locator('summary').click({ timeout: 10000 })
+      }
+      const memory = controls.getByRole('button', { name: /The Quiet Reset/i }).first()
+      await memory.click({ timeout: 10000 })
+      await page.waitForTimeout(700)
+
+      const selectedPortal = page.locator('.life-map-memory-portals').first()
+      await selectedPortal.waitFor({ state: 'visible', timeout: 10000 })
+      const selectedSurface = await selectedPortal.evaluate((node) => {
+        const rect = node.getBoundingClientRect()
+        const focus = node.querySelector('button')?.getBoundingClientRect()
+        const semanticList = document.querySelector('details.life-map-accessibility-menu > div')
+        const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
+        const semanticRect = semanticList?.getBoundingClientRect()
+        const semanticListVisible = Boolean(semanticStyle && semanticRect
+          && semanticStyle.display !== 'none'
+          && semanticStyle.visibility !== 'hidden'
+          && Number.parseFloat(semanticStyle.opacity || '1') > 0.02
+          && semanticRect.width > 4
+          && semanticRect.height > 4)
+        return {
+          contained: rect.left >= -1 && rect.right <= window.innerWidth + 1,
+          focusTouchTarget: Boolean(focus && focus.width >= 44 && focus.height >= 44),
+          semanticListHidden: !semanticListVisible,
+        }
+      })
+      if (!selectedSurface.contained || !selectedSurface.focusTouchTarget || !selectedSurface.semanticListHidden) {
+        throw new Error('Selected Life Map surface failed containment, touch-target, or semantic-list ownership proof')
+      }
+    }
+
+    let found = await firstVisible(page, check.selectors)
+    if (!found) {
+      const orb = page.locator('button[aria-label="Open Orb travel controls"]')
+      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {
+        await orb.click({ timeout: 10000 })
+        await page.waitForTimeout(250)
+        found = await firstVisible(page, check.selectors)
+      }
+    }`,
   ],
   [
     '      const action = await clickOrFollowHref(page, found.locator)',
