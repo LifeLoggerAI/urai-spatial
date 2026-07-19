@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/one-shot-final-lifemap-deterministic-repair.yml
+      - scripts/fix-one-shot-final-lifemap-script.mjs
       - scripts/one-shot-final-lifemap-deterministic-repair.mjs
 
 permissions:
@@ -40,14 +41,16 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          expected_stage="$(printf '%s\n' .github/workflows/one-shot-final-lifemap-deterministic-repair.yml scripts/one-shot-final-lifemap-deterministic-repair.mjs | sort)"
+          expected_stage="$(printf '%s\n' .github/workflows/one-shot-final-lifemap-deterministic-repair.yml scripts/fix-one-shot-final-lifemap-script.mjs scripts/one-shot-final-lifemap-deterministic-repair.mjs | sort)"
           actual_stage="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
           printf '%s\n' "$actual_stage" > /tmp/staged-files.txt
           test "$actual_stage" = "$expected_stage"
+          node scripts/fix-one-shot-final-lifemap-script.mjs 2>&1 | tee /tmp/normalize.log
+          node --check scripts/one-shot-final-lifemap-deterministic-repair.mjs
           node scripts/one-shot-final-lifemap-deterministic-repair.mjs 2>&1 | tee /tmp/apply.log
           git diff --check
           expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
-          actual_product="$(git diff --name-only | sort)"
+          actual_product="$(git diff --name-only | grep -v '^scripts/one-shot-final-lifemap-deterministic-repair.mjs$' | sort)"
           printf '%s\n' "$actual_product" > /tmp/product-files.txt
           test "$actual_product" = "$expected_product"
 
@@ -118,6 +121,7 @@ jobs:
           path: |
             /tmp/staged-files.txt
             /tmp/product-files.txt
+            /tmp/normalize.log
             /tmp/apply.log
             /tmp/install.log
             /tmp/unit.log
@@ -137,6 +141,7 @@ jobs:
           remote_head="$(git ls-remote origin "refs/heads/$SOURCE_BRANCH" | awk '{print $1}')"
           test "$remote_head" = "${{ github.event.pull_request.head.sha }}"
           rm .github/workflows/one-shot-final-lifemap-deterministic-repair.yml
+          rm scripts/fix-one-shot-final-lifemap-script.mjs
           rm scripts/one-shot-final-lifemap-deterministic-repair.mjs
           git diff --check
           expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
