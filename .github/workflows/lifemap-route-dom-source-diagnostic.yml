@@ -29,28 +29,56 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Apply both bounded repairs in isolated checkout
+      - name: Apply and retain both bounded transforms
+        id: transform
+        shell: bash
         run: |
-          set -euo pipefail
-          node scripts/one-shot-lifemap-fullscreen-selected-actions.mjs
-          node scripts/one-shot-ground-mobile-containment.mjs
-          git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' \
-            urai-tier1/src/app/GroundSpatialWorldClean.tsx \
-            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx \
-            urai-tier1/src/spatial/world/lifeMapSelectedCinematic.css \
-            urai-tier1/tests/accessibility-performance-source-contract.test.mjs \
-            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs \
-            urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs \
-            urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs | sort)"
+          set +e
+          {
+            node scripts/one-shot-lifemap-fullscreen-selected-actions.mjs
+            first=$?
+            echo "LIFEMAP_TRANSFORM_STATUS=$first"
+            if [ "$first" -eq 0 ]; then
+              node scripts/one-shot-ground-mobile-containment.mjs
+              second=$?
+            else
+              second=99
+            fi
+            echo "GROUND_TRANSFORM_STATUS=$second"
+            git diff --check
+            diff_status=$?
+            echo "DIFF_CHECK_STATUS=$diff_status"
+            git diff --name-only | sort | tee /tmp/combined-spatial-changed-files.txt
+            expected="$(printf '%s\n' \
+              urai-tier1/src/app/GroundSpatialWorldClean.tsx \
+              urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx \
+              urai-tier1/src/spatial/world/lifeMapSelectedCinematic.css \
+              urai-tier1/tests/accessibility-performance-source-contract.test.mjs \
+              urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs \
+              urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs | sort)"
+            actual="$(cat /tmp/combined-spatial-changed-files.txt)"
+            printf '%s\n' "$expected" > /tmp/combined-spatial-expected-files.txt
+            if [ "$actual" = "$expected" ]; then allowlist_status=0; else allowlist_status=1; fi
+            echo "ALLOWLIST_STATUS=$allowlist_status"
+            if [ "$first" -eq 0 ] && [ "$second" -eq 0 ] && [ "$diff_status" -eq 0 ] && [ "$allowlist_status" -eq 0 ]; then status=0; else status=1; fi
+            echo "TRANSFORM_STATUS=$status"
+            exit "$status"
+          } > /tmp/combined-spatial-transform.log 2>&1
+          status=$?
+          cat /tmp/combined-spatial-transform.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "$status" > /tmp/combined-spatial-transform.status
+          exit 0
 
       - name: Install exact dependencies
+        if: steps.transform.outputs.status == '0'
         run: |
           set -euo pipefail
           corepack enable
           corepack pnpm install --frozen-lockfile
 
       - name: Capture combined source-contract result
+        if: steps.transform.outputs.status == '0'
         id: source
         shell: bash
         run: |
@@ -61,24 +89,30 @@ jobs:
           echo "$status" > /tmp/combined-spatial-source.status
           exit 0
 
-      - name: Print combined source-contract result
+      - name: Print combined diagnostic result
         if: always()
         shell: bash
         run: |
-          echo "SOURCE_CONTRACT_STATUS=$(cat /tmp/combined-spatial-source.status 2>/dev/null || echo missing)"
-          tail -n 140 /tmp/combined-spatial-source.log 2>/dev/null || true
+          echo "TRANSFORM_STATUS=$(cat /tmp/combined-spatial-transform.status 2>/dev/null || echo missing)"
+          cat /tmp/combined-spatial-transform.log 2>/dev/null || true
+          echo "SOURCE_CONTRACT_STATUS=$(cat /tmp/combined-spatial-source.status 2>/dev/null || echo not-run)"
+          tail -n 160 /tmp/combined-spatial-source.log 2>/dev/null || true
 
-      - name: Retain combined source-contract result
+      - name: Retain combined diagnostic result
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: combined-spatial-source-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
           path: |
+            /tmp/combined-spatial-transform.log
+            /tmp/combined-spatial-transform.status
+            /tmp/combined-spatial-changed-files.txt
+            /tmp/combined-spatial-expected-files.txt
             /tmp/combined-spatial-source.log
             /tmp/combined-spatial-source.status
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
-      - name: Require source contracts
-        if: steps.source.outputs.status != '0'
+      - name: Require transform and source contracts
+        if: steps.transform.outputs.status != '0' || steps.source.outputs.status != '0'
         run: exit 1
