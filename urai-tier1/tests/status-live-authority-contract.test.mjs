@@ -6,6 +6,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const page = read('src/app/status/page.tsx')
 const authority = read('src/app/status/StatusReleaseAuthority.tsx')
 const launchTruth = read('src/data/launchTruth.ts')
+const legacyLayer = read('src/app/UraiAutonomousV1Layer.tsx')
 
 test('Status replaces stale production-pending copy with bounded verified-live truth', () => {
   assert.match(page, /StatusReleaseAuthority/)
@@ -17,6 +18,12 @@ test('Status replaces stale production-pending copy with bounded verified-live t
   assert.match(page, /\['\/privacy-controls', 'verified live'/)
   assert.doesNotMatch(page, /Production certification remains pending/)
   assert.doesNotMatch(page, /pending-current-main-evidence/)
+})
+
+test('Canonical Status page is not covered by the legacy autonomous realm layer', () => {
+  assert.match(legacyLayer, /Status are owned exclusively by their canonical route clients/)
+  assert.doesNotMatch(legacyLayer, /pathname\.startsWith\("\/status"\)/)
+  assert.doesNotMatch(legacyLayer, /return <UraiAutonomousV1Realms[^>]*status/)
 })
 
 test('Only canonical production requests and validates the protected fingerprint', () => {
