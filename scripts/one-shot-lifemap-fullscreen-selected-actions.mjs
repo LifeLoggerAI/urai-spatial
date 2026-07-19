@@ -2,7 +2,8 @@ import fs from 'node:fs'
 
 const replaceRequired = (path, pattern, replacement, label) => {
   const source = fs.readFileSync(path, 'utf8')
-  if (!pattern.test(source)) throw new Error(`Missing ${label} in ${path}`)
+  const found = typeof pattern === 'string' ? source.includes(pattern) : pattern.test(source)
+  if (!found) throw new Error(`Missing ${label} in ${path}`)
   const next = source.replace(pattern, replacement)
   if (next === source) throw new Error(`No change while applying ${label} in ${path}`)
   fs.writeFileSync(path, next)
@@ -150,7 +151,7 @@ replaceRequired(
 
 replaceRequired(
   deepLink,
-  /  assert\.match\(adaptive, \/\\\{selected \\\? \\\(\/\)/,
+  String.raw`  assert.match(adaptive, /\{selected \? \(/)`,
   String.raw`  assert.match(adaptive, /\{selectedNode \? \(/)`,
   'route-owned Overview selected-state contract',
 )
