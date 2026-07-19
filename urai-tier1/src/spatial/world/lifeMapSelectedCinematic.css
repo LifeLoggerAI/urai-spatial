@@ -20,13 +20,34 @@
 .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
   position: relative;
   z-index: 90;
-  transform: translateY(clamp(-280px, -26vh, -160px));
+  max-width: min(520px, calc((100vw - 40px) / .72));
+  transform: translateY(clamp(-250px, -23vh, -150px)) scale(.72);
+  transform-origin: center;
   will-change: transform;
+}
+
+.life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals button {
+  min-height: 62px;
+  padding-inline: 22px;
+  font-size: 14px;
+}
+
+/* Selection owns one cinematic action surface. The overview memory list returns
+ * after Overview instead of remaining visually open behind the selected lens. */
+.life-map-independent-realm[data-life-map-mode='selected'] .life-map-accessibility-menu > div {
+  display: none !important;
 }
 
 @media (max-width: 760px) {
   .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
-    max-width: calc(100vw - 16px);
+    max-width: min(620px, calc((100vw - 18px) / .56));
+    transform: translateY(clamp(-170px, -18vh, -110px)) scale(.56);
+  }
+
+  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals button {
+    min-height: 80px;
+    padding-inline: 22px;
+    font-size: 16px;
   }
 }
 
