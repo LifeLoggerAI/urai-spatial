@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# One-shot production convergence retrigger for canonical main@1770a4967e7501d82d55385c9584a8f24231eced after the first receipt dispatcher did not register.
+# One-shot production convergence retrigger for canonical main@08da539ba662d552ef5077f8090d54dc229f11d2 after the first merged dispatcher produced no receipt within its initial verification window.
 
 on:
   push:
