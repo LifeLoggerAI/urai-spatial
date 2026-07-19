@@ -132,7 +132,7 @@ const deepLink = 'urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs'
 replaceRequired(
   deepLink,
   /test\('canonical Life Map has one selected-memory owner inside the spatial lens scene',[\s\S]*?\n\}\)\n\n(?=test\('selected-memory identity)/,
-  `test('canonical Life Map has one selected-memory owner in the route DOM overlay', () => {
+  String.raw`test('canonical Life Map has one selected-memory owner in the route DOM overlay', () => {
   assert.match(canonical, /<LifeMapRouteBoundary \/>/)
   assert.match(canonical, /<Suspense/)
   assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
@@ -151,7 +151,7 @@ replaceRequired(
 replaceRequired(
   deepLink,
   /test\('selected mode raises the spatial realm and keeps one three-column action surface inside desktop and mobile viewports',[\s\S]*?\n\}\)\n\n(?=test\('schema-7)/,
-  `test('selected mode raises the spatial realm and keeps one route-owned action surface inside desktop and mobile viewports', () => {
+  String.raw`test('selected mode raises the spatial realm and keeps one route-owned action surface inside desktop and mobile viewports', () => {
   assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
   assert.match(selectedCinematic, /data-life-map-mode='selected'/)
   assert.match(selectedCinematic, /> \.life-map-independent-realm/)
@@ -190,7 +190,7 @@ const finalContract = 'urai-tier1/tests/final-aaa-world-convergence-contract.tes
 replaceRequired(
   finalContract,
   /test\('Life Map renders synchronous luminous lenses with dominant selected mode',[\s\S]*?\n\}\)\s*$/,
-  `test('Life Map renders synchronous luminous lenses with dominant selected mode', () => {
+  String.raw`test('Life Map renders synchronous luminous lenses with dominant selected mode', () => {
   assert.match(adaptiveLifeMap, /memoryLensPath/)
   assert.match(adaptiveLifeMap, /const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/)
   assert.match(adaptiveLifeMap, /const textureKey = texture\?\.uuid/)
