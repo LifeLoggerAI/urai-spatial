@@ -184,8 +184,22 @@ replaceRequired(
         action = await clickOrFollowHref(page, found.locator)
       }
       await page.waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 }).catch(() => {})
+      if (check.name === 'life-map-to-focus') {
+        await page.waitForFunction(() => {
+          const chamber = document.querySelector('[data-testid="urai-final-focus-chamber"]')
+          return chamber instanceof HTMLElement
+            && chamber.dataset.memoryStatus === 'demo'
+            && chamber.dataset.memoryId?.startsWith('demo:')
+            && !document.body.textContent?.includes('Memory unavailable')
+        }, null, { timeout: 15000, polling: 'raf' })
+        const destinationUrl = new URL(page.url())
+        if (destinationUrl.searchParams.get('demo') !== '1'
+          || !destinationUrl.searchParams.get('memoryId')?.startsWith('demo:')) {
+          throw new Error('Life Map did not preserve truthful explicit-demo identity into Focus: ' + destinationUrl.toString())
+        }
+      }
       mode = action.mode`,
-  'interaction URL wait and stable portal activation',
+  'interaction URL wait, Focus identity proof, and stable portal activation',
 )
 
 const forbidden = [
@@ -205,6 +219,9 @@ for (const value of [
   'urai:lifeMapDemoMode',
   '.life-map-accessibility-menu',
   'dom-activation-after-pointer-proof',
+  'data-memory-status',
+  "destinationUrl.searchParams.get('demo')",
+  "startsWith('demo:')",
   "polling: 'raf'",
 ]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
