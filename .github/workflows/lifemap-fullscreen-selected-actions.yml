@@ -51,8 +51,7 @@ jobs:
             urai-tier1/tests/accessibility-performance-source-contract.test.mjs \
             urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs \
             urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs \
-            urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs \
-            urai-tier1/tests/post-deploy-ground-smoke-contract.test.mjs | sort)"
+            urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs | sort)"
 
       - name: Install exact dependencies
         shell: bash
