@@ -22,6 +22,17 @@ function unavailable(message: string): SelectedMemoryResult {
   return { status: 'unavailable', memory: null, message }
 }
 
+function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
+  if (!memoryId || memoryId.startsWith('demo:')) return null
+  if (params.get('from') !== 'life-map-camera') return null
+
+  const publicDemoEnabled = process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true'
+  const localDemoEnabled = typeof window !== 'undefined'
+    && window.localStorage.getItem('urai:lifeMapDemoMode') === 'true'
+
+  return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
+}
+
 export function useSelectedMemory(): SelectedMemoryResult {
   const params = useMemo(() => {
     if (typeof window === 'undefined') return new URLSearchParams()
@@ -29,6 +40,8 @@ export function useSelectedMemory(): SelectedMemoryResult {
   }, [])
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
+  const continuedDemoMemoryId = demoContinuationMemoryId(params, memoryId)
+  const requestedDemoMemoryId = isExplicitDemoRequest(params) ? memoryId : continuedDemoMemoryId
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
 
   useEffect(() => {
@@ -39,8 +52,8 @@ export function useSelectedMemory(): SelectedMemoryResult {
       return () => { cancelled = true }
     }
 
-    if (isExplicitDemoRequest(params)) {
-      const memory = buildNamedExplicitDemoMemory(memoryId)
+    if (requestedDemoMemoryId) {
+      const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
       if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
         return () => { cancelled = true }
@@ -87,7 +100,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       cancelled = true
       unsubscribe()
     }
-  }, [manifestId, memoryId, params])
+  }, [manifestId, memoryId, requestedDemoMemoryId])
 
   return result
 }
