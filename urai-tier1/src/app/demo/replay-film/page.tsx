@@ -1,4 +1,3 @@
-import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import {
@@ -14,10 +13,6 @@ import {
 } from '@/spatial/assets/uraiAssets'
 
 export const dynamic = 'force-static'
-
-function publicDemoRoutesAllowed() {
-  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.NODE_ENV !== 'production'
-}
 
 const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 const demoFocusHref = `/focus?${demoMemoryQuery}`
@@ -99,10 +94,8 @@ const orbStyle = {
 } as CSSProperties
 
 export default function CutOneReplayFilmPage() {
-  if (!publicDemoRoutesAllowed()) notFound()
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="cinematic-replay-film-proof">
+    <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="cinematic-replay-film-proof" data-demo-disclosure="not-personal-data">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(167,139,250,.2),transparent_28rem),radial-gradient(circle_at_82%_18%,rgba(56,189,248,.16),transparent_28rem),linear-gradient(180deg,#05020b,#090314_54%,#020106)]" />
 
       <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden px-5 pb-24 pt-28 md:px-10 lg:px-16">
@@ -111,10 +104,10 @@ export default function CutOneReplayFilmPage() {
         <div className="absolute right-[8vw] top-[12vh] h-44 w-44 overflow-hidden rounded-full bg-contain bg-center bg-no-repeat opacity-80 mix-blend-screen drop-shadow-[0_0_60px_rgba(125,211,252,.65)] md:h-72 md:w-72" style={orbStyle} />
 
         <div className="relative z-10 max-w-6xl">
-          <p className="text-[10px] font-black uppercase tracking-[.48em] text-violet-100/75 md:text-xs">URAI · First Replay · Cut One</p>
+          <p className="text-[10px] font-black uppercase tracking-[.48em] text-violet-100/75 md:text-xs">URAI · First Replay · Cut One · Demo fixture · not personal data</p>
           <h1 className="mt-5 max-w-[10ch] text-[clamp(4.5rem,12vw,11rem)] font-black leading-[.76] tracking-[-.12em]">Your life is a world.</h1>
           <p className="mt-7 max-w-3xl text-base font-semibold leading-8 text-violet-50/82 md:text-xl md:leading-9">
-            A cinematic proof of the complete journey: pressure to portal, Ground to sky, Life Map to Focus, Replay to Mirror, and ownership through Passport.
+            A disclosed cinematic proof of the complete journey: pressure to portal, Ground to sky, Life Map to Focus, Replay to Mirror, and ownership through Passport.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#film" className="rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 no-underline transition hover:-translate-y-0.5">Play the proof rail</a>
