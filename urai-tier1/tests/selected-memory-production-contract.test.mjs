@@ -15,10 +15,15 @@ test('production memory loading never silently substitutes demo or seed content'
   assert.match(hook, /Selected memory could not be loaded/)
 })
 
-test('demo memory is explicit and visibly disclosed', () => {
+test('demo memory is explicit, disclosed, and retained through Life Map camera travel', () => {
   assert.match(contract, /params\.get\('demo'\) === '1'/)
   assert.match(contract, /startsWith\('demo:'\)/)
   assert.match(contract, /This is not personal data/)
+  assert.match(hook, /params\.get\('from'\) !== 'life-map-camera'/)
+  assert.match(hook, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)
+  assert.match(hook, /urai:lifeMapDemoMode/)
+  assert.match(hook, /`demo:\$\{memoryId\}`/)
+  assert.match(hook, /requestedDemoMemoryId/)
   assert.match(focus, /DEMO FIXTURE · NOT PERSONAL DATA/)
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
