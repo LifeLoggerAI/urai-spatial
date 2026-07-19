@@ -53,13 +53,19 @@ test('Focus is a living memory chamber with dominant identity and one Replay thr
   assert.match(focus, /forced-colors:active/)
 })
 
-test('public demo route is a disclosed walkthrough and cannot collapse to not-found', () => {
+test('public demo is disclosed by default and retains an explicit production kill switch', () => {
   assert.match(demoPage, /import CutOneReplayFilmPage from '\.\/replay-film\/page'/)
   assert.match(demoPage, /return <CutOneReplayFilmPage \/>/)
-  assert.doesNotMatch(demoPage, /notFound|publicDemoRoutesAllowed/)
+  assert.match(demoPage, /publicDemoRouteExplicitlyDisabled/)
+  assert.match(demoPage, /NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
+  assert.match(demoPage, /URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
+  assert.match(demoPage, /if \(publicDemoRouteExplicitlyDisabled\(\)\) notFound\(\)/)
   assert.match(demoFilm, /data-demo-disclosure="not-personal-data"/)
   assert.match(demoFilm, /Demo fixture · not personal data/)
-  assert.doesNotMatch(demoFilm, /notFound|publicDemoRoutesAllowed/)
+  assert.match(demoFilm, /NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
+  assert.match(demoFilm, /URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'/)
+  assert.doesNotMatch(demoPage, /ALLOW_PUBLIC_DEMO_ROUTES === 'true'/)
+  assert.doesNotMatch(demoFilm, /ALLOW_PUBLIC_DEMO_ROUTES === 'true'/)
 })
 
 test('public proof rail never links its Focus or Replay scenes to identity-free routes', () => {
