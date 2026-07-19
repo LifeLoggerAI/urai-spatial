@@ -29,8 +29,8 @@ replaceExact(
 const sourceContract = 'urai-tier1/tests/accessibility-performance-source-contract.test.mjs'
 replaceExact(
   sourceContract,
-  "requireNormalizedPattern(ground, /inline:\\s*'center'/, 'Ground focus reveal must center the destination inline')",
-  "requireNormalizedPattern(ground, /inline:\\s*'nearest'/, 'Ground focus reveal must use the nearest inline boundary')",
+  String.raw`requireNormalizedPattern(ground, /inline:\s*'center'/, 'Ground focus reveal must center the destination inline')`,
+  String.raw`requireNormalizedPattern(ground, /inline:\s*'nearest'/, 'Ground focus reveal must use the nearest inline boundary')`,
   1,
   'Ground nearest-edge source contract',
 )
