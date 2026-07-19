@@ -83,9 +83,12 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(focus).toBeFocused()
     await focus.press('Enter')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/focus')
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
-    expect(new URL(page.url()).searchParams.get('returnNode')).toBe(selectedMemoryId)
-    expect(new URL(page.url()).searchParams.get('lifeMapOrigin')).toBeTruthy()
+    const focusUrl = new URL(page.url())
+    expect(focusUrl.searchParams.get('memoryId')).toBe(`demo:${selectedMemoryId}`)
+    expect(focusUrl.searchParams.get('demo')).toBe('1')
+    expect(focusUrl.searchParams.get('returnNode')).toBe(selectedMemoryId)
+    expect(focusUrl.searchParams.get('manifestId')).toBeTruthy()
+    expect(focusUrl.searchParams.get('lifeMapOrigin')).toBeTruthy()
   })
 
   test('Overview preserves memory identity while removing selected visual and semantic state across refresh and history', async ({ page }) => {
