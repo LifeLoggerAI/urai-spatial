@@ -72,13 +72,16 @@ test.describe('Life Map independent realm runtime evidence', () => {
     expect(selectedMemoryId).toBeTruthy()
     await expect(page.locator('.life-map-whisper')).toContainText((firstLabel || '').split(':')[0].trim())
 
-    if (!(await menu.evaluate((element) => (element as HTMLDetailsElement).open))) {
-      await controls.press('Enter')
-    }
-    await expect(menu).toHaveAttribute('open', '')
-    const focus = menu.getByRole('button', { name: 'Enter Focus' })
+    // Selected mode intentionally closes the semantic list and transfers action
+    // ownership to the one visible spatial portal surface. Prove that surface is
+    // keyboard reachable rather than reopening the hidden competing menu.
+    const portals = selectedMemoryControls(page)
+    await expect(portals).toBeVisible({ timeout: 15_000 })
+    const focus = portals.getByRole('button', { name: 'Enter Focus' })
     await expect(focus).toBeVisible()
-    await focus.click()
+    await focus.focus()
+    await expect(focus).toBeFocused()
+    await focus.press('Enter')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/focus')
     expect(new URL(page.url()).searchParams.get('memoryId')).toBe(selectedMemoryId)
     expect(new URL(page.url()).searchParams.get('returnNode')).toBe(selectedMemoryId)
