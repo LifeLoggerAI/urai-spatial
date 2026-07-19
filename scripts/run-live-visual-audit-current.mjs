@@ -73,6 +73,11 @@ replaceRequired(
   'Life Map to Focus selector ownership',
 )
 replaceRequired(
+  /start:\s*'\/life-map',/g,
+  "start: '/life-map?demo=1',",
+  'Life Map explicit-demo interaction start',
+)
+replaceRequired(
   /start:\s*'\/focus\?memoryId=quiet-reset',/g,
   `start: '/focus?${demoMemoryQuery}',`,
   'Focus interaction identity',
@@ -136,11 +141,18 @@ replaceRequired(
 const forbidden = [
   "markers: ['Own your life', 'Step inside yourself']",
   "details.life-map-accessibility-menu').first()",
+  "start: '/life-map',",
 ]
 for (const value of forbidden) {
   if (source.includes(value)) throw new Error(`Current-canon audit still contains retired contract: ${value}`)
 }
-for (const value of ['WALK THE SANCTUARY', 'Open Ground directly', 'Open Life Map directly', '.life-map-memory-portals']) {
+for (const value of [
+  'WALK THE SANCTUARY',
+  'Open Ground directly',
+  'Open Life Map directly',
+  '.life-map-memory-portals',
+  "start: '/life-map?demo=1',",
+]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
 }
 
