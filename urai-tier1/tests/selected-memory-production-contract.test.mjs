@@ -8,6 +8,7 @@ const contract = read('src/spatial/memory/selectedMemoryContract.ts')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
 const replay = read('src/app/replay/CinematicReplayClient.tsx')
+const demoPage = read('src/app/demo/page.tsx')
 const demoFilm = read('src/app/demo/replay-film/page.tsx')
 const visualAudit = readRoot('scripts/run-live-visual-audit-current.mjs')
 
@@ -33,6 +34,15 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(hook, /window\.history\.replaceState/)
   assert.match(focus, /DEMO FIXTURE · NOT PERSONAL DATA/)
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
+})
+
+test('public demo route is a disclosed walkthrough and cannot collapse to not-found', () => {
+  assert.match(demoPage, /import CutOneReplayFilmPage from '\.\/replay-film\/page'/)
+  assert.match(demoPage, /return <CutOneReplayFilmPage \/>/)
+  assert.doesNotMatch(demoPage, /notFound|publicDemoRoutesAllowed/)
+  assert.match(demoFilm, /data-demo-disclosure="not-personal-data"/)
+  assert.match(demoFilm, /Demo fixture · not personal data/)
+  assert.doesNotMatch(demoFilm, /notFound|publicDemoRoutesAllowed/)
 })
 
 test('public proof rail never links its Focus or Replay scenes to identity-free routes', () => {
