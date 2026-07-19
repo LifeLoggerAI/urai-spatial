@@ -5,8 +5,8 @@ import path from 'node:path'
 const root = process.cwd()
 const appRoot = path.join(root, 'urai-tier1', 'src', 'app')
 const failures = []
-const guardedPrefixes = ['admin', 'brand-system', 'demo', 'internal']
-const guardTokens = ['notFound()', 'redirect(', 'NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES', 'NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES', 'NEXT_PUBLIC_ALLOW_ADMIN_ROUTES', 'URAI_ALLOW_PUBLIC_DEMO_ROUTES', 'URAI_ALLOW_INTERNAL_ROUTES', 'URAI_ALLOW_ADMIN_ROUTES']
+const guardedPrefixes = ['admin', 'brand-system', 'internal']
+const guardTokens = ['notFound()', 'redirect(', 'NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES', 'NEXT_PUBLIC_ALLOW_ADMIN_ROUTES', 'URAI_ALLOW_INTERNAL_ROUTES', 'URAI_ALLOW_ADMIN_ROUTES']
 
 const walk = (directory) => fs.existsSync(directory)
   ? fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -37,6 +37,25 @@ for (const file of walk(appRoot)) {
   const source = fs.readFileSync(file, 'utf8')
   if (!guardTokens.some((token) => source.includes(token))) failures.push(`${path.relative(root, file)} exposes /${route} without an explicit production guard`)
 }
+
+// /demo is intentionally public proof content, never an implicit private-data fixture.
+// It replaces the old hidden/not-found duplicate runtime with one force-static,
+// explicitly disclosed journey whose Focus and Replay links carry demo identity.
+requireTokens('urai-tier1/src/app/demo/page.tsx', [
+  "import CutOneReplayFilmPage from './replay-film/page'",
+  'without exposing personal data',
+  'return <CutOneReplayFilmPage />',
+])
+requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
+  "export const dynamic = 'force-static'",
+  "memoryId=demo%3Aquiet-reset",
+  'manifestId=replay-recovery-thread',
+  'demo=1',
+  'data-demo-disclosure="not-personal-data"',
+  'Demo fixture · not personal data',
+  'href: demoFocusHref',
+  'href: demoReplayHref',
+])
 
 requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Privacy Controls'", 'data-route-polish="privacy-consent-console"', 'export default function PrivacyControlsRoutePage()'])
 
