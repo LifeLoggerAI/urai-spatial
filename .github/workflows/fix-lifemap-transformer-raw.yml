@@ -1,0 +1,51 @@
+name: Fix Life Map transformer raw source
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/fix-lifemap-transformer-raw.yml
+      - scripts/one-shot-fix-lifemap-transformer-raw.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-lifemap-transformer-raw-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_BRANCH: product/canonical-seven-fix-clean-r3-20260718
+
+jobs:
+  publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'product/canonical-seven-fix-clean-r3-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact canonical head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Repair generated-source escaping
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          node scripts/one-shot-fix-lifemap-transformer-raw.mjs
+          git diff --check
+          test "$(git diff --name-only)" = "scripts/one-shot-lifemap-fullscreen-selected-actions.mjs"
+
+      - name: Publish bounded transformer correction
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/fix-lifemap-transformer-raw.yml scripts/one-shot-fix-lifemap-transformer-raw.mjs
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): preserve generated test regex source"
+          git push origin HEAD:refs/heads/$SOURCE_BRANCH
