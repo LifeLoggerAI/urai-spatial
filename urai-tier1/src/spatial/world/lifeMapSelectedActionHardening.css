@@ -136,12 +136,25 @@
   }
 }
 
-/* Manual visual acceptance repair: narrow selected-memory frames previously
- * exposed a cropped canvas title underneath the action rail. Mobile now treats
- * the DOM narration as the authoritative readable title, veils the cropped
- * lower texture edge, and reserves separate safe-area bands for narration,
- * selected actions, and persistent map navigation. */
+/* Manual visual acceptance repair: narrow frames must keep the sample-data
+ * disclosure below the top control stack. The disclosure is privacy-critical
+ * and may not be covered by Map controls or the movement affordance. */
 @media (max-width: 760px) {
+  .urai-world-runtime[data-world-destination='life-map']
+    .life-map-independent-realm
+    > .life-map-sample-boundary {
+    position: fixed !important;
+    z-index: 2147482400 !important;
+    top: max(124px, calc(env(safe-area-inset-top) + 118px)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    text-align: center !important;
+    pointer-events: none !important;
+  }
+
   .urai-world-runtime[data-world-destination='life-map']
     .life-map-independent-realm[data-life-map-mode='selected']::after {
     content: '';
