@@ -4,18 +4,11 @@ import path from 'node:path'
 import test from 'node:test'
 
 const root = process.cwd()
-const css = fs.readFileSync(
-  path.join(root, 'src/spatial/world/lifeMapSelectedActionHardening.css'),
-  'utf8',
-)
-const invariant = fs.readFileSync(
-  path.join(root, 'src/spatial/world/lifeMapSelectedActionInvariant.css'),
-  'utf8',
-)
-const shell = fs.readFileSync(
-  path.join(root, 'src/spatial/world/UraiWorldShell.tsx'),
-  'utf8',
-)
+const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
+const css = read('src/spatial/world/lifeMapSelectedActionHardening.css')
+const invariant = read('src/spatial/world/lifeMapSelectedActionInvariant.css')
+const runtimeInvariant = read('src/spatial/world/LifeMapSelectedActionRuntimeInvariant.tsx')
+const shell = read('src/spatial/world/UraiWorldShell.tsx')
 
 test('selected Life Map action ownership does not wait for outer world-state synchronization', () => {
   assert.match(invariant, /^\.life-map-independent-realm\[data-life-map-mode='selected'\]/m)
@@ -27,6 +20,19 @@ test('selected Life Map action ownership does not wait for outer world-state syn
   assert.match(invariant, /pointer-events: auto !important/)
   assert.match(invariant, /> \.life-map-accessibility-menu[\s\S]*pointer-events: none !important/)
   assert.match(shell, /import '\.\/lifeMapSelectedActionHardening\.css'[\s\S]*import '\.\/lifeMapSelectedActionInvariant\.css'/)
+})
+
+test('runtime invariant applies important geometry and pointer ownership when the rail appears', () => {
+  assert.match(runtimeInvariant, /MutationObserver\(apply\)/)
+  assert.match(runtimeInvariant, /requestAnimationFrame\(hardenSelectedActions\)/)
+  assert.match(runtimeInvariant, /style\.setProperty\(property, value, 'important'\)/)
+  assert.match(runtimeInvariant, /\['height', '52px'\]/)
+  assert.match(runtimeInvariant, /\['min-height', '52px'\]/)
+  assert.match(runtimeInvariant, /\['z-index', '2147483646'\]/)
+  assert.match(runtimeInvariant, /nav\.querySelectorAll<HTMLElement>\('button'\)/)
+  assert.match(runtimeInvariant, /pointer-events', 'none'/)
+  assert.match(shell, /import \{ LifeMapSelectedActionRuntimeInvariant \}/)
+  assert.match(shell, /<LifeMapSelectedActionRuntimeInvariant \/>/)
 })
 
 test('selected Life Map desktop composition keeps readable title and separated action bands', () => {
