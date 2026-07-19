@@ -33,6 +33,16 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
+function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
+  if (typeof window === 'undefined') return
+  const next = new URLSearchParams(params)
+  next.set('memoryId', demoMemoryId)
+  next.set('demo', '1')
+  if (!next.get('node')) next.set('node', demoMemoryId.replace(/^demo:/, ''))
+  const query = next.toString()
+  window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
+}
+
 export function useSelectedMemory(): SelectedMemoryResult {
   const params = useMemo(() => {
     if (typeof window === 'undefined') return new URLSearchParams()
@@ -53,6 +63,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (requestedDemoMemoryId) {
+      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
       const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
       if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
@@ -100,7 +111,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
       cancelled = true
       unsubscribe()
     }
-  }, [manifestId, memoryId, requestedDemoMemoryId])
+  }, [continuedDemoMemoryId, manifestId, memoryId, params, requestedDemoMemoryId])
 
   return result
 }
