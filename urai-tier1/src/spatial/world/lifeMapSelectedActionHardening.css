@@ -1,0 +1,56 @@
+/* Exact-head repair: the selected Life Map action surface must keep native
+ * touch geometry and own its hit area after the semantic menu selects a node.
+ * Selection already exposes Focus, Replay, and Overview in the route DOM, so
+ * the expanded semantic menu yields pointer ownership until Overview returns. */
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-independent-realm[data-life-map-mode='selected'] {
+  isolation: isolate;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-accessibility-menu {
+  z-index: 20 !important;
+  pointer-events: none !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-accessibility-menu * {
+  pointer-events: none !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-memory-portals {
+  position: fixed !important;
+  z-index: 2147483000 !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-memory-portals > button {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 48px !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  touch-action: manipulation !important;
+}
