@@ -29,6 +29,7 @@ test('Canonical Status page is not covered by the legacy autonomous realm layer'
 test('Only canonical production requests and validates the protected fingerprint', () => {
   assert.match(authority, /window\.location\.origin !== 'https:\/\/urai\.app'/)
   assert.match(authority, /setState\(\{ kind: 'preview' \}\)/)
+  assert.match(authority, /Tracked \{totalRoutes\} public routes/)
   assert.match(authority, /fetch\(`\/release-fingerprint\.json\?status=\$\{Date\.now\(\)\}`/)
   assert.match(authority, /cache: 'no-store'/)
   assert.match(authority, /schemaVersion !== 'urai-release-fingerprint-1'/)
