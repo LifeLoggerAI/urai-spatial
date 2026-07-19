@@ -38,7 +38,7 @@ replaceRequired(
 )
 replaceRequired(
   /markers:\s*\['The Quiet Reset',\s*'Selected memory camera chamber',\s*'Replay'\]/g,
-  "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']",
+  "markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay']",
   'Focus marker contract',
 )
 replaceRequired(
@@ -47,14 +47,49 @@ replaceRequired(
   'Replay route identity',
 )
 replaceRequired(
+  /markers:\s*\['Replay the thread',\s*'Film beats'\]/g,
+  "markers: ['The Quiet Reset', 'Memory', 'Play']",
+  'Replay marker contract',
+)
+replaceRequired(
+  /markers:\s*\['See the pattern clearly',\s*'Reflection stack',\s*'Mirror'\]/g,
+  "markers: ['Mirror does not judge.', 'Patterns become visible without turning your life into a score.']",
+  'Mirror marker contract',
+)
+replaceRequired(
+  /markers:\s*\['Your life stays yours',\s*'Vault layers',\s*'Passport'\]/g,
+  "markers: ['Your life remains yours.', 'OWNERSHIP VAULT']",
+  'Passport marker contract',
+)
+replaceRequired(
   /markers:\s*\['World online',\s*'Route matrix',\s*'Tracked'\]/g,
   "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']",
   'Status marker contract',
 )
 replaceRequired(
+  /markers:\s*\['Choose what the world can hold',\s*'Privacy Controls',\s*'Private by default'\]/g,
+  "markers: ['Nothing moves without you.', 'Consent remains reversible']",
+  'Privacy marker contract',
+)
+replaceRequired(
+  /markers:\s*\['Emotional weather over private places',\s*'symbolic atlas'\]/g,
+  "markers: ['Places carry signal.', 'EMOTIONAL WEATHER']",
+  'Location marker contract',
+)
+replaceRequired(
   /markers:\s*\['Step inside the Life Map',\s*'Quest',\s*'manual'\]/g,
   "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']",
   'XR marker contract',
+)
+replaceRequired(
+  /markers:\s*\['URAI'\]/g,
+  "markers: ['Your life is a world.', 'Demo fixture', 'Play the proof rail']",
+  'Demo marker contract',
+)
+replaceRequired(
+  /markers:\s*\['Replay'\]/g,
+  "markers: ['Your life is a world.', 'Demo fixture', 'Play the proof rail']",
+  'Demo replay-film marker contract',
 )
 
 replaceRequired(
@@ -188,8 +223,8 @@ replaceRequired(
         await page.waitForFunction(() => {
           const chamber = document.querySelector('[data-testid="urai-final-focus-chamber"]')
           return chamber instanceof HTMLElement
-            && chamber.dataset.memoryStatus === 'demo'
-            && chamber.dataset.memoryId?.startsWith('demo:')
+            && chamber.getAttribute('data-memory-status') === 'demo'
+            && chamber.getAttribute('data-memory-id')?.startsWith('demo:')
             && !document.body.textContent?.includes('Memory unavailable')
         }, null, { timeout: 15000, polling: 'raf' })
         const destinationUrl = new URL(page.url())
@@ -204,6 +239,8 @@ replaceRequired(
 
 const forbidden = [
   "markers: ['Own your life', 'Step inside yourself']",
+  "markers: ['URAI']",
+  "markers: ['Replay']",
   "start: '/life-map',",
   'await page.waitForTimeout(700)',
 ]
@@ -219,9 +256,13 @@ for (const value of [
   'urai:lifeMapDemoMode',
   '.life-map-accessibility-menu',
   'dom-activation-after-pointer-proof',
-  'data-memory-status',
+  "getAttribute('data-memory-status')",
+  "getAttribute('data-memory-id')",
   "destinationUrl.searchParams.get('demo')",
   "startsWith('demo:')",
+  'Your life is a world.',
+  'Demo fixture',
+  'Enter Replay',
   "polling: 'raf'",
 ]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
