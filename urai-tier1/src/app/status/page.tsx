@@ -108,7 +108,7 @@ export default function StatusRoutePage() {
         </div>
         <section className="mt-6 rounded-[2rem] border border-emerald-200/20 bg-emerald-200/[0.07] p-6 text-sm font-semibold leading-7 text-emerald-50/90">
           <h2 className="text-xl font-black text-emerald-100">Certification boundary</h2>
-          <p className="mt-2">Production: verified live for the canonical Spatial web release. Pending proof: physical Quest hardware, provider-backed assets, private supporting services, autonomous real-world actions, and the wider repository estate.</p>
+          <p className="mt-2">Production: verified live for the canonical Spatial web release. Pending proof: physical Quest hardware, provider-backed assets, private supporting services, and the wider repository estate. Autonomous real-world actions are not enabled and remain human-approved only.</p>
         </section>
         <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation">
           <Link className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link>
