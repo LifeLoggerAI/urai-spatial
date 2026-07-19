@@ -1,0 +1,13 @@
+.focusTargetGuard {
+  min-width: 0;
+}
+
+.focusTargetGuard > section[role] {
+  background: transparent;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .focusTargetGuard details summary {
+    min-height: 48px;
+  }
+}

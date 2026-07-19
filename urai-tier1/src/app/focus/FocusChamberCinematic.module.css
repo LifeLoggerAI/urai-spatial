@@ -1,0 +1,449 @@
+.cinematic {
+  --focus-aperture-width: min(51vw, 650px);
+  --focus-aperture-height: min(69svh, 760px);
+  --focus-replay-size: clamp(150px, 15vw, 210px);
+  --focus-copy-width: min(38vw, 470px);
+  isolation: isolate;
+}
+
+.recoveryCinematic {
+  display: grid;
+  place-items: center;
+  align-content: center;
+}
+
+.recoveryCinematic section[role] {
+  width: min(680px, 100%);
+  padding: clamp(26px, 5vw, 54px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.cinematic::before,
+.cinematic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cinematic::before {
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(1, 6, 13, .1), rgba(1, 4, 10, .56) 63%, rgba(0, 2, 7, .96)),
+    radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--focus-accent) 10%, transparent), transparent 39%);
+}
+
+.cinematic::after {
+  z-index: 7;
+  inset: auto 0 0;
+  height: 27%;
+  background:
+    linear-gradient(180deg, transparent, rgba(0, 2, 7, .82) 56%, #000 100%);
+}
+
+.cinematic > header {
+  z-index: 8;
+  max-width: var(--focus-copy-width);
+  padding-top: 4px;
+}
+
+.cinematic > header h1 {
+  max-width: 8.5em;
+  font-size: clamp(2.8rem, 6.4vw, 7.1rem);
+  line-height: .84;
+  letter-spacing: -.064em;
+  text-wrap: balance;
+}
+
+.cinematic > header > p:first-child {
+  max-width: 34em;
+  color: color-mix(in srgb, var(--focus-light) 80%, rgba(255,255,255,.72));
+}
+
+.cinematic figure {
+  z-index: 4;
+  align-self: center;
+  justify-self: center;
+  width: var(--focus-aperture-width);
+  height: var(--focus-aperture-height);
+  max-width: 54vw;
+  margin: clamp(54px, 7svh, 86px) auto 0;
+  border-radius: 52% 52% 47% 47% / 38% 38% 55% 55%;
+  overflow: hidden;
+  isolation: isolate;
+  animation: focus-memory-arrival 1.45s cubic-bezier(.2,.76,.18,1) both;
+}
+
+.cinematic figure::before,
+.cinematic figure::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.cinematic figure::before {
+  z-index: 4;
+  inset: 4%;
+  border: 1px solid color-mix(in srgb, var(--focus-light) 31%, transparent);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 90px rgba(1,7,13,.34),
+    0 0 56px color-mix(in srgb, var(--focus-accent) 16%, transparent);
+}
+
+.cinematic figure::after {
+  z-index: 5;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), transparent 20%, transparent 66%, rgba(0,0,0,.48)),
+    radial-gradient(ellipse at center, transparent 46%, rgba(1,5,11,.44) 90%);
+}
+
+.cinematic figure > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(.84) contrast(1.06) brightness(.84);
+  transform: scale(1.025);
+}
+
+.cinematic figure > figcaption {
+  z-index: 7;
+  width: min(78%, 520px);
+  left: 50%;
+  bottom: clamp(54px, 8svh, 98px);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.cinematic figure > figcaption p {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(1.2rem, 2.3vw, 2rem);
+  line-height: 1.18;
+  text-wrap: balance;
+}
+
+.cinematic figure > figcaption span {
+  display: none;
+}
+
+.cinematic button[aria-describedby='focus-replay-description'] {
+  z-index: 9;
+  position: absolute;
+  right: max(4vw, env(safe-area-inset-right));
+  bottom: max(13svh, calc(env(safe-area-inset-bottom) + 84px));
+  width: var(--focus-replay-size);
+  min-height: 0;
+  aspect-ratio: 1;
+  padding: 26px 18px 22px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  text-align: center;
+  transform: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--focus-light) 28%, transparent),
+    0 0 44px color-mix(in srgb, var(--focus-accent) 25%, transparent),
+    inset 0 0 48px rgba(255,255,255,.08),
+    inset 0 -30px 58px rgba(0,0,0,.28);
+  overflow: visible;
+  animation: focus-replay-breathe 4.8s ease-in-out 1.15s infinite;
+}
+
+.cinematic button[aria-describedby='focus-replay-description']::before,
+.cinematic button[aria-describedby='focus-replay-description']::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.cinematic button[aria-describedby='focus-replay-description']::before {
+  inset: -14px;
+  border: 1px solid color-mix(in srgb, var(--focus-light) 22%, transparent);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--focus-accent) 22%, transparent);
+}
+
+.cinematic button[aria-describedby='focus-replay-description']::after {
+  inset: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.cinematic button[aria-describedby='focus-replay-description'] > span:first-child {
+  font-size: clamp(.92rem, 1.4vw, 1.24rem);
+  line-height: 1.03;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.cinematic button[aria-describedby='focus-replay-description'] > span[aria-hidden='true'] {
+  width: clamp(52px, 5.7vw, 76px);
+  margin: 0 auto;
+  animation: focus-replay-core 3.2s ease-in-out infinite;
+}
+
+.cinematic button[aria-describedby='focus-replay-description'] > small {
+  max-width: 12ch;
+  margin: 0 auto;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.cinematic button[aria-describedby='focus-replay-description']:hover:not(:disabled) {
+  transform: translateY(-7px) scale(1.018);
+}
+
+.cinematic details {
+  z-index: 10;
+  position: absolute;
+  right: max(4vw, env(safe-area-inset-right));
+  bottom: max(4svh, calc(env(safe-area-inset-bottom) + 20px));
+  width: min(340px, 28vw);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.cinematic details summary {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid rgba(200,241,255,.2);
+  border-radius: 999px;
+  background: rgba(3,10,18,.7);
+  box-shadow: 0 14px 36px rgba(0,0,0,.24);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(239,253,255,.9);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.cinematic details summary::after {
+  content: '+';
+  color: var(--focus-light);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.cinematic details[open] summary::after {
+  content: '−';
+}
+
+.cinematic details > div {
+  margin-top: 10px;
+  padding: 16px 18px;
+  border: 1px solid rgba(200,241,255,.18);
+  border-radius: 20px;
+  background: rgba(3,9,16,.9);
+  box-shadow: 0 22px 56px rgba(0,0,0,.35);
+  backdrop-filter: blur(18px) saturate(1.12);
+}
+
+.cinematic details > div > p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cinematic details dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.cinematic > footer {
+  z-index: 10;
+  width: min(430px, calc(100% - 32px));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  grid-template-columns: 1fr auto;
+}
+
+.cinematic > footer > p {
+  max-width: 15ch;
+}
+
+.cinematic > footer button {
+  min-height: 48px;
+}
+
+@keyframes focus-memory-arrival {
+  0% {
+    opacity: 0;
+    filter: blur(10px) brightness(.45);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--focus-light) 12%, transparent),
+      0 0 0 color-mix(in srgb, var(--focus-accent) 0%, transparent);
+  }
+  52% {
+    opacity: .94;
+    filter: blur(2px) brightness(.76);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--focus-light) 24%, transparent),
+      0 0 90px color-mix(in srgb, var(--focus-accent) 19%, transparent),
+      0 44px 100px rgba(0,0,0,.5);
+  }
+}
+
+@keyframes focus-replay-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--focus-light) 28%, transparent),
+      0 0 44px color-mix(in srgb, var(--focus-accent) 25%, transparent),
+      inset 0 0 48px rgba(255,255,255,.08),
+      inset 0 -30px 58px rgba(0,0,0,.28);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--focus-light) 42%, transparent),
+      0 0 78px color-mix(in srgb, var(--focus-accent) 38%, transparent),
+      inset 0 0 62px rgba(255,255,255,.13),
+      inset 0 -30px 58px rgba(0,0,0,.24);
+  }
+}
+
+@keyframes focus-replay-core {
+  0%, 100% { transform: scale(.94); filter: brightness(.94); }
+  50% { transform: scale(1.06); filter: brightness(1.2); }
+}
+
+@media (max-width: 900px) {
+  .cinematic {
+    --focus-aperture-width: min(90vw, 560px);
+    --focus-aperture-height: min(60svh, 650px);
+    min-height: 100svh;
+    padding-bottom: calc(190px + env(safe-area-inset-bottom));
+  }
+
+  .cinematic > header {
+    max-width: calc(100% - 32px);
+  }
+
+  .cinematic > header h1 {
+    max-width: 8em;
+    font-size: clamp(2.45rem, 13vw, 5.3rem);
+  }
+
+  .cinematic figure {
+    width: var(--focus-aperture-width);
+    height: var(--focus-aperture-height);
+    max-width: 100%;
+    margin-top: clamp(150px, 21svh, 210px);
+  }
+
+  .cinematic figure > figcaption {
+    bottom: 68px;
+    width: 76%;
+  }
+
+  .cinematic button[aria-describedby='focus-replay-description'] {
+    position: absolute;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(214px, calc(env(safe-area-inset-bottom) + 205px));
+    width: clamp(144px, 38vw, 178px);
+  }
+
+  .cinematic details {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(148px, calc(env(safe-area-inset-bottom) + 140px));
+    width: min(320px, calc(100vw - 32px));
+  }
+
+  .cinematic > footer {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .cinematic {
+    --focus-replay-size: min(38vh, 170px);
+    grid-template-columns: minmax(230px, .72fr) minmax(250px, 1fr) minmax(176px, .58fr);
+    align-items: center;
+    gap: 16px;
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(18px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(18px, env(safe-area-inset-left));
+  }
+
+  .cinematic > header {
+    position: relative;
+    inset: auto;
+    align-self: start;
+    max-width: 100%;
+    padding-top: 0;
+  }
+
+  .cinematic > header h1 {
+    max-width: 6.8em;
+    font-size: clamp(2.1rem, 7vw, 4.3rem);
+  }
+
+  .cinematic figure {
+    width: min(51vh, 300px, 100%);
+    height: auto;
+    aspect-ratio: .9;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .cinematic button[aria-describedby='focus-replay-description'] {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: min(38vh, 170px);
+    padding: 20px 14px 17px;
+    transform: none;
+    justify-self: center;
+  }
+
+  .cinematic button[aria-describedby='focus-replay-description']:hover:not(:disabled) {
+    transform: translateY(-4px) scale(1.015);
+  }
+
+  .cinematic details {
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(58px, calc(env(safe-area-inset-bottom) + 52px));
+    width: min(250px, 31vw);
+  }
+
+  .cinematic details summary {
+    min-height: 48px;
+    padding: 0 13px;
+  }
+
+  .cinematic details > div > p {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic figure,
+  .cinematic button[aria-describedby='focus-replay-description'] > span[aria-hidden='true'] {
+    animation: none !important;
+  }
+}
