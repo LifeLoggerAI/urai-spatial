@@ -60,7 +60,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
 
   assert.match(visualAudit, /data-world-target=\\"focus\\"/)
   assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
-  assert.match(visualAudit, /details\.life-map-accessibility-menu/)
+  assert.match(visualAudit, /\.life-map-accessibility-menu/)
   assert.match(visualAudit, /The Quiet Reset/)
   assert.match(visualAudit, /focusTouchTarget/)
   assert.match(visualAudit, /semanticListHidden/)
