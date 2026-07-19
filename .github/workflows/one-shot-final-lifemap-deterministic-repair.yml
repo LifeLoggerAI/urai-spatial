@@ -1,0 +1,149 @@
+name: One-shot final Life Map deterministic repair
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-final-lifemap-deterministic-repair.yml
+      - scripts/one-shot-final-lifemap-deterministic-repair.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-final-lifemap-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: fa4d5a7b4fab2c5d3951d857b46d8f4e4f63694e
+  SOURCE_BRANCH: integrate/final-world-main-88287-20260718
+
+jobs:
+  repair-prove-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'integrate/final-world-main-88287-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - name: Checkout exact staged authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove bounded authority and apply exact repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          expected_stage="$(printf '%s\n' .github/workflows/one-shot-final-lifemap-deterministic-repair.yml scripts/one-shot-final-lifemap-deterministic-repair.mjs | sort)"
+          actual_stage="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
+          printf '%s\n' "$actual_stage" > /tmp/staged-files.txt
+          test "$actual_stage" = "$expected_stage"
+          node scripts/one-shot-final-lifemap-deterministic-repair.mjs 2>&1 | tee /tmp/apply.log
+          git diff --check
+          expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
+          actual_product="$(git diff --name-only | sort)"
+          printf '%s\n' "$actual_product" > /tmp/product-files.txt
+          test "$actual_product" = "$expected_product"
+
+      - name: Install frozen dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
+
+      - name: Run complete unit contracts
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/unit.log
+
+      - name: Typecheck exact repaired candidate
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/build-static.log
+          test -f urai-tier1/out/home/index.html
+          test -f urai-tier1/out/ground/index.html
+          test -f urai-tier1/out/life-map/index.html
+          test -f urai-tier1/out/focus/index.html
+          test -f urai-tier1/out/replay/index.html
+
+      - name: Install Chromium
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium 2>&1 | tee /tmp/playwright-install.log
+
+      - name: Capture deterministic exact-head visual proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory urai-tier1/out >/tmp/http-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/home/ >/dev/null
+          curl -fsS http://127.0.0.1:4173/ground/ >/dev/null
+          curl -fsS http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/final-lifemap-proof \
+          URAI_EXACT_HEAD='${{ github.event.pull_request.head.sha }}' \
+          node scripts/capture-continuous-spatial-proof.mjs 2>&1 | tee /tmp/capture.log
+          node - <<'NODE'
+          const receipt = require('/tmp/final-lifemap-proof/receipt.json')
+          if (receipt.passed !== true) throw new Error('Exact visual receipt did not pass')
+          const lifeMap = receipt.results.filter((result) => result.route === 'life-map' || result.route === 'life-map-selected' || result.id === 'life-map' || result.id === 'life-map-selected')
+          if (lifeMap.length < 4) throw new Error(`Expected desktop/mobile overview and selected Life Map results; found ${lifeMap.length}`)
+          for (const result of lifeMap) {
+            const verification = result.verification || result.verify || result
+            if (verification.visualReadyMarked !== true) throw new Error(`Missing deterministic visual-ready mark for ${result.id || result.route}`)
+          }
+          NODE
+
+      - name: Retain exact repair evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: final-lifemap-deterministic-repair-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/staged-files.txt
+            /tmp/product-files.txt
+            /tmp/apply.log
+            /tmp/install.log
+            /tmp/unit.log
+            /tmp/typecheck.log
+            /tmp/build-static.log
+            /tmp/playwright-install.log
+            /tmp/http-server.log
+            /tmp/capture.log
+            /tmp/final-lifemap-proof
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Publish clean self-removing product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_head="$(git ls-remote origin "refs/heads/$SOURCE_BRANCH" | awk '{print $1}')"
+          test "$remote_head" = "${{ github.event.pull_request.head.sha }}"
+          rm .github/workflows/one-shot-final-lifemap-deterministic-repair.yml
+          rm scripts/one-shot-final-lifemap-deterministic-repair.mjs
+          git diff --check
+          expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
+          actual_product="$(git diff --name-only "$CLEAN_BASE" | sort)"
+          test "$actual_product" = "$expected_product"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): certify deterministic visual readiness"
+          git push origin HEAD:refs/heads/$SOURCE_BRANCH
