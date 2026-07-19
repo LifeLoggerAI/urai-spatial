@@ -36,6 +36,23 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
+test('Focus is a living memory chamber with dominant identity and one Replay threshold', () => {
+  assert.match(focus, /data-focus-composition="living-memory-chamber"/)
+  assert.match(focus, /className="focusBackdrop"/)
+  assert.match(focus, /className="focusHeading"/)
+  assert.match(focus, /<h1>\{memory\.title\}<\/h1>/)
+  assert.match(focus, /className="focusNarration"/)
+  assert.match(focus, /className="artifactImage"/)
+  assert.match(focus, /clip-path:polygon\(50% 0%/)
+  assert.match(focus, /className="apertureOrbit apertureOrbitOuter"/)
+  assert.match(focus, /<strong>Enter Replay<\/strong>/)
+  assert.match(focus, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/)
+  assert.match(focus, /Held in context\. Nothing leaves this chamber\./)
+  assert.match(focus, /@media\(max-width:700px\)/)
+  assert.match(focus, /prefers-reduced-motion:reduce/)
+  assert.match(focus, /forced-colors:active/)
+})
+
 test('public demo route is a disclosed walkthrough and cannot collapse to not-found', () => {
   assert.match(demoPage, /import CutOneReplayFilmPage from '\.\/replay-film\/page'/)
   assert.match(demoPage, /return <CutOneReplayFilmPage \/>/)
