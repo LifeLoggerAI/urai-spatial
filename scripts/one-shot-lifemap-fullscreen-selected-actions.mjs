@@ -141,7 +141,7 @@ replaceRequired(
   assert.match(adaptive, /data-life-map-selected-actions-owner="route-dom-overlay"/)
   assert.match(adaptive, /onClick=\{\(\) => enterFocus\(selectedNode\)\}/)
   assert.match(adaptive, /onClick=\{\(\) => enterReplay\(selectedNode\)\}/)
-  assert.doesNotMatch(adaptive, /<Html[\s\S]*life-map-memory-portals/)
+  assert.doesNotMatch(adaptive, /<Html distanceFactor=\{8\.2\}/)
 })
 
 `,
@@ -159,7 +159,7 @@ replaceRequired(
   assert.match(selectedCinematic, /data-life-map-authored-universe='primary'/)
   assert.match(selectedCinematic, /opacity: \.04 !important/)
   assert.match(adaptive, /data-life-map-selected-actions-owner="route-dom-overlay"/)
-  assert.doesNotMatch(adaptive, /<Html[\s\S]*life-map-memory-portals/)
+  assert.doesNotMatch(adaptive, /<Html distanceFactor=\{8\.2\}/)
   assert.match(selectedCinematic, /\.life-map-memory-portals/)
   assert.match(selectedCinematic, /z-index: 90/)
   assert.match(selectedCinematic, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
@@ -206,7 +206,7 @@ replaceRequired(
   assert.match(lifeMapConvergence, /data-life-map-mode='selected'/)
   assert.match(lifeMapConvergence, /life-map-whisper\[data-selected='true'\]/)
   assert.match(adaptiveLifeMap, /data-life-map-selected-actions-owner="route-dom-overlay"/)
-  assert.doesNotMatch(adaptiveLifeMap, /<Html[\s\S]*life-map-memory-portals/)
+  assert.doesNotMatch(adaptiveLifeMap, /<Html distanceFactor=\{8\.2\}/)
   assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-memory-portals/)
   assert.match(lifeMapSelectedCinematic, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
   assert.match(lifeMapSelectedCinematic, /position: fixed/)
