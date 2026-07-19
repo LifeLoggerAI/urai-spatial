@@ -6,42 +6,83 @@ import { spawnSync } from 'node:child_process'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const sourcePath = join(scriptDir, 'live-visual-audit.mjs')
 const generatedPath = join(scriptDir, `.live-visual-audit-current-${process.pid}.mjs`)
-
 const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
-const replacements = new Map([
-  ["markers: ['Own your life', 'Step inside yourself']", "markers: ['ENTER BELOW', 'URAI destination home. World layer living-world.']"],
-  ["markers: ['Your real life has a place', 'private operating world']", "markers: ['URAI Ground', 'Private infrastructure, embodied.', 'Reception', 'Archive']"],
-  ["markers: ['Life Map', 'Wheel', 'Drag', 'memory star']", "markers: ['URAI destination life-map.', 'World layer infrastructure-world.']"],
-  ["route: '/focus?memoryId=quiet-reset',", `route: '/focus?${demoMemoryQuery}',`],
-  ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']"],
-  ["route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',", `route: '/replay?${demoMemoryQuery}',`],
-  ["markers: ['World online', 'Route matrix', 'Tracked']", "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']"],
-  ["markers: ['Step inside the Life Map', 'Quest', 'manual']", "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']"],
-  [
-    "'a[data-urai-audit-action=\"home-life-map\"]',",
-    "'button[data-world-target=\"life-map\"]',\n      'a[data-urai-audit-action=\"home-life-map\"]',",
-  ],
-  [
-    "'a[data-urai-audit-action=\"home-ground\"]',",
-    "'button[data-world-target=\"infrastructure-hub\"]',\n      'a[data-urai-audit-action=\"home-ground\"]',",
-  ],
-  [
-    "'a[data-urai-audit-action=\"life-map-focus\"]',",
-    "'button[data-world-target=\"focus\"]',\n      'a[data-urai-audit-action=\"life-map-focus\"]',",
-  ],
-  [
-    "start: '/focus?memoryId=quiet-reset',",
-    `start: '/focus?${demoMemoryQuery}',`,
-  ],
-  [
-    '    const found = await firstVisible(page, check.selectors)',
-    `    if (check.name === 'life-map-to-focus') {
-      const controls = page.locator('details.life-map-accessibility-menu').first()
-      await controls.waitFor({ state: 'visible', timeout: 10000 })
-      if ((await controls.getAttribute('open')) === null) {
-        await controls.locator('summary').click({ timeout: 10000 })
-      }
-      const memory = controls.getByRole('button', { name: /The Quiet Reset/i }).first()
+
+let source = readFileSync(sourcePath, 'utf8')
+
+function replaceRequired(pattern, replacement, label) {
+  const next = source.replace(pattern, replacement)
+  if (next === source) throw new Error(`Current-canon audit wrapper could not replace ${label}`)
+  source = next
+}
+
+replaceRequired(
+  /markers:\s*\['Own your life',\s*'Step inside yourself'\]/g,
+  "markers: ['WALK THE SANCTUARY', 'URAI destination home. World layer living-world.']",
+  'Home marker contract',
+)
+replaceRequired(
+  /markers:\s*\['Your real life has a place',\s*'private operating world'\]/g,
+  "markers: ['URAI Ground', 'Private infrastructure, embodied.', 'Reception', 'Archive']",
+  'Ground marker contract',
+)
+replaceRequired(
+  /markers:\s*\['Life Map',\s*'Wheel',\s*'Drag',\s*'memory star'\]/g,
+  "markers: ['Step inside the map.', 'Life Map independent memory universe', 'MAP CONTROLS']",
+  'Life Map marker contract',
+)
+replaceRequired(
+  /route:\s*'\/focus\?memoryId=quiet-reset',/g,
+  `route: '/focus?${demoMemoryQuery}',`,
+  'Focus route identity',
+)
+replaceRequired(
+  /markers:\s*\['The Quiet Reset',\s*'Selected memory camera chamber',\s*'Replay'\]/g,
+  "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']",
+  'Focus marker contract',
+)
+replaceRequired(
+  /route:\s*'\/replay\?memoryId=quiet-reset&manifestId=replay-recovery-thread',/g,
+  `route: '/replay?${demoMemoryQuery}',`,
+  'Replay route identity',
+)
+replaceRequired(
+  /markers:\s*\['World online',\s*'Route matrix',\s*'Tracked'\]/g,
+  "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']",
+  'Status marker contract',
+)
+replaceRequired(
+  /markers:\s*\['Step inside the Life Map',\s*'Quest',\s*'manual'\]/g,
+  "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']",
+  'XR marker contract',
+)
+
+replaceRequired(
+  /'a\[data-urai-audit-action="home-life-map"\]',/g,
+  "'button[aria-label=\"Open Life Map directly\"]',\n      'button[data-world-target=\"life-map\"]',\n      'a[data-urai-audit-action=\"home-life-map\"]',",
+  'Home to Life Map selector ownership',
+)
+replaceRequired(
+  /'a\[data-urai-audit-action="home-ground"\]',/g,
+  "'button[aria-label=\"Open Ground directly\"]',\n      'button[data-world-target=\"infrastructure-hub\"]',\n      'a[data-urai-audit-action=\"home-ground\"]',",
+  'Home to Ground selector ownership',
+)
+replaceRequired(
+  /'a\[data-urai-audit-action="life-map-focus"\]',/g,
+  "'button[data-world-target=\"focus\"]',\n      '.life-map-memory-portals button',\n      'a[data-urai-audit-action=\"life-map-focus\"]',",
+  'Life Map to Focus selector ownership',
+)
+replaceRequired(
+  /start:\s*'\/focus\?memoryId=quiet-reset',/g,
+  `start: '/focus?${demoMemoryQuery}',`,
+  'Focus interaction identity',
+)
+
+replaceRequired(
+  /    const found = await firstVisible\(page, check\.selectors\)\n    if \(!found\) \{[\s\S]*?\n    \} else \{/,
+  `    if (check.name === 'life-map-to-focus') {
+      const memory = page.getByRole('button', { name: /The Quiet Reset/i }).filter({ visible: true }).first()
+      await memory.waitFor({ state: 'visible', timeout: 15000 })
       await memory.click({ timeout: 10000 })
       await page.waitForTimeout(700)
 
@@ -78,20 +119,29 @@ const replacements = new Map([
         await page.waitForTimeout(250)
         found = await firstVisible(page, check.selectors)
       }
-    }`,
-  ],
-  [
-    '      const action = await clickOrFollowHref(page, found.locator)',
-    "      const action = await clickOrFollowHref(page, found.locator)\n      await page.waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 }).catch(() => {})",
-  ],
-])
+    }
+    if (!found) {
+      error = \`visible selector not found: \${check.selectors.join(' | ')}\`
+    } else {`,
+  'interaction selection block',
+)
+replaceRequired(
+  /      const action = await clickOrFollowHref\(page, found\.locator\)\n      mode = action\.mode/,
+  `      const action = await clickOrFollowHref(page, found.locator)
+      await page.waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 }).catch(() => {})
+      mode = action.mode`,
+  'interaction URL wait',
+)
 
-let source = readFileSync(sourcePath, 'utf8')
-for (const [before, after] of replacements) {
-  if (!source.includes(before)) {
-    throw new Error(`Current-canon audit wrapper could not find expected marker contract: ${before}`)
-  }
-  source = source.replaceAll(before, after)
+const forbidden = [
+  "markers: ['Own your life', 'Step inside yourself']",
+  "details.life-map-accessibility-menu').first()",
+]
+for (const value of forbidden) {
+  if (source.includes(value)) throw new Error(`Current-canon audit still contains retired contract: ${value}`)
+}
+for (const value of ['WALK THE SANCTUARY', 'Open Ground directly', 'Open Life Map directly', '.life-map-memory-portals']) {
+  if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
 }
 
 writeFileSync(generatedPath, source)
