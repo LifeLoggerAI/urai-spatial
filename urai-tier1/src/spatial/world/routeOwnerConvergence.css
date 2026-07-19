@@ -69,6 +69,14 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   outline-offset: 8px !important;
 }
 
+/* Focus owns one memory core and one Replay threshold. The generic travel Orb is
+ * deliberately absent here so it cannot become a second unexplained focal object.
+ * Route return and Replay travel remain available through native chamber controls. */
+.urai-world-runtime[data-world-destination='focus'] .urai-world-companion {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 /* Ground is a realm, not a miniature dashboard. Route chrome remains available
  * through the shared companion; the environment receives the entire viewport. */
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root {
