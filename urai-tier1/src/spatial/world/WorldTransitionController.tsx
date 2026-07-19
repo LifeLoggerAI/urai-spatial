@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
+  announceUraiWorldLocation,
   URAI_WORLD_RETURN_EVENT,
   URAI_WORLD_TRAVEL_EVENT,
 } from './worldEvents'
@@ -18,6 +19,7 @@ const CONTEXT_KEYS = [
   'placeId',
   'manifestId',
   'privacyMode',
+  'demo',
 ] as const
 
 function prefersReducedMotion() {
@@ -28,6 +30,11 @@ function transitionDuration(destination: UraiDestination) {
   if (prefersReducedMotion()) return 260
   if (destination === 'replay' || destination === 'location-map') return 1900
   return 1100
+}
+
+function normalizePathname(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, '')
+  return normalized || '/'
 }
 
 function buildTravelHref(request: UraiWorldTravelRequest) {
@@ -81,15 +88,17 @@ function fallbackReturnDestination(destination: UraiDestination): UraiDestinatio
 
 export function WorldTransitionController() {
   const router = useRouter()
-  const { world, phase, beginTravel } = useUraiWorldState()
+  const { world, phase, beginTravel, cancelTransition } = useUraiWorldState()
   const timer = useRef<number | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
+  const cancelTransitionRef = useRef(cancelTransition)
 
   useEffect(() => { worldRef.current = world }, [world])
   useEffect(() => { phaseRef.current = phase }, [phase])
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
+  useEffect(() => { cancelTransitionRef.current = cancelTransition }, [cancelTransition])
 
   const clearTimer = useCallback(() => {
     if (timer.current === null) return
@@ -112,8 +121,12 @@ export function WorldTransitionController() {
     }
 
     const href = buildTravelHref(request)
+    const targetPathname = new URL(href, window.location.origin).pathname
+    const samePath = normalizePathname(targetPathname) === normalizePathname(window.location.pathname)
     timer.current = window.setTimeout(() => {
+      announceUraiWorldLocation(href)
       router.push(href)
+      if (samePath) cancelTransitionRef.current()
       timer.current = null
     }, transitionDuration(request.destination))
   }, [clearTimer, router])

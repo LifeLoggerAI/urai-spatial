@@ -19,12 +19,14 @@ import './lifeMapIndependentInteraction.css'
 import './embodiedExplorationLayout.css'
 import './interactionCollisionRepair.css'
 
+const COMPANION_FREE_DESTINATIONS = new Set(['life-map', 'focus'])
+
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  // Life Map is an independent non-Orb realm. Home keeps the shared controller
-  // mounted, but routeOwnerConvergence makes its generated artwork transparent
-  // so the authored sanctuary Orb remains the only visible Orb.
-  const showWorldCompanion = world.destination !== 'life-map'
+  // Life Map and Focus are independent companion-free realms. Home keeps the
+  // shared controller mounted, but routeOwnerConvergence makes its generated
+  // artwork transparent so the authored sanctuary Orb remains the only visible Orb.
+  const showWorldCompanion = !COMPANION_FREE_DESTINATIONS.has(world.destination)
 
   return (
     <div
