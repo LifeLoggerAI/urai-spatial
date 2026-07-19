@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
+import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
 import {
   lifeMapEras,
-  lifeMapNodes,
   mapLifeMapEventToNode,
   type LifeMapEra,
   type LifeMapEraType,
@@ -148,7 +148,7 @@ function resolveUserId(explicitUserId?: string): string | null {
 export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const explicitDemo = useMemo(() => explicitDemoEnabled(userId), [userId]);
   const resolvedUserId = useMemo(() => resolveUserId(userId), [userId]);
-  const [nodes, setNodes] = useState<LifeMapNode[]>(() => explicitDemo ? lifeMapNodes : []);
+  const [nodes, setNodes] = useState<LifeMapNode[]>(() => explicitDemo ? canonicalLifeMapDemoNodes : []);
   const [eras, setEras] = useState<LifeMapEra[]>(() => explicitDemo ? lifeMapEras : []);
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
   const [erasLoading, setErasLoading] = useState(!explicitDemo);
@@ -161,7 +161,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     let cancelled = false;
 
     if (explicitDemo) {
-      setNodes(lifeMapNodes);
+      setNodes(canonicalLifeMapDemoNodes);
       setUsingSeedNodes(true);
       setEventsLoading(false);
       setEventsError(null);

@@ -15,9 +15,14 @@ import {
 
 export const dynamic = 'force-static'
 
-function publicDemoRoutesAllowed() {
-  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.NODE_ENV !== 'production'
+function publicDemoRouteExplicitlyDisabled() {
+  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'
+    || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'
 }
+
+const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const demoFocusHref = `/focus?${demoMemoryQuery}`
+const demoReplayHref = `/replay?${demoMemoryQuery}`
 
 const scenes = [
   {
@@ -50,15 +55,15 @@ const scenes = [
     title: 'A life becomes an explorable constellation.',
     copy: 'Memories become stars, chapters become constellations, and the selected thread pulls the field toward Focus.',
     asset: lifeMapAssets.primary,
-    href: '/life-map',
+    href: '/life-map?demo=1',
   },
   {
     number: '05',
     eyebrow: 'Focus',
     title: 'One memory becomes a chamber.',
-    copy: 'Image, title, signal, orb guidance, and one clear doorway isolate the selected memory without losing its place in the world.',
+    copy: 'Image, title, memory signal, and one clear doorway isolate the selected memory without losing its place in the world.',
     asset: focusAssets.primary,
-    href: '/focus',
+    href: demoFocusHref,
   },
   {
     number: '06',
@@ -66,7 +71,7 @@ const scenes = [
     title: 'The memory becomes a film thread.',
     copy: 'The moment, the signal, the world around it, what changed afterward, and what remains unfold as one continuous experience.',
     asset: replayAssets.primary,
-    href: '/replay',
+    href: demoReplayHref,
   },
   {
     number: '07',
@@ -95,20 +100,22 @@ const orbStyle = {
 } as CSSProperties
 
 export default function CutOneReplayFilmPage() {
+  if (publicDemoRouteExplicitlyDisabled()) notFound()
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="cinematic-replay-film-proof">
+    <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="cinematic-replay-film-proof" data-demo-disclosure="not-personal-data">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(167,139,250,.2),transparent_28rem),radial-gradient(circle_at_82%_18%,rgba(56,189,248,.16),transparent_28rem),linear-gradient(180deg,#05020b,#090314_54%,#020106)]" />
 
       <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden px-5 pb-24 pt-28 md:px-10 lg:px-16">
         <div className="absolute inset-0 bg-cover bg-center opacity-55 mix-blend-screen brightness-65 contrast-125 saturate-150" style={heroStyle} />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,2,10,.18),rgba(3,2,10,.48)_48%,rgba(3,2,10,.98)),radial-gradient(ellipse_at_55%_42%,transparent_0_24%,rgba(0,0,0,.72)_84%)]" />
-        <div className="absolute right-[8vw] top-[12vh] h-44 w-44 bg-contain bg-center bg-no-repeat opacity-70 drop-shadow-[0_0_60px_rgba(125,211,252,.65)] md:h-72 md:w-72" style={orbStyle} />
+        <div className="absolute right-[8vw] top-[12vh] h-44 w-44 overflow-hidden rounded-full bg-contain bg-center bg-no-repeat opacity-80 mix-blend-screen drop-shadow-[0_0_60px_rgba(125,211,252,.65)] md:h-72 md:w-72" style={orbStyle} />
 
         <div className="relative z-10 max-w-6xl">
-          <p className="text-[10px] font-black uppercase tracking-[.48em] text-violet-100/75 md:text-xs">URAI · First Replay · Cut One</p>
+          <p className="text-[10px] font-black uppercase tracking-[.48em] text-violet-100/75 md:text-xs">URAI · First Replay · Cut One · Demo fixture · not personal data</p>
           <h1 className="mt-5 max-w-[10ch] text-[clamp(4.5rem,12vw,11rem)] font-black leading-[.76] tracking-[-.12em]">Your life is a world.</h1>
           <p className="mt-7 max-w-3xl text-base font-semibold leading-8 text-violet-50/82 md:text-xl md:leading-9">
-            A cinematic proof of the complete journey: pressure to portal, Ground to sky, Life Map to Focus, Replay to Mirror, and ownership through Passport.
+            A disclosed cinematic proof of the complete journey: pressure to portal, Ground to sky, Life Map to Focus, Replay to Mirror, and ownership through Passport.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#film" className="rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 no-underline transition hover:-translate-y-0.5">Play the proof rail</a>

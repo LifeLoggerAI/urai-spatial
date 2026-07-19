@@ -29,7 +29,11 @@ assert.match(focusClient, /aria-label={`Open Replay for \${memory\.title}`}/, "F
 assert.match(focusClient, /requestUraiWorldTravel\(\{/, "Final Focus chamber must enter Replay through persistent world travel.");
 assert.match(focusClient, /destination: 'replay'/, "Final Focus chamber must target the Replay destination.");
 assert.match(focusClient, /replayManifestId: memory\.replayManifest\.id/, "Final Focus chamber must preserve replay manifest identity.");
-assert.match(focusClient, /new URLSearchParams\(\{ memoryId: memory\.id, manifestId: memory\.replayManifest\.id, node: memory\.star\.id, from: 'focus-artifact' \}\)/, "Final Focus chamber must preserve selected memory identity in its Replay route.");
+assert.match(focusClient, /new URLSearchParams\(\{/, "Final Focus chamber must construct a canonical Replay query.");
+assert.match(focusClient, /memoryId:\s*memory\.id/, "Final Focus chamber must preserve selected memory identity in its Replay route.");
+assert.match(focusClient, /manifestId:\s*memory\.replayManifest\.id/, "Final Focus chamber must preserve selected manifest identity in its Replay route.");
+assert.match(focusClient, /node:\s*memory\.star\.id/, "Final Focus chamber must preserve selected star identity in its Replay route.");
+assert.match(focusClient, /from:\s*'focus-artifact'/, "Final Focus chamber must preserve its entry provenance in the Replay route.");
 assert.match(focusClient, /if \(!memory \|\| !replayHref\) return/, "Final Focus chamber must fail closed before Replay when no authorized memory exists.");
 assert.match(focusClient, /requestUraiWorldReturn\(\)/, "Final Focus chamber must retain deterministic world return.");
 assert.match(memoryStar, /canEnterMemoryPlace/, "Memory star schema must define canEnterMemoryPlace.");

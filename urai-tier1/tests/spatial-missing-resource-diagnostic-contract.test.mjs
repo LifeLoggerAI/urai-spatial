@@ -32,8 +32,11 @@ test('fallback diagnostic neutralizes provider configuration before starting Nex
 test('Life Map event listeners remain offline when public Firebase configuration is absent', () => {
   assert.match(lifeMapEventsSource, /firebasePublicEnvReady/)
   assert.equal((lifeMapEventsSource.match(/if \(!firebasePublicEnvReady\)/g) ?? []).length, 2)
-  assert.match(lifeMapEventsSource, /setNodes\(lifeMapNodes\)/)
-  assert.match(lifeMapEventsSource, /setEras\(lifeMapEras\)/)
+  assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setNodes\(canonicalLifeMapDemoNodes\)/)
+  assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)
+  assert.match(lifeMapEventsSource, /if \(!firebasePublicEnvReady\) \{[\s\S]*setNodes\(\[\]\)/)
+  assert.match(lifeMapEventsSource, /if \(!firebasePublicEnvReady\) \{[\s\S]*setEras\(\[\]\)/)
+  assert.match(lifeMapEventsSource, /sourceMode: LifeMapSourceMode = explicitDemo[\s\S]*\? "explicit-demo"[\s\S]*: !firebasePublicEnvReady[\s\S]*\? "unavailable"/)
 })
 
 test('external requests are intercepted and aborted before send', () => {

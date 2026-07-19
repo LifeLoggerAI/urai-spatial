@@ -1,18 +1,17 @@
 import { notFound } from 'next/navigation'
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import CutOneReplayFilmPage from './replay-film/page'
 
 export const metadata = {
-  title: "URAI in 60 Seconds | Spatial AI Memory World",
-  description:
-    "Experience how URAI turns scattered personal context into a connected spatial AI memory world.",
-};
+  title: 'URAI in 60 Seconds | Spatial AI Memory World',
+  description: 'Experience the disclosed URAI proof journey from Home through ownership without exposing personal data.',
+}
 
-function publicDemoRoutesAllowed() {
-  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.NODE_ENV !== 'production'
+function publicDemoRouteExplicitlyDisabled() {
+  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'
+    || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'
 }
 
 export default function DemoPage() {
-  if (!publicDemoRoutesAllowed()) notFound()
-
-  return <TierOneExperience />;
+  if (publicDemoRouteExplicitlyDisabled()) notFound()
+  return <CutOneReplayFilmPage />
 }
