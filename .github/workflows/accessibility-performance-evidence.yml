@@ -15,6 +15,9 @@ on:
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+      - 'urai-tier1/src/app/status/**'
+      - 'urai-tier1/src/data/launchTruth.ts'
+      - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
       - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
       - 'urai-tier1/src/spatial/world/persistentWorldCompanion.css'
 
