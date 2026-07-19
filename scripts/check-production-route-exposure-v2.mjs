@@ -6,7 +6,7 @@ const root = process.cwd()
 const appRoot = path.join(root, 'urai-tier1', 'src', 'app')
 const failures = []
 const guardedPrefixes = ['admin', 'brand-system', 'internal']
-const guardTokens = ['notFound()', 'redirect(', 'NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES', 'NEXT_PUBLIC_ALLOW_ADMIN_ROUTES', 'URAI_ALLOW_INTERNAL_ROUTES', 'URAI_ALLOW_ADMIN_ROUTES']
+const guardTokens = ['notFound()', 'redirect(', 'NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES', 'NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES', 'NEXT_PUBLIC_ALLOW_ADMIN_ROUTES', 'URAI_ALLOW_PUBLIC_DEMO_ROUTES', 'URAI_ALLOW_INTERNAL_ROUTES', 'URAI_ALLOW_ADMIN_ROUTES']
 
 const walk = (directory) => fs.existsSync(directory)
   ? fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
