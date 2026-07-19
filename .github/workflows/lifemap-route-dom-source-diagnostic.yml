@@ -41,12 +41,35 @@ jobs:
           corepack enable
           corepack pnpm install --frozen-lockfile
 
-      - name: Print focused source-contract failure
+      - name: Capture focused source-contract result
+        id: source
         shell: bash
         run: |
           set +e
           corepack pnpm --dir urai-tier1 test > /tmp/lifemap-route-dom-source.log 2>&1
           status=$?
-          echo "SOURCE_CONTRACT_STATUS=$status"
-          tail -n 240 /tmp/lifemap-route-dom-source.log
-          exit "$status"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "$status" > /tmp/lifemap-route-dom-source.status
+          exit 0
+
+      - name: Print focused source-contract result
+        if: always()
+        shell: bash
+        run: |
+          echo "SOURCE_CONTRACT_STATUS=$(cat /tmp/lifemap-route-dom-source.status 2>/dev/null || echo missing)"
+          tail -n 100 /tmp/lifemap-route-dom-source.log 2>/dev/null || true
+
+      - name: Retain focused source-contract result
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-route-dom-source-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-route-dom-source.log
+            /tmp/lifemap-route-dom-source.status
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Require source contracts
+        if: steps.source.outputs.status != '0'
+        run: exit 1
