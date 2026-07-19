@@ -17,6 +17,13 @@ function replaceRequired(pattern, replacement, label) {
 }
 
 replaceRequired(
+  /import \{ chromium \} from 'playwright'/,
+  `import { createRequire } from 'node:module'
+const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
+const { chromium } = requireFromTierOne('playwright')`,
+  'Tier-1 Playwright ownership',
+)
+replaceRequired(
   /markers:\s*\['Own your life',\s*'Step inside yourself'\]/g,
   "markers: ['WALK THE SANCTUARY', 'URAI destination home. World layer living-world.']",
   'Home marker contract',
@@ -264,6 +271,7 @@ for (const value of [
   'Demo fixture',
   'Enter Replay',
   "polling: 'raf'",
+  "requireFromTierOne('playwright')",
 ]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
 }
