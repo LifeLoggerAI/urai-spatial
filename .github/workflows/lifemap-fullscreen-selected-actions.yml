@@ -135,10 +135,6 @@ jobs:
             console.error(JSON.stringify(summary, null, 2))
           }
           NODE
-          if [ -s /tmp/lifemap-fullscreen-a11y.stderr.log ]; then
-            echo '--- accessibility stderr ---'
-            tail -n 120 /tmp/lifemap-fullscreen-a11y.stderr.log
-          fi
 
       - name: Require accessibility regressions
         if: steps.a11y.outputs.status != '0'
@@ -147,25 +143,71 @@ jobs:
           cat /tmp/lifemap-fullscreen-a11y-summary.json
           exit 1
 
-      - name: Run exact visual and AAA interaction proof
+      - name: Start exact static server
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-fullscreen-http.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          nohup python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-fullscreen-http.log 2>&1 &
+          echo $! > /tmp/lifemap-fullscreen-http.pid
           for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then exit 0; fi
             sleep 1
           done
-          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          cat /tmp/lifemap-fullscreen-http.log
+          exit 1
+
+      - name: Run exact visual proof
+        shell: bash
+        run: |
+          set -euo pipefail
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=/tmp/lifemap-fullscreen-visual \
           URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
             node scripts/run-continuous-spatial-proof-fixed.mjs
+
+      - name: Run and retain exact AAA interaction audit
+        id: aaa
+        shell: bash
+        run: |
+          set +e
           URAI_VISUAL_AUDIT_BASE=http://127.0.0.1:4173 \
           URAI_VISUAL_AUDIT_DIR=/tmp/lifemap-fullscreen-audit \
-            node scripts/run-live-visual-audit-current.mjs
+            node scripts/run-live-visual-audit-current.mjs \
+            > /tmp/lifemap-fullscreen-aaa.stdout.log \
+            2> /tmp/lifemap-fullscreen-aaa.stderr.log
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "$status" > /tmp/lifemap-fullscreen-aaa.status
+          exit 0
+
+      - name: Summarize AAA audit result
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const summary = {
+            status: Number(fs.readFileSync('/tmp/lifemap-fullscreen-aaa.status', 'utf8').trim()),
+            stdoutTail: fs.existsSync('/tmp/lifemap-fullscreen-aaa.stdout.log')
+              ? fs.readFileSync('/tmp/lifemap-fullscreen-aaa.stdout.log', 'utf8').split('\n').slice(-160).join('\n')
+              : '',
+            stderrTail: fs.existsSync('/tmp/lifemap-fullscreen-aaa.stderr.log')
+              ? fs.readFileSync('/tmp/lifemap-fullscreen-aaa.stderr.log', 'utf8').split('\n').slice(-160).join('\n')
+              : '',
+            auditFiles: fs.existsSync('/tmp/lifemap-fullscreen-audit')
+              ? fs.readdirSync('/tmp/lifemap-fullscreen-audit', { recursive: true }).map(String).sort()
+              : [],
+          }
+          fs.writeFileSync('/tmp/lifemap-fullscreen-aaa-summary.json', JSON.stringify(summary, null, 2))
+          console.log(JSON.stringify(summary, null, 2))
+          NODE
+
+      - name: Require AAA interaction audit
+        if: steps.aaa.outputs.status != '0'
+        shell: bash
+        run: |
+          cat /tmp/lifemap-fullscreen-aaa-summary.json
+          exit 1
 
       - name: Publish clean canonical product commit
         shell: bash
@@ -192,6 +234,10 @@ jobs:
             /tmp/lifemap-fullscreen-a11y.stderr.log
             /tmp/lifemap-fullscreen-a11y.status
             /tmp/lifemap-fullscreen-a11y-summary.json
+            /tmp/lifemap-fullscreen-aaa.stdout.log
+            /tmp/lifemap-fullscreen-aaa.stderr.log
+            /tmp/lifemap-fullscreen-aaa.status
+            /tmp/lifemap-fullscreen-aaa-summary.json
             urai-tier1/test-results
           if-no-files-found: ignore
           retention-days: 90
