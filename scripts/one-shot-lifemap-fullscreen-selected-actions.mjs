@@ -1,37 +1,26 @@
 import fs from 'node:fs'
 
-const replaceOnce = (path, before, after) => {
+const replaceRequired = (path, pattern, replacement, label) => {
   const source = fs.readFileSync(path, 'utf8')
-  const first = source.indexOf(before)
-  if (first < 0) throw new Error(`Expected source not found in ${path}: ${before.slice(0, 180)}`)
-  if (source.indexOf(before, first + before.length) >= 0) throw new Error(`Expected unique source duplicated in ${path}`)
-  fs.writeFileSync(path, source.slice(0, first) + after + source.slice(first + before.length))
+  if (!pattern.test(source)) throw new Error(`Missing ${label} in ${path}`)
+  const next = source.replace(pattern, replacement)
+  if (next === source) throw new Error(`No change while applying ${label} in ${path}`)
+  fs.writeFileSync(path, next)
+  console.log(`Applied ${label}`)
 }
 
 const adaptive = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
 
-replaceOnce(
+replaceRequired(
   adaptive,
-  `type MemoryPortalHandlers = {
-  onEnterFocus: (node: LifeMapNode) => void;
-  onEnterReplay: (node: LifeMapNode) => void;
-  onOverview: () => void;
-};
-
-`,
+  /type MemoryPortalHandlers = \{[\s\S]*?\};\n\n/,
   '',
+  'unused Three-scene portal handler type removal',
 )
 
-replaceOnce(
+replaceRequired(
   adaptive,
-  `function MemoryArtifact({ node, selected, related, overview, profile, onSelect, onEnterFocus, onEnterReplay, onOverview }: {
-  node: LifeMapNode;
-  selected: boolean;
-  related: boolean;
-  overview: boolean;
-  profile: SpatialQualityProfile;
-  onSelect: (node: LifeMapNode) => void;
-} & MemoryPortalHandlers) {`,
+  /function MemoryArtifact\(\{ node, selected, related, overview, profile, onSelect, onEnterFocus, onEnterReplay, onOverview \}: \{[\s\S]*?onSelect: \(node: LifeMapNode\) => void;\n\} & MemoryPortalHandlers\) \{/,
   `function MemoryArtifact({ node, selected, related, overview, profile, onSelect }: {
   node: LifeMapNode;
   selected: boolean;
@@ -40,32 +29,19 @@ replaceOnce(
   profile: SpatialQualityProfile;
   onSelect: (node: LifeMapNode) => void;
 }) {`,
+  'MemoryArtifact portal prop removal',
 )
 
-replaceOnce(
+replaceRequired(
   adaptive,
-  `
-      {selected ? (
-        <Html distanceFactor={8.2} position={[0, -scale * 1.48, 0.16]} center zIndexRange={[90, 30]}>
-          <div className="life-map-memory-portals" onPointerDown={(event) => event.stopPropagation()}>
-            <button type="button" onClick={() => onEnterFocus(node)}>Enter Focus</button>
-            <button type="button" onClick={() => onEnterReplay(node)} disabled={!node.replayAvailable || node.locked}>Replay</button>
-            <button type="button" onClick={onOverview}>Overview</button>
-          </div>
-        </Html>
-      ) : null}`,
+  /\n\s*\{selected \? \(\n\s*<Html distanceFactor=\{8\.2\}[\s\S]*?<\/Html>\n\s*\) : null\}/,
   '',
+  'projected selected-action Html removal',
 )
 
-replaceOnce(
+replaceRequired(
   adaptive,
-  `function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect, onEnterFocus, onEnterReplay, onOverview }: {
-  nodes: LifeMapNode[];
-  selectedNode: LifeMapNode | null;
-  profile: SpatialQualityProfile;
-  cameraIntent: CameraIntent;
-  onSelect: (node: LifeMapNode) => void;
-} & MemoryPortalHandlers) {`,
+  /function LifeMapWorld\(\{ nodes, selectedNode, profile, cameraIntent, onSelect, onEnterFocus, onEnterReplay, onOverview \}: \{[\s\S]*?onSelect: \(node: LifeMapNode\) => void;\n\} & MemoryPortalHandlers\) \{/,
   `function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect }: {
   nodes: LifeMapNode[];
   selectedNode: LifeMapNode | null;
@@ -73,44 +49,27 @@ replaceOnce(
   cameraIntent: CameraIntent;
   onSelect: (node: LifeMapNode) => void;
 }) {`,
+  'LifeMapWorld portal prop removal',
 )
 
-replaceOnce(
+replaceRequired(
   adaptive,
-  `            profile={profile}
-            onSelect={onSelect}
-            onEnterFocus={onEnterFocus}
-            onEnterReplay={onEnterReplay}
-            onOverview={onOverview}
-          />`,
-  `            profile={profile}
-            onSelect={onSelect}
-          />`,
+  /\n\s*onEnterFocus=\{onEnterFocus\}\n\s*onEnterReplay=\{onEnterReplay\}\n\s*onOverview=\{onOverview\}/,
+  '',
+  'MemoryArtifact call portal prop removal',
 )
 
-replaceOnce(
+replaceRequired(
   adaptive,
-  `        <LifeMapWorld
-          nodes={nodes}
-          selectedNode={selectedNode}
-          profile={profile}
-          cameraIntent={cameraIntent}
-          onSelect={selectNode}
-          onEnterFocus={enterFocus}
-          onEnterReplay={enterReplay}
-          onOverview={recenter}
-        />
-      </Canvas>
+  /\n\s*onEnterFocus=\{enterFocus\}\n\s*onEnterReplay=\{enterReplay\}\n\s*onOverview=\{recenter\}/,
+  '',
+  'LifeMapWorld call portal prop removal',
+)
 
-      <div className="life-map-realm-mark" aria-hidden="true">`,
-  `        <LifeMapWorld
-          nodes={nodes}
-          selectedNode={selectedNode}
-          profile={profile}
-          cameraIntent={cameraIntent}
-          onSelect={selectNode}
-        />
-      </Canvas>
+replaceRequired(
+  adaptive,
+  /      <\/Canvas>\n\n      <div className="life-map-realm-mark" aria-hidden="true">/,
+  `      </Canvas>
 
       {selectedNode ? (
         <nav
@@ -127,22 +86,13 @@ replaceOnce(
       ) : null}
 
       <div className="life-map-realm-mark" aria-hidden="true">`,
+  'route-owned selected action overlay insertion',
 )
 
 const css = 'urai-tier1/src/spatial/world/lifeMapSelectedCinematic.css'
-replaceOnce(
+replaceRequired(
   css,
-  `.life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
-  position: relative;
-  z-index: 90;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(560px, calc(100vw - 40px));
-  max-width: min(560px, calc(100vw - 40px));
-  box-sizing: border-box;
-  transform: translateY(clamp(-230px, -22vh, -145px));
-  transform-origin: center;
-}`,
+  /\.life-map-independent-realm\[data-life-map-mode='selected'\] \.life-map-memory-portals \{[\s\S]*?\n\}/,
   `.life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
   position: fixed;
   z-index: 90;
@@ -158,17 +108,14 @@ replaceOnce(
   transform: none;
   pointer-events: auto;
 }`,
+  'viewport-owned desktop selected action CSS',
 )
-replaceOnce(
+
+replaceRequired(
   css,
-  `  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
-    gap: 4px;
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
-    padding: 5px;
-    transform: translateY(clamp(-145px, -16vh, -96px));
-  }`,
-  `  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
+  /@media \(max-width: 760px\) \{\n  \.life-map-independent-realm\[data-life-map-mode='selected'\] \.life-map-memory-portals \{[\s\S]*?\n  \}/,
+  `@media (max-width: 760px) {
+  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals {
     left: max(12px, env(safe-area-inset-left));
     right: max(12px, env(safe-area-inset-right));
     top: clamp(400px, 62svh, 590px);
@@ -178,32 +125,44 @@ replaceOnce(
     padding: 5px;
     transform: none;
   }`,
+  'safe-area mobile selected action CSS',
 )
 
 const deepLink = 'urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs'
-replaceOnce(
+replaceRequired(
   deepLink,
-  `  assert.match(adaptive, /className="life-map-memory-portals"/)
-  assert.match(adaptive, /onClick=\{\(\) => onEnterFocus\(node\)\}/)
-  assert.match(adaptive, /onClick=\{\(\) => onEnterReplay\(node\)\}/)`,
-  `  assert.match(adaptive, /className="life-map-memory-portals"/)
+  /test\('canonical Life Map has one selected-memory owner inside the spatial lens scene',[\s\S]*?\n\}\)\n\n(?=test\('selected-memory identity)/,
+  `test('canonical Life Map has one selected-memory owner in the route DOM overlay', () => {
+  assert.match(canonical, /<LifeMapRouteBoundary \/>/)
+  assert.match(canonical, /<Suspense/)
+  assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
+  assert.doesNotMatch(canonical, /LifeMapDeepLinkControls|urai-lifemap-deep-link-controls/)
+  assert.match(adaptive, /className="life-map-memory-portals"/)
   assert.match(adaptive, /data-life-map-selected-actions-owner="route-dom-overlay"/)
   assert.match(adaptive, /onClick=\{\(\) => enterFocus\(selectedNode\)\}/)
   assert.match(adaptive, /onClick=\{\(\) => enterReplay\(selectedNode\)\}/)
-  assert.doesNotMatch(adaptive, /<Html[\s\S]*life-map-memory-portals/)`,
-)
-replaceOnce(
-  deepLink,
-  `  assert.match(selectedCinematic, /width: min\(560px, calc\(100vw - 40px\)\)/)
-  assert.match(selectedCinematic, /max-width: min\(560px, calc\(100vw - 40px\)\)/)
-  assert.match(selectedCinematic, /translateY\(clamp\(-230px, -22vh, -145px\)\)/)
-  assert.match(selectedCinematic, /min-height: 52px/)
-  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*width: calc\(100vw - 24px\)/)
-  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*max-width: calc\(100vw - 24px\)/)
-  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*translateY\(clamp\(-145px, -16vh, -96px\)\)/)
-  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)`,
-  `  assert.match(adaptive, /data-life-map-selected-actions-owner="route-dom-overlay"/)
   assert.doesNotMatch(adaptive, /<Html[\s\S]*life-map-memory-portals/)
+})
+
+`,
+  'route DOM owner contract test',
+)
+
+replaceRequired(
+  deepLink,
+  /test\('selected mode raises the spatial realm and keeps one three-column action surface inside desktop and mobile viewports',[\s\S]*?\n\}\)\n\n(?=test\('schema-7)/,
+  `test('selected mode raises the spatial realm and keeps one route-owned action surface inside desktop and mobile viewports', () => {
+  assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
+  assert.match(selectedCinematic, /data-life-map-mode='selected'/)
+  assert.match(selectedCinematic, /> \.life-map-independent-realm/)
+  assert.match(selectedCinematic, /z-index: 70/)
+  assert.match(selectedCinematic, /data-life-map-authored-universe='primary'/)
+  assert.match(selectedCinematic, /opacity: \.04 !important/)
+  assert.match(adaptive, /data-life-map-selected-actions-owner="route-dom-overlay"/)
+  assert.doesNotMatch(adaptive, /<Html[\s\S]*life-map-memory-portals/)
+  assert.match(selectedCinematic, /\.life-map-memory-portals/)
+  assert.match(selectedCinematic, /z-index: 90/)
+  assert.match(selectedCinematic, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
   assert.match(selectedCinematic, /position: fixed/)
   assert.match(selectedCinematic, /left: max\(20px, env\(safe-area-inset-left\)\)/)
   assert.match(selectedCinematic, /right: max\(20px, env\(safe-area-inset-right\)\)/)
@@ -215,18 +174,41 @@ replaceOnce(
   assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*left: max\(12px, env\(safe-area-inset-left\)\)/)
   assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*right: max\(12px, env\(safe-area-inset-right\)\)/)
   assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*top: clamp\(400px, 62svh, 590px\)/)
-  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)`,
+  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)
+  assert.match(adaptive, /data-life-map-overview-list="true"/)
+  assert.match(adaptive, /data-life-map-selected-actions="true"/)
+  assert.match(adaptive, /data-life-map-route-actions="true"/)
+  assert.match(selectedCinematic, /data-life-map-mode='selected'[\s\S]*data-life-map-overview-list='true'[\s\S]*display: none !important/)
+  assert.doesNotMatch(selectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-accessibility-menu > div[\s\S]*display: none !important/)
+})
+
+`,
+  'selected route action containment contract test',
 )
 
 const finalContract = 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
-replaceOnce(
+replaceRequired(
   finalContract,
-  `  assert.match(lifeMapSelectedCinematic, /width: min\(560px, calc\(100vw - 40px\)\)/)
-  assert.match(lifeMapSelectedCinematic, /transform: translateY\(clamp\(-230px, -22vh, -145px\)\)/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*width: calc\(100vw - 24px\)/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)`,
-  `  assert.match(adaptiveLifeMap, /data-life-map-selected-actions-owner="route-dom-overlay"/)
+  /test\('Life Map renders synchronous luminous lenses with dominant selected mode',[\s\S]*?\n\}\)\s*$/,
+  `test('Life Map renders synchronous luminous lenses with dominant selected mode', () => {
+  assert.match(adaptiveLifeMap, /memoryLensPath/)
+  assert.match(adaptiveLifeMap, /const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/)
+  assert.match(adaptiveLifeMap, /const textureKey = texture\?\.uuid/)
+  assert.match(adaptiveLifeMap, /key=\{textureKey \+ "-main"\}/)
+  assert.match(adaptiveLifeMap, /color=\{texture \? "#ffffff" : "#071425"\}/)
+  assert.match(adaptiveLifeMap, /data-life-map-memory-contract="synchronous-luminous-memory-lenses"/)
+  assert.match(adaptiveLifeMap, /data-life-map-mode=\{selectedNode \? "selected" : "overview"\}/)
+  assert.match(adaptiveLifeMap, /data-selected=\{selectedNode \? "true" : "false"\}/)
+  assert.match(adaptiveLifeMap, /name="life-map-memory-lens-hit-target"/)
+  assert.match(adaptiveLifeMap, /opacity=\{texture \? visibleOpacity : 0\}/)
+  assert.doesNotMatch(adaptiveLifeMap, /useState<THREE\.CanvasTexture \| null>|setTexture\(|map=\{texture \?\? undefined\}/)
+  assert.match(lifeMapConvergence, /AAA MEMORY LENS SELECTION CONVERGENCE/)
+  assert.match(lifeMapConvergence, /data-life-map-mode='selected'/)
+  assert.match(lifeMapConvergence, /life-map-whisper\[data-selected='true'\]/)
+  assert.match(adaptiveLifeMap, /data-life-map-selected-actions-owner="route-dom-overlay"/)
   assert.doesNotMatch(adaptiveLifeMap, /<Html[\s\S]*life-map-memory-portals/)
+  assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-memory-portals/)
+  assert.match(lifeMapSelectedCinematic, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
   assert.match(lifeMapSelectedCinematic, /position: fixed/)
   assert.match(lifeMapSelectedCinematic, /left: max\(20px, env\(safe-area-inset-left\)\)/)
   assert.match(lifeMapSelectedCinematic, /right: max\(20px, env\(safe-area-inset-right\)\)/)
@@ -237,7 +219,14 @@ replaceOnce(
   assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*left: max\(12px, env\(safe-area-inset-left\)\)/)
   assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*right: max\(12px, env\(safe-area-inset-right\)\)/)
   assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*top: clamp\(400px, 62svh, 590px\)/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)`,
+  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)
+  assert.match(adaptiveLifeMap, /data-life-map-overview-list="true"/)
+  assert.match(adaptiveLifeMap, /data-life-map-selected-actions="true"/)
+  assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*data-life-map-overview-list='true'[\s\S]*display: none !important/)
+  assert.doesNotMatch(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-accessibility-menu > div[\s\S]*display: none !important/)
+})
+`,
+  'final AAA route DOM owner contract test',
 )
 
 console.log('Applied route-owned selected-memory action overlay repair')
