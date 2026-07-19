@@ -3,39 +3,39 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-
 const page = read('src/app/status/page.tsx')
 const authority = read('src/app/status/StatusReleaseAuthority.tsx')
 const launchTruth = read('src/data/launchTruth.ts')
 
-test('Status renders verified live authority instead of stale production-pending copy', () => {
+test('Status replaces stale production-pending copy with bounded verified-live truth', () => {
   assert.match(page, /StatusReleaseAuthority/)
   assert.match(page, /data-production-certification="verified-live-fingerprint"/)
   assert.match(page, /Production: verified live for the canonical Spatial web release/)
   assert.match(page, /Pending proof: physical Quest hardware/)
+  assert.match(page, /Autonomous real-world actions are not enabled and remain human-approved only/)
   assert.match(page, /\['\/status', 'verified live'/)
   assert.match(page, /\['\/privacy-controls', 'verified live'/)
-  assert.doesNotMatch(page, /Production<\/span><strong[^>]*>Pending proof/)
   assert.doesNotMatch(page, /Production certification remains pending/)
   assert.doesNotMatch(page, /pending-current-main-evidence/)
 })
 
-test('Status reads and validates the protected public fingerprint without caching', () => {
+test('Only canonical production requests and validates the protected fingerprint', () => {
+  assert.match(authority, /window\.location\.origin !== 'https:\/\/urai\.app'/)
+  assert.match(authority, /setState\(\{ kind: 'preview' \}\)/)
   assert.match(authority, /fetch\(`\/release-fingerprint\.json\?status=\$\{Date\.now\(\)\}`/)
   assert.match(authority, /cache: 'no-store'/)
   assert.match(authority, /schemaVersion !== 'urai-release-fingerprint-1'/)
-  assert.match(authority, /fullSha\.test\(String\(fingerprint\.authoritySha/)
-  assert.match(authority, /fullSha\.test\(String\(fingerprint\.releaseSha/)
-  assert.match(authority, /fullSha\.test\(String\(fingerprint\.rollbackSha/)
-  assert.match(authority, /fingerprint\.releaseSha === fingerprint\.rollbackSha/)
-  assert.match(authority, /firebaseProject !== 'urai-4dc1d'/)
-  assert.match(authority, /liveUrl !== 'https:\/\/urai\.app'/)
+  assert.match(authority, /\['authoritySha', 'releaseSha', 'rollbackSha'\]/)
+  assert.match(authority, /shaPattern\.test\(String\(item\[field\]/)
+  assert.match(authority, /item\.releaseSha === item\.rollbackSha/)
+  assert.match(authority, /item\.firebaseProject !== 'urai-4dc1d'/)
+  assert.match(authority, /item\.liveUrl !== 'https:\/\/urai\.app'/)
+  assert.match(authority, /does not request or substitute a live or candidate SHA/)
   assert.match(authority, /No candidate SHA is displayed while live authority is unresolved/)
   assert.match(authority, /role="alert"/)
-  assert.match(authority, /Live certification cannot be displayed/)
 })
 
-test('Launch truth certifies the web release while preserving separate blocked claims', () => {
+test('Launch truth certifies web scope and preserves separate blocks', () => {
   assert.match(launchTruth, /id: 'DEPLOY-SHA'[\s\S]*state: 'green'/)
   assert.match(launchTruth, /id: 'ROLLBACK-SHA'[\s\S]*state: 'green'/)
   assert.match(launchTruth, /id: 'STATUS-TRUTH'[\s\S]*state: 'green'/)
