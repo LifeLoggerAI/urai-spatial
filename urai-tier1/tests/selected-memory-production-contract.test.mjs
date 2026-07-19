@@ -11,6 +11,7 @@ const replay = read('src/app/replay/CinematicReplayClient.tsx')
 const demoPage = read('src/app/demo/page.tsx')
 const demoFilm = read('src/app/demo/replay-film/page.tsx')
 const visualAudit = readRoot('scripts/run-live-visual-audit-current.mjs')
+const aaaProof = readRoot('scripts/aaa-launch-proof.mjs')
 
 test('production memory loading never silently substitutes demo or seed content', () => {
   assert.doesNotMatch(hook, /lifeMapNodes|seed|quiet-reset|replay-recovery-thread|seed-memory-bloom/)
@@ -80,12 +81,21 @@ test('public proof rail never links its Focus or Replay scenes to identity-free 
 })
 
 test('visual proof rejects URL-only Life Map to Focus success', () => {
-  assert.match(visualAudit, /data-memory-status/)
-  assert.match(visualAudit, /chamber\.dataset\.memoryStatus === 'demo'/)
-  assert.match(visualAudit, /chamber\.dataset\.memoryId\?\.startsWith\('demo:'\)/)
+  assert.match(visualAudit, /getAttribute\('data-memory-status'\) === 'demo'/)
+  assert.match(visualAudit, /getAttribute\('data-memory-id'\)\?\.startsWith\('demo:'\)/)
   assert.match(visualAudit, /document\.body\.textContent\?\.includes\('Memory unavailable'\)/)
   assert.match(visualAudit, /destinationUrl\.searchParams\.get\('demo'\) !== '1'/)
   assert.match(visualAudit, /Life Map did not preserve truthful explicit-demo identity into Focus/)
+})
+
+test('AAA receipt records disclosed demo routes and current semantic markers', () => {
+  assert.match(aaaProof, /const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'/)
+  assert.match(aaaProof, /route: `\/focus\?\$\{demoMemoryQuery\}`/)
+  assert.match(aaaProof, /route: `\/replay\?\$\{demoMemoryQuery\}`/)
+  assert.match(aaaProof, /markers: \['The Quiet Reset', 'Selected memory', 'Enter Replay'\]/)
+  assert.match(aaaProof, /markers: \['Your life is a world\.', 'Demo fixture', 'Play the proof rail'\]/)
+  assert.doesNotMatch(aaaProof, /route: '\/focus\?memoryId=quiet-reset'/)
+  assert.doesNotMatch(aaaProof, /markers: \['URAI'\]/)
 })
 
 test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () => {
