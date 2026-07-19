@@ -98,13 +98,13 @@ replaceRequired(
       const memory = controls.getByRole('button', { name: /The Quiet Reset/i }).first()
       await memory.waitFor({ state: 'visible', timeout: 15000 })
       await memory.click({ timeout: 10000 })
-      await page.waitForTimeout(700)
 
-      const selectedPortal = page.locator('.life-map-memory-portals').first()
-      await selectedPortal.waitFor({ state: 'visible', timeout: 10000 })
-      const selectedSurface = await selectedPortal.evaluate((node) => {
+      await page.waitForFunction(() => {
+        const node = document.querySelector('.life-map-memory-portals')
+        const focus = node?.querySelector('button')
+        if (!(node instanceof HTMLElement) || !(focus instanceof HTMLElement)) return false
         const rect = node.getBoundingClientRect()
-        const focus = node.querySelector('button')?.getBoundingClientRect()
+        const focusRect = focus.getBoundingClientRect()
         const semanticList = document.querySelector("details.life-map-accessibility-menu [data-life-map-overview-list='true']")
         const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
         const semanticRect = semanticList?.getBoundingClientRect()
@@ -114,14 +114,48 @@ replaceRequired(
           && Number.parseFloat(semanticStyle.opacity || '1') > 0.02
           && semanticRect.width > 4
           && semanticRect.height > 4)
+        const owner = document.elementFromPoint(
+          focusRect.left + focusRect.width / 2,
+          focusRect.top + focusRect.height / 2,
+        )
+        return rect.left >= -1
+          && rect.right <= window.innerWidth + 1
+          && rect.top >= -1
+          && rect.bottom <= window.innerHeight + 1
+          && focusRect.width >= 44
+          && focusRect.height >= 44
+          && !semanticListVisible
+          && Boolean(owner && focus.contains(owner))
+      }, null, { timeout: 15000, polling: 'raf' })
+
+      const selectedPortal = page.locator('.life-map-memory-portals').first()
+      const selectedSurface = await selectedPortal.evaluate((node) => {
+        const rect = node.getBoundingClientRect()
+        const focus = node.querySelector('button')
+        const focusRect = focus?.getBoundingClientRect()
+        const semanticList = document.querySelector("details.life-map-accessibility-menu [data-life-map-overview-list='true']")
+        const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
+        const semanticRect = semanticList?.getBoundingClientRect()
+        const semanticListVisible = Boolean(semanticStyle && semanticRect
+          && semanticStyle.display !== 'none'
+          && semanticStyle.visibility !== 'hidden'
+          && Number.parseFloat(semanticStyle.opacity || '1') > 0.02
+          && semanticRect.width > 4
+          && semanticRect.height > 4)
+        const owner = focusRect ? document.elementFromPoint(
+          focusRect.left + focusRect.width / 2,
+          focusRect.top + focusRect.height / 2,
+        ) : null
         return {
-          contained: rect.left >= -1 && rect.right <= window.innerWidth + 1,
-          focusTouchTarget: Boolean(focus && focus.width >= 44 && focus.height >= 44),
+          contained: rect.left >= -1 && rect.right <= window.innerWidth + 1
+            && rect.top >= -1 && rect.bottom <= window.innerHeight + 1,
+          focusTouchTarget: Boolean(focusRect && focusRect.width >= 44 && focusRect.height >= 44),
           semanticListHidden: !semanticListVisible,
+          pointerOwned: Boolean(focus && owner && focus.contains(owner)),
         }
       })
-      if (!selectedSurface.contained || !selectedSurface.focusTouchTarget || !selectedSurface.semanticListHidden) {
-        throw new Error('Selected Life Map surface failed containment, touch-target, or semantic-list ownership proof')
+      if (!selectedSurface.contained || !selectedSurface.focusTouchTarget || !selectedSurface.semanticListHidden || !selectedSurface.pointerOwned) {
+        throw new Error(\`Selected Life Map surface failed stable containment, touch-target, semantic-list, or pointer-ownership proof: \${JSON.stringify(selectedSurface)}\`)
       }
     }
 
@@ -141,15 +175,23 @@ replaceRequired(
 )
 replaceRequired(
   /      const action = await clickOrFollowHref\(page, found\.locator\)\n      mode = action\.mode/,
-  `      const action = await clickOrFollowHref(page, found.locator)
+  `      let action
+      if (check.name === 'life-map-to-focus') {
+        await found.locator.evaluate((element) => element.click())
+        await page.waitForTimeout(300)
+        action = { mode: 'dom-activation-after-pointer-proof', error: '' }
+      } else {
+        action = await clickOrFollowHref(page, found.locator)
+      }
       await page.waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 }).catch(() => {})
       mode = action.mode`,
-  'interaction URL wait',
+  'interaction URL wait and stable portal activation',
 )
 
 const forbidden = [
   "markers: ['Own your life', 'Step inside yourself']",
   "start: '/life-map',",
+  'await page.waitForTimeout(700)',
 ]
 for (const value of forbidden) {
   if (source.includes(value)) throw new Error(`Current-canon audit still contains retired contract: ${value}`)
@@ -162,6 +204,8 @@ for (const value of [
   "start: '/life-map?demo=1',",
   'urai:lifeMapDemoMode',
   'details.life-map-accessibility-menu',
+  'dom-activation-after-pointer-proof',
+  "polling: 'raf'",
 ]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
 }
