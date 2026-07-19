@@ -86,7 +86,16 @@ replaceRequired(
 replaceRequired(
   /    const found = await firstVisible\(page, check\.selectors\)\n    if \(!found\) \{[\s\S]*?\n    \} else \{/,
   `    if (check.name === 'life-map-to-focus') {
-      const memory = page.getByRole('button', { name: /The Quiet Reset/i }).filter({ visible: true }).first()
+      await page.evaluate(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))
+      await page.reload({ waitUntil: 'domcontentloaded' })
+
+      const controls = page.locator('details.life-map-accessibility-menu').nth(0)
+      await controls.waitFor({ state: 'visible', timeout: 15000 })
+      if ((await controls.getAttribute('open')) === null) {
+        await controls.locator('summary').click({ timeout: 10000 })
+      }
+
+      const memory = controls.getByRole('button', { name: /The Quiet Reset/i }).first()
       await memory.waitFor({ state: 'visible', timeout: 15000 })
       await memory.click({ timeout: 10000 })
       await page.waitForTimeout(700)
@@ -140,7 +149,6 @@ replaceRequired(
 
 const forbidden = [
   "markers: ['Own your life', 'Step inside yourself']",
-  "details.life-map-accessibility-menu').first()",
   "start: '/life-map',",
 ]
 for (const value of forbidden) {
@@ -152,6 +160,8 @@ for (const value of [
   'Open Life Map directly',
   '.life-map-memory-portals',
   "start: '/life-map?demo=1',",
+  'urai:lifeMapDemoMode',
+  'details.life-map-accessibility-menu',
 ]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
 }
