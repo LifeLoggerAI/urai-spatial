@@ -74,7 +74,15 @@ const routeExpectations = [
   { route: `/replay?${demoMemoryQuery}`, markers: ['The Quiet Reset', 'Memory', 'Play'] },
   { route: '/mirror', markers: ['Mirror does not judge.', 'Patterns become visible without turning your life into a score.'] },
   { route: '/passport', markers: ['Your life remains yours.', 'OWNERSHIP VAULT'] },
-  { route: '/status', markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof'] },
+  {
+    route: '/status',
+    markers: [
+      'Launch locked. Proof before expansion.',
+      'Tracked',
+      'Production fingerprint is read only on urai.app.',
+      'authority unresolved',
+    ],
+  },
   { route: '/privacy-controls', markers: ['Nothing moves without you.', 'Consent remains reversible'] },
   { route: '/location-map', markers: ['Places carry signal.', 'EMOTIONAL WEATHER'] },
   { route: '/spatial/ar-vr', markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile'] },
