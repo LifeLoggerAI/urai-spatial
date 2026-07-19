@@ -61,7 +61,7 @@ const scenes = [
     number: '05',
     eyebrow: 'Focus',
     title: 'One memory becomes a chamber.',
-    copy: 'Image, title, signal, orb guidance, and one clear doorway isolate the selected memory without losing its place in the world.',
+    copy: 'Image, title, memory signal, and one clear doorway isolate the selected memory without losing its place in the world.',
     asset: focusAssets.primary,
     href: demoFocusHref,
   },
