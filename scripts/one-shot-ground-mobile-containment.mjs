@@ -61,4 +61,82 @@ replaceExact(
   'Ground nearest-edge restoration contract',
 )
 
+// The unified publisher runs the Life Map transform first and this Ground transform second.
+// In that lane only, strengthen the generated route-owned mobile action geometry. The
+// Ground-only diagnostic sees the untransformed CSS and safely skips this conditional block.
+const selectedCss = 'urai-tier1/src/spatial/world/lifeMapSelectedCinematic.css'
+const selectedCssSource = fs.readFileSync(selectedCss, 'utf8')
+if (selectedCssSource.includes('  position: fixed;\n  z-index: 90;')) {
+  replaceExact(
+    selectedCss,
+    '  position: fixed;\n  z-index: 90;\n  left: max(20px, env(safe-area-inset-left));',
+    '  position: fixed;\n  z-index: 2147482000;\n  isolation: isolate;\n  left: max(20px, env(safe-area-inset-left));',
+    1,
+    'Life Map route-action stacking ownership',
+  )
+  replaceExact(
+    selectedCss,
+    '  transform: none;\n  pointer-events: auto;\n}',
+    '  transform: none;\n  pointer-events: auto !important;\n}',
+    1,
+    'Life Map route-action pointer ownership',
+  )
+  replaceExact(
+    selectedCss,
+    `  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals button {
+    min-height: 48px;
+    padding-inline: 6px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }`,
+    `  .life-map-independent-realm[data-life-map-mode='selected'] .life-map-memory-portals button {
+    position: relative;
+    z-index: 2;
+    min-width: 48px;
+    min-height: 52px !important;
+    padding-inline: 6px;
+    font-size: 10px;
+    letter-spacing: 0;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+  }`,
+    1,
+    'Life Map mobile Focus touch and pointer target',
+  )
+
+  const deepLinkContract = 'urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs'
+  replaceExact(
+    deepLinkContract,
+    '  assert.match(selectedCinematic, /z-index: 90/)\n',
+    "  assert.match(selectedCinematic, /z-index: 2147482000/)\n  assert.match(selectedCinematic, /isolation: isolate/)\n  assert.match(selectedCinematic, /pointer-events: auto !important/)\n",
+    1,
+    'Life Map route-action stacking contract',
+  )
+  replaceExact(
+    deepLinkContract,
+    "  assert.match(selectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*min-height: 48px/)\n",
+    "  assert.match(selectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*min-width: 48px/)\n  assert.match(selectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*min-height: 52px !important/)\n  assert.match(selectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*pointer-events: auto !important/)\n  assert.match(selectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*touch-action: manipulation/)\n",
+    1,
+    'Life Map mobile pointer target contract',
+  )
+
+  const finalContract = 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
+  replaceExact(
+    finalContract,
+    '  assert.match(lifeMapSelectedCinematic, /position: fixed/)\n',
+    "  assert.match(lifeMapSelectedCinematic, /position: fixed/)\n  assert.match(lifeMapSelectedCinematic, /z-index: 2147482000/)\n  assert.match(lifeMapSelectedCinematic, /pointer-events: auto !important/)\n",
+    1,
+    'final AAA route-action stacking contract',
+  )
+  replaceExact(
+    finalContract,
+    "  assert.match(lifeMapSelectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*min-height: 48px/)\n",
+    "  assert.match(lifeMapSelectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*min-width: 48px/)\n  assert.match(lifeMapSelectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*min-height: 52px !important/)\n  assert.match(lifeMapSelectedCinematic, /@media \\(max-width: 760px\\)[\\s\\S]*pointer-events: auto !important/)\n",
+    1,
+    'final AAA mobile pointer target contract',
+  )
+
+  console.log('Applied bounded Life Map mobile pointer-ownership repair')
+}
+
 console.log('Applied bounded Ground mobile containment repair')
