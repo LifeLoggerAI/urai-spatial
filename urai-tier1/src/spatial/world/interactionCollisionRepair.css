@@ -16,6 +16,18 @@
   z-index: 26 !important;
 }
 
+/* Ground focus containment is geometric, not decorative. Destination pills must reach
+ * their focused width before scrollIntoView resolves; animating max-width lets a pill
+ * expand back outside the mobile viewport after it has been revealed. Preserve visual
+ * color/transform feedback while making width ownership synchronous and deterministic. */
+.ground-spatial-root .ground-destination-compass :is(a, button) {
+  transition-property: border-color, background, transform, color !important;
+}
+
+.ground-spatial-root .ground-destination-compass :is(a, button) strong {
+  transition-property: opacity !important;
+}
+
 @media (max-width: 700px) {
   .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
     top: max(62px, calc(env(safe-area-inset-top) + 52px)) !important;
