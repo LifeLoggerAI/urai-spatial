@@ -75,10 +75,10 @@ export default function StatusRoutePage() {
           <article className="rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-8 shadow-2xl shadow-black/40 backdrop-blur-2xl md:p-12">
             <p className="text-xs font-black uppercase tracking-[0.42em] text-cyan-200">URAI Status · Launch Truth Control Room</p>
             <h1 className="mt-4 max-w-4xl text-6xl font-black leading-[0.82] tracking-[-0.1em] md:text-8xl">
-              Spatial live. Proof remains visible.
+              Launch locked. Proof before expansion.
             </h1>
             <p className="mt-6 max-w-3xl text-base font-semibold leading-8 text-slate-200/80">
-              The canonical web release is verified through a protected public fingerprint, exact-head deployment receipt, route and slash parity, desktop and mobile identity checks, and an executable rollback target. Physical XR, providers, and the supporting estate remain separately gated.
+              The canonical Spatial web release is verified live through a protected public fingerprint, exact-head deployment receipt, route and slash parity, desktop and mobile identity checks, and an executable rollback target. The lock now applies to unsupported expansion claims: physical XR, providers, and the supporting estate remain separately gated.
             </p>
           </article>
           <StatusReleaseAuthority totalRoutes={totalRoutes} />
@@ -108,7 +108,7 @@ export default function StatusRoutePage() {
         </div>
         <section className="mt-6 rounded-[2rem] border border-emerald-200/20 bg-emerald-200/[0.07] p-6 text-sm font-semibold leading-7 text-emerald-50/90">
           <h2 className="text-xl font-black text-emerald-100">Certification boundary</h2>
-          <p className="mt-2">The canonical Spatial web release is verified live. This does not certify physical Quest hardware, provider-backed assets, private supporting services, autonomous real-world actions, or the wider repository estate; those claims require their own protected receipts.</p>
+          <p className="mt-2">Production: verified live for the canonical Spatial web release. Pending proof: physical Quest hardware, provider-backed assets, private supporting services, autonomous real-world actions, and the wider repository estate.</p>
         </section>
         <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation">
           <Link className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link>
