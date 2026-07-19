@@ -52,7 +52,7 @@ test('legacy selected-memory card remains unmounted and cannot compete visually'
   assert.doesNotMatch(canonical, /import LifeMapDeepLinkControls/)
 })
 
-test('selected mode raises the spatial realm and keeps its portals inside desktop and mobile viewports', () => {
+test('selected mode raises the spatial realm and keeps one three-column action surface inside desktop and mobile viewports', () => {
   assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
   assert.match(selectedCinematic, /data-life-map-mode='selected'/)
   assert.match(selectedCinematic, /> \.life-map-independent-realm/)
@@ -61,12 +61,17 @@ test('selected mode raises the spatial realm and keeps its portals inside deskto
   assert.match(selectedCinematic, /opacity: \.04 !important/)
   assert.match(selectedCinematic, /\.life-map-memory-portals/)
   assert.match(selectedCinematic, /z-index: 90/)
-  assert.match(selectedCinematic, /max-width: min\(520px, calc\(\(100vw - 40px\) \/ \.72\)\)/)
-  assert.match(selectedCinematic, /translateY\(clamp\(-250px, -23vh, -150px\)\) scale\(\.72\)/)
-  assert.match(selectedCinematic, /@media \(max-width: 760px\)/)
-  assert.match(selectedCinematic, /max-width: min\(620px, calc\(\(100vw - 18px\) \/ \.56\)\)/)
-  assert.match(selectedCinematic, /translateY\(clamp\(-170px, -18vh, -110px\)\) scale\(\.56\)/)
-  assert.match(selectedCinematic, /min-height: 80px/)
+  assert.match(selectedCinematic, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
+  assert.match(selectedCinematic, /width: min\(560px, calc\(100vw - 40px\)\)/)
+  assert.match(selectedCinematic, /max-width: min\(560px, calc\(100vw - 40px\)\)/)
+  assert.match(selectedCinematic, /translateY\(clamp\(-230px, -22vh, -145px\)\)/)
+  assert.match(selectedCinematic, /min-height: 52px/)
+  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*width: calc\(100vw - 24px\)/)
+  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*max-width: calc\(100vw - 24px\)/)
+  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*translateY\(clamp\(-145px, -16vh, -96px\)\)/)
+  assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)
+  assert.doesNotMatch(selectedCinematic, /\.life-map-memory-portals[\s\S]*scale\(\./)
+  assert.match(selectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-accessibility-menu > div[\s\S]*display: none !important/)
 })
 
 test('schema-7 selected route requires visible spatial Focus and Replay portals', () => {
