@@ -50,7 +50,7 @@ jobs:
           node scripts/one-shot-final-lifemap-deterministic-repair.mjs 2>&1 | tee /tmp/apply.log
           git add -N urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs
           git diff --check
-          expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
+          expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
           actual_product="$(git diff --name-only | grep -v '^scripts/one-shot-final-lifemap-deterministic-repair.mjs$' | sort)"
           printf '%s\n' "$actual_product" > /tmp/product-files.txt
           test "$actual_product" = "$expected_product"
@@ -145,7 +145,7 @@ jobs:
           rm scripts/fix-one-shot-final-lifemap-script.mjs
           rm scripts/one-shot-final-lifemap-deterministic-repair.mjs
           git diff --check
-          expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
+          expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
           actual_product="$(git diff --name-only "$CLEAN_BASE" | sort)"
           test "$actual_product" = "$expected_product"
           git config user.name github-actions[bot]
