@@ -73,15 +73,79 @@ jobs:
       - name: Install Chromium
         run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
-      - name: Run exact accessibility regressions
+      - name: Run and retain exact accessibility regressions
+        id: a11y
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           corepack pnpm exec playwright test \
             --config=playwright.accessibility.config.ts \
             accessibility-performance-evidence.spec.ts \
             accessibility-performance-lifemap-independent.spec.ts \
-            --project=chromium
+            --project=chromium \
+            --reporter=json \
+            > /tmp/lifemap-fullscreen-a11y.json \
+            2> /tmp/lifemap-fullscreen-a11y.stderr.log
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "$status" > /tmp/lifemap-fullscreen-a11y.status
+          exit 0
+
+      - name: Summarize accessibility result
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const reportPath = '/tmp/lifemap-fullscreen-a11y.json'
+          const summaryPath = '/tmp/lifemap-fullscreen-a11y-summary.json'
+          const failures = []
+          try {
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'))
+            const walk = (suite, parents = []) => {
+              const nextParents = suite.title ? [...parents, suite.title] : parents
+              for (const spec of suite.specs || []) {
+                for (const test of spec.tests || []) {
+                  for (const result of test.results || []) {
+                    if (!['passed', 'skipped'].includes(result.status)) {
+                      failures.push({
+                        title: [...nextParents, spec.title, test.title].filter(Boolean).join(' > '),
+                        file: spec.file || '',
+                        line: spec.line || 0,
+                        status: result.status,
+                        error: result.error?.message || result.errors?.[0]?.message || '',
+                      })
+                    }
+                  }
+                }
+              }
+              for (const child of suite.suites || []) walk(child, nextParents)
+            }
+            for (const suite of report.suites || []) walk(suite)
+            const summary = {
+              status: Number(fs.readFileSync('/tmp/lifemap-fullscreen-a11y.status', 'utf8').trim()),
+              failures,
+              stats: report.stats || null,
+            }
+            fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2))
+            console.log(JSON.stringify(summary, null, 2))
+          } catch (error) {
+            const summary = { status: 1, failures: [], parseError: String(error) }
+            fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2))
+            console.error(JSON.stringify(summary, null, 2))
+          }
+          NODE
+          if [ -s /tmp/lifemap-fullscreen-a11y.stderr.log ]; then
+            echo '--- accessibility stderr ---'
+            tail -n 120 /tmp/lifemap-fullscreen-a11y.stderr.log
+          fi
+
+      - name: Require accessibility regressions
+        if: steps.a11y.outputs.status != '0'
+        shell: bash
+        run: |
+          cat /tmp/lifemap-fullscreen-a11y-summary.json
+          exit 1
 
       - name: Run exact visual and AAA interaction proof
         shell: bash
@@ -124,5 +188,10 @@ jobs:
             /tmp/lifemap-fullscreen-http.log
             /tmp/lifemap-fullscreen-visual
             /tmp/lifemap-fullscreen-audit
+            /tmp/lifemap-fullscreen-a11y.json
+            /tmp/lifemap-fullscreen-a11y.stderr.log
+            /tmp/lifemap-fullscreen-a11y.status
+            /tmp/lifemap-fullscreen-a11y-summary.json
+            urai-tier1/test-results
           if-no-files-found: ignore
           retention-days: 90
