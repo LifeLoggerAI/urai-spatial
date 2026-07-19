@@ -213,12 +213,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git rm .github/workflows/lifemap-fullscreen-selected-actions.yml scripts/one-shot-lifemap-fullscreen-selected-actions.mjs
+          git rm \
+            .github/workflows/lifemap-fullscreen-selected-actions.yml \
+            .github/workflows/lifemap-route-dom-source-diagnostic.yml \
+            scripts/one-shot-lifemap-fullscreen-selected-actions.mjs
           git diff --check
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
-          git commit -m "fix(life-map): stabilize selected actions in fullscreen DOM"
+          git commit -m "fix(life-map): stabilize selected actions in route DOM"
           git push origin HEAD:refs/heads/$SOURCE_BRANCH
 
       - name: Retain fullscreen portal proof
