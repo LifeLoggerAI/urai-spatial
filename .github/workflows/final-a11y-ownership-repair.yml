@@ -1,0 +1,98 @@
+name: Final accessibility ownership repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/final-a11y-ownership-repair.yml
+      - scripts/one-shot-final-a11y-ownership-repair.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: final-a11y-ownership-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_BRANCH: product/canonical-seven-fix-clean-r3-20260718
+
+jobs:
+  repair-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'product/canonical-seven-fix-clean-r3-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - name: Checkout exact canonical head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply bounded ownership repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          node scripts/one-shot-final-a11y-ownership-repair.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' \
+            scripts/run-live-visual-audit-current.mjs \
+            urai-tier1/src/app/GroundSpatialWorldClean.tsx \
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx \
+            urai-tier1/src/spatial/world/lifeMapSelectedCinematic.css \
+            urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs \
+            urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs \
+            urai-tier1/tests/persistent-world-doorway-regression.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run full source contracts
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 test
+
+      - name: Typecheck exact repair
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 typecheck
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm build:static
+          test -f urai-tier1/out/life-map/index.html
+          test -f urai-tier1/out/ground/index.html
+
+      - name: Install Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run exact accessibility regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm exec playwright test \
+            --config=playwright.accessibility.config.ts \
+            accessibility-performance-evidence.spec.ts \
+            accessibility-performance-lifemap-independent.spec.ts \
+            --project=chromium
+
+      - name: Publish clean canonical product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/final-a11y-ownership-repair.yml scripts/one-shot-final-a11y-ownership-repair.mjs
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(spatial): preserve selected actions and focus containment"
+          git push origin HEAD:refs/heads/$SOURCE_BRANCH
