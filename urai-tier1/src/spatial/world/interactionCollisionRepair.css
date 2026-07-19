@@ -1,0 +1,24 @@
+/* Route-owned interaction surfaces must not compete with legacy or secondary controls. */
+
+/* The embodied Home owns its own physical Ground threshold and direct destinations.
+ * Remove the legacy full-width Ground gateway from pointer and accessibility ownership
+ * only while the embodied sanctuary is mounted. Fallback Home renderers retain it. */
+.urai-world-runtime[data-world-destination='home']:has(.urai-home-embodied-shell)
+  > .urai-ground-gateway {
+  display: none;
+}
+
+/* Keep Life Map's compact movement help below and behind the primary Map controls.
+ * This prevents its summary from intercepting pointer activation while preserving
+ * keyboard access and the independent spatial-navigation instructions. */
+.urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
+  top: max(68px, calc(env(safe-area-inset-top) + 58px)) !important;
+  z-index: 26 !important;
+}
+
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
+    top: max(62px, calc(env(safe-area-inset-top) + 52px)) !important;
+    max-width: min(250px, calc(100vw - 18px)) !important;
+  }
+}
