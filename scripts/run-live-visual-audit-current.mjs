@@ -70,7 +70,7 @@ replaceRequired(
 )
 replaceRequired(
   /markers:\s*\['World online',\s*'Route matrix',\s*'Tracked'\]/g,
-  "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']",
+  "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Production fingerprint is read only on urai.app.', 'AUTHORITY UNRESOLVED']",
   'Status marker contract',
 )
 replaceRequired(
@@ -141,10 +141,14 @@ replaceRequired(
       await memory.waitFor({ state: 'visible', timeout: 15000 })
       await memory.click({ timeout: 10000 })
 
-      await page.waitForFunction(() => {
+      const stableProof = await page.waitForFunction(() => {
+        const proofKey = '__uraiLifeMapSelectedStableProof'
         const node = document.querySelector('.life-map-memory-portals')
-        const focus = node?.querySelector('button')
-        if (!(node instanceof HTMLElement) || !(focus instanceof HTMLElement)) return false
+        const focus = node?.querySelector('button[data-world-target="focus"], button')
+        if (!(node instanceof HTMLElement) || !(focus instanceof HTMLElement)) {
+          window[proofKey] = { frames: 0, signature: '' }
+          return false
+        }
         const rect = node.getBoundingClientRect()
         const focusRect = focus.getBoundingClientRect()
         const semanticList = document.querySelector(".life-map-accessibility-menu [data-life-map-overview-list='true']")
@@ -160,44 +164,27 @@ replaceRequired(
           focusRect.left + focusRect.width / 2,
           focusRect.top + focusRect.height / 2,
         )
-        return rect.left >= -1
-          && rect.right <= window.innerWidth + 1
-          && rect.top >= -1
-          && rect.bottom <= window.innerHeight + 1
-          && focusRect.width >= 44
-          && focusRect.height >= 44
-          && !semanticListVisible
-          && Boolean(owner && focus.contains(owner))
-      }, null, { timeout: 15000, polling: 'raf' })
-
-      const selectedPortal = page.locator('.life-map-memory-portals').first()
-      const selectedSurface = await selectedPortal.evaluate((node) => {
-        const rect = node.getBoundingClientRect()
-        const focus = node.querySelector('button')
-        const focusRect = focus?.getBoundingClientRect()
-        const semanticList = document.querySelector(".life-map-accessibility-menu [data-life-map-overview-list='true']")
-        const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
-        const semanticRect = semanticList?.getBoundingClientRect()
-        const semanticListVisible = Boolean(semanticStyle && semanticRect
-          && semanticStyle.display !== 'none'
-          && semanticStyle.visibility !== 'hidden'
-          && Number.parseFloat(semanticStyle.opacity || '1') > 0.02
-          && semanticRect.width > 4
-          && semanticRect.height > 4)
-        const owner = focusRect ? document.elementFromPoint(
-          focusRect.left + focusRect.width / 2,
-          focusRect.top + focusRect.height / 2,
-        ) : null
-        return {
+        const result = {
           contained: rect.left >= -1 && rect.right <= window.innerWidth + 1
             && rect.top >= -1 && rect.bottom <= window.innerHeight + 1,
-          focusTouchTarget: Boolean(focusRect && focusRect.width >= 44 && focusRect.height >= 44),
+          focusTouchTarget: focusRect.width >= 44 && focusRect.height >= 44,
           semanticListHidden: !semanticListVisible,
-          pointerOwned: Boolean(focus && owner && focus.contains(owner)),
+          pointerOwned: Boolean(owner && focus.contains(owner)),
         }
-      })
-      if (!selectedSurface.contained || !selectedSurface.focusTouchTarget || !selectedSurface.semanticListHidden || !selectedSurface.pointerOwned) {
-        throw new Error('Selected Life Map surface failed stable containment, touch-target, semantic-list, or pointer-ownership proof: ' + JSON.stringify(selectedSurface))
+        const valid = result.contained && result.focusTouchTarget && result.semanticListHidden && result.pointerOwned
+        const signature = [
+          Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom),
+          Math.round(focusRect.left), Math.round(focusRect.top), Math.round(focusRect.width), Math.round(focusRect.height),
+        ].join(':')
+        const previous = window[proofKey] || { frames: 0, signature: '' }
+        const frames = valid && previous.signature === signature ? previous.frames + 1 : valid ? 1 : 0
+        window[proofKey] = { frames, signature }
+        return frames >= 4 ? result : false
+      }, null, { timeout: 15000, polling: 'raf' })
+
+      const selectedSurface = await stableProof.jsonValue()
+      if (!selectedSurface?.contained || !selectedSurface?.focusTouchTarget || !selectedSurface?.semanticListHidden || !selectedSurface?.pointerOwned) {
+        throw new Error('Selected Life Map surface failed multi-frame containment, touch-target, semantic-list, or pointer-ownership proof: ' + JSON.stringify(selectedSurface))
       }
     }
 
@@ -250,6 +237,7 @@ const forbidden = [
   "markers: ['Replay']",
   "start: '/life-map',",
   'await page.waitForTimeout(700)',
+  "'Pending proof'",
 ]
 for (const value of forbidden) {
   if (source.includes(value)) throw new Error(`Current-canon audit still contains retired contract: ${value}`)
@@ -272,6 +260,10 @@ for (const value of [
   'Enter Replay',
   "polling: 'raf'",
   "requireFromTierOne('playwright')",
+  'Production fingerprint is read only on urai.app.',
+  'AUTHORITY UNRESOLVED',
+  '__uraiLifeMapSelectedStableProof',
+  'frames >= 4',
 ]) {
   if (!source.includes(value)) throw new Error(`Current-canon audit is missing required contract: ${value}`)
 }

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { GroundGateway } from './GroundGateway'
 import { LifeMapIndependentInputBoundary } from './LifeMapIndependentInputBoundary'
+import { LifeMapSelectedActionRuntimeInvariant } from './LifeMapSelectedActionRuntimeInvariant'
 import { PersistentRealmAtmosphere } from './PersistentRealmAtmosphere'
 import { PersistentWorldCompanion } from './PersistentWorldCompanion'
 import { WorldTransitionController } from './WorldTransitionController'
@@ -19,6 +20,7 @@ import './lifeMapIndependentInteraction.css'
 import './embodiedExplorationLayout.css'
 import './interactionCollisionRepair.css'
 import './lifeMapSelectedActionHardening.css'
+import './lifeMapSelectedActionInvariant.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
@@ -38,6 +40,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-camera-checkpoint={world.cameraCheckpoint ?? ''}
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
     >
+      <LifeMapSelectedActionRuntimeInvariant />
       <PersistentRealmAtmosphere />
       {children}
       <GroundGateway />
