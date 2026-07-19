@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import {
@@ -13,6 +14,11 @@ import {
 } from '@/spatial/assets/uraiAssets'
 
 export const dynamic = 'force-static'
+
+function publicDemoRouteExplicitlyDisabled() {
+  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'false'
+    || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'false'
+}
 
 const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 const demoFocusHref = `/focus?${demoMemoryQuery}`
@@ -94,6 +100,8 @@ const orbStyle = {
 } as CSSProperties
 
 export default function CutOneReplayFilmPage() {
+  if (publicDemoRouteExplicitlyDisabled()) notFound()
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#03020a] text-white" data-launch-surface="cinematic-replay-film-proof" data-demo-disclosure="not-personal-data">
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(167,139,250,.2),transparent_28rem),radial-gradient(circle_at_82%_18%,rgba(56,189,248,.16),transparent_28rem),linear-gradient(180deg,#05020b,#090314_54%,#020106)]" />
