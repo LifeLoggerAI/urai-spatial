@@ -52,7 +52,7 @@ test('legacy selected-memory card remains unmounted and cannot compete visually'
   assert.doesNotMatch(canonical, /import LifeMapDeepLinkControls/)
 })
 
-test('selected mode raises the spatial realm and keeps its portals inside the viewport', () => {
+test('selected mode raises the spatial realm and keeps its portals inside desktop and mobile viewports', () => {
   assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
   assert.match(selectedCinematic, /data-life-map-mode='selected'/)
   assert.match(selectedCinematic, /> \.life-map-independent-realm/)
@@ -61,8 +61,12 @@ test('selected mode raises the spatial realm and keeps its portals inside the vi
   assert.match(selectedCinematic, /opacity: \.04 !important/)
   assert.match(selectedCinematic, /\.life-map-memory-portals/)
   assert.match(selectedCinematic, /z-index: 90/)
-  assert.match(selectedCinematic, /translateY\(clamp\(-280px, -26vh, -160px\)\)/)
-  assert.match(selectedCinematic, /max-width: calc\(100vw - 16px\)/)
+  assert.match(selectedCinematic, /max-width: min\(520px, calc\(\(100vw - 40px\) \/ \.72\)\)/)
+  assert.match(selectedCinematic, /translateY\(clamp\(-250px, -23vh, -150px\)\) scale\(\.72\)/)
+  assert.match(selectedCinematic, /@media \(max-width: 760px\)/)
+  assert.match(selectedCinematic, /max-width: min\(620px, calc\(\(100vw - 18px\) \/ \.56\)\)/)
+  assert.match(selectedCinematic, /translateY\(clamp\(-170px, -18vh, -110px\)\) scale\(\.56\)/)
+  assert.match(selectedCinematic, /min-height: 80px/)
 })
 
 test('schema-7 selected route requires visible spatial Focus and Replay portals', () => {
