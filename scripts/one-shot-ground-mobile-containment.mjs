@@ -26,6 +26,13 @@ replaceExact(
   1,
   'symmetric Ground mobile safe-area gutters',
 )
+replaceExact(
+  ground,
+  '.ground-destination-compass :is(a,button){min-height:48px;max-width:46px;padding:7px 10px;font-size:9px}.ground-destination-compass :is(a,button):hover',
+  '.ground-destination-compass :is(a,button){min-height:48px;max-width:46px;padding:7px 10px;font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-destination-compass :is(a,button):hover',
+  1,
+  'deterministic Ground mobile focus expansion',
+)
 
 const sourceContract = 'urai-tier1/tests/accessibility-performance-source-contract.test.mjs'
 replaceExact(
@@ -38,7 +45,7 @@ replaceExact(
 replaceExact(
   sourceContract,
   "  requireText(ground, 'min-height:48px')\n",
-  "  requireText(ground, 'min-height:48px')\n  requireText(ground, 'padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))')\n  requireText(ground, 'scroll-padding-inline-start:max(14px,env(safe-area-inset-left))')\n  requireText(ground, 'scroll-padding-inline-end:max(14px,env(safe-area-inset-right))')\n  assert.equal(ground.includes('padding-inline:12px 210px'), false, 'Ground must not reserve a hard-coded mobile right gutter')\n",
+  "  requireText(ground, 'min-height:48px')\n  requireText(ground, 'padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))')\n  requireText(ground, 'scroll-padding-inline-start:max(14px,env(safe-area-inset-left))')\n  requireText(ground, 'scroll-padding-inline-end:max(14px,env(safe-area-inset-right))')\n  requireText(ground, 'font-size:9px;transition:none')\n  requireText(ground, '.ground-destination-compass :is(a,button) strong{transition:none}')\n  assert.equal(ground.includes('padding-inline:12px 210px'), false, 'Ground must not reserve a hard-coded mobile right gutter')\n",
   1,
   'Ground safe-area source contract',
 )
@@ -48,7 +55,8 @@ replaceExact(
   restorationContract,
   String.raw`  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)`,
   String.raw`  // Ground nearest-edge focus reveal is canonical and prevents mobile rail overflow.
-  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)`,
+  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)
+  assert.match(groundCanonical, /@media\(max-width:700px\)[\s\S]*?font-size:\s*9px;\s*transition:\s*none[\s\S]*?strong\{\s*transition:\s*none\s*\}/)`,
   1,
   'Ground nearest-edge restoration contract',
 )
