@@ -25,6 +25,16 @@ test('selected Life Map desktop composition keeps readable title and separated a
   assert.match(css, /max-width: 960px !important/)
 })
 
+test('mobile Life Map keeps the sample-data disclosure below the top controls', () => {
+  assert.match(css, /> \.life-map-sample-boundary/)
+  assert.match(css, /position: fixed !important/)
+  assert.match(css, /top: max\(124px, calc\(env\(safe-area-inset-top\) \+ 118px\)\) !important/)
+  assert.match(css, /left: max\(12px, env\(safe-area-inset-left\)\) !important/)
+  assert.match(css, /right: max\(12px, env\(safe-area-inset-right\)\) !important/)
+  assert.match(css, /text-align: center !important/)
+  assert.match(css, /pointer-events: none !important/)
+})
+
 test('selected Life Map mobile composition keeps readable title and separated action bands', () => {
   assert.match(css, /@media \(max-width: 760px\)/)
   assert.match(css, /data-life-map-mode='selected'\]::after/)
