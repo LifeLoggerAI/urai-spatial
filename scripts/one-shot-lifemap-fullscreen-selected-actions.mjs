@@ -150,6 +150,13 @@ replaceRequired(
 
 replaceRequired(
   deepLink,
+  /  assert\.match\(adaptive, \/\\\{selected \\\? \\\(\/\)/,
+  String.raw`  assert.match(adaptive, /\{selectedNode \? \(/)`,
+  'route-owned Overview selected-state contract',
+)
+
+replaceRequired(
+  deepLink,
   /test\('selected mode raises the spatial realm and keeps one three-column action surface inside desktop and mobile viewports',[\s\S]*?\n\}\)\n\n(?=test\('schema-7)/,
   String.raw`test('selected mode raises the spatial realm and keeps one route-owned action surface inside desktop and mobile viewports', () => {
   assert.match(shell, /import '\.\/lifeMapSelectedCinematic\.css'/)
