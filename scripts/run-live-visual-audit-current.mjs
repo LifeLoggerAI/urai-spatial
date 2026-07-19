@@ -155,7 +155,7 @@ replaceRequired(
         }
       })
       if (!selectedSurface.contained || !selectedSurface.focusTouchTarget || !selectedSurface.semanticListHidden || !selectedSurface.pointerOwned) {
-        throw new Error(`Selected Life Map surface failed stable containment, touch-target, semantic-list, or pointer-ownership proof: ${JSON.stringify(selectedSurface)}`)
+        throw new Error('Selected Life Map surface failed stable containment, touch-target, semantic-list, or pointer-ownership proof: ' + JSON.stringify(selectedSurface))
       }
     }
 
@@ -169,7 +169,7 @@ replaceRequired(
       }
     }
     if (!found) {
-      error = `visible selector not found: ${check.selectors.join(' | ')}`
+      error = \`visible selector not found: \${check.selectors.join(' | ')}\`
     } else {`,
   'interaction selection block',
 )
