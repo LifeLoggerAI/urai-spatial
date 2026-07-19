@@ -3,10 +3,13 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const readRoot = (path) => fs.readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
 const contract = read('src/spatial/memory/selectedMemoryContract.ts')
 const hook = read('src/spatial/memory/useSelectedMemory.ts')
 const focus = read('src/app/focus/FocusChamberClient.tsx')
 const replay = read('src/app/replay/CinematicReplayClient.tsx')
+const demoFilm = read('src/app/demo/replay-film/page.tsx')
+const visualAudit = readRoot('scripts/run-live-visual-audit-current.mjs')
 
 test('production memory loading never silently substitutes demo or seed content', () => {
   assert.doesNotMatch(hook, /lifeMapNodes|seed|quiet-reset|replay-recovery-thread|seed-memory-bloom/)
@@ -30,6 +33,26 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(hook, /window\.history\.replaceState/)
   assert.match(focus, /DEMO FIXTURE · NOT PERSONAL DATA/)
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
+})
+
+test('public proof rail never links its Focus or Replay scenes to identity-free routes', () => {
+  assert.match(demoFilm, /const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'/)
+  assert.match(demoFilm, /const demoFocusHref = `\/focus\?\$\{demoMemoryQuery\}`/)
+  assert.match(demoFilm, /const demoReplayHref = `\/replay\?\$\{demoMemoryQuery\}`/)
+  assert.match(demoFilm, /href: '\/life-map\?demo=1'/)
+  assert.match(demoFilm, /href: demoFocusHref/)
+  assert.match(demoFilm, /href: demoReplayHref/)
+  assert.doesNotMatch(demoFilm, /href: '\/focus',/)
+  assert.doesNotMatch(demoFilm, /href: '\/replay',/)
+})
+
+test('visual proof rejects URL-only Life Map to Focus success', () => {
+  assert.match(visualAudit, /data-memory-status/)
+  assert.match(visualAudit, /chamber\.dataset\.memoryStatus === 'demo'/)
+  assert.match(visualAudit, /chamber\.dataset\.memoryId\?\.startsWith\('demo:'\)/)
+  assert.match(visualAudit, /document\.body\.textContent\?\.includes\('Memory unavailable'\)/)
+  assert.match(visualAudit, /destinationUrl\.searchParams\.get\('demo'\) !== '1'/)
+  assert.match(visualAudit, /Life Map did not preserve truthful explicit-demo identity into Focus/)
 })
 
 test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () => {
