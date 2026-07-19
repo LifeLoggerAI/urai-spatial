@@ -45,11 +45,11 @@ replaceExact(
 const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
 replaceExact(
   restorationContract,
-  String.raw`  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)`,
+  String.raw`  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'center',?\s*\}\)/)`,
   String.raw`  // Ground nearest-edge focus reveal is canonical and prevents mobile rail overflow.
   assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)`,
   1,
-  'Ground nearest-edge restoration authority marker',
+  'Ground nearest-edge restoration contract',
 )
 
 console.log('Applied bounded Ground mobile containment repair')
