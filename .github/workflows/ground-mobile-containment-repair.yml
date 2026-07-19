@@ -41,7 +41,8 @@ jobs:
           git diff --check
           test "$(git diff --name-only | sort)" = "$(printf '%s\n' \
             urai-tier1/src/app/GroundSpatialWorldClean.tsx \
-            urai-tier1/tests/accessibility-performance-source-contract.test.mjs | sort)"
+            urai-tier1/tests/accessibility-performance-source-contract.test.mjs \
+            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs | sort)"
 
       - name: Install exact dependencies
         run: |
