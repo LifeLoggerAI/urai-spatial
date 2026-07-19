@@ -1,4 +1,4 @@
-name: Ground mobile containment repair
+name: Ground mobile containment diagnostic
 
 on:
   pull_request:
@@ -9,18 +9,17 @@ on:
       - scripts/one-shot-ground-mobile-containment.mjs
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ground-mobile-containment-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: true
 
 env:
-  SOURCE_BRANCH: product/canonical-seven-fix-clean-r3-20260718
   NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
 
 jobs:
-  repair-and-publish:
+  diagnose:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'product/canonical-seven-fix-clean-r3-20260718'
     runs-on: ubuntu-24.04
     timeout-minutes: 75
@@ -30,10 +29,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
           show-progress: false
 
-      - name: Apply bounded Ground repair
+      - name: Apply bounded Ground repair in isolated checkout
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
@@ -62,25 +61,12 @@ jobs:
           corepack pnpm build:static
           test -f urai-tier1/out/ground/index.html
 
-      - name: Install Chromium
-        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
-
       - name: Prove mobile safe-area containment
         run: |
           set -euo pipefail
+          corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
           corepack pnpm exec playwright test \
             --config=playwright.accessibility.config.ts \
             accessibility-performance-evidence.spec.ts \
             --project=chromium \
             --grep "mobile visible controls stay inside the visual viewport and safe area"
-
-      - name: Publish clean Ground product commit
-        run: |
-          set -euo pipefail
-          git rm .github/workflows/ground-mobile-containment-repair.yml scripts/one-shot-ground-mobile-containment.mjs
-          git diff --check
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git commit -m "fix(ground): contain mobile direct-travel controls"
-          git push origin HEAD:refs/heads/$SOURCE_BRANCH
