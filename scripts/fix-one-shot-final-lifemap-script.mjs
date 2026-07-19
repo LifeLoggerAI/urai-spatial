@@ -45,7 +45,18 @@ const uniqueOverview = [
 if (!next.includes(genericOverview)) throw new Error('Expected generic overview readiness insertion was not found')
 next = next.replace(genericOverview, uniqueOverview)
 
+const completionMarker = "console.log('Applied deterministic Life Map visual readiness, composition, and accessibility repair.')"
+const restorationPatch = [
+  "const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'",
+  'replaceOnce(restorationContract,',
+  'String.raw' + bt + "  assert.match(groundCanonical, /scrollIntoView\\(\\{\\s*block:\\s*'nearest',\\s*inline:\\s*'center',?\\s*\\}\\)/)" + bt + ',',
+  'String.raw' + bt + "  assert.match(groundCanonical, /scrollIntoView\\(\\{\\s*block:\\s*'nearest',\\s*inline:\\s*'nearest',?\\s*\\}\\)/)" + bt + ')',
+  '',
+].join('\n')
+if (!next.includes(completionMarker)) throw new Error('Expected completion marker was not found')
+next = next.replace(completionMarker, restorationPatch + completionMarker)
+
 if (templateAssertions !== 3) throw new Error(`Expected three nested-template assertions; replaced ${templateAssertions}`)
 if (readinessExpression !== 1) throw new Error(`Expected one generated readiness expression; replaced ${readinessExpression}`)
 fs.writeFileSync(path, next)
-console.log('Normalized nested assertions, generated readiness expression, and unique overview proof insertion.')
+console.log('Normalized generator syntax, route-specific readiness proof, and Ground restoration containment contract.')
