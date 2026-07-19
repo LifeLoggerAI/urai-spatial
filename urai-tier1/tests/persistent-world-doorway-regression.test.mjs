@@ -11,6 +11,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   const home = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
+  const worldNavigation = read('src/spatial/world/worldNavigation.css')
   const finalCss = read('src/app/native-doorway-final-fix.css')
   const lifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
   const layout = read('src/app/layout.tsx')
@@ -42,6 +43,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(finalCss, /\.urai-ground-gateway \{[\s\S]*z-index: 11 !important;[\s\S]*height: 80px !important/)
   assert.match(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: 9/)
   assert.match(finalCss, /height: 96px !important/)
+  assert.match(worldNavigation, /@media \(max-width: 700px\)[\s\S]*\.urai-ground-gateway__surface[\s\S]*bottom: max\(72px, calc\(env\(safe-area-inset-bottom\) \+ 64px\)\)/)
 
   assert.match(lifeMap, /identityHref\("focus", selectedNode\)/)
   assert.match(lifeMap, /identityHref\("replay", selectedNode\)/)
@@ -52,6 +54,11 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-replay"/)
 
   assert.match(visualAudit, /data-world-target=\\"focus\\"/)
+  assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
+  assert.match(visualAudit, /details\.life-map-accessibility-menu/)
+  assert.match(visualAudit, /The Quiet Reset/)
+  assert.match(visualAudit, /focusTouchTarget/)
+  assert.match(visualAudit, /semanticListHidden/)
   assert.match(visualAudit, /firstVisible\(page, check\.selectors\)/)
   assert.match(visualAudit, /Open Orb travel controls/)
   assert.match(visualAudit, /clickOrFollowHref\(page, found\.locator\)/)
