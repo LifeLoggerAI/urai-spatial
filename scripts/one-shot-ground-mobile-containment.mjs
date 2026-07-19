@@ -53,4 +53,16 @@ replaceExact(
   'Ground nearest-edge restoration contract',
 )
 
+const postDeployGroundContract = 'urai-tier1/tests/post-deploy-ground-smoke-contract.test.mjs'
+replaceExact(
+  postDeployGroundContract,
+  String.raw`  assert.doesNotMatch(canonicalGround, /padding-inline:12px 210px/)
+  assert.match(canonicalGround, /scroll-padding-inline-start:max\(14px,env\(safe-area-inset-left\)\)/)`,
+  String.raw`  assert.doesNotMatch(canonicalGround, /padding-inline:12px 210px/)
+  assert.match(canonicalGround, /padding-inline:max\(14px,env\(safe-area-inset-left\)\) max\(14px,env\(safe-area-inset-right\)\)/)
+  assert.match(canonicalGround, /scroll-padding-inline-start:max\(14px,env\(safe-area-inset-left\)\)/)`,
+  1,
+  'Ground post-deploy symmetric safe-area contract',
+)
+
 console.log('Applied bounded Ground mobile containment repair')
