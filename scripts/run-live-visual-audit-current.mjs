@@ -28,7 +28,7 @@ replaceRequired(
 )
 replaceRequired(
   /markers:\s*\['Life Map',\s*'Wheel',\s*'Drag',\s*'memory star'\]/g,
-  "markers: ['Step inside the map.', 'Life Map independent memory universe', 'MAP CONTROLS']",
+  "markers: ['Step inside the map.', 'Life Map independent memory universe', 'Map controls']",
   'Life Map marker contract',
 )
 replaceRequired(
@@ -89,7 +89,7 @@ replaceRequired(
       await page.evaluate(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))
       await page.reload({ waitUntil: 'domcontentloaded' })
 
-      const controls = page.locator('details.life-map-accessibility-menu').nth(0)
+      const controls = page.locator('.life-map-accessibility-menu').first()
       await controls.waitFor({ state: 'visible', timeout: 15000 })
       if ((await controls.getAttribute('open')) === null) {
         await controls.locator('summary').click({ timeout: 10000 })
@@ -105,7 +105,7 @@ replaceRequired(
         if (!(node instanceof HTMLElement) || !(focus instanceof HTMLElement)) return false
         const rect = node.getBoundingClientRect()
         const focusRect = focus.getBoundingClientRect()
-        const semanticList = document.querySelector("details.life-map-accessibility-menu [data-life-map-overview-list='true']")
+        const semanticList = document.querySelector(".life-map-accessibility-menu [data-life-map-overview-list='true']")
         const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
         const semanticRect = semanticList?.getBoundingClientRect()
         const semanticListVisible = Boolean(semanticStyle && semanticRect
@@ -133,7 +133,7 @@ replaceRequired(
         const rect = node.getBoundingClientRect()
         const focus = node.querySelector('button')
         const focusRect = focus?.getBoundingClientRect()
-        const semanticList = document.querySelector("details.life-map-accessibility-menu [data-life-map-overview-list='true']")
+        const semanticList = document.querySelector(".life-map-accessibility-menu [data-life-map-overview-list='true']")
         const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
         const semanticRect = semanticList?.getBoundingClientRect()
         const semanticListVisible = Boolean(semanticStyle && semanticRect
@@ -155,7 +155,7 @@ replaceRequired(
         }
       })
       if (!selectedSurface.contained || !selectedSurface.focusTouchTarget || !selectedSurface.semanticListHidden || !selectedSurface.pointerOwned) {
-        throw new Error(\`Selected Life Map surface failed stable containment, touch-target, semantic-list, or pointer-ownership proof: \${JSON.stringify(selectedSurface)}\`)
+        throw new Error(`Selected Life Map surface failed stable containment, touch-target, semantic-list, or pointer-ownership proof: ${JSON.stringify(selectedSurface)}`)
       }
     }
 
@@ -169,7 +169,7 @@ replaceRequired(
       }
     }
     if (!found) {
-      error = \`visible selector not found: \${check.selectors.join(' | ')}\`
+      error = `visible selector not found: ${check.selectors.join(' | ')}`
     } else {`,
   'interaction selection block',
 )
@@ -203,7 +203,7 @@ for (const value of [
   '.life-map-memory-portals',
   "start: '/life-map?demo=1',",
   'urai:lifeMapDemoMode',
-  'details.life-map-accessibility-menu',
+  '.life-map-accessibility-menu',
   'dom-activation-after-pointer-proof',
   "polling: 'raf'",
 ]) {
