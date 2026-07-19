@@ -157,7 +157,9 @@ test('Ground navigation remains contained, keyboard-operable and exposes active 
   assert.ok(includesCanonical(groundWorld, 'Escape returns Home.'))
   assert.match(groundCanonical, /min-height:48px/)
   assert.doesNotMatch(groundCanonical, /min-height:44px/)
+  // Ground nearest-edge focus reveal is canonical and prevents mobile rail overflow.
   assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)
+  assert.match(groundCanonical, /@media\(max-width:700px\)[\s\S]*?font-size:\s*9px;\s*transition:\s*none[\s\S]*?strong\{\s*transition:\s*none\s*\}/)
   assert.match(groundCanonical, /overflow-x:auto/)
   assert.match(groundCanonical, /scrollbar-width:none/)
   assert.match(groundCanonical, /max\(12px,env\(safe-area-inset-left\)\)/)

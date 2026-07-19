@@ -41,12 +41,6 @@ type LoseContextExtension = {
   restoreContext?: () => void;
 };
 
-type MemoryPortalHandlers = {
-  onEnterFocus: (node: LifeMapNode) => void;
-  onEnterReplay: (node: LifeMapNode) => void;
-  onOverview: () => void;
-};
-
 const OVERVIEW_CAMERA: CameraIntent = {
   position: [0.35, 2.55, 11.8],
   target: [0.05, 0.05, -2.6],
@@ -670,14 +664,14 @@ function MemoryPath({ from, to, active, profile }: {
   );
 }
 
-function MemoryArtifact({ node, selected, related, overview, profile, onSelect, onEnterFocus, onEnterReplay, onOverview }: {
+function MemoryArtifact({ node, selected, related, overview, profile, onSelect }: {
   node: LifeMapNode;
   selected: boolean;
   related: boolean;
   overview: boolean;
   profile: SpatialQualityProfile;
   onSelect: (node: LifeMapNode) => void;
-} & MemoryPortalHandlers) {
+}) {
   const group = useRef<THREE.Group>(null);
   const lens = useRef<THREE.MeshPhysicalMaterial>(null);
   const { camera } = useThree();
@@ -791,16 +785,6 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
           <meshBasicMaterial color="#01040a" transparent opacity={0.58} depthWrite={false} />
         </mesh>
       ) : null}
-
-      {selected ? (
-        <Html distanceFactor={8.2} position={[0, -scale * 1.48, 0.16]} center zIndexRange={[90, 30]}>
-          <div className="life-map-memory-portals" onPointerDown={(event) => event.stopPropagation()}>
-            <button type="button" onClick={() => onEnterFocus(node)}>Enter Focus</button>
-            <button type="button" onClick={() => onEnterReplay(node)} disabled={!node.replayAvailable || node.locked}>Replay</button>
-            <button type="button" onClick={onOverview}>Overview</button>
-          </div>
-        </Html>
-      ) : null}
     </group>
   );
 }
@@ -826,13 +810,13 @@ function ForegroundDepthCrossings({ profile }: { profile: SpatialQualityProfile 
   );
 }
 
-function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect, onEnterFocus, onEnterReplay, onOverview }: {
+function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect }: {
   nodes: LifeMapNode[];
   selectedNode: LifeMapNode | null;
   profile: SpatialQualityProfile;
   cameraIntent: CameraIntent;
   onSelect: (node: LifeMapNode) => void;
-} & MemoryPortalHandlers) {
+}) {
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const related = useMemo(() => {
     if (!selectedNode) return new Set(nodes.map((node) => node.id));
@@ -897,9 +881,6 @@ function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect, on
             overview={!selectedNode}
             profile={profile}
             onSelect={onSelect}
-            onEnterFocus={onEnterFocus}
-            onEnterReplay={onEnterReplay}
-            onOverview={onOverview}
           />
         ))}
       </group>
@@ -1141,11 +1122,22 @@ export default function AdaptiveLifeMapScene() {
           profile={profile}
           cameraIntent={cameraIntent}
           onSelect={selectNode}
-          onEnterFocus={enterFocus}
-          onEnterReplay={enterReplay}
-          onOverview={recenter}
         />
       </Canvas>
+
+      {selectedNode ? (
+        <nav
+          className="life-map-memory-portals"
+          aria-label="Selected memory actions"
+          data-life-map-selected-actions-owner="route-dom-overlay"
+          onPointerDown={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={() => enterFocus(selectedNode)}>Enter Focus</button>
+          <button type="button" onClick={() => enterReplay(selectedNode)} disabled={!selectedNode.replayAvailable || selectedNode.locked}>Replay</button>
+          <button type="button" onClick={recenter}>Overview</button>
+        </nav>
+      ) : null}
 
       <div className="life-map-realm-mark" aria-hidden="true">
         <span>URAI · LIFE MAP</span>
