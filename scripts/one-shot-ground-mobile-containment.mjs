@@ -42,4 +42,13 @@ replaceExact(
   'Ground safe-area source contract',
 )
 
+const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
+replaceExact(
+  restorationContract,
+  String.raw`  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'center',?\s*\}\)/)`,
+  String.raw`  assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)`,
+  1,
+  'Ground nearest-edge restoration contract',
+)
+
 console.log('Applied bounded Ground mobile containment repair')
