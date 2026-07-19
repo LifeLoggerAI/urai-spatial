@@ -46,17 +46,27 @@ if (!next.includes(genericOverview)) throw new Error('Expected generic overview 
 next = next.replace(genericOverview, uniqueOverview)
 
 const completionMarker = "console.log('Applied deterministic Life Map visual readiness, composition, and accessibility repair.')"
-const restorationPatch = [
+const permanentContractPatches = [
   "const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'",
   'replaceOnce(restorationContract,',
   'String.raw' + bt + "  assert.match(groundCanonical, /scrollIntoView\\(\\{\\s*block:\\s*'nearest',\\s*inline:\\s*'center',?\\s*\\}\\)/)" + bt + ',',
   'String.raw' + bt + "  assert.match(groundCanonical, /scrollIntoView\\(\\{\\s*block:\\s*'nearest',\\s*inline:\\s*'nearest',?\\s*\\}\\)/)" + bt + ')',
   '',
+  "const sceneBehaviorContract = 'urai-tier1/tests/lifemap-scene-behavior.test.mjs'",
+  'replaceOnce(sceneBehaviorContract,',
+  bt + "  assert.ok(canonical.includes('opacity: .78'), 'The authored universe must not regress to a nearly invisible decorative tint.')" + bt + ',',
+  'String.raw' + bt + `  assert.ok(canonical.includes('data-life-map-seam-blended="true"'), 'The authored universe must explicitly blend its baked source seam.')
+  assert.ok(canonical.includes('opacity: .56'), 'The authored universe must remain visible without overpowering committed memory surfaces.')
+  assert.ok(canonical.includes('WebkitMaskImage: "linear-gradient(to bottom'), 'The authored universe must preserve its center crossfade in WebKit.')
+  const continuityBlock = source.match(/function ContinuityNexus[\\s\\S]*?\\n}\\n\\nfunction ChapterRegions/)?.[0] ?? ''
+  assert.ok(continuityBlock.includes('<octahedronGeometry args={[1, 0]} />'), 'The continuity nexus must use restrained shard geometry.')
+  assert.doesNotMatch(continuityBlock, /<boxGeometry/, 'The continuity nexus must not regress to rectangular debug slabs.')` + bt + ')',
+  '',
 ].join('\n')
 if (!next.includes(completionMarker)) throw new Error('Expected completion marker was not found')
-next = next.replace(completionMarker, restorationPatch + completionMarker)
+next = next.replace(completionMarker, permanentContractPatches + completionMarker)
 
 if (templateAssertions !== 3) throw new Error(`Expected three nested-template assertions; replaced ${templateAssertions}`)
 if (readinessExpression !== 1) throw new Error(`Expected one generated readiness expression; replaced ${readinessExpression}`)
 fs.writeFileSync(path, next)
-console.log('Normalized generator syntax, route-specific readiness proof, and Ground restoration containment contract.')
+console.log('Normalized generator syntax and aligned permanent Ground and Life Map composition contracts.')
