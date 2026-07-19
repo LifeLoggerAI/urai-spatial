@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 
+// Final current-head trigger: the publisher must certify and push from this unchanged transient authority.
 const replaceExact = (path, before, after, expectedCount, label) => {
   const source = fs.readFileSync(path, 'utf8')
   const count = source.split(before).length - 1
