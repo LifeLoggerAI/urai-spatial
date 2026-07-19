@@ -1,0 +1,52 @@
+name: Life Map route DOM source diagnostic
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/lifemap-route-dom-source-diagnostic.yml
+      - scripts/one-shot-lifemap-fullscreen-selected-actions.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifemap-route-dom-source-diagnostic-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'product/canonical-seven-fix-clean-r3-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact canonical head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Apply exact route DOM repair in isolated checkout
+        run: |
+          set -euo pipefail
+          node scripts/one-shot-lifemap-fullscreen-selected-actions.mjs
+          git diff --check
+          git diff --name-only | sort
+
+      - name: Install exact dependencies
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Print focused source-contract failure
+        shell: bash
+        run: |
+          set +e
+          corepack pnpm --dir urai-tier1 test > /tmp/lifemap-route-dom-source.log 2>&1
+          status=$?
+          echo "SOURCE_CONTRACT_STATUS=$status"
+          tail -n 240 /tmp/lifemap-route-dom-source.log
+          exit "$status"
