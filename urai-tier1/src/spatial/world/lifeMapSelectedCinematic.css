@@ -40,7 +40,15 @@
 
 /* Selection owns one cinematic action surface. The overview memory list returns
  * after Overview instead of remaining visually open behind the selected lens. */
-.life-map-independent-realm[data-life-map-mode='selected'] .life-map-accessibility-menu > div {
+.life-map-accessibility-menu [data-life-map-overview-list='true'],
+.life-map-accessibility-menu [data-life-map-selected-actions='true'],
+.life-map-accessibility-menu [data-life-map-route-actions='true'] {
+  display: grid;
+  gap: 7px;
+}
+
+.life-map-independent-realm[data-life-map-mode='selected']
+  .life-map-accessibility-menu [data-life-map-overview-list='true'] {
   display: none !important;
 }
 

@@ -50,7 +50,7 @@ const replacements = new Map([
       const selectedSurface = await selectedPortal.evaluate((node) => {
         const rect = node.getBoundingClientRect()
         const focus = node.querySelector('button')?.getBoundingClientRect()
-        const semanticList = document.querySelector('details.life-map-accessibility-menu > div')
+        const semanticList = document.querySelector("details.life-map-accessibility-menu [data-life-map-overview-list='true']")
         const semanticStyle = semanticList ? getComputedStyle(semanticList) : null
         const semanticRect = semanticList?.getBoundingClientRect()
         const semanticListVisible = Boolean(semanticStyle && semanticRect

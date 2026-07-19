@@ -1186,21 +1186,25 @@ export default function AdaptiveLifeMapScene() {
       >
         <summary>Map controls</summary>
         <div>
-          <p>Explore memories without the visual field.</p>
-          {nodes.map((node) => (
-            <button key={node.id} type="button" onClick={() => selectNode(node)}>
-              {node.title}: {node.summary}
-            </button>
-          ))}
+          <div data-life-map-overview-list="true">
+            <p>Explore memories without the visual field.</p>
+            {nodes.map((node) => (
+              <button key={node.id} type="button" onClick={() => selectNode(node)}>
+                {node.title}: {node.summary}
+              </button>
+            ))}
+          </div>
           {selectedNode ? (
-            <>
+            <div data-life-map-selected-actions="true">
               <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))}>Enter Focus</button>
               <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} disabled={!selectedNode.replayAvailable || selectedNode.locked}>Replay</button>
-            </>
+            </div>
           ) : null}
-          <button type="button" data-life-map-overview-control="true" onClick={recenter}>Overview</button>
-          <button type="button" onClick={() => router.push("/ground")}>Ground</button>
-          <button type="button" onClick={() => router.push("/home")}>Home</button>
+          <div data-life-map-route-actions="true">
+            <button type="button" data-life-map-overview-control="true" onClick={recenter}>Overview</button>
+            <button type="button" onClick={() => router.push("/ground")}>Ground</button>
+            <button type="button" onClick={() => router.push("/home")}>Home</button>
+          </div>
         </div>
       </details>
     </main>

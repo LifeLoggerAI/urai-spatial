@@ -71,7 +71,11 @@ test('selected mode raises the spatial realm and keeps one three-column action s
   assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*translateY\(clamp\(-145px, -16vh, -96px\)\)/)
   assert.match(selectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 48px/)
   assert.doesNotMatch(selectedCinematic, /\.life-map-memory-portals[\s\S]*scale\(\./)
-  assert.match(selectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-accessibility-menu > div[\s\S]*display: none !important/)
+  assert.match(adaptive, /data-life-map-overview-list="true"/)
+  assert.match(adaptive, /data-life-map-selected-actions="true"/)
+  assert.match(adaptive, /data-life-map-route-actions="true"/)
+  assert.match(selectedCinematic, /data-life-map-mode='selected'[\s\S]*data-life-map-overview-list='true'[\s\S]*display: none !important/)
+  assert.doesNotMatch(selectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-accessibility-menu > div[\s\S]*display: none !important/)
 })
 
 test('schema-7 selected route requires visible spatial Focus and Replay portals', () => {

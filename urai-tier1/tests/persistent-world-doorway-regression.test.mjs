@@ -44,6 +44,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: 9/)
   assert.match(finalCss, /height: 96px !important/)
   assert.match(worldNavigation, /@media \(max-width: 700px\)[\s\S]*\.urai-ground-gateway__surface[\s\S]*bottom: max\(72px, calc\(env\(safe-area-inset-bottom\) \+ 64px\)\)/)
+  assert.match(read('src/app/GroundSpatialWorldClean.tsx'), /padding-inline:12px 210px;scroll-padding-inline:12px 210px/)
 
   assert.match(lifeMap, /identityHref\("focus", selectedNode\)/)
   assert.match(lifeMap, /identityHref\("replay", selectedNode\)/)
