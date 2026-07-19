@@ -48,6 +48,7 @@ jobs:
           node scripts/fix-one-shot-final-lifemap-script.mjs 2>&1 | tee /tmp/normalize.log
           node --check scripts/one-shot-final-lifemap-deterministic-repair.mjs
           node scripts/one-shot-final-lifemap-deterministic-repair.mjs 2>&1 | tee /tmp/apply.log
+          git add -N urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs
           git diff --check
           expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/lifemap-material-fallback-contract.test.mjs urai-tier1/tests/lifemap-visual-readiness-contract.test.mjs | sort)"
           actual_product="$(git diff --name-only | grep -v '^scripts/one-shot-final-lifemap-deterministic-repair.mjs$' | sort)"
