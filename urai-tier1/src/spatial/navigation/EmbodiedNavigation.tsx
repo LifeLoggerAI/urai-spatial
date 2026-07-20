@@ -224,7 +224,7 @@ export function stepEmbodiedMotion({
   // Preserve real elapsed movement on slow devices without allowing an unbounded
   // background-tab leap. Integrating in 50 ms substeps keeps damping and collision
   // behavior stable instead of discarding all frame time above the old hard clamp.
-  let remainingDelta = Math.min(delta, 0.25)
+  let remainingDelta = Math.min(delta, 0.5)
   while (remainingDelta > 0) {
     const stepDelta = Math.min(remainingDelta, 0.05)
     velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, stepDelta)
