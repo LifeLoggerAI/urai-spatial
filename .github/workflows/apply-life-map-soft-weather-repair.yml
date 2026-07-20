@@ -1,0 +1,260 @@
+name: Apply Life Map soft-weather repair
+
+on:
+  push:
+    branches:
+      - repair/life-map-soft-weather-demo-continuity-20260719
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair/life-map-soft-weather-demo-continuity-20260719
+          fetch-depth: 0
+
+      - name: Apply bounded Life Map repair
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          adaptive_path = Path('urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx')
+          test_path = Path('urai-tier1/tests/lifemap-scene-behavior.test.mjs')
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              return text.replace(old, new, 1)
+
+          adaptive = adaptive_path.read_text()
+
+          adaptive = replace_once(
+              adaptive,
+              '  const { nodes, loading, error, usingSeedData } = useLifeMapEvents();',
+              '  const explicitDemoRequested = params.get("demo") === "1";\n  const { nodes, loading, error, usingSeedData, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);',
+              'explicit demo source selection',
+          )
+
+          identity_pair = '    next.set("manifestId", manifestId);\n    next.set("node", node.id);'
+          if adaptive.count(identity_pair) != 2:
+              raise SystemExit(f'demo identity propagation: expected two matches, found {adaptive.count(identity_pair)}')
+          adaptive = adaptive.replace(
+              identity_pair,
+              '    next.set("manifestId", manifestId);\n    if (explicitDemoRequested) next.set("demo", "1");\n    next.set("node", node.id);',
+          )
+
+          adaptive = replace_once(
+              adaptive,
+              '    if (manifestId) next.set("manifestId", manifestId);\n    next.set("overview", "1");',
+              '    if (manifestId) next.set("manifestId", manifestId);\n    if (explicitDemoRequested) next.set("demo", "1");\n    next.set("overview", "1");',
+              'overview demo propagation',
+          )
+
+          adaptive = replace_once(
+              adaptive,
+              '  }, [cameraIntent.position, manifestId]);',
+              '  }, [cameraIntent.position, explicitDemoRequested, manifestId]);',
+              'identityHref dependencies',
+          )
+          adaptive = replace_once(
+              adaptive,
+              '  }, [manifestId, router]);',
+              '  }, [explicitDemoRequested, manifestId, router]);',
+              'selectNode dependencies',
+          )
+          adaptive = replace_once(
+              adaptive,
+              '  }, [manifestId, queryNodeId, router, selectedId]);',
+              '  }, [explicitDemoRequested, manifestId, queryNodeId, router, selectedId]);',
+              'recenter dependencies',
+          )
+
+          state_effect_marker = '''  useEffect(() => {
+              try {
+                window.localStorage.setItem(LIFE_MAP_STATE_KEY, JSON.stringify({ selectedId, cameraIntent }));
+              } catch {
+                // State restoration is best-effort when storage is unavailable.
+              }
+            }, [cameraIntent, selectedId]);'''
+          empty_state_effect = '''  useEffect(() => {
+              if (loading || selectedNode || nodes.length > 0) return;
+              if (sourceMode === "signed-out") {
+                setNarratorText("Sign in to open your private memories. The visible universe contains no personal data.");
+                return;
+              }
+              if (sourceMode === "empty") {
+                setNarratorText("Your private constellation is ready for its first memory.");
+                return;
+              }
+              setNarratorText("The visual universe is available, but private memory data could not be opened.");
+            }, [loading, nodes.length, selectedNode, sourceMode]);
+
+          ''' + state_effect_marker
+          adaptive = replace_once(adaptive, state_effect_marker, empty_state_effect, 'empty-state narration')
+
+          weather_start = adaptive.index('function EmotionalWeather')
+          weather_end = adaptive.index('\nfunction MemoryPath', weather_start)
+          weather_repair = '''function createSoftWeatherTexture() {
+            if (typeof document === "undefined") return null;
+            const canvas = document.createElement("canvas");
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return null;
+            const glow = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+            glow.addColorStop(0, "rgba(255,255,255,.82)");
+            glow.addColorStop(0.2, "rgba(255,255,255,.42)");
+            glow.addColorStop(0.56, "rgba(255,255,255,.12)");
+            glow.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, 256, 256);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
+            texture.needsUpdate = true;
+            return texture;
+          }
+
+          function EmotionalWeather({ profile }: { profile: SpatialQualityProfile }) {
+            const group = useRef<THREE.Group>(null);
+            const texture = useMemo(() => createSoftWeatherTexture(), []);
+            const veils = useMemo(() => [
+              { position: [-3.6, 1.1, -1.1] as [number, number, number], scale: [6.8, 3.2, 1] as [number, number, number], color: "#4fdfff", opacity: 0.12 },
+              { position: [-0.8, -0.2, -2.3] as [number, number, number], scale: [5.4, 2.5, 1] as [number, number, number], color: "#7adfff", opacity: 0.075 },
+              { position: [3.7, -0.35, -2.1] as [number, number, number], scale: [7.2, 3.4, 1] as [number, number, number], color: "#b177ff", opacity: 0.115 },
+              { position: [1.4, 2.5, -4.4] as [number, number, number], scale: [5.8, 2.2, 1] as [number, number, number], color: "#fff1bd", opacity: 0.055 },
+              { position: [0.2, -2.2, -3.7] as [number, number, number], scale: [8.4, 2.7, 1] as [number, number, number], color: "#5aaeff", opacity: 0.045 },
+            ], []);
+
+            useEffect(() => () => texture?.dispose(), [texture]);
+
+            useFrame(({ clock }) => {
+              if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+              group.current.position.x = Math.sin(clock.elapsedTime * 0.035) * 0.8;
+              group.current.rotation.z = Math.sin(clock.elapsedTime * 0.022) * 0.04;
+            });
+
+            return (
+              <group ref={group} position={[0, 0.3, -8]} name="life-map-emotional-weather">
+                {veils.map((veil, index) => (
+                  <sprite key={index} position={veil.position} scale={veil.scale} name="life-map-soft-weather-veil">
+                    <spriteMaterial
+                      map={texture || undefined}
+                      color={veil.color}
+                      transparent
+                      opacity={texture ? veil.opacity * (profile.tier === "low" ? 0.72 : 1) : 0}
+                      depthWrite={false}
+                      blending={THREE.AdditiveBlending}
+                      toneMapped={false}
+                    />
+                  </sprite>
+                ))}
+              </group>
+            );
+          }
+          '''
+          adaptive = adaptive[:weather_start] + weather_repair + adaptive[weather_end:]
+
+          adaptive = replace_once(
+              adaptive,
+              '      data-life-map-source={usingSeedData ? "explicit-sample" : "private"}',
+              '      data-life-map-source={usingSeedData ? "explicit-sample" : sourceMode}',
+              'source-mode disclosure',
+          )
+
+          realm_marker = '  const semanticRecoveryVisible = webglState === "lost" || webglState === "recovering" || webglState === "failed";'
+          realm_replacement = realm_marker + '''
+            const realmTitle = selectedNode
+              ? selectedNode.title
+              : loading
+                ? "Opening the constellation"
+                : usingSeedData
+                  ? "Protected sample field"
+                  : sourceMode === "signed-out"
+                    ? "Private constellation locked"
+                    : sourceMode === "empty"
+                      ? "Private constellation ready"
+                      : sourceMode === "error"
+                        ? "Private constellation unavailable"
+                        : sourceMode === "unavailable"
+                          ? "Private constellation resting"
+                          : "Private constellation";'''
+          adaptive = replace_once(adaptive, realm_marker, realm_replacement, 'realm title')
+
+          adaptive = replace_once(
+              adaptive,
+              '        <p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? usingSeedData ? "Protected sample field" : "Private constellation unavailable" : "Private constellation"}</p>',
+              '        <p>{realmTitle}</p>',
+              'whisper title',
+          )
+
+          adaptive_path.write_text(adaptive)
+
+          tests = test_path.read_text()
+          tests = replace_once(
+              tests,
+              "  assert.ok(source.includes('useLifeMapEvents()'), 'Life Map must load private or explicit sample-backed memory nodes.')",
+              "  assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? \\\"demo-user\\\" : undefined)'), 'Life Map must load private or explicitly requested sample-backed memory nodes.')",
+              'scene source assertion',
+          )
+          tests = replace_once(
+              tests,
+              "  assert.ok(source.includes('data-life-map-source={usingSeedData ? \\\"explicit-sample\\\" : \\\"private\\\"}'))",
+              "  assert.ok(source.includes('data-life-map-source={usingSeedData ? \\\"explicit-sample\\\" : sourceMode}'))",
+              'source-mode test assertion',
+          )
+          tests = replace_once(
+              tests,
+              "  assert.ok(source.includes('error ? usingSeedData ? \\\"Protected sample field\\\" : \\\"Private constellation unavailable\\\"'), 'Unavailable private data must never be described as sample data.')",
+              "  assert.ok(source.includes('sourceMode === \\\"signed-out\\\"'), 'Signed-out state must remain distinct from disclosed sample data.')\n  assert.ok(source.includes('Private constellation unavailable'), 'Private load errors must remain fail-closed and clearly named.')",
+              'private state truth assertion',
+          )
+
+          visual_anchor = '''  assert.doesNotMatch(nexus, /#5ce8ff|#90f5ff/)
+            assert.match(source, /const textureKey = texture\\?\\.uuid/)'''
+          visual_replacement = '''  assert.doesNotMatch(nexus, /#5ce8ff|#90f5ff/)
+            const weatherStart = source.indexOf('function createSoftWeatherTexture')
+            const weatherEnd = source.indexOf('function MemoryPath', weatherStart)
+            const weather = source.slice(weatherStart, weatherEnd)
+            assert.match(weather, /new THREE\\.CanvasTexture/)
+            assert.match(weather, /life-map-soft-weather-veil/)
+            assert.match(weather, /spriteMaterial/)
+            assert.doesNotMatch(weather, /planeGeometry|boxGeometry/)
+            assert.match(source, /const textureKey = texture\\?\\.uuid/)'''
+          tests = replace_once(tests, visual_anchor, visual_replacement, 'soft weather regression assertions')
+
+          route_test_anchor = "test('LifeMap Overview preserves URL identity without restoring selected semantic controls', () => {"
+          demo_test = '''test('LifeMap explicit demo identity survives selection, Focus, Replay, and Overview navigation', () => {
+            assert.ok(source.includes('const explicitDemoRequested = params.get("demo") === "1"'))
+            assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined)'))
+            assert.ok(source.includes('if (explicitDemoRequested) next.set("demo", "1")'))
+            assert.match(source, /cameraIntent\\.position, explicitDemoRequested, manifestId/)
+            assert.match(source, /explicitDemoRequested, manifestId, queryNodeId, router, selectedId/)
+          })
+
+          ''' + route_test_anchor
+          tests = replace_once(tests, route_test_anchor, demo_test, 'explicit demo continuity test')
+          test_path.write_text(tests)
+          PY
+
+      - name: Run focused Life Map source contract
+        working-directory: urai-tier1
+        run: node --test tests/lifemap-scene-behavior.test.mjs
+
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          git commit -m "fix(life-map): remove slab weather and preserve explicit demo identity"
+          git push origin HEAD:repair/life-map-soft-weather-demo-continuity-20260719
