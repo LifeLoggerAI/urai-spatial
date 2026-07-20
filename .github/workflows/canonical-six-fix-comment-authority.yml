@@ -15,12 +15,12 @@ concurrency:
 
 jobs:
   repair:
-    if: github.event.pull_request.number == 861 && github.event.pull_request.draft == true && github.event.pull_request.head.sha == '3c6143c5a90d08464ce9cce37a9e1c82a4bdcbe2'
+    if: github.event.pull_request.number == 861 && github.event.pull_request.draft == true && github.event.pull_request.head.ref == 'corrective/life-map-materialized-repair-20260720'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       EXPECTED_PR: '861'
-      EXPECTED_HEAD: 3c6143c5a90d08464ce9cce37a9e1c82a4bdcbe2
+      EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
       TARGET_BRANCH: corrective/life-map-materialized-repair-20260720
     steps:
       - name: Resolve exact draft authority
