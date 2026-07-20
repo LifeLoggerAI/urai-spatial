@@ -1,0 +1,116 @@
+name: Apply Life Map proof finalization
+
+on:
+  push:
+    branches:
+      - repair/life-map-proof-route-finalize-20260720
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: apply-life-map-proof-finalize
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout proof-finalization branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/life-map-proof-route-finalize-20260720
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply bounded proof correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          capture = Path('scripts/capture-continuous-spatial-proof.mjs')
+          text = capture.read_text()
+          replacements = {
+              "    path: '/life-map/',": "    path: '/life-map/?demo=1',",
+              "    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',": "    path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',",
+          }
+          for old, new in replacements.items():
+              if old in text:
+                  text = text.replace(old, new, 1)
+              elif new not in text:
+                  raise SystemExit(f'missing expected proof route: {old}')
+          capture.write_text(text)
+
+          audit = Path('scripts/live-visual-audit.mjs')
+          text = audit.read_text()
+          old = "    route: '/life-map',"
+          new = "    route: '/life-map?demo=1',"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('missing expected live audit route')
+          audit.write_text(text)
+          PY
+          git rm -f --ignore-unmatch \
+            .github/proof-route-finalize.trigger \
+            .github/workflows/apply-life-map-proof-finalize.yml \
+            .github/workflows/apply-life-map-proof-route-repair.yml \
+            .github/workflows/life-map-proof-route-comment-authority.yml \
+            .github/workflows/life-map-proof-route-final-authority.yml
+          grep -F "path: '/life-map/?demo=1'," scripts/capture-continuous-spatial-proof.mjs
+          grep -F "path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'," scripts/capture-continuous-spatial-proof.mjs
+          grep -F "route: '/life-map?demo=1'," scripts/live-visual-audit.mjs
+          node --check scripts/capture-continuous-spatial-proof.mjs
+          node --check scripts/live-visual-audit.mjs
+          node --check scripts/run-live-visual-audit-current.mjs
+          git diff --check
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Verify contracts, types and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          corepack pnpm --dir urai-tier1 typecheck
+          corepack pnpm --dir urai-tier1 build
+
+      - name: Publish final proof correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No changes remain to publish.'
+            exit 0
+          fi
+          git commit -m "fix(proof): capture explicit Life Map demo routes"
+          git push origin HEAD:repair/life-map-proof-route-finalize-20260720
+
+      - name: Post executor receipt
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              'Life Map proof-finalization executor receipt.',
+              '',
+              `- trigger SHA: \`${context.sha}\``,
+              `- run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              'The executor removes itself and temporary authorities. No merge or deployment is performed.'
+            ].join('\n');
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 857, body });
