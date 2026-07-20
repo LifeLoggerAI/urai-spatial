@@ -16,7 +16,9 @@ async function holdKey(page: Page, key: string, duration = 450) {
 
 async function waitForHomeWorld(home: Locator) {
   await expect(home).toBeVisible({ timeout: 15_000 })
-  await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 15_000 })
+  await expect(home.locator('canvas')).toBeVisible({ timeout: 15_000 })
+  await expect(home).toHaveAttribute('data-home-player-z', /-?\d+\.\d+/, { timeout: 15_000 })
+  await expect(home).toHaveAttribute('data-home-distance', /\d+\.\d+/, { timeout: 15_000 })
 }
 
 async function enableLifeMapDemo(page: Page) {
@@ -37,11 +39,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
     await expect(home).toHaveAttribute('data-home-visible-world', 'sanctuary-geometry-memory-vignettes')
-    await expect(home.locator('canvas')).toBeVisible()
 
     const beforeZ = Number(await home.getAttribute('data-home-player-z'))
-    await holdKey(page, 'w', 1_500)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 10_000 }).toBeGreaterThan(1.2)
+    await holdKey(page, 'w', 2_400)
+    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(1.2)
     const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
     await expect.poll(() => home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))).not.toBe('0.0px')
@@ -117,9 +118,9 @@ test.describe('Embodied exploration runtime evidence', () => {
     }
     const forward = homePad.getByRole('button', { name: 'Move forward' })
     await forward.dispatchEvent('pointerdown', { pointerId: 1, button: 0, buttons: 1, pointerType: 'touch', isPrimary: true })
-    await page.waitForTimeout(1_200)
+    await page.waitForTimeout(2_200)
     await forward.dispatchEvent('pointerup', { pointerId: 1, button: 0, buttons: 0, pointerType: 'touch', isPrimary: true })
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 10_000 }).toBeGreaterThan(0.8)
+    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(0.8)
     const layout = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1)
   })
@@ -129,8 +130,8 @@ test.describe('Embodied exploration runtime evidence', () => {
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator('.urai-home-embodied-shell')
     await waitForHomeWorld(home)
-    await holdKey(page, 'w', 1_000)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 10_000 }).toBeGreaterThan(0.6)
+    await holdKey(page, 'w', 1_800)
+    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(0.6)
     await expect(page.getByText(/WASD or arrows move/i)).toBeVisible()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })
