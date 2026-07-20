@@ -54,9 +54,8 @@ function useWebGLCapability() {
   useEffect(() => {
     try {
       const canvas = document.createElement("canvas");
-      const context = canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) || canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
+      const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
       setAvailable(Boolean(context));
-      context?.getExtension("WEBGL_lose_context")?.loseContext();
     } catch {
       setAvailable(false);
     }
