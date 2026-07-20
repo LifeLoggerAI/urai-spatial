@@ -14,14 +14,14 @@ concurrency:
 
 jobs:
   repair:
-    if: github.event.issue.number == 842 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-proof-route-repair-d8619467'
+    if: github.event.issue.number == 857 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-proof-route-finalize-4e802bbe'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
-      EXPECTED_HEAD: d8619467a6a92249664bc069c5f03c2937e18c08
-      TARGET_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+      EXPECTED_HEAD: 4e802bbeeb52790b954aed4500c43f7d9e426754
+      TARGET_BRANCH: repair/life-map-proof-route-finalize-20260720
     steps:
-      - name: Checkout exact repair head
+      - name: Checkout exact finalization head
         uses: actions/checkout@v4
         with:
           ref: ${{ env.EXPECTED_HEAD }}
@@ -39,16 +39,15 @@ jobs:
 
           capture = Path('scripts/capture-continuous-spatial-proof.mjs')
           text = capture.read_text()
-          old = "    path: '/life-map/',"
-          new = "    path: '/life-map/?demo=1',"
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one unsigned Life Map capture route, found {text.count(old)}')
-          text = text.replace(old, new, 1)
-          old_selected = "    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',"
-          new_selected = "    path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',"
-          if text.count(old_selected) != 1:
-              raise SystemExit(f'expected one unsigned selected Life Map route, found {text.count(old_selected)}')
-          capture.write_text(text.replace(old_selected, new_selected, 1))
+          replacements = {
+              "    path: '/life-map/',": "    path: '/life-map/?demo=1',",
+              "    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',": "    path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',",
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected one proof route {old!r}, found {text.count(old)}')
+              text = text.replace(old, new, 1)
+          capture.write_text(text)
 
           audit = Path('scripts/live-visual-audit.mjs')
           text = audit.read_text()
@@ -58,6 +57,12 @@ jobs:
               raise SystemExit(f'expected one unsigned Life Map audit route, found {text.count(old)}')
           audit.write_text(text.replace(old, new, 1))
           PY
+          git rm -f --ignore-unmatch \
+            .github/proof-route-finalize.trigger \
+            .github/workflows/apply-life-map-proof-finalize.yml \
+            .github/workflows/apply-life-map-proof-route-repair.yml \
+            .github/workflows/life-map-proof-route-comment-authority.yml \
+            .github/workflows/life-map-proof-route-final-authority.yml
           grep -F "path: '/life-map/?demo=1'," scripts/capture-continuous-spatial-proof.mjs
           grep -F "path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'," scripts/capture-continuous-spatial-proof.mjs
           grep -F "route: '/life-map?demo=1'," scripts/live-visual-audit.mjs
@@ -66,14 +71,16 @@ jobs:
           node --check scripts/run-live-visual-audit-current.mjs
           git diff --check
 
-      - name: Verify focused contracts and types
+      - name: Verify focused contracts, types and build
         shell: bash
         run: |
           set -euo pipefail
           corepack enable
           corepack pnpm install --frozen-lockfile
           node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
           corepack pnpm --dir urai-tier1 typecheck
+          corepack pnpm --dir urai-tier1 build
 
       - name: Publish exact proof correction
         shell: bash
@@ -81,8 +88,7 @@ jobs:
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git rm -f --ignore-unmatch .github/workflows/apply-life-map-proof-route-repair.yml
-          git add scripts/capture-continuous-spatial-proof.mjs scripts/live-visual-audit.mjs
+          git add -A
           git diff --cached --check
           git commit -m "fix(proof): capture explicit Life Map demo routes"
           git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
@@ -93,11 +99,11 @@ jobs:
         with:
           script: |
             const body = [
-              'Life Map proof-route authority receipt.',
+              'Life Map proof-finalization authority receipt.',
               '',
               `- expected head: \`${process.env.EXPECTED_HEAD}\``,
               `- run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               '',
-              'This lane changes proof route identity only. No merge or deployment is performed.'
+              'This lane changes proof route identity and removes temporary authorities. No merge or deployment is performed.'
             ].join('\n');
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 842, body });
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 857, body });
