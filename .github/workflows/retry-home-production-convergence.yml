@@ -1,0 +1,89 @@
+name: Retry Home production convergence
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+concurrency:
+  group: retry-home-production-convergence
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: github.event.issue.number == 841 && github.event.comment.body == '/retry-home-production-convergence'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Dispatch current exact main and report terminal receipt
+        uses: actions/github-script@v7
+        env:
+          ROLLBACK_SHA: 1bbf34d48bcb4d0814346bb69091d3f71c58d54f
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const rollback = process.env.ROLLBACK_SHA;
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+            const release = branch.data.commit.sha;
+            if (!/^[0-9a-f]{40}$/.test(release) || !/^[0-9a-f]{40}$/.test(rollback) || release === rollback) {
+              core.setFailed('Invalid release or rollback identity');
+              return;
+            }
+            const started = Date.now();
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'spatial-live-deploy.yml',
+              ref: 'main',
+              inputs: {
+                release_sha: release,
+                rollback_sha: rollback,
+                confirm: 'DEPLOY_URAI_APP'
+              }
+            });
+            let run;
+            for (let attempt = 0; attempt < 120; attempt += 1) {
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'spatial-live-deploy.yml',
+                event: 'workflow_dispatch',
+                per_page: 50
+              });
+              run = response.data.workflow_runs.find((candidate) =>
+                candidate.head_sha === release && Date.parse(candidate.created_at) >= started - 15000
+              );
+              if (run && run.status === 'completed') break;
+              await new Promise((resolve) => setTimeout(resolve, 15000));
+            }
+            if (!run || run.status !== 'completed') {
+              core.setFailed('Protected production run did not reach a terminal state');
+              return;
+            }
+            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({ owner, repo, run_id: run.id, per_page: 100 });
+            const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id: run.id, per_page: 100 });
+            const jobs = jobsResponse.data.jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`).join('\n');
+            const artifacts = artifactsResponse.data.artifacts.map((artifact) => `- ${artifact.name}: id ${artifact.id}, digest ${artifact.digest || 'none'}`).join('\n') || '- none';
+            const body = [
+              '## Home production retry receipt',
+              '',
+              `- release SHA: \`${release}\``,
+              `- rollback SHA: \`${rollback}\``,
+              `- protected run: ${run.html_url}`,
+              `- run ID: \`${run.id}\``,
+              `- status: \`${run.status}\``,
+              `- conclusion: \`${run.conclusion || 'none'}\``,
+              '',
+              '### Jobs',
+              jobs,
+              '',
+              '### Artifacts',
+              artifacts
+            ].join('\n');
+            await github.rest.issues.createComment({ owner, repo, issue_number: 841, body });
+            if (run.conclusion !== 'success') core.setFailed(`Protected production concluded ${run.conclusion}`);
