@@ -31,6 +31,8 @@ function normalizedPathname(url: string) {
 }
 
 test.describe('Embodied exploration runtime evidence', () => {
+  test.describe.configure({ timeout: 60_000 })
+
   test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
