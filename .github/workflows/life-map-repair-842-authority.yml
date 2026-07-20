@@ -3,6 +3,10 @@ name: Life Map repair 842 authority
 on:
   issue_comment:
     types: [created]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/life-map-repair-842-authority.yml'
 
 permissions:
   contents: write
@@ -15,22 +19,22 @@ concurrency:
 
 jobs:
   repair:
-    if: github.event.issue.number == 842 && github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-life-map-repair-')
+    if: github.event_name == 'push' || (github.event.issue.number == 842 && github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-life-map-repair-'))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       EXPECTED_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+      PUSH_EXPECTED_HEAD: b683da7354dc6ca4a1c404a8641db50d4e450795
     steps:
       - name: Resolve exact PR authority
         id: authority
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          COMMAND: ${{ github.event.comment.body }}
-          COMMENTER: ${{ github.event.comment.user.login }}
+          COMMAND: ${{ github.event.comment.body || '' }}
+          COMMENTER: ${{ github.event.comment.user.login || '' }}
         run: |
           set -euo pipefail
-          test "$COMMENTER" = "LifeLoggerAI"
           pr="$(curl --fail-with-body -sS \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
@@ -39,11 +43,15 @@ jobs:
           head_sha="$(jq -r '.head.sha' <<<"$pr")"
           head_ref="$(jq -r '.head.ref' <<<"$pr")"
           head_repo="$(jq -r '.head.repo.full_name' <<<"$pr")"
-          expected_command="/run-life-map-repair-${head_sha}"
-          test "$COMMAND" = "$expected_command"
           test "$head_ref" = "$EXPECTED_BRANCH"
           test "$head_repo" = "$GITHUB_REPOSITORY"
           [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]]
+          if test "$GITHUB_EVENT_NAME" = "push"; then
+            test "$head_sha" = "$PUSH_EXPECTED_HEAD"
+          else
+            test "$COMMENTER" = "LifeLoggerAI"
+            test "$COMMAND" = "/run-life-map-repair-${head_sha}"
+          fi
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
 
