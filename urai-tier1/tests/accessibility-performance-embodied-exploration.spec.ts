@@ -17,6 +17,7 @@ async function holdKey(page: Page, key: string, duration = 450) {
 async function waitForHomeWorld(home: Locator) {
   await expect(home).toBeVisible({ timeout: 15_000 })
   await expect(home.locator('canvas')).toBeVisible({ timeout: 15_000 })
+  await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 30_000 })
   await expect(home).toHaveAttribute('data-home-player-z', /-?\d+\.\d+/, { timeout: 15_000 })
   await expect(home).toHaveAttribute('data-home-distance', /\d+\.\d+/, { timeout: 15_000 })
 }
