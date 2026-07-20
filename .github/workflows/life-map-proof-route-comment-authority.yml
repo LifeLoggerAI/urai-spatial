@@ -1,0 +1,103 @@
+name: Life Map proof route comment authority
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: life-map-proof-route-comment-authority
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.issue.number == 842 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-proof-route-repair-d8619467'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_HEAD: d8619467a6a92249664bc069c5f03c2937e18c08
+      TARGET_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_HEAD }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply bounded proof-route correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          python3 - <<'PY'
+          from pathlib import Path
+
+          capture = Path('scripts/capture-continuous-spatial-proof.mjs')
+          text = capture.read_text()
+          old = "    path: '/life-map/',"
+          new = "    path: '/life-map/?demo=1',"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one unsigned Life Map capture route, found {text.count(old)}')
+          text = text.replace(old, new, 1)
+          old_selected = "    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',"
+          new_selected = "    path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',"
+          if text.count(old_selected) != 1:
+              raise SystemExit(f'expected one unsigned selected Life Map route, found {text.count(old_selected)}')
+          capture.write_text(text.replace(old_selected, new_selected, 1))
+
+          audit = Path('scripts/live-visual-audit.mjs')
+          text = audit.read_text()
+          old = "    route: '/life-map',"
+          new = "    route: '/life-map?demo=1',"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one unsigned Life Map audit route, found {text.count(old)}')
+          audit.write_text(text.replace(old, new, 1))
+          PY
+          grep -F "path: '/life-map/?demo=1'," scripts/capture-continuous-spatial-proof.mjs
+          grep -F "path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'," scripts/capture-continuous-spatial-proof.mjs
+          grep -F "route: '/life-map?demo=1'," scripts/live-visual-audit.mjs
+          node --check scripts/capture-continuous-spatial-proof.mjs
+          node --check scripts/live-visual-audit.mjs
+          node --check scripts/run-live-visual-audit-current.mjs
+          git diff --check
+
+      - name: Verify focused contracts and types
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          corepack pnpm --dir urai-tier1 typecheck
+
+      - name: Publish exact proof correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm -f --ignore-unmatch .github/workflows/apply-life-map-proof-route-repair.yml
+          git add scripts/capture-continuous-spatial-proof.mjs scripts/live-visual-audit.mjs
+          git diff --cached --check
+          git commit -m "fix(proof): capture explicit Life Map demo routes"
+          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
+
+      - name: Post authority receipt
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              'Life Map proof-route authority receipt.',
+              '',
+              `- expected head: \`${process.env.EXPECTED_HEAD}\``,
+              `- run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              'This lane changes proof route identity only. No merge or deployment is performed.'
+            ].join('\n');
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 842, body });
