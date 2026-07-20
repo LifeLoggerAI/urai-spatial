@@ -111,3 +111,102 @@ jobs:
             ];
             const body = ['Canonical six-fix authority receipt for `99117734727d8cb1156662233042cc11bd72fb7a`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 788, body });
+
+  life-map-repair:
+    if: github.event.issue.number == 842 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-life-map-repair-b683da73'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EXPECTED_HEAD: b683da7354dc6ca4a1c404a8641db50d4e450795
+      TARGET_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+    steps:
+      - name: Checkout exact Life Map repair head
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXPECTED_HEAD }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply retained visual and privacy patch
+        id: repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git fetch --no-tags origin main
+          test -s .github/patches/life-map-visual-privacy.patch.gz.b64
+          base64 -d .github/patches/life-map-visual-privacy.patch.gz.b64 | gzip -dc > /tmp/life-map-visual-privacy.patch
+          git apply --check /tmp/life-map-visual-privacy.patch
+          git apply /tmp/life-map-visual-privacy.patch
+          git checkout origin/main -- \
+            scripts/check-workflow-phase-boundaries.mjs \
+            .github/workflows/canonical-six-fix-comment-authority.yml \
+            .github/workflows/life-map-repair-842-authority.yml
+          git rm -f --ignore-unmatch \
+            .github/workflows/apply-life-map-soft-weather-repair.yml \
+            .github/scripts/apply_life_map_visual_privacy_repair.py \
+            .github/patches/life-map-visual-privacy.patch.gz.b64
+          git diff --check
+          mapfile -t changed < <(git diff --name-only origin/main | sort)
+          expected=(
+            scripts/capture-continuous-spatial-proof.mjs
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+            urai-tier1/src/components/lifemap/useLifeMapEvents.ts
+            urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx
+            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+            urai-tier1/tests/lifemap-data-boundary.test.mjs
+            urai-tier1/tests/lifemap-scene-behavior.test.mjs
+            urai-tier1/tests/lifemap-trust-loop.test.mjs
+          )
+          test "${changed[*]}" = "${expected[*]}"
+
+      - name: Install exact dependencies
+        id: install
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Verify Life Map contracts, types and static build
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          node --test urai-tier1/tests/lifemap-data-boundary.test.mjs
+          node --test urai-tier1/tests/lifemap-trust-loop.test.mjs
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          corepack pnpm --dir urai-tier1 test:lifemap
+          corepack pnpm --dir urai-tier1 typecheck
+          corepack pnpm --dir urai-tier1 build
+
+      - name: Publish one exact bounded Life Map repair commit
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(life-map): remove slab weather and enforce explicit demo privacy"
+          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
+
+      - name: Post Life Map authority receipt
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        with:
+          script: |
+            const rows = [
+              ['checkout', '${{ steps.checkout.outcome }}'],
+              ['repair', '${{ steps.repair.outcome }}'],
+              ['install', '${{ steps.install.outcome }}'],
+              ['verify', '${{ steps.verify.outcome }}'],
+              ['publish', '${{ steps.publish.outcome }}']
+            ];
+            const body = ['Canonical Life Map repair authority receipt for `b683da7354dc6ca4a1c404a8641db50d4e450795`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`, '', 'No merge or production deployment was performed.'].join('\n');
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 842, body });
