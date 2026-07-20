@@ -222,7 +222,7 @@ export function stepEmbodiedMotion({
   if (requested.lengthSq() > 0.0001) requested.normalize().multiplyScalar(speed)
   const damping = requested.lengthSq() > 0 ? acceleration : deceleration
   // Preserve real elapsed movement on slow devices without allowing an unbounded
-  // background-tab jump. Integrating in 50 ms substeps keeps damping and collision
+  // background-tab leap. Integrating in 50 ms substeps keeps damping and collision
   // behavior stable instead of discarding all frame time above the old hard clamp.
   let remainingDelta = Math.min(delta, 0.25)
   while (remainingDelta > 0) {
