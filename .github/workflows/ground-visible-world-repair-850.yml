@@ -1,0 +1,19 @@
+name: Ground Visible World Repair 850
+
+on:
+  push:
+    branches:
+      - fix/ground-visible-spatial-world-20260720
+    paths:
+      - .github/workflows/ground-visible-world-repair-850.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ground-visible-world-repair-850
+  cancel-in-progress: false
+
+jobs:
+  apply-ground-repair:
+    if: github.event.head_commit.message == 'chore(ground): add one-shot repair executor
