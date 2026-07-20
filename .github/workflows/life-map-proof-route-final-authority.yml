@@ -14,21 +14,21 @@ concurrency:
 
 jobs:
   repair:
-    if: github.event.issue.number == 842 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-proof-route-repair-f5380b61'
+    if: github.event.issue.number == 857 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-proof-route-finalize-732a5c87'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
-      EXPECTED_HEAD: f5380b61c45fffaad4a423cc2ab7d0a54133b23d
-      TARGET_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+      EXPECTED_HEAD: 732a5c87e7bb5e443d281e75142f57ee612783f1
+      TARGET_BRANCH: repair/life-map-proof-route-finalize-20260720
     steps:
-      - name: Checkout exact repair head
+      - name: Checkout exact proof-finalization head
         uses: actions/checkout@v4
         with:
           ref: ${{ env.EXPECTED_HEAD }}
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Apply proof identity correction
+      - name: Apply proof identity correction and clean temporary authorities
         shell: bash
         run: |
           set -euo pipefail
@@ -36,6 +36,7 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=all)"
           python3 - <<'PY'
           from pathlib import Path
+
           capture = Path('scripts/capture-continuous-spatial-proof.mjs')
           text = capture.read_text()
           replacements = {
@@ -47,6 +48,7 @@ jobs:
                   raise SystemExit(f'expected one match for {old!r}, found {text.count(old)}')
               text = text.replace(old, new, 1)
           capture.write_text(text)
+
           audit = Path('scripts/live-visual-audit.mjs')
           text = audit.read_text()
           old = "    route: '/life-map',"
@@ -55,18 +57,42 @@ jobs:
               raise SystemExit(f'expected one audit match, found {text.count(old)}')
           audit.write_text(text.replace(old, new, 1))
           PY
+          git rm -f --ignore-unmatch \
+            .github/proof-route-finalize.trigger \
+            .github/workflows/apply-life-map-proof-route-repair.yml \
+            .github/workflows/life-map-proof-route-comment-authority.yml \
+            .github/workflows/life-map-proof-route-final-authority.yml
+          grep -F "path: '/life-map/?demo=1'," scripts/capture-continuous-spatial-proof.mjs
+          grep -F "path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'," scripts/capture-continuous-spatial-proof.mjs
+          grep -F "route: '/life-map?demo=1'," scripts/live-visual-audit.mjs
           node --check scripts/capture-continuous-spatial-proof.mjs
           node --check scripts/live-visual-audit.mjs
-          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          node --check scripts/run-live-visual-audit-current.mjs
           git diff --check
 
-      - name: Publish exact proof correction
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Verify proof contracts, types and static build
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          corepack pnpm --dir urai-tier1 typecheck
+          corepack pnpm --dir urai-tier1 build
+
+      - name: Publish exact proof finalization
         shell: bash
         run: |
           set -euo pipefail
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add scripts/capture-continuous-spatial-proof.mjs scripts/live-visual-audit.mjs
+          git add -A
           git diff --cached --check
           git commit -m "fix(proof): capture explicit Life Map demo routes"
           git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
@@ -77,11 +103,11 @@ jobs:
         with:
           script: |
             const body = [
-              'Final Life Map proof-route authority receipt.',
+              'Life Map proof-route finalization authority receipt.',
               '',
               `- expected head: \`${process.env.EXPECTED_HEAD}\``,
               `- run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               '',
-              'No merge or deployment was performed.'
+              'This lane corrects proof identity, removes temporary authorities, and performs no merge or deployment.'
             ].join('\n');
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 842, body });
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 857, body });
