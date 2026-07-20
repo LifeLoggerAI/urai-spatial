@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# Protected convergence for the fingerprint-gated Status smoke repair; transient GitHub API failures are recovered without duplicating an accepted deployment run.
+# Protected convergence for the fingerprint-gated Status smoke repair; workflow runs are listed broadly and exact-SHA filtered locally to avoid unstable server-side head_sha queries.
 
 on:
   push:
@@ -90,16 +90,18 @@ jobs:
                 owner,
                 repo,
                 workflow_id,
+                branch: 'main',
                 event: 'workflow_dispatch',
-                head_sha: releaseSha,
-                per_page: 30
+                per_page: 100
               }));
             }
 
+            function exactShaRuns(response) {
+              return response.data.workflow_runs.filter((candidate) => candidate.head_sha === releaseSha);
+            }
+
             function findUnseenRun(response, excludedRunIds) {
-              return response.data.workflow_runs.find((candidate) =>
-                candidate.head_sha === releaseSha && !excludedRunIds.has(candidate.id)
-              ) || null;
+              return exactShaRuns(response).find((candidate) => !excludedRunIds.has(candidate.id)) || null;
             }
 
             async function probeAcceptedDispatch(excludedRunIds, attempts = 8) {
@@ -197,7 +199,7 @@ jobs:
             }
 
             const existingRuns = await listDispatchRuns();
-            const excludedRunIds = new Set(existingRuns.data.workflow_runs.map((run) => run.id));
+            const excludedRunIds = new Set(exactShaRuns(existingRuns).map((run) => run.id));
             const sections = [];
             const liveFingerprint = await readLiveFingerprint();
 
