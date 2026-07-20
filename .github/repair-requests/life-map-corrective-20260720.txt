@@ -1,0 +1,3 @@
+Corrective Life Map materialization authority marker.
+No merge or deployment is authorized.
+Trigger generation: 20260720-2.
