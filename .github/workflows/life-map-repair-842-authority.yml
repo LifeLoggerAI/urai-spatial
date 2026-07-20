@@ -1,0 +1,179 @@
+name: Life Map repair 842 authority
+
+on:
+  issue_comment:
+    types: [created]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/life-map-repair-842-authority.yml'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: life-map-repair-842-authority
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    if: github.event_name == 'push' || (github.event.issue.number == 842 && github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-life-map-repair-'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPECTED_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+      PUSH_EXPECTED_HEAD: b683da7354dc6ca4a1c404a8641db50d4e450795
+    steps:
+      - name: Resolve exact PR authority
+        id: authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMAND: ${{ github.event.comment.body || '' }}
+          COMMENTER: ${{ github.event.comment.user.login || '' }}
+        run: |
+          set -euo pipefail
+          pr="$(curl --fail-with-body -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/842")"
+          head_sha="$(jq -r '.head.sha' <<<"$pr")"
+          head_ref="$(jq -r '.head.ref' <<<"$pr")"
+          head_repo="$(jq -r '.head.repo.full_name' <<<"$pr")"
+          test "$head_ref" = "$EXPECTED_BRANCH"
+          test "$head_repo" = "$GITHUB_REPOSITORY"
+          [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]]
+          if test "$GITHUB_EVENT_NAME" = "push"; then
+            test "$head_sha" = "$PUSH_EXPECTED_HEAD"
+          else
+            test "$COMMENTER" = "LifeLoggerAI"
+            test "$COMMAND" = "/run-life-map-repair-${head_sha}"
+          fi
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Post start receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.authority.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          body="Life Map repair authority started for ${HEAD_SHA}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Older queued or active authority runs are superseded."
+          payload="$(jq -n --arg body "$body" '{body:$body}')"
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/842/comments" \
+            -d "$payload"
+
+      - name: Checkout exact repair head
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ steps.authority.outputs.head_sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply exact retained patch and remove temporary authority files
+        id: patch
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ steps.authority.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git fetch --no-tags origin main
+          test -s .github/patches/life-map-visual-privacy.patch.gz.b64
+          base64 -d .github/patches/life-map-visual-privacy.patch.gz.b64 | gzip -dc > /tmp/life-map-visual-privacy.patch
+          git apply --check /tmp/life-map-visual-privacy.patch
+          git apply /tmp/life-map-visual-privacy.patch
+          git checkout origin/main -- scripts/check-workflow-phase-boundaries.mjs
+          git rm -f --ignore-unmatch \
+            .github/workflows/apply-life-map-soft-weather-repair.yml \
+            .github/scripts/apply_life_map_visual_privacy_repair.py \
+            .github/patches/life-map-visual-privacy.patch.gz.b64
+          git diff --check
+          mapfile -t changed < <(git diff --name-only origin/main | sort)
+          expected=(
+            scripts/capture-continuous-spatial-proof.mjs
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+            urai-tier1/src/components/lifemap/useLifeMapEvents.ts
+            urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx
+            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+            urai-tier1/tests/lifemap-data-boundary.test.mjs
+            urai-tier1/tests/lifemap-scene-behavior.test.mjs
+            urai-tier1/tests/lifemap-trust-loop.test.mjs
+          )
+          test "${changed[*]}" = "${expected[*]}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Verify focused contracts, types and static build
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
+          node --test urai-tier1/tests/lifemap-data-boundary.test.mjs
+          node --test urai-tier1/tests/lifemap-trust-loop.test.mjs
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          pnpm --dir urai-tier1 test:lifemap
+          pnpm --dir urai-tier1 typecheck
+          pnpm --dir urai-tier1 build
+
+      - name: Publish one bounded repair commit
+        id: publish
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ steps.authority.outputs.head_sha }}
+          TARGET_BRANCH: ${{ steps.authority.outputs.head_ref }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(life-map): remove slab weather and enforce explicit demo privacy"
+          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
+
+      - name: Post exact authority receipt
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.authority.outputs.head_sha }}
+          AUTHORITY: ${{ steps.authority.outcome }}
+          CHECKOUT: ${{ steps.checkout.outcome }}
+          PATCH: ${{ steps.patch.outcome }}
+          VERIFY: ${{ steps.verify.outcome }}
+          PUBLISH: ${{ steps.publish.outcome }}
+        run: |
+          set -euo pipefail
+          body="Life Map repair authority receipt for ${HEAD_SHA:-unknown}: authority=${AUTHORITY}; checkout=${CHECKOUT}; patch=${PATCH}; verify=${VERIFY}; publish=${PUBLISH}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. No merge or deployment was performed."
+          payload="$(jq -n --arg body "$body" '{body:$body}')"
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/842/comments" \
+            -d "$payload"
