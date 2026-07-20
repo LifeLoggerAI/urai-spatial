@@ -33,7 +33,7 @@ const contracts = [
   ['/passport', ['urai-final-passport-vault', 'Your life stays yours.'], []],
   ['/privacy-controls', ['privacy-consent-console', 'Choose what the world can hold.'], ['Home threshold']],
   ['/location-map', ['premium-emotional-weather-atlas'], []],
-  ['/status', ['urai-final-status-control-room', 'Launch locked. Proof before expansion.', 'Pending proof'], ['World online. Route matrix visible.']],
+  ['/status', ['urai-final-status-control-room', 'Launch locked. Proof before expansion.', 'fingerprint-gated', 'Production certification remains hidden until the protected fingerprint is validated.'], ['Pending proof', 'World online. Route matrix visible.']],
 ]
 
 function normalizePath(value) {
