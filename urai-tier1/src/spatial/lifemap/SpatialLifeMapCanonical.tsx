@@ -24,12 +24,13 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, []);
-  return <main aria-label="Life Map authored fallback" data-testid="urai-life-map-authored-fallback" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"radial-gradient(circle at 30% 30%,rgba(103,232,249,.16),transparent 26%),radial-gradient(circle at 72% 54%,rgba(196,181,253,.14),transparent 28%),#01030a" }}>
+  return <main aria-label="Life Map authored fallback" data-testid="urai-life-map-authored-fallback" data-life-map-fallback="authored-semantic" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"radial-gradient(circle at 30% 30%,rgba(103,232,249,.16),transparent 26%),radial-gradient(circle at 72% 54%,rgba(196,181,253,.14),transparent 28%),#01030a" }}>
     <div aria-hidden="true" style={{ position:"absolute", inset:0, backgroundImage:assetCssStack(lifeMapAssets.primary), backgroundSize:"cover", backgroundPosition:"center", opacity:.12 }} />
     <section style={{ position:"absolute", left:"50%", top:"50%", transform:"translate(-50%,-50%)", width:"min(560px,calc(100% - 36px))", padding:28, border:"1px solid rgba(180,239,255,.2)", borderRadius:28, background:"rgba(2,7,18,.74)", backdropFilter:"blur(22px)", textAlign:"center" }}>
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".24em", textTransform:"uppercase", color:"#a5f3fc" }}>URAI · LIFE MAP</p>
       <h1 style={{ margin:"10px 0 0", fontSize:"clamp(34px,7vw,74px)", lineHeight:.9, letterSpacing:"-.06em" }}>Your life has depth.</h1>
       <p role="status" aria-live="polite" style={{ margin:"18px 0 0", color:"rgba(235,244,255,.75)" }}>{label} · Escape remains available</p>
+      <button type="button" onClick={() => requestUraiWorldReturn()} style={{ minHeight:48, marginTop:20, padding:"0 20px", border:"1px solid rgba(232,251,255,.22)", borderRadius:999, background:"rgba(8,24,38,.82)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button>
     </section>
   </main>;
 }
@@ -48,6 +49,21 @@ function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void
   </main>;
 }
 
+function useWebGLCapability() {
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    try {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) || canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
+      setAvailable(Boolean(context));
+      context?.getExtension("WEBGL_lose_context")?.loseContext();
+    } catch {
+      setAvailable(false);
+    }
+  }, []);
+  return available;
+}
+
 const LifeMapRouteBoundary = dynamic(() => import("@/components/lifemap/LifeMapRouteBoundary"), { ssr:false, loading:() => <LifeMapLoading /> });
 
 function LifeMapAccessGate() {
@@ -55,6 +71,7 @@ function LifeMapAccessGate() {
   const params = useSearchParams();
   const query = useMemo(() => params.toString(), [params]);
   const [mode, setMode] = useState<LifeMapAccessMode>("checking");
+  const webglAvailable = useWebGLCapability();
 
   useEffect(() => {
     const current = new URLSearchParams(query);
@@ -72,8 +89,9 @@ function LifeMapAccessGate() {
     router.replace(`/life-map?${next.toString()}`, { scroll:false });
   };
 
-  if (mode === "checking") return <LifeMapLoading label="Checking the private threshold" />;
+  if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
+  if (!webglAvailable) return <LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" />;
   return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><Suspense fallback={<LifeMapLoading label="Preserving your map while the spatial field opens" />}><LifeMapRouteBoundary /></Suspense></section>;
 }
 
