@@ -1,28 +1,58 @@
-name: Canonical six-fix comment authority
+name: Canonical corrective Life Map authority
 
 on:
   issue_comment:
     types: [created]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canonical-six-fix-comment-authority.yml'
 
 permissions:
   contents: write
   issues: write
+  pull-requests: read
 
 concurrency:
-  group: canonical-six-fix-comment-authority
-  cancel-in-progress: false
+  group: canonical-life-map-corrective-861
+  cancel-in-progress: true
 
 jobs:
   repair:
-    if: github.event.issue.number == 788 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-six-fix-99117734'
+    if: github.event_name == 'push' || (github.event.issue.number == 861 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-repair-3c6143c5a90d08464ce9cce37a9e1c82a4bdcbe2')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
-      EXPECTED_HEAD: 99117734727d8cb1156662233042cc11bd72fb7a
-      TARGET_BRANCH: exec/canonical-six-fix-product-r2-20260718
+      EXPECTED_PR: '861'
+      EXPECTED_HEAD: 3c6143c5a90d08464ce9cce37a9e1c82a4bdcbe2
+      TARGET_BRANCH: corrective/life-map-materialized-repair-20260720
     steps:
-      - name: Checkout exact isolated repair head
+      - name: Resolve exact draft authority
+        id: authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pr="$(curl --fail-with-body -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${EXPECTED_PR}")"
+          test "$(jq -r '.head.sha' <<<"$pr")" = "$EXPECTED_HEAD"
+          test "$(jq -r '.head.ref' <<<"$pr")" = "$TARGET_BRANCH"
+          test "$(jq -r '.head.repo.full_name' <<<"$pr")" = "$GITHUB_REPOSITORY"
+          test "$(jq -r '.draft' <<<"$pr")" = "true"
+          test "$(jq -r '.merged' <<<"$pr")" = "false"
+          test "$(jq -r '.state' <<<"$pr")" = "open"
+
+      - name: Post start receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          body="Canonical corrective Life Map authority started for ${EXPECTED_HEAD}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. PR #861 remains draft; no merge or deployment is authorized."
+          payload="$(jq -n --arg body "$body" '{body:$body}')"
+          curl --fail-with-body -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${EXPECTED_PR}/comments" -d "$payload"
+
+      - name: Checkout exact corrective authority head
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -31,127 +61,32 @@ jobs:
           persist-credentials: true
           show-progress: false
 
-      - name: Prove exact authority and apply bounded repair
+      - name: Rebuild from current main and apply retained repair
         id: repair
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
-          test -z "$(git status --porcelain --untracked-files=all)"
-          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' scripts/one-shot-six-fix-direct.mjs | sort)"
-          node scripts/one-shot-six-fix-direct.mjs
-          git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
-
-      - name: Install exact dependencies
-        id: install
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack pnpm install --frozen-lockfile
-
-      - name: Verify contracts, types and build
-        id: verify
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack pnpm --dir urai-tier1 test
-          corepack pnpm --dir urai-tier1 typecheck
-          corepack pnpm --dir urai-tier1 build
-
-      - name: Install Chromium
-        id: chromium
-        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
-
-      - name: Verify exact prior accessibility failures
-        id: browser
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent"
-
-      - name: Rewrite branch to one clean four-file product commit
-        id: publish
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/urai-six-fix/urai-tier1/src/app /tmp/urai-six-fix/urai-tier1/src/components/lifemap /tmp/urai-six-fix/urai-tier1/src/spatial/navigation
-          cp urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx /tmp/urai-six-fix/urai-tier1/src/app/
-          cp urai-tier1/src/app/GroundSpatialWorldClean.tsx /tmp/urai-six-fix/urai-tier1/src/app/
-          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/urai-six-fix/urai-tier1/src/components/lifemap/
-          cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/
-          git checkout --detach "$CLEAN_BASE"
-          cp /tmp/urai-six-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
-          cp /tmp/urai-six-fix/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
-          cp /tmp/urai-six-fix/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
-          cp /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
-          git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git commit -m "fix(spatial): close bounded accessibility and runtime defects"
-          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
-
-      - name: Post exact authority receipt
-        if: always()
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
-        with:
-          script: |
-            const rows = [
-              ['checkout', '${{ steps.checkout.outcome }}'],
-              ['repair', '${{ steps.repair.outcome }}'],
-              ['install', '${{ steps.install.outcome }}'],
-              ['verify', '${{ steps.verify.outcome }}'],
-              ['chromium', '${{ steps.chromium.outcome }}'],
-              ['browser', '${{ steps.browser.outcome }}'],
-              ['publish', '${{ steps.publish.outcome }}']
-            ];
-            const body = ['Canonical six-fix authority receipt for `99117734727d8cb1156662233042cc11bd72fb7a`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`].join('\n');
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 788, body });
-
-  life-map-repair:
-    if: github.event.issue.number == 842 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-life-map-repair-3f39506e'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    env:
-      EXPECTED_HEAD: 3f39506e66f3c4c12a13514e0848e72be5b6f2bb
-      TARGET_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
-    steps:
-      - name: Checkout exact Life Map repair head
-        id: checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.EXPECTED_HEAD }}
-          fetch-depth: 0
-          persist-credentials: true
-          show-progress: false
-
-      - name: Apply retained visual and privacy patch
-        id: repair
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -f .github/repair-requests/life-map-corrective-20260720.txt
           test -z "$(git status --porcelain --untracked-files=all)"
           git fetch --no-tags origin main
+          git checkout --detach origin/main
           test -s .github/patches/life-map-visual-privacy.patch.gz.b64
           base64 -d .github/patches/life-map-visual-privacy.patch.gz.b64 | gzip -dc > /tmp/life-map-visual-privacy.patch
           git apply --check /tmp/life-map-visual-privacy.patch
           git apply /tmp/life-map-visual-privacy.patch
-          git checkout origin/main -- \
-            scripts/check-workflow-phase-boundaries.mjs \
-            .github/workflows/canonical-six-fix-comment-authority.yml \
-            .github/workflows/life-map-repair-842-authority.yml
           git rm -f --ignore-unmatch \
+            .github/workflows/apply-life-map-proof-route-repair.yml \
             .github/workflows/apply-life-map-soft-weather-repair.yml \
             .github/scripts/apply_life_map_visual_privacy_repair.py \
             .github/patches/life-map-visual-privacy.patch.gz.b64
           git diff --check
           mapfile -t changed < <(git diff --name-only origin/main | sort)
           expected=(
+            .github/patches/life-map-visual-privacy.patch.gz.b64
+            .github/scripts/apply_life_map_visual_privacy_repair.py
+            .github/workflows/apply-life-map-proof-route-repair.yml
+            .github/workflows/apply-life-map-soft-weather-repair.yml
             scripts/capture-continuous-spatial-proof.mjs
             urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
             urai-tier1/src/components/lifemap/useLifeMapEvents.ts
@@ -162,29 +97,40 @@ jobs:
             urai-tier1/tests/lifemap-trust-loop.test.mjs
           )
           test "${changed[*]}" = "${expected[*]}"
+          grep -q 'life-map-soft-weather-veil' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+          ! sed -n '/function EmotionalWeather/,/function MemoryPath/p' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx | grep -q 'planeGeometry'
+          grep -q 'explicitUserId === "demo-user"' urai-tier1/src/components/lifemap/useLifeMapEvents.ts
+          grep -q "path: '/life-map/?demo=1" scripts/capture-continuous-spatial-proof.mjs
 
-      - name: Install exact dependencies
-        id: install
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack pnpm install --frozen-lockfile
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
 
-      - name: Verify Life Map contracts, types and static build
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Verify focused contracts types and build
         id: verify
         shell: bash
         run: |
           set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
           node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs
           node --test urai-tier1/tests/lifemap-data-boundary.test.mjs
           node --test urai-tier1/tests/lifemap-trust-loop.test.mjs
           node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
-          corepack pnpm --dir urai-tier1 test:lifemap
-          corepack pnpm --dir urai-tier1 typecheck
-          corepack pnpm --dir urai-tier1 build
+          pnpm --dir urai-tier1 test:lifemap
+          pnpm --dir urai-tier1 typecheck
+          pnpm --dir urai-tier1 build
 
-      - name: Publish one exact bounded Life Map repair commit
+      - name: Publish one bounded corrective commit
         id: publish
         shell: bash
         run: |
@@ -193,20 +139,21 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git diff --cached --check
-          git commit -m "fix(life-map): remove slab weather and enforce explicit demo privacy"
+          git commit -m "fix(life-map): materialize repair and remove contaminated executors"
           git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
 
-      - name: Post Life Map authority receipt
+      - name: Post exact authority receipt
         if: always()
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
-        with:
-          script: |
-            const rows = [
-              ['checkout', '${{ steps.checkout.outcome }}'],
-              ['repair', '${{ steps.repair.outcome }}'],
-              ['install', '${{ steps.install.outcome }}'],
-              ['verify', '${{ steps.verify.outcome }}'],
-              ['publish', '${{ steps.publish.outcome }}']
-            ];
-            const body = ['Canonical Life Map repair authority receipt for `3f39506e66f3c4c12a13514e0848e72be5b6f2bb`.', '', ...rows.map(([name, outcome]) => `- ${name}: ${outcome}`), '', `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`, '', 'No merge or production deployment was performed.'].join('\n');
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 842, body });
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTHORITY: ${{ steps.authority.outcome }}
+          CHECKOUT: ${{ steps.checkout.outcome }}
+          REPAIR: ${{ steps.repair.outcome }}
+          VERIFY: ${{ steps.verify.outcome }}
+          PUBLISH: ${{ steps.publish.outcome }}
+        run: |
+          set -euo pipefail
+          body="Canonical corrective Life Map receipt for ${EXPECTED_HEAD}: authority=${AUTHORITY}; checkout=${CHECKOUT}; repair=${REPAIR}; verify=${VERIFY}; publish=${PUBLISH}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. PR #861 remains draft. No merge or deployment was performed."
+          payload="$(jq -n --arg body "$body" '{body:$body}')"
+          curl --fail-with-body -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${EXPECTED_PR}/comments" -d "$payload"
