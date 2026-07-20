@@ -1,4 +1,4 @@
-name: Life Map repair 842 authority
+name: Life Map corrective repair authority
 
 on:
   issue_comment:
@@ -14,17 +14,18 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: life-map-repair-842-authority
+  group: life-map-corrective-repair-authority
   cancel-in-progress: true
 
 jobs:
   repair:
-    if: github.event_name == 'push' || (github.event.issue.number == 842 && github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-life-map-repair-'))
+    if: github.event_name == 'push' || (github.event.issue.number == 861 && github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-life-map-repair-'))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      EXPECTED_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
-      PUSH_EXPECTED_HEAD: b683da7354dc6ca4a1c404a8641db50d4e450795
+      EXPECTED_PR: '861'
+      EXPECTED_BRANCH: corrective/life-map-materialized-repair-20260720
+      PUSH_EXPECTED_HEAD: 3c6143c5a90d08464ce9cce37a9e1c82a4bdcbe2
     steps:
       - name: Resolve exact PR authority
         id: authority
@@ -39,12 +40,18 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/842")"
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${EXPECTED_PR}")"
           head_sha="$(jq -r '.head.sha' <<<"$pr")"
           head_ref="$(jq -r '.head.ref' <<<"$pr")"
           head_repo="$(jq -r '.head.repo.full_name' <<<"$pr")"
+          draft="$(jq -r '.draft' <<<"$pr")"
+          merged="$(jq -r '.merged' <<<"$pr")"
+          state="$(jq -r '.state' <<<"$pr")"
           test "$head_ref" = "$EXPECTED_BRANCH"
           test "$head_repo" = "$GITHUB_REPOSITORY"
+          test "$draft" = "true"
+          test "$merged" = "false"
+          test "$state" = "open"
           [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]]
           if test "$GITHUB_EVENT_NAME" = "push"; then
             test "$head_sha" = "$PUSH_EXPECTED_HEAD"
@@ -62,16 +69,16 @@ jobs:
           HEAD_SHA: ${{ steps.authority.outputs.head_sha }}
         run: |
           set -euo pipefail
-          body="Life Map repair authority started for ${HEAD_SHA}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Older queued or active authority runs are superseded."
+          body="Life Map corrective repair authority started for ${HEAD_SHA}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. PR #861 remains draft; no merge or deployment is authorized."
           payload="$(jq -n --arg body "$body" '{body:$body}')"
           curl --fail-with-body -sS -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/842/comments" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${EXPECTED_PR}/comments" \
             -d "$payload"
 
-      - name: Checkout exact repair head
+      - name: Checkout exact corrective head
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -80,7 +87,7 @@ jobs:
           persist-credentials: true
           show-progress: false
 
-      - name: Apply exact retained patch and remove temporary authority files
+      - name: Apply retained repair and remove contamination
         id: patch
         shell: bash
         env:
@@ -96,12 +103,18 @@ jobs:
           git apply /tmp/life-map-visual-privacy.patch
           git checkout origin/main -- scripts/check-workflow-phase-boundaries.mjs
           git rm -f --ignore-unmatch \
+            .github/repair-requests/life-map-corrective-20260720.txt \
+            .github/workflows/apply-life-map-proof-route-repair.yml \
             .github/workflows/apply-life-map-soft-weather-repair.yml \
             .github/scripts/apply_life_map_visual_privacy_repair.py \
             .github/patches/life-map-visual-privacy.patch.gz.b64
           git diff --check
           mapfile -t changed < <(git diff --name-only origin/main | sort)
           expected=(
+            .github/patches/life-map-visual-privacy.patch.gz.b64
+            .github/scripts/apply_life_map_visual_privacy_repair.py
+            .github/workflows/apply-life-map-proof-route-repair.yml
+            .github/workflows/apply-life-map-soft-weather-repair.yml
             scripts/capture-continuous-spatial-proof.mjs
             urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
             urai-tier1/src/components/lifemap/useLifeMapEvents.ts
@@ -112,6 +125,10 @@ jobs:
             urai-tier1/tests/lifemap-trust-loop.test.mjs
           )
           test "${changed[*]}" = "${expected[*]}"
+          grep -q 'life-map-soft-weather-veil' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+          ! sed -n '/function EmotionalWeather/,/function MemoryPath/p' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx | grep -q 'planeGeometry'
+          grep -q 'explicitUserId === "demo-user"' urai-tier1/src/components/lifemap/useLifeMapEvents.ts
+          grep -q "path: '/life-map/?demo=1" scripts/capture-continuous-spatial-proof.mjs
 
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
@@ -141,7 +158,7 @@ jobs:
           pnpm --dir urai-tier1 typecheck
           pnpm --dir urai-tier1 build
 
-      - name: Publish one bounded repair commit
+      - name: Publish one bounded corrective commit
         id: publish
         shell: bash
         env:
@@ -153,7 +170,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git diff --cached --check
-          git commit -m "fix(life-map): remove slab weather and enforce explicit demo privacy"
+          git commit -m "fix(life-map): materialize repair and remove contaminated executors"
           git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
 
       - name: Post exact authority receipt
@@ -169,11 +186,11 @@ jobs:
           PUBLISH: ${{ steps.publish.outcome }}
         run: |
           set -euo pipefail
-          body="Life Map repair authority receipt for ${HEAD_SHA:-unknown}: authority=${AUTHORITY}; checkout=${CHECKOUT}; patch=${PATCH}; verify=${VERIFY}; publish=${PUBLISH}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. No merge or deployment was performed."
+          body="Life Map corrective repair authority receipt for ${HEAD_SHA:-unknown}: authority=${AUTHORITY}; checkout=${CHECKOUT}; patch=${PATCH}; verify=${VERIFY}; publish=${PUBLISH}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. PR #861 remains draft. No merge or deployment was performed."
           payload="$(jq -n --arg body "$body" '{body:$body}')"
           curl --fail-with-body -sS -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/842/comments" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${EXPECTED_PR}/comments" \
             -d "$payload"
