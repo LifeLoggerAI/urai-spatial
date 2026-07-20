@@ -1,0 +1,57 @@
+name: Inspect Home production once
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  inspect:
+    if: github.event.issue.number == 841 && github.event.comment.body == '/inspect-home-production-bb5b35a7'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Report exact dispatcher and protected release runs
+        uses: actions/github-script@v7
+        env:
+          TARGET_SHA: bb5b35a7cbe4ede7839277443e2c08577dc6a291
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const target = process.env.TARGET_SHA;
+            async function runs(workflow_id, event) {
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id, event, per_page: 100
+              });
+              return response.data.workflow_runs.filter((run) => run.head_sha === target);
+            }
+            const dispatcher = await runs('dispatch-production-once.yml', 'push');
+            const protectedRuns = await runs('spatial-live-deploy.yml', 'workflow_dispatch');
+            const format = (run) => run ? [
+              `- run: ${run.html_url}`,
+              `- id: \`${run.id}\``,
+              `- status: \`${run.status}\``,
+              `- conclusion: \`${run.conclusion || 'none'}\``,
+              `- created: \`${run.created_at}\``,
+              `- updated: \`${run.updated_at}\``
+            ].join('\n') : '- none found';
+            const body = [
+              '## Home production observer receipt',
+              '',
+              `- target SHA: \`${target}\``,
+              `- current main: \`${context.sha}\``,
+              '',
+              '### Dispatcher',
+              format(dispatcher[0]),
+              '',
+              '### Protected production',
+              format(protectedRuns[0]),
+              '',
+              'Read-only inspection. No deployment, rollback, merge, or certification was performed.'
+            ].join('\n');
+            await github.rest.issues.createComment({ owner, repo, issue_number: 841, body });
