@@ -221,25 +221,32 @@ export function stepEmbodiedMotion({
 
   if (requested.lengthSq() > 0.0001) requested.normalize().multiplyScalar(speed)
   const damping = requested.lengthSq() > 0 ? acceleration : deceleration
-  const clampedDelta = Math.min(delta, 0.05)
-  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, clampedDelta)
-  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, clampedDelta)
+  // Preserve real elapsed movement on slow devices without allowing an unbounded
+  // background-tab leap. Integrating in 50 ms substeps keeps damping and collision
+  // behavior stable instead of discarding all frame time above the old hard clamp.
+  let remainingDelta = Math.min(delta, 0.25)
+  while (remainingDelta > 0) {
+    const stepDelta = Math.min(remainingDelta, 0.05)
+    velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, stepDelta)
+    velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, stepDelta)
 
-  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, clampedDelta)
-  next.x = THREE.MathUtils.clamp(next.x, bounds.minX, bounds.maxX)
-  next.z = THREE.MathUtils.clamp(next.z, bounds.minZ, bounds.maxZ)
+    const next = MOTION_NEXT.copy(position).addScaledVector(velocity, stepDelta)
+    next.x = THREE.MathUtils.clamp(next.x, bounds.minX, bounds.maxX)
+    next.z = THREE.MathUtils.clamp(next.z, bounds.minZ, bounds.maxZ)
 
-  for (const obstacle of obstacles) {
-    const dx = next.x - obstacle.x
-    const dz = next.z - obstacle.z
-    const distance = Math.hypot(dx, dz)
-    if (distance >= obstacle.radius || distance === 0) continue
-    const scale = obstacle.radius / distance
-    next.x = obstacle.x + dx * scale
-    next.z = obstacle.z + dz * scale
+    for (const obstacle of obstacles) {
+      const dx = next.x - obstacle.x
+      const dz = next.z - obstacle.z
+      const distance = Math.hypot(dx, dz)
+      if (distance >= obstacle.radius || distance === 0) continue
+      const scale = obstacle.radius / distance
+      next.x = obstacle.x + dx * scale
+      next.z = obstacle.z + dz * scale
+    }
+
+    position.copy(next)
+    remainingDelta -= stepDelta
   }
-
-  position.copy(next)
   return {
     moving: velocity.lengthSq() > 0.0025,
     hasTarget: target.current !== null,
