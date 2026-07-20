@@ -25,6 +25,12 @@ function safeToken(value: string | null, fallback = "") {
   return (value || fallback).replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 120);
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement && (
+    target.isContentEditable || target.matches("input,textarea,select,[role='textbox']")
+  );
+}
+
 function goalForNode(node: LifeMapNode): CameraGoal {
   const p = new THREE.Vector3(...node.position);
   const direction = p.clone().normalize();
@@ -114,6 +120,44 @@ function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: Jo
   return null;
 }
 
+function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLState) => void }) {
+  const { gl } = useThree();
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    let recoveryTimer: number | null = null;
+
+    const clearRecoveryTimer = () => {
+      if (recoveryTimer !== null) {
+        window.clearTimeout(recoveryTimer);
+        recoveryTimer = null;
+      }
+    };
+    const lost = (event: Event) => {
+      event.preventDefault();
+      clearRecoveryTimer();
+      onStateChange("lost");
+      recoveryTimer = window.setTimeout(() => onStateChange("recovering"), 250);
+    };
+    const restored = () => {
+      clearRecoveryTimer();
+      onStateChange("ready");
+    };
+
+    canvas.addEventListener("webglcontextlost", lost, false);
+    canvas.addEventListener("webglcontextrestored", restored, false);
+    onStateChange("ready");
+
+    return () => {
+      clearRecoveryTimer();
+      canvas.removeEventListener("webglcontextlost", lost, false);
+      canvas.removeEventListener("webglcontextrestored", restored, false);
+    };
+  }, [gl, onStateChange]);
+
+  return null;
+}
+
 function MemoryLens({ node, active, muted, reducedMotion, onSelect }: { node: LifeMapNode; active: boolean; muted: boolean; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const group = useRef<THREE.Group>(null);
   const color = useMemo(() => new THREE.Color(node.aura), [node.aura]);
@@ -125,7 +169,11 @@ function MemoryLens({ node, active, muted, reducedMotion, onSelect }: { node: Li
   });
   return (
     <group ref={group} position={node.position} rotation={[0, node.position[0] * .04, node.position[1] * .03]} name={`life-map-memory-${node.id}`} data-depth-anchor="true">
-      <mesh onClick={(event) => { event.stopPropagation(); onSelect(node); }}>
+      <mesh
+        onClick={(event) => { event.stopPropagation(); onSelect(node); }}
+        onPointerOver={(event) => { event.stopPropagation(); document.body.style.cursor = "pointer"; }}
+        onPointerOut={(event) => { event.stopPropagation(); document.body.style.cursor = ""; }}
+      >
         <sphereGeometry args={[.42 + node.intensity * .16, 32, 32]} />
         <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : .55} roughness={.18} metalness={.18} transmission={.18} transparent opacity={muted ? .28 : .9} />
       </mesh>
@@ -152,13 +200,14 @@ function MemoryPaths({ nodes, activeId }: { nodes: LifeMapNode[]; activeId: stri
   }))}</group>;
 }
 
-function LifeMapWorld({ nodes, selected, goal, phase, reducedMotion, onSelect }: { nodes: LifeMapNode[]; selected: LifeMapNode | null; goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
+function LifeMapWorld({ nodes, selected, goal, phase, reducedMotion, onSelect, onWebGLStateChange }: { nodes: LifeMapNode[]; selected: LifeMapNode | null; goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void; onWebGLStateChange: (state: WebGLState) => void }) {
   return (
     <>
       <color attach="background" args={["#01030a"]} />
       <fog attach="fog" args={["#01030a", 12, 42]} />
       <ambientLight intensity={.26} color="#b8dcff" />
       <directionalLight position={[4, 8, 8]} intensity={1.2} color="#d8f5ff" />
+      <WebGLRecoveryBridge onStateChange={onWebGLStateChange} />
       <CameraRig goal={goal} phase={phase} reducedMotion={reducedMotion} />
       <AtmosphericDepth reducedMotion={reducedMotion} />
       <MemoryPaths nodes={nodes} activeId={selected?.id || null} />
@@ -191,8 +240,11 @@ export default function AdaptiveLifeMapScene() {
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
   const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [selected]);
 
-  const clearTimers = useCallback(() => { timers.current.forEach(window.clearTimeout); timers.current = []; }, []);
-  useEffect(() => clearTimers, [clearTimers]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach((id) => window.clearTimeout(id));
+    timers.current = [];
+  }, []);
+  useEffect(() => () => clearTimers(), [clearTimers]);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemoRequested) next.set("demo", "1");
@@ -243,7 +295,7 @@ export default function AdaptiveLifeMapScene() {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
+      if (event.defaultPrevented || event.key !== "Escape" || isEditableTarget(event.target)) return;
       event.preventDefault();
       if (selectedId) overview(); else router.push("/home");
     };
@@ -251,21 +303,16 @@ export default function AdaptiveLifeMapScene() {
     return () => window.removeEventListener("keydown", handler, true);
   }, [overview, router, selectedId]);
 
-  const onCreated = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
-    const canvas = gl.domElement;
-    const lost = (event: Event) => { event.preventDefault(); setWebglState("lost"); window.setTimeout(() => setWebglState("recovering"), 250); };
-    const restored = () => setWebglState("ready");
-    canvas.addEventListener("webglcontextlost", lost, false);
-    canvas.addEventListener("webglcontextrestored", restored, false);
-    setWebglState("ready");
+  useEffect(() => () => {
+    document.body.style.cursor = "";
   }, []);
 
   const recovery = webglState !== "ready";
   return (
     <main className="life-map-root" data-testid="urai-true-3d-life-map" data-life-map-source={sourceMode} data-life-map-phase={phase} data-life-map-mode={selected ? "selected" : "overview"} data-webgl-state={webglState} data-home-companion-owned="false">
       <h1 className="sr-only">URAI Life Map private universe</h1>
-      <Canvas camera={{ position: OVERVIEW_POSITION, fov: 44, near: .08, far: 120 }} dpr={[1, profile.pixelRatioMax]} gl={{ antialias: profile.antialias, powerPreference: "high-performance" }} onCreated={onCreated}>
-        <LifeMapWorld nodes={nodes} selected={selected} goal={goal} phase={phase} reducedMotion={profile.reducedMotion} onSelect={selectNode} />
+      <Canvas camera={{ position: OVERVIEW_POSITION, fov: 44, near: .08, far: 120 }} dpr={[1, profile.pixelRatioMax]} gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}>
+        <LifeMapWorld nodes={nodes} selected={selected} goal={goal} phase={phase} reducedMotion={profile.reducedMotion} onSelect={selectNode} onWebGLStateChange={setWebglState} />
       </Canvas>
 
       <header className="life-map-title"><span>URAI · LIFE MAP</span><strong>{selected ? selected.title : "Your private universe"}</strong><em>{truthLabel(sourceMode)}</em></header>
