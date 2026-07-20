@@ -25,6 +25,7 @@ type SceneProps = {
   pitch: MutableRefObject<number>
   walkTarget: MutableRefObject<THREE.Vector3 | null>
   nearby: MutableRefObject<Nearby>
+  nearbyState: Nearby
   reducedMotion: boolean
   shellRef: MutableRefObject<HTMLDivElement | null>
   onNearbyChange: (target: Nearby) => void
@@ -121,11 +122,11 @@ function EmbodiedSelf({ walkTarget, nearby }: Pick<SceneProps, 'walkTarget' | 'n
   )
 }
 
-function Threshold({ kind, position, walkTarget, nearby, onTravel }: {
+function Threshold({ kind, position, walkTarget, active, onTravel }: {
   kind: 'ground' | 'life-map'
   position: THREE.Vector3
-} & Pick<SceneProps, 'walkTarget' | 'nearby' | 'onTravel'>) {
-  const active = nearby.current === kind
+  active: boolean
+} & Pick<SceneProps, 'walkTarget' | 'onTravel'>) {
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (active) onTravel(kind === 'ground' ? 'infrastructure-hub' : 'life-map')
@@ -217,8 +218,8 @@ function HomeScene(props: SceneProps) {
       <HomeFloor walkTarget={props.walkTarget} />
       <HomeOrb walkTarget={props.walkTarget} nearby={props.nearby} onOrbOpen={props.onOrbOpen} />
       <EmbodiedSelf walkTarget={props.walkTarget} nearby={props.nearby} />
-      <Threshold kind="life-map" position={LIFE_MAP_POSITION} walkTarget={props.walkTarget} nearby={props.nearby} onTravel={props.onTravel} />
-      <Threshold kind="ground" position={GROUND_GATE_POSITION} walkTarget={props.walkTarget} nearby={props.nearby} onTravel={props.onTravel} />
+      <Threshold kind="life-map" position={LIFE_MAP_POSITION} walkTarget={props.walkTarget} active={props.nearbyState === 'life-map'} onTravel={props.onTravel} />
+      <Threshold kind="ground" position={GROUND_GATE_POSITION} walkTarget={props.walkTarget} active={props.nearbyState === 'ground'} onTravel={props.onTravel} />
     </>
   )
 }
@@ -310,6 +311,7 @@ export default function EmbodiedHomeSpatialCanvas({ onOrbOpen, webglAvailable }:
           pitch={pitch}
           walkTarget={walkTarget}
           nearby={nearby}
+          nearbyState={nearbyState}
           reducedMotion={reducedMotion}
           shellRef={shellRef}
           onNearbyChange={setNearbyState}
