@@ -1,0 +1,87 @@
+name: Life Map proof route final authority
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: life-map-proof-route-final-authority
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.issue.number == 842 && github.event.issue.pull_request && github.event.comment.body == '/run-life-map-proof-route-repair-f5380b61'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_HEAD: f5380b61c45fffaad4a423cc2ab7d0a54133b23d
+      TARGET_BRANCH: repair/life-map-soft-weather-demo-continuity-20260719
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_HEAD }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply proof identity correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          python3 - <<'PY'
+          from pathlib import Path
+          capture = Path('scripts/capture-continuous-spatial-proof.mjs')
+          text = capture.read_text()
+          replacements = {
+              "    path: '/life-map/',": "    path: '/life-map/?demo=1',",
+              "    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',": "    path: '/life-map/?demo=1&memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',",
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected one match for {old!r}, found {text.count(old)}')
+              text = text.replace(old, new, 1)
+          capture.write_text(text)
+          audit = Path('scripts/live-visual-audit.mjs')
+          text = audit.read_text()
+          old = "    route: '/life-map',"
+          new = "    route: '/life-map?demo=1',"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one audit match, found {text.count(old)}')
+          audit.write_text(text.replace(old, new, 1))
+          PY
+          node --check scripts/capture-continuous-spatial-proof.mjs
+          node --check scripts/live-visual-audit.mjs
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          git diff --check
+
+      - name: Publish exact proof correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/capture-continuous-spatial-proof.mjs scripts/live-visual-audit.mjs
+          git diff --cached --check
+          git commit -m "fix(proof): capture explicit Life Map demo routes"
+          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
+
+      - name: Post receipt
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              'Final Life Map proof-route authority receipt.',
+              '',
+              `- expected head: \`${process.env.EXPECTED_HEAD}\``,
+              `- run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              '',
+              'No merge or deployment was performed.'
+            ].join('\n');
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: 842, body });
