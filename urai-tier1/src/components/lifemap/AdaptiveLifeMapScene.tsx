@@ -1,336 +1,1204 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, Line, Stars } from "@react-three/drei";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Html, Stars } from "@react-three/drei";
+import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
 import * as THREE from "three";
-import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
-import { lifeMapTypeLabels, type LifeMapNode } from "./lifeMapData";
-import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
+import { useLifeMapEvents } from "./useLifeMapEvents";
+import {
+  lifeMapTypeLabels,
+  narrationForNode,
+  type LifeMapNode,
+} from "./lifeMapData";
+import {
+  markFirstSpatialFrame,
+  useAdaptiveSpatialQuality,
+  type SpatialQualityProfile,
+} from "@/spatial/performance/useAdaptiveSpatialQuality";
 
-const OVERVIEW_POSITION: [number, number, number] = [0, 1.8, 13.5];
-const OVERVIEW_TARGET: [number, number, number] = [0, 0, -3.5];
-const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
-
-type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
-type WebGLState = "ready" | "lost" | "recovering" | "failed";
-
-type CameraGoal = {
+type CameraIntent = {
   position: [number, number, number];
   target: [number, number, number];
 };
 
+type PersistedLifeMapState = {
+  selectedId: string | null;
+  cameraIntent: CameraIntent;
+};
+
+type WebGLState = "starting" | "ready" | "lost" | "recovering" | "failed";
+
+type LoseContextExtension = {
+  restoreContext?: () => void;
+};
+
+const OVERVIEW_CAMERA: CameraIntent = {
+  position: [0.35, 2.55, 11.8],
+  target: [0.05, 0.05, -2.6],
+};
+
+const LIFE_MAP_STATE_KEY = "urai:spatial:lifeMapState";
+const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
+
 function safeToken(value: string | null, fallback = "") {
-  return (value || fallback).replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 120);
+  if (!value) return fallback;
+  const trimmed = value.trim().slice(0, 120);
+  return /^[A-Za-z0-9._:-]+$/.test(trimmed) ? trimmed : fallback;
 }
 
-function isEditableTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && (
-    target.isContentEditable || target.matches("input,textarea,select,[role='textbox']")
-  );
+function validVector(value: unknown): value is [number, number, number] {
+  return Array.isArray(value) && value.length === 3 && value.every((item) => typeof item === "number" && Number.isFinite(item));
 }
 
-function goalForNode(node: LifeMapNode): CameraGoal {
-  const p = new THREE.Vector3(...node.position);
-  const direction = p.clone().normalize();
-  const arrival = p.clone().add(direction.multiplyScalar(2.5));
-  arrival.y += 0.55;
+function isLifeMapUiTarget(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest(".life-map-accessibility-menu, .life-map-recovery, .life-map-memory-portals"));
+}
+
+function readPersistedState(): PersistedLifeMapState {
+  if (typeof window === "undefined") return { selectedId: null, cameraIntent: OVERVIEW_CAMERA };
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(LIFE_MAP_STATE_KEY) || "{}") as Partial<PersistedLifeMapState>;
+    const camera = parsed.cameraIntent;
+    return {
+      selectedId: typeof parsed.selectedId === "string" ? parsed.selectedId : null,
+      cameraIntent: camera && validVector(camera.position) && validVector(camera.target)
+        ? { position: camera.position, target: camera.target }
+        : OVERVIEW_CAMERA,
+    };
+  } catch {
+    return { selectedId: null, cameraIntent: OVERVIEW_CAMERA };
+  }
+}
+
+function cameraForNode(node: LifeMapNode): CameraIntent {
+  const lateral = node.position[0] >= 0 ? 0.95 : -0.95;
   return {
-    position: [arrival.x, arrival.y, arrival.z + 1.2],
-    target: [p.x, p.y, p.z],
+    position: [node.position[0] + lateral, node.position[1] + 0.72, node.position[2] + 3.35],
+    target: [node.position[0], node.position[1] + 0.05, node.position[2] - 0.18],
   };
 }
 
-function createRadialTexture() {
+function titleize(value: string) {
+  return value
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const value = hex.replace("#", "");
+  const normalized = value.length === 3 ? value.split("").map((part) => part + part).join("") : value.padEnd(6, "0").slice(0, 6);
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return `rgba(138, 223, 255, ${alpha})`;
+  const number = Number.parseInt(normalized, 16);
+  const red = (number >> 16) & 255;
+  const green = (number >> 8) & 255;
+  const blue = number & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function memoryLensPath(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  outerRadius: number,
+  innerRadius: number,
+  points = 12,
+  phase = 0,
+) {
+  ctx.beginPath();
+  for (let index = 0; index < points * 2; index += 1) {
+    const radius = index % 2 === 0 ? outerRadius : innerRadius;
+    const angle = phase - Math.PI / 2 + (index * Math.PI) / points;
+    const x = centerX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius;
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+function createMemorySurface(node: LifeMapNode, resolution: number) {
   if (typeof document === "undefined") return null;
+
   const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const context = canvas.getContext("2d");
-  if (!context) return null;
-  const gradient = context.createRadialGradient(128, 128, 0, 128, 128, 128);
-  gradient.addColorStop(0, "rgba(255,255,255,.72)");
-  gradient.addColorStop(.28, "rgba(255,255,255,.32)");
-  gradient.addColorStop(.66, "rgba(255,255,255,.08)");
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, 256, 256);
+  canvas.width = resolution;
+  canvas.height = resolution;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const designScale = resolution / 768;
+  ctx.scale(designScale, designScale);
+
+  const centerX = 384;
+  const centerY = 352;
+  const outerRadius = 306;
+  const innerRadius = 270;
+  const aura = node.aura || "#8adfff";
+  const phase = ((node.id.length + node.title.length) % 12) * 0.025;
+
+  const auraGlow = ctx.createRadialGradient(centerX, centerY, 54, centerX, centerY, 372);
+  auraGlow.addColorStop(0, hexToRgba(aura, 0.2));
+  auraGlow.addColorStop(0.58, hexToRgba(aura, 0.1));
+  auraGlow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = auraGlow;
+  ctx.fillRect(0, 0, 768, 768);
+
+  const deep = ctx.createRadialGradient(322, 252, 18, centerX, centerY, 340);
+  deep.addColorStop(0, "rgba(218,250,255,.92)");
+  deep.addColorStop(0.08, hexToRgba(aura, 0.84));
+  deep.addColorStop(0.34, "rgba(12,34,63,.98)");
+  deep.addColorStop(0.72, "rgba(4,12,31,.99)");
+  deep.addColorStop(1, "rgba(1,3,12,1)");
+
+  memoryLensPath(ctx, centerX, centerY, outerRadius, innerRadius, 12, phase);
+  ctx.fillStyle = deep;
+  ctx.fill();
+
+  ctx.save();
+  memoryLensPath(ctx, centerX, centerY, outerRadius - 14, innerRadius - 16, 12, phase);
+  ctx.clip();
+
+  const horizon = ctx.createLinearGradient(0, 118, 0, 670);
+  horizon.addColorStop(0, "rgba(255,255,255,.055)");
+  horizon.addColorStop(0.46, hexToRgba(aura, 0.08));
+  horizon.addColorStop(1, "rgba(0,0,0,.84)");
+  ctx.fillStyle = horizon;
+  ctx.fillRect(64, 54, 640, 650);
+
+  for (let index = 0; index < 64; index += 1) {
+    const angle = index * 2.399963229728653 + node.id.length * 0.17;
+    const radial = 44 + ((index * 47) % 245);
+    const x = centerX + Math.cos(angle) * radial;
+    const y = centerY + Math.sin(angle * 1.13) * radial * 0.78;
+    const radius = 1.1 + (index % 5) * 0.62;
+    ctx.fillStyle = index % 5 === 0 ? "rgba(255,255,255,.86)" : hexToRgba(aura, 0.38 + (index % 3) * 0.08);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = "screen";
+  if (node.type === "relationship") {
+    ctx.fillStyle = "rgba(245,252,255,.62)";
+    ctx.beginPath();
+    ctx.arc(300, 314, 58, 0, Math.PI * 2);
+    ctx.arc(474, 292, 66, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba(aura, 0.72);
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(350, 306);
+    ctx.bezierCurveTo(382, 258, 430, 360, 446, 310);
+    ctx.stroke();
+  } else if (node.type === "threshold") {
+    ctx.fillStyle = hexToRgba(aura, 0.34);
+    ctx.beginPath();
+    ctx.moveTo(384, 130);
+    ctx.lineTo(554, 468);
+    ctx.lineTo(214, 468);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.54)";
+    ctx.fillRect(370, 246, 28, 240);
+  } else if (node.type === "ritual") {
+    ctx.strokeStyle = hexToRgba(aura, 0.64);
+    ctx.lineWidth = 8;
+    for (let ring = 0; ring < 4; ring += 1) {
+      ctx.beginPath();
+      ctx.ellipse(centerX, 350, 92 + ring * 46, 26 + ring * 12, -0.08, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (node.type === "recovery") {
+    ctx.strokeStyle = hexToRgba(aura, 0.74);
+    ctx.lineWidth = 7;
+    for (let arc = 0; arc < 5; arc += 1) {
+      ctx.beginPath();
+      ctx.arc(centerX, 396, 54 + arc * 42, Math.PI * 1.06, Math.PI * 1.94);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(245,255,255,.68)";
+    ctx.beginPath();
+    ctx.arc(centerX, 334, 54, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (node.type === "forecast") {
+    ctx.strokeStyle = hexToRgba(aura, 0.68);
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(192, 470);
+    ctx.bezierCurveTo(270, 408, 336, 450, 402, 342);
+    ctx.bezierCurveTo(478, 220, 544, 286, 602, 176);
+    ctx.stroke();
+  } else if (node.type === "legacy") {
+    ctx.fillStyle = "rgba(3,9,24,.66)";
+    for (let layer = 0; layer < 5; layer += 1) {
+      const inset = layer * 28;
+      ctx.fillRect(210 + inset, 190 + inset * 0.52, 348 - inset * 2, 252 - inset);
+      ctx.strokeStyle = hexToRgba(aura, 0.3 + layer * 0.06);
+      ctx.lineWidth = 4;
+      ctx.strokeRect(210 + inset, 190 + inset * 0.52, 348 - inset * 2, 252 - inset);
+    }
+  } else {
+    const glow = ctx.createRadialGradient(334, 278, 16, centerX, 344, 250);
+    glow.addColorStop(0, "rgba(255,255,255,.84)");
+    glow.addColorStop(0.24, hexToRgba(aura, 0.62));
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(112, 92, 544, 494);
+
+    ctx.strokeStyle = "rgba(235,251,255,.48)";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(184, 456);
+    ctx.bezierCurveTo(260, 390, 326, 486, 408, 412);
+    ctx.bezierCurveTo(476, 352, 542, 384, 600, 306);
+    ctx.stroke();
+  }
+
+  ctx.globalCompositeOperation = "source-over";
+  const lower = ctx.createLinearGradient(0, 422, 0, 650);
+  lower.addColorStop(0, "rgba(1,5,16,0)");
+  lower.addColorStop(1, "rgba(1,5,16,.9)");
+  ctx.fillStyle = lower;
+  ctx.fillRect(94, 402, 580, 260);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(216,247,255,.7)";
+  ctx.font = "800 19px system-ui, sans-serif";
+  ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), centerX, 528);
+
+  ctx.fillStyle = "rgba(255,255,255,.98)";
+  ctx.font = "800 34px system-ui, sans-serif";
+  const title = node.title.length > 26 ? `${node.title.slice(0, 24)}…` : node.title;
+  ctx.fillText(title, centerX, 574);
+
+  ctx.fillStyle = "rgba(219,241,255,.7)";
+  ctx.font = "650 20px system-ui, sans-serif";
+  ctx.fillText(node.dateLabel, centerX, 610);
+  ctx.restore();
+
+  memoryLensPath(ctx, centerX, centerY, outerRadius, innerRadius, 12, phase);
+  ctx.strokeStyle = "rgba(225,251,255,.5)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, innerRadius - 18, 0, Math.PI * 2);
+  ctx.strokeStyle = hexToRgba(aura, 0.24);
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
+  texture.anisotropy = resolution >= 384 ? 8 : 4;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
+  texture.generateMipmaps = resolution >= 128;
+  texture.premultiplyAlpha = true;
+  texture.needsUpdate = true;
   return texture;
 }
 
-function AtmosphericDepth({ reducedMotion }: { reducedMotion: boolean }) {
-  const texture = useMemo(() => createRadialTexture(), []);
-  const nearRef = useRef<THREE.Group>(null);
-  const midRef = useRef<THREE.Group>(null);
-  useEffect(() => () => texture?.dispose(), [texture]);
-  useFrame(({ clock, camera }) => {
-    if (reducedMotion) return;
-    if (nearRef.current) nearRef.current.position.x = camera.position.x * 0.42 + Math.sin(clock.elapsedTime * .08) * .3;
-    if (midRef.current) midRef.current.position.x = camera.position.x * 0.18 + Math.sin(clock.elapsedTime * .04) * .16;
-  });
-  const veil = (position: [number, number, number], scale: [number, number, number], color: string, opacity: number) => (
-    <sprite position={position} scale={scale} name="life-map-soft-weather-veil">
-      <spriteMaterial map={texture || undefined} color={color} transparent opacity={texture ? opacity : 0} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-    </sprite>
-  );
-  return (
-    <>
-      <group ref={nearRef} name="life-map-depth-near" data-depth-band="near">
-        {veil([-5, 1, 3], [7, 5, 1], "#5adfff", .08)}
-        {veil([5, -1, 2], [6, 4, 1], "#9d78ff", .07)}
-        <mesh position={[-4.8, -1.8, 1]} rotation={[.2, .35, .1]}><icosahedronGeometry args={[1.1, 1]} /><meshStandardMaterial color="#071422" emissive="#16415d" emissiveIntensity={.34} roughness={.4} metalness={.5} /></mesh>
-        <mesh position={[5.4, 1.4, .5]} rotation={[-.2, -.3, .4]}><octahedronGeometry args={[.85, 1]} /><meshStandardMaterial color="#130b20" emissive="#4b2c78" emissiveIntensity={.3} roughness={.35} metalness={.55} /></mesh>
-      </group>
-      <group ref={midRef} name="life-map-depth-middle" data-depth-band="middle">
-        {veil([-2.5, 1.8, -5], [8, 4, 1], "#8beeff", .055)}
-        {veil([4.5, -1.1, -7], [9, 5, 1], "#c4a5ff", .05)}
-      </group>
-      <group name="life-map-depth-far" data-depth-band="far">
-        <Stars radius={70} depth={48} count={reducedMotion ? 500 : 1100} factor={2.4} saturation={.25} fade speed={reducedMotion ? 0 : .08} />
-      </group>
-    </>
-  );
-}
-
-function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean }) {
-  const { camera } = useThree();
-  const target = useRef(new THREE.Vector3(...goal.target));
-  useFrame((_, delta) => {
-    target.current.set(...goal.target);
-    if (reducedMotion) {
-      camera.position.set(...goal.position);
-      camera.lookAt(target.current);
-      return;
-    }
-    const rate = phase === "travel" ? 2.4 : phase === "approach" ? 3.2 : 4.6;
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.position[0], rate, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.position[1], rate, delta);
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, goal.position[2], rate, delta);
-    const currentLook = new THREE.Vector3();
-    camera.getWorldDirection(currentLook).add(camera.position);
-    currentLook.lerp(target.current, 1 - Math.exp(-rate * delta));
-    camera.lookAt(currentLook);
+function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
+  const marked = useRef(false);
+  useFrame(() => {
+    if (marked.current || !profile.documentVisible) return;
+    marked.current = true;
+    markFirstSpatialFrame("/life-map", profile.tier);
   });
   return null;
 }
 
-function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLState) => void }) {
-  const { gl } = useThree();
+function CameraRig({ intent, reducedMotion, visible }: {
+  intent: CameraIntent;
+  reducedMotion: boolean;
+  visible: boolean;
+}) {
+  const { camera } = useThree();
+  const desired = useMemo(() => new THREE.Vector3(...intent.position), [intent.position]);
+  const desiredTarget = useMemo(() => new THREE.Vector3(...intent.target), [intent.target]);
+  const currentTarget = useRef(new THREE.Vector3(...intent.target));
+  const transition = useRef({
+    startPosition: camera.position.clone(),
+    startTarget: currentTarget.current.clone(),
+    progress: 1,
+  });
+  const workingPosition = useRef(new THREE.Vector3());
 
   useEffect(() => {
-    const canvas = gl.domElement;
-    let recoveryTimer: number | null = null;
+    transition.current = {
+      startPosition: camera.position.clone(),
+      startTarget: currentTarget.current.clone(),
+      progress: reducedMotion ? 1 : 0,
+    };
+  }, [camera, desired, desiredTarget, reducedMotion]);
 
-    const clearRecoveryTimer = () => {
-      if (recoveryTimer !== null) {
-        window.clearTimeout(recoveryTimer);
-        recoveryTimer = null;
-      }
-    };
-    const lost = (event: Event) => {
-      event.preventDefault();
-      clearRecoveryTimer();
-      onStateChange("lost");
-      recoveryTimer = window.setTimeout(() => onStateChange("recovering"), 250);
-    };
-    const restored = () => {
-      clearRecoveryTimer();
-      onStateChange("ready");
-    };
+  useFrame((_, delta) => {
+    if (!visible) return;
+    if (reducedMotion) {
+      camera.position.copy(desired);
+      currentTarget.current.copy(desiredTarget);
+      camera.lookAt(currentTarget.current);
+      return;
+    }
 
-    canvas.addEventListener("webglcontextlost", lost, false);
-    canvas.addEventListener("webglcontextrestored", restored, false);
-    onStateChange("ready");
-
-    return () => {
-      clearRecoveryTimer();
-      canvas.removeEventListener("webglcontextlost", lost, false);
-      canvas.removeEventListener("webglcontextrestored", restored, false);
-    };
-  }, [gl, onStateChange]);
+    const state = transition.current;
+    state.progress = Math.min(1, state.progress + delta * 0.48);
+    const eased = THREE.MathUtils.smootherstep(state.progress, 0, 1);
+    workingPosition.current.lerpVectors(state.startPosition, desired, eased);
+    const distance = state.startPosition.distanceTo(desired);
+    const arc = Math.sin(Math.PI * eased);
+    workingPosition.current.y += arc * Math.min(1.2, distance * 0.12);
+    workingPosition.current.x += arc * (desired.x >= state.startPosition.x ? 0.18 : -0.18);
+    camera.position.copy(workingPosition.current);
+    currentTarget.current.lerpVectors(state.startTarget, desiredTarget, eased);
+    camera.lookAt(currentTarget.current);
+  });
 
   return null;
 }
 
-function MemoryLens({ node, active, muted, reducedMotion, onSelect }: { node: LifeMapNode; active: boolean; muted: boolean; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
+function ParallaxLayer({ profile, countMultiplier, radius, depth, opacity, size, seed }: {
+  profile: SpatialQualityProfile;
+  countMultiplier: number;
+  radius: number;
+  depth: number;
+  opacity: number;
+  size: number;
+  seed: number;
+}) {
   const group = useRef<THREE.Group>(null);
-  const color = useMemo(() => new THREE.Color(node.aura), [node.aura]);
+  const count = Math.max(180, Math.round(profile.particleCount * countMultiplier));
+  const geometry = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const color = new THREE.Color();
+
+    for (let index = 0; index < count; index += 1) {
+      const normalized = index / Math.max(1, count - 1);
+      const angle = index * 2.399963229728653 + seed;
+      const radial = Math.sqrt(normalized) * radius;
+      const wave = Math.sin(index * 0.37 + seed) * radius * 0.08;
+      positions[index * 3] = Math.cos(angle) * radial + wave;
+      positions[index * 3 + 1] = (Math.sin(index * 0.61 + seed) * 0.5 + Math.cos(index * 0.13) * 0.5) * radius * 0.34;
+      positions[index * 3 + 2] = -Math.abs(Math.sin(angle * 0.72)) * depth - normalized * depth - 1.5;
+      color.setHSL(0.52 + ((index + seed) % 7) * 0.012, 0.72, 0.58 + (index % 5) * 0.055);
+      colors[index * 3] = color.r;
+      colors[index * 3 + 1] = color.g;
+      colors[index * 3 + 2] = color.b;
+    }
+
+    const next = new THREE.BufferGeometry();
+    next.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    next.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    return next;
+  }, [count, depth, radius, seed]);
+
+  useEffect(() => () => geometry.dispose(), [geometry]);
+
+  useFrame(({ clock }) => {
+    if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+    group.current.rotation.y = Math.sin(clock.elapsedTime * (0.018 + seed * 0.002)) * 0.035;
+    group.current.rotation.z = Math.cos(clock.elapsedTime * (0.014 + seed * 0.001)) * 0.018;
+  });
+
+  return (
+    <group ref={group} name={`life-map-parallax-layer-${seed}`}>
+      <points geometry={geometry} frustumCulled={false}>
+        <pointsMaterial size={size} vertexColors transparent opacity={opacity} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
+      </points>
+    </group>
+  );
+}
+
+function ContinuityNexus({ profile }: { profile: SpatialQualityProfile }) {
+  const group = useRef<THREE.Group>(null);
+  const threads = useMemo(() => [
+    {
+      color: "#8befff",
+      curve: new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-1.9, -0.72, 0.34),
+        new THREE.Vector3(-1.18, 0.22, 0.08),
+        new THREE.Vector3(-0.34, -0.2, -0.22),
+        new THREE.Vector3(0.58, 0.52, -0.52),
+        new THREE.Vector3(1.74, 0.08, -0.86),
+      ]),
+    },
+    {
+      color: "#b896ff",
+      curve: new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-1.46, 0.92, -0.48),
+        new THREE.Vector3(-0.72, 0.28, -0.1),
+        new THREE.Vector3(0.12, 0.36, -0.42),
+        new THREE.Vector3(0.94, -0.48, -0.68),
+        new THREE.Vector3(1.46, -0.92, -1.06),
+      ]),
+    },
+    {
+      color: "#ffe6a8",
+      curve: new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-1.12, -1.02, -0.72),
+        new THREE.Vector3(-0.54, -0.38, -0.22),
+        new THREE.Vector3(0.18, -0.04, -0.54),
+        new THREE.Vector3(0.74, 0.72, -0.88),
+        new THREE.Vector3(1.22, 1.06, -1.22),
+      ]),
+    },
+  ], []);
+  const anchors = useMemo(() => [
+    { position: [-1.9, -0.72, 0.34] as [number, number, number], radius: 0.055, color: "#dffcff" },
+    { position: [-1.18, 0.22, 0.08] as [number, number, number], radius: 0.04, color: "#8befff" },
+    { position: [-0.34, -0.2, -0.22] as [number, number, number], radius: 0.047, color: "#efffff" },
+    { position: [0.18, -0.04, -0.54] as [number, number, number], radius: 0.038, color: "#ffe6a8" },
+    { position: [0.58, 0.52, -0.52] as [number, number, number], radius: 0.052, color: "#b896ff" },
+    { position: [0.94, -0.48, -0.68] as [number, number, number], radius: 0.042, color: "#dffcff" },
+    { position: [1.74, 0.08, -0.86] as [number, number, number], radius: 0.058, color: "#8befff" },
+    { position: [1.22, 1.06, -1.22] as [number, number, number], radius: 0.036, color: "#ffe6a8" },
+  ], []);
+
+  useFrame(({ clock }) => {
+    if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+    group.current.rotation.y = -0.12 + Math.sin(clock.elapsedTime * 0.038) * 0.026;
+    group.current.rotation.z = Math.cos(clock.elapsedTime * 0.031) * 0.012;
+    group.current.position.y = 0.12 + Math.sin(clock.elapsedTime * 0.09) * 0.045;
+  });
+
+  return (
+    <group ref={group} position={[0.45, 0.12, -10.4]} rotation={[0.03, -0.12, -0.02]} name="life-map-continuity-nexus">
+      {threads.map((thread, index) => (
+        <mesh key={thread.color} name="life-map-continuity-thread">
+          <tubeGeometry args={[thread.curve, 72, index === 0 ? 0.018 : 0.012, 8, false]} />
+          <meshBasicMaterial
+            color={thread.color}
+            transparent
+            opacity={index === 0 ? 0.32 : 0.2}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ))}
+      {anchors.map((anchor, index) => (
+        <group key={index} position={anchor.position} name="life-map-continuity-anchor">
+          <mesh>
+            <sphereGeometry args={[anchor.radius, 18, 18]} />
+            <meshBasicMaterial color={anchor.color} transparent opacity={0.86} depthWrite={false} blending={THREE.AdditiveBlending} />
+          </mesh>
+          {index === 2 || index === 4 || index === 6 ? (
+            <pointLight color={anchor.color} intensity={0.34} distance={2.8} />
+          ) : null}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function ChapterRegions({ nodes, selectedId }: { nodes: LifeMapNode[]; selectedId: string | null }) {
+  const regions = useMemo(() => {
+    const grouped = new Map<string, LifeMapNode[]>();
+    nodes.forEach((node) => {
+      const key = node.eraId || node.clusterId || "present";
+      grouped.set(key, [...(grouped.get(key) || []), node]);
+    });
+    return [...grouped.entries()].map(([id, members], index) => {
+      const total = members.reduce<[number, number, number]>((sum, node) => [
+        sum[0] + node.position[0],
+        sum[1] + node.position[1],
+        sum[2] + node.position[2],
+      ], [0, 0, 0]);
+      const center: [number, number, number] = [
+        total[0] / members.length,
+        total[1] / members.length,
+        total[2] / members.length - 0.24,
+      ];
+      return {
+        id,
+        center,
+        radius: 1.05 + members.length * 0.28,
+        aura: members[0]?.aura || "#8adfff",
+        selected: members.some((node) => node.id === selectedId),
+        start: index * 0.65,
+      };
+    });
+  }, [nodes, selectedId]);
+
+  return (
+    <group name="life-map-middle-chapter-regions">
+      {regions.map((region, index) => (
+        <group key={region.id} position={region.center} rotation={[Math.PI / 2 + index * 0.07, index * 0.16, index * 0.04]}>
+          <mesh>
+            <ringGeometry args={[region.radius, region.radius + 0.035, 96, 1, region.start, Math.PI * 1.42]} />
+            <meshBasicMaterial color={region.aura} transparent opacity={region.selected ? 0.34 : 0.11} depthWrite={false} blending={THREE.AdditiveBlending} />
+          </mesh>
+          <mesh rotation={[0.08, 0.18, 0]} position={[0, 0, -0.08]}>
+            <ringGeometry args={[region.radius * 0.72, region.radius * 0.735, 80, 1, region.start + 0.8, Math.PI * 0.92]} />
+            <meshBasicMaterial color="#d8fbff" transparent opacity={region.selected ? 0.22 : 0.055} depthWrite={false} />
+          </mesh>
+          {!selectedId ? (
+            <Html distanceFactor={12} position={[region.radius * 0.28, region.radius * 0.72, 0]} center zIndexRange={[24, 4]}>
+              <span className="life-map-region-label">{titleize(region.id)}</span>
+            </Html>
+          ) : null}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function GoalMonuments() {
+  const monuments = [
+    { position: [-7.4, 0.15, -19.5] as [number, number, number], height: 4.8, width: 0.8 },
+    { position: [6.8, 1.1, -22.5] as [number, number, number], height: 6.2, width: 1.05 },
+    { position: [2.6, -0.4, -26.5] as [number, number, number], height: 5.4, width: 0.72 },
+  ];
+
+  return (
+    <group name="life-map-far-goal-monuments">
+      {monuments.map((monument, index) => (
+        <group key={index} position={monument.position} rotation={[0, index * 0.42 - 0.36, 0]}>
+          <mesh scale={[monument.width, monument.height, 0.7]}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshStandardMaterial color="#050b18" emissive={index === 1 ? "#d9c98e" : "#557a91"} emissiveIntensity={0.18} roughness={0.26} metalness={0.82} />
+          </mesh>
+          <mesh position={[0, monument.height * 0.56, 0.15]} scale={[monument.width * 1.35, 0.08, 0.9]}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshBasicMaterial color={index === 1 ? "#fff0b8" : "#b7efff"} transparent opacity={0.28} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function PrivateVaults() {
+  return (
+    <group name="life-map-private-vaults">
+      <group position={[-5.6, -2.4, -7.2]} rotation={[0.08, 0.44, -0.06]}>
+        <mesh scale={[1.45, 0.72, 1.15]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#01040a" emissive="#182338" emissiveIntensity={0.14} roughness={0.18} metalness={0.88} />
+        </mesh>
+        <mesh position={[0, 0.02, 0.59]} scale={[0.34, 0.34, 0.03]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshBasicMaterial color="#d9f7ff" transparent opacity={0.22} />
+        </mesh>
+      </group>
+      <group position={[5.7, -2.05, -9.2]} rotation={[-0.04, -0.38, 0.04]}>
+        <mesh scale={[1.12, 0.58, 0.92]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#02030a" emissive="#271c38" emissiveIntensity={0.12} roughness={0.2} metalness={0.84} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function EmotionalWeather({ profile }: { profile: SpatialQualityProfile }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+    group.current.position.x = Math.sin(clock.elapsedTime * 0.035) * 0.8;
+    group.current.rotation.z = Math.sin(clock.elapsedTime * 0.022) * 0.04;
+  });
+
+  return (
+    <group ref={group} position={[0, 0.3, -8]} name="life-map-emotional-weather">
+      <mesh position={[-3.4, 1.1, -0.8]} rotation={[0.18, -0.28, 0.12]}>
+        <planeGeometry args={[9.2, 4.8]} />
+        <meshBasicMaterial color="#4fdfff" transparent opacity={0.026} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[3.5, -0.4, -1.8]} rotation={[-0.12, 0.32, -0.18]}>
+        <planeGeometry args={[10.8, 5.6]} />
+        <meshBasicMaterial color="#b177ff" transparent opacity={0.035} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[0.8, 2.4, -4.2]} rotation={[0.14, 0.08, 0.2]}>
+        <planeGeometry args={[8.4, 3.2]} />
+        <meshBasicMaterial color="#fff1bd" transparent opacity={0.018} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}
+
+function MemoryPath({ from, to, active, profile }: {
+  from: LifeMapNode;
+  to: LifeMapNode;
+  active: boolean;
+  profile: SpatialQualityProfile;
+}) {
+  const pulse = useRef<THREE.Mesh>(null);
+  const curve = useMemo(() => {
+    const start = new THREE.Vector3(...from.position);
+    const end = new THREE.Vector3(...to.position);
+    const middle = start.clone().lerp(end, 0.5);
+    middle.y += 0.7 + Math.abs(start.x - end.x) * 0.11;
+    middle.z -= 0.55 + Math.abs(start.z - end.z) * 0.08;
+    return new THREE.CatmullRomCurve3([start, middle, end]);
+  }, [from, to]);
+
+  useFrame(({ clock }) => {
+    if (!pulse.current || !active || profile.reducedMotion || !profile.documentVisible) return;
+    const t = (clock.elapsedTime * 0.075 + from.intensity * 0.17) % 1;
+    pulse.current.position.copy(curve.getPointAt(t));
+  });
+
+  return (
+    <group name="life-map-temporal-path">
+      <mesh>
+        <tubeGeometry args={[curve, 72, active ? 0.012 : 0.005, 6, false]} />
+        <meshBasicMaterial color={active ? "#a5f7ff" : "#24344d"} transparent opacity={active ? 0.38 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh ref={pulse} visible={active && !profile.reducedMotion}>
+        <sphereGeometry args={[0.034, 10, 10]} />
+        <meshBasicMaterial color="#f4ffff" transparent opacity={0.78} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}
+
+function MemoryArtifact({ node, selected, related, overview, profile, onSelect }: {
+  node: LifeMapNode;
+  selected: boolean;
+  related: boolean;
+  overview: boolean;
+  profile: SpatialQualityProfile;
+  onSelect: (node: LifeMapNode) => void;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const lens = useRef<THREE.MeshPhysicalMaterial>(null);
+  const { camera } = useThree();
+  const textureResolution = selected
+    ? profile.tier === "high" ? 512 : 384
+    : overview
+      ? profile.tier === "high" ? 128 : 96
+      : related
+        ? profile.tier === "high" ? 224 : 160
+        : 80;
+  const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution]);
+  const textureKey = texture?.uuid || "pending";
+  const scale = 0.58 + node.intensity * 0.2;
+  const visibleOpacity = selected ? 1 : overview ? 0.82 : related ? 0.42 : 0.11;
+
+  useEffect(() => () => {
+    const dispose = () => texture?.dispose();
+    if (typeof window === "undefined") dispose();
+    else window.requestAnimationFrame(dispose);
+  }, [texture]);
+
   useFrame(({ clock }, delta) => {
     if (!group.current) return;
-    const scale = active ? 1.7 : muted ? .72 : 1;
-    group.current.scale.setScalar(THREE.MathUtils.damp(group.current.scale.x, scale, 5, delta));
-    if (!reducedMotion) group.current.rotation.y = Math.sin(clock.elapsedTime * .22 + node.position[0]) * .12;
+    group.current.quaternion.slerp(camera.quaternion, profile.reducedMotion ? 1 : 0.085);
+    const targetScale = selected ? 1.82 : overview ? 0.92 : related ? 0.76 : 0.56;
+    const nextScale = profile.reducedMotion
+      ? targetScale
+      : THREE.MathUtils.damp(group.current.scale.x, targetScale, 4.8, delta);
+    group.current.scale.setScalar(nextScale);
+    if (!profile.reducedMotion && profile.documentVisible) {
+      const breath = Math.sin(clock.elapsedTime * (0.44 + node.intensity) + node.position[0]) * (selected ? 0.032 : 0.018);
+      group.current.scale.multiplyScalar(1 + breath);
+      group.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.2 + node.position[2]) * 0.045;
+      group.current.rotation.z = Math.sin(clock.elapsedTime * 0.08 + node.position[0]) * (selected ? 0.018 : 0.008);
+    }
+    if (lens.current) lens.current.opacity = selected ? 0.3 : overview ? 0.12 : related ? 0.07 : 0.025;
   });
+
+  const choose = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+    onSelect(node);
+  };
+
   return (
-    <group ref={group} position={node.position} rotation={[0, node.position[0] * .04, node.position[1] * .03]} name={`life-map-memory-${node.id}`} data-depth-anchor="true">
+    <group ref={group} position={node.position} name={`life-map-memory-lens-${node.type}`}>
       <mesh
-        onClick={(event) => { event.stopPropagation(); onSelect(node); }}
-        onPointerOver={(event) => { event.stopPropagation(); document.body.style.cursor = "pointer"; }}
-        onPointerOut={(event) => { event.stopPropagation(); document.body.style.cursor = ""; }}
+        name="life-map-memory-lens-hit-target"
+        onClick={choose}
+        onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = ""; }}
+        scale={[scale * 1.62, scale * 1.62, 1]}
       >
-        <sphereGeometry args={[.42 + node.intensity * .16, 32, 32]} />
-        <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : .55} roughness={.18} metalness={.18} transmission={.18} transparent opacity={muted ? .28 : .9} />
+        <circleGeometry args={[0.82, 56]} />
+        <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
       </mesh>
-      <mesh scale={active ? 1.8 : 1.35}><torusGeometry args={[.48, .018, 10, 72]} /><meshBasicMaterial color={color} transparent opacity={muted ? .12 : active ? .8 : .34} depthWrite={false} /></mesh>
-      <pointLight color={color} intensity={active ? 5 : 1.4} distance={active ? 7 : 3.5} decay={2} />
-      {(active || !muted) ? (
-        <Html position={[0, .88, 0]} center distanceFactor={10} occlude="blending">
-          <button className="life-map-world-label" data-active={active ? "true" : "false"} onClick={() => onSelect(node)}>
-            <strong>{node.title}</strong><span>{lifeMapTypeLabels[node.type]} · {node.dateLabel}</span>
-          </button>
-        </Html>
+
+      {selected ? Array.from({ length: 6 }, (_, index) => (
+        <mesh key={index} position={[0, 0, -0.14]} rotation={[0, 0, (Math.PI / 6) * index]} scale={[scale * 0.035, scale * 2.8, 1]}>
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial color={node.aura} transparent opacity={0.16} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      )) : null}
+
+      <mesh position={[0, 0, -0.12]} scale={[scale * 1.66, scale * 1.66, 1]}>
+        <circleGeometry args={[0.86, 64]} />
+        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.2 : overview ? 0.075 : related ? 0.04 : 0.012} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      <mesh key={textureKey + "-main"} scale={[scale * 1.5, scale * 1.5, 1]}>
+        <planeGeometry args={[1.74, 1.74, 1, 1]} />
+        <meshBasicMaterial
+          map={texture || undefined}
+          color={texture ? "#ffffff" : "#071425"}
+          transparent
+          opacity={texture ? visibleOpacity : 0}
+          toneMapped={false}
+          depthWrite={selected}
+        />
+      </mesh>
+
+      <mesh position={[0, 0, -0.055]} scale={[scale * 1.36, scale * 1.36, 1]}>
+        <circleGeometry args={[0.84, 64]} />
+        <meshPhysicalMaterial
+          ref={lens}
+          color={node.aura}
+          transparent
+          opacity={selected ? 0.3 : 0.08}
+          roughness={0.06}
+          metalness={0.08}
+          transmission={0.48}
+          thickness={0.26}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      <mesh position={[-scale * 0.78, scale * 0.52, -0.09]} rotation={[0, 0, -0.42]} scale={[scale * 0.26, scale * 0.08, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.34 : related ? 0.08 : 0.015} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[scale * 0.76, -scale * 0.48, -0.1]} rotation={[0, 0, 0.36]} scale={[scale * 0.22, scale * 0.065, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#dffcff" transparent opacity={selected ? 0.28 : related ? 0.06 : 0.012} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      {selected ? <pointLight color={node.aura} intensity={1.35} distance={7} decay={2} position={[0, 0.15, 0.7]} /> : null}
+
+      {node.privacyLevel === "hidden" || node.locked ? (
+        <mesh position={[0, 0, 0.08]} scale={[scale * 1.3, scale * 1.3, 1]}>
+          <circleGeometry args={[0.84, 64]} />
+          <meshBasicMaterial color="#01040a" transparent opacity={0.58} depthWrite={false} />
+        </mesh>
       ) : null}
     </group>
   );
 }
 
-function MemoryPaths({ nodes, activeId }: { nodes: LifeMapNode[]; activeId: string | null }) {
-  const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
-  return <group name="life-map-anchored-paths">{nodes.flatMap((node) => node.connectedTo.slice(0, 2).map((targetId) => {
-    const target = byId.get(targetId);
-    if (!target || target.id < node.id) return null;
-    const active = activeId === node.id || activeId === target.id;
-    return <Line key={`${node.id}-${target.id}`} points={[node.position, target.position]} color={active ? "#c8f7ff" : "#38506b"} transparent opacity={active ? .62 : .16} lineWidth={active ? 1.6 : .7} />;
-  }))}</group>;
-}
+function ForegroundDepthCrossings({ profile }: { profile: SpatialQualityProfile }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.04) * 0.025;
+  });
 
-function LifeMapWorld({ nodes, selected, goal, phase, reducedMotion, onSelect, onWebGLStateChange }: { nodes: LifeMapNode[]; selected: LifeMapNode | null; goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void; onWebGLStateChange: (state: WebGLState) => void }) {
   return (
-    <>
-      <color attach="background" args={["#01030a"]} />
-      <fog attach="fog" args={["#01030a", 12, 42]} />
-      <ambientLight intensity={.26} color="#b8dcff" />
-      <directionalLight position={[4, 8, 8]} intensity={1.2} color="#d8f5ff" />
-      <WebGLRecoveryBridge onStateChange={onWebGLStateChange} />
-      <CameraRig goal={goal} phase={phase} reducedMotion={reducedMotion} />
-      <AtmosphericDepth reducedMotion={reducedMotion} />
-      <MemoryPaths nodes={nodes} activeId={selected?.id || null} />
-      {nodes.map((node) => <MemoryLens key={node.id} node={node} active={selected?.id === node.id} muted={Boolean(selected && selected.id !== node.id && !selected.connectedTo.includes(node.id))} reducedMotion={reducedMotion} onSelect={onSelect} />)}
-    </>
+    <group ref={group} name="life-map-near-depth-crossings">
+      <mesh position={[-6.8, -2.7, 3.4]} rotation={[0.1, 0.62, -0.12]} scale={[1.5, 4.8, 0.18]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#02050b" emissive="#102235" emissiveIntensity={0.12} roughness={0.16} metalness={0.86} />
+      </mesh>
+      <mesh position={[7.1, 2.3, 2.2]} rotation={[-0.18, -0.48, 0.2]} scale={[1.2, 3.9, 0.14]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#03040b" emissive="#241833" emissiveIntensity={0.1} roughness={0.18} metalness={0.82} />
+      </mesh>
+    </group>
   );
 }
 
-function truthLabel(sourceMode: LifeMapSourceMode) {
-  if (sourceMode === "explicit-demo") return "Sample constellation · not your memories";
-  if (sourceMode === "signed-out") return "Signed out · no personal data displayed";
-  if (sourceMode === "empty") return "Private constellation ready for its first memory";
-  if (sourceMode === "unavailable") return "Private memory service resting safely";
-  if (sourceMode === "error") return "Private memory data could not be opened";
-  return "Private constellation";
+function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect }: {
+  nodes: LifeMapNode[];
+  selectedNode: LifeMapNode | null;
+  profile: SpatialQualityProfile;
+  cameraIntent: CameraIntent;
+  onSelect: (node: LifeMapNode) => void;
+}) {
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const related = useMemo(() => {
+    if (!selectedNode) return new Set(nodes.map((node) => node.id));
+    const next = new Set<string>([selectedNode.id, ...selectedNode.connectedTo]);
+    nodes.forEach((node) => {
+      if (node.connectedTo.includes(selectedNode.id)) next.add(node.id);
+    });
+    return next;
+  }, [nodes, selectedNode]);
+
+  const edges = useMemo(() => {
+    const seen = new Set<string>();
+    return nodes.flatMap((node) => node.connectedTo.flatMap((targetId) => {
+      const target = nodeById.get(targetId);
+      if (!target) return [];
+      const key = [node.id, target.id].sort().join("::");
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [{ from: node, to: target, key }];
+    }));
+  }, [nodeById, nodes]);
+
+  return (
+    <>
+      <FirstFrame profile={profile} />
+      <color attach="background" args={["#01030a"]} />
+      <fog attach="fog" args={["#01030a", selectedNode ? 5.5 : 8, selectedNode ? 30 : 44]} />
+      <CameraRig intent={cameraIntent} reducedMotion={profile.reducedMotion} visible={profile.documentVisible} />
+      <ambientLight intensity={0.28} />
+      <directionalLight position={[-5, 8, 5]} intensity={1.1} color="#dffbff" castShadow={profile.shadows} />
+      <pointLight position={[-4, 3, 5]} color="#7df8ff" intensity={1.8} />
+      <pointLight position={[5, 1.2, 1]} color="#c887ff" intensity={1.25} />
+      <pointLight position={[0, -2, 2]} color="#fff0c2" intensity={0.42} />
+
+      <Stars radius={120} depth={92} count={profile.tier === "high" ? 5200 : profile.tier === "medium" ? 3200 : 1600} factor={4.2} saturation={0.42} fade speed={profile.reducedMotion ? 0 : 0.14} />
+      <ParallaxLayer profile={profile} countMultiplier={1.1} radius={9} depth={7} opacity={0.62} size={0.034} seed={1} />
+      <ParallaxLayer profile={profile} countMultiplier={1.65} radius={17} depth={19} opacity={0.34} size={0.052} seed={3} />
+      <ParallaxLayer profile={profile} countMultiplier={2.1} radius={31} depth={42} opacity={0.2} size={0.075} seed={5} />
+
+      <EmotionalWeather profile={profile} />
+      <ContinuityNexus profile={profile} />
+      <GoalMonuments />
+      <PrivateVaults />
+      <ChapterRegions nodes={nodes} selectedId={selectedNode?.id || null} />
+
+      <group rotation={[-0.11, 0.05, -0.02]} position={[0, -0.05, -0.4]} name="life-map-memory-field">
+        {edges.map(({ from, to, key }) => (
+          <MemoryPath
+            key={key}
+            from={from}
+            to={to}
+            active={!selectedNode || related.has(from.id) || related.has(to.id)}
+            profile={profile}
+          />
+        ))}
+        {nodes.map((node) => (
+          <MemoryArtifact
+            key={node.id}
+            node={node}
+            selected={selectedNode?.id === node.id}
+            related={related.has(node.id)}
+            overview={!selectedNode}
+            profile={profile}
+            onSelect={onSelect}
+          />
+        ))}
+      </group>
+
+      <ForegroundDepthCrossings profile={profile} />
+
+      {profile.postprocessing && !profile.reducedMotion ? (
+        <EffectComposer>
+          <Bloom intensity={0.46} luminanceThreshold={0.24} luminanceSmoothing={0.38} />
+          <Vignette eskil={false} offset={0.2} darkness={0.54} />
+        </EffectComposer>
+      ) : null}
+    </>
+  );
 }
 
 export default function AdaptiveLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
   const profile = useAdaptiveSpatialQuality();
-  const explicitDemoRequested = params.get("demo") === "1";
-  const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
-  const queryNode = safeToken(params.get("node") || params.get("memoryId"));
+  const { nodes, loading, error, usingSeedData } = useLifeMapEvents();
+  const initial = useRef<PersistedLifeMapState | null>(null);
+  if (!initial.current) initial.current = readPersistedState();
+
+  const queryNodeId = safeToken(params.get("node") || params.get("nodeId") || params.get("memoryId"));
+  const overviewRequested = params.get("overview") === "1";
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-  const [selectedId, setSelectedId] = useState<string | null>(params.get("overview") === "1" ? null : queryNode || null);
-  const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
-  const [webglState, setWebglState] = useState<WebGLState>("ready");
-  const timers = useRef<number[]>([]);
-  const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
-  const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [selected]);
+  const [selectedId, setSelectedId] = useState<string | null>(() => overviewRequested ? null : queryNodeId || initial.current?.selectedId || null);
+  const [cameraIntent, setCameraIntent] = useState<CameraIntent>(() => overviewRequested ? OVERVIEW_CAMERA : initial.current?.cameraIntent || OVERVIEW_CAMERA);
+  const [narratorText, setNarratorText] = useState("The Life Map is open. Select a star to move inside the memory field.");
+  const [webglState, setWebglState] = useState<WebGLState>("starting");
+  const mainRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ x: number; y: number; camera: CameraIntent } | null>(null);
+  const rendererCleanupRef = useRef<(() => void) | null>(null);
+  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const stableCanvas = useRef({ antialias: profile.antialias, pixelRatioMax: profile.pixelRatioMax });
 
-  const clearTimers = useCallback(() => {
-    timers.current.forEach((id) => window.clearTimeout(id));
-    timers.current = [];
-  }, []);
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(() => {
+    if (overviewRequested || !queryNodeId || !nodes.length) return;
+    const node = nodes.find((candidate) => candidate.id === queryNodeId);
+    if (!node) return;
+    setSelectedId(node.id);
+    setCameraIntent(cameraForNode(node));
+    setNarratorText(narrationForNode(node).text);
+  }, [nodes, overviewRequested, queryNodeId]);
 
-  const withIdentity = useCallback((next: URLSearchParams) => {
-    if (explicitDemoRequested) next.set("demo", "1");
-    if (manifestId) next.set("manifestId", manifestId);
-    return next;
-  }, [explicitDemoRequested, manifestId]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LIFE_MAP_STATE_KEY, JSON.stringify({ selectedId, cameraIntent }));
+    } catch {
+      // State restoration is best-effort when storage is unavailable.
+    }
+  }, [cameraIntent, selectedId]);
+
+  const identityHref = useCallback((route: "focus" | "replay", node: LifeMapNode) => {
+    const next = new URLSearchParams();
+    next.set("memoryId", node.id);
+    next.set("manifestId", manifestId);
+    next.set("node", node.id);
+    next.set("returnNode", node.id);
+    next.set("lifeMapOrigin", cameraIntent.position.map((value) => value.toFixed(3)).join(","));
+    next.set("from", "life-map-camera");
+    return `/${route}?${next.toString()}`;
+  }, [cameraIntent.position, manifestId]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
-    clearTimers();
     setSelectedId(node.id);
-    if (profile.reducedMotion) setPhase("arrival");
-    else {
-      setPhase("departure");
-      timers.current.push(window.setTimeout(() => setPhase("travel"), 180));
-      timers.current.push(window.setTimeout(() => setPhase("approach"), 760));
-      timers.current.push(window.setTimeout(() => setPhase("arrival"), 1320));
-    }
-    const next = withIdentity(new URLSearchParams());
+    setCameraIntent(cameraForNode(node));
+    setNarratorText(narrationForNode(node).text);
+    const next = new URLSearchParams();
     next.set("memoryId", node.id);
+    next.set("manifestId", manifestId);
     next.set("node", node.id);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [clearTimers, profile.reducedMotion, router, withIdentity]);
+  }, [manifestId, router]);
 
-  const overview = useCallback(() => {
-    clearTimers();
+  const recenter = useCallback(() => {
+    const preservedMemoryId = selectedId || queryNodeId;
     setSelectedId(null);
-    setPhase("overview");
-    const next = withIdentity(new URLSearchParams());
+    setCameraIntent(OVERVIEW_CAMERA);
+    setNarratorText("Back to the whole private constellation. Select any star to enter it.");
+    const next = new URLSearchParams();
+    if (preservedMemoryId) next.set("memoryId", preservedMemoryId);
+    if (manifestId) next.set("manifestId", manifestId);
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [clearTimers, router, withIdentity]);
-
-  const destinationHref = useCallback((route: "focus" | "replay") => {
-    if (!selected) return "/life-map";
-    const next = withIdentity(new URLSearchParams());
-    next.set("memoryId", selected.id);
-    next.set("node", selected.id);
-    next.set("returnNode", selected.id);
-    next.set("from", "life-map");
-    return `/${route}?${next.toString()}`;
-  }, [selected, withIdentity]);
+  }, [manifestId, queryNodeId, router, selectedId]);
 
   useEffect(() => {
-    if (!queryNode || !nodes.length) return;
-    const node = nodes.find((candidate) => candidate.id === queryNode);
-    if (node && node.id !== selectedId) selectNode(node);
-  }, [nodes, queryNode, selectNode, selectedId]);
+    const onOverviewRequest = () => recenter();
+    window.addEventListener("urai:life-map-overview", onOverviewRequest);
+    return () => window.removeEventListener("urai:life-map-overview", onOverviewRequest);
+  }, [recenter]);
+
+  const enterFocus = useCallback((node: LifeMapNode) => {
+    router.push(identityHref("focus", node));
+  }, [identityHref, router]);
+
+  const enterReplay = useCallback((node: LifeMapNode) => {
+    router.push(identityHref("replay", node));
+  }, [identityHref, router]);
 
   useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.key !== "Escape" || isEditableTarget(event.target)) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
       event.preventDefault();
-      if (selectedId) overview(); else router.push("/home");
+      event.stopImmediatePropagation();
+      if (selectedId) recenter();
+      else router.push("/home");
     };
-    window.addEventListener("keydown", handler, true);
-    return () => window.removeEventListener("keydown", handler, true);
-  }, [overview, router, selectedId]);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [recenter, router, selectedId]);
 
-  useEffect(() => () => {
-    document.body.style.cursor = "";
+  useEffect(() => {
+    const target = mainRef.current;
+    if (!target) return;
+    const onWheel = (event: WheelEvent) => {
+      if (isLifeMapUiTarget(event.target)) return;
+      event.preventDefault();
+      setCameraIntent((current) => ({
+        position: [current.position[0], current.position[1], THREE.MathUtils.clamp(current.position[2] + event.deltaY * 0.005, 4.2, 14.8)],
+        target: current.target,
+      }));
+    };
+    target.addEventListener("wheel", onWheel, { passive: false });
+    return () => target.removeEventListener("wheel", onWheel);
   }, []);
 
-  const recovery = webglState !== "ready";
+  useEffect(() => () => {
+    rendererCleanupRef.current?.();
+    if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+  }, []);
+
+  const configureRenderer = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
+    rendererCleanupRef.current?.();
+    const canvas = gl.domElement;
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      setWebglState("lost");
+      setNarratorText("The visual field paused safely. Your map and selected memory are still here.");
+      if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+      recoveryTimerRef.current = setTimeout(() => {
+        setWebglState("recovering");
+        const extension = gl.getContext().getExtension("WEBGL_lose_context") as LoseContextExtension | null;
+        extension?.restoreContext?.();
+        recoveryTimerRef.current = setTimeout(() => setWebglState((current) => current === "ready" ? current : "failed"), 8000);
+      }, 250);
+    };
+    const onContextRestored = () => {
+      if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, stableCanvas.current.pixelRatioMax));
+      gl.shadowMap.enabled = profile.shadows;
+      setWebglState("ready");
+    };
+    canvas.addEventListener("webglcontextlost", onContextLost, false);
+    canvas.addEventListener("webglcontextrestored", onContextRestored, false);
+    rendererCleanupRef.current = () => {
+      canvas.removeEventListener("webglcontextlost", onContextLost, false);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored, false);
+    };
+    gl.setPixelRatio(Math.min(window.devicePixelRatio, stableCanvas.current.pixelRatioMax));
+    gl.shadowMap.enabled = profile.shadows;
+    setWebglState("ready");
+  }, [profile.shadows]);
+
+  const onPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
+    if (isLifeMapUiTarget(event.target)) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { x: event.clientX, y: event.clientY, camera: cameraIntent };
+  }, [cameraIntent]);
+
+  const onPointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
+    if (!dragRef.current || selectedId) return;
+    const dx = event.clientX - dragRef.current.x;
+    const dy = event.clientY - dragRef.current.y;
+    const base = dragRef.current.camera;
+    const shiftX = dx * -0.008;
+    const shiftY = dy * 0.005;
+    setCameraIntent({
+      position: [THREE.MathUtils.clamp(base.position[0] + shiftX, -5.8, 5.8), THREE.MathUtils.clamp(base.position[1] + shiftY, -1.4, 4.2), base.position[2]],
+      target: [THREE.MathUtils.clamp(base.target[0] + shiftX * 0.7, -4.8, 4.8), THREE.MathUtils.clamp(base.target[1] + shiftY * 0.45, -1.8, 2.8), base.target[2]],
+    });
+  }, [selectedId]);
+
+  const onPointerUp = useCallback((event: PointerEvent<HTMLElement>) => {
+    dragRef.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Browser may already have released the pointer.
+    }
+  }, []);
+
+  const semanticRecoveryVisible = webglState === "lost" || webglState === "recovering" || webglState === "failed";
+
   return (
-    <main className="life-map-root" data-testid="urai-true-3d-life-map" data-life-map-source={sourceMode} data-life-map-phase={phase} data-life-map-mode={selected ? "selected" : "overview"} data-webgl-state={webglState} data-home-companion-owned="false">
-      <h1 className="sr-only">URAI Life Map private universe</h1>
-      <Canvas camera={{ position: OVERVIEW_POSITION, fov: 44, near: .08, far: 120 }} dpr={[1, profile.pixelRatioMax]} gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}>
-        <LifeMapWorld nodes={nodes} selected={selected} goal={goal} phase={phase} reducedMotion={profile.reducedMotion} onSelect={selectNode} onWebGLStateChange={setWebglState} />
+    <main
+      ref={mainRef}
+      className="life-map-independent-realm"
+      data-testid="urai-true-3d-life-map"
+      data-spatial-quality={profile.tier}
+      data-spatial-visible={profile.documentVisible ? "true" : "false"}
+      data-webgl-state={webglState}
+      data-life-map-source={usingSeedData ? "explicit-sample" : "private"}
+      data-life-map-mode={selectedNode ? "selected" : "overview"}
+      data-home-companion-owned="false"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
+      <h1 className="sr-only">Step inside the map.</h1>
+      <div
+        className="sr-only"
+        data-life-map-layer-contract="near middle far"
+        data-life-map-memory-contract="synchronous-luminous-memory-lenses"
+        data-life-map-companion-contract="home-companion-unmounted"
+      >
+        Life Map independent memory universe
+      </div>
+
+      <div className="life-map-cosmic-wash" aria-hidden="true" />
+      <div className="life-map-depth-vignette" aria-hidden="true" />
+
+      <Canvas
+        className="life-map-canvas"
+        camera={{ position: OVERVIEW_CAMERA.position, fov: 43, near: 0.1, far: 180 }}
+        dpr={[1, profile.pixelRatioMax]}
+        shadows={profile.shadows}
+        frameloop={profile.documentVisible ? "always" : "never"}
+        gl={{ antialias: stableCanvas.current.antialias, alpha: false, powerPreference: "high-performance" }}
+        onCreated={configureRenderer}
+      >
+        <LifeMapWorld
+          nodes={nodes}
+          selectedNode={selectedNode}
+          profile={profile}
+          cameraIntent={cameraIntent}
+          onSelect={selectNode}
+        />
       </Canvas>
 
-      <header className="life-map-title"><span>URAI · LIFE MAP</span><strong>{selected ? selected.title : "Your private universe"}</strong><em>{truthLabel(sourceMode)}</em></header>
-      <div className="life-map-phase" role="status" aria-live="polite">{loading ? "Opening constellation" : phase}</div>
+      {selectedNode ? (
+        <nav
+          className="life-map-memory-portals"
+          aria-label="Selected memory actions"
+          data-life-map-selected-actions-owner="route-dom-overlay"
+          onPointerDown={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={() => enterFocus(selectedNode)}>Enter Focus</button>
+          <button type="button" onClick={() => enterReplay(selectedNode)} disabled={!selectedNode.replayAvailable || selectedNode.locked}>Replay</button>
+          <button type="button" onClick={recenter}>Overview</button>
+        </nav>
+      ) : null}
 
-      {selected ? <nav className="life-map-actions" aria-label="Selected memory actions">
-        <button type="button" onClick={() => router.push(destinationHref("focus"))}>Enter Focus</button>
-        <button type="button" disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref("replay"))}>Replay</button>
-        <button type="button" onClick={overview}>Overview</button>
-      </nav> : null}
+      <div className="life-map-realm-mark" aria-hidden="true">
+        <span>URAI · LIFE MAP</span>
+        <i>{selectedNode ? selectedNode.dateLabel : "PRIVATE CONSTELLATION"}</i>
+      </div>
 
-      <details className="life-map-help"><summary>Explore</summary><div><p>Choose a memory, use Escape to unwind, or select Overview.</p>{nodes.map((node) => <button key={node.id} onClick={() => selectNode(node)}>{node.title}: {node.summary}</button>)}</div></details>
+      {usingSeedData ? (
+        <div className="life-map-sample-boundary" role="status">
+          Sample constellation · not your memories
+        </div>
+      ) : null}
 
-      {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive"><h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2><p>Your selected memory and privacy state remain preserved.</p><button onClick={overview}>Open semantic overview</button><button onClick={() => router.push("/home")}>Return Home</button></section> : null}
+      {semanticRecoveryVisible ? (
+        <section className="life-map-recovery" role="status" aria-live="assertive">
+          <p>Life Map protected mode</p>
+          <h2>{webglState === "failed" ? "The visual field could not restart." : "Restoring the visual field…"}</h2>
+          <span>Your selected memory and camera context remain preserved.</span>
+          <div>
+            {nodes.map((node) => (
+              <button key={node.id} type="button" onClick={() => selectNode(node)}>
+                {node.title}
+              </button>
+            ))}
+            <button type="button" onClick={() => router.push("/home")}>Return Home</button>
+          </div>
+        </section>
+      ) : null}
 
-      <style jsx>{`
-        .life-map-root{position:fixed;inset:0;overflow:hidden;background:#01030a;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important}.life-map-title{position:absolute;z-index:5;top:max(22px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));display:grid;gap:5px;max-width:min(560px,calc(100vw - 44px));pointer-events:none;text-shadow:0 12px 40px #000}.life-map-title span,.life-map-title em{font:800 10px/1.2 Inter,system-ui;letter-spacing:.22em;text-transform:uppercase;color:rgba(194,244,255,.72);font-style:normal}.life-map-title strong{font:800 clamp(26px,5vw,58px)/.95 Inter,system-ui;letter-spacing:-.055em}.life-map-phase{position:absolute;z-index:6;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));padding:9px 13px;border:1px solid rgba(190,241,255,.2);border-radius:999px;background:rgba(2,7,18,.58);backdrop-filter:blur(14px);font:800 9px/1 Inter,system-ui;letter-spacing:.16em;text-transform:uppercase}.life-map-actions{position:absolute;z-index:8;left:50%;bottom:max(26px,calc(env(safe-area-inset-bottom) + 14px));transform:translateX(-50%);display:flex;gap:8px;padding:8px;border:1px solid rgba(195,240,255,.18);border-radius:999px;background:rgba(2,7,18,.72);backdrop-filter:blur(18px)}.life-map-actions button,.life-map-help button,.life-map-recovery button{min-height:48px;border:1px solid rgba(220,248,255,.2);border-radius:999px;background:rgba(10,25,40,.84);color:#f8fbff;padding:0 18px;font-weight:800;cursor:pointer}.life-map-actions button:disabled{opacity:.38;cursor:not-allowed}.life-map-help{position:absolute;z-index:8;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(390px,calc(100vw - 40px));border:1px solid rgba(195,240,255,.18);border-radius:20px;background:rgba(2,7,18,.78);backdrop-filter:blur(18px)}.life-map-help summary{padding:14px 18px;cursor:pointer;font-weight:800}.life-map-help div{display:grid;max-height:48vh;overflow:auto;gap:8px;padding:0 12px 12px}.life-map-help p{font-size:12px;color:rgba(229,244,255,.72)}.life-map-help button{text-align:left;height:auto;padding:12px 14px;border-radius:14px}.life-map-recovery{position:absolute;z-index:20;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.9);backdrop-filter:blur(22px)}.life-map-recovery h2{font-size:clamp(28px,6vw,64px);margin:0}.life-map-recovery p{color:rgba(230,245,255,.74)}:global(.life-map-world-label){display:grid;gap:3px;min-width:150px;padding:10px 12px;border:1px solid rgba(205,244,255,.18);border-radius:16px;background:rgba(2,7,18,.72);backdrop-filter:blur(14px);color:#fff;text-align:left;cursor:pointer;transform:translateZ(0)}:global(.life-map-world-label[data-active='true']){border-color:rgba(215,250,255,.72);background:rgba(10,35,52,.9)}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:9px;color:rgba(221,241,255,.68)}@media(max-width:700px){.life-map-title{top:max(16px,env(safe-area-inset-top));left:16px}.life-map-title strong{font-size:34px}.life-map-phase{top:auto;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px));right:16px}.life-map-actions{bottom:max(16px,env(safe-area-inset-bottom));width:calc(100vw - 32px);justify-content:center}.life-map-actions button{flex:1;padding:0 10px}.life-map-help{right:16px;bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px))}}@media(prefers-reduced-motion:reduce){.life-map-root *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
-      `}</style>
+      <section className="life-map-whisper" data-life-map-whisper="true" data-selected={selectedNode ? "true" : "false"} aria-live="polite" aria-atomic="true">
+        <p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? usingSeedData ? "Protected sample field" : "Private constellation unavailable" : "Private constellation"}</p>
+        <span>{narratorText}</span>
+      </section>
+
+      <details
+        className="life-map-accessibility-menu"
+        onPointerDown={(event) => event.stopPropagation()}
+        onWheel={(event) => event.stopPropagation()}
+      >
+        <summary>Map controls</summary>
+        <div>
+          <div data-life-map-overview-list="true">
+            <p>Explore memories without the visual field.</p>
+            {nodes.map((node) => (
+              <button key={node.id} type="button" onClick={() => selectNode(node)}>
+                {node.title}: {node.summary}
+              </button>
+            ))}
+          </div>
+          {selectedNode ? (
+            <div data-life-map-selected-actions="true">
+              <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))}>Enter Focus</button>
+              <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} disabled={!selectedNode.replayAvailable || selectedNode.locked}>Replay</button>
+            </div>
+          ) : null}
+          <div data-life-map-route-actions="true">
+            <button type="button" data-life-map-overview-control="true" onClick={recenter}>Overview</button>
+            <button type="button" onClick={() => router.push("/ground")}>Ground</button>
+            <button type="button" onClick={() => router.push("/home")}>Home</button>
+          </div>
+        </div>
+      </details>
     </main>
   );
 }
