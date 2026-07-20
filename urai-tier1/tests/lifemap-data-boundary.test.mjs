@@ -12,18 +12,17 @@ test('Life Map identity fails closed instead of defaulting to demo-user', () => 
   assert.match(source, /Sign in to open your private Life Map\./)
 })
 
-test('sample memories require an explicit demo contract', () => {
-  assert.match(source, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)
-  assert.match(source, /urai:lifeMapDemoMode/)
-  assert.match(source, /explicitUserId === "demo-user"/)
+test('sample memories require only the explicit demo-user contract', () => {
+  assert.match(source, /return explicitUserId === "demo-user"/)
+  assert.doesNotMatch(source, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)
+  assert.doesNotMatch(source, /lifeMapDemoMode/)
   assert.match(source, /sourceMode: LifeMapSourceMode/)
   assert.match(source, /"explicit-demo"/)
 })
 
 test('empty and failed private snapshots never substitute seed memories', () => {
-  assert.match(source, /setNodes\(nextNodes\)/)
-  assert.doesNotMatch(source, /setNodes\(nextNodes\.length \? nextNodes : lifeMapNodes\)/)
-  assert.doesNotMatch(source, /setEras\(nextEras\.length \? nextEras : lifeMapEras\)/)
+  assert.match(source, /setNodes\(snapshot\.docs\.map/)
+  assert.doesNotMatch(source, /setNodes\([^)]*lifeMapNodes/)
   assert.match(source, /setNodes\(\[\]\)/)
   assert.match(source, /setEras\(\[\]\)/)
   assert.match(source, /\? "empty"/)
