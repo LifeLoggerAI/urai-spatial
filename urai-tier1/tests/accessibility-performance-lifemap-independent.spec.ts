@@ -54,7 +54,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(page.locator('details[data-life-map-navigator] summary')).toHaveText('Search life')
   })
 
-  test('keyboard-accessible semantic memory selection preserves identity into Focus', async ({ page }) => {
+  test('keyboard-accessible semantic memory selection preserves explicit demo identity into Focus', async ({ page }) => {
     const navigator = await openDemoNavigator(page)
     await expect(page.locator('.life-map-title')).toContainText('Sample constellation · not your memories')
 
@@ -78,14 +78,15 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(focus).toBeFocused()
     await focus.press('Enter')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/focus')
+    await expect(page.getByTestId('urai-final-focus-chamber')).toHaveAttribute('data-memory-status', 'demo', { timeout: 15_000 })
     const focusUrl = new URL(page.url())
-    expect(focusUrl.searchParams.get('memoryId')).toBe(selectedMemoryId)
+    expect(focusUrl.searchParams.get('memoryId')).toBe(`demo:${selectedMemoryId}`)
     expect(focusUrl.searchParams.get('demo')).toBe('1')
     expect(focusUrl.searchParams.get('returnNode')).toBe(selectedMemoryId)
-    expect(focusUrl.searchParams.get('manifestId')).toBeTruthy()
+    expect(focusUrl.searchParams.get('manifestId')).toBe('demo-manifest')
   })
 
-  test('Overview clears selected visual and semantic state across refresh and browser history', async ({ page }) => {
+  test('Overview clears selected visual and semantic state across refresh and browser return', async ({ page }) => {
     await page.goto(demoMemoryUrl(false), { waitUntil: 'domcontentloaded' })
     await expect(selectedMemoryControls(page)).toBeVisible({ timeout: 15_000 })
     await expect(selectedMemoryControls(page).getByRole('button', { name: 'Enter Focus' })).toBeVisible()
@@ -101,13 +102,13 @@ test.describe('Life Map independent realm runtime evidence', () => {
     expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(selectedMemoryControls(page)).toHaveCount(0)
 
+    await page.goto('/home', { waitUntil: 'domcontentloaded' })
     await page.goBack({ waitUntil: 'domcontentloaded' })
-    expect(new URL(page.url()).searchParams.get('overview')).toBeNull()
-    await expect(selectedMemoryControls(page)).toBeVisible({ timeout: 15_000 })
-
-    await page.goForward({ waitUntil: 'domcontentloaded' })
+    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBeNull()
     await expect(selectedMemoryControls(page)).toHaveCount(0)
+    await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-mode', 'overview')
   })
 
   test('mobile viewports contain the independent navigation layer without horizontal overflow', async ({ page }) => {
