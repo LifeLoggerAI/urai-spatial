@@ -171,7 +171,7 @@ export default function GroundSpatialWorldClean() {
         .ground-destination-compass :is(a,button) span{width:8px;height:8px;flex:0 0 auto;border-radius:50%}.ground-destination-compass :is(a,button) strong{opacity:0;max-width:0;overflow:hidden}.ground-destination-compass :is(a,button):hover strong,.ground-destination-compass :is(a,button):focus-visible strong,.ground-destination-compass :is(a,button)[aria-current] strong{opacity:1;max-width:170px}.ground-destination-compass i{font-style:normal;font-size:12px}
         .ground-accessible-instruction{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
         @media(max-width:700px){.ground-title{top:max(15px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}.ground-title strong{font-size:18px}.ground-movement-prompt{bottom:max(238px,calc(env(safe-area-inset-bottom) + 228px));min-width:min(320px,calc(100vw - 24px))}.ground-destination-compass{justify-content:flex-start;bottom:max(10px,env(safe-area-inset-bottom));padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))}.ground-destination-compass :is(a,button){min-height:48px;max-width:46px;padding:7px 10px;font-size:9px;transition:none}}
-        @media(prefers-reduced-motion:reduce){.ground-destination-compass :is(a,button){transition:none!important;transform:none!important}}
+        @media(prefers-reduced-motion:reduce){.ground-destination-compass :is(a,button){transition:none!important;transform:none!important}.ground-destination-compass :is(a,button) strong{transition:none}}
       `}</style>
     </main>
   );
