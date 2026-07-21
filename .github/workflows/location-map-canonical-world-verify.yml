@@ -65,12 +65,7 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run exact-head browser acceptance
-        run: pnpm exec playwright test urai-tier1/tests/location-map-browser-acceptance.spec.ts --config=playwright.config.ts
-      - name: Record exact-head metadata
-        if: always()
-        run: |
-          mkdir -p location-map-browser-receipt
-          printf '{"repository":"%s","sha":"%s","run_id":"%s","run_attempt":"%s"}\n' "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > location-map-browser-receipt/exact-head.json
+        run: pnpm exec playwright test tests/location-map-browser-acceptance.spec.ts --config=playwright.config.ts
       - name: Retain browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,6 +74,5 @@ jobs:
           path: |
             test-results
             playwright-report
-            location-map-browser-receipt
           if-no-files-found: error
           retention-days: 30
