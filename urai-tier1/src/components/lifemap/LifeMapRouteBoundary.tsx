@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
+import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
@@ -53,5 +54,8 @@ export default function LifeMapRouteBoundary() {
     }
   }, [])
 
-  return <AdaptiveLifeMapScene />
+  return <>
+    <AdaptiveLifeMapScene />
+    <LifeMapSemanticNavigator />
+  </>
 }
