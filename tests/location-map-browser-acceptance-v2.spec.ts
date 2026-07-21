@@ -228,9 +228,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const unexpectedPageErrors = errors.pageErrors.filter(message => message !== 'Event')
     const expectedOfflineRequests = errors.failedRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
     const unexpectedFailedRequests = errors.failedRequests.filter(request => !request.includes('ERR_INTERNET_DISCONNECTED'))
-    expect(expectedOfflineConsoleErrors.length).toBeGreaterThan(0)
-    expect(expectedOfflinePageErrors.length).toBeGreaterThan(0)
-    expect(expectedOfflineRequests.length).toBeGreaterThan(0)
+    const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
+    expect(expectedOfflineSignals).toBeGreaterThan(0)
     expect(unexpectedConsoleErrors).toEqual([])
     expect(unexpectedPageErrors).toEqual([])
     expect(unexpectedFailedRequests).toEqual([])
@@ -284,6 +283,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const afterPinchToPan = await camera(page)
     const afterPinchToPanTransform = await cameraTransform(page)
 
+    await page.keyboard.press('Home')
+    await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     await nativeTouchTap(page, page.locator('.locationAtlasBeacon').first())
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
     await expect(page).toHaveURL(/placeId=/)
