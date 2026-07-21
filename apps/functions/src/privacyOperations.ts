@@ -912,7 +912,7 @@ export const getPassportSnapshot = functions.https.onCall(async (_data, context)
     userRef.collection('deletionJobs').orderBy('createdAt', 'desc').limit(25).get(),
     userRef.collection('privacyReceipts').orderBy('createdAt', 'desc').limit(50).get(),
   ])
-  const claims = context.auth?.token ?? {}
+  const claims = (context.auth?.token ?? {}) as Record<string, unknown>
   const authTime = Number(claims.auth_time ?? 0)
   const keyState = Math.floor(Date.now() / 1000) - authTime <= REAUTH_WINDOW_SECONDS ? 'authorized' : 'available'
   const displayName = String(user.get('displayName') ?? context.auth?.token.name ?? 'Private owner').slice(0, 120)
