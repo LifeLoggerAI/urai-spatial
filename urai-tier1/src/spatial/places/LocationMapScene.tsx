@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type TouchEvent, type WheelEvent } from 'react'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
 import type { MemoryPlace } from './memoryPlaceSchema'
 import './location-map-scene.css'
@@ -52,6 +52,8 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   const drag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
   const pointers = useRef(new Map<number, PointerPoint>())
   const pinch = useRef<{ distance: number; zoom: number } | null>(null)
+  const touchDrag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
+  const touchPinch = useRef<{ distance: number; zoom: number } | null>(null)
   const fixtureState = acceptanceFixturesEnabled ? searchParams.get('acceptanceState') : null
   const visiblePlaces = useMemo(() => {
     if (!places) return []
@@ -180,15 +182,9 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     cameraRef.current = nextCamera
     return nextCamera
   }), [])
-  useEffect(() => {
-    const stage = stageRef.current
-    if (!stage) return
-    const handleWheel = (event: globalThis.WheelEvent) => {
-      event.preventDefault()
-      zoom(event.deltaY > 0 ? -.09 : .09)
-    }
-    stage.addEventListener('wheel', handleWheel, { passive: false })
-    return () => stage.removeEventListener('wheel', handleWheel)
+  const onWheel = useCallback((event: WheelEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    zoom(event.deltaY > 0 ? -.09 : .09)
   }, [zoom])
 
   const moveMarker = (amount: number) => {
@@ -213,7 +209,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   }
   const onBeaconKey = (event: KeyboardEvent<HTMLButtonElement>, amount: number) => { event.preventDefault(); event.stopPropagation(); moveMarker(amount) }
   const onPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if ((event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
+    if (event.pointerType === 'touch' || (event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
     event.currentTarget.setPointerCapture(event.pointerId)
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const activePointers = [...pointers.current.values()]
@@ -224,7 +220,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     }
   }, [])
   const onPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if (!pointers.current.has(event.pointerId)) return
+    if (event.pointerType === 'touch' || !pointers.current.has(event.pointerId)) return
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const activePointers = [...pointers.current.values()]
     if (activePointers.length >= 2 && pinch.current) {
@@ -248,6 +244,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     setCamera(nextCamera)
   }, [])
   const onPointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return
     pointers.current.delete(event.pointerId)
     if (pointers.current.size < 2) pinch.current = null
     if (pointers.current.size === 1) {
@@ -257,6 +254,44 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
       drag.current = null
     }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }, [])
+  const onTouchStart = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
+    event.preventDefault()
+    const activeTouches = Array.from(event.touches).map(touch => ({ x: touch.clientX, y: touch.clientY }))
+    if (activeTouches.length >= 2) {
+      touchPinch.current = { distance: distance(activeTouches), zoom: cameraRef.current.zoom }
+      touchDrag.current = null
+    } else if (activeTouches.length === 1) {
+      touchDrag.current = { x: activeTouches[0].x, y: activeTouches[0].y, camera: cameraRef.current }
+      touchPinch.current = null
+    }
+  }, [])
+  const onTouchMove = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const activeTouches = Array.from(event.touches).map(touch => ({ x: touch.clientX, y: touch.clientY }))
+    if (activeTouches.length >= 2 && touchPinch.current) {
+      const nextDistance = distance(activeTouches)
+      if (nextDistance > 0 && touchPinch.current.distance > 0) {
+        const nextCamera = { ...cameraRef.current, zoom: clamp(touchPinch.current.zoom * (nextDistance / touchPinch.current.distance), .7, 1.9) }
+        cameraRef.current = nextCamera
+        setCamera(nextCamera)
+      }
+      return
+    }
+    if (activeTouches.length !== 1 || !touchDrag.current) return
+    const nextCamera = {
+      ...touchDrag.current.camera,
+      x: clamp(touchDrag.current.camera.x + activeTouches[0].x - touchDrag.current.x, -360, 360),
+      y: clamp(touchDrag.current.camera.y + activeTouches[0].y - touchDrag.current.y, -320, 320),
+    }
+    cameraRef.current = nextCamera
+    setCamera(nextCamera)
+  }, [])
+  const onTouchEnd = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    const remaining = Array.from(event.touches).map(touch => ({ x: touch.clientX, y: touch.clientY }))
+    touchPinch.current = null
+    touchDrag.current = remaining.length === 1 ? { x: remaining[0].x, y: remaining[0].y, camera: cameraRef.current } : null
   }, [])
 
   const openDemo = () => {
@@ -277,7 +312,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     <picture className="locationAtlasArt" aria-hidden="true"><source media="(max-width:760px)" srcSet={locationMapAssets.mobile.src}/><img src={locationMapAssets.primary.src} alt="" draggable={false}/></picture>
     <div className="locationAtlasWeather" aria-hidden="true"/>
     <header className="locationAtlasHeader" data-atlas-panel><div><span>URAI · Emotional geography</span><strong>{isDemo ? 'Sample atlas' : 'Private atlas'}</strong></div><div className="locationAtlasStatus"><span>{isDemo ? 'Sample view' : 'Private view'}</span><span>{isDemo ? 'Disclosed sample places' : 'Permissioned places'}</span>{offline ? <span>Offline · local view retained</span> : null}</div><nav><Link href="/life-map">Life Map</Link><Link href="/home">Home</Link></nav></header>
-    <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+    <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
       <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan. Pinch to zoom on touch screens.</p>
       <div className="locationAtlasCamera" aria-hidden="true"><i/><i/><i/></div>
       <div className="locationAtlasBeacons" aria-label={`${points.length} discoverable symbolic places`}>{points.map((point,index) => <button key={point.place.id} ref={node => { markers.current[index] = node }} type="button" className="locationAtlasBeacon" style={{ '--beacon-x': `${point.x}%`, '--beacon-y': `${point.y}%`, '--beacon-depth': point.depth, '--beacon-color': tone(point.place), '--beacon-intensity': point.place.emotionalOverlay.intensity } as CSSProperties} data-selected={selectedId === point.place.id ? 'true' : 'false'} aria-pressed={selectedId === point.place.id} aria-label={`${point.place.title}. ${words(point.place.emotionalOverlay.mood)} weather. ${privacy(point.place)}. ${point.place.memoryIds.length} linked memories.`} onClick={() => focus(point,index)} onFocus={() => setActiveIndex(index)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') onBeaconKey(event,-1); else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') onBeaconKey(event,1) }}><span className="locationAtlasBeaconCore"><i/></span><span className="locationAtlasBeaconLabel"><strong>{point.place.title}</strong><small>{words(point.place.emotionalOverlay.mood)} · {privacy(point.place)}</small></span></button>)}</div>
