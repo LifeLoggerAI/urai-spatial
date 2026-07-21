@@ -43,17 +43,7 @@ async function waitForState(page, attribute, expected, timeout = 20_000) {
   await page.waitForFunction(({ attribute, expected }) => {
     const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
     return root?.getAttribute(attribute) === expected
-  }, { attribute, expected }, { timeout, polling: 50 })
-}
-
-async function advanceClockToState(page, attribute, expected, maxAdvance) {
-  const root = page.locator('[data-testid="urai-true-3d-life-map"]').first()
-  for (let advanced = 0; advanced <= maxAdvance; advanced += 50) {
-    if (await root.getAttribute(attribute) === expected) return
-    await page.clock.runFor(50)
-  }
-  const actual = await root.getAttribute(attribute)
-  throw new Error(`${attribute} did not reach ${expected} after ${maxAdvance}ms; received ${actual}`)
+  }, { attribute, expected }, { timeout, polling: 25 })
 }
 
 async function captureScreenshot(page, file) {
@@ -96,15 +86,14 @@ async function desktopJourney() {
     await page.mouse.down(); await page.mouse.move(box.x + box.width * .40, box.y + box.height * .55, { steps: 16 }); await page.mouse.up(); await stable(page)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
 
-    await page.clock.install()
     await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
     await waitForState(page, 'data-life-map-mode', 'selected')
     await shot(page, 'selection-start', 'selection-start', { memoryId: 'quiet-reset' })
-    await advanceClockToState(page, 'data-life-map-phase', 'travel', 300)
+    await waitForState(page, 'data-life-map-phase', 'travel')
     await shot(page, 'mid-travel', 'travel')
-    await advanceClockToState(page, 'data-life-map-phase', 'approach', 700)
+    await waitForState(page, 'data-life-map-phase', 'approach')
     await shot(page, 'approach', 'approach')
-    await advanceClockToState(page, 'data-life-map-phase', 'arrival', 800)
+    await waitForState(page, 'data-life-map-phase', 'arrival')
     await shot(page, 'stable-arrival', 'arrival')
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
 
