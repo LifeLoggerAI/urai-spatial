@@ -32,26 +32,50 @@ async function resolveTarget(page, doorway) {
   return target
 }
 
+async function inspectHitPoint(target) {
+  return target.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    const describe = (element) => element ? {
+      tag: element.tagName.toLowerCase(),
+      id: element.id || '',
+      className: typeof element.className === 'string' ? element.className : '',
+      ariaLabel: element.getAttribute('aria-label') || '',
+      pointerEvents: getComputedStyle(element).pointerEvents,
+      zIndex: getComputedStyle(element).zIndex,
+    } : null
+    return {
+      center: { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) },
+      target: describe(node),
+      hit: describe(hit),
+      targetOwnsHitPoint: hit === node || Boolean(hit && node.contains(hit)),
+    }
+  })
+}
+
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, hitPoint: null, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
+    record.hitPoint = await inspectHitPoint(target)
     await activate(target, testCase.method)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
-    await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
     record.success = normalize(record.resultingUrl) === doorway.destination
   } catch (error) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
   } finally {
+    await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' }).catch(() => {})
     await context.close()
   }
   return record
@@ -66,7 +90,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 4, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 5, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
