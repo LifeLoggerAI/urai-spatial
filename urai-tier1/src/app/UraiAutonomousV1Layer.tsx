@@ -10,8 +10,9 @@ import "./urai-autonomous-v1-workforce.css";
 
 /**
  * Legacy autonomous presentation is retained only for secondary realms that
- * still lack a route-owned canonical client. Privacy Controls and Location Map
- * are explicitly excluded: each route client is its sole visual/runtime owner.
+ * still lack a route-owned canonical client. Privacy Controls is explicitly
+ * excluded because its route client is the sole visual/runtime owner. Location
+ * Map is explicitly excluded for the same route-owned authority reason.
  */
 export default function UraiAutonomousV1Layer() {
   const pathname = usePathname() || "";
