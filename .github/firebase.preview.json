@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "../urai-tier1/out",
+    "public": "urai-tier1/out",
     "ignore": [
       "firebase.preview.json",
       "**/.*",
