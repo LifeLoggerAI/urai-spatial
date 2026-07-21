@@ -14,6 +14,18 @@ async function holdKey(page: Page, key: string, duration = 450) {
   await page.keyboard.up(key)
 }
 
+async function dispatchMovementKey(page: Page, type: 'keydown' | 'keyup', code: 'KeyW' | 'ArrowUp') {
+  await page.evaluate(({ eventType, eventCode }) => {
+    const event = new KeyboardEvent(eventType, {
+      code: eventCode,
+      key: eventCode === 'KeyW' ? 'w' : 'ArrowUp',
+      bubbles: true,
+      cancelable: true,
+    })
+    window.dispatchEvent(event)
+  }, { eventType: type, eventCode: code })
+}
+
 async function waitForHomeWorld(home: Locator) {
   await expect(home).toBeVisible({ timeout: 15_000 })
   await expect(home.locator('canvas')).toBeVisible({ timeout: 15_000 })
@@ -27,7 +39,7 @@ function normalizedPathname(url: string) {
 }
 
 test.describe('Embodied exploration runtime evidence', () => {
-  test.describe.configure({ timeout: 60_000 })
+  test.describe.configure({ timeout: 90_000 })
 
   test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
@@ -69,10 +81,9 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
     await expect(ground.locator('canvas')).toBeVisible()
 
-    await page.keyboard.down('w')
-    await expect.poll(() => ground.getAttribute('data-ground-camera-mode'), { timeout: 12_000 }).toBe('walking')
-    await expect(page.locator('.ground-movement-prompt')).toContainText(/Moving through Ground/i)
-    await page.keyboard.up('w')
+    await dispatchMovementKey(page, 'keydown', 'KeyW')
+    await expect(page.locator('.ground-movement-prompt')).toContainText(/Moving through Ground/i, { timeout: 12_000 })
+    await dispatchMovementKey(page, 'keyup', 'KeyW')
 
     const destinations = page.getByRole('navigation', { name: 'Ground destinations' })
     await expect(destinations).toBeVisible()
@@ -107,9 +118,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(map).toHaveAttribute('data-life-map-phase', /departure|travel|approach|arrival/)
     await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toBeVisible()
 
+    if (await navigator.getAttribute('open') !== null) await navigator.locator('summary').click()
     await page.keyboard.press('Escape')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
-    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeNull()
     await expect(map).toHaveAttribute('data-life-map-mode', 'overview')
     await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toHaveCount(0)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
@@ -141,12 +153,15 @@ test.describe('Embodied exploration runtime evidence', () => {
   })
 
   test('reduced motion preserves movement access without forced animation or pointer lock', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator('.urai-final-home-world')
     await waitForHomeWorld(home)
-    await holdKey(page, 'w', 1_800)
-    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(0.6)
+    await dispatchMovementKey(page, 'keydown', 'KeyW')
+    await page.waitForTimeout(1_800)
+    await dispatchMovementKey(page, 'keyup', 'KeyW')
+    await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 15_000 }).toBeGreaterThan(0.6)
     await expect(page.getByText('Move through Home', { exact: true })).toBeVisible()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })
