@@ -12,6 +12,7 @@ import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpat
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.8, 13.5];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0, -3.5];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
+const SELECTED_MEMORY_STANDOFF = 5.6;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
@@ -33,11 +34,11 @@ function isEditableTarget(target: EventTarget | null) {
 
 function goalForNode(node: LifeMapNode): CameraGoal {
   const p = new THREE.Vector3(...node.position);
-  const direction = p.clone().normalize();
-  const arrival = p.clone().add(direction.multiplyScalar(2.5));
-  arrival.y += 0.55;
+  const direction = p.lengthSq() > .01 ? p.clone().normalize() : new THREE.Vector3(0, 0, 1);
+  const arrival = p.clone().add(direction.multiplyScalar(SELECTED_MEMORY_STANDOFF));
+  arrival.y += .75;
   return {
-    position: [arrival.x, arrival.y, arrival.z + 1.2],
+    position: [arrival.x, arrival.y, arrival.z + .6],
     target: [p.x, p.y, p.z],
   };
 }
