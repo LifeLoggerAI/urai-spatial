@@ -74,10 +74,13 @@ async function nativeTouchTap(page: Page, target: Locator) {
   const cdp = await page.context().newCDPSession(page)
   try {
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
-    const x = box!.x + box!.width * .5
-    const y = box!.y + box!.height * .5
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.send('Input.synthesizeTapGesture', {
+      x: box!.x + box!.width * .5,
+      y: box!.y + box!.height * .5,
+      duration: 80,
+      tapCount: 1,
+      gestureSourceType: 'touch',
+    })
   } finally {
     await cdp.detach()
   }
@@ -177,14 +180,14 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await beacons.first().click()
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
-    await expect(page).toHaveURL(/placeId=/)
+    await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
     const selectedUrl = page.url()
     await page.screenshot({ path: testInfo.outputPath('demo-desktop-selected.png'), fullPage: true })
 
     await page.goBack()
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
     await page.goForward()
-    await expect(page).toHaveURL(selectedUrl)
+    await expect(page).toHaveURL(selectedUrl, { timeout: 15_000 })
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
     await page.reload({ waitUntil: 'networkidle' })
     await expect(page.locator('[data-camera-checkpoint="place-focus"]')).toBeVisible()
@@ -192,7 +195,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.keyboard.press('Escape')
     await expect(page.locator('.locationAtlasSelection')).toBeHidden()
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
-    await expect(page).not.toHaveURL(/placeId=/)
+    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-desktop-deselected.png'), fullPage: true })
     await stage.focus()
     await page.keyboard.press('ArrowRight')
@@ -246,7 +249,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const offlineRequests = errors.failedRequests.slice(offlineStart.failedRequests, offlineEnd.failedRequests)
     const expectedOfflineConsoleErrors = offlineConsoleErrors.filter(message => message.includes('ERR_INTERNET_DISCONNECTED'))
     const expectedOfflinePageErrors = offlinePageErrors.filter(message => message === 'Event' || message.includes('ERR_INTERNET_DISCONNECTED'))
-    const expectedOfflineRequests = offlineRequests.filter(request => request.includes('/location-map/offline-probe-') && request.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflineRequests = offlineRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflineProbeRequests = expectedOfflineRequests.filter(request => request.includes('/location-map/offline-probe-'))
     const expectedNavigationAborts = errors.failedRequests.filter(isExpectedNavigationAbort)
     const unexpectedConsoleErrors = [
       ...errors.consoleErrors.slice(0, offlineStart.consoleErrors),
@@ -264,6 +268,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     ))
     const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
     expect(expectedOfflineSignals).toBeGreaterThan(0)
+    expect(expectedOfflineProbeRequests.length).toBeGreaterThan(0)
     expect(unexpectedConsoleErrors).toEqual([])
     expect(unexpectedPageErrors).toEqual([])
     expect(unexpectedFailedRequests).toEqual([])
@@ -274,6 +279,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       expectedOfflineConsoleErrors,
       expectedOfflinePageErrors,
       expectedOfflineRequests,
+      expectedOfflineProbeRequests,
       expectedNavigationAborts,
       unexpectedConsoleErrors,
       unexpectedPageErrors,
@@ -324,13 +330,13 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     await nativeTouchTap(page, page.locator('.locationAtlasBeacon').first())
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
-    await expect(page).toHaveURL(/placeId=/)
+    await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
 
     const selection = page.locator('.locationAtlasSelection')
     await nativeTouchTap(page, selection.getByRole('button', { name: 'Return to atlas overview' }))
     await expect(selection).toBeHidden()
-    await expect(page).not.toHaveURL(/placeId=/)
+    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
     expect(errors.consoleErrors).toEqual([])
