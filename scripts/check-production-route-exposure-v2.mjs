@@ -65,9 +65,25 @@ requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', [
 requireTokens('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx', [
   'data-route-owner="consent-sanctuary"',
   'data-privacy-source={loadState}',
-  'runTransaction',
-  "collection(db, 'users', activeUser.uid, 'privacyAudit')",
-  'Confirm and enforce',
+  'applyOperationalConsentPolicy',
+  'createOperationalExportRequest',
+  'createOperationalDeletionRequest',
+  'Confirm and request enforcement',
+  'No private state was replaced with demo data.',
+])
+requireTokens('urai-tier1/src/lib/privacy/operationalPrivacyClient.ts', [
+  'httpsCallable',
+  "collection(getFirebaseDb(), 'users', uid, collectionName)",
+])
+requireTokens('apps/functions/src/privacyOperations.ts', [
+  'applyConsentPolicy',
+  'CONSENT_REVISION_CONFLICT',
+  'processPrivacyEnforcementJob',
+  'providerRevocationQueue',
+  'createExportRequest',
+  'processExportJob',
+  'createDeletionRequest',
+  'processDeletionQueueItem',
 ])
 
 const focusRoutePath = 'urai-tier1/src/app/focus/page.tsx'
