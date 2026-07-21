@@ -15,12 +15,14 @@ concurrency:
 
 env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  FIREBASE_PROJECT_ID: urai-4dc1d
 
 jobs:
   preview:
-    name: Preview deploy guard
+    name: Deploy isolated exact-head preview
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    environment: preview
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -29,38 +31,115 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
+
       - name: Verify exact clean candidate
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
           run_install: false
+
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+
       - name: Install exact lockfile
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+
       - name: Preflight
         run: pnpm preflight
+
       - name: Build exact static candidate
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_TARGET_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
         run: pnpm build:static
-      - name: Prove exact source remained clean
-        shell: bash
-        run: test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Preview deploy boundary
+
+      - name: Verify preview output identity
         shell: bash
         run: |
           set -euo pipefail
-          echo "Preview deployment is intentionally non-mutating on pull requests."
-          echo "Exact candidate verified: ${URAI_EXACT_HEAD}"
-          echo "Protected deployment requires the canonical release workflow and authorized environment."
+          test -f urai-tier1/out/index.html
+          grep -R --fixed-strings --include='*.html' -q "$URAI_EXACT_HEAD" urai-tier1/out
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Prepare isolated Firebase credentials
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/urai-preview-service-account.json"
+          chmod 600 "$RUNNER_TEMP/urai-preview-service-account.json"
+
+      - name: Deploy expiring non-production channel
+        id: deploy
+        shell: bash
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-preview-service-account.json
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${URAI_EXACT_HEAD:0:12}"
+          PR_NUMBER="${{ github.event.pull_request.number || 'manual' }}"
+          CHANNEL="location-map-${PR_NUMBER}-${SHORT_SHA}"
+          test "$CHANNEL" != live
+          mkdir -p preview-receipt
+          pnpm exec firebase hosting:channel:deploy "$CHANNEL" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --config firebase.static.json \
+            --expires 7d \
+            --non-interactive \
+            --json > preview-receipt/firebase-deploy.json
+          PREVIEW_URL="$(node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('preview-receipt/firebase-deploy.json','utf8'));const r=j.result||j;const u=r.url||r.details?.url||r.hosting?.url||Object.values(r).find(v=>v&&typeof v==='object'&&typeof v.url==='string')?.url;if(!u)process.exit(2);process.stdout.write(u)")"
+          case "$PREVIEW_URL" in
+            https://*.web.app|https://*.firebaseapp.com) ;;
+            *) echo "Unexpected preview URL: $PREVIEW_URL" >&2; exit 65 ;;
+          esac
+          printf '%s\n' "$PREVIEW_URL" > preview-receipt/url.txt
+          printf '%s\n' "$CHANNEL" > preview-receipt/channel.txt
+          printf '%s\n' "$URAI_EXACT_HEAD" > preview-receipt/sha.txt
+          printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > preview-receipt/deployed-at.txt
+          sha256sum preview-receipt/* > preview-receipt/SHA256SUMS
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "### Exact-head Firebase preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SHA: \`$URAI_EXACT_HEAD\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Channel: \`$CHANNEL\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Expiration: 7 days" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke preview route
+        shell: bash
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$PREVIEW_URL/location-map/" > preview-receipt/location-map.html
+          grep -q "$URAI_EXACT_HEAD" preview-receipt/location-map.html
+          sha256sum preview-receipt/location-map.html >> preview-receipt/SHA256SUMS
+
+      - name: Retain preview receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: urai-location-map-preview-${{ env.URAI_EXACT_HEAD }}
+          path: preview-receipt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Remove temporary credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/urai-preview-service-account.json"
