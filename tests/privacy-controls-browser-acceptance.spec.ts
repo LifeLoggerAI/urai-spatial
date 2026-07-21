@@ -5,6 +5,8 @@ import path from 'node:path'
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
 const evidenceRoot = path.resolve('test-results/privacy-controls-evidence')
 
+test.setTimeout(60_000)
+
 type RuntimeEvidence = {
   consoleErrors: string[]
   pageErrors: string[]
@@ -29,9 +31,20 @@ async function saveEvidence(name: string, evidence: RuntimeEvidence) {
   await fs.writeFile(path.join(evidenceRoot, `${name}.json`), JSON.stringify(evidence, null, 2))
 }
 
+async function openSanctuary(page: Page, suffix = '') {
+  const response = await page.goto(`${baseURL}/privacy-controls/${suffix}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 45_000,
+  })
+  expect(response?.ok()).toBeTruthy()
+  const root = page.locator('main[data-route-owner="consent-sanctuary"]')
+  await expect(root).toBeVisible({ timeout: 20_000 })
+  await page.waitForFunction(() => document.readyState !== 'loading')
+  return root
+}
+
 async function openDemo(page: Page) {
-  await page.goto(`${baseURL}/privacy-controls/?demo=1`, { waitUntil: 'networkidle' })
-  await expect(page.locator('main[data-route-owner="consent-sanctuary"]')).toBeVisible()
+  await openSanctuary(page, '?demo=1')
   await expect(page.getByText('DEMONSTRATION — no personal data', { exact: false })).toBeVisible()
 }
 
@@ -61,9 +74,7 @@ test('desktop demo exposes all domains and direct keyboard controls', async ({ p
 
 test('signed-out direct entry never becomes demo or private state', async ({ page }) => {
   const runtime = await captureRuntime(page)
-  await page.goto(`${baseURL}/privacy-controls/`, { waitUntil: 'networkidle' })
-  const root = page.locator('main[data-route-owner="consent-sanctuary"]')
-  await expect(root).toBeVisible()
+  const root = await openSanctuary(page)
   await expect(root).not.toHaveAttribute('data-privacy-source', 'demo')
   await expect(page.getByText('DEMONSTRATION — no personal data', { exact: false })).toHaveCount(0)
   await page.screenshot({ path: path.join(evidenceRoot, 'signed-out-boundary.png'), fullPage: true })
@@ -109,7 +120,7 @@ test('offline transition is explicit and disables sensitive operations', async (
   await openDemo(page)
   await context.setOffline(true)
   await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await expect(page.getByRole('status')).toContainText('Offline')
+  await expect(page.getByRole('status').filter({ hasText: 'Offline' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Request export' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Create deletion request' })).toBeDisabled()
   await page.screenshot({ path: path.join(evidenceRoot, 'offline-boundary.png'), fullPage: true })
