@@ -291,14 +291,18 @@ export default function FinalHomeWorld({ onOrbOpen, webglAvailable }: Props) {
       {prompt ? <button className="urai-final-home-context" type="button" onClick={activateNearby}>{prompt}</button> : null}
       <MovementHelp realm="Home" summary="Walk through your private sanctuary, memory rooms, Orb, Ground doorway, and Life Map threshold." controls="WASD or arrows move. Click the ground to walk. Drag to look. Enter interacts. R resets." />
       <MobileMovementPad input={input} label="Home movement controls" />
-      <nav className="urai-final-home-semantic-exits" aria-label="Accessible Home destinations"><button type="button" onClick={onOrbOpen}>Orb</button><button type="button" aria-label="Ground threshold" onClick={() => travel('infrastructure-hub')}>Ground</button><button type="button" aria-label="Life Map threshold" onClick={() => travel('life-map')}>Life Map</button></nav>
+      <nav className="urai-final-home-doorways" data-movement-ui="true" aria-label="Direct Home destinations">
+        <button type="button" aria-label="Open Orb directly" onClick={onOrbOpen}>Orb</button>
+        <button type="button" aria-label="Open Ground directly" onClick={() => travel('infrastructure-hub')}>Ground</button>
+        <button type="button" aria-label="Open Life Map directly" onClick={() => travel('life-map')}>Life Map</button>
+      </nav>
       <style jsx>{`
         .urai-final-home-world{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:${dragging ? 'grabbing' : 'grab'};background:#071112}
         :global(.urai-final-home-canvas){position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
-        .urai-final-home-context{position:absolute;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 18px));z-index:25;transform:translateX(-50%);min-height:48px;padding:0 18px;border:1px solid rgba(227,241,233,.3);border-radius:999px;background:rgba(8,20,21,.78);backdrop-filter:blur(12px);color:#f5fbf7;font:700 12px/1 system-ui;letter-spacing:.04em}
-        .urai-final-home-semantic-exits{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
-        @media(max-width:700px){.urai-final-home-context{bottom:max(180px,calc(env(safe-area-inset-bottom) + 170px));max-width:calc(100vw - 32px)}}
-        @media(prefers-reduced-motion:reduce){.urai-final-home-context{backdrop-filter:none}}
+        .urai-final-home-context{position:absolute;left:50%;bottom:max(86px,calc(env(safe-area-inset-bottom) + 76px));z-index:25;transform:translateX(-50%);min-height:48px;padding:0 18px;border:1px solid rgba(227,241,233,.3);border-radius:999px;background:rgba(8,20,21,.78);backdrop-filter:blur(12px);color:#f5fbf7;font:700 12px/1 system-ui;letter-spacing:.04em}
+        .urai-final-home-doorways{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:30;display:flex;gap:8px}.urai-final-home-doorways button{min-height:48px;padding:0 15px;border:1px solid rgba(227,241,233,.24);border-radius:999px;background:rgba(8,20,21,.72);backdrop-filter:blur(12px);color:#f5fbf7;font:750 11px/1 system-ui;letter-spacing:.03em}
+        @media(max-width:700px){.urai-final-home-context{bottom:max(180px,calc(env(safe-area-inset-bottom) + 170px));max-width:calc(100vw - 32px)}.urai-final-home-doorways{left:max(9px,env(safe-area-inset-left));right:max(9px,env(safe-area-inset-right));bottom:max(9px,env(safe-area-inset-bottom));justify-content:center}.urai-final-home-doorways button{flex:1;max-width:112px;padding:0 10px}}
+        @media(prefers-reduced-motion:reduce){.urai-final-home-context,.urai-final-home-doorways button{backdrop-filter:none}}
       `}</style>
     </div>
   )
