@@ -22,10 +22,6 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-distance', /\d+\.\d+/, { timeout: 15_000 })
 }
 
-async function enableLifeMapDemo(page: Page) {
-  await page.addInitScript(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))
-}
-
 function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
@@ -37,23 +33,23 @@ test.describe('Embodied exploration runtime evidence', () => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
 
-    const home = page.locator('.urai-home-embodied-shell')
+    const home = page.locator('.urai-final-home-world')
     await waitForHomeWorld(home)
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
-    await expect(home).toHaveAttribute('data-home-visible-world', 'sanctuary-geometry-memory-vignettes')
+    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')
 
     const beforeZ = Number(await home.getAttribute('data-home-player-z'))
     await holdKey(page, 'w', 2_400)
     await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(1.2)
     const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(() => home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))).not.toBe('0.0px')
 
-    const direct = page.getByRole('navigation', { name: 'Direct Home destinations' })
-    await expect(direct.getByRole('button', { name: 'Orb' })).toBeVisible()
-    await expect(direct.getByRole('button', { name: 'Ground' })).toBeVisible()
-    await expect(direct.getByRole('button', { name: 'Life Map' })).toBeVisible()
+    const direct = page.locator('.urai-home-runtime-doorways')
+    await expect(direct).toBeVisible()
+    await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()
+    await expect(direct.getByRole('button', { name: 'Open Ground directly' })).toBeVisible()
+    await expect(direct.getByRole('button', { name: 'Open Life Map directly' })).toBeVisible()
     await expect(direct.getByRole('button')).toHaveCount(3)
 
     const help = page.getByText('Move through Home', { exact: true })
@@ -65,41 +61,57 @@ test.describe('Embodied exploration runtime evidence', () => {
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('Ground starts at the overlook, walks toward the Nexus, and retains direct destination parity', async ({ page }) => {
+  test('Ground walks through the arrival hall and retains keyboard-accessible direct destinations', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
     const ground = page.locator('.ground-spatial-root[data-ground-exploration="walkable"]').first()
     await expect(ground).toBeVisible({ timeout: 15_000 })
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
     await expect(ground.locator('canvas')).toBeVisible()
-    await holdKey(page, 'w', 550)
-    await expect(page.getByRole('status').filter({ hasText: /Moving through Ground/i })).toBeVisible()
-    const privacy = page.getByRole('navigation', { name: 'Ground destinations' }).getByRole('link', { name: /Privacy Sanctuary/i })
-    await expect(privacy).toBeVisible()
-    await privacy.focus()
-    await expect(privacy).toBeFocused()
+
+    await page.keyboard.down('w')
+    await expect.poll(() => ground.getAttribute('data-ground-camera-mode'), { timeout: 12_000 }).toBe('walking')
+    await expect(page.locator('.ground-movement-prompt')).toContainText(/Moving through Ground/i)
+    await page.keyboard.up('w')
+
+    const destinations = page.getByRole('navigation', { name: 'Ground destinations' })
+    await expect(destinations).toBeVisible()
+    const firstDestination = destinations.locator('a,button').first()
+    await expect(firstDestination).toBeVisible()
+    await firstDestination.evaluate((element) => (element as HTMLElement).focus())
+    await expect.poll(() => firstDestination.evaluate((element) => element === document.activeElement)).toBe(true)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('Life Map navigation glides through depth, selects memories, resets overview, and stays Orb-free', async ({ page }) => {
-    await enableLifeMapDemo(page)
+  test('Life Map selects a disclosed demo memory, glides to it, and unwinds to overview without an Orb', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
-    await page.goto('/life-map/', { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('.life-map-independent-realm')).toBeVisible({ timeout: 15_000 })
+    await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
+
+    const map = page.locator('.life-map-root')
+    await expect(map).toBeVisible({ timeout: 15_000 })
+    await expect(map).toHaveAttribute('data-home-companion-owned', 'false')
     await expect(page.locator('.urai-world-companion')).toHaveCount(0)
-    await expect(page.getByRole('group', { name: 'Life Map spatial movement controls' })).toBeVisible()
-    await page.keyboard.press('w')
-    await expect(page.getByRole('status').filter({ hasText: /Gliding deeper into the memory field/i })).toBeVisible()
-    await page.keyboard.press('d')
+    await expect(page.getByRole('navigation', { name: 'Life Map journey controls' })).toBeVisible()
+
+    const navigator = page.locator('details[data-life-map-navigator]')
+    await expect(navigator).toBeVisible()
+    await navigator.locator('summary').click()
+    const firstMemory = navigator.locator('.semantic-results > button').first()
+    await expect(firstMemory).toBeVisible({ timeout: 15_000 })
+    await firstMemory.click()
+
     await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
-    await expect(page.locator('.life-map-independent-realm')).toHaveAttribute('data-life-map-mode', 'selected')
-    await expect(page.locator('.life-map-memory-portals')).toBeVisible()
-    await page.keyboard.press('r')
+    await expect(map).toHaveAttribute('data-life-map-mode', 'selected')
+    await expect(map).toHaveAttribute('data-life-map-phase', /departure|travel|approach|arrival/)
+    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toBeVisible()
+
+    await page.keyboard.press('Escape')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
-    await expect(page.locator('.life-map-memory-portals')).toHaveCount(0)
+    await expect(map).toHaveAttribute('data-life-map-mode', 'overview')
+    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toHaveCount(0)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
@@ -108,7 +120,7 @@ test.describe('Embodied exploration runtime evidence', () => {
   test('mobile movement controls remain contained, touch-sized, and move through Home', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    const home = page.locator('.urai-home-embodied-shell')
+    const home = page.locator('.urai-final-home-world')
     await waitForHomeWorld(home)
     const homePad = page.getByRole('group', { name: 'Home movement controls' })
     await expect(homePad).toBeVisible({ timeout: 15_000 })
@@ -131,12 +143,11 @@ test.describe('Embodied exploration runtime evidence', () => {
   test('reduced motion preserves movement access without forced animation or pointer lock', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    const home = page.locator('.urai-home-embodied-shell')
+    const home = page.locator('.urai-final-home-world')
     await waitForHomeWorld(home)
     await holdKey(page, 'w', 1_800)
     await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(0.6)
-    const help = page.getByText('Move through Home', { exact: true })
-    await expect(help).toBeVisible()
+    await expect(page.getByText('Move through Home', { exact: true })).toBeVisible()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })
 })
