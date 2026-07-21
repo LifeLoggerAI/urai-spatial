@@ -13,6 +13,14 @@ function monitor(page: Page): Evidence {
   return evidence
 }
 
+function isExpectedNavigationAbort(request: string) {
+  return request.includes('net::ERR_ABORTED') && (
+    request.includes('/location-map?')
+    || request.includes('/location-map/?')
+    || request.includes('/_next/static/css/app/location-map/')
+  )
+}
+
 async function attachJson(testInfo: TestInfo, name: string, value: unknown) {
   await testInfo.attach(name, { body: Buffer.from(JSON.stringify(value, null, 2)), contentType: 'application/json' })
 }
@@ -218,6 +226,11 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.getByText('Offline · local view retained')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('offline-desktop.png'), fullPage: true })
     await context.setOffline(false)
+    const offlineEnd = {
+      consoleErrors: errors.consoleErrors.length,
+      pageErrors: errors.pageErrors.length,
+      failedRequests: errors.failedRequests.length,
+    }
 
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await expect(page.locator('.locationAtlas')).toHaveAttribute('data-reduced-motion', 'true')
@@ -228,12 +241,27 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     expect(motionStyles.every(style => style.transitionDuration.split(',').every(value => value.trim() === '0s') && style.animationDuration.split(',').every(value => value.trim() === '0s'))).toBe(true)
     await page.screenshot({ path: testInfo.outputPath('reduced-motion-desktop.png'), fullPage: true })
 
-    const expectedOfflineConsoleErrors = errors.consoleErrors.slice(offlineStart.consoleErrors)
-    const unexpectedConsoleErrors = errors.consoleErrors.slice(0, offlineStart.consoleErrors)
-    const expectedOfflinePageErrors = errors.pageErrors.slice(offlineStart.pageErrors)
-    const unexpectedPageErrors = errors.pageErrors.slice(0, offlineStart.pageErrors)
-    const expectedOfflineRequests = errors.failedRequests.slice(offlineStart.failedRequests)
-    const unexpectedFailedRequests = errors.failedRequests.slice(0, offlineStart.failedRequests)
+    const offlineConsoleErrors = errors.consoleErrors.slice(offlineStart.consoleErrors, offlineEnd.consoleErrors)
+    const offlinePageErrors = errors.pageErrors.slice(offlineStart.pageErrors, offlineEnd.pageErrors)
+    const offlineRequests = errors.failedRequests.slice(offlineStart.failedRequests, offlineEnd.failedRequests)
+    const expectedOfflineConsoleErrors = offlineConsoleErrors.filter(message => message.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflinePageErrors = offlinePageErrors.filter(message => message === 'Event' || message.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflineRequests = offlineRequests.filter(request => request.includes('/location-map/offline-probe-') && request.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedNavigationAborts = errors.failedRequests.filter(isExpectedNavigationAbort)
+    const unexpectedConsoleErrors = [
+      ...errors.consoleErrors.slice(0, offlineStart.consoleErrors),
+      ...offlineConsoleErrors.filter(message => !expectedOfflineConsoleErrors.includes(message)),
+      ...errors.consoleErrors.slice(offlineEnd.consoleErrors),
+    ]
+    const unexpectedPageErrors = [
+      ...errors.pageErrors.slice(0, offlineStart.pageErrors),
+      ...offlinePageErrors.filter(message => !expectedOfflinePageErrors.includes(message)),
+      ...errors.pageErrors.slice(offlineEnd.pageErrors),
+    ]
+    const unexpectedFailedRequests = errors.failedRequests.filter(request => (
+      !expectedOfflineRequests.includes(request)
+      && !expectedNavigationAborts.includes(request)
+    ))
     const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
     expect(expectedOfflineSignals).toBeGreaterThan(0)
     expect(unexpectedConsoleErrors).toEqual([])
@@ -241,9 +269,12 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     expect(unexpectedFailedRequests).toEqual([])
     await attachJson(testInfo, 'desktop-console-network-receipt.json', {
       ...errors,
+      offlineStart,
+      offlineEnd,
       expectedOfflineConsoleErrors,
       expectedOfflinePageErrors,
       expectedOfflineRequests,
+      expectedNavigationAborts,
       unexpectedConsoleErrors,
       unexpectedPageErrors,
       unexpectedFailedRequests,
