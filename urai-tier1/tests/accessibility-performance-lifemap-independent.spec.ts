@@ -28,6 +28,14 @@ async function openDemoNavigator(page: Page) {
   return navigator
 }
 
+async function expectOverviewState(page: Page) {
+  await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
+  await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeNull()
+  await expect.poll(() => new URL(page.url()).searchParams.get('node')).toBeNull()
+  await expect(selectedMemoryControls(page)).toHaveCount(0)
+  await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-mode', 'overview')
+}
+
 test.describe('Life Map independent realm runtime evidence', () => {
   test('Life Map does not mount the Home companion visually, semantically, or in the tab sequence', async ({ page }) => {
     await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
@@ -79,11 +87,11 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await focus.press('Enter')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/focus')
     await expect(page.getByTestId('urai-final-focus-chamber')).toHaveAttribute('data-memory-status', 'demo', { timeout: 15_000 })
+    await expect.poll(() => new URL(page.url()).searchParams.get('manifestId')).toBe('demo-manifest')
     const focusUrl = new URL(page.url())
     expect(focusUrl.searchParams.get('memoryId')).toBe(`demo:${selectedMemoryId}`)
     expect(focusUrl.searchParams.get('demo')).toBe('1')
     expect(focusUrl.searchParams.get('returnNode')).toBe(selectedMemoryId)
-    expect(focusUrl.searchParams.get('manifestId')).toBe('demo-manifest')
   })
 
   test('Overview clears selected visual and semantic state across refresh and browser return', async ({ page }) => {
@@ -93,22 +101,14 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(selectedMemoryControls(page).getByRole('button', { name: 'Replay' })).toBeVisible()
 
     await selectedMemoryControls(page).getByRole('button', { name: 'Overview' }).click()
-    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBeNull()
-    await expect(selectedMemoryControls(page)).toHaveCount(0)
-    await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-mode', 'overview')
+    await expectOverviewState(page)
 
     await page.reload({ waitUntil: 'domcontentloaded' })
-    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
-    await expect(selectedMemoryControls(page)).toHaveCount(0)
+    await expectOverviewState(page)
 
     await page.goto('/home', { waitUntil: 'domcontentloaded' })
     await page.goBack({ waitUntil: 'domcontentloaded' })
-    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
-    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBeNull()
-    await expect(selectedMemoryControls(page)).toHaveCount(0)
-    await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-mode', 'overview')
+    await expectOverviewState(page)
   })
 
   test('mobile viewports contain the independent navigation layer without horizontal overflow', async ({ page }) => {
@@ -156,10 +156,8 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-mode', 'selected')
     await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-phase', 'arrival')
 
+    if (await navigator.getAttribute('open') !== null) await navigator.locator('summary').click()
     await page.keyboard.press('Escape')
-    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
-    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
-    await expect(page.locator('.life-map-root')).toHaveAttribute('data-life-map-mode', 'overview')
-    await expect(selectedMemoryControls(page)).toHaveCount(0)
+    await expectOverviewState(page)
   })
 })
