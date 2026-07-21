@@ -7,7 +7,7 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
-const receipt = { schemaVersion: 'urai-lifemap-founder-proof-3', repository: 'LifeLoggerAI/urai-spatial', pr: 860, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
+const receipt = { schemaVersion: 'urai-lifemap-founder-proof-4', repository: 'LifeLoggerAI/urai-spatial', pr: 860, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
 let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
@@ -88,8 +88,8 @@ async function desktopJourney() {
 
     await page.clock.install()
     await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
-    await waitForState(page, 'data-life-map-phase', 'departure')
-    await shot(page, 'departure', 'departure')
+    await waitForState(page, 'data-life-map-mode', 'selected')
+    await shot(page, 'selection-start', 'selection-start', { memoryId: 'quiet-reset' })
     await page.clock.runFor(220)
     await waitForState(page, 'data-life-map-phase', 'travel')
     await shot(page, 'mid-travel', 'travel')
