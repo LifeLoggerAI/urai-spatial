@@ -147,7 +147,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await attachJson(testInfo, 'desktop-interaction-receipt.json', { beforePan, afterPan, afterWheel, selectedUrl })
   })
 
-  test('mobile touch drag and touch selection packet', async ({ page }, testInfo) => {
+  test('mobile touch drag and touch selection packet', async ({ page, browserName }, testInfo) => {
+    test.skip(browserName !== 'chromium', 'CDP touch simulation requires Chromium')
     const errors = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
