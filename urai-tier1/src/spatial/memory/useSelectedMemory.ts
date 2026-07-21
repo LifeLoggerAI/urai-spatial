@@ -24,6 +24,15 @@ function unavailable(message: string): SelectedMemoryResult {
 
 function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
   if (!memoryId || memoryId.startsWith('demo:')) return null
+
+  // Life Map keeps its node identity unprefixed so the constellation can resolve
+  // the selected node. Once the user explicitly enters Focus or Replay from a
+  // disclosed demo constellation, canonicalize that identity into the demo-only
+  // memory namespace before any private data lookup can occur.
+  if (params.get('demo') === '1' && params.get('from') === 'life-map') {
+    return `demo:${memoryId}`
+  }
+
   if (params.get('from') !== 'life-map-camera') return null
 
   const publicDemoEnabled = process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true'
@@ -33,10 +42,11 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
-function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
+function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string, manifestId: string) {
   if (typeof window === 'undefined') return
   const next = new URLSearchParams(params)
   next.set('memoryId', demoMemoryId)
+  next.set('manifestId', manifestId)
   next.set('demo', '1')
   if (!next.get('node')) next.set('node', demoMemoryId.replace(/^demo:/, ''))
   const query = next.toString()
@@ -63,9 +73,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (requestedDemoMemoryId) {
-      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
       const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
-      if (manifestId && memory.replayManifest.id !== manifestId) {
+      if (continuedDemoMemoryId) {
+        canonicalizeDemoContinuation(params, continuedDemoMemoryId, memory.replayManifest.id)
+      } else if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
         return () => { cancelled = true }
       }
