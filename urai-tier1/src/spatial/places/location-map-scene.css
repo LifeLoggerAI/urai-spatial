@@ -62,6 +62,7 @@
   border: 1px solid rgba(214,241,255,.14);
   border-radius: 20px;
   background: rgba(2,8,14,.72);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }
 
@@ -261,6 +262,7 @@
   z-index: 42;
   border: 1px solid rgba(213,241,255,.14);
   background: rgba(2,8,14,.82);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }
 
