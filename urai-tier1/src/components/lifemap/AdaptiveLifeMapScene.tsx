@@ -66,10 +66,14 @@ function createRadialTexture() {
 }
 
 function AtmosphericDepth({ reducedMotion }: { reducedMotion: boolean }) {
-  const texture = useMemo(() => createRadialTexture(), []);
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const nearRef = useRef<THREE.Group>(null);
   const midRef = useRef<THREE.Group>(null);
-  useEffect(() => () => texture?.dispose(), [texture]);
+  useEffect(() => {
+    const nextTexture = createRadialTexture();
+    setTexture(nextTexture);
+    return () => nextTexture?.dispose();
+  }, []);
   useFrame(({ clock, camera }) => {
     if (reducedMotion) return;
     if (nearRef.current) nearRef.current.position.x = camera.position.x * 0.42 + Math.sin(clock.elapsedTime * .08) * .3;
@@ -102,6 +106,7 @@ function AtmosphericDepth({ reducedMotion }: { reducedMotion: boolean }) {
 function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean }) {
   const { camera } = useThree();
   const target = useRef(new THREE.Vector3(...goal.target));
+  const currentLook = useRef(new THREE.Vector3());
   useFrame((_, delta) => {
     target.current.set(...goal.target);
     if (reducedMotion) {
@@ -113,10 +118,9 @@ function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: Jo
     camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.position[0], rate, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.position[1], rate, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, goal.position[2], rate, delta);
-    const currentLook = new THREE.Vector3();
-    camera.getWorldDirection(currentLook).add(camera.position);
-    currentLook.lerp(target.current, 1 - Math.exp(-rate * delta));
-    camera.lookAt(currentLook);
+    camera.getWorldDirection(currentLook.current).add(camera.position);
+    currentLook.current.lerp(target.current, 1 - Math.exp(-rate * delta));
+    camera.lookAt(currentLook.current);
   });
   return null;
 }
@@ -194,10 +198,10 @@ function MemoryLens({ node, active, muted, reducedMotion, onSelect }: { node: Li
 function MemoryPaths({ nodes, activeId }: { nodes: LifeMapNode[]; activeId: string | null }) {
   const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   return <group name="life-map-anchored-paths">{nodes.flatMap((node) => node.connectedTo.slice(0, 2).map((targetId) => {
-    const target = byId.get(targetId);
-    if (!target || target.id < node.id) return null;
-    const active = activeId === node.id || activeId === target.id;
-    return <Line key={`${node.id}-${target.id}`} points={[node.position, target.position]} color={active ? "#c8f7ff" : "#38506b"} transparent opacity={active ? .62 : .16} lineWidth={active ? 1.6 : .7} />;
+    const targetNode = byId.get(targetId);
+    if (!targetNode || targetNode.id < node.id) return null;
+    const active = activeId === node.id || activeId === targetNode.id;
+    return <Line key={`${node.id}-${targetNode.id}`} points={[node.position, targetNode.position]} color={active ? "#c8f7ff" : "#38506b"} transparent opacity={active ? .62 : .16} lineWidth={active ? 1.6 : .7} />;
   }))}</group>;
 }
 
