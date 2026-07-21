@@ -1,0 +1,19 @@
+name: Location Map Canonical World Verification
+
+on:
+  push:
+    branches:
+      - agent/location-map-canonical-world-872
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: location-map-canonical-world-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, contracts, and production build
+    runs-on: ubuntu
