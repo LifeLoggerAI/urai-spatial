@@ -2,14 +2,17 @@ import { LocationMapScene } from '@/spatial/places/LocationMapScene'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 import type { MemoryPlace } from '@/spatial/places/memoryPlaceSchema'
 
+type SearchParams = Record<string, string | string[] | undefined>
+
 type PageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<SearchParams>
 }
 
 function acceptancePlaces(places: MemoryPlace[], state: string | string[] | undefined) {
   if (process.env.URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES !== '1') return places
-  if (state === 'empty') return []
-  if (state === 'private') {
+  const normalizedState = Array.isArray(state) ? state[0] : state
+  if (normalizedState === 'empty') return []
+  if (normalizedState === 'private') {
     return places.map((place, index) => ({
       ...place,
       id: `private-acceptance-${index + 1}`,
@@ -28,7 +31,7 @@ export default async function LocationMapPage({ searchParams }: PageProps) {
 
   return (
     <section data-launch-surface="premium-emotional-weather-atlas">
-      <LocationMapScene places={places} />
+      <LocationMapScene places={places} searchParams={params} />
     </section>
   )
 }
