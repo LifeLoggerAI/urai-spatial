@@ -155,11 +155,23 @@ async function privacyAndRecovery() {
   try {
     await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'); await waitForState(recovery.page, 'data-life-map-phase', 'arrival')
     const canvas = recovery.page.locator('canvas').first()
-    await canvas.evaluate((element) => { const gl = element.getContext('webgl2') || element.getContext('webgl'); gl?.getExtension('WEBGL_lose_context')?.loseContext() })
+    const contextLossAvailable = await canvas.evaluate((element) => {
+      const gl = element.getContext('webgl2') || element.getContext('webgl')
+      const extension = gl?.getExtension('WEBGL_lose_context')
+      if (!extension) return false
+      window.__uraiFounderContextLoss = extension
+      extension.loseContext()
+      return true
+    })
+    if (!contextLossAvailable) throw new Error('WEBGL_lose_context unavailable for founder recovery proof')
     await recovery.page.locator('[data-webgl-state="lost"], [data-webgl-state="recovering"]').first().waitFor({ state: 'attached', timeout: 10_000 })
     await canvas.evaluate((element) => { element.style.visibility = 'hidden' })
     await shot(recovery.page, 'webgl-context-loss', 'context-lost', { memoryId: 'quiet-reset' })
-    await canvas.evaluate((element) => { const gl = element.getContext('webgl2') || element.getContext('webgl'); gl?.getExtension('WEBGL_lose_context')?.restoreContext(); element.style.visibility = '' }).catch(() => {})
+    await canvas.evaluate((element) => {
+      window.__uraiFounderContextLoss?.restoreContext()
+      delete window.__uraiFounderContextLoss
+      element.style.visibility = ''
+    })
     await waitForState(recovery.page, 'data-webgl-state', 'ready', 20_000)
     await shot(recovery.page, 'webgl-recovered', 'context-recovered', { memoryId: 'quiet-reset' })
     await shot(recovery.page, 'context-recovery-state-preserved', 'context-recovered-selected', { memoryId: 'quiet-reset' })
