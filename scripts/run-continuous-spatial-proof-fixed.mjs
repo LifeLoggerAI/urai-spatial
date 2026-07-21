@@ -41,25 +41,65 @@ if (!source.includes('timeout: 2_500')) {
   )
 }
 
-if (!source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVisible')) {
-  replaceRequired(
-    'Home verifier',
-    /const sceneLabels = page\.locator\('\.urai-home-spatial-portal-label'\)\s*const sceneLabelCount = await sceneLabels\.count\(\)\s*const visibleSceneLabelCount = await visibleElementCount\(sceneLabels\)\s*const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1/,
-    `const sceneLabels = page.locator('.urai-home-spatial-portal-label')
-      const sceneLabelCount = await sceneLabels.count()
-      const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const sceneLabelRetired = sceneLabelCount === 0 && visibleSceneLabelCount === 0
-      const marketingPortalLabelSuppressed = visibleSceneLabelCount === 0`,
-  )
-  replaceRequired(
-    'Home verification receipt',
-    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent,/,
-    `
-        sceneLabelRetired,
-        marketingPortalLabelSuppressed,
-        permanentFeatureShortcutsAbsent,`,
-  )
-}
+replaceRequired(
+  'active Home verifier',
+  /const directDestinations = page\.getByRole\('navigation', \{ name: 'Direct Home destinations' \}\)\.getByRole\('button'\)[\s\S]*?const firstHomeFrameMarked = await page\.evaluate\(\(\) => performance\.getEntriesByName\('urai:first-home-spatial-frame'\)\.length > 0\)[\s\S]*?const canvas = await canvasEvidence\(page, '\[data-home-spatial-renderer="webgl"\] canvas'\)/,
+  `const directDestinations = page.getByRole('navigation', { name: 'Direct Home destinations' }).getByRole('button')
+      const directDestinationCount = await directDestinations.count()
+      const visibleDirectDestinationCount = await visibleElementCount(directDestinations)
+      const directDestinationsOwned = directDestinationCount === 3 && visibleDirectDestinationCount === 3
+      const authoredSceneMounted = await page.locator('[data-testid="urai-home-visible-world"]').count() === 1
+      const activeWorld = page.locator('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
+      const activeWorldReady = await activeWorld.getAttribute('data-home-ready') === 'true'
+      const permanentFeatureShortcutsAbsent = await visibleElementCount(page.locator('.urai-home-spatial-runtime-portals a')) === 0
+      const gateway = page.getByRole('button', { name: 'Open Ground directly' })
+      const canonicalGroundGatewayVisible = await visibleElementCount(gateway) === 1
+      const canonicalGroundGatewayInteractive = canonicalGroundGatewayVisible && await gateway.evaluate((node) => {
+        const style = getComputedStyle(node)
+        return !node.disabled && style.pointerEvents !== 'none'
+      })
+      const skyGateway = page.getByRole('button', { name: 'Open Life Map directly' })
+      const canonicalSkyGatewayVisible = await visibleElementCount(skyGateway) === 1
+      const canonicalSkyGatewayInteractive = canonicalSkyGatewayVisible && await skyGateway.evaluate((node) => {
+        const style = getComputedStyle(node)
+        return !node.disabled && style.pointerEvents !== 'none'
+      })
+      const mobileControlsContained = await page.evaluate(() => {
+        if (window.innerWidth > 700) return true
+        const pad = document.querySelector('.urai-mobile-movement')
+        const nav = document.querySelector('.urai-home-runtime-doorways')
+        if (!(pad instanceof HTMLElement) || !(nav instanceof HTMLElement)) return false
+        const padRect = pad.getBoundingClientRect()
+        const navRect = nav.getBoundingClientRect()
+        const inside = (rect) => rect.left >= 0 && rect.top >= 0 && rect.right <= window.innerWidth && rect.bottom <= window.innerHeight
+        const separated = padRect.right <= navRect.left - 8 || navRect.right <= padRect.left - 8 || padRect.bottom <= navRect.top - 8 || navRect.bottom <= padRect.top - 8
+        return inside(padRect) && inside(navRect) && separated
+      })
+      const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')`,
+)
+
+replaceRequired(
+  'active Home receipt',
+  /return \{\s*runtimeMounted: runtime === 1,[\s\S]*?\.\.\.canvas,\s*\}/,
+  `return {
+        runtimeMounted: runtime === 1,
+        oldWorldHidden,
+        legacyControlsSuppressed: legacyControlsVisible === 0,
+        activeWorldReady,
+        mobileControlsContained,
+        authoredSceneMounted,
+        directDestinationsOwned,
+        permanentFeatureShortcutsAbsent,
+        canonicalGroundGatewayVisible,
+        canonicalGroundGatewayInteractive,
+        canonicalSkyGatewayVisible,
+        canonicalSkyGatewayInteractive,
+        canvasSized: canvas.canvasSized,
+        directDestinationCount,
+        visibleDirectDestinationCount,
+        ...canvas,
+      }`,
+)
 
 if (!source.includes('activeGroundLinkSuppressed')) {
   replaceRequired(
@@ -124,7 +164,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)
