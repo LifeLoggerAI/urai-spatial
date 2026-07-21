@@ -25,6 +25,7 @@ type MovementState = {
 }
 
 const initialMovement: MovementState = { forward: false, backward: false, left: false, right: false }
+const interactiveSelector = 'button,input,textarea,select,summary,a,[role="button"],[contenteditable="true"]'
 
 function replayPhase(progressMs: number, durationMs: number) {
   if (durationMs <= 0) return 0
@@ -39,9 +40,16 @@ function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }
   const pitch = useRef(-0.05)
   const dragging = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
+  const desired = useRef(new THREE.Vector3())
+  const target = useRef(new THREE.Vector3())
+  const direction = useRef(new THREE.Vector3())
+  const right = useRef(new THREE.Vector3())
+  const look = useRef(new THREE.Vector3())
 
   useEffect(() => {
     const update = (pressed: boolean) => (event: KeyboardEvent) => {
+      const targetElement = event.target instanceof Element ? event.target : null
+      if (targetElement?.closest(interactiveSelector)) return
       const key = event.key.toLowerCase()
       if (key === 'w' || key === 'arrowup') movement.current.forward = pressed
       if (key === 's' || key === 'arrowdown') movement.current.backward = pressed
@@ -50,19 +58,22 @@ function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }
     }
     const down = update(true)
     const up = update(false)
+    const clear = () => { movement.current = { ...initialMovement } }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
+    window.addEventListener('blur', clear)
     return () => {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', clear)
     }
   }, [])
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       if (!explorationEnabled) return
-      const target = event.target instanceof Element ? event.target : null
-      if (target?.closest('button,input,textarea,select,summary,a,[role="button"]')) return
+      const targetElement = event.target instanceof Element ? event.target : null
+      if (targetElement?.closest(interactiveSelector)) return
       dragging.current = true
       lastPointer.current = { x: event.clientX, y: event.clientY }
     }
@@ -95,14 +106,14 @@ function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }
     if (!explorationEnabled) {
       const angle = phase * Math.PI * 1.05 - 0.35
       const radius = mobile ? 8.3 : 9.8
-      const desired = new THREE.Vector3(
+      desired.current.set(
         Math.sin(angle) * radius * 0.42,
         (mobile ? 2.45 : 2.8) + Math.sin(phase * Math.PI) * 1.2,
         Math.cos(angle) * radius + 1.1 - phase * 4.3,
       )
-      const target = new THREE.Vector3(0, 1.2 + Math.sin(phase * Math.PI) * 0.45, -2.8 - phase * 2.2)
-      camera.position.lerp(desired, easing)
-      camera.lookAt(target)
+      target.current.set(0, 1.2 + Math.sin(phase * Math.PI) * 0.45, -2.8 - phase * 2.2)
+      camera.position.lerp(desired.current, easing)
+      camera.lookAt(target.current)
       freePosition.current.copy(camera.position)
       return
     }
@@ -110,39 +121,39 @@ function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }
     const speed = reducedMotion ? 2.3 : 3.8
     const forward = Number(movement.current.forward) - Number(movement.current.backward)
     const strafe = Number(movement.current.right) - Number(movement.current.left)
-    const direction = new THREE.Vector3(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
-    const right = new THREE.Vector3(direction.z * -1, 0, direction.x)
-    freePosition.current.addScaledVector(direction, forward * speed * delta)
-    freePosition.current.addScaledVector(right, strafe * speed * delta)
+    direction.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current))
+    right.current.set(direction.current.z * -1, 0, direction.current.x)
+    freePosition.current.addScaledVector(direction.current, forward * speed * delta)
+    freePosition.current.addScaledVector(right.current, strafe * speed * delta)
     freePosition.current.x = THREE.MathUtils.clamp(freePosition.current.x, -8.2, 8.2)
     freePosition.current.y = THREE.MathUtils.clamp(freePosition.current.y, 1.35, 3.5)
     freePosition.current.z = THREE.MathUtils.clamp(freePosition.current.z, -10.5, 8.5)
     camera.position.lerp(freePosition.current, easing)
-    const look = new THREE.Vector3(
+    look.current.set(
       camera.position.x + Math.sin(yaw.current) * Math.cos(pitch.current),
       camera.position.y + Math.sin(pitch.current),
       camera.position.z - Math.cos(yaw.current) * Math.cos(pitch.current),
     )
-    camera.lookAt(look)
+    camera.lookAt(look.current)
     state.invalidate()
   })
 
   return null
 }
 
-function MemoryAnchor({ position, label, detail, accent, inferred, onSelect }: { position: [number, number, number]; label: string; detail: string; accent: string; inferred?: boolean; onSelect: (label: string, detail: string) => void }) {
+function MemoryAnchor({ position, label, detail, accent, inferred, reducedMotion, onSelect }: { position: [number, number, number]; label: string; detail: string; accent: string; inferred?: boolean; reducedMotion: boolean; onSelect: (label: string, detail: string) => void }) {
   const ref = useRef<THREE.Group>(null)
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     onSelect(label, detail)
   }
   useFrame((state) => {
-    if (!ref.current) return
+    if (!ref.current || reducedMotion) return
     ref.current.rotation.y = state.clock.getElapsedTime() * 0.16
   })
   return (
     <group ref={ref} position={position}>
-      <Float speed={1.2} rotationIntensity={0.12} floatIntensity={0.18}>
+      <Float speed={reducedMotion ? 0 : 1.2} rotationIntensity={reducedMotion ? 0 : 0.12} floatIntensity={reducedMotion ? 0 : 0.18}>
         <mesh onClick={activate} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
           <icosahedronGeometry args={[inferred ? 0.34 : 0.46, inferred ? 1 : 2]} />
           <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={inferred ? 0.55 : 1.1} transparent opacity={inferred ? 0.42 : 0.82} roughness={0.22} metalness={0.08} wireframe={inferred} />
@@ -181,8 +192,8 @@ function MemoryWorld({ memory, active, progressMs, durationMs, reducedMotion, ex
       <ambientLight intensity={0.32} color={light} />
       <directionalLight castShadow position={[5, 10, 7]} color={light} intensity={1.8} shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <pointLight position={[0, 3.4, -4]} color={accent} intensity={3.6} distance={18} />
-      <Stars radius={55} depth={26} count={900} factor={2.2} saturation={0.25} fade speed={reducedMotion ? 0 : 0.18} />
-      <Sparkles count={Math.round(35 + memory.visuals.particles * 95)} scale={[18, 8, 28]} size={1.15} speed={reducedMotion ? 0 : 0.16} color={accent} opacity={0.48} />
+      <Stars radius={55} depth={26} count={reducedMotion ? 450 : 900} factor={2.2} saturation={0.25} fade speed={reducedMotion ? 0 : 0.18} />
+      <Sparkles count={reducedMotion ? 18 : Math.round(35 + memory.visuals.particles * 95)} scale={[18, 8, 28]} size={1.15} speed={reducedMotion ? 0 : 0.16} color={accent} opacity={reducedMotion ? 0.24 : 0.48} />
 
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, -3]}>
         <planeGeometry args={[28, 36, 1, 1]} />
@@ -197,11 +208,11 @@ function MemoryWorld({ memory, active, progressMs, durationMs, reducedMotion, ex
       ))}
 
       <mesh castShadow position={[0, 1.35, -5.6]}>
-        <sphereGeometry args={[1.05, 64, 64]} />
+        <sphereGeometry args={[1.05, 48, 48]} />
         <meshPhysicalMaterial color={accent} emissive={accent} emissiveIntensity={1.15} transmission={0.55} thickness={0.8} roughness={0.08} metalness={0.05} transparent opacity={0.84} />
       </mesh>
 
-      {anchors.map((anchor) => <MemoryAnchor key={`${anchor.label}-${anchor.position.join('-')}`} {...anchor} accent={anchor.inferred ? '#b9a9ff' : accent} onSelect={onSelectAnchor} />)}
+      {anchors.map((anchor) => <MemoryAnchor key={`${anchor.label}-${anchor.position.join('-')}`} {...anchor} reducedMotion={reducedMotion} accent={anchor.inferred ? '#b9a9ff' : accent} onSelect={onSelectAnchor} />)}
 
       <CameraRig progressMs={progressMs} durationMs={durationMs} reducedMotion={reducedMotion} explorationEnabled={explorationEnabled} />
     </>
@@ -221,7 +232,7 @@ export function ReplaySpatialWorld(props: ReplaySpatialWorldProps) {
           const canvas = gl.domElement
           const lost = (event: Event) => { event.preventDefault(); setWebglLost(true) }
           const restored = () => setWebglLost(false)
-          canvas.addEventListener('webglcontextlost', lost)
+          canvas.addEventListener('webglcontextlost', lost, { passive: false })
           canvas.addEventListener('webglcontextrestored', restored)
         }}
       >
