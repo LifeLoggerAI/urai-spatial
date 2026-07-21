@@ -36,15 +36,23 @@ async function openDemo(page: Page) {
 }
 
 async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', dx: number, dy: number) {
-  await page.locator('.locationAtlasStage').evaluate((element, args) => {
-    const rect = element.getBoundingClientRect()
-    const x = rect.left + rect.width * .5
-    const y = rect.top + rect.height * .5
-    const init = { bubbles: true, cancelable: true, composed: true, pointerId: args.pointerType === 'touch' ? 17 : 9, pointerType: args.pointerType, isPrimary: true, buttons: 1, clientX: x, clientY: y }
-    element.dispatchEvent(new PointerEvent('pointerdown', init))
-    element.dispatchEvent(new PointerEvent('pointermove', { ...init, clientX: x + args.dx, clientY: y + args.dy }))
-    element.dispatchEvent(new PointerEvent('pointerup', { ...init, buttons: 0, clientX: x + args.dx, clientY: y + args.dy }))
-  }, { pointerType, dx, dy })
+  const box = await page.locator('.locationAtlasStage').boundingBox()
+  expect(box).not.toBeNull()
+  const x = box!.x + box!.width * .5
+  const y = box!.y + box!.height * .5
+
+  if (pointerType === 'mouse') {
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + dx, y + dy, { steps: 8 })
+    await page.mouse.up()
+    return
+  }
+
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx, y: y + dy }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 }
 
 test.describe('Location Map exact-head browser acceptance evidence v2', () => {
