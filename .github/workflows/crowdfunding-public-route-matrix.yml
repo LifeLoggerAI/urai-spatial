@@ -1,0 +1,74 @@
+name: Crowdfunding Public Route Matrix
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/verify-crowdfunding-public-routes.mjs'
+      - 'docs/crowdfunding/**'
+      - 'urai-tier1/tests/crowdfunding-public-route-verifier-contract.test.mjs'
+      - '.github/workflows/crowdfunding-public-route-matrix.yml'
+  workflow_dispatch:
+    inputs:
+      public_base_url:
+        description: Public URAI base URL
+        required: false
+        default: https://urai.app
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crowdfunding-public-route-matrix-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      URAI_PUBLIC_BASE_URL: ${{ inputs.public_base_url || 'https://urai.app' }}
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify exact-head identity
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Validate verifier syntax and contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/verify-crowdfunding-public-routes.mjs
+          node --test urai-tier1/tests/crowdfunding-capture-authority-contract.test.mjs
+          node --test urai-tier1/tests/crowdfunding-public-route-verifier-contract.test.mjs
+
+      - name: Probe public route matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-crowdfunding-public-routes.mjs
+
+      - name: Upload route matrix evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crowdfunding-public-route-matrix-${{ github.run_id }}
+          path: artifacts/crowdfunding-route-matrix/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Verify repository remains clean except generated evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          status="$(git status --porcelain --untracked-files=all)"
+          unexpected="$(printf '%s\n' "$status" | grep -v '^?? artifacts/crowdfunding-route-matrix/' || true)"
+          test -z "$unexpected"
