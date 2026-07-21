@@ -444,8 +444,10 @@
   .locationAtlasBeacons,
   .locationAtlasBeacon,
   .locationAtlasBeaconLabel,
+  .locationAtlasSelection,
   .locationAtlasWeather {
     transition: none !important;
+    animation: none !important;
   }
 
   .locationAtlasWeather {
