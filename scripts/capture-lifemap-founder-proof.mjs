@@ -97,6 +97,7 @@ async function desktopJourney() {
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
 
     await page.clock.install()
+    await page.clock.pauseAt(Date.now())
     await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
     await waitForState(page, 'data-life-map-mode', 'selected')
     await shot(page, 'selection-start', 'selection-start', { memoryId: 'quiet-reset' })
