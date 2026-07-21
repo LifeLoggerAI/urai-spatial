@@ -15,6 +15,7 @@ test('Life Map route has one canonical scene owner', () => {
   assert.equal((source.match(/<Canvas\b/g) || []).length, 1)
   assert.doesNotMatch(page, /RealLifeMapGalaxy|LifeMapScene/)
   assert.ok(source.includes('data-home-companion-owned="false"'))
+  assert.ok(source.includes('data-spatial-visible="true"'))
 })
 
 test('Life Map establishes real near middle and far depth', () => {
