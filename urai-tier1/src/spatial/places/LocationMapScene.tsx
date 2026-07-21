@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
 import type { MemoryPlace } from './memoryPlaceSchema'
@@ -10,6 +10,7 @@ import './location-map-scene.css'
 type Camera = { x: number; y: number; zoom: number }
 type AtlasPoint = { place: MemoryPlace; x: number; y: number; depth: number }
 type AccessMode = 'checking' | 'threshold' | 'private' | 'demo'
+type SearchParams = Record<string, string | string[] | undefined>
 
 const OVERVIEW: Camera = { x: 0, y: 0, zoom: 0.9 }
 const USER_KEY = 'urai:userId'
@@ -38,9 +39,17 @@ function pointsFor(places: MemoryPlace[]): AtlasPoint[] {
   })
 }
 
-export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
+export function LocationMapScene({ places, searchParams: searchParamsProp = {} }: { places: MemoryPlace[]; searchParams?: SearchParams }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const searchParams = useMemo(() => {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(searchParamsProp)) {
+      if (value === undefined) continue
+      if (Array.isArray(value)) value.forEach(item => params.append(key, item))
+      else params.set(key, value)
+    }
+    return params
+  }, [searchParamsProp])
   const stageRef = useRef<HTMLDivElement | null>(null)
   const markers = useRef<Array<HTMLButtonElement | null>>([])
   const drag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
@@ -92,16 +101,13 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
       setAccess(explicitDemo ? 'demo' : 'threshold')
     }
   }, [searchParams])
-
   useEffect(() => { applyUrl() }, [applyUrl])
-
   useEffect(() => {
     if (!selected) return
     const handleResize = () => setCamera(focusCamera(selected))
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [focusCamera, selected])
-
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const updateMotion = () => setReducedMotion(motion.matches)
@@ -129,7 +135,6 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     if (push) writeUrl(null)
     requestAnimationFrame(() => stageRef.current?.focus())
   }, [writeUrl])
-
   const focus = useCallback((point: AtlasPoint, index: number, push = true) => {
     setSelectedId(point.place.id); setActiveIndex(index); setCheckpoint('place-focus'); setCamera(focusCamera(point))
     setAnnouncement(`${point.place.title} selected. ${privacy(point.place)}.`)
@@ -148,14 +153,10 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   }, [overview, selectedId])
 
   const zoom = useCallback((amount: number) => setCamera(value => ({ ...value, zoom: clamp(value.zoom + amount, .7, 1.9) })), [])
-
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
-    const handleWheel = (event: globalThis.WheelEvent) => {
-      event.preventDefault()
-      zoom(event.deltaY > 0 ? -.09 : .09)
-    }
+    const handleWheel = (event: globalThis.WheelEvent) => { event.preventDefault(); zoom(event.deltaY > 0 ? -.09 : .09) }
     stage.addEventListener('wheel', handleWheel, { passive: false })
     return () => stage.removeEventListener('wheel', handleWheel)
   }, [access, zoom])
@@ -185,7 +186,6 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     setCamera({ ...drag.current.camera, x: clamp(drag.current.camera.x + event.clientX - drag.current.x, -360, 360), y: clamp(drag.current.camera.y + event.clientY - drag.current.y, -320, 320) })
   }
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => { drag.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }
-
   const openDemo = () => {
     try { localStorage.setItem(DEMO_KEY, 'true') } catch { /* storage may be unavailable */ }
     const params = new URLSearchParams(searchParams.toString())
