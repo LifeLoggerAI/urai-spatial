@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAcceptanceBoundary'
+import { LocationMapNativeWheelBridge } from '@/spatial/places/LocationMapNativeWheelBridge'
 import '@/spatial/places/location-map-release-depth.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
@@ -9,6 +10,7 @@ export default async function LocationMapPage() {
 
   return (
     <section data-launch-surface="premium-emotional-weather-atlas">
+      <LocationMapNativeWheelBridge />
       <Suspense fallback={null}>
         <LocationMapAcceptanceBoundary
           places={places}
