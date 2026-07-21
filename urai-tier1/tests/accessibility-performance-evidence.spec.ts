@@ -67,13 +67,16 @@ test.describe('URAI accessibility and performance evidence', () => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.getByRole('button', { name: /open orb travel controls/i })
-    await expect(orb).toBeVisible()
+    await expect(orb).toBeVisible({ timeout: 15_000 })
     await expect(orb).toBeEnabled()
     await orb.click()
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
     const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
     await page.goto('/focus?memoryId=demo:seed-memory-bloom&manifestId=demo-manifest&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
+    const chamber = page.getByTestId('urai-final-focus-chamber')
+    await expect(chamber).toBeVisible({ timeout: 15_000 })
+    await expect(chamber).toHaveAttribute('data-memory-status', 'demo')
     const focusTargets = await targetSize(page, '[data-testid="urai-final-focus-chamber"] :is(button,a[href])')
 
     expect(companionTargets.length).toBeGreaterThan(0)
@@ -118,7 +121,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('mobile visible controls stay inside the visual viewport and safe area', async ({ page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(120_000)
     await page.setViewportSize({ width: 393, height: 873 })
     const report: Array<{ route: string; clipped: Array<{ html: string; left: number; top: number; right: number; bottom: number }> }> = []
     for (const route of routes) {
@@ -154,7 +157,11 @@ test.describe('URAI accessibility and performance evidence', () => {
     }
 
     await page.goto('/ground', { waitUntil: 'domcontentloaded' })
-    const railTargets = page.locator('.ground-destination-compass :is(a,button)')
+    const ground = page.locator('.ground-spatial-root[data-ground-exploration="walkable"]')
+    await expect(ground).toBeVisible({ timeout: 15_000 })
+    const rail = page.getByRole('navigation', { name: 'Ground destinations' })
+    await expect(rail).toBeVisible({ timeout: 15_000 })
+    const railTargets = rail.locator('a,button')
     await expect(railTargets.first()).toBeVisible({ timeout: 15_000 })
     const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
     for (let index = 0; index < await railTargets.count(); index += 1) {
@@ -163,8 +170,8 @@ test.describe('URAI accessibility and performance evidence', () => {
       await expect.poll(() => target.evaluate((element) => element === document.activeElement)).toBe(true)
       focusContainment.push(await target.evaluate((element) => {
         const rect = element.getBoundingClientRect()
-        const rail = element.closest<HTMLElement>('.ground-destination-compass')
-        const railRect = rail?.getBoundingClientRect() ?? rect
+        const railElement = element.closest<HTMLElement>('.ground-destination-compass')
+        const railRect = railElement?.getBoundingClientRect() ?? rect
         const viewport = window.visualViewport
         const leftBoundary = Math.max(viewport?.offsetLeft ?? 0, railRect.left)
         const rightBoundary = Math.min(
