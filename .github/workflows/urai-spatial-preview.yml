@@ -61,6 +61,14 @@ jobs:
       - name: Prove exact source remained clean
         shell: bash
         run: test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Verify isolated preview payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/firebase.preview.json
+          test -d urai-tier1/out
+          test -f urai-tier1/out/index.html
+          test -f urai-tier1/out/location-map/index.html
       - name: Deploy isolated Firebase preview channel
         id: deploy
         shell: bash
@@ -72,17 +80,19 @@ jobs:
           test -n "$FIREBASE_SERVICE_ACCOUNT"
           test -n "$FIREBASE_PROJECT_ID"
           CREDENTIALS_FILE="$RUNNER_TEMP/firebase-preview-service-account.json"
+          cleanup() { rm -f "$CREDENTIALS_FILE"; }
+          trap cleanup EXIT
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
           chmod 600 "$CREDENTIALS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
           CHANNEL_ID="lane6-885-${URAI_EXACT_HEAD:0:7}"
           test "$CHANNEL_ID" != "live"
           pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
+            --config .github/firebase.preview.json \
             --project "$FIREBASE_PROJECT_ID" \
             --expires 1d \
             --non-interactive \
             --json > preview-deploy.json
-          rm -f "$CREDENTIALS_FILE"
           PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
           case "$PREVIEW_URL" in
             https://*.web.app|https://*.firebaseapp.com) ;;
@@ -141,7 +151,10 @@ jobs:
           printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > preview-evidence/manifest.txt
-          find preview-evidence test-results playwright-report -type f ! -name SHA256SUMS -print0 2>/dev/null \
+          evidence_paths=(preview-evidence)
+          test -d test-results && evidence_paths+=(test-results)
+          test -d playwright-report && evidence_paths+=(playwright-report)
+          find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 \
             | sort -z \
             | xargs -0 -r sha256sum > "$RUNNER_TEMP/location-map-evidence-sha256sums"
           mv "$RUNNER_TEMP/location-map-evidence-sha256sums" preview-evidence/SHA256SUMS
