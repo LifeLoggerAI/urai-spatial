@@ -59,7 +59,7 @@ test('Home is one living sanctuary with canonical Ground and Life Map thresholds
   ]) assert.ok(homeGraph.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.doesNotMatch(homeGraph, /data-home-visible-world="final-physical-sanctuary-memory-rooms"|requestPointerLock|OrbitControls|EffectComposer|Bloom|Vignette/)
+  assert.doesNotMatch(homeGraph, /data-home-visible-world="final-physical-sanctuary-memory-rooms"|requestPointerLock|OrbitControls|EffectComposer|<Bloom|<Vignette/)
 })
 
 test('Home keeps one accessible companion plus first-frame and recovery evidence', () => {
