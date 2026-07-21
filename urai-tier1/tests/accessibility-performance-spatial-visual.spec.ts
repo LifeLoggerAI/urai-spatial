@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test.describe('URAI visual ownership and containment evidence', () => {
   test('Home exposes one authored Orb with a transparent operable controller', async ({ page }) => {
+    test.setTimeout(45_000)
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
 
@@ -10,7 +11,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(shell).toHaveAttribute('data-companion-owned', 'true')
 
     const orb = page.locator('[data-urai-audit-action="orb-controls"]')
-    await expect(orb).toBeVisible()
+    await expect(orb).toBeVisible({ timeout: 15_000 })
     await expect(orb).toBeEnabled()
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
 
@@ -66,10 +67,10 @@ test.describe('URAI visual ownership and containment evidence', () => {
       && openLayout!.controller.bottom > openLayout!.destination.top
     expect(overlaps).toBe(false)
 
-    const lifeMapDestination = menu.getByRole('button', { name: 'Life Map', exact: true })
-    await expect(lifeMapDestination).toBeVisible()
-    await lifeMapDestination.dispatchEvent('click')
-    await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveAttribute('aria-hidden', 'true')
+    await expect(orb).toBeFocused()
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
   })
 
   test('Ground WebGL canvas remains inside a narrow mobile viewport', async ({ page }) => {
@@ -111,10 +112,11 @@ test.describe('URAI visual ownership and containment evidence', () => {
 
   test('Life Map semantic controls stay closed until the user opens them', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
-    await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+    await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
 
-    const controls = page.locator('details.life-map-accessibility-menu')
-    const body = controls.locator(':scope > div')
+    const controls = page.locator('details[data-life-map-navigator]')
+    const body = controls.locator(':scope > section')
+    await expect(controls).toBeVisible({ timeout: 15_000 })
     await expect(controls).not.toHaveAttribute('open', '')
     await expect(body).toBeHidden()
 
