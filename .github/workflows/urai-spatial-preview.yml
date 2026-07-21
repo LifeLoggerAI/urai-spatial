@@ -62,7 +62,7 @@ jobs:
       - name: Prove exact source remained clean
         shell: bash
         run: test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Verify isolated preview payload
+      - name: Verify and stage isolated preview payload
         shell: bash
         run: |
           set -euo pipefail
@@ -70,6 +70,11 @@ jobs:
           test -d urai-tier1/out
           test -f urai-tier1/out/index.html
           test -f urai-tier1/out/location-map/index.html
+          rm -rf .github/urai-tier1
+          mkdir -p .github/urai-tier1
+          cp -R urai-tier1/out .github/urai-tier1/out
+          test -f .github/urai-tier1/out/index.html
+          test -f .github/urai-tier1/out/location-map/index.html
       - name: Deploy isolated Firebase preview channel
         id: deploy
         shell: bash
