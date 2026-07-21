@@ -1,0 +1,49 @@
+name: Restore Replay from preserved backup
+
+on:
+  push:
+    branches:
+      - repair/replay-spatial-world-20260721
+
+permissions:
+  contents: write
+
+concurrency:
+  group: restore-replay-from-backup
+  cancel-in-progress: false
+
+jobs:
+  restore-replay:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout clean Replay branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: repair/replay-spatial-world-20260721
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Restore Replay-owned files and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin backup/replay-spatial-world-b2a87881-20260721
+          git checkout origin/backup/replay-spatial-world-b2a87881-20260721 -- \
+            tests/replay-memory-theater-contract.mjs \
+            urai-tier1/src/app/replay/CinematicReplayClient.tsx \
+            urai-tier1/src/app/replay/ReplayRecoveryState.tsx \
+            urai-tier1/src/app/replay/ReplaySpatialWorld.tsx \
+            urai-tier1/src/spatial/replay/replaySpatialModel.ts \
+            urai-tier1/tests/replay-spatial-world-contract.test.mjs
+          git rm .github/workflows/restore-replay-from-backup.yml
+          git add tests/replay-memory-theater-contract.mjs \
+            urai-tier1/src/app/replay/CinematicReplayClient.tsx \
+            urai-tier1/src/app/replay/ReplayRecoveryState.tsx \
+            urai-tier1/src/app/replay/ReplaySpatialWorld.tsx \
+            urai-tier1/src/spatial/replay/replaySpatialModel.ts \
+            urai-tier1/tests/replay-spatial-world-contract.test.mjs
+          git commit -m "feat(replay): reapply spatial memory world onto current main"
+          git push origin HEAD:repair/replay-spatial-world-20260721
