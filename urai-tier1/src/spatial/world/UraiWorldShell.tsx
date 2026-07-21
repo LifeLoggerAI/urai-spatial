@@ -24,10 +24,11 @@ import './lifeMapSelectedActionInvariant.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  // Life Map is an independent non-Orb realm. Home keeps the shared controller
-  // mounted, but routeOwnerConvergence makes its generated artwork transparent
-  // so the authored sanctuary Orb remains the only visible Orb.
-  const showWorldCompanion = world.destination !== 'life-map'
+  // Life Map and Location Map are independently controlled realms. Their route
+  // owners provide the only visible interaction surfaces so shared Orb controls
+  // cannot overlap, intercept Escape, or imply a second navigation authority.
+  const independentlyControlled = world.destination === 'life-map' || world.destination === 'location-map'
+  const showWorldCompanion = !independentlyControlled
 
   return (
     <div
