@@ -87,8 +87,7 @@ jobs:
           PROJECT_ID_STATUS=missing
           test -n "$FIREBASE_SERVICE_ACCOUNT" && SERVICE_ACCOUNT_STATUS=present
           test -n "$FIREBASE_PROJECT_ID" && PROJECT_ID_STATUS=present
-          printf 'firebase_service_account=%s\nfirebase_project_id=%s\n' \
-            "$SERVICE_ACCOUNT_STATUS" "$PROJECT_ID_STATUS" > preview-auth-boundary.txt
+          printf 'firebase_service_account=%s\nfirebase_project_id=%s\n' "$SERVICE_ACCOUNT_STATUS" "$PROJECT_ID_STATUS" > preview-auth-boundary.txt
           test "$SERVICE_ACCOUNT_STATUS" = present
           test "$PROJECT_ID_STATUS" = present
           CREDENTIALS_FILE="$RUNNER_TEMP/firebase-preview-service-account.json"
@@ -97,27 +96,16 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
           chmod 600 "$CREDENTIALS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
-          CHANNEL_ID="lane6-885-${URAI_EXACT_HEAD:0:7}"
+          CHANNEL_ID="lane6-889-${URAI_EXACT_HEAD:0:7}"
           test "$CHANNEL_ID" != "live"
           set +e
-          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
-            --config .github/firebase.preview.json \
-            --project "$FIREBASE_PROJECT_ID" \
-            --expires 1d \
-            --non-interactive \
-            --json > preview-deploy.json 2> preview-deploy.stderr
+          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" --config .github/firebase.preview.json --project "$FIREBASE_PROJECT_ID" --expires 1d --non-interactive --json > preview-deploy.json 2> preview-deploy.stderr
           DEPLOY_STATUS=$?
           set -e
           printf '%s\n' "$DEPLOY_STATUS" > preview-deploy.exit-code
-          if [ "$DEPLOY_STATUS" -ne 0 ]; then
-            cat preview-deploy.stderr >&2
-            exit "$DEPLOY_STATUS"
-          fi
+          if [ "$DEPLOY_STATUS" -ne 0 ]; then cat preview-deploy.stderr >&2; exit "$DEPLOY_STATUS"; fi
           PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
-          case "$PREVIEW_URL" in
-            https://*.web.app|https://*.firebaseapp.com) ;;
-            *) echo "Unexpected non-preview URL: $PREVIEW_URL" >&2; exit 65 ;;
-          esac
+          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) echo "Unexpected non-preview URL: $PREVIEW_URL" >&2; exit 65 ;; esac
           test "$PREVIEW_URL" != "https://urai.app"
           test "$PREVIEW_URL" != "https://urai.app/"
           printf 'preview_url=%s\n' "$PREVIEW_URL" >> "$GITHUB_OUTPUT"
@@ -157,7 +145,7 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
           URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+        run: node scripts/run-location-map-browser-acceptance-fixed.mjs
       - name: Create exact-head evidence manifest
         if: always()
         shell: bash
@@ -168,15 +156,11 @@ jobs:
           set -euo pipefail
           mkdir -p preview-evidence
           cp -f preview-auth-boundary.txt preview-deploy.json preview-deploy.stderr preview-deploy.exit-code preview-receipt.txt preview-location-map.html preview-evidence/ 2>/dev/null || true
-          printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
-            "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            > preview-evidence/manifest.txt
+          printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > preview-evidence/manifest.txt
           evidence_paths=(preview-evidence)
           test -d test-results && evidence_paths+=(test-results)
           test -d playwright-report && evidence_paths+=(playwright-report)
-          find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum > "$RUNNER_TEMP/location-map-evidence-sha256sums"
+          find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > "$RUNNER_TEMP/location-map-evidence-sha256sums"
           mv "$RUNNER_TEMP/location-map-evidence-sha256sums" preview-evidence/SHA256SUMS
       - name: Retain preview deployment and runtime evidence
         if: always()
