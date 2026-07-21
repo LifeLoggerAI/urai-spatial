@@ -1,5 +1,5 @@
 /* Final native doorway separation: Ground sits above the WebGL canvas,
-   while its bounded bottom rail never overlaps the Orb or its panel. */
+   while its bounded bottom rail never overlaps the Orb or direct destination controls. */
 .urai-ground-gateway {
   z-index: 11 !important;
   height: 80px !important;
@@ -13,6 +13,21 @@
 .urai-home-spatial-runtime-layer {
   position: relative;
   z-index: auto;
+}
+
+/* The direct Home controls are their own real interaction island. Desktop controls
+   sit above the 80px Ground rail; touch controls opt back into tap semantics instead
+   of inheriting the world's drag-only touch-action:none behavior. */
+.urai-final-home-doorways,
+.urai-final-home-doorways button {
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+@media (min-width: 761px) {
+  .urai-final-home-doorways {
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px)) !important;
+  }
 }
 
 .urai-home-spatial-orb-trigger,
@@ -65,6 +80,10 @@
     right: auto !important;
     width: min(82vw, 560px) !important;
     transform: translateX(-50%) !important;
+  }
+
+  .urai-final-home-doorways {
+    bottom: max(112px, calc(env(safe-area-inset-bottom) + 112px)) !important;
   }
 
   .urai-life-map-persistent-doorways {
