@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAcceptanceBoundary'
 import '@/spatial/places/location-map-release-depth.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
@@ -8,10 +9,12 @@ export default async function LocationMapPage() {
 
   return (
     <section data-launch-surface="premium-emotional-weather-atlas">
-      <LocationMapAcceptanceBoundary
-        places={places}
-        enabled={acceptanceFixturesEnabled}
-      />
+      <Suspense fallback={null}>
+        <LocationMapAcceptanceBoundary
+          places={places}
+          enabled={acceptanceFixturesEnabled}
+        />
+      </Suspense>
     </section>
   )
 }
