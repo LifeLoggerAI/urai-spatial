@@ -205,7 +205,8 @@ export default function ConsentSanctuaryClient() {
     if (!user || explicitDemo || loadState === 'signed-out' || loadState === 'unavailable') return
     const policyRef = doc(getFirebaseDb(), 'users', user.uid, 'privacyPolicy', 'current')
     return onSnapshot(policyRef, (snapshot) => {
-      const next = snapshot.exists() && isConsentPolicy(snapshot.data(), user.uid) ? snapshot.data() : defaultConsentPolicy(user.uid)
+      const rawPolicy = snapshot.data()
+      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)
       setPolicy(next)
       setLoadState('private')
       const state = next.enforcement.state
