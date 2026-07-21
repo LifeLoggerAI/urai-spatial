@@ -92,7 +92,26 @@ jobs:
           test "$PREVIEW_URL" != "https://urai.app/"
           printf 'preview_url=%s\n' "$PREVIEW_URL" >> "$GITHUB_OUTPUT"
           printf 'channel_id=%s\n' "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
-          node -e "const fs=require('fs');const crypto=require('crypto');const p='preview-deploy.json';const digest=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');fs.writeFileSync('preview-receipt.txt',[`exact_sha=${process.env.URAI_EXACT_HEAD}`,`run_id=${process.env.GITHUB_RUN_ID}`,`job=${process.env.GITHUB_JOB}`,`environment=firebase-hosting-preview-channel`,`channel_id=${process.argv[2]}`,`preview_url=${process.argv[1]}`,`production_targeted=false`,`deployed_at=${new Date().toISOString()}`,`deployment_receipt_sha256=${digest}`,''].join('\n'))" "$PREVIEW_URL" "$CHANNEL_ID"
+          node - "$PREVIEW_URL" "$CHANNEL_ID" <<'NODE'
+          const fs = require('fs')
+          const crypto = require('crypto')
+          const previewUrl = process.argv[2]
+          const channelId = process.argv[3]
+          const deploymentPath = 'preview-deploy.json'
+          const digest = crypto.createHash('sha256').update(fs.readFileSync(deploymentPath)).digest('hex')
+          fs.writeFileSync('preview-receipt.txt', [
+            `exact_sha=${process.env.URAI_EXACT_HEAD}`,
+            `run_id=${process.env.GITHUB_RUN_ID}`,
+            `job=${process.env.GITHUB_JOB}`,
+            'environment=firebase-hosting-preview-channel',
+            `channel_id=${channelId}`,
+            `preview_url=${previewUrl}`,
+            'production_targeted=false',
+            `deployed_at=${new Date().toISOString()}`,
+            `deployment_receipt_sha256=${digest}`,
+            '',
+          ].join('\n'))
+          NODE
       - name: Verify reachable preview runtime and SHA identity
         shell: bash
         env:
@@ -122,7 +141,10 @@ jobs:
           printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > preview-evidence/manifest.txt
-          find preview-evidence test-results playwright-report -type f -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum > preview-evidence/SHA256SUMS
+          find preview-evidence test-results playwright-report -type f ! -name SHA256SUMS -print0 2>/dev/null \
+            | sort -z \
+            | xargs -0 -r sha256sum > "$RUNNER_TEMP/location-map-evidence-sha256sums"
+          mv "$RUNNER_TEMP/location-map-evidence-sha256sums" preview-evidence/SHA256SUMS
       - name: Retain preview deployment and runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
