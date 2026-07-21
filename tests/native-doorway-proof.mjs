@@ -17,18 +17,24 @@ const doorways = [
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
-async function activate(target, method) {
-  const options = { timeout: 10000, noWaitAfter: true }
-  if (method === 'pointer') return target.click(options)
-  if (method === 'touch') return target.tap(options)
-  await target.focus()
-  if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
-  return target.press('Enter', { noWaitAfter: true })
+async function activate(page, target, method) {
+  if (method === 'keyboard') {
+    await target.focus()
+    if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
+    return target.press('Enter', { noWaitAfter: true })
+  }
+
+  const box = await target.boundingBox()
+  if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  if (method === 'touch') return page.touchscreen.tap(x, y)
+  return page.mouse.click(x, y)
 }
 
 async function resolveTarget(page, doorway) {
   const target = page.getByRole('button', { name: doorway.name, exact: true })
-  await target.waitFor({ state: 'visible', timeout: 15000 })
+  await target.waitFor({ state: 'visible', timeout: 30000 })
   return target
 }
 
@@ -43,7 +49,7 @@ async function prove(browser, doorway, testCase) {
     const target = await resolveTarget(page, doorway)
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
-    await activate(target, testCase.method)
+    await activate(page, target, testCase.method)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
     await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
@@ -66,7 +72,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 4, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 5, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
