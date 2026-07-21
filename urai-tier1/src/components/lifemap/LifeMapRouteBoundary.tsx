@@ -1,28 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
-function overviewHref() {
+function primeOverviewIdentity() {
   const current = new URLSearchParams(window.location.search)
   current.delete('memoryId')
   current.delete('node')
   current.delete('returnNode')
   current.delete('from')
   current.set('overview', '1')
-  return `/life-map?${current.toString()}`
+  window.history.replaceState(window.history.state, '', `/life-map?${current.toString()}`)
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }))
 }
 
 export default function LifeMapRouteBoundary() {
-  const [sceneVersion, setSceneVersion] = useState(0)
-
-  const unwindToOverview = useCallback(() => {
-    window.history.replaceState(window.history.state, '', overviewHref())
-    setSceneVersion((version) => version + 1)
-  }, [])
-
   useEffect(() => {
     const primeOverview = (event: MouseEvent) => {
       const target = event.target
@@ -30,27 +24,23 @@ export default function LifeMapRouteBoundary() {
       const button = target.closest('button')
       const label = button?.textContent?.trim() || ''
       if (!button || !overviewActionLabels.has(label)) return
-      event.preventDefault()
-      event.stopPropagation()
-      unwindToOverview()
+      primeOverviewIdentity()
     }
 
-    const unwindOnEscape = (event: KeyboardEvent) => {
+    const primeEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       const current = new URLSearchParams(window.location.search)
       if (!current.has('memoryId') && !current.has('node')) return
-      event.preventDefault()
-      event.stopImmediatePropagation()
-      unwindToOverview()
+      primeOverviewIdentity()
     }
 
     document.addEventListener('click', primeOverview, true)
-    window.addEventListener('keydown', unwindOnEscape, true)
+    window.addEventListener('keydown', primeEscape, true)
     return () => {
       document.removeEventListener('click', primeOverview, true)
-      window.removeEventListener('keydown', unwindOnEscape, true)
+      window.removeEventListener('keydown', primeEscape, true)
     }
-  }, [unwindToOverview])
+  }, [])
 
-  return <AdaptiveLifeMapScene key={sceneVersion} />
+  return <AdaptiveLifeMapScene />
 }
