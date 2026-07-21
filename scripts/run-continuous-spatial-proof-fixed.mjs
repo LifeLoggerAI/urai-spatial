@@ -49,7 +49,7 @@ if (!source.includes('activeHomeOwnerMounted')) {
       const activeHomeOwner = page.locator('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
       const activeHomeOwnerMounted = await activeHomeOwner.count() === 1
       const activeHomeOwnerReady = activeHomeOwnerMounted && await activeHomeOwner.getAttribute('data-home-ready') === 'true'
-      const visibleWorldMounted = await page.locator('[data-testid="urai-home-visible-world"]').count() === 1`,
+      const visibleWorldMounted = activeHomeOwnerMounted && await activeHomeOwner.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'`,
   )
   replaceRequired(
     'Home retired authored marker',
@@ -59,7 +59,7 @@ if (!source.includes('activeHomeOwnerMounted')) {
   replaceRequired(
     'Home rendered frame readiness',
     /const firstHomeFrameMarked = await page\.evaluate\(\(\) => performance\.getEntriesByName\('urai:first-home-spatial-frame'\)\.length > 0\)/,
-    `const firstHomeFrameMarked = activeHomeOwnerReady`,
+    `const firstHomeFrameMarked = authoredSceneMounted`,
   )
   replaceRequired(
     'Home optional contextual prompt overlap',
@@ -165,7 +165,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-14'",
 )
 
 await writeFile(patchedPath, source)
