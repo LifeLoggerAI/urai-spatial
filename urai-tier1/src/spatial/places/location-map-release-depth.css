@@ -159,9 +159,12 @@
 @media (prefers-reduced-motion: reduce) {
   .urai-world-runtime[data-world-destination="location-map"] .locationAtlasArt,
   .urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage::before,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasWeather,
   .urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera,
   .urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacons,
-  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon {
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasSelection {
     transition: none !important;
+    animation: none !important;
   }
 }
