@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const externalBaseURL = process.env.PLAYWRIGHT_BASE_URL?.trim();
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -8,10 +10,10 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: externalBaseURL || 'http://localhost:3000',
     trace: 'on-first-retry',
   },
-  webServer: {
+  webServer: externalBaseURL ? undefined : {
     command: 'pnpm exec next dev -p 3000',
     cwd: './urai-tier1',
     url: 'http://localhost:3000',
