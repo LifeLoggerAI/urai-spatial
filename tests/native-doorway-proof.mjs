@@ -64,6 +64,7 @@ async function prove(browser, doorway, testCase) {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
+    await target.scrollIntoViewIfNeeded()
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
     record.hitPoint = await inspectHitPoint(target)
