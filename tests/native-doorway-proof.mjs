@@ -67,7 +67,7 @@ const interactions = []
 for (const doorway of doorways) {
   for (const testCase of cases) interactions.push(await prove(doorway, testCase))
 }
-const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.method}:${item.destinationRoute}: ${item.failureReason}`)
+const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
 const receipt = { schemaVersion: 6, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, pointerProofMethod: 'validated-hit-target-coordinate-input-isolated-browser', interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
