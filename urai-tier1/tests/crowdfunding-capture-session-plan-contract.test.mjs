@@ -44,7 +44,7 @@ test('capture session plan retains exact release and route-matrix authority', ()
 });
 
 test('capture ledger is fail-closed and complete', () => {
-  const lines = fs.readFileSync(ledgerPath, 'utf8').trim().split('\n');
+  const lines = fs.readFileSync(ledgerPath, 'utf8').trim().split(/\r?\n/);
   const headers = parseCsvLine(lines[0]);
   const rows = lines.slice(1).map(parseCsvLine);
 
@@ -72,6 +72,7 @@ test('capture ledger is fail-closed and complete', () => {
   const routeIndex = headers.indexOf('route');
 
   for (const row of rows) {
+    assert.equal(row.length, headers.length, 'every ledger row must align with the header schema');
     assert.equal(row[statusIndex], 'HOLD', 'every unreviewed shot must default to HOLD');
     if (/life-map|focus|replay/.test(row[routeIndex])) {
       assert.equal(row[disclosureIndex], 'SAMPLE DATA');
