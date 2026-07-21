@@ -131,6 +131,81 @@
   box-shadow: 0 18px 55px rgba(0,0,0,.34), inset 0 1px rgba(255,255,255,.035);
 }
 
+/* Route-owned terrain world: the three camera layers form distant, middle and
+   near land shelves instead of decorative concentric rings. */
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i {
+  left: 50%;
+  border: 1px solid rgba(159, 231, 238, .16);
+  border-radius: 42% 58% 38% 62% / 54% 42% 58% 46%;
+  clip-path: polygon(0 58%, 8% 42%, 17% 48%, 26% 29%, 38% 43%, 49% 20%, 61% 37%, 73% 18%, 83% 39%, 92% 31%, 100% 53%, 100% 100%, 0 100%);
+  background:
+    linear-gradient(180deg, rgba(76, 152, 145, .2), rgba(11, 34, 37, .82) 56%, rgba(1, 8, 12, .96)),
+    repeating-linear-gradient(102deg, transparent 0 9%, rgba(137, 225, 225, .045) 9.3% 9.7%);
+  box-shadow: inset 0 18px 48px rgba(120, 227, 219, .06), 0 -24px 90px rgba(72, 190, 200, .08);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i:nth-child(1) {
+  top: 39%;
+  width: 104%;
+  height: 56%;
+  opacity: .58;
+  transform: translate3d(-50%, -48%, -220px) rotateX(70deg) scale(1.08);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i:nth-child(2) {
+  top: 52%;
+  width: 88%;
+  height: 48%;
+  opacity: .78;
+  transform: translate3d(-50%, -48%, -70px) rotateX(68deg);
+  background:
+    linear-gradient(180deg, rgba(64, 156, 138, .3), rgba(9, 38, 38, .9) 54%, rgba(1, 9, 12, .98)),
+    repeating-linear-gradient(78deg, transparent 0 11%, rgba(144, 232, 221, .055) 11.2% 11.6%);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i:nth-child(3) {
+  top: 68%;
+  width: 72%;
+  height: 42%;
+  opacity: .96;
+  transform: translate3d(-50%, -48%, 70px) rotateX(66deg);
+  background:
+    linear-gradient(180deg, rgba(72, 166, 143, .34), rgba(7, 34, 35, .94) 50%, #01080b),
+    radial-gradient(ellipse at 50% 20%, rgba(144, 233, 215, .11), transparent 52%);
+  box-shadow: inset 0 24px 55px rgba(123, 232, 211, .08), 0 -18px 80px rgba(66, 185, 188, .1);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeaconCore {
+  inset: 8px 24px 21px;
+  border-radius: 48% 48% 18% 18% / 32% 32% 68% 68%;
+  clip-path: polygon(50% 0, 82% 24%, 72% 100%, 28% 100%, 18% 24%);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.94), transparent 17%),
+    linear-gradient(180deg, color-mix(in srgb, var(--beacon-color) 78%, white), color-mix(in srgb, var(--beacon-color) 38%, #06131a) 48%, #061018 100%);
+  box-shadow: inset 0 0 16px rgba(255,255,255,.16), 0 0 34px color-mix(in srgb, var(--beacon-color) 42%, transparent);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeaconCore i {
+  inset: 28% 31% 20%;
+  border-radius: 40%;
+  filter: blur(7px);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon::before {
+  top: 63%;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--beacon-color) 88%, white), color-mix(in srgb, var(--beacon-color) 24%, #061018));
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon::after {
+  top: calc(63% + 30px + var(--beacon-depth) * 42px);
+  border-width: 2px;
+  background:
+    radial-gradient(ellipse, color-mix(in srgb, var(--beacon-color) 34%, transparent), transparent 62%),
+    rgba(1, 8, 12, .72);
+}
+
 @media (max-width: 620px) {
   .urai-world-runtime[data-world-destination="location-map"] .locationAtlas {
     --atlas-horizon: 39%;
@@ -153,6 +228,18 @@
 
   .urai-world-runtime[data-world-destination="location-map"] .locationAtlasOrientation {
     width: calc(100vw - 142px);
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i:nth-child(1) {
+    width: 132%;
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i:nth-child(2) {
+    width: 108%;
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i:nth-child(3) {
+    width: 88%;
   }
 }
 
