@@ -74,7 +74,8 @@ for (const token of [
   'useDragLook',
   'MobileMovementPad',
   'data-replay-spatial-renderer="webgl-r3f"',
-  'data-replay-camera-x',
+  'shell.dataset.replayCameraX',
+  'shell.dataset.replayCameraZ',
   'data-testid="replay-webgl-fallback"',
   "ReplayNavigationMode = 'guided' | 'explore'",
 ]) assertIncludes(replayWorldPath, replayWorld, token)
