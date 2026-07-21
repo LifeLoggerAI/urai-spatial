@@ -21,6 +21,7 @@ import './embodiedExplorationLayout.css'
 import './interactionCollisionRepair.css'
 import './lifeMapSelectedActionHardening.css'
 import './lifeMapSelectedActionInvariant.css'
+import '../places/location-map-release-depth.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
