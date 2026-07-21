@@ -38,12 +38,15 @@ export default function CinematicReplayClient() {
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
 
   useEffect(() => {
+    if (progressMs >= duration && playing) setPlaying(false)
+  }, [duration, playing, progressMs])
+
+  useEffect(() => {
     if (!memory || !playing) return
-    const tick = window.setInterval(() => setProgressMs((current) => {
-      const next = clamp(current + (reducedMotion || lowSensory ? 250 : 100), duration)
-      if (next >= duration) setPlaying(false)
-      return next
-    }), reducedMotion || lowSensory ? 250 : 100)
+    const step = reducedMotion || lowSensory ? 250 : 100
+    const tick = window.setInterval(() => {
+      setProgressMs((current) => clamp(current + step, duration))
+    }, step)
     return () => window.clearInterval(tick)
   }, [duration, lowSensory, memory, playing, reducedMotion])
 
@@ -72,9 +75,7 @@ export default function CinematicReplayClient() {
     setSelectedAnchor(null)
   }, [memory?.id])
 
-  if (!memory) {
-    return <ReplayRecoveryState status={result.status} message={result.message} />
-  }
+  if (!memory) return <ReplayRecoveryState status={result.status} message={result.message} />
 
   const percent = Math.round((progressMs / duration) * 100)
   const style = {
@@ -141,18 +142,7 @@ export default function CinematicReplayClient() {
 
       <section className="controls" aria-label="Replay playback controls" data-testid="urai-replay-timeline">
         <button type="button" onClick={togglePlayback} disabled={navigationMode === 'explore'} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? 'Pause' : 'Play'}</button>
-        <input
-          type="range"
-          min={0}
-          max={duration}
-          step={100}
-          value={progressMs}
-          onChange={(event) => {
-            setPlaying(false)
-            setProgressMs(Number(event.currentTarget.value))
-          }}
-          aria-label={`Replay timeline, ${percent} percent complete`}
-        />
+        <input type="range" min={0} max={duration} step={100} value={progressMs} onChange={(event) => { setPlaying(false); setProgressMs(Number(event.currentTarget.value)) }} aria-label={`Replay timeline, ${percent} percent complete`} />
         <output>{percent}%</output>
       </section>
 
@@ -171,10 +161,8 @@ export default function CinematicReplayClient() {
         </section>
       ) : null}
 
-      <p className="sceneSummary" data-testid="urai-replay-meta-panel">
-        Scene summary: {memory.title}. {memory.place ? `Confirmed place: ${memory.place.label}.` : 'The place is not confirmed.'} Inferred elements are visually softened and remain correctable.
-      </p>
-      <style jsx>{replayCss}</style>
+      <p className="sceneSummary" data-testid="urai-replay-meta-panel">Scene summary: {memory.title}. {memory.place ? `Confirmed place: ${memory.place.label}.` : 'The place is not confirmed.'} Inferred elements are visually softened and remain correctable.</p>
+      <style dangerouslySetInnerHTML={{ __html: replayCss }} />
     </main>
   )
 }
