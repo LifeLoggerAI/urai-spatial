@@ -3,11 +3,15 @@
 /* The active Home renderer owns its own physical Ground threshold and direct destinations.
  * Remove the legacy full-width Ground gateway from pointer and accessibility ownership
  * only while a navigable sanctuary renderer is mounted. Fallback Home renderers retain it. */
+body.urai-home-webgl-active
+  .urai-world-runtime[data-world-destination='home']
+  > .urai-ground-gateway,
 .urai-world-runtime[data-world-destination='home']:has(.urai-home-embodied-shell)
   > .urai-ground-gateway,
 .urai-world-runtime[data-world-destination='home']:has(.urai-final-home-world)
   > .urai-ground-gateway {
-  display: none;
+  display: none !important;
+  pointer-events: none !important;
 }
 
 /* Keep Life Map's compact movement help below and behind the primary Map controls.
