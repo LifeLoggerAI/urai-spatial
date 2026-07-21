@@ -39,6 +39,7 @@ export type ReplaySensitiveTopic = {
   id: string
   label: string
   reason: string
+  toString: () => string
 }
 
 export type ReplaySpatialSceneModel = {
@@ -78,6 +79,10 @@ function personPosition(index: number, total: number): [number, number, number] 
   return [Math.cos(angle) * radius, 0, -2.8 + Math.sin(angle) * radius * 0.55]
 }
 
+function sensitiveTopic(id: string, label: string, reason: string): ReplaySensitiveTopic {
+  return { id, label, reason, toString: () => label }
+}
+
 function detectSensitiveTopics(memory: SelectedMemory): ReplaySensitiveTopic[] {
   const searchable = [
     memory.title,
@@ -91,18 +96,20 @@ function detectSensitiveTopics(memory: SelectedMemory): ReplaySensitiveTopic[] {
     memory.replayManifest.transcript ?? '',
   ].join(' ').toLowerCase()
 
-  const topics = SENSITIVE_TERMS.filter((topic) => topic.terms.some((term) => searchable.includes(term))).map((topic) => ({
-    id: topic.id,
-    label: topic.label,
-    reason: 'Possible sensitive material detected from user-approved Replay text. Review before playback.',
-  }))
+  const topics = SENSITIVE_TERMS
+    .filter((topic) => topic.terms.some((term) => searchable.includes(term)))
+    .map((topic) => sensitiveTopic(
+      topic.id,
+      topic.label,
+      'Possible sensitive material detected from user-approved Replay text. Review before playback.',
+    ))
 
   if (memory.people.length > 0 && !topics.some((topic) => topic.id === 'people')) {
-    topics.push({
-      id: 'people',
-      label: 'other people appear in this memory',
-      reason: 'People remain abstract unless a future consent record explicitly permits likeness or voice use.',
-    })
+    topics.push(sensitiveTopic(
+      'people',
+      'other people appear in this memory',
+      'People remain abstract unless a future consent record explicitly permits likeness or voice use.',
+    ))
   }
 
   return topics
@@ -205,6 +212,13 @@ export function buildReplaySpatialScene(memory: SelectedMemory): ReplaySpatialSc
   )
 
   const sensitiveTopics = detectSensitiveTopics(memory)
+  const preflightDisclosures = Array.from(new Set([
+    'Replay never autoplays. You choose when to enter and may exit immediately.',
+    'Confirmed, inferred, disputed, and unknown details remain visibly separated.',
+    'People remain abstract unless a future consent record explicitly permits likeness or voice use.',
+    ...sensitiveTopics.map((topic) => topic.reason),
+  ]))
+
   return {
     memoryId: memory.id,
     title: memory.title,
@@ -214,12 +228,7 @@ export function buildReplaySpatialScene(memory: SelectedMemory): ReplaySpatialSc
     guidedCamera: GUIDED_CAMERA,
     anchors: anchors.filter((anchor) => anchor.consentState !== 'blocked'),
     sensitiveTopics,
-    preflightDisclosures: [
-      'Replay never autoplays. You choose when to enter and may exit immediately.',
-      'Confirmed, inferred, disputed, and unknown details remain visibly separated.',
-      'People remain abstract unless a future consent record explicitly permits likeness or voice use.',
-      ...sensitiveTopics.map((topic) => topic.reason),
-    ],
+    preflightDisclosures,
   }
 }
 
