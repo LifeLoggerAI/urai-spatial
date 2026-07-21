@@ -53,6 +53,7 @@ export type ReplaySpatialSceneModel = {
   }>
   anchors: ReplayWorldAnchor[]
   sensitiveTopics: ReplaySensitiveTopic[]
+  preflightDisclosures: string[]
 }
 
 const GUIDED_CAMERA: ReplaySpatialSceneModel['guidedCamera'] = {
@@ -203,6 +204,7 @@ export function buildReplaySpatialScene(memory: SelectedMemory): ReplaySpatialSc
     },
   )
 
+  const sensitiveTopics = detectSensitiveTopics(memory)
   return {
     memoryId: memory.id,
     title: memory.title,
@@ -211,7 +213,13 @@ export function buildReplaySpatialScene(memory: SelectedMemory): ReplaySpatialSc
     spawn: [0, 0, 7.2],
     guidedCamera: GUIDED_CAMERA,
     anchors: anchors.filter((anchor) => anchor.consentState !== 'blocked'),
-    sensitiveTopics: detectSensitiveTopics(memory),
+    sensitiveTopics,
+    preflightDisclosures: [
+      'Replay never autoplays. You choose when to enter and may exit immediately.',
+      'Confirmed, inferred, disputed, and unknown details remain visibly separated.',
+      'People remain abstract unless a future consent record explicitly permits likeness or voice use.',
+      ...sensitiveTopics.map((topic) => topic.reason),
+    ],
   }
 }
 
