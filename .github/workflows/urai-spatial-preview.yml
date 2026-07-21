@@ -15,6 +15,7 @@ concurrency:
 
 env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
 
 jobs:
   preview:
@@ -73,8 +74,8 @@ jobs:
         id: deploy
         shell: bash
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
-          FIREBASE_PROJECT_ID: ${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
         run: |
           set -euo pipefail
           SERVICE_ACCOUNT_STATUS=missing
