@@ -1,18 +1,24 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 
 const HOME_ROUTES = new Set(['/', '/home'])
 
 export default function HomeDirectDoorways() {
   const pathname = (usePathname() || '/').replace(/\/+$/, '') || '/'
-  if (!HOME_ROUTES.has(pathname)) return null
+  const [mounted, setMounted] = useState(false)
 
-  return (
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted || !HOME_ROUTES.has(pathname)) return null
+
+  return createPortal(
     <nav
       className="urai-home-direct-doorways"
       data-movement-ui="true"
-      data-native-doorway-owner="route-shell"
+      data-native-doorway-owner="document-body-portal"
       aria-label="Direct Home destinations"
     >
       <a
@@ -27,6 +33,7 @@ export default function HomeDirectDoorways() {
       >
         Life Map
       </a>
-    </nav>
+    </nav>,
+    document.body,
   )
 }
