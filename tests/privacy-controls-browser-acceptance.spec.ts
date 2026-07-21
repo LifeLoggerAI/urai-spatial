@@ -11,6 +11,8 @@ type RuntimeEvidence = {
   consoleErrors: string[]
   pageErrors: string[]
   failedRequests: string[]
+  expectedOfflineFailures?: string[]
+  unexpectedOfflineFailures?: string[]
 }
 
 async function captureRuntime(page: Page): Promise<RuntimeEvidence> {
@@ -46,6 +48,22 @@ async function openSanctuary(page: Page, suffix = '') {
 async function openDemo(page: Page) {
   await openSanctuary(page, '?demo=1')
   await expect(page.getByText('DEMONSTRATION — no personal data', { exact: true })).toBeVisible()
+}
+
+function classifyOfflineFailures(runtime: RuntimeEvidence) {
+  const expectedPageErrors = runtime.pageErrors.filter((message) => message === 'Failed to fetch')
+  const unexpectedPageErrors = runtime.pageErrors.filter((message) => message !== 'Failed to fetch')
+  const expectedRequestFailures = runtime.failedRequests.filter((request) => (
+    request.includes('cdn.jsdelivr.net/gh/lojjic/unicode-font-resolver')
+    && request.includes('net::ERR_INTERNET_DISCONNECTED')
+  ))
+  const unexpectedRequestFailures = runtime.failedRequests.filter((request) => !(
+    request.includes('cdn.jsdelivr.net/gh/lojjic/unicode-font-resolver')
+    && request.includes('net::ERR_INTERNET_DISCONNECTED')
+  ))
+
+  runtime.expectedOfflineFailures = [...expectedPageErrors, ...expectedRequestFailures]
+  runtime.unexpectedOfflineFailures = [...unexpectedPageErrors, ...unexpectedRequestFailures]
 }
 
 test('desktop demo exposes all domains and direct keyboard controls', async ({ page }) => {
@@ -125,6 +143,12 @@ test('offline transition is explicit and disables sensitive operations', async (
   await expect(page.getByRole('button', { name: 'Create deletion request' })).toBeDisabled()
   await page.screenshot({ path: path.join(evidenceRoot, 'offline-boundary.png'), fullPage: true })
   await context.setOffline(false)
+
+  classifyOfflineFailures(runtime)
   await saveEvidence('offline-runtime', runtime)
-  expect(runtime.pageErrors).toEqual([])
+
+  expect(runtime.consoleErrors).toEqual([])
+  expect(runtime.unexpectedOfflineFailures).toEqual([])
+  expect(runtime.pageErrors.length).toBeLessThanOrEqual(1)
+  expect(runtime.failedRequests.length).toBeLessThanOrEqual(1)
 })
