@@ -10,8 +10,8 @@ import "./urai-autonomous-v1-workforce.css";
 
 /**
  * Legacy autonomous presentation is retained only for secondary private realms
- * that do not yet have a route-owned canonical client. Home, Focus, Replay and
- * Status are owned exclusively by their canonical route clients.
+ * that do not yet have a route-owned canonical client. Location Map now owns
+ * its complete route runtime and must never be hidden by this compatibility layer.
  */
 export default function UraiAutonomousV1Layer() {
   const pathname = usePathname() || "";
@@ -19,8 +19,7 @@ export default function UraiAutonomousV1Layer() {
   if (
     pathname.startsWith("/mirror") ||
     pathname.startsWith("/passport") ||
-    pathname.startsWith("/privacy-controls") ||
-    pathname.startsWith("/location-map")
+    pathname.startsWith("/privacy-controls")
   ) {
     return <UraiAutonomousV1Realms pathname={pathname} />;
   }
