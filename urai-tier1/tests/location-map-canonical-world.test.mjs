@@ -15,6 +15,8 @@ assert.match(scene, /privacyMode/, 'Private-mode query state must be preserved.'
 assert.match(scene, /entryPortal/, 'Entry portal query state must be preserved.')
 assert.match(scene, /cameraCheckpoint/, 'Camera checkpoint query state must be preserved.')
 assert.match(scene, /placeId/, 'Selected place identity must be durable in route state.')
+assert.match(scene, /setActiveIndex\(index\)/, 'URL-restored place selection must synchronize keyboard navigation state.')
+assert.match(scene, /event\.stopPropagation\(\)/, 'Beacon arrow navigation must not bubble into atlas camera controls.')
 assert.match(scene, /Disclosed sample places/, 'Fallback demo data must be explicitly disclosed.')
 assert.match(scene, /no personal location history is displayed/i, 'Selected demo places must retain a truthful disclosure.')
 assert.match(scene, /data-private-memory-mounted="false"/, 'Signed-out threshold must certify that private memory data is not mounted.')
