@@ -46,7 +46,8 @@ requireMatch('Signed-out route does not mount private memories', wrapper, /data-
 forbidMatch('Wrapper retains implicit demo authority', wrapper, /lifeMapDemoMode|DEMO_MODE_KEY/)
 
 requireMatch('Life Map boundary imports adaptive scene', boundary, /import AdaptiveLifeMapScene from ["']\.\/AdaptiveLifeMapScene["']/)
-requireMatch('Life Map boundary preserves one stable adaptive scene', boundary, /return <AdaptiveLifeMapScene \/>/)
+requireMatch('Life Map boundary imports semantic navigator', boundary, /import LifeMapSemanticNavigator from ["']\.\/LifeMapSemanticNavigator["']/)
+requireMatch('Life Map boundary preserves one stable adaptive scene and semantic navigator', boundary, /return <>\s*<AdaptiveLifeMapScene \/>\s*<LifeMapSemanticNavigator \/>\s*<\/>/)
 forbidMatch('Life Map boundary remounts on query identity', boundary, /useSearchParams|key=|revision|previousIdentity/)
 
 requireMatch('Active Life Map adaptive hook', lifeMap, /useAdaptiveSpatialQuality\(\)/)
