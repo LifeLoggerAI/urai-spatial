@@ -28,9 +28,12 @@ export function LocationMapNativeWheelBridge() {
     const active = new Map<number, Point>()
     let drag: { point: Point; camera: Camera } | null = null
     let pinch: { distance: number; camera: Camera } | null = null
+    let touchDrag: { point: Point; camera: Camera } | null = null
+    let touchPinch: { distance: number; camera: Camera } | null = null
 
     const stageFor = (target: EventTarget | null) => target instanceof HTMLElement ? target.closest<HTMLElement>('.locationAtlasStage') : null
     const blocked = (target: EventTarget | null) => target instanceof HTMLElement && Boolean(target.closest('button,a,[data-atlas-panel]'))
+    const touchPoints = (touches: TouchList): Point[] => Array.from(touches).map(touch => ({ x: touch.clientX, y: touch.clientY }))
 
     const handleWheel = (event: WheelEvent) => {
       if (!stageFor(event.target)) return
@@ -39,6 +42,62 @@ export function LocationMapNativeWheelBridge() {
       event.stopImmediatePropagation()
       const label = event.deltaY > 0 ? 'Zoom out' : 'Zoom in'
       document.querySelector<HTMLButtonElement>(`.locationAtlasControls button[aria-label="${label}"]`)?.click()
+    }
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (blocked(event.target)) return
+      const stage = stageFor(event.target)
+      const atlas = stage?.closest<HTMLElement>('.locationAtlas')
+      if (!stage || !atlas) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      const points = touchPoints(event.touches)
+      if (points.length >= 2) {
+        touchPinch = { distance: spacing(points), camera: currentCamera(atlas) }
+        touchDrag = null
+      } else if (points.length === 1) {
+        touchDrag = { point: points[0], camera: currentCamera(atlas) }
+        touchPinch = null
+      }
+    }
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (blocked(event.target)) return
+      const stage = stageFor(event.target) || document.querySelector<HTMLElement>('.locationAtlasStage')
+      const atlas = stage?.closest<HTMLElement>('.locationAtlas')
+      if (!atlas) return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      const points = touchPoints(event.touches)
+      if (points.length >= 2 && touchPinch) {
+        const nextDistance = spacing(points)
+        if (nextDistance > 0 && touchPinch.distance > 0) {
+          applyCamera(atlas, { ...touchPinch.camera, zoom: clamp(touchPinch.camera.zoom * (nextDistance / touchPinch.distance), .7, 1.9) })
+        }
+        return
+      }
+      if (points.length === 1) {
+        if (!touchDrag) {
+          touchPinch = null
+          touchDrag = { point: points[0], camera: currentCamera(atlas) }
+          return
+        }
+        applyCamera(atlas, {
+          ...touchDrag.camera,
+          x: clamp(touchDrag.camera.x + points[0].x - touchDrag.point.x, -360, 360),
+          y: clamp(touchDrag.camera.y + points[0].y - touchDrag.point.y, -320, 320),
+        })
+      }
+    }
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (blocked(event.target)) return
+      const atlas = document.querySelector<HTMLElement>('.locationAtlas')
+      const points = touchPoints(event.touches)
+      touchPinch = null
+      touchDrag = atlas && points.length === 1 ? { point: points[0], camera: currentCamera(atlas) } : null
     }
 
     const handlePointerDown = (event: PointerEvent) => {
@@ -95,12 +154,20 @@ export function LocationMapNativeWheelBridge() {
     document.head.appendChild(motionStyle)
 
     document.addEventListener('wheel', handleWheel, { capture: true, passive: false })
+    document.addEventListener('touchstart', handleTouchStart, { capture: true, passive: false })
+    document.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false })
+    document.addEventListener('touchend', handleTouchEnd, true)
+    document.addEventListener('touchcancel', handleTouchEnd, true)
     document.addEventListener('pointerdown', handlePointerDown, true)
     document.addEventListener('pointermove', handlePointerMove, true)
     document.addEventListener('pointerup', handlePointerEnd, true)
     document.addEventListener('pointercancel', handlePointerEnd, true)
     return () => {
       document.removeEventListener('wheel', handleWheel, { capture: true })
+      document.removeEventListener('touchstart', handleTouchStart, { capture: true })
+      document.removeEventListener('touchmove', handleTouchMove, { capture: true })
+      document.removeEventListener('touchend', handleTouchEnd, true)
+      document.removeEventListener('touchcancel', handleTouchEnd, true)
       document.removeEventListener('pointerdown', handlePointerDown, true)
       document.removeEventListener('pointermove', handlePointerMove, true)
       document.removeEventListener('pointerup', handlePointerEnd, true)
