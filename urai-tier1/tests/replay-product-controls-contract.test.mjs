@@ -29,7 +29,7 @@ test('Replay controls expose truthful accessible pending offline error and recov
   assert.match(controls, /safe-area-inset-bottom/)
   assert.match(controls, /prefers-reduced-motion:reduce/)
   assert.match(controls, /forced-colors:active/)
-  assert.match(client, /<header>.*className="unwind".*<\/header>/s)
+  assert.match(client, /<header className="replayHeader">[\s\S]*?<button className="unwind"/)
   assert.match(client, /bottom:max\(180px,calc\(env\(safe-area-inset-bottom\) \+ 174px\)\)/)
   assert.match(controls, /bottom:max\(102px,calc\(env\(safe-area-inset-bottom\) \+ 96px\)\)/)
 })
