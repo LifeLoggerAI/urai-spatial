@@ -17,10 +17,14 @@ const doorways = [
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
-async function activate(target, method) {
+async function activate(page, target, method) {
   const options = { timeout: 10000, noWaitAfter: true }
   if (method === 'pointer') return target.click(options)
-  if (method === 'touch') return target.tap(options)
+  if (method === 'touch') {
+    const box = await target.boundingBox()
+    if (!box) throw new Error('touch target has no bounding box')
+    return page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+  }
   await target.focus()
   if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
   return target.press('Enter', { noWaitAfter: true })
@@ -43,7 +47,7 @@ async function prove(browser, doorway, testCase) {
     const target = await resolveTarget(page, doorway)
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
-    await activate(target, testCase.method)
+    await activate(page, target, testCase.method)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
     await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
