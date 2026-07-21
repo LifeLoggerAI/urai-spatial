@@ -16,14 +16,12 @@ export default function HomeDirectDoorways() {
       aria-label="Direct Home destinations"
     >
       <a
-        role="button"
         aria-label="Open Ground directly"
         href="/ground/?entryPortal=home-direct&cameraCheckpoint=home-direct"
       >
         Ground
       </a>
       <a
-        role="button"
         aria-label="Open Life Map directly"
         href="/life-map/?from=home-direct&entryPortal=home-direct&cameraCheckpoint=home-direct"
       >

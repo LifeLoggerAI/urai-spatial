@@ -45,7 +45,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(directDoorways, /data-native-doorway-owner="route-shell"/)
   assert.match(directDoorways, /aria-label="Open Ground directly"[\s\S]*href="\/ground\//)
   assert.match(directDoorways, /aria-label="Open Life Map directly"[\s\S]*href="\/life-map\//)
-  assert.match(directDoorways, /role="button"/)
+  assert.doesNotMatch(directDoorways, /role="button"/)
   assert.match(layout, /import HomeDirectDoorways from '\.\/HomeDirectDoorways'/)
   assert.match(layout, /\{children\}[\s\S]*<HomeDirectDoorways \/>/)
 
