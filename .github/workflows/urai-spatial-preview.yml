@@ -77,8 +77,14 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          test -n "$FIREBASE_PROJECT_ID"
+          SERVICE_ACCOUNT_STATUS=missing
+          PROJECT_ID_STATUS=missing
+          test -n "$FIREBASE_SERVICE_ACCOUNT" && SERVICE_ACCOUNT_STATUS=present
+          test -n "$FIREBASE_PROJECT_ID" && PROJECT_ID_STATUS=present
+          printf 'firebase_service_account=%s\nfirebase_project_id=%s\n' \
+            "$SERVICE_ACCOUNT_STATUS" "$PROJECT_ID_STATUS" > preview-auth-boundary.txt
+          test "$SERVICE_ACCOUNT_STATUS" = present
+          test "$PROJECT_ID_STATUS" = present
           CREDENTIALS_FILE="$RUNNER_TEMP/firebase-preview-service-account.json"
           cleanup() { rm -f "$CREDENTIALS_FILE"; }
           trap cleanup EXIT
@@ -155,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p preview-evidence
-          cp -f preview-deploy.json preview-deploy.stderr preview-deploy.exit-code preview-receipt.txt preview-location-map.html preview-evidence/ 2>/dev/null || true
+          cp -f preview-auth-boundary.txt preview-deploy.json preview-deploy.stderr preview-deploy.exit-code preview-receipt.txt preview-location-map.html preview-evidence/ 2>/dev/null || true
           printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > preview-evidence/manifest.txt
