@@ -53,6 +53,7 @@ import './spatial-first-root-launch.css'
 import './urai-design-system.css'
 import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
+import HomeDirectDoorways from './HomeDirectDoorways'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <UraiAAAARoutePolish />
           <UraiFinalAssetSpineBridge />
           {children}
+          <HomeDirectDoorways />
           <UraiAutonomousV1Layer />
           <UraiV2StateController />
           <UraiV2OnboardingLayer />
