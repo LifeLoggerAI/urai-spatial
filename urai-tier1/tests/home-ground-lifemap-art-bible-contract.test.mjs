@@ -75,7 +75,7 @@ test('Life Map loading and reduced capability remain authored private experience
   assert.match(lifeMap, /WebGL is unavailable\. Semantic navigation remains available/)
   assert.match(lifeMap, /data-testid="urai-life-map-signed-out-threshold"/)
   assert.match(lifeMap, /data-private-memory-mounted="false"/)
-  assert.match(lifeMap, /No private memory data is mounted here\./)
+  assert.match(lifeMap, /No private memory data is mounted\./)
   assert.match(lifeMap, /Open disclosed sample/)
   assert.match(lifeMap, /if \(current\.get\("demo"\) === "1"\) \{ setMode\("explicit-demo"\); return; \}/)
   assert.match(lifeMap, /Return Home/)
