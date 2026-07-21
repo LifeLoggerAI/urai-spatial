@@ -122,8 +122,10 @@ async function nativePinchThenPan(page: Page) {
         ],
       })
     }
+    // CDP touchEnd terminates the stream. Continue with one native contact by
+    // reducing the active touch list through touchMove, matching Chromium input semantics.
     await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchEnd',
+      type: 'touchMove',
       touchPoints: [{ x: remaining.x, y: remaining.y, id: 2, radiusX: 6, radiusY: 6, force: 1 }],
     })
     for (let step = 1; step <= 8; step += 1) {
@@ -234,10 +236,22 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     expect(motionStyles.every(style => style.transitionDuration.split(',').every(value => value.trim() === '0s') && style.animationDuration.split(',').every(value => value.trim() === '0s'))).toBe(true)
     await page.screenshot({ path: testInfo.outputPath('reduced-motion-desktop.png'), fullPage: true })
 
-    expect(errors.consoleErrors).toEqual([])
+    const expectedOfflineConsoleErrors = errors.consoleErrors.filter(message => message.includes('ERR_INTERNET_DISCONNECTED'))
+    const unexpectedConsoleErrors = errors.consoleErrors.filter(message => !message.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflineRequests = errors.failedRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
+    const unexpectedFailedRequests = errors.failedRequests.filter(request => !request.includes('ERR_INTERNET_DISCONNECTED'))
+    expect(expectedOfflineConsoleErrors.length).toBeGreaterThan(0)
+    expect(expectedOfflineRequests.length).toBeGreaterThan(0)
+    expect(unexpectedConsoleErrors).toEqual([])
     expect(errors.pageErrors).toEqual([])
-    expect(errors.failedRequests).toEqual([])
-    await attachJson(testInfo, 'desktop-console-network-receipt.json', errors)
+    expect(unexpectedFailedRequests).toEqual([])
+    await attachJson(testInfo, 'desktop-console-network-receipt.json', {
+      ...errors,
+      expectedOfflineConsoleErrors,
+      expectedOfflineRequests,
+      unexpectedConsoleErrors,
+      unexpectedFailedRequests,
+    })
     await attachJson(testInfo, 'desktop-interaction-receipt.json', {
       exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
       beforePan,
