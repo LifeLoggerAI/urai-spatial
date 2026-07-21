@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAcceptanceBoundary'
 import '@/spatial/places/location-map-release-depth.css'
+import '@/spatial/places/location-map-safari.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
 export default async function LocationMapPage() {
