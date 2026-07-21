@@ -107,6 +107,7 @@ async function desktopJourney() {
     await advanceClockToState(page, 'data-life-map-phase', 'arrival', 800)
     await shot(page, 'stable-arrival', 'arrival')
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
+    await page.clock.resume()
 
     await page.getByRole('button', { name: 'Enter Focus', exact: true }).click({ force: true })
     await page.waitForURL(/\/focus\/?\?/, { timeout: 30_000 }); await stable(page); await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
