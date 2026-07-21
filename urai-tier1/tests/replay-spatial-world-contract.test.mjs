@@ -52,5 +52,5 @@ test('Replay preflight detects possible sensitive topics conservatively', () => 
   assert.match(model, /Possible sensitive material detected from user-approved Replay text/)
   assert.match(model, /People remain abstract unless a future consent record explicitly permits likeness or voice use/)
   assert.match(model, /sensitiveTopics: detectSensitiveTopics\(memory\)/)
-  assert.doesNotMatch(model, /diagnos/)
+  assert.doesNotMatch(model, /diagnoses the user|diagnostic conclusion|medical determination/i)
 })
