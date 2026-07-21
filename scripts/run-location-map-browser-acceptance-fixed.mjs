@@ -17,7 +17,25 @@ replaceRequired(
   `async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
   await expect(target).toBeVisible()
-  await target.tap({ force: true, timeout: 10_000 })
+  const box = await target.boundingBox()
+  expect(box).not.toBeNull()
+  const viewport = page.viewportSize()
+  expect(viewport).not.toBeNull()
+  const x = Math.max(1, Math.min(viewport!.width - 2, box!.x + box!.width * .5))
+  const y = Math.max(1, Math.min(viewport!.height - 2, box!.y + box!.height * .5))
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    await cdp.send('Input.synthesizeTapGesture', {
+      x,
+      y,
+      duration: 80,
+      tapCount: 1,
+      gestureSourceType: 'touch',
+    })
+  } finally {
+    await cdp.detach()
+  }
 }
 
 async function dispatchPointerDrag`,
