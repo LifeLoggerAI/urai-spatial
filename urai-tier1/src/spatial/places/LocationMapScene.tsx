@@ -10,6 +10,7 @@ import './location-map-scene.css'
 type Camera = { x: number; y: number; zoom: number }
 type AtlasPoint = { place: MemoryPlace; x: number; y: number; depth: number }
 type AccessMode = 'checking' | 'threshold' | 'private' | 'demo'
+type PointerPoint = { x: number; y: number }
 
 const OVERVIEW: Camera = { x: 0, y: 0, zoom: 0.9 }
 const USER_KEY = 'urai:userId'
@@ -37,15 +38,34 @@ function pointsFor(places: MemoryPlace[]): AtlasPoint[] {
     return { place, x: clamp(seed[0] + ((lap * 9) % 17) - 8, 10, 90), y: clamp(seed[1] + ((lap * 7) % 15) - 7, 13, 87), depth: clamp(seed[2] + lap * .04, .18, .96) }
   })
 }
+function distance(points: PointerPoint[]) {
+  if (points.length < 2) return 0
+  return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
+}
 
-export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
+export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: { places: MemoryPlace[]; acceptanceFixturesEnabled?: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const stageRef = useRef<HTMLDivElement | null>(null)
   const markers = useRef<Array<HTMLButtonElement | null>>([])
   const drag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
-  const points = useMemo(() => pointsFor(places), [places])
-  const demoData = places.length > 0 && places.every(place => place.privacyLevel === 'demo')
+  const pointers = useRef(new Map<number, PointerPoint>())
+  const pinch = useRef<{ distance: number; zoom: number } | null>(null)
+  const fixtureState = acceptanceFixturesEnabled ? searchParams.get('acceptanceState') : null
+  const visiblePlaces = useMemo(() => {
+    if (fixtureState === 'empty') return []
+    if (fixtureState !== 'private') return places
+    return places.map((place, index) => ({
+      ...place,
+      id: `private-acceptance-${index + 1}`,
+      userId: 'acceptance-user',
+      title: `Private Place ${index + 1}`,
+      privacyLevel: 'private' as const,
+      locationPrivacy: index === 0 ? 'exact-private' as const : 'approx-private' as const,
+    }))
+  }, [fixtureState, places])
+  const points = useMemo(() => pointsFor(visiblePlaces), [visiblePlaces])
+  const demoData = visiblePlaces.length > 0 && visiblePlaces.every(place => place.privacyLevel === 'demo')
   const [access, setAccess] = useState<AccessMode>('checking')
   const [camera, setCamera] = useState<Camera>(OVERVIEW)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -92,16 +112,13 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
       setAccess(explicitDemo ? 'demo' : 'threshold')
     }
   }, [searchParams])
-
   useEffect(() => { applyUrl() }, [applyUrl])
-
   useEffect(() => {
     if (!selected) return
     const handleResize = () => setCamera(focusCamera(selected))
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [focusCamera, selected])
-
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const updateMotion = () => setReducedMotion(motion.matches)
@@ -122,14 +139,12 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     if (placeId) params.set('placeId', placeId); else params.delete('placeId')
     router.push(`/location-map/?${params.toString()}`, { scroll: false })
   }, [access, entryPortal, privacyMode, router, searchParams])
-
   const overview = useCallback((push = true) => {
     setSelectedId(null); setCheckpoint('atlas-world-view'); setCamera(OVERVIEW)
     setAnnouncement('Returned to the complete emotional geography atlas.')
     if (push) writeUrl(null)
     requestAnimationFrame(() => stageRef.current?.focus())
   }, [writeUrl])
-
   const focus = useCallback((point: AtlasPoint, index: number, push = true) => {
     setSelectedId(point.place.id); setActiveIndex(index); setCheckpoint('place-focus'); setCamera(focusCamera(point))
     setAnnouncement(`${point.place.title} selected. ${privacy(point.place)}.`)
@@ -148,7 +163,6 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   }, [overview, selectedId])
 
   const zoom = useCallback((amount: number) => setCamera(value => ({ ...value, zoom: clamp(value.zoom + amount, .7, 1.9) })), [])
-
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
@@ -178,13 +192,35 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   const onBeaconKey = (event: KeyboardEvent<HTMLButtonElement>, amount: number) => { event.preventDefault(); event.stopPropagation(); moveMarker(amount) }
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
-    event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.clientX, y: event.clientY, camera }
+    event.currentTarget.setPointerCapture(event.pointerId)
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    const activePointers = [...pointers.current.values()]
+    if (activePointers.length === 1) drag.current = { x: event.clientX, y: event.clientY, camera }
+    if (activePointers.length === 2) {
+      pinch.current = { distance: distance(activePointers), zoom: camera.zoom }
+      drag.current = null
+    }
   }
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!pointers.current.has(event.pointerId)) return
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    const activePointers = [...pointers.current.values()]
+    if (activePointers.length >= 2 && pinch.current) {
+      const nextDistance = distance(activePointers)
+      if (nextDistance > 0 && pinch.current.distance > 0) {
+        setCamera(value => ({ ...value, zoom: clamp(pinch.current!.zoom * (nextDistance / pinch.current!.distance), .7, 1.9) }))
+      }
+      return
+    }
     if (!drag.current) return
     setCamera({ ...drag.current.camera, x: clamp(drag.current.camera.x + event.clientX - drag.current.x, -360, 360), y: clamp(drag.current.camera.y + event.clientY - drag.current.y, -320, 320) })
   }
-  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => { drag.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) }
+  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    pointers.current.delete(event.pointerId)
+    if (pointers.current.size < 2) pinch.current = null
+    if (pointers.current.size === 0) drag.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }
 
   const openDemo = () => {
     try { localStorage.setItem(DEMO_KEY, 'true') } catch { /* storage may be unavailable */ }
@@ -195,22 +231,22 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
 
   if (access === 'checking') return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route" data-private-memory-mounted="false"><section><p>URAI · Private emotional geography</p><h1>Opening the atlas.</h1><span>Checking the private threshold without mounting personal location history.</span></section></main>
   if (access === 'threshold') return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route" data-private-memory-mounted="false"><section><p>URAI · Private emotional geography</p><h1>Your places stay closed until you open them.</h1><span>No personal place history is mounted while signed out. You may enter the disclosed sample atlas.</span><button type="button" onClick={openDemo}>Open disclosed sample</button><Link href="/home">Return Home</Link></section></main>
-  if (!places.length) return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route"><section><p>URAI · Private emotional geography</p><h1>Your atlas is quiet.</h1><span>No place memories are available. Nothing private has been inferred.</span><Link href="/home">Return Home</Link></section></main>
+  if (!visiblePlaces.length) return <main className="locationAtlas locationAtlas--empty" data-location-map-owner="canonical-route"><section><p>URAI · Private emotional geography</p><h1>Your atlas is quiet.</h1><span>No place memories are available. Nothing private has been inferred.</span><Link href="/home">Return Home</Link></section></main>
 
   const isDemo = demoData || access === 'demo'
   const style = { '--atlas-x': `${camera.x}px`, '--atlas-y': `${camera.y}px`, '--atlas-zoom': camera.zoom, '--weather-color': selected ? tone(selected.place) : '#8eeaff', '--weather-strength': selected?.place.emotionalOverlay.intensity ?? .34 } as CSSProperties
 
-  return <main className="locationAtlas" style={style} data-launch-surface="premium-emotional-weather-atlas" data-location-map-owner="canonical-route" data-location-map-renderer="layered-spatial-atlas" data-location-map-source={isDemo ? 'disclosed-demo' : 'private-repository'} data-privacy-mode={privacyMode} data-entry-portal={entryPortal} data-camera-checkpoint={checkpoint} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
+  return <main className="locationAtlas" style={style} data-launch-surface="premium-emotional-weather-atlas" data-location-map-owner="canonical-route" data-location-map-renderer="layered-spatial-atlas" data-location-map-source={isDemo ? 'disclosed-demo' : 'private-repository'} data-privacy-mode={privacyMode} data-entry-portal={entryPortal} data-camera-checkpoint={checkpoint} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-online={offline ? 'false' : 'true'}>
     <picture className="locationAtlasArt" aria-hidden="true"><source media="(max-width:760px)" srcSet={locationMapAssets.mobile.src}/><img src={locationMapAssets.primary.src} alt="" draggable={false}/></picture>
     <div className="locationAtlasWeather" aria-hidden="true"/>
     <header className="locationAtlasHeader" data-atlas-panel><div><span>URAI · Emotional geography</span><strong>{isDemo ? 'Sample atlas' : 'Private atlas'}</strong></div><div className="locationAtlasStatus"><span>{isDemo ? 'Sample view' : 'Private view'}</span><span>{isDemo ? 'Disclosed sample places' : 'Permissioned places'}</span>{offline ? <span>Offline · local view retained</span> : null}</div><nav><Link href="/life-map">Life Map</Link><Link href="/home">Home</Link></nav></header>
     <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
-      <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan.</p>
+      <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan. Pinch to zoom on touch screens.</p>
       <div className="locationAtlasCamera" aria-hidden="true"><i/><i/><i/></div>
       <div className="locationAtlasBeacons" aria-label={`${points.length} discoverable symbolic places`}>{points.map((point,index) => <button key={point.place.id} ref={node => { markers.current[index] = node }} type="button" className="locationAtlasBeacon" style={{ '--beacon-x': `${point.x}%`, '--beacon-y': `${point.y}%`, '--beacon-depth': point.depth, '--beacon-color': tone(point.place), '--beacon-intensity': point.place.emotionalOverlay.intensity } as CSSProperties} data-selected={selectedId === point.place.id ? 'true' : 'false'} aria-pressed={selectedId === point.place.id} aria-label={`${point.place.title}. ${words(point.place.emotionalOverlay.mood)} weather. ${privacy(point.place)}. ${point.place.memoryIds.length} linked memories.`} onClick={() => focus(point,index)} onFocus={() => setActiveIndex(index)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') onBeaconKey(event,-1); else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') onBeaconKey(event,1) }}><span className="locationAtlasBeaconCore"><i/></span><span className="locationAtlasBeaconLabel"><strong>{point.place.title}</strong><small>{words(point.place.emotionalOverlay.mood)} · {privacy(point.place)}</small></span></button>)}</div>
       <div className="locationAtlasForeground" aria-hidden="true"/>
     </div></section>
-    <aside className="locationAtlasOrientation" data-atlas-panel><span>{selected ? 'Place focus' : 'Atlas overview'}</span><strong>{selected ? selected.place.title : `${points.length} symbolic places`}</strong><small>{selected ? 'Escape returns to the atlas.' : 'Drag to explore · choose a beacon.'}</small></aside>
+    <aside className="locationAtlasOrientation" data-atlas-panel><span>{selected ? 'Place focus' : 'Atlas overview'}</span><strong>{selected ? selected.place.title : `${points.length} symbolic places`}</strong><small>{selected ? 'Escape returns to the atlas.' : 'Drag to explore · pinch or wheel to zoom · choose a beacon.'}</small></aside>
     {selected ? <aside className="locationAtlasSelection" data-atlas-panel aria-labelledby="selected-place-title"><button type="button" className="locationAtlasClose" onClick={() => overview()} aria-label="Return to atlas overview">×</button><span>{words(selected.place.category)}</span><h1 id="selected-place-title">{selected.place.title}</h1><p>{words(selected.place.emotionalOverlay.mood)} weather at {Math.round(selected.place.emotionalOverlay.intensity * 100)}% intensity.</p><dl><div><dt>Privacy</dt><dd>{privacy(selected.place)}</dd></div><div><dt>Memories</dt><dd>{selected.place.memoryIds.length} permissioned marker{selected.place.memoryIds.length === 1 ? '' : 's'}</dd></div><div><dt>Place form</dt><dd>{words(selected.place.kind)} · {words(selected.place.reconstruction.scenePreset)}</dd></div></dl><div className="locationAtlasActions"><Link href={`/place/${encodeURIComponent(selected.place.id)}`}>Enter this place</Link><button type="button" onClick={() => overview()}>Return to atlas</button></div>{isDemo ? <small className="locationAtlasDisclosure">Sample place · no personal location history is displayed.</small> : null}</aside> : null}
     <div className="locationAtlasControls" data-atlas-panel aria-label="Atlas camera controls"><button type="button" onClick={() => zoom(-.12)} aria-label="Zoom out">−</button><button type="button" onClick={() => overview()} aria-label="Return to atlas overview">Overview</button><button type="button" onClick={() => zoom(.12)} aria-label="Zoom in">+</button></div>
     <div className="locationAtlasTruth" data-atlas-panel><span>{isDemo ? 'Sample atlas' : 'Private atlas'}</span><small>Symbolic positions protect precise history. No live location requested.</small></div>
