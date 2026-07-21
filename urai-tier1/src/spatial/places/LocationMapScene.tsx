@@ -158,7 +158,7 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     }
     stage.addEventListener('wheel', handleWheel, { passive: false })
     return () => stage.removeEventListener('wheel', handleWheel)
-  }, [zoom])
+  }, [access, zoom])
 
   const moveMarker = (amount: number) => {
     if (!points.length) return
