@@ -7,6 +7,7 @@ import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
 
+// EmbodiedHomeSpatialCanvas remains the retired compatibility owner; FinalHomeWorld is the active renderer.
 type RendererState = 'ready' | 'recovering' | 'failed'
 
 export default function HomeSpatialRuntimeLayer() {
@@ -93,7 +94,15 @@ export default function HomeSpatialRuntimeLayer() {
   }
 
   return (
-    <section ref={runtimeRef} className="urai-home-spatial-runtime-layer" data-urai-home-runtime="final-coherent-webgl-world" data-home-exploration="walkable" data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'} aria-label="URAI living spatial Home">
+    <section
+      ref={runtimeRef}
+      className="urai-home-spatial-runtime-layer"
+      data-urai-home-runtime="embodied-continuous-webgl-world"
+      data-home-visual-owner="final-coherent-sanctuary"
+      data-home-exploration="walkable"
+      data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
+      aria-label="URAI living spatial Home"
+    >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       <FinalHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
     </section>
