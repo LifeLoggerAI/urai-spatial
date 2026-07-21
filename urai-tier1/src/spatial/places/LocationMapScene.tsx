@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
 import type { MemoryPlace } from './memoryPlaceSchema'
 import './location-map-scene.css'
@@ -37,10 +37,10 @@ function pointsFor(places: MemoryPlace[]): AtlasPoint[] {
     return { place, x: clamp(seed[0] + ((lap * 9) % 17) - 8, 10, 90), y: clamp(seed[1] + ((lap * 7) % 15) - 7, 13, 87), depth: clamp(seed[2] + lap * .04, .18, .96) }
   })
 }
-function paramsNow() { return new URLSearchParams(window.location.search) }
 
 export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const stageRef = useRef<HTMLDivElement | null>(null)
   const markers = useRef<Array<HTMLButtonElement | null>>([])
   const drag = useRef<{ x: number; y: number; camera: Camera } | null>(null)
@@ -65,11 +65,10 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   }, [])
 
   const applyUrl = useCallback(() => {
-    const params = paramsNow()
-    setPrivacyMode(params.get('privacyMode') || 'private')
-    setEntryPortal(params.get('entryPortal') || 'location-beacon')
-    const requestedCheckpoint = params.get('cameraCheckpoint') || 'atlas-world-view'
-    const index = points.findIndex(item => item.place.id === params.get('placeId'))
+    setPrivacyMode(searchParams.get('privacyMode') || 'private')
+    setEntryPortal(searchParams.get('entryPortal') || 'location-beacon')
+    const requestedCheckpoint = searchParams.get('cameraCheckpoint') || 'atlas-world-view'
+    const index = points.findIndex(item => item.place.id === searchParams.get('placeId'))
     if (index >= 0) {
       const point = points[index]
       setSelectedId(point.place.id)
@@ -81,11 +80,10 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     setSelectedId(null)
     setCheckpoint(requestedCheckpoint === 'place-focus' ? 'atlas-world-view' : requestedCheckpoint)
     setCamera(OVERVIEW)
-  }, [focusCamera, points])
+  }, [focusCamera, points, searchParams])
 
   useEffect(() => {
-    const params = paramsNow()
-    const explicitDemo = params.get('demo') === '1'
+    const explicitDemo = searchParams.get('demo') === '1'
     try {
       const userId = localStorage.getItem(USER_KEY)?.trim()
       const retainedDemo = localStorage.getItem(DEMO_KEY) === 'true'
@@ -93,10 +91,16 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     } catch {
       setAccess(explicitDemo ? 'demo' : 'threshold')
     }
-    applyUrl()
-    window.addEventListener('popstate', applyUrl)
-    return () => window.removeEventListener('popstate', applyUrl)
-  }, [applyUrl])
+  }, [searchParams])
+
+  useEffect(() => { applyUrl() }, [applyUrl])
+
+  useEffect(() => {
+    if (!selected) return
+    const handleResize = () => setCamera(focusCamera(selected))
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [focusCamera, selected])
 
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -110,14 +114,14 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   }, [])
 
   const writeUrl = useCallback((placeId: string | null) => {
-    const params = paramsNow()
+    const params = new URLSearchParams(searchParams.toString())
     params.set('privacyMode', privacyMode || 'private')
     params.set('entryPortal', entryPortal || 'location-beacon')
     params.set('cameraCheckpoint', placeId ? 'place-focus' : 'atlas-world-view')
     if (access === 'demo') params.set('demo', '1')
     if (placeId) params.set('placeId', placeId); else params.delete('placeId')
     router.push(`/location-map/?${params.toString()}`, { scroll: false })
-  }, [access, entryPortal, privacyMode, router])
+  }, [access, entryPortal, privacyMode, router, searchParams])
 
   const overview = useCallback((push = true) => {
     setSelectedId(null); setCheckpoint('atlas-world-view'); setCamera(OVERVIEW)
@@ -143,7 +147,19 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     return () => window.removeEventListener('keydown', onEscape, true)
   }, [overview, selectedId])
 
-  const zoom = (amount: number) => setCamera(value => ({ ...value, zoom: clamp(value.zoom + amount, .7, 1.9) }))
+  const zoom = useCallback((amount: number) => setCamera(value => ({ ...value, zoom: clamp(value.zoom + amount, .7, 1.9) })), [])
+
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const handleWheel = (event: globalThis.WheelEvent) => {
+      event.preventDefault()
+      zoom(event.deltaY > 0 ? -.09 : .09)
+    }
+    stage.addEventListener('wheel', handleWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', handleWheel)
+  }, [zoom])
+
   const moveMarker = (amount: number) => {
     if (!points.length) return
     const next = (activeIndex + amount + points.length) % points.length
@@ -160,7 +176,6 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     else if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget && points[activeIndex]) { event.preventDefault(); focus(points[activeIndex], activeIndex) }
   }
   const onBeaconKey = (event: KeyboardEvent<HTMLButtonElement>, amount: number) => { event.preventDefault(); event.stopPropagation(); moveMarker(amount) }
-  const onWheel = (event: WheelEvent<HTMLDivElement>) => { event.preventDefault(); zoom(event.deltaY > 0 ? -.09 : .09) }
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
     event.currentTarget.setPointerCapture(event.pointerId); drag.current = { x: event.clientX, y: event.clientY, camera }
@@ -173,7 +188,8 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
 
   const openDemo = () => {
     try { localStorage.setItem(DEMO_KEY, 'true') } catch { /* storage may be unavailable */ }
-    const params = paramsNow(); params.set('demo', '1'); params.set('privacyMode', 'private'); params.set('entryPortal', 'location-beacon'); params.set('cameraCheckpoint', 'atlas-world-view')
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('demo', '1'); params.set('privacyMode', 'private'); params.set('entryPortal', 'location-beacon'); params.set('cameraCheckpoint', 'atlas-world-view')
     setAccess('demo'); router.replace(`/location-map/?${params.toString()}`, { scroll: false })
   }
 
@@ -188,7 +204,7 @@ export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
     <picture className="locationAtlasArt" aria-hidden="true"><source media="(max-width:760px)" srcSet={locationMapAssets.mobile.src}/><img src={locationMapAssets.primary.src} alt="" draggable={false}/></picture>
     <div className="locationAtlasWeather" aria-hidden="true"/>
     <header className="locationAtlasHeader" data-atlas-panel><div><span>URAI · Emotional geography</span><strong>{isDemo ? 'Sample atlas' : 'Private atlas'}</strong></div><div className="locationAtlasStatus"><span>{isDemo ? 'Sample view' : 'Private view'}</span><span>{isDemo ? 'Disclosed sample places' : 'Permissioned places'}</span>{offline ? <span>Offline · local view retained</span> : null}</div><nav><Link href="/life-map">Life Map</Link><Link href="/home">Home</Link></nav></header>
-    <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+    <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
       <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan.</p>
       <div className="locationAtlasCamera" aria-hidden="true"><i/><i/><i/></div>
       <div className="locationAtlasBeacons" aria-label={`${points.length} discoverable symbolic places`}>{points.map((point,index) => <button key={point.place.id} ref={node => { markers.current[index] = node }} type="button" className="locationAtlasBeacon" style={{ '--beacon-x': `${point.x}%`, '--beacon-y': `${point.y}%`, '--beacon-depth': point.depth, '--beacon-color': tone(point.place), '--beacon-intensity': point.place.emotionalOverlay.intensity } as CSSProperties} data-selected={selectedId === point.place.id ? 'true' : 'false'} aria-pressed={selectedId === point.place.id} aria-label={`${point.place.title}. ${words(point.place.emotionalOverlay.mood)} weather. ${privacy(point.place)}. ${point.place.memoryIds.length} linked memories.`} onClick={() => focus(point,index)} onFocus={() => setActiveIndex(index)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') onBeaconKey(event,-1); else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') onBeaconKey(event,1) }}><span className="locationAtlasBeaconCore"><i/></span><span className="locationAtlasBeaconLabel"><strong>{point.place.title}</strong><small>{words(point.place.emotionalOverlay.mood)} · {privacy(point.place)}</small></span></button>)}</div>
