@@ -18,7 +18,7 @@ env:
 
 jobs:
   preview:
-    name: Preview deploy guard
+    name: Exact-head isolated preview deploy
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -53,14 +53,54 @@ jobs:
       - name: Preflight
         run: pnpm preflight
       - name: Build exact static candidate
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
         run: pnpm build:static
       - name: Prove exact source remained clean
         shell: bash
         run: test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Preview deploy boundary
+      - name: Deploy isolated Firebase preview channel
+        id: deploy
         shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}
         run: |
           set -euo pipefail
-          echo "Preview deployment is intentionally non-mutating on pull requests."
-          echo "Exact candidate verified: ${URAI_EXACT_HEAD}"
-          echo "Protected deployment requires the canonical release workflow and authorized environment."
+          test -n "$FIREBASE_SERVICE_ACCOUNT"
+          test -n "$FIREBASE_PROJECT_ID"
+          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-preview-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
+          chmod 600 "$CREDENTIALS_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+          CHANNEL_ID="lane6-885-${URAI_EXACT_HEAD:0:7}"
+          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --expires 1d \
+            --non-interactive \
+            --json > preview-deploy.json
+          rm -f "$CREDENTIALS_FILE"
+          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
+          test "$PREVIEW_URL" != "https://urai.app"
+          test "$PREVIEW_URL" != "https://urai.app/"
+          printf 'preview_url=%s\n' "$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          node -e "const fs=require('fs');const crypto=require('crypto');const p='preview-deploy.json';const digest=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');fs.writeFileSync('preview-receipt.txt',[`exact_sha=${process.env.URAI_EXACT_HEAD}`,`run_id=${process.env.GITHUB_RUN_ID}`,`job=${process.env.GITHUB_JOB}`,`environment=firebase-hosting-preview-channel`,`preview_url=${process.argv[1]}`,`production_targeted=false`,`deployed_at=${new Date().toISOString()}`,`deployment_receipt_sha256=${digest}`,''].join('\n'))" "$PREVIEW_URL"
+      - name: Verify reachable preview runtime
+        shell: bash
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/location-map/" -o preview-location-map.html
+          grep -q 'URAI' preview-location-map.html
+      - name: Retain preview deployment receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: urai-spatial-preview-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            preview-deploy.json
+            preview-receipt.txt
+            preview-location-map.html
+          if-no-files-found: error
+          retention-days: 30
