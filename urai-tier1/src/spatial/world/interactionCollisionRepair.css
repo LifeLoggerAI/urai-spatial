@@ -1,9 +1,11 @@
 /* Route-owned interaction surfaces must not compete with legacy or secondary controls. */
 
-/* The embodied Home owns its own physical Ground threshold and direct destinations.
+/* The active Home renderer owns its own physical Ground threshold and direct destinations.
  * Remove the legacy full-width Ground gateway from pointer and accessibility ownership
- * only while the embodied sanctuary is mounted. Fallback Home renderers retain it. */
+ * only while a navigable sanctuary renderer is mounted. Fallback Home renderers retain it. */
 .urai-world-runtime[data-world-destination='home']:has(.urai-home-embodied-shell)
+  > .urai-ground-gateway,
+.urai-world-runtime[data-world-destination='home']:has(.urai-final-home-world)
   > .urai-ground-gateway {
   display: none;
 }
