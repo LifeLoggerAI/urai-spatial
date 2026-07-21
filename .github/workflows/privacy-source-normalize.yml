@@ -1,0 +1,58 @@
+name: Privacy Source Normalize
+
+on:
+  push:
+    branches: [feat/privacy-consent-sanctuary-550-20260721]
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Apply narrow type-safe source repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          functions = Path('apps/functions/src/privacyOperations.ts')
+          source = functions.read_text()
+          old = "const claims = context.auth?.token ?? {}\n  const authTime = Number(claims.auth_time ?? 0)"
+          new = "const claims = (context.auth?.token ?? {}) as Record<string, unknown>\n  const authTime = Number(claims.auth_time ?? 0)"
+          if old in source:
+              source = source.replace(old, new, 1)
+              functions.write_text(source)
+
+          client = Path('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx')
+          source = client.read_text()
+          old = "const next = snapshot.exists() && isConsentPolicy(snapshot.data(), user.uid)\n        ? snapshot.data()\n        : defaultConsentPolicy(user.uid)"
+          new = "const rawPolicy = snapshot.data()\n      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid)\n        ? rawPolicy\n        : defaultConsentPolicy(user.uid)"
+          if old in source:
+              source = source.replace(old, new, 1)
+              client.write_text(source)
+
+          shim = Path('apps/functions/src/privacyCallableClaims.d.ts')
+          if shim.exists():
+              shim.unlink()
+          PY
+      - name: Commit normalized source when needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -z "$(git status --porcelain)"; then
+            echo "No normalization required."
+            exit 0
+          fi
+          git config user.name "urai-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add apps/functions/src/privacyOperations.ts urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx apps/functions/src/privacyCallableClaims.d.ts
+          git commit -m "fix(privacy): preserve consent types through trusted snapshots"
+          git push origin HEAD:feat/privacy-consent-sanctuary-550-20260721
