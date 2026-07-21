@@ -45,7 +45,7 @@ async function openSanctuary(page: Page, suffix = '') {
 
 async function openDemo(page: Page) {
   await openSanctuary(page, '?demo=1')
-  await expect(page.getByText('DEMONSTRATION — no personal data', { exact: false })).toBeVisible()
+  await expect(page.getByText('DEMONSTRATION — no personal data', { exact: true })).toBeVisible()
 }
 
 test('desktop demo exposes all domains and direct keyboard controls', async ({ page }) => {
@@ -76,7 +76,7 @@ test('signed-out direct entry never becomes demo or private state', async ({ pag
   const runtime = await captureRuntime(page)
   const root = await openSanctuary(page)
   await expect(root).not.toHaveAttribute('data-privacy-source', 'demo')
-  await expect(page.getByText('DEMONSTRATION — no personal data', { exact: false })).toHaveCount(0)
+  await expect(page.getByText('DEMONSTRATION — no personal data', { exact: true })).toHaveCount(0)
   await page.screenshot({ path: path.join(evidenceRoot, 'signed-out-boundary.png'), fullPage: true })
   await saveEvidence('signed-out-runtime', runtime)
   expect(runtime.pageErrors).toEqual([])
