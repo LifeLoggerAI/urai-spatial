@@ -3,9 +3,9 @@ import { expect, test, type Page } from '@playwright/test'
 const routes = [
   { name: 'home', path: '/' },
   { name: 'ground', path: '/ground' },
-  { name: 'life-map', path: '/life-map' },
-  { name: 'focus', path: '/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
-  { name: 'replay', path: '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1' },
+  { name: 'life-map', path: '/life-map?demo=1' },
+  { name: 'focus', path: '/focus?memoryId=demo:seed-memory-bloom&manifestId=demo-manifest&node=seed-memory-bloom&demo=1' },
+  { name: 'replay', path: '/replay?memoryId=demo:seed-memory-bloom&manifestId=demo-manifest&node=seed-memory-bloom&demo=1' },
 ] as const
 
 const interactiveSelector = [
@@ -73,8 +73,8 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
     const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
-    await page.goto('/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
-    const focusTargets = await targetSize(page, '.artifact, .unwind, .focusState button')
+    await page.goto('/focus?memoryId=demo:seed-memory-bloom&manifestId=demo-manifest&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
+    const focusTargets = await targetSize(page, '[data-testid="urai-final-focus-chamber"] :is(button,a[href])')
 
     expect(companionTargets.length).toBeGreaterThan(0)
     expect(focusTargets.length).toBeGreaterThan(0)
@@ -155,11 +155,12 @@ test.describe('URAI accessibility and performance evidence', () => {
 
     await page.goto('/ground', { waitUntil: 'domcontentloaded' })
     const railTargets = page.locator('.ground-destination-compass :is(a,button)')
+    await expect(railTargets.first()).toBeVisible({ timeout: 15_000 })
     const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
     for (let index = 0; index < await railTargets.count(); index += 1) {
       const target = railTargets.nth(index)
-      await target.focus()
-      await expect(target).toBeFocused()
+      await target.evaluate((element) => (element as HTMLElement).focus())
+      await expect.poll(() => target.evaluate((element) => element === document.activeElement)).toBe(true)
       focusContainment.push(await target.evaluate((element) => {
         const rect = element.getBoundingClientRect()
         const rail = element.closest<HTMLElement>('.ground-destination-compass')
@@ -215,7 +216,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('offline transition preserves the current route and recovers online', async ({ page, context }) => {
-    await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+    await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
     const before = page.url()
     await context.setOffline(true)
     await page.evaluate(() => window.dispatchEvent(new Event('offline')))
