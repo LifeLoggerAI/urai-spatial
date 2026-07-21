@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import EmbodiedHomeSpatialCanvas from './EmbodiedHomeSpatialCanvas'
+import FinalHomeWorld from './FinalHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
@@ -49,7 +49,6 @@ export default function HomeSpatialRuntimeLayer() {
         setRendererState('failed')
         return
       }
-
       recoveryAttemptsRef.current += 1
       setRendererState('recovering')
       recoveryTimer = setTimeout(() => {
@@ -58,9 +57,7 @@ export default function HomeSpatialRuntimeLayer() {
       }, 250)
     }
 
-    const onContextRestored = () => {
-      setRendererState('ready')
-    }
+    const onContextRestored = () => setRendererState('ready')
 
     const attach = () => {
       const canvas = root.querySelector('canvas')
@@ -88,12 +85,7 @@ export default function HomeSpatialRuntimeLayer() {
 
   if (rendererState === 'failed') {
     return (
-      <section
-        className="urai-home-spatial-runtime-layer"
-        data-urai-home-runtime="accessible-fallback-after-renderer-failure"
-        data-webgl-ready="false"
-        aria-label="Spatial Home fallback"
-      >
+      <section className="urai-home-spatial-runtime-layer" data-urai-home-runtime="accessible-fallback-after-renderer-failure" data-webgl-ready="false" aria-label="Spatial Home fallback">
         <div role="status" aria-live="polite" className="sr-only">The spatial renderer could not recover. Accessible Home controls remain available.</div>
         <HomeSpatialWorldFinal />
       </section>
@@ -101,21 +93,9 @@ export default function HomeSpatialRuntimeLayer() {
   }
 
   return (
-    <section
-      ref={runtimeRef}
-      className="urai-home-spatial-runtime-layer"
-      data-urai-home-runtime="embodied-continuous-webgl-world"
-      data-home-exploration="walkable"
-      data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
-      aria-label="URAI living spatial Home"
-    >
+    <section ref={runtimeRef} className="urai-home-spatial-runtime-layer" data-urai-home-runtime="final-coherent-webgl-world" data-home-exploration="walkable" data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'} aria-label="URAI living spatial Home">
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
-      <EmbodiedHomeSpatialCanvas key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
-      <style jsx global>{`
-        .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
-          filter: brightness(1.22) saturate(1.14) contrast(1.02);
-        }
-      `}</style>
+      <FinalHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
     </section>
   )
 }
