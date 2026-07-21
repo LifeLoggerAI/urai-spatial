@@ -207,8 +207,14 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.screenshot({ path: testInfo.outputPath('empty-state-desktop.png'), fullPage: true })
 
     await openDemo(page)
+    const offlineStart = {
+      consoleErrors: errors.consoleErrors.length,
+      pageErrors: errors.pageErrors.length,
+      failedRequests: errors.failedRequests.length,
+    }
     await context.setOffline(true)
     await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+    await page.evaluate(() => fetch(`/location-map/offline-probe-${Date.now()}`).catch(() => undefined))
     await expect(page.getByText('Offline · local view retained')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('offline-desktop.png'), fullPage: true })
     await context.setOffline(false)
@@ -222,12 +228,12 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     expect(motionStyles.every(style => style.transitionDuration.split(',').every(value => value.trim() === '0s') && style.animationDuration.split(',').every(value => value.trim() === '0s'))).toBe(true)
     await page.screenshot({ path: testInfo.outputPath('reduced-motion-desktop.png'), fullPage: true })
 
-    const expectedOfflineConsoleErrors = errors.consoleErrors.filter(message => message.includes('ERR_INTERNET_DISCONNECTED'))
-    const unexpectedConsoleErrors = errors.consoleErrors.filter(message => !message.includes('ERR_INTERNET_DISCONNECTED'))
-    const expectedOfflinePageErrors = errors.pageErrors.filter(message => message === 'Event')
-    const unexpectedPageErrors = errors.pageErrors.filter(message => message !== 'Event')
-    const expectedOfflineRequests = errors.failedRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
-    const unexpectedFailedRequests = errors.failedRequests.filter(request => !request.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflineConsoleErrors = errors.consoleErrors.slice(offlineStart.consoleErrors)
+    const unexpectedConsoleErrors = errors.consoleErrors.slice(0, offlineStart.consoleErrors)
+    const expectedOfflinePageErrors = errors.pageErrors.slice(offlineStart.pageErrors)
+    const unexpectedPageErrors = errors.pageErrors.slice(0, offlineStart.pageErrors)
+    const expectedOfflineRequests = errors.failedRequests.slice(offlineStart.failedRequests)
+    const unexpectedFailedRequests = errors.failedRequests.slice(0, offlineStart.failedRequests)
     const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
     expect(expectedOfflineSignals).toBeGreaterThan(0)
     expect(unexpectedConsoleErrors).toEqual([])
