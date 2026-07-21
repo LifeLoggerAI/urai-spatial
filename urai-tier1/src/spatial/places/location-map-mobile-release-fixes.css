@@ -18,3 +18,11 @@
     max-height: calc(100svh - 250px);
   }
 }
+
+/* Location Map owns the complete route HUD. Retired Home overlay markers must not
+   leak through the shared world shell and cover atlas orientation or controls. */
+.urai-world-runtime[data-world-destination="location-map"] .urai-home-compass,
+.urai-world-runtime[data-world-destination="location-map"] .urai-visual-caption,
+.urai-world-runtime[data-world-destination="location-map"] .urai-scene-status {
+  display: none !important;
+}
