@@ -10,7 +10,7 @@
   right: 0;
   bottom: 0;
   height: clamp(150px, 28svh, 330px);
-  z-index: 2147481000;
+  z-index: 20;
   pointer-events: none;
 }
 
