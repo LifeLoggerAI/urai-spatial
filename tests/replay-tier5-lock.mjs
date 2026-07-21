@@ -140,12 +140,14 @@ async function openDemoReplay(page, baseUrl) {
 async function validateReplay(page, report, screenshotName) {
   const proof = page.getByTestId('urai-replay-surface').first();
   const client = page.getByTestId('cinematic-replay-client').first();
-  const controls = page.locator('[aria-label="Replay controls"]').first();
-  const productControls = page.locator('[aria-label="Replay memory controls"]').first();
+  const preflight = client.getByTestId('replay-preflight').first();
+  const enterReplay = preflight.getByRole('button', { name: 'Enter Replay', exact: true }).first();
+  const controls = client.locator('[aria-label="Replay playback controls"]').first();
+  const productControls = client.locator('[aria-label="Replay memory controls"]').first();
   const companion = page.getByRole('button', { name: /Orb travel controls/i }).first();
-  const heading = page.locator('.replayWorld header h1').first();
-  const caption = page.locator('.caption').first();
-  const unwind = page.locator('.unwind').first();
+  const heading = client.locator('header h1').first();
+  const caption = client.locator('.caption').first();
+  const unwind = client.locator('.unwind').first();
 
   await proof.waitFor({ state: 'attached', timeout: 30000 });
   await expectAttribute(proof, 'data-replay-phase', 'replay_playing');
@@ -154,7 +156,12 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-memory-status', 'demo');
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
-  await expectVisible(controls, 'Replay controls');
+  await expectAttribute(client, 'data-replay-entered', 'false');
+  await expectVisible(preflight, 'mandatory Replay preflight');
+  await expectVisible(enterReplay, 'Enter Replay control');
+  await enterReplay.click();
+  await expectAttribute(client, 'data-replay-entered', 'true');
+  await expectVisible(controls, 'Replay playback controls');
   await expectVisible(productControls, 'Replay memory controls');
   await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(caption, 'Replay caption');
@@ -162,16 +169,17 @@ async function validateReplay(page, report, screenshotName) {
   await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
   await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
 
-  const play = page.getByRole('button', { name: 'Play replay' }).first();
+  const play = client.getByRole('button', { name: 'Play replay' }).first();
   await expectVisible(play, 'Play replay control');
   await play.click();
   await expectAttribute(client, 'data-playing', 'true');
 
-  const pause = page.getByRole('button', { name: 'Pause replay' }).first();
+  const pause = client.getByRole('button', { name: 'Pause replay' }).first();
   await expectVisible(pause, 'Pause replay control');
   await pause.click();
   await expectAttribute(client, 'data-playing', 'false');
 
+  report.audits.push('mandatory preflight is entered explicitly before authenticated demo playback controls are verified');
   report.audits.push('route proof exposes replay_playing while authenticated demo client play and pause states are independently verified');
   await page.screenshot({ path: `${ARTIFACT_DIR}/${screenshotName}`, fullPage: true });
   report.screenshots.push(screenshotName);
@@ -182,7 +190,7 @@ async function validateReplay(page, report, screenshotName) {
 async function run() {
   const server = await startServer();
   const report = {
-    schemaVersion: 'urai-replay-tier5-report-4',
+    schemaVersion: 'urai-replay-tier5-report-5',
     screenshots: [],
     console: [],
     pageErrors: [],
@@ -213,7 +221,9 @@ async function run() {
       consoleErrors.push(message);
     });
     page.on('requestfailed', (request) => {
-      report.requestFailures.push({ url: request.url(), error: request.failure()?.errorText || null });
+      const failure = request.failure()?.errorText || null;
+      if (failure === 'net::ERR_ABORTED' && request.isNavigationRequest()) return;
+      report.requestFailures.push({ url: request.url(), error: failure });
     });
 
     await openDemoReplay(page, server.baseUrl);
@@ -249,7 +259,7 @@ async function run() {
       report.selectors = {
         proofSurface: await page.getByTestId('urai-replay-surface').count().catch(() => 0),
         cinematicClient: await page.getByTestId('cinematic-replay-client').count().catch(() => 0),
-        replayControls: await page.locator('[aria-label="Replay controls"]').count().catch(() => 0),
+        replayControls: await page.getByTestId('cinematic-replay-client').locator('[aria-label="Replay playback controls"]').count().catch(() => 0),
         nextError: await page.locator('nextjs-portal').count().catch(() => 0),
       };
       await page.screenshot({ path: `${ARTIFACT_DIR}/failure-replay-route.png`, fullPage: true }).catch(() => {});
