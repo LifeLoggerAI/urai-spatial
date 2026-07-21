@@ -43,7 +43,7 @@ async function waitForState(page, attribute, expected, timeout = 20_000) {
   await page.waitForFunction(({ attribute, expected }) => {
     const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
     return root?.getAttribute(attribute) === expected
-  }, { attribute, expected }, { timeout })
+  }, { attribute, expected }, { timeout, polling: 50 })
 }
 
 async function captureScreenshot(page, file) {
