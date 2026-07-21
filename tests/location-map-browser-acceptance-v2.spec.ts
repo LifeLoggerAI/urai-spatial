@@ -1,8 +1,9 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test'
+import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test'
 
 const route = '/location-map/?privacyMode=private&entryPortal=location-beacon&cameraCheckpoint=atlas-world-view'
 
 type Evidence = { consoleErrors: string[]; pageErrors: string[]; failedRequests: string[] }
+type ScreenPoint = { x: number; y: number }
 
 function monitor(page: Page): Evidence {
   const evidence: Evidence = { consoleErrors: [], pageErrors: [], failedRequests: [] }
@@ -24,6 +25,10 @@ async function camera(page: Page) {
   }))
 }
 
+async function cameraTransform(page: Page) {
+  return page.locator('.locationAtlasBeacons').evaluate(element => getComputedStyle(element).transform)
+}
+
 async function openDemo(page: Page) {
   await page.evaluate(() => {
     localStorage.removeItem('urai:userId')
@@ -35,12 +40,43 @@ async function openDemo(page: Page) {
   await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
 }
 
-async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', dx: number, dy: number) {
+async function gestureAnchor(page: Page): Promise<ScreenPoint> {
   const box = await page.locator('.locationAtlasStage').boundingBox()
   expect(box).not.toBeNull()
-  const x = box!.x + box!.width * .5
-  const y = box!.y + box!.height * .5
+  const candidates = [
+    { x: box!.x + box!.width * .50, y: box!.y + box!.height * .50 },
+    { x: box!.x + box!.width * .30, y: box!.y + box!.height * .42 },
+    { x: box!.x + box!.width * .70, y: box!.y + box!.height * .42 },
+    { x: box!.x + box!.width * .50, y: box!.y + box!.height * .68 },
+  ]
+  for (const candidate of candidates) {
+    const blocked = await page.evaluate(({ x, y }) => {
+      const node = document.elementFromPoint(x, y)
+      return Boolean(node instanceof HTMLElement && node.closest('button,a,[data-atlas-panel]'))
+    }, candidate)
+    if (!blocked) return candidate
+  }
+  throw new Error('No unobstructed native gesture anchor was available in the Location Map stage')
+}
 
+async function nativeTouchTap(page: Page, target: Locator) {
+  await target.scrollIntoViewIfNeeded()
+  const box = await target.boundingBox()
+  expect(box).not.toBeNull()
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    const x = box!.x + box!.width * .5
+    const y = box!.y + box!.height * .5
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } finally {
+    await cdp.detach()
+  }
+}
+
+async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', dx: number, dy: number) {
+  const { x, y } = await gestureAnchor(page)
   if (pointerType === 'mouse') {
     await page.mouse.move(x, y)
     await page.mouse.down()
@@ -50,30 +86,61 @@ async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', d
   }
 
   const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
-  for (let step = 1; step <= 8; step += 1) {
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + (dx * step) / 8, y: y + (dy * step) / 8, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
+    for (let step = 1; step <= 8; step += 1) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + (dx * step) / 8, y: y + (dy * step) / 8, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } finally {
+    await cdp.detach()
   }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 }
 
-async function touchSelectFirstBeacon(page: Page) {
-  const box = await page.locator('.locationAtlasBeacon').first().boundingBox()
-  expect(box).not.toBeNull()
+async function nativePinchThenPan(page: Page) {
+  const anchor = await gestureAnchor(page)
   const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
-  const x = box!.x + box!.width * .5
-  const y = box!.y + box!.height * .5
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  let remaining = { x: anchor.x + 34, y: anchor.y }
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        { x: anchor.x - 34, y: anchor.y, id: 1, radiusX: 6, radiusY: 6, force: 1 },
+        { x: anchor.x + 34, y: anchor.y, id: 2, radiusX: 6, radiusY: 6, force: 1 },
+      ],
+    })
+    for (let step = 1; step <= 8; step += 1) {
+      const spread = 34 + step * 5
+      remaining = { x: anchor.x + spread, y: anchor.y }
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [
+          { x: anchor.x - spread, y: anchor.y, id: 1, radiusX: 6, radiusY: 6, force: 1 },
+          { x: remaining.x, y: remaining.y, id: 2, radiusX: 6, radiusY: 6, force: 1 },
+        ],
+      })
+    }
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [{ x: remaining.x, y: remaining.y, id: 2, radiusX: 6, radiusY: 6, force: 1 }],
+    })
+    for (let step = 1; step <= 8; step += 1) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: remaining.x + (64 * step) / 8, y: remaining.y + (46 * step) / 8, id: 2, radiusX: 6, radiusY: 6, force: 1 }],
+      })
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } finally {
+    await cdp.detach()
+  }
 }
 
 async function realWheelZoom(page: Page) {
-  const stage = page.locator('.locationAtlasStage')
-  const box = await stage.boundingBox()
-  expect(box).not.toBeNull()
-  await page.mouse.move(box!.x + box!.width * .5, box!.y + box!.height * .5)
+  const { x, y } = await gestureAnchor(page)
+  await page.mouse.move(x, y)
   await page.mouse.wheel(0, -520)
 }
 
@@ -97,13 +164,18 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
 
     const beforePan = await camera(page)
+    const beforePanTransform = await cameraTransform(page)
     await dispatchPointerDrag(page, 'mouse', 140, 80)
     await expect.poll(async () => camera(page)).not.toEqual(beforePan)
+    await expect.poll(async () => cameraTransform(page)).not.toBe(beforePanTransform)
     const afterPan = await camera(page)
+    const afterPanTransform = await cameraTransform(page)
 
     await realWheelZoom(page)
     await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(afterPan.zoom)
     const afterWheel = await camera(page)
+    expect(afterWheel.x).toBe(afterPan.x)
+    expect(afterWheel.y).toBe(afterPan.y)
 
     await beacons.first().click()
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
@@ -168,7 +240,9 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await attachJson(testInfo, 'desktop-interaction-receipt.json', {
       exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
       beforePan,
+      beforePanTransform,
       afterPan,
+      afterPanTransform,
       afterWheel,
       selectedUrl,
       motionStyles,
@@ -176,8 +250,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     })
   })
 
-  test('mobile touch drag and touch selection packet', async ({ page, browserName }, testInfo) => {
-    test.skip(browserName !== 'chromium', 'CDP touch simulation requires Chromium')
+  test('mobile native touch drag pinch continuation selection and deselection packet', async ({ page, browserName }, testInfo) => {
+    test.skip(browserName !== 'chromium', 'CDP native touch input requires Chromium')
     const errors = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
@@ -186,17 +260,30 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
 
     const beforeTouch = await camera(page)
+    const beforeTouchTransform = await cameraTransform(page)
     await dispatchPointerDrag(page, 'touch', 72, 54)
     await expect.poll(async () => camera(page)).not.toEqual(beforeTouch)
+    await expect.poll(async () => cameraTransform(page)).not.toBe(beforeTouchTransform)
     const afterTouch = await camera(page)
+    const afterTouchTransform = await cameraTransform(page)
 
-    await touchSelectFirstBeacon(page)
+    await nativePinchThenPan(page)
+    await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(afterTouch.zoom)
+    await expect.poll(async () => {
+      const value = await camera(page)
+      return `${value.x}:${value.y}`
+    }).not.toBe(`${afterTouch.x}:${afterTouch.y}`)
+    const afterPinchToPan = await camera(page)
+    const afterPinchToPanTransform = await cameraTransform(page)
+
+    await nativeTouchTap(page, page.locator('.locationAtlasBeacon').first())
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
     await expect(page).toHaveURL(/placeId=/)
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
 
-    await page.getByRole('button', { name: 'Return to atlas overview' }).click()
+    await nativeTouchTap(page, page.getByRole('button', { name: 'Return to atlas overview' }))
     await expect(page.locator('.locationAtlasSelection')).toBeHidden()
+    await expect(page).not.toHaveURL(/placeId=/)
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
     expect(errors.consoleErrors).toEqual([])
@@ -206,8 +293,13 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await attachJson(testInfo, 'mobile-interaction-receipt.json', {
       exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
       beforeTouch,
+      beforeTouchTransform,
       afterTouch,
+      afterTouchTransform,
+      afterPinchToPan,
+      afterPinchToPanTransform,
       viewport: '390x844',
+      nativeInput: ['touch-drag', 'two-finger-pinch', 'pinch-to-one-finger-pan', 'touch-select', 'touch-deselect'],
     })
   })
 })
