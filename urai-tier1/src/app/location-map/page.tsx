@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAcceptanceBoundary'
 import { LocationMapNativeWheelBridge } from '@/spatial/places/LocationMapNativeWheelBridge'
 import '@/spatial/places/location-map-release-depth.css'
+import '@/spatial/places/location-map-mobile-release-fixes.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
 export default async function LocationMapPage() {
