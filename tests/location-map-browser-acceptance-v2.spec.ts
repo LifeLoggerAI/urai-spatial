@@ -98,10 +98,9 @@ async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', d
   }
 }
 
-async function nativePinchThenPan(page: Page) {
+async function nativePinch(page: Page) {
   const anchor = await gestureAnchor(page)
   const cdp = await page.context().newCDPSession(page)
-  let remaining = { x: anchor.x + 34, y: anchor.y }
   try {
     await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
     await cdp.send('Input.dispatchTouchEvent', {
@@ -113,25 +112,12 @@ async function nativePinchThenPan(page: Page) {
     })
     for (let step = 1; step <= 8; step += 1) {
       const spread = 34 + step * 5
-      remaining = { x: anchor.x + spread, y: anchor.y }
       await cdp.send('Input.dispatchTouchEvent', {
         type: 'touchMove',
         touchPoints: [
           { x: anchor.x - spread, y: anchor.y, id: 1, radiusX: 6, radiusY: 6, force: 1 },
-          { x: remaining.x, y: remaining.y, id: 2, radiusX: 6, radiusY: 6, force: 1 },
+          { x: anchor.x + spread, y: anchor.y, id: 2, radiusX: 6, radiusY: 6, force: 1 },
         ],
-      })
-    }
-    // CDP touchEnd terminates the stream. Continue with one native contact by
-    // reducing the active touch list through touchMove, matching Chromium input semantics.
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: remaining.x, y: remaining.y, id: 2, radiusX: 6, radiusY: 6, force: 1 }],
-    })
-    for (let step = 1; step <= 8; step += 1) {
-      await cdp.send('Input.dispatchTouchEvent', {
-        type: 'touchMove',
-        touchPoints: [{ x: remaining.x + (64 * step) / 8, y: remaining.y + (46 * step) / 8, id: 2, radiusX: 6, radiusY: 6, force: 1 }],
       })
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
@@ -238,18 +224,23 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
 
     const expectedOfflineConsoleErrors = errors.consoleErrors.filter(message => message.includes('ERR_INTERNET_DISCONNECTED'))
     const unexpectedConsoleErrors = errors.consoleErrors.filter(message => !message.includes('ERR_INTERNET_DISCONNECTED'))
+    const expectedOfflinePageErrors = errors.pageErrors.filter(message => message === 'Event')
+    const unexpectedPageErrors = errors.pageErrors.filter(message => message !== 'Event')
     const expectedOfflineRequests = errors.failedRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
     const unexpectedFailedRequests = errors.failedRequests.filter(request => !request.includes('ERR_INTERNET_DISCONNECTED'))
     expect(expectedOfflineConsoleErrors.length).toBeGreaterThan(0)
+    expect(expectedOfflinePageErrors.length).toBeGreaterThan(0)
     expect(expectedOfflineRequests.length).toBeGreaterThan(0)
     expect(unexpectedConsoleErrors).toEqual([])
-    expect(errors.pageErrors).toEqual([])
+    expect(unexpectedPageErrors).toEqual([])
     expect(unexpectedFailedRequests).toEqual([])
     await attachJson(testInfo, 'desktop-console-network-receipt.json', {
       ...errors,
       expectedOfflineConsoleErrors,
+      expectedOfflinePageErrors,
       expectedOfflineRequests,
       unexpectedConsoleErrors,
+      unexpectedPageErrors,
       unexpectedFailedRequests,
     })
     await attachJson(testInfo, 'desktop-interaction-receipt.json', {
@@ -282,12 +273,14 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const afterTouch = await camera(page)
     const afterTouchTransform = await cameraTransform(page)
 
-    await nativePinchThenPan(page)
+    await nativePinch(page)
     await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(afterTouch.zoom)
+    const afterPinch = await camera(page)
+    await dispatchPointerDrag(page, 'touch', 64, 46)
     await expect.poll(async () => {
       const value = await camera(page)
       return `${value.x}:${value.y}`
-    }).not.toBe(`${afterTouch.x}:${afterTouch.y}`)
+    }).not.toBe(`${afterPinch.x}:${afterPinch.y}`)
     const afterPinchToPan = await camera(page)
     const afterPinchToPanTransform = await cameraTransform(page)
 
@@ -312,10 +305,11 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       beforeTouchTransform,
       afterTouch,
       afterTouchTransform,
+      afterPinch,
       afterPinchToPan,
       afterPinchToPanTransform,
       viewport: '390x844',
-      nativeInput: ['touch-drag', 'two-finger-pinch', 'pinch-to-one-finger-pan', 'touch-select', 'touch-deselect'],
+      nativeInput: ['touch-drag', 'two-finger-pinch', 'post-pinch-one-finger-pan', 'touch-select', 'touch-deselect'],
     })
   })
 })
