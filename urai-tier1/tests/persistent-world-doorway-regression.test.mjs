@@ -42,7 +42,8 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(shell, /showWorldCompanion \? <PersistentWorldCompanion \/> : null/)
 
   assert.match(finalCss, /\.urai-ground-gateway \{[\s\S]*z-index: 11 !important;[\s\S]*height: 80px !important/)
-  assert.match(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: 9/)
+  assert.match(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: auto/)
+  assert.doesNotMatch(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: 9/)
   assert.match(finalCss, /height: 96px !important/)
   assert.match(worldNavigation, /@media \(max-width: 700px\)[\s\S]*\.urai-ground-gateway__surface[\s\S]*bottom: max\(72px, calc\(env\(safe-area-inset-bottom\) \+ 64px\)\)/)
   assert.doesNotMatch(ground, /padding-inline:12px 210px;scroll-padding-inline:12px 210px/)
