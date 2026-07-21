@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 const HOME_ROUTES = new Set(['/', '/home'])
 
 export default function HomeDirectDoorways() {
-  const pathname = usePathname() || '/'
+  const pathname = (usePathname() || '/').replace(/\/+$/, '') || '/'
   if (!HOME_ROUTES.has(pathname)) return null
 
   return (
