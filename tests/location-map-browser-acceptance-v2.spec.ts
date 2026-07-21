@@ -61,6 +61,14 @@ async function touchSelectFirstBeacon(page: Page) {
   await page.touchscreen.tap(box!.x + box!.width * .5, box!.y + box!.height * .5)
 }
 
+async function realWheelZoom(page: Page) {
+  const stage = page.locator('.locationAtlasStage')
+  const box = await stage.boundingBox()
+  expect(box).not.toBeNull()
+  await page.mouse.move(box!.x + box!.width * .5, box!.y + box!.height * .5)
+  await page.mouse.wheel(0, -520)
+}
+
 test.describe('Location Map exact-head browser acceptance evidence v2', () => {
   test('desktop complete acceptance packet', async ({ page, context }, testInfo) => {
     const errors = monitor(page)
@@ -75,14 +83,17 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const stage = page.locator('.locationAtlasStage')
     const beacons = page.locator('.locationAtlasBeacon')
     expect(await beacons.count()).toBeGreaterThan(0)
-    await page.screenshot({ path: testInfo.outputPath('demo-desktop-overview.png'), fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath('demo-desktop-standard-overview.png'), fullPage: true })
+    await page.setViewportSize({ width: 1920, height: 1080 })
+    await page.screenshot({ path: testInfo.outputPath('demo-desktop-wide-overview.png'), fullPage: true })
+    await page.setViewportSize({ width: 1440, height: 900 })
 
     const beforePan = await camera(page)
     await dispatchPointerDrag(page, 'mouse', 140, 80)
     await expect.poll(async () => camera(page)).not.toEqual(beforePan)
     const afterPan = await camera(page)
 
-    await stage.evaluate(element => element.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: -520 })))
+    await realWheelZoom(page)
     await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(afterPan.zoom)
     const afterWheel = await camera(page)
 
@@ -105,6 +116,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.locator('.locationAtlasSelection')).toBeHidden()
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     await expect(page).not.toHaveURL(/placeId=/)
+    await page.screenshot({ path: testInfo.outputPath('demo-desktop-deselected.png'), fullPage: true })
     await stage.focus()
     await page.keyboard.press('ArrowRight')
     await expect(beacons.nth(1)).toBeFocused()
@@ -145,15 +157,25 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     expect(errors.pageErrors).toEqual([])
     expect(errors.failedRequests).toEqual([])
     await attachJson(testInfo, 'desktop-console-network-receipt.json', errors)
-    await attachJson(testInfo, 'desktop-interaction-receipt.json', { beforePan, afterPan, afterWheel, selectedUrl, motionStyles })
+    await attachJson(testInfo, 'desktop-interaction-receipt.json', {
+      exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
+      beforePan,
+      afterPan,
+      afterWheel,
+      selectedUrl,
+      motionStyles,
+      viewports: ['1440x900', '1920x1080'],
+    })
   })
 
-  test('mobile touch drag and touch selection packet', async ({ page }, testInfo) => {
+  test('mobile touch drag and touch selection packet', async ({ page, browserName }, testInfo) => {
+    test.skip(browserName !== 'chromium', 'CDP touch simulation requires Chromium')
     const errors = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
     await page.goto(route, { waitUntil: 'networkidle' })
     await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
 
     const beforeTouch = await camera(page)
     await dispatchPointerDrag(page, 'touch', 72, 54)
@@ -165,10 +187,19 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page).toHaveURL(/placeId=/)
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
 
+    await page.getByRole('button', { name: 'Return to atlas overview' }).click()
+    await expect(page.locator('.locationAtlasSelection')).toBeHidden()
+    await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
+
     expect(errors.consoleErrors).toEqual([])
     expect(errors.pageErrors).toEqual([])
     expect(errors.failedRequests).toEqual([])
     await attachJson(testInfo, 'mobile-console-network-receipt.json', errors)
-    await attachJson(testInfo, 'mobile-interaction-receipt.json', { beforeTouch, afterTouch })
+    await attachJson(testInfo, 'mobile-interaction-receipt.json', {
+      exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
+      beforeTouch,
+      afterTouch,
+      viewport: '390x844',
+    })
   })
 })
