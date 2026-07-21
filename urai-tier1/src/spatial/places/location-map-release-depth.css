@@ -14,7 +14,7 @@
 }
 
 .urai-world-runtime[data-world-destination="location-map"] .locationAtlasArt img {
-  filter: saturate(.88) contrast(1.18) brightness(.38) depth(1px);
+  filter: saturate(.88) contrast(1.18) brightness(.38);
 }
 
 .urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage {
