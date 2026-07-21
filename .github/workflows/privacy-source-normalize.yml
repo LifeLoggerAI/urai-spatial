@@ -28,16 +28,14 @@ jobs:
           old = "const claims = context.auth?.token ?? {}\n  const authTime = Number(claims.auth_time ?? 0)"
           new = "const claims = (context.auth?.token ?? {}) as Record<string, unknown>\n  const authTime = Number(claims.auth_time ?? 0)"
           if old in source:
-              source = source.replace(old, new, 1)
-              functions.write_text(source)
+              functions.write_text(source.replace(old, new, 1))
 
           client = Path('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx')
           source = client.read_text()
-          old = "const next = snapshot.exists() && isConsentPolicy(snapshot.data(), user.uid)\n        ? snapshot.data()\n        : defaultConsentPolicy(user.uid)"
-          new = "const rawPolicy = snapshot.data()\n      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid)\n        ? rawPolicy\n        : defaultConsentPolicy(user.uid)"
+          old = "const next = snapshot.exists() && isConsentPolicy(snapshot.data(), user.uid) ? snapshot.data() : defaultConsentPolicy(user.uid)"
+          new = "const rawPolicy = snapshot.data()\n      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)"
           if old in source:
-              source = source.replace(old, new, 1)
-              client.write_text(source)
+              client.write_text(source.replace(old, new, 1))
 
           shim = Path('apps/functions/src/privacyCallableClaims.d.ts')
           if shim.exists():
@@ -53,6 +51,6 @@ jobs:
           fi
           git config user.name "urai-release-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add apps/functions/src/privacyOperations.ts urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx apps/functions/src/privacyCallableClaims.d.ts
-          git commit -m "fix(privacy): preserve consent types through trusted snapshots"
+          git add -A apps/functions/src/privacyOperations.ts urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx apps/functions/src/privacyCallableClaims.d.ts
+          git commit -m "fix(privacy): narrow consent snapshot before state update"
           git push origin HEAD:feat/privacy-consent-sanctuary-550-20260721
