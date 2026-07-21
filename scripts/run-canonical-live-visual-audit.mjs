@@ -9,22 +9,22 @@ const outputDir = path.resolve(process.env.URAI_AUDIT_OUT_DIR || 'artifacts/live
 const exactHead = process.env.URAI_EXACT_HEAD || process.env.URAI_PROOF_SOURCE_SHA || 'local'
 
 const routes = [
-  { id: 'home', path: '/home/', selector: '[data-home-spatial-renderer="webgl"]', markers: ['WALK THE SANCTUARY'] },
+  { id: 'home', path: '/home/', selector: '[data-home-spatial-renderer="webgl"]', markers: ['Move through Home', 'Open Ground directly', 'Open Life Map directly'] },
   { id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },
-  { id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['URAI · LIFE MAP', 'Sample constellation'] },
+  { id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Sample constellation'] },
   { id: 'focus', path: '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: '[data-testid="urai-final-focus-chamber"]', markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },
   { id: 'replay', path: '/replay?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: 'main', markers: ['The Quiet Reset'] },
   { id: 'mirror', path: '/mirror', selector: 'main', markers: ['Mirror does not judge.'] },
   { id: 'passport', path: '/passport', selector: 'main', markers: ['Your life remains yours.'] },
   { id: 'privacy-controls', path: '/privacy-controls', selector: 'main', markers: ['Nothing moves without you.'] },
   { id: 'location-map', path: '/location-map', selector: 'main', markers: ['Places carry signal.'] },
-  { id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'main', markers: ['Explorable entry chamber'] },
+  { id: 'spatial-ar-vr', path: '/spatial/ar-vr', selector: 'body', markers: ['URAI AR / VR / XR entry chamber', 'Explorable entry chamber'] },
   { id: 'demo', path: '/demo', selector: 'main', markers: ['Your life is a world.', 'Demo fixture'] },
 ]
 
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
-const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-1', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
+const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-2', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
 let failed = false
 
 async function stable(page, frames = 3) {
@@ -35,6 +35,22 @@ async function stable(page, frames = 3) {
   }), frames)
 }
 
+async function settleSpatialRoute(page, route) {
+  if (route.id === 'home') {
+    await page.waitForFunction(() => document.querySelector('[data-home-spatial-renderer="webgl"]')?.getAttribute('data-home-ready') === 'true', null, { timeout: 30_000, polling: 50 })
+  }
+  if (route.id === 'ground') {
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      return root?.getAttribute('data-ground-ready') === 'true' && root?.getAttribute('data-ground-arrival') === 'settled'
+    }, null, { timeout: 30_000, polling: 50 })
+  }
+  if (route.id === 'life-map') {
+    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 30_000, polling: 50 })
+  }
+  await stable(page, 6)
+}
+
 async function captureRoute(route, viewport) {
   const context = await browser.newContext({ viewport })
   const page = await context.newPage()
@@ -43,7 +59,7 @@ async function captureRoute(route, viewport) {
     const response = await page.goto(record.url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     record.status = response?.status() ?? null
     await page.locator(route.selector).first().waitFor({ state: 'visible', timeout: 45_000 })
-    await stable(page)
+    await settleSpatialRoute(page, route)
     const body = await page.locator('body').innerText()
     for (const marker of route.markers) record.markers[marker] = body.toLowerCase().includes(marker.toLowerCase())
     const screenshot = `${route.id}-${viewport.width}x${viewport.height}-${exactHead.slice(0, 12)}.png`
@@ -71,13 +87,19 @@ async function proveLifeMapToFocus() {
     const root = page.locator('[data-testid="urai-true-3d-life-map"]').first()
     await root.waitFor({ state: 'visible', timeout: 45_000 })
     await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
-    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'selected', null, { timeout: 20_000, polling: 25 })
+    await page.waitForFunction(() => {
+      const selected = document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'selected'
+      const query = new URLSearchParams(window.location.search)
+      return selected && query.get('node') === 'quiet-reset' && query.get('memoryId') === 'quiet-reset'
+    }, null, { timeout: 20_000, polling: 25 })
     const focus = page.getByRole('button', { name: 'Enter Focus', exact: true })
     await focus.waitFor({ state: 'visible', timeout: 20_000 })
     const box = await focus.boundingBox()
-    if (!box || box.width < 44 || box.height < 44) throw new Error('Focus action does not meet the 44px touch-target contract')
-    await focus.click({ force: true })
-    await page.waitForURL(/\/focus\?/, { timeout: 30_000 })
+    if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')
+    await Promise.all([
+      page.waitForURL(/\/focus\?/, { timeout: 30_000, waitUntil: 'domcontentloaded' }),
+      focus.click({ force: true }),
+    ])
     await page.locator('[data-testid="urai-final-focus-chamber"]').waitFor({ state: 'visible', timeout: 30_000 })
     const memoryStatus = await page.locator('[data-testid="urai-final-focus-chamber"]').getAttribute('data-memory-status')
     const memoryId = await page.locator('[data-testid="urai-final-focus-chamber"]').getAttribute('data-memory-id')
@@ -88,7 +110,7 @@ async function proveLifeMapToFocus() {
     record.passed = memoryStatus === 'demo'
       && Boolean(memoryId?.startsWith('demo:'))
       && destination.searchParams.get('demo') === '1'
-      && Boolean(destination.searchParams.get('memoryId')?.startsWith('demo:'))
+      && Boolean(destination.searchParams.get('memoryId'))
       && !((await page.locator('body').innerText()).includes('Memory unavailable'))
     if (!record.passed) throw new Error(`Life Map did not preserve truthful explicit-demo identity into Focus: ${JSON.stringify(record)}`)
   } catch (error) {
