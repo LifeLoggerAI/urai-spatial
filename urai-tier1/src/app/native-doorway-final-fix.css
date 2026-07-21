@@ -10,9 +10,12 @@
   height: 80px !important;
 }
 
+/* The active spatial Home must own pointer and touch hit-testing above legacy
+   route/main layers raised by historical global hotfixes. Keep it below the
+   protected world transition surface at z-index 2147482500. */
 .urai-home-spatial-runtime-layer {
   position: relative;
-  z-index: 9;
+  z-index: 2147482400 !important;
 }
 
 .urai-home-spatial-orb-trigger,
