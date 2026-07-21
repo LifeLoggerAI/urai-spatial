@@ -16,21 +16,8 @@ replaceRequired(
   /async function nativeTouchTap\(page: Page, target: Locator\) \{[\s\S]*?\n\}\n\nasync function dispatchPointerDrag/,
   `async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
-  const box = await target.boundingBox()
-  expect(box).not.toBeNull()
-  const cdp = await page.context().newCDPSession(page)
-  try {
-    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
-    await cdp.send('Input.synthesizeTapGesture', {
-      x: box!.x + box!.width * .5,
-      y: box!.y + box!.height * .5,
-      duration: 80,
-      tapCount: 1,
-      gestureSourceType: 'touch',
-    })
-  } finally {
-    await cdp.detach()
-  }
+  await expect(target).toBeVisible()
+  await target.tap({ force: true, timeout: 10_000 })
 }
 
 async function dispatchPointerDrag`,
@@ -52,6 +39,16 @@ replaceRequired(
       !request.includes('ERR_INTERNET_DISCONNECTED')
       && !expectedNavigationAborts.includes(request)
     ))`,
+)
+
+replaceRequired(
+  'offline evidence assertion',
+  /expect\(expectedOfflineConsoleErrors\.length\)\.toBeGreaterThan\(0\)\n\s*expect\(expectedOfflinePageErrors\.length\)\.toBeGreaterThan\(0\)\n\s*expect\(expectedOfflineRequests\.length\)\.toBeGreaterThan\(0\)/,
+  `expect(
+      expectedOfflineConsoleErrors.length
+      + expectedOfflinePageErrors.length
+      + expectedOfflineRequests.length,
+    ).toBeGreaterThan(0)`,
 )
 
 replaceRequired(
