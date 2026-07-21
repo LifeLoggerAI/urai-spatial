@@ -1,3 +1,4 @@
+# Second push activates this registered one-shot workflow.
 name: Restore Replay from preserved backup
 
 on:
