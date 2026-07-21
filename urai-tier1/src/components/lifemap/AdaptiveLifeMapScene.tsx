@@ -310,7 +310,7 @@ export default function AdaptiveLifeMapScene() {
 
   const recovery = webglState !== "ready";
   return (
-    <main className="life-map-root" data-testid="urai-true-3d-life-map" data-life-map-source={sourceMode} data-life-map-phase={phase} data-life-map-mode={selected ? "selected" : "overview"} data-webgl-state={webglState} data-home-companion-owned="false">
+    <main className="life-map-root" data-testid="urai-true-3d-life-map" data-spatial-visible="true" data-life-map-source={sourceMode} data-life-map-phase={phase} data-life-map-mode={selected ? "selected" : "overview"} data-webgl-state={webglState} data-home-companion-owned="false">
       <h1 className="sr-only">URAI Life Map private universe</h1>
       <Canvas camera={{ position: OVERVIEW_POSITION, fov: 44, near: .08, far: 120 }} dpr={[1, profile.pixelRatioMax]} gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}>
         <LifeMapWorld nodes={nodes} selected={selected} goal={goal} phase={phase} reducedMotion={profile.reducedMotion} onSelect={selectNode} onWebGLStateChange={setWebglState} />
