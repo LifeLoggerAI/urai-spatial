@@ -67,7 +67,8 @@ if (!source.includes('activeGroundLinkSuppressed')) {
     /const activeGroundLink = rail\.locator\('a\[aria-current="page"\]'\)\s*const activeGroundLinkVisible = await activeGroundLink\.count\(\) === 1 && await activeGroundLink\.isVisible\(\)\s*const canvas = await canvasEvidence\(page, '\.ground-spatial-root canvas'\)\s*return \{ providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas\.canvasSized, \.\.\.canvas \}/,
     `const activeGroundLink = rail.locator('a[aria-current="page"]')
       const activeGroundLinkSuppressed = await visibleElementCount(activeGroundLink) === 0
-      const groundRouteOwned = new URL(page.url()).pathname.replace(/\/$/, '') === '/ground'
+      const groundPath = new URL(page.url()).pathname
+      const groundRouteOwned = (groundPath.endsWith('/') ? groundPath.slice(0, -1) : groundPath) === '/ground'
       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
       return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkSuppressed, groundRouteOwned, canvasSized: canvas.canvasSized, ...canvas }`,
   )
