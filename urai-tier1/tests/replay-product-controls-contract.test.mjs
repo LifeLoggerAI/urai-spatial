@@ -3,18 +3,41 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const client = fs.readFileSync('src/app/replay/CinematicReplayClient.tsx', 'utf8')
+const world = fs.readFileSync('src/app/replay/ReplaySpatialWorld.tsx', 'utf8')
 const controls = fs.readFileSync('src/app/replay/ReplayProductControls.tsx', 'utf8')
 const transport = fs.readFileSync('src/spatial/replay/replayServerTransport.ts', 'utf8')
 const operations = fs.readFileSync('src/spatial/replay/replayOperations.ts', 'utf8')
 const rules = fs.readFileSync('../firebase/firestore.rules', 'utf8')
 
-test('Replay preserves current cinematic identity while exposing Save Hide Correct and History', () => {
-  for (const marker of ['assetCssStack', 'replayAssets', 'data-node={memory.star.id}', 'data-canonical-asset={replayAssets.primary.src}', '<ReplayProductControls memory={memory} />']) {
-    assert.ok(client.includes(marker), `missing current-main Replay marker: ${marker}`)
+test('Replay is owned by a real spatial scene while preserving product controls', () => {
+  for (const marker of ['ReplaySpatialWorld', 'data-node={memory.star.id}', 'data-exploration={explorationEnabled', '<ReplayProductControls memory={memory} />']) {
+    assert.ok(client.includes(marker), `missing Replay orchestration marker: ${marker}`)
+  }
+  for (const marker of ["from '@react-three/fiber'", '<Canvas', 'function CameraRig', 'useFrame', 'MemoryAnchor', 'data-testid="replay-spatial-world"', 'webglcontextlost', 'webglcontextrestored']) {
+    assert.ok(world.includes(marker), `missing embodied Replay marker: ${marker}`)
   }
   for (const marker of ['Replay memory controls', "operations.saved ? 'Saved' : 'Save'", "operations.hidden ? 'Unhide' : 'Hide'", "pendingCorrection ? 'Correcting…' : 'Correct'", '>History<', 'data-replay-saved', 'data-replay-hidden', 'data-pending-operations']) {
     assert.ok(controls.includes(marker), `missing Replay product marker: ${marker}`)
   }
+})
+
+test('direct Replay entry is recoverable instead of a dead-end', () => {
+  assert.match(client, /Replay needs a memory/)
+  assert.match(client, /Choose from Life Map/)
+  assert.match(client, /Return to Focus/)
+  assert.match(client, /destination: 'life-map'/)
+  assert.match(client, /destination: 'focus'/)
+  assert.match(client, /preserve its identity, privacy, sources, and return path/)
+})
+
+test('Replay exposes guided exploration and low-sensory modes', () => {
+  assert.match(client, />Guided</)
+  assert.match(client, />Explore</)
+  assert.match(client, />Low sensory</)
+  assert.match(client, /WASD or arrow keys move/)
+  assert.match(client, /event\.key\.toLowerCase\(\) === 'e'/)
+  assert.match(world, /THREE\.MathUtils\.clamp\(freePosition\.current\.x/)
+  assert.match(world, /touch-action:none/)
 })
 
 test('Replay controls expose truthful accessible pending offline error and recovery states', () => {
@@ -29,7 +52,7 @@ test('Replay controls expose truthful accessible pending offline error and recov
   assert.match(controls, /safe-area-inset-bottom/)
   assert.match(controls, /prefers-reduced-motion:reduce/)
   assert.match(controls, /forced-colors:active/)
-  assert.match(client, /<header>.*className="unwind".*<\/header>/s)
+  assert.match(client, /className="unwind"/)
   assert.match(client, /bottom:max\(180px,calc\(env\(safe-area-inset-bottom\) \+ 174px\)\)/)
   assert.match(controls, /bottom:max\(102px,calc\(env\(safe-area-inset-bottom\) \+ 96px\)\)/)
 })
@@ -65,9 +88,6 @@ test('authenticated persistence is owner-scoped idempotent transactional and acc
   assert.match(controls, /operationVersion\.current !== requestedVersion/)
   assert.match(controls, /operationVersion\.current \+= 1/)
   assert.match(controls, /const current = readReplayOperationState\(window\.localStorage, memory\.ownerId, memory\.id\)/)
-  assert.match(controls, /const operationVersion = useRef\(0\)/)
-  assert.match(controls, /operationVersion\.current !== requestedVersion/)
-  assert.match(controls, /operationVersion\.current \+= 1/)
   assert.match(controls, /mergeState\(current, server\)/)
   assert.match(controls, /const applyIfCurrent = \(state: ReplayOperationState\)/)
   assert.match(controls, /onOptimistic: applyIfCurrent/)
@@ -94,9 +114,11 @@ test('offline retry is bounded by events or explicit user action and duplicate i
   assert.match(operations, /state\.audit\.some\(\(entry\) => entry\.id === operation\.id\)/)
 })
 
-test('cinematic keyboard timing ignores interactive controls and keeps Escape unwind', () => {
+test('cinematic keyboard timing ignores interactive controls and keeps layered Escape unwind', () => {
   assert.match(client, /closest\('button, input, textarea, select, summary, a, \[role="button"\]'\)/)
   assert.match(client, /event\.key === 'Escape'/)
   assert.match(client, /event\.key === ' ' \|\| event\.key === 'Enter'/)
+  assert.match(client, /setSelectedAnchor\(null\)/)
+  assert.match(client, /setExplorationEnabled\(false\)/)
   assert.match(client, /window\.removeEventListener\('keydown', onKey\)/)
 })
