@@ -2,32 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isSelf(uid) {
-      return isSignedIn() && request.auth.uid == uid;
-    }
-
+    function isSignedIn() { return request.auth != null; }
+    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
     function isAdmin() {
-      return isSignedIn()
-        && (
-          request.auth.token.admin == true
-          || request.auth.token.founder == true
-        );
+      return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true);
     }
-
-    function isLaunchDemoOwner(ownerId) {
-      return ownerId == 'launch-demo';
-    }
-
+    function isLaunchDemoOwner(ownerId) { return ownerId == 'launch-demo'; }
     function isManifestOwner() {
-      return isSignedIn()
-        && resource.data.ownerId is string
-        && resource.data.ownerId == request.auth.uid;
+      return isSignedIn() && resource.data.ownerId is string && resource.data.ownerId == request.auth.uid;
     }
-
     function isValidSpatialManifestCreate() {
       return request.resource.data.manifestId is string
         && request.resource.data.manifestVersion == '1.0'
@@ -37,66 +20,54 @@ service cloud.firestore {
         && request.resource.data.artifacts is list
         && request.resource.data.spatialCompatibility is map;
     }
-
+    function isUserOwnedCreate(uid) {
+      return isSelf(uid)
+        && (!('userId' in request.resource.data) || request.resource.data.userId == uid)
+        && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
+        && (!('ownerId' in request.resource.data) || request.resource.data.ownerId == uid);
+    }
+    function isUserOwnedUpdate(uid) {
+      return isSelf(uid)
+        && (!('userId' in resource.data) || resource.data.userId == uid)
+        && (!('uid' in resource.data) || resource.data.uid == uid)
+        && (!('ownerId' in resource.data) || resource.data.ownerId == uid)
+        && (!('userId' in request.resource.data) || request.resource.data.userId == uid)
+        && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
+        && (!('ownerId' in request.resource.data) || request.resource.data.ownerId == uid);
+    }
+    function isPrivateSpatialPayloadSafe() {
+      return !('rawAudioUrl' in request.resource.data)
+        && !('privateMediaUrl' in request.resource.data)
+        && !('providerSecret' in request.resource.data)
+        && !('apiKey' in request.resource.data)
+        && !('accessToken' in request.resource.data)
+        && !('refreshToken' in request.resource.data);
+    }
     function hasOnlyHomeWorldStateFields() {
       return request.resource.data.keys().hasOnly([
-        'version',
-        'userId',
-        'groundTier',
-        'orbTier',
-        'skyTier',
-        'moodState',
-        'recoveryState',
-        'energyScore',
-        'narratorSpeaking',
-        'skyWeatherIntensity',
-        'groundGrowthIntensity',
-        'orbPulseIntensity',
-        'rawScores',
-        'smoothedScores',
-        'confidence',
-        'sourceCoverage',
-        'lastDerivedAt',
-        'lastMoodShiftAt',
-        'lastRecoveryBloomAt',
-        'lastTierUpgradeAt',
-        'createdAt',
-        'updatedAt'
+        'version','userId','groundTier','orbTier','skyTier','moodState','recoveryState','energyScore',
+        'narratorSpeaking','skyWeatherIntensity','groundGrowthIntensity','orbPulseIntensity','rawScores',
+        'smoothedScores','confidence','sourceCoverage','lastDerivedAt','lastMoodShiftAt',
+        'lastRecoveryBloomAt','lastTierUpgradeAt','createdAt','updatedAt'
       ]);
     }
-
-    function hasOnlyHomeWorldExplanationFields() {
-      return request.resource.data.keys().hasOnly([
-        'version',
-        'userId',
-        'headline',
-        'summary',
-        'whyAmISeeingThis',
-        'ground',
-        'orb',
-        'sky',
-        'mood',
-        'recovery',
-        'confidence',
-        'dataSources',
-        'contributors',
-        'privacy',
-        'updatedAt'
-      ]);
-    }
-
     function isValidHomeWorldStateWrite(uid) {
       return isSelf(uid)
         && request.resource.data.userId == uid
         && hasOnlyHomeWorldStateFields()
-        && request.resource.data.groundTier in [1, 2, 3, 4, 5]
-        && request.resource.data.orbTier in [1, 2, 3, 4, 5]
-        && request.resource.data.skyTier in [1, 2, 3, 4, 5]
-        && request.resource.data.moodState in ['calm', 'low', 'recovery', 'dream', 'shadow', 'focused', 'joy']
-        && request.resource.data.recoveryState in ['dormant', 'recovering', 'stable', 'growing', 'awakened']
+        && request.resource.data.groundTier in [1,2,3,4,5]
+        && request.resource.data.orbTier in [1,2,3,4,5]
+        && request.resource.data.skyTier in [1,2,3,4,5]
+        && request.resource.data.moodState in ['calm','low','recovery','dream','shadow','focused','joy']
+        && request.resource.data.recoveryState in ['dormant','recovering','stable','growing','awakened']
         && request.resource.data.updatedAt == request.time;
     }
-
+    function hasOnlyHomeWorldExplanationFields() {
+      return request.resource.data.keys().hasOnly([
+        'version','userId','headline','summary','whyAmISeeingThis','ground','orb','sky','mood','recovery',
+        'confidence','dataSources','contributors','privacy','updatedAt'
+      ]);
+    }
     function isValidHomeWorldExplanationWrite(uid) {
       return isSelf(uid)
         && request.resource.data.userId == uid
@@ -109,128 +80,71 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
-    function isUserOwnedCreate(uid) {
-      return isSelf(uid)
-        && (!('userId' in request.resource.data) || request.resource.data.userId == uid)
-        && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
-        && (!('ownerId' in request.resource.data) || request.resource.data.ownerId == uid);
-    }
-
-    function isUserOwnedUpdate(uid) {
-      return isSelf(uid)
-        && (!('userId' in resource.data) || resource.data.userId == uid)
-        && (!('uid' in resource.data) || resource.data.uid == uid)
-        && (!('ownerId' in resource.data) || resource.data.ownerId == uid)
-        && (!('userId' in request.resource.data) || request.resource.data.userId == uid)
-        && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
-        && (!('ownerId' in request.resource.data) || request.resource.data.ownerId == uid);
-    }
-
-    function isPrivateSpatialPayloadSafe() {
-      return !('rawAudioUrl' in request.resource.data)
-        && !('privateMediaUrl' in request.resource.data)
-        && !('providerSecret' in request.resource.data)
-        && !('apiKey' in request.resource.data);
-    }
-
-    function isValidConsentDomain(value) {
-      return value is map
-        && value.keys().hasOnly([
-          'mode', 'retentionDays', 'precise', 'replayVisible', 'lifeMapVisible',
-          'modelContext', 'sharingEnabled', 'automationEnabled', 'likenessEnabled', 'updatedAt'
-        ])
-        && value.mode in ['granted', 'limited', 'paused', 'denied']
-        && (value.retentionDays == null || value.retentionDays in [30, 90, 365])
-        && value.precise is bool
-        && value.replayVisible is bool
-        && value.lifeMapVisible is bool
-        && value.modelContext is bool
-        && value.sharingEnabled is bool
-        && value.automationEnabled is bool
-        && value.likenessEnabled is bool;
-    }
-
-    function isValidConsentPolicy(uid) {
-      return request.resource.data.keys().hasOnly(['version', 'revision', 'ownerId', 'domains', 'updatedAt'])
-        && request.resource.data.version == 1
-        && request.resource.data.ownerId == uid
-        && request.resource.data.revision is int
-        && request.resource.data.revision >= 1
-        && request.resource.data.domains is map
-        && request.resource.data.domains.keys().hasOnly(['memory', 'location', 'models', 'exports', 'workforce', 'identity'])
-        && isValidConsentDomain(request.resource.data.domains.memory)
-        && isValidConsentDomain(request.resource.data.domains.location)
-        && isValidConsentDomain(request.resource.data.domains.models)
-        && isValidConsentDomain(request.resource.data.domains.exports)
-        && isValidConsentDomain(request.resource.data.domains.workforce)
-        && isValidConsentDomain(request.resource.data.domains.identity)
-        && request.resource.data.updatedAt == request.time;
-    }
-
-    function isValidConsentAudit(uid) {
-      return request.resource.data.keys().hasOnly([
-          'ownerId', 'domain', 'previousMode', 'nextMode', 'previousState', 'nextState',
-          'revision', 'result', 'createdAt', 'receiptId'
-        ])
-        && request.resource.data.ownerId == uid
-        && request.resource.data.domain in ['memory', 'location', 'models', 'exports', 'workforce', 'identity']
-        && request.resource.data.previousMode in ['granted', 'limited', 'paused', 'denied']
-        && request.resource.data.nextMode in ['granted', 'limited', 'paused', 'denied']
-        && request.resource.data.revision is int
-        && request.resource.data.revision >= 1
-        && request.resource.data.result == 'enforced'
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.receiptId is string;
-    }
-
     match /features/{flagId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
     match /assetManifests/{manifestId} {
-      allow get, list: if isAdmin()
-        || isManifestOwner()
-        || isLaunchDemoOwner(resource.data.ownerId);
-      allow create: if isAdmin() && isValidSpatialManifestCreate();
-      allow update: if isAdmin() && isValidSpatialManifestCreate();
+      allow get, list: if isAdmin() || isManifestOwner() || isLaunchDemoOwner(resource.data.ownerId);
+      allow create, update: if isAdmin() && isValidSpatialManifestCreate();
       allow delete: if isAdmin();
     }
 
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
       allow create: if isSelf(uid)
-        && !(
-          ('entitlementTier' in request.resource.data)
-          || ('isAdmin' in request.resource.data)
-          || ('founderOverride' in request.resource.data)
-        );
+        && !('entitlementTier' in request.resource.data)
+        && !('isAdmin' in request.resource.data)
+        && !('founderOverride' in request.resource.data)
+        && isPrivateSpatialPayloadSafe();
       allow update: if isSelf(uid)
         && !('entitlementTier' in request.resource.data.diff(resource.data).changedKeys())
         && !('isAdmin' in request.resource.data.diff(resource.data).changedKeys())
-        && !('founderOverride' in request.resource.data.diff(resource.data).changedKeys());
+        && !('founderOverride' in request.resource.data.diff(resource.data).changedKeys())
+        && isPrivateSpatialPayloadSafe();
       allow delete: if false;
 
-      match /tierLockAudit/{auditId} {
+      // Trusted privacy authority. Admin SDK writes bypass rules; clients can only inspect their own state.
+      match /privacyPolicy/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
       }
-
-      match /privacyPolicy/{docId} {
+      match /privacyRuntime/{docId} {
         allow read: if isSelf(uid) || isAdmin();
-        allow create: if docId == 'current' && isSelf(uid) && isValidConsentPolicy(uid) && request.resource.data.revision == 1;
-        allow update: if docId == 'current'
-          && isSelf(uid)
-          && resource.data.ownerId == uid
-          && isValidConsentPolicy(uid)
-          && request.resource.data.revision == resource.data.revision + 1;
-        allow delete: if false;
+        allow write: if false;
       }
-
       match /privacyAudit/{auditId} {
         allow read: if isSelf(uid) || isAdmin();
-        allow create: if isSelf(uid) && isValidConsentAudit(uid) && request.resource.data.receiptId == auditId;
-        allow update, delete: if false;
+        allow write: if false;
+      }
+      match /privacyReceipts/{receiptId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /exportJobs/{jobId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /deletionJobs/{jobId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /dataSources/{sourceId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /devices/{deviceId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /providerConnections/{providerId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+      match /tierLockAudit/{auditId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
       }
 
       match /homeWorld/{docId} {
@@ -238,7 +152,6 @@ service cloud.firestore {
         allow create, update: if isAdmin() || (docId == 'state' && isValidHomeWorldStateWrite(uid));
         allow delete: if isAdmin();
       }
-
       match /homeWorldExplainability/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create, update: if isAdmin() || (docId == 'latest' && isValidHomeWorldExplanationWrite(uid));
@@ -250,91 +163,79 @@ service cloud.firestore {
         }
       }
 
-      match /replayEvents/{eventId} {
+      match /replayEvents/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /spatialMemories/{memoryId} {
+      match /spatialMemories/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /canonChains/{chainId} {
+      match /canonChains/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /focusStates/{stateId} {
+      match /focusStates/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /transitionStates/{transitionId} {
+      match /transitionStates/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /bodyBiometricSnapshots/{snapshotId} {
+      match /bodyBiometricSnapshots/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /orbCompanionEvents/{eventId} {
+      match /orbCompanionEvents/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /spatialAnchors/{anchorId} {
+      match /spatialAnchors/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /userSpatialPreferences/{preferenceId} {
+      match /userSpatialPreferences/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || isUserOwnedCreate(uid);
         allow update: if isAdmin() || isUserOwnedUpdate(uid);
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /spatialSessions/{sessionId} {
+      match /spatialSessions/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /spatialNodes/{nodeId} {
+      match /spatialNodes/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /lifemapNodes/{nodeId} {
+      match /lifemapNodes/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
         allow delete: if isAdmin() || isSelf(uid);
       }
-
-      match /lifemapReplays/{replayId} {
+      match /lifemapReplays/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
         allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
@@ -342,8 +243,12 @@ service cloud.firestore {
       }
     }
 
-    match /spatial/{doc=**} {
-      allow read, write: if isAdmin();
-    }
+    // Trusted queues and durable receipts are never client-readable or client-writable.
+    match /privacyEnforcementJobs/{docId} { allow read, write: if false; }
+    match /providerRevocationQueue/{docId} { allow read, write: if false; }
+    match /deletionQueue/{docId} { allow read, write: if false; }
+    match /deletionReceipts/{docId} { allow read, write: if false; }
+    match /spatial/{doc=**} { allow read, write: if isAdmin(); }
+    match /{document=**} { allow read, write: if false; }
   }
 }
