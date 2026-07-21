@@ -1,4 +1,4 @@
-import { LocationMapScene } from '@/spatial/places/LocationMapScene'
+import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAcceptanceBoundary'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
 export default async function LocationMapPage() {
@@ -7,9 +7,9 @@ export default async function LocationMapPage() {
 
   return (
     <section data-launch-surface="premium-emotional-weather-atlas">
-      <LocationMapScene
+      <LocationMapAcceptanceBoundary
         places={places}
-        acceptanceFixturesEnabled={acceptanceFixturesEnabled}
+        enabled={acceptanceFixturesEnabled}
       />
     </section>
   )
