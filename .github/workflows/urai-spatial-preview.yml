@@ -19,9 +19,9 @@ env:
 
 jobs:
   preview:
-    name: Deploy isolated exact-head preview
+    name: Deploy and accept isolated exact-head preview
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: preview
     steps:
       - name: Checkout exact candidate
@@ -65,6 +65,7 @@ jobs:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
           URAI_TARGET_SHA: ${{ env.URAI_EXACT_HEAD }}
           URAI_FIREBASE_STATIC_EXPORT: 'true'
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
         run: pnpm build:static
 
       - name: Verify preview output identity
@@ -112,14 +113,8 @@ jobs:
           printf '%s\n' "$CHANNEL" > preview-receipt/channel.txt
           printf '%s\n' "$URAI_EXACT_HEAD" > preview-receipt/sha.txt
           printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > preview-receipt/deployed-at.txt
-          sha256sum preview-receipt/* > preview-receipt/SHA256SUMS
           echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
-          echo "### Exact-head Firebase preview" >> "$GITHUB_STEP_SUMMARY"
-          echo "- SHA: \`$URAI_EXACT_HEAD\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Channel: \`$CHANNEL\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- URL: $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Expiration: 7 days" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Smoke preview route
         shell: bash
@@ -129,14 +124,47 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 5 --retry-delay 3 "$PREVIEW_URL/location-map/" > preview-receipt/location-map.html
           grep -q "$URAI_EXACT_HEAD" preview-receipt/location-map.html
-          sha256sum preview-receipt/location-map.html >> preview-receipt/SHA256SUMS
 
-      - name: Retain preview receipt
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run browser acceptance against deployed preview
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+
+      - name: Finalize exact-head preview receipt
+        if: always()
+        shell: bash
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p preview-receipt
+          printf '%s\n' "${PREVIEW_URL:-unavailable}" > preview-receipt/url.txt
+          printf '%s\n' "$URAI_EXACT_HEAD" > preview-receipt/sha.txt
+          printf '%s\n' "${{ github.run_id }}" > preview-receipt/run-id.txt
+          printf '%s\n' "${{ github.job }}" > preview-receipt/job.txt
+          printf '%s\n' "preview" > preview-receipt/environment.txt
+          printf '%s\n' "$FIREBASE_PROJECT_ID" > preview-receipt/project.txt
+          find preview-receipt test-results playwright-report -type f -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum > preview-receipt/SHA256SUMS
+          echo "### Exact-head Firebase preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SHA: \`$URAI_EXACT_HEAD\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Channel: \`${{ steps.deploy.outputs.channel }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: ${PREVIEW_URL:-unavailable}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Browser acceptance: executed against deployed preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Expiration: 7 days" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain preview and browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: urai-location-map-preview-${{ env.URAI_EXACT_HEAD }}
-          path: preview-receipt
+          path: |
+            preview-receipt
+            test-results
+            playwright-report
           if-no-files-found: error
           retention-days: 90
 
