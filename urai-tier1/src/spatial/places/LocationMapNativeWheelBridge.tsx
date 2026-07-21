@@ -31,6 +31,7 @@ export function LocationMapNativeWheelBridge() {
     let touchDrag: { point: Point; camera: Camera } | null = null
     let touchPinch: { distance: number; camera: Camera } | null = null
     let touchControl: HTMLButtonElement | null = null
+    let pointerControl: HTMLButtonElement | null = null
 
     const stageFor = (target: EventTarget | null) => target instanceof HTMLElement ? target.closest<HTMLElement>('.locationAtlasStage') : null
     const blocked = (target: EventTarget | null) => target instanceof HTMLElement && Boolean(target.closest('button,a,[data-atlas-panel]'))
@@ -110,6 +111,7 @@ export function LocationMapNativeWheelBridge() {
       if (touchControl && event.touches.length === 0) {
         const control = touchControl
         touchControl = null
+        pointerControl = null
         control.click()
         return
       }
@@ -121,7 +123,13 @@ export function LocationMapNativeWheelBridge() {
     }
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch' || blocked(event.target)) return
+      if (event.pointerType !== 'touch') return
+      const control = event.target instanceof HTMLElement ? event.target.closest<HTMLButtonElement>('button') : null
+      if (control) {
+        pointerControl = control
+        return
+      }
+      if (blocked(event.target)) return
       const stage = stageFor(event.target)
       const atlas = stage?.closest<HTMLElement>('.locationAtlas')
       if (!stage || !atlas) return
@@ -137,6 +145,10 @@ export function LocationMapNativeWheelBridge() {
     }
 
     const handlePointerMove = (event: PointerEvent) => {
+      if (pointerControl) {
+        pointerControl = null
+        return
+      }
       if (event.pointerType !== 'touch' || !active.has(event.pointerId)) return
       const stage = stageFor(event.target) || document.querySelector<HTMLElement>('.locationAtlasStage')
       const atlas = stage?.closest<HTMLElement>('.locationAtlas')
@@ -161,6 +173,13 @@ export function LocationMapNativeWheelBridge() {
 
     const handlePointerEnd = (event: PointerEvent) => {
       if (event.pointerType !== 'touch') return
+      if (pointerControl) {
+        const control = pointerControl
+        pointerControl = null
+        touchControl = null
+        control.click()
+        return
+      }
       active.delete(event.pointerId)
       const atlas = document.querySelector<HTMLElement>('.locationAtlas')
       const points = [...active.values()]
