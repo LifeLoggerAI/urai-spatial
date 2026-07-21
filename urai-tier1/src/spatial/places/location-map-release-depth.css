@@ -1,0 +1,167 @@
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlas {
+  --atlas-horizon: 43%;
+  background:
+    radial-gradient(circle at 50% 15%, rgba(80, 180, 210, .13), transparent 30%),
+    linear-gradient(180deg, #03111c 0%, #06131b 44%, #02070b 100%);
+  perspective: 1400px;
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasArt {
+  inset: -10%;
+  transform: translate3d(calc(var(--atlas-x) * .08), calc(var(--atlas-y) * .05), -120px) scale(calc(1.16 + (var(--atlas-zoom) - .9) * .08));
+  transition: transform 900ms cubic-bezier(.2,.82,.2,1);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasArt img {
+  filter: saturate(.88) contrast(1.18) brightness(.38);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage {
+  perspective: 1500px;
+  perspective-origin: 50% 34%;
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage::before,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage::after {
+  content: "";
+  position: absolute;
+  left: -18%;
+  right: -18%;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage::before {
+  z-index: 2;
+  top: var(--atlas-horizon);
+  bottom: -38%;
+  transform: translate3d(calc(var(--atlas-x) * .42), calc(var(--atlas-y) * .28), -10px) rotateX(64deg) scale(var(--atlas-zoom));
+  transform-origin: 50% 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 8%, rgba(140, 224, 238, .05) 8.2% 8.5%),
+    repeating-linear-gradient(0deg, transparent 0 10%, rgba(140, 224, 238, .045) 10.2% 10.5%),
+    radial-gradient(ellipse at 50% 10%, rgba(71, 163, 174, .22), transparent 52%),
+    linear-gradient(180deg, rgba(20, 61, 67, .38), rgba(1, 8, 12, .92));
+  border-top: 1px solid rgba(166, 239, 247, .22);
+  box-shadow: 0 -30px 100px rgba(80, 196, 215, .08), inset 0 45px 80px rgba(85, 180, 186, .07);
+  transition: transform 900ms cubic-bezier(.2,.82,.2,1);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage::after {
+  z-index: 3;
+  top: 39%;
+  height: 20%;
+  background:
+    linear-gradient(90deg, transparent, rgba(111, 225, 230, .08) 20%, transparent 42%, rgba(99, 182, 222, .08) 72%, transparent),
+    radial-gradient(ellipse at 50% 100%, rgba(151, 239, 238, .13), transparent 64%);
+  filter: blur(14px);
+  opacity: .8;
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacons {
+  inset: 4% -8% -16%;
+  transform-style: preserve-3d;
+  transform: translate3d(var(--atlas-x), var(--atlas-y), 80px) rotateX(18deg) scale(var(--atlas-zoom));
+  transform-origin: 50% 45%;
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera > i {
+  transform: translate(-50%, -46%) rotateX(69deg);
+  border-color: rgba(154, 235, 244, .16);
+  background: repeating-radial-gradient(ellipse, rgba(139,224,255,.075) 0 1px, transparent 2px 7%);
+  box-shadow: 0 0 70px rgba(100, 215, 224, .06);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon {
+  transform: translate(-50%, -74%) translateZ(calc(var(--beacon-depth) * 120px)) scale(calc(.72 + var(--beacon-depth) * .36));
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 18px 18px rgba(0,0,0,.55));
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  width: 2px;
+  height: calc(30px + var(--beacon-depth) * 42px);
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--beacon-color) 75%, white), rgba(130, 224, 230, .1));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--beacon-color) 50%, transparent);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(54% + 28px + var(--beacon-depth) * 42px);
+  width: calc(34px + var(--beacon-depth) * 22px);
+  height: calc(11px + var(--beacon-depth) * 7px);
+  transform: translate(-50%, -50%) rotateX(70deg);
+  border: 1px solid color-mix(in srgb, var(--beacon-color) 52%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--beacon-color) 30%, transparent), transparent 68%);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--beacon-color) 24%, transparent);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon:hover,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon:focus-visible,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon[data-selected="true"] {
+  transform: translate(-50%, -82%) translateZ(calc(90px + var(--beacon-depth) * 150px)) scale(calc(.82 + var(--beacon-depth) * .4));
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon[data-selected="true"] .locationAtlasBeaconCore {
+  box-shadow: 0 0 0 7px rgba(218, 249, 255, .09), 0 0 70px color-mix(in srgb, var(--beacon-color) 64%, transparent);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasForeground {
+  height: 34%;
+  background:
+    linear-gradient(180deg, transparent, rgba(1,5,9,.84)),
+    radial-gradient(ellipse at 8% 100%, rgba(24, 82, 72, .82), transparent 48%),
+    radial-gradient(ellipse at 92% 100%, rgba(26, 54, 99, .88), transparent 50%);
+}
+
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasHeader,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasOrientation,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasTruth,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasSelection,
+.urai-world-runtime[data-world-destination="location-map"] .locationAtlasControls {
+  box-shadow: 0 18px 55px rgba(0,0,0,.34), inset 0 1px rgba(255,255,255,.035);
+}
+
+@media (max-width: 620px) {
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlas {
+    --atlas-horizon: 39%;
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacons {
+    inset: 2% -28% -24%;
+    transform: translate3d(var(--atlas-x), var(--atlas-y), 70px) rotateX(20deg) scale(var(--atlas-zoom));
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasHeader {
+    min-height: 52px;
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasSelection {
+    max-height: 43svh;
+    padding: 18px;
+  }
+
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasOrientation {
+    width: calc(100vw - 142px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasArt,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasStage::before,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasCamera,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacons,
+  .urai-world-runtime[data-world-destination="location-map"] .locationAtlasBeacon {
+    transition: none !important;
+  }
+}
