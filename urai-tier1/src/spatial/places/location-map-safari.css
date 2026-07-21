@@ -1,0 +1,6 @@
+.locationAtlasHeader,
+.locationAtlasOrientation,
+.locationAtlasTruth,
+.locationAtlasSelection {
+  -webkit-backdrop-filter: blur(18px);
+}
