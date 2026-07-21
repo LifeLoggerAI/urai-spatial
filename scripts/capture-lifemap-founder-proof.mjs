@@ -46,6 +46,16 @@ async function waitForState(page, attribute, expected, timeout = 20_000) {
   }, { attribute, expected }, { timeout, polling: 50 })
 }
 
+async function advanceClockToState(page, attribute, expected, maxAdvance) {
+  const root = page.locator('[data-testid="urai-true-3d-life-map"]').first()
+  for (let advanced = 0; advanced <= maxAdvance; advanced += 50) {
+    if (await root.getAttribute(attribute) === expected) return
+    await page.clock.runFor(50)
+  }
+  const actual = await root.getAttribute(attribute)
+  throw new Error(`${attribute} did not reach ${expected} after ${maxAdvance}ms; received ${actual}`)
+}
+
 async function captureScreenshot(page, file) {
   try {
     await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide' })
@@ -90,14 +100,11 @@ async function desktopJourney() {
     await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
     await waitForState(page, 'data-life-map-mode', 'selected')
     await shot(page, 'selection-start', 'selection-start', { memoryId: 'quiet-reset' })
-    await page.clock.runFor(220)
-    await waitForState(page, 'data-life-map-phase', 'travel')
+    await advanceClockToState(page, 'data-life-map-phase', 'travel', 300)
     await shot(page, 'mid-travel', 'travel')
-    await page.clock.runFor(640)
-    await waitForState(page, 'data-life-map-phase', 'approach')
+    await advanceClockToState(page, 'data-life-map-phase', 'approach', 700)
     await shot(page, 'approach', 'approach')
-    await page.clock.runFor(700)
-    await waitForState(page, 'data-life-map-phase', 'arrival')
+    await advanceClockToState(page, 'data-life-map-phase', 'arrival', 800)
     await shot(page, 'stable-arrival', 'arrival')
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
 
