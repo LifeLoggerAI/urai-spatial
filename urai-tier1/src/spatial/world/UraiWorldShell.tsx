@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { GroundGateway } from './GroundGateway'
 import { LifeMapIndependentInputBoundary } from './LifeMapIndependentInputBoundary'
@@ -23,11 +24,12 @@ import './lifeMapSelectedActionHardening.css'
 import './lifeMapSelectedActionInvariant.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname() || ''
   const { world, phase } = useUraiWorldState()
-  // Life Map is an independent non-Orb realm. Home keeps the shared controller
-  // mounted, but routeOwnerConvergence makes its generated artwork transparent
-  // so the authored sanctuary Orb remains the only visible Orb.
-  const showWorldCompanion = world.destination !== 'life-map'
+  const locationMapOwnsRoute = pathname.startsWith('/location-map')
+  // Life Map and Location Map are independent non-Orb realms. Route-owned worlds
+  // must not inherit persistent companion, gateway, atmosphere, or transition chrome.
+  const showWorldCompanion = !locationMapOwnsRoute && world.destination !== 'life-map'
 
   return (
     <div
@@ -39,14 +41,15 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-entry-portal={world.entryPortal ?? ''}
       data-camera-checkpoint={world.cameraCheckpoint ?? ''}
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
+      data-route-owned-world={locationMapOwnsRoute ? 'location-map' : 'shared-shell'}
     >
-      <LifeMapSelectedActionRuntimeInvariant />
-      <PersistentRealmAtmosphere />
+      {!locationMapOwnsRoute ? <LifeMapSelectedActionRuntimeInvariant /> : null}
+      {!locationMapOwnsRoute ? <PersistentRealmAtmosphere /> : null}
       {children}
-      <GroundGateway />
-      {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
+      {!locationMapOwnsRoute ? <GroundGateway /> : null}
+      {!locationMapOwnsRoute && world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
       {showWorldCompanion ? <PersistentWorldCompanion /> : null}
-      <WorldTransitionController />
+      {!locationMapOwnsRoute ? <WorldTransitionController /> : null}
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         URAI destination {world.destination}. World layer {world.layer}.
       </p>
