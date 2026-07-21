@@ -167,5 +167,10 @@ replaceRequired(
   "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
+const retiredHomeVerifierMarkersAbsent = !source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVisible')
+if (!retiredHomeVerifierMarkersAbsent) {
+  throw new Error('retired Home verifier markers remain in the exact-head visual proof source')
+}
+
 await writeFile(patchedPath, source)
 await import(`${pathToFileURL(patchedPath).href}?exactHead=${encodeURIComponent(process.env.URAI_EXACT_HEAD || 'local')}`)
