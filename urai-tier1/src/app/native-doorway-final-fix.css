@@ -12,7 +12,7 @@
 
 .urai-home-spatial-runtime-layer {
   position: relative;
-  z-index: 9;
+  z-index: auto;
 }
 
 .urai-home-spatial-orb-trigger,
