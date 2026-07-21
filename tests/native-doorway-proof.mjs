@@ -33,6 +33,7 @@ async function activate(page, target, method) {
 }
 
 async function resolveTarget(page, doorway) {
+  await page.locator('.urai-final-home-doorways').waitFor({ state: 'visible', timeout: 45000 })
   const target = page.getByRole('button', { name: doorway.name, exact: true })
   await target.waitFor({ state: 'visible', timeout: 15000 })
   return target
