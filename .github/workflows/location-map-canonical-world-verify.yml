@@ -1,0 +1,42 @@
+name: Location Map Canonical World Verification
+
+on:
+  push:
+    branches: [agent/location-map-canonical-world-872-v2]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: location-map-canonical-world-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck contracts and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Location Map contract
+        run: node urai-tier1/tests/location-map-canonical-world.test.mjs
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Production build
+        run: pnpm build
