@@ -33,17 +33,33 @@ test('Replay has bounded embodied movement, recovery, and WebGL fallback', () =>
   assert.match(recovery, /Sample Replay uses demonstration data only/)
 })
 
-test('Replay truth modes are policy-enforced rather than cosmetic', () => {
+test('Replay truth modes are enforced in both policy and the rendered anchor graph', () => {
   assert.match(model, /ReplayTruthMode/)
-  assert.match(model, /'evidence'/)
-  assert.match(model, /'reflection'/)
-  assert.match(model, /'cinematic'/)
-  assert.match(model, /'private-journal'/)
+  for (const mode of ["'evidence'", "'reflection'", "'cinematic'", "'private-journal'"]) assert.match(model, new RegExp(mode))
   assert.match(model, /filterReplayAnchorsForTruthMode/)
   assert.match(model, /mode === 'evidence'/)
   assert.match(model, /anchor\.evidenceLevel === 'confirmed'/)
   assert.match(model, /mode === 'reflection'/)
   assert.match(model, /replayTruthModeDescription/)
+  assert.match(world, /filterReplayAnchorsForTruthMode/)
+  assert.match(world, /data-replay-truth-mode=/)
+  assert.match(world, /MutationObserver/)
+  assert.match(client, /data-replay-truth-mode=\{truthMode\}/)
+  assert.match(client, /visibleAnchors/)
+})
+
+test('Replay requires a visible non-autoplay preflight before entering the world', () => {
+  assert.match(client, /data-replay-entered=\{entered \? 'true' : 'false'\}/)
+  assert.match(client, /data-testid="replay-preflight"/)
+  assert.match(client, /Replay preflight/)
+  assert.match(client, /will not autoplay/)
+  assert.match(client, /Truth mode/)
+  assert.match(client, /Enter Replay/)
+  assert.match(client, /Return to Focus/)
+  assert.match(client, /Verified provider evidence preview/)
+  assert.match(client, /evidence preview only/)
+  assert.match(client, /Source ledger/)
+  assert.match(client, /data-sensitive-topic-count/)
 })
 
 test('Replay preflight detects possible sensitive topics conservatively', () => {
