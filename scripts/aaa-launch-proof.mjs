@@ -63,22 +63,31 @@ const skipAssets = args.has('--skip-assets')
 const skipTest = args.has('--skip-test')
 const skipBuild = args.has('--skip-build')
 const skipTypecheck = args.has('--skip-typecheck')
+const demoMemoryQuery = 'memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 
 const routeExpectations = [
-  { route: '/', markers: ['Own your life', 'Step inside yourself'] },
-  { route: '/home', markers: ['Own your life', 'Step inside yourself'] },
+  { route: '/', markers: ['WALK THE SANCTUARY', 'URAI destination home. World layer living-world.'] },
+  { route: '/home', markers: ['WALK THE SANCTUARY', 'URAI destination home. World layer living-world.'] },
   { route: '/ground', markers: ['URAI Ground', 'Private infrastructure, embodied.', 'Reception', 'Archive'] },
-  { route: '/life-map', markers: ['Step inside the map.', 'Focus and Replay keep the same memory identity'] },
-  { route: '/focus?memoryId=quiet-reset', markers: ['The Quiet Reset', 'The moment pressure became permission to begin again.'] },
-  { route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread', markers: ['Replay the thread', 'Film beats'] },
+  { route: '/life-map', markers: ['Step inside the map.', 'Life Map independent memory universe', 'Map controls'] },
+  { route: `/focus?${demoMemoryQuery}`, markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },
+  { route: `/replay?${demoMemoryQuery}`, markers: ['The Quiet Reset', 'Memory', 'Play'] },
   { route: '/mirror', markers: ['Mirror does not judge.', 'Patterns become visible without turning your life into a score.'] },
   { route: '/passport', markers: ['Your life remains yours.', 'OWNERSHIP VAULT'] },
-  { route: '/status', markers: ['The route matrix is visible.', 'Availability and proof stay separate'] },
+  {
+    route: '/status',
+    markers: [
+      'Launch locked. Proof before expansion.',
+      'Tracked',
+      'Production fingerprint is read only on urai.app.',
+      'authority unresolved',
+    ],
+  },
   { route: '/privacy-controls', markers: ['Nothing moves without you.', 'Consent remains reversible'] },
   { route: '/location-map', markers: ['Places carry signal.', 'EMOTIONAL WEATHER'] },
-  { route: '/spatial/ar-vr', markers: ['Explorable entry chamber', 'Enter VR in Quest'] },
-  { route: '/demo', markers: ['URAI'] },
-  { route: '/demo/replay-film', markers: ['Replay'] },
+  { route: '/spatial/ar-vr', markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile'] },
+  { route: '/demo', markers: ['Your life is a world.', 'Demo fixture', 'Play the proof rail'] },
+  { route: '/demo/replay-film', markers: ['Your life is a world.', 'Demo fixture', 'Play the proof rail'] },
 ]
 
 const startedAt = new Date().toISOString()

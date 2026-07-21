@@ -21,8 +21,9 @@ export default function LifeMapDeepLinkControls() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const memoryId = safeToken(searchParams.get('memoryId') ?? searchParams.get('node'))
+  const overviewRequested = searchParams.get('overview') === '1'
 
-  if (!memoryId) return null
+  if (!memoryId || overviewRequested) return null
 
   const manifestId = safeToken(searchParams.get('manifestId'), 'replay-recovery-thread')
   const title = memoryTitle(memoryId)

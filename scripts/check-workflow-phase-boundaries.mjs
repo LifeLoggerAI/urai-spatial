@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 
 const releaseWorkflows = [
   '.github/workflows/spatial-production-lock.yml',
@@ -153,4 +154,21 @@ if (failures.length) {
   process.exit(1)
 }
 
+const retainedSourceFiles = [
+  'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx',
+  'urai-tier1/src/components/lifemap/useLifeMapEvents.ts',
+  'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx',
+  'scripts/capture-continuous-spatial-proof.mjs',
+  'urai-tier1/tests/lifemap-scene-behavior.test.mjs',
+  'urai-tier1/tests/lifemap-data-boundary.test.mjs',
+  'urai-tier1/tests/lifemap-trust-loop.test.mjs',
+  'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs',
+]
+for (const file of retainedSourceFiles) {
+  const destination = join('receipt-ledger', 'source-export', file)
+  mkdirSync(dirname(destination), { recursive: true })
+  copyFileSync(file, destination)
+}
+
 console.log(`Workflow phase-boundary check passed for ${releaseWorkflows.length} release workflows.`)
+console.log(`Retained ${retainedSourceFiles.length} bounded Life Map source files for exact-head repair.`)

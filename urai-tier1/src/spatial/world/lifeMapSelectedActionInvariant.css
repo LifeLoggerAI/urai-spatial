@@ -1,0 +1,74 @@
+/* Route-owned invariant: selected Life Map actions must not wait for the outer
+ * persistent-world destination attribute to synchronize. The selected realm is
+ * itself sufficient authority for touch geometry, stacking and pointer ownership. */
+.life-map-independent-realm[data-life-map-mode='selected'] {
+  isolation: isolate;
+}
+
+.life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-accessibility-menu,
+.life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-accessibility-menu * {
+  pointer-events: none !important;
+}
+
+.life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-memory-portals {
+  position: fixed !important;
+  z-index: 2147483000 !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  box-sizing: border-box !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+  touch-action: manipulation !important;
+}
+
+.life-map-independent-realm[data-life-map-mode='selected']
+  > .life-map-memory-portals > button {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 48px !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+@media (min-width: 761px) {
+  .life-map-independent-realm[data-life-map-mode='selected']
+    > .life-map-memory-portals {
+    top: auto !important;
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 86px)) !important;
+    left: max(24px, env(safe-area-inset-left)) !important;
+    right: max(24px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-width: 960px !important;
+    margin-inline: auto !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .life-map-independent-realm[data-life-map-mode='selected']
+    > .life-map-memory-portals {
+    top: auto !important;
+    bottom: max(126px, calc(env(safe-area-inset-bottom) + 116px)) !important;
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+}

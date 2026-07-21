@@ -1,0 +1,67 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const page = read('src/app/status/page.tsx')
+const authority = read('src/app/status/StatusReleaseAuthority.tsx')
+const launchTruth = read('src/data/launchTruth.ts')
+const legacyLayer = read('src/app/UraiAutonomousV1Layer.tsx')
+
+test('Status server shell remains neutral until the protected fingerprint validates', () => {
+  assert.match(page, /StatusReleaseAuthority/)
+  assert.match(page, /data-production-certification="fingerprint-gated"/)
+  assert.match(page, /fingerprint-gated release authority/)
+  assert.doesNotMatch(page, /Production: verified live/)
+  assert.doesNotMatch(page, /\['\/status', 'verified live'/)
+  assert.doesNotMatch(page, /pending-current-main-evidence/)
+})
+
+test('Canonical Status page is not covered by the legacy autonomous realm layer', () => {
+  assert.match(legacyLayer, /Status are owned exclusively by their canonical route clients/)
+  assert.doesNotMatch(legacyLayer, /pathname\.startsWith\("\/status"\)/)
+  assert.doesNotMatch(legacyLayer, /return <UraiAutonomousV1Realms[^>]*status/)
+})
+
+test('Only canonical production requests and validates the complete protected fingerprint', () => {
+  assert.match(authority, /window\.location\.origin !== 'https:\/\/urai\.app'/)
+  assert.match(authority, /setState\(\{ kind: 'preview' \}\)/)
+  assert.match(authority, /fetch\(`\/release-fingerprint\.json\?_\=\$\{Date\.now\(\)\}`/)
+  assert.match(authority, /cache: 'no-store'/)
+  assert.match(authority, /contentType\.includes\('application\/json'\)/)
+  assert.match(authority, /schemaVersion !== 'urai-release-fingerprint-1'/)
+  assert.match(authority, /\['authoritySha', 'releaseSha', 'rollbackSha'\]/)
+  assert.match(authority, /item\.authoritySha !== item\.releaseSha/)
+  assert.match(authority, /item\.releaseSha === item\.rollbackSha/)
+  assert.match(authority, /item\.firebaseProject !== 'urai-4dc1d'/)
+  assert.match(authority, /item\.liveUrl !== 'https:\/\/urai\.app'/)
+  assert.match(authority, /item\.deploymentScope !== 'hosting-only'/)
+  assert.match(authority, /Workflow run ID is invalid/)
+  assert.match(authority, /does not request or substitute a live or candidate SHA/)
+  assert.match(authority, /No live or candidate SHA is displayed while authority is unresolved/)
+  assert.match(authority, /role="alert"/)
+})
+
+test('Verified claims and route badges are gated on ready fingerprint state', () => {
+  assert.match(authority, /const isReady = state\.kind === 'ready'/)
+  assert.match(authority, /isReady \? launchTruth\.safeClaim : unresolvedCopy/)
+  assert.match(authority, /isReady \? 'verified live' : 'authority unresolved'/)
+  assert.match(authority, /Production certification is hidden because the protected fingerprint could not be validated/)
+  assert.match(authority, /Production certification is not displayed on this origin or state/)
+  assert.match(authority, /Autonomous real-world actions are not enabled and remain human-approved only/)
+  assert.match(authority, /\['\/status', 'certified-live'/)
+  assert.match(authority, /\['\/privacy-controls', 'certified-live'/)
+})
+
+test('Launch truth certifies web scope and preserves separate blocks', () => {
+  assert.match(launchTruth, /id: 'DEPLOY-SHA'[\s\S]*state: 'green'/)
+  assert.match(launchTruth, /id: 'ROLLBACK-SHA'[\s\S]*state: 'green'/)
+  assert.match(launchTruth, /id: 'STATUS-TRUTH'[\s\S]*state: 'green'/)
+  assert.match(launchTruth, /path: '\/status'[\s\S]*state: 'certified-live'/)
+  assert.match(launchTruth, /path: '\/privacy-controls'[\s\S]*state: 'certified-live'/)
+  assert.match(launchTruth, /id: 'XR-DEVICE-PROOF'[\s\S]*state: 'blocked'/)
+  assert.match(launchTruth, /path: '\/spatial\/ar-vr'[\s\S]*state: 'preview'/)
+  assert.match(launchTruth, /supporting services retain separate gates/)
+  assert.doesNotMatch(launchTruth, /Not yet recorded in an immutable deployment receipt/)
+  assert.doesNotMatch(launchTruth, /No verified rollback target is recorded before deploy/)
+})

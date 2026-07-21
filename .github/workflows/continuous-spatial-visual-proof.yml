@@ -15,11 +15,18 @@ on:
       - 'scripts/run-continuous-spatial-proof-fixed.mjs'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
+      - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+      - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
       - 'urai-tier1/src/app/spatial-runtime-restoration.css'
       - 'urai-tier1/src/app/template.tsx'
+      - 'urai-tier1/src/app/status/**'
+      - 'urai-tier1/src/data/launchTruth.ts'
+      - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
       - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
+      - 'urai-tier1/src/spatial/world/**'
 
 permissions:
   contents: read
@@ -31,6 +38,7 @@ concurrency:
 env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
   PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
 
 jobs:
   browser-proof:

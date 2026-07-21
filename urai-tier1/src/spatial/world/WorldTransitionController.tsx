@@ -144,8 +144,11 @@ export function WorldTransitionController() {
     const onReturn = () => reverseTravel()
     const onKeyDown = (event: KeyboardEvent) => {
       const currentWorld = worldRef.current
-      if (event.key !== 'Escape' || isEditableTarget(event.target)) return
+      if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
       if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
+      // Life Map owns its two-stage Escape contract: selected memory -> overview -> Home.
+      // The global reverse-travel fallback must not race that realm-owned handler.
+      if (currentWorld.destination === 'life-map') return
       event.preventDefault()
       reverseTravel()
     }

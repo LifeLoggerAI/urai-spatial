@@ -1,0 +1,85 @@
+{
+  "schema": "urai.home-sanctuary-assets.v1",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "runtimeRoot": "urai-tier1",
+    "owner": "URAI Labs",
+    "license": "Repository-controlled URAI route artwork and original in-house runtime implementation",
+    "externalAttributionRequired": false
+  },
+  "status": "authored-asset-first-production-candidate",
+  "assets": [
+    {
+      "id": "home-authored-desktop",
+      "source": "public/assets/urai/home/home-threshold-main.webp with home-threshold-fallback.svg",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Primary full-viewport Home sanctuary, horizon, environmental storytelling, and threshold composition",
+      "format": "WebP with SVG fallback",
+      "textureDimensions": null,
+      "polygonBudget": 0,
+      "deviceTierBehavior": "Desktop and larger viewports use the primary route artwork through the canonical asset registry",
+      "temporary": false
+    },
+    {
+      "id": "home-authored-mobile",
+      "source": "public/assets/urai/home/home-threshold-mobile.webp with home-threshold-fallback.svg",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Mobile-safe Home sanctuary crop preserving the same world ownership and thresholds",
+      "format": "WebP with SVG fallback",
+      "textureDimensions": null,
+      "polygonBudget": 0,
+      "deviceTierBehavior": "Selected below 700px and composed around mobile safe areas",
+      "temporary": false
+    },
+    {
+      "id": "transparent-spatial-depth-layer",
+      "source": "HomeSpatialCanvas.tsx transparent React Three Fiber interaction layer",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Camera parallax, sky and Ground hit regions, relationship depth lights, embodied self, and first-frame evidence without repainting the authored world",
+      "format": "runtime geometry with transparent WebGL canvas",
+      "textureDimensions": null,
+      "polygonBudget": 5200,
+      "deviceTierBehavior": "DPR and star count adapt by tier; motion respects reduced-motion preference",
+      "temporary": false
+    },
+    {
+      "id": "home-only-orb-companion",
+      "source": "HomeSpatialCanvas.tsx compact glass sphere and aura",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Small Home-owned companion and direct interaction owner without a Saturn-like ring system",
+      "format": "runtime geometry",
+      "textureDimensions": null,
+      "polygonBudget": 5200,
+      "deviceTierBehavior": "Same semantic hit owner at every tier; hidden from Life Map by destination ownership",
+      "temporary": false
+    },
+    {
+      "id": "layered-2d-fallback",
+      "source": "HomeSanctuaryFallback.tsx and home-sanctuary-final.css",
+      "creator": "URAI Labs",
+      "runtimePurpose": "No-WebGL, context-loss, and reduced-graphics sanctuary preserving identical actions",
+      "format": "HTML and CSS gradients",
+      "textureDimensions": null,
+      "polygonBudget": 0,
+      "deviceTierBehavior": "Used when WebGL is unavailable or lost",
+      "temporary": false
+    }
+  ],
+  "budgets": {
+    "adaptiveDpr": {
+      "low": [0.85, 1.0],
+      "medium": [1.0, 1.35],
+      "high": [1.0, 1.7]
+    },
+    "targetFps": {
+      "low": 24,
+      "medium": 40,
+      "high": 60
+    },
+    "textureMemoryMb": 24,
+    "firstInteractiveMsP75": 2500,
+    "longTaskMsMaximum": 200,
+    "requiredMissingAssets": 0
+  },
+  "externalArtBoundary": "No third-party, scraped, watermarked, or unverifiable asset is introduced by this candidate. Any future GLB, KTX2, image, or video replacement must preserve this manifest, prove ownership, and pass exact-head visual, accessibility, privacy, and performance gates before promotion."
+}
