@@ -5,7 +5,9 @@ import fs from 'node:fs'
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-const home = read('src/app/FinalHomeWorld.tsx')
+const legacyHome = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
+const finalHome = read('src/app/FinalHomeWorld.tsx')
+const sanctuary = read('src/app/HomeSanctuaryWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')
@@ -23,46 +25,83 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Home is one coherent inhabitable sanctuary rather than a layered authored image', () => {
-  has(homeRuntime, 'FinalHomeWorld')
-  has(homeRuntime, 'data-urai-home-runtime="final-coherent-webgl-world"')
-  has(homeRuntime, 'data-home-exploration="walkable"')
+test('legacy Home contracts remain available for fallback and migration safety', () => {
+  has(homeRuntime, 'EmbodiedHomeSpatialCanvas')
   for (const marker of [
+    'HomeSanctuaryWorld',
+    'data-home-visible-world="sanctuary-geometry-memory-vignettes"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'data-testid="urai-home-walkable-surface"',
     'data-testid="urai-home-webgl-orb"',
+    'data-home-player-x',
+    'data-home-player-z',
+    'data-home-distance',
+    'data-home-moving',
+    '--home-parallax-x',
+    '--home-parallax-y',
+    'aria-label="Open Orb directly"',
+    'aria-label="Open Ground directly"',
+    'aria-label="Open Life Map directly"',
+    'MobileMovementPad',
+    'requestUraiWorldTravel',
+  ]) has(legacyHome, marker)
+  assert.match(legacyHome, /background-position:calc\(50% \+ var\(--home-parallax-x,0px\)\) calc\(48% \+ var\(--home-parallax-y,0px\)\)/)
+  assert.doesNotMatch(legacyHome, /var\(--home-walk-[xz],0\)\s*\*/)
+  assert.doesNotMatch(legacyHome, /requestPointerLock|sprint|jump|crouch/i)
+
+  for (const marker of [
     'home-visible-navigable-sanctuary-world',
+    'home-sanctuary-spatial-architecture',
+    'home-sanctuary-memory-dust',
     'home-memory-vignette-',
     'place-loved',
     'ride-home',
     'voices-dinner',
     'song-returned',
     'quiet-growth',
-    'MemoryRoom',
-    'MemoryContent',
-    'SanctuaryWorld',
-    'MobileMovementPad',
-    'requestUraiWorldTravel',
-    'Accessible Home destinations',
-  ]) has(home, marker)
-  assert.match(home, /<color attach="background"/)
-  assert.match(home, /<fog attach="fog"/)
-  assert.match(home, /shadows className="urai-final-home-canvas"/)
-  assert.doesNotMatch(home, /assetCssStack|homeAssets|home-authored-desktop|home-authored-mobile/)
-  assert.doesNotMatch(home, /background-image|var\(--home-authored/)
-  assert.doesNotMatch(home, /requestPointerLock|sprint|jump|crouch/i)
+    'SanctuaryArchitecture',
+    'SanctuaryDust',
+    'MemoryVignette',
+  ]) has(sanctuary, marker)
 })
 
-test('Home replaces proof primitives and dominant UI with physical final-world ownership', () => {
-  assert.match(home, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.2\)/)
-  has(home, 'name="home-final-orb"')
-  has(home, 'name="home-final-embodied-self"')
-  has(home, 'clearcoat={1}')
-  has(home, 'castShadow')
-  has(home, 'receiveShadow')
-  assert.doesNotMatch(home, /urai-home-direct-controls|Walk the sanctuary|home-authored-orb-physical-hit-target/)
-  assert.match(home, /left:-9999px/)
+test('Final Home is the active coherent physical sanctuary and rejects placeholder ownership', () => {
+  has(homeRuntime, 'FinalHomeWorld')
+  has(homeRuntime, 'data-home-visual-owner="final-coherent-sanctuary"')
+  has(homeRuntime, 'data-home-exploration="walkable"')
+  for (const marker of [
+    'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+    'data-home-movement="walk-keyboard-click-touch"',
+    'data-home-pointer-lock="false"',
+    'data-testid="urai-home-walkable-surface"',
+    'data-testid="urai-home-webgl-orb"',
+    'data-testid="urai-home-embodied-avatar"',
+    'data-home-player-x',
+    'data-home-player-z',
+    'data-home-distance',
+    'data-home-moving',
+    'home-memory-vignette-',
+    'place-loved',
+    'ride-home',
+    'voices-dinner',
+    'song-returned',
+    'quiet-growth',
+    'MobileMovementPad',
+    'requestUraiWorldTravel',
+    'Ground threshold',
+    'Life Map threshold',
+  ]) has(finalHome, marker)
+  assert.doesNotMatch(finalHome, /assetCssStack|homeAssets|home-authored-desktop|urai-home-embodied-art|urai-home-direct-controls|Walk the sanctuary/)
+  assert.doesNotMatch(finalHome, /requestPointerLock|sprint|jump|crouch/i)
+})
+
+test('Home keeps one authored Orb and direct-access parity', () => {
+  assert.match(legacyHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.15\)/)
+  has(legacyHome, 'name="home-authored-orb-physical-hit-target"')
+  assert.match(legacyHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+  assert.match(finalHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.2\)/)
+  has(finalHome, 'name="home-final-orb-physical-anchor"')
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
@@ -82,8 +121,8 @@ test('Life Map keeps independent non-Orb movement and overview recovery', () => 
 })
 
 test('embodied movement never removes semantic exits', () => {
-  assert.match(home, />Ground<\/button>/)
-  assert.match(home, />Life Map<\/button>/)
+  assert.match(finalHome, />Ground<\/button>/)
+  assert.match(finalHome, />Life Map<\/button>/)
   assert.match(ground, /Escape to return Home/)
   assert.match(lifeMapBoundary, /ROUTE_ACTION_LABELS = new Set\(\['Enter Focus', 'Replay', 'Overview', 'Ground', 'Home'\]\)/)
   assert.match(worldShell, /embodiedExplorationLayout\.css/)
