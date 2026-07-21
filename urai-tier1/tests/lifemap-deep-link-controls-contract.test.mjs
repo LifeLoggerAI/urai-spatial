@@ -9,16 +9,20 @@ const legacyControls = read('src/spatial/lifemap/LifeMapDeepLinkControls.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const boundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
 const adaptive = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const proof = read('../scripts/capture-lifemap-founder-proof.mjs')
 
-test('canonical Life Map has one selected-memory action owner', () => {
+test('canonical Life Map has one spatial selected-memory action owner plus semantic navigation', () => {
   assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
-  assert.match(boundary, /return <AdaptiveLifeMapScene \/>/)
+  assert.match(boundary, /<AdaptiveLifeMapScene \/>/)
+  assert.match(boundary, /<LifeMapSemanticNavigator \/>/)
   assert.doesNotMatch(canonical, /LifeMapDeepLinkControls|urai-lifemap-deep-link-controls/)
   assert.match(adaptive, /className="life-map-actions"/)
   assert.match(adaptive, /aria-label="Selected memory actions"/)
   assert.match(adaptive, /router\.push\(destinationHref\("focus"\)\)/)
   assert.match(adaptive, /router\.push\(destinationHref\("replay"\)\)/)
+  assert.match(navigator, /aria-label="Life Map navigator"/)
+  assert.doesNotMatch(navigator, /aria-label="Selected memory actions"/)
 })
 
 test('selected-memory identity and Focus Replay destinations remain owned by the spatial scene', () => {
