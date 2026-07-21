@@ -48,9 +48,10 @@ replaceRequired(
       const directDestinationCount = await directDestinations.count()
       const visibleDirectDestinationCount = await visibleElementCount(directDestinations)
       const directDestinationsOwned = directDestinationCount === 3 && visibleDirectDestinationCount === 3
-      const authoredSceneMounted = await page.locator('[data-testid="urai-home-visible-world"]').count() === 1
       const activeWorld = page.locator('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
+      await page.waitForFunction(() => document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')?.getAttribute('data-home-ready') === 'true', null, { timeout: 15_000 })
       const activeWorldReady = await activeWorld.getAttribute('data-home-ready') === 'true'
+      const authoredSceneMounted = await activeWorld.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'
       const permanentFeatureShortcutsAbsent = await visibleElementCount(page.locator('.urai-home-spatial-runtime-portals a')) === 0
       const gateway = page.getByRole('button', { name: 'Open Ground directly' })
       const canonicalGroundGatewayVisible = await visibleElementCount(gateway) === 1
@@ -164,7 +165,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-14'",
 )
 
 const retiredHomeVerifierMarkersAbsent = !source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVisible')
