@@ -14,17 +14,22 @@ concurrency:
   group: location-map-canonical-world-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   verify:
     name: Typecheck contracts and build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout exact commit
+      - name: Checkout exact PR head
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.EXACT_HEAD_SHA }}
           persist-credentials: false
+      - name: Assert exact head identity
+        run: test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -48,11 +53,13 @@ jobs:
     env:
       URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
     steps:
-      - name: Checkout exact commit
+      - name: Checkout exact PR head
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.EXACT_HEAD_SHA }}
           persist-credentials: false
+      - name: Assert exact head identity
+        run: test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -65,12 +72,12 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run exact-head browser acceptance
-        run: pnpm exec playwright test tests/location-map-browser-acceptance.spec.ts --config=playwright.config.ts
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
       - name: Retain browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: location-map-browser-acceptance-${{ github.sha }}
+          name: location-map-browser-acceptance-${{ env.EXACT_HEAD_SHA }}
           path: |
             test-results
             playwright-report
