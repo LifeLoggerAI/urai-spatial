@@ -70,6 +70,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   const demoData = visiblePlaces.length > 0 && visiblePlaces.every(place => place.privacyLevel === 'demo')
   const [access, setAccess] = useState<AccessMode>('checking')
   const [camera, setCamera] = useState<Camera>(OVERVIEW)
+  const cameraRef = useRef<Camera>(OVERVIEW)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [privacyMode, setPrivacyMode] = useState('private')
@@ -79,6 +80,8 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   const [reducedMotion, setReducedMotion] = useState(false)
   const [announcement, setAnnouncement] = useState('Atlas overview ready.')
   const selected = points.find(point => point.place.id === selectedId) ?? null
+
+  useEffect(() => { cameraRef.current = camera }, [camera])
 
   const focusCamera = useCallback((point: AtlasPoint) => {
     const width = window.innerWidth
@@ -93,14 +96,17 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     const index = points.findIndex(item => item.place.id === searchParams.get('placeId'))
     if (index >= 0) {
       const point = points[index]
+      const nextCamera = focusCamera(point)
       setSelectedId(point.place.id)
       setActiveIndex(index)
       setCheckpoint('place-focus')
-      setCamera(focusCamera(point))
+      cameraRef.current = nextCamera
+      setCamera(nextCamera)
       return
     }
     setSelectedId(null)
     setCheckpoint(requestedCheckpoint === 'place-focus' ? 'atlas-world-view' : requestedCheckpoint)
+    cameraRef.current = OVERVIEW
     setCamera(OVERVIEW)
   }, [focusCamera, points, searchParams])
 
@@ -117,7 +123,11 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   useEffect(() => { applyUrl() }, [applyUrl])
   useEffect(() => {
     if (!selected) return
-    const handleResize = () => setCamera(focusCamera(selected))
+    const handleResize = () => {
+      const nextCamera = focusCamera(selected)
+      cameraRef.current = nextCamera
+      setCamera(nextCamera)
+    }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [focusCamera, selected])
@@ -142,13 +152,14 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     router.push(`/location-map/?${params.toString()}`, { scroll: false })
   }, [access, entryPortal, privacyMode, router, searchParams])
   const overview = useCallback((push = true) => {
-    setSelectedId(null); setCheckpoint('atlas-world-view'); setCamera(OVERVIEW)
+    setSelectedId(null); setCheckpoint('atlas-world-view'); cameraRef.current = OVERVIEW; setCamera(OVERVIEW)
     setAnnouncement('Returned to the complete emotional geography atlas.')
     if (push) writeUrl(null)
     requestAnimationFrame(() => stageRef.current?.focus())
   }, [writeUrl])
   const focus = useCallback((point: AtlasPoint, index: number, push = true) => {
-    setSelectedId(point.place.id); setActiveIndex(index); setCheckpoint('place-focus'); setCamera(focusCamera(point))
+    const nextCamera = focusCamera(point)
+    setSelectedId(point.place.id); setActiveIndex(index); setCheckpoint('place-focus'); cameraRef.current = nextCamera; setCamera(nextCamera)
     setAnnouncement(`${point.place.title} selected. ${privacy(point.place)}.`)
     if (push) writeUrl(point.place.id)
   }, [focusCamera, writeUrl])
@@ -164,7 +175,11 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     return () => window.removeEventListener('keydown', onEscape, true)
   }, [overview, selectedId])
 
-  const zoom = useCallback((amount: number) => setCamera(value => ({ ...value, zoom: clamp(value.zoom + amount, .7, 1.9) })), [])
+  const zoom = useCallback((amount: number) => setCamera(value => {
+    const nextCamera = { ...value, zoom: clamp(value.zoom + amount, .7, 1.9) }
+    cameraRef.current = nextCamera
+    return nextCamera
+  }), [])
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
@@ -174,55 +189,75 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     }
     stage.addEventListener('wheel', handleWheel, { passive: false })
     return () => stage.removeEventListener('wheel', handleWheel)
-  }, [access, zoom])
+  }, [zoom])
 
   const moveMarker = (amount: number) => {
     if (!points.length) return
     const next = (activeIndex + amount + points.length) % points.length
     setActiveIndex(next); markers.current[next]?.focus(); setAnnouncement(points[next].place.title)
   }
+  const moveCameraY = (amount: number) => setCamera(value => {
+    const nextCamera = { ...value, y: clamp(value.y + amount, -320, 320) }
+    cameraRef.current = nextCamera
+    return nextCamera
+  })
   const onKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowLeft') { event.preventDefault(); moveMarker(-1) }
     else if (event.key === 'ArrowRight') { event.preventDefault(); moveMarker(1) }
-    else if (event.key === 'ArrowUp') { event.preventDefault(); setCamera(value => ({ ...value, y: clamp(value.y + 42, -320, 320) })) }
-    else if (event.key === 'ArrowDown') { event.preventDefault(); setCamera(value => ({ ...value, y: clamp(value.y - 42, -320, 320) })) }
+    else if (event.key === 'ArrowUp') { event.preventDefault(); moveCameraY(42) }
+    else if (event.key === 'ArrowDown') { event.preventDefault(); moveCameraY(-42) }
     else if (event.key === '+' || event.key === '=') { event.preventDefault(); zoom(.12) }
     else if (event.key === '-' || event.key === '_') { event.preventDefault(); zoom(-.12) }
     else if (event.key === '0' || event.key === 'Home') { event.preventDefault(); overview() }
     else if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget && points[activeIndex]) { event.preventDefault(); focus(points[activeIndex], activeIndex) }
   }
   const onBeaconKey = (event: KeyboardEvent<HTMLButtonElement>, amount: number) => { event.preventDefault(); event.stopPropagation(); moveMarker(amount) }
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest('button,a,[data-atlas-panel]')) return
     event.currentTarget.setPointerCapture(event.pointerId)
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const activePointers = [...pointers.current.values()]
-    if (activePointers.length === 1) drag.current = { x: event.clientX, y: event.clientY, camera }
+    if (activePointers.length === 1) drag.current = { x: event.clientX, y: event.clientY, camera: cameraRef.current }
     if (activePointers.length === 2) {
-      pinch.current = { distance: distance(activePointers), zoom: camera.zoom }
+      pinch.current = { distance: distance(activePointers), zoom: cameraRef.current.zoom }
       drag.current = null
     }
-  }
-  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+  }, [])
+  const onPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (!pointers.current.has(event.pointerId)) return
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const activePointers = [...pointers.current.values()]
     if (activePointers.length >= 2 && pinch.current) {
       const nextDistance = distance(activePointers)
       if (nextDistance > 0 && pinch.current.distance > 0) {
-        setCamera(value => ({ ...value, zoom: clamp(pinch.current!.zoom * (nextDistance / pinch.current!.distance), .7, 1.9) }))
+        setCamera(value => {
+          const nextCamera = { ...value, zoom: clamp(pinch.current!.zoom * (nextDistance / pinch.current!.distance), .7, 1.9) }
+          cameraRef.current = nextCamera
+          return nextCamera
+        })
       }
       return
     }
     if (!drag.current) return
-    setCamera({ ...drag.current.camera, x: clamp(drag.current.camera.x + event.clientX - drag.current.x, -360, 360), y: clamp(drag.current.camera.y + event.clientY - drag.current.y, -320, 320) })
-  }
-  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const nextCamera = {
+      ...drag.current.camera,
+      x: clamp(drag.current.camera.x + event.clientX - drag.current.x, -360, 360),
+      y: clamp(drag.current.camera.y + event.clientY - drag.current.y, -320, 320),
+    }
+    cameraRef.current = nextCamera
+    setCamera(nextCamera)
+  }, [])
+  const onPointerUp = useCallback((event: PointerEvent<HTMLDivElement>) => {
     pointers.current.delete(event.pointerId)
     if (pointers.current.size < 2) pinch.current = null
-    if (pointers.current.size === 0) drag.current = null
+    if (pointers.current.size === 1) {
+      const remainingPoint = [...pointers.current.values()][0]
+      drag.current = { x: remainingPoint.x, y: remainingPoint.y, camera: cameraRef.current }
+    } else if (pointers.current.size === 0) {
+      drag.current = null
+    }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-  }
+  }, [])
 
   const openDemo = () => {
     try { localStorage.setItem(DEMO_KEY, 'true') } catch { /* storage may be unavailable */ }
