@@ -32,3 +32,25 @@ test('Replay has bounded embodied movement, recovery, and WebGL fallback', () =>
   assert.match(world, /data-testid="replay-webgl-fallback"/)
   assert.match(recovery, /Sample Replay uses demonstration data only/)
 })
+
+test('Replay truth modes are policy-enforced rather than cosmetic', () => {
+  assert.match(model, /ReplayTruthMode/)
+  assert.match(model, /'evidence'/)
+  assert.match(model, /'reflection'/)
+  assert.match(model, /'cinematic'/)
+  assert.match(model, /'private-journal'/)
+  assert.match(model, /filterReplayAnchorsForTruthMode/)
+  assert.match(model, /mode === 'evidence'/)
+  assert.match(model, /anchor\.evidenceLevel === 'confirmed'/)
+  assert.match(model, /mode === 'reflection'/)
+  assert.match(model, /replayTruthModeDescription/)
+})
+
+test('Replay preflight detects possible sensitive topics conservatively', () => {
+  assert.match(model, /ReplaySensitiveTopic/)
+  assert.match(model, /detectSensitiveTopics/)
+  assert.match(model, /Possible sensitive material detected from user-approved Replay text/)
+  assert.match(model, /People remain abstract unless a future consent record explicitly permits likeness or voice use/)
+  assert.match(model, /sensitiveTopics: detectSensitiveTopics\(memory\)/)
+  assert.doesNotMatch(model, /diagnos/)
+})
