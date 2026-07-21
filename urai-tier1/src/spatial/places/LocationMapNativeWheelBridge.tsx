@@ -30,6 +30,7 @@ export function LocationMapNativeWheelBridge() {
     let pinch: { distance: number; camera: Camera } | null = null
     let touchDrag: { point: Point; camera: Camera } | null = null
     let touchPinch: { distance: number; camera: Camera } | null = null
+    let touchControl: HTMLButtonElement | null = null
 
     const stageFor = (target: EventTarget | null) => target instanceof HTMLElement ? target.closest<HTMLElement>('.locationAtlasStage') : null
     const blocked = (target: EventTarget | null) => target instanceof HTMLElement && Boolean(target.closest('button,a,[data-atlas-panel]'))
@@ -45,6 +46,14 @@ export function LocationMapNativeWheelBridge() {
     }
 
     const handleTouchStart = (event: TouchEvent) => {
+      const control = event.target instanceof HTMLElement ? event.target.closest<HTMLButtonElement>('button') : null
+      if (control) {
+        event.preventDefault()
+        event.stopPropagation()
+        event.stopImmediatePropagation()
+        touchControl = control
+        return
+      }
       if (blocked(event.target)) return
       const stage = stageFor(event.target)
       const atlas = stage?.closest<HTMLElement>('.locationAtlas')
@@ -52,6 +61,7 @@ export function LocationMapNativeWheelBridge() {
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
+      touchControl = null
       const points = touchPoints(event.touches)
       if (points.length >= 2) {
         touchPinch = { distance: spacing(points), camera: currentCamera(atlas) }
@@ -63,6 +73,10 @@ export function LocationMapNativeWheelBridge() {
     }
 
     const handleTouchMove = (event: TouchEvent) => {
+      if (touchControl) {
+        touchControl = null
+        return
+      }
       if (blocked(event.target)) return
       const stage = stageFor(event.target) || document.querySelector<HTMLElement>('.locationAtlasStage')
       const atlas = stage?.closest<HTMLElement>('.locationAtlas')
@@ -93,6 +107,12 @@ export function LocationMapNativeWheelBridge() {
     }
 
     const handleTouchEnd = (event: TouchEvent) => {
+      if (touchControl && event.touches.length === 0) {
+        const control = touchControl
+        touchControl = null
+        control.click()
+        return
+      }
       if (blocked(event.target)) return
       const atlas = document.querySelector<HTMLElement>('.locationAtlas')
       const points = touchPoints(event.touches)
