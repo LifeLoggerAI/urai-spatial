@@ -33,7 +33,7 @@ function replayPhase(progressMs: number, durationMs: number) {
 }
 
 function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }: Pick<ReplaySpatialWorldProps, 'progressMs' | 'durationMs' | 'reducedMotion' | 'explorationEnabled'>) {
-  const { camera, size } = useThree()
+  const { camera, size, gl } = useThree()
   const movement = useRef<MovementState>({ ...initialMovement })
   const freePosition = useRef(new THREE.Vector3(0, 2.2, 7.5))
   const yaw = useRef(0)
@@ -73,7 +73,7 @@ function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }
     const onPointerDown = (event: PointerEvent) => {
       if (!explorationEnabled) return
       const targetElement = event.target instanceof Element ? event.target : null
-      if (targetElement?.closest(interactiveSelector)) return
+      if (!targetElement || !gl.domElement.contains(targetElement)) return
       dragging.current = true
       lastPointer.current = { x: event.clientX, y: event.clientY }
     }
@@ -96,7 +96,7 @@ function CameraRig({ progressMs, durationMs, reducedMotion, explorationEnabled }
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerUp)
     }
-  }, [explorationEnabled])
+  }, [explorationEnabled, gl])
 
   useFrame((state, delta) => {
     const mobile = size.width < 720
@@ -188,7 +188,7 @@ function MemoryWorld({ memory, active, progressMs, durationMs, reducedMotion, ex
   return (
     <>
       <color attach="background" args={[memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.visuals.ground, 8, 31]} />
+      <fog attach="fog" args={[memory.visuals.sky, 8, 31]} />
       <ambientLight intensity={0.32} color={light} />
       <directionalLight castShadow position={[5, 10, 7]} color={light} intensity={1.8} shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <pointLight position={[0, 3.4, -4]} color={accent} intensity={3.6} distance={18} />
