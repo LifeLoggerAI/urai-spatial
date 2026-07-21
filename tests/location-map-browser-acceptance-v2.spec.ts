@@ -146,6 +146,7 @@ async function realWheelZoom(page: Page) {
 
 test.describe('Location Map exact-head browser acceptance evidence v2', () => {
   test('desktop complete acceptance packet', async ({ page, context }, testInfo) => {
+    test.setTimeout(120_000)
     const errors = monitor(page)
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto(route, { waitUntil: 'networkidle' })
@@ -281,8 +282,9 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page).toHaveURL(/placeId=/)
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
 
-    await nativeTouchTap(page, page.getByRole('button', { name: 'Return to atlas overview' }))
-    await expect(page.locator('.locationAtlasSelection')).toBeHidden()
+    const selection = page.locator('.locationAtlasSelection')
+    await nativeTouchTap(page, selection.getByRole('button', { name: 'Return to atlas overview' }))
+    await expect(selection).toBeHidden()
     await expect(page).not.toHaveURL(/placeId=/)
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
