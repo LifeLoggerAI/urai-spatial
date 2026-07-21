@@ -17,7 +17,13 @@ replaceRequired(
   `async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
   await expect(target).toBeVisible()
-  await target.tap({ force: true, timeout: 10_000 })
+  const box = await target.boundingBox()
+  const viewport = page.viewportSize()
+  expect(box).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  const x = Math.min(Math.max((box?.x ?? 0) + (box?.width ?? 1) / 2, 1), (viewport?.width ?? 2) - 2)
+  const y = Math.min(Math.max((box?.y ?? 0) + (box?.height ?? 1) / 2, 1), (viewport?.height ?? 2) - 2)
+  await page.touchscreen.tap(x, y)
 }
 
 async function dispatchPointerDrag`,
