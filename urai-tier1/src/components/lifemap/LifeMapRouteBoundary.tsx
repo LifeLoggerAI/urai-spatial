@@ -1,7 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
 import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
 
+const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
+
 export default function LifeMapRouteBoundary() {
-  return <AdaptiveLifeMapScene />
-}
+  useEffect(() => {
+    const primeOverviewHistory = (event: MouseEvent) => {
