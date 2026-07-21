@@ -13,7 +13,6 @@ on:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof.mjs'
       - 'scripts/run-continuous-spatial-proof-fixed.mjs'
-      - 'scripts/run-continuous-spatial-proof-fixed-v2.mjs'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
@@ -124,7 +123,7 @@ jobs:
           done
           curl --fail --silent --show-error http://127.0.0.1:4173/home/ >/dev/null
           set +e
-          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/continuous-spatial-proof URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/run-continuous-spatial-proof-fixed-v2.mjs 2>&1 | tee artifacts/continuous-spatial-proof/capture.log
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/continuous-spatial-proof URAI_EXACT_HEAD="$URAI_EXACT_HEAD" node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee artifacts/continuous-spatial-proof/capture.log
           capture_status=${PIPESTATUS[0]}
           set -e
           exit "$capture_status"
