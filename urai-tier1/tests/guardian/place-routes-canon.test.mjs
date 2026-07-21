@@ -9,6 +9,7 @@ const requiredFiles = [
   "src/app/location-map/page.tsx",
   "src/app/place/[placeId]/page.tsx",
   "src/app/place/[placeId]/replay/page.tsx",
+  "src/spatial/places/LocationMapAcceptanceBoundary.tsx",
   "src/spatial/places/LocationMapScene.tsx",
   "src/spatial/places/MemoryPlaceScene.tsx",
   "src/spatial/places/PlaceReplayScene.tsx",
@@ -19,8 +20,11 @@ for (const file of requiredFiles) {
 }
 
 const locationMap = readFileSync(join(app, "src/app/location-map/page.tsx"), "utf8");
-assert.match(locationMap, /LocationMapScene/, "Location Map route must render LocationMapScene.");
+assert.match(locationMap, /LocationMapAcceptanceBoundary/, "Location Map route must render the static acceptance boundary.");
 assert.match(locationMap, /listMemoryPlaces/, "Location Map route must load places through repository.");
+
+const locationBoundary = readFileSync(join(app, "src/spatial/places/LocationMapAcceptanceBoundary.tsx"), "utf8");
+assert.match(locationBoundary, /LocationMapScene/, "Location Map acceptance boundary must render LocationMapScene.");
 
 const place = readFileSync(join(app, "src/spatial/places/MemoryPlaceScene.tsx"), "utf8");
 assert.match(place, /Replay Place/, "MemoryPlaceScene must link to place replay.");
