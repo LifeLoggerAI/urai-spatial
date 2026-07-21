@@ -18,7 +18,7 @@ const DEMO_KEY = 'urai:locationMapDemoMode'
 const SEEDS = [[18,29,.25],[34,58,.58],[47,34,.38],[62,51,.68],[77,27,.46],[82,66,.78],[43,75,.88],[24,72,.72],[69,77,.92]] as const
 
 function clamp(value: number, min: number, max: number) { return Math.min(max, Math.max(min, value)) }
-function words(value: string) { return value.replaceAll('-', ' ') }
+function words(value: string | undefined | null) { return value ? value.replaceAll('-', ' ') : '' }
 function tone(place: MemoryPlace) { return place.emotionalOverlay.auraColor || '#8eeaff' }
 function privacy(place: MemoryPlace) {
   const labels: Record<MemoryPlace['locationPrivacy'], string> = {
@@ -31,7 +31,8 @@ function privacy(place: MemoryPlace) {
   }
   return labels[place.locationPrivacy]
 }
-function pointsFor(places: MemoryPlace[]): AtlasPoint[] {
+function pointsFor(places: MemoryPlace[] | undefined | null): AtlasPoint[] {
+  if (!places) return []
   return places.map((place, index) => {
     const seed = SEEDS[index % SEEDS.length]
     const lap = Math.floor(index / SEEDS.length)
@@ -53,6 +54,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
   const pinch = useRef<{ distance: number; zoom: number } | null>(null)
   const fixtureState = acceptanceFixturesEnabled ? searchParams.get('acceptanceState') : null
   const visiblePlaces = useMemo(() => {
+    if (!places) return []
     if (fixtureState === 'empty') return []
     if (fixtureState !== 'private') return places
     return places.map((place, index) => ({
