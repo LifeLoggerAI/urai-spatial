@@ -178,6 +178,10 @@ test('exact-head browser proof stays deterministic, diagnostic and fallback-safe
   ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
 
   assert.doesNotMatch(proof, /waitForTimeout/)
+  assert.ok(proof.includes("path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'"))
+  assert.ok(proof.includes("path: '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'"))
+  assert.doesNotMatch(proof, /id: 'life-map',\s*path: '\/life-map\/',/)
+  assert.doesNotMatch(proof, /id: 'life-map-selected',\s*path: '\/life-map\/\?memoryId=/)
   assert.match(proof, /getByRole\('navigation', \{ name: 'Direct Home destinations' \}\)/)
   assert.doesNotMatch(proof, /page\.locator\('\.urai-home-spatial-portal-label'\)/)
   assert.match(proofRunner, /!source\.includes\('sceneLabelRetired'\) && !source\.includes\('thresholdLabelsVisible'\)/)
