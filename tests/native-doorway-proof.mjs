@@ -32,7 +32,11 @@ async function resolveTarget(page, doorway) {
   return target
 }
 
-async function prove(browser, doorway, testCase) {
+async function prove(doorway, testCase) {
+  // A fresh browser process per case prevents one proof's WebGL/GPU context from
+  // influencing the next. Each interaction still uses a validated native DOM hit
+  // target and real mouse, touch, or keyboard input against the exact static build.
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
@@ -53,20 +57,18 @@ async function prove(browser, doorway, testCase) {
     record.failureReason = String(error?.message || error)
   } finally {
     await context.close()
+    await browser.close()
   }
   return record
 }
 
 await fs.mkdir(path.join(outDir, 'screenshots'), { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
 const interactions = []
-try {
-  for (const doorway of doorways) for (const testCase of cases) interactions.push(await prove(browser, doorway, testCase))
-} finally {
-  await browser.close()
+for (const doorway of doorways) {
+  for (const testCase of cases) interactions.push(await prove(doorway, testCase))
 }
-const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 5, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, pointerProofMethod: 'validated-hit-target-coordinate-input', interactions, status: errors.length ? 'failed' : 'passed', errors }
+const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.method}:${item.destinationRoute}: ${item.failureReason}`)
+const receipt = { schemaVersion: 6, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, pointerProofMethod: 'validated-hit-target-coordinate-input-isolated-browser', interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
