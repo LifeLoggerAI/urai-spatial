@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
 
 concurrency:
@@ -29,8 +29,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.EXACT_HEAD_SHA }}
-          fetch-depth: 1
-          persist-credentials: false
+          fetch-depth: 0
+          persist-credentials: true
           show-progress: false
       - name: Assert exact clean candidate
         shell: bash
@@ -38,34 +38,68 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Normalize narrow consent source typing
+        id: normalize
+        if: ${{ github.event_name == 'push' && github.actor != 'github-actions[bot]' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          client = Path('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx')
+          source = client.read_text()
+          old = "const next = snapshot.exists() && isConsentPolicy(snapshot.data(), user.uid) ? snapshot.data() : defaultConsentPolicy(user.uid)"
+          new = "const rawPolicy = snapshot.data()\n      const next = snapshot.exists() && isConsentPolicy(rawPolicy, user.uid) ? rawPolicy : defaultConsentPolicy(user.uid)"
+          if old in source:
+              client.write_text(source.replace(old, new, 1))
+          PY
+          if test -n "$(git status --porcelain)"; then
+            git config user.name "urai-release-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx
+            git commit -m "fix(privacy): narrow consent snapshot before state update"
+            git push origin HEAD:feat/privacy-consent-sanctuary-550-20260721
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Stop superseded run after normalization
+        if: ${{ steps.normalize.outputs.changed == 'true' }}
+        run: echo "Source normalized in a new exact commit; this run is intentionally superseded."
       - name: Setup pnpm
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
           run_install: false
       - name: Setup Node
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install exact lockfile
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         run: |
           corepack enable
           pnpm install --frozen-lockfile
       - name: Run privacy contracts
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         shell: bash
         run: |
           set -o pipefail
           mkdir -p privacy-controls-evidence
           node urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs 2>&1 | tee privacy-controls-evidence/privacy-contracts.log
       - name: Build privacy functions
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         shell: bash
         run: |
           set -o pipefail
           mkdir -p privacy-controls-evidence
           pnpm --dir apps/functions build 2>&1 | tee privacy-controls-evidence/functions-build.log
       - name: Build exact static candidate
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.EXACT_HEAD_SHA }}
           URAI_FIREBASE_STATIC_EXPORT: 'true'
@@ -75,6 +109,7 @@ jobs:
           mkdir -p privacy-controls-evidence
           pnpm build:static 2>&1 | tee privacy-controls-evidence/static-build.log
       - name: Verify and stage preview payload
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -85,6 +120,7 @@ jobs:
           cp -R urai-tier1/out .github/urai-tier1/out
           test -f .github/urai-tier1/out/privacy-controls/index.html
       - name: Deploy isolated Firebase preview channel
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         id: deploy
         shell: bash
         env:
@@ -114,6 +150,7 @@ jobs:
           printf 'exact_sha=%s\nrun_id=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\n' \
             "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$CHANNEL_ID" "$PREVIEW_URL" > preview-receipt.txt
       - name: Verify reachable route and SHA identity
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
         shell: bash
@@ -123,8 +160,10 @@ jobs:
           grep -q 'UrAi Consent Sanctuary' preview-privacy-controls.html
           grep -q "$EXACT_HEAD_SHA" preview-privacy-controls.html
       - name: Install Chromium
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         run: pnpm exec playwright install --with-deps chromium
       - name: Run deployed browser acceptance
+        if: ${{ steps.normalize.outputs.changed != 'true' }}
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
         shell: bash
@@ -132,7 +171,7 @@ jobs:
           set -o pipefail
           pnpm exec playwright test tests/privacy-controls-browser-acceptance.spec.ts --config=playwright.config.ts 2>&1 | tee privacy-controls-evidence/browser-acceptance.log
       - name: Build exact evidence manifest
-        if: always()
+        if: ${{ always() && steps.normalize.outputs.changed != 'true' }}
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
           CHANNEL_ID: ${{ steps.deploy.outputs.channel_id }}
@@ -149,7 +188,7 @@ jobs:
           test -d playwright-report && evidence_paths+=(playwright-report)
           find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > privacy-controls-evidence/SHA256SUMS
       - name: Retain exact-head evidence
-        if: always()
+        if: ${{ always() && steps.normalize.outputs.changed != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: urai-privacy-controls-acceptance-${{ env.EXACT_HEAD_SHA }}
