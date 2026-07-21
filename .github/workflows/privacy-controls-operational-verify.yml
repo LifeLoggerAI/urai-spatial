@@ -53,15 +53,27 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Run privacy contracts and functions build
+      - name: Run privacy contracts
+        shell: bash
         run: |
-          node urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs
-          pnpm --dir apps/functions build
+          set -o pipefail
+          mkdir -p privacy-controls-evidence
+          node urai-tier1/tests/privacy-consent-sanctuary-contract.test.mjs 2>&1 | tee privacy-controls-evidence/privacy-contracts.log
+      - name: Build privacy functions
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p privacy-controls-evidence
+          pnpm --dir apps/functions build 2>&1 | tee privacy-controls-evidence/functions-build.log
       - name: Build exact static candidate
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.EXACT_HEAD_SHA }}
           URAI_FIREBASE_STATIC_EXPORT: 'true'
-        run: pnpm build:static
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p privacy-controls-evidence
+          pnpm build:static 2>&1 | tee privacy-controls-evidence/static-build.log
       - name: Verify and stage preview payload
         shell: bash
         run: |
@@ -115,7 +127,10 @@ jobs:
       - name: Run deployed browser acceptance
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
-        run: pnpm exec playwright test tests/privacy-controls-browser-acceptance.spec.ts --config=playwright.config.ts
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm exec playwright test tests/privacy-controls-browser-acceptance.spec.ts --config=playwright.config.ts 2>&1 | tee privacy-controls-evidence/browser-acceptance.log
       - name: Build exact evidence manifest
         if: always()
         env:
