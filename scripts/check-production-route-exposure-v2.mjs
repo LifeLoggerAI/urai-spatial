@@ -48,7 +48,7 @@ requireTokens('urai-tier1/src/app/demo/page.tsx', [
 ])
 requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
   "export const dynamic = 'force-static'",
-  "memoryId=demo%3Aquiet-reset",
+  'memoryId=demo%3Aquiet-reset',
   'manifestId=replay-recovery-thread',
   'demo=1',
   'data-demo-disclosure="not-personal-data"',
@@ -57,11 +57,22 @@ requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
   'href: demoReplayHref',
 ])
 
-requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Privacy Controls'", 'data-route-polish="privacy-consent-console"', 'export default function PrivacyControlsRoutePage()'])
+requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', [
+  "import ConsentSanctuaryClient from './ConsentSanctuaryClient'",
+  "title: 'UrAi Consent Sanctuary'",
+  'return <ConsentSanctuaryClient />',
+])
+requireTokens('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx', [
+  'data-route-owner="consent-sanctuary"',
+  'data-privacy-source={loadState}',
+  'runTransaction',
+  "collection(db, 'users', activeUser.uid, 'privacyAudit')",
+  'Confirm and enforce',
+])
 
 const focusRoutePath = 'urai-tier1/src/app/focus/page.tsx'
 const focusRouteSource = read(focusRoutePath)
-const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/) 
+const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/)
 if (!focusImport) {
   failures.push(`${focusRoutePath} must default-import ./FocusChamberClient`)
 } else {
