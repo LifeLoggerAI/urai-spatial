@@ -55,6 +55,16 @@ async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', d
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 }
 
+async function touch(page: Page, locator: ReturnType<Page['locator']>) {
+  const box = await locator.boundingBox()
+  expect(box).not.toBeNull()
+  const x = box!.x + box!.width * .5
+  const y = box!.y + box!.height * .5
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+}
+
 test.describe('Location Map exact-head browser acceptance evidence v2', () => {
   test('desktop complete acceptance packet', async ({ page, context }, testInfo) => {
     const errors = monitor(page)
@@ -93,17 +103,19 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page).toHaveURL(selectedUrl)
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
     await page.reload({ waitUntil: 'networkidle' })
-    await expect(page.locator('[data-camera-checkpoint="place-focus"]')).toBeVisible()
+    await expect(page.locator('.locationAtlas[data-camera-checkpoint="place-focus"]')).toBeVisible()
 
+    await stage.focus()
     await page.keyboard.press('Escape')
-    await expect(page.locator('[data-camera-checkpoint="atlas-world-view"]')).toBeVisible()
+    await expect(page.locator('.locationAtlas[data-camera-checkpoint="atlas-world-view"]')).toBeVisible()
     await stage.focus()
     await page.keyboard.press('ArrowRight')
     await expect(beacons.nth(1)).toBeFocused()
     await page.keyboard.press('Enter')
-    await expect(page.locator('[data-camera-checkpoint="place-focus"]')).toBeVisible()
+    await expect(page.locator('.locationAtlas[data-camera-checkpoint="place-focus"]')).toBeVisible()
+    await stage.focus()
     await page.keyboard.press('Home')
-    await expect(page.locator('[data-camera-checkpoint="atlas-world-view"]')).toBeVisible()
+    await expect(page.locator('.locationAtlas[data-camera-checkpoint="atlas-world-view"]')).toBeVisible()
 
     await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
@@ -141,13 +153,14 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
     await page.goto(route, { waitUntil: 'networkidle' })
     await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
 
     const beforeTouch = await camera(page)
     await dispatchPointerDrag(page, 'touch', 72, 54)
     await expect.poll(async () => camera(page)).not.toEqual(beforeTouch)
     const afterTouch = await camera(page)
 
-    await page.locator('.locationAtlasBeacon').first().tap()
+    await touch(page, page.locator('.locationAtlasBeacon').first())
     await expect(page.locator('.locationAtlas')).toHaveAttribute('data-camera-checkpoint', 'place-focus')
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
