@@ -1,8 +1,6 @@
 name: Location Map Canonical World Verification
 
 on:
-  push:
-    branches: [agent/location-map-canonical-world-872-v2]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -11,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: location-map-canonical-world-${{ github.event_name }}-${{ github.ref }}
+  group: location-map-canonical-world-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
