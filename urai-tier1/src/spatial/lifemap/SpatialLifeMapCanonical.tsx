@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 
@@ -36,16 +36,21 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
 }
 
 function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void; onReturnHome: () => void }) {
+  useEffect(() => {
+    const timer = window.setTimeout(onOpenDemo, 420);
+    return () => window.clearTimeout(timer);
+  }, [onOpenDemo]);
+
   return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
-    <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.55)" }} /></picture>
-    <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.1),rgba(1,3,10,.9) 78%)" }} />
-    <section style={{ position:"absolute", left:"clamp(18px,5vw,72px)", bottom:"clamp(86px,12vh,150px)", width:"min(600px,calc(100% - 36px))", padding:"clamp(24px,5vw,42px)", border:"1px solid rgba(183,239,255,.2)", borderRadius:30, background:"rgba(2,7,17,.78)", backdropFilter:"blur(22px)" }}>
-      <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".26em", textTransform:"uppercase", color:"#b7efff" }}>URAI · PRIVATE CONSTELLATION</p>
-      <h1 style={{ margin:"10px 0 0", fontSize:"clamp(38px,7vw,76px)", lineHeight:.9, letterSpacing:"-.07em" }}>Your memories stay closed until you open them.</h1>
-      <p style={{ margin:"18px 0 0", maxWidth:520, fontSize:15, lineHeight:1.6, color:"rgba(235,244,255,.76)" }}>No private memory data is mounted here. Open the clearly disclosed sample universe or return Home.</p>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginTop:22 }}><button type="button" onClick={onOpenDemo} style={{ minHeight:48, padding:"0 20px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button><button type="button" onClick={onReturnHome} style={{ minHeight:48, padding:"0 20px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button></div>
+    <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.62)" }} /></picture>
+    <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.04),rgba(1,3,10,.76) 88%)" }} />
+    <section style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", bottom:"max(18px,env(safe-area-inset-bottom))", width:"min(420px,calc(100% - 32px))", padding:18, border:"1px solid rgba(183,239,255,.2)", borderRadius:22, background:"rgba(2,7,17,.8)", backdropFilter:"blur(20px)" }}>
+      <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".22em", textTransform:"uppercase", color:"#b7efff" }}>DISCLOSED SAMPLE · NOT YOUR MEMORIES</p>
+      <h1 style={{ margin:"8px 0 0", fontSize:"clamp(24px,4vw,40px)", lineHeight:.95, letterSpacing:"-.05em" }}>Entering an interactive sample universe.</h1>
+      <p style={{ margin:"12px 0 0", fontSize:13, lineHeight:1.5, color:"rgba(235,244,255,.76)" }}>No private memory data is mounted. You can travel, search, select, inspect, and return safely.</p>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:14 }}><button type="button" onClick={onOpenDemo} style={{ minHeight:48, padding:"0 18px", border:0, borderRadius:999, fontWeight:900, cursor:"pointer" }}>Open disclosed sample</button><button type="button" onClick={onReturnHome} style={{ minHeight:48, padding:"0 18px", border:"1px solid rgba(232,251,255,.2)", borderRadius:999, background:"rgba(2,7,17,.62)", color:"#fff", fontWeight:900, cursor:"pointer" }}>Return Home</button></div>
     </section>
-    <div role="status" aria-live="polite" style={{ position:"absolute", left:"clamp(18px,5vw,72px)", top:"max(18px,env(safe-area-inset-top))", fontSize:10, fontWeight:900, letterSpacing:".22em", textTransform:"uppercase", color:"rgba(220,247,255,.68)" }}>Signed out · no personal data displayed</div>
+    <div role="status" aria-live="polite" style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", top:"max(16px,env(safe-area-inset-top))", fontSize:10, fontWeight:900, letterSpacing:".2em", textTransform:"uppercase", color:"rgba(220,247,255,.72)" }}>Signed out · no personal data displayed</div>
   </main>;
 }
 
@@ -79,14 +84,14 @@ function LifeMapAccessGate() {
     catch { setMode("signed-out"); }
   }, [query]);
 
-  const openDemo = () => {
+  const openDemo = useCallback(() => {
     const next = new URLSearchParams(query);
     next.set("demo", "1");
     next.set("manifestId", DEMO_MANIFEST_ID);
     next.set("overview", "1");
     setMode("explicit-demo");
     router.replace(`/life-map?${next.toString()}`, { scroll:false });
-  };
+  }, [query, router]);
 
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
