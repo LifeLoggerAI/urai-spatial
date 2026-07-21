@@ -11,6 +11,12 @@ export type ReplayEvidenceLevel =
   | 'user-corrected'
   | 'disputed'
 
+export type ReplayTruthMode =
+  | 'evidence'
+  | 'reflection'
+  | 'cinematic'
+  | 'private-journal'
+
 export type ReplayConsentState = 'allowed' | 'abstract-only' | 'blocked'
 export type ReplayAnchorKind = 'person' | 'place' | 'object' | 'sound' | 'event' | 'emotion' | 'pattern'
 export type ReplayAnchorInteraction = 'inspect' | 'listen' | 'follow' | 'correct' | 'none'
@@ -29,6 +35,12 @@ export type ReplayWorldAnchor = {
   mediaUrl?: string
 }
 
+export type ReplaySensitiveTopic = {
+  id: string
+  label: string
+  reason: string
+}
+
 export type ReplaySpatialSceneModel = {
   memoryId: string
   title: string
@@ -40,6 +52,7 @@ export type ReplaySpatialSceneModel = {
     target: [number, number, number]
   }>
   anchors: ReplayWorldAnchor[]
+  sensitiveTopics: ReplaySensitiveTopic[]
 }
 
 const GUIDED_CAMERA: ReplaySpatialSceneModel['guidedCamera'] = {
@@ -49,11 +62,64 @@ const GUIDED_CAMERA: ReplaySpatialSceneModel['guidedCamera'] = {
   return: { position: [0, 1.8, 6.2], target: [0, 1.2, -1.1] },
 }
 
+const SENSITIVE_TERMS: Array<{ id: string; label: string; terms: string[] }> = [
+  { id: 'grief', label: 'grief or loss', terms: ['grief', 'loss', 'funeral', 'died', 'death', 'deceased'] },
+  { id: 'conflict', label: 'conflict or breakup', terms: ['breakup', 'argument', 'conflict', 'fight', 'divorce'] },
+  { id: 'health', label: 'health-related material', terms: ['hospital', 'health', 'illness', 'diagnosis', 'injury'] },
+  { id: 'children', label: 'children or family', terms: ['child', 'children', 'kid', 'daughter', 'son'] },
+  { id: 'location', label: 'location details', terms: ['address', 'home', 'location', 'coordinates'] },
+]
+
 function personPosition(index: number, total: number): [number, number, number] {
   const safeTotal = Math.max(1, total)
   const angle = -Math.PI * 0.75 + (index / safeTotal) * Math.PI * 1.5
   const radius = 3.8 + (index % 2) * 0.7
   return [Math.cos(angle) * radius, 0, -2.8 + Math.sin(angle) * radius * 0.55]
+}
+
+function detectSensitiveTopics(memory: SelectedMemory): ReplaySensitiveTopic[] {
+  const searchable = [
+    memory.title,
+    memory.summary,
+    memory.emotionalState,
+    ...memory.emotionalArc,
+    ...memory.people.map((person) => `${person.label} ${person.relationship ?? ''}`),
+    memory.place?.label ?? '',
+    memory.place?.region ?? '',
+    ...memory.sourceMedia.map((media) => media.caption ?? ''),
+    memory.replayManifest.transcript ?? '',
+  ].join(' ').toLowerCase()
+
+  const topics = SENSITIVE_TERMS.filter((topic) => topic.terms.some((term) => searchable.includes(term))).map((topic) => ({
+    id: topic.id,
+    label: topic.label,
+    reason: 'Possible sensitive material detected from user-approved Replay text. Review before playback.',
+  }))
+
+  if (memory.people.length > 0 && !topics.some((topic) => topic.id === 'people')) {
+    topics.push({
+      id: 'people',
+      label: 'other people appear in this memory',
+      reason: 'People remain abstract unless a future consent record explicitly permits likeness or voice use.',
+    })
+  }
+
+  return topics
+}
+
+export function filterReplayAnchorsForTruthMode(anchors: ReplayWorldAnchor[], mode: ReplayTruthMode) {
+  if (mode === 'evidence') {
+    return anchors.filter((anchor) => anchor.evidenceLevel === 'confirmed' || anchor.evidenceLevel === 'high-confidence' || anchor.evidenceLevel === 'user-corrected')
+  }
+  if (mode === 'reflection') return anchors.filter((anchor) => anchor.evidenceLevel !== 'unknown')
+  return anchors
+}
+
+export function replayTruthModeDescription(mode: ReplayTruthMode) {
+  if (mode === 'evidence') return 'Verified source-backed details only. Inferred and unknown elements stay hidden.'
+  if (mode === 'reflection') return 'Confirmed details plus clearly labeled interpretation. Unknown elements stay hidden.'
+  if (mode === 'private-journal') return 'Private reflection mode. This view is not shareable by default.'
+  return 'Cinematic presentation with inferred, disputed, and unknown elements visibly labeled.'
 }
 
 export function buildReplaySpatialScene(memory: SelectedMemory): ReplaySpatialSceneModel {
@@ -145,6 +211,7 @@ export function buildReplaySpatialScene(memory: SelectedMemory): ReplaySpatialSc
     spawn: [0, 0, 7.2],
     guidedCamera: GUIDED_CAMERA,
     anchors: anchors.filter((anchor) => anchor.consentState !== 'blocked'),
+    sensitiveTopics: detectSensitiveTopics(memory),
   }
 }
 
