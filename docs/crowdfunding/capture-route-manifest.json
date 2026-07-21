@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "authority": {
+    "canonicalRepository": "LifeLoggerAI/urai-spatial",
+    "runtimeRoot": "urai-tier1",
+    "verifiedPublicReleaseSha": "1bbf34d48bcb4d0814346bb69091d3f71c58d54f",
+    "protectedDeploymentRun": "29710284063",
+    "deploymentArtifact": "8448878245",
+    "rollbackSha": "a42ded37d1486a95e72062d04f69016a57660af3",
+    "status": "capture-authorized-after-route-refresh"
+  },
+  "rules": {
+    "allowDraftPullRequestFootageAsLive": false,
+    "allowLocalhostFootageAsLive": false,
+    "requireExactReleaseReceipt": true,
+    "requireSampleDataDisclosure": true,
+    "requireCanonicalSlashCheck": true,
+    "requireDesktopAndMobile": true,
+    "requireKeyboardOrFallbackProofWhereApplicable": true
+  },
+  "routes": [
+    {
+      "id": "home",
+      "canonicalPath": "/",
+      "alternatePaths": [],
+      "capturePurpose": "Home establishing shot and Orb threshold",
+      "dataMode": "public",
+      "disclosure": null
+    },
+    {
+      "id": "ground",
+      "canonicalPath": "/ground",
+      "alternatePaths": ["/ground/"],
+      "capturePurpose": "Ground arrival, movement, destination approach and Home return",
+      "dataMode": "public",
+      "disclosure": null
+    },
+    {
+      "id": "life-map-demo",
+      "canonicalPath": "/life-map?demo=1",
+      "alternatePaths": ["/life-map/?demo=1"],
+      "capturePurpose": "Life Map overview, movement and selected-memory demonstration",
+      "dataMode": "explicit-sample",
+      "disclosure": "SAMPLE DATA"
+    },
+    {
+      "id": "focus-demo",
+      "canonicalPath": "/focus?demo=1",
+      "alternatePaths": ["/focus/?demo=1"],
+      "capturePurpose": "Focus entry and selected-memory continuity",
+      "dataMode": "explicit-sample",
+      "disclosure": "SAMPLE DATA"
+    },
+    {
+      "id": "replay-demo",
+      "canonicalPath": "/replay?demo=1",
+      "alternatePaths": ["/replay/?demo=1"],
+      "capturePurpose": "Replay transition and presentation",
+      "dataMode": "explicit-sample",
+      "disclosure": "SAMPLE DATA"
+    },
+    {
+      "id": "privacy",
+      "canonicalPath": "/privacy",
+      "alternatePaths": ["/privacy/"],
+      "capturePurpose": "Privacy and user-authority controls",
+      "dataMode": "public",
+      "disclosure": null
+    },
+    {
+      "id": "status",
+      "canonicalPath": "/status",
+      "alternatePaths": ["/status/"],
+      "capturePurpose": "Public status and release-proof context",
+      "dataMode": "public",
+      "disclosure": null
+    }
+  ],
+  "excludedDraftAuthorities": [
+    {
+      "pullRequest": 855,
+      "reason": "Open draft Ground implementation; no production deployment authorized"
+    },
+    {
+      "pullRequest": 860,
+      "reason": "Open draft Life Map implementation; no production deployment authorized"
+    },
+    {
+      "pullRequest": 857,
+      "reason": "Closed unmerged"
+    },
+    {
+      "pullRequest": 861,
+      "reason": "Closed unmerged and explicitly no production deployment"
+    }
+  ]
+}
