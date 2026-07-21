@@ -1,53 +1,54 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
+import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 
-const LIFE_MAP_STATE_KEY = 'urai:spatial:lifeMapState'
-
-function identityFromParams(params: ReturnType<typeof useSearchParams>) {
-  return params.get('node') || params.get('nodeId') || params.get('memoryId') || ''
-}
+const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
 export default function LifeMapRouteBoundary() {
-  const params = useSearchParams()
-  const identity = useMemo(() => identityFromParams(params), [params])
-  const previousIdentity = useRef(identity)
-  const [revision, setRevision] = useState(0)
-  const returningToOverview = Boolean(previousIdentity.current && !identity)
+  const router = useRouter()
 
   useEffect(() => {
-    if (previousIdentity.current && !identity) {
-      try {
-        window.localStorage.removeItem(LIFE_MAP_STATE_KEY)
-      } catch {
-        // Browser history still returns to overview when storage is unavailable.
-      }
-      setRevision((current) => current + 1)
+    let secondFrame = 0
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        if (!performance.getEntriesByName('urai:first-spatial-frame').length) {
+          performance.mark('urai:first-spatial-frame')
+        }
+      })
+    })
+
+    const primeOverviewIdentity = () => {
+      const current = new URLSearchParams(window.location.search)
+      current.delete('memoryId')
+      current.delete('node')
+      current.delete('returnNode')
+      current.delete('from')
+      current.set('overview', '1')
+      router.replace(`/life-map?${current.toString()}`, { scroll: false })
     }
-    previousIdentity.current = identity
-  }, [identity])
 
-  if (returningToOverview) {
-    return (
-      <main
-        aria-label="Restoring Life Map overview"
-        style={{
-          minHeight: '100svh',
-          display: 'grid',
-          placeItems: 'center',
-          color: '#dffbff',
-          background: 'radial-gradient(circle at 50% 45%, rgba(117,231,255,.18), transparent 28%), #020713',
-          fontWeight: 900,
-          letterSpacing: '.08em',
-          textTransform: 'uppercase',
-        }}
-      >
-        Restoring overview…
-      </main>
-    )
-  }
+    const primeOverview = (event: MouseEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const button = target.closest('button')
+      const label = button?.textContent?.trim() || ''
+      if (!button || !overviewActionLabels.has(label)) return
+      primeOverviewIdentity()
+    }
 
-  return <AdaptiveLifeMapScene key={`${identity}:${revision}`} />
+    document.addEventListener('click', primeOverview, true)
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      if (secondFrame) window.cancelAnimationFrame(secondFrame)
+      document.removeEventListener('click', primeOverview, true)
+    }
+  }, [router])
+
+  return <>
+    <AdaptiveLifeMapScene />
+    <LifeMapSemanticNavigator />
+  </>
 }

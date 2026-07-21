@@ -11,6 +11,7 @@ const sanctuary = read('src/app/HomeSanctuaryWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')
+const lifeMapScene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
 const routeOwner = read('src/spatial/world/routeOwnerConvergence.css')
 const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
@@ -114,16 +115,21 @@ test('Ground remains walkable infrastructure with paths and collision ownership'
   assert.doesNotMatch(groundScene, /requestPointerLock|sprint|jump|crouch/i)
 })
 
-test('Life Map keeps independent non-Orb movement and overview recovery', () => {
-  for (const marker of ['W/S or ↑/↓ move through depth', 'A/D, Q/E, or ←/→ glide between memories', 'glideDepth(-180)', 'glideDepth(180)', 'cycleMemory(-1)', 'cycleMemory(1)', 'life-map-embodied-controls', 'life-map-memory-portals', 'data-life-map-overview-control', 'urai:life-map-overview']) has(lifeMapBoundary, marker)
+test('Life Map keeps independent non-Orb travel, depth and overview recovery', () => {
+  for (const marker of ['KeyA', 'ArrowLeft', 'KeyQ', 'KeyD', 'ArrowRight', 'KeyE', 'cycle(-1)', 'cycle(1)', 'urai:life-map-overview', 'life-map-movement-help']) has(lifeMapBoundary, marker)
+  for (const marker of ['type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival"', 'goalForNode', 'CameraRig', 'life-map-depth-near', 'life-map-depth-middle', 'life-map-depth-far', 'setPhase("departure")', 'setPhase("travel")', 'setPhase("approach")', 'setPhase("arrival")', 'data-life-map-phase={phase}', 'data-home-companion-owned="false"']) has(lifeMapScene, marker)
   assert.match(embodiedLayout, /data-world-destination='life-map'[\s\S]*\.life-map-movement-help/)
   assert.doesNotMatch(lifeMapBoundary, /Orb companion|PersistentWorldCompanion|requestPointerLock/)
+  assert.doesNotMatch(lifeMapScene, /PersistentWorldCompanion|requestPointerLock/)
 })
 
 test('embodied movement never removes semantic exits', () => {
   assert.match(finalHome, />Ground<\/button>/)
   assert.match(finalHome, />Life Map<\/button>/)
   assert.match(ground, /Escape to return Home/)
-  assert.match(lifeMapBoundary, /ROUTE_ACTION_LABELS = new Set\(\['Enter Focus', 'Replay', 'Overview', 'Ground', 'Home'\]\)/)
+  assert.match(lifeMapScene, />Enter Focus<\/button>/)
+  assert.match(lifeMapScene, />Replay<\/button>/)
+  assert.match(lifeMapScene, />Overview<\/button>/)
+  assert.match(lifeMapScene, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
   assert.match(worldShell, /embodiedExplorationLayout\.css/)
 })

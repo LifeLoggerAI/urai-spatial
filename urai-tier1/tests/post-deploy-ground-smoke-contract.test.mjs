@@ -7,8 +7,9 @@ const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mj
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
 const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
 const groundModel = fs.readFileSync('src/app/ground/GroundWorldModel.ts', 'utf8')
-const groundScene = fs.readFileSync('src/app/ground/GroundWorldScene.tsx', 'utf8')
-const groundGraph = `${ground}\n${groundModel}\n${groundScene}`
+const groundScene = fs.readFileSync('src/app/ground/EmbodiedGroundScene.tsx', 'utf8')
+const groundArchitecture = fs.readFileSync('src/app/ground/GroundContinuityArchitecture.tsx', 'utf8')
+const groundGraph = `${ground}\n${groundModel}\n${groundScene}\n${groundArchitecture}`
 const canonicalGround = ground.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ').trim()
 
 const obsoleteTitle = 'Street-level city world'
@@ -24,10 +25,16 @@ const expectedGroundMarkers = [
   'data-ground-destination',
   'data-workforce-state',
   'data-service-availability',
-  'data-ground-visual-owner="authored-provider-art"',
+  'data-ground-visual-owner="shared-continuity-architecture"',
   'data-ground-no-compositing-bands="true"',
-  'DestinationBeacon',
-  'WorkforceSignals',
+  'GroundContinuityArchitecture',
+  'EmbodiedGroundScene',
+  'ground-continuity-architectural-shell',
+  'ground-walkable-navigation-surface',
+  'ground-walkable-path-network',
+  'ground-central-nexus',
+  'ground-enterable-threshold-',
+  'ground-workforce-and-council-presences',
   'Reception',
   'Privacy Sanctuary',
   'Council',
@@ -57,7 +64,7 @@ const liveGroundVisualCopy = [
   'Archive',
 ]
 
-test('post-deploy Ground smoke remains tied to the embodied destination world', () => {
+test('post-deploy Ground smoke remains tied to the embodied architectural destination world', () => {
   for (const marker of expectedGroundMarkers) {
     assert.ok(groundGraph.includes(marker), `missing embodied Ground marker: ${marker}`)
   }
@@ -80,18 +87,20 @@ test('Ground screenshot audit requires current visible world copy', () => {
   assert.ok(!visualAudit.includes("'Nothing acts without you'"))
 })
 
-test('obsolete Ground copy and opaque blockout owners are rejected', () => {
+test('obsolete Ground copy, provider wallpaper ownership and opaque blockouts are rejected', () => {
   assert.doesNotMatch(groundGraph, new RegExp(obsoleteTitle))
   for (const copy of retiredSmokeCopy) {
     assert.ok(!groundGraph.includes(copy), `retired Ground copy returned to the source graph: ${copy}`)
     assert.ok(!smoke.includes(`'${copy}'`), `post-deploy smoke still requires retired Ground copy: ${copy}`)
   }
   assert.match(canonicalGround, /DESTINATIONS\.map/)
-  assert.match(groundScene, /DestinationBeacon/)
-  assert.match(groundScene, /WorkforceSignals/)
-  assert.match(groundScene, /ground-authored-beacon-/)
+  assert.match(groundScene, /ground-enterable-threshold-/)
+  assert.match(groundScene, /ground-workforce-and-council-presences/)
+  assert.match(groundArchitecture, /ground-continuity-architectural-shell/)
+  assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
+  assert.doesNotMatch(groundGraph, /ground-authored-art|--ground-provider-|assetCssStack\(groundAssets\./)
   assert.doesNotMatch(groundScene, /WorldEnvelope|LayeredTerraces|InitialOverlook/)
-  assert.doesNotMatch(groundScene, /<boxGeometry|<color attach="background"/)
+  assert.doesNotMatch(groundScene, /<color attach="background"/)
   assert.match(canonicalGround, /aria-current=\{activeId\s*===\s*destination\.id\s*\?\s*'location'\s*:\s*undefined\}/)
   assert.match(canonicalGround, /min-height:48px/)
   assert.doesNotMatch(canonicalGround, /min-height:44px/)

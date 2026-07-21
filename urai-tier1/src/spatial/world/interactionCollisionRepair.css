@@ -50,6 +50,13 @@
   transition-property: opacity !important;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .ground-spatial-root .ground-destination-compass :is(a, button),
+  .ground-spatial-root .ground-destination-compass :is(a, button) strong {
+    transition: none !important;
+  }
+}
+
 @media (max-width: 760px) {
   .urai-world-runtime[data-world-destination='life-map']
     .life-map-independent-realm[data-life-map-mode='selected']
