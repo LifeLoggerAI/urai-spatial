@@ -15,19 +15,51 @@
   z-index: auto;
 }
 
-/* The direct Home controls are their own real interaction island. Desktop controls
-   sit above the 80px Ground rail; touch controls opt back into tap semantics instead
-   of inheriting the world's drag-only touch-action:none behavior. */
-.urai-final-home-doorways,
-.urai-final-home-doorways button {
+/* The former controls lived inside the full-screen WebGL drag surface and could be
+   unavailable before renderer readiness or lose touch completion to pointer capture. */
+.urai-final-home-doorways {
+  display: none !important;
+}
+
+/* The authoritative direct doorways are route-shell native links. They render without
+   waiting for WebGL, sit outside drag-look ownership, and retain native pointer/touch
+   navigation semantics on every supported input mode. */
+.urai-home-direct-doorways {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
+  z-index: 2147483600;
+  display: flex;
+  gap: 8px;
   pointer-events: auto !important;
   touch-action: manipulation !important;
 }
 
-@media (min-width: 761px) {
-  .urai-final-home-doorways {
-    bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px)) !important;
-  }
+.urai-home-direct-doorways a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 48px;
+  padding: 0 15px;
+  border: 1px solid rgba(227, 241, 233, .24);
+  border-radius: 999px;
+  background: rgba(8, 20, 21, .86);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, .38);
+  backdrop-filter: blur(12px);
+  color: #f5fbf7;
+  font: 750 11px/1 system-ui;
+  letter-spacing: .03em;
+  text-decoration: none;
+  cursor: pointer;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.urai-home-direct-doorways a:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
 }
 
 .urai-home-spatial-orb-trigger,
@@ -82,12 +114,27 @@
     transform: translateX(-50%) !important;
   }
 
-  .urai-final-home-doorways {
-    bottom: max(112px, calc(env(safe-area-inset-bottom) + 112px)) !important;
+  .urai-home-direct-doorways {
+    left: max(9px, env(safe-area-inset-left));
+    right: max(9px, env(safe-area-inset-right));
+    bottom: max(112px, calc(env(safe-area-inset-bottom) + 112px));
+    justify-content: center;
+  }
+
+  .urai-home-direct-doorways a {
+    flex: 1;
+    max-width: 136px;
+    padding: 0 10px;
   }
 
   .urai-life-map-persistent-doorways {
     right: 12px;
     bottom: max(66px, calc(env(safe-area-inset-bottom) + 66px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-home-direct-doorways a {
+    backdrop-filter: none;
   }
 }
