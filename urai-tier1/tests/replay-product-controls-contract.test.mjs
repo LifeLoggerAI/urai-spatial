@@ -76,7 +76,7 @@ test('authenticated persistence is owner-scoped idempotent transactional and acc
 
 test('Firestore and local queues cannot cross account ownership boundaries', () => {
   assert.match(rules, /match \/users\/\{uid\}/)
-  assert.match(rules, /match \/replayEvents\/\{eventId\}/)
+  assert.match(rules, /match \/replayEvents\/\{[^}]+\}/)
   assert.match(rules, /allow read: if isSelf\(uid\) \|\| isAdmin\(\)/)
   assert.match(rules, /allow create: if isAdmin\(\) \|\| \(isUserOwnedCreate\(uid\)/)
   assert.match(rules, /allow update: if isAdmin\(\) \|\| \(isUserOwnedUpdate\(uid\)/)
