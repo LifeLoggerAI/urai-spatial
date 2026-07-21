@@ -58,11 +58,7 @@ async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', d
 async function touchSelectFirstBeacon(page: Page) {
   const box = await page.locator('.locationAtlasBeacon').first().boundingBox()
   expect(box).not.toBeNull()
-  const x = box!.x + box!.width * .5
-  const y = box!.y + box!.height * .5
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await page.touchscreen.tap(box!.x + box!.width * .5, box!.y + box!.height * .5)
 }
 
 test.describe('Location Map exact-head browser acceptance evidence v2', () => {
@@ -138,14 +134,18 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
 
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await expect(page.locator('.locationAtlas')).toHaveAttribute('data-reduced-motion', 'true')
-    expect(await page.locator('.locationAtlasBeacons').evaluate(element => getComputedStyle(element).transitionDuration)).toBe('0s')
+    const motionStyles = await page.locator('.locationAtlasBeacon, .locationAtlasSelection, .locationAtlasBeacons').evaluateAll(elements => elements.map(element => ({
+      transitionDuration: getComputedStyle(element).transitionDuration,
+      animationDuration: getComputedStyle(element).animationDuration,
+    })))
+    expect(motionStyles.every(style => style.transitionDuration.split(',').every(value => value.trim() === '0s') && style.animationDuration.split(',').every(value => value.trim() === '0s'))).toBe(true)
     await page.screenshot({ path: testInfo.outputPath('reduced-motion-desktop.png'), fullPage: true })
 
     expect(errors.consoleErrors).toEqual([])
     expect(errors.pageErrors).toEqual([])
     expect(errors.failedRequests).toEqual([])
     await attachJson(testInfo, 'desktop-console-network-receipt.json', errors)
-    await attachJson(testInfo, 'desktop-interaction-receipt.json', { beforePan, afterPan, afterWheel, selectedUrl })
+    await attachJson(testInfo, 'desktop-interaction-receipt.json', { beforePan, afterPan, afterWheel, selectedUrl, motionStyles })
   })
 
   test('mobile touch drag and touch selection packet', async ({ page }, testInfo) => {
