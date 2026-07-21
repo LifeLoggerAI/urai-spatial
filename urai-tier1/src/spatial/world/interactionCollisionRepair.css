@@ -42,6 +42,14 @@ body.urai-home-webgl-active
   pointer-events: auto !important;
 }
 
+/* Keep the Focus unwind control at the certified 48 CSS pixel target even when
+ * global button metrics or font rendering would otherwise contract its border box. */
+.focusWorld .unwind {
+  height: 48px !important;
+  min-height: 48px !important;
+  box-sizing: border-box !important;
+}
+
 /* Ground focus containment is geometric, not decorative. Destination pills must reach
  * their focused width before scrollIntoView resolves; animating max-width lets a pill
  * expand back outside the mobile viewport after it has been revealed. Preserve visual
@@ -74,6 +82,28 @@ body.urai-home-webgl-active
     width: auto !important;
     max-width: none !important;
     transform: none !important;
+  }
+
+  /* Premium atmosphere used to center and clip this oversized rail, which made the
+   * first destinations zero-visibility on narrow screens. The route owner must remain
+   * horizontally scrollable with deterministic 48px touch targets. */
+  .ground-spatial-root .ground-destination-compass.ground-rail {
+    display: flex !important;
+    width: auto !important;
+    max-width: none !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .ground-spatial-root .ground-destination-compass.ground-rail :is(a, button) {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    box-sizing: border-box !important;
   }
 }
 
