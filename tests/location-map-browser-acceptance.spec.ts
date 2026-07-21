@@ -144,9 +144,10 @@ test.describe('Location Map browser acceptance evidence', () => {
     expect(box).not.toBeNull()
     const startX = box!.x + box!.width * .52
     const startY = box!.y + box!.height * .48
-    await stage.dispatchEvent('pointerdown', { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: startX, clientY: startY, buttons: 1 })
-    await stage.dispatchEvent('pointermove', { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: startX + 58, clientY: startY + 44, buttons: 1 })
-    await stage.dispatchEvent('pointerup', { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: startX + 58, clientY: startY + 44, buttons: 0 })
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: startX, y: startY }] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: startX + 58, y: startY + 44 }] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     const after = await atlas.evaluate(element => ({
       x: getComputedStyle(element).getPropertyValue('--atlas-x'),
       y: getComputedStyle(element).getPropertyValue('--atlas-y'),
