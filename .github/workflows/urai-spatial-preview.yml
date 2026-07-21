@@ -18,9 +18,9 @@ env:
 
 jobs:
   preview:
-    name: Exact-head isolated preview deploy
+    name: Exact-head isolated preview deploy and browser acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -52,9 +52,11 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Preflight
         run: pnpm preflight
-      - name: Build exact static candidate
+      - name: Build exact static candidate with acceptance fixtures
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
         run: pnpm build:static
       - name: Prove exact source remained clean
         shell: bash
@@ -74,6 +76,7 @@ jobs:
           chmod 600 "$CREDENTIALS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
           CHANNEL_ID="lane6-885-${URAI_EXACT_HEAD:0:7}"
+          test "$CHANNEL_ID" != "live"
           pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
             --project "$FIREBASE_PROJECT_ID" \
             --expires 1d \
@@ -81,11 +84,16 @@ jobs:
             --json > preview-deploy.json
           rm -f "$CREDENTIALS_FILE"
           PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
+          case "$PREVIEW_URL" in
+            https://*.web.app|https://*.firebaseapp.com) ;;
+            *) echo "Unexpected non-preview URL: $PREVIEW_URL" >&2; exit 65 ;;
+          esac
           test "$PREVIEW_URL" != "https://urai.app"
           test "$PREVIEW_URL" != "https://urai.app/"
           printf 'preview_url=%s\n' "$PREVIEW_URL" >> "$GITHUB_OUTPUT"
-          node -e "const fs=require('fs');const crypto=require('crypto');const p='preview-deploy.json';const digest=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');fs.writeFileSync('preview-receipt.txt',[`exact_sha=${process.env.URAI_EXACT_HEAD}`,`run_id=${process.env.GITHUB_RUN_ID}`,`job=${process.env.GITHUB_JOB}`,`environment=firebase-hosting-preview-channel`,`preview_url=${process.argv[1]}`,`production_targeted=false`,`deployed_at=${new Date().toISOString()}`,`deployment_receipt_sha256=${digest}`,''].join('\n'))" "$PREVIEW_URL"
-      - name: Verify reachable preview runtime
+          printf 'channel_id=%s\n' "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
+          node -e "const fs=require('fs');const crypto=require('crypto');const p='preview-deploy.json';const digest=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');fs.writeFileSync('preview-receipt.txt',[`exact_sha=${process.env.URAI_EXACT_HEAD}`,`run_id=${process.env.GITHUB_RUN_ID}`,`job=${process.env.GITHUB_JOB}`,`environment=firebase-hosting-preview-channel`,`channel_id=${process.argv[2]}`,`preview_url=${process.argv[1]}`,`production_targeted=false`,`deployed_at=${new Date().toISOString()}`,`deployment_receipt_sha256=${digest}`,''].join('\n'))" "$PREVIEW_URL" "$CHANNEL_ID"
+      - name: Verify reachable preview runtime and SHA identity
         shell: bash
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -93,14 +101,36 @@ jobs:
           set -euo pipefail
           curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/location-map/" -o preview-location-map.html
           grep -q 'URAI' preview-location-map.html
-      - name: Retain preview deployment receipt
+          grep -q "$URAI_EXACT_HEAD" preview-location-map.html
+      - name: Install Chromium for deployed acceptance
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run complete browser acceptance against deployed preview
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+      - name: Create exact-head evidence manifest
+        if: always()
+        shell: bash
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          CHANNEL_ID: ${{ steps.deploy.outputs.channel_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p preview-evidence
+          cp -f preview-deploy.json preview-receipt.txt preview-location-map.html preview-evidence/ 2>/dev/null || true
+          printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
+            "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > preview-evidence/manifest.txt
+          find preview-evidence test-results playwright-report -type f -print0 2>/dev/null | sort -z | xargs -0 -r sha256sum > preview-evidence/SHA256SUMS
+      - name: Retain preview deployment and runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-spatial-preview-${{ env.URAI_EXACT_HEAD }}
+          name: urai-location-map-preview-acceptance-${{ env.URAI_EXACT_HEAD }}
           path: |
-            preview-deploy.json
-            preview-receipt.txt
-            preview-location-map.html
+            preview-evidence
+            test-results
+            playwright-report
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
