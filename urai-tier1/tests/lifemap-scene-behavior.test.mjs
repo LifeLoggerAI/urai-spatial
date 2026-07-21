@@ -27,13 +27,17 @@ test('Life Map establishes real near middle and far depth', () => {
   assert.ok(source.includes('data-depth-anchor="true"'))
 })
 
-test('Life Map uses deterministic travel compositions', () => {
+test('Life Map uses deterministic travel compositions with a safe selected-memory stand-off', () => {
   for (const phase of ['overview', 'departure', 'travel', 'approach', 'arrival']) assert.ok(source.includes(`"${phase}"`))
   assert.ok(source.includes('setPhase("departure")'))
   assert.ok(source.includes('setPhase("travel")'))
   assert.ok(source.includes('setPhase("approach")'))
   assert.ok(source.includes('setPhase("arrival")'))
   assert.ok(source.includes('goalForNode'))
+  assert.ok(source.includes('const SELECTED_MEMORY_STANDOFF = 5.6'))
+  assert.ok(source.includes('direction.multiplyScalar(SELECTED_MEMORY_STANDOFF)'))
+  assert.ok(source.includes('p.lengthSq() > .01'))
+  assert.doesNotMatch(source, /direction\.multiplyScalar\(2\.5\)/)
   assert.ok(source.includes('THREE.MathUtils.damp'))
   assert.ok(source.includes('data-life-map-phase={phase}'))
 })
