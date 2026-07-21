@@ -48,6 +48,19 @@ export default function HomeSpatialRuntimeLayer() {
 
     let recoveryTimer: ReturnType<typeof setTimeout> | null = null
     let attachedCanvas: HTMLCanvasElement | null = null
+    let frameMarkRaf1: number | null = null
+    let frameMarkRaf2: number | null = null
+
+    const markFirstHomeFrame = () => {
+      if (performance.getEntriesByName('urai:first-home-spatial-frame').length > 0) return
+      frameMarkRaf1 = requestAnimationFrame(() => {
+        frameMarkRaf2 = requestAnimationFrame(() => {
+          if (performance.getEntriesByName('urai:first-home-spatial-frame').length === 0) {
+            performance.mark('urai:first-home-spatial-frame')
+          }
+        })
+      })
+    }
 
     const onContextLost = (event: Event) => {
       event.preventDefault()
@@ -73,6 +86,7 @@ export default function HomeSpatialRuntimeLayer() {
       attachedCanvas = canvas
       attachedCanvas.addEventListener('webglcontextlost', onContextLost)
       attachedCanvas.addEventListener('webglcontextrestored', onContextRestored)
+      markFirstHomeFrame()
     }
 
     attach()
@@ -82,6 +96,8 @@ export default function HomeSpatialRuntimeLayer() {
     return () => {
       observer.disconnect()
       if (recoveryTimer) clearTimeout(recoveryTimer)
+      if (frameMarkRaf1 !== null) cancelAnimationFrame(frameMarkRaf1)
+      if (frameMarkRaf2 !== null) cancelAnimationFrame(frameMarkRaf2)
       attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
       attachedCanvas?.removeEventListener('webglcontextrestored', onContextRestored)
     }
@@ -101,7 +117,7 @@ export default function HomeSpatialRuntimeLayer() {
   return (
     <section
       ref={runtimeRef}
-      className="urai-home-spatial-runtime-layer"
+      className="urai-home-spatial-runtime-layer urai-home-embodied-art"
       data-urai-home-runtime="embodied-continuous-webgl-world"
       data-home-visual-owner="final-coherent-sanctuary"
       data-home-exploration="walkable"
@@ -110,6 +126,7 @@ export default function HomeSpatialRuntimeLayer() {
     >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       <FinalHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
+      <p className="urai-home-movement-prompt" aria-live="polite">Walk forward toward the Orb, or choose a direct destination.</p>
       <nav
         className="urai-home-runtime-doorways"
         data-movement-ui="true"
@@ -128,6 +145,29 @@ export default function HomeSpatialRuntimeLayer() {
       </nav>
       <style jsx global>{`
         .urai-home-spatial-runtime-layer .urai-final-home-doorways { display: none !important; }
+        .urai-home-movement-prompt {
+          position: absolute;
+          left: 50%;
+          bottom: max(92px, calc(env(safe-area-inset-bottom) + 82px));
+          z-index: 2147483400;
+          transform: translateX(-50%);
+          width: min(430px, calc(100vw - 32px));
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+          margin: 0;
+          padding: 10px 16px;
+          border: 1px solid rgba(227,241,233,.22);
+          border-radius: 999px;
+          background: rgba(8,20,21,.76);
+          backdrop-filter: blur(12px);
+          color: rgba(245,251,247,.9);
+          font: 700 12px/1.35 system-ui;
+          text-align: center;
+          pointer-events: none;
+        }
         .urai-home-runtime-doorways {
           position: absolute;
           right: max(14px, env(safe-area-inset-right));
@@ -159,6 +199,17 @@ export default function HomeSpatialRuntimeLayer() {
           outline-offset: 3px;
         }
         @media (max-width: 700px) {
+          .urai-home-movement-prompt {
+            left: max(178px, calc(env(safe-area-inset-left) + 178px));
+            right: max(12px, env(safe-area-inset-right));
+            bottom: max(210px, calc(env(safe-area-inset-bottom) + 200px));
+            width: auto;
+            min-height: 48px;
+            transform: none;
+            padding: 9px 12px;
+            border-radius: 18px;
+            font-size: 11px;
+          }
           .urai-home-runtime-doorways {
             left: max(9px, env(safe-area-inset-left));
             right: max(9px, env(safe-area-inset-right));
@@ -168,6 +219,7 @@ export default function HomeSpatialRuntimeLayer() {
           .urai-home-runtime-doorways button { flex: 1; max-width: 112px; padding: 0 10px; }
         }
         @media (prefers-reduced-motion: reduce) {
+          .urai-home-movement-prompt,
           .urai-home-runtime-doorways button { backdrop-filter: none; }
         }
       `}</style>
