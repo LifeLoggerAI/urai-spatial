@@ -26,9 +26,9 @@ assert.match(scene, /role="application"/, 'The visual atlas must expose a keyboa
 assert.match(scene, /Escape/, 'Escape return behavior must remain documented and implemented.')
 assert.match(scene, /aria-live="polite"/, 'Selection changes must be announced to assistive technology.')
 assert.match(scene, /prefers-reduced-motion/, 'Reduced-motion mode must be detected.')
-assert.match(css, /@media\(prefers-reduced-motion:reduce\)/, 'Reduced-motion styling must be present.')
+assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/, 'Reduced-motion styling must be present.')
 assert.match(css, /\.locationAtlasCamera/, 'Near, middle and far atlas depth must be route-owned.')
 assert.match(css, /\.locationAtlasBeacon/, 'Grounded place beacons must be route-owned.')
-assert.match(css, /@media\(max-width:620px\)/, 'Mobile composition must be intentional rather than desktop scaling.')
+assert.match(css, /@media\s*\(max-width:\s*620px\)/, 'Mobile composition must be intentional rather than desktop scaling.')
 
 console.log('URAI canonical Location Map world contract passed.')
