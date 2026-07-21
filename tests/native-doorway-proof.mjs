@@ -17,10 +17,9 @@ const doorways = [
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
-async function activate(target, method) {
-  const options = { timeout: 10000, noWaitAfter: true }
-  if (method === 'pointer') return target.click(options)
-  if (method === 'touch') return target.tap(options)
+async function activate(page, target, method, hitPoint) {
+  if (method === 'pointer') return page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  if (method === 'touch') return page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
   await target.focus()
   if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
   return target.press('Enter', { noWaitAfter: true })
@@ -59,7 +58,7 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, hitPoint: null, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate', viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, hitPoint: null, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
@@ -68,7 +67,8 @@ async function prove(browser, doorway, testCase) {
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
     record.hitPoint = await inspectHitPoint(target)
-    await activate(target, testCase.method)
+    if (!record.hitPoint.targetOwnsHitPoint) throw new Error(`target does not own center hit point ${JSON.stringify(record.hitPoint)}`)
+    await activate(page, target, testCase.method, record.hitPoint)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
     record.success = normalize(record.resultingUrl) === doorway.destination
@@ -91,7 +91,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 5, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 6, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
