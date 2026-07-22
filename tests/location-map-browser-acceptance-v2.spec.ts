@@ -69,29 +69,12 @@ async function gestureAnchor(page: Page): Promise<ScreenPoint> {
 
 async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
-  const box = await target.boundingBox()
-  expect(box).not.toBeNull()
   const viewport = page.viewportSize()
   expect(viewport).not.toBeNull()
-  const x = box!.x + box!.width * .5
-  const y = box!.y + box!.height * .5
-  expect(x).toBeGreaterThanOrEqual(0)
-  expect(y).toBeGreaterThanOrEqual(0)
-  expect(x).toBeLessThan(viewport!.width)
-  expect(y).toBeLessThan(viewport!.height)
-  const cdp = await page.context().newCDPSession(page)
-  try {
-    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
-    await cdp.send('Input.synthesizeTapGesture', {
-      x,
-      y,
-      duration: 80,
-      tapCount: 1,
-      gestureSourceType: 'touch',
-    })
-  } finally {
-    await cdp.detach()
-  }
+  await expect(target).toBeVisible()
+  // Playwright's touch tap preserves native touch semantics while waiting for the
+  // transformed target to finish moving and become the actual hit owner.
+  await target.tap({ timeout: 15_000 })
 }
 
 async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', dx: number, dy: number) {
@@ -341,7 +324,9 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
         const rect = node.getBoundingClientRect()
         const x = rect.left + rect.width * .5
         const y = rect.top + rect.height * .5
+        const hit = document.elementFromPoint(x, y)
         return x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight
+          && hit instanceof Node && (hit === node || node.contains(hit))
       })
       return index
     })
