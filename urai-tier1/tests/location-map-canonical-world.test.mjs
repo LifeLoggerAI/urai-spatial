@@ -4,7 +4,9 @@ import { join } from 'node:path'
 
 const root = process.cwd()
 const app = join(root, 'urai-tier1')
+const page = readFileSync(join(app, 'src/app/location-map/page.tsx'), 'utf8')
 const scene = readFileSync(join(app, 'src/spatial/places/LocationMapScene.tsx'), 'utf8')
+const wheelBridge = readFileSync(join(app, 'src/spatial/places/LocationMapNativeWheelBridge.tsx'), 'utf8')
 const layer = readFileSync(join(app, 'src/app/UraiAutonomousV1Layer.tsx'), 'utf8')
 const shell = readFileSync(join(app, 'src/spatial/world/UraiWorldShell.tsx'), 'utf8')
 const css = readFileSync(join(app, 'src/spatial/places/location-map-scene.css'), 'utf8')
@@ -12,6 +14,10 @@ const depthCss = readFileSync(join(app, 'src/spatial/places/location-map-release
 
 assert.doesNotMatch(layer, /pathname\.startsWith\(["']\/location-map["']\)/, 'Legacy autonomous layer must not own Location Map.')
 assert.match(shell, /world\.destination !== 'location-map'/, 'The shared persistent Orb must not compete with the route-owned Location Map world.')
+assert.match(page, /listMemoryPlaces\(\{ source: 'demo' \}\)/, 'The static route must request only disclosed demo places.')
+assert.match(page, /place\.privacyLevel === 'demo'/, 'The server boundary must reject non-demo places before serialization.')
+assert.doesNotMatch(wheelBridge, /addEventListener\(['"]touch|addEventListener\(['"]pointer/, 'The native wheel bridge must not own touch camera state.')
+assert.match(wheelBridge, /Touch drag and pinch are intentionally owned\s*only by LocationMapScene/, 'Touch ownership must remain explicit and single-owner.')
 assert.match(scene, /data-location-map-owner="canonical-route"/, 'Location Map must identify its canonical route owner.')
 assert.match(scene, /data-location-map-renderer="layered-spatial-atlas"/, 'Location Map must render the spatial atlas rather than a poster owner.')
 assert.match(scene, /privacyMode/, 'Private-mode query state must be preserved.')
