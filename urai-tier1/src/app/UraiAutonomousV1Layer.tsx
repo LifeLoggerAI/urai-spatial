@@ -10,18 +10,14 @@ import "./urai-autonomous-v1-workforce.css";
 
 /**
  * Legacy autonomous presentation is retained only for secondary realms that
- * still lack a route-owned canonical client. Privacy Controls is explicitly
- * excluded: its route client is the sole owner and this layer must never
- * replace, obscure, or duplicate it.
+ * still lack a route-owned canonical client. Mirror remains the only legacy
+ * realm here; Privacy Controls, Passport, and Location Map are route-owned and
+ * excluded from this layer.
  */
 export default function UraiAutonomousV1Layer() {
   const pathname = usePathname() || "";
 
-  if (
-    pathname.startsWith("/mirror") ||
-    pathname.startsWith("/passport") ||
-    pathname.startsWith("/location-map")
-  ) {
+  if (pathname.startsWith("/mirror")) {
     return <UraiAutonomousV1Realms pathname={pathname} />;
   }
 
