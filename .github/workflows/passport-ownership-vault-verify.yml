@@ -3,6 +3,7 @@ name: Passport Ownership Vault Verification
 on:
   push:
     branches:
+      - main
       - feat/passport-ownership-vault-891-20260721
       - feat/passport-ownership-vault-891-rebased-20260722
   pull_request:
