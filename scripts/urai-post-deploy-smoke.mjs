@@ -30,8 +30,8 @@ const contracts = [
   ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
   ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
-  ['/passport', ['urai-final-passport-vault', 'Your life stays yours.'], []],
-  ['/privacy-controls', ['privacy-consent-console', 'Choose what the world can hold.'], ['Home threshold']],
+  ['/passport', ['passport-ownership-vault', 'UrAi Passport', 'Ownership key'], ['urai-final-passport-vault', 'Your life stays yours.']],
+  ['/privacy-controls', ['consent-sanctuary', 'UrAi Consent Sanctuary', 'Choose what the world may hold.', 'Enforcement:'], ['privacy-consent-console', 'Choose what the world can hold.', 'Home threshold']],
   ['/location-map', ['premium-emotional-weather-atlas'], []],
   ['/status', ['urai-final-status-control-room', 'Launch locked. Proof before expansion.', 'fingerprint-gated', 'Production certification remains hidden until the protected fingerprint is validated.'], ['Pending proof', 'World online. Route matrix visible.']],
 ]
