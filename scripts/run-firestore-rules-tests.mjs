@@ -15,7 +15,7 @@ if (javaCheck.status === 0) {
     'emulators:exec',
     '--only',
     'firestore',
-    'node --test tests/firestore.assetManifests.rules.test.mjs',
+    'node --test tests/firestore.assetManifests.rules.test.mjs tests/firestore.privacyConsent.rules.test.mjs',
   ])
   process.exit(result.status ?? 1)
 }
@@ -23,5 +23,9 @@ if (javaCheck.status === 0) {
 console.warn('[URAI] Java is not available, so the Firestore emulator cannot run in this environment.')
 console.warn('[URAI] Running static Firestore rules boundary tests instead. Install Java for full emulator enforcement tests.')
 
-const fallback = run('node', ['--test', 'tests/firestore.assetManifests.rules.static.test.mjs'])
+const fallback = run('node', [
+  '--test',
+  'tests/firestore.assetManifests.rules.static.test.mjs',
+  'tests/firestore.privacyConsent.rules.static.test.mjs',
+])
 process.exit(fallback.status ?? 1)
