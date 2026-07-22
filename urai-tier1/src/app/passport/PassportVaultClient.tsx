@@ -15,7 +15,7 @@ import {
   subscribeOperationalUserCollection,
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
-import { demoPassportSnapshot, redactPassportSnapshot } from './passportModel'
+import { demoPassportSnapshot, redactPassportSnapshot, type PassportSnapshot } from './passportModel'
 import './passport-vault.css'
 
 type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'empty' | 'offline' | 'unavailable'
@@ -66,6 +66,10 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
             <RoundedBox args={index === 0 ? [2.3, 3.7, 1.1] : [2.2, 2.2, 0.65]} radius={0.16} smoothness={4} onClick={(event) => { event.stopPropagation(); onSelect(id) }}>
               <meshStandardMaterial color={active ? '#d6b66f' : '#101823'} emissive={active ? '#d8b463' : '#17313b'} emissiveIntensity={active ? 0.62 : 0.12} metalness={0.48} roughness={0.36} />
             </RoundedBox>
+            <mesh position={[0, index === 0 ? 0.1 : 0, index === 0 ? 0.58 : 0.36]}>
+              <planeGeometry args={[active ? 1.42 : 1.12, 0.08]} />
+              <meshBasicMaterial color={active ? '#fff8e8' : '#8edce5'} />
+            </mesh>
           </group>
         )
       })}

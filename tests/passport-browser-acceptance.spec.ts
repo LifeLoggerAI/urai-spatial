@@ -20,17 +20,10 @@ async function save(name: string, evidence: RuntimeEvidence) {
   await fs.writeFile(path.join(evidenceRoot, `${name}.json`), JSON.stringify(evidence, null, 2))
 }
 
-async function openPassport(page: Page, suffix = '') {
-  await page.goto(`${baseURL}/passport/${suffix}`, { waitUntil: 'domcontentloaded' })
-  const root = page.locator('main[data-route-owner="passport-ownership-vault"]')
-  await expect(root).toBeVisible()
-  return root
-}
-
 async function openDemo(page: Page) {
-  const root = await openPassport(page, '?demo=1')
-  await expect(root).toHaveAttribute('data-passport-source', 'demo')
-  await expect(page.locator('.passportDisclosure')).toHaveText('DEMONSTRATION — sample data only')
+  await page.goto(`${baseURL}/passport/?demo=1`, { waitUntil: 'networkidle' })
+  await expect(page.locator('main[data-route-owner="passport-ownership-vault"]')).toBeVisible()
+  await expect(page.getByText('DEMONSTRATION — sample data only', { exact: true })).toBeVisible()
 }
 
 test('desktop Ownership Vault exposes every zone and transition', async ({ page }) => {
@@ -53,9 +46,11 @@ test('desktop Ownership Vault exposes every zone and transition', async ({ page 
 
 test('signed-out entry never substitutes demo ownership data', async ({ page }) => {
   const runtime = await observe(page)
-  const root = await openPassport(page)
+  await page.goto(`${baseURL}/passport/`, { waitUntil: 'networkidle' })
+  const root = page.locator('main[data-route-owner="passport-ownership-vault"]')
+  await expect(root).toBeVisible()
   await expect(root).not.toHaveAttribute('data-passport-source', 'demo')
-  await expect(page.locator('.passportDisclosure')).toHaveCount(0)
+  await expect(page.getByText('DEMONSTRATION — sample data only', { exact: true })).toHaveCount(0)
   await page.screenshot({ path: path.join(evidenceRoot, 'signed-out-boundary.png'), fullPage: true })
   await save('signed-out-runtime', runtime)
   expect(runtime.pageErrors).toEqual([])

@@ -43,7 +43,7 @@ assert.match(mirror, /mirror-reflection-main/, "Mirror route must use the final 
 
 const passport = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
 assert.match(passport, /PassportVaultClient/, "Passport route must render the canonical Ownership Vault owner.");
-assert.doesNotMatch(passport, /FinalPassportVault/, "Passport route must not restore the retired poster owner.");
+assert.doesNotMatch(passport, /FinalPassportVault/, "Passport route must not restore the retired poster-style vault owner.");
 
 const ground = readFileSync(join(app, "src/app/ground/page.tsx"), "utf8");
 assert.match(ground, /walkable-first-person-ground-layer/, "Ground route must render the final ground world.");
