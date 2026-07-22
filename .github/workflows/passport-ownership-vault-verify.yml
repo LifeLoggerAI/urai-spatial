@@ -17,10 +17,11 @@ permissions:
 env:
   EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   EXPECTED_FIREBASE_PROJECT: urai-4dc1d
+  PR_NUMBER: ${{ github.event.pull_request.number || '' }}
 
 concurrency:
-  group: passport-ownership-vault-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: true
+  group: urai-firebase-preview-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
   verify-and-capture:
@@ -89,8 +90,57 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
           chmod 600 "$CREDENTIALS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
-          CHANNEL_ID="passport-892-${EXACT_HEAD_SHA:0:7}"
+
+          # Reuse one Passport preview channel per PR. Exact candidate identity is
+          # still proven by the SHA embedded in the static payload and receipt.
+          if test -n "$PR_NUMBER"; then
+            CHANNEL_ID="passport-pr-${PR_NUMBER}"
+          else
+            CHANNEL_ID="passport-owner"
+          fi
+          export CHANNEL_ID
           test "$CHANNEL_ID" != live
+
+          # All Firebase preview producers share one repository-wide concurrency
+          # group. Remove only superseded Passport-owned channels; never `live`.
+          pnpm exec firebase hosting:channel:list \
+            --site urai-4dc1d \
+            --project "$FIREBASE_PROJECT_ID" \
+            --json > preview-channels.json 2> preview-channels.stderr
+          node - <<'NODE' > passport-preview-cleanup-candidates.tsv
+          const fs = require('fs')
+          const value = JSON.parse(fs.readFileSync('preview-channels.json', 'utf8'))
+          const current = process.env.CHANNEL_ID
+          const candidates = new Set()
+          const walk = input => {
+            if (Array.isArray(input)) return input.forEach(walk)
+            if (!input || typeof input !== 'object') return
+            const id = input.channelId || input.id || input.name
+            if (typeof id === 'string') {
+              const normalized = id.split('/').pop()
+              const owned = /^(?:passport-892-|passport-pr-|passport-owner$)/.test(normalized)
+              if (owned && normalized !== current && normalized !== 'live') candidates.add(normalized)
+            }
+            Object.values(input).forEach(walk)
+          }
+          walk(value)
+          process.stdout.write([...candidates].sort().map(id => `${id}\tsuperseded`).join('\n'))
+          NODE
+          : > passport-preview-cleanup-results.tsv
+          while IFS=$'\t' read -r old_channel cleanup_reason; do
+            test -n "$old_channel" || continue
+            test "$old_channel" != live
+            if pnpm exec firebase hosting:channel:delete "$old_channel" \
+              --site urai-4dc1d \
+              --project "$FIREBASE_PROJECT_ID" \
+              --force \
+              --non-interactive; then
+              printf '%s\t%s\tdeleted\n' "$old_channel" "$cleanup_reason" >> passport-preview-cleanup-results.tsv
+            else
+              printf '%s\t%s\tdelete-failed\n' "$old_channel" "$cleanup_reason" >> passport-preview-cleanup-results.tsv
+            fi
+          done < passport-preview-cleanup-candidates.tsv
+
           pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
             --config .github/firebase.preview.json \
             --project "$FIREBASE_PROJECT_ID" \
@@ -126,7 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p passport-evidence
-          cp -f preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-passport.html passport-evidence/ 2>/dev/null || true
+          cp -f preview-channels.json preview-channels.stderr passport-preview-cleanup-candidates.tsv passport-preview-cleanup-results.tsv preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-passport.html passport-evidence/ 2>/dev/null || true
           printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > passport-evidence/manifest.txt
