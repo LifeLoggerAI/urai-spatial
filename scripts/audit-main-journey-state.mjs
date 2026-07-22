@@ -24,6 +24,10 @@ function requireMatch(label, source, pattern) {
   if (!pattern.test(source)) failures.push(`${label}: missing ${pattern}`)
 }
 
+function requireCondition(label, condition) {
+  if (!condition) failures.push(label)
+}
+
 function forbidMatch(label, source, pattern) {
   if (pattern.test(source)) failures.push(`${label}: forbidden hardcoded pattern ${pattern}`)
 }
@@ -48,11 +52,17 @@ requireMatch('Focus enters Replay through world travel', focusClient, /requestUr
 requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
 requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: memory\.replayManifest\.id/)
 requireMatch('Focus Replay portal accessibility', focusClient, /aria-label={`Open Replay for \${memory\.title}`}/)
-requireMatch('Focus fails closed without authorized memory', focusClient, /if \(!memory \|\| !replayHref\) return/)
+
+const combinedFocusGuard = /if \(!memory \|\| !replayHref \|\| committed\) return/.test(focusClient)
+const separateAuthorizationGuard = /if \(!memory \|\| !replayHref\) return/.test(focusClient)
+const separateCommittedGuard = /if \(committed\) return/.test(focusClient)
+requireCondition('Focus must fail closed without an authorized memory and Replay route.', combinedFocusGuard || separateAuthorizationGuard)
+requireCondition('Focus must debounce an already committed Replay transition.', combinedFocusGuard || separateCommittedGuard)
+
 requireMatch('Focus deterministic world return', focusClient, /requestUraiWorldReturn\(\)/)
-requireMatch('Focus DOM memory identity', focusClient, /data-memory-id=\{memory\.id\}/)
-requireMatch('Focus DOM star identity', focusClient, /data-star-id=\{memory\.star\.id\}/)
-requireMatch('Focus DOM manifest identity', focusClient, /data-manifest-id=\{memory\.replayManifest\.id\}/)
+requireMatch('Focus DOM memory identity', focusClient, /data-memory-id=\{memory(?:\?\.|\.)id\}/)
+requireMatch('Focus DOM star identity', focusClient, /data-star-id=\{memory(?:\?\.|\.)star\.id\}/)
+requireMatch('Focus DOM manifest identity', focusClient, /data-manifest-id=\{memory(?:\?\.|\.)replayManifest\.id\}/)
 
 requireMatch('Replay deterministic world return', replayClient, /requestUraiWorldReturn\(\)/)
 requireMatch('Replay Escape return', replayClient, /event\.key === 'Escape'/)
