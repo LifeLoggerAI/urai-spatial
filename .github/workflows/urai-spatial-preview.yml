@@ -85,6 +85,7 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
         run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
       - name: Build exact-head local evidence manifest
         if: always()
