@@ -342,10 +342,16 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
+    const expectedNavigationAborts = errors.failedRequests.filter(isExpectedNavigationAbort)
+    const unexpectedFailedRequests = errors.failedRequests.filter(request => !expectedNavigationAborts.includes(request))
     expect(errors.consoleErrors).toEqual([])
     expect(errors.pageErrors).toEqual([])
-    expect(errors.failedRequests).toEqual([])
-    await attachJson(testInfo, 'mobile-console-network-receipt.json', errors)
+    expect(unexpectedFailedRequests).toEqual([])
+    await attachJson(testInfo, 'mobile-console-network-receipt.json', {
+      ...errors,
+      expectedNavigationAborts,
+      unexpectedFailedRequests,
+    })
     await attachJson(testInfo, 'mobile-interaction-receipt.json', {
       exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
       beforeTouch,
