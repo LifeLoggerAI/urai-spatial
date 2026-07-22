@@ -24,6 +24,14 @@ function unavailable(message: string): SelectedMemoryResult {
 
 function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
   if (!memoryId || memoryId.startsWith('demo:')) return null
+
+  // Life Map is allowed to continue an explicitly disclosed sample into Focus or
+  // Replay. Canonicalize the identifier before resolving the memory so an
+  // unprefixed sample can never be mistaken for private user data.
+  if (params.get('demo') === '1' && params.get('from') === 'life-map') {
+    return `demo:${memoryId}`
+  }
+
   if (params.get('from') !== 'life-map-camera') return null
 
   const publicDemoEnabled = process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true'
