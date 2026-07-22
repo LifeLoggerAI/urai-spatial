@@ -14,4 +14,170 @@ env:
   EXPECTED_FIREBASE_PROJECT: urai-4dc1d
 
 concurrency:
-  group: urai-sp
+  group: urai-spatial-preview-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Exact-head build and contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Preflight
+        run: pnpm preflight
+      - name: Build exact static candidate with acceptance fixtures
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: pnpm build:static
+      - name: Prove exact source remained clean
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Verify staged preview payload exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/firebase.preview.json
+          test -d urai-tier1/out
+          test -f urai-tier1/out/index.html
+          test -f urai-tier1/out/location-map/index.html
+
+  deploy-preview:
+    name: Manual trusted preview deploy and browser acceptance
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Build exact static candidate with acceptance fixtures
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: pnpm build:static
+      - name: Verify and stage isolated preview payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/firebase.preview.json
+          rm -rf .github/urai-tier1
+          mkdir -p .github/urai-tier1
+          cp -R urai-tier1/out .github/urai-tier1/out
+          test -f .github/urai-tier1/out/index.html
+          test -f .github/urai-tier1/out/location-map/index.html
+      - name: Deploy isolated Firebase preview channel
+        id: deploy
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT"
+          test -n "$FIREBASE_PROJECT_ID"
+          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-preview-service-account.json"
+          cleanup() { rm -f "$CREDENTIALS_FILE"; }
+          trap cleanup EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
+          chmod 600 "$CREDENTIALS_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+          CHANNEL_ID="lane6-889-${URAI_EXACT_HEAD:0:7}"
+          test "$CHANNEL_ID" != live
+          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
+            --config .github/firebase.preview.json \
+            --project "$FIREBASE_PROJECT_ID" \
+            --expires 1d \
+            --non-interactive \
+            --json > preview-deploy.json 2> preview-deploy.stderr
+          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
+          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;;
+          esac
+          printf 'preview_url=%s\nchannel_id=%s\n' "$PREVIEW_URL" "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
+          printf 'exact_sha=%s\nrun_id=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\n' \
+            "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$CHANNEL_ID" "$PREVIEW_URL" > preview-receipt.txt
+      - name: Verify reachable preview runtime and SHA identity
+        shell: bash
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/location-map/" -o preview-location-map.html
+          grep -q 'URAI' preview-location-map.html
+          grep -q "$URAI_EXACT_HEAD" preview-location-map.html
+      - name: Install Chromium for deployed acceptance
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run complete browser acceptance against deployed preview
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+      - name: Retain preview deployment and runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: urai-location-map-preview-acceptance-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            preview-deploy.json
+            preview-deploy.stderr
+            preview-receipt.txt
+            preview-location-map.html
+            test-results
+            playwright-report
+          if-no-files-found: error
+          retention-days: 90
