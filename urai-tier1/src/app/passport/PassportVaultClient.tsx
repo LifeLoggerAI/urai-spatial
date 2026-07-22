@@ -1,7 +1,7 @@
 "use client"
 
 import { Canvas } from '@react-three/fiber'
-import { Float, OrbitControls, RoundedBox, Text } from '@react-three/drei'
+import { Float, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { app, firebasePublicEnvReady } from '@/lib/firebase/client'
@@ -15,7 +15,7 @@ import {
   subscribeOperationalUserCollection,
   type PrivacyRow,
 } from '@/lib/privacy/operationalPrivacyClient'
-import { demoPassportSnapshot, redactPassportSnapshot, type PassportSnapshot } from './passportModel'
+import { demoPassportSnapshot, redactPassportSnapshot } from './passportModel'
 import './passport-vault.css'
 
 type LoadState = 'loading' | 'private' | 'demo' | 'signed-out' | 'empty' | 'offline' | 'unavailable'
@@ -55,7 +55,7 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
         <circleGeometry args={[10, 72]} />
         <meshStandardMaterial color="#090d14" metalness={0.3} roughness={0.72} />
       </mesh>
-      {ZONES.map(([id, label], index) => {
+      {ZONES.map(([id], index) => {
         const angle = ((index - 1) / ZONES.length) * Math.PI * 2
         const radius = index === 0 ? 0 : 6.2
         const x = index === 0 ? 0 : Math.cos(angle) * radius
@@ -66,7 +66,6 @@ function VaultWorld({ selected, keyState, onSelect, reducedMotion }: { selected:
             <RoundedBox args={index === 0 ? [2.3, 3.7, 1.1] : [2.2, 2.2, 0.65]} radius={0.16} smoothness={4} onClick={(event) => { event.stopPropagation(); onSelect(id) }}>
               <meshStandardMaterial color={active ? '#d6b66f' : '#101823'} emissive={active ? '#d8b463' : '#17313b'} emissiveIntensity={active ? 0.62 : 0.12} metalness={0.48} roughness={0.36} />
             </RoundedBox>
-            <Text position={[0, index === 0 ? 0.1 : 0, index === 0 ? 0.58 : 0.36]} fontSize={0.2} maxWidth={1.8} textAlign="center" color="#fff8e8">{label}</Text>
           </group>
         )
       })}
