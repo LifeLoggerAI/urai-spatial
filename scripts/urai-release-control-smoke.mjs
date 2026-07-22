@@ -150,7 +150,7 @@ async function runReleaseControlSmoke() {
     `node=${identity.node}`,
   ]
   const report = {
-    schemaVersion: 'urai-release-control-smoke-6',
+    schemaVersion: 'urai-release-control-smoke-5',
     generatedAt: new Date().toISOString(),
     base,
     expectedSha,
@@ -220,7 +220,7 @@ async function runReleaseControlSmoke() {
           redirect,
           cache: 'no-store',
           signal: AbortSignal.timeout(20_000),
-          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/6' },
+          headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
         })
         const body = await response.text()
         return {
