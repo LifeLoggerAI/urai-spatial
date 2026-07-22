@@ -6,7 +6,7 @@ test('Location Map route renders from the requested exact build', async ({ page 
 
   await page.goto('/location-map/', { waitUntil: 'domcontentloaded' })
 
-  await expect(page.locator('[data-launch-surface="premium-emotional-weather-atlas"]')).toBeVisible()
+  await expect(page.locator('main[data-launch-surface="premium-emotional-weather-atlas"]')).toBeVisible()
   await expect(page.locator('body')).toContainText(/Location|Places|Map|Atlas/i)
 
   const expectedSha = process.env.URAI_EXACT_HEAD
