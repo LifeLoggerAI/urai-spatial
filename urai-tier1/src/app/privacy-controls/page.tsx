@@ -7,6 +7,8 @@ export const metadata = {
   description: 'Inspect, preview, narrow, pause, revoke, and audit consent inside the private UrAi world.',
 }
 
+// Provider art establishes the authored sanctuary surface; the dedicated client remains
+// the sole procedural WebGL and operational privacy owner above it.
 const providerSurface = {
   position: 'fixed',
   inset: 0,
