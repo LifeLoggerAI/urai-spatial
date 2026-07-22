@@ -3,37 +3,31 @@ set -euo pipefail
 
 die(){ echo "CERT_FAIL: $*" >&2; exit 1; }
 
-SCENE="src/spatial/scene/SpatialScene.tsx"
-CAM_A="src/spatial/components/CameraDirector.tsx"
-CAM_B="src/spatial/components/CinematicCameraRig.tsx"
+HOME_CANON="src/components/spatial/LifeMapScene.tsx"
+REPLAY="urai-tier1/src/spatial/places/PlaceReplayScene.tsx"
+TIER2_CANON="urai-tier1/src/spatial/canon/tier2Canon.ts"
+CAMERA_CANON="urai-tier1/src/spatial/canon/cameraCanon.ts"
+TRANSITION_SYNC="urai-tier1/src/spatial/hooks/useTransitionSync.ts"
 
-[ -f "$SCENE" ] || die "missing SpatialScene.tsx"
+[ -f "$HOME_CANON" ] || die "missing LifeMapScene.tsx"
+[ -f "$REPLAY" ] || die "missing PlaceReplayScene.tsx"
+[ -f "$TIER2_CANON" ] || die "missing tier2Canon.ts"
+[ -f "$CAMERA_CANON" ] || die "missing cameraCanon.ts"
+[ -f "$TRANSITION_SYNC" ] || die "missing useTransitionSync.ts"
 
-HAS_DIRECTOR=0
-HAS_RIG=0
-grep -q "<CameraDirector" "$SCENE" && HAS_DIRECTOR=1 || true
-grep -q "<CinematicCameraRig" "$SCENE" && HAS_RIG=1 || true
+grep -q "resolveReplayVeilOpacity" "$TIER2_CANON" || die "tier2 canon missing replay veil opacity"
+grep -q "resolveFocusOpacity" "$TIER2_CANON" || die "tier2 canon missing focus opacity"
+grep -q "resolveDepthScale" "$TIER2_CANON" || die "tier2 canon missing depth scale"
+grep -q "CANON_ACTIONS" "$TIER2_CANON" || die "tier2 canon missing action registry"
 
-[ "$HAS_DIRECTOR" -eq 1 ] || [ "$HAS_RIG" -eq 1 ] || die "no camera component callsite present"
-[ $((HAS_DIRECTOR + HAS_RIG)) -eq 1 ] || die "multiple camera authorities rendered in SpatialScene"
+grep -q "resolveCameraConvergence" "$CAMERA_CANON" || die "camera canon missing convergence helper"
+grep -q "resolveCameraDamping" "$CAMERA_CANON" || die "camera canon missing damping helper"
+grep -q "resolveCameraDurationMs" "$CAMERA_CANON" || die "camera canon missing duration helper"
+grep -q "normalizeTransitionPhase" "$CAMERA_CANON" || die "camera canon missing phase normalization"
 
-if [ "$HAS_DIRECTOR" -eq 1 ]; then
-  grep -q "<CameraDirector mode={authority.mode} transitionPhase={phase}" "$SCENE" || die "CameraDirector missing canonical transitionPhase wiring"
-  [ -f "$CAM_A" ] || die "CameraDirector.tsx missing"
-  grep -q "transitionPhase" "$CAM_A" || die "CameraDirector component missing transitionPhase prop"
-fi
-
-if [ "$HAS_RIG" -eq 1 ]; then
-  grep -q "<CinematicCameraRig mode={authority.mode} transitionPhase={phase}" "$SCENE" || die "CinematicCameraRig missing canonical transitionPhase wiring"
-  [ -f "$CAM_B" ] || die "CinematicCameraRig.tsx missing"
-  grep -q "transitionPhase" "$CAM_B" || die "CinematicCameraRig component missing transitionPhase prop"
-  grep -q "const phaseAny = transitionPhase" "$CAM_B" || die "CinematicCameraRig missing local phase binding"
-  grep -q "const transitionDamping =" "$CAM_B" || die "CinematicCameraRig missing transition damping helper"
-fi
-
-grep -q "const replaySceneOpacity =" "$SCENE" || die "SpatialScene missing replaySceneOpacity"
-grep -q "const homeReturnOpacity =" "$SCENE" || die "SpatialScene missing homeReturnOpacity"
-grep -q "const replayVisible =" "$SCENE" || die "SpatialScene missing replayVisible"
-grep -q "const lifeMapVisible =" "$SCENE" || die "SpatialScene missing lifeMapVisible"
+grep -q "showHomeLayer" "$TRANSITION_SYNC" || die "transition sync missing home layer"
+grep -q "showLifeMapLayer" "$TRANSITION_SYNC" || die "transition sync missing lifemap layer"
+grep -q "showFocusLayer" "$TRANSITION_SYNC" || die "transition sync missing focus layer"
+grep -q "showReplayLayer" "$TRANSITION_SYNC" || die "transition sync missing replay layer"
 
 echo "CERT_PASS: transition authority wiring intact"
