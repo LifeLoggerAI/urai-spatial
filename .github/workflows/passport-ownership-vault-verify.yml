@@ -1,0 +1,146 @@
+name: Passport Ownership Vault Verification
+
+on:
+  push:
+    branches:
+      - feat/passport-ownership-vault-891-20260721
+      - feat/passport-ownership-vault-891-rebased-20260722
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
+
+concurrency:
+  group: passport-ownership-vault-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  verify-and-capture:
+    name: Exact-head preview and browser evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXACT_HEAD_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Assert exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Run Passport contract
+        run: node urai-tier1/tests/passport-ownership-vault-contract.test.mjs
+      - name: Build exact static candidate
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.EXACT_HEAD_SHA }}
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: pnpm build:static
+      - name: Verify and stage preview payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/firebase.preview.json
+          test -f urai-tier1/out/passport/index.html
+          rm -rf .github/urai-tier1
+          mkdir -p .github/urai-tier1
+          cp -R urai-tier1/out .github/urai-tier1/out
+          test -f .github/urai-tier1/out/passport/index.html
+      - name: Deploy isolated Firebase preview channel
+        id: deploy
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT"
+          test -n "$FIREBASE_PROJECT_ID"
+          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-passport-preview.json"
+          cleanup() { rm -f "$CREDENTIALS_FILE"; }
+          trap cleanup EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
+          chmod 600 "$CREDENTIALS_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+          CHANNEL_ID="passport-892-${EXACT_HEAD_SHA:0:7}"
+          test "$CHANNEL_ID" != live
+          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
+            --config .github/firebase.preview.json \
+            --project "$FIREBASE_PROJECT_ID" \
+            --expires 1d \
+            --non-interactive \
+            --json > preview-deploy.json 2> preview-deploy.stderr
+          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
+          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;; esac
+          printf 'preview_url=%s\nchannel_id=%s\n' "$PREVIEW_URL" "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
+          printf 'exact_sha=%s\nrun_id=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\n' \
+            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$CHANNEL_ID" "$PREVIEW_URL" > preview-receipt.txt
+      - name: Verify reachable route and SHA identity
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/passport/" -o preview-passport.html
+          grep -q 'UrAi Passport' preview-passport.html
+          grep -q "$EXACT_HEAD_SHA" preview-passport.html
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run deployed browser acceptance
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: pnpm exec playwright test tests/passport-browser-acceptance.spec.ts --config=playwright.config.ts
+      - name: Build exact evidence manifest
+        if: always()
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          CHANNEL_ID: ${{ steps.deploy.outputs.channel_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p passport-evidence
+          cp -f preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-passport.html passport-evidence/ 2>/dev/null || true
+          printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
+            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > passport-evidence/manifest.txt
+          evidence_paths=(passport-evidence)
+          test -d test-results && evidence_paths+=(test-results)
+          test -d playwright-report && evidence_paths+=(playwright-report)
+          find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > passport-evidence/SHA256SUMS
+      - name: Retain exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: urai-passport-acceptance-${{ env.EXACT_HEAD_SHA }}
+          path: |
+            passport-evidence
+            test-results
+            playwright-report
+          if-no-files-found: error
+          retention-days: 90
