@@ -20,8 +20,8 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number || '' }}
 
 concurrency:
-  group: urai-firebase-preview-${{ github.repository }}
-  cancel-in-progress: false
+  group: passport-ownership-vault-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify-and-capture:
@@ -101,8 +101,8 @@ jobs:
           export CHANNEL_ID
           test "$CHANNEL_ID" != live
 
-          # All Firebase preview producers share one repository-wide concurrency
-          # group. Remove only superseded Passport-owned channels; never `live`.
+          # Stable Passport channels prevent quota growth. Cleanup is restricted
+          # to superseded Passport-owned channels and explicitly refuses `live`.
           pnpm exec firebase hosting:channel:list \
             --site urai-4dc1d \
             --project "$FIREBASE_PROJECT_ID" \
