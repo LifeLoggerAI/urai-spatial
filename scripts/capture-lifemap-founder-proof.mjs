@@ -7,7 +7,7 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
-const receipt = { schemaVersion: 'urai-lifemap-founder-proof-6', repository: 'LifeLoggerAI/urai-spatial', pr: 889, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
+const receipt = { schemaVersion: 'urai-lifemap-founder-proof-7', repository: 'LifeLoggerAI/urai-spatial', pr: 889, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
 let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
@@ -44,6 +44,18 @@ async function waitForState(page, attribute, expected, timeout = 20_000) {
     const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
     return root?.getAttribute(attribute) === expected
   }, { attribute, expected }, { timeout, polling: 25 })
+}
+
+async function waitForOverviewState(page, timeout = 30_000) {
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
+    const destination = new URL(window.location.href)
+    return root?.getAttribute('data-life-map-mode') === 'overview'
+      && destination.pathname.replace(/\/$/, '') === '/life-map'
+      && destination.searchParams.get('overview') === '1'
+      && !destination.searchParams.has('memoryId')
+      && !destination.searchParams.has('node')
+  }, null, { timeout, polling: 25 })
 }
 
 async function advanceClockToState(page, attribute, expected, maxAdvance) {
@@ -135,20 +147,21 @@ async function desktopJourney() {
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
     await shot(page, 'focus-destination', 'focus', { memoryId: 'demo:quiet-reset' })
     await goto(page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
-    await waitForState(page, 'data-life-map-phase', 'arrival')
+    await waitForState(page, 'data-life-map-mode', 'selected')
     await clickRouteAction(page, 'Replay', '/replay', 'main')
     await shot(page, 'replay-destination', 'replay', { memoryId: 'demo:quiet-reset' })
 
     await goto(page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
-    await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).getByRole('button', { name: 'Overview', exact: true }).click()
-    await waitForState(page, 'data-life-map-mode', 'overview')
-    await page.waitForFunction(() => new URL(window.location.href).searchParams.get('overview') === '1', null, { timeout: 20_000, polling: 50 })
+    await waitForState(page, 'data-life-map-mode', 'selected')
+    const overviewAction = selectedActions(page).getByRole('button', { name: 'Overview', exact: true })
+    await overviewAction.waitFor({ state: 'visible', timeout: 20_000 })
+    await overviewAction.click()
+    await waitForOverviewState(page)
     await shot(page, 'overview-reset', 'overview-reset')
+
     await selectQuietReset(page)
     await page.keyboard.press('Escape')
-    await waitForState(page, 'data-life-map-mode', 'overview')
-    await page.waitForFunction(() => new URL(window.location.href).searchParams.get('overview') === '1', null, { timeout: 20_000, polling: 50 })
+    await waitForOverviewState(page)
     await shot(page, 'escape-unwind', 'escape-unwind')
   } finally { await context.close() }
 }
