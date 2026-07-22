@@ -18,12 +18,26 @@ export function LocationMapNativeWheelBridge() {
     }
 
     const handleHome = (event: KeyboardEvent) => {
-      if (event.key !== 'Home' || !document.querySelector('.locationAtlasStage')) return
+      const atlas = document.querySelector<HTMLElement>('.locationAtlas')
+      if (event.key !== 'Home' || !atlas?.querySelector('.locationAtlasStage')) return
       const target = event.target
       if (target instanceof HTMLElement && target.matches('input,textarea,select,[contenteditable="true"]')) return
-      const overview = document.querySelector<HTMLButtonElement>('.locationAtlasControls button[aria-label="Return to atlas overview"]')
+      const overview = atlas.querySelector<HTMLButtonElement>('.locationAtlasControls button[aria-label="Return to atlas overview"]')
       if (!overview) return
+
       event.preventDefault()
+
+      // A retained sample atlas can be open from localStorage before demo=1 is present
+      // in the URL. Normalize that same-route state before the overview action so the
+      // router does not remount the atlas between camera reset and the next native tap.
+      if (!atlas.querySelector('.locationAtlasSelection') && atlas.dataset.locationMapSource === 'disclosed-demo') {
+        const url = new URL(window.location.href)
+        if (url.searchParams.get('demo') !== '1') {
+          url.searchParams.set('demo', '1')
+          window.history.replaceState(window.history.state, '', url)
+        }
+      }
+
       overview.click()
     }
 
