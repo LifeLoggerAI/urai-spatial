@@ -7,7 +7,7 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
-const receipt = { schemaVersion: 'urai-lifemap-founder-proof-5', repository: 'LifeLoggerAI/urai-spatial', pr: 889, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
+const receipt = { schemaVersion: 'urai-lifemap-founder-proof-6', repository: 'LifeLoggerAI/urai-spatial', pr: 889, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
 let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
@@ -81,6 +81,16 @@ function selectedActions(page) {
   return page.locator('nav[aria-label="Selected memory actions"]').first()
 }
 
+async function selectQuietReset(page) {
+  const navigator = page.locator('[data-life-map-navigator]').first()
+  await navigator.waitFor({ state: 'attached', timeout: 20_000 })
+  await navigator.evaluate((details) => { details.open = true })
+  const result = navigator.locator('[role="listitem"]').filter({ hasText: 'The Quiet Reset' }).first()
+  await result.waitFor({ state: 'visible', timeout: 20_000 })
+  await result.click()
+  await waitForState(page, 'data-life-map-mode', 'selected')
+}
+
 async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedActions(page).getByRole('button', { name, exact: true })
   await action.waitFor({ state: 'visible', timeout: 20_000 })
@@ -111,8 +121,7 @@ async function desktopJourney() {
 
     await page.clock.install()
     await page.clock.pauseAt(Date.now())
-    await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
-    await waitForState(page, 'data-life-map-mode', 'selected')
+    await selectQuietReset(page)
     await shot(page, 'selection-start', 'selection-start', { memoryId: 'quiet-reset' })
     await advanceClockToState(page, 'data-life-map-phase', 'travel', 300)
     await shot(page, 'mid-travel', 'travel')
@@ -136,8 +145,7 @@ async function desktopJourney() {
     await waitForState(page, 'data-life-map-mode', 'overview')
     await page.waitForFunction(() => new URL(window.location.href).searchParams.get('overview') === '1', null, { timeout: 20_000, polling: 50 })
     await shot(page, 'overview-reset', 'overview-reset')
-    await page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true })
-    await waitForState(page, 'data-life-map-mode', 'selected')
+    await selectQuietReset(page)
     await page.keyboard.press('Escape')
     await waitForState(page, 'data-life-map-mode', 'overview')
     await page.waitForFunction(() => new URL(window.location.href).searchParams.get('overview') === '1', null, { timeout: 20_000, polling: 50 })
@@ -149,11 +157,11 @@ async function mobileAndReduced() {
   const mobile = await openPage({ viewport: { width: 390, height: 844 } })
   try {
     await goto(mobile.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'); await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    await mobile.page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true }); await waitForState(mobile.page, 'data-life-map-phase', 'arrival'); await shot(mobile.page, 'portrait-mobile-selected', 'mobile-selected', { memoryId: 'quiet-reset' })
+    await selectQuietReset(mobile.page); await waitForState(mobile.page, 'data-life-map-phase', 'arrival'); await shot(mobile.page, 'portrait-mobile-selected', 'mobile-selected', { memoryId: 'quiet-reset' })
   } finally { await mobile.context.close() }
   const reduced = await openPage({ reducedMotion: 'reduce' })
   try {
-    await goto(reduced.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'); await reduced.page.getByRole('button', { name: /The Quiet Reset/i }).first().click({ force: true }); await waitForState(reduced.page, 'data-life-map-phase', 'arrival'); await shot(reduced.page, 'reduced-motion-arrival', 'reduced-motion-arrival', { memoryId: 'quiet-reset' })
+    await goto(reduced.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'); await selectQuietReset(reduced.page); await waitForState(reduced.page, 'data-life-map-phase', 'arrival'); await shot(reduced.page, 'reduced-motion-arrival', 'reduced-motion-arrival', { memoryId: 'quiet-reset' })
   } finally { await reduced.context.close() }
 }
 
