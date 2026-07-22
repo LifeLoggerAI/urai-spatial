@@ -14,7 +14,7 @@ const routes = [
   ["src/app/focus/page.tsx", "FinalFocusChamber"],
   ["src/app/replay/page.tsx", "FinalReplayFilm"],
   ["src/app/location-map/page.tsx", "LocationMapScene"],
-  ["src/app/passport/page.tsx", "FinalPassportVault"],
+  ["src/app/passport/page.tsx", "PassportVaultClient"],
   ["src/app/council/page.tsx", "RealmShell"],
   ["src/app/legacy/page.tsx", "RealmShell"],
   ["src/app/dream/page.tsx", "RealmShell"],
@@ -27,6 +27,9 @@ for (const [file, expected] of routes) {
   const text = readFileSync(full, "utf8");
   assert.match(text, new RegExp(expected), `${file} must reference ${expected}.`);
 }
+
+const passportRoutePath = join(app, "src", "app", "passport", "page.tsx");
+assert.doesNotMatch(readFileSync(passportRoutePath, "utf8"), /FinalPassportVault/, "passport route must not restore the retired FinalPassportVault owner.");
 
 const placePagePath = join(app, "src", "app", "place", placeSegment, "page.tsx");
 const placeReplayPath = join(app, "src", "app", "place", placeSegment, "replay", "page.tsx");
