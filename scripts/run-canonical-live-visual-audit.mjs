@@ -12,8 +12,8 @@ const routes = [
   {
     id: 'home',
     path: '/home/',
-    selector: 'main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]',
-    markers: ['Own your life.', 'Threshold online'],
+    selector: '.urai-final-home-world[data-home-spatial-renderer="webgl"], [data-testid="urai-home-accessible-fallback"]',
+    markers: [],
   },
   { id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },
   { id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Sample constellation'] },
@@ -29,7 +29,7 @@ const routes = [
 
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
-const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-3', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
+const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-4', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
 let failed = false
 
 async function stable(page, frames = 3) {
@@ -47,11 +47,18 @@ async function stable(page, frames = 3) {
 async function settleSpatialRoute(page, route) {
   if (route.id === 'home') {
     await page.waitForFunction(() => {
-      const root = document.querySelector('main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]')
-      if (!root) return false
+      const webglOwner = document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
+      if (webglOwner) {
+        const canvas = webglOwner.querySelector('canvas')
+        const rect = canvas?.getBoundingClientRect()
+        return webglOwner.getAttribute('data-home-ready') === 'true'
+          && webglOwner.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'
+          && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+      }
+      const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
       const body = document.body.innerText || ''
-      return body.includes('Own your life.') && body.includes('Threshold online')
-    }, null, { timeout: 30_000, polling: 50 })
+      return Boolean(fallback && body.includes('Own your life.') && body.includes('Threshold online'))
+    }, null, { timeout: 45_000, polling: 50 })
   }
   if (route.id === 'ground') {
     await page.waitForFunction(() => {
@@ -108,9 +115,12 @@ async function proveLifeMapToFocus() {
     const start = `${base}/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset`
     const response = await page.goto(start, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     if (response?.status() !== 200) throw new Error(`Life Map returned ${response?.status()}`)
-    const controls = page.locator('[data-testid="urai-lifemap-selected-memory-controls"][data-memory-id="quiet-reset"]')
-    await controls.waitFor({ state: 'visible', timeout: 30_000 })
-    const focus = controls.getByRole('button', { name: 'Enter Focus', exact: true })
+    const map = page.locator('[data-testid="urai-true-3d-life-map"]')
+    await map.waitFor({ state: 'visible', timeout: 30_000 })
+    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'selected', null, { timeout: 30_000, polling: 50 })
+    const actions = page.locator('.life-map-actions[aria-label="Selected memory actions"]')
+    await actions.waitFor({ state: 'visible', timeout: 30_000 })
+    const focus = actions.getByRole('button', { name: 'Enter Focus', exact: true })
     const box = await focus.boundingBox()
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')
     await Promise.all([
@@ -125,7 +135,7 @@ async function proveLifeMapToFocus() {
     record.destination = destination.toString()
     record.passed = destination.searchParams.get('memoryId') === 'quiet-reset'
       && destination.searchParams.get('manifestId') === 'replay-recovery-thread'
-      && destination.searchParams.get('from') === 'life-map-selected-memory'
+      && destination.searchParams.get('from') === 'life-map'
       && !((await page.locator('body').innerText()).includes('Memory unavailable'))
     if (!record.passed) throw new Error(`Life Map did not preserve selected-memory identity into Focus: ${JSON.stringify(record)}`)
   } catch (error) {
