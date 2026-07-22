@@ -9,7 +9,8 @@ const files = [
   "src/spatial/passport/passportPermissionSchema.ts",
   "src/spatial/passport/PassportRealm.tsx",
   "src/app/passport/page.tsx",
-  "src/app/FinalPassportVault.tsx",
+  "src/app/passport/PassportVaultClient.tsx",
+  "src/app/passport/passportModel.ts",
   "src/spatial/council/councilAgentSchema.ts",
   "src/spatial/council/CouncilRealm.tsx",
   "src/app/council/page.tsx",
@@ -27,11 +28,15 @@ assert.match(passport, /DEMO_PASSPORT_PERMISSIONS/, "Demo passport permissions m
 assert.match(passport, /canExport/, "Passport permissions must describe export control.");
 
 const passportRoute = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
-assert.match(passportRoute, /FinalPassportVault/, "Passport route must render the final vault owner.");
+assert.match(passportRoute, /PassportVaultClient/, "Passport route must render the canonical Ownership Vault client.");
+assert.doesNotMatch(passportRoute, /FinalPassportVault/, "Passport route must not restore the retired poster owner.");
 
-const finalPassport = readFileSync(join(app, "src/app/FinalPassportVault.tsx"), "utf8");
-assert.match(finalPassport, /identity-consent-vault/, "Final Passport vault must preserve the identity and consent contract marker.");
-assert.match(finalPassport, /passportAssets/, "Final Passport vault must use the registered Passport asset stack.");
+const passportClient = readFileSync(join(app, "src/app/passport/PassportVaultClient.tsx"), "utf8");
+assert.match(passportClient, /passport-ownership-vault/, "Canonical Passport client must expose its route-owner marker.");
+assert.match(passportClient, /getOperationalPassportSnapshot/, "Canonical Passport client must read the operational ownership snapshot.");
+assert.match(passportClient, /createOperationalExportRequest/, "Canonical Passport client must preserve authenticated export authority.");
+assert.match(passportClient, /createOperationalDeletionRequest/, "Canonical Passport client must preserve scoped deletion authority.");
+assert.match(passportClient, /DEMONSTRATION/, "Canonical Passport client must disclose sample data explicitly.");
 
 const council = readFileSync(join(app, "src/spatial/council/councilAgentSchema.ts"), "utf8");
 assert.match(council, /CouncilAgent/, "CouncilAgent schema must exist.");
