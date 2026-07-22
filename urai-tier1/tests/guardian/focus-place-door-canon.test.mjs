@@ -34,8 +34,12 @@ assert.match(focusClient, /memoryId: memory\.id/, "Final Focus chamber must pres
 assert.match(focusClient, /manifestId: memory\.replayManifest\.id/, "Final Focus chamber must preserve selected manifest identity in its Replay route.");
 assert.match(focusClient, /node: memory\.star\.id/, "Final Focus chamber must preserve selected star identity in its Replay route.");
 assert.match(focusClient, /from: 'focus-artifact'/, "Final Focus chamber must preserve its entry provenance in the Replay route.");
-assert.match(focusClient, /if \(!memory \|\| !replayHref\) return/, "Final Focus chamber must fail closed when no authorized memory or Replay route exists.");
-assert.match(focusClient, /if \(committed\) return/, "Final Focus chamber must debounce an already committed Replay transition.");
+
+const hasAuthorizedReplayGuard = /if \(!memory \|\| !replayHref(?: \|\| committed)?\) return/.test(focusClient);
+const hasCommittedDebounce = /if \(!memory \|\| !replayHref \|\| committed\) return/.test(focusClient) || /if \(committed\) return/.test(focusClient);
+assert.equal(hasAuthorizedReplayGuard, true, "Final Focus chamber must fail closed when no authorized memory or Replay route exists.");
+assert.equal(hasCommittedDebounce, true, "Final Focus chamber must debounce an already committed Replay transition.");
+
 assert.match(focusClient, /requestUraiWorldReturn\(\)/, "Final Focus chamber must retain deterministic world return.");
 assert.match(focusClient, /data-focus-spatial="explorable-observatory"/, "Final Focus chamber must expose the spatial observatory contract.");
 assert.match(focusClient, /<OrbitControls/, "Final Focus chamber must retain bounded pointer and touch exploration.");
