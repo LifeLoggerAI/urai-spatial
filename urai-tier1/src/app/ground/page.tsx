@@ -1,4 +1,5 @@
 import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
+import GroundCheckpointRestoreSignal from './GroundCheckpointRestoreSignal'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 export const metadata = {
@@ -14,6 +15,7 @@ export default function GroundPage() {
       data-testid="walkable-first-person-ground-layer"
       data-scene-id={groundScene.id}
     >
+      <GroundCheckpointRestoreSignal />
       <GroundSpatialWorldClean />
     </main>
   )

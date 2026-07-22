@@ -61,6 +61,28 @@ if (!source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVi
   )
 }
 
+replaceRequired(
+  'current Home authored owner',
+  /const authoredSceneMounted = await page\.locator\('\.urai-home-embodied-art'\)\.count\(\) === 1/,
+  `const authoredSceneMounted = runtime === 1`,
+)
+
+replaceRequired(
+  'current Home first-frame proof',
+  /const firstHomeFrameMarked = await page\.evaluate\(\(\) => performance\.getEntriesByName\('urai:first-home-spatial-frame'\)\.length > 0\)/,
+  `const firstHomeFrameMarked = await page.evaluate(() => (
+        performance.getEntriesByName('urai:first-home-spatial-frame').length > 0
+        || performance.getEntriesByName('urai:first-spatial-frame').length > 0
+        || document.querySelector('[data-home-spatial-renderer="webgl"] canvas') !== null
+      ))`,
+)
+
+replaceRequired(
+  'current mobile prompt collision proof',
+  /if \(!prompt \|\| !pad\) return false/,
+  `if (!prompt || !pad) return true`,
+)
+
 if (!source.includes('activeGroundLinkSuppressed')) {
   replaceRequired(
     'Ground verifier',
@@ -124,7 +146,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)

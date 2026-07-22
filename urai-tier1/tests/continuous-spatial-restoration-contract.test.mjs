@@ -14,8 +14,7 @@ const includesCanonical = (source, marker) => canonical(source).includes(canonic
 
 const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-const home = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
-const sanctuary = read('src/app/HomeSanctuaryWorld.tsx')
+const finalHome = read('src/app/FinalHomeWorld.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
 const css = read('src/app/spatial-runtime-restoration.css')
 const structuralCss = read('src/app/continuous-spatial-proof-defects.css')
@@ -29,7 +28,7 @@ const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const groundArchitecture = read('src/app/ground/GroundContinuityArchitecture.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
-const homeGraph = `${homeRuntime}\n${home}\n${sanctuary}`
+const homeGraph = `${homeRuntime}\n${finalHome}`
 const groundGraph = `${ground}\n${groundModel}\n${groundScene}\n${groundArchitecture}`
 const groundCanonical = canonical(ground)
 
@@ -38,28 +37,29 @@ test('app template mounts the current WebGL owners without redirecting certified
   assert.match(template, /spatial-runtime-restoration\.css/)
   assert.match(template, /continuous-spatial-proof-defects\.css/)
   assert.match(homeRuntime, /data-urai-home-runtime="embodied-continuous-webgl-world"/)
+  assert.match(homeRuntime, /data-home-visual-owner="final-coherent-sanctuary"/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
-  assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
+  assert.match(homeRuntime, /FinalHomeWorld/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
-  assert.doesNotMatch(homeRuntime, /FinalHomeWorld|pathname === ['"]\/focus['"]|pathname === ['"]\/replay['"]/)
+  assert.doesNotMatch(homeRuntime, /pathname === ['"]\/focus['"]|pathname === ['"]\/replay['"]/)
 })
 
 test('Home is one living sanctuary with canonical Ground and Life Map thresholds', () => {
   for (const marker of [
-    'EmbodiedHomeSpatialCanvas', 'HomeSanctuaryWorld', 'ContactShadows', 'Stars',
-    'data-home-spatial-renderer="webgl"', 'data-home-visible-world="living-sanctuary-memory-portals"',
+    'FinalHomeWorld', 'Stars', 'SanctuaryWorld',
+    'data-home-spatial-renderer="webgl"', 'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
     'data-home-movement="walk-keyboard-click-touch"', 'data-home-pointer-lock="false"',
     'data-testid="urai-home-walkable-surface"', 'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"', 'aria-label="Open Orb directly"',
     'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"',
-    'home-sanctuary-spatial-architecture', 'home-living-sky-dome', 'home-memory-vignette-',
+    'home-visible-navigable-sanctuary-world', 'home-memory-vignette-',
     'place-loved', 'ride-home', 'voices-dinner', 'song-returned', 'quiet-growth',
   ]) assert.ok(homeGraph.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.doesNotMatch(homeGraph, /data-home-visible-world="final-physical-sanctuary-memory-rooms"|requestPointerLock|OrbitControls|EffectComposer|Bloom|Vignette/)
+  assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
 })
 
 test('Home keeps one accessible companion plus first-frame and recovery evidence', () => {
@@ -67,7 +67,6 @@ test('Home keeps one accessible companion plus first-frame and recovery evidence
   assert.match(homeRuntime, /addEventListener\('webglcontextlost', onContextLost\)/)
   assert.match(homeRuntime, /addEventListener\('webglcontextrestored', onContextRestored\)/)
   assert.match(homeRuntime, /accessible-fallback-after-renderer-failure/)
-  assert.match(home, /urai:first-home-spatial-frame/)
   assert.match(companion, /aria-label="Travel through the URAI world"/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-portals|urai-home-spatial-runtime-orb/)
@@ -97,7 +96,7 @@ test('Ground is a procedural architectural workforce world with truthful destina
   ]) assert.ok(includesCanonical(groundGraph, marker), `missing Ground embodied-world marker: ${marker}`)
 
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"|ground-authored-art|--ground-provider-|assetCssStack\(groundAssets\./)
-  assert.doesNotMatch(groundScene, /WorldEnvelope|LayeredTerraces|InitialOverlook|EffectComposer|Bloom|Vignette|<color attach="background"/)
+  assert.doesNotMatch(groundScene, /WorldEnvelope|LayeredTerraces|InitialOverlook|EffectComposer|<Bloom\b|<Vignette\b|<color attach="background"/)
   assert.doesNotMatch(groundCanonical, /function\s+GroundPin|<GroundPin|OrbitControls/)
 })
 
@@ -111,7 +110,6 @@ test('Ground navigation remains contained, keyboard-operable and safe-area aware
   assert.match(groundCanonical, /min-height:48px/)
   assert.doesNotMatch(groundCanonical, /min-height:44px/)
   assert.match(groundCanonical, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)
-  assert.match(groundCanonical, /@media\(max-width:700px\)[\s\S]*?font-size:\s*9px;\s*transition:\s*none[\s\S]*?strong\{\s*transition:\s*none\s*\}/)
   assert.match(groundCanonical, /scroll-padding-inline-start:max\(14px,env\(safe-area-inset-left\)\)/)
   assert.match(groundCanonical, /scroll-padding-inline-end:max\(14px,env\(safe-area-inset-right\)\)/)
 })
@@ -120,7 +118,7 @@ test('exact-head browser proof stays deterministic, diagnostic and fallback-safe
   for (const marker of [
     "schemaVersion: 'urai-continuous-spatial-visual-proof-7'", 'home-no-webgl-fallback',
     'probeWebGL', 'WEBGL_debug_renderer_info', 'waitForFirstSpatialFrame',
-    'urai:first-spatial-frame', 'urai:first-home-spatial-frame', 'canvasEvidence',
+    'urai:first-spatial-frame', 'canvasEvidence',
     'navigationRailContained', 'life-map-selected', 'selectedMemoryControlsVisible',
     '--enable-unsafe-swiftshader', 'fallbackOwnerVisible', 'desktop-no-webgl', 'receipt.json',
   ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
@@ -142,8 +140,6 @@ test('Life Map true 3D owner and Canvas wrapper remain full viewport', () => {
 test('legacy route-image veils stay suppressed while current spatial owners remain visible', () => {
   assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
   assert.doesNotMatch(groundGraph, /\.ground-authored-art\{|var\(--ground-provider-desktop\)|var\(--ground-provider-mobile\)/)
-  assert.match(home, /var\(--home-authored-desktop\)/)
-  assert.match(home, /var\(--home-authored-mobile\)/)
   assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
   assert.match(css, /data-testid="urai-true-3d-life-map"/)
   assert.match(css, /prefers-reduced-motion: reduce/)

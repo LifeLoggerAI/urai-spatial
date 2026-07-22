@@ -5,6 +5,7 @@ import test from 'node:test'
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'))
 const runner = fs.readFileSync(path.join(process.cwd(), '..', 'scripts', 'run-final-asset-receipt.mjs'), 'utf8')
+const verifier = fs.readFileSync(path.join(process.cwd(), '..', 'scripts', 'verify-provider-asset-handoff.mjs'), 'utf8')
 
 test('asset receipt uses the root-aware runner', () => {
   assert.equal(packageJson.scripts['receipt:assets'], 'node ../scripts/run-final-asset-receipt.mjs')
@@ -30,4 +31,11 @@ test('generated receipt keeps provider integration language provenance-qualified
   assert.match(runner, /Provider provenance handoff:/)
   assert.match(runner, /Asset Factory provenance handoff/)
   assert.match(runner, /unqualified provider-integration claim/)
+})
+
+test('provider verifier certifies the current procedural Home owner', () => {
+  assert.match(verifier, /urai-tier1\/src\/app\/FinalHomeWorld\.tsx/)
+  assert.match(verifier, /data-home-visual-owner=\"final-coherent-sanctuary\"/)
+  assert.match(verifier, /data-home-visible-world=\"final-physical-sanctuary-memory-rooms\"/)
+  assert.doesNotMatch(verifier, /forbidden:\s*\[[^\]]*FinalHomeWorld from/)
 })
