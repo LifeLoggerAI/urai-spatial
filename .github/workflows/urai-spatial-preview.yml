@@ -76,11 +76,11 @@ jobs:
           grep -q "$URAI_EXACT_HEAD" local-location-map.html
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run complete browser acceptance without secrets
+      - name: Run exact-head Location Map smoke without secrets
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+        run: pnpm exec playwright test tests/location-map-trusted-preview-smoke.spec.ts --config=playwright.config.ts
       - name: Build exact-head local evidence manifest
         if: always()
         shell: bash
