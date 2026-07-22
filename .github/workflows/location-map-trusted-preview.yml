@@ -126,7 +126,7 @@ jobs:
           pnpm install --frozen-lockfile
           test "$(pnpm exec firebase --version)" = "15.22.3"
       - name: Download inert candidate output
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: location-map-static-${{ env.CANDIDATE_SHA }}
           path: candidate-output
@@ -223,11 +223,11 @@ jobs:
           grep -q "$CANDIDATE_SHA" preview-location-map.html
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run deployed browser acceptance
+      - name: Run deployed Location Map smoke
         env:
           PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
           URAI_EXACT_HEAD: ${{ env.CANDIDATE_SHA }}
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+        run: pnpm exec playwright test tests/location-map-trusted-preview-smoke.spec.ts --config=playwright.config.ts
       - name: Build exact-head deployed evidence manifest
         if: always()
         env:
