@@ -33,6 +33,13 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   assert.match(css, /forced-colors/)
 })
 
+test('Passport spatial presentation remains local and offline-safe', () => {
+  const client = read('src/app/passport/PassportVaultClient.tsx')
+  assert.doesNotMatch(client, /\bText\b|<Text|unicode-font-resolver|cdn\.jsdelivr\.net/)
+  assert.match(client, /<planeGeometry/)
+  assert.match(client, /aria-hidden="true"/)
+})
+
 test('Passport uses trusted authenticated export deletion and snapshot operations', () => {
   const client = read('src/app/passport/PassportVaultClient.tsx')
   const bridge = read('src/lib/privacy/operationalPrivacyClient.ts')
