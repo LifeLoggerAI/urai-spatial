@@ -1,15 +1,10 @@
 /* Route-owned interaction surfaces must not compete with legacy or secondary controls. */
 
-/* The active Home renderer owns its own physical Ground threshold and direct destinations.
- * Remove the legacy full-width Ground gateway from pointer and accessibility ownership
- * only while a navigable sanctuary renderer is mounted. Fallback Home renderers retain it. */
-body.urai-home-webgl-active
-  .urai-world-runtime[data-world-destination='home']
-  > .urai-ground-gateway,
-.urai-world-runtime[data-world-destination='home']:has(.urai-home-embodied-shell)
-  > .urai-ground-gateway,
-.urai-world-runtime[data-world-destination='home']:has(.urai-final-home-world)
-  > .urai-ground-gateway {
+/* Home already owns complete Ground and Life Map navigation in both its active
+ * WebGL runtime and accessible fallback. The shared Ground gateway must never
+ * enter Home's pointer or accessibility tree, otherwise its bottom hit surface
+ * can cover the native direct-destination rail. */
+.urai-world-runtime[data-world-destination='home'] > .urai-ground-gateway {
   display: none !important;
   pointer-events: none !important;
 }
