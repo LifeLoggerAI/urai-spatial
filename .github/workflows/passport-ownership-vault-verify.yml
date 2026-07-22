@@ -16,7 +16,6 @@ permissions:
 
 env:
   EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
 
 concurrency:
   group: passport-ownership-vault-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
@@ -24,7 +23,7 @@ concurrency:
 
 jobs:
   verify-and-capture:
-    name: Exact-head preview and browser evidence
+    name: Exact-head local browser evidence without deployment credentials
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -63,72 +62,36 @@ jobs:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.EXACT_HEAD_SHA }}
           URAI_FIREBASE_STATIC_EXPORT: 'true'
         run: pnpm build:static
-      - name: Verify and stage preview payload
+      - name: Serve exact static candidate locally
         shell: bash
         run: |
           set -euo pipefail
-          test -f .github/firebase.preview.json
           test -f urai-tier1/out/passport/index.html
-          rm -rf .github/urai-tier1
-          mkdir -p .github/urai-tier1
-          cp -R urai-tier1/out .github/urai-tier1/out
-          test -f .github/urai-tier1/out/passport/index.html
-      - name: Deploy isolated Firebase preview channel
-        id: deploy
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          test -n "$FIREBASE_PROJECT_ID"
-          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-passport-preview.json"
-          cleanup() { rm -f "$CREDENTIALS_FILE"; }
-          trap cleanup EXIT
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
-          chmod 600 "$CREDENTIALS_FILE"
-          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
-          CHANNEL_ID="passport-892-${EXACT_HEAD_SHA:0:7}"
-          test "$CHANNEL_ID" != live
-          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
-            --config .github/firebase.preview.json \
-            --project "$FIREBASE_PROJECT_ID" \
-            --expires 1d \
-            --non-interactive \
-            --json > preview-deploy.json 2> preview-deploy.stderr
-          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
-          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;; esac
-          printf 'preview_url=%s\nchannel_id=%s\n' "$PREVIEW_URL" "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
-          printf 'exact_sha=%s\nrun_id=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\n' \
-            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$CHANNEL_ID" "$PREVIEW_URL" > preview-receipt.txt
-      - name: Verify reachable route and SHA identity
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/passport/" -o preview-passport.html
-          grep -q 'UrAi Passport' preview-passport.html
-          grep -q "$EXACT_HEAD_SHA" preview-passport.html
+          python3 -m http.server 4174 --directory urai-tier1/out > passport-local-server.log 2>&1 &
+          echo $! > passport-local-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4174/passport/ > local-passport.html; then
+              break
+            fi
+            sleep 1
+          done
+          grep -q 'UrAi Passport' local-passport.html
+          grep -q "$EXACT_HEAD_SHA" local-passport.html
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run deployed browser acceptance
+      - name: Run local browser acceptance
         env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4174
         run: pnpm exec playwright test tests/passport-browser-acceptance.spec.ts --config=playwright.config.ts
       - name: Build exact evidence manifest
         if: always()
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          CHANNEL_ID: ${{ steps.deploy.outputs.channel_id }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p passport-evidence
-          cp -f preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-passport.html passport-evidence/ 2>/dev/null || true
-          printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
-            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          cp -f passport-local-server.log local-passport.html passport-evidence/ 2>/dev/null || true
+          printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\nmode=local-no-secrets\nproduction_targeted=false\ncaptured_at=%s\n' \
+            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > passport-evidence/manifest.txt
           evidence_paths=(passport-evidence)
           test -d test-results && evidence_paths+=(test-results)
@@ -138,7 +101,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-passport-acceptance-${{ env.EXACT_HEAD_SHA }}
+          name: urai-passport-local-acceptance-${{ env.EXACT_HEAD_SHA }}
           path: |
             passport-evidence
             test-results

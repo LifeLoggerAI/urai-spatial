@@ -12,17 +12,15 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: privacy-controls-operational-preview-${{ github.repository }}
-  cancel-in-progress: false
+  group: privacy-controls-local-proof-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
 
 env:
   EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
-  PR_NUMBER: ${{ github.event.pull_request.number || '' }}
 
 jobs:
   verify-and-capture:
-    name: Exact-head preview and browser evidence
+    name: Exact-head local browser evidence without deployment credentials
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -39,20 +37,17 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
+          node --version
+          test "$(node --version | cut -d. -f1 | tr -d v)" -ge 22
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
           run_install: false
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
       - name: Install exact lockfile
         run: |
           corepack enable
+          test "$(pnpm --version)" = "10.0.0"
           pnpm install --frozen-lockfile
       - name: Run privacy contracts
         shell: bash
@@ -73,129 +68,40 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p privacy-controls-evidence
           pnpm build:static 2>&1 | tee privacy-controls-evidence/static-build.log
-      - name: Verify and stage preview payload
+      - name: Serve exact static candidate locally
         shell: bash
         run: |
           set -euo pipefail
-          test -f .github/firebase.preview.json
           test -f urai-tier1/out/privacy-controls/index.html
-          rm -rf .github/urai-tier1
-          mkdir -p .github/urai-tier1
-          cp -R urai-tier1/out .github/urai-tier1/out
-          test -f .github/urai-tier1/out/privacy-controls/index.html
-      - name: Deploy isolated Firebase preview channel
-        id: deploy
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          test -n "$FIREBASE_PROJECT_ID"
-          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-privacy-preview.json"
-          cleanup() { rm -f "$CREDENTIALS_FILE"; }
-          trap cleanup EXIT
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
-          chmod 600 "$CREDENTIALS_FILE"
-          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
-
-          # Reuse one channel per PR instead of consuming one channel per SHA.
-          # Non-PR owner runs reuse a single dedicated channel.
-          if test -n "$PR_NUMBER"; then
-            CHANNEL_ID="privacy-pr-${PR_NUMBER}"
-          else
-            CHANNEL_ID="privacy-owner"
-          fi
-          test "$CHANNEL_ID" != live
-
-          # Preview channels are finite. The workflow is serialized repository-wide,
-          # and cleanup is limited to expired Privacy-owned channels or legacy
-          # SHA-named channels whose last activity is more than two hours old.
-          pnpm exec firebase hosting:channel:list --project "$FIREBASE_PROJECT_ID" --json > preview-channels.json
-          node <<'NODE' > privacy-preview-cleanup-candidates.tsv
-          const fs = require('fs')
-          const value = JSON.parse(fs.readFileSync('preview-channels.json', 'utf8'))
-          const now = Date.now()
-          const staleBefore = now - (2 * 60 * 60 * 1000)
-          const candidates = new Map()
-          const toMillis = (value) => {
-            if (typeof value !== 'string' || !value) return NaN
-            return Date.parse(value)
-          }
-          const walk = (item) => {
-            if (Array.isArray(item)) return item.forEach(walk)
-            if (!item || typeof item !== 'object') return
-            if (typeof item.name === 'string' && item.name.includes('/channels/')) {
-              const id = item.name.split('/channels/').pop()
-              const privacyOwned = /^(?:privacy-890-|privacy-pr-|privacy-owner$)/.test(id)
-              const expireAt = toMillis(item.expireTime)
-              const lastActivity = toMillis(item.updateTime || item.createTime)
-              const expired = Number.isFinite(expireAt) && expireAt <= now
-              const legacyStale = /^privacy-890-/.test(id) && Number.isFinite(lastActivity) && lastActivity <= staleBefore
-              if (privacyOwned && id !== 'live' && (expired || legacyStale)) {
-                candidates.set(id, expired ? 'expired' : 'legacy-older-than-2h')
-              }
-            }
-            Object.values(item).forEach(walk)
-          }
-          walk(value)
-          process.stdout.write([...candidates.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([id, reason]) => `${id}\t${reason}`).join('\n'))
-          NODE
-          : > privacy-preview-cleanup-results.tsv
-          while IFS=$'\t' read -r old_channel cleanup_reason; do
-            test -z "$old_channel" && continue
-            test "$old_channel" != live
-            if pnpm exec firebase hosting:channel:delete "$old_channel" --project "$FIREBASE_PROJECT_ID" --force --non-interactive; then
-              printf '%s\t%s\tdeleted\n' "$old_channel" "$cleanup_reason" >> privacy-preview-cleanup-results.tsv
-            else
-              printf '%s\t%s\tdelete-failed\n' "$old_channel" "$cleanup_reason" >> privacy-preview-cleanup-results.tsv
+          python3 -m http.server 4175 --directory urai-tier1/out > privacy-local-server.log 2>&1 &
+          echo $! > privacy-local-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4175/privacy-controls/ > local-privacy-controls.html; then
+              break
             fi
-          done < privacy-preview-cleanup-candidates.tsv
-
-          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
-            --config .github/firebase.preview.json \
-            --project "$FIREBASE_PROJECT_ID" \
-            --expires 1d \
-            --non-interactive \
-            --json > preview-deploy.json 2> preview-deploy.stderr
-          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
-          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;; esac
-          printf 'preview_url=%s\nchannel_id=%s\n' "$PREVIEW_URL" "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
-          printf 'exact_sha=%s\nrun_id=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\n' \
-            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$CHANNEL_ID" "$PREVIEW_URL" > preview-receipt.txt
-      - name: Verify reachable route and SHA identity
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/privacy-controls/" -o preview-privacy-controls.html
-          grep -q 'UrAi Consent Sanctuary' preview-privacy-controls.html
-          grep -q "$EXACT_HEAD_SHA" preview-privacy-controls.html
+            sleep 1
+          done
+          grep -q 'UrAi Consent Sanctuary' local-privacy-controls.html
+          grep -q "$EXACT_HEAD_SHA" local-privacy-controls.html
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run deployed browser acceptance
+      - name: Run local browser acceptance
         env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.preview_url }}
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4175
         shell: bash
         run: |
           set -o pipefail
           pnpm exec playwright test tests/privacy-controls-browser-acceptance.spec.ts --config=playwright.config.ts 2>&1 | tee privacy-controls-evidence/browser-acceptance.log
       - name: Build exact evidence manifest
         if: always()
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          CHANNEL_ID: ${{ steps.deploy.outputs.channel_id }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p privacy-controls-evidence
-          cp -f preview-channels.json privacy-preview-cleanup-candidates.tsv privacy-preview-cleanup-results.tsv preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-privacy-controls.html privacy-controls-evidence/ 2>/dev/null || true
-          printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
-            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          cp -f privacy-local-server.log local-privacy-controls.html privacy-controls-evidence/ 2>/dev/null || true
+          printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\nmode=local-no-secrets\nproduction_targeted=false\ncaptured_at=%s\n' \
+            "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > privacy-controls-evidence/manifest.txt
           evidence_paths=(privacy-controls-evidence)
           test -d test-results && evidence_paths+=(test-results)
@@ -205,7 +111,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-privacy-controls-acceptance-${{ env.EXACT_HEAD_SHA }}
+          name: urai-privacy-controls-local-acceptance-${{ env.EXACT_HEAD_SHA }}
           path: |
             privacy-controls-evidence
             test-results
