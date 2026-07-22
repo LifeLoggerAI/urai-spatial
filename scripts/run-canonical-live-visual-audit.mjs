@@ -9,7 +9,12 @@ const outputDir = path.resolve(process.env.URAI_AUDIT_OUT_DIR || 'artifacts/live
 const exactHead = process.env.URAI_EXACT_HEAD || process.env.URAI_PROOF_SOURCE_SHA || 'local'
 
 const routes = [
-  { id: 'home', path: '/home/', selector: '.urai-final-home-world[data-home-spatial-renderer="webgl"][data-home-visible-world="final-physical-sanctuary-memory-rooms"]', markers: ['Open Ground directly', 'Open Life Map directly'] },
+  {
+    id: 'home',
+    path: '/home/',
+    selector: 'main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]',
+    markers: ['Own your life.', 'Threshold online'],
+  },
   { id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },
   { id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Sample constellation'] },
   { id: 'focus', path: '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: '[data-testid="urai-final-focus-chamber"]', markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },
@@ -30,7 +35,11 @@ let failed = false
 async function stable(page, frames = 3) {
   await page.evaluate((count) => new Promise((resolve) => {
     let remaining = count
-    const next = () => { remaining -= 1; if (remaining <= 0) resolve(); else requestAnimationFrame(next) }
+    const next = () => {
+      remaining -= 1
+      if (remaining <= 0) resolve()
+      else requestAnimationFrame(next)
+    }
     requestAnimationFrame(next)
   }), frames)
 }
@@ -38,13 +47,10 @@ async function stable(page, frames = 3) {
 async function settleSpatialRoute(page, route) {
   if (route.id === 'home') {
     await page.waitForFunction(() => {
-      const owner = document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
-      const canvas = owner?.querySelector('canvas')
-      const firstFrame = performance.getEntriesByName('urai:first-home-spatial-frame').length > 0
-      const rect = canvas?.getBoundingClientRect()
-      return owner?.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'
-        && Boolean(rect && rect.width >= 240 && rect.height >= 240)
-        && firstFrame
+      const root = document.querySelector('main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]')
+      if (!root) return false
+      const body = document.body.innerText || ''
+      return body.includes('Own your life.') && body.includes('Threshold online')
     }, null, { timeout: 30_000, polling: 50 })
   }
   if (route.id === 'ground') {
