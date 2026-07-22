@@ -12,7 +12,7 @@ test('Privacy Controls has one canonical route owner', () => {
   assert.match(page, /ConsentSanctuaryClient/)
   assert.match(page, /<ConsentSanctuaryClient\s*\/>/)
   assert.doesNotMatch(legacy, /pathname\.startsWith\("\/privacy-controls"\)/)
-  assert.match(legacy, /Privacy Controls is explicitly/)
+  assert.match(legacy, /Privacy Controls[\s\S]*route-owned[\s\S]*excluded from this layer/)
 })
 
 test('Consent Sanctuary is spatial and remains directly operable', () => {

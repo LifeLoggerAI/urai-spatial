@@ -23,7 +23,7 @@ async function save(name: string, evidence: RuntimeEvidence) {
 async function openDemo(page: Page) {
   await page.goto(`${baseURL}/passport/?demo=1`, { waitUntil: 'networkidle' })
   await expect(page.locator('main[data-route-owner="passport-ownership-vault"]')).toBeVisible()
-  await expect(page.getByText('DEMONSTRATION — sample data only')).toBeVisible()
+  await expect(page.getByText('DEMONSTRATION — sample data only', { exact: true })).toBeVisible()
 }
 
 test('desktop Ownership Vault exposes every zone and transition', async ({ page }) => {
@@ -50,7 +50,7 @@ test('signed-out entry never substitutes demo ownership data', async ({ page }) 
   const root = page.locator('main[data-route-owner="passport-ownership-vault"]')
   await expect(root).toBeVisible()
   await expect(root).not.toHaveAttribute('data-passport-source', 'demo')
-  await expect(page.getByText('DEMONSTRATION — sample data only')).toHaveCount(0)
+  await expect(page.getByText('DEMONSTRATION — sample data only', { exact: true })).toHaveCount(0)
   await page.screenshot({ path: path.join(evidenceRoot, 'signed-out-boundary.png'), fullPage: true })
   await save('signed-out-runtime', runtime)
   expect(runtime.pageErrors).toEqual([])
