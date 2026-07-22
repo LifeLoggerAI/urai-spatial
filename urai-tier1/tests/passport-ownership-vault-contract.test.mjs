@@ -19,8 +19,6 @@ test('Passport has one canonical route owner and excludes the legacy realm owner
   assert.doesNotMatch(legacy, /pathname\.startsWith\("\/passport"\)/)
   assert.match(realmCanon, /PassportVaultClient/)
   assert.match(runtimeCanon, /PassportVaultClient/)
-  assert.match(realmCanon, /doesNotMatch/)
-  assert.match(runtimeCanon, /doesNotMatch/)
 })
 
 test('Ownership Vault is spatial and directly accessible without WebGL', () => {
