@@ -40,7 +40,12 @@ test('selected-memory identity and Focus Replay destinations remain owned by the
 })
 
 test('Overview clears selected identity and restores the same universe', () => {
-  assert.match(adaptive, /params\.get\("overview"\) === "1" \? null : queryNode \|\| null/)
+  assert.match(adaptive, /const overviewRequested = params\.get\("overview"\) === "1"/)
+  assert.match(adaptive, /useState<string \| null>\(overviewRequested \? null : queryNode \|\| null\)/)
+  assert.match(adaptive, /const overviewPending = useRef\(overviewRequested\)/)
+  assert.match(adaptive, /overviewPending\.current = true/)
+  assert.match(adaptive, /if \(overviewRequested\)/)
+  assert.match(adaptive, /if \(overviewPending\.current \|\| !queryNode \|\| !nodes\.length\) return/)
   assert.match(adaptive, /setSelectedId\(null\)/)
   assert.match(adaptive, /setPhase\("overview"\)/)
   assert.match(adaptive, /next\.set\("overview", "1"\)/)
