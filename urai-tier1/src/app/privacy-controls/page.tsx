@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react'
-import { assetCssStack, privacyControlsAssets } from '@/spatial/assets/uraiAssets'
 import ConsentSanctuaryClient from './ConsentSanctuaryClient'
 
 export const metadata = {
@@ -7,27 +5,6 @@ export const metadata = {
   description: 'Inspect, preview, narrow, pause, revoke, and audit consent inside the private UrAi world.',
 }
 
-// Provider art establishes the authored sanctuary surface; the dedicated client remains
-// the sole procedural WebGL and operational privacy owner above it.
-const providerSurface = {
-  position: 'fixed',
-  inset: 0,
-  overflow: 'hidden',
-  backgroundImage: assetCssStack(privacyControlsAssets.primary),
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  backgroundColor: '#02070c',
-} satisfies CSSProperties
-
 export default function PrivacyControlsRoutePage() {
-  return (
-    <div
-      data-privacy-provider-surface="consent-sanctuary"
-      data-privacy-provider-primary={privacyControlsAssets.primary.src}
-      data-privacy-provider-mobile={privacyControlsAssets.mobile.src}
-      style={providerSurface}
-    >
-      <ConsentSanctuaryClient />
-    </div>
-  )
+  return <ConsentSanctuaryClient />
 }
