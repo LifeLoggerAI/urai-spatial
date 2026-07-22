@@ -6,7 +6,11 @@ import '@/spatial/places/location-map-mobile-release-fixes.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
 export default async function LocationMapPage() {
-  const places = await listMemoryPlaces()
+  const repositoryPlaces = await listMemoryPlaces({ source: 'demo' })
+  // This static route may embed only disclosed sample places. Authenticated private
+  // places must be loaded after trusted auth and must never cross the server/client
+  // boundary merely because a browser-local flag exists.
+  const places = repositoryPlaces.filter(place => place.privacyLevel === 'demo')
   const acceptanceFixturesEnabled = process.env.URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES === '1'
 
   return (
