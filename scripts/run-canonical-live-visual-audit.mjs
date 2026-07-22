@@ -123,10 +123,12 @@ async function proveLifeMapToFocus() {
     const focus = actions.getByRole('button', { name: 'Enter Focus', exact: true })
     const box = await focus.boundingBox()
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')
-    await Promise.all([
-      page.waitForURL(/\/focus\?/, { timeout: 30_000 }),
-      focus.click(),
-    ])
+    await focus.click()
+    await page.waitForFunction(() => {
+      const destination = new URL(window.location.href)
+      return destination.pathname.replace(/\/$/, '') === '/focus'
+        && destination.searchParams.get('from') === 'life-map'
+    }, null, { timeout: 30_000, polling: 50 })
     const chamber = page.locator('[data-testid="urai-final-focus-chamber"]')
     await chamber.waitFor({ state: 'visible', timeout: 30_000 })
     const destination = new URL(page.url())
