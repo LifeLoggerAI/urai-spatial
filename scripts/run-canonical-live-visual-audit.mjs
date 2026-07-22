@@ -124,8 +124,8 @@ async function proveLifeMapToFocus() {
     const box = await focus.boundingBox()
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')
     await Promise.all([
-      page.waitForURL(/\/focus\?/, { timeout: 30_000, waitUntil: 'domcontentloaded' }),
-      focus.click({ force: true }),
+      page.waitForURL(/\/focus\?/, { timeout: 30_000 }),
+      focus.click(),
     ])
     const chamber = page.locator('[data-testid="urai-final-focus-chamber"]')
     await chamber.waitFor({ state: 'visible', timeout: 30_000 })
