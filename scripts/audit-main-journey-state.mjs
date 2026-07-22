@@ -19,6 +19,7 @@ const focusClient = read('urai-tier1/src/app/focus/FocusChamberClient.tsx')
 const selectedMemoryHook = read('urai-tier1/src/spatial/memory/useSelectedMemory.ts')
 const replayClient = read('urai-tier1/src/app/replay/CinematicReplayClient.tsx')
 const replayRoute = read('urai-tier1/src/app/replay/page.tsx')
+const worldEvents = read('urai-tier1/src/spatial/world/worldEvents.ts')
 
 function requireMatch(label, source, pattern) {
   if (!pattern.test(source)) failures.push(`${label}: missing ${pattern}`)
@@ -56,8 +57,13 @@ requireMatch('Focus Replay portal accessibility', focusClient, /aria-label={`Ope
 const combinedFocusGuard = /if \(!memory \|\| !replayHref \|\| committed\) return/.test(focusClient)
 const separateAuthorizationGuard = /if \(!memory \|\| !replayHref\) return/.test(focusClient)
 const separateCommittedGuard = /if \(committed\) return/.test(focusClient)
+const centralizedTravelDebounce =
+  /const WORLD_TRAVEL_DEBOUNCE_MS = \d+/.test(worldEvents) &&
+  /fingerprint === lastTravelFingerprint/.test(worldEvents) &&
+  /now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS/.test(worldEvents) &&
+  /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>/.test(worldEvents)
 requireCondition('Focus must fail closed without an authorized memory and Replay route.', combinedFocusGuard || separateAuthorizationGuard)
-requireCondition('Focus must debounce an already committed Replay transition.', combinedFocusGuard || separateCommittedGuard)
+requireCondition('Focus must debounce an already committed Replay transition.', combinedFocusGuard || separateCommittedGuard || centralizedTravelDebounce)
 
 requireMatch('Focus deterministic world return', focusClient, /requestUraiWorldReturn\(\)/)
 requireMatch('Focus DOM memory identity', focusClient, /data-memory-id=\{memory(?:\?\.|\.)id\}/)
