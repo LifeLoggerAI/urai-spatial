@@ -100,6 +100,31 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
           chmod 600 "$CREDENTIALS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+
+          # Exact-head preview channels are finite. Remove only stale Privacy-owned
+          # channels before creating the replacement candidate channel.
+          pnpm exec firebase hosting:channel:list --project "$FIREBASE_PROJECT_ID" --json > preview-channels.json
+          node <<'NODE' > privacy-preview-channels.txt
+          const fs = require('fs')
+          const value = JSON.parse(fs.readFileSync('preview-channels.json', 'utf8'))
+          const ids = new Set()
+          const walk = (item) => {
+            if (Array.isArray(item)) return item.forEach(walk)
+            if (!item || typeof item !== 'object') return
+            if (typeof item.name === 'string' && item.name.includes('/channels/')) {
+              const id = item.name.split('/channels/').pop()
+              if (/^privacy-890-/.test(id)) ids.add(id)
+            }
+            Object.values(item).forEach(walk)
+          }
+          walk(value)
+          process.stdout.write([...ids].sort().join('\n'))
+          NODE
+          while IFS= read -r old_channel; do
+            test -z "$old_channel" && continue
+            pnpm exec firebase hosting:channel:delete "$old_channel" --project "$FIREBASE_PROJECT_ID" --force --non-interactive || true
+          done < privacy-preview-channels.txt
+
           CHANNEL_ID="privacy-890-${EXACT_HEAD_SHA:0:7}"
           test "$CHANNEL_ID" != live
           pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
@@ -140,7 +165,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p privacy-controls-evidence
-          cp -f preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-privacy-controls.html privacy-controls-evidence/ 2>/dev/null || true
+          cp -f preview-channels.json privacy-preview-channels.txt preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-privacy-controls.html privacy-controls-evidence/ 2>/dev/null || true
           printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > privacy-controls-evidence/manifest.txt
