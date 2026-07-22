@@ -13,7 +13,7 @@ const routes = [
   ["src/app/spatial-fallback/page.tsx", "UraiV1Experience"],
   ["src/app/focus/page.tsx", "FinalFocusChamber"],
   ["src/app/replay/page.tsx", "FinalReplayFilm"],
-  ["src/app/location-map/page.tsx", "LocationMapScene"],
+  ["src/app/location-map/page.tsx", "LocationMapAcceptanceBoundary"],
   ["src/app/passport/page.tsx", "PassportVaultClient"],
   ["src/app/council/page.tsx", "RealmShell"],
   ["src/app/legacy/page.tsx", "RealmShell"],
@@ -26,10 +26,18 @@ for (const [file, expected] of routes) {
   assert.equal(existsSync(full), true, `${file} must exist.`);
   const text = readFileSync(full, "utf8");
   assert.match(text, new RegExp(expected), `${file} must reference ${expected}.`);
+  if (file === "src/app/passport/page.tsx") {
+    assert.doesNotMatch(text, /FinalPassportVault/, "Passport route must not restore the retired poster owner.");
+  }
 }
 
-const passportRoutePath = join(app, "src", "app", "passport", "page.tsx");
-assert.doesNotMatch(readFileSync(passportRoutePath, "utf8"), /FinalPassportVault/, "passport route must not restore the retired FinalPassportVault owner.");
+const passportClientPath = join(app, "src", "app", "passport", "PassportVaultClient.tsx");
+assert.equal(existsSync(passportClientPath), true, "Canonical Passport Ownership Vault client must exist.");
+assert.match(readFileSync(passportClientPath, "utf8"), /passport-ownership-vault/, "Canonical Passport client must expose its route-owner marker.");
+
+const locationBoundaryPath = join(app, "src", "spatial", "places", "LocationMapAcceptanceBoundary.tsx");
+assert.equal(existsSync(locationBoundaryPath), true, "Location Map acceptance boundary must exist.");
+assert.match(readFileSync(locationBoundaryPath, "utf8"), /LocationMapScene/, "Location Map acceptance boundary must render LocationMapScene.");
 
 const placePagePath = join(app, "src", "app", "place", placeSegment, "page.tsx");
 const placeReplayPath = join(app, "src", "app", "place", placeSegment, "replay", "page.tsx");
