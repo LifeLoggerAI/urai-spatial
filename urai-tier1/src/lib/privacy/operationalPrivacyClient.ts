@@ -1,14 +1,6 @@
 'use client'
 
-import {
-  collection,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-  type DocumentData,
-  type Unsubscribe,
-} from 'firebase/firestore'
+import { collection, limit, onSnapshot, orderBy, query, type DocumentData, type Unsubscribe } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { functions, getFirebaseDb } from '@/lib/firebase/client'
 
@@ -43,77 +35,31 @@ function operationId(prefix: string) {
   return `${prefix}-${random}`.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 96)
 }
 
-export async function callOperationalPrivacyFunction<T extends PrivacyCallableResult = PrivacyCallableResult>(
-  name: string,
-  payload?: Record<string, unknown>,
-): Promise<T> {
+export async function callOperationalPrivacyFunction<T extends PrivacyCallableResult = PrivacyCallableResult>(name: string, payload?: Record<string, unknown>): Promise<T> {
   const callable = httpsCallable<Record<string, unknown> | undefined, T>(functions, name)
   const response = await callable(payload)
   return response.data
 }
 
-export function applyOperationalConsentPolicy(payload: {
-  domain: string
-  next: Record<string, unknown>
-  expectedRevision: number
-  operationId?: string
-}) {
-  return callOperationalPrivacyFunction('applyConsentPolicy', {
-    ...payload,
-    operationId: payload.operationId ?? operationId('consent'),
-  })
+export function applyOperationalConsentPolicy(payload: { domain: string; next: Record<string, unknown>; expectedRevision: number; operationId?: string }) {
+  return callOperationalPrivacyFunction('applyConsentPolicy', { ...payload, operationId: payload.operationId ?? operationId('consent') })
 }
 
-export function getOperationalPassportSnapshot() {
-  return callOperationalPrivacyFunction('getPassportSnapshot')
-}
-
+export function getOperationalPassportSnapshot() { return callOperationalPrivacyFunction('getPassportSnapshot') }
 export function createOperationalExportRequest(scopes: string[], suppliedOperationId?: string) {
-  return callOperationalPrivacyFunction('createExportRequest', {
-    scopes,
-    operationId: suppliedOperationId ?? operationId('export'),
-  })
+  return callOperationalPrivacyFunction('createExportRequest', { scopes, operationId: suppliedOperationId ?? operationId('export') })
 }
-
-export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' }) {
-  return callOperationalPrivacyFunction('getExportDownloadUrl', payload)
+export function getOperationalExportDownloadUrl(payload: { jobId: string; file?: 'export' | 'manifest' }) { return callOperationalPrivacyFunction('getExportDownloadUrl', payload) }
+export function cancelOperationalExportRequest(jobId: string) { return callOperationalPrivacyFunction('cancelExportRequest', { jobId }) }
+export function createOperationalDeletionRequest(payload: { scope: string; confirmation: string; reason?: string; operationId?: string }) {
+  return callOperationalPrivacyFunction('createDeletionRequest', { ...payload, operationId: payload.operationId ?? operationId('deletion') })
 }
+export function cancelOperationalDeletionRequest(jobId: string) { return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId }) }
 
-export function cancelOperationalExportRequest(jobId: string) {
-  return callOperationalPrivacyFunction('cancelExportRequest', { jobId })
-}
-
-export function createOperationalDeletionRequest(payload: {
-  scope: string
-  confirmation: string
-  reason?: string
-  operationId?: string
-}) {
-  return callOperationalPrivacyFunction('createDeletionRequest', {
-    ...payload,
-    operationId: payload.operationId ?? operationId('deletion'),
-  })
-}
-
-export function cancelOperationalDeletionRequest(jobId: string) {
-  return callOperationalPrivacyFunction('cancelDeletionRequest', { jobId })
-}
-
-export function subscribeOperationalUserCollection(
-  collectionName: string,
-  uid: string,
-  onRows: (rows: PrivacyRow[]) => void,
-  onError: (error: Error) => void,
-): Unsubscribe {
+export function subscribeOperationalUserCollection(collectionName: string, uid: string, onRows: (rows: PrivacyRow[]) => void, onError: (error: Error) => void): Unsubscribe {
   requireUserCollection(collectionName)
   const base = collection(getFirebaseDb(), 'users', uid, collectionName)
   const orderedCollections = new Set(['privacyReceipts', 'exportJobs', 'deletionJobs'])
-  const request = orderedCollections.has(collectionName)
-    ? query(base, orderBy('createdAt', 'desc'), limit(50))
-    : query(base, limit(100))
-  return onSnapshot(
-    request,
-    (snapshot) => onRows(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
-    (error) => onError(error),
-  )
+  const request = orderedCollections.has(collectionName) ? query(base, orderBy('createdAt', 'desc'), limit(50)) : query(base, limit(100))
+  return onSnapshot(request, (snapshot) => onRows(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))), onError)
 }
