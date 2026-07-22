@@ -17,47 +17,66 @@ const doorways = [
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
-async function activate(page, target, method) {
-  if (method === 'keyboard') {
-    await target.focus()
-    if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
-    return target.press('Enter', { noWaitAfter: true })
-  }
-
-  const box = await target.boundingBox()
-  if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
-  const x = box.x + box.width / 2
-  const y = box.y + box.height / 2
-  if (method === 'touch') return page.touchscreen.tap(x, y)
-  return page.mouse.click(x, y)
+async function activate(page, target, method, hitPoint) {
+  if (method === 'pointer') return page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  if (method === 'touch') return page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
+  await target.focus()
+  if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
+  return target.press('Enter', { noWaitAfter: true })
 }
 
 async function resolveTarget(page, doorway) {
   const target = page.getByRole('button', { name: doorway.name, exact: true })
-  await target.waitFor({ state: 'visible', timeout: 30000 })
+  await target.waitFor({ state: 'visible', timeout: 15000 })
   return target
+}
+
+async function inspectHitPoint(target) {
+  return target.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    const describe = (element) => element ? {
+      tag: element.tagName.toLowerCase(),
+      id: element.id || '',
+      className: typeof element.className === 'string' ? element.className : '',
+      ariaLabel: element.getAttribute('aria-label') || '',
+      pointerEvents: getComputedStyle(element).pointerEvents,
+      zIndex: getComputedStyle(element).zIndex,
+    } : null
+    return {
+      center: { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) },
+      target: describe(node),
+      hit: describe(hit),
+      targetOwnsHitPoint: hit === node || Boolean(hit && node.contains(hit)),
+    }
+  })
 }
 
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate', viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, hitPoint: null, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
+    await target.scrollIntoViewIfNeeded()
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
-    await activate(page, target, testCase.method)
+    record.hitPoint = await inspectHitPoint(target)
+    if (!record.hitPoint.targetOwnsHitPoint) throw new Error(`target does not own center hit point ${JSON.stringify(record.hitPoint)}`)
+    await activate(page, target, testCase.method, record.hitPoint)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
-    await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
     record.success = normalize(record.resultingUrl) === doorway.destination
   } catch (error) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
   } finally {
+    await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' }).catch(() => {})
     await context.close()
   }
   return record
@@ -72,7 +91,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 5, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 6, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
