@@ -26,7 +26,9 @@ async function activate(page, target, method, hitPoint) {
 }
 
 async function resolveTarget(page, doorway) {
-  const target = page.getByRole('button', { name: doorway.name, exact: true })
+  const doorwayLayer = page.locator('.urai-home-runtime-doorways')
+  await doorwayLayer.waitFor({ state: 'visible', timeout: 45000 })
+  const target = doorwayLayer.getByRole('button', { name: doorway.name, exact: true })
   await target.waitFor({ state: 'visible', timeout: 15000 })
   return target
 }

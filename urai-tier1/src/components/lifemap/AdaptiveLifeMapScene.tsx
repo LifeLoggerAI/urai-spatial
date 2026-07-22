@@ -231,13 +231,15 @@ export default function AdaptiveLifeMapScene() {
   const params = useSearchParams();
   const profile = useAdaptiveSpatialQuality();
   const explicitDemoRequested = params.get("demo") === "1";
+  const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-  const [selectedId, setSelectedId] = useState<string | null>(params.get("overview") === "1" ? null : queryNode || null);
+  const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const timers = useRef<number[]>([]);
+  const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
   const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [selected]);
 
@@ -254,6 +256,7 @@ export default function AdaptiveLifeMapScene() {
   }, [explicitDemoRequested, manifestId]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    overviewPending.current = false;
     clearTimers();
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
@@ -270,6 +273,7 @@ export default function AdaptiveLifeMapScene() {
   }, [clearTimers, profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
+    overviewPending.current = true;
     clearTimers();
     setSelectedId(null);
     setPhase("overview");
@@ -289,10 +293,19 @@ export default function AdaptiveLifeMapScene() {
   }, [selected, withIdentity]);
 
   useEffect(() => {
-    if (!queryNode || !nodes.length) return;
+    if (overviewRequested) {
+      overviewPending.current = false;
+      if (selectedId !== null) {
+        clearTimers();
+        setSelectedId(null);
+        setPhase("overview");
+      }
+      return;
+    }
+    if (overviewPending.current || !queryNode || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (node && node.id !== selectedId) selectNode(node);
-  }, [nodes, queryNode, selectNode, selectedId]);
+  }, [clearTimers, nodes, overviewRequested, queryNode, selectNode, selectedId]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {

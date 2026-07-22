@@ -3,71 +3,45 @@ set -euo pipefail
 
 die(){ echo "SMOKE_FAIL: $*" >&2; exit 1; }
 
-SCENE="src/spatial/scene/SpatialScene.tsx"
-REPLAY="src/spatial/components/ReplayScene.tsx"
-CAM_A="src/spatial/components/CameraDirector.tsx"
-CAM_B="src/spatial/components/CinematicCameraRig.tsx"
+HOME_CANON="src/components/spatial/LifeMapScene.tsx"
+REPLAY="urai-tier1/src/spatial/places/PlaceReplayScene.tsx"
+CAM_A="urai-tier1/src/spatial/canon/cameraCanon.ts"
+CAM_B="urai-tier1/src/spatial/hooks/useTransitionSync.ts"
 MASTER_CERT="scripts/tier2/master-cert.sh"
 
-[ -f "$SCENE" ] || die "missing SpatialScene.tsx"
-[ -f "$REPLAY" ] || die "missing ReplayScene.tsx"
+[ -f "$HOME_CANON" ] || die "missing LifeMapScene.tsx"
+[ -f "$REPLAY" ] || die "missing PlaceReplayScene.tsx"
 [ -x "$MASTER_CERT" ] || die "missing executable master cert"
 
-echo "== remove stale next locks =="
-find . -type f -path '*/.next/dev/lock' -delete || true
-
-echo
 echo "== active camera authority =="
-if grep -q "<CameraDirector" "$SCENE"; then
+if grep -q "<CameraDirector" "$HOME_CANON"; then
   echo "CameraDirector"
-elif grep -q "<CinematicCameraRig" "$SCENE"; then
+elif grep -q "<CinematicCameraRig" "$HOME_CANON"; then
   echo "CinematicCameraRig"
 else
   die "no active camera authority rendered"
 fi
 
 echo
-echo "== key scene anchors =="
-grep -n "const phaseAny =" "$SCENE" || die "missing phaseAny"
-grep -n "const lifeMapVisible =" "$SCENE" || die "missing lifeMapVisible"
-grep -n "const focusVisible =" "$SCENE" || die "missing focusVisible"
-grep -n "const replayVisible =" "$SCENE" || die "missing replayVisible"
-grep -n "const replaySceneOpacity =" "$SCENE" || die "missing replaySceneOpacity"
-grep -n "const replayEnvelopeOpacity =" "$SCENE" || die "missing replayEnvelopeOpacity"
-grep -n "const homeReturnOpacity =" "$SCENE" || die "missing homeReturnOpacity"
+ echo "== key canon anchors =="
+grep -n "resolveReplayVeilOpacity" "$CAM_A" || die "missing replay veil opacity"
+grep -n "resolveFocusOpacity" "$CAM_A" || die "missing focus opacity"
+grep -n "resolveDepthScale" "$CAM_A" || die "missing depth scale"
+grep -n "resolveCameraConvergence" "$CAM_A" || die "missing camera convergence"
+grep -n "showHomeLayer" "$CAM_B" || die "missing home layer"
+grep -n "showLifeMapLayer" "$CAM_B" || die "missing lifemap layer"
+grep -n "showFocusLayer" "$CAM_B" || die "missing focus layer"
+grep -n "showReplayLayer" "$CAM_B" || die "missing replay layer"
 
 echo
-echo "== replay callsite block =="
-START="$(grep -n "<ReplayScene" "$SCENE" | head -n 1 | cut -d: -f1)"
-[ -n "$START" ] || die "ReplayScene callsite missing"
-awk -v start="$START" '
-NR < start { next }
-NR >= start {
-  print
-  if ($0 ~ /\/>/) exit
-}
-' "$SCENE"
+ echo "== replay component contract =="
+grep -n "makeDemoPlaceReplayBeats" "$REPLAY" || die "Replay scene missing beat schema"
+grep -n "getSpatialCueMetadata" "$REPLAY" || die "Replay scene missing cue metadata"
+grep -n "Replay sensory cue" "$REPLAY" || die "Replay scene missing replay sensory cue"
 
 echo
-echo "== replay component props =="
-grep -n "type Props = {" "$REPLAY" || die "ReplayScene Props missing"
-grep -n "visible?: boolean" "$REPLAY" || die "ReplayScene visible prop missing"
-grep -n "opacity?: number" "$REPLAY" || die "ReplayScene opacity prop missing"
-grep -n "starId?: string" "$REPLAY" || die "ReplayScene starId prop missing"
-
-echo
-echo "== camera file anchors =="
-if [ -f "$CAM_A" ] && grep -q "transitionPhase" "$CAM_A"; then
-  grep -n "transitionPhase" "$CAM_A"
-fi
-if [ -f "$CAM_B" ] && grep -q "transitionPhase" "$CAM_B"; then
-  grep -n "transitionPhase" "$CAM_B"
-  grep -n "const transitionDamping =" "$CAM_B" || die "CinematicCameraRig missing transitionDamping"
-fi
-
-echo
-echo "== run master cert =="
+ echo "== master cert =="
 bash "$MASTER_CERT"
 
 echo
-echo "SMOKE_PASS: forensic smoke runner passed"
+ echo "SMOKE_PASS: forensic smoke runner passed"
