@@ -98,7 +98,41 @@ jobs:
           chmod 600 "$CREDENTIALS_FILE"
           export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
           CHANNEL_ID="lane6-885-${URAI_EXACT_HEAD:0:7}"
+          export CHANNEL_ID
           test "$CHANNEL_ID" != "live"
+
+          pnpm exec firebase hosting:channel:list \
+            --site urai-4dc1d \
+            --project "$FIREBASE_PROJECT_ID" \
+            --json > preview-channels.json 2> preview-channels.stderr
+          node - <<'NODE' > stale-lane6-channels.txt
+          const fs = require('fs')
+          const value = JSON.parse(fs.readFileSync('preview-channels.json', 'utf8'))
+          const current = process.env.CHANNEL_ID
+          const found = new Set()
+          const walk = input => {
+            if (Array.isArray(input)) return input.forEach(walk)
+            if (!input || typeof input !== 'object') return
+            const id = input.channelId || input.id || input.name
+            if (typeof id === 'string') {
+              const normalized = id.split('/').pop()
+              if (/^lane6-(885|889)-/.test(normalized) && normalized !== current && normalized !== 'live') found.add(normalized)
+            }
+            Object.values(input).forEach(walk)
+          }
+          walk(value)
+          process.stdout.write([...found].sort().join('\n'))
+          NODE
+          while IFS= read -r stale_channel; do
+            test -n "$stale_channel" || continue
+            test "$stale_channel" != live
+            pnpm exec firebase hosting:channel:delete "$stale_channel" \
+              --site urai-4dc1d \
+              --project "$FIREBASE_PROJECT_ID" \
+              --force \
+              --non-interactive
+          done < stale-lane6-channels.txt
+
           set +e
           pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
             --config .github/firebase.preview.json \
@@ -167,7 +201,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p preview-evidence
-          cp -f preview-auth-boundary.txt preview-deploy.json preview-deploy.stderr preview-deploy.exit-code preview-receipt.txt preview-location-map.html preview-evidence/ 2>/dev/null || true
+          cp -f preview-auth-boundary.txt preview-channels.json preview-channels.stderr stale-lane6-channels.txt preview-deploy.json preview-deploy.stderr preview-deploy.exit-code preview-receipt.txt preview-location-map.html preview-evidence/ 2>/dev/null || true
           printf 'exact_sha=%s\nrun_id=%s\njob_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_JOB" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > preview-evidence/manifest.txt
