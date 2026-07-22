@@ -12,7 +12,7 @@ const atmosphere = read('src/spatial/world/PersistentRealmAtmosphere.tsx')
 const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-const embodiedHome = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
+const finalHome = read('src/app/FinalHomeWorld.tsx')
 const focusClient = read('src/app/focus/FocusChamberClient.tsx')
 const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
@@ -22,17 +22,7 @@ const adaptiveLifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
 const secondaryRealmConvergence = read('src/spatial/world/secondaryRealmConvergence.css')
 
-const canonicalDestinations = [
-  'home',
-  'infrastructure-hub',
-  'life-map',
-  'focus',
-  'replay',
-  'mirror',
-  'passport',
-  'privacy-controls',
-  'location-map',
-]
+const canonicalDestinations = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']
 
 test('the full journey participates in one persistent world model', () => {
   for (const destination of canonicalDestinations) {
@@ -40,7 +30,7 @@ test('the full journey participates in one persistent world model', () => {
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
   assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
-  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/) 
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
 })
 
 test('Orb ownership follows destination canon without visual duplication', () => {
@@ -49,9 +39,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion \/> : null\}/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /SECONDARY_DESTINATIONS/)
-  for (const destination of canonicalDestinations) {
-    assert.match(companion, new RegExp(`['"]${destination}['"]`))
-  }
+  for (const destination of canonicalDestinations) assert.match(companion, new RegExp(`['"]${destination}['"]`))
   assert.match(companion, /requestUraiWorldTravel/)
   assert.match(companion, /requestUraiWorldReturn/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
@@ -60,17 +48,18 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.doesNotMatch(companion, /next\/link/)
   assert.match(worldEvents, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /onOrbOpen=\{requestUraiWorldOrbOpen\}/)
-  assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
-  assert.match(embodiedHome, /name="home-authored-orb-physical-hit-target"/)
-  assert.match(embodiedHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.15\)/)
-  assert.match(embodiedHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
-  assert.doesNotMatch(embodiedHome, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/)
+  assert.match(homeRuntime, /FinalHomeWorld/)
+  assert.match(homeRuntime, /data-home-visual-owner="final-coherent-sanctuary"/)
+  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
+  assert.match(finalHome, /name="home-final-orb-physical-anchor"/)
+  assert.match(finalHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.2\)/)
+  assert.match(finalHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+  assert.doesNotMatch(finalHome, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/)
   assert.match(routeOwnerConvergence, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwnerConvergence, /background:\s*transparent\s*!important/)
   assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
   assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
-  assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger/)
-  assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-orb/)
+  assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger|urai-home-spatial-runtime-orb/)
 })
 
 test('one environmental continuity layer persists across every route transition', () => {
@@ -81,9 +70,7 @@ test('one environmental continuity layer persists across every route transition'
   assert.match(atmosphere, /data-phase=\{phase\}/)
   assert.match(atmosphere, /urai-world-atmosphere__horizon/)
   assert.match(atmosphere, /urai-world-atmosphere__threshold/)
-  for (const destination of ['infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']) {
-    assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
-  }
+  for (const destination of ['infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']) assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
   assert.match(atmosphereCss, /pointer-events:\s*none/)
   assert.match(atmosphereCss, /data-phase/)
   assert.match(atmosphereCss, /env\(safe-area-inset-bottom\)/)
@@ -91,33 +78,36 @@ test('one environmental continuity layer persists across every route transition'
 })
 
 test('page-like route chrome is removed from the active world', () => {
-  for (const selector of ['.ground-card', '.ground-rail', '.focusTitle', '.focusNav']) {
-    assert.match(chrome, new RegExp(selector.replace('.', '\\.')))
-  }
+  for (const selector of ['.ground-card', '.ground-rail', '.focusTitle', '.focusNav']) assert.match(chrome, new RegExp(selector.replace('.', '\\.')))
   assert.match(chrome, /\[aria-label='URAI Life Map route portals'\]/)
   assert.match(chrome, /\[aria-label='Replay location'\]/)
   assert.match(chrome, /display:\s*none\s*!important/)
 })
 
-test('Life Map reads as a full-viewport world instead of a landing page', () => {
+test('Life Map reads as a full-viewport canonical spatial world', () => {
   assert.match(shell, /import '\.\/lifeMapConvergence\.css'/)
   assert.match(lifeMapConvergence, /data-world-destination='life-map'/)
   assert.match(adaptiveLifeMap, /data-testid="urai-true-3d-life-map"/)
-  assert.match(lifeMapConvergence, /\.life-map-independent-realm/)
-  assert.doesNotMatch(adaptiveLifeMap, /<header\b/)
-  assert.match(adaptiveLifeMap, /className="life-map-accessibility-menu"/)
-  assert.match(adaptiveLifeMap, /overviewRequested \? null : queryNodeId/)
-  assert.match(adaptiveLifeMap, /overviewRequested \? OVERVIEW_CAMERA/)
-  assert.match(adaptiveLifeMap, /data-life-map-overview-control="true"/)
-  assert.match(adaptiveLifeMap, /urai:life-map-overview/)
-  assert.match(adaptiveLifeMap, />Ground<\/button>/)
-  assert.match(adaptiveLifeMap, />Home<\/button>/)
-  assert.match(lifeMapConvergence, /height:\s*100svh/)
-  assert.match(lifeMapConvergence, /env\(safe-area-inset-bottom\)/)
-  assert.match(lifeMapConvergence, /@media \(max-width: 430px\)/)
+  assert.match(adaptiveLifeMap, /<Canvas camera=\{\{ position: OVERVIEW_POSITION, fov: 44, near: \.08, far: 120 \}\}/)
+  assert.match(adaptiveLifeMap, /className="life-map-root"/)
+  assert.match(adaptiveLifeMap, /position:fixed;inset:0;overflow:hidden/)
+  assert.match(adaptiveLifeMap, /type JourneyPhase = "overview" \| "departure" \| "travel" \| "approach" \| "arrival"/)
+  assert.match(adaptiveLifeMap, /data-life-map-phase=\{phase\}/)
+  assert.match(adaptiveLifeMap, /data-life-map-mode=\{selected \? "selected" : "overview"\}/)
+  assert.match(adaptiveLifeMap, /data-home-companion-owned="false"/)
+  assert.match(adaptiveLifeMap, /<header className="life-map-title">/)
+  assert.match(adaptiveLifeMap, /<h1 className="sr-only">URAI Life Map private universe<\/h1>/)
+  assert.match(adaptiveLifeMap, /<details className="life-map-help">/)
+  assert.match(adaptiveLifeMap, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
+  assert.match(adaptiveLifeMap, /<button type="button" onClick=\{overview\}>Overview<\/button>/)
+  assert.match(adaptiveLifeMap, /<button onClick=\{\(\) => router\.push\("\/home"\)\}>Return Home<\/button>/)
+  assert.match(adaptiveLifeMap, /env\(safe-area-inset-bottom\)/)
+  assert.match(adaptiveLifeMap, /@media\(max-width:700px\)/)
+  assert.match(adaptiveLifeMap, /@media\(prefers-reduced-motion:reduce\)/)
+  assert.doesNotMatch(adaptiveLifeMap, /requestPointerLock|PersistentWorldCompanion/)
 })
 
-test('canonical route clients own Focus and Replay without the legacy autonomous overlay', () => {
+test('canonical route clients own Focus and Replay', () => {
   assert.match(shell, /import '\.\/routeOwnerConvergence\.css'/)
   assert.match(focusClient, /data-testid="urai-final-focus-chamber"/)
   assert.match(focusClient, /useSelectedMemory\(\)/)
@@ -134,9 +124,7 @@ test('canonical route clients own Focus and Replay without the legacy autonomous
 
 test('secondary realms remain full-viewport destinations owned by the shared Orb', () => {
   assert.match(shell, /import '\.\/secondaryRealmConvergence\.css'/)
-  for (const destination of ['mirror', 'passport', 'privacy-controls', 'location-map']) {
-    assert.match(secondaryRealmConvergence, new RegExp(`data-world-destination=['"]${destination}['"]`))
-  }
+  for (const destination of ['mirror', 'passport', 'privacy-controls', 'location-map']) assert.match(secondaryRealmConvergence, new RegExp(`data-world-destination=['"]${destination}['"]`))
   assert.match(secondaryRealmConvergence, /URAI launch route chain/)
   assert.match(secondaryRealmConvergence, /URAI passport route chain/)
   assert.match(secondaryRealmConvergence, /URAI privacy route chain/)
@@ -156,42 +144,35 @@ test('mobile safe area, scroll containment, and reduced motion remain explicit',
   assert.match(lifeMapConvergence, /prefers-reduced-motion: reduce/)
 })
 
-test('Life Map renders synchronous luminous lenses with dominant selected mode', () => {
-  assert.match(adaptiveLifeMap, /memoryLensPath/)
-  assert.match(adaptiveLifeMap, /const texture = useMemo\(\(\) => createMemorySurface\(node, textureResolution\)/)
-  assert.match(adaptiveLifeMap, /const textureKey = texture\?\.uuid/)
-  assert.match(adaptiveLifeMap, /key=\{textureKey \+ "-main"\}/)
-  assert.match(adaptiveLifeMap, /color=\{texture \? "#ffffff" : "#071425"\}/)
-  assert.match(adaptiveLifeMap, /data-life-map-memory-contract="synchronous-luminous-memory-lenses"/)
-  assert.match(adaptiveLifeMap, /data-life-map-mode=\{selectedNode \? "selected" : "overview"\}/)
-  assert.match(adaptiveLifeMap, /data-selected=\{selectedNode \? "true" : "false"\}/)
-  assert.match(adaptiveLifeMap, /name="life-map-memory-lens-hit-target"/)
-  assert.match(adaptiveLifeMap, /opacity=\{texture \? visibleOpacity : 0\}/)
-  assert.doesNotMatch(adaptiveLifeMap, /useState<THREE\.CanvasTexture \| null>|setTexture\(|map=\{texture \?\? undefined\}/)
-  assert.match(lifeMapConvergence, /AAA MEMORY LENS SELECTION CONVERGENCE/)
-  assert.match(lifeMapConvergence, /data-life-map-mode='selected'/)
-  assert.match(lifeMapConvergence, /life-map-whisper\[data-selected='true'\]/)
-  assert.match(adaptiveLifeMap, /data-life-map-selected-actions-owner="route-dom-overlay"/)
-  assert.doesNotMatch(adaptiveLifeMap, /<Html distanceFactor=\{8\.2\}/)
-  assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-memory-portals/)
-  assert.match(lifeMapSelectedCinematic, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/)
+test('Life Map renders luminous spatial lenses with dominant selected mode and recovery', () => {
+  for (const pattern of [
+    /function MemoryLens/,
+    /name=\{`life-map-memory-\$\{node\.id\}`\}/,
+    /data-depth-anchor="true"/,
+    /sphereGeometry args=\{\[\.42 \+ node\.intensity \* \.16, 32, 32\]\}/,
+    /meshPhysicalMaterial color=\{color\} emissive=\{color\}/,
+    /emissiveIntensity=\{active \? 1\.5 : \.55\}/,
+    /const scale = active \? 1\.7 : muted \? \.72 : 1/,
+    /name="life-map-anchored-paths"/,
+    /activeId=\{selected\?\.id \|\| null\}/,
+    /name="life-map-depth-near"/,
+    /name="life-map-depth-middle"/,
+    /name="life-map-depth-far"/,
+    /setPhase\("departure"\)/,
+    /setPhase\("travel"\)/,
+    /setPhase\("approach"\)/,
+    /setPhase\("arrival"\)/,
+    /<nav className="life-map-actions" aria-label="Selected memory actions">/,
+    />Enter Focus<\/button>/,
+    />Replay<\/button>/,
+    />Overview<\/button>/,
+    /data-webgl-state=\{webglState\}/,
+    /webglcontextlost/,
+    /webglcontextrestored/,
+    /Your selected memory and privacy state remain preserved\./,
+    /Open semantic overview/,
+  ]) assert.match(adaptiveLifeMap, pattern)
+  assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'/)
   assert.match(lifeMapSelectedCinematic, /position: fixed/)
-  assert.match(lifeMapSelectedCinematic, /z-index: 2147482000/)
   assert.match(lifeMapSelectedCinematic, /pointer-events: auto !important/)
-  assert.match(lifeMapSelectedCinematic, /left: max\(20px, env\(safe-area-inset-left\)\)/)
-  assert.match(lifeMapSelectedCinematic, /right: max\(20px, env\(safe-area-inset-right\)\)/)
-  assert.match(lifeMapSelectedCinematic, /top: clamp\(450px, 62svh, 660px\)/)
-  assert.match(lifeMapSelectedCinematic, /width: auto/)
-  assert.match(lifeMapSelectedCinematic, /max-width: 560px/)
-  assert.match(lifeMapSelectedCinematic, /transform: none/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*left: max\(12px, env\(safe-area-inset-left\)\)/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*right: max\(12px, env\(safe-area-inset-right\)\)/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*top: clamp\(400px, 62svh, 590px\)/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-width: 48px/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*min-height: 52px !important/)
-  assert.match(lifeMapSelectedCinematic, /@media \(max-width: 760px\)[\s\S]*pointer-events: auto !important/)
-  assert.match(adaptiveLifeMap, /data-life-map-overview-list="true"/)
-  assert.match(adaptiveLifeMap, /data-life-map-selected-actions="true"/)
-  assert.match(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*data-life-map-overview-list='true'[\s\S]*display: none !important/)
-  assert.doesNotMatch(lifeMapSelectedCinematic, /data-life-map-mode='selected'[\s\S]*\.life-map-accessibility-menu > div[\s\S]*display: none !important/)
 })

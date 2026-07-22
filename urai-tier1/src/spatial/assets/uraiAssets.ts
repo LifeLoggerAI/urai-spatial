@@ -28,14 +28,17 @@ export function assetCssStack(asset: ImageAsset) {
   return `${assetCssUrl(asset.src)}, ${assetCssUrl(asset.fallback)}`;
 }
 
+const homePrimary = image(webp("/home/home-threshold-main.webp"), fallback("/home/home-threshold-fallback.svg"), "URAI Home threshold between real life and Life Map");
+
 export const homeAssets = {
-  primary: image(webp("/home/home-threshold-main.webp"), fallback("/home/home-threshold-fallback.svg"), "URAI Home threshold between real life and Life Map"),
+  primary: homePrimary,
+  desktop: homePrimary,
   mobile: image(webp("/home/home-threshold-mobile.webp"), fallback("/home/home-threshold-fallback.svg"), "URAI Home threshold mobile crop"),
   accents: {
     groundPortal: image(webp("/home/home-ground-portal.webp"), fallback("/home/home-ground-portal-fallback.svg"), "Ground portal into private workforce"),
     skyAscent: image(webp("/home/home-sky-ascent.webp"), fallback("/home/home-sky-ascent-fallback.svg"), "Sky ascent into Life Map galaxy"),
   },
-} satisfies RouteAssetSet;
+} satisfies RouteAssetSet & { readonly desktop: ImageAsset };
 
 export const groundAssets = {
   primary: image(webp("/ground/ground-world-main.webp"), fallback("/ground/ground-world-fallback.svg"), "Real-life Ground World headquarters"),

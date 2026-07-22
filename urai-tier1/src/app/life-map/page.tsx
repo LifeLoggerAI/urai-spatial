@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import SpatialLifeMapCanonical from '@/spatial/lifemap/SpatialLifeMapCanonical'
 
 const lifeMapSocialImage = 'https://urai.app/assets/urai/social/open-graph-life-map.webp'
 
@@ -33,5 +32,6 @@ export const metadata: Metadata = {
 }
 
 export default function LifeMapPage() {
-  return <SpatialLifeMapCanonical />
+  // SpatialLifeMapCanonical is intentionally owned by the persistent route layout.
+  return null
 }

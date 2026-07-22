@@ -65,14 +65,55 @@ const corePaths = new Set([
 ])
 
 const routeOwnerChecks = [
-  { routes: ['/', '/home'], file: 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx', assetSet: 'homeAssets' },
-  { routes: ['/ground'], file: 'urai-tier1/src/app/GroundSpatialWorldClean.tsx', assetSet: 'groundAssets' },
-  { routes: ['/life-map'], file: 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx', assetSet: 'lifeMapAssets' },
-  { routes: ['/focus'], file: 'urai-tier1/src/app/focus/FocusChamberClient.tsx', assetSet: 'focusAssets' },
-  { routes: ['/replay'], file: 'urai-tier1/src/app/replay/CinematicReplayClient.tsx', assetSet: 'replayAssets' },
-  { routes: ['/passport'], file: 'urai-tier1/src/app/FinalPassportVault.tsx', assetSet: 'passportAssets' },
-  { routes: ['/privacy-controls'], file: 'urai-tier1/src/app/privacy-controls/page.tsx', assetSet: 'privacyControlsAssets' },
-  { routes: ['/status'], file: 'urai-tier1/src/app/status/page.tsx', assetSet: 'statusAssets' },
+  {
+    routes: ['/', '/home'],
+    files: [
+      'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+      'urai-tier1/src/app/FinalHomeWorld.tsx',
+    ],
+    renderMode: 'procedural-spatial',
+    required: [
+      'FinalHomeWorld',
+      'data-home-visual-owner="final-coherent-sanctuary"',
+      'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+      'home-visible-navigable-sanctuary-world',
+      'data-testid="urai-home-walkable-surface"',
+      'data-testid="urai-home-webgl-orb"',
+      'aria-label="Open Ground directly"',
+      'aria-label="Open Life Map directly"',
+    ],
+    forbidden: [
+      'EmbodiedHomeSpatialCanvas',
+      'HomeSanctuaryWorld',
+      'assetCssStack(homeAssets.',
+      'home-authored-art',
+      '--home-provider-',
+    ],
+  },
+  {
+    routes: ['/ground'],
+    files: [
+      'urai-tier1/src/app/GroundSpatialWorldClean.tsx',
+      'urai-tier1/src/app/ground/GroundContinuityArchitecture.tsx',
+      'urai-tier1/src/app/ground/EmbodiedGroundScene.tsx',
+    ],
+    renderMode: 'procedural-spatial',
+    required: [
+      'GroundContinuityArchitecture',
+      'EmbodiedGroundScene',
+      'data-ground-visual-owner="shared-continuity-architecture"',
+      'ground-continuity-architectural-shell',
+      'ground-walkable-navigation-surface',
+      'ground-enterable-threshold-',
+    ],
+    forbidden: ['groundAssets', 'assetCssStack(groundAssets.', 'ground-authored-art', '--ground-provider-'],
+  },
+  { routes: ['/life-map'], files: ['urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'], renderMode: 'provider', assetSet: 'lifeMapAssets' },
+  { routes: ['/focus'], files: ['urai-tier1/src/app/focus/FocusChamberClient.tsx'], renderMode: 'provider', assetSet: 'focusAssets' },
+  { routes: ['/replay'], files: ['urai-tier1/src/app/replay/CinematicReplayClient.tsx'], renderMode: 'provider', assetSet: 'replayAssets' },
+  { routes: ['/passport'], files: ['urai-tier1/src/app/FinalPassportVault.tsx'], renderMode: 'provider', assetSet: 'passportAssets' },
+  { routes: ['/privacy-controls'], files: ['urai-tier1/src/app/privacy-controls/page.tsx'], renderMode: 'provider', assetSet: 'privacyControlsAssets' },
+  { routes: ['/status'], files: ['urai-tier1/src/app/status/page.tsx'], renderMode: 'provider', assetSet: 'statusAssets' },
 ]
 
 function normalizeCanonicalPath(value) {
@@ -169,11 +210,9 @@ for (const entry of entries) {
   if (!Number.isInteger(entry.width) || entry.width <= 0 || !Number.isInteger(entry.height) || entry.height <= 0) entryFailures.push('invalid expected dimensions')
 
   let actual = null
-  if (!filePath) {
-    // Invalid paths are rejected before resolution or filesystem access.
-  } else if (!existsSync(filePath)) {
+  if (filePath && !existsSync(filePath)) {
     entryFailures.push('missing committed binary')
-  } else {
+  } else if (filePath) {
     const stat = statSync(filePath)
     const buffer = readFileSync(filePath)
     actual = { bytes: stat.size, sha256: sha256(buffer), width: null, height: null, codec: null }
@@ -218,24 +257,36 @@ const coreRecords = records.filter((record) => record.core)
 if (coreRecords.length !== corePaths.size) failures.push(`Expected ${corePaths.size} core provider records, found ${coreRecords.length}`)
 
 const routeOwners = routeOwnerChecks.map((check) => {
-  const absolute = path.join(root, check.file)
   const ownerFailures = []
-  let active = false
-  if (!existsSync(absolute)) {
-    ownerFailures.push('active owner file is missing')
-  } else {
-    const source = readFileSync(absolute, 'utf8')
-    if (!source.includes(check.assetSet)) ownerFailures.push(`does not import ${check.assetSet}`)
-    if (!source.includes(`assetCssStack(${check.assetSet}.`)) ownerFailures.push(`does not render ${check.assetSet} through assetCssStack`)
-    active = ownerFailures.length === 0
+  const sources = []
+
+  for (const file of check.files) {
+    const absolute = path.join(root, file)
+    if (!existsSync(absolute)) ownerFailures.push(`${file}: active owner file is missing`)
+    else sources.push(readFileSync(absolute, 'utf8'))
   }
-  for (const failure of ownerFailures) failures.push(`${check.routes.join(', ')} via ${check.file}: ${failure}`)
-  return { ...check, active, failures: ownerFailures }
+
+  const sourceGraph = sources.join('\n')
+  if (check.assetSet) {
+    if (!sourceGraph.includes(check.assetSet)) ownerFailures.push(`does not import ${check.assetSet}`)
+    if (!sourceGraph.includes(`assetCssStack(${check.assetSet}.`)) ownerFailures.push(`does not render ${check.assetSet} through assetCssStack`)
+  }
+
+  for (const marker of check.required || []) {
+    if (!sourceGraph.includes(marker)) ownerFailures.push(`missing active-owner marker: ${marker}`)
+  }
+
+  for (const marker of check.forbidden || []) {
+    if (sourceGraph.includes(marker)) ownerFailures.push(`contains retired owner marker: ${marker}`)
+  }
+
+  for (const failure of ownerFailures) failures.push(`${check.routes.join(', ')} via ${check.files.join(' + ')}: ${failure}`)
+  return { ...check, active: ownerFailures.length === 0, failures: ownerFailures }
 })
 
 const report = {
   ok: failures.length === 0,
-  schemaVersion: 'urai-provider-asset-verification-2',
+  schemaVersion: 'urai-provider-asset-verification-3',
   generatedAt: new Date().toISOString(),
   repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
   commit: process.env.GITHUB_SHA || null,

@@ -76,6 +76,8 @@ async function visibleElementCount(locator) {
 }
 
 async function chooseVisibleLifeMapStar(page) {
+  if (await page.getByRole('button', { name: 'Enter Focus' }).first().isVisible().catch(() => false)) return true
+
   const canvas = page.locator('[data-testid="urai-true-3d-life-map"] canvas').first()
   const box = await canvas.boundingBox()
   if (!box) return false
@@ -208,7 +210,7 @@ const routes = [
   },
   {
     id: 'life-map',
-    path: '/life-map/',
+    path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1',
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
     waitForScene: waitForFirstSpatialFrame,
     verify: async (page) => {
@@ -230,7 +232,7 @@ const routes = [
   },
   {
     id: 'life-map-selected',
-    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
+    path: '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
     waitForScene: async (page) => {
       await waitForFirstSpatialFrame(page)

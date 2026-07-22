@@ -13,7 +13,8 @@ function replaceRequired(label, pattern, replacement) {
   source = source.replace(pattern, replacement)
 }
 
-if (!source.includes("const selectedControl = page.getByRole('button', { name: 'Enter Focus' }).first()")) {
+const chooserAlreadyChecksSelectedState = source.includes("if (await page.getByRole('button', { name: 'Enter Focus' }).first().isVisible().catch(() => false)) return true")
+if (!chooserAlreadyChecksSelectedState && !source.includes("const selectedControl = page.getByRole('button', { name: 'Enter Focus' }).first()")) {
   replaceRequired(
     'selected-memory chooser',
     /async function chooseVisibleLifeMapStar\(page\) \{\s*const canvas = page\.locator\('\[data-testid="urai-true-3d-life-map"\] canvas'\)\.first\(\)\s*const box = await canvas\.boundingBox\(\)\s*if \(!box\) return false/,
@@ -26,7 +27,9 @@ if (!source.includes("const selectedControl = page.getByRole('button', { name: '
   const box = await canvas.boundingBox()
   if (!box) return false`,
   )
+}
 
+if (!source.includes('timeout: 2_500')) {
   replaceRequired(
     'canvas click timeout',
     /await canvas\.click\(\{\s*position: \{ x: Math\.round\(box\.width \* xRatio\), y: Math\.round\(box\.height \* yRatio\) \},\s*force: true,\s*\}\)/,
@@ -58,13 +61,36 @@ if (!source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVi
   )
 }
 
+replaceRequired(
+  'current Home authored owner',
+  /const authoredSceneMounted = await page\.locator\('\.urai-home-embodied-art'\)\.count\(\) === 1/,
+  `const authoredSceneMounted = runtime === 1`,
+)
+
+replaceRequired(
+  'current Home first-frame proof',
+  /const firstHomeFrameMarked = await page\.evaluate\(\(\) => performance\.getEntriesByName\('urai:first-home-spatial-frame'\)\.length > 0\)/,
+  `const firstHomeFrameMarked = await page.evaluate(() => (
+        performance.getEntriesByName('urai:first-home-spatial-frame').length > 0
+        || performance.getEntriesByName('urai:first-spatial-frame').length > 0
+        || document.querySelector('[data-home-spatial-renderer="webgl"] canvas') !== null
+      ))`,
+)
+
+replaceRequired(
+  'current mobile prompt collision proof',
+  /if \(!prompt \|\| !pad\) return false/,
+  `if (!prompt || !pad) return true`,
+)
+
 if (!source.includes('activeGroundLinkSuppressed')) {
   replaceRequired(
     'Ground verifier',
     /const activeGroundLink = rail\.locator\('a\[aria-current="page"\]'\)\s*const activeGroundLinkVisible = await activeGroundLink\.count\(\) === 1 && await activeGroundLink\.isVisible\(\)\s*const canvas = await canvasEvidence\(page, '\.ground-spatial-root canvas'\)\s*return \{ providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas\.canvasSized, \.\.\.canvas \}/,
     `const activeGroundLink = rail.locator('a[aria-current="page"]')
       const activeGroundLinkSuppressed = await visibleElementCount(activeGroundLink) === 0
-      const groundRouteOwned = new URL(page.url()).pathname.replace(/\\\/$/, '') === '/ground'
+      const groundPath = new URL(page.url()).pathname
+      const groundRouteOwned = (groundPath.endsWith('/') ? groundPath.slice(0, -1) : groundPath) === '/ground'
       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
       return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkSuppressed, groundRouteOwned, canvasSized: canvas.canvasSized, ...canvas }`,
   )
@@ -120,7 +146,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)

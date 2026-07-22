@@ -66,7 +66,9 @@ test.describe('URAI visual ownership and containment evidence', () => {
       && openLayout!.controller.bottom > openLayout!.destination.top
     expect(overlaps).toBe(false)
 
-    await page.getByRole('button', { name: 'Life Map', exact: true }).click()
+    const lifeMapDestination = menu.getByRole('button', { name: 'Life Map', exact: true })
+    await expect(lifeMapDestination).toBeVisible()
+    await lifeMapDestination.dispatchEvent('click')
     await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
   })
 

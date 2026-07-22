@@ -4,17 +4,12 @@ import path from 'node:path'
 import test from 'node:test'
 
 const root = process.cwd()
-
-function read(relativePath) {
-  const absolute = path.join(root, relativePath)
-  assert.ok(fs.existsSync(absolute), `missing expected file: ${relativePath}`)
-  return fs.readFileSync(absolute, 'utf8')
-}
-
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
 const route = read('src/app/life-map/page.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const boundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
 const scene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
 const memorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
@@ -23,45 +18,53 @@ function includesAll(source, terms) {
   for (const term of terms) assert.ok(source.includes(term), `missing contract term: ${term}`)
 }
 
-test('Life Map route uses the final canonical R3F private galaxy owner chain', () => {
+test('Life Map route uses one canonical R3F private-universe owner chain', () => {
   assert.match(route, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(route, /RealLifeMapGalaxy|LifeMapAscentGate|TierOneExperience|CinematicLifeMapScene/)
-  assert.match(canonical, /LifeMapRouteBoundary/)
   assert.match(canonical, /data-testid="urai-r3f-canonical-lifemap"/)
-  assert.match(boundary, /AdaptiveLifeMapScene/)
+  assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
+  assert.match(canonical, /useWebGLCapability/)
+  assert.match(boundary, /<AdaptiveLifeMapScene \/>/)
+  assert.match(boundary, /<LifeMapSemanticNavigator \/>/)
+  assert.equal((scene.match(/<Canvas\b/g) || []).length, 1)
+  assert.match(navigator, /data-life-map-navigator/)
+  assert.match(navigator, /aria-label="Search and filter Life Map"/)
   assert.match(scene, /data-testid="urai-true-3d-life-map"/)
-  assert.match(scene, /Step inside the map\./)
 })
 
-test('memory stars select in place before Focus or Replay navigation', () => {
+test('memory lenses select in place before Focus or Replay navigation', () => {
   includesAll(scene, [
     'selectedId, setSelectedId',
     'setSelectedId(node.id)',
-    'setCameraIntent(cameraForNode(node))',
-    'identityHref("focus", selectedNode)',
-    'identityHref("replay", selectedNode)',
+    'goalForNode(selected)',
+    'destinationHref("focus")',
+    'destinationHref("replay")',
     'Enter Focus',
     'Replay',
     'Overview',
   ])
-  assert.match(scene, /const identityHref = useCallback/)
-  assert.match(scene, /next\.set\("memoryId", node\.id\)/)
+  assert.match(scene, /const destinationHref = useCallback/)
+  assert.match(scene, /next\.set\("memoryId", selected\.id\)/)
   assert.match(scene, /next\.set\("manifestId", manifestId\)/)
-  assert.match(scene, /next\.set\("node", node\.id\)/)
+  assert.match(scene, /next\.set\("node", selected\.id\)/)
+  assert.match(scene, /next\.set\("returnNode", selected\.id\)/)
 })
 
-test('Life Map keeps camera, keyboard, motion, and safe route contracts', () => {
+test('Life Map keeps deterministic camera travel, Escape recovery, reduced motion, and safe routes', () => {
   includesAll(scene, [
-    'onPointerMove',
-    'onPointerDown',
-    'onWheel',
+    'type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival"',
+    'THREE.MathUtils.damp',
     'event.key !== "Escape"',
     'profile.reducedMotion',
     'router.push("/home")',
-    'router.push("/ground")',
+    'webglcontextlost',
+    'webglcontextrestored',
   ])
-  assert.match(scene, /THREE\.MathUtils\.clamp/)
-  assert.match(scene, /window\.localStorage\.setItem/)
+  assert.match(scene, /setPhase\("departure"\)/)
+  assert.match(scene, /setPhase\("travel"\)/)
+  assert.match(scene, /setPhase\("approach"\)/)
+  assert.match(scene, /setPhase\("arrival"\)/)
+  assert.doesNotMatch(scene, /window\.localStorage\.setItem|requestPointerLock/)
 })
 
 test('Focus and Replay use final static-export-safe cinematic owners', () => {
