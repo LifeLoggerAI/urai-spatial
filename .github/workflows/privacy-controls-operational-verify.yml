@@ -12,7 +12,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: privacy-controls-operational-preview-${{ github.repository }}
+  group: urai-firebase-preview-${{ github.repository }}
   cancel-in-progress: false
 
 env:
@@ -109,46 +109,43 @@ jobs:
           else
             CHANNEL_ID="privacy-owner"
           fi
+          export CHANNEL_ID
           test "$CHANNEL_ID" != live
 
-          # Preview channels are finite. The workflow is serialized repository-wide,
-          # and cleanup is limited to expired Privacy-owned channels or legacy
-          # SHA-named channels whose last activity is more than two hours old.
-          pnpm exec firebase hosting:channel:list --project "$FIREBASE_PROJECT_ID" --json > preview-channels.json
+          # All Firebase preview producers share one repository-wide concurrency
+          # group. Remove only superseded Privacy-owned channels; never `live`.
+          pnpm exec firebase hosting:channel:list \
+            --site urai-4dc1d \
+            --project "$FIREBASE_PROJECT_ID" \
+            --json > preview-channels.json 2> preview-channels.stderr
           node <<'NODE' > privacy-preview-cleanup-candidates.tsv
           const fs = require('fs')
           const value = JSON.parse(fs.readFileSync('preview-channels.json', 'utf8'))
-          const now = Date.now()
-          const staleBefore = now - (2 * 60 * 60 * 1000)
-          const candidates = new Map()
-          const toMillis = (value) => {
-            if (typeof value !== 'string' || !value) return NaN
-            return Date.parse(value)
-          }
+          const current = process.env.CHANNEL_ID
+          const candidates = new Set()
           const walk = (item) => {
             if (Array.isArray(item)) return item.forEach(walk)
             if (!item || typeof item !== 'object') return
-            if (typeof item.name === 'string' && item.name.includes('/channels/')) {
-              const id = item.name.split('/channels/').pop()
-              const privacyOwned = /^(?:privacy-890-|privacy-pr-|privacy-owner$)/.test(id)
-              const expireAt = toMillis(item.expireTime)
-              const lastActivity = toMillis(item.updateTime || item.createTime)
-              const expired = Number.isFinite(expireAt) && expireAt <= now
-              const legacyStale = /^privacy-890-/.test(id) && Number.isFinite(lastActivity) && lastActivity <= staleBefore
-              if (privacyOwned && id !== 'live' && (expired || legacyStale)) {
-                candidates.set(id, expired ? 'expired' : 'legacy-older-than-2h')
-              }
+            const id = item.channelId || item.id || item.name
+            if (typeof id === 'string') {
+              const normalized = id.split('/').pop()
+              const owned = /^(?:privacy-890-|privacy-pr-|privacy-owner$)/.test(normalized)
+              if (owned && normalized !== current && normalized !== 'live') candidates.add(normalized)
             }
             Object.values(item).forEach(walk)
           }
           walk(value)
-          process.stdout.write([...candidates.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([id, reason]) => `${id}\t${reason}`).join('\n'))
+          process.stdout.write([...candidates].sort().map(id => `${id}\tsuperseded`).join('\n'))
           NODE
           : > privacy-preview-cleanup-results.tsv
           while IFS=$'\t' read -r old_channel cleanup_reason; do
-            test -z "$old_channel" && continue
+            test -n "$old_channel" || continue
             test "$old_channel" != live
-            if pnpm exec firebase hosting:channel:delete "$old_channel" --project "$FIREBASE_PROJECT_ID" --force --non-interactive; then
+            if pnpm exec firebase hosting:channel:delete "$old_channel" \
+              --site urai-4dc1d \
+              --project "$FIREBASE_PROJECT_ID" \
+              --force \
+              --non-interactive; then
               printf '%s\t%s\tdeleted\n' "$old_channel" "$cleanup_reason" >> privacy-preview-cleanup-results.tsv
             else
               printf '%s\t%s\tdelete-failed\n' "$old_channel" "$cleanup_reason" >> privacy-preview-cleanup-results.tsv
@@ -193,7 +190,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p privacy-controls-evidence
-          cp -f preview-channels.json privacy-preview-cleanup-candidates.tsv privacy-preview-cleanup-results.tsv preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-privacy-controls.html privacy-controls-evidence/ 2>/dev/null || true
+          cp -f preview-channels.json preview-channels.stderr privacy-preview-cleanup-candidates.tsv privacy-preview-cleanup-results.tsv preview-deploy.json preview-deploy.stderr preview-receipt.txt preview-privacy-controls.html privacy-controls-evidence/ 2>/dev/null || true
           printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\ncaptured_at=%s\n' \
             "$EXACT_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > privacy-controls-evidence/manifest.txt
