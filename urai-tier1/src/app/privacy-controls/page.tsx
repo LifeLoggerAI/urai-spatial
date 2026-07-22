@@ -17,6 +17,7 @@ const providerSurface = {
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundColor: '#02070c',
+  '--privacy-provider-mobile': assetCssStack(privacyControlsAssets.mobile),
 } satisfies CSSProperties
 
 export default function PrivacyControlsRoutePage() {
