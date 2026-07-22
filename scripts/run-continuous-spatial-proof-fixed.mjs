@@ -48,7 +48,7 @@ if (!source.includes('activeHomeOwnerMounted')) {
     `const runtime = await page.locator('[data-urai-home-runtime="embodied-continuous-webgl-world"]').count()
       const activeHomeOwner = page.locator('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
       const activeHomeOwnerMounted = await activeHomeOwner.count() === 1
-      const activeHomeOwnerReady = activeHomeOwnerMounted && await activeHomeOwner.getAttribute('data-home-ready') === 'true'
+      const activeHomeOwnerReadyDiagnostic = activeHomeOwnerMounted && await activeHomeOwner.getAttribute('data-home-ready') === 'true'
       const visibleWorldMounted = activeHomeOwnerMounted && await activeHomeOwner.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'`,
   )
   replaceRequired(
@@ -77,8 +77,16 @@ if (!source.includes('activeHomeOwnerMounted')) {
     /runtimeMounted: runtime === 1,/,
     `runtimeMounted: runtime === 1,
         activeHomeOwnerMounted,
-        activeHomeOwnerReady,
+        activeHomeOwnerReadyDiagnostic,
         visibleWorldMounted,`,
+  )
+}
+
+if (!source.includes("key.endsWith('Diagnostic')")) {
+  replaceRequired(
+    'diagnostic-only proof fields',
+    /if \(key === 'overlayOpacities'\) return true/,
+    `if (key === 'overlayOpacities' || key.endsWith('Diagnostic')) return true`,
   )
 }
 
@@ -165,7 +173,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-14'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-15'",
 )
 
 await writeFile(patchedPath, source)
