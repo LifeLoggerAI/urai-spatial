@@ -29,7 +29,7 @@ const routes = [
 
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
-const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-4', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
+const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-5', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
 let failed = false
 
 async function stable(page, frames = 3) {
@@ -132,10 +132,14 @@ async function proveLifeMapToFocus() {
     const chamber = page.locator('[data-testid="urai-final-focus-chamber"]')
     await chamber.waitFor({ state: 'visible', timeout: 30_000 })
     const destination = new URL(page.url())
+    const expectedMemoryId = 'demo:quiet-reset'
     record.memoryStatus = await chamber.getAttribute('data-memory-status')
     record.memoryId = await chamber.getAttribute('data-memory-id')
     record.destination = destination.toString()
-    record.passed = destination.searchParams.get('memoryId') === 'quiet-reset'
+    record.expectedMemoryId = expectedMemoryId
+    record.passed = destination.searchParams.get('memoryId') === expectedMemoryId
+      && record.memoryId === expectedMemoryId
+      && record.memoryStatus === 'demo'
       && destination.searchParams.get('manifestId') === 'replay-recovery-thread'
       && destination.searchParams.get('from') === 'life-map'
       && !((await page.locator('body').innerText()).includes('Memory unavailable'))
