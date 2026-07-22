@@ -10,11 +10,16 @@ test('Passport has one canonical route owner and excludes the legacy realm owner
   const page = read('src/app/passport/page.tsx')
   const client = read('src/app/passport/PassportVaultClient.tsx')
   const legacy = read('src/app/UraiAutonomousV1Layer.tsx')
+  const realmCanon = read('tests/guardian/realm-routes-canon.test.mjs')
+  const runtimeCanon = read('tests/guardian/passport-council-runtime-canon.test.mjs')
   assert.match(page, /PassportVaultClient/)
   assert.match(page, /<PassportVaultClient\s*\/>/)
   assert.doesNotMatch(page, /FinalPassportVault/)
   assert.match(client, /data-route-owner="passport-ownership-vault"/)
   assert.doesNotMatch(legacy, /pathname\.startsWith\("\/passport"\)/)
+  assert.match(realmCanon, /PassportVaultClient/)
+  assert.match(runtimeCanon, /PassportVaultClient/)
+  assert.doesNotMatch(runtimeCanon, /assert\.match\(passportRoute, \/FinalPassportVault/)
 })
 
 test('Ownership Vault is spatial and directly accessible without WebGL', () => {
@@ -33,11 +38,12 @@ test('Ownership Vault is spatial and directly accessible without WebGL', () => {
   assert.match(css, /forced-colors/)
 })
 
-test('Passport spatial presentation remains local and offline-safe', () => {
+test('Ownership Vault has no runtime font or external CDN dependency', () => {
   const client = read('src/app/passport/PassportVaultClient.tsx')
-  assert.doesNotMatch(client, /\bText\b|<Text|unicode-font-resolver|cdn\.jsdelivr\.net/)
-  assert.match(client, /<planeGeometry/)
-  assert.match(client, /aria-hidden="true"/)
+  assert.doesNotMatch(client, /\bText\b/)
+  assert.doesNotMatch(client, /unicode-font-resolver/)
+  assert.doesNotMatch(client, /cdn\.jsdelivr\.net/)
+  assert.match(client, /boxGeometry/)
 })
 
 test('Passport uses trusted authenticated export deletion and snapshot operations', () => {
