@@ -6,12 +6,14 @@ const page = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta
 const canonical = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const source = fs.readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMapScene.tsx', import.meta.url), 'utf8')
+const navigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const events = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
 
 test('Life Map route has one canonical scene owner', () => {
   assert.match(page, /SpatialLifeMapCanonical/)
   assert.match(canonical, /LifeMapRouteBoundary/)
   assert.match(boundary, /AdaptiveLifeMapScene/)
+  assert.match(boundary, /LifeMapSemanticNavigator/)
   assert.equal((source.match(/<Canvas\b/g) || []).length, 1)
   assert.doesNotMatch(page, /RealLifeMapGalaxy|LifeMapScene/)
   assert.ok(source.includes('data-home-companion-owned="false"'))
@@ -74,10 +76,31 @@ test('Selection Focus Replay Overview and Escape preserve identity', () => {
   assert.ok(source.includes('next.set("overview", "1")'))
 })
 
+test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
+  assert.match(navigator, /Search memories, people, dates, places, themes, and eras/)
+  assert.match(navigator, /TYPE_FILTERS/)
+  assert.match(navigator, /typeFilter === "all" \|\| node\.type === typeFilter/)
+  assert.match(navigator, /eraFilter === "all" \|\| node\.eraId === eraFilter/)
+  assert.match(navigator, /event\.key === "ArrowRight"/)
+  assert.match(navigator, /event\.key === "ArrowLeft"/)
+  assert.match(navigator, /event\.key === "Home"/)
+  assert.match(navigator, /event\.key === "\/"/)
+  assert.match(navigator, /selected\.connectedTo\.includes\(node\.id\)/)
+  assert.match(navigator, /node\.connectedTo\.includes\(selected\.id\)/)
+  assert.match(navigator, /Connected path/)
+  assert.match(navigator, /Focus, Replay, and Overview remain in the single spatial action rail\./)
+  assert.doesNotMatch(navigator, /destinationHref\("timeline"\)|destinationHref\("location-map"\)/)
+  assert.match(navigator, /data-visible-count=/)
+  assert.match(navigator, /min-height:48px/)
+  assert.match(navigator, /env\(safe-area-inset-bottom\)/)
+})
+
 test('Only explicit demo identity can load sample memories', () => {
   assert.ok(source.includes('const explicitDemoRequested = params.get("demo") === "1"'))
   assert.ok(source.includes('useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined)'))
   assert.ok(source.includes('if (explicitDemoRequested) next.set("demo", "1")'))
+  assert.match(navigator, /const explicitDemo = params\.get\("demo"\) === "1"/)
+  assert.match(navigator, /useLifeMapEvents\(explicitDemo \? "demo-user" : undefined\)/)
   assert.match(events, /function explicitDemoEnabled\(explicitUserId\?: string\) \{\s*return explicitUserId === "demo-user";/)
   assert.doesNotMatch(events, /NEXT_PUBLIC_URAI_EXPLICIT_DEMO/)
   assert.doesNotMatch(events, /lifeMapDemoMode/)
@@ -99,6 +122,8 @@ test('Reduced motion and mobile retain equivalent semantic journeys', () => {
   assert.match(source, /@media\(prefers-reduced-motion:reduce\)/)
   assert.ok(source.includes('min-height:48px'))
   assert.ok(source.includes('env(safe-area-inset-bottom)'))
+  assert.match(navigator, /@media\(max-width:760px\)/)
+  assert.match(navigator, /@media\(prefers-reduced-motion:reduce\)/)
 })
 
 test('WebGL context loss preserves truthful semantic recovery', () => {

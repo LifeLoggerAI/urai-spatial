@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": "urai-tier1/out",
+    "ignore": [
+      "firebase.preview.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+  }
+}

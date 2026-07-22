@@ -106,6 +106,27 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 /* Replay uses one compact control stack on phones. Keep the timeline, details,
  * captions and companion in distinct safe-area bands where canon permits it. */
 @media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='home'] .urai-home-direct-controls {
+    top: max(78px, calc(env(safe-area-inset-top) + 62px)) !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    pointer-events: auto !important;
+  }
+
+  .urai-world-runtime[data-world-destination='home'] .urai-home-direct-controls button {
+    min-width: 48px !important;
+    min-height: 48px !important;
+    max-width: 48px !important;
+    touch-action: manipulation !important;
+  }
+
+  .urai-world-runtime[data-world-destination='home'] .urai-home-direct-controls button:focus-visible,
+  .urai-world-runtime[data-world-destination='home'] .urai-home-direct-controls button:hover {
+    max-width: 150px !important;
+  }
+
   .urai-world-runtime[data-world-destination='replay'] [data-testid='urai-replay-meta-panel'] {
     top: max(78px, calc(env(safe-area-inset-top) + 62px)) !important;
     right: 12px !important;

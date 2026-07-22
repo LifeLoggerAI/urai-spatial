@@ -82,12 +82,21 @@ for (const pattern of forbiddenPatterns) {
   }
 }
 
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const collectionMatch = (pathValue) => {
+  if (typeof pathValue !== 'string') return false
+  const segments = pathValue.split('/')
+  const collectionName = segments.at(-2)
+  if (!collectionName) return false
+  return new RegExp(`match\\s+/${escapeRegExp(collectionName)}/\\{[^}]+\\}`).test(rules)
+}
+
 for (const collection of spatialContract.collections ?? []) {
   const anchors = collection.rulesAnchors ?? []
   const equivalent = collection.runtimeEquivalent
-  const hasAnchor = anchors.some((anchor) => rules.includes(anchor))
-  const hasEquivalent = typeof equivalent === 'string' && rules.includes(`match /${equivalent.split('/').slice(-2).join('/')}`)
-  const hasAssetManifestEquivalent = equivalent === 'assetManifests/{manifestId}' && rules.includes('match /assetManifests/{manifestId}')
+  const hasAnchor = anchors.some((anchor) => collectionMatch(anchor.replace(/^match\s+\//, '')))
+  const hasEquivalent = collectionMatch(equivalent)
+  const hasAssetManifestEquivalent = equivalent === 'assetManifests/{manifestId}' && collectionMatch(equivalent)
 
   if (!hasAnchor && !hasEquivalent && !hasAssetManifestEquivalent) {
     console.error(

@@ -1,22 +1,15 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
+import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
-function primeOverviewIdentity() {
-  const current = new URLSearchParams(window.location.search)
-  current.delete('memoryId')
-  current.delete('node')
-  current.delete('returnNode')
-  current.delete('from')
-  current.set('overview', '1')
-  window.history.replaceState(window.history.state, '', `/life-map?${current.toString()}`)
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }))
-}
-
 export default function LifeMapRouteBoundary() {
+  const router = useRouter()
+
   useEffect(() => {
     let secondFrame = 0
     const firstFrame = window.requestAnimationFrame(() => {
@@ -27,6 +20,16 @@ export default function LifeMapRouteBoundary() {
       })
     })
 
+    const primeOverviewIdentity = () => {
+      const current = new URLSearchParams(window.location.search)
+      current.delete('memoryId')
+      current.delete('node')
+      current.delete('returnNode')
+      current.delete('from')
+      current.set('overview', '1')
+      router.replace(`/life-map?${current.toString()}`, { scroll: false })
+    }
+
     const primeOverview = (event: MouseEvent) => {
       const target = event.target
       if (!(target instanceof Element)) return
@@ -36,22 +39,16 @@ export default function LifeMapRouteBoundary() {
       primeOverviewIdentity()
     }
 
-    const primeEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
-      const current = new URLSearchParams(window.location.search)
-      if (!current.has('memoryId') && !current.has('node')) return
-      primeOverviewIdentity()
-    }
-
     document.addEventListener('click', primeOverview, true)
-    window.addEventListener('keydown', primeEscape, true)
     return () => {
       window.cancelAnimationFrame(firstFrame)
       if (secondFrame) window.cancelAnimationFrame(secondFrame)
       document.removeEventListener('click', primeOverview, true)
-      window.removeEventListener('keydown', primeEscape, true)
     }
-  }, [])
+  }, [router])
 
-  return <AdaptiveLifeMapScene />
+  return <>
+    <AdaptiveLifeMapScene />
+    <LifeMapSemanticNavigator />
+  </>
 }

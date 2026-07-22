@@ -102,6 +102,7 @@ function AtmosphericDepth({ reducedMotion }: { reducedMotion: boolean }) {
 function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean }) {
   const { camera } = useThree();
   const target = useRef(new THREE.Vector3(...goal.target));
+  const currentLook = useRef(new THREE.Vector3());
   useFrame((_, delta) => {
     target.current.set(...goal.target);
     if (reducedMotion) {
@@ -113,10 +114,9 @@ function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: Jo
     camera.position.x = THREE.MathUtils.damp(camera.position.x, goal.position[0], rate, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, goal.position[1], rate, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, goal.position[2], rate, delta);
-    const currentLook = new THREE.Vector3();
-    camera.getWorldDirection(currentLook).add(camera.position);
-    currentLook.lerp(target.current, 1 - Math.exp(-rate * delta));
-    camera.lookAt(currentLook);
+    camera.getWorldDirection(currentLook.current).add(camera.position);
+    currentLook.current.lerp(target.current, 1 - Math.exp(-rate * delta));
+    camera.lookAt(currentLook.current);
   });
   return null;
 }
