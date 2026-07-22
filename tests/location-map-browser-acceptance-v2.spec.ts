@@ -172,206 +172,4 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
 
     const beforePan = await camera(page)
-    const beforePanTransform = await cameraTransform(page)
-    await dispatchPointerDrag(page, 'mouse', 140, 80)
-    await expect.poll(async () => camera(page)).not.toEqual(beforePan)
-    await expect.poll(async () => cameraTransform(page)).not.toBe(beforePanTransform)
-    const afterPan = await camera(page)
-    const afterPanTransform = await cameraTransform(page)
-
-    await realWheelZoom(page)
-    await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(afterPan.zoom)
-    const afterWheel = await camera(page)
-    expect(afterWheel.x).toBe(afterPan.x)
-    expect(afterWheel.y).toBe(afterPan.y)
-
-    await beacons.first().click()
-    await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
-    await expect(page.locator('.locationAtlasSelection')).toBeVisible()
-    await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
-    const selectedUrl = page.url()
-    await page.screenshot({ path: testInfo.outputPath('demo-desktop-selected.png'), fullPage: true })
-
-    await page.goBack()
-    await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
-    await page.goForward()
-    await expect(page).toHaveURL(selectedUrl, { timeout: 15_000 })
-    await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
-    await page.reload({ waitUntil: 'networkidle' })
-    await expect(page.locator('[data-camera-checkpoint="place-focus"]')).toBeVisible()
-
-    await page.keyboard.press('Escape')
-    await expect(page.locator('.locationAtlasSelection')).toBeHidden()
-    await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
-    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
-    await page.screenshot({ path: testInfo.outputPath('demo-desktop-deselected.png'), fullPage: true })
-    await stage.focus()
-    await page.keyboard.press('ArrowRight')
-    await expect(beacons.nth(1)).toBeFocused()
-    await page.keyboard.press('Enter')
-    await expect(page.locator('.locationAtlasSelection')).toBeVisible()
-    await page.keyboard.press('Home')
-    await expect(page.locator('.locationAtlasSelection')).toBeHidden()
-    await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
-
-    await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
-    await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
-    await expect(page.locator('[data-location-map-source="private-repository"]')).toBeVisible()
-    await expect(page.getByText('Permissioned places')).toBeVisible()
-    await page.screenshot({ path: testInfo.outputPath('private-user-desktop.png'), fullPage: true })
-
-    await page.goto(`${route}&acceptanceState=empty`, { waitUntil: 'networkidle' })
-    await expect(page.getByRole('heading', { name: 'Your atlas is quiet.' })).toBeVisible()
-    await expect(page.getByText('Nothing private has been inferred.')).toBeVisible()
-    await page.screenshot({ path: testInfo.outputPath('empty-state-desktop.png'), fullPage: true })
-
-    await openDemo(page)
-    const offlineStart = {
-      consoleErrors: errors.consoleErrors.length,
-      pageErrors: errors.pageErrors.length,
-      failedRequests: errors.failedRequests.length,
-    }
-    await context.setOffline(true)
-    await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-    await page.evaluate(() => fetch(`/location-map/offline-probe-${Date.now()}`).catch(() => undefined))
-    await expect(page.getByText('Offline Â· local view retained')).toBeVisible()
-    await page.screenshot({ path: testInfo.outputPath('offline-desktop.png'), fullPage: true })
-    await context.setOffline(false)
-    const offlineEnd = {
-      consoleErrors: errors.consoleErrors.length,
-      pageErrors: errors.pageErrors.length,
-      failedRequests: errors.failedRequests.length,
-    }
-
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await expect(page.locator('.locationAtlas')).toHaveAttribute('data-reduced-motion', 'true')
-    const motionStyles = await page.locator('.locationAtlasBeacon, .locationAtlasSelection, .locationAtlasBeacons').evaluateAll(elements => elements.map(element => ({
-      transitionDuration: getComputedStyle(element).transitionDuration,
-      animationDuration: getComputedStyle(element).animationDuration,
-    })))
-    expect(motionStyles.every(style => style.transitionDuration.split(',').every(value => value.trim() === '0s') && style.animationDuration.split(',').every(value => value.trim() === '0s'))).toBe(true)
-    await page.screenshot({ path: testInfo.outputPath('reduced-motion-desktop.png'), fullPage: true })
-
-    const offlineConsoleErrors = errors.consoleErrors.slice(offlineStart.consoleErrors, offlineEnd.consoleErrors)
-    const offlinePageErrors = errors.pageErrors.slice(offlineStart.pageErrors, offlineEnd.pageErrors)
-    const offlineRequests = errors.failedRequests.slice(offlineStart.failedRequests, offlineEnd.failedRequests)
-    const expectedOfflineConsoleErrors = offlineConsoleErrors.filter(message => message.includes('ERR_INTERNET_DISCONNECTED'))
-    const expectedOfflinePageErrors = offlinePageErrors.filter(message => message === 'Event' || message.includes('ERR_INTERNET_DISCONNECTED'))
-    const expectedOfflineRequests = offlineRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
-    const expectedOfflineProbeRequests = expectedOfflineRequests.filter(request => request.includes('/location-map/offline-probe-'))
-    const expectedNavigationAborts = errors.failedRequests.filter(isExpectedNavigationAbort)
-    const unexpectedConsoleErrors = [
-      ...errors.consoleErrors.slice(0, offlineStart.consoleErrors),
-      ...offlineConsoleErrors.filter(message => !expectedOfflineConsoleErrors.includes(message)),
-      ...errors.consoleErrors.slice(offlineEnd.consoleErrors),
-    ]
-    const unexpectedPageErrors = [
-      ...errors.pageErrors.slice(0, offlineStart.pageErrors),
-      ...offlinePageErrors.filter(message => !expectedOfflinePageErrors.includes(message)),
-      ...errors.pageErrors.slice(offlineEnd.pageErrors),
-    ]
-    const unexpectedFailedRequests = errors.failedRequests.filter(request => (
-      !expectedOfflineRequests.includes(request)
-      && !expectedNavigationAborts.includes(request)
-    ))
-    const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
-    expect(expectedOfflineSignals).toBeGreaterThan(0)
-    expect(expectedOfflineProbeRequests.length).toBeGreaterThan(0)
-    expect(unexpectedConsoleErrors).toEqual([])
-    expect(unexpectedPageErrors).toEqual([])
-    expect(unexpectedFailedRequests).toEqual([])
-    await attachJson(testInfo, 'desktop-console-network-receipt.json', {
-      ...errors,
-      offlineStart,
-      offlineEnd,
-      expectedOfflineConsoleErrors,
-      expectedOfflinePageErrors,
-      expectedOfflineRequests,
-      expectedOfflineProbeRequests,
-      expectedNavigationAborts,
-      unexpectedConsoleErrors,
-      unexpectedPageErrors,
-      unexpectedFailedRequests,
-    })
-    await attachJson(testInfo, 'desktop-interaction-receipt.json', {
-      exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
-      beforePan,
-      beforePanTransform,
-      afterPan,
-      afterPanTransform,
-      afterWheel,
-      selectedUrl,
-      motionStyles,
-      viewports: ['1440x900', '1920x1080'],
-    })
-  })
-
-  test('mobile native touch drag pinch continuation selection and deselection packet', async ({ page, browserName }, testInfo) => {
-    test.skip(browserName !== 'chromium', 'CDP native touch input requires Chromium')
-    const errors = monitor(page)
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
-    await page.goto(route, { waitUntil: 'networkidle' })
-    await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
-    await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
-
-    const beforeTouch = await camera(page)
-    const beforeTouchTransform = await cameraTransform(page)
-    await dispatchPointerDrag(page, 'touch', 72, 54)
-    await expect.poll(async () => camera(page)).not.toEqual(beforeTouch)
-    await expect.poll(async () => cameraTransform(page)).not.toBe(beforeTouchTransform)
-    const afterTouch = await camera(page)
-    const afterTouchTransform = await cameraTransform(page)
-
-    await nativePinch(page)
-    await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(afterTouch.zoom)
-    const afterPinch = await camera(page)
-    await dispatchPointerDrag(page, 'touch', 64, 46)
-    await expect.poll(async () => {
-      const value = await camera(page)
-      return `${value.x}:${value.y}`
-    }).not.toBe(`${afterPinch.x}:${afterPinch.y}`)
-    const afterPinchToPan = await camera(page)
-    const afterPinchToPanTransform = await cameraTransform(page)
-
-    await page.keyboard.press('Home')
-    await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
-    const viewportBeaconIndex = await page.locator('.locationAtlasBeacon').evaluateAll((nodes) => {
-      const index = nodes.findIndex((node) => {
-        const rect = node.getBoundingClientRect()
-        const x = rect.left + rect.width * .5
-        const y = rect.top + rect.height * .5
-        return x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight
-      })
-      return index
-    })
-    expect(viewportBeaconIndex).toBeGreaterThanOrEqual(0)
-    await nativeTouchTap(page, page.locator('.locationAtlasBeacon').nth(viewportBeaconIndex))
-    await expect(page.locator('.locationAtlasSelection')).toBeVisible()
-    await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
-    await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
-
-    const selection = page.locator('.locationAtlasSelection')
-    await nativeTouchTap(page, selection.getByRole('button', { name: 'Return to atlas overview' }))
-    await expect(selection).toBeHidden()
-    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
-    await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
-
-    expect(errors.consoleErrors).toEqual([])
-    expect(errors.pageErrors).toEqual([])
-    expect(errors.failedRequests).toEqual([])
-    await attachJson(testInfo, 'mobile-console-network-receipt.json', errors)
-    await attachJson(testInfo, 'mobile-interaction-receipt.json', {
-      exactSha: process.env.URAI_EXACT_HEAD || process.env.GITHUB_SHA || 'local',
-      beforeTouch,
-      beforeTouchTransform,
-      afterTouch,
-      afterTouchTransform,
-      afterPinch,
-      afterPinchToPan,
-      afterPinchToPanTransform,
-      viewport: '390x844',
-      nativeInput: ['touch-drag', 'two-finger-pinch', 'post-pinch-one-finger-pan', 'touch-select', 'touch-deselect'],
-    })
-  })
-})
+    const beforePanTransform = await cam²È="24€€Á…•ÉÉ½ÉÌè•ÉÉ½ÉÌ¹Á…•ÉÉ½ÉÌ¹±•¹Ñ °(€€€€€™…¥±•‘I•ÅÕ•ÍÑÌè•ÉÉ½ÉÌ¹™…¥±•‘I•ÅÕ•ÍÑÌ¹±•¹Ñ °(€€€ô((€€€…Ý…¥ÐÁ…”¹•µÕ±…Ñ•5•‘¥„¡ìÉ•‘Õ•‘5½Ñ¥½¸è€É•‘Õ”œô¤(€€€…Ý…¥Ð•áÁ•Ð¡Á…”¹±½…Ñ½È œ¹±½…Ñ¥½¹Ñ±…Ìœ¤¤¹Ñ½!…Ù•ÑÑÉ¥‰ÕÑ” ‘…Ñ„µÉ•‘Õ•µµ½Ñ¥½¸œ°€ÑÉÕ”œ¤(€€€½¹ÍÐµ½Ñ¥½¹MÑå±•Ì€ô…Ý…¥ÐÁ…”¹±½…Ñ½È œ¹±½…Ñ¥½¹Ñ±…Í	•…½¸°€¹±½…Ñ¥½¹Ñ±…ÍM•±•Ñ¥½¸°€¹±½…Ñ¥½¹Ñ±…Í	•…½¹Ìœ¤¹•Ù…±Õ…Ñ•±°¡•±•µ•¹ÑÌ€ôø•±•µ•¹ÑÌ¹µ…À¡•±•µ•¹Ð€ôø€¡ì(€€€€€ÑÉ…¹Í¥Ñ¥½¹ÕÉ…Ñ¥½¸è•Ñ½µÁÕÑ•‘MÑå±”¡•±•µ•¹Ð¤¹ÑÉ…¹Í¥Ñ¥½¹ÕÉ…Ñ¥½¸°(€€€€€…¹¥µ…Ñ¥½¹ÕÉ…Ñ¥½¸è•Ñ½µÁÕÑ•‘MÑå±”¡•±•µ•¹Ð¤¹…¹¥µ…Ñ¥½¹ÕÉ…Ñ¥½¸°(€€€ô¤¤¤(€€€•áÁ•Ð¡µ½Ñ¥½¹MÑå±•Ì¹•Ù•Éä¡ÍÑå±”€ôøÍÑå±”¹ÑÉ…¹Í¥Ñ¥½¹ÕÉ…Ñ¥½¸¹ÍÁ±¥Ð œ°œ¤¹•Ù•Éä¡Ù…±Õ”€ôøÙ…±Õ”¹ÑÉ¥´ ¤€ôôô€œÁÌœ¤€˜˜ÍÑå±”¹…¹¥µ…Ñ¥½¹ÕÉ…Ñ¥½¸¹ÍÁ±¥Ð œ°œ¤¹•Ù•Éä¡Ù…±Õ”€ôøÙ…±Õ”¹ÑÉ¥´ ¤€ôôô€œÁÌœ¤¤¤¹Ñ½	”¡ÑÉÕ”¤(€€€…Ý…¥ÐÁ…”¹ÍÉ••¹Í¡½Ð¡ìÁ…Ñ èÑ•ÍÑ%¹™¼¹½ÕÑÁÕÑA…Ñ  É•‘Õ•µµ½Ñ¥½¸µ‘•Í­Ñ½À¹Á¹œœ¤°™Õ±±A…”èÑÉÕ”ô¤((€€€½¹ÍÐ½™™±¥¹•½¹Í½±•ÉÉ½ÉÌ€ô•ÉÉ½ÉÌ¹½¹Í½±•ÉÉ½ÉÌ¹Í±¥”¡½™™±¥¹•MÑ…ÉÐ¹½¹Í½±•ÉÉ½ÉÌ°½™™±¥¹•¹¹½¹Í½±•ÉÉ½ÉÌ¤(€€€½¹ÍÐ½™™±¥¹•A…•ÉÉ½ÉÌ€ô•ÉÉ½ÉÌ¹Á…•ÉÉ½ÉÌ¹Í±¥”¡½™™±¥¹•MÑ…ÉÐ¹Á…•ÉÉ½ÉÌ°½™™±¥¹•¹¹Á…•ÉÉ½ÉÌ¤(€€€½¹ÍÐ½™™±¥¹•I•ÅÕ•ÍÑÌ€ô•ÉÉ½ÉÌ¹™…¥±•‘I•ÅÕ•ÍÑÌ¹Í±¥”¡½™™±¥¹•MÑ…ÉÐ¹™…¥±•‘I•ÅÕ•ÍÑÌ°½™™±¥¹•¹¹™…¥±•‘I•ÅÕ•ÍÑÌ¤(€€€½¹ÍÐ•áÁ•Ñ•‘=™™±¥¹•½¹Í½±•ÉÉ½ÉÌ€ô½™™±¥¹•½¹Í½±•ÉÉ½ÉÌ¹™¥±Ñ•È¡µ•ÍÍ…”€ôøµ•ÍÍ…”¹¥¹±Õ‘•Ì II}%9QI9Q}%M=99Qœ¤¤(€€€½¹ÍÐ•áÁ•Ñ•‘=™™±¥¹•A…•ÉÉ½ÉÌ€ô½™™±¥¹•A…•ÉÉ½ÉÌ¹™¥±Ñ•È¡µ•ÍÍ…”€ôøµ•ÍÍ…”€ôôô€Ù•¹Ðœñðµ•ÍÍ…”¹¥¹±Õ‘•Ì II}%9QI9Q}%M=99Qœ¤¤(€€€½¹ÍÐ•áÁ•Ñ•‘=™™±¥¹•I•ÅÕ•ÍÑÌ€ô½™™±¥¹•I•ÅÕ•ÍÑÌ¹™¥±Ñ•È¡É•ÅÕ•ÍÐ€ôøÉ•ÅÕ•ÍÐ¹¥¹±Õ‘•Ì II}%9QI9Q}%M=99Qœ¤¤(€€€½¹ÍÐ•áÁ•Ñ•‘=™™±¥¹•AÉ½‰•I•ÅÕ•ÍÑÌ€ô•áÁ•Ñ•‘=™™±¥¹•I•ÅÕ•ÍÑÌ¹™¥±Ñ•È¡É•ÅÕ•ÍÐ€ôøÉ•ÅÕ•ÍÐ¹¥¹±Õ‘•Ì œ½±½…Ñ¥½¸µµ…À½½™™±¥¹”µÁÉ½‰”´œ¤¤(€€€½¹ÍÐ•áÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÑÌ€ô•ÉÉ½ÉÌ¹™…¥±•‘I•ÅÕ•ÍÑÌ¹™¥±Ñ•È¡¥ÍáÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÐ¤(€€€½¹ÍÐÕ¹•áÁ•Ñ•‘½¹Í½±•ÉÉ½ÉÌ€ôl(€€€€€€¸¸¹•ÉÉ½ÉÌ¹½¹Í½±•ÉÉ½ÉÌ¹Í±¥” À°½™™±¥¹•MÑ…ÉÐ¹½¹Í½±•ÉÉ½ÉÌ¤°(€€€€€€¸¸¹½™™±¥¹•½¹Í½±•ÉÉ½ÉÌ¹™¥±Ñ•È¡µ•ÍÍ…”€ôø€…•áÁ•Ñ•‘=™™±¥¹•½¹Í½±•ÉÉ½ÉÌ¹¥¹±Õ‘•Ì¡µ•ÍÍ…”¤¤°(€€€€€€¸¸¹•ÉÉ½ÉÌ¹½¹Í½±•ÉÉ½ÉÌ¹Í±¥”¡½™™±¥¹•¹¹½¹Í½±•ÉÉ½ÉÌ¤°(€€€t(€€€½¹ÍÐÕ¹•áÁ•Ñ•‘A…•ÉÉ½ÉÌ€ôl(€€€€€€¸¸¹•ÉÉ½ÉÌ¹Á…•ÉÉ½ÉÌ¹Í±¥” À°½™™±¥¹•MÑ…ÉÐ¹Á…•ÉÉ½ÉÌ¤°(€€€€€€¸¸¹½™™±¥¹•A…•ÉÉ½ÉÌ¹™¥±Ñ•È¡µ•ÍÍ…”€ôø€…•áÁ•Ñ•‘=™™±¥¹•A…•ÉÉ½ÉÌ¹¥¹±Õ‘•Ì¡µ•ÍÍ…”¤¤°(€€€€€€¸¸¹•ÉÉ½ÉÌ¹Á…•ÉÉ½ÉÌ¹Í±¥”¡½™™±¥¹•¹¹Á…•ÉÉ½ÉÌ¤°(€€€t(€€€½¹ÍÐÕ¹•áÁ•Ñ•‘…¥±•‘I•ÅÕ•ÍÑÌ€ô•ÉÉ½ÉÌ¹™…¥±•‘I•ÅÕ•ÍÑÌ¹™¥±Ñ•È¡É•ÅÕ•ÍÐ€ôø€ (€€€€€€…•áÁ•Ñ•‘=™™±¥¹•I•ÅÕ•ÍÑÌ¹¥¹±Õ‘•Ì¡É•ÅÕ•ÍÐ¤(€€€€€€˜˜€…•áÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÑÌ¹¥¹±Õ‘•Ì¡É•ÅÕ•ÍÐ¤(€€€€¤¤(€€€½¹ÍÐ•áÁ•Ñ•‘=™™±¥¹•M¥¹…±Ì€ô•áÁ•Ñ•‘=™™±¥¹•½¹Í½±•ÉÉ½ÉÌ¹±•¹Ñ €¬•áÁ•Ñ•‘=™™±¥¹•A…•ÉÉ½ÉÌ¹±•¹Ñ €¬•áÁ•Ñ•‘=™™±¥¹•I•ÅÕ•ÍÑÌ¹±•¹Ñ (€€€•áÁ•Ð¡•áÁ•Ñ•‘=™™±¥¹•M¥¹…±Ì¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤(€€€•áÁ•Ð¡•áÁ•Ñ•‘=™™±¥¹•AÉ½‰•I•ÅÕ•ÍÑÌ¹±•¹Ñ ¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤(€€€•áÁ•Ð¡Õ¹•áÁ•Ñ•‘½¹Í½±•ÉÉ½ÉÌ¤¹Ñ½ÅÕ…°¡mt¤(€€€•áÁ•Ð¡Õ¹•áÁ•Ñ•‘A…•ÉÉ½ÉÌ¤¹Ñ½ÅÕ…°¡mt¤(€€€•áÁ•Ð¡Õ¹•áÁ•Ñ•‘…¥±•‘I•ÅÕ•ÍÑÌ¤¹Ñ½ÅÕ…°¡mt¤(€€€…Ý…¥Ð…ÑÑ…¡)Í½¸¡Ñ•ÍÑ%¹™¼°€‘•Í­Ñ½Àµ½¹Í½±”µ¹•ÑÝ½É¬µÉ••¥ÁÐ¹©Í½¸œ°ì(€€€€€€¸¸¹•ÉÉ½ÉÌ°(€€€€€½™™±¥¹•MÑ…ÉÐ°(€€€€€½™™±¥¹•¹°(€€€€€•áÁ•Ñ•‘=™™±¥¹•½¹Í½±•ÉÉ½ÉÌ°(€€€€€•áÁ•Ñ•‘=™™±¥¹•A…•ÉÉ½ÉÌ°(€€€€€•áÁ•Ñ•‘=™™±¥¹•I•ÅÕ•ÍÑÌ°(€€€€€•áÁ•Ñ•‘=™™±¥¹•AÉ½‰•I•ÅÕ•ÍÑÌ°(€€€€€•áÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÑÌ°(€€€€€Õ¹•áÁ•Ñ•‘½¹Í½±•ÉÉ½ÉÌ°(€€€€€Õ¹•áÁ•Ñ•‘A…•ÉÉ½ÉÌ°(€€€€€Õ¹•áÁ•Ñ•‘…¥±•‘I•ÅÕ•ÍÑÌ°(€€€ô¤(€€€…Ý…¥Ð…ÑÑ…¡)Í½¸¡Ñ•ÍÑ%¹™¼°€‘•Í­Ñ½Àµ¥¹Ñ•É…Ñ¥½¸µÉ••¥ÁÐ¹©Í½¸œ°ì(€€€€€•á…ÑM¡„èÁÉ½•ÍÌ¹•¹Ø¹UI%}aQ}!ñðÁÉ½•ÍÌ¹•¹Ø¹%Q!U	}M!ñð€±½…°œ°(€€€€€‰•™½É•A…¸°(€€€€€‰•™½É•A…¹QÉ…¹Í™½É´°(€€€€€…™Ñ•ÉA…¸°(€€€€€…™Ñ•ÉA…¹QÉ…¹Í™½É´°(€€€€€…™Ñ•É]¡••°°(€€€€€Í•±•Ñ•‘UÉ°°(€€€€€µ½Ñ¥½¹MÑå±•Ì°(€€€€€Ù¥•ÝÁ½ÉÑÌèlœÄÐÐÁàäÀÀœ°€œÄäÈÁàÄÀàÀt°(€€€ô¤(€ô¤((€Ñ•ÍÐ µ½‰¥±”¹…Ñ¥Ù”Ñ½Õ ‘É…œÁ¥¹ ½¹Ñ¥¹Õ…Ñ¥½¸Í•±•Ñ¥½¸…¹‘•Í•±•Ñ¥½¸Á…­•Ðœ°…Íå¹Œ€¡ìÁ…”°‰É½ÝÍ•É9…µ”ô°Ñ•ÍÑ%¹™¼¤€ôøì(€€€Ñ•ÍÐ¹Í­¥À¡‰É½ÝÍ•É9…µ”€„ôô€¡É½µ¥Õ´œ°€@¹…Ñ¥Ù”Ñ½Õ ¥¹ÁÕÐÉ•ÅÕ¥É•Ì¡É½µ¥Õ´œ¤(€€€½¹ÍÐ•ÉÉ½ÉÌ€ôµ½¹¥Ñ½È¡Á…”¤(€€€…Ý…¥ÐÁ…”¹Í•ÑY¥•ÝÁ½ÉÑM¥é”¡ìÝ¥‘Ñ è€ÌäÀ°¡•¥¡Ðè€àÐÐô¤(€€€…Ý…¥ÐÁ…”¹…‘‘%¹¥ÑMÉ¥ÁÐ  ¤€ôø±½…±MÑ½É…”¹Í•Ñ%Ñ•´ ÕÉ…¤é±½…Ñ¥½¹5…Á•µ½5½‘”œ°€ÑÉÕ”œ¤¤(€€€…Ý…¥ÐÁ…”¹½Ñ¼¡É½ÕÑ”°ìÝ…¥ÑU¹Ñ¥°è€¹•ÑÝ½É­¥‘±”œô¤(€€€…Ý…¥Ð•áÁ•Ð¡Á…”¹±½…Ñ½È m‘…Ñ„µ±½…Ñ¥½¸µµ…ÀµÍ½ÕÉ”ô‰‘¥Í±½Í•µ‘•µ¼‰tœ¤¤¹Ñ½	•Y¥Í¥‰±” ¤(€€€…Ý…¥ÐÁ…”¹ÍÉ••¹Í¡½Ð¡ìÁ…Ñ èÑ•ÍÑ%¹™¼¹½ÕÑÁÕÑA…Ñ  ‘•µ¼µµ½‰¥±”µ½Ù•ÉÙ¥•Ü¹Á¹œœ¤°™Õ±±A…”èÑÉÕ”ô¤((€€€½¹ÍÐ‰•™½É•Q½Õ €ô…Ý…¥Ð…µ•É„¡Á…”¤(€€€½¹ÍÐ‰•™½É•Q½Õ¡QÉ…¹Í™½É´€ô…Ý…¥Ð…µ•É…QÉ…¹Í™½É´¡Á…”¤(€€€…Ý…¥Ð‘¥ÍÁ…Ñ¡A½¥¹Ñ•ÉÉ…œ¡Á…”°€Ñ½Õ œ°€ÜÈ°€ÔÐ¤(€€€…Ý…¥Ð•áÁ•Ð¹Á½±°¡…Íå¹Œ€ ¤€ôø…µ•É„¡Á…”¤¤¹¹½Ð¹Ñ½ÅÕ…°¡‰•™½É•Q½Õ ¤(€€€…Ý…¥Ð•áÁ•Ð¹Á½±°¡…Íå¹Œ€ ¤€ôø…µ•É…QÉ…¹Í™½É´¡Á…”¤¤¹¹½Ð¹Ñ½	”¡‰•™½É•Q½Õ¡QÉ…¹Í™½É´¤(€€€½¹ÍÐ…™Ñ•ÉQ½Õ €ô…Ý…¥Ð…µ•É„¡Á…”¤(€€€½¹ÍÐ…™Ñ•ÉQ½Õ¡QÉ…¹Í™½É´€ô…Ý…¥Ð…µ•É…QÉ…¹Í™½É´¡Á…”¤((€€€…Ý…¥Ð¹…Ñ¥Ù•A¥¹ ¡Á…”¤(€€€…Ý…¥Ð•áÁ•Ð¹Á½±°¡…Íå¹Œ€ ¤€ôø€¡…Ý…¥Ð…µ•É„¡Á…”¤¤¹é½½´¤¹Ñ½	•É•…Ñ•ÉQ¡…¸¡…™Ñ•ÉQ½Õ ¹é½½´¤(€€€½¹ÍÐ…™Ñ•ÉA¥¹ €ô…Ý…¥Ð…µ•É„¡Á…”¤(€€€…Ý…¥Ð‘¥ÍÁ…Ñ¡A½¥¹Ñ•ÉÉ…œ¡Á…”°€Ñ½Õ œ°€ØÐ°€ÐØ¤(€€€…Ý…¥Ð•áÁ•Ð¹Á½±°¡…Íå¹Œ€ ¤€ôøì(€€€€€½¹ÍÐÙ…±Õ”€ô…Ý…¥Ð…µ•É„¡Á…”¤(€€€€€É•ÑÕÉ¸€‘íÙ…±Õ”¹áôè‘íÙ…±Õ”¹åõ€(€€€ô¤¹¹½Ð¹Ñ½	”¡€‘í…™Ñ•ÉA¥¹ ¹áôè‘í…™Ñ•ÉA¥¹ ¹åõ€¤(€€€½¹ÍÐ…™Ñ•ÉA¥¹¡Q½A…¸€ô…Ý…¥Ð…µ•É„¡Á…”¤(€€€½¹ÍÐ…™Ñ•ÉA¥¹¡Q½A…¹QÉ…¹Í™½É´€ô…Ý…¥Ð…µ•É…QÉ…¹Í™½É´¡Á…”¤((€€€…Ý…¥ÐÁ…”¹­•å‰½…É¹ÁÉ•ÍÌ !½µ”œ¤(€€€…Ý…¥Ð•áÁ•Ð¡Á…”¹•Ñ	åQ•áÐ Ñ±…Ì½Ù•ÉÙ¥•Üœ°ì•á…ÐèÑÉÕ”ô¤¤¹Ñ½	•Y¥Í¥‰±” ¤(€€€½¹ÍÐÙ¥•ÝÁ½ÉÑ	•…½¹%¹‘•à€ô…Ý…¥ÐÁ…”¹±½…Ñ½È œ¹±½…Ñ¥½¹Ñ±…Í	•…½¸œ¤¹•Ù…±Õ…Ñ•±° ¡¹½‘•Ì¤€ôøì(€€€€€½¹ÍÐ¥¹‘•à€ô¹½‘•Ì¹™¥¹‘%¹‘•à ¡¹½‘”¤€ôøì(€€€€€€€½¹ÍÐÉ•Ð€ô¹½‘”¹•Ñ	½Õ¹‘¥¹±¥•¹ÑI•Ð ¤(€€€€€€€½¹ÍÐà€ôÉ•Ð¹±•™Ð€¬É•Ð¹Ý¥‘Ñ €¨€¸Ô(€€€€€€€½¹ÍÐä€ôÉ•Ð¹Ñ½À€¬É•Ð¹¡•¥¡Ð€¨€¸Ô(€€€€€€€É•ÑÕÉ¸à€øô€À€˜˜ä€øô€À€˜˜à€ðÝ¥¹‘½Ü¹¥¹¹•É]¥‘Ñ €˜˜ä€ðÝ¥¹‘½Ü¹¥¹¹•É!•¥¡Ð(€€€€€ô¤(€€€€€É•ÑÕÉ¸¥¹‘•à(€€€ô¤(€€€•áÁ•Ð¡Ù¥•ÝÁ½ÉÑ	•…½¹%¹‘•à¤¹Ñ½	•É•…Ñ•ÉQ¡…¹=ÉÅÕ…° À¤(€€€…Ý…¥Ð¹…Ñ¥Ù•Q½Õ¡Q…À¡Á…”°Á…”¹±½…Ñ½È œ¹±½…Ñ¥½¹Ñ±…Í	•…½¸œ¤¹¹Ñ ¡Ù¥•ÝÁ½ÉÑ	•…½¹%¹‘•à¤¤(€€€…Ý…¥Ð•áÁ•Ð¡Á…”¹±½…Ñ½È œ¹±½…Ñ¥½¹Ñ±…ÍM•±•Ñ¥½¸œ¤¤¹Ñ½	•Y¥Í¥‰±” ¤(€€€…Ý…¥Ð•áÁ•Ð¡Á…”¤¹Ñ½!…Ù•UI0 ½Á±…•%ô¼°ìÑ¥µ•½ÕÐè€ÄÕ|ÀÀÀô¤(€€€…Ý…¥ÐÁ…”¹ÍÉ••¹Í¡½Ð¡ìÁ…Ñ èÑ•ÍÑ%¹™¼¹½ÕÑÁÕÑA…Ñ  ‘•µ¼µµ½‰¥±”µÍ•±•Ñ•¹Á¹œœ¤°™Õ±±A…”èÑÉÕ”ô¤((€€€½¹ÍÐÍ•±•Ñ¥½¸€ôÁ…”¹±½…Ñ½È œ¹±½…Ñ¥½¹Ñ±…ÍM•±•Ñ¥½¸œ¤(€€€…Ý…¥Ð¹…Ñ¥Ù•Q½Õ¡Q…À¡Á…”°Í•±•Ñ¥½¸¹•Ñ	åI½±” ‰ÕÑÑ½¸œ°ì¹…µ”è€I•ÑÕÉ¸Ñ¼…Ñ±…Ì½Ù•ÉÙ¥•Üœô¤¤(€€€…Ý…¥Ð•áÁ•Ð¡Í•±•Ñ¥½¸¤¹Ñ½	•!¥‘‘•¸ ¤(€€€…Ý…¥Ð•áÁ•Ð¡Á…”¤¹¹½Ð¹Ñ½!…Ù•UI0 ½Á±…•%ô¼°ìÑ¥µ•½ÕÐè€ÄÕ|ÀÀÀô¤(€€€…Ý…¥ÐÁ…”¹ÍÉ••¹Í¡½Ð¡ìÁ…Ñ èÑ•ÍÑ%¹™¼¹½ÕÑÁÕÑA…Ñ  ‘•µ¼µµ½‰¥±”µ‘•Í•±•Ñ•¹Á¹œœ¤°™Õ±±A…”èÑÉÕ”ô¤((€€€½¹ÍÐ•áÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÑÌ€ô•ÉÉ½ÉÌ¹™…¥±•‘I•ÅÕ•ÍÑÌ¹™¥±Ñ•È¡¥ÍáÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÐ¤(€€€½¹ÍÐÕ¹•áÁ•Ñ•‘…¥±•‘I•ÅÕ•ÍÑÌ€ô•ÉÉ½ÉÌ¹™…¥±•‘I•ÅÕ•ÍÑÌ¹™¥±Ñ•È¡É•ÅÕ•ÍÐ€ôø€…¥ÍáÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÐ¡É•ÅÕ•ÍÐ¤¤(€€€•áÁ•Ð¡•ÉÉ½ÉÌ¹½¹Í½±•ÉÉ½ÉÌ¤¹Ñ½ÅÕ…°¡mt¤(€€€•áÁ•Ð¡•ÉÉ½ÉÌ¹Á…•ÉÉ½ÉÌ¤¹Ñ½ÅÕ…°¡mt¤(€€€•áÁ•Ð¡Õ¹•áÁ•Ñ•‘…¥±•‘I•ÅÕ•ÍÑÌ¤¹Ñ½ÅÕ…°¡mt¤(€€€…Ý…¥Ð…ÑÑ…¡)Í½¸¡Ñ•ÍÑ%¹™¼°€µ½‰¥±”µ½¹Í½±”µ¹•ÑÝ½É¬µÉ••¥ÁÐ¹©Í½¸œ°ì€¸¸¹•ÉÉ½ÉÌ°•áÁ•Ñ•‘9…Ù¥…Ñ¥½¹‰½ÉÑÌ°Õ¹•áÁ•Ñ•‘…¥±•‘I•ÅÕ•ÍÑÌô¤(€€€…Ý…¥Ð…ÑÑ…¡)Í½¸¡Ñ•ÍÑ%¹™¼°€µ½‰¥±”µ¥¹Ñ•É…Ñ¥½¸µÉ••¥ÁÐ¹©Í½¸œ°ì(€€€€€•á…ÑM¡„èÁÉ½•ÍÌ¹•¹Ø¹UI%}aQ}!ñðÁÉ½•ÍÌ¹•¹Ø¹%Q!U	}M!ñð€±½…°œ°(€€€€€‰•™½É•Q½Õ °(€€€€€‰•™½É•Q½Õ¡QÉ…¹Í™½É´°(€€€€€…™Ñ•ÉQ½Õ °(€€€€€…™Ñ•ÉQ½Õ¡QÉ…¹Í™½É´°(€€€€€…™Ñ•ÉA¥¹ °(€€€€€…™Ñ•ÉA¥¹¡Q½A…¸°(€€€€€…™Ñ•ÉA¥¹¡Q½A…¹QÉ…¹Í™½É´°(€€€€€Ù¥•ÝÁ½ÉÐè€œÌäÁààÐÐœ°(€€€€€¹…Ñ¥Ù•%¹ÁÕÐèlÑ½Õ µ‘É…œœ°€ÑÝ¼µ™¥¹•ÈµÁ¥¹ œ°€Á½ÍÐµÁ¥¹ µ½¹”µ™¥¹•ÈµÁ…¸œ°€Ñ½Õ µÍ•±•Ðœ°€Ñ½Õ µ‘•Í•±•Ðt°(€€€ô¤(€ô¤)ô¤(
