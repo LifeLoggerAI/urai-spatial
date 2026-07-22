@@ -58,14 +58,9 @@ requireTokens('urai-tier1/src/app/demo/replay-film/page.tsx', [
 ])
 
 requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', [
-  "import { assetCssStack, privacyControlsAssets } from '@/spatial/assets/uraiAssets'",
   "import ConsentSanctuaryClient from './ConsentSanctuaryClient'",
   "title: 'UrAi Consent Sanctuary'",
-  'backgroundImage: assetCssStack(privacyControlsAssets.primary)',
-  'data-privacy-provider-surface="consent-sanctuary"',
-  'data-privacy-provider-primary={privacyControlsAssets.primary.src}',
-  'data-privacy-provider-mobile={privacyControlsAssets.mobile.src}',
-  '<ConsentSanctuaryClient />',
+  'return <ConsentSanctuaryClient />',
 ])
 requireTokens('urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx', [
   'data-route-owner="consent-sanctuary"',
