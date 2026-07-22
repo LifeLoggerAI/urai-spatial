@@ -22,7 +22,12 @@ const providerSurface = {
 
 export default function PrivacyControlsRoutePage() {
   return (
-    <div data-privacy-provider-surface="consent-sanctuary" style={providerSurface}>
+    <div
+      data-privacy-provider-surface="consent-sanctuary"
+      data-privacy-provider-primary={privacyControlsAssets.primary.src}
+      data-privacy-provider-mobile={privacyControlsAssets.mobile.src}
+      style={providerSurface}
+    >
       <ConsentSanctuaryClient />
     </div>
   )
