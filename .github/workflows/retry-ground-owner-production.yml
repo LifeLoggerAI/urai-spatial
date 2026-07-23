@@ -1,0 +1,109 @@
+name: Retry Ground Owner Production
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/retry-ground-owner-production.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/retry-ground-owner-production.yml'
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+concurrency:
+  group: retry-ground-owner-production
+  cancel-in-progress: false
+
+jobs:
+  verify-request:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove one-file dispatcher request
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only origin/main...HEAD)" = '.github/workflows/retry-ground-owner-production.yml'
+          node scripts/audit-production-workflow-authority.mjs
+          node scripts/verify-production-action-pins.mjs
+
+  dispatch-and-receipt:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Dispatch protected production and record terminal receipt
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const workflow_id = 'spatial-live-deploy.yml';
+            const releaseSha = context.sha;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            const fingerprintResponse = await fetch(`https://urai.app/release-fingerprint.json?ground_owner_retry=${Date.now()}`, {
+              headers: { accept: 'application/json', 'cache-control': 'no-cache, no-store, max-age=0' },
+              signal: AbortSignal.timeout(15000),
+            });
+            if (fingerprintResponse.status !== 200) throw new Error(`Live fingerprint returned ${fingerprintResponse.status}`);
+            const fingerprint = await fingerprintResponse.json();
+            const rollbackSha = fingerprint?.releaseSha;
+            if (fingerprint?.schemaVersion !== 'urai-release-fingerprint-1' || !/^[0-9a-f]{40}$/i.test(String(rollbackSha || ''))) {
+              throw new Error('Live fingerprint is invalid');
+            }
+            if (rollbackSha === releaseSha) throw new Error('Release SHA already live; refusing duplicate deployment');
+
+            const prior = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id, branch: 'main', event: 'workflow_dispatch', per_page: 100 });
+            const priorIds = new Set(prior.data.workflow_runs.filter((run) => run.head_sha === releaseSha).map((run) => run.id));
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id,
+              ref: 'main',
+              inputs: { release_sha: releaseSha, rollback_sha: rollbackSha, confirm: 'DEPLOY_URAI_APP' },
+            });
+
+            let run = null;
+            for (let attempt = 0; attempt < 90 && !run; attempt += 1) {
+              await sleep(5000);
+              const listed = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id, branch: 'main', event: 'workflow_dispatch', per_page: 100 });
+              run = listed.data.workflow_runs.find((candidate) => candidate.head_sha === releaseSha && !priorIds.has(candidate.id)) || null;
+            }
+            if (!run) throw new Error(`Protected production run did not appear for ${releaseSha}`);
+
+            for (let attempt = 0; attempt < 240 && run.status !== 'completed'; attempt += 1) {
+              await sleep(10000);
+              run = (await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id })).data;
+            }
+            if (run.status !== 'completed') throw new Error(`Protected production run ${run.id} did not complete`);
+
+            const jobs = (await github.rest.actions.listJobsForWorkflowRun({ owner, repo, run_id: run.id, filter: 'latest', per_page: 100 })).data.jobs;
+            const body = [
+              '## Ground owner production retry receipt',
+              '',
+              `- Release SHA: \`${releaseSha}\``,
+              `- Rollback SHA: \`${rollbackSha}\``,
+              `- Protected run: ${run.html_url}`,
+              `- Run ID: \`${run.id}\``,
+              `- Conclusion: \`${run.conclusion || 'none'}\``,
+              '',
+              '### Jobs',
+              ...jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`),
+            ].join('\n');
+            await github.rest.issues.create({ owner, repo, title: `Ground owner production ${releaseSha.slice(0, 12)} — ${run.conclusion}`, body });
+            core.summary.addRaw(body).write();
+            if (run.conclusion !== 'success') core.setFailed(`Protected production concluded ${run.conclusion}`);
