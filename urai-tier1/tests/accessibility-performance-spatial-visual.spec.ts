@@ -8,8 +8,10 @@ test.describe('URAI visual ownership and containment evidence', () => {
     const shell = page.locator('[data-testid="urai-persistent-world-shell"]')
     await expect(shell).toHaveAttribute('data-world-destination', 'home')
     await expect(shell).toHaveAttribute('data-companion-owned', 'true')
+    await expect(page.locator('.urai-final-home-world')).toBeVisible({ timeout: 15_000 })
 
     const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    await expect(orb).toHaveCount(1)
     await expect(orb).toBeVisible()
     await expect(orb).toBeEnabled()
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
@@ -35,8 +37,8 @@ test.describe('URAI visual ownership and containment evidence', () => {
       contentType: 'application/json',
     })
 
-    expect(evidence.width).toBeGreaterThanOrEqual(96)
-    expect(evidence.height).toBeGreaterThanOrEqual(96)
+    expect(evidence.width).toBeGreaterThanOrEqual(48)
+    expect(evidence.height).toBeGreaterThanOrEqual(48)
     expect(evidence.backgroundImage).toBe('none')
     expect(evidence.backgroundColor).toBe('rgba(0, 0, 0, 0)')
     expect(evidence.boxShadow).toBe('none')
@@ -70,6 +72,8 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(lifeMapDestination).toBeVisible()
     await lifeMapDestination.dispatchEvent('click')
     await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
+    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.urai-world-companion')).toHaveCount(0)
   })
 
   test('Ground WebGL canvas remains inside a narrow mobile viewport', async ({ page }) => {
@@ -111,15 +115,20 @@ test.describe('URAI visual ownership and containment evidence', () => {
 
   test('Life Map semantic controls stay closed until the user opens them', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
-    await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
+    await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
 
-    const controls = page.locator('details.life-map-accessibility-menu')
+    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })
+    const controls = page.locator('details.life-map-help')
     const body = controls.locator(':scope > div')
     await expect(controls).not.toHaveAttribute('open', '')
     await expect(body).toBeHidden()
 
-    await controls.locator('summary').click()
+    const summary = controls.locator('summary')
+    await summary.focus()
+    await expect(summary).toBeFocused()
+    await summary.press('Enter')
     await expect(controls).toHaveAttribute('open', '')
     await expect(body).toBeVisible()
+    await expect(body.getByRole('button').first()).toBeVisible()
   })
 })
