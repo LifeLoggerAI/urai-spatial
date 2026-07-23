@@ -14,6 +14,19 @@ const auditedCaptureBinding = "const sourcePath = path.join(scriptsDir, 'capture
 const compositedCaptureBinding = "const sourcePath = path.join(scriptsDir, '.capture-continuous-spatial-proof-composited.mjs')"
 const cancelledAnimationCapture = "animations: 'disabled'"
 const compositedAnimationCapture = "animations: 'allow'"
+const geometryReturn = `return {
+          height: rect.height,`
+const portaledGeometryReturn = `return {
+          bodyPortaled: element.parentElement === document.body && element.getAttribute('data-portal-owner') === 'document-body',
+          height: rect.height,`
+const compactDeclaration = 'const selectedJourneyRailCompact = selectedJourneyRailGeometry.height >= 60'
+const portaledCompactDeclaration = `const selectedJourneyRailBodyPortaled = selectedJourneyRailGeometry.bodyPortaled === true
+      const selectedJourneyRailCompact = selectedJourneyRailGeometry.height >= 60`
+const receiptDeclaration = `singleSelectedActionOwner,
+        selectedJourneyRailCompact,`
+const portaledReceiptDeclaration = `singleSelectedActionOwner,
+        selectedJourneyRailBodyPortaled,
+        selectedJourneyRailCompact,`
 
 let capture = await readFile(captureSourcePath, 'utf8')
 const cancelledCaptureCount = capture.split(cancelledAnimationCapture).length - 1
@@ -24,13 +37,19 @@ capture = capture.replace(cancelledAnimationCapture, compositedAnimationCapture)
 await writeFile(compositedCapturePath, capture)
 
 let launcher = await readFile(auditedLauncherPath, 'utf8')
-if (!launcher.includes(previousClassifier)) {
-  throw new Error('continuous visual proof classifier no longer matches the audited schema-18 launcher')
-}
-if (!launcher.includes(auditedCaptureBinding)) {
-  throw new Error('continuous visual proof capture binding no longer matches the audited launcher')
+for (const [label, needle] of [
+  ['classifier', previousClassifier],
+  ['capture binding', auditedCaptureBinding],
+  ['journey geometry return', geometryReturn],
+  ['journey compact declaration', compactDeclaration],
+  ['journey receipt declaration', receiptDeclaration],
+]) {
+  if (!launcher.includes(needle)) throw new Error(`continuous visual proof ${label} no longer matches the audited launcher`)
 }
 launcher = launcher.replace(previousClassifier, classifiedGeometry)
 launcher = launcher.replace(auditedCaptureBinding, compositedCaptureBinding)
+launcher = launcher.replace(geometryReturn, portaledGeometryReturn)
+launcher = launcher.replace(compactDeclaration, portaledCompactDeclaration)
+launcher = launcher.replace(receiptDeclaration, portaledReceiptDeclaration)
 await writeFile(classifiedLauncherPath, launcher)
 await import(`${pathToFileURL(classifiedLauncherPath).href}?exactHead=${encodeURIComponent(process.env.URAI_EXACT_HEAD || 'local')}`)
