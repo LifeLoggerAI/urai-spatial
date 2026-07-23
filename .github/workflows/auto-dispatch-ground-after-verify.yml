@@ -1,0 +1,107 @@
+name: Auto-dispatch verified Ground production once
+
+on:
+  workflow_run:
+    workflows: ["URAI Canonical Production Release"]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+jobs:
+  dispatch:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_sha == 'fd613bd3a265be3d00bf38b2638e9b2a0b87a2bc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Dispatch and receipt the protected current-main production release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const workflow_id = 'spatial-live-deploy.yml';
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+            const releaseSha = branch.data.commit.sha;
+            if (!/^[0-9a-f]{40}$/i.test(releaseSha)) throw new Error(`Invalid current main SHA: ${releaseSha}`);
+
+            const response = await fetch(`https://urai.app/release-fingerprint.json?auto_dispatch=${Date.now()}`, {
+              redirect: 'manual',
+              signal: AbortSignal.timeout(15000),
+              headers: { accept: 'application/json', 'cache-control': 'no-cache, no-store, max-age=0' }
+            });
+            if (response.status !== 200) throw new Error(`Live fingerprint returned HTTP ${response.status}`);
+            const fingerprint = await response.json();
+            if (fingerprint?.schemaVersion !== 'urai-release-fingerprint-1') throw new Error('Invalid live fingerprint schema');
+            const rollbackSha = fingerprint.releaseSha;
+            if (!/^[0-9a-f]{40}$/i.test(rollbackSha)) throw new Error(`Invalid live rollback SHA: ${rollbackSha}`);
+
+            if (releaseSha === rollbackSha) {
+              core.notice(`Current main ${releaseSha} is already the live release.`);
+              return;
+            }
+
+            const before = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id, branch: 'main', event: 'workflow_dispatch', per_page: 100
+            });
+            const excluded = new Set(before.data.workflow_runs.filter((run) => run.head_sha === releaseSha).map((run) => run.id));
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id,
+              ref: 'main',
+              inputs: {
+                release_sha: releaseSha,
+                rollback_sha: rollbackSha,
+                confirm: 'DEPLOY_URAI_APP'
+              }
+            });
+
+            let run = null;
+            for (let attempt = 0; attempt < 90 && !run; attempt += 1) {
+              await sleep(5000);
+              const listed = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id, branch: 'main', event: 'workflow_dispatch', per_page: 100
+              });
+              run = listed.data.workflow_runs.find((candidate) => candidate.head_sha === releaseSha && !excluded.has(candidate.id)) || null;
+            }
+            if (!run) throw new Error(`Protected production run did not appear for ${releaseSha}`);
+
+            for (let attempt = 0; attempt < 240 && run.status !== 'completed'; attempt += 1) {
+              await sleep(10000);
+              run = (await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id })).data;
+            }
+            if (run.status !== 'completed') throw new Error(`Protected production run ${run.id} did not complete`);
+
+            const jobs = (await github.rest.actions.listJobsForWorkflowRun({
+              owner, repo, run_id: run.id, filter: 'latest', per_page: 100
+            })).data.jobs;
+            const body = [
+              '## Automatic protected production receipt',
+              '',
+              `- Trigger verification run: ${context.payload.workflow_run.html_url}`,
+              `- Trigger verified SHA: \`${context.payload.workflow_run.head_sha}\``,
+              `- Released current main: \`${releaseSha}\``,
+              `- Rollback authority: \`${rollbackSha}\``,
+              `- Protected run: ${run.html_url}`,
+              `- Conclusion: \`${run.conclusion || 'none'}\``,
+              '',
+              '### Jobs',
+              ...jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`)
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `Automatic production ${releaseSha.slice(0, 12)} — ${run.conclusion || 'none'}`,
+              body
+            });
+            core.summary.addRaw(body).write();
+            if (run.conclusion !== 'success') core.setFailed(`Protected production concluded ${run.conclusion}`);
