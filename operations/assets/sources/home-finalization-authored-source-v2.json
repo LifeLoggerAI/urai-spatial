@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "sourceId": "urai-home-authored-sanctuary-source-v2",
+  "authoredBy": "URAI Labs",
+  "ownership": "URAI Labs proprietary original geometry and animation authored for PR #952",
+  "license": "URAI Labs internal proprietary; redistribution governed by repository license and asset receipts",
+  "tool": "deterministic dependency-free Node.js glTF 2.0 authoring pipeline",
+  "generator": "scripts/author-home-finalization-assets.mjs",
+  "coordinateSystem": "glTF right-handed Y-up, meters",
+  "releaseBoundary": "review candidate only; visual approval, Meshopt compression, exact-head route proof, and narrow manifest promotion still required",
+  "assets": [
+    {
+      "fileName": "home-entry-chamber-v1.glb",
+      "sha256": "2664ebd275e7ed3847da6b6993ba36c15fb76eec16e9d1261ed2c6149f71df07",
+      "bytes": 527920,
+      "triangleCount": 25254,
+      "nodes": 62,
+      "materials": 11,
+      "animations": 0,
+      "boundsMeters": {"min": [-8.8, -1.81, -9.6], "max": [8.8, 5.54, 8], "size": [17.6, 7.35, 17.6]}
+    },
+    {
+      "fileName": "portal-ring-master-v1.glb",
+      "sha256": "74893df3bf7cf13c4eca936ea4b0de68124f4be1ae7d42f522fe49aa87bd5aea",
+      "bytes": 196060,
+      "triangleCount": 8844,
+      "nodes": 25,
+      "materials": 11,
+      "animations": 7,
+      "boundsMeters": {"min": [-2.16, -2.51, -0.92], "max": [2.16, 2.95, 1.16], "size": [4.32, 5.46, 2.08]}
+    },
+    {
+      "fileName": "urai-orb-avatar-v1.glb",
+      "sha256": "9da613b996826bd6cd2f9c0d099ff19e34abd111ecfeb5e61b9b926535763bf9",
+      "bytes": 264516,
+      "triangleCount": 11248,
+      "nodes": 18,
+      "materials": 11,
+      "animations": 12,
+      "boundsMeters": {"min": [-0.712, -0.712, -0.48], "max": [0.738, 0.712, 0.48], "size": [1.45, 1.424, 0.96]}
+    }
+  ]
+}
