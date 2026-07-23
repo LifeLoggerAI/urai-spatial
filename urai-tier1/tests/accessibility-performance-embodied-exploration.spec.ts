@@ -120,6 +120,33 @@ test.describe('Embodied exploration runtime evidence', () => {
     expect(errors.consoleErrors).toEqual([])
   })
 
+  test('closed mobile Life Map movement help stays compact and cannot obstruct the world', async ({ page }) => {
+    await enableLifeMapDemo(page)
+    await page.setViewportSize({ width: 393, height: 873 })
+    await page.goto('/life-map/?demo=1', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })
+
+    const help = page.locator('details.life-map-movement-help')
+    await expect(help).toBeVisible()
+    await expect(help).not.toHaveAttribute('open', '')
+    const rect = await help.boundingBox()
+    expect(rect).not.toBeNull()
+    expect(rect!.width).toBeLessThanOrEqual(250)
+    expect(rect!.height).toBeGreaterThanOrEqual(48)
+    expect(rect!.height).toBeLessThanOrEqual(52)
+    expect(rect!.x).toBeGreaterThanOrEqual(0)
+    expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)
+    expect(rect!.y).toBeGreaterThanOrEqual(0)
+    expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)
+    expect(rect!.height / 873).toBeLessThan(0.08)
+
+    const hiddenBody = help.locator(':scope > p')
+    await expect(hiddenBody).toBeHidden()
+    await help.locator('summary').press('Enter')
+    await expect(help).toHaveAttribute('open', '')
+    await expect(hiddenBody).toBeVisible()
+  })
+
   test('mobile movement controls remain contained, touch-sized, and move through Home', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
