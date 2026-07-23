@@ -163,7 +163,7 @@
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-card,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-status,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-pins,
-.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-rail,
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-rail[aria-label='URAI Ground navigation'],
 .urai-world-runtime[data-world-destination='life-map'] [aria-label='URAI Life Map route portals'],
 .urai-world-runtime[data-world-destination='life-map'] [aria-label='Adaptive spatial controls'],
 .urai-world-runtime[data-world-destination='focus'] .focusTitle,
