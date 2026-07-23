@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "urai-ambient-bed-v1",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav",
+  "targetRoutes": [
+    "/home",
+    "/life-map",
+    "/focus",
+    "/replay"
+  ],
+  "bytes": 352844,
+  "sha256": "148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d",
+  "measured": {
+    "durationSeconds": 8,
+    "sampleRate": 22050,
+    "channels": 1
+  },
+  "compressionStatus": "pcm-wav-candidate",
+  "requiredCompression": "ogg-or-aac-for-production",
+  "fallback": "silent-audio-with-user-controlled-enable",
+  "source": "URAI deterministic candidate forge; final mix requires review",
+  "license": "URAI Labs internal production asset",
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-07-23T20:54:23.512Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav"
+}

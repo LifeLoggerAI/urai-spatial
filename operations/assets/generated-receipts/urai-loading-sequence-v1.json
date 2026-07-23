@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "urai-loading-sequence-v1",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+  "targetRoutes": [
+    "/",
+    "/home",
+    "/life-map",
+    "/focus",
+    "/replay"
+  ],
+  "bytes": 612,
+  "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+  "measured": {
+    "bytes": 612
+  },
+  "compressionStatus": "json",
+  "requiredCompression": "json",
+  "fallback": "accessible-static-loading-state",
+  "source": "URAI deterministic candidate forge",
+  "license": "URAI Labs internal production asset",
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-07-23T20:54:23.511Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json"
+}

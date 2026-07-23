@@ -1,0 +1,252 @@
+{
+  "manifestId": "urai-launch-critical-assets-v1",
+  "generatedAt": "2026-07-23T20:54:23.512Z",
+  "candidateOnly": true,
+  "normalized": true,
+  "assetCount": 12,
+  "totalBytes": 2056575,
+  "assets": [
+    {
+      "id": "home-entry-chamber-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "bytes": 45904,
+      "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+      "measured": {
+        "triangleCount": 2132,
+        "boundsMeters": {
+          "min": [
+            -6.5,
+            -2.61,
+            -6.5
+          ],
+          "max": [
+            6.5,
+            6.39,
+            6.5
+          ],
+          "size": [
+            13,
+            9,
+            13
+          ]
+        },
+        "repairedEulerRotations": 2
+      }
+    },
+    {
+      "id": "ground-world-terrain-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",
+      "bytes": 24936,
+      "sha256": "8068d71509d55035efeb869d827328aa5422a99f6a1f46c80db1424c8f32e1e8",
+      "measured": {
+        "triangleCount": 852,
+        "boundsMeters": {
+          "min": [
+            -11,
+            -2.54,
+            -9
+          ],
+          "max": [
+            11,
+            2.82,
+            9
+          ],
+          "size": [
+            22,
+            5.36,
+            18
+          ]
+        },
+        "repairedEulerRotations": 1
+      }
+    },
+    {
+      "id": "life-map-memory-star-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+      "bytes": 32204,
+      "sha256": "6fa964e1c51b66f83ccafa7c0c774185bee528dfbb673d8b906bc2dc181f9bcf",
+      "measured": {
+        "triangleCount": 1520,
+        "boundsMeters": {
+          "min": [
+            -1.105,
+            -1.105,
+            -0.8
+          ],
+          "max": [
+            1.105,
+            1.105,
+            0.8
+          ],
+          "size": [
+            2.21,
+            2.21,
+            1.6
+          ]
+        },
+        "repairedEulerRotations": 1
+      }
+    },
+    {
+      "id": "focus-memory-chamber-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+      "bytes": 72312,
+      "sha256": "fb88bf90b3757798a0cdbbd158e95c40e8e322524c9da1632be5a0ffef096d90",
+      "measured": {
+        "triangleCount": 3644,
+        "boundsMeters": {
+          "min": [
+            -2.59,
+            -2.59,
+            -7.2
+          ],
+          "max": [
+            2.59,
+            2.59,
+            0.09
+          ],
+          "size": [
+            5.18,
+            5.18,
+            7.29
+          ]
+        },
+        "repairedEulerRotations": 4
+      }
+    },
+    {
+      "id": "replay-memory-environment-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
+      "bytes": 22336,
+      "sha256": "51eca3cbf7f28d438fb7e09c868f8247d02eb65bfecb015828ce9edb806fe9f0",
+      "measured": {
+        "triangleCount": 828,
+        "boundsMeters": {
+          "min": [
+            -7,
+            -2.91,
+            -9.5
+          ],
+          "max": [
+            7,
+            3.2,
+            6.5
+          ],
+          "size": [
+            14,
+            6.11,
+            16
+          ]
+        },
+        "repairedEulerRotations": 1
+      }
+    },
+    {
+      "id": "urai-orb-avatar-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+      "bytes": 55980,
+      "sha256": "83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d",
+      "measured": {
+        "triangleCount": 2784,
+        "boundsMeters": {
+          "min": [
+            -0.745,
+            -0.745,
+            -0.56
+          ],
+          "max": [
+            0.745,
+            0.745,
+            0.56
+          ],
+          "size": [
+            1.49,
+            1.49,
+            1.12
+          ]
+        },
+        "repairedEulerRotations": 2
+      }
+    },
+    {
+      "id": "portal-ring-master-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "bytes": 32912,
+      "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
+      "measured": {
+        "triangleCount": 1560,
+        "boundsMeters": {
+          "min": [
+            -2.42,
+            -2.56,
+            -0.625
+          ],
+          "max": [
+            2.42,
+            2.42,
+            0.625
+          ],
+          "size": [
+            4.84,
+            4.98,
+            1.25
+          ]
+        },
+        "repairedEulerRotations": 2
+      }
+    },
+    {
+      "id": "life-map-galaxy-skybox-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+      "bytes": 1415240,
+      "sha256": "f43eef43074193370e096ad1e2e57657b7083601c18e70b5d0307e75f7f671d9",
+      "measured": {
+        "resolution": [
+          2048,
+          1024
+        ]
+      }
+    },
+    {
+      "id": "spatial-particle-atlas-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+      "bytes": 622,
+      "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+      "measured": {
+        "resolution": [
+          1024,
+          1024
+        ]
+      }
+    },
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "bytes": 673,
+      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+      "measured": {
+        "bytes": 673
+      }
+    },
+    {
+      "id": "urai-loading-sequence-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+      "bytes": 612,
+      "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+      "measured": {
+        "bytes": 612
+      }
+    },
+    {
+      "id": "urai-ambient-bed-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav",
+      "bytes": 352844,
+      "sha256": "148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d",
+      "measured": {
+        "durationSeconds": 8,
+        "sampleRate": 22050,
+        "channels": 1
+      }
+    }
+  ]
+}

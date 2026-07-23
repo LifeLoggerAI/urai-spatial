@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "portal-ring-master-v1",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+  "targetRoutes": [
+    "/",
+    "/home",
+    "/ground",
+    "/life-map",
+    "/focus",
+    "/replay"
+  ],
+  "bytes": 32912,
+  "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
+  "measured": {
+    "triangleCount": 1560,
+    "boundsMeters": {
+      "min": [
+        -2.42,
+        -2.56,
+        -0.625
+      ],
+      "max": [
+        2.42,
+        2.42,
+        0.625
+      ],
+      "size": [
+        4.84,
+        4.98,
+        1.25
+      ]
+    },
+    "repairedEulerRotations": 2
+  },
+  "compressionStatus": "uncompressed-glb-candidate",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "procedural-portal-ring",
+  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+  "license": "URAI Labs internal production asset",
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-07-23T20:54:23.263Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "global-cinematic-material-pack-v1",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+  "targetRoutes": [
+    "/",
+    "/home",
+    "/ground",
+    "/life-map",
+    "/focus",
+    "/replay"
+  ],
+  "bytes": 673,
+  "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+  "measured": {
+    "bytes": 673
+  },
+  "compressionStatus": "json",
+  "requiredCompression": "json",
+  "fallback": "runtime-default-materials",
+  "source": "URAI deterministic candidate forge",
+  "license": "URAI Labs internal production asset",
+  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-07-23T20:54:23.511Z",
+  "releaseState": "candidate-not-production-ready",
+  "absolutePath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json"
+}
