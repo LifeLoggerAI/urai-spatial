@@ -210,6 +210,30 @@
   to { transform: scale(1.08); filter: brightness(1.18); }
 }
 
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-directory {
+    left: max(170px, calc(env(safe-area-inset-left) + 158px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    contain: layout paint;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-layer-tabs,
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-destination-compass {
+    justify-self: stretch !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain;
+  }
+}
+
 @media (max-width: 560px) {
   .urai-world-companion__orb { width: 56px; height: 56px; }
   .urai-world-companion__menu { border-radius: 20px; }
