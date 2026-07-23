@@ -86,7 +86,7 @@ function PortalBay({ destination }: { destination: GroundDestination }) {
 
 export default function GroundContinuityArchitecture() {
   return (
-    <group name="ground-continuity-architectural-shell" data-testid="urai-ground-continuity-shell">
+    <group name="ground-continuity-architectural-shell" data-testid="urai-ground-continuity-shell" data-ground-visual-owner="shared-continuity-architecture">
       <fog attach="fog" args={['#020812', 12, 62]} />
 
       <mesh position={[0, -.22, -12]} receiveShadow><boxGeometry args={[28, .34, 44]} /><meshStandardMaterial color="#06111d" roughness={.8} metalness={.1} /></mesh>
