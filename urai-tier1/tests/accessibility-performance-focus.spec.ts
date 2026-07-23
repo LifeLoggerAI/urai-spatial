@@ -91,7 +91,7 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await expect(focus.getByText('Held in context. Nothing leaves this chamber.', { exact: true })).toBeVisible()
     const controls = page.getByRole('navigation', { name: 'Focus chamber controls' })
     await expect(controls.getByRole('button', { name: 'Recenter', exact: true })).toBeVisible()
-    await expect(controls.getByRole('button', { name: /Enter Replay/i })).toBeVisible()
+    await expect(controls.getByRole('button', { name: /Open Replay for|Enter Replay/i })).toBeVisible()
     await expect(controls.getByRole('button', { name: /Life Map/i })).toBeVisible()
   })
 })
