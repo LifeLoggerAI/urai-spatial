@@ -390,7 +390,6 @@ function GroundPlayerCamera(props: Pick<EmbodiedGroundSceneProps, 'input' | 'yaw
 export function EmbodiedGroundScene(props: EmbodiedGroundSceneProps) {
   return (
     <>
-      <color attach="background" args={['#071015']} />
       <GroundPlayerCamera {...props} />
       <ambientLight intensity={0.58} color="#cde8e8" />
       <hemisphereLight args={['#bfe9ee', '#172122', 0.9]} />
