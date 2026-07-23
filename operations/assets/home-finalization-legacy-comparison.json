@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "lane": "home-finalization-legacy-comparison",
+  "sourceCommit": "e4e94a501a64e7375a5cfdbe9547436fbc8e75a2",
+  "runtimeEligible": false,
+  "visualApproval": "pending",
+  "assets": [
+    {
+      "id": "home-entry-chamber-v1",
+      "blobSha": "62e3cd9e6090908708ce9a984bce8a8c16060537",
+      "status": "comparison-only",
+      "notes": "Historical candidate extracted for independent comparison. Not promoted and not runtime authority."
+    },
+    {
+      "id": "portal-ring-master-v1",
+      "blobSha": "405c6073a0020d0dde1a6b18dc13af6ee9232377",
+      "status": "comparison-only",
+      "notes": "Historical candidate extracted for independent comparison. Not promoted and not runtime authority."
+    }
+  ]
+}
