@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "authority": {
+    "workflowRun": 30042154450,
+    "job": 89324429858,
+    "sourceHead": "5219a70b01544beaff5422ca492d5935aa88e91a",
+    "candidateArtifactId": 8577690093,
+    "candidateArtifactDigest": "sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0",
+    "legacyArtifactId": 8577690575,
+    "legacyArtifactDigest": "sha256:849af9ddbe2d0245e29154eb1013ca4088f0115a4c2ed8aecdc62013639a2c27"
+  },
+  "truthBoundary": {
+    "manifestPromotion": false,
+    "visualApproval": false,
+    "productionReady": false,
+    "reviewModeRequired": true
+  },
+  "decisions": [
+    {
+      "id": "home-entry-chamber-current",
+      "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+      "bytes": 45904,
+      "triangleCount": 2132,
+      "boundsMeters": { "min": [-6.5, -2.61, -6.5], "max": [6.5, 6.39, 6.5], "size": [13, 9, 13] },
+      "nodes": 6,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed-glb-candidate",
+      "validation": "passed structural, budget, independent audit, HDR suite where applicable, and Khronos-compatible GLB validation",
+      "classification": "review candidate",
+      "reason": "Technically valid and mobile-light, but visibly procedural and materially simpler than the historical 21-node chamber. Mount only behind disclosed review mode."
+    },
+    {
+      "id": "home-entry-chamber-legacy",
+      "sha256": "9d376de5e3a74ea4bd2a264b260489cda6e42fccefa73ff2a54bd76d26d203ea",
+      "bytes": 61052,
+      "triangleCount": 2158,
+      "nodes": 21,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed",
+      "classification": "comparison-only",
+      "reason": "Richer spatial node language and portal anchors, but historical branch provenance and visual acceptance remain unresolved."
+    },
+    {
+      "id": "portal-ring-current",
+      "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
+      "bytes": 32912,
+      "triangleCount": 1560,
+      "boundsMeters": { "min": [-2.42, -2.56, -0.625], "max": [2.42, 2.42, 0.625], "size": [4.84, 4.98, 1.25] },
+      "nodes": 4,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed-glb-candidate",
+      "classification": "review candidate",
+      "reason": "Technically valid and performant, but lacks authored state clips and is visibly simpler than the historical 35-node portal."
+    },
+    {
+      "id": "portal-ring-legacy",
+      "sha256": "a36f17d65ecbbd527582725b5cf3b1bc359538e42f80e22fb167947c94495adc",
+      "bytes": 160436,
+      "triangleCount": 6696,
+      "nodes": 35,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed",
+      "classification": "comparison-only",
+      "reason": "Substantially richer silhouette and depth structure, but no animation clips and no current-contract visual or rights promotion receipt."
+    },
+    {
+      "id": "urai-orb-avatar-current",
+      "sha256": "83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d",
+      "bytes": 55980,
+      "triangleCount": 2784,
+      "boundsMeters": { "min": [-0.745, -0.745, -0.56], "max": [0.745, 0.745, 0.56], "size": [1.49, 1.49, 1.12] },
+      "nodes": 4,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed-glb-candidate",
+      "classification": "technically approved but visually pending",
+      "reason": "Valid compact reusable Orb representation. Runtime state changes must be driven through transforms, light, material response, particles, captions and accessibility because the candidate contains no animation clips."
+    },
+    {
+      "id": "global-cinematic-material-pack-current",
+      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+      "bytes": 673,
+      "classification": "review candidate",
+      "reason": "Valid internal JSON material vocabulary but not a texture pack and not sufficient to establish final environmental materials by itself."
+    },
+    {
+      "id": "life-map-galaxy-skybox-current",
+      "sha256": "f43eef43074193370e096ad1e2e57657b7083601c18e70b5d0307e75f7f671d9",
+      "bytes": 1415240,
+      "resolution": [2048, 1024],
+      "classification": "review candidate",
+      "reason": "Technically decoded and materially stronger than the 64x32 legacy HDR, but Home does not promote or claim it in this lane."
+    },
+    {
+      "id": "spatial-particle-atlas-current",
+      "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+      "bytes": 622,
+      "resolution": [1024, 1024],
+      "classification": "review candidate",
+      "reason": "Valid SVG source; production conversion to KTX2 or WebP remains required."
+    },
+    {
+      "id": "urai-loading-sequence-current",
+      "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+      "bytes": 612,
+      "classification": "technically approved but visually pending",
+      "reason": "Accessible deterministic sequence contract; final visual integration remains unreviewed."
+    },
+    {
+      "id": "urai-ambient-bed-current",
+      "sha256": "148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d",
+      "bytes": 352844,
+      "durationSeconds": 8,
+      "sampleRate": 22050,
+      "channels": 1,
+      "classification": "review candidate",
+      "reason": "Valid internal PCM candidate with silent fallback; final mix and production compression remain required."
+    }
+  ]
+}
