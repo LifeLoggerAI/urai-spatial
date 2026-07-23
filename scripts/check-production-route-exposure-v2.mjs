@@ -88,7 +88,7 @@ requireTokens('apps/functions/src/privacyOperations.ts', [
 
 const focusRoutePath = 'urai-tier1/src/app/focus/page.tsx'
 const focusRouteSource = read(focusRoutePath)
-const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/)
+const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/) 
 if (!focusImport) {
   failures.push(`${focusRoutePath} must default-import ./FocusChamberClient`)
 } else {
@@ -96,18 +96,30 @@ if (!focusImport) {
   if (!focusRouteSource.includes(`return <${focusImport[1]} />`)) failures.push(`${focusRoutePath} must directly render the imported FocusChamberClient component`)
 }
 
-requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', [
+const focusClientPath = 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+const focusClientSource = read(focusClientPath)
+for (const token of [
   'data-testid="urai-final-focus-chamber"',
-  'data-memory-id={memory.id}',
-  'data-star-id={memory.star.id}',
-  'data-manifest-id={memory.replayManifest.id}',
   'requestUraiWorldTravel({',
   "destination: 'replay'",
   "entryPortal: 'focus-memory-aperture'",
   'replayManifestId: memory.replayManifest.id',
   'requestUraiWorldReturn()',
   'aria-label={`Open Replay for ${memory.title}`}',
-])
+  'No personal memory is displayed in this neutral observatory.',
+  'data-chamber-state={chamberState}',
+]) {
+  if (!focusClientSource.includes(token)) failures.push(`${focusClientPath} is missing: ${token}`)
+}
+for (const [label, pattern] of [
+  ['memory identity', /data-memory-id=\{memory(?:\?\.)?\.id\}/],
+  ['star identity', /data-star-id=\{memory(?:\?\.)?\.star\.id\}/],
+  ['manifest identity', /data-manifest-id=\{memory(?:\?\.)?\.replayManifest\.id\}/],
+]) {
+  if (!pattern.test(focusClientSource)) failures.push(`${focusClientPath} is missing truthful ${label} binding`)
+}
+if (!/if \(!memory \|\| !replayHref(?: \|\| committed)?\) return/.test(focusClientSource)) failures.push(`${focusClientPath} must fail closed before Replay when no authorized memory or route exists`)
+
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
 
 const staticConfig = JSON.parse(read('firebase.static.json') || '{}').hosting || {}
