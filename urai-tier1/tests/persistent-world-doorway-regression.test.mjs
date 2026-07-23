@@ -12,6 +12,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
   const worldNavigation = read('src/spatial/world/worldNavigation.css')
+  const collisionCss = read('src/spatial/world/interactionCollisionRepair.css')
   const finalCss = read('src/app/native-doorway-final-fix.css')
   const ground = read('src/app/GroundSpatialWorldClean.tsx')
   const lifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
@@ -42,6 +43,8 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(shell, /world\.destination !== 'life-map'/)
   assert.match(shell, /showWorldCompanion \? <PersistentWorldCompanion \/> : null/)
 
+  assert.match(collisionCss, /\.urai-world-runtime\[data-world-destination='home'\] > \.urai-ground-gateway \{[\s\S]*display: none !important;[\s\S]*pointer-events: none !important;/)
+  assert.doesNotMatch(collisionCss, /\.urai-world-runtime\[data-world-destination=['"]home['"]\]:has\(/)
   assert.match(finalCss, /\.urai-ground-gateway \{[\s\S]*z-index: 11 !important;[\s\S]*height: 80px !important/)
   assert.match(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: 9/)
   assert.match(finalCss, /height: 96px !important/)
@@ -62,7 +65,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-focus"/)
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-replay"/)
 
-  assert.match(visualAudit, /data-world-target=\"focus\"/)
+  assert.match(visualAudit, /data-world-target="focus"/)
   assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
   assert.match(visualAudit, /\.life-map-accessibility-menu/)
   assert.match(visualAudit, /The Quiet Reset/)

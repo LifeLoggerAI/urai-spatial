@@ -45,6 +45,8 @@ export default function GroundSpatialWorldClean() {
   const [guideDestination, setGuideDestination] = useState<GroundDestination | null>(null);
   const [requestedCheckpoint, setRequestedCheckpoint] = useState<GroundCheckpoint | null>(null);
   const [openLayer, setOpenLayer] = useState<GroundLayer>("threshold");
+  const [groundReady, setGroundReady] = useState(false);
+  const [arrival, setArrival] = useState<"entering" | "settled">("entering");
   const yaw = useRef(0);
   const pitch = useRef(-0.05);
   const walkTarget = useRef<THREE.Vector3 | null>(null);
@@ -112,6 +114,18 @@ export default function GroundSpatialWorldClean() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!groundReady) return;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => setArrival("settled"));
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [groundReady]);
+
   const prompt = nearby
     ? `${nearby.label}: cross the threshold`
     : moving
@@ -129,6 +143,8 @@ export default function GroundSpatialWorldClean() {
       data-ground-no-compositing-bands="true"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
+      data-ground-ready={groundReady ? "true" : "false"}
+      data-ground-arrival={arrival}
       data-ground-camera-mode={dragging ? "look" : moving ? "walking" : "embodied-idle"}
       {...look}
     >
@@ -142,7 +158,7 @@ export default function GroundSpatialWorldClean() {
           shadows
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          onCreated={({ gl }) => gl.setClearColor(0x020812, 1)}
+          onCreated={({ gl }) => { gl.setClearColor(0x020812, 1); setGroundReady(true); }}
           onPointerMissed={() => { if (!nearby) setActiveId(null); }}
         >
           <EmbodiedGroundScene
@@ -213,10 +229,10 @@ export default function GroundSpatialWorldClean() {
         .ground-title span{font:800 10px/1 Inter;letter-spacing:.24em;text-transform:uppercase;color:rgba(165,243,252,.82)}.ground-title strong{font:800 clamp(18px,2.2vw,30px)/1.05 Inter;letter-spacing:-.035em}.ground-title em{font:700 10px/1.2 Inter;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:rgba(203,239,255,.64)}
         .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;touch-action:none}.ground-loader{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#071015;color:rgba(226,246,255,.78);letter-spacing:.16em;text-transform:uppercase;font-size:12px}
         .ground-movement-prompt{position:absolute;left:50%;bottom:max(124px,calc(env(safe-area-inset-bottom) + 112px));z-index:7;transform:translateX(-50%);display:grid;gap:3px;min-width:min(430px,calc(100vw - 32px));padding:10px 16px;border:1px solid rgba(207,250,254,.18);border-radius:18px;background:rgba(2,10,22,.7);backdrop-filter:blur(16px);text-align:center;pointer-events:none}.ground-movement-prompt strong{font:800 11px/1.2 Inter;letter-spacing:.08em;text-transform:uppercase}.ground-movement-prompt span{font:600 10px/1.3 Inter;color:rgba(199,235,247,.7)}
-        .ground-directory{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(96px,calc(env(safe-area-inset-right) + 84px));bottom:max(12px,env(safe-area-inset-bottom));z-index:9;display:grid;gap:5px}.ground-layer-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}.ground-layer-tabs button{min-height:34px;padding:6px 12px;border:1px solid rgba(174,225,255,.14);border-radius:999px;background:rgba(2,10,22,.68);color:rgba(239,249,255,.74);text-transform:capitalize;font:750 10px/1 Inter}.ground-layer-tabs button[aria-selected='true']{background:rgba(207,250,254,.9);color:#061017}
-        .ground-destination-compass{display:flex;gap:6px;overflow-x:auto;padding:2px;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scrollbar-width:none;touch-action:pan-x;scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right))}.ground-destination-compass::-webkit-scrollbar,.ground-layer-tabs::-webkit-scrollbar{display:none}.ground-destination-entry{display:flex;flex:0 0 auto;gap:4px}.ground-destination-entry>button{display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:8px 12px;border:1px solid rgba(174,225,255,.18);border-radius:15px;background:linear-gradient(180deg,rgba(11,28,43,.85),rgba(1,7,18,.82));color:rgba(239,249,255,.86);font:700 10px/1 Inter;cursor:pointer;white-space:nowrap}.ground-destination-entry>button:first-child{max-width:48px;overflow:hidden;transition:max-width .22s ease,border-color .18s ease,transform .18s ease}.ground-destination-entry>button:first-child:hover,.ground-destination-entry>button:first-child:focus-visible,.ground-destination-entry>button:first-child[aria-current]{max-width:240px;transform:translateY(-2px)}.ground-destination-entry>button:first-child strong{opacity:0;max-width:0;overflow:hidden;transition:opacity .18s ease,max-width .22s ease}.ground-destination-entry>button:first-child:hover strong,.ground-destination-entry>button:first-child:focus-visible strong,.ground-destination-entry>button:first-child[aria-current] strong{opacity:1;max-width:180px}.ground-destination-entry>button:first-child span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 16px currentColor}.ground-destination-entry>button[aria-current]{border-color:rgba(207,250,254,.76);background:linear-gradient(180deg,rgba(20,57,79,.96),rgba(5,22,35,.94));outline:2px solid rgba(255,255,255,.84);outline-offset:2px}.ground-destination-entry i{font-style:normal}.ground-go-now{padding-inline:10px!important;color:#a5f3fc!important}
+        .ground-directory{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(96px,calc(env(safe-area-inset-right) + 84px));bottom:max(12px,env(safe-area-inset-bottom));z-index:9;display:grid;gap:5px;min-width:0}.ground-layer-tabs{display:flex;gap:5px;min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:none}.ground-layer-tabs button{min-height:34px;padding:6px 12px;border:1px solid rgba(174,225,255,.14);border-radius:999px;background:rgba(2,10,22,.68);color:rgba(239,249,255,.74);text-transform:capitalize;font:750 10px/1 Inter}.ground-layer-tabs button[aria-selected='true']{background:rgba(207,250,254,.9);color:#061017}
+        .ground-destination-compass{display:flex;gap:6px;box-sizing:border-box;min-width:0;max-width:100%;overflow-x:auto;padding:2px;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scrollbar-width:none;touch-action:pan-x;scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right))}.ground-destination-compass::-webkit-scrollbar,.ground-layer-tabs::-webkit-scrollbar{display:none}.ground-destination-entry{display:flex;flex:0 0 auto;gap:4px}.ground-destination-entry>button{display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:8px 12px;border:1px solid rgba(174,225,255,.18);border-radius:15px;background:linear-gradient(180deg,rgba(11,28,43,.85),rgba(1,7,18,.82));color:rgba(239,249,255,.86);font:700 10px/1 Inter;cursor:pointer;white-space:nowrap}.ground-destination-entry>button:first-child{max-width:48px;overflow:hidden;transition:max-width .22s ease,border-color .18s ease,transform .18s ease}.ground-destination-entry>button:first-child:hover,.ground-destination-entry>button:first-child:focus-visible,.ground-destination-entry>button:first-child[aria-current]{max-width:240px;transform:translateY(-2px)}.ground-destination-entry>button:first-child strong{opacity:0;max-width:0;overflow:hidden;transition:opacity .18s ease,max-width .22s ease}.ground-destination-entry>button:first-child:hover strong,.ground-destination-entry>button:first-child:focus-visible strong,.ground-destination-entry>button:first-child[aria-current] strong{opacity:1;max-width:180px}.ground-destination-entry>button:first-child span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 16px currentColor}.ground-destination-entry>button[aria-current]{border-color:rgba(207,250,254,.76);background:linear-gradient(180deg,rgba(20,57,79,.96),rgba(5,22,35,.94));outline:2px solid rgba(255,255,255,.84);outline-offset:2px}.ground-destination-entry i{font-style:normal}.ground-go-now{padding-inline:10px!important;color:#a5f3fc!important}
         .ground-accessible-instruction{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}:global(.ground-active-label){display:grid;gap:5px;min-width:210px;max-width:300px;padding:13px 15px;border:1px solid rgba(207,250,254,.34);border-radius:18px;background:linear-gradient(180deg,rgba(7,22,35,.94),rgba(1,7,18,.9));box-shadow:0 18px 60px rgba(0,0,0,.52);backdrop-filter:blur(18px);text-align:center;pointer-events:none}:global(.ground-active-label strong){font-size:11px;letter-spacing:.12em;text-transform:uppercase}:global(.ground-active-label span),:global(.ground-active-label small){font-size:9px;color:rgba(235,244,255,.76)}:global(.ground-active-label em){font-size:8px;font-style:normal;color:#a5f3fc;text-transform:uppercase;letter-spacing:.09em}
-        @media(max-width:700px){.ground-title{top:max(15px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}.ground-title strong{font-size:18px}.ground-movement-prompt{bottom:max(246px,calc(env(safe-area-inset-bottom) + 236px));min-width:min(320px,calc(100vw - 24px))}.ground-directory{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));padding-left:170px}.ground-layer-tabs button{min-height:38px}.ground-destination-entry>button{min-height:48px;font-size:9px;transition:none}}
+        @media(max-width:700px){.ground-title{top:max(15px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}.ground-title strong{font-size:18px}.ground-movement-prompt{bottom:max(246px,calc(env(safe-area-inset-bottom) + 236px));min-width:min(320px,calc(100vw - 24px))}.ground-directory{left:max(170px,calc(env(safe-area-inset-left) + 158px));right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));padding-left:0;box-sizing:border-box;min-width:0;max-width:calc(100vw - max(182px,calc(env(safe-area-inset-left) + 170px)))}.ground-layer-tabs,.ground-destination-compass{width:100%;max-width:100%;min-width:0}.ground-layer-tabs button{min-height:38px}.ground-destination-entry>button{min-height:48px;font-size:9px;transition:none}}
         @media(prefers-reduced-motion:reduce){.ground-spatial-root *{scroll-behavior:auto!important}.ground-destination-entry>button,.ground-layer-tabs button{transition:none!important}.ground-destination-compass :is(a,button) strong{transition:none}}
       `}</style>
     </main>

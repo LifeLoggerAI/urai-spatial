@@ -163,7 +163,7 @@
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-card,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-status,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-pins,
-.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-rail,
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-rail[aria-label='URAI Ground navigation'],
 .urai-world-runtime[data-world-destination='life-map'] [aria-label='URAI Life Map route portals'],
 .urai-world-runtime[data-world-destination='life-map'] [aria-label='Adaptive spatial controls'],
 .urai-world-runtime[data-world-destination='focus'] .focusTitle,
@@ -208,6 +208,30 @@
 @keyframes urai-world-orb-travel {
   from { transform: scale(.96); filter: brightness(.92); }
   to { transform: scale(1.08); filter: brightness(1.18); }
+}
+
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-directory {
+    left: max(170px, calc(env(safe-area-inset-left) + 158px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    contain: layout paint;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-layer-tabs,
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-destination-compass {
+    justify-self: stretch !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain;
+  }
 }
 
 @media (max-width: 560px) {

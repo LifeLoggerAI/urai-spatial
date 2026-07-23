@@ -1,4 +1,4 @@
-name: Auto-dispatch verified Ground production once
+name: Auto-dispatch verified main production
 
 on:
   workflow_run:
@@ -14,7 +14,8 @@ jobs:
   dispatch:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_sha == 'fd613bd3a265be3d00bf38b2638e9b2a0b87a2bc'
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
