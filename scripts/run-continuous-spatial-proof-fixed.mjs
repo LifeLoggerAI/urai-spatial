@@ -192,10 +192,47 @@ if (!source.includes('singleSelectedActionOwner')) {
   )
 }
 
+if (!source.includes('selectedJourneyRailCompact')) {
+  replaceRequired(
+    'selected journey rail geometry verifier',
+    /const singleSelectedActionOwner = selectedMemoryControlsVisible && replayControlVisible\s*const canvas/,
+    `const singleSelectedActionOwner = selectedMemoryControlsVisible && replayControlVisible
+      const selectedJourneyRailGeometry = await page.locator('[data-testid="life-map-journey-rail"][data-selected="true"]').evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        return {
+          height: rect.height,
+          width: rect.width,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+        }
+      })
+      const selectedJourneyRailCompact = selectedJourneyRailGeometry.height >= 60
+        && selectedJourneyRailGeometry.height <= 66
+        && selectedJourneyRailGeometry.height / selectedJourneyRailGeometry.viewportHeight < 0.1
+      const selectedJourneyRailContained = selectedJourneyRailGeometry.left >= -1
+        && selectedJourneyRailGeometry.right <= selectedJourneyRailGeometry.viewportWidth + 1
+        && selectedJourneyRailGeometry.top >= -1
+        && selectedJourneyRailGeometry.bottom <= selectedJourneyRailGeometry.viewportHeight + 1
+      const canvas`,
+  )
+  replaceRequired(
+    'selected journey rail receipt',
+    /singleSelectedActionOwner,\s*canvasSized:/,
+    `singleSelectedActionOwner,
+        selectedJourneyRailCompact,
+        selectedJourneyRailContained,
+        canvasSized:`,
+  )
+}
+
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-16'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-17'",
 )
 
 await writeFile(patchedPath, source)
