@@ -9,6 +9,7 @@ const files = [
   "src/spatial/passport/passportPermissionSchema.ts",
   "src/spatial/passport/PassportRealm.tsx",
   "src/app/passport/page.tsx",
+  "src/app/passport/PassportVaultClient.tsx",
   "src/app/FinalPassportVault.tsx",
   "src/spatial/council/councilAgentSchema.ts",
   "src/spatial/council/CouncilRealm.tsx",
@@ -27,11 +28,16 @@ assert.match(passport, /DEMO_PASSPORT_PERMISSIONS/, "Demo passport permissions m
 assert.match(passport, /canExport/, "Passport permissions must describe export control.");
 
 const passportRoute = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
-assert.match(passportRoute, /FinalPassportVault/, "Passport route must render the final vault owner.");
+assert.match(passportRoute, /PassportVaultClient/, "Passport route must render the canonical Ownership Vault owner.");
+assert.doesNotMatch(passportRoute, /FinalPassportVault/, "Passport route must not restore the retired poster-style owner.");
+
+const passportClient = readFileSync(join(app, "src/app/passport/PassportVaultClient.tsx"), "utf8");
+assert.match(passportClient, /data-route-owner="passport-ownership-vault"/, "Passport client must expose canonical route ownership.");
+assert.match(passportClient, /getOperationalPassportSnapshot/, "Passport client must use trusted owner-scoped state.");
 
 const finalPassport = readFileSync(join(app, "src/app/FinalPassportVault.tsx"), "utf8");
-assert.match(finalPassport, /identity-consent-vault/, "Final Passport vault must preserve the identity and consent contract marker.");
-assert.match(finalPassport, /passportAssets/, "Final Passport vault must use the registered Passport asset stack.");
+assert.match(finalPassport, /identity-consent-vault/, "Retained legacy Passport source must preserve its historical contract marker.");
+assert.match(finalPassport, /passportAssets/, "Retained legacy Passport source must preserve the registered asset stack.");
 
 const council = readFileSync(join(app, "src/spatial/council/councilAgentSchema.ts"), "utf8");
 assert.match(council, /CouncilAgent/, "CouncilAgent schema must exist.");

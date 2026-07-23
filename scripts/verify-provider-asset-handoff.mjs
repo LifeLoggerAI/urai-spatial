@@ -112,7 +112,30 @@ const routeOwnerChecks = [
   { routes: ['/focus'], files: ['urai-tier1/src/app/focus/FocusChamberClient.tsx'], renderMode: 'provider', assetSet: 'focusAssets' },
   { routes: ['/replay'], files: ['urai-tier1/src/app/replay/CinematicReplayClient.tsx'], renderMode: 'provider', assetSet: 'replayAssets' },
   { routes: ['/passport'], files: ['urai-tier1/src/app/FinalPassportVault.tsx'], renderMode: 'provider', assetSet: 'passportAssets' },
-  { routes: ['/privacy-controls'], files: ['urai-tier1/src/app/privacy-controls/page.tsx'], renderMode: 'provider', assetSet: 'privacyControlsAssets' },
+  {
+    routes: ['/privacy-controls'],
+    files: [
+      'urai-tier1/src/app/privacy-controls/page.tsx',
+      'urai-tier1/src/app/privacy-controls/ConsentSanctuaryClient.tsx',
+    ],
+    renderMode: 'procedural-spatial',
+    required: [
+      'ConsentSanctuaryClient',
+      'data-route-owner="consent-sanctuary"',
+      'data-privacy-source={loadState}',
+      'data-enforcement-state={policy.enforcement.state}',
+      '<Canvas',
+      'applyOperationalConsentPolicy',
+      'createOperationalExportRequest',
+      'createOperationalDeletionRequest',
+      'DEMONSTRATION — no personal data',
+    ],
+    forbidden: [
+      'privacyControlsAssets',
+      'assetCssStack(privacyControlsAssets.',
+      'UraiAutonomousV1Realms',
+    ],
+  },
   { routes: ['/status'], files: ['urai-tier1/src/app/status/page.tsx'], renderMode: 'provider', assetSet: 'statusAssets' },
 ]
 
@@ -286,7 +309,7 @@ const routeOwners = routeOwnerChecks.map((check) => {
 
 const report = {
   ok: failures.length === 0,
-  schemaVersion: 'urai-provider-asset-verification-3',
+  schemaVersion: 'urai-provider-asset-verification-4',
   generatedAt: new Date().toISOString(),
   repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
   commit: process.env.GITHUB_SHA || null,

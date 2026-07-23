@@ -1,0 +1,85 @@
+name: Location Map Canonical World Verification
+
+on:
+  push:
+    branches: [agent/location-map-canonical-world-872-v2]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: location-map-canonical-world-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  verify:
+    name: Typecheck contracts and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXACT_HEAD_SHA }}
+          persist-credentials: false
+      - name: Assert exact head identity
+        run: test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Location Map contract
+        run: node urai-tier1/tests/location-map-canonical-world.test.mjs
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Production build
+        run: pnpm build
+
+  browser-acceptance:
+    name: Browser acceptance evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXACT_HEAD_SHA }}
+          persist-credentials: false
+      - name: Assert exact head identity
+        run: test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run exact-head browser acceptance
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+      - name: Retain browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: location-map-browser-acceptance-${{ env.EXACT_HEAD_SHA }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: error
+          retention-days: 30

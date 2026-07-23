@@ -8,10 +8,10 @@ TS="$(date +%Y%m%d_%H%M%S)"
 REPORT_DIR="${ROOT}/_audit/${TS}_release_gate_run"
 REPORT="${REPORT_DIR}/report.txt"
 
-SCENE="src/spatial/scene/SpatialScene.tsx"
-REPLAY="src/spatial/components/ReplayScene.tsx"
-CAM_A="src/spatial/components/CameraDirector.tsx"
-CAM_B="src/spatial/components/CinematicCameraRig.tsx"
+HOME_CANON="src/components/spatial/LifeMapScene.tsx"
+REPLAY="urai-tier1/src/spatial/places/PlaceReplayScene.tsx"
+CAMERA_CANON="urai-tier1/src/spatial/canon/cameraCanon.ts"
+TRANSITION_SYNC="urai-tier1/src/spatial/hooks/useTransitionSync.ts"
 AUTH_CERT="scripts/tier2/authority-cert.sh"
 STRUCT_CERT="scripts/tier2/scene-structure-cert.sh"
 MASTER_CERT="scripts/tier2/master-cert.sh"
@@ -19,17 +19,19 @@ SMOKE="scripts/tier2/forensic-smoke.sh"
 
 mkdir -p "$REPORT_DIR"
 
-[ -f "$SCENE" ] || die "missing SpatialScene.tsx"
-[ -f "$REPLAY" ] || die "missing ReplayScene.tsx"
+[ -f "$HOME_CANON" ] || die "missing LifeMapScene.tsx"
+[ -f "$REPLAY" ] || die "missing PlaceReplayScene.tsx"
+[ -f "$CAMERA_CANON" ] || die "missing cameraCanon.ts"
+[ -f "$TRANSITION_SYNC" ] || die "missing useTransitionSync.ts"
 [ -x "$AUTH_CERT" ] || die "missing authority cert"
 [ -x "$STRUCT_CERT" ] || die "missing scene structure cert"
 [ -x "$MASTER_CERT" ] || die "missing master cert"
 [ -x "$SMOKE" ] || die "missing forensic smoke runner"
 
 ACTIVE_CAMERA=""
-if grep -q "<CameraDirector" "$SCENE"; then
+if grep -q "<CameraDirector" "$HOME_CANON"; then
   ACTIVE_CAMERA="CameraDirector"
-elif grep -q "<CinematicCameraRig" "$SCENE"; then
+elif grep -q "<CinematicCameraRig" "$HOME_CANON"; then
   ACTIVE_CAMERA="CinematicCameraRig"
 else
   die "no active camera authority"
@@ -40,31 +42,23 @@ fi
   echo "timestamp=$TS"
   echo "active_camera=$ACTIVE_CAMERA"
   echo
-  echo "== scene anchors =="
-  grep -n "const phaseAny =" "$SCENE"
-  grep -n "const lifeMapVisible =" "$SCENE"
-  grep -n "const focusVisible =" "$SCENE"
-  grep -n "const replayVisible =" "$SCENE"
-  grep -n "const replaySceneOpacity =" "$SCENE"
-  grep -n "const replayEnvelopeOpacity =" "$SCENE"
-  grep -n "const homeReturnOpacity =" "$SCENE"
+  echo "== canon anchors =="
+  grep -n "resolveReplayVeilOpacity" "$CAMERA_CANON"
+  grep -n "resolveFocusOpacity" "$CAMERA_CANON"
+  grep -n "resolveDepthScale" "$CAMERA_CANON"
+  grep -n "showHomeLayer" "$TRANSITION_SYNC"
+  grep -n "showLifeMapLayer" "$TRANSITION_SYNC"
+  grep -n "showFocusLayer" "$TRANSITION_SYNC"
+  grep -n "showReplayLayer" "$TRANSITION_SYNC"
   echo
   echo "== replay callsite =="
-  START="$(grep -n "<ReplayScene" "$SCENE" | head -n 1 | cut -d: -f1)"
-  [ -n "$START" ] || die "ReplayScene callsite missing"
-  awk -v start="$START" '
-  NR < start { next }
-  NR >= start {
-    print
-    if ($0 ~ /\/>/) exit
-  }
-  ' "$SCENE"
+  grep -n "makeDemoPlaceReplayBeats" "$REPLAY"
+  grep -n "getSpatialCueMetadata" "$REPLAY"
   echo
-  echo "== replay props =="
-  grep -n "type Props = {" "$REPLAY"
-  grep -n "visible?: boolean" "$REPLAY"
-  grep -n "opacity?: number" "$REPLAY"
-  grep -n "starId?: string" "$REPLAY"
+  echo "== scene anchors =="
+  grep -n "Own your life\." "$HOME_CANON"
+  grep -n "Threshold online" "$HOME_CANON"
+  grep -n "Place Replay" "$REPLAY"
 } > "$REPORT"
 
 echo "== authority cert =="

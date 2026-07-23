@@ -138,6 +138,11 @@ async function runReleaseControlSmoke() {
     manifestId: 'replay-recovery-thread',
     node: 'quiet-reset',
   }
+  const disclosedLifeMapQuery = [
+    ['demo', '1'],
+    ['manifestId', 'replay-recovery-thread'],
+    ['overview', '1'],
+  ].sort(([leftKey, leftValue], [rightKey, rightValue]) => leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
   const requiredQueryTokens = [
     'demo=1',
     `memoryId=${identity.memoryId}`,
@@ -153,6 +158,7 @@ async function runReleaseControlSmoke() {
     routes: [],
     queryChecks: [],
     hydratedIdentityChecks: [],
+    canonicalBrowserTransitions: [],
     fingerprints: [],
     screenshots: [],
     pageErrors: [],
@@ -170,6 +176,31 @@ async function runReleaseControlSmoke() {
     if (final.search !== requested.search) {
       throw new Error(`${label} query changed: requested ${requested.search}, final ${final.search}`)
     }
+  }
+
+  function assertCanonicalBrowserFinalUrl(label, route, requestedUrl, finalUrl, profileName) {
+    const requested = new URL(requestedUrl)
+    const final = new URL(finalUrl)
+    if (final.origin !== canonicalOrigin) throw new Error(`${label} escaped canonical origin: ${final.toString()}`)
+    if (normalizePath(final.pathname) !== normalizePath(requested.pathname)) {
+      throw new Error(`${label} path changed: requested ${requested.pathname}, final ${final.pathname}`)
+    }
+    if (final.search === requested.search) return
+    if (route !== '/life-map' || requested.search) {
+      throw new Error(`${label} query changed: requested ${requested.search}, final ${final.search}`)
+    }
+    const observedEntries = sortedSearchEntries(final.toString())
+    if (JSON.stringify(observedEntries) !== JSON.stringify(disclosedLifeMapQuery)) {
+      throw new Error(`${label} unexpected Life Map disclosure query: ${JSON.stringify(observedEntries)}`)
+    }
+    report.canonicalBrowserTransitions.push({
+      profile: profileName,
+      route,
+      requested: requested.toString(),
+      observed: final.toString(),
+      transition: 'signed-out-to-disclosed-sample',
+      privateMemoryMounted: false,
+    })
   }
 
   function assertExactQueryIdentity(label, requestedUrl, observedUrl) {
@@ -354,7 +385,7 @@ async function runReleaseControlSmoke() {
         if (!response || response.status() !== 200) throw new Error(`Browser route failed for ${route}: ${response?.status() ?? 'no response'}`)
         await page.locator('body').waitFor({ state: 'visible', timeout: 10000 })
         await page.waitForTimeout(1200)
-        assertCanonicalFinalUrl(`${profileName} browser route ${route}`, requestedUrl, page.url())
+        assertCanonicalBrowserFinalUrl(`${profileName} browser route ${route}`, route, requestedUrl, page.url(), profileName)
         const identityCheck = queryCases.find((check) => check.path === route)
         if (identityCheck) await verifyHydratedIdentity(page, identityCheck, profileName)
         const html = await page.content()
