@@ -32,6 +32,69 @@
   pointer-events: auto !important;
 }
 
+/* The composed Life Map scene used a fixed isolated root, so selected Focus and
+ * Replay controls could be CSS-visible while remaining painted below sibling
+ * semantic chrome. Keep the scene viewport-bound without creating that nested
+ * stacking context, then give the single selected action owner an explicit band. */
+.urai-world-runtime[data-world-destination='life-map'] .life-map-root {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  isolation: auto !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-root[data-life-map-mode='selected']
+  .life-map-actions {
+  position: fixed !important;
+  z-index: 2147483500 !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  min-height: 64px !important;
+  height: 64px !important;
+  max-height: 64px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-root[data-life-map-mode='selected']
+  .life-map-actions > button {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 96px !important;
+  min-height: 48px !important;
+  height: 48px !important;
+  max-height: 48px !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  touch-action: manipulation !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-root[data-life-map-mode='selected']
+  .life-map-help {
+  display: none !important;
+}
+
 /* Ground owns a labeled directory across the lower-left and center. Dock the shared
  * Orb at lower-right so it never interrupts destination order or chamber controls. */
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion {
@@ -76,6 +139,72 @@
     max-width: none !important;
     transform: none !important;
   }
+
+  .urai-world-runtime[data-world-destination='life-map']
+    .life-map-root[data-life-map-mode='selected']
+    .life-map-actions {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    min-height: 64px !important;
+    height: 64px !important;
+    max-height: 64px !important;
+    transform: none !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']
+    .life-map-root[data-life-map-mode='selected']
+    .life-map-actions > button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding-inline: 8px !important;
+  }
+
+  /* Selected mobile composition owns three deliberate bottom bands:
+   * details above, compact search/explore in the middle, actions at the edge. */
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='selected'])
+    .life-map-semantic-inspector {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(148px, calc(env(safe-area-inset-bottom) + 138px)) !important;
+    width: auto !important;
+    max-height: min(30svh, 250px) !important;
+    overflow: auto !important;
+    padding: 14px !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='selected'])
+    .life-map-semantic-inspector .action-owner-note {
+    display: none !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='selected'])
+    .life-map-navigator {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 72px)) !important;
+    width: calc(100vw - 176px) !important;
+    min-width: 132px !important;
+    min-height: 54px !important;
+    height: 54px !important;
+    max-height: 54px !important;
+    overflow: hidden !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='selected'])
+    .life-map-navigator:not([open]) > :not(summary) {
+    display: none !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='selected'])
+    .life-map-navigator > summary {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 52px !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+  }
 }
 
 @media (max-width: 700px) {
@@ -87,7 +216,7 @@
     left: auto !important;
     right: max(12px, env(safe-area-inset-right)) !important;
     bottom: max(82px, calc(env(safe-area-inset-bottom) + 72px)) !important;
-    max-width: min(250px, calc(100vw - 24px)) !important;
+    max-width: min(152px, calc(100vw - 176px)) !important;
   }
 
   .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help:not([open]) {
