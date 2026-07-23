@@ -37,21 +37,46 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
-test('Focus is a living memory chamber with dominant identity and one Replay threshold', () => {
+test('Focus is an explorable living memory chamber rather than a static composited page', () => {
   assert.match(focus, /data-focus-composition="living-memory-chamber"/)
+  assert.match(focus, /data-focus-spatial="explorable-observatory"/)
+  assert.match(focus, /<Canvas/)
+  assert.match(focus, /<OrbitControls/)
+  assert.match(focus, /function FocusCameraRig/)
+  assert.match(focus, /KeyW/)
+  assert.match(focus, /ArrowUp/)
+  assert.match(focus, /CAMERA_LIMIT/)
+  assert.match(focus, /Recenter/)
   assert.match(focus, /className="focusBackdrop"/)
   assert.match(focus, /className="focusHeading"/)
-  assert.match(focus, /<h1>\{memory\.title\}<\/h1>/)
   assert.match(focus, /className="focusNarration"/)
   assert.match(focus, /className="artifactImage"/)
-  assert.match(focus, /clip-path:polygon\(50% 0%/)
   assert.match(focus, /className="apertureOrbit apertureOrbitOuter"/)
-  assert.match(focus, /<strong>Enter Replay<\/strong>/)
+  assert.match(focus, /Enter Replay/)
   assert.match(focus, /aria-label=\{`Open Replay for \$\{memory\.title\}`\}/)
   assert.match(focus, /Held in context\. Nothing leaves this chamber\./)
   assert.match(focus, /@media\(max-width:700px\)/)
   assert.match(focus, /prefers-reduced-motion:reduce/)
   assert.match(focus, /forced-colors:active/)
+})
+
+test('direct Focus entry remains a truthful neutral observatory and never mounts fake personal data', () => {
+  assert.match(focus, /Focus Observatory/)
+  assert.match(focus, /No personal memory is displayed in this neutral observatory/)
+  assert.match(focus, /Choose a star in Life Map/)
+  assert.match(focus, /Open Life Map/)
+  assert.match(focus, /Awaiting a selected star/)
+  assert.doesNotMatch(focus, /buildExplicitDemoMemory|buildNamedExplicitDemoMemory|URAI_SPATIAL_DEMO_DATA/)
+})
+
+test('Focus retains adaptive quality, reduced motion, visibility pausing, and WebGL fallback', () => {
+  assert.match(focus, /useAdaptiveSpatialQuality/)
+  assert.match(focus, /profile\.pixelRatioMax/)
+  assert.match(focus, /profile\.documentVisible \? 'always' : 'never'/)
+  assert.match(focus, /useWebGLAvailable/)
+  assert.match(focus, /Spatial view unavailable/)
+  assert.match(focus, /profile\.reducedMotion/)
+  assert.match(focus, /markFirstSpatialFrame\('\/focus'/)
 })
 
 test('public demo is disclosed by default and retains an explicit production kill switch', () => {
@@ -108,7 +133,7 @@ test('privacy-safe denied, deleted, unavailable, and corrupt states exist', () =
 test('Focus and Replay share exact selected memory and manifest identity', () => {
   assert.match(focus, /useSelectedMemory/)
   assert.match(replay, /useSelectedMemory/)
-  assert.match(focus, /data-star-id=\{memory\.star\.id\}/)
+  assert.match(focus, /data-star-id=\{memory\?\.star\.id\}/)
   assert.match(replay, /data-star-id=\{memory\.star\.id\}/)
   assert.match(focus, /memory\.replayManifest\.id/)
   assert.match(replay, /memory\?\.replayManifest\.segments/)
