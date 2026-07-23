@@ -232,4 +232,16 @@
     right: max(12px, env(safe-area-inset-right)) !important;
     bottom: max(12px, env(safe-area-inset-bottom)) !important;
   }
+
+  /* Expanding the first focused destination used to grow around its original
+   * center and place its leading edge outside the portrait rail. Reserve a real
+   * leading scroll gutter so keyboard focus can center every expanded target. */
+  .ground-spatial-root .ground-destination-compass {
+    padding-inline-start: max(40px, calc(env(safe-area-inset-left) + 28px)) !important;
+    scroll-padding-inline-start: max(40px, calc(env(safe-area-inset-left) + 28px)) !important;
+  }
+
+  .ground-spatial-root .ground-destination-entry:first-child {
+    margin-inline-start: 24px !important;
+  }
 }
