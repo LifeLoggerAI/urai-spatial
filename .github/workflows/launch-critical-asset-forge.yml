@@ -11,35 +11,91 @@ on:
       - 'scripts/audit-launch-critical-artifact.mjs'
       - 'scripts/validate-radiance-hdr.mjs'
       - 'scripts/compare-legacy-asset-candidates.mjs'
+      - 'scripts/author-home-finalization-assets.mjs'
+      - 'scripts/record-home-finalization-authored-candidates.mjs'
+      - 'scripts/verify-home-finalization-authored-assets.mjs'
       - '.github/workflows/launch-critical-asset-forge.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: launch-critical-asset-forge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   LEGACY_ASSET_HEAD: e4e94a501a64e7375a5cfdbe9547436fbc8e75a2
 
 jobs:
   forge-and-verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+
+      - uses: actions/setup-node@1e60f620b9541d558f7a8b5982f6e7840a25e548
         with:
           node-version: '22'
-      - name: Forge deterministic launch candidates
+
+      - name: Restore retained authored source tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat operations/assets/sources/bootstrap/author-home-finalization-assets.mjs.gz.b64.part* \
+            | base64 --decode | gzip --decompress > scripts/author-home-finalization-assets.mjs
+          base64 --decode operations/assets/sources/bootstrap/record-home-finalization-authored-candidates.mjs.gz.b64 \
+            | gzip --decompress > scripts/record-home-finalization-authored-candidates.mjs
+          base64 --decode operations/assets/sources/bootstrap/verify-home-finalization-authored-assets.mjs.gz.b64 \
+            | gzip --decompress > scripts/verify-home-finalization-authored-assets.mjs
+          node --check scripts/author-home-finalization-assets.mjs
+          node --check scripts/record-home-finalization-authored-candidates.mjs
+          node --check scripts/verify-home-finalization-authored-assets.mjs
+
+      - name: Forge baseline launch candidates
         run: node scripts/forge-launch-critical-assets.mjs
-      - name: Normalize formats and repair glTF rotations
+
+      - name: Normalize baseline formats
         run: node scripts/normalize-launch-critical-assets.mjs
-      - name: Verify manifest, receipts and budgets
+
+      - name: Author Home Portal and Orb candidates
+        run: >-
+          node scripts/author-home-finalization-assets.mjs
+          urai-tier1/public/assets/urai/generated/models
+          operations/assets/sources/home-finalization-authored-source-v2.json
+
+      - name: Apply Meshopt compression to authored models
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb; do
+            output="${file%.glb}.meshopt.glb"
+            npx --yes @gltf-transform/cli@4.2.1 optimize "$file" "$output" --compress meshopt
+            mv "$output" "$file"
+          done
+
+      - name: Record exact authored identities
+        run: node scripts/record-home-finalization-authored-candidates.mjs
+
+      - name: Verify authored nodes clips compression and truth boundary
+        run: node scripts/verify-home-finalization-authored-assets.mjs
+
+      - name: Verify manifest receipts and budgets
         run: node scripts/verify-launch-critical-assets.mjs
+
       - name: Independently audit generated formats and metrics
         run: node scripts/audit-launch-critical-artifact.mjs
+
       - name: Strictly decode every Radiance HDR scanline
         run: node scripts/validate-radiance-hdr.mjs
+
       - name: Validate every GLB with Khronos-compatible validator
         shell: bash
         run: |
@@ -47,6 +103,7 @@ jobs:
           for file in urai-tier1/public/assets/urai/generated/models/*.glb; do
             npx --yes @gltf-transform/cli@4.2.1 validate "$file"
           done
+
       - name: Extract pinned legacy comparison candidates
         shell: bash
         run: |
@@ -67,24 +124,31 @@ jobs:
             mkdir -p "$(dirname "$destination")"
             git show "$LEGACY_ASSET_HEAD:$file" > "$destination"
           done
-      - name: Compare current and pinned legacy candidates
+
+      - name: Compare authored current and pinned legacy candidates
         run: node scripts/compare-legacy-asset-candidates.mjs --legacy-root comparison/legacy --legacy-head "$LEGACY_ASSET_HEAD"
-      - name: Upload reviewable candidate bundle
-        uses: actions/upload-artifact@v4
+
+      - name: Upload reviewable authored candidate bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-launch-critical-asset-candidates-${{ github.sha }}
+          name: urai-launch-critical-authored-candidates-${{ github.sha }}
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
           path: |
             urai-tier1/public/assets/urai/generated/
             operations/assets/generated-receipts/
+            operations/assets/sources/home-finalization-authored-source-v2.json
+            operations/assets/home-finalization-candidate-decisions.json
             operations/assets/launch-critical-assets.json
+
       - name: Upload legacy comparison evidence
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: urai-legacy-asset-comparison-${{ github.sha }}
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
           path: |
             operations/assets/comparison/
             comparison/legacy/urai-tier1/public/assets/urai/generated/
