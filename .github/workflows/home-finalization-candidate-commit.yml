@@ -9,6 +9,10 @@ on:
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/home/**'
       - 'operations/assets/home-finalization-candidate-decisions.json'
+      - 'operations/assets/sources/**'
+      - 'scripts/author-home-finalization-assets.mjs'
+      - 'scripts/record-home-finalization-authored-candidates.mjs'
+      - 'scripts/verify-home-finalization-authored-assets.mjs'
   workflow_dispatch:
 
 permissions:
@@ -27,10 +31,10 @@ jobs:
         github.event.pull_request.head.ref == 'feat/home-final-personalized-sanctuary-20260723') ||
        (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/home-final-personalized-sanctuary-20260723'))
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out exact Home branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: feat/home-final-personalized-sanctuary-20260723
           fetch-depth: 0
@@ -45,17 +49,58 @@ jobs:
             test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1e60f620b9541d558f7a8b5982f6e7840a25e548
         with:
           node-version: '22'
 
-      - name: Forge deterministic review candidates
+      - name: Restore retained authored source tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat operations/assets/sources/bootstrap/author-home-finalization-assets.mjs.gz.b64.part* \
+            | base64 --decode | gzip --decompress > scripts/author-home-finalization-assets.mjs
+          base64 --decode operations/assets/sources/bootstrap/record-home-finalization-authored-candidates.mjs.gz.b64 \
+            | gzip --decompress > scripts/record-home-finalization-authored-candidates.mjs
+          base64 --decode operations/assets/sources/bootstrap/verify-home-finalization-authored-assets.mjs.gz.b64 \
+            | gzip --decompress > scripts/verify-home-finalization-authored-assets.mjs
+          node --check scripts/author-home-finalization-assets.mjs
+          node --check scripts/record-home-finalization-authored-candidates.mjs
+          node --check scripts/verify-home-finalization-authored-assets.mjs
+
+      - name: Forge baseline launch candidates
         run: node scripts/forge-launch-critical-assets.mjs
 
-      - name: Normalize candidates
+      - name: Normalize baseline candidates
         run: node scripts/normalize-launch-critical-assets.mjs
 
-      - name: Verify candidate receipts and budgets
+      - name: Author Home Portal and Orb source candidates
+        run: >-
+          node scripts/author-home-finalization-assets.mjs
+          urai-tier1/public/assets/urai/generated/models
+          operations/assets/sources/home-finalization-authored-source-v2.json
+
+      - name: Apply Meshopt production compression
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
+          )
+          for file in "${files[@]}"; do
+            output="${file%.glb}.meshopt.glb"
+            npx --yes @gltf-transform/cli@4.2.1 optimize "$file" "$output" --compress meshopt
+            mv "$output" "$file"
+          done
+
+      - name: Record exact authored candidate identities
+        run: node scripts/record-home-finalization-authored-candidates.mjs
+
+      - name: Verify authored structure animation and truth boundary
+        run: node scripts/verify-home-finalization-authored-assets.mjs
+
+      - name: Verify full manifest receipts and budgets
         run: node scripts/verify-launch-critical-assets.mjs
 
       - name: Independently audit generated formats
@@ -72,69 +117,46 @@ jobs:
             npx --yes @gltf-transform/cli@4.2.1 validate "$file"
           done
 
-      - name: Verify exact selected hashes
-        shell: bash
-        run: |
-          set -euo pipefail
-          cat > /tmp/home-selected.sha256 <<'HASHES'
-          0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883  urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
-          578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f  urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
-          83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d  urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
-          f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035  urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json
-          3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba  urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg
-          7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046  urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json
-          148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d  urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav
-          HASHES
-          sha256sum -c /tmp/home-selected.sha256
-
-      - name: Commit review candidates without manifest promotion
+      - name: Commit authored compressed review candidates without promotion
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- \
+            scripts/author-home-finalization-assets.mjs \
+            scripts/record-home-finalization-authored-candidates.mjs \
+            scripts/verify-home-finalization-authored-assets.mjs \
+            operations/assets/sources/home-finalization-authored-source-v2.json \
+            operations/assets/home-finalization-candidate-decisions.json \
+            operations/assets/generated-receipts/forge-summary.json \
+            operations/assets/generated-receipts/home-entry-chamber-v1.json \
+            operations/assets/generated-receipts/portal-ring-master-v1.json \
+            operations/assets/generated-receipts/urai-orb-avatar-v1.json \
             urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
             urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
-            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb \
-            urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json \
-            urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg \
-            urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json \
-            urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav \
-            urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.opus \
-            urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.json \
-            urai-tier1/public/assets/urai/generated/haptics/semantic-haptic-patterns-v1.json \
-            urai-tier1/public/assets/urai/generated/fallbacks/home-sanctuary-static-v1.svg \
-            operations/assets/generated-receipts/home-entry-chamber-v1.json \
-            operations/assets/generated-receipts/home-entry-chamber-v1.production.json \
-            operations/assets/generated-receipts/portal-ring-master-v1.json \
-            operations/assets/generated-receipts/portal-ring-master-v1.production.json \
-            operations/assets/generated-receipts/urai-orb-avatar-v1.json \
-            operations/assets/generated-receipts/urai-orb-avatar-v1.production.json \
-            operations/assets/generated-receipts/global-cinematic-material-pack-v1.json \
-            operations/assets/generated-receipts/spatial-particle-atlas-v1.json \
-            operations/assets/generated-receipts/urai-loading-sequence-v1.json \
-            operations/assets/generated-receipts/urai-ambient-bed-v1.json \
-            operations/assets/generated-receipts/forge-summary.json
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
           if git diff --cached --quiet; then
-            echo 'Selected review candidates already match the branch.'
+            echo 'Authored compressed candidates already match the branch.'
             exit 0
           fi
-          git commit -m 'assets(home): retain verified review candidates'
+          git commit -m 'assets(home): retain authored compressed Home Portal and Orb candidates'
           git push origin HEAD:feat/home-final-personalized-sanctuary-20260723
 
-      - name: Upload committed candidate evidence
-        uses: actions/upload-artifact@v4
+      - name: Upload authored candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: home-finalization-candidate-commit-${{ github.sha }}
-          retention-days: 14
+          name: home-finalization-authored-candidates-${{ github.sha }}
+          retention-days: 30
           if-no-files-found: error
           path: |
+            operations/assets/sources/home-finalization-authored-source-v2.json
             operations/assets/home-finalization-candidate-decisions.json
-            operations/assets/generated-receipts/home-entry-chamber-v1*.json
-            operations/assets/generated-receipts/portal-ring-master-v1*.json
-            operations/assets/generated-receipts/urai-orb-avatar-v1*.json
-            operations/assets/generated-receipts/global-cinematic-material-pack-v1.json
-            operations/assets/generated-receipts/spatial-particle-atlas-v1.json
-            operations/assets/generated-receipts/urai-loading-sequence-v1.json
-            operations/assets/generated-receipts/urai-ambient-bed-v1.json
+            operations/assets/generated-receipts/home-entry-chamber-v1.json
+            operations/assets/generated-receipts/portal-ring-master-v1.json
+            operations/assets/generated-receipts/urai-orb-avatar-v1.json
+            operations/assets/generated-receipts/forge-summary.json
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
