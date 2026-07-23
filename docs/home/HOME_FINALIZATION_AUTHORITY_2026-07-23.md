@@ -9,6 +9,8 @@
 - Canonical P0: #863 (reopened)
 - Asset dependencies: #524 and #525
 - Public deployed authority at lane opening: `748e50398d85effeaa4ed17aaf78d4076dddbb45` through protected receipt #948
+- Previous exact candidate: `cddaab8b42ecf535e5e5a2c402d213121b1ebc01`
+- Current exact candidate before this documentation commit: `77139c9e29981c14c79ec779e089d53ec0be943e`
 
 ## Founder decision
 
@@ -17,6 +19,12 @@
 The current `/` and `/home` runtime remains a procedural production blockout. Prior use of `final`, `AAA`, `final-coherent-sanctuary`, green CI, route reachability, source-pattern assertions, or a protected deployment receipt does not constitute final visual acceptance.
 
 The current procedural scene remains permitted only as a degraded fallback while production assets and the personalized primary runtime are built and proven.
+
+## Exact-head verification repair
+
+Workflow approval was handled and a real matrix ran against `cddaab8b42ecf535e5e5a2c402d213121b1ebc01`. The matrix exposed an actual TypeScript build defect in `AssetDrivenHomeWorld.tsx`: React Three Fiber group props were typed through `JSX.IntrinsicElements`, which is not available under the repository's current React/TypeScript namespace configuration. Commit `77139c9e29981c14c79ec779e089d53ec0be943e` imports `ThreeElements` from `@react-three/fiber` and uses `ThreeElements['group']`. This is a source repair, not a relaxed test or budget.
+
+All results bound to earlier heads are superseded. A complete replacement matrix and exact-head preview are required after every subsequent authority commit.
 
 ## Non-negotiable completion boundary
 
