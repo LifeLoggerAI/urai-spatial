@@ -18,14 +18,19 @@ const geometryReturn = `return {
           height: rect.height,`
 const portaledGeometryReturn = `return {
           bodyPortaled: element.parentElement === document.body && element.getAttribute('data-portal-owner') === 'document-body',
+          position: style.position,
           height: rect.height,`
 const compactDeclaration = 'const selectedJourneyRailCompact = selectedJourneyRailGeometry.height >= 60'
 const portaledCompactDeclaration = `const selectedJourneyRailBodyPortaled = selectedJourneyRailGeometry.bodyPortaled === true
+      const selectedJourneyRailViewportFixed = selectedJourneyRailGeometry.position === 'fixed'
+        && selectedJourneyRailGeometry.top >= -1
+        && selectedJourneyRailGeometry.bottom <= selectedJourneyRailGeometry.viewportHeight + 1
       const selectedJourneyRailCompact = selectedJourneyRailGeometry.height >= 60`
 const receiptDeclaration = `singleSelectedActionOwner,
         selectedJourneyRailCompact,`
 const portaledReceiptDeclaration = `singleSelectedActionOwner,
         selectedJourneyRailBodyPortaled,
+        selectedJourneyRailViewportFixed,
         selectedJourneyRailCompact,`
 
 let capture = await readFile(captureSourcePath, 'utf8')
