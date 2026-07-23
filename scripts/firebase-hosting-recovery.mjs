@@ -205,19 +205,27 @@ function resolveReceiptPath() {
   return assertPathInsideRunnerTemp('Hosting recovery receipt', requested)
 }
 
+export function validateRecoveryReceipt(receipt) {
+  if (!receipt || typeof receipt !== 'object') throw new Error('Hosting recovery receipt must contain an object')
+  if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-1') throw new Error('Unsupported Hosting recovery receipt schema')
+  const siteId = assertSiteId(receipt.siteId)
+  const versionName = assertVersionName(receipt.versionName, siteId)
+  if (receipt.versionStatus !== undefined && receipt.versionStatus !== 'FINALIZED') {
+    throw new Error(`Recovery receipt records a non-restorable Firebase Hosting version status: ${receipt.versionStatus}`)
+  }
+  if (!new RegExp(`^sites/${escapeRegExp(siteId)}/releases/[^/]+$`).test(String(receipt.releaseName || ''))) {
+    throw new Error('Recovery receipt does not identify a live-channel release')
+  }
+  return { siteId, versionName }
+}
+
 function readRecoveryReceipt() {
   const receiptPath = resolveReceiptPath()
   if (!existsSync(receiptPath)) throw new Error(`Hosting recovery receipt is missing: ${receiptPath}`)
   const stats = lstatSync(receiptPath)
   if (!stats.isFile() || stats.isSymbolicLink()) throw new Error('Hosting recovery receipt must be a regular non-symlinked file')
   const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
-  if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-1') throw new Error('Unsupported Hosting recovery receipt schema')
-  const siteId = assertSiteId(receipt.siteId)
-  const versionName = assertVersionName(receipt.versionName, siteId)
-  if (receipt.versionStatus !== 'FINALIZED') throw new Error('Recovery receipt does not prove a FINALIZED Firebase Hosting version')
-  if (!new RegExp(`^sites/${escapeRegExp(siteId)}/releases/[^/]+$`).test(String(receipt.releaseName || ''))) {
-    throw new Error('Recovery receipt does not identify a live-channel release')
-  }
+  const { siteId, versionName } = validateRecoveryReceipt(receipt)
   return { receiptPath, receipt, siteId, versionName }
 }
 
@@ -370,6 +378,27 @@ export function selfTest() {
   if (selected.versionName !== 'sites/urai-4dc1d/versions/live-v1') throw new Error('Self-test selected the wrong live version')
   const restorable = assertRestorableVersion({ name: selected.versionName, status: 'FINALIZED' }, selected.versionName)
   if (restorable.status !== 'FINALIZED') throw new Error('Self-test failed to accept a finalized recovery version')
+
+  const legacyReceipt = {
+    schemaVersion: 'urai-firebase-hosting-recovery-1',
+    siteId: expectedSiteId,
+    releaseName: 'sites/urai-4dc1d/releases/live-current',
+    versionName: selected.versionName,
+  }
+  const validatedLegacy = validateRecoveryReceipt(legacyReceipt)
+  if (validatedLegacy.versionName !== selected.versionName) throw new Error('Self-test failed to accept a legacy receipt for live revalidation')
+
+  const finalizedReceipt = { ...legacyReceipt, versionStatus: 'FINALIZED' }
+  validateRecoveryReceipt(finalizedReceipt)
+
+  let explicitExpiredReceiptRejected = false
+  try {
+    validateRecoveryReceipt({ ...legacyReceipt, versionStatus: 'EXPIRED' })
+  } catch {
+    explicitExpiredReceiptRejected = true
+  }
+  if (!explicitExpiredReceiptRejected) throw new Error('Self-test failed to reject an explicitly expired recovery receipt')
+
   let expiredRejected = false
   try {
     assertRestorableVersion({ name: selected.versionName, status: 'EXPIRED' }, selected.versionName)
@@ -377,7 +406,15 @@ export function selfTest() {
     expiredRejected = true
   }
   if (!expiredRejected) throw new Error('Self-test failed to reject an expired recovery version')
-  console.log(JSON.stringify({ ok: true, action: 'self-test', selected: selected.name, versionName: selected.versionName, versionStatus: restorable.status }, null, 2))
+  console.log(JSON.stringify({
+    ok: true,
+    action: 'self-test',
+    selected: selected.name,
+    versionName: selected.versionName,
+    versionStatus: restorable.status,
+    legacyReceiptAcceptedForLiveRevalidation: true,
+    explicitExpiredReceiptRejected: true,
+  }, null, 2))
 }
 
 const invokedPath = path.resolve(process.argv[1] || '')
