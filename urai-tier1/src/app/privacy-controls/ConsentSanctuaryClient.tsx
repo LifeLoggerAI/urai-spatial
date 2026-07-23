@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas } from '@react-three/fiber'
-import { Float, OrbitControls, RoundedBox, Text } from '@react-three/drei'
+import { Float, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { getAuth, onAuthStateChanged, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
@@ -78,10 +78,16 @@ function Chamber({ domain, policy, index, selected, onSelect }: {
             roughness={0.4}
           />
         </RoundedBox>
-        <Text position={[0, 0.15, 0.38]} fontSize={0.25} maxWidth={1.9} textAlign="center" color="#f4f8fb">
-          {DOMAIN_LABELS[domain]}
-        </Text>
-        <Text position={[0, -0.55, 0.38]} fontSize={0.16} color={color}>{policy.mode.toUpperCase()}</Text>
+        <Html position={[0, 0.15, 0.38]} center transform distanceFactor={8}>
+          <span style={{ display: 'block', width: '152px', color: '#f4f8fb', fontSize: '16px', fontWeight: 800, lineHeight: 1.1, textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
+            {DOMAIN_LABELS[domain]}
+          </span>
+        </Html>
+        <Html position={[0, -0.55, 0.38]} center transform distanceFactor={8}>
+          <span style={{ display: 'block', color, fontSize: '12px', fontWeight: 900, letterSpacing: '.12em', textAlign: 'center', textShadow: '0 2px 12px #000', pointerEvents: 'none' }}>
+            {policy.mode.toUpperCase()}
+          </span>
+        </Html>
       </Float>
     </group>
   )
