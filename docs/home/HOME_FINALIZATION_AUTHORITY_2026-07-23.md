@@ -9,8 +9,8 @@
 - Canonical P0: #863 (reopened)
 - Asset dependencies: #524 and #525
 - Public deployed authority at lane opening: `748e50398d85effeaa4ed17aaf78d4076dddbb45` through protected receipt #948
-- Previous exact candidate: `cddaab8b42ecf535e5e5a2c402d213121b1ebc01`
-- Current exact candidate before this documentation commit: `77139c9e29981c14c79ec779e089d53ec0be943e`
+- Previous exact candidate: `77139c9e29981c14c79ec779e089d53ec0be943e`
+- Current exact candidate before this documentation commit: `77e7a5b9604f67c9598da34c1abda7de6bee7057`
 
 ## Founder decision
 
@@ -20,9 +20,11 @@ The current `/` and `/home` runtime remains a procedural production blockout. Pr
 
 The current procedural scene remains permitted only as a degraded fallback while production assets and the personalized primary runtime are built and proven.
 
-## Exact-head verification repair
+## Exact-head verification repairs
 
 Workflow approval was handled and a real matrix ran against `cddaab8b42ecf535e5e5a2c402d213121b1ebc01`. The matrix exposed an actual TypeScript build defect in `AssetDrivenHomeWorld.tsx`: React Three Fiber group props were typed through `JSX.IntrinsicElements`, which is not available under the repository's current React/TypeScript namespace configuration. Commit `77139c9e29981c14c79ec779e089d53ec0be943e` imports `ThreeElements` from `@react-three/fiber` and uses `ThreeElements['group']`. This is a source repair, not a relaxed test or budget.
+
+The approval record was then removed from `operations/assets/home-finalization-candidate-decisions.json` at `77e7a5b9604f67c9598da34c1abda7de6bee7057`. Workflow authorization belongs in release authority, PR, and receipt records—not inside asset promotion decisions. This preserves the promotion validator's narrow semantic scope without changing any asset classification, status, hash, or visual decision.
 
 All results bound to earlier heads are superseded. A complete replacement matrix and exact-head preview are required after every subsequent authority commit.
 
