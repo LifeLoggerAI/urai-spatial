@@ -38,9 +38,6 @@ for (const file of walk(appRoot)) {
   if (!guardTokens.some((token) => source.includes(token))) failures.push(`${path.relative(root, file)} exposes /${route} without an explicit production guard`)
 }
 
-// /demo is intentionally public proof content, never an implicit private-data fixture.
-// It replaces the old hidden/not-found duplicate runtime with one force-static,
-// explicitly disclosed journey whose Focus and Replay links carry demo identity.
 requireTokens('urai-tier1/src/app/demo/page.tsx', [
   "import CutOneReplayFilmPage from './replay-film/page'",
   'without exposing personal data',
@@ -112,9 +109,9 @@ for (const token of [
   if (!focusClientSource.includes(token)) failures.push(`${focusClientPath} is missing: ${token}`)
 }
 for (const [label, pattern] of [
-  ['memory identity', /data-memory-id=\{memory(?:\?\.)?\.id\}/],
-  ['star identity', /data-star-id=\{memory(?:\?\.)?\.star\.id\}/],
-  ['manifest identity', /data-manifest-id=\{memory(?:\?\.)?\.replayManifest\.id\}/],
+  ['memory identity', /data-memory-id=\{memory(?:\?\.)?id\}/],
+  ['star identity', /data-star-id=\{memory(?:\?\.)?star\.id\}/],
+  ['manifest identity', /data-manifest-id=\{memory(?:\?\.)?replayManifest\.id\}/],
 ]) {
   if (!pattern.test(focusClientSource)) failures.push(`${focusClientPath} is missing truthful ${label} binding`)
 }
