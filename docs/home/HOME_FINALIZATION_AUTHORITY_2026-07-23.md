@@ -9,7 +9,8 @@
 - Canonical P0: #863 (reopened)
 - Asset dependencies: #524 and #525
 - Public deployed authority at lane opening: `748e50398d85effeaa4ed17aaf78d4076dddbb45` through protected receipt #948
-- Repaired candidate lineage: `cddaab8b42ecf535e5e5a2c402d213121b1ebc01` → `77139c9e29981c14c79ec779e089d53ec0be943e` → `77e7a5b9604f67c9598da34c1abda7de6bee7057` → `a257b0e0badc9270945fc2a18bf4cf8745c254a0`
+- Repaired candidate lineage: `cddaab8b42ecf535e5e5a2c402d213121b1ebc01` → `77139c9e29981c14c79ec779e089d53ec0be943e` → `77e7a5b9604f67c9598da34c1abda7de6bee7057`
+- Exact current PR head is maintained in PR #952 and the canonical Drive execution receipt.
 
 ## Founder decision
 
