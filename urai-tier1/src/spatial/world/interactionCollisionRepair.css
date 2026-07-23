@@ -9,17 +9,12 @@
   pointer-events: none !important;
 }
 
-/* Keep Life Map's compact movement help below and behind the primary Map controls.
- * This prevents its summary from intercepting pointer activation while preserving
- * keyboard access and the independent spatial-navigation instructions. */
+/* Keep Life Map's compact movement help below and behind the primary Map controls. */
 .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
   top: max(68px, calc(env(safe-area-inset-top) + 58px)) !important;
   z-index: 26 !important;
 }
 
-/* The route-owned selected-memory actions are a native DOM control layer, not part of
- * the animated canvas. Keep their geometry and pointer ownership above the authored
- * scene while still below the protected full-screen transition surface. */
 .urai-world-runtime[data-world-destination='life-map']
   .life-map-independent-realm[data-life-map-mode='selected']
   > .life-map-memory-portals {
@@ -37,10 +32,20 @@
   pointer-events: auto !important;
 }
 
-/* Ground focus containment is geometric, not decorative. Destination pills must reach
- * their focused width before scrollIntoView resolves; animating max-width lets a pill
- * expand back outside the mobile viewport after it has been revealed. Preserve visual
- * color/transform feedback while making width ownership synchronous and deterministic. */
+/* Ground owns a labeled directory across the lower-left and center. Dock the shared
+ * Orb at lower-right so it never interrupts destination order or chamber controls. */
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion {
+  left: auto !important;
+  right: max(18px, env(safe-area-inset-right)) !important;
+  bottom: max(18px, env(safe-area-inset-bottom)) !important;
+  transform: none !important;
+  z-index: 32 !important;
+}
+
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion__menu {
+  transform-origin: bottom right;
+}
+
 .ground-spatial-root .ground-destination-compass :is(a, button) {
   transition-property: border-color, background, transform, color !important;
 }
@@ -50,6 +55,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion,
   .ground-spatial-root .ground-destination-compass :is(a, button),
   .ground-spatial-root .ground-destination-compass :is(a, button) strong {
     transition: none !important;
@@ -76,5 +82,10 @@
   .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
     top: max(62px, calc(env(safe-area-inset-top) + 52px)) !important;
     max-width: min(250px, calc(100vw - 18px)) !important;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion {
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
   }
 }
