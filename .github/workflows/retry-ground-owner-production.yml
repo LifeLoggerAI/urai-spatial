@@ -5,10 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/retry-ground-owner-production.yml'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/retry-ground-owner-production.yml'
+  issues:
+    types: [opened]
 
 permissions:
   actions: write
@@ -40,7 +38,11 @@ jobs:
           node scripts/verify-production-action-pins.mjs
 
   dispatch-and-receipt:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'issues' &&
+      github.event.action == 'opened' &&
+      github.event.issue.user.login == github.repository_owner &&
+      startsWith(github.event.issue.title, 'Dispatch protected Ground production ')
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -51,7 +53,19 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const workflow_id = 'spatial-live-deploy.yml';
-            const releaseSha = context.sha;
+            const issueBody = context.payload.issue?.body || '';
+            const releaseMatch = issueBody.match(/^Release SHA:\s*`?([0-9a-f]{40})`?\s*$/im);
+            const confirmMatch = issueBody.match(/^Confirm:\s*`?DEPLOY_URAI_APP`?\s*$/im);
+            if (!releaseMatch || !confirmMatch) {
+              throw new Error('Issue must contain exact Release SHA and Confirm: DEPLOY_URAI_APP');
+            }
+            const releaseSha = releaseMatch[1].toLowerCase();
+            const defaultBranch = context.payload.repository.default_branch;
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: defaultBranch });
+            const currentMainSha = branch.data.commit.sha.toLowerCase();
+            if (releaseSha !== currentMainSha) {
+              throw new Error(`Requested release ${releaseSha} is not current ${defaultBranch}@${currentMainSha}`);
+            }
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
             const fingerprintResponse = await fetch(`https://urai.app/release-fingerprint.json?ground_owner_retry=${Date.now()}`, {
@@ -66,21 +80,21 @@ jobs:
             }
             if (rollbackSha === releaseSha) throw new Error('Release SHA already live; refusing duplicate deployment');
 
-            const prior = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id, branch: 'main', event: 'workflow_dispatch', per_page: 100 });
+            const prior = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id, branch: defaultBranch, event: 'workflow_dispatch', per_page: 100 });
             const priorIds = new Set(prior.data.workflow_runs.filter((run) => run.head_sha === releaseSha).map((run) => run.id));
 
             await github.rest.actions.createWorkflowDispatch({
               owner,
               repo,
               workflow_id,
-              ref: 'main',
+              ref: defaultBranch,
               inputs: { release_sha: releaseSha, rollback_sha: rollbackSha, confirm: 'DEPLOY_URAI_APP' },
             });
 
             let run = null;
             for (let attempt = 0; attempt < 90 && !run; attempt += 1) {
               await sleep(5000);
-              const listed = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id, branch: 'main', event: 'workflow_dispatch', per_page: 100 });
+              const listed = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id, branch: defaultBranch, event: 'workflow_dispatch', per_page: 100 });
               run = listed.data.workflow_runs.find((candidate) => candidate.head_sha === releaseSha && !priorIds.has(candidate.id)) || null;
             }
             if (!run) throw new Error(`Protected production run did not appear for ${releaseSha}`);
@@ -105,5 +119,6 @@ jobs:
               ...jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`),
             ].join('\n');
             await github.rest.issues.create({ owner, repo, title: `Ground owner production ${releaseSha.slice(0, 12)} — ${run.conclusion}`, body });
+            await github.rest.issues.createComment({ owner, repo, issue_number: context.issue.number, body });
             core.summary.addRaw(body).write();
             if (run.conclusion !== 'success') core.setFailed(`Protected production concluded ${run.conclusion}`);
