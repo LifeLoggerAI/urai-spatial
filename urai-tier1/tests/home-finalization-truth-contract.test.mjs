@@ -6,10 +6,14 @@ const read = (path) => fs.readFileSync(path, 'utf8')
 
 const authority = read('../docs/home/HOME_FINALIZATION_AUTHORITY_2026-07-23.md')
 const personalization = read('src/app/home/homePersonalizationModel.ts')
+const personalizationHook = read('src/app/home/useHomePersonalizedScene.ts')
 const orb = read('src/app/home/orbStateController.ts')
+const candidateState = read('src/app/home/homeReviewCandidateState.ts')
+const assetOwner = read('src/app/AssetDrivenHomeWorld.tsx')
 const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-const procedural = read('src/app/FinalHomeWorld.tsx')
+const fallback = read('src/app/FinalHomeWorld.tsx')
+const doorwayProof = read('../tests/native-doorway-proof.mjs')
 
 test('Home remains visually NO-GO until exact deployed founder acceptance', () => {
   assert.match(authority, /HOME VISUAL STATUS: NO-GO/)
@@ -32,37 +36,67 @@ test('normal production personalization cannot silently consume disclosed sample
   assert.match(personalization, /if \(input\.requestedMode === 'explicit-sample'\)/)
   assert.match(personalization, /sample: false/)
   assert.doesNotMatch(personalization, /place-loved|ride-home|voices-dinner|song-returned|quiet-growth/)
+  assert.match(personalizationHook, /params\.get\('homeSample'\) === '1'/)
+  assert.match(personalizationHook, /users', user\.uid, 'memories'/)
+  assert.match(personalizationHook, /setEvidence\(\[\]\)/)
 })
 
-test('every required Orb state has sensory output bindings', () => {
+test('every required Orb state has sensory output bindings and a visible runtime owner', () => {
   for (const state of ['dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking', 'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition']) {
     assert.match(orb, new RegExp(`\\b${state}: \\{`))
+    assert.match(assetOwner, new RegExp(`['"]${state}['"]`))
   }
   for (const binding of ['animation', 'material', 'light', 'particles', 'movement', 'audioCue', 'caption', 'haptic', 'announcement', 'affordance']) {
     assert.match(orb, new RegExp(`readonly ${binding}`))
   }
-  assert.match(orb, /reducedMotion \? 'orb-state-static'/)
-  assert.match(orb, /muted \? null/)
+  assert.match(assetOwner, /resolveOrbSensoryOutput/)
+  assert.match(assetOwner, /data-home-orb-state=/)
+  assert.match(assetOwner, /aria-live="polite"/)
 })
 
-test('current primary asset candidates remain unpromoted until reviewed', () => {
+test('review candidates remain disclosed and cannot silently become promoted assets', () => {
   for (const id of ['home-entry-chamber-model-v1', 'portal-ring-master-glb-v1', 'urai-orb-avatar-glb-v1']) {
     const start = manifest.indexOf(`id: '${id}'`)
     assert.notEqual(start, -1)
     const entry = manifest.slice(start, start + 700)
     assert.match(entry, /status: 'future'/)
     assert.match(entry, /fallbackAssetId:/)
+    assert.match(candidateState, new RegExp(`assetId: '${id}'`))
   }
+  assert.match(candidateState, /allowDisclosedReviewCandidate/)
+  assert.match(assetOwner, /homeAssetReview/)
+  assert.match(assetOwner, /Review candidate assets — technically validated, visually unapproved/)
 })
 
-test('the currently named final procedural world is not accepted as final authority', () => {
-  assert.match(runtime, /FinalHomeWorld/)
-  assert.match(runtime, /data-home-visual-owner="final-coherent-sanctuary"/)
-  assert.match(procedural, /capsuleGeometry/)
-  assert.match(procedural, /const MEMORY_SCENES =/)
-  assert.match(procedural, /place-loved|ride-home|voices-dinner/)
-  assert.match(procedural, /Open Orb directly/)
-  assert.match(procedural, /Open Ground directly/)
-  assert.match(procedural, /Open Life Map directly/)
+test('asset-driven Home owns supported review runtime and procedural world is degraded fallback only', () => {
+  assert.match(runtime, /AssetDrivenHomeWorld/)
+  assert.match(runtime, /asset-driven-primary-with-procedural-degraded-fallback/)
+  assert.match(runtime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
+  assert.match(assetOwner, /AssetRuntimeBoundary/)
+  assert.match(assetOwner, /fallback=\{fallback\}/)
+  assert.match(assetOwner, /home-symbolic-embodied-self/)
+  assert.doesNotMatch(assetOwner, /capsuleGeometry/)
+  assert.doesNotMatch(assetOwner, /const MEMORY_SCENES =/)
+  assert.match(fallback, /capsuleGeometry/)
+  assert.match(fallback, /const MEMORY_SCENES =/)
   assert.match(authority, /reclassified as a fallback implementation/)
+})
+
+test('persistent visible shortcut pills are removed and semantic direct access remains', () => {
+  assert.doesNotMatch(runtime, /urai-home-runtime-doorways/)
+  assert.doesNotMatch(assetOwner, /className="urai-final-home-doorways"/)
+  assert.match(assetOwner, /home-semantic-navigation sr-only/)
+  assert.match(assetOwner, /data-testid="home-semantic-ground"/)
+  assert.match(assetOwner, /data-testid="home-semantic-life-map"/)
+  assert.match(doorwayProof, /persistentVisibleShortcutPillsForbidden: true/)
+  assert.match(doorwayProof, /semanticNavigationNonDominant/)
+})
+
+test('personalized state changes actual world composition and exposes provenance', () => {
+  assert.match(assetOwner, /PersonalizedPlaces/)
+  assert.match(assetOwner, /scene\.environment\.weatherTone/)
+  assert.match(assetOwner, /home-personalized-places-/)
+  assert.match(assetOwner, /Why am I seeing this\?/)
+  assert.match(assetOwner, /Review consent/)
+  assert.match(assetOwner, /Correct, hide, or delete sources/)
 })
