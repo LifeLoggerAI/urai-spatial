@@ -8,7 +8,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const route = read('src/app/life-map/page.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const boundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
-const scene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const scene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
@@ -24,7 +24,7 @@ test('Life Map route uses one canonical R3F private-universe owner chain', () =>
   assert.match(canonical, /data-testid="urai-r3f-canonical-lifemap"/)
   assert.match(canonical, /data-selected-memory-owner="spatial-lens-only"/)
   assert.match(canonical, /useWebGLCapability/)
-  assert.match(boundary, /<AdaptiveLifeMapScene \/>/)
+  assert.match(boundary, /<ComposedLifeMapScene \/>/)
   assert.match(boundary, /<LifeMapSemanticNavigator \/>/)
   assert.equal((scene.match(/<Canvas\b/g) || []).length, 1)
   assert.match(navigator, /data-life-map-navigator/)
@@ -36,7 +36,7 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
   includesAll(scene, [
     'selectedId, setSelectedId',
     'setSelectedId(node.id)',
-    'goalForNode(selected)',
+    'goalForNode(selected, phase)',
     'destinationHref("focus")',
     'destinationHref("replay")',
     'Enter Focus',
