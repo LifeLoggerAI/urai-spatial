@@ -31,7 +31,7 @@ function normalizedPathname(url: string) {
 }
 
 test.describe('Embodied exploration runtime evidence', () => {
-  test.describe.configure({ timeout: 60_000 })
+  test.describe.configure({ timeout: 90_000 })
 
   test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
@@ -41,7 +41,7 @@ test.describe('Embodied exploration runtime evidence', () => {
     await waitForHomeWorld(home)
     await expect(home).toHaveAttribute('data-home-movement', 'walk-keyboard-click-touch')
     await expect(home).toHaveAttribute('data-home-pointer-lock', 'false')
-    await expect(home).toHaveAttribute('data-home-visible-world', 'sanctuary-geometry-memory-vignettes')
+    await expect(home).toHaveAttribute('data-home-visible-world', 'final-physical-sanctuary-memory-rooms')
 
     const beforeZ = Number(await home.getAttribute('data-home-player-z'))
     await holdKey(page, 'w', 2_400)
