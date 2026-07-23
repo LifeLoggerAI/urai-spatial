@@ -16,6 +16,7 @@ function forbidMatch(label, source, pattern) { if (pattern.test(source)) failure
 const budgetPath = 'operations/performance/spatial-performance-budget.json'
 const canvasPath = 'urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx'
 const adaptiveControllerPath = 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
+// The composed scene is the mounted owner; the adaptive scene retains the audited atmospheric resource lifecycle contract.
 const activeLifeMapPath = 'urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx'
 const resourceLifeMapPath = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
 const activeLifeMapBoundaryPath = 'urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx'
