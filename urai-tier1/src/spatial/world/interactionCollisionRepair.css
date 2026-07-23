@@ -79,9 +79,24 @@
 }
 
 @media (max-width: 700px) {
+  /* The route-owned help is bottom-anchored on mobile. Never combine a global top
+   * anchor with its bottom anchor: that stretches a closed details element across
+   * the viewport and blocks the world even though its body is hidden. */
   .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help {
-    top: max(62px, calc(env(safe-area-inset-top) + 52px)) !important;
-    max-width: min(250px, calc(100vw - 18px)) !important;
+    top: auto !important;
+    left: auto !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 72px)) !important;
+    max-width: min(250px, calc(100vw - 24px)) !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map'] .life-map-movement-help:not([open]) {
+    width: max-content !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
+    overflow: hidden !important;
   }
 
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion {
