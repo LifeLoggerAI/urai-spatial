@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
+import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
@@ -48,7 +48,7 @@ export default function LifeMapRouteBoundary() {
   }, [router])
 
   return <>
-    <AdaptiveLifeMapScene />
+    <ComposedLifeMapScene />
     <LifeMapSemanticNavigator />
   </>
 }

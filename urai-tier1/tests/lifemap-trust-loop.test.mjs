@@ -5,14 +5,14 @@ import { readFileSync } from 'node:fs'
 const routeSource = readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
 const canonicalSource = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const boundarySource = readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
-const sceneSource = readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMapScene.tsx', import.meta.url), 'utf8')
+const sceneSource = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const universeSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapUniverseData.ts', import.meta.url), 'utf8')
 
-test('Life Map route preserves the final canonical adaptive authority', () => {
+test('Life Map route preserves the final canonical composed authority', () => {
   assert.ok(routeSource.includes('SpatialLifeMapCanonical'))
   assert.ok(!routeSource.includes('RealLifeMapGalaxy'))
   assert.ok(canonicalSource.includes('LifeMapRouteBoundary'))
-  assert.ok(boundarySource.includes('AdaptiveLifeMapScene'))
+  assert.ok(boundarySource.includes('ComposedLifeMapScene'))
 })
 
 test('private selected-memory state and truth boundaries remain inside the route owner', () => {

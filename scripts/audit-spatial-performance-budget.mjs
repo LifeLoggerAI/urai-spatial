@@ -15,20 +15,23 @@ function forbidMatch(label, source, pattern) { if (pattern.test(source)) failure
 
 const budgetPath = 'operations/performance/spatial-performance-budget.json'
 const canvasPath = 'urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx'
-const adaptivePath = 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
-const activeLifeMapPath = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
+const adaptiveControllerPath = 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
+// The composed scene is the mounted owner; the adaptive scene retains the audited atmospheric resource lifecycle contract.
+const activeLifeMapPath = 'urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx'
+const resourceLifeMapPath = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
 const activeLifeMapBoundaryPath = 'urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx'
 const activeLifeMapWrapperPath = 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'
 const budgetSource = read(budgetPath)
 const canvas = read(canvasPath)
-const adaptive = read(adaptivePath)
+const adaptiveController = read(adaptiveControllerPath)
 const lifeMap = read(activeLifeMapPath)
+const resourceLifeMap = read(resourceLifeMapPath)
 const boundary = read(activeLifeMapBoundaryPath)
 const wrapper = read(activeLifeMapWrapperPath)
 let budget = null
 try { budget = JSON.parse(budgetSource) } catch (error) { failures.push(`Invalid ${budgetPath}: ${error.message}`) }
 
-for (const marker of ['deviceMemory', 'hardwareConcurrency', 'saveData', 'effectiveType', 'documentVisible']) requireMatch(`Adaptive controller ${marker}`, adaptive, new RegExp(marker))
+for (const marker of ['deviceMemory', 'hardwareConcurrency', 'saveData', 'effectiveType', 'documentVisible']) requireMatch(`Adaptive controller ${marker}`, adaptiveController, new RegExp(marker))
 for (const marker of ['particleCount', 'pixelRatioMax', 'shadows', 'postprocessing', 'antialias']) requireMatch(`Secondary spatial Canvas consumes ${marker}`, canvas, new RegExp(`profile\\.${marker}`))
 for (const marker of ['pixelRatioMax', 'antialias', 'reducedMotion']) requireMatch(`Active Life Map consumes ${marker}`, lifeMap, new RegExp(`profile\\.${marker}`))
 
@@ -45,9 +48,9 @@ requireMatch('Active route wraps query reader in Suspense', wrapper, /<Suspense[
 requireMatch('Signed-out route does not mount private memories', wrapper, /data-private-memory-mounted="false"/)
 forbidMatch('Wrapper retains implicit demo authority', wrapper, /lifeMapDemoMode|DEMO_MODE_KEY/)
 
-requireMatch('Life Map boundary imports adaptive scene', boundary, /import AdaptiveLifeMapScene from ["']\.\/AdaptiveLifeMapScene["']/)
+requireMatch('Life Map boundary imports composed scene', boundary, /import ComposedLifeMapScene from ["']\.\/ComposedLifeMapScene["']/)
 requireMatch('Life Map boundary imports semantic navigator', boundary, /import LifeMapSemanticNavigator from ["']\.\/LifeMapSemanticNavigator["']/)
-requireMatch('Life Map boundary preserves one stable adaptive scene and semantic navigator', boundary, /return <>\s*<AdaptiveLifeMapScene \/>\s*<LifeMapSemanticNavigator \/>\s*<\/>/)
+requireMatch('Life Map boundary preserves one stable composed scene and semantic navigator', boundary, /return <>\s*<ComposedLifeMapScene \/>\s*<LifeMapSemanticNavigator \/>\s*<\/>/)
 forbidMatch('Life Map boundary remounts on query identity', boundary, /useSearchParams|key=|revision|previousIdentity/)
 
 requireMatch('Active Life Map adaptive hook', lifeMap, /useAdaptiveSpatialQuality\(\)/)
@@ -59,18 +62,25 @@ requireMatch('Active Life Map explicit demo identity', lifeMap, /params\.get\("d
 requireMatch('Active Life Map near depth', lifeMap, /data-depth-band="near"/)
 requireMatch('Active Life Map middle depth', lifeMap, /data-depth-band="middle"/)
 requireMatch('Active Life Map far depth', lifeMap, /data-depth-band="far"/)
-requireMatch('Active Life Map near parallax', lifeMap, /camera\.position\.x \* (?:0?\.)42/)
-requireMatch('Active Life Map middle parallax', lifeMap, /camera\.position\.x \* (?:0?\.)18/)
 requireMatch('Active Life Map damped camera travel', lifeMap, /THREE\.MathUtils\.damp/)
-requireMatch('Active Life Map radial atmosphere texture', lifeMap, /createRadialGradient/)
-requireMatch('Active Life Map texture disposal', lifeMap, /dispose\(\)/)
+requireMatch('Active Life Map persistent camera position goal', lifeMap, /positionGoal = useRef\(new THREE\.Vector3\(\)\)/)
+requireMatch('Active Life Map persistent camera target goal', lifeMap, /targetGoal = useRef\(new THREE\.Vector3\(\)\)/)
+requireMatch('Active Life Map persistent look target', lifeMap, /lookTarget = useRef\(new THREE\.Vector3/)
+requireMatch('Active Life Map portrait framing', lifeMap, /size\.height > size\.width/)
+requireMatch('Active Life Map layout-safe initial camera placement', lifeMap, /useLayoutEffect/)
 requireMatch('Active Life Map context loss handling', lifeMap, /webglcontextlost/)
 requireMatch('Active Life Map context restoration', lifeMap, /webglcontextrestored/)
 requireMatch('Active Life Map query-preserving Focus path', lifeMap, /destinationHref\("focus"\)/)
 requireMatch('Active Life Map query-preserving Replay path', lifeMap, /destinationHref\("replay"\)/)
-forbidMatch('Active Life Map rectangular weather geometry', lifeMap.slice(lifeMap.indexOf('function createRadialTexture'), lifeMap.indexOf('function CameraRig')), /planeGeometry|boxGeometry/)
 forbidMatch('Active Life Map hardcoded legacy DPR', lifeMap, /dpr=\{\[1,\s*1\.85\]\}/)
 forbidMatch('Active Life Map retained high-resolution memory canvases', lifeMap, /canvas\.width\s*=\s*768|canvas\.height\s*=\s*768/)
+
+requireMatch('Life Map atmospheric texture remains bounded', resourceLifeMap, /canvas\.width = 256[\s\S]*canvas\.height = 256/)
+requireMatch('Life Map radial atmosphere texture remains disposable', resourceLifeMap, /createRadialGradient/)
+requireMatch('Life Map texture lifecycle disposes the exact created texture', resourceLifeMap, /return \(\) => nextTexture\?\.dispose\(\)/)
+requireMatch('Life Map near parallax remains adaptive', resourceLifeMap, /camera\.position\.x \* (?:0?\.)42/)
+requireMatch('Life Map middle parallax remains adaptive', resourceLifeMap, /camera\.position\.x \* (?:0?\.)18/)
+forbidMatch('Life Map atmospheric resource uses rectangular weather geometry', resourceLifeMap.slice(resourceLifeMap.indexOf('function createRadialTexture'), resourceLifeMap.indexOf('function CameraRig')), /planeGeometry|boxGeometry/)
 
 if (budget) {
   for (const tier of ['low', 'medium', 'high']) {
@@ -92,6 +102,6 @@ if (budget) {
   }
 }
 if (oversized.length) failures.push(`${oversized.length} spatial assets exceed their single-file budget.`)
-const report = { ok: failures.length === 0, budgetId: budget?.budgetId ?? null, integrationState: failures.length === 0 ? 'integrated' : 'failed', activeProductionRoute: '/life-map', activeLifeMapPath, activeLifeMapBoundaryPath, activeLifeMapWrapperPath, failures, oversized }
+const report = { ok: failures.length === 0, budgetId: budget?.budgetId ?? null, integrationState: failures.length === 0 ? 'integrated' : 'failed', activeProductionRoute: '/life-map', activeLifeMapPath, resourceLifeMapPath, activeLifeMapBoundaryPath, activeLifeMapWrapperPath, failures, oversized }
 console.log(JSON.stringify(report, null, 2))
 if (failures.length) process.exitCode = 1

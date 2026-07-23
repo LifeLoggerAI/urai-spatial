@@ -66,10 +66,14 @@ function createRadialTexture() {
 }
 
 function AtmosphericDepth({ reducedMotion }: { reducedMotion: boolean }) {
-  const texture = useMemo(() => createRadialTexture(), []);
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const nearRef = useRef<THREE.Group>(null);
   const midRef = useRef<THREE.Group>(null);
-  useEffect(() => () => texture?.dispose(), [texture]);
+  useEffect(() => {
+    const nextTexture = createRadialTexture();
+    setTexture(nextTexture);
+    return () => nextTexture?.dispose();
+  }, []);
   useFrame(({ clock, camera }) => {
     if (reducedMotion) return;
     if (nearRef.current) nearRef.current.position.x = camera.position.x * 0.42 + Math.sin(clock.elapsedTime * .08) * .3;
@@ -194,10 +198,10 @@ function MemoryLens({ node, active, muted, reducedMotion, onSelect }: { node: Li
 function MemoryPaths({ nodes, activeId }: { nodes: LifeMapNode[]; activeId: string | null }) {
   const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   return <group name="life-map-anchored-paths">{nodes.flatMap((node) => node.connectedTo.slice(0, 2).map((targetId) => {
-    const target = byId.get(targetId);
-    if (!target || target.id < node.id) return null;
-    const active = activeId === node.id || activeId === target.id;
-    return <Line key={`${node.id}-${target.id}`} points={[node.position, target.position]} color={active ? "#c8f7ff" : "#38506b"} transparent opacity={active ? .62 : .16} lineWidth={active ? 1.6 : .7} />;
+    const targetNode = byId.get(targetId);
+    if (!targetNode || targetNode.id < node.id) return null;
+    const active = activeId === node.id || activeId === targetNode.id;
+    return <Line key={`${node.id}-${targetNode.id}`} points={[node.position, targetNode.position]} color={active ? "#c8f7ff" : "#38506b"} transparent opacity={active ? .62 : .16} lineWidth={active ? 1.6 : .7} />;
   }))}</group>;
 }
 
@@ -231,15 +235,13 @@ export default function AdaptiveLifeMapScene() {
   const params = useSearchParams();
   const profile = useAdaptiveSpatialQuality();
   const explicitDemoRequested = params.get("demo") === "1";
-  const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-  const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
+  const [selectedId, setSelectedId] = useState<string | null>(params.get("overview") === "1" ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const timers = useRef<number[]>([]);
-  const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
   const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [selected]);
 
@@ -256,7 +258,6 @@ export default function AdaptiveLifeMapScene() {
   }, [explicitDemoRequested, manifestId]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
-    overviewPending.current = false;
     clearTimers();
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
@@ -273,7 +274,6 @@ export default function AdaptiveLifeMapScene() {
   }, [clearTimers, profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
-    overviewPending.current = true;
     clearTimers();
     setSelectedId(null);
     setPhase("overview");
@@ -293,19 +293,10 @@ export default function AdaptiveLifeMapScene() {
   }, [selected, withIdentity]);
 
   useEffect(() => {
-    if (overviewRequested) {
-      overviewPending.current = false;
-      if (selectedId !== null) {
-        clearTimers();
-        setSelectedId(null);
-        setPhase("overview");
-      }
-      return;
-    }
-    if (overviewPending.current || !queryNode || !nodes.length) return;
+    if (!queryNode || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (node && node.id !== selectedId) selectNode(node);
-  }, [clearTimers, nodes, overviewRequested, queryNode, selectNode, selectedId]);
+  }, [nodes, queryNode, selectNode, selectedId]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
