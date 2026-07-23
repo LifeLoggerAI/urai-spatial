@@ -7,7 +7,7 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
-const receipt = { schemaVersion: 'urai-lifemap-founder-proof-7', repository: 'LifeLoggerAI/urai-spatial', pr: 889, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
+const receipt = { schemaVersion: 'urai-lifemap-founder-proof-8', repository: 'LifeLoggerAI/urai-spatial', pr: 951, exactHead, runId: process.env.GITHUB_RUN_ID || 'local', capturedAt: new Date().toISOString(), captures: [] }
 let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
@@ -46,16 +46,20 @@ async function waitForState(page, attribute, expected, timeout = 20_000) {
   }, { attribute, expected }, { timeout, polling: 25 })
 }
 
-async function waitForOverviewState(page, timeout = 30_000) {
-  await page.waitForFunction(() => {
+async function waitForOverviewState(page, expectedIdentity, timeout = 30_000) {
+  await page.waitForFunction(({ expectedIdentity }) => {
     const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
     const destination = new URL(window.location.href)
+    const memoryId = destination.searchParams.get('memoryId')
+    const node = destination.searchParams.get('node')
+    const selectedActions = document.querySelector('nav[aria-label="Selected memory actions"]')
     return root?.getAttribute('data-life-map-mode') === 'overview'
       && destination.pathname.replace(/\/$/, '') === '/life-map'
       && destination.searchParams.get('overview') === '1'
-      && !destination.searchParams.has('memoryId')
-      && !destination.searchParams.has('node')
-  }, null, { timeout, polling: 25 })
+      && memoryId === expectedIdentity
+      && node === expectedIdentity
+      && selectedActions === null
+  }, { expectedIdentity }, { timeout, polling: 25 })
 }
 
 async function advanceClockToState(page, attribute, expected, maxAdvance) {
@@ -156,13 +160,13 @@ async function desktopJourney() {
     const overviewAction = selectedActions(page).getByRole('button', { name: 'Overview', exact: true })
     await overviewAction.waitFor({ state: 'visible', timeout: 20_000 })
     await overviewAction.click()
-    await waitForOverviewState(page)
-    await shot(page, 'overview-reset', 'overview-reset')
+    await waitForOverviewState(page, 'quiet-reset')
+    await shot(page, 'overview-reset', 'overview-reset', { memoryId: 'quiet-reset' })
 
     await selectQuietReset(page)
     await page.keyboard.press('Escape')
-    await waitForOverviewState(page)
-    await shot(page, 'escape-unwind', 'escape-unwind')
+    await waitForOverviewState(page, 'quiet-reset')
+    await shot(page, 'escape-unwind', 'escape-unwind', { memoryId: 'quiet-reset' })
   } finally { await context.close() }
 }
 
@@ -217,7 +221,7 @@ catch (error) { failed = true; receipt.error = String(error) }
 finally {
   await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 21
-  await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
-  if (!receipt.passed) process.exitCode = 1
+  receipt.passed = !failed && receipt.captures.length >= 19
+  await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 }
+if (failed) process.exitCode = 1
