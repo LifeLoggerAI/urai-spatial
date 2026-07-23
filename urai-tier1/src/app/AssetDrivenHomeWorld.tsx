@@ -1,7 +1,7 @@
 'use client'
 
 import { Html, useGLTF } from '@react-three/drei'
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, type ThreeElements, type ThreeEvent } from '@react-three/fiber'
 import { Component, Suspense, useCallback, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import FinalHomeWorld from './FinalHomeWorld'
@@ -33,7 +33,7 @@ class AssetRuntimeBoundary extends Component<{ fallback: ReactNode; children: Re
   render() { return this.state.failed ? this.props.fallback : this.props.children }
 }
 
-function AssetModel({ path, name, ...props }: { path: string; name: string } & JSX.IntrinsicElements['group']) {
+function AssetModel({ path, name, ...props }: { path: string; name: string } & ThreeElements['group']) {
   const gltf = useGLTF(path)
   return <primitive object={gltf.scene.clone(true)} name={name} {...props} />
 }
