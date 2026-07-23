@@ -189,13 +189,15 @@ export default function ComposedLifeMapScene() {
   const params = useSearchParams();
   const profile = useAdaptiveSpatialQuality();
   const explicitDemoRequested = params.get("demo") === "1";
+  const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-  const [selectedId, setSelectedId] = useState<string | null>(params.get("overview") === "1" ? null : queryNode || null);
+  const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const timers = useRef<number[]>([]);
+  const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
   const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected, phase) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [phase, selected]);
 
@@ -203,7 +205,9 @@ export default function ComposedLifeMapScene() {
   useEffect(() => () => clearTimers(), [clearTimers]);
   const withIdentity = useCallback((next: URLSearchParams) => { if (explicitDemoRequested) next.set("demo", "1"); if (manifestId) next.set("manifestId", manifestId); return next; }, [explicitDemoRequested, manifestId]);
   const selectNode = useCallback((node: LifeMapNode) => {
-    clearTimers(); setSelectedId(node.id);
+    overviewPending.current = false;
+    clearTimers();
+    setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival"); else {
       setPhase("departure");
       timers.current.push(window.setTimeout(() => setPhase("travel"), 220));
@@ -212,9 +216,25 @@ export default function ComposedLifeMapScene() {
     }
     const next = withIdentity(new URLSearchParams()); next.set("memoryId", node.id); next.set("node", node.id); router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [clearTimers, profile.reducedMotion, router, withIdentity]);
-  const overview = useCallback(() => { clearTimers(); setSelectedId(null); setPhase("overview"); const next = withIdentity(new URLSearchParams()); next.set("overview", "1"); router.replace(`/life-map?${next.toString()}`, { scroll: false }); }, [clearTimers, router, withIdentity]);
-  const destinationHref = useCallback((route: "focus" | "replay") => { if (!selected) return "/life-map"; const next = withIdentity(new URLSearchParams()); next.set("memoryId", selected.id); next.set("node", selected.id); next.set("returnNode", selected.id); next.set("from", "life-map"); return `/${route}?${next.toString()}`; }, [selected, withIdentity]);
-  useEffect(() => { if (!queryNode || !nodes.length) return; const node = nodes.find((candidate) => candidate.id === queryNode); if (node && node.id !== selectedId) selectNode(node); }, [nodes, queryNode, selectNode, selectedId]);
+  const overview = useCallback(() => {
+    overviewPending.current = true;
+    clearTimers();
+    setSelectedId(null);
+    setPhase("overview");
+    const next = withIdentity(new URLSearchParams()); next.set("overview", "1"); router.replace(`/life-map?${next.toString()}`, { scroll: false });
+  }, [clearTimers, router, withIdentity]);
+  useEffect(() => {
+    if (!overviewRequested) return;
+    overviewPending.current = false;
+    clearTimers();
+    setSelectedId((current) => current === null ? current : null);
+    setPhase((current) => current === "overview" ? current : "overview");
+  }, [clearTimers, overviewRequested]);
+  useEffect(() => {
+    if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
+    const node = nodes.find((candidate) => candidate.id === queryNode);
+    if (node && node.id !== selectedId) selectNode(node);
+  }, [nodes, overviewRequested, queryNode, selectNode, selectedId]);
   useEffect(() => { const handler = (event: KeyboardEvent) => { if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return; event.preventDefault(); if (selectedId) overview(); else router.push("/home"); }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [overview, router, selectedId]);
   useEffect(() => () => { document.body.style.cursor = ""; }, []);
 
