@@ -110,6 +110,28 @@ if (!source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVi
   )
 }
 
+if (!source.includes('activeGroundDestinationControlCount')) {
+  replaceRequired(
+    'Ground destination control style verifier',
+    /const railLinks = rail\.locator\('a'\)\s*const navigationPillsStyled = await railLinks\.count\(\) === 5 && await railLinks\.first\(\)\.evaluate\(\(node\) => \{[\s\S]*?&& hasPaintedBackground\s*\}\)\s*const navigationRailContained/,
+    `const activeGroundDestinationControls = rail.locator('button[data-ground-destination]')
+      const activeGroundDestinationControlCount = await activeGroundDestinationControls.count()
+      const navigationPillsStyled = activeGroundDestinationControlCount >= 2 && await activeGroundDestinationControls.evaluateAll((nodes) => nodes.every((node) => {
+        const style = getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
+        const hasPaintedBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          || (style.backgroundImage && style.backgroundImage !== 'none')
+        return ['flex', 'inline-flex'].includes(style.display)
+          && style.whiteSpace === 'nowrap'
+          && Number.parseFloat(style.borderTopWidth || '0') >= 1
+          && Number.parseFloat(style.paddingLeft || '0') >= 8
+          && rect.height >= 44
+          && hasPaintedBackground
+      }))
+      const navigationRailContained`,
+  )
+}
+
 if (!source.includes('activeGroundLinkSuppressed')) {
   replaceRequired(
     'Ground verifier',
@@ -173,7 +195,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-15'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-16'",
 )
 
 await writeFile(patchedPath, source)
