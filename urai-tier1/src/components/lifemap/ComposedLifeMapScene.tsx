@@ -110,22 +110,58 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   useEffect(() => {
     const canvas = gl.domElement;
     let timer: number | null = null;
+    const clearRecoveryTimer = () => {
+      if (timer === null) return;
+      window.clearTimeout(timer);
+      timer = null;
+    };
     const lost = (event: Event) => {
       event.preventDefault();
+      clearRecoveryTimer();
       onStateChange("lost");
-      timer = window.setTimeout(() => onStateChange("recovering"), 250);
+      timer = window.setTimeout(() => {
+        timer = null;
+        onStateChange("recovering");
+      }, 250);
     };
-    const restored = () => onStateChange("ready");
+    const restored = () => {
+      clearRecoveryTimer();
+      onStateChange("ready");
+    };
     canvas.addEventListener("webglcontextlost", lost, false);
     canvas.addEventListener("webglcontextrestored", restored, false);
     onStateChange("ready");
     return () => {
-      if (timer !== null) window.clearTimeout(timer);
+      clearRecoveryTimer();
       canvas.removeEventListener("webglcontextlost", lost, false);
       canvas.removeEventListener("webglcontextrestored", restored, false);
     };
   }, [gl, onStateChange]);
   return null;
+}
+
+function MiddleDepthAtmosphere({ reducedMotion }: { reducedMotion: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ camera, clock }, delta) => {
+    if (!group.current) return;
+    group.current.position.x = THREE.MathUtils.damp(group.current.position.x, camera.position.x * .18, 2.4, delta);
+    group.current.position.y = THREE.MathUtils.damp(group.current.position.y, camera.position.y * .06, 2, delta);
+    group.current.rotation.z = reducedMotion ? 0 : Math.sin(clock.elapsedTime * .08) * .035;
+  });
+  return <group ref={group} name="life-map-depth-middle" data-depth-band="middle">
+    <mesh position={[0, -.8, -8]} scale={[10, 5.2, 2.4]}>
+      <sphereGeometry args={[1, 32, 18]} />
+      <meshBasicMaterial color="#0c3146" transparent opacity={.1} depthWrite={false} side={THREE.BackSide} />
+    </mesh>
+    <mesh position={[4.6, 1.4, -7.4]} rotation={[.3, .15, .18]}>
+      <torusGeometry args={[3.2, .028, 8, 96]} />
+      <meshBasicMaterial color="#58a5bf" transparent opacity={.16} depthWrite={false} />
+    </mesh>
+    <mesh position={[-4.8, -1.2, -6.2]} rotation={[.2, -.3, -.16]}>
+      <icosahedronGeometry args={[1.7, 1]} />
+      <meshBasicMaterial color="#3b7188" wireframe transparent opacity={.12} depthWrite={false} />
+    </mesh>
+  </group>;
 }
 
 function MemoryLens({ node, active, muted, phase, reducedMotion, onSelect }: { node: LifeMapNode; active: boolean; muted: boolean; phase: JourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
@@ -167,7 +203,7 @@ function World({ nodes, selected, goal, phase, reducedMotion, onSelect, onWebGLS
     <WebGLRecoveryBridge onStateChange={onWebGLStateChange} />
     <CameraRig goal={goal} phase={phase} reducedMotion={reducedMotion} />
     <group name="life-map-depth-near" data-depth-band="near"><mesh position={[-4.8, -1.8, 1]}><icosahedronGeometry args={[1.1, 1]} /><meshStandardMaterial color="#071422" emissive="#16415d" emissiveIntensity={.34} /></mesh></group>
-    <group name="life-map-depth-middle" data-depth-band="middle" />
+    <MiddleDepthAtmosphere reducedMotion={reducedMotion} />
     <group name="life-map-depth-far" data-depth-band="far"><Stars radius={70} depth={48} count={reducedMotion ? 500 : 1100} factor={2.4} saturation={.25} fade speed={reducedMotion ? 0 : .08} /></group>
     <MemoryPaths nodes={nodes} activeId={selected?.id || null} />
     {selected && (phase === "approach" || phase === "arrival") ? <group position={selected.position} name="life-map-selected-memory-chamber"><mesh><torusGeometry args={[1.05, .026, 12, 96]} /><meshBasicMaterial color={selected.aura} transparent opacity={phase === "arrival" ? .48 : .28} depthWrite={false} /></mesh><mesh rotation={[0, Math.PI / 2, 0]}><torusGeometry args={[1.28, .018, 12, 96]} /><meshBasicMaterial color={selected.aura} transparent opacity={.2} depthWrite={false} /></mesh></group> : null}
