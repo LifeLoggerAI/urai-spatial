@@ -7,7 +7,12 @@
     "candidateArtifactId": 8577690093,
     "candidateArtifactDigest": "sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0",
     "legacyArtifactId": 8577690575,
-    "legacyArtifactDigest": "sha256:849af9ddbe2d0245e29154eb1013ca4088f0115a4c2ed8aecdc62013639a2c27"
+    "legacyArtifactDigest": "sha256:849af9ddbe2d0245e29154eb1013ca4088f0115a4c2ed8aecdc62013639a2c27",
+    "workflowApproval": {
+      "handled": true,
+      "approvedPreviousHead": "8bdc959b13fe791533dc89bf5c8cd5dbc9cf9490",
+      "purpose": "Authorize safe same-repository PR workflows and trigger a fresh exact-head verification matrix. This does not authorize merge or production deployment."
+    }
   },
   "truthBoundary": {
     "manifestPromotion": false,
