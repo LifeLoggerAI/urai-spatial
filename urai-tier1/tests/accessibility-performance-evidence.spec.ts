@@ -160,6 +160,8 @@ test.describe('URAI accessibility and performance evidence', () => {
       const target = railTargets.nth(index)
       await target.focus()
       await expect(target).toBeFocused()
+      await target.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'center' }))
+      await page.waitForTimeout(250)
       focusContainment.push(await target.evaluate((element) => {
         const rect = element.getBoundingClientRect()
         const rail = element.closest<HTMLElement>('.ground-destination-compass')
