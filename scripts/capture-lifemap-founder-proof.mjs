@@ -221,7 +221,7 @@ catch (error) { failed = true; receipt.error = String(error) }
 finally {
   await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 19
-  await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+  receipt.passed = !failed && receipt.captures.length >= 21
+  await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
+  if (!receipt.passed) process.exitCode = 1
 }
-if (failed) process.exitCode = 1
