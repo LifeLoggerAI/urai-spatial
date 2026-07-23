@@ -8,6 +8,7 @@ import {
   buildHomePersonalizedScene,
   type HomeEvidenceRef,
   type HomePersonalizedScene,
+  type HomeSceneMode,
   type HomeSignalKind,
 } from './homePersonalizationModel'
 
@@ -15,6 +16,8 @@ const knownKinds = new Set<HomeSignalKind>([
   'memory', 'relationship', 'emotional-weather', 'recovery', 'stress', 'cognitive-load',
   'time-of-day', 'season', 'location-routine', 'permission-state',
 ])
+
+const reviewModes = new Set<HomeSceneMode>(['world-forming', 'permission-limited', 'unavailable', 'offline', 'explicit-sample'])
 
 function safeDate(value: unknown): string | undefined {
   if (!value) return undefined
@@ -38,15 +41,21 @@ function evidenceFromDocument(id: string, data: Record<string, unknown>): HomeEv
   }
 }
 
+function parseRequestedMode(): HomeSceneMode | 'auto' {
+  if (typeof window === 'undefined') return 'auto'
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('homeSample') === '1' || params.get('demo') === '1') return 'explicit-sample'
+  const fixture = params.get('homeState') as HomeSceneMode | null
+  return fixture && reviewModes.has(fixture) ? fixture : 'auto'
+}
+
 export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; loading: boolean } {
-  const explicitSample = useMemo(() => {
-    if (typeof window === 'undefined') return false
-    const params = new URLSearchParams(window.location.search)
-    return params.get('homeSample') === '1' || params.get('demo') === '1'
-  }, [])
+  const requestedMode = useMemo(parseRequestedMode, [])
+  const isolatedReviewMode = requestedMode !== 'auto'
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine)
   const [signedIn, setSignedIn] = useState(false)
   const [permissionsAvailable, setPermissionsAvailable] = useState(true)
+  const [dataAvailable, setDataAvailable] = useState(true)
   const [evidence, setEvidence] = useState<readonly HomeEvidenceRef[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -62,15 +71,17 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
   }, [])
 
   useEffect(() => {
-    if (explicitSample) {
+    if (isolatedReviewMode) {
       setSignedIn(false)
       setEvidence([])
+      setDataAvailable(requestedMode !== 'unavailable')
       setLoading(false)
       return
     }
     if (!firebasePublicEnvReady) {
       setSignedIn(false)
       setEvidence([])
+      setDataAvailable(false)
       setLoading(false)
       return
     }
@@ -81,15 +92,22 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
       setSignedIn(Boolean(user))
       if (!user) {
         setEvidence([])
+        setDataAvailable(true)
         setLoading(false)
         return
       }
       setLoading(true)
       try {
         const snapshot = await getDocs(query(collection(getFirebaseDb(), 'users', user.uid, 'memories'), limit(12)))
-        if (!cancelled) setEvidence(snapshot.docs.map((item) => evidenceFromDocument(item.id, item.data() as Record<string, unknown>)))
+        if (!cancelled) {
+          setEvidence(snapshot.docs.map((item) => evidenceFromDocument(item.id, item.data() as Record<string, unknown>)))
+          setDataAvailable(true)
+        }
       } catch {
-        if (!cancelled) setEvidence([])
+        if (!cancelled) {
+          setEvidence([])
+          setDataAvailable(false)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -98,16 +116,17 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
       cancelled = true
       unsubscribe()
     }
-  }, [explicitSample])
+  }, [isolatedReviewMode, requestedMode])
 
   const scene = useMemo(() => buildHomePersonalizedScene({
-    requestedMode: explicitSample ? 'explicit-sample' : online ? 'auto' : 'offline',
+    requestedMode: requestedMode === 'auto' && !online ? 'offline' : requestedMode,
     signedIn,
     online,
     permissionsAvailable,
+    dataAvailable,
     evidence,
     now: new Date(),
-  }), [evidence, explicitSample, online, permissionsAvailable, signedIn])
+  }), [dataAvailable, evidence, online, permissionsAvailable, requestedMode, signedIn])
 
   return { scene, loading }
 }
