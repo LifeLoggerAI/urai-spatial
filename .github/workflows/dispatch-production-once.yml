@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# Protected convergence request for Ground main b40f0e5; workflow runs are listed broadly and exact-SHA filtered locally to avoid unstable server-side head_sha queries.
+# Protected convergence request for Ground owner repair 78d08f3; workflow runs are listed broadly and exact-SHA filtered locally to avoid unstable server-side head_sha queries.
 
 on:
   push:
