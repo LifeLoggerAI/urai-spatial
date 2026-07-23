@@ -32,22 +32,23 @@ test('the personalization contract separates private, empty, offline and disclos
   assert.match(personalization, /inspect, correct, hide, or delete/)
 })
 
-test('normal production personalization cannot silently consume disclosed sample places', () => {
-  assert.match(personalization, /if \(input\.requestedMode === 'explicit-sample'\)/)
-  assert.match(personalization, /sample: false/)
-  assert.doesNotMatch(personalization, /place-loved|ride-home|voices-dinner|song-returned|quiet-growth/)
-  assert.match(personalizationHook, /params\.get\('homeSample'\) === '1'/)
-  assert.match(personalizationHook, /users', user\.uid, 'memories'/)
-  assert.match(personalizationHook, /setEvidence\(\[\]\)/)
-})
-
-test('review fixtures are explicit, isolated and never mount private records', () => {
-  assert.match(personalizationHook, /params\.get\('homeState'\)/)
-  assert.match(personalizationHook, /isolatedReviewMode/)
+test('review fixtures isolate private records and include a disclosed synthetic personalized state', () => {
+  assert.match(personalizationHook, /homePrivateFixture/)
+  assert.match(personalizationHook, /safePrivate: true/)
+  assert.match(personalizationHook, /if \(isolatedReviewMode\)/)
   assert.match(personalizationHook, /setSignedIn\(false\)/)
   assert.match(personalizationHook, /setEvidence\(\[\]\)/)
-  assert.match(personalizationHook, /setDataAvailable\(requestedMode !== 'unavailable'\)/)
-  assert.match(personalization, /input\.dataAvailable === false/)
+  assert.match(personalization, /safePrivateFixtureEvidence/)
+  assert.match(personalization, /synthetic review inputs, not user records/)
+  assert.match(personalization, /privateDataMounted: false/)
+  assert.match(personalization, /reviewFixture: 'safe-private'/)
+})
+
+test('normal production personalization cannot silently consume disclosed sample places', () => {
+  assert.match(personalization, /if \(input\.requestedMode === 'explicit-sample'\)/)
+  assert.match(personalizationHook, /params\.get\('homeSample'\) === '1'/)
+  assert.match(personalizationHook, /users', user\.uid, 'memories'/)
+  assert.match(personalizationHook, /setDataAvailable\(false\)/)
   assert.match(personalization, /No substitute memories or sample records were mounted/)
 })
 
@@ -61,6 +62,8 @@ test('every required Orb state has sensory output bindings and a visible runtime
   }
   assert.match(assetOwner, /resolveOrbSensoryOutput/)
   assert.match(assetOwner, /data-home-orb-state=/)
+  assert.match(assetOwner, /data-home-audio=/)
+  assert.match(assetOwner, /Enable ambience/)
   assert.match(assetOwner, /aria-live="polite"/)
 })
 
@@ -75,7 +78,7 @@ test('review candidates remain disclosed and cannot silently become promoted ass
   }
   assert.match(candidateState, /allowDisclosedReviewCandidate/)
   assert.match(assetOwner, /homeAssetReview/)
-  assert.match(assetOwner, /Review candidate assets — technically validated, visually unapproved/)
+  assert.match(assetOwner, /Review candidate composition — visually improved, still unapproved/)
 })
 
 test('asset-driven Home owns supported review runtime and procedural world is degraded fallback only', () => {
@@ -84,12 +87,24 @@ test('asset-driven Home owns supported review runtime and procedural world is de
   assert.match(runtime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
   assert.match(assetOwner, /AssetRuntimeBoundary/)
   assert.match(assetOwner, /fallback=\{fallback\}/)
-  assert.match(assetOwner, /home-symbolic-embodied-self/)
+  assert.match(assetOwner, /home-authored-embodied-self/)
   assert.doesNotMatch(assetOwner, /capsuleGeometry/)
   assert.doesNotMatch(assetOwner, /const MEMORY_SCENES =/)
   assert.match(fallback, /capsuleGeometry/)
   assert.match(fallback, /const MEMORY_SCENES =/)
   assert.match(authority, /reclassified as a fallback implementation/)
+})
+
+test('the review world has authored terrain memory forms and distinct portal compositions', () => {
+  assert.match(assetOwner, /home-authored-terrain/)
+  assert.match(assetOwner, /SanctuaryTerrain/)
+  assert.match(assetOwner, /MemoryPlace/)
+  assert.match(assetOwner, /relationship-presence/)
+  assert.match(assetOwner, /torusKnotGeometry/)
+  assert.match(assetOwner, /destination="ground"/)
+  assert.match(assetOwner, /destination="life-map"/)
+  assert.match(assetOwner, /The path descends into Ground/)
+  assert.match(assetOwner, /The path rises into Life Map/)
 })
 
 test('persistent visible shortcut pills are removed and semantic direct access remains', () => {
@@ -106,6 +121,7 @@ test('personalized state changes actual world composition and exposes provenance
   assert.match(assetOwner, /PersonalizedPlaces/)
   assert.match(assetOwner, /scene\.environment\.weatherTone/)
   assert.match(assetOwner, /home-personalized-places-/)
+  assert.match(assetOwner, /data-home-review-fixture=/)
   assert.match(assetOwner, /Why am I seeing this\?/)
   assert.match(assetOwner, /Review consent/)
   assert.match(assetOwner, /Correct, hide, or delete sources/)
