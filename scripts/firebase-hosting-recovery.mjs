@@ -64,6 +64,19 @@ export function assertVersionName(value, siteId = expectedSiteId) {
   return versionName
 }
 
+export function assertRestorableVersion(version, expectedVersionName) {
+  if (!version || typeof version !== 'object') throw new Error('Firebase Hosting recovery version response is missing')
+  const versionName = assertVersionName(version.name)
+  if (versionName !== expectedVersionName) {
+    throw new Error(`Firebase Hosting recovery version mismatch: expected ${expectedVersionName}, observed ${versionName}`)
+  }
+  const status = requireString('Firebase Hosting recovery version status', version.status)
+  if (status !== 'FINALIZED') {
+    throw new Error(`Firebase Hosting recovery version ${versionName} is not restorable; status is ${status}`)
+  }
+  return { versionName, status }
+}
+
 export function selectCurrentLiveRelease(releases, siteId = expectedSiteId) {
   if (!Array.isArray(releases)) throw new Error('Firebase Hosting releases response must contain an array')
   const liveNamePattern = new RegExp(`^sites/${escapeRegExp(siteId)}/releases/[^/]+$`)
@@ -201,6 +214,7 @@ function readRecoveryReceipt() {
   if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-1') throw new Error('Unsupported Hosting recovery receipt schema')
   const siteId = assertSiteId(receipt.siteId)
   const versionName = assertVersionName(receipt.versionName, siteId)
+  if (receipt.versionStatus !== 'FINALIZED') throw new Error('Recovery receipt does not prove a FINALIZED Firebase Hosting version')
   if (!new RegExp(`^sites/${escapeRegExp(siteId)}/releases/[^/]+$`).test(String(receipt.releaseName || ''))) {
     throw new Error('Recovery receipt does not identify a live-channel release')
   }
@@ -227,6 +241,12 @@ async function listAllReleases(accessToken, siteId) {
   throw new Error('Firebase Hosting release pagination exceeded the fail-closed limit')
 }
 
+async function fetchVersion(accessToken, versionName) {
+  return requestJson(`${apiRoot}/${versionName}`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  })
+}
+
 async function currentLiveRelease(serviceAccount, siteId) {
   const accessToken = await accessTokenFromServiceAccount(serviceAccount)
   const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
@@ -236,7 +256,9 @@ async function currentLiveRelease(serviceAccount, siteId) {
 export async function discoverCurrentLiveRelease() {
   const siteId = assertSiteId(process.env.FIREBASE_SITE_ID || expectedSiteId)
   const serviceAccount = serviceAccountFromEnvironment()
-  const { release } = await currentLiveRelease(serviceAccount, siteId)
+  const { accessToken, release } = await currentLiveRelease(serviceAccount, siteId)
+  const version = await fetchVersion(accessToken, release.versionName)
+  const restorable = assertRestorableVersion(version, release.versionName)
   const receiptPath = resolveReceiptPath()
   mkdirSync(path.dirname(receiptPath), { recursive: true })
   const receipt = {
@@ -248,9 +270,10 @@ export async function discoverCurrentLiveRelease() {
     siteId,
     releaseName: release.name,
     versionName: release.versionName,
+    versionStatus: restorable.status,
     releaseTime: release.releaseTime,
     releaseType: release.type || 'TYPE_UNSPECIFIED',
-    sourceApi: 'firebasehosting.googleapis.com/v1beta1/sites.releases.list',
+    sourceApi: 'firebasehosting.googleapis.com/v1beta1/sites.releases.list+sites.versions.get',
     deployment: false,
   }
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 })
@@ -265,6 +288,7 @@ export async function restoreDiscoveredVersion() {
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
   const serviceAccount = serviceAccountFromEnvironment()
   const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  assertRestorableVersion(await fetchVersion(accessToken, versionName), versionName)
   const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
   url.searchParams.set('versionName', versionName)
   const restored = await requestJson(url, {
@@ -344,7 +368,16 @@ export function selfTest() {
   const selected = selectCurrentLiveRelease(releases)
   if (selected.name !== 'sites/urai-4dc1d/releases/live-current') throw new Error('Self-test selected the wrong live release')
   if (selected.versionName !== 'sites/urai-4dc1d/versions/live-v1') throw new Error('Self-test selected the wrong live version')
-  console.log(JSON.stringify({ ok: true, action: 'self-test', selected: selected.name, versionName: selected.versionName }, null, 2))
+  const restorable = assertRestorableVersion({ name: selected.versionName, status: 'FINALIZED' }, selected.versionName)
+  if (restorable.status !== 'FINALIZED') throw new Error('Self-test failed to accept a finalized recovery version')
+  let expiredRejected = false
+  try {
+    assertRestorableVersion({ name: selected.versionName, status: 'EXPIRED' }, selected.versionName)
+  } catch {
+    expiredRejected = true
+  }
+  if (!expiredRejected) throw new Error('Self-test failed to reject an expired recovery version')
+  console.log(JSON.stringify({ ok: true, action: 'self-test', selected: selected.name, versionName: selected.versionName, versionStatus: restorable.status }, null, 2))
 }
 
 const invokedPath = path.resolve(process.argv[1] || '')
