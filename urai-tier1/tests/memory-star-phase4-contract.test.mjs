@@ -34,9 +34,7 @@ test('memory star schema keeps final privacy and route fields', () => {
     'canEnterPlace: boolean',
     'redactMemoryStarForPublic',
     "sourceId: 'redacted'",
-  ]) {
-    assert.ok(schema.includes(snippet), `schema missing ${snippet}`)
-  }
+  ]) assert.ok(schema.includes(snippet), `schema missing ${snippet}`)
 })
 
 test('demo memory stars remain local launch-safe data', () => {
@@ -51,11 +49,9 @@ test('direct memory routes keep safe redirect shells', () => {
   assert.ok(lifeMapStarRoute.includes('resolveDemoMemoryStar(starId)'), 'star route must resolve demo star id')
   assert.ok(lifeMapStarRoute.includes('redirect(resolution.star.focusHref)'), 'star route must redirect to Focus shell')
   assert.ok(lifeMapStarRoute.includes('urai-memory-star-direct-route'), 'star route must expose unavailable state marker')
-
   assert.ok(focusSessionRoute.includes('resolveDemoMemoryStar(sessionId)'), 'focus session route must resolve demo star id')
   assert.ok(focusSessionRoute.includes('redirect(resolution.star.focusHref)'), 'focus session route must redirect to Focus shell')
   assert.ok(focusSessionRoute.includes('urai-focus-session-direct-route'), 'focus session route must expose unavailable state marker')
-
   assert.ok(replayDirectRoute.includes('resolveDemoReplay(replayId)'), 'replay route must resolve replay id')
   assert.ok(replayDirectRoute.includes('redirect(resolution.star.replayHref)'), 'replay route must redirect to Replay shell')
   assert.ok(replayDirectRoute.includes('urai-replay-direct-route'), 'replay route must expose unavailable state marker')
@@ -64,7 +60,7 @@ test('direct memory routes keep safe redirect shells', () => {
 test('canonical LifeMap, Focus, and Replay final owners remain present', () => {
   assert.ok(lifeMapPage.includes('SpatialLifeMapCanonical'), 'Life Map route must use SpatialLifeMapCanonical')
   assert.ok(lifeMapCanonical.includes('LifeMapRouteBoundary'), 'Life Map canonical owner must keep its route boundary')
-  assert.ok(lifeMapBoundary.includes('AdaptiveLifeMapScene'), 'Life Map route boundary must use AdaptiveLifeMapScene')
+  assert.ok(lifeMapBoundary.includes('ComposedLifeMapScene'), 'Life Map route boundary must use ComposedLifeMapScene')
   assert.ok(focusPage.includes('FinalFocusChamber'), 'Focus route must use FinalFocusChamber')
   assert.ok(replayPage.includes('FinalReplayFilm'), 'Replay route must use FinalReplayFilm')
 })
