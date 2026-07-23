@@ -1,4 +1,12 @@
-import { resolvePromotedUraiSpatialAsset, type UraiSpatialAssetResolution } from '@/spatial/assets/promotedAssetResolver'
+import {
+  getUraiSpatialAsset,
+  getUraiSpatialFallbackAsset,
+  type UraiSpatialAssetResolution,
+} from '@/spatial/assets/assetManifest'
+import {
+  isUraiAssetPromoted,
+  uraiPromotedAssetPathOverrides,
+} from '@/spatial/assets/assetPromotionState'
 
 export type HomeRuntimeAssetMode = 'ready' | 'review-candidate' | 'fallback' | 'unavailable'
 
@@ -66,11 +74,48 @@ export type HomeRuntimeAssetResolution = {
   readonly reviewCandidate: HomeReviewCandidate | null
 }
 
+function canonicalResolution(assetId: HomeReviewCandidate['assetId']): UraiSpatialAssetResolution {
+  const selectedAsset = getUraiSpatialAsset(assetId)
+  const fallbackAsset = getUraiSpatialFallbackAsset(assetId)
+
+  if (
+    selectedAsset?.status === 'ready' &&
+    isUraiAssetPromoted(assetId)
+  ) {
+    return {
+      requestedAssetId: assetId,
+      source: 'selected',
+      path: uraiPromotedAssetPathOverrides[assetId] ?? selectedAsset.path,
+      selectedAsset,
+      fallbackAsset,
+    }
+  }
+
+  if (fallbackAsset?.status === 'fallback') {
+    return {
+      requestedAssetId: assetId,
+      source: 'fallback',
+      path: fallbackAsset.path,
+      selectedAsset,
+      fallbackAsset,
+    }
+  }
+
+  return {
+    requestedAssetId: assetId,
+    source: 'unavailable',
+    path: null,
+    selectedAsset,
+    fallbackAsset,
+  }
+}
+
 export function resolveHomeRuntimeAsset(
   assetId: HomeReviewCandidate['assetId'],
   allowDisclosedReviewCandidate: boolean,
 ): HomeRuntimeAssetResolution {
-  const canonical = resolvePromotedUraiSpatialAsset(assetId)
+  const canonical = canonicalResolution(assetId)
+
   if (canonical.source === 'selected' && canonical.path) {
     return { assetId, mode: 'ready', path: canonical.path, canonical, reviewCandidate: null }
   }
