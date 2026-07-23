@@ -17,7 +17,7 @@ const knownKinds = new Set<HomeSignalKind>([
   'time-of-day', 'season', 'location-routine', 'permission-state',
 ])
 
-const reviewModes = new Set<HomeSceneMode>(['world-forming', 'permission-limited', 'unavailable', 'offline', 'explicit-sample'])
+const reviewModes = new Set<HomeSceneMode>(['private-personalized', 'world-forming', 'permission-limited', 'unavailable', 'offline', 'explicit-sample'])
 
 function safeDate(value: unknown): string | undefined {
   if (!value) return undefined
@@ -41,16 +41,18 @@ function evidenceFromDocument(id: string, data: Record<string, unknown>): HomeEv
   }
 }
 
-function parseRequestedMode(): HomeSceneMode | 'auto' {
-  if (typeof window === 'undefined') return 'auto'
+function parseRequestedMode(): { mode: HomeSceneMode | 'auto'; safePrivate: boolean } {
+  if (typeof window === 'undefined') return { mode: 'auto', safePrivate: false }
   const params = new URLSearchParams(window.location.search)
-  if (params.get('homeSample') === '1' || params.get('demo') === '1') return 'explicit-sample'
+  if (params.get('homeSample') === '1' || params.get('demo') === '1') return { mode: 'explicit-sample', safePrivate: false }
+  if (params.get('homePrivateFixture') === '1') return { mode: 'private-personalized', safePrivate: true }
   const fixture = params.get('homeState') as HomeSceneMode | null
-  return fixture && reviewModes.has(fixture) ? fixture : 'auto'
+  return fixture && reviewModes.has(fixture) ? { mode: fixture, safePrivate: fixture === 'private-personalized' } : { mode: 'auto', safePrivate: false }
 }
 
 export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; loading: boolean } {
-  const requestedMode = useMemo(parseRequestedMode, [])
+  const requested = useMemo(parseRequestedMode, [])
+  const requestedMode = requested.mode
   const isolatedReviewMode = requestedMode !== 'auto'
   const [online, setOnline] = useState(() => typeof navigator === 'undefined' ? true : navigator.onLine)
   const [signedIn, setSignedIn] = useState(false)
@@ -124,9 +126,10 @@ export function useHomePersonalizedScene(): { scene: HomePersonalizedScene; load
     online,
     permissionsAvailable,
     dataAvailable,
+    reviewFixture: requested.safePrivate ? 'safe-private' : null,
     evidence,
     now: new Date(),
-  }), [dataAvailable, evidence, online, permissionsAvailable, requestedMode, signedIn])
+  }), [dataAvailable, evidence, online, permissionsAvailable, requested.safePrivate, requestedMode, signedIn])
 
   return { scene, loading }
 }
