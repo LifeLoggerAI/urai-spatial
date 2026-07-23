@@ -48,6 +48,7 @@ export type HomePersonalizedScene = {
   readonly mode: HomeSceneMode
   readonly disclosedSample: boolean
   readonly privateDataMounted: boolean
+  readonly reviewFixture: 'safe-private' | null
   readonly places: readonly HomeScenePlace[]
   readonly environment: HomeSceneEnvironment
   readonly generatedAt: string
@@ -59,6 +60,7 @@ export type HomeSceneInput = {
   readonly online: boolean
   readonly permissionsAvailable: boolean
   readonly dataAvailable?: boolean
+  readonly reviewFixture?: 'safe-private' | null
   readonly evidence: readonly HomeEvidenceRef[]
   readonly now: Date
 }
@@ -72,11 +74,22 @@ const emptyEnvironment = (now: Date): HomeSceneEnvironment => ({
 })
 
 export function buildHomePersonalizedScene(input: HomeSceneInput): HomePersonalizedScene {
+  if (input.requestedMode === 'private-personalized' && input.reviewFixture === 'safe-private') {
+    const evidence = safePrivateFixtureEvidence()
+    return buildPrivateScene(evidence, input.now, {
+      disclosedSample: true,
+      privateDataMounted: false,
+      reviewFixture: 'safe-private',
+      explanation: 'Disclosed privacy-safe personalized fixture. These signals are synthetic review inputs, not user records.',
+    })
+  }
+
   if (input.requestedMode === 'explicit-sample') {
     return {
       mode: 'explicit-sample',
       disclosedSample: true,
       privateDataMounted: false,
+      reviewFixture: null,
       places: disclosedSamplePlaces(),
       environment: {
         ...emptyEnvironment(input.now),
@@ -119,28 +132,42 @@ export function buildHomePersonalizedScene(input: HomeSceneInput): HomePersonali
     return sceneWithoutPlaces('world-forming', input.now, 'Your world is beginning to form. UrAi will not invent memories while it learns your permitted rhythms.')
   }
 
-  const places = input.evidence.slice(0, 12).map<HomeScenePlace>((evidence, index) => ({
-    id: `private-place-${index}-${evidence.id}`,
-    title: privateTitle(evidence.kind),
-    form: formFor(evidence.kind),
-    evidence: [evidence],
-    explanation: `You are seeing this because ${evidence.sourceLabel} was available through ${evidence.permission}. You can inspect, correct, hide, or delete it.`,
-    confidence: evidence.kind === 'time-of-day' || evidence.kind === 'season' ? 'not-applicable' : 'medium',
-    sample: false,
+  return buildPrivateScene(input.evidence, input.now, {
+    disclosedSample: false,
+    privateDataMounted: true,
+    reviewFixture: null,
+    explanation: 'The atmosphere reflects only the permitted signals listed in its explanation.',
+  })
+}
+
+function buildPrivateScene(
+  evidence: readonly HomeEvidenceRef[],
+  now: Date,
+  options: Pick<HomePersonalizedScene, 'disclosedSample' | 'privateDataMounted' | 'reviewFixture'> & { explanation: string },
+): HomePersonalizedScene {
+  const places = evidence.slice(0, 12).map<HomeScenePlace>((item, index) => ({
+    id: `private-place-${index}-${item.id}`,
+    title: privateTitle(item.kind),
+    form: formFor(item.kind),
+    evidence: [item],
+    explanation: `You are seeing this because ${item.sourceLabel} was available through ${item.permission}. You can inspect, correct, hide, or delete it.`,
+    confidence: item.kind === 'time-of-day' || item.kind === 'season' ? 'not-applicable' : 'medium',
+    sample: options.reviewFixture === 'safe-private',
   }))
 
   return {
     mode: 'private-personalized',
-    disclosedSample: false,
-    privateDataMounted: true,
+    disclosedSample: options.disclosedSample,
+    privateDataMounted: options.privateDataMounted,
+    reviewFixture: options.reviewFixture,
     places,
     environment: {
-      ...emptyEnvironment(input.now),
-      weatherTone: deriveWeatherTone(input.evidence),
-      explanation: 'The atmosphere reflects only the permitted signals listed in its explanation.',
-      evidence: input.evidence.filter((item) => ['emotional-weather', 'recovery', 'stress', 'cognitive-load'].includes(item.kind)),
+      ...emptyEnvironment(now),
+      weatherTone: deriveWeatherTone(evidence),
+      explanation: options.explanation,
+      evidence: evidence.filter((item) => ['emotional-weather', 'recovery', 'stress', 'cognitive-load'].includes(item.kind)),
     },
-    generatedAt: input.now.toISOString(),
+    generatedAt: now.toISOString(),
   }
 }
 
@@ -149,6 +176,7 @@ function sceneWithoutPlaces(mode: Exclude<HomeSceneMode, 'private-personalized' 
     mode,
     disclosedSample: false,
     privateDataMounted: false,
+    reviewFixture: null,
     places: [{
       id: 'world-forming',
       title: 'Your world is forming',
@@ -183,6 +211,16 @@ function disclosedSamplePlaces(): readonly HomeScenePlace[] {
       confidence: 'not-applicable',
       sample: true,
     },
+  ]
+}
+
+function safePrivateFixtureEvidence(): readonly HomeEvidenceRef[] {
+  return [
+    { id: 'fixture-memory', kind: 'memory', sourceLabel: 'a synthetic memory-place review signal', permission: 'the disclosed safe-private fixture' },
+    { id: 'fixture-relationship', kind: 'relationship', sourceLabel: 'a synthetic relationship review signal', permission: 'the disclosed safe-private fixture' },
+    { id: 'fixture-recovery', kind: 'recovery', sourceLabel: 'a synthetic recovery review signal', permission: 'the disclosed safe-private fixture' },
+    { id: 'fixture-routine', kind: 'location-routine', sourceLabel: 'a synthetic routine review signal', permission: 'the disclosed safe-private fixture' },
+    { id: 'fixture-stress', kind: 'stress', sourceLabel: 'a synthetic stress review signal', permission: 'the disclosed safe-private fixture' },
   ]
 }
 
