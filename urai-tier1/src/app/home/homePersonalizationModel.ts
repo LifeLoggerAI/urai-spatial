@@ -54,10 +54,11 @@ export type HomePersonalizedScene = {
 }
 
 export type HomeSceneInput = {
-  readonly requestedMode: Exclude<HomeSceneMode, 'private-personalized' | 'world-forming' | 'permission-limited' | 'unavailable'> | 'auto'
+  readonly requestedMode: HomeSceneMode | 'auto'
   readonly signedIn: boolean
   readonly online: boolean
   readonly permissionsAvailable: boolean
+  readonly dataAvailable?: boolean
   readonly evidence: readonly HomeEvidenceRef[]
   readonly now: Date
 }
@@ -90,8 +91,24 @@ export function buildHomePersonalizedScene(input: HomeSceneInput): HomePersonali
     return sceneWithoutPlaces('offline', input.now, 'UrAi is offline. Your private world remains unavailable until a secure connection returns.')
   }
 
+  if (input.requestedMode === 'unavailable') {
+    return sceneWithoutPlaces('unavailable', input.now, 'Private Home data is unavailable in this disclosed review state. No personal information is mounted here.')
+  }
+
+  if (input.requestedMode === 'permission-limited') {
+    return sceneWithoutPlaces('permission-limited', input.now, 'Your world is quiet in this disclosed permission-limited state. You remain in control in Passport.')
+  }
+
+  if (input.requestedMode === 'world-forming') {
+    return sceneWithoutPlaces('world-forming', input.now, 'Your world is beginning to form. UrAi will not invent memories while it learns your permitted rhythms.')
+  }
+
   if (!input.signedIn) {
     return sceneWithoutPlaces('unavailable', input.now, 'Sign in to open your private world. No personal information is mounted here.')
+  }
+
+  if (input.dataAvailable === false) {
+    return sceneWithoutPlaces('unavailable', input.now, 'UrAi could not load your permitted private Home sources. No substitute memories or sample records were mounted.')
   }
 
   if (!input.permissionsAvailable) {
