@@ -187,4 +187,78 @@ test.describe('URAI visual ownership and containment evidence', () => {
       expect(button.bottom).toBeLessThanOrEqual(evidence.bottom + 1)
     }
   })
+
+  test('selected Life Map action owner is topmost, contained, and directly operable on portrait mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/life-map?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', { waitUntil: 'domcontentloaded' })
+
+    const lifeMap = page.getByTestId('urai-true-3d-life-map')
+    await expect(lifeMap).toBeVisible({ timeout: 15_000 })
+    await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'selected')
+
+    const actions = page.locator('.life-map-actions')
+    const focus = actions.getByRole('button', { name: 'Enter Focus', exact: true })
+    const replay = actions.getByRole('button', { name: 'Replay', exact: true })
+    const overview = actions.getByRole('button', { name: 'Overview', exact: true })
+    await expect(actions).toBeVisible()
+    await expect(focus).toBeVisible()
+    await expect(replay).toBeVisible()
+    await expect(overview).toBeVisible()
+
+    const evidence = await actions.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      const viewport = window.visualViewport
+      const buttons = [...element.querySelectorAll<HTMLButtonElement>('button')].map((button) => {
+        const buttonRect = button.getBoundingClientRect()
+        const centerX = buttonRect.left + buttonRect.width / 2
+        const centerY = buttonRect.top + buttonRect.height / 2
+        const topmost = document.elementFromPoint(centerX, centerY)
+        return {
+          label: button.textContent?.trim() || '',
+          left: buttonRect.left,
+          top: buttonRect.top,
+          right: buttonRect.right,
+          bottom: buttonRect.bottom,
+          width: buttonRect.width,
+          height: buttonRect.height,
+          topmostOwned: topmost === button || Boolean(topmost && button.contains(topmost)),
+          pointerEvents: getComputedStyle(button).pointerEvents,
+        }
+      })
+      return {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        viewportWidth: viewport?.width ?? window.innerWidth,
+        viewportHeight: viewport?.height ?? window.innerHeight,
+        buttons,
+      }
+    })
+
+    await test.info().attach('life-map-selected-mobile-action-owner.json', {
+      body: JSON.stringify(evidence, null, 2),
+      contentType: 'application/json',
+    })
+
+    expect(evidence.height).toBeGreaterThanOrEqual(62)
+    expect(evidence.height).toBeLessThanOrEqual(68)
+    expect(evidence.left).toBeGreaterThanOrEqual(0)
+    expect(evidence.right).toBeLessThanOrEqual(evidence.viewportWidth + 1)
+    expect(evidence.top).toBeGreaterThanOrEqual(0)
+    expect(evidence.bottom).toBeLessThanOrEqual(evidence.viewportHeight + 1)
+    expect(evidence.buttons.map((button) => button.label)).toEqual(['Enter Focus', 'Replay', 'Overview'])
+    for (const button of evidence.buttons) {
+      expect(button.width).toBeGreaterThanOrEqual(48)
+      expect(button.height).toBeGreaterThanOrEqual(48)
+      expect(button.topmostOwned).toBe(true)
+      expect(button.pointerEvents).not.toBe('none')
+    }
+
+    await overview.click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(page.locator('.life-map-actions')).toHaveCount(0)
+  })
 })
