@@ -44,7 +44,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.match(shell, /showWorldCompanion \? <PersistentWorldCompanion \/> : null/)
 
   assert.match(collisionCss, /\.urai-world-runtime\[data-world-destination='home'\] > \.urai-ground-gateway \{[\s\S]*display: none !important;[\s\S]*pointer-events: none !important;/)
-  assert.doesNotMatch(collisionCss, /data-world-destination='home':has\(/)
+  assert.doesNotMatch(collisionCss, /\.urai-world-runtime\[data-world-destination=['"]home['"]\]:has\(/)
   assert.match(finalCss, /\.urai-ground-gateway \{[\s\S]*z-index: 11 !important;[\s\S]*height: 80px !important/)
   assert.match(finalCss, /\.urai-home-spatial-runtime-layer \{[\s\S]*z-index: 9/)
   assert.match(finalCss, /height: 96px !important/)
@@ -65,7 +65,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-focus"/)
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-replay"/)
 
-  assert.match(visualAudit, /data-world-target=\"focus\"/)
+  assert.match(visualAudit, /data-world-target="focus"/)
   assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
   assert.match(visualAudit, /\.life-map-accessibility-menu/)
   assert.match(visualAudit, /The Quiet Reset/)
