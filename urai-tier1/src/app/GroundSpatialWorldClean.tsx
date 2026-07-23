@@ -45,6 +45,8 @@ export default function GroundSpatialWorldClean() {
   const [guideDestination, setGuideDestination] = useState<GroundDestination | null>(null);
   const [requestedCheckpoint, setRequestedCheckpoint] = useState<GroundCheckpoint | null>(null);
   const [openLayer, setOpenLayer] = useState<GroundLayer>("threshold");
+  const [groundReady, setGroundReady] = useState(false);
+  const [arrival, setArrival] = useState<"entering" | "settled">("entering");
   const yaw = useRef(0);
   const pitch = useRef(-0.05);
   const walkTarget = useRef<THREE.Vector3 | null>(null);
@@ -112,6 +114,18 @@ export default function GroundSpatialWorldClean() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!groundReady) return;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => setArrival("settled"));
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [groundReady]);
+
   const prompt = nearby
     ? `${nearby.label}: cross the threshold`
     : moving
@@ -129,6 +143,8 @@ export default function GroundSpatialWorldClean() {
       data-ground-no-compositing-bands="true"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
+      data-ground-ready={groundReady ? "true" : "false"}
+      data-ground-arrival={arrival}
       data-ground-camera-mode={dragging ? "look" : moving ? "walking" : "embodied-idle"}
       {...look}
     >
@@ -142,7 +158,7 @@ export default function GroundSpatialWorldClean() {
           shadows
           dpr={[1, 1.5]}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          onCreated={({ gl }) => gl.setClearColor(0x020812, 1)}
+          onCreated={({ gl }) => { gl.setClearColor(0x020812, 1); setGroundReady(true); }}
           onPointerMissed={() => { if (!nearby) setActiveId(null); }}
         >
           <EmbodiedGroundScene
