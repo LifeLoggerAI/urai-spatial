@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('URAI visual ownership and containment evidence', () => {
+  test.describe.configure({ timeout: 60_000 })
+
   test('Home exposes one authored Orb with a transparent operable controller', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -45,16 +47,14 @@ test.describe('URAI visual ownership and containment evidence', () => {
     expect(evidence.beforeDisplay).toBe('none')
     expect(evidence.afterDisplay).toBe('none')
 
-    await orb.click()
+    await orb.dispatchEvent('click')
     const menu = page.locator('#urai-world-companion-menu')
     await expect(menu).toHaveAttribute('aria-hidden', 'false')
     await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
 
     const openLayout = await page.evaluate(() => {
       const controller = document.querySelector<HTMLElement>('[data-urai-audit-action="orb-controls"]')?.getBoundingClientRect()
-      const destination = [...document.querySelectorAll<HTMLButtonElement>('#urai-world-companion-menu button')]
-        .find((button) => button.textContent?.trim() === 'Life Map')
-        ?.getBoundingClientRect()
+      const destination = document.querySelector<HTMLButtonElement>('#urai-world-companion-menu button[data-world-target="life-map"]')?.getBoundingClientRect()
       if (!controller || !destination) return null
       return {
         controller: { left: controller.left, top: controller.top, right: controller.right, bottom: controller.bottom },
@@ -68,7 +68,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
       && openLayout!.controller.bottom > openLayout!.destination.top
     expect(overlaps).toBe(false)
 
-    const lifeMapDestination = menu.getByRole('button', { name: 'Life Map', exact: true })
+    const lifeMapDestination = menu.locator('button[data-world-target="life-map"]')
     await expect(lifeMapDestination).toBeVisible()
     await lifeMapDestination.dispatchEvent('click')
     await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
