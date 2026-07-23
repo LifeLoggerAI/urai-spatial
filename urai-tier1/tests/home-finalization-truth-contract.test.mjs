@@ -41,6 +41,16 @@ test('normal production personalization cannot silently consume disclosed sample
   assert.match(personalizationHook, /setEvidence\(\[\]\)/)
 })
 
+test('review fixtures are explicit, isolated and never mount private records', () => {
+  assert.match(personalizationHook, /params\.get\('homeState'\)/)
+  assert.match(personalizationHook, /isolatedReviewMode/)
+  assert.match(personalizationHook, /setSignedIn\(false\)/)
+  assert.match(personalizationHook, /setEvidence\(\[\]\)/)
+  assert.match(personalizationHook, /setDataAvailable\(requestedMode !== 'unavailable'\)/)
+  assert.match(personalization, /input\.dataAvailable === false/)
+  assert.match(personalization, /No substitute memories or sample records were mounted/)
+})
+
 test('every required Orb state has sensory output bindings and a visible runtime owner', () => {
   for (const state of ['dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking', 'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition']) {
     assert.match(orb, new RegExp(`\\b${state}: \\{`))
