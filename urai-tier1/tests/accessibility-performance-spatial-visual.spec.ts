@@ -132,7 +132,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(body.getByRole('button').first()).toBeVisible()
   })
 
-  test('selected Life Map journey rail stays compact and contained on portrait mobile', async ({ page }) => {
+  test('selected Life Map journey rail is painted, topmost, contained, and directly operable on portrait mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/life-map?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', { waitUntil: 'domcontentloaded' })
 
@@ -142,16 +142,38 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(page.getByRole('button', { name: 'Enter Focus', exact: true })).toBeVisible()
 
     const rail = page.getByTestId('life-map-journey-rail')
+    const previous = rail.getByRole('button', { name: 'Previous visible life object' })
+    const next = rail.getByRole('button', { name: 'Next visible life object' })
+    const overview = rail.getByRole('button', { name: 'Overview', exact: true })
     await expect(rail).toBeVisible()
     await expect(rail).toHaveAttribute('data-selected', 'true')
-    await expect(rail.getByRole('button')).toHaveCount(3)
+    await expect(previous).toBeVisible()
+    await expect(next).toBeVisible()
+    await expect(overview).toBeVisible()
 
     const evidence = await rail.evaluate((element) => {
       const rect = element.getBoundingClientRect()
       const viewport = window.visualViewport
-      const buttons = [...element.querySelectorAll<HTMLElement>('button')].map((button) => {
+      const style = getComputedStyle(element)
+      const buttons = [...element.querySelectorAll<HTMLButtonElement>('button')].map((button) => {
         const buttonRect = button.getBoundingClientRect()
-        return { width: buttonRect.width, height: buttonRect.height, top: buttonRect.top, bottom: buttonRect.bottom }
+        const centerX = buttonRect.left + buttonRect.width / 2
+        const centerY = buttonRect.top + buttonRect.height / 2
+        const topmost = document.elementFromPoint(centerX, centerY)
+        const buttonStyle = getComputedStyle(button)
+        return {
+          label: button.textContent?.trim() || '',
+          width: buttonRect.width,
+          height: buttonRect.height,
+          left: buttonRect.left,
+          right: buttonRect.right,
+          top: buttonRect.top,
+          bottom: buttonRect.bottom,
+          topmostOwned: topmost === button || Boolean(topmost && button.contains(topmost)),
+          pointerEvents: buttonStyle.pointerEvents,
+          visibility: buttonStyle.visibility,
+          opacity: Number.parseFloat(buttonStyle.opacity || '1'),
+        }
       })
       return {
         left: rect.left,
@@ -162,6 +184,11 @@ test.describe('URAI visual ownership and containment evidence', () => {
         height: rect.height,
         viewportWidth: viewport?.width ?? window.innerWidth,
         viewportHeight: viewport?.height ?? window.innerHeight,
+        visibility: style.visibility,
+        opacity: Number.parseFloat(style.opacity || '1'),
+        pointerEvents: style.pointerEvents,
+        backgroundColor: style.backgroundColor,
+        borderTopWidth: style.borderTopWidth,
         buttons,
       }
     })
@@ -179,13 +206,40 @@ test.describe('URAI visual ownership and containment evidence', () => {
     expect(evidence.right).toBeLessThanOrEqual(evidence.viewportWidth + 1)
     expect(evidence.top).toBeGreaterThanOrEqual(0)
     expect(evidence.bottom).toBeLessThanOrEqual(evidence.viewportHeight + 1)
-    expect(evidence.buttons).toHaveLength(3)
+    expect(evidence.visibility).toBe('visible')
+    expect(evidence.opacity).toBeGreaterThan(0.9)
+    expect(evidence.pointerEvents).not.toBe('none')
+    expect(evidence.backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+    expect(Number.parseFloat(evidence.borderTopWidth)).toBeGreaterThanOrEqual(1)
+    expect(evidence.buttons.map((button) => button.label)).toEqual(['Previous', 'Next', 'Overview'])
     for (const button of evidence.buttons) {
+      expect(button.width).toBeGreaterThanOrEqual(48)
       expect(button.height).toBeGreaterThanOrEqual(48)
-      expect(button.height).toBeLessThanOrEqual(50)
       expect(button.top).toBeGreaterThanOrEqual(evidence.top)
       expect(button.bottom).toBeLessThanOrEqual(evidence.bottom + 1)
+      expect(button.topmostOwned).toBe(true)
+      expect(button.pointerEvents).not.toBe('none')
+      expect(button.visibility).toBe('visible')
+      expect(button.opacity).toBeGreaterThan(0.9)
     }
+
+    await next.click()
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
+    }).not.toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
+    const advancedUrl = new URL(page.url())
+    expect(advancedUrl.searchParams.get('memoryId')).toBe(advancedUrl.searchParams.get('node'))
+
+    await previous.click()
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
+    }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
+
+    await overview.click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(page.locator('.life-map-actions')).toHaveCount(0)
   })
 
   test('selected Life Map action owner is topmost, contained, and directly operable on portrait mobile', async ({ page }) => {
