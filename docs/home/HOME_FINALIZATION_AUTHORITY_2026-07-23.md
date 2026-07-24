@@ -38,6 +38,8 @@ Candidate-retention commit `5efba382c151395ec821c6f452ea6e8d1284a9bb` contains t
 
 Candidate-retention commit `2fc4878d43a78716b1aedee28b64f195114f08be` additionally materializes review-query detection after client hydration so disclosed pre-promotion v18 evidence can load the authored-v3 candidate while normal unsupported mode remains fallback. This trusted authority commit binds the replacement matrix after that retention commit and changes no runtime behavior itself.
 
+Capture-repair commit `690f62b6a9b291521864cfc214ac0a23f395bdcd` makes pre-promotion normal-route evidence explicitly use the disclosed review-candidate query while post-promotion evidence continues to require query-free ready resolution. This preserves the no-review-query production requirement and removes the contradictory expectation that an unpromoted asset load without disclosure.
+
 All workflow evidence is valid only for the exact current PR head. Earlier-head results are superseded after any source or authority commit.
 
 ## Non-negotiable completion boundary
