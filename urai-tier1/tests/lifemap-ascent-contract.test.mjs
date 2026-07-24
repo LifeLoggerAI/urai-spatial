@@ -6,10 +6,11 @@ const pageSource = fs.readFileSync(new URL('../src/app/life-map/page.tsx', impor
 const canonicalSource = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const boundarySource = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const sceneSource = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const worldSource = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const homeSource = fs.readFileSync(new URL('../src/app/HomeSpatialWorldFinal.tsx', import.meta.url), 'utf8')
 const transitionCss = fs.readFileSync(new URL('../src/app/urai-canon-camera-transitions.css', import.meta.url), 'utf8')
 
-test('Life Map route resolves directly to the final canonical galaxy after Home ascent', () => {
+ test('Life Map route resolves directly to the final canonical galaxy after Home ascent', () => {
   assert.match(pageSource, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(pageSource, /RealLifeMapGalaxy|LifeMapAscentGate|TierOneExperience/)
   assert.match(canonicalSource, /LifeMapRouteBoundary/)
@@ -43,9 +44,9 @@ test('ascent transition has a bounded timer and reduced-motion escape hatch', ()
 
 test('destination becomes interactive through canonical Life Map-owned controls', () => {
   assert.match(sceneSource, /data-testid="urai-true-3d-life-map"/)
-  assert.match(sceneSource, /className="life-map-world-label"/)
-  assert.match(sceneSource, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
-  assert.match(sceneSource, /className="life-map-actions"/)
+  assert.match(worldSource, /className="life-map-world-label"/)
+  assert.match(worldSource, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
+  assert.match(sceneSource, /aria-label="Selected memory actions"/)
   assert.match(sceneSource, /Enter Focus/)
   assert.match(sceneSource, /Replay/)
   assert.match(sceneSource, /Overview/)
