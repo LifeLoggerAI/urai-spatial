@@ -11,12 +11,11 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
-      - 'scripts/capture-continuous-spatial-proof.mjs'
-      - 'scripts/run-continuous-spatial-proof-fixed.mjs'
+      - 'scripts/capture-continuous-spatial-proof-v17.mjs'
+      - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
-      - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
-      - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+      - 'urai-tier1/src/app/home/**'
       - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
       - 'urai-tier1/src/app/spatial-runtime-restoration.css'
       - 'urai-tier1/src/app/template.tsx'
@@ -119,7 +118,7 @@ jobs:
           test -x "$browser_path"
           printf '%s\n' "$browser_path" > artifacts/continuous-spatial-proof/playwright-executable-path.txt
 
-      - name: Capture desktop mobile and fallback spatial proof
+      - name: Capture disclosed review desktop mobile and fallback spatial proof
         shell: bash
         run: |
           set -euo pipefail
@@ -139,7 +138,7 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/continuous-spatial-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/run-continuous-spatial-proof-fixed.mjs \
+            node scripts/capture-continuous-spatial-proof-v17.mjs \
             2>&1 | tee artifacts/continuous-spatial-proof/capture.log
           capture_status=${PIPESTATUS[0]}
           set -e
