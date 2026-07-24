@@ -427,7 +427,10 @@ function requestedReviewOrbState(reviewMode: boolean): OrbState | null {
 }
 
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
-  const reviewMode = useMemo(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetReview') === '1', [])
+  const [reviewMode, setReviewMode] = useState(false)
+useEffect(() => {
+  setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
+}, [])
   const forcedAssetFailure = useMemo(() => reviewMode && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetFailure') === '1', [reviewMode])
   const forcedOrbState = useMemo(() => requestedReviewOrbState(reviewMode), [reviewMode])
   const { scene, loading } = useHomePersonalizedScene()
