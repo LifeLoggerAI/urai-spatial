@@ -22,6 +22,7 @@ const visualSystemPath = 'urai-tier1/src/components/lifemap/lifeMapVisualSystem.
 const resourceLifeMapPath = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
 const activeLifeMapBoundaryPath = 'urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx'
 const activeLifeMapWrapperPath = 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'
+const isolationPath = 'urai-tier1/src/spatial/world/lifeMapProductionIsolation.css'
 const budgetSource = read(budgetPath)
 const canvas = read(canvasPath)
 const adaptiveController = read(adaptiveControllerPath)
@@ -31,13 +32,14 @@ const visualSystem = read(visualSystemPath)
 const resourceLifeMap = read(resourceLifeMapPath)
 const boundary = read(activeLifeMapBoundaryPath)
 const wrapper = read(activeLifeMapWrapperPath)
+const isolation = read(isolationPath)
 let budget = null
 try { budget = JSON.parse(budgetSource) } catch (error) { failures.push(`Invalid ${budgetPath}: ${error.message}`) }
 
 for (const marker of ['deviceMemory', 'hardwareConcurrency', 'saveData', 'effectiveType', 'documentVisible']) requireMatch(`Adaptive controller ${marker}`, adaptiveController, new RegExp(marker))
-for (const marker of ['particleCount', 'pixelRatioMax', 'shadows', 'postprocessing', 'antialias']) requireMatch(`Secondary spatial Canvas consumes ${marker}`, canvas, new RegExp(`profile\.${marker}`))
-for (const marker of ['pixelRatioMax', 'antialias', 'reducedMotion', 'shadows']) requireMatch(`Active Life Map consumes ${marker}`, lifeMap, new RegExp(`profile\.${marker}`))
-for (const marker of ['tier', 'postprocessing', 'shadows', 'reducedMotion']) requireMatch(`Production Life Map consumes ${marker}`, productionWorld, new RegExp(`profile\.${marker}`))
+for (const marker of ['particleCount', 'pixelRatioMax', 'shadows', 'postprocessing', 'antialias']) requireMatch(`Secondary spatial Canvas consumes ${marker}`, canvas, new RegExp(`profile\\.${marker}`))
+for (const marker of ['pixelRatioMax', 'antialias', 'reducedMotion', 'shadows', 'documentVisible']) requireMatch(`Active Life Map consumes ${marker}`, lifeMap, new RegExp(`profile\\.${marker}`))
+for (const marker of ['tier', 'postprocessing', 'shadows', 'reducedMotion']) requireMatch(`Production Life Map consumes ${marker}`, productionWorld, new RegExp(`profile\\.${marker}`))
 
 requireMatch('Secondary visibility-aware frameloop', canvas, /frameloop=\{profile\.documentVisible \? 'always' : 'never'\}/)
 requireMatch('Secondary first actual frame marker', canvas, /useFrame\(\(\) => \{[\s\S]*markFirstSpatialFrame/)
@@ -62,6 +64,7 @@ requireMatch('Active Life Map imports production world', lifeMap, /import \{ Lif
 requireMatch('Active Life Map mounts production world', lifeMap, /<LifeMapProductionWorld/)
 requireMatch('Active Life Map single Canvas', lifeMap, /<Canvas/)
 requireMatch('Active Life Map bounded DPR', lifeMap, /dpr=\{\[1, profile\.pixelRatioMax\]\}/)
+requireMatch('Active Life Map visibility-aware frameloop', lifeMap, /frameloop=\{profile\.documentVisible \? "always" : "never"\}/)
 requireMatch('Active Life Map high-performance preference', lifeMap, /powerPreference: "high-performance"/)
 requireMatch('Active Life Map reduced motion', lifeMap, /profile\.reducedMotion/)
 requireMatch('Active Life Map explicit demo identity', lifeMap, /params\.get\("demo"\) === "1"/)
@@ -76,7 +79,9 @@ requireMatch('Active Life Map context restoration', lifeMap, /webglcontextrestor
 requireMatch('Active Life Map query-preserving Focus path', lifeMap, /destinationHref\("focus"\)/)
 requireMatch('Active Life Map query-preserving Replay path', lifeMap, /destinationHref\("replay"\)/)
 requireMatch('Active Life Map ACES tone mapping', lifeMap, /ACESFilmicToneMapping/)
-requireMatch('Active Life Map controlled exposure', lifeMap, /toneMappingExposure = 0\.92/)
+requireMatch('Active Life Map controlled exposure', lifeMap, /toneMappingExposure = 1\.15/)
+requireMatch('Active Life Map render proof bridge', lifeMap, /data-life-map-render-ready=\{renderProof\.ready/)
+requireMatch('Active Life Map sequential phase timing', lifeMap, /PHASE_DURATION_MS\[phase\]/)
 forbidMatch('Active Life Map hardcoded legacy DPR', lifeMap, /dpr=\{\[1,\s*1\.85\]\}/)
 forbidMatch('Active Life Map retained high-resolution memory canvases', lifeMap, /canvas\.width\s*=\s*768|canvas\.height\s*=\s*768/)
 
@@ -87,6 +92,11 @@ requireMatch('Production world adaptive star tiers', productionWorld, /profile\.
 requireMatch('Production world quality-aware postprocessing', productionWorld, /active=\{profile\.postprocessing\}/)
 requireMatch('Production world reduced-motion animation guards', productionWorld, /if \(!group\.current \|\| reducedMotion\) return/)
 forbidMatch('Production memory artifact reintroduces generic sphere owner', productionWorld.slice(productionWorld.indexOf('function MemoryArtifact'), productionWorld.indexOf('function SemanticPath')), /sphereGeometry/)
+
+requireMatch('Canonical Life Map hides shared atmosphere', isolation, /urai-world-atmosphere/)
+requireMatch('Canonical Life Map hides asset-spine plate', isolation, /urai-final-asset-spine-scene-layer/)
+requireMatch('Canonical Life Map forces visible canvas', isolation, /canvas[\s\S]*opacity: 1 !important/)
+requireMatch('Canonical Life Map removes dashboard inspector', isolation, /life-map-semantic-inspector/)
 
 requireMatch('Life Map atmospheric texture remains bounded', resourceLifeMap, /canvas\.width = 256[\s\S]*canvas\.height = 256/)
 requireMatch('Life Map radial atmosphere texture remains disposable', resourceLifeMap, /createRadialGradient/)
@@ -115,6 +125,6 @@ if (budget) {
   }
 }
 if (oversized.length) failures.push(`${oversized.length} spatial assets exceed their single-file budget.`)
-const report = { ok: failures.length === 0, budgetId: budget?.budgetId ?? null, integrationState: failures.length === 0 ? 'integrated' : 'failed', activeProductionRoute: '/life-map', activeLifeMapPath, productionWorldPath, visualSystemPath, resourceLifeMapPath, activeLifeMapBoundaryPath, activeLifeMapWrapperPath, failures, oversized }
+const report = { ok: failures.length === 0, budgetId: budget?.budgetId ?? null, integrationState: failures.length === 0 ? 'integrated' : 'failed', activeProductionRoute: '/life-map', activeLifeMapPath, productionWorldPath, visualSystemPath, isolationPath, resourceLifeMapPath, activeLifeMapBoundaryPath, activeLifeMapWrapperPath, failures, oversized }
 console.log(JSON.stringify(report, null, 2))
 if (failures.length) process.exitCode = 1
