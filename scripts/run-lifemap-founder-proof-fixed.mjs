@@ -32,7 +32,7 @@ const stableSelection = `async function selectQuietReset(page) {
   await waitForState(page, 'data-life-map-mode', 'selected')
 }`
 
-const originalRouteAction = `async function clickRouteAction(page, name, destinationPath, destinationSelector) {
+const originalRouteAction = String.raw`async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedActions(page).getByRole('button', { name, exact: true })
   await action.waitFor({ state: 'visible', timeout: 20_000 })
   await action.click()
@@ -41,7 +41,7 @@ const originalRouteAction = `async function clickRouteAction(page, name, destina
   await stable(page)
 }`
 
-const stableRouteAction = `function selectedAction(page, label) {
+const stableRouteAction = String.raw`function selectedAction(page, label) {
   return selectedActions(page)
     .locator('button')
     .filter({ has: page.getByText(label, { exact: true }) })
