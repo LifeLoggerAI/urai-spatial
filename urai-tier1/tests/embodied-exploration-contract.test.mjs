@@ -43,9 +43,11 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'data-home-personalization-mode=',
     'data-home-review-fixture=',
     'data-home-orb-state=',
-    'home-authored-terrain',
+    'data-home-orb-clip=',
+    'data-home-animation-owner="gltf-authored-clips"',
+    'home-authored-entry-chamber',
     'home-personalized-places-',
-    'home-authored-embodied-self',
+    'home-embodied-presence-interaction',
     'home-orb-state-',
     'home-ground-portal-',
     'home-life-map-portal-',
@@ -66,14 +68,17 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'data-testid="urai-home-embodied-avatar"',
     'home-visible-navigable-sanctuary-world',
   ]) has(finalHome, marker)
-  assert.match(assetHome, /return <FinalHomeWorld webglAvailable=\{true\} onOrbOpen=\{onOrbOpen\} \/>/)
-  assert.doesNotMatch(assetHome, /requestPointerLock|sprint|jump|crouch/i)
+  assert.match(assetHome, /<HomeFallback reason=/)
+  assert.match(assetHome, /data-home-fallback-reason=/)
+  assert.match(assetHome, /interactionRef\.current/)
+  assert.match(assetHome, /data-home-nearby=/)
+  assert.doesNotMatch(assetHome, /requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
 })
 
-test('Home keeps one physical Orb and direct-access parity', () => {
+test('Home keeps one physical authored Orb and direct-access parity', () => {
   assert.match(assetHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.62, -0\.65\)/)
   has(assetHome, 'name={`home-orb-state-${state}`}')
-  has(assetHome, 'name="home-candidate-orb"')
+  has(assetHome, 'name="home-authored-orb"')
   assert.match(assetHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)

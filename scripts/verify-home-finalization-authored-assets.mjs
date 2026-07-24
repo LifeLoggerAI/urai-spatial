@@ -7,27 +7,46 @@ const root = process.cwd()
 const source = JSON.parse(fs.readFileSync(path.join(root, 'operations/assets/sources/home-finalization-authored-source-v2.json'), 'utf8'))
 const decisions = JSON.parse(fs.readFileSync(path.join(root, 'operations/assets/home-finalization-candidate-decisions.json'), 'utf8'))
 const manifestSource = fs.readFileSync(path.join(root, 'urai-tier1/src/spatial/assets/assetManifest.ts'), 'utf8')
+const runtimeSource = fs.readFileSync(path.join(root, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
 const errors = []
 const contracts = [
   {
     assetId: 'home-entry-chamber-v1', fileName: 'home-entry-chamber-v1.glb', decisionId: 'home-entry-chamber-current',
-    minNodes: 40, requiredClips: [], manifestId: 'home-entry-chamber-model-v1', maxTriangles: 180000,
-    requiredNodes: ['sanctuary-terrain','ground-descent-path','life-map-ascent-path','mirror-basin-water','ground-alcove-arch','life-map-alcove-arch','horizon-monolith-left'],
+    minNodes: 120, requiredClips: ['Home_Breathing','Presence_Idle','Presence_Privacy','Presence_Forming'], manifestId: 'home-entry-chamber-model-v1', maxTriangles: 180000,
+    requiredNodes: ['home-sanctuary-root','sanctuary-terrain','ground-descent-path','life-map-ascent-path','mirror-basin-water','ground-alcove-root','life-map-alcove-root','horizon-threshold-root','embodied-presence-root','embodied-presence-cloak-back','embodied-presence-face-light','memory-place-anchor-1'],
   },
   {
     assetId: 'portal-ring-master-v1', fileName: 'portal-ring-master-v1.glb', decisionId: 'portal-ring-current',
-    minNodes: 20, requiredClips: ['Portal_Closed','Portal_Available','Portal_Attention','Portal_Active','Portal_Opening','Portal_Traversal','Portal_Closing'], manifestId: 'portal-ring-master-glb-v1', maxTriangles: 24000,
-    requiredNodes: ['portal-root','portal-architectural-arch','portal-membrane','portal-depth-1','portal-threshold-stone'],
+    minNodes: 40, requiredClips: ['Portal_Closed','Portal_Available','Portal_Attention','Portal_Active','Portal_Opening','Portal_Traversal','Portal_Closing'], manifestId: 'portal-ring-master-glb-v1', maxTriangles: 24000,
+    requiredNodes: ['portal-root','portal-pillar-left','portal-pillar-right','portal-architectural-arch','portal-membrane','portal-inner-veil','portal-depth-1','portal-threshold-stone'],
   },
   {
     assetId: 'urai-orb-avatar-v1', fileName: 'urai-orb-avatar-v1.glb', decisionId: 'urai-orb-avatar-current',
-    minNodes: 16, requiredClips: ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition'], manifestId: 'urai-orb-avatar-glb-v1', maxTriangles: 30000,
-    requiredNodes: ['orb-root','orb-core','orb-heart','orb-aura','orb-orbit-a','orb-orbit-b','orb-orbit-c'],
+    minNodes: 20, requiredClips: ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition'], manifestId: 'urai-orb-avatar-glb-v1', maxTriangles: 30000,
+    requiredNodes: ['orb-root','orb-core','orb-heart','orb-aura','orb-petal-1','orb-orbit-a','orb-orbit-b','orb-orbit-c'],
   },
 ]
 
+if (source.schemaVersion !== 3 || source.sourceId !== 'urai-home-authored-sanctuary-source-v3') errors.push('authored source receipt must be schema v3')
 if (decisions.truthBoundary?.manifestPromotion !== false || decisions.truthBoundary?.visualApproval !== false || decisions.truthBoundary?.productionReady !== false) errors.push('truth boundary must remain unpromoted, visually unapproved and not production ready')
 if (decisions.truthBoundary?.reviewModeRequired !== true) errors.push('review mode must remain required')
+
+for (const marker of [
+  "useAnimations",
+  "data-home-animation-owner=\"gltf-authored-clips\"",
+  "data-home-orb-clip=",
+  "Portal_Opening",
+  "Portal_Traversal",
+  "Portal_Closing",
+  "Presence_Idle",
+  "Presence_Privacy",
+  "Presence_Forming",
+]) {
+  if (!runtimeSource.includes(marker)) errors.push(`runtime authored clip binding missing: ${marker}`)
+}
+for (const forbidden of ['latheGeometry', 'torusKnotGeometry', 'home-candidate-orb', 'Review candidate composition — visually improved, still unapproved.']) {
+  if (runtimeSource.includes(forbidden)) errors.push(`retired procedural review marker remains: ${forbidden}`)
+}
 
 for (const contract of contracts) {
   const filePath = path.join(root, 'urai-tier1/public/assets/urai/generated/models', contract.fileName)

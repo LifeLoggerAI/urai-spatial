@@ -19,7 +19,7 @@ const finalHome = read('src/app/FinalHomeWorld.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
 const css = read('src/app/spatial-runtime-restoration.css')
 const structuralCss = read('src/app/continuous-spatial-proof-defects.css')
-const proof = read('../scripts/capture-continuous-spatial-proof-v17.mjs')
+const proof = read('../scripts/capture-continuous-spatial-proof-v18.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const groundOwner = read('src/app/ground/page.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
@@ -41,7 +41,7 @@ test('app template mounts the current WebGL owners without redirecting certified
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
   assert.match(homeRuntime, /AssetDrivenHomeWorld/)
   assert.match(assetHome, /data-home-primary-owner="asset-driven"/)
-  assert.match(assetHome, /FinalHomeWorld/)
+  assert.match(assetHome, /HomeFallback/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
@@ -58,19 +58,23 @@ test('Home is one living sanctuary with canonical Ground and Life Map thresholds
     'aria-label="Open Ground directly"', 'aria-label="Open Life Map directly"',
     'home-visible-navigable-sanctuary-world', 'home-memory-vignette-',
     'place-loved', 'ride-home', 'voices-dinner', 'song-returned', 'quiet-growth',
+    'home-authored-entry-chamber', 'home-embodied-presence-interaction',
   ]) assert.ok(homeGraph.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
 })
 
-test('Home keeps one accessible companion plus first-frame and recovery evidence', () => {
+test('Home keeps one accessible companion plus first-frame loading and recovery evidence', () => {
   assert.match(homeRuntime, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /addEventListener\('webglcontextlost', onContextLost\)/)
   assert.match(homeRuntime, /addEventListener\('webglcontextrestored', onContextRestored\)/)
   assert.match(homeRuntime, /accessible-fallback-after-renderer-failure/)
   assert.match(companion, /aria-label="Travel through the URAI world"/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
+  assert.match(assetHome, /data-home-assets-ready=/)
+  assert.match(assetHome, /Your private world is forming/)
+  assert.match(assetHome, /data-home-fallback-reason=/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-portals|urai-home-spatial-runtime-orb/)
 })
 
@@ -116,18 +120,19 @@ test('Ground navigation remains contained, keyboard-operable and safe-area aware
   assert.match(groundCanonical, /scroll-padding-inline-end:max\(14px,env\(safe-area-inset-right\)\)/)
 })
 
-test('exact-head browser proof covers disclosed review states, movement and fallback safety', () => {
+test('exact-head browser proof v18 covers parity states clips movement traversal recordings and fallbacks', () => {
   for (const marker of [
-    "schemaVersion: 'urai-continuous-spatial-visual-proof-17'",
-    'home-review-private', 'home-review-privacy', 'home-review-unavailable',
-    'homeAssetReview=1', 'homePrivateFixture=1', 'homeState=permission-limited', 'homeState=unavailable',
-    'reviewCandidateDisclosed', 'personalizationModeCorrect', 'reviewFixtureCorrect', 'orbStateCorrect',
-    'movementReachedOrb', 'sceneLabelRetired', 'home-no-webgl-fallback',
-    'probeWebGL', 'WEBGL_debug_renderer_info', 'life-map-selected', 'singleSelectedActionOwner',
-    '--enable-unsafe-swiftshader', 'fallbackOwnerVisible', 'receipt.json',
+    "schemaVersion: 'urai-continuous-spatial-visual-proof-18'",
+    "route of ['/', '/home/']", 'portrait-mobile', 'landscape-mobile',
+    'homePrivateFixture=1', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline',
+    'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop',
+    'home-ground-portal-journey', 'home-life-map-portal-journey', 'opening', 'traversal', 'closing',
+    'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'homeAssetFailure',
+    'home-no-webgl-fallback', 'receipt.json', '--enable-unsafe-swiftshader',
   ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
   assert.doesNotMatch(proof, /waitForTimeout/)
-  assert.match(proofWorkflow, /capture-continuous-spatial-proof-v17\.mjs/)
+  assert.match(proofWorkflow, /capture-continuous-spatial-proof-v18\.mjs/)
+  assert.match(proofWorkflow, /URAI_HOME_EXPECT_READY/)
   assert.match(proofWorkflow, /PLAYWRIGHT_BROWSERS_PATH: '0'/)
   assert.match(proofWorkflow, /pnpm --dir urai-tier1 exec playwright install --with-deps chromium/)
 })

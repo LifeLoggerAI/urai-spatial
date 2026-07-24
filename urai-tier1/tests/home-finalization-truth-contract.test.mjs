@@ -14,10 +14,15 @@ const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const fallback = read('src/app/FinalHomeWorld.tsx')
 const doorwayProof = read('../tests/native-doorway-proof.mjs')
+const authoring = read('../scripts/author-home-finalization-assets.mjs')
+const authoredVerifier = read('../scripts/verify-home-finalization-authored-assets.mjs')
+const visualProof = read('../scripts/capture-continuous-spatial-proof-v18.mjs')
 
-test('Home remains visually NO-GO until exact deployed founder acceptance', () => {
+const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+
+test('Home remains visually NO-GO until exact deployed delegated founder acceptance', () => {
   assert.match(authority, /HOME VISUAL STATUS: NO-GO/)
-  assert.match(authority, /Adam Clamp explicitly approves the exact deployed desktop and mobile SHA/)
+  assert.match(authority, /delegated exact-SHA visual approval authority/)
   assert.match(authority, /No approval for another SHA transfers/)
 })
 
@@ -52,16 +57,22 @@ test('normal production personalization cannot silently consume disclosed sample
   assert.match(personalization, /No substitute memories or sample records were mounted/)
 })
 
-test('every required Orb state has sensory output bindings and a visible runtime owner', () => {
+test('every required Orb state maps to a directly bound authored GLB clip', () => {
+  const clips = ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']
   for (const state of ['dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking', 'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition']) {
     assert.match(orb, new RegExp(`\\b${state}: \\{`))
-    assert.match(assetOwner, new RegExp(`['"]${state}['"]`))
+    assert.match(assetOwner, new RegExp(`\\b${state}: ['"]Orb_`))
+  }
+  for (const clip of clips) {
+    has(assetOwner, clip)
+    has(authoring, clip)
   }
   for (const binding of ['animation', 'material', 'light', 'particles', 'movement', 'audioCue', 'caption', 'haptic', 'announcement', 'affordance']) {
     assert.match(orb, new RegExp(`readonly ${binding}`))
   }
-  assert.match(assetOwner, /resolveOrbSensoryOutput/)
-  assert.match(assetOwner, /data-home-orb-state=/)
+  assert.match(assetOwner, /useAnimations/)
+  assert.match(assetOwner, /data-home-orb-clip=/)
+  assert.match(assetOwner, /data-home-animation-owner="gltf-authored-clips"/)
   assert.match(assetOwner, /data-home-audio=/)
   assert.match(assetOwner, /Enable ambience/)
   assert.match(assetOwner, /aria-live="polite"/)
@@ -78,7 +89,8 @@ test('review candidates remain disclosed and cannot silently become promoted ass
   }
   assert.match(candidateState, /allowDisclosedReviewCandidate/)
   assert.match(assetOwner, /homeAssetReview/)
-  assert.match(assetOwner, /Review candidate composition — visually improved, still unapproved/)
+  assert.match(assetOwner, /data-home-review-disclosure=/)
+  assert.doesNotMatch(assetOwner, /Review candidate composition — visually improved, still unapproved\./)
 })
 
 test('asset-driven Home owns supported review runtime and procedural world is degraded fallback only', () => {
@@ -87,24 +99,48 @@ test('asset-driven Home owns supported review runtime and procedural world is de
   assert.match(runtime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
   assert.match(assetOwner, /AssetRuntimeBoundary/)
   assert.match(assetOwner, /fallback=\{fallback\}/)
-  assert.match(assetOwner, /home-authored-embodied-self/)
-  assert.doesNotMatch(assetOwner, /capsuleGeometry/)
-  assert.doesNotMatch(assetOwner, /const MEMORY_SCENES =/)
+  assert.match(assetOwner, /data-home-fallback-reason=/)
+  assert.match(assetOwner, /data-home-assets-ready=/)
+  assert.match(assetOwner, /Your private world is forming/)
+  assert.match(assetOwner, /home-authored-entry-chamber/)
+  assert.match(assetOwner, /home-embodied-presence-interaction/)
+  assert.doesNotMatch(assetOwner, /latheGeometry|capsuleGeometry|const MEMORY_SCENES =/)
   assert.match(fallback, /capsuleGeometry/)
   assert.match(fallback, /const MEMORY_SCENES =/)
   assert.match(authority, /reclassified as a fallback implementation/)
 })
 
-test('the review world has authored terrain memory forms and distinct portal compositions', () => {
-  assert.match(assetOwner, /home-authored-terrain/)
-  assert.match(assetOwner, /SanctuaryTerrain/)
+test('the review world uses authored sanctuary embodiment and meaningful spatial places', () => {
+  for (const marker of ['home-sanctuary-root','embodied-presence-root','embodied-presence-cloak-back','memory-place-anchor-1','ground-alcove-root','life-map-alcove-root','Home_Breathing','Presence_Idle','Presence_Privacy','Presence_Forming']) has(authoring, marker)
   assert.match(assetOwner, /MemoryPlace/)
+  assert.match(assetOwner, /OrganicArch/)
+  assert.match(assetOwner, /WovenLeaf/)
   assert.match(assetOwner, /relationship-presence/)
-  assert.match(assetOwner, /torusKnotGeometry/)
+  assert.doesNotMatch(assetOwner, /torusKnotGeometry|latheGeometry/)
   assert.match(assetOwner, /destination="ground"/)
   assert.match(assetOwner, /destination="life-map"/)
-  assert.match(assetOwner, /The path descends into Ground/)
-  assert.match(assetOwner, /The path rises into Life Map/)
+  assert.match(assetOwner, /living path descends into Ground/)
+  assert.match(assetOwner, /luminous path rises into Life Map/)
+})
+
+test('Portal opening traversal and closing phases bind all seven authored clips', () => {
+  for (const clip of ['Portal_Closed','Portal_Available','Portal_Attention','Portal_Active','Portal_Opening','Portal_Traversal','Portal_Closing']) {
+    has(authoring, clip)
+    has(assetOwner, clip)
+  }
+  assert.match(assetOwner, /setPhase\('opening'\)/)
+  assert.match(assetOwner, /setPhase\('traversal'\)/)
+  assert.match(assetOwner, /setPhase\('closing'\)/)
+  assert.match(assetOwner, /data-home-portal-sequence=/)
+})
+
+test('authored asset verification refuses structural pruning and premature promotion', () => {
+  assert.match(authoredVerifier, /minNodes: 120/)
+  assert.match(authoredVerifier, /minNodes: 40/)
+  assert.match(authoredVerifier, /minNodes: 20/)
+  assert.match(authoredVerifier, /EXT_meshopt_compression/)
+  assert.match(authoredVerifier, /status: 'future'/)
+  assert.match(authoredVerifier, /retired procedural review marker remains/)
 })
 
 test('persistent visible shortcut pills are removed and semantic direct access remains', () => {
@@ -125,4 +161,26 @@ test('personalized state changes actual world composition and exposes provenance
   assert.match(assetOwner, /Why am I seeing this\?/)
   assert.match(assetOwner, /Review consent/)
   assert.match(assetOwner, /Correct, hide, or delete sources/)
+})
+
+
+test('v18 exact-head evidence covers root parity mobile states motion portals accessibility and failures', () => {
+  for (const marker of [
+    "schemaVersion: 'urai-continuous-spatial-visual-proof-18'",
+    "route of ['/', '/home/']",
+    "portrait-mobile",
+    "landscape-mobile",
+    "homeOrbState",
+    "recordVideo",
+    "reducedMotion",
+    "forcedColors",
+    "homeAssetFailure",
+    "home-real-offline-transition",
+    "home-ground-portal-journey",
+    "home-life-map-portal-journey",
+    "home-no-webgl-fallback",
+    "home-pointer-look-desktop",
+    "home-touch-orb",
+  ]) has(visualProof, marker)
+  assert.doesNotMatch(visualProof, /waitForTimeout/)
 })

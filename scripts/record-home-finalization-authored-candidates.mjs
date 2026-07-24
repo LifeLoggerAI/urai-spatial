@@ -15,6 +15,8 @@ const maps = [
   ['urai-orb-avatar-v1', 'urai-orb-avatar-current', 'urai-orb-avatar-v1.glb'],
 ]
 
+if (source.schemaVersion !== 3 || source.sourceId !== 'urai-home-authored-sanctuary-source-v3') throw new Error('Expected authored source receipt v3')
+
 for (const [assetId, decisionId, fileName] of maps) {
   const filePath = path.join(root, 'urai-tier1/public/assets/urai/generated/models', fileName)
   const receiptPath = path.join(root, 'operations/assets/generated-receipts', `${assetId}.json`)
@@ -37,11 +39,11 @@ for (const [assetId, decisionId, fileName] of maps) {
     animationClips: (json.animations || []).map((clip) => clip.name),
   }
   receipt.compressionStatus = compression
-  receipt.source = 'URAI deterministic candidate forge; replaceable by reviewed provider asset'
-  receipt.license = 'URAI Labs internal production asset'
+  receipt.source = 'URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset'
+  receipt.license = 'URAI Labs internal proprietary production asset'
   receipt.authoredOwnership = source.ownership
   receipt.authoredLicense = source.license
-  receipt.generatedBy = 'scripts/author-home-finalization-assets.mjs + pinned @gltf-transform/cli Meshopt optimization + scripts/normalize-launch-critical-assets.mjs'
+  receipt.generatedBy = 'scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation'
   receipt.authoredSourceReceipt = 'operations/assets/sources/home-finalization-authored-source-v2.json'
   receipt.releaseState = 'candidate-not-production-ready'
   fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
@@ -59,13 +61,13 @@ for (const [assetId, decisionId, fileName] of maps) {
     animations: json.animations?.length || 0,
     animationClips: (json.animations || []).map((clip) => clip.name),
     compression,
-    validation: 'authored source lock, receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and founder visual acceptance still required',
+    validation: 'authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required',
     classification: compression === 'meshopt' ? 'authored compressed review candidate' : 'authored review candidate awaiting compression',
     reason: assetId === 'home-entry-chamber-v1'
-      ? 'Authored sanctuary architecture with grounded terrain, natural paths, portal alcoves, environmental landmarks, mobile-safe composition and retained source provenance. Remains review-only until exact-head visual acceptance.'
+      ? 'Authored sanctuary v3 with open mobile-safe sightline, grounded terrain, masonry vaults, natural paths, portal alcoves, environmental growth, authored embodied presence, personalized-place anchors and four Home/presence clips. Remains review-only until exact-head visual acceptance.'
       : assetId === 'portal-ring-master-v1'
-        ? 'Authored architectural portal with internal depth, named state nodes and seven animation clips. Remains review-only until route-wide visual acceptance.'
-        : 'Authored route-independent Orb rig with named nodes and twelve state clips. Remains review-only until runtime clip binding and exact-head visual acceptance.',
+        ? 'Authored architectural masonry portal v3 with internal depth, traversal veil, named interaction nodes and seven directly bound state clips. Remains review-only until route-wide visual acceptance.'
+        : 'Authored route-independent Orb v3 with layered petals, core, heart, aura, orbital systems and twelve directly bound state clips. Remains review-only until exact-head visual acceptance.',
   })
 }
 
@@ -81,10 +83,11 @@ if (fs.existsSync(summaryPath)) {
   summary.totalBytes = summary.assets.reduce((sum, item) => sum + Number(item.bytes || 0), 0)
   summary.authoredHomeAssets = true
   summary.authoredSourceReceipt = 'operations/assets/sources/home-finalization-authored-source-v2.json'
+  summary.authoredSourceId = source.sourceId
   fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`)
 }
 
-console.log(JSON.stringify({ ok: true, updated: maps.map(([id]) => id) }, null, 2))
+console.log(JSON.stringify({ ok: true, sourceId: source.sourceId, updated: maps.map(([id]) => id) }, null, 2))
 
 function readGlbJson(buffer) {
   if (buffer.readUInt32LE(0) !== 0x46546c67) throw new Error('Invalid GLB magic')
