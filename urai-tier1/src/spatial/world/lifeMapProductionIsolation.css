@@ -53,6 +53,8 @@ html.urai-route-life-map [data-testid='urai-true-3d-life-map'] canvas {
   opacity: 1 !important;
   visibility: visible !important;
   filter: saturate(.88) contrast(1.04) !important;
+  transform-origin: 50% 50% !important;
+  transition: transform .72s cubic-bezier(.2,.8,.2,1), filter .4s ease !important;
 }
 
 /* Semantic access remains available, but ordinary dashboard chrome does not own the frame. */
@@ -80,42 +82,94 @@ html.urai-route-life-map .life-map-navigator:not([open]) {
 }
 
 /* The world—not a wall of labels—owns the first read. */
+html.urai-route-life-map .life-map-title {
+  padding: 12px 14px !important;
+  border-left: 1px solid rgba(205, 240, 255, .28) !important;
+  background: linear-gradient(90deg, rgba(2, 7, 18, .76), rgba(2, 7, 18, 0)) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
 html.urai-route-life-map .life-map-title strong {
   font-size: clamp(24px, 3.1vw, 42px) !important;
   max-width: 11ch !important;
 }
 
 html.urai-route-life-map .life-map-world-label {
-  transition: opacity .28s ease, transform .28s ease, border-color .28s ease !important;
-}
-
-html.urai-route-life-map .life-map-world-label:not([data-active='true']) {
-  opacity: .16 !important;
-  transform: scale(.82) !important;
-  border-color: rgba(205, 244, 255, .08) !important;
-  background: rgba(2, 7, 18, .28) !important;
-  pointer-events: auto !important;
-}
-
-html.urai-route-life-map .life-map-world-label:not([data-active='true']):hover,
-html.urai-route-life-map .life-map-world-label:not([data-active='true']):focus-visible {
-  opacity: .92 !important;
-  transform: scale(1) !important;
-  background: rgba(5, 18, 31, .9) !important;
+  display: none !important;
 }
 
 html.urai-route-life-map .life-map-chapter-label {
-  opacity: .7 !important;
+  opacity: .48 !important;
+  padding: 5px 9px !important;
+  border-left-color: rgba(210, 240, 255, .18) !important;
+  background: rgba(2, 7, 18, .28) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'] canvas {
+  transform: scale(1.08) translateY(1.5%) !important;
+  filter: saturate(.94) contrast(1.08) brightness(.94) !important;
+}
+
+html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'] .life-map-title strong {
+  font-size: clamp(22px, 2.5vw, 34px) !important;
+  max-width: 16ch !important;
+  line-height: 1.02 !important;
+}
+
+html.urai-route-life-map .life-map-thresholds {
+  padding: 8px !important;
+  border: 1px solid rgba(205, 240, 255, .12) !important;
+  border-radius: 24px !important;
+  background: rgba(1, 5, 13, .64) !important;
+  backdrop-filter: blur(16px) saturate(1.1) !important;
+  box-shadow: 0 22px 80px rgba(0, 0, 0, .52) !important;
 }
 
 @media (max-width: 700px) {
-  html.urai-route-life-map .life-map-title strong {
-    font-size: 25px !important;
+  html.urai-route-life-map .life-map-title {
+    max-width: min(72vw, 270px) !important;
+    padding: 9px 10px !important;
   }
 
-  html.urai-route-life-map .life-map-world-label:not([data-active='true']) {
-    opacity: .1 !important;
-    transform: scale(.74) !important;
+  html.urai-route-life-map .life-map-title strong {
+    font-size: 23px !important;
+    max-width: 12ch !important;
+  }
+
+  html.urai-route-life-map .life-map-status {
+    top: auto !important;
+    right: 12px !important;
+    bottom: calc(env(safe-area-inset-bottom) + 154px) !important;
+    max-width: 46vw !important;
+    padding: 7px 9px !important;
+    background: rgba(2, 7, 18, .5) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  html.urai-route-life-map .life-map-chapter-label {
+    display: none !important;
+  }
+
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='overview'] canvas {
+    transform: scale(1.48) translateY(-1.5%) !important;
+  }
+
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'] canvas {
+    transform: scale(1.22) translateY(3.5%) !important;
+  }
+
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'] .life-map-title strong {
+    font-size: 20px !important;
+    max-width: 14ch !important;
+  }
+
+  html.urai-route-life-map .life-map-thresholds {
+    width: calc(100vw - 16px) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    gap: 7px !important;
+    padding: 7px !important;
+    border-radius: 20px !important;
   }
 
   html.urai-route-life-map .life-map-thresholds .overview-return {
@@ -124,7 +178,7 @@ html.urai-route-life-map .life-map-chapter-label {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.urai-route-life-map .life-map-world-label {
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'] canvas {
     transition: none !important;
   }
 }
@@ -137,6 +191,7 @@ html.urai-route-life-map .life-map-chapter-label {
   }
 
   html.urai-route-life-map .life-map-world-label {
+    display: block !important;
     opacity: 1 !important;
     transform: none !important;
   }
