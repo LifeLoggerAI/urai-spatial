@@ -55,16 +55,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Restore retained authored source tools
+      - name: Validate committed authored source tools
         shell: bash
         run: |
           set -euo pipefail
-          cat operations/assets/sources/bootstrap/author-home-finalization-assets.mjs.gz.b64.part* \
-            | base64 --decode | gzip --decompress > scripts/author-home-finalization-assets.mjs
-          base64 --decode operations/assets/sources/bootstrap/record-home-finalization-authored-candidates.mjs.gz.b64 \
-            | gzip --decompress > scripts/record-home-finalization-authored-candidates.mjs
-          base64 --decode operations/assets/sources/bootstrap/verify-home-finalization-authored-assets.mjs.gz.b64 \
-            | gzip --decompress > scripts/verify-home-finalization-authored-assets.mjs
           node --check scripts/author-home-finalization-assets.mjs
           node --check scripts/record-home-finalization-authored-candidates.mjs
           node --check scripts/verify-home-finalization-authored-assets.mjs
