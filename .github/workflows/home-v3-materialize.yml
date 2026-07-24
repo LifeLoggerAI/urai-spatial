@@ -1,0 +1,104 @@
+name: Home V3 Materialize
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/home-v3-materialize.yml'
+      - 'operations/assets/sources/bootstrap/home-v3-materialize.tgz.b64.part*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-v3-materialize-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'feat/home-final-personalized-sanctuary-20260723') ||
+       (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/home-final-personalized-sanctuary-20260723'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      HOME_BRANCH: feat/home-final-personalized-sanctuary-20260723
+      HOME_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.HOME_EXACT_HEAD }}
+          fetch-depth: 0
+
+      - name: Materialize reviewed v3 source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HOME_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          rm -rf /tmp/urai-home-v3
+          mkdir -p /tmp/urai-home-v3
+          cat operations/assets/sources/bootstrap/home-v3-materialize.tgz.b64.part* \
+            | base64 --decode | tar -xz -C /tmp/urai-home-v3
+
+          copy_one() {
+            local name="$1" target="$2" source
+            source="$(find /tmp/urai-home-v3 -type f -name "$name" -print -quit)"
+            test -n "$source"
+            mkdir -p "$(dirname "$target")"
+            cp "$source" "$target"
+          }
+
+          copy_one AssetDrivenHomeWorld.v3.tsx urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          copy_one author-home-finalization-assets-v3.mjs scripts/author-home-finalization-assets.mjs
+          copy_one record-home-finalization-authored-candidates.v3.mjs scripts/record-home-finalization-authored-candidates.mjs
+          copy_one verify-home-finalization-authored-assets.v3.mjs scripts/verify-home-finalization-authored-assets.mjs
+          copy_one capture-continuous-spatial-proof-v18.mjs scripts/capture-continuous-spatial-proof-v18.mjs
+          copy_one home-finalization-candidate-commit.v3.yml .github/workflows/home-finalization-candidate-commit.yml
+          copy_one launch-critical-asset-forge.v3.yml .github/workflows/launch-critical-asset-forge.yml
+          copy_one continuous-spatial-visual-proof.v18.yml .github/workflows/continuous-spatial-visual-proof.yml
+          copy_one home-finalization-truth-contract.v3.test.mjs urai-tier1/tests/home-finalization-truth-contract.test.mjs
+          copy_one embodied-exploration-contract.v3.test.mjs urai-tier1/tests/embodied-exploration-contract.test.mjs
+          copy_one continuous-spatial-restoration-contract.v18.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          copy_one HOME_FINALIZATION_AUTHORITY_2026-07-23.v3.md docs/home/HOME_FINALIZATION_AUTHORITY_2026-07-23.md
+
+          node --check scripts/author-home-finalization-assets.mjs
+          node --check scripts/record-home-finalization-authored-candidates.mjs
+          node --check scripts/verify-home-finalization-authored-assets.mjs
+          node --check scripts/capture-continuous-spatial-proof-v18.mjs
+          node --check urai-tier1/tests/home-finalization-truth-contract.test.mjs
+          node --check urai-tier1/tests/embodied-exploration-contract.test.mjs
+          node --check urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+
+      - name: Commit materialized v3 implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            urai-tier1/src/app/AssetDrivenHomeWorld.tsx \
+            scripts/author-home-finalization-assets.mjs \
+            scripts/record-home-finalization-authored-candidates.mjs \
+            scripts/verify-home-finalization-authored-assets.mjs \
+            scripts/capture-continuous-spatial-proof-v18.mjs \
+            .github/workflows/home-finalization-candidate-commit.yml \
+            .github/workflows/launch-critical-asset-forge.yml \
+            .github/workflows/continuous-spatial-visual-proof.yml \
+            urai-tier1/tests/home-finalization-truth-contract.test.mjs \
+            urai-tier1/tests/embodied-exploration-contract.test.mjs \
+            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs \
+            docs/home/HOME_FINALIZATION_AUTHORITY_2026-07-23.md
+          if git diff --cached --quiet; then
+            echo 'V3 implementation already materialized.'
+            exit 0
+          fi
+          git fetch origin "$HOME_BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$HOME_EXACT_HEAD"
+          git commit -m 'feat(home): replace rejected sanctuary with authored v3 runtime'
+          git push origin HEAD:"$HOME_BRANCH"
