@@ -19,8 +19,7 @@ const finalHome = read('src/app/FinalHomeWorld.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
 const css = read('src/app/spatial-runtime-restoration.css')
 const structuralCss = read('src/app/continuous-spatial-proof-defects.css')
-const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
-const proofRunner = read('../scripts/run-continuous-spatial-proof-fixed.mjs')
+const proof = read('../scripts/capture-continuous-spatial-proof-v17.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const groundOwner = read('src/app/ground/page.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
@@ -117,17 +116,18 @@ test('Ground navigation remains contained, keyboard-operable and safe-area aware
   assert.match(groundCanonical, /scroll-padding-inline-end:max\(14px,env\(safe-area-inset-right\)\)/)
 })
 
-test('exact-head browser proof stays deterministic, diagnostic and fallback-safe', () => {
+test('exact-head browser proof covers disclosed review states, movement and fallback safety', () => {
   for (const marker of [
-    "schemaVersion: 'urai-continuous-spatial-visual-proof-7'", 'home-no-webgl-fallback',
-    'probeWebGL', 'WEBGL_debug_renderer_info', 'waitForFirstSpatialFrame',
-    'urai:first-spatial-frame', 'canvasEvidence',
-    'navigationRailContained', 'life-map-selected', 'selectedMemoryControlsVisible',
-    '--enable-unsafe-swiftshader', 'fallbackOwnerVisible', 'desktop-no-webgl', 'receipt.json',
+    "schemaVersion: 'urai-continuous-spatial-visual-proof-17'",
+    'home-review-private', 'home-review-privacy', 'home-review-unavailable',
+    'homeAssetReview=1', 'homePrivateFixture=1', 'homeState=permission-limited', 'homeState=unavailable',
+    'reviewCandidateDisclosed', 'personalizationModeCorrect', 'reviewFixtureCorrect', 'orbStateCorrect',
+    'movementReachedOrb', 'sceneLabelRetired', 'home-no-webgl-fallback',
+    'probeWebGL', 'WEBGL_debug_renderer_info', 'life-map-selected', 'singleSelectedActionOwner',
+    '--enable-unsafe-swiftshader', 'fallbackOwnerVisible', 'receipt.json',
   ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
   assert.doesNotMatch(proof, /waitForTimeout/)
-  assert.match(proof, /getByRole\('navigation', \{ name: 'Direct Home destinations' \}\)/)
-  assert.match(proofRunner, /!source\.includes\('sceneLabelRetired'\) && !source\.includes\('thresholdLabelsVisible'\)/)
+  assert.match(proofWorkflow, /capture-continuous-spatial-proof-v17\.mjs/)
   assert.match(proofWorkflow, /PLAYWRIGHT_BROWSERS_PATH: '0'/)
   assert.match(proofWorkflow, /pnpm --dir urai-tier1 exec playwright install --with-deps chromium/)
 })
