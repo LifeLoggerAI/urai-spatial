@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
@@ -26,6 +27,7 @@ const SECONDARY_DESTINATIONS: readonly UraiDestination[] = [
 ]
 
 export function PersistentWorldCompanion() {
+  const router = useRouter()
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -99,6 +101,7 @@ export function PersistentWorldCompanion() {
     }
 
     const target = definitionForDestination(destination)
+    const sourcePathname = window.location.pathname.replace(/\/+$/, '') || '/'
     requestUraiWorldTravel({
       destination,
       href: target.href,
@@ -113,8 +116,15 @@ export function PersistentWorldCompanion() {
         privacyMode: world.privacyMode,
       },
     })
+    // The transition controller owns normal spatial travel. This guarded fallback
+    // guarantees a real button activation still completes if an event listener is
+    // interrupted during hydration or a synthetic accessibility activation.
+    window.setTimeout(() => {
+      const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+      if (currentPathname === sourcePathname) router.push(target.href)
+    }, 1800)
     closeCompanion(false)
-  }, [closeCompanion, phase, world])
+  }, [closeCompanion, phase, router, world])
 
   const returnThroughWorld = useCallback(() => {
     if (phase !== 'idle' || world.destination === 'home') {
