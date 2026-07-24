@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
@@ -103,8 +104,7 @@ jobs:
           set -o pipefail
           pnpm build:static 2>&1 | tee artifacts/continuous-spatial-proof/build-static.log
           build_status=${PIPESTATUS[0]}
-          printf '%s
-' "$build_status" > artifacts/continuous-spatial-proof/build-static-exit-code.txt
+          printf '%s\n' "$build_status" > artifacts/continuous-spatial-proof/build-static-exit-code.txt
           set -e
           exit "$build_status"
 
@@ -118,8 +118,7 @@ jobs:
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium \
             2>&1 | tee artifacts/continuous-spatial-proof/playwright-install.log
           install_status=${PIPESTATUS[0]}
-          printf '%s
-' "$install_status" > artifacts/continuous-spatial-proof/playwright-install-exit-code.txt
+          printf '%s\n' "$install_status" > artifacts/continuous-spatial-proof/playwright-install-exit-code.txt
           set -e
           test "$install_status" -eq 0
           pnpm --dir urai-tier1 exec playwright --version | tee artifacts/continuous-spatial-proof/playwright-version.txt
