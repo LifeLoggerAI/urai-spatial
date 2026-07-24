@@ -192,10 +192,25 @@ if (!source.includes('singleSelectedActionOwner')) {
   )
 }
 
+if (!source.includes('selected route reaches stable arrival before ownership verification')) {
+  replaceRequired(
+    'selected route arrival stability',
+    /await chooseVisibleLifeMapStar\(page\)\s*\}/,
+    `await chooseVisibleLifeMapStar(page)
+      await page.waitForFunction(() => {
+        const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
+        return root?.getAttribute('data-life-map-mode') === 'selected'
+          && root?.getAttribute('data-life-map-phase') === 'arrival'
+      }, null, { timeout: 30_000, polling: 25 })
+      // selected route reaches stable arrival before ownership verification
+    }`,
+  )
+}
+
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-16'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-17'",
 )
 
 await writeFile(patchedPath, source)
