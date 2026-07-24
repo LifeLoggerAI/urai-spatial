@@ -72,8 +72,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect(ground).toBeVisible({ timeout: 15_000 })
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
     await expect(ground.locator('canvas')).toBeVisible()
-    await holdKey(page, 'w', 550)
+    await page.keyboard.down('w')
     await expect(page.getByRole('status').filter({ hasText: /Moving through Ground/i })).toBeVisible()
+    await page.waitForTimeout(550)
+    await page.keyboard.up('w')
 
     const destinations = page.getByRole('navigation', { name: 'Ground destinations' })
     const privacyCard = destinations.getByRole('button', { name: /^Privacy Sanctuary\./i })
