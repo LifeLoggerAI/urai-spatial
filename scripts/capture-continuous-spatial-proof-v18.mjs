@@ -387,7 +387,7 @@ async function captureNormalMode(browser) {
     const id = `home-normal-${route === '/' ? 'root' : 'home'}-desktop`
     const { context, page } = await openContext(browser, viewports[0])
     const diagnostics = attachDiagnostics(page, id)
-    await page.goto(urlFor(route), { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await page.goto(urlFor(route, expectReady ? '' : candidateQuery()), { waitUntil: 'domcontentloaded', timeout: 45_000 })
     let result
     await waitForAssetHome(page)
     const expectedAssetMode = expectReady ? 'ready' : 'disclosed-review-candidate'
