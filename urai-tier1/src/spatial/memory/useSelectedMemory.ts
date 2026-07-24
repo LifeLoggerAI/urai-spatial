@@ -26,8 +26,8 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   if (!memoryId || memoryId.startsWith('demo:')) return null
 
   // Life Map is allowed to continue an explicitly disclosed sample into Focus or
-  // Replay. Canonicalize the identifier before resolving the memory so an
-  // unprefixed sample can never be mistaken for private user data.
+  // Replay. Canonicalize only the internal resolver identifier so the public URL
+  // preserves the exact Life Map node identity across realm boundaries.
   if (params.get('demo') === '1' && params.get('from') === 'life-map') {
     return `demo:${memoryId}`
   }
@@ -41,12 +41,16 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
-function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
+function preserveDemoContinuationIdentity(params: URLSearchParams) {
   if (typeof window === 'undefined') return
   const next = new URLSearchParams(params)
-  next.set('memoryId', demoMemoryId)
   next.set('demo', '1')
-  if (!next.get('node')) next.set('node', demoMemoryId.replace(/^demo:/, ''))
+  const memoryId = sanitizeMemoryId(next.get('memoryId') ?? next.get('node'))
+  if (memoryId) {
+    const publicMemoryId = memoryId.replace(/^demo:/, '')
+    next.set('memoryId', publicMemoryId)
+    next.set('node', publicMemoryId)
+  }
   const query = next.toString()
   window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
 }
@@ -71,7 +75,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (requestedDemoMemoryId) {
-      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
+      if (continuedDemoMemoryId) preserveDemoContinuationIdentity(params)
       const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
       if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
@@ -102,7 +106,6 @@ export function useSelectedMemory(): SelectedMemoryResult {
           setResult(unavailable('Selected memory could not be found.'))
           return
         }
-
         const parsed = parseSelectedMemory(snapshot.data(), user.uid, memoryId)
         if (parsed.memory && manifestId && parsed.memory.replayManifest.id !== manifestId) {
           setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this memory.' })
