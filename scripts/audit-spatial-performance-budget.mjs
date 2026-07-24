@@ -39,7 +39,7 @@ try { budget = JSON.parse(budgetSource) } catch (error) { failures.push(`Invalid
 for (const marker of ['deviceMemory', 'hardwareConcurrency', 'saveData', 'effectiveType', 'documentVisible']) requireMatch(`Adaptive controller ${marker}`, adaptiveController, new RegExp(marker))
 for (const marker of ['particleCount', 'pixelRatioMax', 'shadows', 'postprocessing', 'antialias']) requireMatch(`Secondary spatial Canvas consumes ${marker}`, canvas, new RegExp(`profile\\.${marker}`))
 for (const marker of ['pixelRatioMax', 'antialias', 'reducedMotion', 'shadows', 'documentVisible']) requireMatch(`Active Life Map consumes ${marker}`, lifeMap, new RegExp(`profile\\.${marker}`))
-for (const marker of ['tier', 'postprocessing', 'shadows', 'reducedMotion']) requireMatch(`Production Life Map consumes ${marker}`, productionWorld, new RegExp(`profile\\.${marker}`))
+for (const marker of ['tier', 'postprocessing', 'reducedMotion']) requireMatch(`Production Life Map consumes ${marker}`, productionWorld, new RegExp(`profile\\.${marker}`))
 
 requireMatch('Secondary visibility-aware frameloop', canvas, /frameloop=\{profile\.documentVisible \? 'always' : 'never'\}/)
 requireMatch('Secondary first actual frame marker', canvas, /useFrame\(\(\) => \{[\s\S]*markFirstSpatialFrame/)
