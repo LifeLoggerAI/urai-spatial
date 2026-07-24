@@ -97,12 +97,17 @@ export default function HomeSpatialRuntimeLayer() {
     const synchronizeHome = (home: HTMLElement) => {
       const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
       const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
+      const distance = Number.parseFloat(home.dataset.homeDistance ?? '0')
       if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
-      if (Number.isFinite(playerZ)) home.style.setProperty('--home-parallax-y', `${((playerZ - 7.6) * 1.35).toFixed(1)}px`)
+      if (Number.isFinite(playerZ)) {
+        const zOffset = playerZ - 7.6
+        const movementOffset = Math.abs(zOffset) > 0.001 ? zOffset : -Math.abs(distance)
+        home.style.setProperty('--home-parallax-y', `${(movementOffset * 1.35).toFixed(1)}px`)
+      }
     }
 
     const synchronizeAllHomes = () => {
-      document.querySelectorAll<HTMLElement>('.urai-final-home-world').forEach(synchronizeHome)
+      runtimeRef.current?.querySelectorAll<HTMLElement>('.urai-final-home-world').forEach(synchronizeHome)
     }
 
     synchronizeAllHomes()
@@ -115,12 +120,23 @@ export default function HomeSpatialRuntimeLayer() {
         if (record.type === 'childList') synchronizeAllHomes()
       })
     })
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
-      childList: true,
-      subtree: true,
-    })
+    const root = runtimeRef.current
+    if (root) {
+      observer.observe(root, {
+        attributes: true,
+        attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-distance'],
+        childList: true,
+        subtree: true,
+      })
+    }
+
+    const synchronizeAfterInput = () => {
+      synchronizeAllHomes()
+      window.requestAnimationFrame(synchronizeAllHomes)
+    }
+    window.addEventListener('keyup', synchronizeAfterInput)
+    window.addEventListener('pointerup', synchronizeAfterInput)
+    window.addEventListener('touchend', synchronizeAfterInput)
 
     let frame = 0
     const syncParallaxTelemetry = () => {
@@ -131,6 +147,9 @@ export default function HomeSpatialRuntimeLayer() {
 
     return () => {
       observer.disconnect()
+      window.removeEventListener('keyup', synchronizeAfterInput)
+      window.removeEventListener('pointerup', synchronizeAfterInput)
+      window.removeEventListener('touchend', synchronizeAfterInput)
       window.cancelAnimationFrame(frame)
     }
   }, [homeRuntimeActive, recoveryKey, rendererState])
