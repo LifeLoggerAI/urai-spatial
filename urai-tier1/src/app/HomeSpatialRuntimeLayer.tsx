@@ -92,24 +92,20 @@ export default function HomeSpatialRuntimeLayer() {
     const root = runtimeRef.current
     if (!root) return
 
+    let frame = 0
     const syncParallaxTelemetry = () => {
       const home = root.querySelector<HTMLElement>('.urai-final-home-world')
-      if (!home) return
-      const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
-      const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
-      if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
-      if (Number.isFinite(playerZ)) home.style.setProperty('--home-parallax-y', `${((playerZ - 7.6) * 1.35).toFixed(1)}px`)
+      if (home) {
+        const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
+        const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
+        if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
+        if (Number.isFinite(playerZ)) home.style.setProperty('--home-parallax-y', `${((playerZ - 7.6) * 1.35).toFixed(1)}px`)
+      }
+      frame = window.requestAnimationFrame(syncParallaxTelemetry)
     }
 
     syncParallaxTelemetry()
-    const observer = new MutationObserver(syncParallaxTelemetry)
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
-    })
-    return () => observer.disconnect()
+    return () => window.cancelAnimationFrame(frame)
   }, [homeRuntimeActive, recoveryKey, rendererState])
 
   if (!homeRouteActive || webglAvailable !== true) return null
