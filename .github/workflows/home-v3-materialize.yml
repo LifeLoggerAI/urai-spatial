@@ -15,6 +15,7 @@ concurrency:
   group: home-v3-materialize-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
+# Exact-head materialization is intentionally isolated from asset promotion.
 jobs:
   materialize:
     if: >-
