@@ -8,6 +8,7 @@ on:
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/home/**'
+      - 'operations/assets/launch-critical-assets.json'
       - 'operations/assets/home-finalization-candidate-decisions.json'
       - 'operations/assets/sources/**'
       - 'scripts/author-home-finalization-assets.mjs'
@@ -63,6 +64,33 @@ jobs:
           node --check scripts/record-home-finalization-authored-candidates.mjs
           node --check scripts/verify-home-finalization-authored-assets.mjs
           grep -q "urai-home-authored-sanctuary-source-v3" scripts/author-home-finalization-assets.mjs
+
+      - name: Repair materialized v3 typecheck and manifest provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+
+          const runtimePath = 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+          const runtime = fs.readFileSync(runtimePath, 'utf8')
+          const invalidCleanup = '  useEffect(() => () => mixer.stopAllAction(), [mixer])'
+          const validCleanup = '  useEffect(() => () => { mixer.stopAllAction() }, [mixer])'
+          if (!runtime.includes(validCleanup)) {
+            if (!runtime.includes(invalidCleanup)) throw new Error('Home v3 animation mixer cleanup contract was not found')
+            fs.writeFileSync(runtimePath, runtime.replace(invalidCleanup, validCleanup))
+          }
+
+          const manifestPath = 'operations/assets/launch-critical-assets.json'
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+          const authoredIds = new Set(['home-entry-chamber-v1', 'portal-ring-master-v1', 'urai-orb-avatar-v1'])
+          for (const asset of manifest.assets) {
+            if (!authoredIds.has(asset.id)) continue
+            asset.source = 'URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset'
+            asset.license = 'URAI Labs internal proprietary production asset'
+          }
+          fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+          NODE
 
       - name: Forge baseline launch candidates
         run: node scripts/forge-launch-critical-assets.mjs
@@ -121,6 +149,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- \
+            urai-tier1/src/app/AssetDrivenHomeWorld.tsx \
+            operations/assets/launch-critical-assets.json \
             scripts/author-home-finalization-assets.mjs \
             scripts/record-home-finalization-authored-candidates.mjs \
             scripts/verify-home-finalization-authored-assets.mjs \
@@ -150,6 +180,7 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           path: |
+            operations/assets/launch-critical-assets.json
             operations/assets/sources/home-finalization-authored-source-v2.json
             operations/assets/home-finalization-candidate-decisions.json
             operations/assets/generated-receipts/home-entry-chamber-v1.json
