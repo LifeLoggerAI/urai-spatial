@@ -71,8 +71,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
 
   requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
-  requireText(homeRuntime, 'FinalHomeWorld')
-  requireText(homeRuntime, 'data-home-visual-owner="final-coherent-sanctuary"')
+  requireText(homeRuntime, 'AssetDrivenHomeWorld')
+  requireText(homeRuntime, 'data-home-visual-owner="asset-driven-personalized-sanctuary"')
   requireText(finalHome, 'data-testid="urai-home-webgl-orb"')
   requireText(finalHome, 'const ORB_POSITION = new THREE.Vector3(0, 1.55, -1.2)')
   requireText(finalHome, '<meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />')
