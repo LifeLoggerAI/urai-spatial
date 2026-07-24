@@ -126,7 +126,7 @@ test('exact-head browser proof v18 covers parity states clips movement traversal
     "route of ['/', '/home/']", 'portrait-mobile', 'landscape-mobile',
     'homePrivateFixture=1', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline',
     'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop',
-    'home-ground-portal-journey', 'home-life-map-portal-journey', 'opening', 'traversal', 'closing',
+    "capturePortalJourney(browser, 'ground')", "capturePortalJourney(browser, 'life-map')", 'opening', 'traversal', 'closing',
     'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'homeAssetFailure',
     'home-no-webgl-fallback', 'receipt.json', '--enable-unsafe-swiftshader',
   ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
