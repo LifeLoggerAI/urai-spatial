@@ -14,6 +14,7 @@ const includesCanonical = (source, marker) => canonical(source).includes(canonic
 
 const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
 const css = read('src/app/spatial-runtime-restoration.css')
@@ -28,7 +29,7 @@ const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const groundArchitecture = read('src/app/ground/GroundContinuityArchitecture.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
-const homeGraph = `${homeRuntime}\n${finalHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${finalHome}`
 const groundGraph = `${ground}\n${groundModel}\n${groundScene}\n${groundArchitecture}`
 const groundCanonical = canonical(ground)
 
@@ -36,10 +37,12 @@ test('app template mounts the current WebGL owners without redirecting certified
   assert.match(template, /HomeSpatialRuntimeLayer/)
   assert.match(template, /spatial-runtime-restoration\.css/)
   assert.match(template, /continuous-spatial-proof-defects\.css/)
-  assert.match(homeRuntime, /data-urai-home-runtime="embodied-continuous-webgl-world"/)
-  assert.match(homeRuntime, /data-home-visual-owner="final-coherent-sanctuary"/)
+  assert.match(homeRuntime, /data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"/)
+  assert.match(homeRuntime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
   assert.match(homeRuntime, /data-home-exploration="walkable"/)
-  assert.match(homeRuntime, /FinalHomeWorld/)
+  assert.match(homeRuntime, /AssetDrivenHomeWorld/)
+  assert.match(assetHome, /data-home-primary-owner="asset-driven"/)
+  assert.match(assetHome, /FinalHomeWorld/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
