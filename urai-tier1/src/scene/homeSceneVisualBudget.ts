@@ -34,12 +34,8 @@ function qualityTierForMode(mode: HomeSceneMode, reducedMotion: boolean): Spatia
   return 'high'
 }
 
-function resolveMode(input: HomeSceneVisualBudgetInput): HomeSceneMode {
-  return input.mode ?? input.sceneMode
-}
-
 export function resolveHomeSceneVisualBudget(input: HomeSceneVisualBudgetInput): HomeSceneVisualBudget {
-  const mode = resolveMode(input)
+  const mode = 'sceneMode' in input ? input.sceneMode : input.mode
   const { reducedMotion } = input
   const budget = resolveSpatialRenderBudget({
     reducedMotion,
