@@ -16,6 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 # Exact-head materialization is intentionally isolated from asset promotion.
+# Workflow files are applied separately through the connected GitHub contents API;
+# GITHUB_TOKEN materializes only source/test/docs files to avoid workflow-scope rejection.
 jobs:
   materialize:
     if: >-
@@ -60,9 +62,6 @@ jobs:
           copy_one record-home-finalization-authored-candidates.v3.mjs scripts/record-home-finalization-authored-candidates.mjs
           copy_one verify-home-finalization-authored-assets.v3.mjs scripts/verify-home-finalization-authored-assets.mjs
           copy_one capture-continuous-spatial-proof-v18.mjs scripts/capture-continuous-spatial-proof-v18.mjs
-          copy_one home-finalization-candidate-commit.v3.yml .github/workflows/home-finalization-candidate-commit.yml
-          copy_one launch-critical-asset-forge.v3.yml .github/workflows/launch-critical-asset-forge.yml
-          copy_one continuous-spatial-visual-proof.v18.yml .github/workflows/continuous-spatial-visual-proof.yml
           copy_one home-finalization-truth-contract.v3.test.mjs urai-tier1/tests/home-finalization-truth-contract.test.mjs
           copy_one embodied-exploration-contract.v3.test.mjs urai-tier1/tests/embodied-exploration-contract.test.mjs
           copy_one continuous-spatial-restoration-contract.v18.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
@@ -88,9 +87,6 @@ jobs:
             scripts/record-home-finalization-authored-candidates.mjs \
             scripts/verify-home-finalization-authored-assets.mjs \
             scripts/capture-continuous-spatial-proof-v18.mjs \
-            .github/workflows/home-finalization-candidate-commit.yml \
-            .github/workflows/launch-critical-asset-forge.yml \
-            .github/workflows/continuous-spatial-visual-proof.yml \
             urai-tier1/tests/home-finalization-truth-contract.test.mjs \
             urai-tier1/tests/embodied-exploration-contract.test.mjs \
             urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs \
