@@ -89,18 +89,15 @@ export default function HomeSpatialRuntimeLayer() {
 
   useEffect(() => {
     if (!homeRuntimeActive || rendererState === 'failed') return
-    const root = runtimeRef.current
-    if (!root) return
 
     let frame = 0
     const syncParallaxTelemetry = () => {
-      const home = root.querySelector<HTMLElement>('.urai-final-home-world')
-      if (home) {
+      document.querySelectorAll<HTMLElement>('.urai-final-home-world').forEach((home) => {
         const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
         const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
         if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
         if (Number.isFinite(playerZ)) home.style.setProperty('--home-parallax-y', `${((playerZ - 7.6) * 1.35).toFixed(1)}px`)
-      }
+      })
       frame = window.requestAnimationFrame(syncParallaxTelemetry)
     }
 
