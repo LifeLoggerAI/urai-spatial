@@ -43,7 +43,7 @@
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
   "generatedBy": "scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation",
-  "generatedAt": "2026-07-24T04:35:52.014Z",
+  "generatedAt": "2026-07-24T04:43:08.589Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
   "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",
