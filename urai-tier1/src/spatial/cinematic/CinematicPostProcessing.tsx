@@ -25,12 +25,31 @@ export default function CinematicPostProcessing({
     [budget, sharedVisualBudget, effectiveReducedMotion],
   )
 
+  const chromaticOffset = useMemo(() => new Vector2(0.00045, 0.00035), [])
+
   if (!active) return null
 
   const qualityTier = resolvedBudget.qualityTier
   const bloomEnabled = resolvedBudget.bloomEnabled
   const chromaticAberrationEnabled = resolvedBudget.chromaticAberrationEnabled
   const highQuality = qualityTier === 'high' && !effectiveReducedMotion
+
+  const effects = [
+    bloomEnabled ? (
+      <Bloom
+        key="bloom"
+        intensity={qualityTier === 'low' ? 0.32 : qualityTier === 'medium' ? 0.62 : 0.78}
+        luminanceThreshold={qualityTier === 'low' ? 0.28 : 0.18}
+        luminanceSmoothing={0.64}
+        mipmapBlur={qualityTier !== 'low'}
+      />
+    ) : null,
+    highQuality ? <DepthOfField key="depth-of-field" focusDistance={0.025} focalLength={0.034} bokehScale={1.15} height={360} /> : null,
+    chromaticAberrationEnabled && !effectiveReducedMotion ? (
+      <ChromaticAberration key="chromatic-aberration" blendFunction={BlendFunction.NORMAL} offset={chromaticOffset} />
+    ) : null,
+    <Vignette key="vignette" eskil={false} offset={0.16} darkness={qualityTier === 'low' ? 0.5 : highQuality ? 0.78 : 0.66} />,
+  ].filter(Boolean)
 
   return (
     <group
@@ -44,22 +63,7 @@ export default function CinematicPostProcessing({
     >
       {/* Contract anchors: data-testid="urai-cinematic-postprocessing-budget" data-render-budget-quality-tier={qualityTier} data-render-budget-bloom-enabled={bloomEnabled ? 'true' : 'false'} data-render-budget-chromatic-aberration-enabled={chromaticAberrationEnabled ? 'true' : 'false'} */}
       <EffectComposer multisampling={0} enabled={active}>
-        {bloomEnabled ? (
-          <Bloom
-            intensity={qualityTier === 'low' ? 0.32 : qualityTier === 'medium' ? 0.62 : 0.78}
-            luminanceThreshold={qualityTier === 'low' ? 0.28 : 0.18}
-            luminanceSmoothing={0.64}
-            mipmapBlur={qualityTier !== 'low'}
-          />
-        ) : null}
-
-        {highQuality ? <DepthOfField focusDistance={0.025} focalLength={0.034} bokehScale={1.15} height={360} /> : null}
-
-        {chromaticAberrationEnabled && !effectiveReducedMotion ? (
-          <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new Vector2(0.00045, 0.00035)} />
-        ) : null}
-
-        <Vignette eskil={false} offset={0.16} darkness={qualityTier === 'low' ? 0.5 : highQuality ? 0.78 : 0.66} />
+        {effects}
       </EffectComposer>
     </group>
   )
