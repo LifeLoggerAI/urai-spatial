@@ -32,6 +32,34 @@ const stableSelection = `async function selectQuietReset(page) {
   await waitForState(page, 'data-life-map-mode', 'selected')
 }`
 
+const originalRouteAction = `async function clickRouteAction(page, name, destinationPath, destinationSelector) {
+  const action = selectedActions(page).getByRole('button', { name, exact: true })
+  await action.waitFor({ state: 'visible', timeout: 20_000 })
+  await action.click()
+  await page.waitForFunction((expectedPath) => window.location.pathname.replace(/\/$/, '') === expectedPath, destinationPath, { timeout: 30_000, polling: 50 })
+  await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  await stable(page)
+}`
+
+const stableRouteAction = `function selectedAction(page, label) {
+  return selectedActions(page)
+    .locator('button')
+    .filter({ has: page.getByText(label, { exact: true }) })
+    .first()
+}
+
+async function clickRouteAction(page, name, destinationPath, destinationSelector) {
+  const action = selectedAction(page, name)
+  await action.waitFor({ state: 'visible', timeout: 20_000 })
+  await action.click()
+  await page.waitForFunction((expectedPath) => window.location.pathname.replace(/\/$/, '') === expectedPath, destinationPath, { timeout: 30_000, polling: 50 })
+  await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  await stable(page)
+}`
+
+const originalOverviewAction = `    const overviewAction = selectedActions(page).getByRole('button', { name: 'Overview', exact: true })`
+const stableOverviewAction = `    const overviewAction = selectedAction(page, 'Overview')`
+
 const contextLine = `  const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: options.reducedMotion || 'no-preference' })`
 const stableContext = `${contextLine}
   await context.addInitScript(() => {
@@ -43,9 +71,13 @@ const stableContext = `${contextLine}
   })`
 
 if (!source.includes(originalSelection)) throw new Error('Founder selection source drifted; semantic repair not applied')
+if (!source.includes(originalRouteAction)) throw new Error('Founder route-action source drifted; visible-label repair not applied')
+if (!source.includes(originalOverviewAction)) throw new Error('Founder Overview source drifted; visible-label repair not applied')
 if (!source.includes(contextLine)) throw new Error('Founder context source drifted; deterministic phase repair not applied')
 source = source
   .replace(originalSelection, stableSelection)
+  .replace(originalRouteAction, stableRouteAction)
+  .replace(originalOverviewAction, stableOverviewAction)
   .replace(contextLine, stableContext)
   .replace('async function waitForState(page, attribute, expected, timeout = 8_000)', 'async function waitForState(page, attribute, expected, timeout = 90_000)')
 await writeFile(generatedPath, source)
