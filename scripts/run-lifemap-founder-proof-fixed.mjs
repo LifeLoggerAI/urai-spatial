@@ -61,24 +61,15 @@ const originalOverviewAction = `    const overviewAction = selectedActions(page)
 const stableOverviewAction = `    const overviewAction = selectedAction(page, 'Overview')`
 
 const contextLine = `  const context = await browser.newContext({ viewport: options.viewport || { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: options.reducedMotion || 'no-preference' })`
-const stableContext = `${contextLine}
-  await context.addInitScript(() => {
-    const nativeSetTimeout = window.setTimeout.bind(window)
-    window.setTimeout = ((handler, timeout = 0, ...args) => {
-      const retained = timeout === 280 || timeout === 720 || timeout === 820 ? 75_000 : timeout
-      return nativeSetTimeout(handler, retained, ...args)
-    })
-  })`
 
 if (!source.includes(originalSelection)) throw new Error('Founder selection source drifted; semantic repair not applied')
 if (!source.includes(originalRouteAction)) throw new Error('Founder route-action source drifted; visible-label repair not applied')
 if (!source.includes(originalOverviewAction)) throw new Error('Founder Overview source drifted; visible-label repair not applied')
-if (!source.includes(contextLine)) throw new Error('Founder context source drifted; deterministic phase repair not applied')
+if (!source.includes(contextLine)) throw new Error('Founder context source drifted; deterministic proof context not found')
 source = source
   .replace(originalSelection, stableSelection)
   .replace(originalRouteAction, stableRouteAction)
   .replace(originalOverviewAction, stableOverviewAction)
-  .replace(contextLine, stableContext)
-  .replace('async function waitForState(page, attribute, expected, timeout = 8_000)', 'async function waitForState(page, attribute, expected, timeout = 90_000)')
+  .replace('async function waitForState(page, attribute, expected, timeout = 8_000)', 'async function waitForState(page, attribute, expected, timeout = 30_000)')
 await writeFile(generatedPath, source)
 await import(generatedPath)
