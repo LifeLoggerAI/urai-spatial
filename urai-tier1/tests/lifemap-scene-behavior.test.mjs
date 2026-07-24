@@ -11,6 +11,9 @@ const visualSystem = fs.readFileSync(new URL('../src/components/lifemap/lifeMapV
 const demo = fs.readFileSync(new URL('../src/components/lifemap/canonicalLifeMapDemoNodes.ts', import.meta.url), 'utf8')
 const navigator = fs.readFileSync(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const events = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
+const shell = fs.readFileSync(new URL('../src/spatial/world/UraiWorldShell.tsx', import.meta.url), 'utf8')
+const isolation = fs.readFileSync(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
+const proof = fs.readFileSync(new URL('../../scripts/capture-lifemap-founder-proof.mjs', import.meta.url), 'utf8')
 
 test('Life Map route has one canonical production scene owner', () => {
   assert.match(page, /SpatialLifeMapCanonical/)
@@ -25,26 +28,45 @@ test('Life Map route has one canonical production scene owner', () => {
   assert.match(source, /<LifeMapProductionWorld/)
 })
 
+test('Canonical Life Map visually isolates the authored world from legacy plates and dashboard chrome', () => {
+  assert.match(shell, /lifeMapProductionIsolation\.css/)
+  assert.match(isolation, /urai-world-atmosphere/)
+  assert.match(isolation, /urai-final-asset-spine-scene-layer/)
+  assert.match(isolation, /data-testid='urai-true-3d-life-map'/)
+  assert.match(isolation, /opacity: 1 !important/)
+  assert.match(isolation, /life-map-journey-rail/)
+  assert.match(isolation, /life-map-semantic-inspector/)
+  assert.match(isolation, /life-map-navigator:not\(\[open\]\)/)
+})
+
 test('Life Map establishes authored foreground middle distance and horizon depth', () => {
-  assert.match(world, /life-map-white-gold-life-core/)
-  assert.match(world, /life-map-authored-chapter-regions/)
-  assert.match(world, /life-map-goal-horizon/)
-  assert.match(world, /life-map-achievement-monument/)
-  assert.match(world, /life-map-privacy-vault/)
-  assert.match(world, /life-map-emotional-weather/)
-  assert.match(world, /life-map-archive-particles/)
-  assert.match(world, /life-map-far-future-horizon/)
+  for (const marker of [
+    'life-map-white-gold-life-core',
+    'life-map-authored-chapter-regions',
+    'life-map-light-bridges',
+    'life-map-foreground-observatory',
+    'life-map-relationship-observatory',
+    'life-map-goal-horizon',
+    'life-map-achievement-monument',
+    'life-map-privacy-vault',
+    'life-map-emotional-weather',
+    'life-map-archive-particles',
+    'life-map-far-future-horizon',
+  ]) assert.match(world, new RegExp(marker))
   assert.match(world, /fog attach="fog"/)
   assert.match(world, /data-scale="cosmic-overview"/)
   assert.match(world, /data-scale="intimate"/)
+  for (const band of ['near', 'middle', 'far']) assert.match(world, new RegExp(`data-depth-band="${band}"`))
 })
 
-test('Life Map uses deterministic travel compositions with a safe selected-memory stand-off', () => {
+test('Life Map uses deterministic sequential travel compositions with a safe selected-memory stand-off', () => {
   for (const phase of ['overview', 'departure', 'travel', 'approach', 'arrival']) assert.ok(source.includes(`"${phase}"`))
   assert.ok(source.includes('setPhase("departure")'))
   assert.ok(source.includes('setPhase("travel")'))
   assert.ok(source.includes('setPhase("approach")'))
   assert.ok(source.includes('setPhase("arrival")'))
+  assert.ok(source.includes('PHASE_DURATION_MS[phase]'))
+  assert.ok(source.includes('journeyToken.current'))
   assert.ok(source.includes('goalForNode'))
   assert.match(source, /const SELECTED_MEMORY_STANDOFF = 5\.[0-9]+/)
   assert.ok(source.includes('addScaledVector(direction, SELECTED_MEMORY_STANDOFF)'))
@@ -52,6 +74,7 @@ test('Life Map uses deterministic travel compositions with a safe selected-memor
   assert.ok(source.includes('THREE.MathUtils.damp'))
   assert.ok(source.includes('data-life-map-phase={phase}'))
   assert.ok(source.includes('data-life-map-scale='))
+  assert.doesNotMatch(source, /setTimeout\(\(\) => setPhase\("approach"\), 1050\)/)
 })
 
 test('Production artifacts are differentiated by meaning rather than generic bubbles', () => {
@@ -67,7 +90,7 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
 
-test('Relationships use curved semantic path classes and privacy-aware rendering', () => {
+test('Relationships use curved semantic path classes, living pulses, and privacy-aware rendering', () => {
   for (const kind of ['family', 'friendship', 'work', 'conflict', 'goal', 'temporal', 'pattern', 'confirmed', 'inferred', 'corrected', 'protected']) {
     assert.ok(visualSystem.includes(`"${kind}"`), `missing path kind ${kind}`)
   }
@@ -76,6 +99,7 @@ test('Relationships use curved semantic path classes and privacy-aware rendering
   assert.match(world, /resolvePathKind\(source, target\)/)
   assert.match(world, /kind === "protected"/)
   assert.match(world, /dashed={kind === "inferred" \|\| kind === "corrected" \|\| kind === "protected"}/)
+  assert.match(world, /curve\.getPoint\(t\)/)
 })
 
 test('Selection Focus Replay Overview and Escape preserve artifact identity', () => {
@@ -87,6 +111,7 @@ test('Selection Focus Replay Overview and Escape preserve artifact identity', ()
   assert.ok(source.includes('router.push(destinationHref("replay"))'))
   assert.ok(source.includes('if (selectedId) overview(); else router.push("/home")'))
   assert.ok(source.includes('next.set("overview", "1")'))
+  assert.match(source, /aria-label="Selected memory actions"/)
 })
 
 test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
@@ -132,11 +157,11 @@ test('Signed-out threshold never mounts private memory data', () => {
 
 test('Reduced motion portrait adaptive quality and high contrast retain equivalent journeys', () => {
   assert.match(source, /profile\.reducedMotion/)
+  assert.match(source, /shadows={profile\.shadows}/)
   assert.match(world, /profile\.tier/)
   assert.match(world, /profile\.postprocessing/)
-  assert.match(world, /profile\.shadows/)
   assert.match(source, /size\.height > size\.width/)
-  assert.match(source, /positionGoal\.current\.set\(0, 2\.15, 17\.8\)/)
+  assert.match(source, /positionGoal\.current\.set\(0, 2\.15, 16\.6\)/)
   assert.match(source, /@media\(max-width:700px\)/)
   assert.match(source, /@media\(prefers-reduced-motion:reduce\)/)
   assert.match(source, /@media\(forced-colors:active\)/)
@@ -144,6 +169,17 @@ test('Reduced motion portrait adaptive quality and high contrast retain equivale
   assert.ok(source.includes('env(safe-area-inset-bottom)'))
   assert.match(navigator, /@media\(max-width:760px\)/)
   assert.match(navigator, /@media\(prefers-reduced-motion:reduce\)/)
+})
+
+test('Founder proof rejects blank, duplicate, or state-incomplete WebGL evidence', () => {
+  assert.match(proof, /waitForRenderedWorld/)
+  assert.match(proof, /data-life-map-visible-anchors/)
+  assert.match(proof, /parallax proof produced duplicate captures/)
+  assert.match(proof, /WebGL pixel variance is below the visible-world minimum/)
+  assert.match(proof, /waitForState\(page, 'data-life-map-phase', 'approach'\)/)
+  assert.match(proof, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
+  assert.match(proof, /requestfailed/)
+  assert.match(proof, /pageerror/)
 })
 
 test('WebGL context loss preserves truthful semantic recovery', () => {
