@@ -6,6 +6,7 @@ const routeSource = readFileSync(new URL('../src/app/life-map/page.tsx', import.
 const canonicalSource = readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
 const boundarySource = readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const sceneSource = readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const isolationSource = readFileSync(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
 const universeSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapUniverseData.ts', import.meta.url), 'utf8')
 
 test('Life Map route preserves the final canonical composed authority', () => {
@@ -21,7 +22,7 @@ test('private selected-memory state and truth boundaries remain inside the route
   assert.ok(!sceneSource.includes('Orb companion'))
   assert.ok(sceneSource.includes('data-home-companion-owned="false"'))
   assert.ok(sceneSource.includes('data-life-map-source={sourceMode}'))
-  assert.ok(sceneSource.includes('Sample constellation · not your memories'))
+  assert.ok(sceneSource.includes('Disclosed sample universe · not your memories'))
   assert.ok(canonicalSource.includes('data-private-memory-mounted="false"'))
 })
 
@@ -53,6 +54,6 @@ test('selected-memory travel and recenter remain user controlled', () => {
 test('mobile controls retain safe areas and 48px touch targets', () => {
   assert.match(sceneSource, /@media\(max-width:700px\)/)
   assert.match(sceneSource, /env\(safe-area-inset-bottom\)/)
-  assert.match(sceneSource, /min-height:48px/)
-  assert.match(sceneSource, /width:calc\(100vw - 32px\)/)
+  assert.match(isolationSource, /\.life-map-thresholds \.overview-return \{[\s\S]*min-height: 48px !important;/)
+  assert.match(isolationSource, /width: calc\(100vw - 16px\) !important;/)
 })
