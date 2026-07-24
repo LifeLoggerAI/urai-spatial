@@ -99,6 +99,8 @@ export default function HomeSpatialRuntimeLayer() {
       data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"
       data-home-visual-owner="asset-driven-personalized-sanctuary"
       data-home-exploration="walkable"
+      data-home-ground-portal="home-ground-portal-world-owned"
+      data-home-life-map-portal="home-life-map-portal-world-owned"
       data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
       aria-label="URAI living spatial Home"
     >
