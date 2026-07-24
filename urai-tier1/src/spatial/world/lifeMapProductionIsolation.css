@@ -1,0 +1,72 @@
+/* Canonical Life Map owns its complete visible world.
+   Legacy shared atmosphere, asset plates, and dashboard chrome must never cover it. */
+
+.urai-world-runtime[data-world-destination='life-map'] {
+  position: relative;
+  isolation: isolate;
+  background: #02050b;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] > .urai-world-atmosphere,
+html.urai-route-life-map .urai-final-asset-spine-scene-layer,
+html.urai-route-life-map body::before,
+html.urai-route-life-map body::after {
+  display: none !important;
+}
+
+html.urai-route-life-map [data-testid='urai-r3f-canonical-lifemap'] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 90 !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  background: #02050b !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  isolation: isolate !important;
+}
+
+html.urai-route-life-map [data-testid='urai-true-3d-life-map'] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100 !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: #02050b !important;
+  isolation: isolate !important;
+}
+
+html.urai-route-life-map [data-testid='urai-true-3d-life-map'] canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+}
+
+/* Semantic access remains available, but ordinary dashboard chrome does not own the frame. */
+html.urai-route-life-map .life-map-journey-rail,
+html.urai-route-life-map .life-map-semantic-inspector,
+html.urai-route-life-map .life-map-movement-help {
+  display: none !important;
+}
+
+html.urai-route-life-map .life-map-navigator {
+  z-index: 130 !important;
+}
+
+@media (forced-colors: active) {
+  html.urai-route-life-map [data-testid='urai-r3f-canonical-lifemap'],
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'] {
+    background: Canvas !important;
+    color: CanvasText !important;
+  }
+}
