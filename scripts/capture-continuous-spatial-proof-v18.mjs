@@ -389,21 +389,22 @@ async function captureNormalMode(browser) {
     const diagnostics = attachDiagnostics(page, id)
     await page.goto(urlFor(route), { waitUntil: 'domcontentloaded', timeout: 45_000 })
     let result
-    if (expectReady) {
-      await waitForAssetHome(page)
-      result = { expected: 'ready', verification: await verifyHome(page, { mode: 'unavailable', fixture: 'none', orbState: 'warning', assetMode: 'ready' }) }
-    } else {
-      const fallback = page.locator(fallbackSelector).first()
-      await fallback.waitFor({ state: 'visible', timeout: 30_000 })
-      result = { expected: 'canonical-fallback', fallbackVisible: true }
-    }
+    await waitForAssetHome(page)
+    const expectedAssetMode = expectReady ? 'ready' : 'disclosed-review-candidate'
+    const verification = await verifyHome(page, {
+      mode: 'unavailable',
+      fixture: 'none',
+      orbState: 'warning',
+      assetMode: expectedAssetMode,
+    })
+    result = { expected: expectedAssetMode, verification }
     const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
     await page.screenshot({ path: screenshot })
     const diagnosticResult = diagnostics()
     const video = await closeAndRecordVideo(context, page, id)
     const record = { id, route, screenshot: path.relative(outputDir, screenshot), video, result, diagnostics: diagnosticResult }
     receipt.captures.push(record)
-    if ((expectReady && !result.verification?.passed) || diagnosticResult.pageErrors.length) receipt.errors.push(record)
+    if (!result.verification?.passed || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
   }
 }
 
