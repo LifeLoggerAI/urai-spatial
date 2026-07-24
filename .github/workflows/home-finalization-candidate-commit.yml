@@ -7,6 +7,7 @@ on:
       - '.github/workflows/home-finalization-candidate-commit.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/spatial-runtime-restoration.css'
       - 'urai-tier1/src/app/home/**'
       - 'operations/assets/launch-critical-assets.json'
       - 'operations/assets/home-finalization-candidate-decisions.json'
@@ -65,7 +66,7 @@ jobs:
           node --check scripts/verify-home-finalization-authored-assets.mjs
           grep -q "urai-home-authored-sanctuary-source-v3" scripts/author-home-finalization-assets.mjs
 
-      - name: Repair materialized v3 typecheck and manifest provenance
+      - name: Repair materialized v3 typecheck manifest provenance and fallback visibility
         shell: bash
         run: |
           set -euo pipefail
@@ -80,6 +81,15 @@ jobs:
             if (!runtime.includes(invalidCleanup)) throw new Error('Home v3 animation mixer cleanup contract was not found')
             fs.writeFileSync(runtimePath, runtime.replace(invalidCleanup, validCleanup))
           }
+
+          const cssPath = 'urai-tier1/src/app/spatial-runtime-restoration.css'
+          const css = fs.readFileSync(cssPath, 'utf8')
+          const broadOwner = 'body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final'
+          const assetOwner = 'body:has(.urai-asset-home-world) .urai-home-spatial-world-final'
+          if (css.includes(broadOwner)) fs.writeFileSync(cssPath, css.split(broadOwner).join(assetOwner))
+          const repairedCss = fs.readFileSync(cssPath, 'utf8')
+          if (repairedCss.includes(broadOwner)) throw new Error('Fallback veil rule still targets the runtime wrapper')
+          if (!repairedCss.includes(assetOwner)) throw new Error('Asset-driven overlay veil rule was not retained')
 
           const manifestPath = 'operations/assets/launch-critical-assets.json'
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
@@ -150,6 +160,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- \
             urai-tier1/src/app/AssetDrivenHomeWorld.tsx \
+            urai-tier1/src/app/spatial-runtime-restoration.css \
             operations/assets/launch-critical-assets.json \
             scripts/author-home-finalization-assets.mjs \
             scripts/record-home-finalization-authored-candidates.mjs \
@@ -169,7 +180,7 @@ jobs:
           fi
           git fetch origin "$HOME_BRANCH"
           test "$(git rev-parse FETCH_HEAD)" = "$HOME_EXACT_HEAD"
-          git commit -m 'assets(home): retain authored compressed Home Portal and Orb candidates'
+          git commit -m 'assets(home): retain authored candidates and truthful fallback visibility'
           git push origin HEAD:"$HOME_BRANCH"
 
       - name: Upload authored candidate evidence
@@ -180,6 +191,7 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           path: |
+            urai-tier1/src/app/spatial-runtime-restoration.css
             operations/assets/launch-critical-assets.json
             operations/assets/sources/home-finalization-authored-source-v2.json
             operations/assets/home-finalization-candidate-decisions.json
