@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
@@ -59,6 +59,10 @@ export function useSelectedMemory(): SelectedMemoryResult {
   const requestedDemoMemoryId = isExplicitDemoRequest(params) ? memoryId : continuedDemoMemoryId
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
 
+  useLayoutEffect(() => {
+    if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
+  }, [continuedDemoMemoryId, params])
+
   useEffect(() => {
     let cancelled = false
 
@@ -68,7 +72,6 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (requestedDemoMemoryId) {
-      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
       const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
       if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
