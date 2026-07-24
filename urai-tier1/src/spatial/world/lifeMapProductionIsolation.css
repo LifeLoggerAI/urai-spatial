@@ -117,6 +117,10 @@ html.urai-route-life-map .life-map-chapter-label {
     opacity: .1 !important;
     transform: scale(.74) !important;
   }
+
+  html.urai-route-life-map .life-map-thresholds .overview-return {
+    min-height: 48px !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
