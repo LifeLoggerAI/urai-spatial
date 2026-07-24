@@ -150,12 +150,8 @@ if (!source.includes('unselectedActionControlsAbsent')) {
     'Life Map unselected action ownership',
     /const spatialVisible = await page\.locator\('\[data-testid="urai-true-3d-life-map"\]'\)\.first\(\)\.getAttribute\('data-spatial-visible'\)\s*const canvas = await canvasEvidence\(page, '\[data-testid="urai-true-3d-life-map"\] canvas'\)\s*return \{/,
     `const spatialVisible = await page.locator('[data-testid="urai-true-3d-life-map"]').first().getAttribute('data-spatial-visible')
-      const unselectedFocus = page.getByRole('button', { name: /^(Enter )?Focus$/ })
-      const unselectedReplay = page.getByRole('button', { name: 'Replay', exact: true })
-      const unselectedActionControlsAbsent = (
-        await visibleElementCount(unselectedFocus) === 0
-        && await visibleElementCount(unselectedReplay) === 0
-      )
+      const unselectedOwner = page.locator('nav[aria-label="Selected memory actions"]')
+      const unselectedActionControlsAbsent = await visibleElementCount(unselectedOwner) === 0
       const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
       return {`,
   )
@@ -172,11 +168,14 @@ if (!source.includes('singleSelectedActionOwner')) {
   replaceRequired(
     'selected-memory controls',
     /const selectedControls = page\.getByRole\('button', \{ name: 'Enter Focus' \}\)\s*const selectedMemoryControlsVisible = await selectedControls\.count\(\) >= 1 && await selectedControls\.first\(\)\.isVisible\(\)\s*const replayControl = page\.getByRole\('button', \{ name: 'Replay' \}\)/,
-    `const selectedControls = page.getByRole('button', { name: 'Enter Focus', exact: true })
-      const replayControl = page.getByRole('button', { name: 'Replay', exact: true })
+    `const selectedOwner = page.locator('nav[aria-label="Selected memory actions"]')
+      const selectedControls = selectedOwner.locator('button.focus-threshold')
+      const replayControl = selectedOwner.locator('button.replay-threshold')
       const selectedMemoryControlsVisible = await visibleElementCount(selectedControls) === 1
       const replayControlVisible = await visibleElementCount(replayControl) === 1
-      const singleSelectedActionOwner = selectedMemoryControlsVisible && replayControlVisible`,
+      const singleSelectedActionOwner = await visibleElementCount(selectedOwner) === 1
+        && selectedMemoryControlsVisible
+        && replayControlVisible`,
   )
   replaceRequired(
     'selected-memory duplicate replay visibility',
@@ -210,7 +209,7 @@ if (!source.includes('selected route reaches stable arrival before ownership ver
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-17'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-18'",
 )
 
 await writeFile(patchedPath, source)
