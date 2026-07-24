@@ -49,6 +49,7 @@ jobs:
           node --check scripts/author-home-finalization-assets.mjs
           node --check scripts/record-home-finalization-authored-candidates.mjs
           node --check scripts/verify-home-finalization-authored-assets.mjs
+          grep -q "urai-home-authored-sanctuary-source-v3" scripts/author-home-finalization-assets.mjs
 
       - name: Forge baseline launch candidates
         run: node scripts/forge-launch-critical-assets.mjs
