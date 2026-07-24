@@ -6,36 +6,42 @@
     "/",
     "/home"
   ],
-  "bytes": 45904,
-  "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+  "bytes": 90628,
+  "sha256": "d7e6c32de40c6a503a0c9581c2e1f12db64898e549871ae284a58f9f79848f96",
   "measured": {
-    "triangleCount": 2132,
+    "triangleCount": 25254,
     "boundsMeters": {
       "min": [
-        -6.5,
-        -2.61,
-        -6.5
+        -8.8,
+        -1.81,
+        -9.6
       ],
       "max": [
-        6.5,
-        6.39,
-        6.5
+        8.8,
+        5.54,
+        8
       ],
       "size": [
-        13,
-        9,
-        13
+        17.6,
+        7.35,
+        17.6
       ]
     },
-    "repairedEulerRotations": 2
+    "repairedEulerRotations": 2,
+    "nodeCount": 62,
+    "materialCount": 9,
+    "animationClips": []
   },
-  "compressionStatus": "uncompressed-glb-candidate",
+  "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-07-23T21:41:50.299Z",
+  "generatedBy": "scripts/author-home-finalization-assets.mjs + pinned @gltf-transform/cli Meshopt optimization + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-07-24T01:53:35.238Z",
   "releaseState": "candidate-not-production-ready",
-  "absolutePath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+  "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",
+  "authoredLicense": "URAI Labs internal proprietary; redistribution governed by repository license and asset receipts",
+  "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json"
 }

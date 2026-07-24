@@ -10,36 +10,50 @@
     "/focus",
     "/replay"
   ],
-  "bytes": 32912,
-  "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
+  "bytes": 58736,
+  "sha256": "227203946d5acd7029d123c6509733a587e3435bed19c89078c5a74c7c1b2d72",
   "measured": {
-    "triangleCount": 1560,
+    "triangleCount": 8844,
     "boundsMeters": {
       "min": [
-        -2.42,
-        -2.56,
-        -0.625
+        -2.16,
+        -2.51,
+        -0.92
       ],
       "max": [
-        2.42,
-        2.42,
-        0.625
+        2.16,
+        2.95,
+        1.16
       ],
       "size": [
-        4.84,
-        4.98,
-        1.25
+        4.32,
+        5.46,
+        2.08
       ]
     },
-    "repairedEulerRotations": 2
+    "repairedEulerRotations": 2,
+    "nodeCount": 30,
+    "materialCount": 6,
+    "animationClips": [
+      "Portal_Closed",
+      "Portal_Available",
+      "Portal_Attention",
+      "Portal_Active",
+      "Portal_Opening",
+      "Portal_Traversal",
+      "Portal_Closing"
+    ]
   },
-  "compressionStatus": "uncompressed-glb-candidate",
+  "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-portal-ring",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "scripts/forge-launch-critical-assets.mjs + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-07-23T21:41:50.304Z",
+  "generatedBy": "scripts/author-home-finalization-assets.mjs + pinned @gltf-transform/cli Meshopt optimization + scripts/normalize-launch-critical-assets.mjs",
+  "generatedAt": "2026-07-24T01:53:35.244Z",
   "releaseState": "candidate-not-production-ready",
-  "absolutePath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb"
+  "absolutePath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+  "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",
+  "authoredLicense": "URAI Labs internal proprietary; redistribution governed by repository license and asset receipts",
+  "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json"
 }

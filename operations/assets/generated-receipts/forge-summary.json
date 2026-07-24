@@ -1,36 +1,39 @@
 {
   "manifestId": "urai-launch-critical-assets-v1",
-  "generatedAt": "2026-07-23T21:41:50.581Z",
+  "generatedAt": "2026-07-24T01:53:35.516Z",
   "candidateOnly": true,
   "normalized": true,
   "assetCount": 12,
-  "totalBytes": 2056575,
+  "totalBytes": 2150795,
   "assets": [
     {
       "id": "home-entry-chamber-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-      "bytes": 45904,
-      "sha256": "0a3c3c2da53c5fe25958e57954c8337d7a27d9c4f94ae0967de21ae84e3e8883",
+      "bytes": 90628,
+      "sha256": "d7e6c32de40c6a503a0c9581c2e1f12db64898e549871ae284a58f9f79848f96",
       "measured": {
-        "triangleCount": 2132,
+        "triangleCount": 25254,
         "boundsMeters": {
           "min": [
-            -6.5,
-            -2.61,
-            -6.5
+            -8.8,
+            -1.81,
+            -9.6
           ],
           "max": [
-            6.5,
-            6.39,
-            6.5
+            8.8,
+            5.54,
+            8
           ],
           "size": [
-            13,
-            9,
-            13
+            17.6,
+            7.35,
+            17.6
           ]
         },
-        "repairedEulerRotations": 2
+        "repairedEulerRotations": 2,
+        "nodeCount": 62,
+        "materialCount": 9,
+        "animationClips": []
       }
     },
     {
@@ -144,55 +147,82 @@
     {
       "id": "urai-orb-avatar-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-      "bytes": 55980,
-      "sha256": "83b252f0de613a60fffb15e07cdf4f02ca81b59aac5d5bfccce7ee716287f77d",
+      "bytes": 79652,
+      "sha256": "a1a3cf781da4df31b7b4ee1cd4b076a6f2698971da71faaddf7458b38bd76661",
       "measured": {
-        "triangleCount": 2784,
+        "triangleCount": 11248,
         "boundsMeters": {
           "min": [
-            -0.745,
-            -0.745,
-            -0.56
+            -0.712,
+            -0.712,
+            -0.48
           ],
           "max": [
-            0.745,
-            0.745,
-            0.56
+            0.738,
+            0.712,
+            0.48
           ],
           "size": [
-            1.49,
-            1.49,
-            1.12
+            1.45,
+            1.424,
+            0.96
           ]
         },
-        "repairedEulerRotations": 2
+        "repairedEulerRotations": 2,
+        "nodeCount": 23,
+        "materialCount": 6,
+        "animationClips": [
+          "Orb_Resting",
+          "Orb_Idle",
+          "Orb_Attention",
+          "Orb_Listening",
+          "Orb_Thinking",
+          "Orb_Speaking",
+          "Orb_Guiding",
+          "Orb_Reflecting",
+          "Orb_Calming",
+          "Orb_Privacy",
+          "Orb_Degraded",
+          "Orb_Transition"
+        ]
       }
     },
     {
       "id": "portal-ring-master-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-      "bytes": 32912,
-      "sha256": "578bcc59ac90d7df5193fc67cf94efbd4b663a2035a1cd807d494a294c3af00f",
+      "bytes": 58736,
+      "sha256": "227203946d5acd7029d123c6509733a587e3435bed19c89078c5a74c7c1b2d72",
       "measured": {
-        "triangleCount": 1560,
+        "triangleCount": 8844,
         "boundsMeters": {
           "min": [
-            -2.42,
-            -2.56,
-            -0.625
+            -2.16,
+            -2.51,
+            -0.92
           ],
           "max": [
-            2.42,
-            2.42,
-            0.625
+            2.16,
+            2.95,
+            1.16
           ],
           "size": [
-            4.84,
-            4.98,
-            1.25
+            4.32,
+            5.46,
+            2.08
           ]
         },
-        "repairedEulerRotations": 2
+        "repairedEulerRotations": 2,
+        "nodeCount": 30,
+        "materialCount": 6,
+        "animationClips": [
+          "Portal_Closed",
+          "Portal_Available",
+          "Portal_Attention",
+          "Portal_Active",
+          "Portal_Opening",
+          "Portal_Traversal",
+          "Portal_Closing"
+        ]
       }
     },
     {
@@ -248,5 +278,7 @@
         "channels": 1
       }
     }
-  ]
+  ],
+  "authoredHomeAssets": true,
+  "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json"
 }

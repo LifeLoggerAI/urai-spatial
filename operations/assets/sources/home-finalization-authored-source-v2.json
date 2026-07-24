@@ -17,7 +17,23 @@
       "nodes": 62,
       "materials": 11,
       "animations": 0,
-      "boundsMeters": {"min": [-8.8, -1.81, -9.6], "max": [8.8, 5.54, 8], "size": [17.6, 7.35, 17.6]}
+      "boundsMeters": {
+        "min": [
+          -8.8,
+          -1.81,
+          -9.6
+        ],
+        "max": [
+          8.8,
+          5.54,
+          8
+        ],
+        "size": [
+          17.6,
+          7.35,
+          17.6
+        ]
+      }
     },
     {
       "fileName": "portal-ring-master-v1.glb",
@@ -27,7 +43,23 @@
       "nodes": 25,
       "materials": 11,
       "animations": 7,
-      "boundsMeters": {"min": [-2.16, -2.51, -0.92], "max": [2.16, 2.95, 1.16], "size": [4.32, 5.46, 2.08]}
+      "boundsMeters": {
+        "min": [
+          -2.16,
+          -2.51,
+          -0.92
+        ],
+        "max": [
+          2.16,
+          2.95,
+          1.16
+        ],
+        "size": [
+          4.32,
+          5.46,
+          2.08
+        ]
+      }
     },
     {
       "fileName": "urai-orb-avatar-v1.glb",
@@ -37,7 +69,23 @@
       "nodes": 18,
       "materials": 11,
       "animations": 12,
-      "boundsMeters": {"min": [-0.712, -0.712, -0.48], "max": [0.738, 0.712, 0.48], "size": [1.45, 1.424, 0.96]}
+      "boundsMeters": {
+        "min": [
+          -0.712,
+          -0.712,
+          -0.48
+        ],
+        "max": [
+          0.738,
+          0.712,
+          0.48
+        ],
+        "size": [
+          1.45,
+          1.424,
+          0.96
+        ]
+      }
     }
   ]
 }
