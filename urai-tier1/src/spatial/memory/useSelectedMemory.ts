@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
@@ -48,20 +48,28 @@ function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: str
   window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
 }
 
-export function useSelectedMemory(): SelectedMemoryResult {
-  const params = useMemo(() => {
-    if (typeof window === 'undefined') return new URLSearchParams()
+function initialSelectedMemoryParams() {
+  if (typeof window === 'undefined') return new URLSearchParams()
+
+  const initial = new URLSearchParams(window.location.search)
+  const initialMemoryId = sanitizeMemoryId(initial.get('memoryId') ?? initial.get('node'))
+  const continuedDemoMemoryId = demoContinuationMemoryId(initial, initialMemoryId)
+
+  if (continuedDemoMemoryId) {
+    canonicalizeDemoContinuation(initial, continuedDemoMemoryId)
     return new URLSearchParams(window.location.search)
-  }, [])
+  }
+
+  return initial
+}
+
+export function useSelectedMemory(): SelectedMemoryResult {
+  const params = useMemo(initialSelectedMemoryParams, [])
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
   const continuedDemoMemoryId = demoContinuationMemoryId(params, memoryId)
   const requestedDemoMemoryId = isExplicitDemoRequest(params) ? memoryId : continuedDemoMemoryId
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
-
-  useLayoutEffect(() => {
-    if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
-  }, [continuedDemoMemoryId, params])
 
   useEffect(() => {
     let cancelled = false
