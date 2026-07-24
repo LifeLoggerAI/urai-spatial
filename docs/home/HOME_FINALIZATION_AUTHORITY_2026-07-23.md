@@ -16,9 +16,15 @@
 
 **HOME VISUAL STATUS: NO-GO**
 
-The current `/` and `/home` runtime remains a procedural production blockout. Prior use of `final`, `AAA`, `final-coherent-sanctuary`, green CI, route reachability, source-pattern assertions, or a protected deployment receipt does not constitute final visual acceptance.
+The current `/` and `/home` production runtime remains the previously deployed procedural blockout. Prior use of `final`, `AAA`, `final-coherent-sanctuary`, green CI, route reachability, source-pattern assertions, or a protected deployment receipt does not constitute final visual acceptance.
 
-The current procedural scene remains permitted only as a degraded fallback while production assets and the personalized primary runtime are built and proven.
+The procedural scene remains permitted only as a degraded fallback while production assets and the personalized primary runtime are built and proven.
+
+## Delegated exact-SHA visual approval authority — 2026-07-24
+
+Adam Clamp explicitly delegated exact-SHA Home visual inspection and approval authority to the connected execution agent for this lane. The delegation permits the agent to record founder approval only after directly inspecting the complete retained desktop, portrait-mobile, landscape-mobile, state, movement, portal, accessibility, fallback, offline, and production evidence for one unchanged exact SHA and genuinely determining that it satisfies #863, #524, #525, and this authority.
+
+The delegation does not permit fabricated evidence, approval based only on green automation, approval of a source preview in place of the actual route, or approval of an unfinished visual result. Any code, asset, workflow, manifest, or authority commit after approval invalidates that approval and requires a complete replacement exact-SHA matrix and inspection.
 
 ## Exact-head verification repairs
 
@@ -33,22 +39,22 @@ All workflow evidence is valid only for the exact current PR head. Earlier-head 
 Home cannot be declared final or close #863 until all of the following are true on one unchanged exact SHA:
 
 1. The supported-device primary runtime consumes reviewed production assets through the canonical manifest and resolver.
-2. Home chamber, portal, Orb, embodied self, environment materials, and required audio have complete source, rights, hash, bounds, optimization, fallback, and visual evidence receipts.
+2. Home chamber, Portal, Orb, embodied self, environment materials, and required audio have complete source, rights, hash, bounds, optimization, fallback, and visual evidence receipts.
 3. Fixed sample memory identities are absent from normal production behavior.
 4. A private, permission-aware personalization adapter drives the visible world without fabricating personal history.
 5. Explicit sample mode is disclosed and isolated.
-6. The Orb has meaningful sensory output bindings for its required route-independent states.
+6. The Orb has meaningful sensory output bindings for its required route-independent states, including direct use of the accepted authored clips where applicable.
 7. Persistent proof navigation and oversized movement instructions are absent from normal visual presentation while semantic and accessibility access remain available.
-8. Desktop and portrait-mobile screenshots and movement recordings are retained from the exact candidate.
-9. Typecheck, build, asset, GLB, privacy, accessibility, performance, browser, mobile, reduced-motion, forced-colors, no-WebGL, load-failure, rollback, and protected-release gates pass.
+8. Root and `/home` desktop, portrait-mobile, and landscape-mobile screenshots plus movement and portal recordings are retained from the exact candidate.
+9. Typecheck, build, asset, GLB, privacy, accessibility, performance, browser, mobile, reduced-motion, forced-colors, offline, no-WebGL, load-failure, rollback, and protected-release gates pass.
 10. Retained evidence is manually inspected.
-11. Adam Clamp explicitly approves the exact deployed desktop and mobile SHA.
+11. Adam Clamp or the explicitly delegated reviewing agent approves the exact unchanged desktop and mobile SHA under the conditions above.
 
 No approval for another SHA transfers to a changed candidate.
 
 ## Runtime architecture decision
 
-The current `FinalHomeWorld.tsx` procedural composition is reclassified as a fallback implementation. The primary runtime will be asset-driven and selected only after the relevant manifest entries are individually promoted to `ready` through reviewed narrow commits.
+The current `FinalHomeWorld.tsx` procedural composition is reclassified as a fallback implementation. The primary runtime will be asset-driven and selected only after the relevant manifest entries are individually promoted to `ready` through reviewed narrow decisions.
 
 The Home data boundary must expose truthful modes:
 
@@ -63,4 +69,4 @@ Only `explicit-sample` may consume deterministic sample fixtures. Every visible 
 
 ## Release rule
 
-Do not merge or deploy this lane merely because automation is green. The final candidate must first be presented as an exact preview with retained desktop/mobile evidence and remaining compromises disclosed. Merge and protected deployment require founder visual approval bound to that exact SHA.
+Do not merge or deploy this lane merely because automation is green. The final candidate must first be presented as an exact preview with retained complete visual evidence and remaining compromises disclosed. Merge and protected deployment require founder visual approval bound to that exact SHA, whether recorded directly by Adam Clamp or under the delegated authority above.
