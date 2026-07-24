@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
       - 'scripts/capture-lifemap-founder-proof.mjs'
+      - 'scripts/run-lifemap-founder-proof-fixed.mjs'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
@@ -92,7 +93,7 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/lifemap-founder-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-          node scripts/capture-lifemap-founder-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
+          node scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
 
       - name: Upload exact-head founder receipt
         if: always()
