@@ -24,7 +24,7 @@ jobs:
         github.event.pull_request.head.repo.full_name == github.repository &&
         github.event.pull_request.head.ref == 'feat/home-final-personalized-sanctuary-20260723') ||
        (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/home-final-personalized-sanctuary-20260723'))
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       HOME_BRANCH: feat/home-final-personalized-sanctuary-20260723
