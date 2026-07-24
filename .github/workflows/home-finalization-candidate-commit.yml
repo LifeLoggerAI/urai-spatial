@@ -66,7 +66,7 @@ jobs:
           node --check scripts/verify-home-finalization-authored-assets.mjs
           grep -q "urai-home-authored-sanctuary-source-v3" scripts/author-home-finalization-assets.mjs
 
-      - name: Repair materialized v3 typecheck manifest provenance and fallback visibility
+      - name: Repair materialized v3 typecheck manifest provenance fallback visibility and review hydration
         shell: bash
         run: |
           set -euo pipefail
@@ -74,13 +74,22 @@ jobs:
           import fs from 'node:fs'
 
           const runtimePath = 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
-          const runtime = fs.readFileSync(runtimePath, 'utf8')
+          let runtime = fs.readFileSync(runtimePath, 'utf8')
           const invalidCleanup = '  useEffect(() => () => mixer.stopAllAction(), [mixer])'
           const validCleanup = '  useEffect(() => () => { mixer.stopAllAction() }, [mixer])'
           if (!runtime.includes(validCleanup)) {
             if (!runtime.includes(invalidCleanup)) throw new Error('Home v3 animation mixer cleanup contract was not found')
-            fs.writeFileSync(runtimePath, runtime.replace(invalidCleanup, validCleanup))
+            runtime = runtime.replace(invalidCleanup, validCleanup)
           }
+
+          const serverLockedReview = "  const reviewMode = useMemo(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetReview') === '1', [])"
+          const hydratedReview = `  const [reviewMode, setReviewMode] = useState(false)
+          useEffect(() => {
+            setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
+          }, [])`
+          if (runtime.includes(serverLockedReview)) runtime = runtime.replace(serverLockedReview, hydratedReview)
+          if (!runtime.includes('const [reviewMode, setReviewMode] = useState(false)')) throw new Error('Hydrated disclosed review-mode contract was not materialized')
+          fs.writeFileSync(runtimePath, runtime)
 
           const cssPath = 'urai-tier1/src/app/spatial-runtime-restoration.css'
           const css = fs.readFileSync(cssPath, 'utf8')
@@ -180,12 +189,12 @@ jobs:
           fi
           git fetch origin "$HOME_BRANCH"
           test "$(git rev-parse FETCH_HEAD)" = "$HOME_EXACT_HEAD"
-          git commit -m 'assets(home): retain authored candidates and truthful fallback visibility'
+          git commit -m 'assets(home): retain authored candidates and hydrated review runtime'
           git push origin HEAD:"$HOME_BRANCH"
 
       - name: Upload authored candidate evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@ea165f8d65b540449e92b4886f43607fa02
         with:
           name: home-finalization-authored-candidates-${{ env.HOME_EXACT_HEAD }}
           retention-days: 30
