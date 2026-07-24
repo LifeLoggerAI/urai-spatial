@@ -18,9 +18,13 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   lastTravelAt = now
   const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
+
+  const fallbackHref = request.href
+  if (!fallbackHref) return
+
   window.setTimeout(() => {
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) window.location.assign(request.href)
+    if (currentLocation === startingLocation) window.location.assign(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 }
 
