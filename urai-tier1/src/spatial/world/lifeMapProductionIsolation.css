@@ -63,6 +63,19 @@ html.urai-route-life-map .life-map-navigator {
   z-index: 130 !important;
 }
 
+html.urai-route-life-map .life-map-navigator:not([open]) {
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 @media (forced-colors: active) {
   html.urai-route-life-map [data-testid='urai-r3f-canonical-lifemap'],
   html.urai-route-life-map [data-testid='urai-true-3d-life-map'] {
