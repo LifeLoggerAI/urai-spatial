@@ -10,30 +10,30 @@
     "/focus",
     "/replay"
   ],
-  "bytes": 58736,
-  "sha256": "227203946d5acd7029d123c6509733a587e3435bed19c89078c5a74c7c1b2d72",
+  "bytes": 73164,
+  "sha256": "7b3d133aec57896416d8617522c3a8a5381e5b918397974bf054b46c0b1c3961",
   "measured": {
-    "triangleCount": 8844,
+    "triangleCount": 7576,
     "boundsMeters": {
       "min": [
-        -2.16,
-        -2.51,
-        -0.92
+        -1.9753,
+        -2.52,
+        -1.02
       ],
       "max": [
-        2.16,
-        2.95,
-        1.16
+        2,
+        2.9579,
+        1.2349
       ],
       "size": [
-        4.32,
-        5.46,
-        2.08
+        3.9753,
+        5.4779,
+        2.2549
       ]
     },
     "repairedEulerRotations": 2,
-    "nodeCount": 30,
-    "materialCount": 6,
+    "nodeCount": 53,
+    "materialCount": 8,
     "animationClips": [
       "Portal_Closed",
       "Portal_Available",
@@ -47,10 +47,10 @@
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-portal-ring",
-  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-  "license": "URAI Labs internal production asset",
-  "generatedBy": "scripts/author-home-finalization-assets.mjs + pinned @gltf-transform/cli Meshopt optimization + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-07-24T03:22:52.644Z",
+  "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+  "license": "URAI Labs internal proprietary production asset",
+  "generatedBy": "scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation",
+  "generatedAt": "2026-07-24T03:57:16.219Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
   "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",

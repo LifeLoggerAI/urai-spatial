@@ -6,39 +6,44 @@
     "/",
     "/home"
   ],
-  "bytes": 90628,
-  "sha256": "d7e6c32de40c6a503a0c9581c2e1f12db64898e549871ae284a58f9f79848f96",
+  "bytes": 184160,
+  "sha256": "414ce8368de280b057a38157585fe0ed8c3626327345cd294f8b8f58e6ffc271",
   "measured": {
-    "triangleCount": 25254,
+    "triangleCount": 12934,
     "boundsMeters": {
       "min": [
-        -8.8,
-        -1.81,
-        -9.6
+        -9.345,
+        -1.83,
+        -9.238
       ],
       "max": [
-        8.8,
-        5.54,
-        8
+        9.345,
+        5.0844,
+        7.452
       ],
       "size": [
-        17.6,
-        7.35,
-        17.6
+        18.69,
+        6.9144,
+        16.69
       ]
     },
     "repairedEulerRotations": 2,
-    "nodeCount": 62,
-    "materialCount": 9,
-    "animationClips": []
+    "nodeCount": 160,
+    "materialCount": 13,
+    "animationClips": [
+      "Home_Breathing",
+      "Presence_Idle",
+      "Presence_Privacy",
+      "Presence_Forming"
+    ]
   },
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
-  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-  "license": "URAI Labs internal production asset",
-  "generatedBy": "scripts/author-home-finalization-assets.mjs + pinned @gltf-transform/cli Meshopt optimization + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-07-24T03:22:52.639Z",
+  "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+  "license": "URAI Labs internal proprietary production asset",
+  "generatedBy": "scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation",
+  "generatedAt": "2026-07-24T03:57:16.214Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
   "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",

@@ -18,35 +18,40 @@
   "decisions": [
     {
       "id": "home-entry-chamber-current",
-      "sha256": "d7e6c32de40c6a503a0c9581c2e1f12db64898e549871ae284a58f9f79848f96",
-      "bytes": 90628,
-      "triangleCount": 25254,
+      "sha256": "414ce8368de280b057a38157585fe0ed8c3626327345cd294f8b8f58e6ffc271",
+      "bytes": 184160,
+      "triangleCount": 12934,
       "boundsMeters": {
         "min": [
-          -8.8,
-          -1.81,
-          -9.6
+          -9.345,
+          -1.83,
+          -9.238
         ],
         "max": [
-          8.8,
-          5.54,
-          8
+          9.345,
+          5.0844,
+          7.452
         ],
         "size": [
-          17.6,
-          7.35,
-          17.6
+          18.69,
+          6.9144,
+          16.69
         ]
       },
-      "nodes": 62,
-      "materials": 9,
+      "nodes": 160,
+      "materials": 13,
       "textures": 0,
-      "animations": 0,
+      "animations": 4,
       "compression": "meshopt",
-      "validation": "authored source lock, receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and founder visual acceptance still required",
+      "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required",
       "classification": "authored compressed review candidate",
-      "reason": "Authored sanctuary architecture with grounded terrain, natural paths, portal alcoves, environmental landmarks, mobile-safe composition and retained source provenance. Remains review-only until exact-head visual acceptance.",
-      "animationClips": []
+      "reason": "Authored sanctuary v3 with open mobile-safe sightline, grounded terrain, masonry vaults, natural paths, portal alcoves, environmental growth, authored embodied presence, personalized-place anchors and four Home/presence clips. Remains review-only until exact-head visual acceptance.",
+      "animationClips": [
+        "Home_Breathing",
+        "Presence_Idle",
+        "Presence_Privacy",
+        "Presence_Forming"
+      ]
     },
     {
       "id": "home-entry-chamber-legacy",
@@ -63,33 +68,33 @@
     },
     {
       "id": "portal-ring-current",
-      "sha256": "227203946d5acd7029d123c6509733a587e3435bed19c89078c5a74c7c1b2d72",
-      "bytes": 58736,
-      "triangleCount": 8844,
+      "sha256": "7b3d133aec57896416d8617522c3a8a5381e5b918397974bf054b46c0b1c3961",
+      "bytes": 73164,
+      "triangleCount": 7576,
       "boundsMeters": {
         "min": [
-          -2.16,
-          -2.51,
-          -0.92
+          -1.9753,
+          -2.52,
+          -1.02
         ],
         "max": [
-          2.16,
-          2.95,
-          1.16
+          2,
+          2.9579,
+          1.2349
         ],
         "size": [
-          4.32,
-          5.46,
-          2.08
+          3.9753,
+          5.4779,
+          2.2549
         ]
       },
-      "nodes": 30,
-      "materials": 6,
+      "nodes": 53,
+      "materials": 8,
       "textures": 0,
       "animations": 7,
       "compression": "meshopt",
       "classification": "authored compressed review candidate",
-      "reason": "Authored architectural portal with internal depth, named state nodes and seven animation clips. Remains review-only until route-wide visual acceptance.",
+      "reason": "Authored architectural masonry portal v3 with internal depth, traversal veil, named interaction nodes and seven directly bound state clips. Remains review-only until route-wide visual acceptance.",
       "animationClips": [
         "Portal_Closed",
         "Portal_Available",
@@ -99,7 +104,7 @@
         "Portal_Traversal",
         "Portal_Closing"
       ],
-      "validation": "authored source lock, receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and founder visual acceptance still required"
+      "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required"
     },
     {
       "id": "portal-ring-legacy",
@@ -116,33 +121,33 @@
     },
     {
       "id": "urai-orb-avatar-current",
-      "sha256": "a1a3cf781da4df31b7b4ee1cd4b076a6f2698971da71faaddf7458b38bd76661",
-      "bytes": 79652,
-      "triangleCount": 11248,
+      "sha256": "557bd8eaf4b53d91a7d115343f841673c86feca72eda028960411cbfd6632016",
+      "bytes": 83984,
+      "triangleCount": 8776,
       "boundsMeters": {
         "min": [
-          -0.712,
-          -0.712,
-          -0.48
+          -0.765,
+          -0.73,
+          -0.4873
         ],
         "max": [
-          0.738,
-          0.712,
-          0.48
+          0.756,
+          0.73,
+          0.4873
         ],
         "size": [
-          1.45,
-          1.424,
-          0.96
+          1.521,
+          1.46,
+          0.9746
         ]
       },
-      "nodes": 23,
-      "materials": 6,
+      "nodes": 34,
+      "materials": 8,
       "textures": 0,
       "animations": 12,
       "compression": "meshopt",
       "classification": "authored compressed review candidate",
-      "reason": "Authored route-independent Orb rig with named nodes and twelve state clips. Remains review-only until runtime clip binding and exact-head visual acceptance.",
+      "reason": "Authored route-independent Orb v3 with layered petals, core, heart, aura, orbital systems and twelve directly bound state clips. Remains review-only until exact-head visual acceptance.",
       "animationClips": [
         "Orb_Resting",
         "Orb_Idle",
@@ -157,7 +162,7 @@
         "Orb_Degraded",
         "Orb_Transition"
       ],
-      "validation": "authored source lock, receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and founder visual acceptance still required"
+      "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required"
     },
     {
       "id": "global-cinematic-material-pack-current",

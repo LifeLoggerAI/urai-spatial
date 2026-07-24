@@ -9,30 +9,30 @@
     "/focus",
     "/replay"
   ],
-  "bytes": 79652,
-  "sha256": "a1a3cf781da4df31b7b4ee1cd4b076a6f2698971da71faaddf7458b38bd76661",
+  "bytes": 83984,
+  "sha256": "557bd8eaf4b53d91a7d115343f841673c86feca72eda028960411cbfd6632016",
   "measured": {
-    "triangleCount": 11248,
+    "triangleCount": 8776,
     "boundsMeters": {
       "min": [
-        -0.712,
-        -0.712,
-        -0.48
+        -0.765,
+        -0.73,
+        -0.4873
       ],
       "max": [
-        0.738,
-        0.712,
-        0.48
+        0.756,
+        0.73,
+        0.4873
       ],
       "size": [
-        1.45,
-        1.424,
-        0.96
+        1.521,
+        1.46,
+        0.9746
       ]
     },
     "repairedEulerRotations": 2,
-    "nodeCount": 23,
-    "materialCount": 6,
+    "nodeCount": 34,
+    "materialCount": 8,
     "animationClips": [
       "Orb_Resting",
       "Orb_Idle",
@@ -51,10 +51,10 @@
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-orb",
-  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
-  "license": "URAI Labs internal production asset",
-  "generatedBy": "scripts/author-home-finalization-assets.mjs + pinned @gltf-transform/cli Meshopt optimization + scripts/normalize-launch-critical-assets.mjs",
-  "generatedAt": "2026-07-24T03:22:52.644Z",
+  "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+  "license": "URAI Labs internal proprietary production asset",
+  "generatedBy": "scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation",
+  "generatedAt": "2026-07-24T03:57:16.218Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
   "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",

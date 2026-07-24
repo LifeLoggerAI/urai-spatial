@@ -120,7 +120,7 @@ function AnimatedAsset({ path, name, clips, reducedMotion, position, rotation, s
     }
   }, [actions, clipKey, reducedMotion])
 
-  useEffect(() => () => mixer.stopAllAction(), [mixer])
+  useEffect(() => () => { mixer.stopAllAction() }, [mixer])
 
   return <group ref={root} name={name} position={position} rotation={rotation} scale={scale}>
     <primitive object={scene} />
