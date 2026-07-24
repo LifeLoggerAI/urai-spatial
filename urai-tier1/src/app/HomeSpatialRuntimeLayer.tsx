@@ -1,16 +1,18 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import FinalHomeWorld from './FinalHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import type { UraiWorldTravelRequest } from '@/spatial/world/worldTypes'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
+  const router = useRouter()
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const webglAvailable = useWebGLAvailable()
   const homeRouteActive = normalizedPathname === '/' || normalizedPathname === '/home'
@@ -21,10 +23,12 @@ export default function HomeSpatialRuntimeLayer() {
   const [recoveryKey, setRecoveryKey] = useState(0)
 
   const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => {
-    requestUraiWorldTravel(destination === 'life-map'
+    const request: UraiWorldTravelRequest = destination === 'life-map'
       ? { destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
-      : { destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })
-  }, [])
+      : { destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }
+    requestUraiWorldTravel(request)
+    if (request.href) router.push(request.href)
+  }, [router])
 
   useEffect(() => {
     document.body.style.cursor = 'default'
@@ -90,19 +94,45 @@ export default function HomeSpatialRuntimeLayer() {
   useEffect(() => {
     if (!homeRuntimeActive || rendererState === 'failed') return
 
-    let frame = 0
-    const syncParallaxTelemetry = () => {
-      document.querySelectorAll<HTMLElement>('.urai-final-home-world').forEach((home) => {
-        const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
-        const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
-        if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
-        if (Number.isFinite(playerZ)) home.style.setProperty('--home-parallax-y', `${((playerZ - 7.6) * 1.35).toFixed(1)}px`)
-      })
-      frame = window.requestAnimationFrame(syncParallaxTelemetry)
+    const synchronizeHome = (home: HTMLElement) => {
+      const playerX = Number.parseFloat(home.dataset.homePlayerX ?? '0')
+      const playerZ = Number.parseFloat(home.dataset.homePlayerZ ?? '7.6')
+      if (Number.isFinite(playerX)) home.style.setProperty('--home-parallax-x', `${(-playerX * 3.2).toFixed(1)}px`)
+      if (Number.isFinite(playerZ)) home.style.setProperty('--home-parallax-y', `${((playerZ - 7.6) * 1.35).toFixed(1)}px`)
     }
 
-    syncParallaxTelemetry()
-    return () => window.cancelAnimationFrame(frame)
+    const synchronizeAllHomes = () => {
+      document.querySelectorAll<HTMLElement>('.urai-final-home-world').forEach(synchronizeHome)
+    }
+
+    synchronizeAllHomes()
+    const observer = new MutationObserver((records) => {
+      records.forEach((record) => {
+        if (record.type === 'attributes' && record.target instanceof HTMLElement && record.target.matches('.urai-final-home-world')) {
+          synchronizeHome(record.target)
+          return
+        }
+        if (record.type === 'childList') synchronizeAllHomes()
+      })
+    })
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
+      childList: true,
+      subtree: true,
+    })
+
+    let frame = 0
+    const syncParallaxTelemetry = () => {
+      synchronizeAllHomes()
+      frame = window.requestAnimationFrame(syncParallaxTelemetry)
+    }
+    frame = window.requestAnimationFrame(syncParallaxTelemetry)
+
+    return () => {
+      observer.disconnect()
+      window.cancelAnimationFrame(frame)
+    }
   }, [homeRuntimeActive, recoveryKey, rendererState])
 
   if (!homeRouteActive || webglAvailable !== true) return null
