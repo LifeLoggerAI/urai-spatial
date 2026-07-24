@@ -79,7 +79,7 @@ jobs:
           urai-tier1/public/assets/urai/generated/models
           operations/assets/sources/home-finalization-authored-source-v2.json
 
-      - name: Apply Meshopt production compression
+      - name: Apply Meshopt production compression without pruning authored scene structure
         shell: bash
         run: |
           set -euo pipefail
@@ -90,7 +90,7 @@ jobs:
           )
           for file in "${files[@]}"; do
             output="${file%.glb}.meshopt.glb"
-            npx --yes @gltf-transform/cli@4.2.1 optimize "$file" "$output" --compress meshopt
+            npx --yes @gltf-transform/cli@4.2.1 meshopt "$file" "$output" --level medium
             mv "$output" "$file"
           done
 
