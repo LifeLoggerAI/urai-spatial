@@ -1,5 +1,6 @@
 'use client'
 
+import './installR3FDataProps'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ComposedLifeMapScene from './ComposedLifeMapScene'
