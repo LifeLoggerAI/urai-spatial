@@ -32,6 +32,8 @@ Workflow approval was handled and a real matrix ran against `cddaab8b42ecf535e5e
 
 The approval record was removed from `operations/assets/home-finalization-candidate-decisions.json` at `77e7a5b9604f67c9598da34c1abda7de6bee7057`. Workflow authorization belongs in release authority, PR, and receipt records—not inside asset promotion decisions. This preserves the promotion validator's narrow semantic scope without changing any asset classification, status, hash, or visual decision.
 
+The authored-v3 candidate retention lane subsequently completed successfully and retained compressed Home, Portal, and Orb review candidates. Adam Clamp renewed the GitHub **Approve and run workflows** authorization for PR #952 on 2026-07-24. This authority-only commit intentionally creates a fresh exact candidate so GitHub can emit a new complete pull-request matrix under the renewed approval. No test, visual, privacy, accessibility, performance, security, governance, or release requirement is changed or relaxed.
+
 All workflow evidence is valid only for the exact current PR head. Earlier-head results are superseded after any source or authority commit.
 
 ## Non-negotiable completion boundary
