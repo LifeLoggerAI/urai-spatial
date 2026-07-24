@@ -41,7 +41,7 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
-function preserveDemoContinuationIdentity(params: URLSearchParams) {
+function canonicalizeDemoContinuation(params: URLSearchParams) {
   if (typeof window === 'undefined') return
   const next = new URLSearchParams(params)
   next.set('demo', '1')
@@ -75,7 +75,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (requestedDemoMemoryId) {
-      if (continuedDemoMemoryId) preserveDemoContinuationIdentity(params)
+      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params)
       const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
       if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
