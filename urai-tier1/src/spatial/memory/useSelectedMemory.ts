@@ -25,9 +25,6 @@ function unavailable(message: string): SelectedMemoryResult {
 function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
   if (!memoryId || memoryId.startsWith('demo:')) return null
 
-  // Life Map is allowed to continue an explicitly disclosed sample into Focus or
-  // Replay. Canonicalize only the internal resolver identifier so the public URL
-  // preserves the exact Life Map node identity across realm boundaries.
   if (params.get('demo') === '1' && params.get('from') === 'life-map') {
     return `demo:${memoryId}`
   }
@@ -41,16 +38,12 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
-function canonicalizeDemoContinuation(params: URLSearchParams) {
+function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
   if (typeof window === 'undefined') return
   const next = new URLSearchParams(params)
+  next.set('memoryId', demoMemoryId)
   next.set('demo', '1')
-  const memoryId = sanitizeMemoryId(next.get('memoryId') ?? next.get('node'))
-  if (memoryId) {
-    const publicMemoryId = memoryId.replace(/^demo:/, '')
-    next.set('memoryId', publicMemoryId)
-    next.set('node', publicMemoryId)
-  }
+  if (!next.get('node')) next.set('node', demoMemoryId.replace(/^demo:/, ''))
   const query = next.toString()
   window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
 }
@@ -75,7 +68,7 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (requestedDemoMemoryId) {
-      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params)
+      if (continuedDemoMemoryId) canonicalizeDemoContinuation(params, continuedDemoMemoryId)
       const memory = buildNamedExplicitDemoMemory(requestedDemoMemoryId)
       if (manifestId && memory.replayManifest.id !== manifestId) {
         setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
