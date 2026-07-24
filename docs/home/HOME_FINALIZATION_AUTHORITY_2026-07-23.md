@@ -36,6 +36,8 @@ The authored-v3 candidate retention lane subsequently completed successfully and
 
 Candidate-retention commit `5efba382c151395ec821c6f452ea6e8d1284a9bb` contains the repaired fallback ownership boundary and truthful pre-promotion browser-proof behavior. The immediately following trusted authority commit exists only to bind the complete replacement matrix to a non-bot exact head after retention; it changes no runtime, asset, manifest, test, or release requirement.
 
+Candidate-retention commit `2fc4878d43a78716b1aedee28b64f195114f08be` additionally materializes review-query detection after client hydration so disclosed pre-promotion v18 evidence can load the authored-v3 candidate while normal unsupported mode remains fallback. This trusted authority commit binds the replacement matrix after that retention commit and changes no runtime behavior itself.
+
 All workflow evidence is valid only for the exact current PR head. Earlier-head results are superseded after any source or authority commit.
 
 ## Non-negotiable completion boundary
