@@ -3,7 +3,7 @@
 import { EffectComposer, Bloom, Vignette, ChromaticAberration, DepthOfField } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { Vector2 } from 'three'
-import { useMemo } from 'react'
+import { useMemo, type ReactElement } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
@@ -33,23 +33,29 @@ export default function CinematicPostProcessing({
   const bloomEnabled = resolvedBudget.bloomEnabled
   const chromaticAberrationEnabled = resolvedBudget.chromaticAberrationEnabled
   const highQuality = qualityTier === 'high' && !effectiveReducedMotion
+  const effects: ReactElement[] = []
 
-  const effects = [
-    bloomEnabled ? (
+  if (bloomEnabled) {
+    effects.push(
       <Bloom
         key="bloom"
         intensity={qualityTier === 'low' ? 0.32 : qualityTier === 'medium' ? 0.62 : 0.78}
         luminanceThreshold={qualityTier === 'low' ? 0.28 : 0.18}
         luminanceSmoothing={0.64}
         mipmapBlur={qualityTier !== 'low'}
-      />
-    ) : null,
-    highQuality ? <DepthOfField key="depth-of-field" focusDistance={0.025} focalLength={0.034} bokehScale={1.15} height={360} /> : null,
-    chromaticAberrationEnabled && !effectiveReducedMotion ? (
-      <ChromaticAberration key="chromatic-aberration" blendFunction={BlendFunction.NORMAL} offset={chromaticOffset} />
-    ) : null,
-    <Vignette key="vignette" eskil={false} offset={0.16} darkness={qualityTier === 'low' ? 0.5 : highQuality ? 0.78 : 0.66} />,
-  ].filter(Boolean)
+      />,
+    )
+  }
+
+  if (highQuality) {
+    effects.push(<DepthOfField key="depth-of-field" focusDistance={0.025} focalLength={0.034} bokehScale={1.15} height={360} />)
+  }
+
+  if (chromaticAberrationEnabled && !effectiveReducedMotion) {
+    effects.push(<ChromaticAberration key="chromatic-aberration" blendFunction={BlendFunction.NORMAL} offset={chromaticOffset} />)
+  }
+
+  effects.push(<Vignette key="vignette" eskil={false} offset={0.16} darkness={qualityTier === 'low' ? 0.5 : highQuality ? 0.78 : 0.66} />)
 
   return (
     <group
