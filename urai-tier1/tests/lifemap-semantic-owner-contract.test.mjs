@@ -15,10 +15,12 @@ test('semantic navigator activates the real world-label owner before persisting 
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
-test('semantic navigator visibility is state-owned across external open and rerenders', () => {
-  assert.match(navigator, /const \[navigatorOpen, setNavigatorOpen\] = useState\(false\)/)
-  assert.match(navigator, /open=\{navigatorOpen\}/)
-  assert.match(navigator, /onToggle=\{\(event\) => setNavigatorOpen\(event\.currentTarget\.open\)\}/)
+test('semantic navigator keeps native details open state across external mutation and rerenders', () => {
+  assert.match(navigator, /const navigatorRef = useRef<HTMLDetailsElement>\(null\)/)
+  assert.match(navigator, /const setNavigatorOpen = useCallback\(\(open: boolean\) => \{/)
+  assert.match(navigator, /navigatorRef\.current\.open = open/)
+  assert.match(navigator, /<details ref=\{navigatorRef\} className="life-map-navigator" data-life-map-navigator>/)
+  assert.doesNotMatch(navigator, /open=\{navigatorOpen\}/)
   assert.match(navigator, /if \(event\.key === "\/"\)[\s\S]*setNavigatorOpen\(true\)/)
   assert.match(navigator, /setNavigatorOpen\(false\);[\s\S]*router\.replace/)
 })
