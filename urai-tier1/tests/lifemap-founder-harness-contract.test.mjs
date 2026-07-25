@@ -45,13 +45,19 @@ test('Founder runner retains every required real interaction and phase owner', (
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
 
-test('Founder runner preserves the distributed WebGL acceptance method', () => {
+test('Founder runner validates the retained high-resolution PNG with the distributed acceptance method', () => {
+  assert.match(runner, /deviceScaleFactor:\s*3/)
+  assert.match(runner, /scale:\s*'device'/)
+  assert.match(runner, /source:\s*'retained-png'/)
+  assert.match(runner, /context\.getImageData\(x, y, block, block\)/)
+  assert.doesNotMatch(runner, /gl\.readPixels/)
   assert.match(runner, /const columns = 24/)
   assert.match(runner, /const rows = 16/)
   assert.match(runner, /const block = 3/)
   assert.match(runner, /sampleCount !== 3456/)
   assert.match(runner, /variance < 8/)
   assert.match(runner, /nonDarkRatio <= 0/)
+  assert.match(runner, /screenshot\.bytes < 120_000/)
   assert.match(runner, /distributed-grid-24x16-3x3/)
 })
 
