@@ -5,12 +5,20 @@ import test from 'node:test'
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
+const selection = await readFile(new URL('../src/components/lifemap/lifeMapSelection.ts', import.meta.url), 'utf8')
+const founder = await readFile(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url), 'utf8')
 
-test('semantic navigator owns one route selection without re-entering through hidden world labels', () => {
+test('semantic navigator invokes the authoritative world selection transaction without hidden re-entry', () => {
   assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} role="listitem"/)
   assert.doesNotMatch(navigator, /className="life-map-world-label"[^>]*role="listitem"/)
   assert.doesNotMatch(navigator, /function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
-  assert.match(navigator, /setNavigatorOpen\(false\);[\s\S]*next\.set\("memoryId", node\.id\)[\s\S]*next\.set\("node", node\.id\)[\s\S]*router\.replace/)
+  assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
+  assert.doesNotMatch(navigator, /next\.set\("memoryId", node\.id\)[\s\S]*router\.replace/)
+  assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
+  assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
+  assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
+  assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
+  assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
@@ -19,6 +27,13 @@ test('mounted world labels retain independent pointer activation ownership', () 
   assert.match(world, /button\.life-map-world-label\[data-life-map-node-id\]/)
   assert.match(world, /document\.addEventListener\("click", handleWorldLabelClick, true\)/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
+})
+
+test('pointer keyboard and touch semantic paths converge on the same node identity', () => {
+  assert.match(navigator, /event\.detail === 0 \? "keyboard" : "pointer"/)
+  assert.match(navigator, /onTouchEnd=\{\(\) => selectNode\(node, "touch"\)\}/)
+  assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
+  assert.match(selection, /detail: \{ nodeId, source \}/)
 })
 
 test('semantic navigator retains externally opened native details state across rerenders', () => {
@@ -31,5 +46,9 @@ test('semantic navigator retains externally opened native details state across r
   assert.match(navigator, /<details ref=\{navigatorRef\} className="life-map-navigator" data-life-map-navigator>/)
   assert.doesNotMatch(navigator, /open=\{navigatorOpen\}/)
   assert.match(navigator, /if \(event\.key === "\/"\)[\s\S]*setNavigatorOpen\(true\)/)
-  assert.match(navigator, /setNavigatorOpen\(false\);[\s\S]*router\.replace/)
+})
+
+test('Founder proof waits for the real selected world state', () => {
+  assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
+  assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
 })
