@@ -66,7 +66,6 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companionCss, 'min-width: 48px;')
   requireText(companionCss, 'env(safe-area-inset-bottom)')
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
-
   requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
   requireText(homeRuntime, 'FinalHomeWorld')
   requireText(homeRuntime, 'data-home-visual-owner="final-coherent-sanctuary"')
@@ -91,12 +90,10 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeRuntime, 'recoveryAttemptsRef.current >= 1')
   requireText(homeRuntime, 'accessible-fallback-after-renderer-failure')
   requireText(homeRuntime, 'role="status"')
-
   requireText(embodiedEvidence, "element.style.getPropertyValue('--home-parallax-y')")
   requireText(embodiedEvidence, 'Math.abs(Number.parseFloat(value))')
   requireText(embodiedEvidence, 'toBeGreaterThan(0.1)')
   assert.doesNotMatch(embodiedEvidence, /\.not\.toBe\('0\.0px'\)/, 'Parallax evidence must use numeric magnitude rather than a transient string-negation poll')
-
   requireText(ground, 'event.currentTarget.scrollIntoView')
   requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
   requireNormalizedPattern(ground, /inline:\s*'nearest'/, 'Ground focus reveal must use the nearest inline boundary')
