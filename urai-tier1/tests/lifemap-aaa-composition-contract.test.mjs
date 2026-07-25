@@ -7,6 +7,7 @@ const root = process.cwd()
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
+const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
 
 function sliceBetween(source, start, end) {
   const from = source.indexOf(start)
@@ -16,18 +17,17 @@ function sliceBetween(source, start, end) {
   return source.slice(from, to)
 }
 
-test('semantic result is the authored native world-label owner before route persistence', () => {
+test('semantic result requests the authoritative world owner without hidden-label re-entry', () => {
   assert.match(world, /import \{ Html, Line, Stars \} from "@react-three\/drei"/)
   assert.match(world, /<button className="life-map-world-label" data-life-map-node-id=\{node\.id\}/)
   assert.match(world, /document\.addEventListener\("click", handleWorldLabelClick, true\)/)
   assert.match(world, /target\.dataset\.lifeMapNodeId/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
-  assert.match(navigator, /querySelectorAll<HTMLButtonElement>\("button\.life-map-world-label"\)/)
-  assert.match(navigator, /button\.getAttribute\("role"\) !== "listitem"/)
-  assert.match(navigator, /className="life-map-world-label" data-life-map-node-id=\{node\.id\} role="listitem"/)
-  const selection = sliceBetween(navigator, 'const selectNode = useCallback', 'const overview = useCallback')
-  assert.ok(selection.indexOf('activateWorldLabel(node)') < selection.indexOf('router.replace'), 'scene ownership must resolve before route persistence')
+  assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} role="listitem"/)
+  assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
+  assert.doesNotMatch(navigator, /querySelectorAll<HTMLButtonElement>\("button\.life-map-world-label"\)|activateWorldLabel|owner\.click\(\)/)
+  assert.match(selectionBroker, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
 })
 
 test('Quiet Reset pattern memories resolve to an authored settling sanctuary', () => {
