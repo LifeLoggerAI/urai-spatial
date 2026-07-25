@@ -27,15 +27,13 @@ test('semantic search activates the authored world-label owner before route pers
 })
 
 test('Quiet Reset pattern memories resolve to an authored settling sanctuary', () => {
-  assert.match(world, /function SettlingBasin/)
   assert.match(world, /function GroundingSanctuary/)
   assert.match(world, /data-grounding-language="settling-rhythm"/)
-  assert.match(world, /family === "pattern"\) return <GroundingSanctuary/)
-  const grounding = sliceBetween(world, 'function GroundingSanctuary', 'function FamilyChamberSignature')
-  assert.doesNotMatch(grounding, /OrganicVeil/)
-  assert.match(grounding, /SettlingBasin/)
+  assert.match(world, /family === "pattern" \? <GroundingSanctuary/)
+  const grounding = sliceBetween(world, 'function GroundingSanctuary', 'function ArrivalSanctuary')
   assert.match(grounding, /life-map-grounding-witness-stones/)
-  assert.match(grounding, /MemoryRibbon/)
+  assert.match(grounding, /<Ground seed=\{500\}/)
+  assert.match(grounding, /<Current key=\{y\}/)
 })
 
 test('overview composition is opaque, authored, and independently framed for portrait', () => {
@@ -45,7 +43,7 @@ test('overview composition is opaque, authored, and independently framed for por
   assert.match(world, /life-map-foreground-observatory/)
   assert.match(world, /const portrait = size\.height > size\.width/)
   assert.match(world, /portrait \? \[0\.5, 0\.92, 0\.74\]/)
-  assert.match(world, /roughness=\{0\.7\}/)
+  assert.match(world, /roughness=\{0\.72\}/)
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
