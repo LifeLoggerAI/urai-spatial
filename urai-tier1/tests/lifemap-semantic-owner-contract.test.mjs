@@ -29,10 +29,11 @@ test('mounted world labels retain independent pointer activation ownership', () 
   assert.match(world, /if \(node\) onSelect\(node\)/)
 })
 
-test('pointer keyboard and touch semantic paths converge on the same node identity', () => {
+test('pointer keyboard and touch semantic paths converge on one single-fire click owner', () => {
   assert.match(navigator, /event\.detail === 0 \? "keyboard" : "pointer"/)
-  assert.match(navigator, /onTouchEnd=\{\(\) => selectNode\(node, "touch"\)\}/)
   assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
+  assert.doesNotMatch(navigator, /onTouchEnd=/)
+  assert.match(founder, /await result\.tap\(\)/)
   assert.match(selection, /detail: \{ nodeId, source \}/)
 })
 
