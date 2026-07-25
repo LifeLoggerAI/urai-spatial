@@ -8,6 +8,7 @@ import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
 import { LIFE_MAP_CORE_POSITION } from "./lifeMapLayout";
+import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 import { LIFE_MAP_CHAPTERS, LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapterForNode, resolveArtifactFamily, resolvePathKind } from "./lifeMapVisualSystem";
 
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
@@ -179,8 +180,18 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       const node = nodes.find((candidate) => candidate.id === nodeId);
       if (node) onSelect(node);
     };
+    const handleSelectionRequest = (event: Event) => {
+      const detail = readLifeMapSelection(event);
+      if (!detail) return;
+      const node = nodes.find((candidate) => candidate.id === detail.nodeId);
+      if (node) onSelect(node);
+    };
     document.addEventListener("click", handleWorldLabelClick, true);
-    return () => document.removeEventListener("click", handleWorldLabelClick, true);
+    window.addEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
+    return () => {
+      document.removeEventListener("click", handleWorldLabelClick, true);
+      window.removeEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
+    };
   }, [nodes, onSelect]);
 
   return <><color attach="background" args={[DEEP]} /><fog attach="fog" args={[DEEP, 18, 76]} /><ambientLight intensity={0.78} color="#c7efff" /><directionalLight position={[7, 10, 8]} intensity={1.85} color="#e5f7ff" castShadow={profile.shadows} /><hemisphereLight args={["#d7f3ff", "#07111a", 0.82]} />{webglRecovery}{cameraRig}<group name="life-map-authored-environment" data-depth-band="far"><mesh><sphereGeometry args={[74, 36, 24]} /><meshBasicMaterial color="#091827" side={THREE.BackSide} /></mesh></group><group name="life-map-temporal-horizon" data-depth-band="far" /><group name="life-map-world-stage" scale={stageScale} position={stagePosition}><group name="life-map-temporal-landscape" data-depth-band="middle" /><LifeCore reducedMotion={profile.reducedMotion} tier={profile.tier} hidden={Boolean(selected)} /><group name="life-map-light-bridges" data-depth-band="middle" /><ChapterConstellations selected={selected} /><ForegroundObservatory selected={selected} /><OverviewLandmarks selected={selected} /><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /><group name="life-map-memory-artifact-families" data-depth-band="middle">{nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}</group><group name="life-map-selected-relationship-context" data-depth-band="middle" /><ArrivalSanctuary selected={selected} phase={phase} reducedMotion={profile.reducedMotion} /></group><ArchiveParticles qualityTier={qualityTier} reducedMotion={profile.reducedMotion} /><group name="life-map-far-future-horizon" data-depth-band="far"><Stars radius={78} depth={58} count={starCount} factor={1.42} saturation={0.22} fade speed={profile.reducedMotion ? 0 : 0.018} /></group><CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} /></>;
