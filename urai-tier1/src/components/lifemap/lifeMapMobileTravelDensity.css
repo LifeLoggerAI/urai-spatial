@@ -49,6 +49,16 @@
   html.urai-route-life-map [data-testid='urai-true-3d-life-map'] canvas {
     z-index: 2 !important;
   }
+
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'][data-life-map-phase='departure'] canvas {
+    transform: scale(1.12);
+    transform-origin: 50% 58%;
+  }
+
+  html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'][data-life-map-phase='travel'] canvas {
+    transform: scale(1.45);
+    transform-origin: 50% 58%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
