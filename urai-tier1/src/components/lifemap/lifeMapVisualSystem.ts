@@ -123,6 +123,7 @@ export function resolveArtifactFamily(node: LifeMapNode): LifeMapArtifactFamily 
   if (node.sourceType === "audio" || hasTag(node, "audio", "voice", "sound")) return "audio";
   if (node.type === "relationship" || node.sourceType === "relationship") return "relationship";
   if (hasTag(node, "place", "location", "home", "room")) return "place";
+  // Grounding and calm recovery are represented as settling rhythm, not the high-energy emotional-turning-point enclosure.
   if (hasTag(node, "quiet-reset", "calm-reflection", "grounding")) return "pattern";
   if (node.type === "threshold" || node.type === "recovery" || hasTag(node, "emotion", "grief", "joy", "repair")) return "emotion";
   if (node.type === "ritual" || hasTag(node, "pattern", "habit", "recurring")) return "pattern";
