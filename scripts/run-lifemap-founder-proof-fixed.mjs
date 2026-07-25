@@ -7,12 +7,22 @@ let source = await readFile(sourcePath, 'utf8')
 
 function replaceFunction(name, replacement) {
   const start = source.indexOf(`async function ${name}(`)
-  if (start < 0) throw new Error(`Founder ${name} source drifted; function not found`)
-  const next = source.indexOf('\nasync function ', start + 1)
-  const syncNext = source.indexOf('\nfunction ', start + 1)
-  const candidates = [next, syncNext].filter((value) => value > start)
-  const end = candidates.length ? Math.min(...candidates) : source.length
-  source = `${source.slice(0, start)}${replacement.trim()}\n${source.slice(end + 1)}`
+  if (start < 0) throw new Error(`Founder source drifted; ${name} was not found`)
+  const bodyStart = source.indexOf('{', start)
+  let depth = 0
+  let end = -1
+  for (let index = bodyStart; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1
+    if (source[index] === '}') {
+      depth -= 1
+      if (depth === 0) {
+        end = index + 1
+        break
+      }
+    }
+  }
+  if (end < 0) throw new Error(`Founder source drifted; ${name} body did not close`)
+  source = source.slice(0, start) + replacement + source.slice(end)
 }
 
 const stableSelection = `async function selectQuietReset(page) {
@@ -90,33 +100,34 @@ replaceFunction('selectQuietReset', stableSelection)
 replaceFunction('clickRouteAction', stableRouteAction)
 replaceFunction('canvasSignal', distributedCanvasSignal)
 
-const journeyPattern = /    await selectQuietReset\(page\)\n    await waitForState\(page, 'data-life-map-phase', 'departure'\)[\s\S]*?    await shot\(page, 'stable-arrival', 'arrival'\)/
-if (!journeyPattern.test(source)) throw new Error('Founder sequential journey source drifted; deterministic phase block not found')
+source = source.replace(
+  `    const overviewAction = selectedActions(page).getByRole('button', { name: 'Overview', exact: true })`,
+  `    const overviewAction = selectedAction(page, 'Overview')`,
+)
+
+const journeyPattern = /    await selectQuietReset\(page\)[\s\S]*?      await shot\(page, 'stable-arrival', 'arrival'\)/
+if (!journeyPattern.test(source)) throw new Error('Founder journey source drifted; deterministic phase block not found')
 source = source.replace(journeyPattern, `    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'departure')
-    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset' })
+      await waitForState(page, 'data-life-map-phase', 'departure')
+      await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset' })
 
-    await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'travel')
-    await shot(page, 'mid-travel', 'travel')
+      await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+      await waitForRenderedWorld(page)
+      await selectQuietReset(page)
+      await waitForState(page, 'data-life-map-phase', 'travel')
+      await shot(page, 'mid-travel', 'travel')
 
-    await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'approach')
-    await shot(page, 'approach', 'approach')
+      await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+      await waitForRenderedWorld(page)
+      await selectQuietReset(page)
+      await waitForState(page, 'data-life-map-phase', 'approach')
+      await shot(page, 'approach', 'approach')
 
-    await goto(page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
-    await waitForRenderedWorld(page)
-    await waitForState(page, 'data-life-map-phase', 'arrival')
-    await shot(page, 'stable-arrival', 'arrival')`)
+      await goto(page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
+      await waitForRenderedWorld(page)
+      await waitForState(page, 'data-life-map-phase', 'arrival')
+      await shot(page, 'stable-arrival', 'arrival')`)
 
-const overviewAction = `    const overviewAction = selectedActions(page).getByRole('button', { name: 'Overview', exact: true })`
-if (!source.includes(overviewAction)) throw new Error('Founder Overview source drifted; visible-label repair not applied')
-source = source.replace(overviewAction, `    const overviewAction = selectedAction(page, 'Overview')`)
 source = source.replace('async function waitForState(page, attribute, expected, timeout = 8_000)', 'async function waitForState(page, attribute, expected, timeout = 30_000)')
-
 await writeFile(generatedPath, source)
 await import(generatedPath)
