@@ -2,7 +2,7 @@
 
 import { Html, Line, Stars } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
@@ -115,7 +115,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
     if (!group.current || reducedMotion) return;
     group.current.rotation.y = Math.sin(clock.elapsedTime * 0.1 + index) * 0.03;
   });
-  return <group ref={group} position={node.position} visible={visible} name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`} data-artifact-family={resolveArtifactFamily(node)} data-importance={importance.toFixed(2)} data-chapter={chapter.id} data-semantic-label={semanticLabel}><group onClick={(event) => { event.stopPropagation(); onSelect(node); }}><ArtifactShape node={node} active={active} /></group><Html center position={[0, 0.72, 0]} distanceFactor={11} style={{ pointerEvents: "auto" }}><button className="life-map-world-label" type="button" onClick={(event) => { event.stopPropagation(); onSelect(node); }} style={{ minWidth: 96, minHeight: 48, borderRadius: 999, border: `1px solid ${node.aura}88`, background: "rgba(5,18,28,.88)", color: "#f5fbff", padding: "8px 12px", font: "600 12px/1.2 system-ui", boxShadow: `0 8px 28px ${node.aura}33` }}><strong>{node.title}</strong></button></Html></group>;
+  return <group ref={group} position={node.position} visible={visible} name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`} data-artifact-family={resolveArtifactFamily(node)} data-importance={importance.toFixed(2)} data-chapter={chapter.id} data-semantic-label={semanticLabel}><group onClick={(event) => { event.stopPropagation(); onSelect(node); }}><ArtifactShape node={node} active={active} /></group><Html center position={[0, 0.72, 0]} distanceFactor={11} style={{ pointerEvents: "auto" }}><button className="life-map-world-label" data-life-map-node-id={node.id} data-active={active ? "true" : "false"} type="button" style={{ minWidth: 96, minHeight: 48, borderRadius: 999, border: `1px solid ${node.aura}88`, background: "rgba(5,18,28,.88)", color: "#f5fbff", padding: "8px 12px", font: "600 12px/1.2 system-ui", boxShadow: `0 8px 28px ${node.aura}33` }}><strong>{node.title}</strong></button></Html></group>;
 }
 
 function PathPulse({ curve, color, reducedMotion, offset }: { curve: THREE.QuadraticBezierCurve3; color: string; reducedMotion: boolean; offset: number }) {
@@ -170,5 +170,18 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   const portrait = size.height > size.width;
   const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.5, 0.92, 0.74] : [1.12, 1.1, 1.04];
   const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.36, 1.3] : [0, -0.28, 1.18];
+
+  useEffect(() => {
+    const handleWorldLabelClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("button.life-map-world-label[data-life-map-node-id]") : null;
+      if (!target) return;
+      const nodeId = target.dataset.lifeMapNodeId;
+      const node = nodes.find((candidate) => candidate.id === nodeId);
+      if (node) onSelect(node);
+    };
+    document.addEventListener("click", handleWorldLabelClick, true);
+    return () => document.removeEventListener("click", handleWorldLabelClick, true);
+  }, [nodes, onSelect]);
+
   return <><color attach="background" args={[DEEP]} /><fog attach="fog" args={[DEEP, 18, 76]} /><ambientLight intensity={0.78} color="#c7efff" /><directionalLight position={[7, 10, 8]} intensity={1.85} color="#e5f7ff" castShadow={profile.shadows} /><hemisphereLight args={["#d7f3ff", "#07111a", 0.82]} />{webglRecovery}{cameraRig}<group name="life-map-authored-environment" data-depth-band="far"><mesh><sphereGeometry args={[74, 36, 24]} /><meshBasicMaterial color="#091827" side={THREE.BackSide} /></mesh></group><group name="life-map-temporal-horizon" data-depth-band="far" /><group name="life-map-world-stage" scale={stageScale} position={stagePosition}><group name="life-map-temporal-landscape" data-depth-band="middle" /><LifeCore reducedMotion={profile.reducedMotion} tier={profile.tier} hidden={Boolean(selected)} /><group name="life-map-light-bridges" data-depth-band="middle" /><ChapterConstellations selected={selected} /><ForegroundObservatory selected={selected} /><OverviewLandmarks selected={selected} /><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /><group name="life-map-memory-artifact-families" data-depth-band="middle">{nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}</group><group name="life-map-selected-relationship-context" data-depth-band="middle" /><ArrivalSanctuary selected={selected} phase={phase} reducedMotion={profile.reducedMotion} /></group><ArchiveParticles qualityTier={qualityTier} reducedMotion={profile.reducedMotion} /><group name="life-map-far-future-horizon" data-depth-band="far"><Stars radius={78} depth={58} count={starCount} factor={1.42} saturation={0.22} fade speed={profile.reducedMotion ? 0 : 0.018} /></group><CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} /></>;
 }
