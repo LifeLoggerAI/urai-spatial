@@ -16,8 +16,9 @@ function dispatchLifeMapSelection(detail: LifeMapSelectionDetail) {
 function selectionWasAcknowledged(nodeId: string) {
   const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
   if (root?.dataset.lifeMapMode !== 'selected') return false
-  const route = new URL(window.location.href)
-  return (route.searchParams.get('node') || route.searchParams.get('memoryId')) === nodeId
+  const activeNode = Array.from(document.querySelectorAll<HTMLElement>('[data-life-map-node-id][data-active="true"]'))
+    .some((candidate) => candidate.dataset.lifeMapNodeId === nodeId)
+  return activeNode
 }
 
 export function requestLifeMapSelection(nodeId: string, source: LifeMapSelectionSource) {
