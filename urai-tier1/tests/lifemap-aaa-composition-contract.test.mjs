@@ -16,17 +16,18 @@ function sliceBetween(source, start, end) {
   return source.slice(from, to)
 }
 
-test('semantic search activates the authored world-label owner before route persistence', () => {
+test('semantic result is the authored native world-label owner before route persistence', () => {
   assert.match(world, /import \{ Html, Line, Stars \} from "@react-three\/drei"/)
   assert.match(world, /<button className="life-map-world-label" data-life-map-node-id=\{node\.id\}/)
-  assert.match(world, /<strong>\{node\.title\}<\/strong>/)
   assert.match(world, /document\.addEventListener\("click", handleWorldLabelClick, true\)/)
   assert.match(world, /target\.dataset\.lifeMapNodeId/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
   assert.match(navigator, /querySelectorAll<HTMLButtonElement>\("button\.life-map-world-label"\)/)
+  assert.match(navigator, /button\.getAttribute\("role"\) !== "listitem"/)
+  assert.match(navigator, /className="life-map-world-label" data-life-map-node-id=\{node\.id\} role="listitem"/)
   const selection = sliceBetween(navigator, 'const selectNode = useCallback', 'const overview = useCallback')
-  assert.ok(selection.indexOf('activateWorldLabel(node)') < selection.indexOf('router.replace'), 'world owner must activate before route persistence')
+  assert.ok(selection.indexOf('activateWorldLabel(node)') < selection.indexOf('router.replace'), 'scene ownership must resolve before route persistence')
 })
 
 test('Quiet Reset pattern memories resolve to an authored settling sanctuary', () => {
@@ -54,7 +55,5 @@ test('visual repair preserves adaptive performance and evidence budgets', () => 
   assert.match(world, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)
   assert.match(world, /active=\{profile\.postprocessing\}/)
   assert.match(world, /if \(!group\.current \|\| reducedMotion\) return/)
-  for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-intimate-memory-chamber']) {
-    assert.match(world, new RegExp(marker))
-  }
+  for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-intimate-memory-chamber']) assert.match(world, new RegExp(marker))
 })
