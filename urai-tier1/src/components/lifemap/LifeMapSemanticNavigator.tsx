@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from "./lifeMapData";
 import { useLifeMapEvents } from "./useLifeMapEvents";
 
@@ -35,11 +35,15 @@ export default function LifeMapSemanticNavigator() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LifeMapNodeType | "all">("all");
   const [eraFilter, setEraFilter] = useState("all");
-  const [navigatorOpen, setNavigatorOpen] = useState(false);
+  const navigatorRef = useRef<HTMLDetailsElement>(null);
   const selectedId = params.get("node") || params.get("memoryId");
   const selected = nodes.find((node) => node.id === selectedId) || null;
 
   const visibleNodes = useMemo(() => nodes.filter((node) => matchesSearch(node, search) && (typeFilter === "all" || node.type === typeFilter) && (eraFilter === "all" || node.eraId === eraFilter)), [eraFilter, nodes, search, typeFilter]);
+
+  const setNavigatorOpen = useCallback((open: boolean) => {
+    if (navigatorRef.current) navigatorRef.current.open = open;
+  }, []);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemo) next.set("demo", "1");
@@ -56,14 +60,14 @@ export default function LifeMapSemanticNavigator() {
     next.set("node", node.id);
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [router, withIdentity]);
+  }, [router, setNavigatorOpen, withIdentity]);
 
   const overview = useCallback(() => {
     setNavigatorOpen(false);
     const next = withIdentity(new URLSearchParams());
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [router, withIdentity]);
+  }, [router, setNavigatorOpen, withIdentity]);
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes;
@@ -86,7 +90,7 @@ export default function LifeMapSemanticNavigator() {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [overview, step]);
+  }, [overview, setNavigatorOpen, step]);
 
   const related = selected ? nodes.filter((node) => selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)) : [];
 
@@ -96,7 +100,7 @@ export default function LifeMapSemanticNavigator() {
       <button type="button" onClick={() => step(1)} aria-label="Next visible life object">→</button>
       <button type="button" onClick={overview}>Overview</button>
     </nav>
-    <details className="life-map-navigator" data-life-map-navigator open={navigatorOpen} onToggle={(event) => setNavigatorOpen(event.currentTarget.open)}>
+    <details ref={navigatorRef} className="life-map-navigator" data-life-map-navigator>
       <summary>Search life</summary>
       <section aria-label="Search and filter Life Map">
         <label htmlFor="life-map-search">Search memories, people, dates, places, themes, and eras</label>
