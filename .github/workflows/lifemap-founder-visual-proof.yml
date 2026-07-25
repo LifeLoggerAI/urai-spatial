@@ -16,6 +16,7 @@ on:
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
+      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'
 
 permissions:
   contents: read
@@ -66,6 +67,13 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+
+      - name: Prove Founder harness ownership before Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/lifemap-founder-proof
+          node --test urai-tier1/tests/lifemap-founder-harness-contract.test.mjs | tee artifacts/lifemap-founder-proof/founder-harness-contract.log
 
       - name: Run Life Map contracts and static build
         shell: bash
