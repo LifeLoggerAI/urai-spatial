@@ -141,7 +141,7 @@ function HomeFloor({ walkTarget }: { walkTarget: MutableRefObject<THREE.Vector3 
 
 function Orb({ walkTarget, nearby, onOrbOpen }: Pick<SceneProps, 'walkTarget' | 'nearby' | 'onOrbOpen'>) {
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (nearby.current === 'orb') onOrbOpen(); else walkTarget.current = new THREE.Vector3(0, 0, 0.4) }
-  return <group position={ORB_POSITION} name="home-authored-orb"><mesh onClick={activate} castShadow><sphereGeometry args={[0.62, 42, 42]} /><meshPhysicalMaterial color="#b7f0e9" emissive="#5fc7c7" emissiveIntensity={1.15} roughness={0.12} transmission={0.2} clearcoat={1} /></mesh><pointLight color="#7edfd9" intensity={3.2} distance={8} /><mesh onClick={activate}><sphereGeometry args={[0.95, 22, 22]} /><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} /></mesh></group>
+  return <group position={ORB_POSITION} name="home-authored-orb" data-testid="urai-home-webgl-orb"><mesh onClick={activate} castShadow><sphereGeometry args={[0.62, 42, 42]} /><meshPhysicalMaterial color="#b7f0e9" emissive="#5fc7c7" emissiveIntensity={1.15} roughness={0.12} transmission={0.2} clearcoat={1} /></mesh><pointLight color="#7edfd9" intensity={3.2} distance={8} /><mesh onClick={activate}><sphereGeometry args={[0.95, 22, 22]} /><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} /></mesh></group>
 }
 
 function EmbodiedSelf({ walkTarget, nearby }: Pick<SceneProps, 'walkTarget' | 'nearby'>) {
