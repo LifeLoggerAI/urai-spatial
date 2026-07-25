@@ -136,7 +136,7 @@ function SanctuaryWorld({ walkTarget, reducedMotion }: { walkTarget: MutableRefO
 
 function HomeFloor({ walkTarget }: { walkTarget: MutableRefObject<THREE.Vector3 | null> }) {
   const choose = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (event.delta <= 6) walkTarget.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, HOME_BOUNDS.minX, HOME_BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, HOME_BOUNDS.minZ, HOME_BOUNDS.maxZ)) }
-  return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, -1]} onClick={choose}><planeGeometry args={[19, 21]} /><meshBasicMaterial transparent opacity={0.001} depthWrite={false} colorWrite={false} /></mesh>
+  return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, -1]} onClick={choose} data-testid="urai-home-walkable-surface"><planeGeometry args={[19, 21]} /><meshBasicMaterial transparent opacity={0.001} depthWrite={false} colorWrite={false} /></mesh>
 }
 
 function Orb({ walkTarget, nearby, onOrbOpen }: Pick<SceneProps, 'walkTarget' | 'nearby' | 'onOrbOpen'>) {
