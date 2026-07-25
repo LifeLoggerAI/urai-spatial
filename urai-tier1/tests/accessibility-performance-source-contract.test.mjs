@@ -79,6 +79,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeParallaxBridge, "home.dataset.homeParallaxOwner = 'telemetry-bridge'")
   assert.doesNotMatch(homeParallaxBridge, /attributeFilter:\s*\[[^\]]*['"]style['"]/, 'Telemetry bridge must not observe the style attribute it mutates')
   requireText(finalHome, 'data-testid="urai-home-webgl-orb"')
+  assert.equal((finalHome.match(/data-testid="urai-home-webgl-orb"/g) ?? []).length, 1, 'Final Home must expose exactly one physical Orb ownership marker')
+  requireNormalizedPattern(finalHome, /function Orb\([\s\S]*?<group[^>]*name='home-authored-orb'[^>]*data-testid='urai-home-webgl-orb'[^>]*>[\s\S]*?<mesh onClick=\{activate\} castShadow>/, 'The ownership marker must remain on the rendered interactive Orb group')
   requireText(finalHome, 'const ORB_POSITION = new THREE.Vector3(0, 1.55, -1.2)')
   requireText(finalHome, '<meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />')
   requireText(finalHome, 'aria-label="Open Orb directly"')
