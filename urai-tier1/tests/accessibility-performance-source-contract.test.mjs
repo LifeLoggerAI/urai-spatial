@@ -28,7 +28,6 @@ test('accessibility and performance implementation contracts are present', () =>
   const performanceMetrics = read('tests/accessibility-performance-metrics.spec.ts')
   const accessibilityEvidence = read('tests/accessibility-performance-evidence.spec.ts')
   const embodiedEvidence = read('tests/accessibility-performance-embodied-exploration.spec.ts')
-
   requireText(reducedMotion, 'prefers-reduced-motion: reduce')
   requireText(reducedMotion, "addEventListener?.('change', update)")
   requireText(reducedMotion, "removeEventListener?.('change', update)")
