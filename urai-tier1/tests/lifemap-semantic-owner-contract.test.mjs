@@ -22,13 +22,17 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
-test('selection delivery remains bounded and retries only the same authoritative request', () => {
-  assert.match(selection, /const SELECTION_RETRY_DELAYS_MS = \[0, 60, 180\] as const/)
+test('selection delivery remains bounded and stops after the real world acknowledges the same node', () => {
+  assert.match(selection, /const SELECTION_RETRY_DELAYS_MS = \[60, 180\] as const/)
   assert.match(selection, /const detail = \{ nodeId, source \}/)
   assert.match(selection, /dispatchLifeMapSelection\(detail\)/)
+  assert.match(selection, /function selectionWasAcknowledged\(nodeId: string\)/)
+  assert.match(selection, /root\?\.dataset\.lifeMapMode !== 'selected'/)
+  assert.match(selection, /route\.searchParams\.get\('node'\) \|\| route\.searchParams\.get\('memoryId'\)/)
   assert.match(selection, /for \(const delay of SELECTION_RETRY_DELAYS_MS\)/)
-  assert.match(selection, /window\.setTimeout\(\(\) => dispatchLifeMapSelection\(detail\), delay\)/)
-  assert.doesNotMatch(selection, /router|history|location|synthetic-selected|test-only-selected|forceSelected/)
+  assert.match(selection, /if \(!selectionWasAcknowledged\(nodeId\)\) dispatchLifeMapSelection\(detail\)/)
+  assert.doesNotMatch(selection, /SELECTION_RETRY_DELAYS_MS = \[0/)
+  assert.doesNotMatch(selection, /synthetic-selected|test-only-selected|forceSelected/)
 })
 
 test('semantic selection has one bounded route fail-safe only when real selected state was not reached', () => {
@@ -67,7 +71,10 @@ test('semantic navigator retains externally opened native details state across r
   assert.match(navigator, /if \(event\.key === "\/"\)[\s\S]*setNavigatorOpen\(true\)/)
 })
 
-test('Founder proof waits for the real selected world state', () => {
+test('Founder proof waits for the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
+  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'travel'\)/)
+  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'approach'\)/)
+  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
   assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
 })
