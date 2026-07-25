@@ -14,11 +14,21 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.doesNotMatch(navigator, /function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
+  assert.match(selection, /function dispatchLifeMapSelection\(detail: LifeMapSelectionDetail\)/)
   assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
   assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
   assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(scene, /onSelect=\{selectNode\}/)
+})
+
+test('selection delivery remains bounded and retries only the same authoritative request', () => {
+  assert.match(selection, /const SELECTION_RETRY_DELAYS_MS = \[0, 60, 180\] as const/)
+  assert.match(selection, /const detail = \{ nodeId, source \}/)
+  assert.match(selection, /dispatchLifeMapSelection\(detail\)/)
+  assert.match(selection, /for \(const delay of SELECTION_RETRY_DELAYS_MS\)/)
+  assert.match(selection, /window\.setTimeout\(\(\) => dispatchLifeMapSelection\(detail\), delay\)/)
+  assert.doesNotMatch(selection, /router|history|location|synthetic-selected|test-only-selected|forceSelected/)
 })
 
 test('semantic selection has one bounded route fail-safe only when real selected state was not reached', () => {
@@ -42,7 +52,7 @@ test('pointer keyboard and touch semantic paths converge on one single-fire clic
   assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
   assert.doesNotMatch(navigator, /onTouchEnd=/)
   assert.match(founder, /await result\.tap\(\)/)
-  assert.match(selection, /detail: \{ nodeId, source \}/)
+  assert.match(selection, /const detail = \{ nodeId, source \}/)
 })
 
 test('semantic navigator retains externally opened native details state across rerenders', () => {
