@@ -19,14 +19,6 @@ function matchesSearch(node: LifeMapNode, search: string) {
     .some((value) => String(value).toLowerCase().includes(query));
 }
 
-function activateWorldLabel(node: LifeMapNode) {
-  const labels = Array.from(document.querySelectorAll<HTMLButtonElement>("button.life-map-world-label"));
-  const owner = labels.find((button) => button.getAttribute("role") !== "listitem" && (button.dataset.lifeMapNodeId === node.id || button.querySelector("strong")?.textContent?.trim() === node.title.trim()));
-  if (!owner) return false;
-  owner.click();
-  return true;
-}
-
 export default function LifeMapSemanticNavigator() {
   const router = useRouter();
   const params = useSearchParams();
@@ -70,7 +62,6 @@ export default function LifeMapSemanticNavigator() {
   }, [explicitDemo, params]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
-    activateWorldLabel(node);
     setNavigatorOpen(false);
     const next = withIdentity(new URLSearchParams());
     next.set("memoryId", node.id);
