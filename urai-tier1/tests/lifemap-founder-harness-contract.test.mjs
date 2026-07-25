@@ -1,35 +1,61 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
-const runner = await readFile(new URL('../../scripts/run-lifemap-founder-proof-fixed.mjs', import.meta.url), 'utf8')
-const capture = await readFile(new URL('../../scripts/capture-lifemap-founder-proof.mjs', import.meta.url), 'utf8')
+const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
+const launcherPath = fileURLToPath(new URL('../../scripts/run-lifemap-founder-proof-fixed.mjs', import.meta.url))
+const runnerPath = fileURLToPath(new URL('../../scripts/capture-lifemap-founder-proof-fixed.mjs', import.meta.url))
+const launcher = await readFile(launcherPath, 'utf8')
+const runner = await readFile(runnerPath, 'utf8')
 const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
 
-test('Founder harness owns stable semantic interaction surfaces without literal journey matching', () => {
-  assert.doesNotMatch(runner, /journeyPattern|deterministic phase block not found|source\.replace\(\s*\/.*selectQuietReset/s)
+function runNode(args) {
+  return spawnSync(process.execPath, args, { cwd: repoRoot, encoding: 'utf8' })
+}
+
+test('Founder proof is a checked-in stable module with a mandatory syntax gate', () => {
+  assert.match(launcher, /spawnSync\(process\.execPath, \['--check', runnerPath\]/)
+  assert.match(launcher, /--validate-only/)
+  assert.doesNotMatch(launcher, /writeFile|replaceFunction|journeyPattern|\.capture-lifemap-founder-proof-fixed/)
+  assert.doesNotMatch(runner, /journeyPattern|deterministic phase block not found|replaceFunction/)
+  const orphanedBoundary = /^\s*\}\)\s*\{\s*$/m
+  assert.match('replacement body\n}) {\nremaining source', orphanedBoundary)
+  assert.doesNotMatch(runner, orphanedBoundary)
+
+  const syntax = runNode(['--check', runnerPath])
+  assert.equal(syntax.status, 0, syntax.stderr || syntax.stdout)
+  const validation = runNode(['scripts/run-lifemap-founder-proof-fixed.mjs', '--validate-only'])
+  assert.equal(validation.status, 0, validation.stderr || validation.stdout)
+  assert.match(validation.stdout, /FOUNDER_CAPTURE_SYNTAX_OK/)
+})
+
+test('Founder runner retains every required real interaction and phase owner', () => {
   for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'mobileAndReduced', 'assertVisualSanity']) {
-    assert.match(runner, new RegExp(`replaceFunction\\('${owner}'`))
-    assert.match(capture, new RegExp(`(?:async )?function ${owner}\\(`))
+    const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
+    assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
   assert.match(runner, /\[data-life-map-navigator\]/)
   assert.match(runner, /role="listitem"/)
   assert.match(runner, /selectedAction\(page, 'Overview'\)/)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
   assert.match(runner, /result\.tap\(\)/)
+  for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
 
-test('Founder harness preserves the exact distributed WebGL acceptance method', () => {
+test('Founder runner preserves the distributed WebGL acceptance method', () => {
   assert.match(runner, /const columns = 24/)
   assert.match(runner, /const rows = 16/)
   assert.match(runner, /const block = 3/)
   assert.match(runner, /sampleCount !== 3456/)
   assert.match(runner, /variance < 8/)
+  assert.match(runner, /nonDarkRatio <= 0/)
   assert.match(runner, /distributed-grid-24x16-3x3/)
 })
 
-test('Founder proof exercises the real production state machine and no production proof backdoor exists', () => {
+test('Founder proof observes the real production state machine without a production backdoor', () => {
   assert.match(scene, /setPhase\("departure"\)/)
   assert.match(scene, /setPhase\("travel"\)/)
   assert.match(scene, /setPhase\("approach"\)/)

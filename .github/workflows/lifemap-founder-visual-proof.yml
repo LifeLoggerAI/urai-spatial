@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
       - 'scripts/capture-lifemap-founder-proof.mjs'
+      - 'scripts/capture-lifemap-founder-proof-fixed.mjs'
       - 'scripts/run-lifemap-founder-proof-fixed.mjs'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
@@ -68,11 +69,13 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Prove Founder harness ownership before Chromium
+      - name: Prove Founder runner syntax and ownership before Chromium
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/lifemap-founder-proof
+          node --check scripts/capture-lifemap-founder-proof-fixed.mjs | tee artifacts/lifemap-founder-proof/founder-runner-syntax.log
+          node scripts/run-lifemap-founder-proof-fixed.mjs --validate-only | tee artifacts/lifemap-founder-proof/founder-launcher-validation.log
           node --test urai-tier1/tests/lifemap-founder-harness-contract.test.mjs | tee artifacts/lifemap-founder-proof/founder-harness-contract.log
 
       - name: Run Life Map contracts and static build
