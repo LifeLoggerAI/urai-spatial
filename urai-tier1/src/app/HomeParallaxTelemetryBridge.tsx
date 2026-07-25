@@ -29,6 +29,8 @@ function synchronizeHome(home: HTMLElement) {
       home.style.setProperty('--home-parallax-y', parallaxY)
     }
   }
+
+  home.dataset.homeParallaxOwner = 'telemetry-bridge'
 }
 
 function synchronizeAllHomes() {
@@ -38,21 +40,30 @@ function synchronizeAllHomes() {
 export default function HomeParallaxTelemetryBridge() {
   useEffect(() => {
     let frame = 0
+    let observerFrame = 0
 
     const synchronize = () => {
       synchronizeAllHomes()
       frame = window.requestAnimationFrame(synchronize)
     }
 
-    const synchronizeAfterInput = () => {
-      synchronizeAllHomes()
-      window.requestAnimationFrame(synchronizeAllHomes)
+    const scheduleSynchronization = () => {
+      if (observerFrame) return
+      observerFrame = window.requestAnimationFrame(() => {
+        observerFrame = 0
+        synchronizeAllHomes()
+      })
     }
 
-    const observer = new MutationObserver(synchronizeAllHomes)
+    const synchronizeAfterInput = () => {
+      synchronizeAllHomes()
+      scheduleSynchronization()
+    }
+
+    const observer = new MutationObserver(scheduleSynchronization)
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-distance', 'style'],
+      attributeFilter: ['data-home-player-x', 'data-home-player-z', 'data-home-distance'],
       childList: true,
       subtree: true,
     })
@@ -67,6 +78,7 @@ export default function HomeParallaxTelemetryBridge() {
     return () => {
       observer.disconnect()
       window.cancelAnimationFrame(frame)
+      if (observerFrame) window.cancelAnimationFrame(observerFrame)
       window.removeEventListener('keyup', synchronizeAfterInput, true)
       window.removeEventListener('pointerup', synchronizeAfterInput, true)
       window.removeEventListener('touchend', synchronizeAfterInput, true)
