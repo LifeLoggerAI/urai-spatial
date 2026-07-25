@@ -87,8 +87,8 @@ forbidMatch('Active Life Map retained high-resolution memory canvases', lifeMap,
 
 for (const marker of ['life-map-white-gold-life-core', 'life-map-authored-chapter-regions', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-achievement-monument', 'life-map-goal-horizon', 'life-map-privacy-vault', 'life-map-emotional-weather', 'life-map-archive-particles', 'life-map-intimate-memory-chamber']) requireMatch(`Production world ${marker}`, productionWorld, new RegExp(marker))
 for (const family of ['visual', 'audio', 'relationship', 'place', 'emotion', 'pattern', 'achievement', 'goal', 'future', 'everyday', 'archive', 'protected']) requireMatch(`Visual system artifact family ${family}`, visualSystem, new RegExp(`"${family}"`))
-requireMatch('Production world adaptive particle tiers', productionWorld, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 160 : 260/)
-requireMatch('Production world adaptive star tiers', productionWorld, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1200/)
+requireMatch('Production world adaptive particle tiers', productionWorld, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 150 : 240/)
+requireMatch('Production world adaptive star tiers', productionWorld, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)
 requireMatch('Production world quality-aware postprocessing', productionWorld, /active=\{profile\.postprocessing\}/)
 requireMatch('Production world reduced-motion animation guards', productionWorld, /if \(!group\.current \|\| reducedMotion\) return/)
 forbidMatch('Production memory artifact reintroduces generic sphere owner', productionWorld.slice(productionWorld.indexOf('function MemoryArtifact'), productionWorld.indexOf('function SemanticPath')), /sphereGeometry/)
