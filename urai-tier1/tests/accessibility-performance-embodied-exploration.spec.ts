@@ -48,7 +48,10 @@ test.describe('Embodied exploration runtime evidence', () => {
     await expect.poll(async () => Number(await home.getAttribute('data-home-distance')), { timeout: 12_000 }).toBeGreaterThan(1.2)
     const afterZ = Number(await home.getAttribute('data-home-player-z'))
     expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
-    await expect.poll(() => home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))).not.toBe('0.0px')
+    await expect.poll(async () => {
+      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
+      return Math.abs(Number.parseFloat(value))
+    }, { timeout: 12_000 }).toBeGreaterThan(0.1)
 
     const direct = page.getByRole('navigation', { name: 'Direct Home destinations' })
     await expect(direct.getByRole('button', { name: 'Open Orb directly' })).toBeVisible()
