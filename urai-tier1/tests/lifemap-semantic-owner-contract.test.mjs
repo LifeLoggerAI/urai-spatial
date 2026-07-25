@@ -22,17 +22,18 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
-test('selection delivery remains bounded and stops after the real world acknowledges the same node', () => {
+test('selection delivery remains bounded and stops after the real rendered world acknowledges the same node', () => {
   assert.match(selection, /const SELECTION_RETRY_DELAYS_MS = \[60, 180\] as const/)
   assert.match(selection, /const detail = \{ nodeId, source \}/)
   assert.match(selection, /dispatchLifeMapSelection\(detail\)/)
   assert.match(selection, /function selectionWasAcknowledged\(nodeId: string\)/)
   assert.match(selection, /root\?\.dataset\.lifeMapMode !== 'selected'/)
-  assert.match(selection, /route\.searchParams\.get\('node'\) \|\| route\.searchParams\.get\('memoryId'\)/)
+  assert.match(selection, /querySelectorAll<HTMLElement>\('\[data-life-map-node-id\]\[data-active="true"\]'\)/)
+  assert.match(selection, /candidate\.dataset\.lifeMapNodeId === nodeId/)
   assert.match(selection, /for \(const delay of SELECTION_RETRY_DELAYS_MS\)/)
   assert.match(selection, /if \(!selectionWasAcknowledged\(nodeId\)\) dispatchLifeMapSelection\(detail\)/)
   assert.doesNotMatch(selection, /SELECTION_RETRY_DELAYS_MS = \[0/)
-  assert.doesNotMatch(selection, /synthetic-selected|test-only-selected|forceSelected/)
+  assert.doesNotMatch(selection, /route\.searchParams|synthetic-selected|test-only-selected|forceSelected/)
 })
 
 test('semantic selection has one bounded route fail-safe only when real selected state was not reached', () => {
@@ -46,6 +47,7 @@ test('semantic selection has one bounded route fail-safe only when real selected
 
 test('mounted world labels retain independent pointer activation ownership', () => {
   assert.match(world, /className="life-map-world-label" data-life-map-node-id=\{node\.id\}/)
+  assert.match(world, /data-active=\{active \? "true" : "false"\}/)
   assert.match(world, /button\.life-map-world-label\[data-life-map-node-id\]/)
   assert.match(world, /document\.addEventListener\("click", handleWorldLabelClick, true\)/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
