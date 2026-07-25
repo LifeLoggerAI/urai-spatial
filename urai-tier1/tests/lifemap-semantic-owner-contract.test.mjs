@@ -14,7 +14,6 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.doesNotMatch(navigator, /function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
-  assert.match(selection, /function dispatchLifeMapSelection\(detail: LifeMapSelectionDetail\)/)
   assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
   assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
   assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
@@ -22,21 +21,14 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
-test('selection delivery remains bounded and stops after the real rendered world acknowledges the same node', () => {
-  assert.match(selection, /const SELECTION_RETRY_DELAYS_MS = \[60, 180\] as const/)
+test('selection delivery is one synchronous authoritative request with no duplicate broker retries', () => {
   assert.match(selection, /const detail = \{ nodeId, source \}/)
-  assert.match(selection, /dispatchLifeMapSelection\(detail\)/)
-  assert.match(selection, /function selectionWasAcknowledged\(nodeId: string\)/)
-  assert.match(selection, /root\?\.dataset\.lifeMapMode !== 'selected'/)
-  assert.match(selection, /querySelectorAll<HTMLElement>\('\[data-life-map-node-id\]\[data-active="true"\]'\)/)
-  assert.match(selection, /candidate\.dataset\.lifeMapNodeId === nodeId/)
-  assert.match(selection, /for \(const delay of SELECTION_RETRY_DELAYS_MS\)/)
-  assert.match(selection, /if \(!selectionWasAcknowledged\(nodeId\)\) dispatchLifeMapSelection\(detail\)/)
-  assert.doesNotMatch(selection, /SELECTION_RETRY_DELAYS_MS = \[0/)
+  assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
+  assert.doesNotMatch(selection, /SELECTION_RETRY_DELAYS_MS|selectionWasAcknowledged|setTimeout|dispatchLifeMapSelection/)
   assert.doesNotMatch(selection, /route\.searchParams|synthetic-selected|test-only-selected|forceSelected/)
 })
 
-test('semantic selection has one bounded route fail-safe only when real selected state was not reached', () => {
+test('semantic selection retains one bounded route fail-safe only when real selected state was not reached', () => {
   assert.match(navigator, /selectionFallbackRef = useRef<number \| null>\(null\)/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\);[\s\S]*selectionFallbackRef\.current = window\.setTimeout/)
   assert.match(navigator, /root\?\.dataset\.lifeMapMode === "selected" && routeSelectedId === node\.id/)
