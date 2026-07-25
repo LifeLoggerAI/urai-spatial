@@ -9,7 +9,7 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-9',
+  schemaVersion: 'urai-lifemap-founder-proof-10',
   repository: 'LifeLoggerAI/urai-spatial',
   pr: 953,
   exactHead,
@@ -42,7 +42,7 @@ function recordPageEvents(page, label) {
 async function openPage(options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport || { width: 1440, height: 900 },
-    deviceScaleFactor: 1,
+    deviceScaleFactor: 3,
     reducedMotion: options.reducedMotion || 'no-preference',
     hasTouch: Boolean(options.hasTouch),
     isMobile: Boolean(options.isMobile),
@@ -97,18 +97,28 @@ async function waitForOverviewState(page, timeout = 30_000) {
   }, null, { timeout, polling: 25 })
 }
 
-async function canvasSignal(page) {
-  const canvas = page.locator('canvas').first()
-  if (!await canvas.count()) return null
-  return canvas.evaluate((element) => {
-    const gl = element.getContext('webgl2') || element.getContext('webgl')
-    if (!gl) return null
-    const width = Math.max(1, gl.drawingBufferWidth || element.width)
-    const height = Math.max(1, gl.drawingBufferHeight || element.height)
+async function canvasSignal(page, screenshotBuffer) {
+  const dataUrl = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
+  return page.evaluate(async ({ dataUrl }) => {
+    const image = new Image()
+    image.decoding = 'sync'
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve
+      image.onerror = () => reject(new Error('retained PNG could not be decoded for distributed sampling'))
+    })
+    image.src = dataUrl
+    await loaded
+    const width = Math.max(1, image.naturalWidth)
+    const height = Math.max(1, image.naturalHeight)
+    const surface = document.createElement('canvas')
+    surface.width = width
+    surface.height = height
+    const context = surface.getContext('2d', { willReadFrequently: true })
+    if (!context) return null
+    context.drawImage(image, 0, 0)
     const columns = 24
     const rows = 16
     const block = 3
-    const pixels = new Uint8Array(block * block * 4)
     let count = 0
     let sum = 0
     let sumSquares = 0
@@ -118,7 +128,7 @@ async function canvasSignal(page) {
         for (let column = 0; column < columns; column += 1) {
           const x = Math.max(0, Math.min(width - block, Math.round(((column + 0.5) / columns) * width) - 1))
           const y = Math.max(0, Math.min(height - block, Math.round(((row + 0.5) / rows) * height) - 1))
-          gl.readPixels(x, y, block, block, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+          const pixels = context.getImageData(x, y, block, block).data
           for (let index = 0; index < pixels.length; index += 4) {
             const luminance = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3
             count += 1
@@ -139,13 +149,14 @@ async function canvasSignal(page) {
       nonDarkRatio: nonDark / Math.max(1, count),
       sampleCount: count,
       sampling: 'distributed-grid-24x16-3x3',
+      source: 'retained-png',
     }
-  })
+  }, { dataUrl })
 }
 
 async function captureScreenshot(page, file) {
-  const buffer = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60_000 })
-  return { hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
+  const buffer = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', scale: 'device', timeout: 60_000 })
+  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
 }
 
 async function shot(page, id, captureState, extra = {}) {
@@ -165,8 +176,8 @@ async function shot(page, id, captureState, extra = {}) {
     privateMounted: node.getAttribute('data-private-memory-mounted'),
     fallback: node.getAttribute('data-life-map-fallback'),
   })) : {}
-  const screenshot = await captureScreenshot(page, file)
-  const signal = await canvasSignal(page)
+  const { buffer, ...screenshot } = await captureScreenshot(page, file)
+  const signal = await canvasSignal(page, buffer)
   receipt.captures.push({ order: receipt.captures.length + 1, id, file, route: page.url(), viewport: page.viewportSize(), captureState, state, screenshot, signal, timestamp: new Date().toISOString(), ...extra })
 }
 
