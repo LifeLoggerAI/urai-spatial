@@ -123,6 +123,7 @@ export function resolveArtifactFamily(node: LifeMapNode): LifeMapArtifactFamily 
   if (node.sourceType === "audio" || hasTag(node, "audio", "voice", "sound")) return "audio";
   if (node.type === "relationship" || node.sourceType === "relationship") return "relationship";
   if (hasTag(node, "place", "location", "home", "room")) return "place";
+  if (hasTag(node, "quiet-reset", "calm-reflection", "grounding")) return "pattern";
   if (node.type === "threshold" || node.type === "recovery" || hasTag(node, "emotion", "grief", "joy", "repair")) return "emotion";
   if (node.type === "ritual" || hasTag(node, "pattern", "habit", "recurring")) return "pattern";
   if (node.type === "legacy" || hasTag(node, "archive", "deep-time")) return "archive";
@@ -142,24 +143,18 @@ export function artifactImportance(node: LifeMapNode) {
 
 export function resolvePathKind(source: LifeMapNode, target: LifeMapNode): LifeMapPathKind {
   if (source.locked || target.locked || source.privacyLevel === "hidden" || target.privacyLevel === "hidden") return "protected";
-  if (hasTag(source, "corrected", "rejected") || hasTag(target, "corrected", "rejected")) return "corrected";
+  if (hasTag(source, "corrected") || hasTag(target, "corrected")) return "corrected";
   if (hasTag(source, "inferred") || hasTag(target, "inferred")) return "inferred";
   if (hasTag(source, "family") || hasTag(target, "family")) return "family";
-  if (hasTag(source, "friendship", "friend") || hasTag(target, "friendship", "friend")) return "friendship";
+  if (hasTag(source, "friendship") || hasTag(target, "friendship")) return "friendship";
   if (hasTag(source, "work") || hasTag(target, "work")) return "work";
   if (hasTag(source, "conflict") || hasTag(target, "conflict")) return "conflict";
-  if (resolveArtifactFamily(source) === "goal" || resolveArtifactFamily(target) === "goal" || resolveArtifactFamily(source) === "future" || resolveArtifactFamily(target) === "future") return "goal";
+  if (resolveArtifactFamily(source) === "goal" || resolveArtifactFamily(target) === "goal") return "goal";
   if (resolveArtifactFamily(source) === "pattern" || resolveArtifactFamily(target) === "pattern") return "pattern";
   if (source.eraId && target.eraId && source.eraId === target.eraId) return "temporal";
   return "confirmed";
 }
 
-export function chapterForNode(node: LifeMapNode, index = 0): LifeMapChapterDescriptor {
-  return LIFE_MAP_CHAPTERS.find((chapter) => chapter.id === node.eraId)
-    || LIFE_MAP_CHAPTERS[index % LIFE_MAP_CHAPTERS.length];
-}
-
-export function chapterVisibility(chapter: LifeMapChapterDescriptor, selected: LifeMapNode | null) {
-  if (!selected) return 1;
-  return selected.eraId === chapter.id ? 1 : chapter.depth === "far" ? 0.28 : 0.46;
+export function chapterForNode(node: LifeMapNode, index: number) {
+  return LIFE_MAP_CHAPTERS.find((chapter) => chapter.id === node.eraId) || LIFE_MAP_CHAPTERS[index % LIFE_MAP_CHAPTERS.length];
 }
