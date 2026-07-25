@@ -19,7 +19,7 @@ export const quietResetDemoNode: LifeMapNode = {
   eraId: "threshold-return",
   narratorHint: "This was the moment the noise lowered enough for you to return.",
   privacyLevel: "private",
-  tags: ["sample", "recovery", "quiet-reset", "confirmed", "emotion"],
+  tags: ["sample", "recovery", "quiet-reset", "grounding", "calm-reflection", "confirmed"],
 };
 
 const authoredDemoNodes: LifeMapNode[] = [
