@@ -1,3 +1,4 @@
+import MirrorBareEntryGuard from './MirrorBareEntryGuard'
 import MirrorSpatialClient from './MirrorSpatialClient'
 
 const routeFingerprintStyle = {
@@ -22,6 +23,7 @@ export default function MirrorRoutePage() {
       >
         Mirror embodied reflection chamber. Evidence-aware patterns. Replay and Passport continuity.
       </span>
+      <MirrorBareEntryGuard />
       <MirrorSpatialClient />
     </>
   )
