@@ -7,17 +7,26 @@ export type LifeMapSelectionDetail = {
   source: LifeMapSelectionSource
 }
 
-const SELECTION_RETRY_DELAYS_MS = [0, 60, 180] as const
+const SELECTION_RETRY_DELAYS_MS = [60, 180] as const
 
 function dispatchLifeMapSelection(detail: LifeMapSelectionDetail) {
   window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
+}
+
+function selectionWasAcknowledged(nodeId: string) {
+  const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+  if (root?.dataset.lifeMapMode !== 'selected') return false
+  const route = new URL(window.location.href)
+  return (route.searchParams.get('node') || route.searchParams.get('memoryId')) === nodeId
 }
 
 export function requestLifeMapSelection(nodeId: string, source: LifeMapSelectionSource) {
   const detail = { nodeId, source }
   dispatchLifeMapSelection(detail)
   for (const delay of SELECTION_RETRY_DELAYS_MS) {
-    window.setTimeout(() => dispatchLifeMapSelection(detail), delay)
+    window.setTimeout(() => {
+      if (!selectionWasAcknowledged(nodeId)) dispatchLifeMapSelection(detail)
+    }, delay)
   }
 }
 
