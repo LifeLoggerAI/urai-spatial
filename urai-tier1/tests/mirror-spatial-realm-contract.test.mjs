@@ -5,16 +5,34 @@ import { buildExplicitDemoMemory } from '../src/spatial/memory/selectedMemoryCon
 import { applyMirrorFixture, buildMirrorPatterns } from '../src/spatial/mirror/mirrorPatternModel.ts'
 
 const pageSource = fs.readFileSync(new URL('../src/app/mirror/page.tsx', import.meta.url), 'utf8')
+const bareEntrySource = fs.readFileSync(new URL('../src/app/mirror/MirrorBareEntryGuard.tsx', import.meta.url), 'utf8')
 const clientSource = fs.readFileSync(new URL('../src/app/mirror/MirrorSpatialClient.tsx', import.meta.url), 'utf8')
 const modelSource = fs.readFileSync(new URL('../src/spatial/mirror/mirrorPatternModel.ts', import.meta.url), 'utf8')
 
 test('Mirror route has one embodied spatial owner and no promotional-image owner', () => {
   assert.match(pageSource, /MirrorSpatialClient/)
+  assert.match(pageSource, /MirrorBareEntryGuard/)
   assert.match(pageSource, /mirror-embodied-reflection-chamber/)
   assert.doesNotMatch(pageSource, /mirror-reflection-main\.webp/)
   assert.doesNotMatch(pageSource, /Reflection stack/)
   assert.doesNotMatch(pageSource, /See the pattern clearly/)
   assert.doesNotMatch(pageSource, /import Link from/)
+})
+
+test('bare Mirror entry remains usable without silently substituting private data', () => {
+  for (const required of [
+    'data-testid="mirror-bare-entry"',
+    'data-demo-disclosure="required"',
+    'Open disclosed demo',
+    'Open Passport',
+    'Return home',
+    "params.get('memoryId') ?? params.get('node')",
+    "params.get('mirrorFixture')",
+    'demo%3Amirror-preview',
+  ]) assert.match(bareEntrySource, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+
+  assert.match(bareEntrySource, /Mirror will not invent or silently substitute a private memory/)
+  assert.doesNotMatch(bareEntrySource, /window\.location\.replace/)
 })
 
 test('Mirror spatial runtime owns chamber, embodied reflection, interaction, restoration, and fallbacks', () => {
