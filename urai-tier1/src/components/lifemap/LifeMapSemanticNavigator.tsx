@@ -41,8 +41,11 @@ function matchesSearch(node: LifeMapNode, search: string) {
 function activateWorldLabel(node: LifeMapNode) {
   const labels = Array.from(document.querySelectorAll<HTMLButtonElement>("button.life-map-world-label"));
   const owner = labels.find((button) => button.querySelector("strong")?.textContent?.trim() === node.title.trim());
-  if (!owner) return false;
-  owner.click();
+  if (owner) {
+    owner.click();
+    return true;
+  }
+  window.dispatchEvent(new CustomEvent("urai-life-map-select", { detail: { nodeId: node.id } }));
   return true;
 }
 
