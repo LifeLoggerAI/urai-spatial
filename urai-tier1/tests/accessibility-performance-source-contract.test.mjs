@@ -33,7 +33,6 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(reducedMotion, "addEventListener?.('change', update)")
   requireText(reducedMotion, "removeEventListener?.('change', update)")
   for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) requireText(adaptiveQuality, marker)
-
   requireText(companion, "open ? 'Close Orb travel controls' : 'Open Orb travel controls'")
   requireText(companion, 'aria-expanded={open}')
   requireText(companion, 'aria-controls="urai-world-companion-menu"')
@@ -61,7 +60,6 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(routeOwnerCss, 'left: auto !important;')
   requireText(routeOwnerCss, 'top: auto !important;')
   requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
-
   requireText(companionCss, 'width: 64px;')
   requireText(companionCss, 'height: 64px;')
   requireText(companionCss, 'min-height: 48px;')
@@ -113,7 +111,6 @@ test('accessibility and performance implementation contracts are present', () =>
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')
   requireText(routeOwnerCss, 'max-width: 100vw !important;')
   requireText(routeOwnerCss, 'max-height: 100svh !important;')
-
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
   requireText(focus, 'min-height:48px')
@@ -121,7 +118,6 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(focus, 'env(safe-area-inset-right)')
   requireText(focus, 'env(safe-area-inset-bottom)')
   requireText(focus, '@media(prefers-reduced-motion:reduce)')
-
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
   for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'NOT_AVAILABLE_HARDWARE_RENDERER', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
