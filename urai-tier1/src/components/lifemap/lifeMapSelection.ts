@@ -7,10 +7,18 @@ export type LifeMapSelectionDetail = {
   source: LifeMapSelectionSource
 }
 
+const SELECTION_RETRY_DELAYS_MS = [0, 60, 180] as const
+
+function dispatchLifeMapSelection(detail: LifeMapSelectionDetail) {
+  window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
+}
+
 export function requestLifeMapSelection(nodeId: string, source: LifeMapSelectionSource) {
-  window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, {
-    detail: { nodeId, source },
-  }))
+  const detail = { nodeId, source }
+  dispatchLifeMapSelection(detail)
+  for (const delay of SELECTION_RETRY_DELAYS_MS) {
+    window.setTimeout(() => dispatchLifeMapSelection(detail), delay)
+  }
 }
 
 export function readLifeMapSelection(event: Event): LifeMapSelectionDetail | null {
