@@ -18,8 +18,11 @@ function sliceBetween(source, start, end) {
 
 test('semantic search activates the authored world-label owner before route persistence', () => {
   assert.match(world, /import \{ Html, Line, Stars \} from "@react-three\/drei"/)
-  assert.match(world, /<button className="life-map-world-label" type="button"/)
+  assert.match(world, /<button className="life-map-world-label" data-life-map-node-id=\{node\.id\}/)
   assert.match(world, /<strong>\{node\.title\}<\/strong>/)
+  assert.match(world, /document\.addEventListener\("click", handleWorldLabelClick, true\)/)
+  assert.match(world, /target\.dataset\.lifeMapNodeId/)
+  assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
   assert.match(navigator, /querySelectorAll<HTMLButtonElement>\("button\.life-map-world-label"\)/)
   const selection = sliceBetween(navigator, 'const selectNode = useCallback', 'const overview = useCallback')
