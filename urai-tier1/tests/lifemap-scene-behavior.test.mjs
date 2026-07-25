@@ -85,7 +85,8 @@ test('Production artifacts are differentiated by meaning rather than generic bub
     assert.match(world, new RegExp(`function ${component}`))
   }
   assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
-  assert.match(world, /data-artifact-family={family}/)
+  assert.match(world, /data-artifact-family={resolveArtifactFamily\(node\)}/)
+  assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
   assert.match(world, /data-importance={importance\.toFixed\(2\)}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
