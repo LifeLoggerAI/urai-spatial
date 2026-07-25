@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from "./lifeMapData";
 import { useLifeMapEvents } from "./useLifeMapEvents";
 
@@ -36,13 +36,30 @@ export default function LifeMapSemanticNavigator() {
   const [typeFilter, setTypeFilter] = useState<LifeMapNodeType | "all">("all");
   const [eraFilter, setEraFilter] = useState("all");
   const navigatorRef = useRef<HTMLDetailsElement>(null);
+  const desiredNavigatorOpenRef = useRef(false);
   const selectedId = params.get("node") || params.get("memoryId");
   const selected = nodes.find((node) => node.id === selectedId) || null;
 
   const visibleNodes = useMemo(() => nodes.filter((node) => matchesSearch(node, search) && (typeFilter === "all" || node.type === typeFilter) && (eraFilter === "all" || node.eraId === eraFilter)), [eraFilter, nodes, search, typeFilter]);
 
   const setNavigatorOpen = useCallback((open: boolean) => {
+    desiredNavigatorOpenRef.current = open;
     if (navigatorRef.current) navigatorRef.current.open = open;
+  }, []);
+
+  useLayoutEffect(() => {
+    const navigator = navigatorRef.current;
+    if (navigator && navigator.open !== desiredNavigatorOpenRef.current) navigator.open = desiredNavigatorOpenRef.current;
+  });
+
+  useEffect(() => {
+    const navigator = navigatorRef.current;
+    if (!navigator) return;
+    const observer = new MutationObserver(() => {
+      desiredNavigatorOpenRef.current = navigator.open;
+    });
+    observer.observe(navigator, { attributes: true, attributeFilter: ["open"] });
+    return () => observer.disconnect();
   }, []);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
