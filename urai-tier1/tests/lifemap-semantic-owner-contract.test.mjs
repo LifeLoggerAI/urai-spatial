@@ -13,13 +13,21 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.doesNotMatch(navigator, /className="life-map-world-label"[^>]*role="listitem"/)
   assert.doesNotMatch(navigator, /function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
-  assert.doesNotMatch(navigator, /next\.set\("memoryId", node\.id\)[\s\S]*router\.replace/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
   assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
   assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
   assert.match(world, /const node = nodes\.find\(\(candidate\) => candidate\.id === detail\.nodeId\)/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
   assert.match(scene, /onSelect=\{selectNode\}/)
+})
+
+test('semantic selection has one bounded route fail-safe only when real selected state was not reached', () => {
+  assert.match(navigator, /selectionFallbackRef = useRef<number \| null>\(null\)/)
+  assert.match(navigator, /requestLifeMapSelection\(node\.id, source\);[\s\S]*selectionFallbackRef\.current = window\.setTimeout/)
+  assert.match(navigator, /root\?\.dataset\.lifeMapMode === "selected" && routeSelectedId === node\.id/)
+  assert.match(navigator, /next\.set\("memoryId", node\.id\)[\s\S]*next\.set\("node", node\.id\)[\s\S]*router\.replace/)
+  assert.match(navigator, /\}, 120\);/)
+  assert.doesNotMatch(navigator, /requestLifeMapSelection\(node\.id, source\)[\s\S]*router\.replace\([^)]*\);\s*\}/)
 })
 
 test('mounted world labels retain independent pointer activation ownership', () => {
