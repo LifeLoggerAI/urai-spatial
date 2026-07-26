@@ -69,25 +69,44 @@ function expectedSignature(destination: Destination) {
   return JSON.stringify({ pathname: destination.pathname, params: destination.params })
 }
 
-function assertAuthorizedSettledIdentity(page: Page, destination: Destination) {
+function settledIdentity(page: Page, destination: Destination) {
   const url = new URL(page.url())
   const demo = url.searchParams.get('demo')
   const manifestId = url.searchParams.get('manifestId')
   const overview = url.searchParams.get('overview')
 
-  if (destination.id === 'life-map' && demo === '1') {
-    expect(manifestId).toBe(disclosedSampleManifest)
-    expect(overview).toBe('1')
-  } else {
-    expect(demo).not.toBe('1')
-  }
-
   return {
-    url: url.toString(),
+    pathname: normalizedPathname(url.toString()),
     demo,
     manifestId,
     overview,
+    authorized: destination.id !== 'life-map'
+      ? demo !== '1'
+      : demo === '1'
+        ? manifestId === disclosedSampleManifest && overview === '1'
+        : true,
   }
+}
+
+async function waitForAuthorizedSettledIdentity(page: Page, destination: Destination) {
+  await expect.poll(
+    () => settledIdentity(page, destination).authorized,
+    { timeout: 15_000, message: `${destination.id} must finish only authorized destination-owned enrichment` },
+  ).toBe(true)
+
+  if (destination.id === 'life-map') {
+    await expect.poll(
+      () => {
+        const current = settledIdentity(page, destination)
+        return current.demo === '1'
+          ? current.manifestId === disclosedSampleManifest && current.overview === '1'
+          : current.pathname === destination.pathname
+      },
+      { timeout: 15_000, message: 'Life Map must settle into canonical private or disclosed-sample identity' },
+    ).toBe(true)
+  }
+
+  return settledIdentity(page, destination)
 }
 
 async function activate(page: Page, destination: Destination, activation: Activation) {
@@ -130,13 +149,12 @@ async function proveCanonicalTravel(
     { timeout: 20_000, message: `${activation.id} must settle on the canonical ${destination.id} URL` },
   ).toBe(expected)
 
-  await page.waitForTimeout(fallbackSettleMs)
-  expect(canonicalSignature(page, destination)).toBe(expected)
-  const settledIdentity = assertAuthorizedSettledIdentity(page, destination)
+  const identity = await waitForAuthorizedSettledIdentity(page, destination)
   const settledUrl = page.url()
 
-  await page.waitForTimeout(postTransitionStabilityMs)
+  await page.waitForTimeout(fallbackSettleMs + postTransitionStabilityMs)
   expect(canonicalSignature(page, destination)).toBe(expected)
+  expect(settledIdentity(page, destination)).toEqual(identity)
   expect(page.url()).toBe(settledUrl)
 
   await page.goBack({ waitUntil: 'domcontentloaded' })
@@ -148,7 +166,7 @@ async function proveCanonicalTravel(
     destination: destination.id,
     activation: activation.id,
     canonicalUrl: settledUrl,
-    settledIdentity,
+    settledIdentity: identity,
     backUrl: page.url(),
     fallbackSettleMs,
     postTransitionStabilityMs,
