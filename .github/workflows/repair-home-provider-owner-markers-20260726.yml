@@ -1,0 +1,70 @@
+name: Repair Home Provider Owner Markers
+
+on:
+  push:
+    branches:
+      - feat/home-final-personalized-sanctuary-20260723
+    paths:
+      - .github/workflows/repair-home-provider-owner-markers-20260726.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-home-provider-owner-markers-20260726
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout trigger head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feat/home-final-personalized-sanctuary-20260723
+          fetch-depth: 1
+
+      - name: Replace exactly the two retired owner markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/verify-provider-asset-handoff.mjs')
+          source = path.read_text()
+          replacements = {
+              "      'home-authored-terrain',": "      'home-authored-entry-chamber',",
+              "      'home-authored-embodied-self',": "      'home-embodied-presence-interaction',",
+          }
+          for old, new in replacements.items():
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one retired marker {old!r}; found {count}')
+              source = source.replace(old, new)
+          for old in replacements:
+              if old in source:
+                  raise SystemExit(f'retired marker remains: {old}')
+          for new in replacements.values():
+              if source.count(new) != 1:
+                  raise SystemExit(f'canonical marker count drifted: {new}')
+          path.write_text(source)
+          PY
+
+          grep -q "home-authored-entry-chamber" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -q "home-embodied-presence-interaction" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          node --check scripts/verify-provider-asset-handoff.mjs
+          rm .github/workflows/repair-home-provider-owner-markers-20260726.yml
+
+      - name: Commit bounded verifier repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/verify-provider-asset-handoff.mjs .github/workflows/repair-home-provider-owner-markers-20260726.yml
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '2'
+          git commit -m 'fix(home): verify canonical authored owner markers'
+          git push origin HEAD:feat/home-final-personalized-sanctuary-20260723
