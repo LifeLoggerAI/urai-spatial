@@ -5,9 +5,19 @@ import { useEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
-import { requestUraiWorldOrbOpen } from '@/spatial/world/worldEvents'
+import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 type RendererState = 'ready' | 'recovering' | 'failed'
+
+function HomeSemanticNavigation() {
+  return (
+    <nav className="home-semantic-navigation sr-only" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary">
+      <button type="button" aria-label="Open Orb directly" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Open Orb</button>
+      <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })}>Ground</button>
+      <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })}>Life Map</button>
+    </nav>
+  )
+}
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
@@ -87,7 +97,9 @@ export default function HomeSpatialRuntimeLayer() {
     return (
       <section className="urai-home-spatial-runtime-layer" data-urai-home-runtime="accessible-fallback-after-renderer-failure" data-webgl-ready="false" aria-label="Spatial Home fallback">
         <div role="status" aria-live="polite" className="sr-only">The spatial renderer could not recover. Accessible Home controls remain available.</div>
+        <HomeSemanticNavigation />
         <HomeSpatialWorldFinal />
+        <style jsx global>{`.urai-home-spatial-runtime-layer .urai-final-home-doorways{display:none!important}`}</style>
       </section>
     )
   }
@@ -107,7 +119,9 @@ export default function HomeSpatialRuntimeLayer() {
       aria-label="URAI living spatial Home"
     >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
+      <HomeSemanticNavigation />
       <AssetDrivenHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
+      <style jsx global>{`.urai-home-spatial-runtime-layer .urai-final-home-doorways{display:none!important}`}</style>
     </section>
   )
 }
