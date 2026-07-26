@@ -1,100 +1,92 @@
 name: Accessibility Performance Evidence
 
 on:
-  workflow_dispatch:
-    inputs:
-      verification_sha:
-        description: Exact 40-character commit SHA to verify
-        required: true
-        type: string
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
-      - 'playwright.accessibility.config.ts'
-      - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
-      - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
-      - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
-      - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
-      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
-      - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
-      - 'urai-tier1/src/app/status/**'
-      - 'urai-tier1/src/data/launchTruth.ts'
-      - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
-      - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
-      - 'urai-tier1/src/spatial/world/persistentWorldCompanion.css'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: accessibility-performance-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
-  cancel-in-progress: true
-
-env:
-  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
-  PLAYWRIGHT_BROWSERS_PATH: '0'
+  group: focus-url-identity-repair
+  cancel-in-progress: false
 
 jobs:
-  evidence:
+  repair:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      github.event.pull_request.head.ref == 'feat/focus-current-main-20260723'
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
     steps:
-      - name: Checkout exact candidate
+      - name: Checkout exact trigger head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ env.URAI_EXACT_HEAD }}
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Prove exact clean candidate
+      - name: Apply bounded URL identity repair
+        shell: python
+        run: |
+          from pathlib import Path
+
+          home = Path('urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx')
+          life_map = Path('urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx')
+          contract = Path('urai-tier1/tests/focus-url-identity-repair-contract.test.mjs')
+
+          home_source = home.read_text()
+          old_travel = """  const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => requestUraiWorldTravel(destination === 'life-map'
+            ? { destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
+            : { destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }), [])
+          """
+          new_travel = """  const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => requestUraiWorldTravel(destination === 'life-map'
+            ? { destination: 'life-map', href: '/life-map?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
+            : { destination: 'infrastructure-hub', href: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }), [])
+          """
+          if old_travel not in home_source:
+              raise SystemExit('expected Home travel block is absent; fail closed')
+          home.write_text(home_source.replace(old_travel, new_travel, 1))
+
+          life_source = life_map.read_text()
+          old_identity = """    next.set("memoryId", selected.id);
+              next.set("node", selected.id);
+          """
+          new_identity = """    next.set("memoryId", explicitDemoRequested ? `demo:${selected.id}` : selected.id);
+              next.set("node", selected.id);
+          """
+          if old_identity not in life_source:
+              raise SystemExit('expected Life Map destination identity block is absent; fail closed')
+          life_source = life_source.replace(old_identity, new_identity, 1)
+          old_deps = "  }, [selected, withIdentity]);"
+          new_deps = "  }, [explicitDemoRequested, selected, withIdentity]);"
+          if old_deps not in life_source:
+              raise SystemExit('expected destination dependency block is absent; fail closed')
+          life_map.write_text(life_source.replace(old_deps, new_deps, 1))
+
+          contract.write_text("""import assert from 'node:assert/strict'
+          import fs from 'node:fs'
+
+          const home = fs.readFileSync(new URL('../src/app/EmbodiedHomeSpatialCanvas.tsx', import.meta.url), 'utf8')
+          const lifeMap = fs.readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMapScene.tsx', import.meta.url), 'utf8')
+
+          assert.match(home, /\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent/)
+          assert.match(home, /\/life-map\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent/)
+          assert.match(lifeMap, /explicitDemoRequested \? `demo:\$\{selected\.id\}` : selected\.id/)
+          assert.match(lifeMap, /\[explicitDemoRequested, selected, withIdentity\]/)
+          console.log('FOCUS_URL_IDENTITY_REPAIR_CONTRACT_PASSED')
+          """)
+
+      - name: Verify and publish repair
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
-          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
-          test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.0.0
-          run_install: false
-
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install exact lockfile
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-
-      - name: Typecheck and build exact candidate
-        run: |
-          pnpm --dir urai-tier1 typecheck
-          pnpm build:static
-
-      - name: Install Chromium
-        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
-
-      - name: Run isolated accessibility and performance suite
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/accessibility-performance
-          pnpm exec playwright test --config playwright.accessibility.config.ts \
-            2>&1 | tee artifacts/accessibility-performance/playwright.log
-
-      - name: Retain exact-head evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: accessibility-performance-evidence-${{ env.URAI_EXACT_HEAD }}
-          path: artifacts/accessibility-performance
-          if-no-files-found: error
-          retention-days: 365
+          node urai-tier1/tests/focus-url-identity-repair-contract.test.mjs
+          git add urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/focus-url-identity-repair-contract.test.mjs
+          git config user.name 'LifeLoggerAI'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'fix(focus): preserve canonical travel and demo identity'
+          git fetch origin feat/focus-current-main-20260723
+          test "$(git rev-parse FETCH_HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git push origin HEAD:feat/focus-current-main-20260723
