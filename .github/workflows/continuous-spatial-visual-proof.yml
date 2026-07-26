@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
@@ -143,7 +144,7 @@ jobs:
           URAI_PROOF_DIR=artifacts/continuous-spatial-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
           URAI_HOME_EXPECT_READY="$URAI_HOME_EXPECT_READY" \
-            node scripts/capture-continuous-spatial-proof-v18.mjs \
+            node scripts/run-continuous-spatial-proof-v18-stable.mjs \
             2>&1 | tee artifacts/continuous-spatial-proof/capture.log
           capture_status=${PIPESTATUS[0]}
           set -e
