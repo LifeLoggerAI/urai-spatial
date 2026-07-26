@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: home-finalization-candidate-commit-${{ github.event.pull_request.number || github.ref_name }}
@@ -161,36 +161,77 @@ jobs:
             npx --yes @gltf-transform/cli@4.2.1 validate "$file"
           done
 
-      - name: Commit authored compressed review candidates without promotion
+      - name: Classify generated candidate drift without mutating frozen branch
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- \
-            urai-tier1/src/app/AssetDrivenHomeWorld.tsx \
-            urai-tier1/src/app/spatial-runtime-restoration.css \
-            operations/assets/launch-critical-assets.json \
-            scripts/author-home-finalization-assets.mjs \
-            scripts/record-home-finalization-authored-candidates.mjs \
-            scripts/verify-home-finalization-authored-assets.mjs \
-            operations/assets/sources/home-finalization-authored-source-v2.json \
-            operations/assets/home-finalization-candidate-decisions.json \
-            operations/assets/generated-receipts/forge-summary.json \
-            operations/assets/generated-receipts/home-entry-chamber-v1.json \
-            operations/assets/generated-receipts/portal-ring-master-v1.json \
-            operations/assets/generated-receipts/urai-orb-avatar-v1.json \
-            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
-            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
+          mkdir -p artifacts/home-finalization-candidate
+          tracked=(
+            urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+            urai-tier1/src/app/spatial-runtime-restoration.css
+            operations/assets/launch-critical-assets.json
+            scripts/author-home-finalization-assets.mjs
+            scripts/record-home-finalization-authored-candidates.mjs
+            scripts/verify-home-finalization-authored-assets.mjs
+            operations/assets/sources/home-finalization-authored-source-v2.json
+            operations/assets/home-finalization-candidate-decisions.json
+            operations/assets/generated-receipts/forge-summary.json
+            operations/assets/generated-receipts/home-entry-chamber-v1.json
+            operations/assets/generated-receipts/portal-ring-master-v1.json
+            operations/assets/generated-receipts/urai-orb-avatar-v1.json
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
             urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
+          )
+          git add -- "${tracked[@]}"
           if git diff --cached --quiet; then
-            echo 'Authored compressed candidates already match the exact candidate.'
+            echo 'Authored compressed candidates already match the frozen exact head.'
             exit 0
           fi
-          git fetch origin "$HOME_BRANCH"
-          test "$(git rev-parse FETCH_HEAD)" = "$HOME_EXACT_HEAD"
-          git commit -m 'assets(home): retain authored candidates and hydrated review runtime'
-          git push origin HEAD:"$HOME_BRANCH"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          import { execFileSync } from 'node:child_process'
+
+          const files = [
+            'operations/assets/generated-receipts/forge-summary.json',
+            'operations/assets/generated-receipts/home-entry-chamber-v1.json',
+            'operations/assets/generated-receipts/portal-ring-master-v1.json',
+            'operations/assets/generated-receipts/urai-orb-avatar-v1.json',
+          ]
+          const stripVolatile = (value) => {
+            if (Array.isArray(value)) return value.map(stripVolatile)
+            if (!value || typeof value !== 'object') return value
+            return Object.fromEntries(Object.entries(value)
+              .filter(([key]) => key !== 'generatedAt')
+              .map(([key, child]) => [key, stripVolatile(child)]))
+          }
+          for (const path of files) {
+            if (!fs.existsSync(path)) continue
+            let priorText
+            try {
+              priorText = execFileSync('git', ['show', `${process.env.HOME_EXACT_HEAD}:${path}`], { encoding: 'utf8' })
+            } catch {
+              continue
+            }
+            const current = JSON.parse(fs.readFileSync(path, 'utf8'))
+            const prior = JSON.parse(priorText)
+            if (JSON.stringify(stripVolatile(current)) === JSON.stringify(stripVolatile(prior))) {
+              fs.writeFileSync(path, priorText)
+            }
+          }
+          NODE
+
+          git add -- "${tracked[@]}"
+          if git diff --cached --quiet; then
+            echo 'Only volatile generatedAt receipt fields changed; the branch remains frozen.'
+            exit 0
+          fi
+
+          git diff --cached --name-status | tee artifacts/home-finalization-candidate/substantive-drift-files.txt
+          git diff --cached --binary > artifacts/home-finalization-candidate/substantive-candidate-drift.patch
+          echo 'Substantive authored candidate drift requires an explicit reviewed commit. This verification workflow is not permitted to mutate the branch.' >&2
+          exit 1
 
       - name: Upload authored candidate evidence
         if: always()
@@ -200,6 +241,7 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           path: |
+            artifacts/home-finalization-candidate/**
             urai-tier1/src/app/spatial-runtime-restoration.css
             operations/assets/launch-critical-assets.json
             operations/assets/sources/home-finalization-authored-source-v2.json
