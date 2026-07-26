@@ -1,0 +1,58 @@
+name: Life Map Bounded Review Repair PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/lifemap-bounded-review-repair-pr.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-bounded-review-repair-pr
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Execute reviewed bounded repair payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/lifemap-bounded-review-repair.yml').read_text()
+          marker = "          python3 - <<'PY'\n"
+          start = source.index(marker) + len(marker)
+          end = source.index("\n          PY\n", start)
+          payload = source[start:end]
+          normalized = '\n'.join(line[10:] if line.startswith('          ') else line for line in payload.splitlines())
+          Path('/tmp/lifemap-bounded-review-repair.py').write_text(normalized + '\n')
+          PY
+          python3 /tmp/lifemap-bounded-review-repair.py
+          rm -f .github/workflows/lifemap-bounded-review-repair-pr.yml
+
+      - name: Verify and publish real repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/verify-lifemap-canvas-proof.mjs
+          git diff --check
+          test ! -e .github/workflows/lifemap-bounded-review-repair.yml
+          test ! -e .github/workflows/lifemap-bounded-review-repair-pr.yml
+          git config user.name 'urai-release-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(life-map): close visual proof and journey review defects'
+          git push origin HEAD:feat/life-map-aaa-final-production-20260723
