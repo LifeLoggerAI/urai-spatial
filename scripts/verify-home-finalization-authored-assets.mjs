@@ -32,20 +32,18 @@ if (decisions.truthBoundary?.manifestPromotion !== false || decisions.truthBound
 if (decisions.truthBoundary?.reviewModeRequired !== true) errors.push('review mode must remain required')
 
 for (const marker of [
-  "useAnimations",
-  "data-home-animation-owner=\"authored-sanctuary-plus-gltf-interactions\"",
-  "data-home-orb-clip=",
-  "Portal_Opening",
-  "Portal_Traversal",
-  "Portal_Closing",
-  "Presence_Idle",
-  "Presence_Privacy",
-  "Presence_Forming",
+  'HomeSanctuaryWorld',
+  'useAnimations',
+  'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
+  'data-home-orb-clip=',
+  'Portal_Opening',
+  'Portal_Traversal',
+  'Portal_Closing',
 ]) {
-  if (!runtimeSource.includes(marker)) errors.push(`runtime authored clip binding missing: ${marker}`)
+  if (!runtimeSource.includes(marker)) errors.push(`runtime sanctuary or authored interaction binding missing: ${marker}`)
 }
-for (const forbidden of ['latheGeometry', 'torusKnotGeometry', 'home-candidate-orb', 'Review candidate composition — visually improved, still unapproved.']) {
-  if (runtimeSource.includes(forbidden)) errors.push(`retired procedural review marker remains: ${forbidden}`)
+for (const forbidden of ['data-home-animation-owner="gltf-authored-clips"', 'latheGeometry', 'torusKnotGeometry', 'home-candidate-orb', 'Review candidate composition — visually improved, still unapproved.']) {
+  if (runtimeSource.includes(forbidden)) errors.push(`retired procedural or rejected visual marker remains: ${forbidden}`)
 }
 
 for (const contract of contracts) {
