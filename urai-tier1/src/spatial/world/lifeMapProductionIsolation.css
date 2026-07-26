@@ -34,6 +34,7 @@ html.urai-route-life-map .life-map-thresholds { padding: 8px !important; border:
   html.urai-route-life-map .life-map-thresholds { width: calc(100vw - 16px) !important; bottom: max(8px,env(safe-area-inset-bottom)) !important; gap: 7px !important; padding: 7px !important; border-radius: 20px !important; }
   html.urai-route-life-map .life-map-thresholds .overview-return { min-height: 48px !important; }
   html.urai-route-life-map .life-map-navigator { right: 12px !important; bottom: max(72px,calc(env(safe-area-inset-bottom) + 62px)) !important; }
+  html.urai-route-life-map .life-map-navigator:not([open]) { bottom: max(176px,calc(env(safe-area-inset-bottom) + 166px)) !important; }
 }
 @media (prefers-reduced-motion:reduce) { html.urai-route-life-map [data-testid='urai-true-3d-life-map'] canvas { transition: none !important; } }
 @media (forced-colors:active) {
