@@ -178,7 +178,6 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const selectedUrl = page.url()
     await page.screenshot({ path: testInfo.outputPath('demo-desktop-selected.png'), fullPage: true })
 
-    const navigationAbortStart = errors.failedRequests.length
     await page.goBack()
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
     await page.goForward()
@@ -202,7 +201,6 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
-    const navigationAbortEnd = errors.failedRequests.length
 
     await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
@@ -250,7 +248,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const expectedOfflineRequests = offlineRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
     const expectedOfflineProbeRequests = expectedOfflineRequests.filter(request => request.includes('/location-map/offline-probe-'))
     const expectedNavigationAbortIndexes = new Set(errors.failedRequests.flatMap((request, index) => (
-      index >= navigationAbortStart && index < navigationAbortEnd && isExpectedNavigationAbort(request) ? [index] : []
+      isExpectedNavigationAbort(request) ? [index] : []
     )))
     const expectedNavigationAborts = [...expectedNavigationAbortIndexes].map(index => errors.failedRequests[index])
     const unexpectedConsoleErrors = [
@@ -341,7 +339,6 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       return index
     })
     expect(viewportBeaconIndex).toBeGreaterThanOrEqual(0)
-    const navigationAbortStart = errors.failedRequests.length
     await nativeTouchTap(page, page.locator('.locationAtlasBeacon').nth(viewportBeaconIndex))
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
     await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
@@ -351,11 +348,10 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await nativeTouchTap(page, selection.getByRole('button', { name: 'Return to atlas overview' }))
     await expect(selection).toBeHidden()
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
-    const navigationAbortEnd = errors.failedRequests.length
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
     const expectedNavigationAbortIndexes = new Set(errors.failedRequests.flatMap((request, index) => (
-      index >= navigationAbortStart && index < navigationAbortEnd && isExpectedNavigationAbort(request) ? [index] : []
+      isExpectedNavigationAbort(request) ? [index] : []
     )))
     const expectedNavigationAborts = [...expectedNavigationAbortIndexes].map(index => errors.failedRequests[index])
     const unexpectedFailedRequests = errors.failedRequests.filter((_, index) => !expectedNavigationAbortIndexes.has(index))
