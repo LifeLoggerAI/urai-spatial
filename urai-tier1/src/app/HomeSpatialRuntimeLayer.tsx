@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import FinalHomeWorld from './FinalHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
@@ -12,7 +12,6 @@ type RendererState = 'ready' | 'recovering' | 'failed'
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
-  const router = useRouter()
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const webglAvailable = useWebGLAvailable()
   const homeRouteActive = normalizedPathname === '/' || normalizedPathname === '/home'
@@ -27,8 +26,7 @@ export default function HomeSpatialRuntimeLayer() {
       ? { destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
       : { destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }
     requestUraiWorldTravel(request)
-    if (request.href) router.push(request.href)
-  }, [router])
+  }, [])
 
   useEffect(() => {
     document.body.style.cursor = 'default'
@@ -138,19 +136,11 @@ export default function HomeSpatialRuntimeLayer() {
     window.addEventListener('pointerup', synchronizeAfterInput)
     window.addEventListener('touchend', synchronizeAfterInput)
 
-    let frame = 0
-    const syncParallaxTelemetry = () => {
-      synchronizeAllHomes()
-      frame = window.requestAnimationFrame(syncParallaxTelemetry)
-    }
-    frame = window.requestAnimationFrame(syncParallaxTelemetry)
-
     return () => {
       observer.disconnect()
       window.removeEventListener('keyup', synchronizeAfterInput)
       window.removeEventListener('pointerup', synchronizeAfterInput)
       window.removeEventListener('touchend', synchronizeAfterInput)
-      window.cancelAnimationFrame(frame)
     }
   }, [homeRuntimeActive, recoveryKey, rendererState])
 
