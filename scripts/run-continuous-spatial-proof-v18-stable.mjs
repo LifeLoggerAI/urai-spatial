@@ -215,6 +215,8 @@ if (!original.includes(existingDriver)) {
 
 const stableSource = (original.slice(0, moveStart) + deterministicMove + original.slice(moveEnd))
   .replace(existingDriver, stableDriver)
+  .replaceAll('await page.screenshot({ path: screenshot, fullPage: false })', 'await page.screenshot({ path: screenshot, fullPage: false, timeout: 90_000 })')
+  .replaceAll('await page.screenshot({ path: screenshot })', 'await page.screenshot({ path: screenshot, timeout: 90_000 })')
 
 await writeFile(generatedUrl, stableSource, 'utf8')
 try {
