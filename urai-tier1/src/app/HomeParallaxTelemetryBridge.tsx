@@ -39,13 +39,7 @@ function synchronizeAllHomes() {
 
 export default function HomeParallaxTelemetryBridge() {
   useEffect(() => {
-    let frame = 0
     let observerFrame = 0
-
-    const synchronize = () => {
-      synchronizeAllHomes()
-      frame = window.requestAnimationFrame(synchronize)
-    }
 
     const scheduleSynchronization = () => {
       if (observerFrame) return
@@ -73,11 +67,9 @@ export default function HomeParallaxTelemetryBridge() {
     window.addEventListener('touchend', synchronizeAfterInput, true)
 
     synchronizeAllHomes()
-    frame = window.requestAnimationFrame(synchronize)
 
     return () => {
       observer.disconnect()
-      window.cancelAnimationFrame(frame)
       if (observerFrame) window.cancelAnimationFrame(observerFrame)
       window.removeEventListener('keyup', synchronizeAfterInput, true)
       window.removeEventListener('pointerup', synchronizeAfterInput, true)
