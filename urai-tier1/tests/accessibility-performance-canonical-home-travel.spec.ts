@@ -89,22 +89,35 @@ function settledIdentity(page: Page, destination: Destination) {
 }
 
 async function waitForAuthorizedSettledIdentity(page: Page, destination: Destination) {
-  await expect.poll(
-    () => settledIdentity(page, destination).authorized,
-    { timeout: 15_000, message: `${destination.id} must finish only authorized destination-owned enrichment` },
-  ).toBe(true)
+  const startedAt = Date.now()
+  let stableIdentity = JSON.stringify(settledIdentity(page, destination))
+  let stableSince = startedAt
 
-  if (destination.id === 'life-map') {
-    await expect.poll(
-      () => {
-        const current = settledIdentity(page, destination)
-        return current.demo === '1'
-          ? current.manifestId === disclosedSampleManifest && current.overview === '1'
-          : current.pathname === destination.pathname
-      },
-      { timeout: 15_000, message: 'Life Map must settle into canonical private or disclosed-sample identity' },
-    ).toBe(true)
-  }
+  await expect.poll(
+    () => {
+      const current = settledIdentity(page, destination)
+      const serialized = JSON.stringify(current)
+      const now = Date.now()
+
+      if (serialized !== stableIdentity) {
+        stableIdentity = serialized
+        stableSince = now
+      }
+
+      if (!current.authorized) return false
+      if (destination.id === 'life-map' && current.demo === '1') {
+        if (current.manifestId !== disclosedSampleManifest || current.overview !== '1') return false
+      }
+
+      return now - startedAt >= fallbackSettleMs + postTransitionStabilityMs
+        && now - stableSince >= postTransitionStabilityMs
+    },
+    {
+      timeout: 20_000,
+      intervals: [100, 200, 400],
+      message: `${destination.id} must finish only authorized destination-owned enrichment and remain stable`,
+    },
+  ).toBe(true)
 
   return settledIdentity(page, destination)
 }
@@ -152,7 +165,6 @@ async function proveCanonicalTravel(
   const identity = await waitForAuthorizedSettledIdentity(page, destination)
   const settledUrl = page.url()
 
-  await page.waitForTimeout(fallbackSettleMs + postTransitionStabilityMs)
   expect(canonicalSignature(page, destination)).toBe(expected)
   expect(settledIdentity(page, destination)).toEqual(identity)
   expect(page.url()).toBe(settledUrl)
