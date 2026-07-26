@@ -75,6 +75,7 @@ const routeOwnerChecks = [
     required: [
       'AssetDrivenHomeWorld',
       'FinalHomeWorld',
+      'HomeSanctuaryWorld',
       'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
       'data-home-visual-owner="asset-driven-personalized-sanctuary"',
       'data-home-primary-owner="asset-driven"',
@@ -91,7 +92,6 @@ const routeOwnerChecks = [
     ],
     forbidden: [
       'EmbodiedHomeSpatialCanvas',
-      'HomeSanctuaryWorld',
       'assetCssStack(homeAssets.',
       'home-authored-art',
       '--home-provider-',
