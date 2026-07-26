@@ -18,6 +18,85 @@ const GOLD = "#ffd98a";
 const ICE = "#dcf7ff";
 const DEEP = "#030914";
 
+function RenderProofRepublisher() {
+  const { gl, scene } = useThree();
+  const root = useRef<HTMLElement | null>(null);
+  const frames = useRef(0);
+  const invalidated = useRef(true);
+  const invalidationFrame = useRef<number | null>(null);
+  const lastSignature = useRef("");
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    root.current = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+
+    const writeInvalid = () => {
+      const element = root.current;
+      if (element) {
+        element.dataset.lifeMapRenderReady = "false";
+        element.dataset.lifeMapVisibleObjects = "0";
+        element.dataset.lifeMapVisibleAnchors = "0";
+        element.dataset.lifeMapRenderCalls = "0";
+        element.dataset.lifeMapRenderTriangles = "0";
+      }
+      if (invalidated.current) invalidationFrame.current = window.requestAnimationFrame(writeInvalid);
+    };
+
+    const invalidate = () => {
+      invalidated.current = true;
+      frames.current = 0;
+      lastSignature.current = "";
+      if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      writeInvalid();
+    };
+
+    canvas.addEventListener("webglcontextlost", invalidate, false);
+    canvas.addEventListener("webglcontextrestored", invalidate, false);
+    invalidate();
+
+    return () => {
+      invalidated.current = false;
+      if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      canvas.removeEventListener("webglcontextlost", invalidate, false);
+      canvas.removeEventListener("webglcontextrestored", invalidate, false);
+    };
+  }, [gl]);
+
+  useFrame(() => {
+    frames.current += 1;
+    if (frames.current < 4) return;
+
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    if (!invalidated.current && lastSignature.current === signature) return;
+
+    invalidated.current = false;
+    if (invalidationFrame.current !== null) {
+      window.cancelAnimationFrame(invalidationFrame.current);
+      invalidationFrame.current = null;
+    }
+    lastSignature.current = signature;
+
+    const element = root.current ?? gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    if (!element) return;
+    element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
+    element.dataset.lifeMapVisibleObjects = String(objects);
+    element.dataset.lifeMapVisibleAnchors = String(anchors);
+    element.dataset.lifeMapRenderCalls = String(calls);
+    element.dataset.lifeMapRenderTriangles = String(triangles);
+  });
+
+  return null;
+}
+
 function authoredCurve(points: Point3[]) {
   return new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)), false, "catmullrom", 0.28);
 }
@@ -194,5 +273,5 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     };
   }, [nodes, onSelect]);
 
-  return <><color attach="background" args={[DEEP]} /><fog attach="fog" args={[DEEP, 18, 76]} /><ambientLight intensity={0.78} color="#c7efff" /><directionalLight position={[7, 10, 8]} intensity={1.85} color="#e5f7ff" castShadow={profile.shadows} /><hemisphereLight args={["#d7f3ff", "#07111a", 0.82]} />{webglRecovery}{cameraRig}<group name="life-map-authored-environment" data-depth-band="far"><mesh><sphereGeometry args={[74, 36, 24]} /><meshBasicMaterial color="#091827" side={THREE.BackSide} /></mesh></group><group name="life-map-temporal-horizon" data-depth-band="far" /><group name="life-map-world-stage" scale={stageScale} position={stagePosition}><group name="life-map-temporal-landscape" data-depth-band="middle" /><LifeCore reducedMotion={profile.reducedMotion} tier={profile.tier} hidden={Boolean(selected)} /><group name="life-map-light-bridges" data-depth-band="middle" /><ChapterConstellations selected={selected} /><ForegroundObservatory selected={selected} /><OverviewLandmarks selected={selected} /><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /><group name="life-map-memory-artifact-families" data-depth-band="middle">{nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}</group><group name="life-map-selected-relationship-context" data-depth-band="middle" /><ArrivalSanctuary selected={selected} phase={phase} reducedMotion={profile.reducedMotion} /></group><ArchiveParticles qualityTier={qualityTier} reducedMotion={profile.reducedMotion} /><group name="life-map-far-future-horizon" data-depth-band="far"><Stars radius={78} depth={58} count={starCount} factor={1.42} saturation={0.22} fade speed={profile.reducedMotion ? 0 : 0.018} /></group><CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} /></>;
+  return <><color attach="background" args={[DEEP]} /><fog attach="fog" args={[DEEP, 18, 76]} /><ambientLight intensity={0.78} color="#c7efff" /><directionalLight position={[7, 10, 8]} intensity={1.85} color="#e5f7ff" castShadow={profile.shadows} /><hemisphereLight args={["#d7f3ff", "#07111a", 0.82]} />{webglRecovery}<RenderProofRepublisher />{cameraRig}<group name="life-map-authored-environment" data-depth-band="far"><mesh><sphereGeometry args={[74, 36, 24]} /><meshBasicMaterial color="#091827" side={THREE.BackSide} /></mesh></group><group name="life-map-temporal-horizon" data-depth-band="far" /><group name="life-map-world-stage" scale={stageScale} position={stagePosition}><group name="life-map-temporal-landscape" data-depth-band="middle" /><LifeCore reducedMotion={profile.reducedMotion} tier={profile.tier} hidden={Boolean(selected)} /><group name="life-map-light-bridges" data-depth-band="middle" /><ChapterConstellations selected={selected} /><ForegroundObservatory selected={selected} /><OverviewLandmarks selected={selected} /><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /><group name="life-map-memory-artifact-families" data-depth-band="middle">{nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}</group><group name="life-map-selected-relationship-context" data-depth-band="middle" /><ArrivalSanctuary selected={selected} phase={phase} reducedMotion={profile.reducedMotion} /></group><ArchiveParticles qualityTier={qualityTier} reducedMotion={profile.reducedMotion} /><group name="life-map-far-future-horizon" data-depth-band="far"><Stars radius={78} depth={58} count={starCount} factor={1.42} saturation={0.22} fade speed={profile.reducedMotion ? 0 : 0.018} /></group><CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} /></>;
 }
