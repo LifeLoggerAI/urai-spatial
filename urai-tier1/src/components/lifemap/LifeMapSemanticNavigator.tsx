@@ -75,9 +75,13 @@ export default function LifeMapSemanticNavigator() {
 
   const overview = useCallback(() => {
     const next = withIdentity(new URLSearchParams());
+    const memoryId = params.get("memoryId");
+    const node = params.get("node");
+    if (memoryId) next.set("memoryId", memoryId);
+    if (node) next.set("node", node);
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [router, withIdentity]);
+  }, [params, router, withIdentity]);
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes;
