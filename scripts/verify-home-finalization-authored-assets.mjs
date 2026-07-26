@@ -33,7 +33,7 @@ if (decisions.truthBoundary?.reviewModeRequired !== true) errors.push('review mo
 
 for (const marker of [
   "useAnimations",
-  "data-home-animation-owner=\"gltf-authored-clips\"",
+  "data-home-animation-owner=\"authored-sanctuary-plus-gltf-interactions\"",
   "data-home-orb-clip=",
   "Portal_Opening",
   "Portal_Traversal",
