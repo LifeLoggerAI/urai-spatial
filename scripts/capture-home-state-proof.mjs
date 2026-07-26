@@ -54,7 +54,7 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 900 
 const page = await context.newPage()
 const transition = { id: 'home-real-offline-transition', passed: false }
 try {
-  await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+  await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await page.locator(owner).waitFor({ state: 'visible', timeout: 45_000 })
   await context.setOffline(true)
   await page.evaluate(() => window.dispatchEvent(new Event('offline')))
