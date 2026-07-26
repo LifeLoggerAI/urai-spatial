@@ -210,14 +210,14 @@ async function holdKeysUntil(page, keys, target, timeout = 18_000) {
 }
 
 async function resetHome(page) {
-  await page.keyboard.press('KeyR')
+  await page.keyboard.press('r')
   await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-nearby') === 'none', ownerSelector, { timeout: 10_000 })
   await waitFrames(page, 2)
 }
 
 async function moveToNearby(page, destination, method) {
   if (method === 'keyboard') {
-    const keys = destination === 'orb' ? ['KeyW'] : destination === 'ground' ? ['KeyW', 'KeyA'] : ['KeyW', 'KeyD']
+    const keys = destination === 'orb' ? ['w'] : destination === 'ground' ? ['w', 'a'] : ['w', 'd']
     await holdKeysUntil(page, keys, destination, 22_000)
   } else if (method === 'touch') {
     const forward = page.getByRole('button', { name: 'Move forward' })
@@ -296,7 +296,7 @@ async function capturePortalSequence(browser) {
     await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded' })
     await waitForAssetHome(page)
     await moveToNearby(page, destination, 'keyboard')
-    await page.keyboard.press('KeyE')
+    await page.keyboard.press('Enter')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === 'traversal', ownerSelector, { timeout: 10_000 })
     const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')
     const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
