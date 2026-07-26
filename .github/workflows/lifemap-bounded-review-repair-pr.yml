@@ -40,6 +40,24 @@ jobs:
           end = source.index("\n          PY\n", start)
           payload = source[start:end]
           normalized = '\n'.join(line[10:] if line.startswith('          ') else line for line in payload.splitlines())
+          helper_start = normalized.index('def replace_once(')
+          helper_end = normalized.index('\n\nscene =', helper_start)
+          helper = '''def replace_once(path: Path, old: str, new: str) -> None:
+              import re
+              text = path.read_text()
+              count = text.count(old)
+              if count == 1:
+                  path.write_text(text.replace(old, new, 1))
+                  return
+              lines = [line.strip() for line in old.splitlines() if line.strip()]
+              pattern = re.compile(r'[ \\t]*\\n[ \\t]*'.join(re.escape(line) for line in lines))
+              matches = list(pattern.finditer(text))
+              if len(matches) != 1:
+                  raise SystemExit(f"{path}: expected one whitespace-safe match, found {len(matches)}")
+              match = matches[0]
+              replacement = new.strip('\\n')
+              path.write_text(text[:match.start()] + replacement + text[match.end():])'''
+          normalized = normalized[:helper_start] + helper + normalized[helper_end:]
           Path('/tmp/lifemap-bounded-review-repair.py').write_text(normalized + '\n')
           PY
           set +e
