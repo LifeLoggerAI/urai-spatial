@@ -29,8 +29,14 @@ function tuple(vector: THREE.Vector3): [number, number, number] {
   return [vector.x, vector.y, vector.z];
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase): CameraGoal {
-  const target = new THREE.Vector3(...node.position);
+function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
+  const scale = portrait ? new THREE.Vector3(0.92, 0.96, 0.92) : new THREE.Vector3(1.12, 1.12, 1.08);
+  const position = portrait ? new THREE.Vector3(0, -0.08, 0.9) : new THREE.Vector3(0, -0.16, 0.62);
+  return new THREE.Vector3(...node.position).multiply(scale).add(position);
+}
+
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
+  const target = selectedStagePoint(node, portrait);
   const overview = new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
@@ -40,7 +46,7 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase): CameraGoal {
   if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
   if (phase === "travel") {
     const travel = overview.clone().lerp(arrival, 0.5);
-    travel.x += (Math.sign(node.position[0]) || 1) * 1.25;
+    travel.x += (Math.sign(target.x) || 1) * 1.25;
     travel.y += 1.2;
     return { position: tuple(travel), target: tuple(target) };
   }
@@ -52,17 +58,18 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase): CameraGoal {
   return { position: tuple(arrival), target: tuple(target) };
 }
 
-function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean }) {
+function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
-  const lookTarget = useRef(new THREE.Vector3(...goal.target));
+  const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
 
   const resolve = useCallback(() => {
+    const portrait = size.height > size.width;
+    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
-    const portrait = size.height > size.width;
     if (portrait) {
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
@@ -74,7 +81,7 @@ function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: Jo
       }
     }
     return portrait;
-  }, [goal.position, goal.target, phase, size.height, size.width]);
+  }, [phase, selected, size.height, size.width]);
 
   useLayoutEffect(() => {
     if (initialized.current) return;
@@ -212,7 +219,6 @@ export default function ComposedLifeMapScene() {
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
-  const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected, phase) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [phase, selected]);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemoRequested) next.set("demo", "1");
@@ -220,9 +226,14 @@ export default function ComposedLifeMapScene() {
     return next;
   }, [explicitDemoRequested, manifestId]);
 
-  useEffect(() => {
-    if (!selected || phase === "overview" || phase === "arrival" || profile.reducedMotion) return;
-    const token = journeyToken.current;
+    useEffect(() => {
+  if (!selected || phase === "overview" || phase === "arrival") return;
+  if (profile.reducedMotion) {
+    journeyToken.current += 1;
+    setPhase("arrival");
+    return;
+  }
+  const token = journeyToken.current;
     const timeout = window.setTimeout(() => {
       if (token !== journeyToken.current) return;
       if (phase === "departure") setPhase("travel");
@@ -334,7 +345,7 @@ export default function ComposedLifeMapScene() {
         phase={phase as LifeMapJourneyPhase}
         profile={profile}
         onSelect={selectNode}
-        cameraRig={<CameraRig goal={goal} phase={phase} reducedMotion={profile.reducedMotion} />}
+        cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
         webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
       />
     </Canvas>
