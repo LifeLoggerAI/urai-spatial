@@ -11,13 +11,15 @@ type RendererState = 'ready' | 'recovering' | 'failed'
 
 function HomeSemanticNavigation() {
   return (
-    <nav className="home-semantic-navigation sr-only" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary">
-      <button type="button" aria-label="Open Orb directly" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Open Orb</button>
-      <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })}>Ground</button>
-      <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })}>Life Map</button>
+    <nav className="home-semantic-navigation sr-only focus-within:not-sr-only" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary">
+      <button className="sr-only focus:not-sr-only" type="button" aria-label="Open Orb directly" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Open Orb</button>
+      <button className="sr-only focus:not-sr-only" type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })}>Ground</button>
+      <button className="sr-only focus:not-sr-only" type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })}>Life Map</button>
     </nav>
   )
 }
+
+const runtimeStyles = `.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}`
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
@@ -29,6 +31,7 @@ export default function HomeSpatialRuntimeLayer() {
   const recoveryAttemptsRef = useRef(0)
   const [rendererState, setRendererState] = useState<RendererState>('ready')
   const [recoveryKey, setRecoveryKey] = useState(0)
+  const [assetsReady, setAssetsReady] = useState(false)
 
   useEffect(() => {
     document.body.style.cursor = 'default'
@@ -46,7 +49,10 @@ export default function HomeSpatialRuntimeLayer() {
   }, [homeRuntimeActive, rendererState])
 
   useEffect(() => {
-    if (!homeRuntimeActive || rendererState === 'failed') return
+    if (!homeRuntimeActive || rendererState === 'failed') {
+      setAssetsReady(false)
+      return
+    }
     const root = runtimeRef.current
     if (!root) return
 
@@ -71,17 +77,21 @@ export default function HomeSpatialRuntimeLayer() {
 
     const attach = () => {
       const canvas = root.querySelector('canvas')
-      if (!canvas || canvas === attachedCanvas) return
-      attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
-      attachedCanvas?.removeEventListener('webglcontextrestored', onContextRestored)
-      attachedCanvas = canvas
-      attachedCanvas.addEventListener('webglcontextlost', onContextLost)
-      attachedCanvas.addEventListener('webglcontextrestored', onContextRestored)
+      if (canvas && canvas !== attachedCanvas) {
+        attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
+        attachedCanvas?.removeEventListener('webglcontextrestored', onContextRestored)
+        attachedCanvas = canvas
+        attachedCanvas.addEventListener('webglcontextlost', onContextLost)
+        attachedCanvas.addEventListener('webglcontextrestored', onContextRestored)
+      }
+      const owner = root.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      setAssetsReady(owner?.getAttribute('data-home-assets-ready') === 'true')
     }
 
+    setAssetsReady(false)
     attach()
     const observer = new MutationObserver(attach)
-    observer.observe(root, { childList: true, subtree: true })
+    observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-home-assets-ready'] })
 
     return () => {
       observer.disconnect()
@@ -99,7 +109,7 @@ export default function HomeSpatialRuntimeLayer() {
         <div role="status" aria-live="polite" className="sr-only">The spatial renderer could not recover. Accessible Home controls remain available.</div>
         <HomeSemanticNavigation />
         <HomeSpatialWorldFinal />
-        <style jsx global>{`.urai-home-spatial-runtime-layer .urai-final-home-doorways{display:none!important}`}</style>
+        <style jsx global>{runtimeStyles}</style>
       </section>
     )
   }
@@ -119,9 +129,10 @@ export default function HomeSpatialRuntimeLayer() {
       aria-label="URAI living spatial Home"
     >
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
+      {!assetsReady ? <div className="home-runtime-loading" role="status" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <HomeSemanticNavigation />
       <AssetDrivenHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
-      <style jsx global>{`.urai-home-spatial-runtime-layer .urai-final-home-doorways{display:none!important}`}</style>
+      <style jsx global>{runtimeStyles}</style>
     </section>
   )
 }
