@@ -14,11 +14,12 @@ function monitor(page: Page): Evidence {
 }
 
 function isExpectedNavigationAbort(request: string) {
-  return request.includes('net::ERR_ABORTED') && (
-    request.includes('/location-map?')
-    || request.includes('/location-map/?')
-    || request.includes('/_next/static/css/app/location-map/')
-  )
+  const match = request.match(/^GET (http:\/\/127\.0\.0\.1:4173\/\S+) :: net::ERR_ABORTED$/)
+  if (!match) return false
+  const url = new URL(match[1])
+  if (!url.searchParams.has('_rsc')) return false
+  return url.pathname === '/location-map/index.txt'
+    || /^\/place\/place-seed-[a-z0-9-]+\/index\.txt$/.test(url.pathname)
 }
 
 async function attachJson(testInfo: TestInfo, name: string, value: unknown) {
@@ -72,8 +73,6 @@ async function nativeTouchTap(page: Page, target: Locator) {
   const viewport = page.viewportSize()
   expect(viewport).not.toBeNull()
   await expect(target).toBeVisible()
-  // Playwright's touch tap preserves native touch semantics while waiting for the
-  // transformed target to finish moving and become the actual hit owner.
   await target.tap({ timeout: 15_000 })
 }
 
@@ -177,6 +176,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
 
     await page.goBack()
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
+    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.goForward()
     await expect(page).toHaveURL(selectedUrl, { timeout: 15_000 })
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
@@ -193,9 +193,11 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(beacons.nth(1)).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
+    await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.keyboard.press('Home')
     await expect(page.locator('.locationAtlasSelection')).toBeHidden()
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
+    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
 
     await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
