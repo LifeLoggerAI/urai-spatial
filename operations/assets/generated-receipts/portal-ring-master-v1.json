@@ -11,7 +11,7 @@
     "/replay"
   ],
   "bytes": 73164,
-  "sha256": "7b3d133aec57896416d8617522c3a8a5381e5b918397974bf054b46c0b1c3961",
+  "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
   "measured": {
     "triangleCount": 7576,
     "boundsMeters": {
@@ -50,7 +50,7 @@
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
   "generatedBy": "scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation",
-  "generatedAt": "2026-07-24T04:43:08.594Z",
+  "generatedAt": "2026-07-26T00:58:31.707Z",
   "releaseState": "candidate-not-production-ready",
   "absolutePath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
   "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",

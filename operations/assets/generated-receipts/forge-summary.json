@@ -1,6 +1,6 @@
 {
   "manifestId": "urai-launch-critical-assets-v1",
-  "generatedAt": "2026-07-24T04:43:08.861Z",
+  "generatedAt": "2026-07-26T00:58:31.982Z",
   "candidateOnly": true,
   "normalized": true,
   "assetCount": 12,
@@ -10,7 +10,7 @@
       "id": "home-entry-chamber-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
       "bytes": 184160,
-      "sha256": "414ce8368de280b057a38157585fe0ed8c3626327345cd294f8b8f58e6ffc271",
+      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
       "measured": {
         "triangleCount": 12934,
         "boundsMeters": {
@@ -153,7 +153,7 @@
       "id": "urai-orb-avatar-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
       "bytes": 83984,
-      "sha256": "557bd8eaf4b53d91a7d115343f841673c86feca72eda028960411cbfd6632016",
+      "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
       "measured": {
         "triangleCount": 8776,
         "boundsMeters": {
@@ -196,7 +196,7 @@
       "id": "portal-ring-master-v1",
       "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
       "bytes": 73164,
-      "sha256": "7b3d133aec57896416d8617522c3a8a5381e5b918397974bf054b46c0b1c3961",
+      "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
       "measured": {
         "triangleCount": 7576,
         "boundsMeters": {
