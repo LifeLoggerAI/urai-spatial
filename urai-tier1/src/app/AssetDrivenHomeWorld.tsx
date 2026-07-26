@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import * as THREE from 'three'
 import FinalHomeWorld from './FinalHomeWorld'
+import HomeSanctuaryWorld from './HomeSanctuaryWorld'
 import { resolveHomeRuntimeAsset } from './home/homeReviewCandidateState'
 import { useHomePersonalizedScene } from './home/useHomePersonalizedScene'
 import { resolveOrbSensoryOutput, type OrbState } from './home/orbStateController'
@@ -247,13 +248,13 @@ function PersonalizedPlaces({ scene, reducedMotion }: { scene: ReturnType<typeof
   </group>
 }
 
-function AuthoredHomeAsset({ path, mode, reducedMotion }: { path: string; mode: ReturnType<typeof useHomePersonalizedScene>['scene']['mode']; reducedMotion: boolean }) {
-  const presenceClip = mode === 'permission-limited' || mode === 'unavailable' || mode === 'offline'
-    ? 'Presence_Privacy'
-    : mode === 'world-forming'
-      ? 'Presence_Forming'
-      : 'Presence_Idle'
-  return <AnimatedAsset path={path} name="home-authored-entry-chamber" clips={['Home_Breathing', presenceClip]} reducedMotion={reducedMotion} position={[0, -0.12, -1.2]} scale={[1.08, 1.08, 1.08]} />
+function AuthoredHomeSanctuary({ sourcePath, reducedMotion, walkTarget, playerPosition }: { sourcePath: string; reducedMotion: boolean; walkTarget: MutableRefObject<THREE.Vector3 | null>; playerPosition: MutableRefObject<THREE.Vector3> }) {
+  const openMemory = useCallback((memoryId: string) => {
+    window.dispatchEvent(new CustomEvent('urai:home-memory-open', { detail: { memoryId, source: 'home-sanctuary-walk' } }))
+  }, [])
+  return <group name="home-authored-entry-chamber" userData={{ rejectedCandidatePath: sourcePath, visualOwner: 'home-sanctuary-world' }}>
+    <HomeSanctuaryWorld reducedMotion={reducedMotion} walkTarget={walkTarget} playerPosition={playerPosition} onMemoryOpen={openMemory} />
+  </group>
 }
 
 function EmbodiedPresenceInteraction({ onApproach }: { onApproach: (event: ThreeEvent<MouseEvent>) => void }) {
@@ -406,7 +407,7 @@ function Scene({ chamberPath, portalPath, orbPath, scene, orbState, setOrbState,
     <directionalLight position={[-8, 7, -8]} intensity={1.05} color="#91b5ee" />
     <pointLight position={[0, 5, 4]} intensity={1.0} color="#b8eadb" distance={18} decay={2} />
     <SceneReady onReady={onAssetsReady} />
-    <AuthoredHomeAsset path={chamberPath} mode={scene.mode} reducedMotion={reducedMotion} />
+    <AuthoredHomeSanctuary sourcePath={chamberPath} reducedMotion={reducedMotion} walkTarget={target} playerPosition={position} />
     <PersonalizedPlaces scene={scene} reducedMotion={reducedMotion} />
     <AmbientLife tone={scene.environment.weatherTone} reducedMotion={reducedMotion} />
     <EmbodiedPresenceInteraction onApproach={approach(new THREE.Vector3(-2.2, 0, 1.15))} />
@@ -446,6 +447,7 @@ useEffect(() => {
   const [dragging, setDragging] = useState(false)
   const [portalEvidence, setPortalEvidence] = useState('idle')
   const [assetsReady, setAssetsReady] = useState(false)
+  const [reviewLoadingHeld, setReviewLoadingHeld] = useState(false)
   const yaw = useRef(0)
   const pitch = useRef(-0.04)
   const target = useRef<THREE.Vector3 | null>(null)
@@ -466,7 +468,18 @@ useEffect(() => {
     else setOrbState('idle')
   }, [forcedOrbState, scene.mode])
 
-  const markAssetsReady = useCallback(() => setAssetsReady(true), [])
+  useEffect(() => {
+  const shouldHold = reviewMode && new URLSearchParams(window.location.search).get('homeLoadingHold') === '1'
+  if (!shouldHold) {
+    setReviewLoadingHeld(false)
+    return
+  }
+  setReviewLoadingHeld(true)
+  const timer = window.setTimeout(() => setReviewLoadingHeld(false), 1800)
+  return () => window.clearTimeout(timer)
+}, [reviewMode])
+
+const markAssetsReady = useCallback(() => setAssetsReady(true), [])
 
   const toggleAudio = useCallback(async () => {
     const audio = audioRef.current
@@ -498,7 +511,7 @@ useEffect(() => {
       data-home-review-fixture={scene.reviewFixture ?? 'none'}
       data-home-orb-state={orbState}
       data-home-orb-clip={ORB_CLIP[orbState]}
-      data-home-animation-owner="gltf-authored-clips"
+      data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"
       data-home-portal-sequence={portalEvidence}
       data-home-nearby={nearbyState ?? 'none'}
       data-home-camera-mode={dragging ? 'look' : 'embodied'}
@@ -512,18 +525,13 @@ useEffect(() => {
           <Scene chamberPath={chamber.path} portalPath={portal.path} orbPath={orb.path} scene={scene} orbState={orbState} setOrbState={setOrbState} onOrbOpen={onOrbOpen} reducedMotion={reducedMotion} muted={muted} input={input} yaw={yaw} pitch={pitch} target={target} position={position} velocity={velocity} nearby={nearby} nearbyState={nearbyState} setNearby={setNearbyState} setPortalEvidence={setPortalEvidence} onAssetsReady={markAssetsReady} interactionRef={interactionRef} />
         </Suspense>
       </Canvas>
-      {!assetsReady ? <div className="home-world-loading" role="status" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
+      {!assetsReady || reviewLoadingHeld ? <div className="home-world-loading" role="status" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <audio ref={audioRef} src="/assets/urai/generated/audio/urai-ambient-bed-v1.opus" loop preload="none" muted aria-hidden="true" />
       <div className="home-discreet-controls">
         <button className="home-audio" type="button" aria-pressed={!muted} onClick={toggleAudio}>{muted ? 'Enable ambience' : 'Mute ambience'}</button>
         <button className="home-why" type="button" aria-expanded={whyOpen} onClick={() => setWhyOpen((value) => !value)}>Why am I seeing this?</button>
       </div>
       {whyOpen ? <aside className="home-provenance" aria-label="Home source explanation"><strong>{scene.reviewFixture === 'safe-private' ? 'Disclosed safe-private fixture' : scene.mode === 'explicit-sample' ? 'Disclosed sample world' : loading ? 'World forming' : 'Private Home source'}</strong><p>{scene.environment.explanation}</p>{scene.places.slice(0, 4).map((place) => <p key={place.id}>{place.title}: {place.explanation}</p>)}<a href="/privacy-controls">Review consent</a><a href="/passport">Correct, hide, or delete sources</a></aside> : null}
-      <nav className="home-semantic-navigation sr-only" aria-label="Accessible Home destinations">
-        <button type="button" aria-label="Open Orb directly" data-testid="home-semantic-orb" onClick={onOrbOpen}>Open Orb</button>
-        <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })}>Ground</button>
-        <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })}>Life Map</button>
-      </nav>
       <MobileMovementPad input={input} label="Home movement controls" />
       <div className="sr-only" aria-live="polite">{resolveOrbSensoryOutput(orbState, reducedMotion, muted).announcement}</div>
       <style jsx>{`

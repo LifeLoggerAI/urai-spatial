@@ -59,6 +59,7 @@ async function waitFrames(page, count = 2) {
 
 async function visibleCount(locator) {
   return locator.evaluateAll((nodes) => nodes.filter((node) => {
+    if (node.closest('.sr-only')) return false
     const style = getComputedStyle(node)
     const rect = node.getBoundingClientRect()
     return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
@@ -141,7 +142,7 @@ async function verifyHome(page, expected) {
   const passed = result.ownerCount === 1 && result.canvasVisible && result.canvasWidth >= 240 && result.canvasHeight >= 240
     && result.assetMode === requiredMode && result.personalizationMode === expected.mode
     && result.reviewFixture === (expected.fixture || 'none') && result.orbState === expected.orbState
-    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'gltf-authored-clips'
+    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
     && result.assetsReady === 'true' && result.fallbackVisible === 0
     && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2
   return { ...result, passed }
@@ -170,7 +171,7 @@ async function captureLoading(browser, spec) {
   const { context, page } = await openContext(browser, spec)
   const diagnostics = attachDiagnostics(page, id)
   await page.route('**/*.glb', async (route) => { await delay(900); await route.continue() })
-  const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
+  const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1&homeLoadingHold=1')
   const navigation = page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
   const loading = page.getByRole('status', { name: /private world is forming/i }).first()
   await loading.waitFor({ state: 'visible', timeout: 20_000 })
