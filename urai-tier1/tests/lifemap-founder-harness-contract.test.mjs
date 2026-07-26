@@ -94,9 +94,9 @@ test('closed semantic navigator preserves a visible pointer and touch opener', (
   assert.doesNotMatch(closedBlock, /pointer-events:\s*none/)
 })
 
-test('portrait closed navigator clears the threshold action rail', () => {
+test('portrait closed navigator clears the selected chamber caption and threshold action rail', () => {
   const mobileBlock = isolation.match(/@media \(max-width:700px\) \{[\s\S]*?\n\}/)?.[0] || ''
   assert.match(mobileBlock, /\.life-map-thresholds\s*\{[^}]*bottom:\s*max\(8px,env\(safe-area-inset-bottom\)\)/)
-  assert.match(mobileBlock, /\.life-map-navigator:not\(\[open\]\)\s*\{[^}]*bottom:\s*max\(176px,calc\(env\(safe-area-inset-bottom\) \+ 166px\)\)\s*!important/)
+  assert.match(mobileBlock, /\.life-map-navigator:not\(\[open\]\)\s*\{[^}]*bottom:\s*max\(272px,calc\(env\(safe-area-inset-bottom\) \+ 262px\)\)\s*!important/)
   assert.doesNotMatch(mobileBlock, /\.life-map-navigator:not\(\[open\]\)\s*\{[^}]*bottom:\s*max\(72px/)
 })
