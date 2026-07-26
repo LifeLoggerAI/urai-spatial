@@ -146,9 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           node urai-tier1/tests/home-visual-authority-repair-contract.test.mjs
-          git checkout HEAD^ -- .github/workflows/home-proof-capture-repair.yml
-          git rm -f .github/workflows/home-bounded-visual-authority-repair.yml
-          git add .github/workflows/home-proof-capture-repair.yml urai-tier1/src/app/AssetDrivenHomeWorld.tsx scripts/capture-continuous-spatial-proof-v18.mjs urai-tier1/tests/home-visual-authority-repair-contract.test.mjs
+          git add urai-tier1/src/app/AssetDrivenHomeWorld.tsx scripts/capture-continuous-spatial-proof-v18.mjs urai-tier1/tests/home-visual-authority-repair-contract.test.mjs
           git config user.name 'LifeLoggerAI'
           git config user.email 'actions@users.noreply.github.com'
           git commit -m 'fix(home): restore coherent sanctuary visual authority'
