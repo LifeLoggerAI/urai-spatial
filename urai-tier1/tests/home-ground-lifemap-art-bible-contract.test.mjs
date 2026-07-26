@@ -36,7 +36,9 @@ test('Home is one authored inhabitable sanctuary with embodied spatial interacti
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(assetHome, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.doesNotMatch(homeGraph, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
+  assert.match(assetHome, /function AuthoredHomeSanctuary\([\s\S]*?<HomeSanctuaryWorld\s+reducedMotion=/)
+  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
+  assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
 })
 
 test('Ground is one procedural architectural infrastructure world', () => {
