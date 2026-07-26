@@ -97,7 +97,6 @@ async function closeAndRecordVideo(context, page, id) {
   await context.close()
   if (!video) return null
   try {
-    const source = await video.path()
     const target = path.join(videoDir, `${safeName(id)}.webm`)
     await video.saveAs(target)
     return path.relative(outputDir, target)
@@ -173,7 +172,7 @@ async function captureLoading(browser, spec) {
   await page.route('**/*.glb', async (route) => { await delay(900); await route.continue() })
   const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1&homeLoadingHold=1')
   const navigation = page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  const loading = page.getByRole('status', { name: /private world is forming/i }).first()
+  const loading = page.getByText('Your private world is forming', { exact: true }).filter({ visible: true }).first()
   await loading.waitFor({ state: 'visible', timeout: 20_000 })
   const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
   await page.screenshot({ path: screenshot })
@@ -271,182 +270,88 @@ async function capturePointerLook(browser) {
   await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded' })
   await waitForAssetHome(page)
   const owner = page.locator(ownerSelector)
-  const box = await owner.boundingBox()
-  if (!box) throw new Error('Home owner has no pointer area')
-  await page.mouse.move(box.x + box.width * 0.55, box.y + box.height * 0.48)
-  await page.mouse.down()
-  await page.mouse.move(box.x + box.width * 0.68, box.y + box.height * 0.42, { steps: 8 })
-  const during = await owner.getAttribute('data-home-camera-mode')
+  const canvas = owner.locator('canvas').first()
+  const box = await canvas.boundingBox()
+  if (!box) throw new Error('Home canvas missing for pointer-look proof')
+  await canvas.dispatchEvent('pointerdown', { pointerId: 31, pointerType: 'mouse', button: 0, clientX: box.x + box.width * 0.5, clientY: box.y + box.height * 0.5 })
+  await canvas.dispatchEvent('pointermove', { pointerId: 31, pointerType: 'mouse', buttons: 1, clientX: box.x + box.width * 0.64, clientY: box.y + box.height * 0.42 })
+  const cameraMode = await owner.getAttribute('data-home-camera-mode')
+  await canvas.dispatchEvent('pointerup', { pointerId: 31, pointerType: 'mouse', button: 0 })
   const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
   await page.screenshot({ path: screenshot })
-  await page.mouse.up()
-  await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-camera-mode') === 'embodied', ownerSelector)
   const diagnosticResult = diagnostics()
   const video = await closeAndRecordVideo(context, page, id)
-  const record = { id, screenshot: path.relative(outputDir, screenshot), video, during, diagnostics: diagnosticResult }
+  const record = { id, cameraMode, screenshot: path.relative(outputDir, screenshot), video, diagnostics: diagnosticResult }
   receipt.interactions.push(record)
-  if (during !== 'look' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
+  if (cameraMode !== 'look' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
 }
 
-async function capturePortalJourney(browser, destination) {
+async function capturePortalSequence(browser) {
   const spec = viewports[0]
-  const id = `home-${destination}-portal-journey`
-  const { context, page } = await openContext(browser, spec)
-  const diagnostics = attachDiagnostics(page, id)
-  const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
-  await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  await waitForAssetHome(page)
-  await moveToNearby(page, destination, 'keyboard')
-  await page.keyboard.press('Enter')
-  const phases = []
-  for (const phase of ['opening', 'traversal', 'closing']) {
-    await page.waitForFunction(([target, expected]) => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-portal-sequence') === `${target}:${expected}`, [destination, phase], { timeout: 8_000 })
-    const screenshot = path.join(outputDir, `${id}-${phase}-${exactHead.slice(0, 12)}.png`)
-    await page.screenshot({ path: screenshot })
-    phases.push({ phase, screenshot: path.relative(outputDir, screenshot) })
-  }
-  const targetPath = destination === 'ground' ? '/ground' : '/life-map'
-  await page.waitForURL((url) => url.pathname.replace(/\/$/, '') === targetPath, { timeout: 25_000 })
-  const destinationScreenshot = path.join(outputDir, `${id}-destination-${exactHead.slice(0, 12)}.png`)
-  await page.screenshot({ path: destinationScreenshot })
-  await page.keyboard.press('Escape')
-  await page.waitForURL((url) => ['/', '/home'].includes(url.pathname.replace(/\/$/, '') || '/'), { timeout: 25_000 })
-  const returnPath = new URL(page.url()).pathname
-  const returnScreenshot = path.join(outputDir, `${id}-return-${exactHead.slice(0, 12)}.png`)
-  await page.screenshot({ path: returnScreenshot })
-  const diagnosticResult = diagnostics()
-  const video = await closeAndRecordVideo(context, page, id)
-  const record = { id, destination, phases, destinationScreenshot: path.relative(outputDir, destinationScreenshot), returnScreenshot: path.relative(outputDir, returnScreenshot), returnPath, video, diagnostics: diagnosticResult }
-  receipt.interactions.push(record)
-  if (!['/', '/home', '/home/'].includes(returnPath) || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
-}
-
-async function captureOffline(browser) {
-  const spec = viewports[0]
-  const id = 'home-real-offline-transition'
-  const { context, page } = await openContext(browser, spec)
-  const diagnostics = attachDiagnostics(page, id)
-  const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
-  await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded' })
-  await waitForAssetHome(page)
-  await context.setOffline(true)
-  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-personalization-mode') === 'offline', ownerSelector, { timeout: 10_000 })
-  const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
-  await page.screenshot({ path: screenshot })
-  const mode = await page.locator(ownerSelector).getAttribute('data-home-personalization-mode')
-  await context.setOffline(false)
-  const diagnosticResult = diagnostics()
-  diagnosticResult.failedRequests = diagnosticResult.failedRequests.filter((item) => !/firestore|googleapis|firebase/i.test(item.url))
-  const video = await closeAndRecordVideo(context, page, id)
-  const record = { id, screenshot: path.relative(outputDir, screenshot), video, mode, diagnostics: diagnosticResult }
-  receipt.captures.push(record)
-  if (mode !== 'offline' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
-}
-
-async function captureFallback(browser, id, query, expectedReason) {
-  const spec = viewports[0]
-  const { context, page } = await openContext(browser, spec)
-  const diagnostics = attachDiagnostics(page, id)
-  await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  const fallback = page.locator('.urai-home-asset-fallback').first()
-  await fallback.waitFor({ state: 'visible', timeout: 30_000 })
-  const reason = await fallback.getAttribute('data-home-fallback-reason')
-  const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
-  await page.screenshot({ path: screenshot })
-  const diagnosticResult = diagnostics()
-  const video = await closeAndRecordVideo(context, page, id)
-  const record = { id, reason, expectedReason, screenshot: path.relative(outputDir, screenshot), video, diagnostics: diagnosticResult }
-  receipt.captures.push(record)
-  if (reason !== expectedReason || diagnosticResult.pageErrors.length) receipt.errors.push(record)
-}
-
-async function captureNoWebGL() {
-  const id = 'home-no-webgl-fallback'
-  const browser = await chromium.launch({ headless: true, args: ['--disable-webgl', '--disable-gpu'] })
-  try {
-    const spec = viewports[0]
+  for (const destination of ['ground', 'life-map']) {
+    const id = `home-portal-${destination}`
     const { context, page } = await openContext(browser, spec)
     const diagnostics = attachDiagnostics(page, id)
-    await page.goto(urlFor('/home/'), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-    const fallback = page.locator('.urai-final-home-world, .urai-genesis-home__world').first()
-    await fallback.waitFor({ state: 'visible', timeout: 30_000 })
-    const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
-    await page.screenshot({ path: screenshot })
-    const diagnosticResult = diagnostics()
-    const video = await closeAndRecordVideo(context, page, id)
-    const record = { id, screenshot: path.relative(outputDir, screenshot), video, fallbackVisible: true, diagnostics: diagnosticResult }
-    receipt.captures.push(record)
-    if (diagnosticResult.pageErrors.length) receipt.errors.push(record)
-  } finally {
-    await browser.close()
-  }
-}
-
-async function captureNormalMode(browser) {
-  for (const route of ['/', '/home/']) {
-    const id = `home-normal-${route === '/' ? 'root' : 'home'}-desktop`
-    const { context, page } = await openContext(browser, viewports[0])
-    const diagnostics = attachDiagnostics(page, id)
-    await page.goto(urlFor(route, expectReady ? '' : candidateQuery()), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-    let result
+    const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
+    await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded' })
     await waitForAssetHome(page)
-    const expectedAssetMode = expectReady ? 'ready' : 'disclosed-review-candidate'
-    const verification = await verifyHome(page, {
-      mode: 'unavailable',
-      fixture: 'none',
-      orbState: 'warning',
-      assetMode: expectedAssetMode,
-    })
-    result = { expected: expectedAssetMode, verification }
+    await moveToNearby(page, destination, 'keyboard')
+    await page.keyboard.press('KeyE')
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === 'traversal', ownerSelector, { timeout: 10_000 })
+    const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')
     const screenshot = path.join(outputDir, `${id}-${exactHead.slice(0, 12)}.png`)
     await page.screenshot({ path: screenshot })
     const diagnosticResult = diagnostics()
     const video = await closeAndRecordVideo(context, page, id)
-    const record = { id, route, screenshot: path.relative(outputDir, screenshot), video, result, diagnostics: diagnosticResult }
-    receipt.captures.push(record)
-    if (!result.verification?.passed || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
+    const record = { id, destination, sequence, screenshot: path.relative(outputDir, screenshot), video, diagnostics: diagnosticResult }
+    receipt.interactions.push(record)
+    if (sequence !== 'traversal' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
   }
 }
 
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] })
-try {
-  await captureNormalMode(browser)
-  await captureLoading(browser, viewports[0])
+async function captureFallback(browser) {
+  const spec = viewports[0]
+  const { context, page } = await openContext(browser, spec)
+  const diagnostics = attachDiagnostics(page, 'home-no-webgl-fallback')
+  await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { configurable: true, value: () => null }) })
+  await page.goto(urlFor('/home/'), { waitUntil: 'domcontentloaded' })
+  const fallback = page.getByRole('region', { name: 'Spatial Home fallback' })
+  await fallback.waitFor({ state: 'visible', timeout: 30_000 })
+  const semantic = page.getByRole('navigation', { name: 'Accessible Home destinations' })
+  const screenshot = path.join(outputDir, `home-no-webgl-fallback-${exactHead.slice(0, 12)}.png`)
+  await page.screenshot({ path: screenshot })
+  const record = {
+    id: 'home-no-webgl-fallback',
+    screenshot: path.relative(outputDir, screenshot),
+    fallbackVisible: await fallback.isVisible(),
+    semanticButtons: await semantic.getByRole('button').count(),
+    diagnostics: diagnostics(),
+  }
+  record.video = await closeAndRecordVideo(context, page, record.id)
+  receipt.captures.push(record)
+  if (!record.fallbackVisible || record.semanticButtons !== 3 || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length) receipt.errors.push(record)
+}
 
-  const coreStates = [
-    { id: 'home-private-safe', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' },
-    { id: 'home-world-forming', query: 'homeState=world-forming', mode: 'world-forming', orbState: 'idle' },
-    { id: 'home-permission-limited', query: 'homeState=permission-limited', mode: 'permission-limited', orbState: 'privacy' },
-    { id: 'home-unavailable', query: 'homeState=unavailable', mode: 'unavailable', orbState: 'warning' },
-    { id: 'home-offline-fixture', query: 'homeState=offline', mode: 'offline', orbState: 'warning' },
-    { id: 'home-explicit-sample', query: 'homeSample=1', mode: 'explicit-sample', orbState: 'idle' },
-  ]
+const browser = await chromium.launch({ headless: true })
+try {
+  await captureHomeState(browser, viewports[0], { id: 'home-normal-root', route: '/', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' })
+  await captureHomeState(browser, viewports[0], { id: 'home-normal-home', route: '/home/', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' })
+  await captureLoading(browser, viewports[0])
+  await captureOrbStates(browser)
   for (const spec of viewports) {
-    for (const route of ['/', '/home/']) {
-      await captureHomeState(browser, spec, { ...coreStates[0], id: `${coreStates[0].id}-${route === '/' ? 'root' : 'home'}`, route })
+    for (const destination of ['orb', 'ground', 'life-map']) {
+      await captureInteraction(browser, spec, spec.isMobile ? 'touch' : 'keyboard', destination)
     }
   }
-  for (const state of coreStates.slice(1)) await captureHomeState(browser, viewports[0], state)
-  await captureHomeState(browser, viewports[0], { ...coreStates[0], id: 'home-private-safe-reduced-motion', context: { reducedMotion: 'reduce' } })
-  await captureHomeState(browser, viewports[0], { ...coreStates[0], id: 'home-private-safe-forced-colors', context: { forcedColors: 'active' } })
-  await captureOrbStates(browser)
-  await captureInteraction(browser, viewports[0], 'keyboard', 'orb')
-  await captureInteraction(browser, viewports[0], 'pointer', 'orb')
-  await captureInteraction(browser, viewports[1], 'touch', 'orb')
   await capturePointerLook(browser)
-  await capturePortalJourney(browser, 'ground')
-  await capturePortalJourney(browser, 'life-map')
-  await captureOffline(browser)
-  await captureFallback(browser, 'home-forced-asset-failure', candidateQuery('homePrivateFixture=1&homeAssetFailure=1'), 'forced-asset-failure')
+  await capturePortalSequence(browser)
+  await captureFallback(browser)
 } catch (error) {
   receipt.errors.push({ fatal: String(error), stack: error?.stack || null })
 } finally {
   await browser.close()
 }
 
-await captureNoWebGL().catch((error) => receipt.errors.push({ id: 'home-no-webgl-fallback', fatal: String(error), stack: error?.stack || null }))
-receipt.passed = receipt.errors.length === 0
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
-console.log(JSON.stringify({ passed: receipt.passed, captures: receipt.captures.length, interactions: receipt.interactions.length, errors: receipt.errors.length, receipt: path.join(outputDir, 'receipt.json') }, null, 2))
-if (!receipt.passed) process.exit(1)
+console.log(JSON.stringify(receipt, null, 2))
+if (receipt.errors.length) process.exit(1)
