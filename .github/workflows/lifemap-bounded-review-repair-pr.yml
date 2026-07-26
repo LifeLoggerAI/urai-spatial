@@ -20,102 +20,51 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout exact PR head
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
-          persist-credentials: true
-          show-progress: false
+        uses: actions/checkouLX™ÌNLX˜™MXŒMŒÌÙYXMÌÙÍNMÌÍÎXYÂˆÚ]‚ˆ™Yˆ	ŞÈÚ]X‹™]™[œ[Ü™\]Y\İšXYœÚH_Bˆ™]ÚY\ˆBˆ\œÚ\İXÜ™Y[X[ÎˆYBˆÚİË\›ÙÜ™\ÜÎˆ˜[ÙB‚ˆH˜[YNˆ^Xİ]H™]šY]ÙY›ÙXİ[Û›H™\Z\ˆ^[ØYˆYˆ^Xİ]BˆÚ[ˆ˜\Úˆ[ˆˆÙ]Y][È\Y˜Z[ˆ]ÛŒÈH	ÔIÂˆœ›ÛH]Xˆ[\Ü]ˆÛİ\˜ÙHH]
+	Ë™Ú]X‹İÛÜšÙ›İÜËÛY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹[[	ÊKœ™XYİ^
 
-      - name: Execute reviewed bounded repair payload
-        id: execute
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          source = Path('.github/workflows/lifemap-bounded-review-repair.yml').read_text()
-          marker = "          python3 - <<'PY'\n"
-          start = source.index(marker) + len(marker)
-          end = source.index("\n          PY\n", start)
-          payload = source[start:end]
-          normalized = '\n'.join(line[10:] if line.startswith('          ') else line for line in payload.splitlines())
-          helper_start = normalized.index('def replace_once(')
-          helper_end = normalized.index('\n\nscene =', helper_start)
-          helper = '''def replace_once(path: Path, old: str, new: str) -> None:
-              import re
-              text = path.read_text()
-              count = text.count(old)
-              if count == 1:
-                  path.write_text(text.replace(old, new, 1))
-                  return
-              lines = [line.strip() for line in old.splitlines() if line.strip()]
-              pattern = re.compile(r'[ \\t]*\\n[ \\t]*'.join(re.escape(line) for line in lines))
-              matches = list(pattern.finditer(text))
-              if len(matches) != 1:
-                  raise SystemExit(f"{path}: expected one whitespace-safe match, found {len(matches)}")
-              match = matches[0]
-              replacement = new.strip('\\n')
-              path.write_text(text[:match.start()] + replacement + text[match.end():])'''
-          normalized = normalized[:helper_start] + helper + normalized[helper_end:]
-          Path('/tmp/lifemap-bounded-review-repair.py').write_text(normalized + '\n')
-          PY
-          set +e
-          python3 /tmp/lifemap-bounded-review-repair.py > /tmp/lifemap-bounded-review-repair.log 2>&1
-          status=$?
-          set -e
-          cat /tmp/lifemap-bounded-review-repair.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
+BˆX\šÙ\ˆHˆ]ÛŒÈH	ÔI×ˆ‚ˆİ\HÛİ\˜ÙKš[™^
+X\šÙ\ŠH
+È[ŠX\šÙ\ŠBˆ[™HÛİ\˜ÙKš[™^
+—ˆWˆ‹İ\
+Bˆ^[ØYHÛİ\˜ÙVÜİ\™[™Bˆ›Ü›X[^™YH	×‰Ëš›Ú[Š[™VÌL—HYˆ[™Kœİ\İÚ]
+	È	ÊH[ÙH[™H›Üˆ[™H[ˆ^[ØYœÜ][™\Ê
+JBˆ[\—Üİ\H›Ü›X[^™Yš[™^
+	ÙYˆ™\XÙWÛÛ˜ÙJ	ÊBˆ[\—Ù[™H›Ü›X[^™Yš[™^
+	×—œØÙ[™HIË[\—Üİ\
+Bˆ[\ˆH	ÉÉÙYˆ™\XÙWÛÛ˜ÙJ]ˆ]Ûˆİ‹™]ÎˆİŠHOˆ›Û™N‚ˆ[\Ü™Bˆ^H]œ™XYİ^
 
-      - name: Retain bounded repair diagnostic
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: lifemap-bounded-review-repair-${{ github.event.pull_request.head.sha }}
-          path: /tmp/lifemap-bounded-review-repair.log
-          if-no-files-found: error
-          retention-days: 30
+BˆÛİ[H^˜Ûİ[
+Û
+BˆYˆÛİ[OHN‚ˆ]Üš]Wİ^
+^œ™\XÙJÛ™]ËJJBˆ™]\›‚ˆ[™\ÈHÛ[™Kœİš\
 
-      - name: Fail on bounded repair assertion
-        if: steps.execute.outputs.status != '0'
-        shell: bash
-        run: exit 1
+H›Üˆ[™H[ˆÛœÜ][™\Ê
+HYˆ[™Kœİš\
 
-      - name: Verify and publish product repair
-        id: publish
-        if: steps.execute.outputs.status == '0'
-        shell: bash
-        run: |
-          set +e
-          {
-            set -euxo pipefail
-            git checkout HEAD -- .github/workflows/lifemap-founder-visual-proof.yml .github/workflows/lifemap-bounded-review-repair.yml .github/workflows/lifemap-bounded-review-repair-pr.yml
-            node --check scripts/verify-lifemap-canvas-proof.mjs
-            git diff --check
-            grep -q 'function selectedStagePoint' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
-            grep -q 'setPhase("arrival")' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
-            grep -q 'retained-webgl-canvas-png' scripts/verify-lifemap-canvas-proof.mjs
-            git config user.name 'urai-release-bot'
-            git config user.email actions@users.noreply.github.com
-            git add urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx scripts/verify-lifemap-canvas-proof.mjs
-            git commit -m 'fix(life-map): repair camera journey and canvas proof'
-            git push origin HEAD:feat/life-map-aaa-final-production-20260723
-          } > /tmp/lifemap-bounded-review-publish.log 2>&1
-          status=$?
-          set -e
-          cat /tmp/lifemap-bounded-review-publish.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
+WBˆ]\›ˆH™K˜ÛÛ\[J‰ÖÈJ—–ÈJ‰Ëš›Ú[Š™K™\ØØ\J[™JH›Üˆ[™H[ˆ[™\ÊJBˆX]Ú\ÈH\İ
+]\›‹™š[™]\Š^
+JBˆYˆ[ŠX]Ú\ÊHOHN‚ˆ˜Z\ÙHŞ\İ[Q^]
+ˆÜ]Nˆ^XİYÛ™HÚ]\ÜXÙK\ØY™HX]Ú›İ[™Û[ŠX]Ú\Ê_HŠBˆX]ÚHX]Ú\ÖÌBˆ™\XÙ[Y[H™]Ëœİš\
+	×‰ÊBˆ]Üš]Wİ^
+^Î›X]Úœİ\
 
-      - name: Retain product repair publication diagnostic
-        if: always() && steps.execute.outputs.status == '0'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: lifemap-bounded-review-publish-${{ github.event.pull_request.head.sha }}
-          path: /tmp/lifemap-bounded-review-publish.log
-          if-no-files-found: error
-          retention-days: 30
+WH
+È™\XÙ[Y[
+È^ÛX]Ú™[™
 
-      - name: Fail on product repair publication
-        if: steps.execute.outputs.status == '0' && steps.publish.outputs.status != '0'
-        shell: bash
-        run: exit 1
+N—JIÉÉÂˆ›Ü›X[^™YH›Ü›X[^™YÎš[\—Üİ\H
+È[\ˆ
+È›Ü›X[^™YÚ[\—Ù[™—BˆÛÜšÙ›İ×Üİ\H›Ü›X[^™Yš[™^
+	×ÛÜšÙ›İÈH]
+	ÊBˆ›Ü›X[^™YH›Ü›X[^™YÎÛÜšÙ›İ×Üİ\H
+È	×‰Âˆ]
+	Ëİ\ÛY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹œIÊKÜš]Wİ^
+›Ü›X[^™Y
+BˆBˆÙ]
+ÙBˆ]ÛŒÈİ\ÛY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹œHˆİ\ÛY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹›ÙÈ‰ŒBˆİ]\ÏIÂˆÙ]YBˆØ]İ\ÛY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹›ÙÂˆXÚÈœİ]\ÏIİ]\Èˆˆ‰ÒUP—ÓÕUU‚‚ˆH˜[YNˆ™]Z[ˆ›İ[™Y™\Z\ˆXYÛ›ÜİXÂˆYˆ[Ø^\Ê
+Bˆ\Ù\ÎˆXİ[ÛœËİ\ØYX\Y˜XİXLMYX™MÍXMYNL˜™ÍŒÙ˜L‚ˆÚ]‚ˆ˜[YNˆY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹IŞÈÚ]X‹™]™[œ[Ü™\]Y\İšXYœÚH_Bˆ]ˆİ\ÛY™[X\X›İ[™Y\™]šY]Ë\™\Z\‹›ÙÂˆY‹[›ËYš[\ËY›İ[™ˆ\œ›Ü‚ˆ™][[Û‹Y^\ÎˆÌ‚ˆH˜[YNˆ˜Z[Ûˆ›İ[™Y™\Z\ˆ\ÜÙ\[Û‚ˆYˆİ\Ë™^Xİ]K›İ]]Ëœİ]\ÈOH	Ì	Âˆ[ˆ^]B‚ˆH˜[YNˆ™\šYH[™X›\Ú›ÙXİ™\Z\‚ˆYˆX›\ÚˆYˆİ\Ë™^Xİ]K›İ]]Ëœİ]\ÈOH	Ì	ÂˆÚ[ˆ˜\Úˆ[ˆˆÙ]
+ÙBˆÂˆÙ]Y]^È\Y˜Z[ˆ›ÙHKXÚXÚÈØÜš\Ëİ™\šYK[Y™[X\XØ[˜\Ë\›ÛÙ‹›ZœÂˆÚ]Y™ˆKXÚXÚÂˆÜ™\\H	Ù[˜İ[ÛˆÙ[XİYİYÙTÚ[	È\˜ZK]Y\ŒKÜÜ˜ËØÛÛ\Û™[ËÛY™[X\ĞÛÛ\ÜÙYY™SX\ØÙ[™KŞˆÜ™\\H	ÜÙ]\ÙJ˜\œš]˜[ŠIÈ\˜ZK]Y\ŒKÜÜ˜ËØÛÛ\Û™[ËÛY™[X\ĞÛÛ\ÜÙYY™SX\ØÙ[™KŞˆÜ™\\H	Ü™]Z[™Y]ÙX™ÛXØ[˜\Ë\™ÉÈØÜš\Ëİ™\šYK[Y™[X\XØ[˜\Ë\›ÛÙ‹›ZœÂˆÚ]ÛÛ™šYÈ\Ù\‹›˜[YH	İ\˜ZK\™[X\ÙKX›İ	ÂˆÚ]ÛÛ™šYÈ\Ù\‹™[XZ[Xİ[ÛœĞ\Ù\œË››Ü™\K™Ú]X‹˜ÛÛBˆÚ]Y\˜ZK]Y\ŒKÜÜ˜ËØÛÛ\Û™[ËÛY™[X\ĞÛÛ\ÜÙYY™SX\ØÙ[™KŞØÜš\Ëİ™\šYK[Y™[X\XØ[˜\Ë\›ÛÙ‹›ZœÂˆÚ]ÛÛ[Z][H	Ùš^
+Y™K[X\
+Nˆ™\Z\ˆØ[Y\˜H›İ\›™^H[™Ø[˜\È›ÛÙ‰ÂˆÚ]\ÚÜšYÚ[ˆPQ™™X]ÛY™K[X\XXXKYš[˜[\›ÙXİ[Û‹LŒŒÌŒÂˆHˆİ\ÛY™[X\X›İ[™Y\™]šY]Ë\X›\Ú›ÙÈ‰ŒBˆİ]\ÏIÂˆÙ]YBˆØ]İ\ÛY™[X\X›İ[™Y\™]šY]Ë\X›\Ú›ÙÂˆXÚÈœİ]\ÏIİ]\Èˆˆ‰ÒUP—ÓÕUU‚‚ˆH˜[YNˆ™]Z[ˆ›ÙXİ™\Z\ˆX›XØ][ÛˆXYÛ›ÜİXÂˆYˆ[Ø^\Ê
+H	‰ˆİ\Ë™^Xİ]K›İ]]Ëœİ]\ÈOH	Ì	Âˆ\Ù\ÎˆXİ[ÛœËİ\ØYX\Y˜XİXLMYX™MÍXMYNL˜™ÍŒÙ˜L‚ˆÚ]‚ˆ˜[YNˆY™[X\X›İ[™Y\™]šY]Ë\X›\ÚIŞÈÚ]X‹™]™[œ[Ü™\]Y\İšXYœÚH_Bˆ]ˆİ\ÛY™[X\X›İ[™Y\™]šY]Ë\X›\Ú›ÙÂˆY‹[›ËYš[\ËY›İ[™ˆ\œ›Ü‚ˆ™][[Û‹Y^\ÎˆÌ‚ˆH˜[YNˆ˜Z[Ûˆ›ÙXİ™\Z\ˆX›XØ][Û‚ˆYˆİ\Ë™^Xİ]K›İ]]Ëœİ]\ÈOH	Ì	È	‰ˆİ\ËœX›\Ú›İ]]Ëœİ]\ÈOH	Ì	Âˆ[ˆ^]B
