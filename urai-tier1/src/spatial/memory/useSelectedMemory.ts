@@ -38,38 +38,52 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
-function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
-  if (typeof window === 'undefined') return
+function canonicalDemoContinuationParams(params: URLSearchParams, demoMemoryId: string) {
   const next = new URLSearchParams(params)
   next.set('memoryId', demoMemoryId)
   next.set('demo', '1')
   if (!next.get('node')) next.set('node', demoMemoryId.replace(/^demo:/, ''))
-  const query = next.toString()
-  window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
+  return next
 }
 
-function initialSelectedMemoryParams() {
-  if (typeof window === 'undefined') return new URLSearchParams()
+type InitialSelectedMemoryState = {
+  params: URLSearchParams
+  canonicalHref: string | null
+}
+
+function initialSelectedMemoryState(): InitialSelectedMemoryState {
+  if (typeof window === 'undefined') return { params: new URLSearchParams(), canonicalHref: null }
 
   const initial = new URLSearchParams(window.location.search)
   const initialMemoryId = sanitizeMemoryId(initial.get('memoryId') ?? initial.get('node'))
   const continuedDemoMemoryId = demoContinuationMemoryId(initial, initialMemoryId)
 
-  if (continuedDemoMemoryId) {
-    canonicalizeDemoContinuation(initial, continuedDemoMemoryId)
-    return new URLSearchParams(window.location.search)
-  }
+  if (!continuedDemoMemoryId) return { params: initial, canonicalHref: null }
 
-  return initial
+  const params = canonicalDemoContinuationParams(initial, continuedDemoMemoryId)
+  const query = params.toString()
+  return {
+    params,
+    canonicalHref: `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
+  }
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const params = useMemo(initialSelectedMemoryParams, [])
+  const initialState = useMemo(initialSelectedMemoryState, [])
+  const params = initialState.params
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
   const continuedDemoMemoryId = demoContinuationMemoryId(params, memoryId)
   const requestedDemoMemoryId = isExplicitDemoRequest(params) ? memoryId : continuedDemoMemoryId
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
+
+  useEffect(() => {
+    if (!initialState.canonicalHref || typeof window === 'undefined') return
+    const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    if (currentHref !== initialState.canonicalHref) {
+      window.history.replaceState(window.history.state, '', initialState.canonicalHref)
+    }
+  }, [initialState.canonicalHref])
 
   useEffect(() => {
     let cancelled = false
