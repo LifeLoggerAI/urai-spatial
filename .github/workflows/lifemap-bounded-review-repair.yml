@@ -1,0 +1,245 @@
+name: Life Map Bounded Review Repair
+
+on:
+  push:
+    branches:
+      - feat/life-map-aaa-final-production-20260723
+    paths:
+      - '.github/workflows/lifemap-bounded-review-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-bounded-review-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout current Life Map branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feat/life-map-aaa-final-production-20260723
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Apply exact bounded repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str) -> None:
+              text = path.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one exact match, found {count}")
+              path.write_text(text.replace(old, new, 1))
+
+          scene = Path('urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx')
+          replace_once(
+              scene,
+              '''function goalForNode(node: LifeMapNode, phase: JourneyPhase): CameraGoal {
+            const target = new THREE.Vector3(...node.position);''',
+              '''function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
+            const scale = portrait ? new THREE.Vector3(0.92, 0.96, 0.92) : new THREE.Vector3(1.12, 1.12, 1.08);
+            const position = portrait ? new THREE.Vector3(0, -0.08, 0.9) : new THREE.Vector3(0, -0.16, 0.62);
+            return new THREE.Vector3(...node.position).multiply(scale).add(position);
+          }
+
+          function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
+            const target = selectedStagePoint(node, portrait);''')
+          replace_once(scene, 'travel.x += (Math.sign(node.position[0]) || 1) * 1.25;', 'travel.x += (Math.sign(target.x) || 1) * 1.25;')
+          replace_once(
+              scene,
+              '''function CameraRig({ goal, phase, reducedMotion }: { goal: CameraGoal; phase: JourneyPhase; reducedMotion: boolean }) {
+            const { camera, size } = useThree();
+            const initialized = useRef(false);
+            const positionGoal = useRef(new THREE.Vector3());
+            const targetGoal = useRef(new THREE.Vector3());
+            const lookTarget = useRef(new THREE.Vector3(...goal.target));
+
+            const resolve = useCallback(() => {
+              positionGoal.current.set(...goal.position);
+              targetGoal.current.set(...goal.target);
+              const portrait = size.height > size.width;''',
+              '''function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
+            const { camera, size } = useThree();
+            const initialized = useRef(false);
+            const positionGoal = useRef(new THREE.Vector3());
+            const targetGoal = useRef(new THREE.Vector3());
+            const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+
+            const resolve = useCallback(() => {
+              const portrait = size.height > size.width;
+              const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+              positionGoal.current.set(...goal.position);
+              targetGoal.current.set(...goal.target);''')
+          replace_once(scene, '}, [goal.position, goal.target, phase, size.height, size.width]);', '}, [phase, selected, size.height, size.width]);')
+          replace_once(scene, '  const goal = useMemo<CameraGoal>(() => selected ? goalForNode(selected, phase) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET }, [phase, selected]);\n', '')
+          replace_once(
+              scene,
+              '''  useEffect(() => {
+            if (!selected || phase === "overview" || phase === "arrival" || profile.reducedMotion) return;
+            const token = journeyToken.current;''',
+              '''  useEffect(() => {
+            if (!selected || phase === "overview" || phase === "arrival") return;
+            if (profile.reducedMotion) {
+              journeyToken.current += 1;
+              setPhase("arrival");
+              return;
+            }
+            const token = journeyToken.current;''')
+          replace_once(scene, '<CameraRig goal={goal} phase={phase} reducedMotion={profile.reducedMotion} />', '<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />')
+
+          verifier = Path('scripts/verify-lifemap-canvas-proof.mjs')
+          verifier.write_text(r'''import { createHash } from 'node:crypto'
+          import { mkdir, writeFile } from 'node:fs/promises'
+          import { createRequire } from 'node:module'
+          import path from 'node:path'
+
+          const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
+          const { chromium } = requireFromTierOne('playwright')
+          const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
+          const outputDir = path.resolve(process.env.URAI_CANVAS_PROOF_DIR || 'artifacts/lifemap-founder-proof/canvas-proof')
+          const exactHead = process.env.URAI_EXACT_HEAD || 'local'
+          const receipt = { schemaVersion: 'urai-lifemap-webgl-canvas-proof-1', exactHead, captures: [], browserEvents: [], capturedAt: new Date().toISOString() }
+          let failed = false
+
+          await mkdir(outputDir, { recursive: true })
+          const browser = await chromium.launch({ headless: true })
+
+          function recordEvents(page, label) {
+            page.on('pageerror', (error) => receipt.browserEvents.push({ label, kind: 'pageerror', text: String(error) }))
+            page.on('requestfailed', (request) => receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}` }))
+            page.on('console', (message) => { if (message.type() === 'error') receipt.browserEvents.push({ label, kind: 'console:error', text: message.text() }) })
+          }
+
+          async function signalFromCanvasPng(page, buffer) {
+            const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
+            return page.evaluate(async ({ dataUrl }) => {
+              const image = new Image()
+              const loaded = new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject })
+              image.src = dataUrl
+              await loaded
+              const surface = document.createElement('canvas')
+              surface.width = image.naturalWidth
+              surface.height = image.naturalHeight
+              const context = surface.getContext('2d', { willReadFrequently: true })
+              if (!context) return null
+              context.drawImage(image, 0, 0)
+              const columns = 24
+              const rows = 16
+              const block = 3
+              let count = 0
+              let sum = 0
+              let sumSquares = 0
+              let nonDark = 0
+              for (let row = 0; row < rows; row += 1) {
+                for (let column = 0; column < columns; column += 1) {
+                  const x = Math.max(0, Math.min(surface.width - block, Math.round(((column + 0.5) / columns) * surface.width) - 1))
+                  const y = Math.max(0, Math.min(surface.height - block, Math.round(((row + 0.5) / rows) * surface.height) - 1))
+                  const pixels = context.getImageData(x, y, block, block).data
+                  for (let index = 0; index < pixels.length; index += 4) {
+                    const luminance = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3
+                    count += 1
+                    sum += luminance
+                    sumSquares += luminance * luminance
+                    if (luminance > 8) nonDark += 1
+                  }
+                }
+              }
+              const mean = sum / Math.max(1, count)
+              return {
+                width: surface.width,
+                height: surface.height,
+                variance: sumSquares / Math.max(1, count) - mean * mean,
+                nonDarkRatio: nonDark / Math.max(1, count),
+                sampleCount: count,
+                sampling: 'distributed-grid-24x16-3x3',
+                source: 'retained-webgl-canvas-png',
+              }
+            }, { dataUrl })
+          }
+
+          async function capture(spec) {
+            const context = await browser.newContext({ viewport: spec.viewport, deviceScaleFactor: 2, reducedMotion: spec.reducedMotion || 'no-preference', hasTouch: Boolean(spec.touch), isMobile: Boolean(spec.touch) })
+            const page = await context.newPage()
+            recordEvents(page, spec.id)
+            try {
+              const response = await page.goto(new URL(spec.route, base).toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
+              if (!response || response.status() !== 200) throw new Error(`${spec.id} returned ${response?.status()}`)
+              const root = page.getByTestId('urai-true-3d-life-map')
+              await root.waitFor({ state: 'visible', timeout: 45_000 })
+              await page.waitForFunction(({ phase }) => {
+                const element = document.querySelector('[data-testid="urai-true-3d-life-map"]')
+                return element?.getAttribute('data-life-map-render-ready') === 'true' && (!phase || element.getAttribute('data-life-map-phase') === phase)
+              }, { phase: spec.phase }, { timeout: 45_000, polling: 50 })
+              const canvas = root.locator('canvas').first()
+              await canvas.waitFor({ state: 'visible', timeout: 20_000 })
+              const file = `${spec.id}-${exactHead.slice(0, 12)}.png`
+              const buffer = await canvas.screenshot({ path: path.join(outputDir, file), animations: 'disabled', caret: 'hide', scale: 'device', timeout: 60_000 })
+              const signal = await signalFromCanvasPng(page, buffer)
+              if (!signal || signal.sampleCount !== 3456) throw new Error(`${spec.id} missing exact canvas sampling`)
+              if (signal.source !== 'retained-webgl-canvas-png') throw new Error(`${spec.id} did not sample the WebGL canvas PNG`)
+              if (signal.variance < 8) throw new Error(`${spec.id} WebGL canvas variance below minimum: ${signal.variance}`)
+              if (signal.nonDarkRatio <= 0.02) throw new Error(`${spec.id} WebGL canvas non-dark coverage below minimum: ${signal.nonDarkRatio}`)
+              receipt.captures.push({ id: spec.id, route: page.url(), viewport: spec.viewport, phase: spec.phase, file, bytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex'), signal })
+            } finally {
+              await context.close()
+            }
+          }
+
+          const selected = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+          const overview = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+          try {
+            await capture({ id: 'desktop-overview-canvas', route: overview, phase: 'overview', viewport: { width: 1440, height: 900 } })
+            await capture({ id: 'desktop-selected-canvas', route: selected, phase: 'arrival', viewport: { width: 1440, height: 900 } })
+            await capture({ id: 'portrait-selected-canvas', route: selected, phase: 'arrival', viewport: { width: 390, height: 844 }, touch: true })
+            await capture({ id: 'reduced-selected-canvas', route: selected, phase: 'arrival', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
+            const blocking = receipt.browserEvents.filter((event) => event.kind === 'pageerror' || event.kind === 'requestfailed' || (event.kind === 'console:error' && !/favicon/i.test(event.text)))
+            if (blocking.length) throw new Error(`canvas proof emitted ${blocking.length} blocking browser events`)
+          } catch (error) {
+            failed = true
+            receipt.error = String(error)
+          } finally {
+            await browser.close()
+            receipt.completedAt = new Date().toISOString()
+            receipt.passed = !failed && receipt.captures.length === 4
+            await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
+            if (!receipt.passed) process.exitCode = 1
+          }
+          ''')
+
+          workflow = Path('.github/workflows/lifemap-founder-visual-proof.yml')
+          replace_once(workflow, "      - 'scripts/capture-lifemap-founder-proof-fixed.mjs'\n", "      - 'scripts/capture-lifemap-founder-proof-fixed.mjs'\n      - 'scripts/verify-lifemap-canvas-proof.mjs'\n")
+          replace_once(workflow, "      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'\n", "      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'\n      - 'urai-tier1/tests/lifemap-review-repair-contract.test.mjs'\n")
+          replace_once(workflow, "          node --check scripts/capture-lifemap-founder-proof-fixed.mjs | tee artifacts/lifemap-founder-proof/founder-runner-syntax.log\n", "          node --check scripts/capture-lifemap-founder-proof-fixed.mjs | tee artifacts/lifemap-founder-proof/founder-runner-syntax.log\n          node --check scripts/verify-lifemap-canvas-proof.mjs | tee artifacts/lifemap-founder-proof/canvas-runner-syntax.log\n")
+          replace_once(workflow, "          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs | tee artifacts/lifemap-founder-proof/lifemap-contract.log\n", "          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/lifemap-review-repair-contract.test.mjs | tee artifacts/lifemap-founder-proof/lifemap-contract.log\n")
+          replace_once(workflow, "          node scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log\n", "          node scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log\n          URAI_PROOF_BASE=http://127.0.0.1:4173 \\\n          URAI_CANVAS_PROOF_DIR=artifacts/lifemap-founder-proof/canvas-proof \\\n          URAI_EXACT_HEAD=\"$URAI_EXACT_HEAD\" \\\n          node scripts/verify-lifemap-canvas-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/canvas-proof.log\n")
+
+          Path('.github/workflows/lifemap-bounded-review-repair.yml').unlink()
+          PY
+
+      - name: Verify bounded patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/verify-lifemap-canvas-proof.mjs
+          git diff --check
+          git diff -- urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx scripts/verify-lifemap-canvas-proof.mjs .github/workflows/lifemap-founder-visual-proof.yml
+          test ! -e .github/workflows/lifemap-bounded-review-repair.yml
+
+      - name: Commit bounded repair and remove executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'urai-release-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(life-map): close visual proof and journey review defects'
+          git push origin HEAD:feat/life-map-aaa-final-production-20260723
