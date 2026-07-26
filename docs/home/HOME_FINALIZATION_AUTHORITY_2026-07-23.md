@@ -40,6 +40,12 @@ Candidate-retention commit `2fc4878d43a78716b1aedee28b64f195114f08be` additional
 
 Capture-repair commit `690f62b6a9b291521864cfc214ac0a23f395bdcd` makes pre-promotion normal-route evidence explicitly use the disclosed review-candidate query while post-promotion evidence continues to require query-free ready resolution. This preserves the no-review-query production requirement and removes the contradictory expectation that an unpromoted asset load without disclosure.
 
+### Trusted authority reset — 2026-07-25
+
+The Actions-authored visual repair commit `3c51929108071f195bd0ccb64710bd97fe59dc56` successfully published the bounded runtime and proof repair, but GitHub marked the entire pull-request matrix `action_required` before creating jobs. This authority-only documentation commit is intentionally authored through the connected repository identity to trigger a clean exact-head matrix without changing runtime behavior, assets, manifests, tests, release thresholds, privacy, accessibility, security, governance, promotion state, or deployment authority.
+
+The visual repair remains unaccepted until the complete replacement matrix executes on the new exact head and its retained evidence is directly inspected. No workflow result from `3c51929108071f195bd0ccb64710bd97fe59dc56` or earlier transfers to the new head.
+
 All workflow evidence is valid only for the exact current PR head. Earlier-head results are superseded after any source or authority commit.
 
 ## Non-negotiable completion boundary
