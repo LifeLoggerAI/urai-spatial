@@ -219,7 +219,7 @@ export default function HomeSpatialRuntimeLayer() {
           .urai-home-runtime-doorways {
             left: max(9px, env(safe-area-inset-left));
             right: max(9px, env(safe-area-inset-right));
-            bottom: max(92px, calc(env(safe-area-inset-bottom) + 82px));
+            bottom: max(176px, calc(env(safe-area-inset-bottom) + 166px));
             justify-content: center;
             flex-wrap: wrap;
           }
