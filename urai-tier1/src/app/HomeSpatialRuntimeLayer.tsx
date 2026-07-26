@@ -98,6 +98,8 @@ export default function HomeSpatialRuntimeLayer() {
       className="urai-home-spatial-runtime-layer"
       data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"
       data-home-visual-owner="asset-driven-personalized-sanctuary"
+      data-home-authored-terrain="home-authored-terrain"
+      data-home-authored-embodied-self="home-authored-embodied-self"
       data-home-exploration="walkable"
       data-home-ground-portal="home-ground-portal-world-owned"
       data-home-life-map-portal="home-life-map-portal-world-owned"
