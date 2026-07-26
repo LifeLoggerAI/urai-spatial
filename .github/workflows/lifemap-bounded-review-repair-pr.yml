@@ -28,6 +28,7 @@ jobs:
           show-progress: false
 
       - name: Execute reviewed bounded repair payload
+        id: execute
         shell: bash
         run: |
           set -euo pipefail
@@ -41,13 +42,32 @@ jobs:
           normalized = '\n'.join(line[10:] if line.startswith('          ') else line for line in payload.splitlines())
           Path('/tmp/lifemap-bounded-review-repair.py').write_text(normalized + '\n')
           PY
-          if ! python3 /tmp/lifemap-bounded-review-repair.py > /tmp/lifemap-bounded-review-repair.log 2>&1; then
-            cat /tmp/lifemap-bounded-review-repair.log
-            exit 1
+          set +e
+          python3 /tmp/lifemap-bounded-review-repair.py > /tmp/lifemap-bounded-review-repair.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/lifemap-bounded-review-repair.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -eq 0 ]; then
+            rm -f .github/workflows/lifemap-bounded-review-repair-pr.yml
           fi
-          rm -f .github/workflows/lifemap-bounded-review-repair-pr.yml
+
+      - name: Retain bounded repair diagnostic
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-bounded-review-repair-${{ github.event.pull_request.head.sha }}
+          path: /tmp/lifemap-bounded-review-repair.log
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Fail on bounded repair assertion
+        if: steps.execute.outputs.status != '0'
+        shell: bash
+        run: exit 1
 
       - name: Verify and publish real repair
+        if: steps.execute.outputs.status == '0'
         shell: bash
         run: |
           set -euo pipefail
