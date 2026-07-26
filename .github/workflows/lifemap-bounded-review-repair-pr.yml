@@ -66,9 +66,6 @@ jobs:
           set -e
           cat /tmp/lifemap-bounded-review-repair.log
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          if [ "$status" -eq 0 ]; then
-            rm -f .github/workflows/lifemap-bounded-review-repair-pr.yml
-          fi
 
       - name: Retain bounded repair diagnostic
         if: always()
@@ -84,7 +81,7 @@ jobs:
         shell: bash
         run: exit 1
 
-      - name: Verify and publish real repair
+      - name: Verify and publish product repair
         id: publish
         if: steps.execute.outputs.status == '0'
         shell: bash
@@ -92,14 +89,16 @@ jobs:
           set +e
           {
             set -euxo pipefail
+            git checkout HEAD -- .github/workflows/lifemap-founder-visual-proof.yml .github/workflows/lifemap-bounded-review-repair.yml .github/workflows/lifemap-bounded-review-repair-pr.yml
             node --check scripts/verify-lifemap-canvas-proof.mjs
             git diff --check
-            test ! -e .github/workflows/lifemap-bounded-review-repair.yml
-            test ! -e .github/workflows/lifemap-bounded-review-repair-pr.yml
+            grep -q 'function selectedStagePoint' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+            grep -q 'setPhase("arrival")' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+            grep -q 'retained-webgl-canvas-png' scripts/verify-lifemap-canvas-proof.mjs
             git config user.name 'urai-release-bot'
-            git config user.email 'actions@users.noreply.github.com'
-            git add -A
-            git commit -m 'fix(life-map): close visual proof and journey review defects'
+            git config user.email actions@users.noreply.github.com
+            git add urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx scripts/verify-lifemap-canvas-proof.mjs
+            git commit -m 'fix(life-map): repair camera journey and canvas proof'
             git push origin HEAD:feat/life-map-aaa-final-production-20260723
           } > /tmp/lifemap-bounded-review-publish.log 2>&1
           status=$?
@@ -107,7 +106,7 @@ jobs:
           cat /tmp/lifemap-bounded-review-publish.log
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
-      - name: Retain bounded repair publication diagnostic
+      - name: Retain product repair publication diagnostic
         if: always() && steps.execute.outputs.status == '0'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -116,7 +115,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Fail on bounded repair publication
+      - name: Fail on product repair publication
         if: steps.execute.outputs.status == '0' && steps.publish.outputs.status != '0'
         shell: bash
         run: exit 1
