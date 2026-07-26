@@ -141,6 +141,7 @@ export default function HomeSpatialRuntimeLayer() {
       data-home-exploration="walkable"
       data-home-ground-portal="home-ground-portal-world-owned"
       data-home-life-map-portal="home-life-map-portal-world-owned"
+      data-home-context-owner="runtime-overlay"
       data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
       aria-label="URAI living spatial Home"
     >
@@ -148,7 +149,7 @@ export default function HomeSpatialRuntimeLayer() {
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <HomeSemanticNavigation />
       <AssetDrivenHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
-      {context ? <div className="home-world-context" role="status" aria-live="polite" data-home-context-owner="runtime-overlay">{context}</div> : null}
+      {context ? <div className="home-world-context" role="status" aria-live="polite">{context}</div> : null}
       <style jsx global>{runtimeStyles}</style>
     </section>
   )
