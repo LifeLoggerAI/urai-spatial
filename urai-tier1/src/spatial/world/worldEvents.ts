@@ -27,6 +27,11 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   return `${target.pathname}${target.search}${target.hash}`
 }
 
+function commitHardFallback(href: string) {
+  window.history.pushState(window.history.state, '', href)
+  window.location.reload()
+}
+
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
   const now = Date.now()
@@ -47,7 +52,7 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     settled = true
     if (observer) window.clearInterval(observer)
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) window.location.assign(fallbackHref)
+    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
