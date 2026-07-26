@@ -38,7 +38,7 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
 }
 
-function canonicalDemoContinuationParams(params: URLSearchParams, demoMemoryId: string) {
+function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
   const next = new URLSearchParams(params)
   next.set('memoryId', demoMemoryId)
   next.set('demo', '1')
@@ -60,7 +60,7 @@ function initialSelectedMemoryState(): InitialSelectedMemoryState {
 
   if (!continuedDemoMemoryId) return { params: initial, canonicalHref: null }
 
-  const params = canonicalDemoContinuationParams(initial, continuedDemoMemoryId)
+  const params = canonicalizeDemoContinuation(initial, continuedDemoMemoryId)
   const query = params.toString()
   return {
     params,
