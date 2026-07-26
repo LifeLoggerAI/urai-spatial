@@ -2,6 +2,8 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 
 const baseURL = 'http://127.0.0.1:3000'
 const fallbackSettleMs = 2_800
+const postTransitionStabilityMs = 900
+const disclosedSampleManifest = 'replay-recovery-thread'
 
 const destinations = [
   {
@@ -67,6 +69,27 @@ function expectedSignature(destination: Destination) {
   return JSON.stringify({ pathname: destination.pathname, params: destination.params })
 }
 
+function assertAuthorizedSettledIdentity(page: Page, destination: Destination) {
+  const url = new URL(page.url())
+  const demo = url.searchParams.get('demo')
+  const manifestId = url.searchParams.get('manifestId')
+  const overview = url.searchParams.get('overview')
+
+  if (destination.id === 'life-map' && demo === '1') {
+    expect(manifestId).toBe(disclosedSampleManifest)
+    expect(overview).toBe('1')
+  } else {
+    expect(demo).not.toBe('1')
+  }
+
+  return {
+    url: url.toString(),
+    demo,
+    manifestId,
+    overview,
+  }
+}
+
 async function activate(page: Page, destination: Destination, activation: Activation) {
   const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
   await expect(navigation).toBeVisible({ timeout: 30_000 })
@@ -107,10 +130,14 @@ async function proveCanonicalTravel(
     { timeout: 20_000, message: `${activation.id} must settle on the canonical ${destination.id} URL` },
   ).toBe(expected)
 
-  const canonicalUrl = page.url()
   await page.waitForTimeout(fallbackSettleMs)
   expect(canonicalSignature(page, destination)).toBe(expected)
-  expect(page.url()).toBe(canonicalUrl)
+  const settledIdentity = assertAuthorizedSettledIdentity(page, destination)
+  const settledUrl = page.url()
+
+  await page.waitForTimeout(postTransitionStabilityMs)
+  expect(canonicalSignature(page, destination)).toBe(expected)
+  expect(page.url()).toBe(settledUrl)
 
   await page.goBack({ waitUntil: 'domcontentloaded' })
   await expect.poll(() => normalizedPathname(page.url()), { timeout: 15_000 }).toBe('/home')
@@ -120,9 +147,11 @@ async function proveCanonicalTravel(
   return {
     destination: destination.id,
     activation: activation.id,
-    canonicalUrl,
+    canonicalUrl: settledUrl,
+    settledIdentity,
     backUrl: page.url(),
     fallbackSettleMs,
+    postTransitionStabilityMs,
   }
 }
 
