@@ -39,7 +39,7 @@ if (moveStart < 0 || moveEnd < 0 || original.indexOf(moveStartMarker, moveStart 
 
 const existingMove = original.slice(moveStart, moveEnd)
 for (const required of [
-  'const focus = method === \'keyboard\' ? await clearEditableFocus(page)',
+  "const focus = method === 'keyboard' ? await clearEditableFocus(page)",
   'const start = await readMovementTelemetry(page, destination)',
   'if (telemetry.nearby === destination)',
   'await releaseDirections(page, method, active)',
@@ -68,6 +68,7 @@ const deterministicMove = `async function moveToNearby(page, destination, method
   const lateralDirection = target.x < start.playerX ? 'left' : target.x > start.playerX ? 'right' : null
   const forwardDirection = target.z < start.playerZ ? 'forward' : target.z > start.playerZ ? 'back' : null
   const lateralTolerance = Math.min(1.35, target.radius * 0.6)
+  const depthTolerance = Math.min(1.35, target.radius * 0.6)
 
   const setDirections = async (desired) => {
     if (method === 'keyboard') await setKeyboardDirections(page, active, desired)
@@ -119,14 +120,47 @@ const deterministicMove = `async function moveToNearby(page, destination, method
     return telemetry
   }
 
-  try {
-    if (destination !== 'orb' && lateralDirection) {
-      await waitForCoordinateOrNearby('x', lateralDirection, target.x, lateralTolerance, 'lateral-alignment')
+  const pulseTouchToNearby = async () => {
+    const phaseStartedAt = Date.now()
+    let pulses = 0
+    while (Date.now() - phaseStartedAt < phaseTimeout) {
+      const telemetry = await readMovementTelemetry(page, destination)
+      samples.push(telemetry)
+      if (telemetry.nearby === destination) {
+        phases.push({ label: 'touch-pulse-arrival', pulses, elapsedMs: Date.now() - phaseStartedAt, telemetry })
+        return telemetry
+      }
+      if (telemetry.playerX == null || telemetry.playerZ == null) break
+      const dx = target.x - telemetry.playerX
+      const dz = target.z - telemetry.playerZ
+      let direction = null
+      if (destination !== 'orb' && Math.abs(dx) > lateralTolerance) direction = dx < 0 ? 'left' : 'right'
+      else if (Math.abs(dz) > depthTolerance) direction = dz < 0 ? 'forward' : 'back'
+      else direction = Math.abs(dx) >= Math.abs(dz) ? (dx < 0 ? 'left' : 'right') : (dz < 0 ? 'forward' : 'back')
+      await setDirections(new Set([direction]))
+      await delay(250)
+      await releaseDirections(page, method, active)
+      await waitFrames(page, 1)
+      pulses += 1
     }
-    const aligned = samples.at(-1)
-    if (aligned.nearby !== destination) {
-      if (!forwardDirection) throw new Error(\`Home proof had no forward axis available for \${destination}: \${JSON.stringify(aligned)}\`)
-      await waitForNearby(forwardDirection, 'forward-arrival')
+    const telemetry = await readMovementTelemetry(page, destination)
+    samples.push(telemetry)
+    phases.push({ label: 'touch-pulse-timeout', pulses, elapsedMs: Date.now() - phaseStartedAt, telemetry })
+    throw new Error(\`Home touch movement did not reach \${destination} with bounded corrective pulses\`)
+  }
+
+  try {
+    if (method === 'touch') {
+      await pulseTouchToNearby()
+    } else {
+      if (destination !== 'orb' && lateralDirection) {
+        await waitForCoordinateOrNearby('x', lateralDirection, target.x, lateralTolerance, 'lateral-alignment')
+      }
+      const aligned = samples.at(-1)
+      if (aligned.nearby !== destination) {
+        if (!forwardDirection) throw new Error(\`Home proof had no forward axis available for \${destination}: \${JSON.stringify(aligned)}\`)
+        await waitForNearby(forwardDirection, 'forward-arrival')
+      }
     }
   } catch (error) {
     await releaseDirections(page, method, active).catch(() => {})
