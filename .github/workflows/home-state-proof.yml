@@ -42,7 +42,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: |
-          corepack enable
           pnpm install --frozen-lockfile
           node urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
           pnpm build:static
