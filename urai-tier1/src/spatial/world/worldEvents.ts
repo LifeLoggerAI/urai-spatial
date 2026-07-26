@@ -6,6 +6,7 @@ export const URAI_WORLD_ORB_OPEN_EVENT = 'urai:world-orb-open'
 
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
+const WORLD_TRAVEL_OBSERVE_MS = 50
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
@@ -22,10 +23,23 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const fallbackHref = request.href
   if (!fallbackHref) return
 
-  window.setTimeout(() => {
+  let settled = false
+  let observer = 0
+  const fallback = window.setTimeout(() => {
+    if (settled) return
+    settled = true
+    if (observer) window.clearInterval(observer)
     const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
     if (currentLocation === startingLocation) window.location.assign(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
+
+  observer = window.setInterval(() => {
+    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    if (currentLocation === startingLocation) return
+    settled = true
+    window.clearTimeout(fallback)
+    window.clearInterval(observer)
+  }, WORLD_TRAVEL_OBSERVE_MS)
 }
 
 export function requestUraiWorldReturn() {
