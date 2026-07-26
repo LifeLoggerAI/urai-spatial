@@ -199,7 +199,29 @@ async function captureOrbStates(browser) {
   }
 }
 
+async function clearEditableFocus(page) {
+  return page.evaluate(() => {
+    const editableRoles = new Set(['button', 'link', 'textbox', 'combobox', 'menuitem', 'option', 'radio', 'switch', 'tab'])
+    const describe = (element) => element instanceof HTMLElement
+      ? { tag: element.tagName.toLowerCase(), role: element.getAttribute('role'), editable: element.isContentEditable }
+      : null
+    const isEditable = (element) => element instanceof HTMLElement && (
+      element.isContentEditable
+      || ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(element.tagName)
+      || editableRoles.has(element.getAttribute('role') || '')
+    )
+    const active = document.activeElement
+    const before = describe(active)
+    const blurred = isEditable(active)
+    if (blurred) active.blur()
+    const after = document.activeElement
+    return { before, blurred, after: describe(after), afterEditable: isEditable(after) }
+  })
+}
+
 async function holdKeysUntil(page, keys, target, timeout = 18_000) {
+  const focus = await clearEditableFocus(page)
+  if (focus.afterEditable) throw new Error(`Home proof could not clear editable focus before movement: ${JSON.stringify(focus)}`)
   for (const key of keys) await page.keyboard.down(key)
   try {
     await page.waitForFunction((expected) => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-nearby') === expected, target, { timeout })
@@ -207,6 +229,7 @@ async function holdKeysUntil(page, keys, target, timeout = 18_000) {
     for (const key of [...keys].reverse()) await page.keyboard.up(key)
   }
   await waitFrames(page, 2)
+  return focus
 }
 
 async function resetHome(page) {
@@ -218,7 +241,7 @@ async function resetHome(page) {
 async function moveToNearby(page, destination, method) {
   if (method === 'keyboard') {
     const keys = destination === 'orb' ? ['w'] : destination === 'ground' ? ['w', 'a'] : ['w', 'd']
-    await holdKeysUntil(page, keys, destination, 22_000)
+    return holdKeysUntil(page, keys, destination, 22_000)
   } else if (method === 'touch') {
     const forward = page.getByRole('button', { name: 'Move forward' })
     const side = destination === 'ground' ? page.getByRole('button', { name: 'Move left' }) : destination === 'life-map' ? page.getByRole('button', { name: 'Move right' }) : null
@@ -230,6 +253,7 @@ async function moveToNearby(page, destination, method) {
       await forward.dispatchEvent('pointerup', { pointerId: 21, pointerType: 'touch', button: 0 })
       if (side) await side.dispatchEvent('pointerup', { pointerId: 22, pointerType: 'touch', button: 0 })
     }
+    return null
   } else {
     const canvas = page.locator(`${ownerSelector} canvas`).first()
     const box = await canvas.boundingBox()
@@ -237,6 +261,7 @@ async function moveToNearby(page, destination, method) {
     const point = destination === 'orb' ? [0.5, 0.58] : destination === 'ground' ? [0.28, 0.62] : [0.72, 0.62]
     await canvas.click({ position: { x: Math.round(box.width * point[0]), y: Math.round(box.height * point[1]) }, force: true })
     await page.waitForFunction((target) => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-nearby') === target, destination, { timeout: 22_000 })
+    return null
   }
 }
 
@@ -247,18 +272,29 @@ async function captureInteraction(browser, spec, method, destination) {
   const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
   await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await waitForAssetHome(page)
-  await moveToNearby(page, destination, method)
+  let editableFocusProven = false
+  if (method === 'keyboard') {
+    const editableControl = page.locator('.home-discreet-controls button').first()
+    await editableControl.focus()
+    editableFocusProven = await editableControl.evaluate((node) => node === document.activeElement)
+    if (!editableFocusProven) throw new Error('Home proof could not establish editable-control focus before movement regression')
+  }
+  const focusClear = await moveToNearby(page, destination, method)
   const screenshot = path.join(outputDir, `${id}-nearby-${exactHead.slice(0, 12)}.png`)
   await page.screenshot({ path: screenshot })
   const result = {
     nearby: await page.locator(ownerSelector).getAttribute('data-home-nearby'),
     contextVisible: await visibleCount(page.locator('.home-world-context')) === 1,
+    editableFocusProven,
+    focusClear,
   }
   const diagnosticResult = diagnostics()
   const video = await closeAndRecordVideo(context, page, id)
   const record = { id, method, destination, screenshot: path.relative(outputDir, screenshot), video, result, diagnostics: diagnosticResult }
   receipt.interactions.push(record)
-  if (result.nearby !== destination || !result.contextVisible || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
+  if (result.nearby !== destination || !result.contextVisible
+    || (method === 'keyboard' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable))
+    || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
 }
 
 async function capturePointerLook(browser) {
