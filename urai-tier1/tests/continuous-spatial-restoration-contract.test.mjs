@@ -123,7 +123,7 @@ test('Ground navigation remains contained, keyboard-operable and safe-area aware
 test('exact-head browser proof v18 covers parity states clips movement traversal recordings and fallbacks', () => {
   for (const marker of [
     "schemaVersion: 'urai-continuous-spatial-visual-proof-18'",
-    "route of ['/', '/home/']", 'portrait-mobile', 'landscape-mobile',
+    "id: 'home-normal-root', route: '/'", "id: 'home-normal-home', route: '/home/'", 'portrait-mobile', 'landscape-mobile',
     'homePrivateFixture=1', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline',
     'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop',
     "capturePortalJourney(browser, 'ground')", "capturePortalJourney(browser, 'life-map')", 'opening', 'traversal', 'closing',
