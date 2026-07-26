@@ -49,7 +49,7 @@ jobs:
           pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
       - name: Verify state-proof contract and build
         run: |
-          node urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof
