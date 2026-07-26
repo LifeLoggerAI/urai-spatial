@@ -49,8 +49,6 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'home-personalized-places-',
     'home-embodied-presence-interaction',
     'home-orb-state-',
-    'home-ground-portal-',
-    'home-life-map-portal-',
     'MobileMovementPad',
     'requestUraiWorldTravel',
     'aria-label="Open Orb directly"',
@@ -58,6 +56,10 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'aria-label="Open Life Map directly"',
     'Why am I seeing this?',
   ]) has(assetHome, marker)
+  assert.match(assetHome, /name=\{`home-\$\{destination\}-portal-\$\{phase\}`\}/)
+  assert.match(assetHome, /<DestinationPortal destination="ground"/)
+  assert.match(assetHome, /<DestinationPortal destination="life-map"/)
+  assert.match(assetHome, /destination:\s*'ground'\s*\|\s*'life-map'/)
 
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
