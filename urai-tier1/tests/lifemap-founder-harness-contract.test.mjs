@@ -10,7 +10,9 @@ const runnerPath = fileURLToPath(new URL('../../scripts/capture-lifemap-founder-
 const launcher = await readFile(launcherPath, 'utf8')
 const runner = await readFile(runnerPath, 'utf8')
 const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
+const isolation = await readFile(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
 
 function runNode(args) {
   return spawnSync(process.execPath, args, { cwd: repoRoot, encoding: 'utf8' })
@@ -71,4 +73,23 @@ test('Founder proof observes the real production state machine without a product
   assert.match(navigator, /role="listitem"/)
   assert.doesNotMatch(scene, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(navigator, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
+})
+
+test('render proof is invalidated and republished after WebGL context restoration', () => {
+  assert.match(world, /function RenderProofRepublisher\(/)
+  assert.match(world, /webglcontextlost/)
+  assert.match(world, /webglcontextrestored/)
+  assert.match(world, /lifeMapRenderReady = "false"/)
+  assert.match(world, /frames\.current < 4/)
+  assert.match(world, /lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 \? "true" : "false"/)
+  assert.match(world, /<RenderProofRepublisher \/>/)
+})
+
+test('closed semantic navigator preserves a visible pointer and touch opener', () => {
+  assert.match(isolation, /\.life-map-navigator:not\(\[open\]\) > summary/)
+  assert.match(isolation, /pointer-events:\s*auto\s*!important/)
+  assert.match(isolation, /min-height:\s*48px\s*!important/)
+  assert.match(isolation, /cursor:\s*pointer\s*!important/)
+  const closedBlock = isolation.match(/\.life-map-navigator:not\(\[open\]\)\s*\{[^}]+\}/)?.[0] || ''
+  assert.doesNotMatch(closedBlock, /pointer-events:\s*none/)
 })
