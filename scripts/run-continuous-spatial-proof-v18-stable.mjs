@@ -29,11 +29,29 @@ const stableDriver = `async function setKeyboardDirections(page, active, desired
   }
 }`
 
-if (!original.includes(existingDriver)) {
-  throw new Error('Continuous visual proof keyboard driver contract changed; refusing an unbounded patch')
+const existingFinalTelemetry = `  await waitFrames(page, 3)
+  const end = await readMovementTelemetry(page, destination)
+  samples.push(end)
+  const evidence = {`
+
+const stableFinalTelemetry = `  await waitFrames(page, 3)
+  const end = await readMovementTelemetry(page, destination)
+  samples.push(end)
+  const finalDistance = end.distanceToTarget
+  if (finalDistance != null && finalDistance < bestDistance) bestDistance = finalDistance
+  reached = reached || end.nearby === destination
+    || (finalDistance != null && finalDistance <= destinationTelemetry[destination].radius)
+  const evidence = {`
+
+if (!original.includes(existingDriver) || !original.includes(existingFinalTelemetry)) {
+  throw new Error('Continuous visual proof movement contract changed; refusing an unbounded patch')
 }
 
-await writeFile(generatedUrl, original.replace(existingDriver, stableDriver), 'utf8')
+const stableSource = original
+  .replace(existingDriver, stableDriver)
+  .replace(existingFinalTelemetry, stableFinalTelemetry)
+
+await writeFile(generatedUrl, stableSource, 'utf8')
 try {
   await import(`${generatedUrl.href}?exact=${Date.now()}`)
 } finally {
