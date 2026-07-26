@@ -34,6 +34,9 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'data-home-exploration="walkable"',
     'data-home-ground-portal="home-ground-portal-world-owned"',
     'data-home-life-map-portal="home-life-map-portal-world-owned"',
+    'aria-label="Open Orb directly"',
+    'aria-label="Open Ground directly"',
+    'aria-label="Open Life Map directly"',
   ]) has(homeRuntime, marker)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-visual-owner="final-coherent-sanctuary"/)
 
@@ -51,9 +54,6 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'home-orb-state-',
     'MobileMovementPad',
     'requestUraiWorldTravel',
-    'aria-label="Open Orb directly"',
-    'aria-label="Open Ground directly"',
-    'aria-label="Open Life Map directly"',
     'Why am I seeing this?',
   ]) has(assetHome, marker)
   assert.match(assetHome, /name=\{`home-\$\{destination\}-portal-\$\{phase\}`\}/)
