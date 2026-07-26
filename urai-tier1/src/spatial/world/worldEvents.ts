@@ -10,6 +10,23 @@ const WORLD_TRAVEL_OBSERVE_MS = 50
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
+function buildFallbackHref(request: UraiWorldTravelRequest) {
+  if (!request.href || typeof window === 'undefined') return request.href
+  const target = new URL(request.href, window.location.origin)
+  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+
+  const context = request.context
+  if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
+  if (context?.threadId) target.searchParams.set('thread', context.threadId)
+  if (context?.personId) target.searchParams.set('personId', context.personId)
+  if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+
+  return `${target.pathname}${target.search}${target.hash}`
+}
+
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
   const now = Date.now()
@@ -20,7 +37,7 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
-  const fallbackHref = request.href
+  const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
 
   let settled = false
