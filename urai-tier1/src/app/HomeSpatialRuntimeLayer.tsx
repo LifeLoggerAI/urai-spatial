@@ -23,7 +23,7 @@ export default function HomeSpatialRuntimeLayer() {
 
   const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => {
     const request: UraiWorldTravelRequest = destination === 'life-map'
-      ? { destination: 'life-map', href: '/life-map?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
+      ? { destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
       : { destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }
     requestUraiWorldTravel(request)
   }, [])
@@ -219,13 +219,14 @@ export default function HomeSpatialRuntimeLayer() {
           .urai-home-runtime-doorways {
             left: max(9px, env(safe-area-inset-left));
             right: max(9px, env(safe-area-inset-right));
-            bottom: max(9px, env(safe-area-inset-bottom));
+            bottom: max(92px, calc(env(safe-area-inset-bottom) + 82px));
             justify-content: center;
+            flex-wrap: wrap;
           }
-          .urai-home-runtime-doorways button { flex: 1; max-width: 112px; padding: 0 10px; }
+          .urai-home-runtime-doorways button { min-height: 52px; }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .urai-home-runtime-doorways button { backdrop-filter: none; }
+        @media (forced-colors: active) {
+          .urai-home-runtime-doorways button { forced-color-adjust: auto; background: Canvas; color: CanvasText; border: 1px solid ButtonText; }
         }
       `}</style>
     </section>
