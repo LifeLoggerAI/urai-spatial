@@ -126,33 +126,22 @@ async function proveCanonicalTravel(
   }
 }
 
-test('Home doorway inputs converge on canonical context and Back remains stable', async ({ browser }, testInfo) => {
-  test.setTimeout(180_000)
-  const report: Array<{
-    destination: string
-    activation: string
-    canonicalUrl: string
-    backUrl: string
-    fallbackSettleMs: number
-  }> = []
-
-  for (const destination of destinations) {
-    for (const activation of activations) {
-      await test.step(`${activation.id} to ${destination.id}`, async () => {
-        const context = await browser.newContext({ baseURL, ...activation.context })
-        try {
-          report.push(await proveCanonicalTravel(context, destination, activation))
-        } finally {
-          await context.close()
-        }
-      })
-    }
+for (const destination of destinations) {
+  for (const activation of activations) {
+    test(`${activation.id} to ${destination.id} converges on canonical context and Back remains stable`, async ({ browser }, testInfo) => {
+      test.setTimeout(90_000)
+      const context = await browser.newContext({ baseURL, ...activation.context })
+      try {
+        const report = await proveCanonicalTravel(context, destination, activation)
+        await testInfo.attach(`canonical-home-travel-${destination.id}-${activation.id}.json`, {
+          body: JSON.stringify(report, null, 2),
+          contentType: 'application/json',
+        })
+        expect(report.destination).toBe(destination.id)
+        expect(report.activation).toBe(activation.id)
+      } finally {
+        await context.close()
+      }
+    })
   }
-
-  await testInfo.attach('canonical-home-travel-report.json', {
-    body: JSON.stringify(report, null, 2),
-    contentType: 'application/json',
-  })
-
-  expect(report).toHaveLength(destinations.length * activations.length)
-})
+}
