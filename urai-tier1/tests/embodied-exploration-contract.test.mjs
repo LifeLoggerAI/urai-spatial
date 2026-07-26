@@ -44,7 +44,7 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'data-home-review-fixture=',
     'data-home-orb-state=',
     'data-home-orb-clip=',
-    'data-home-animation-owner="gltf-authored-clips"',
+    'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
     'home-authored-entry-chamber',
     'home-personalized-places-',
     'home-embodied-presence-interaction',
