@@ -19,6 +19,15 @@ const orbClips = {
   calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
 }
 
+const destinationTelemetry = {
+  orb: { x: 0, z: -0.65, radius: 1.8, attribute: 'data-home-distance-orb' },
+  ground: { x: -4.55, z: -6.55, radius: 2.2, attribute: 'data-home-distance-ground' },
+  'life-map': { x: 4.55, z: -6.65, radius: 2.2, attribute: 'data-home-distance-life-map' },
+}
+const movementKeys = { forward: 'w', back: 's', left: 'a', right: 'd' }
+const movementButtonNames = { forward: 'Move forward', back: 'Move backward', left: 'Move left', right: 'Move right' }
+const movementPointerIds = { forward: 31, back: 32, left: 33, right: 34 }
+
 const viewports = [
   { id: 'desktop', width: 1440, height: 900, isMobile: false, hasTouch: false },
   { id: 'portrait-mobile', width: 390, height: 844, isMobile: true, hasTouch: true },
@@ -109,7 +118,24 @@ async function closeAndRecordVideo(context, page, id) {
 async function waitForAssetHome(page, { ready = true } = {}) {
   await page.locator(ownerSelector).waitFor({ state: 'visible', timeout: 45_000 })
   if (ready) {
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-assets-ready') === 'true', ownerSelector, { timeout: 45_000 })
+    await page.waitForFunction((selector) => {
+      const owner = document.querySelector(selector)
+      if (!owner) return false
+      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
+        .some((node) => {
+          const style = getComputedStyle(node)
+          const rect = node.getBoundingClientRect()
+          return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+            && rect.width > 4 && rect.height > 4
+        })
+      return owner.getAttribute('data-home-assets-ready') === 'true'
+        && owner.getAttribute('data-home-input-ready') === 'true'
+        && owner.getAttribute('data-home-interaction-ready') === 'true'
+        && owner.getAttribute('data-home-ready') === 'true'
+        && owner.getAttribute('data-home-input-owner') === 'window-capture-movement'
+        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel'
+        && !loadingVisible
+    }, ownerSelector, { timeout: 45_000 })
   }
   await waitFrames(page, 3)
 }
@@ -199,11 +225,25 @@ async function captureOrbStates(browser) {
   }
 }
 
+async function describeFocus(page) {
+  return page.evaluate(() => {
+    const active = document.activeElement
+    if (!(active instanceof HTMLElement)) return null
+    return {
+      tag: active.tagName.toLowerCase(),
+      role: active.getAttribute('role'),
+      ariaLabel: active.getAttribute('aria-label'),
+      className: active.className || null,
+      editable: active.isContentEditable,
+    }
+  })
+}
+
 async function clearEditableFocus(page) {
   return page.evaluate(() => {
     const editableRoles = new Set(['button', 'link', 'textbox', 'combobox', 'menuitem', 'option', 'radio', 'switch', 'tab'])
     const describe = (element) => element instanceof HTMLElement
-      ? { tag: element.tagName.toLowerCase(), role: element.getAttribute('role'), editable: element.isContentEditable }
+      ? { tag: element.tagName.toLowerCase(), role: element.getAttribute('role'), ariaLabel: element.getAttribute('aria-label'), className: element.className || null, editable: element.isContentEditable }
       : null
     const isEditable = (element) => element instanceof HTMLElement && (
       element.isContentEditable
@@ -219,50 +259,168 @@ async function clearEditableFocus(page) {
   })
 }
 
-async function holdKeysUntil(page, keys, target, timeout = 18_000) {
-  const focus = await clearEditableFocus(page)
-  if (focus.afterEditable) throw new Error(`Home proof could not clear editable focus before movement: ${JSON.stringify(focus)}`)
-  for (const key of keys) await page.keyboard.down(key)
-  try {
-    await page.waitForFunction((expected) => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-nearby') === expected, target, { timeout })
-  } finally {
-    for (const key of [...keys].reverse()) await page.keyboard.up(key)
+async function readMovementTelemetry(page, destination) {
+  const target = destinationTelemetry[destination]
+  return page.evaluate(({ selector, destination, targetAttribute }) => {
+    const owner = document.querySelector(selector)
+    const numeric = (name) => {
+      const value = Number.parseFloat(owner?.getAttribute(name) || '')
+      return Number.isFinite(value) ? value : null
+    }
+    const active = document.activeElement
+    return {
+      destination,
+      selector,
+      selectorCount: document.querySelectorAll(selector).length,
+      primaryOwner: owner?.getAttribute('data-home-primary-owner') || null,
+      telemetryOwner: owner?.getAttribute('data-home-telemetry-owner') || null,
+      inputOwner: owner?.getAttribute('data-home-input-owner') || null,
+      assetsReady: owner?.getAttribute('data-home-assets-ready') || null,
+      inputReady: owner?.getAttribute('data-home-input-ready') || null,
+      interactionReady: owner?.getAttribute('data-home-interaction-ready') || null,
+      homeReady: owner?.getAttribute('data-home-ready') || null,
+      playerX: numeric('data-home-player-x'),
+      playerZ: numeric('data-home-player-z'),
+      distanceTravelled: numeric('data-home-distance'),
+      distanceToTarget: numeric(targetAttribute),
+      nearby: owner?.getAttribute('data-home-nearby') || null,
+      moving: owner?.getAttribute('data-home-moving') || null,
+      pressedKeys: owner?.getAttribute('data-home-pressed-keys') || '',
+      movementVector: owner?.getAttribute('data-home-movement-vector') || null,
+      renderedFrames: numeric('data-home-rendered-frames'),
+      focus: active instanceof HTMLElement ? {
+        tag: active.tagName.toLowerCase(),
+        role: active.getAttribute('role'),
+        ariaLabel: active.getAttribute('aria-label'),
+        className: active.className || null,
+        editable: active.isContentEditable,
+      } : null,
+    }
+  }, { selector: ownerSelector, destination, targetAttribute: target.attribute })
+}
+
+function desiredDirections(telemetry, destination) {
+  const target = destinationTelemetry[destination]
+  const directions = []
+  if (telemetry.playerZ == null || telemetry.playerX == null) return directions
+  const dz = target.z - telemetry.playerZ
+  const dx = target.x - telemetry.playerX
+  if (dz < -0.32) directions.push('forward')
+  else if (dz > 0.32) directions.push('back')
+  if (dx < -0.32) directions.push('left')
+  else if (dx > 0.32) directions.push('right')
+  return directions
+}
+
+async function setKeyboardDirections(page, active, desired) {
+  for (const direction of [...active]) {
+    if (desired.has(direction)) continue
+    await page.keyboard.up(movementKeys[direction])
+    active.delete(direction)
   }
-  await waitFrames(page, 2)
-  return focus
+  for (const direction of desired) {
+    if (active.has(direction)) continue
+    await page.keyboard.down(movementKeys[direction])
+    active.add(direction)
+  }
+}
+
+async function setTouchDirections(page, active, desired) {
+  for (const direction of [...active]) {
+    if (desired.has(direction)) continue
+    const button = page.getByRole('button', { name: movementButtonNames[direction] })
+    await button.dispatchEvent('pointerup', { pointerId: movementPointerIds[direction], pointerType: 'touch', button: 0 })
+    active.delete(direction)
+  }
+  for (const direction of desired) {
+    if (active.has(direction)) continue
+    const button = page.getByRole('button', { name: movementButtonNames[direction] })
+    await button.dispatchEvent('pointerdown', { pointerId: movementPointerIds[direction], pointerType: 'touch', button: 0 })
+    active.add(direction)
+  }
+}
+
+async function releaseDirections(page, method, active) {
+  const desired = new Set()
+  if (method === 'keyboard') await setKeyboardDirections(page, active, desired)
+  else await setTouchDirections(page, active, desired)
+}
+
+async function moveToNearby(page, destination, method, timeout = 40_000) {
+  const focus = method === 'keyboard' ? await clearEditableFocus(page) : { before: await describeFocus(page), blurred: false, after: await describeFocus(page), afterEditable: false }
+  if (focus.afterEditable) throw new Error(`Home proof could not clear editable focus before movement: ${JSON.stringify(focus)}`)
+
+  const start = await readMovementTelemetry(page, destination)
+  const active = new Set()
+  const samples = [start]
+  const startedAt = Date.now()
+  let bestDistance = start.distanceToTarget ?? Infinity
+  let lastProgressAt = startedAt
+  let nextSampleAt = startedAt + 1_000
+  let reached = false
+
+  try {
+    while (Date.now() - startedAt < timeout) {
+      const telemetry = await readMovementTelemetry(page, destination)
+      if (telemetry.distanceToTarget != null && telemetry.distanceToTarget < bestDistance - 0.025) {
+        bestDistance = telemetry.distanceToTarget
+        lastProgressAt = Date.now()
+      }
+      if (Date.now() >= nextSampleAt && samples.length < 32) {
+        samples.push(telemetry)
+        nextSampleAt += 1_000
+      }
+      if (telemetry.nearby === destination) {
+        reached = true
+        break
+      }
+      if (Date.now() - lastProgressAt > 10_000) break
+      const directions = desiredDirections(telemetry, destination)
+      const desired = method === 'touch' && directions.length > 1
+        ? new Set([directions.find((direction) => direction === 'left' || direction === 'right') || directions[0]])
+        : new Set(directions)
+      if (!desired.size) break
+      if (method === 'keyboard') await setKeyboardDirections(page, active, desired)
+      else await setTouchDirections(page, active, desired)
+      await delay(250)
+    }
+  } finally {
+    await releaseDirections(page, method, active)
+  }
+
+  await waitFrames(page, 3)
+  const end = await readMovementTelemetry(page, destination)
+  samples.push(end)
+  const evidence = {
+    method,
+    target: { destination, ...destinationTelemetry[destination] },
+    focus,
+    start,
+    end,
+    elapsedMs: Date.now() - startedAt,
+    distanceTravelled: start.playerX != null && start.playerZ != null && end.playerX != null && end.playerZ != null
+      ? Math.hypot(end.playerX - start.playerX, end.playerZ - start.playerZ)
+      : null,
+    bestDistanceToTarget: Number.isFinite(bestDistance) ? bestDistance : null,
+    reached,
+    samples,
+  }
+  if (!reached || evidence.distanceTravelled == null || evidence.distanceTravelled < 0.25) {
+    const error = new Error(`Home ${method} movement did not reach ${destination}: ${JSON.stringify(evidence)}`)
+    error.evidence = evidence
+    throw error
+  }
+  return evidence
 }
 
 async function resetHome(page) {
   await page.keyboard.press('r')
-  await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-nearby') === 'none', ownerSelector, { timeout: 10_000 })
+  await page.waitForFunction((selector) => {
+    const owner = document.querySelector(selector)
+    const distance = Number.parseFloat(owner?.getAttribute('data-home-distance') || '')
+    return owner?.getAttribute('data-home-nearby') === 'none' && Number.isFinite(distance) && distance < 0.05
+  }, ownerSelector, { timeout: 10_000 })
   await waitFrames(page, 2)
-}
-
-async function moveToNearby(page, destination, method) {
-  if (method === 'keyboard') {
-    const keys = destination === 'orb' ? ['w'] : destination === 'ground' ? ['w', 'a'] : ['w', 'd']
-    return holdKeysUntil(page, keys, destination, 22_000)
-  } else if (method === 'touch') {
-    const forward = page.getByRole('button', { name: 'Move forward' })
-    const side = destination === 'ground' ? page.getByRole('button', { name: 'Move left' }) : destination === 'life-map' ? page.getByRole('button', { name: 'Move right' }) : null
-    await forward.dispatchEvent('pointerdown', { pointerId: 21, pointerType: 'touch', button: 0 })
-    if (side) await side.dispatchEvent('pointerdown', { pointerId: 22, pointerType: 'touch', button: 0 })
-    try {
-      await page.waitForFunction((target) => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-nearby') === target, destination, { timeout: 22_000 })
-    } finally {
-      await forward.dispatchEvent('pointerup', { pointerId: 21, pointerType: 'touch', button: 0 })
-      if (side) await side.dispatchEvent('pointerup', { pointerId: 22, pointerType: 'touch', button: 0 })
-    }
-    return null
-  } else {
-    const canvas = page.locator(`${ownerSelector} canvas`).first()
-    const box = await canvas.boundingBox()
-    if (!box) throw new Error('Home canvas has no pointer target')
-    const point = destination === 'orb' ? [0.5, 0.58] : destination === 'ground' ? [0.28, 0.62] : [0.72, 0.62]
-    await canvas.click({ position: { x: Math.round(box.width * point[0]), y: Math.round(box.height * point[1]) }, force: true })
-    await page.waitForFunction((target) => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-nearby') === target, destination, { timeout: 22_000 })
-    return null
-  }
 }
 
 async function captureInteraction(browser, spec, method, destination) {
@@ -270,31 +428,48 @@ async function captureInteraction(browser, spec, method, destination) {
   const { context, page } = await openContext(browser, spec)
   const diagnostics = attachDiagnostics(page, id)
   const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
-  await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  await waitForAssetHome(page)
+  let movement = null
+  let movementFailure = null
   let editableFocusProven = false
-  if (method === 'keyboard') {
-    const editableControl = page.locator('.home-discreet-controls button').first()
-    await editableControl.focus()
-    editableFocusProven = await editableControl.evaluate((node) => node === document.activeElement)
-    if (!editableFocusProven) throw new Error('Home proof could not establish editable-control focus before movement regression')
+  let screenshot = null
+  try {
+    await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await waitForAssetHome(page)
+    if (method === 'keyboard') {
+      const editableControl = page.locator('.home-discreet-controls button').first()
+      await editableControl.focus()
+      editableFocusProven = await editableControl.evaluate((node) => node === document.activeElement)
+      if (!editableFocusProven) throw new Error('Home proof could not establish editable-control focus before movement regression')
+    }
+    movement = await moveToNearby(page, destination, method)
+  } catch (error) {
+    movementFailure = { message: String(error), evidence: error?.evidence || null, stack: error?.stack || null }
   }
-  const focusClear = await moveToNearby(page, destination, method)
-  const screenshot = path.join(outputDir, `${id}-nearby-${exactHead.slice(0, 12)}.png`)
-  await page.screenshot({ path: screenshot })
+
+  screenshot = path.join(outputDir, `${id}-${movementFailure ? 'failed' : 'nearby'}-${exactHead.slice(0, 12)}.png`)
+  await page.screenshot({ path: screenshot }).catch(() => {})
   const result = {
-    nearby: await page.locator(ownerSelector).getAttribute('data-home-nearby'),
-    contextVisible: await visibleCount(page.locator('.home-world-context')) === 1,
+    nearby: await page.locator(ownerSelector).getAttribute('data-home-nearby').catch(() => null),
+    contextVisible: await visibleCount(page.locator('.home-world-context')).catch(() => 0) === 1,
     editableFocusProven,
-    focusClear,
+    focusClear: movement?.focus || movementFailure?.evidence?.focus || null,
+    movement,
+    movementFailure,
+    finalTelemetry: await readMovementTelemetry(page, destination).catch(() => null),
   }
   const diagnosticResult = diagnostics()
   const video = await closeAndRecordVideo(context, page, id)
   const record = { id, method, destination, screenshot: path.relative(outputDir, screenshot), video, result, diagnostics: diagnosticResult }
   receipt.interactions.push(record)
-  if (result.nearby !== destination || !result.contextVisible
+  const failed = Boolean(movementFailure)
+    || result.nearby !== destination || !result.contextVisible
+    || !movement || movement.distanceTravelled == null || movement.distanceTravelled < 0.25
     || (method === 'keyboard' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable))
-    || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)
+    || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length
+  if (failed) {
+    receipt.errors.push(record)
+    throw new Error(`Home interaction proof failed for ${id}: ${JSON.stringify(record)}`)
+  }
 }
 
 async function capturePointerLook(browser) {
