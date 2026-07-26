@@ -41,8 +41,14 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - run: |
-          pnpm install --frozen-lockfile
+      - name: Install exact lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/home-state-proof
+          pnpm install --frozen-lockfile 2>&1 | tee artifacts/home-state-proof/install.log
+      - name: Verify state-proof contract and build
+        run: |
           node urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
