@@ -22,11 +22,16 @@ function unavailable(message: string): SelectedMemoryResult {
   return { status: 'unavailable', memory: null, message }
 }
 
+function asDemoMemoryId(memoryId: string | null) {
+  if (!memoryId) return null
+  return memoryId.startsWith('demo:') ? memoryId : `demo:${memoryId}`
+}
+
 function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
-  if (!memoryId || memoryId.startsWith('demo:')) return null
+  if (!memoryId) return null
 
   if (params.get('demo') === '1' && params.get('from') === 'life-map') {
-    return `demo:${memoryId}`
+    return asDemoMemoryId(memoryId)
   }
 
   if (params.get('from') !== 'life-map-camera') return null
@@ -35,55 +40,21 @@ function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | nu
   const localDemoEnabled = typeof window !== 'undefined'
     && window.localStorage.getItem('urai:lifeMapDemoMode') === 'true'
 
-  return publicDemoEnabled || localDemoEnabled ? `demo:${memoryId}` : null
-}
-
-function canonicalizeDemoContinuation(params: URLSearchParams, demoMemoryId: string) {
-  const next = new URLSearchParams(params)
-  next.set('memoryId', demoMemoryId)
-  next.set('demo', '1')
-  if (!next.get('node')) next.set('node', demoMemoryId.replace(/^demo:/, ''))
-  return next
-}
-
-type InitialSelectedMemoryState = {
-  params: URLSearchParams
-  canonicalHref: string | null
-}
-
-function initialSelectedMemoryState(): InitialSelectedMemoryState {
-  if (typeof window === 'undefined') return { params: new URLSearchParams(), canonicalHref: null }
-
-  const initial = new URLSearchParams(window.location.search)
-  const initialMemoryId = sanitizeMemoryId(initial.get('memoryId') ?? initial.get('node'))
-  const continuedDemoMemoryId = demoContinuationMemoryId(initial, initialMemoryId)
-
-  if (!continuedDemoMemoryId) return { params: initial, canonicalHref: null }
-
-  const params = canonicalizeDemoContinuation(initial, continuedDemoMemoryId)
-  const query = params.toString()
-  return {
-    params,
-    canonicalHref: `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`,
-  }
+  return publicDemoEnabled || localDemoEnabled ? asDemoMemoryId(memoryId) : null
 }
 
 export function useSelectedMemory(): SelectedMemoryResult {
-  const initialState = useMemo(initialSelectedMemoryState, [])
-  const params = initialState.params
+  const params = useMemo(
+    () => typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search),
+    [],
+  )
   const memoryId = sanitizeMemoryId(params.get('memoryId') ?? params.get('node'))
   const manifestId = sanitizeMemoryId(params.get('manifestId'))
   const continuedDemoMemoryId = demoContinuationMemoryId(params, memoryId)
-  const requestedDemoMemoryId = isExplicitDemoRequest(params) ? memoryId : continuedDemoMemoryId
+  const requestedDemoMemoryId = isExplicitDemoRequest(params)
+    ? asDemoMemoryId(memoryId)
+    : continuedDemoMemoryId
   const [result, setResult] = useState<SelectedMemoryResult>(LOADING)
-
-  useEffect(() => {
-    if (!initialState.canonicalHref || typeof window === 'undefined') return
-    const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentHref !== initialState.canonicalHref) {
-      window.history.replaceState(window.history.state, '', initialState.canonicalHref)
-    }
-  }, [initialState.canonicalHref])
 
   useEffect(() => {
     let cancelled = false
