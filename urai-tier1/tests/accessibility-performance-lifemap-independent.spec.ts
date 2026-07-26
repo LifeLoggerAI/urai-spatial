@@ -97,7 +97,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await focus.press('Enter')
     await expect.poll(() => normalizedPathname(page.url())).toBe('/focus')
     const focusUrl = new URL(page.url())
-    expect(focusUrl.searchParams.get('memoryId')).toBe(`demo:${selectedMemoryId}`)
+    expect(focusUrl.searchParams.get('memoryId')).toBe(selectedMemoryId)
     expect(focusUrl.searchParams.get('node')).toBe(selectedMemoryId)
     expect(focusUrl.searchParams.get('demo')).toBe('1')
     expect(focusUrl.searchParams.get('returnNode')).toBe(selectedMemoryId)
