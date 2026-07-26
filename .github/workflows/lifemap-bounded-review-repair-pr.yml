@@ -25,6 +25,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: true
+          show-progress: false
 
       - name: Execute reviewed bounded repair payload
         shell: bash
@@ -40,7 +41,10 @@ jobs:
           normalized = '\n'.join(line[10:] if line.startswith('          ') else line for line in payload.splitlines())
           Path('/tmp/lifemap-bounded-review-repair.py').write_text(normalized + '\n')
           PY
-          python3 /tmp/lifemap-bounded-review-repair.py
+          if ! python3 /tmp/lifemap-bounded-review-repair.py > /tmp/lifemap-bounded-review-repair.log 2>&1; then
+            cat /tmp/lifemap-bounded-review-repair.log
+            exit 1
+          fi
           rm -f .github/workflows/lifemap-bounded-review-repair-pr.yml
 
       - name: Verify and publish real repair
