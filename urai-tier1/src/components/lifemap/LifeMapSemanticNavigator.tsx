@@ -43,12 +43,13 @@ export default function LifeMapSemanticNavigator() {
   const router = useRouter();
   const params = useSearchParams();
   const explicitDemo = params.get("demo") === "1";
+  const overviewRequested = params.get("overview") === "1";
   const { nodes, eras, loading, sourceMode } = useLifeMapEvents(explicitDemo ? "demo-user" : undefined);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LifeMapNodeType | "all">("all");
   const [eraFilter, setEraFilter] = useState("all");
   const [portalReady, setPortalReady] = useState(false);
-  const selectedId = params.get("node") || params.get("memoryId");
+  const selectedId = overviewRequested ? null : params.get("node") || params.get("memoryId");
   const selected = nodes.find((node) => node.id === selectedId) || null;
 
   const visibleNodes = useMemo(() => nodes.filter((node) => (
