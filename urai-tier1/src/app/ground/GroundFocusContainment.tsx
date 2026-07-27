@@ -19,12 +19,13 @@ export default function GroundFocusContainment() {
         })
       })
     }
+    const onFocusIn = (event: FocusEvent) => reveal(event.target)
 
-    document.addEventListener('focusin', (event) => reveal(event.target), true)
+    document.addEventListener('focusin', onFocusIn, true)
     return () => {
       window.cancelAnimationFrame(outerFrame)
       window.cancelAnimationFrame(innerFrame)
-      document.removeEventListener('focusin', (event) => reveal(event.target), true)
+      document.removeEventListener('focusin', onFocusIn, true)
     }
   }, [])
 
