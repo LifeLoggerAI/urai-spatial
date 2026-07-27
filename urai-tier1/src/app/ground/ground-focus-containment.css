@@ -1,5 +1,6 @@
 @media (max-width: 420px) {
   .ground-spatial-root .ground-destination-compass .ground-destination-entry {
+    box-sizing: border-box;
     max-width: 100%;
     min-width: 0;
   }
@@ -7,10 +8,11 @@
   .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child:hover,
   .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child:focus-visible,
   .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child[aria-current] {
-    max-width: min(138px, calc(100vw - 252px));
+    max-width: min(112px, calc(100vw - 278px));
   }
 
   .ground-spatial-root .ground-destination-compass .ground-go-now {
     flex: 0 0 auto;
+    max-width: 72px;
   }
 }
