@@ -1,0 +1,16 @@
+@media (max-width: 420px) {
+  .ground-spatial-root .ground-destination-compass .ground-destination-entry {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child:hover,
+  .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child:focus-visible,
+  .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child[aria-current] {
+    max-width: min(138px, calc(100vw - 252px));
+  }
+
+  .ground-spatial-root .ground-destination-compass .ground-go-now {
+    flex: 0 0 auto;
+  }
+}
