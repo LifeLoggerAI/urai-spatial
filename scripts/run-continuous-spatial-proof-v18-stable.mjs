@@ -50,7 +50,20 @@ for (const required of [
   }
 }
 
-const deterministicMove = `async function moveToNearby(page, destination, method, timeout = 40_000) {
+const deterministicMove = `async function waitForMovementFrame(page, timeout = 500) {
+  await page.evaluate((timeoutMs) => new Promise((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+    requestAnimationFrame(finish)
+    setTimeout(finish, timeoutMs)
+  }), timeout)
+}
+
+async function moveToNearby(page, destination, method, timeout = 40_000) {
   const focus = method === 'keyboard' ? await clearEditableFocus(page) : { before: await describeFocus(page), blurred: false, after: await describeFocus(page), afterEditable: false }
   if (focus.afterEditable) throw new Error(\`Home proof could not clear editable focus before movement: \${JSON.stringify(focus)}\`)
 
@@ -102,10 +115,10 @@ const deterministicMove = `async function moveToNearby(page, destination, method
       }
 
       await setDirections(new Set([direction]))
-      if (method === 'keyboard') await waitFrames(page, 1)
+      if (method === 'keyboard') await waitForMovementFrame(page)
       else await delay(250)
       await releaseDirections(page, method, active)
-      await waitFrames(page, 1)
+      await waitForMovementFrame(page)
 
       const after = await readMovementTelemetry(page, destination)
       samples.push(after)
