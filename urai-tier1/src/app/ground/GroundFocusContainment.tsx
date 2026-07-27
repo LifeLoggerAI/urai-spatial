@@ -13,8 +13,15 @@ export default function GroundFocusContainment() {
       if (!(target instanceof HTMLElement) || !target.matches(TARGET_SELECTOR)) return
       window.cancelAnimationFrame(outerFrame)
       window.cancelAnimationFrame(innerFrame)
+
+      // Focus can expand the Guide control before React and CSS finish layout.
+      // Bring the complete destination pair into the rail synchronously, then
+      // repeat against the focused control after two rendered frames.
+      const entry = target.closest<HTMLElement>('.ground-destination-entry')
+      ;(entry ?? target).scrollIntoView({ block: 'nearest', inline: 'nearest' })
       outerFrame = window.requestAnimationFrame(() => {
         innerFrame = window.requestAnimationFrame(() => {
+          ;(entry ?? target).scrollIntoView({ block: 'nearest', inline: 'nearest' })
           target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
         })
       })
