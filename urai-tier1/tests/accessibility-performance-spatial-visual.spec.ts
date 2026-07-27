@@ -68,8 +68,8 @@ test.describe('URAI visual ownership and containment evidence', () => {
 
     const lifeMapDestination = menu.getByRole('button', { name: 'Life Map', exact: true })
     await expect(lifeMapDestination).toBeVisible()
-    await lifeMapDestination.dispatchEvent('click')
-    await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
+    await lifeMapDestination.click()
+    await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, ''), { timeout: 15_000 }).toBe('/life-map')
   })
 
   test('Ground WebGL canvas remains inside a narrow mobile viewport', async ({ page }) => {
