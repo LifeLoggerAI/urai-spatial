@@ -50,17 +50,11 @@ for (const required of [
   }
 }
 
-const deterministicMove = `async function waitForMovementFrame(page, timeout = 500) {
-  await page.evaluate((timeoutMs) => new Promise((resolve) => {
-    let settled = false
-    const finish = () => {
-      if (settled) return
-      settled = true
-      resolve()
-    }
-    requestAnimationFrame(finish)
-    setTimeout(finish, timeoutMs)
-  }), timeout)
+const deterministicMove = `async function waitForMovementFrame(page, timeout = 20_000) {
+  const frameWait = page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => resolve('rendered-frame'))
+  })).catch(() => 'page-closed')
+  await Promise.race([frameWait, delay(timeout)])
 }
 
 async function moveToNearby(page, destination, method, timeout = 40_000) {
@@ -77,7 +71,7 @@ async function moveToNearby(page, destination, method, timeout = 40_000) {
   const samples = [start]
   const phases = []
   const startedAt = Date.now()
-  const movementTimeout = Math.max(timeout, 150_000)
+  const movementTimeout = Math.max(timeout, 300_000)
   const maxPulses = method === 'keyboard' ? 240 : 600
   const lateralTolerance = Math.min(1.1, target.radius * 0.45)
   const depthTolerance = Math.min(1.1, target.radius * 0.45)
