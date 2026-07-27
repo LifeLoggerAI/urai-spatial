@@ -22,6 +22,11 @@ const routes = [
   '/status',
   '/spatial/ar-vr',
 ];
+const promotedGeneratedAssetPaths = new Set([
+  '/assets/urai/generated/models/home-entry-chamber-v1.glb',
+  '/assets/urai/generated/models/portal-ring-master-v1.glb',
+  '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
+]);
 const neutralizedProviderVariables = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',
   'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
@@ -81,6 +86,10 @@ function isBenignLocalAbort(entry) {
     return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
   }
   if (parsed.search === '' && parsed.pathname.startsWith('/_next/static/chunks/') && parsed.pathname.endsWith('.js')) return true;
+  if (entry.method === 'GET'
+    && entry.resourceType === 'fetch'
+    && parsed.search === ''
+    && promotedGeneratedAssetPaths.has(parsed.pathname)) return true;
   return entry.method === 'GET'
     && entry.resourceType === 'fetch'
     && parsed.search === ''
@@ -195,7 +204,7 @@ try {
   ].map((entry) => [key(entry), entry])).values()];
 
   const report = {
-    schemaVersion: 'urai-spatial-missing-resource-diagnostics-4',
+    schemaVersion: 'urai-spatial-missing-resource-diagnostics-5',
     generatedAt: new Date().toISOString(),
     baseUrl,
     routes,
@@ -210,6 +219,7 @@ try {
         'next-hmr-hot-update',
         'next-dev-route-chunk-navigation',
         'canonical-local-manifest-navigation-cancellation',
+        'promoted-generated-asset-navigation-cancellation',
       ],
     },
     actionable,
