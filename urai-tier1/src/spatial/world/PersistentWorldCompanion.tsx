@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
@@ -8,7 +9,7 @@ import {
   URAI_WORLD_ORB_OPEN_EVENT,
 } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
-import type { UraiDestination } from './worldTypes'
+import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
 const PRIMARY_DESTINATIONS: readonly UraiDestination[] = [
   'home',
@@ -25,7 +26,50 @@ const SECONDARY_DESTINATIONS: readonly UraiDestination[] = [
   'location-map',
 ]
 
+const CONTEXT_KEYS = [
+  'memoryId',
+  'node',
+  'thread',
+  'personId',
+  'placeId',
+  'manifestId',
+  'privacyMode',
+] as const
+
+function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
+  const definition = definitionForDestination(request.destination)
+  const target = new URL(request.href ?? definition.href, window.location.origin)
+  const current = new URLSearchParams(window.location.search)
+
+  for (const key of CONTEXT_KEYS) {
+    if (!target.searchParams.has(key) && current.has(key)) {
+      target.searchParams.set(key, current.get(key) ?? '')
+    }
+  }
+
+  const context = request.context
+  if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
+  if (context?.threadId) target.searchParams.set('thread', context.threadId)
+  if (context?.personId) target.searchParams.set('personId', context.personId)
+  if (context?.placeId) target.searchParams.set('placeId', context.placeId)
+  if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
+  if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
+  if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
+
+  const memoryId = target.searchParams.get('memoryId')
+  const nodeId = target.searchParams.get('node')
+  if (request.destination === 'life-map') {
+    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
+  } else if (!memoryId && nodeId) {
+    target.searchParams.set('memoryId', nodeId)
+  }
+
+  return `${target.pathname}${target.search}${target.hash}`
+}
+
 export function PersistentWorldCompanion() {
+  const router = useRouter()
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -99,7 +143,7 @@ export function PersistentWorldCompanion() {
     }
 
     const target = definitionForDestination(destination)
-    requestUraiWorldTravel({
+    const request: UraiWorldTravelRequest = {
       destination,
       href: target.href,
       entryPortal: target.entryPortal,
@@ -112,9 +156,16 @@ export function PersistentWorldCompanion() {
         replayManifestId: world.replayManifestId,
         privacyMode: world.privacyMode,
       },
-    })
+    }
+    const href = buildCompanionTravelHref(request)
+
+    // The visible control owns the canonical URL immediately. The world event still
+    // starts spatial transition state, but it can no longer unmount this controller
+    // before its deferred router write commits.
+    router.push(href)
+    requestUraiWorldTravel({ ...request, href })
     closeCompanion(false)
-  }, [closeCompanion, phase, world])
+  }, [closeCompanion, phase, router, world])
 
   const returnThroughWorld = useCallback(() => {
     if (phase !== 'idle' || world.destination === 'home') {
