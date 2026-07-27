@@ -66,6 +66,8 @@ const deterministicMove = `async function moveToNearby(page, destination, method
   const startedAt = Date.now()
   const movementTimeout = Math.max(timeout, 150_000)
   const maxPulses = method === 'keyboard' ? 240 : 600
+  const lateralTolerance = Math.min(1.1, target.radius * 0.45)
+  const depthTolerance = Math.min(1.1, target.radius * 0.45)
   let reached = start.nearby === destination
   let pulse = 0
 
@@ -88,9 +90,16 @@ const deterministicMove = `async function moveToNearby(page, destination, method
 
       const dx = target.x - before.playerX
       const dz = target.z - before.playerZ
-      const direction = Math.abs(dx) >= Math.abs(dz)
-        ? (dx < 0 ? 'left' : 'right')
-        : (dz < 0 ? 'forward' : 'back')
+      let direction = null
+      if (destination !== 'orb' && Math.abs(dx) > lateralTolerance) {
+        direction = dx < 0 ? 'left' : 'right'
+      } else if (Math.abs(dz) > depthTolerance) {
+        direction = dz < 0 ? 'forward' : 'back'
+      } else {
+        direction = Math.abs(dx) >= Math.abs(dz)
+          ? (dx < 0 ? 'left' : 'right')
+          : (dz < 0 ? 'forward' : 'back')
+      }
 
       await setDirections(new Set([direction]))
       if (method === 'keyboard') await waitFrames(page, 1)
