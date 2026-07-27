@@ -113,8 +113,9 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
 
-    const controls = page.locator('details.life-map-accessibility-menu')
+    const controls = page.locator('details.life-map-help')
     const body = controls.locator(':scope > div')
+    await expect(controls).toBeVisible({ timeout: 30_000 })
     await expect(controls).not.toHaveAttribute('open', '')
     await expect(body).toBeHidden()
 
