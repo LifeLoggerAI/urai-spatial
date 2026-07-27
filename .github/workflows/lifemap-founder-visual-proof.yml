@@ -12,9 +12,14 @@ on:
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
       - 'scripts/capture-lifemap-founder-proof.mjs'
+      - 'scripts/capture-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/run-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/verify-lifemap-canvas-proof.mjs'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
+      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'
+      - 'urai-tier1/tests/lifemap-review-repair-contract.test.mjs'
 
 permissions:
   contents: read
@@ -66,12 +71,22 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
+      - name: Prove Founder runner syntax and ownership before Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/lifemap-founder-proof
+          node --check scripts/capture-lifemap-founder-proof-fixed.mjs | tee artifacts/lifemap-founder-proof/founder-runner-syntax.log
+          node --check scripts/verify-lifemap-canvas-proof.mjs | tee artifacts/lifemap-founder-proof/canvas-runner-syntax.log
+          node scripts/run-lifemap-founder-proof-fixed.mjs --validate-only | tee artifacts/lifemap-founder-proof/founder-launcher-validation.log
+          node --test urai-tier1/tests/lifemap-founder-harness-contract.test.mjs | tee artifacts/lifemap-founder-proof/founder-harness-contract.log
+
       - name: Run Life Map contracts and static build
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts/lifemap-founder-proof
-          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs | tee artifacts/lifemap-founder-proof/lifemap-contract.log
+          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/lifemap-review-repair-contract.test.mjs | tee artifacts/lifemap-founder-proof/lifemap-contract.log
           pnpm --dir urai-tier1 typecheck | tee artifacts/lifemap-founder-proof/typecheck.log
           pnpm build:static 2>&1 | tee artifacts/lifemap-founder-proof/build-static.log
 
@@ -92,7 +107,11 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/lifemap-founder-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-          node scripts/capture-lifemap-founder-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
+          node scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_CANVAS_PROOF_DIR=artifacts/lifemap-founder-proof/canvas-proof \
+          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
+          node scripts/verify-lifemap-canvas-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/canvas-proof.log
 
       - name: Upload exact-head founder receipt
         if: always()

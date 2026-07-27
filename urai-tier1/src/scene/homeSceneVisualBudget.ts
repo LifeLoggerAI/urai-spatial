@@ -36,6 +36,7 @@ function qualityTierForMode(mode: HomeSceneMode, reducedMotion: boolean): Spatia
 
 export function resolveHomeSceneVisualBudget(input: HomeSceneVisualBudgetInput): HomeSceneVisualBudget {
   const mode = 'sceneMode' in input ? input.sceneMode : input.mode
+  if (!mode) throw new Error('Home scene mode is required')
   const { reducedMotion } = input
   const budget = resolveSpatialRenderBudget({
     reducedMotion,

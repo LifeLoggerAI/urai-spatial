@@ -17,7 +17,7 @@ test('canonical Life Map has one spatial selected-memory action owner plus seman
   assert.match(boundary, /<ComposedLifeMapScene \/>/)
   assert.match(boundary, /<LifeMapSemanticNavigator \/>/)
   assert.doesNotMatch(canonical, /LifeMapDeepLinkControls|urai-lifemap-deep-link-controls/)
-  assert.match(scene, /className="life-map-actions"/)
+  assert.match(scene, /className="life-map-thresholds"/)
   assert.match(scene, /aria-label="Selected memory actions"/)
   assert.match(scene, /router\.push\(destinationHref\("focus"\)\)/)
   assert.match(scene, /router\.push\(destinationHref\("replay"\)\)/)
@@ -58,13 +58,13 @@ test('legacy selected-memory card remains unmounted and cannot compete visually'
   assert.doesNotMatch(scene, /life-map-memory-portals|data-life-map-selected-actions-owner/)
 })
 
-test('selected action surface remains contained on desktop and mobile', () => {
-  assert.match(scene, /\.life-map-actions\{position:absolute;z-index:8;left:50%;bottom:max\(26px/)
-  assert.match(scene, /min-height:48px/)
+test('selected cinematic thresholds remain contained on desktop and mobile', () => {
+  assert.match(scene, /\.life-map-thresholds\{position:absolute;z-index:16;left:50%;bottom:max\(24px/)
+  assert.match(scene, /min-height:58px/)
   assert.match(scene, /@media\(max-width:700px\)/)
-  assert.match(scene, /width:calc\(100vw - 32px\)/)
-  assert.match(scene, /\.life-map-actions button\{flex:1/)
-  assert.match(scene, /className="life-map-help"/)
+  assert.match(scene, /width:calc\(100vw - 24px\)/)
+  assert.match(scene, /grid-template-columns:1fr 1fr/)
+  assert.match(scene, /className="life-map-status"/)
 })
 
 test('founder proof requires Focus Replay overview privacy fallback and recovery evidence', () => {
