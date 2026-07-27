@@ -27,6 +27,93 @@ for (const required of [
 
 const repairedPortal = `async function capturePortalSequence(browser) {
   const spec = viewports[0]
+
+  async function movePortalToNearby(page, destination) {
+    try {
+      return await moveToNearby(page, destination, 'keyboard')
+    } catch (initialError) {
+      const initial = initialError?.evidence || null
+      const target = destinationTelemetry[destination]
+      const active = new Set()
+      const correctiveSamples = []
+      const correctivePhases = []
+      const correctiveStartedAt = Date.now()
+      const maxPulses = 12
+
+      try {
+        for (let pulse = 0; pulse < maxPulses; pulse += 1) {
+          const before = await readMovementTelemetry(page, destination)
+          correctiveSamples.push(before)
+          if (before.nearby === destination) break
+          if (before.playerX == null || before.playerZ == null || before.distanceToTarget == null) {
+            throw new Error(\`Home portal corrective steering telemetry was incomplete for \${destination}: \${JSON.stringify(before)}\`)
+          }
+
+          const dx = target.x - before.playerX
+          const dz = target.z - before.playerZ
+          const direction = Math.abs(dx) >= Math.abs(dz)
+            ? (dx < 0 ? 'left' : 'right')
+            : (dz < 0 ? 'forward' : 'back')
+
+          await setKeyboardDirections(page, active, new Set([direction]))
+          await waitFrames(page, 1)
+          await releaseDirections(page, 'keyboard', active)
+          await waitFrames(page, 1)
+
+          const after = await readMovementTelemetry(page, destination)
+          correctiveSamples.push(after)
+          correctivePhases.push({ pulse, direction, before, after })
+          if (after.nearby === destination) break
+        }
+      } finally {
+        await releaseDirections(page, 'keyboard', active).catch(() => {})
+      }
+
+      const end = await readMovementTelemetry(page, destination)
+      correctiveSamples.push(end)
+      const allSamples = [...(initial?.samples || []), ...correctiveSamples]
+      const start = initial?.start || allSamples[0] || null
+      const distances = allSamples
+        .map((sample) => sample?.distanceToTarget)
+        .filter((value) => Number.isFinite(value))
+      const evidence = {
+        method: 'keyboard',
+        target: { destination, ...target },
+        focus: initial?.focus || null,
+        start,
+        end,
+        elapsedMs: (initial?.elapsedMs || 0) + (Date.now() - correctiveStartedAt),
+        distanceTravelled: start?.playerX != null && start?.playerZ != null && end.playerX != null && end.playerZ != null
+          ? Math.hypot(end.playerX - start.playerX, end.playerZ - start.playerZ)
+          : null,
+        bestDistanceToTarget: distances.length ? Math.min(...distances) : null,
+        reached: end.nearby === destination,
+        phases: [
+          ...(initial?.phases || []),
+          {
+            label: 'portal-bounded-corrective-steering',
+            maxPulses,
+            elapsedMs: Date.now() - correctiveStartedAt,
+            initialFailure: String(initialError),
+            pulses: correctivePhases,
+          },
+        ],
+        samples: allSamples,
+      }
+
+      if (!evidence.reached
+        || evidence.distanceTravelled == null
+        || evidence.distanceTravelled < 0.25
+        || end.distanceToTarget == null
+        || end.distanceToTarget > target.radius) {
+        const error = new Error(\`Home portal corrective steering did not reach \${destination}: \${JSON.stringify(evidence)}\`)
+        error.evidence = evidence
+        throw error
+      }
+      return evidence
+    }
+  }
+
   for (const destination of ['ground', 'life-map']) {
     const id = \`home-portal-\${destination}\`
     const { context, page } = await openContext(browser, spec)
@@ -44,7 +131,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
     try {
       await page.goto(urlFor('/home/', query), { waitUntil: 'domcontentloaded', timeout: 45_000 })
       await waitForAssetHome(page)
-      movement = await moveToNearby(page, destination, 'keyboard')
+      movement = await movePortalToNearby(page, destination)
       const focus = await clearEditableFocus(page)
       if (focus.afterEditable) throw new Error(\`Home portal proof retained editable focus before \${destination}: \${JSON.stringify(focus)}\`)
 
@@ -97,7 +184,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
         }
       }, { expected: expectedRoute, key: historyKey })
     } catch (error) {
-      activationFailure = { message: String(error), stack: error?.stack || null }
+      activationFailure = { message: String(error), stack: error?.stack || null, evidence: error?.evidence || null }
       routeEvidence = await page.evaluate(({ key }) => {
         const url = new URL(location.href)
         return {
