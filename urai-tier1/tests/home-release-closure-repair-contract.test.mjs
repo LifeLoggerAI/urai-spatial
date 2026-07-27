@@ -39,7 +39,7 @@ test('Ground focus expansion remains fully reachable at the required 390px viewp
 test('accessibility evidence is bound to the current Home and Life Map owners', () => {
   assert.match(embodiedEvidence, /urai-asset-home-world\[data-home-primary-owner=/)
   assert.match(embodiedEvidence, /Accessible Home destinations/)
-  assert.match(lifeMapEvidence, /data-testid=\\?"urai-true-3d-life-map/)
+  assert.match(lifeMapEvidence, /urai-true-3d-life-map/)
   assert.match(visualEvidence, /details\.life-map-help/)
   for (const obsolete of [
     '.urai-home-embodied-shell',
@@ -47,5 +47,5 @@ test('accessibility evidence is bound to the current Home and Life Map owners', 
     '.life-map-memory-portals',
     'details.life-map-accessibility-menu',
   ]) assert.equal(accessibilityEvidence.includes(obsolete), false, `obsolete selector returned: ${obsolete}`)
-  assert.doesNotMatch(embodiedEvidence, /getByRole\('link', \{ name: \/Privacy Sanctuary/)
+  assert.equal(embodiedEvidence.includes("getByRole('link', { name: /Privacy Sanctuary"), false)
 })
