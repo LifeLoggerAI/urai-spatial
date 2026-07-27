@@ -28,11 +28,13 @@ test('continuous Home proof uses a bounded host clock without weakening rendered
 test('Ground focus expansion remains fully reachable at the required 390px viewport', () => {
   assert.match(groundPage, /GroundFocusContainment/)
   assert.match(groundPage, /ground-focus-containment\.css/)
+  assert.match(focusBridge, /entry \?\? target\)\.scrollIntoView/)
   assert.match(focusBridge, /requestAnimationFrame[\s\S]*requestAnimationFrame/)
-  assert.match(focusBridge, /scrollIntoView\(\{ block: 'nearest', inline: 'nearest' \}\)/)
+  assert.match(focusBridge, /target\.scrollIntoView\(\{ block: 'nearest', inline: 'nearest' \}\)/)
   assert.match(focusBridge, /removeEventListener\('focusin', onFocusIn, true\)/)
   assert.match(focusCss, /@media \(max-width: 420px\)/)
-  assert.match(focusCss, /max-width: min\(138px, calc\(100vw - 252px\)\)/)
+  assert.match(focusCss, /max-width: min\(112px, calc\(100vw - 278px\)\)/)
+  assert.match(focusCss, /\.ground-go-now[\s\S]*max-width: 72px/)
   assert.doesNotMatch(focusCss, /display:\s*none|overflow:\s*hidden/)
 })
 
