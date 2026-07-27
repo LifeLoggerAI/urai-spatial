@@ -77,15 +77,20 @@ export type HomeRuntimeAssetResolution = {
 function canonicalResolution(assetId: HomeReviewCandidate['assetId']): UraiSpatialAssetResolution {
   const selectedAsset = getUraiSpatialAsset(assetId)
   const fallbackAsset = getUraiSpatialFallbackAsset(assetId)
+  const promotedCandidate = homeReviewCandidates.find((candidate) => candidate.assetId === assetId) ?? null
 
+  // Governed promotion is the release authority for generated Home assets. The
+  // original catalog status describes the pre-promotion intake state and must not
+  // force a promoted, receipted asset back to the procedural fallback.
   if (
-    selectedAsset?.status === 'ready' &&
+    selectedAsset &&
+    selectedAsset.status !== 'missing' &&
     isUraiAssetPromoted(assetId)
   ) {
     return {
       requestedAssetId: assetId,
       source: 'selected',
-      path: uraiPromotedAssetPathOverrides[assetId] ?? selectedAsset.path,
+      path: uraiPromotedAssetPathOverrides[assetId] ?? promotedCandidate?.path ?? selectedAsset.path,
       selectedAsset,
       fallbackAsset,
     }
