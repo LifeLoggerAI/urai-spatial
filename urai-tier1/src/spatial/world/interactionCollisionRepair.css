@@ -15,6 +15,23 @@
   z-index: 26 !important;
 }
 
+/* Overview has two legitimate disclosure surfaces. Give Explore and Search life
+ * separate pointer regions instead of allowing two bottom-right details elements
+ * to occupy the same hit target. */
+.urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='overview'])
+  .life-map-help {
+  left: max(20px, env(safe-area-inset-left)) !important;
+  right: auto !important;
+  z-index: 48 !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='overview'])
+  .life-map-navigator {
+  left: auto !important;
+  right: max(20px, env(safe-area-inset-right)) !important;
+  z-index: 47 !important;
+}
+
 .urai-world-runtime[data-world-destination='life-map']
   .life-map-independent-realm[data-life-map-mode='selected']
   > .life-map-memory-portals {
@@ -226,6 +243,37 @@
     height: 48px !important;
     max-height: 48px !important;
     overflow: hidden !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='overview'])
+    .life-map-help:not([open]) {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    width: max-content !important;
+    max-width: min(152px, calc(50vw - 18px)) !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='overview'])
+    .life-map-navigator:not([open]) {
+    left: auto !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: max-content !important;
+    max-width: min(190px, calc(50vw - 18px)) !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='overview'])
+    :is(.life-map-help, .life-map-navigator)[open] {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(62svh, 560px) !important;
+    overflow: auto !important;
+    z-index: 60 !important;
   }
 
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .urai-world-companion {
