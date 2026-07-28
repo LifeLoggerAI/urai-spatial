@@ -1,7 +1,6 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLifeMapEvents } from '@/components/lifemap/useLifeMapEvents'
 
 function routeHref(params: URLSearchParams) {
@@ -16,9 +15,15 @@ function buttonFromEvent(event: MouseEvent) {
 }
 
 export function LifeMapRouteTransactionBridge() {
-  const params = useSearchParams()
-  const explicitDemo = params.get('demo') === '1'
+  // Read the disclosed-demo boundary only after hydration. Using Next's
+  // useSearchParams here forces a CSR bailout during static export even though
+  // this bridge renders no UI and owns only post-hydration click transactions.
+  const [explicitDemo, setExplicitDemo] = useState(false)
   const { nodes } = useLifeMapEvents(explicitDemo ? 'demo-user' : undefined)
+
+  useEffect(() => {
+    setExplicitDemo(new URLSearchParams(window.location.search).get('demo') === '1')
+  }, [])
 
   useEffect(() => {
     const captureRouteIdentity = (event: MouseEvent) => {
