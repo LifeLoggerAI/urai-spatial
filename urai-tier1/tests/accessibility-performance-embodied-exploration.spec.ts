@@ -37,7 +37,11 @@ function normalizedPathname(url: string) {
 }
 
 test.describe('Embodied exploration runtime evidence', () => {
-  test.describe.configure({ timeout: 90_000 })
+  // Exact-head traces prove the asset-driven Home completed real displacement,
+  // but software-rendered Actions hosts spent 3-11 seconds on individual DOM,
+  // keyboard and attribute operations. Preserve every assertion while allowing
+  // the complete interaction sequence to finish on that proven host envelope.
+  test.describe.configure({ timeout: 180_000 })
 
   test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
