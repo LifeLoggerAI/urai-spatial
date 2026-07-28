@@ -67,6 +67,10 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   return `${target.pathname}${target.search}${target.hash}`
 }
 
+function normalizedPathname(value: string) {
+  return value.replace(/\/+$/, '') || '/'
+}
+
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
@@ -83,6 +87,7 @@ export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
+  const navigationWatchdog = useRef<number | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
@@ -92,9 +97,14 @@ export function WorldTransitionController() {
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
 
   const clearTimer = useCallback(() => {
-    if (timer.current === null) return
-    window.clearTimeout(timer.current)
-    timer.current = null
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current)
+      timer.current = null
+    }
+    if (navigationWatchdog.current !== null) {
+      window.clearTimeout(navigationWatchdog.current)
+      navigationWatchdog.current = null
+    }
   }, [])
 
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
@@ -112,9 +122,20 @@ export function WorldTransitionController() {
     }
 
     const href = buildTravelHref(request)
+    const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
     timer.current = window.setTimeout(() => {
       router.push(href)
       timer.current = null
+
+      // A renderer recovery or a saturated browser main thread must not leave the
+      // world permanently in transition. Prefer client navigation, then use the
+      // same-origin document route only when the requested destination did not land.
+      navigationWatchdog.current = window.setTimeout(() => {
+        navigationWatchdog.current = null
+        if (normalizedPathname(window.location.pathname) !== targetPathname) {
+          window.location.assign(href)
+        }
+      }, 2500)
     }, transitionDuration(request.destination))
   }, [clearTimer, router])
 
