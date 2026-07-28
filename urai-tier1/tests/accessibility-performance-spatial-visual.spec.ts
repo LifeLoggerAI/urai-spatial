@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('URAI visual ownership and containment evidence', () => {
+  // The software-rendered Actions host proved the complete Orb route contract in
+  // 27-30 seconds while the default 30-second test envelope clipped the first
+  // attempt. Preserve every visual, accessibility and destination assertion while
+  // allowing the deterministic route proof to complete without relying on retries.
+  test.describe.configure({ timeout: 90_000 })
+
   test('Home exposes one authored Orb with a transparent operable controller', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
