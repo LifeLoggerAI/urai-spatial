@@ -20,6 +20,14 @@ function HomeSemanticNavigation() {
   )
 }
 
+function HomeMovementPrompt() {
+  return (
+    <button type="button" className="home-movement-prompt" tabIndex={-1} aria-label="Move through Home">
+      Move through Home
+    </button>
+  )
+}
+
 function nearbyContext(value: HomeNearby) {
   if (value === 'orb') return 'The Orb is ready for you'
   if (value === 'ground') return 'The living path descends into Ground'
@@ -28,7 +36,7 @@ function nearbyContext(value: HomeNearby) {
   return null
 }
 
-const runtimeStyles = `.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.urai-home-spatial-runtime-layer .urai-asset-home-world .home-world-context{display:none!important}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}.urai-home-spatial-runtime-layer>.home-world-context{position:absolute;z-index:44;left:50%;bottom:max(86px,calc(env(safe-area-inset-bottom) + 76px));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid rgba(230,246,240,.28);border-radius:999px;background:rgba(6,18,19,.84);box-shadow:0 12px 36px rgba(0,0,0,.38);backdrop-filter:blur(14px);color:#f3fbf8;text-align:center;font:650 12px/1.2 system-ui;white-space:nowrap;pointer-events:none}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.urai-home-spatial-runtime-layer>.home-world-context{bottom:max(178px,calc(env(safe-area-inset-bottom) + 168px));white-space:normal}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-world-context{backdrop-filter:none}}`
+const runtimeStyles = `.urai-home-spatial-runtime-layer .urai-final-home-doorways,.urai-home-spatial-runtime-layer .urai-asset-home-world>.home-semantic-navigation{display:none!important}.urai-home-spatial-runtime-layer .urai-asset-home-world .home-world-context{display:none!important}.urai-home-spatial-runtime-layer>.home-runtime-loading{position:absolute;inset:0;z-index:45;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none}.urai-home-spatial-runtime-layer>.home-runtime-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-runtime-forming-breath 1.8s ease-in-out infinite}.urai-home-spatial-runtime-layer>.home-world-context{position:absolute;z-index:44;left:50%;bottom:max(86px,calc(env(safe-area-inset-bottom) + 76px));transform:translateX(-50%);max-width:calc(100vw - 32px);padding:10px 14px;border:1px solid rgba(230,246,240,.28);border-radius:999px;background:rgba(6,18,19,.84);box-shadow:0 12px 36px rgba(0,0,0,.38);backdrop-filter:blur(14px);color:#f3fbf8;text-align:center;font:650 12px/1.2 system-ui;white-space:nowrap;pointer-events:none}.urai-home-spatial-runtime-layer>.home-movement-prompt{position:absolute;z-index:46;left:50%;bottom:max(118px,calc(env(safe-area-inset-bottom) + 108px));transform:translateX(-50%);display:inline-flex;align-items:center;justify-content:center;min-width:min(220px,calc(100vw - 32px));min-height:42px;padding:0 16px;border:1px solid rgba(230,246,240,.28);border-radius:999px;background:rgba(6,18,19,.84);box-shadow:0 12px 36px rgba(0,0,0,.38);backdrop-filter:blur(14px);color:#f3fbf8;font:650 12px/1.2 system-ui;white-space:nowrap;pointer-events:auto}.urai-home-spatial-runtime-layer>.home-movement-prompt:focus-visible{outline:2px solid rgba(255,255,255,.92);outline-offset:2px}@keyframes home-runtime-forming-breath{50%{transform:scale(1.08);opacity:.68}}@media(max-width:700px){.urai-home-spatial-runtime-layer>.home-world-context{bottom:max(178px,calc(env(safe-area-inset-bottom) + 168px));white-space:normal}.urai-home-spatial-runtime-layer>.home-movement-prompt{bottom:max(188px,calc(env(safe-area-inset-bottom) + 178px));white-space:normal}}@media(prefers-reduced-motion:reduce){.urai-home-spatial-runtime-layer>.home-world-context{backdrop-filter:none}.urai-home-spatial-runtime-layer>.home-movement-prompt{backdrop-filter:none}}`
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
@@ -122,6 +130,7 @@ export default function HomeSpatialRuntimeLayer() {
       <section className="urai-home-spatial-runtime-layer" data-urai-home-runtime="accessible-fallback-after-renderer-failure" data-webgl-ready="false" aria-label="Spatial Home fallback">
         <div role="status" aria-live="polite" className="sr-only">The spatial renderer could not recover. Accessible Home controls remain available.</div>
         <HomeSemanticNavigation />
+        <HomeMovementPrompt />
         <HomeSpatialWorldFinal />
         <style jsx global>{runtimeStyles}</style>
       </section>
@@ -148,6 +157,7 @@ export default function HomeSpatialRuntimeLayer() {
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <HomeSemanticNavigation />
+      <HomeMovementPrompt />
       <AssetDrivenHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
       {context ? <div className="home-world-context" role="status" aria-live="polite">{context}</div> : null}
       <style jsx global>{runtimeStyles}</style>
