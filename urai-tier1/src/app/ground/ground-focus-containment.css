@@ -8,7 +8,7 @@
   .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child:hover,
   .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child:focus-visible,
   .ground-spatial-root .ground-destination-compass .ground-destination-entry > button:first-child[aria-current] {
-    max-width: min(112px, calc(100vw - 278px));
+    max-width: min(104px, calc(100vw - 286px));
   }
 
   .ground-spatial-root .ground-destination-compass .ground-go-now {
