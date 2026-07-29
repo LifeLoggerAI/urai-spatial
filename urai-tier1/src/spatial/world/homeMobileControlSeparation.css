@@ -1,8 +1,9 @@
 /* Mobile Home owns two independent interaction regions: movement stays in the
  * lower-left safe-area band, while ambience and provenance controls remain in
  * the upper-right. This prevents either operable surface from covering the
- * other at 360–412 px portrait widths. */
-@media (max-width: 700px) {
+ * other across phone portrait, phone landscape, tablet, and coarse-pointer
+ * layouts where the movement pad is enabled. */
+@media (max-width: 900px), (pointer: coarse) {
   .urai-world-runtime[data-world-destination='home']
     .urai-asset-home-world
     .home-discreet-controls {
