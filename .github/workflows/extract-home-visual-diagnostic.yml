@@ -4,23 +4,32 @@ on:
   push:
     branches:
       - diagnostics/extract-home-visual-receipt-20260729
+    paths-ignore:
+      - diagnostics/extracted/**
 
 permissions:
   actions: read
-  contents: read
+  contents: write
 
 jobs:
   extract:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Download exact retained artifact
+      - name: Checkout diagnostic branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: diagnostics/extract-home-visual-receipt-20260729
+          fetch-depth: 1
+
+      - name: Download and extract exact retained artifact
         env:
           GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: '8713872767'
         run: |
           set -euo pipefail
-          mkdir -p diagnostic/raw diagnostic/out
+          rm -rf diagnostic/raw diagnostic/out diagnostics/extracted
+          mkdir -p diagnostic/raw diagnostic/out diagnostics/extracted
           curl --fail-with-body --location \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header "Accept: application/vnd.github+json" \
@@ -32,8 +41,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          receipt_path = Path('diagnostic/out/receipt.json')
-          data = json.loads(receipt_path.read_text())
+          data = json.loads(Path('diagnostic/out/receipt.json').read_text())
           summary = {
               'schemaVersion': data.get('schemaVersion'),
               'exactHead': data.get('exactHead'),
@@ -43,25 +51,26 @@ jobs:
               'errors': data.get('errors', []),
               'interactions': data.get('interactions', []),
           }
-          Path('diagnostic/out/failure-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
-          failed = []
-          for error in data.get('errors', []):
-              if isinstance(error, dict):
-                  screenshot = error.get('screenshot')
-                  if screenshot:
-                      failed.append(screenshot)
-          Path('diagnostic/out/failed-screenshots.txt').write_text('\n'.join(failed) + ('\n' if failed else ''))
+          Path('diagnostics/extracted/failure-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          failed = [e.get('screenshot') for e in data.get('errors', []) if isinstance(e, dict) and e.get('screenshot')]
+          Path('diagnostics/extracted/failed-screenshots.txt').write_text('\n'.join(failed) + ('\n' if failed else ''))
           PY
+          cp diagnostic/out/archive-list.txt diagnostics/extracted/archive-list.txt
           while IFS= read -r screenshot; do
             [ -n "$screenshot" ] || continue
-            unzip -j diagnostic/raw/artifact.zip "*/${screenshot}" -d diagnostic/out || true
-          done < diagnostic/out/failed-screenshots.txt
-          rm -f diagnostic/raw/artifact.zip
+            unzip -j diagnostic/raw/artifact.zip "*/${screenshot}" -d diagnostics/extracted || true
+          done < diagnostics/extracted/failed-screenshots.txt
+          rm -rf diagnostic
 
-      - name: Upload bounded diagnostic packet
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: home-visual-diagnostic-ce5dc8b
-          path: diagnostic/out
-          if-no-files-found: error
-          retention-days: 30
+      - name: Commit bounded diagnostic result
+        run: |
+          set -euo pipefail
+          git config user.name 'urai-release-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add diagnostics/extracted
+          if git diff --cached --quiet; then
+            echo 'No diagnostic changes to commit.'
+            exit 0
+          fi
+          git commit -m 'chore(diagnostics): retain Home visual failure summary'
+          git push origin HEAD:diagnostics/extract-home-visual-receipt-20260729
