@@ -23,6 +23,7 @@ jobs:
           set -euo pipefail
           git config user.name "urai-release-bot"
           git config user.email "actions@users.noreply.github.com"
+          pre_merge_head="$(git rev-parse HEAD)"
           merge_status=0
           git merge --no-ff --no-commit 51db7b3ba77a657659da34ca5e146e049dd03d31 || merge_status=$?
           test "$merge_status" -ne 0
@@ -70,10 +71,11 @@ jobs:
             path=Path(name)
             path.write_text(resolve(path.read_text(), choices))
           PY
-          git add .github/workflows/continuous-spatial-visual-proof.yml .github/workflows/lifemap-founder-visual-proof.yml scripts/capture-lifemap-founder-proof.mjs tests/native-doorway-proof.mjs urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/world/interactionCollisionRepair.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts urai-tier1/tests/selected-memory-production-contract.test.mjs
+          git add scripts/capture-lifemap-founder-proof.mjs tests/native-doorway-proof.mjs urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/world/interactionCollisionRepair.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts urai-tier1/tests/selected-memory-production-contract.test.mjs
+          git checkout "$pre_merge_head" -- .github/workflows
+          git add .github/workflows
           test -z "$(git diff --name-only --diff-filter=U)"
-          grep -RIl '^<<<<<<<\|^=======\|^>>>>>>>' .github/workflows/continuous-spatial-visual-proof.yml .github/workflows/lifemap-founder-visual-proof.yml scripts/capture-lifemap-founder-proof.mjs tests/native-doorway-proof.mjs urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/world/interactionCollisionRepair.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts urai-tier1/tests/selected-memory-production-contract.test.mjs && exit 1 || true
-          rm -f .github/workflows/home-core-conflict-pack.yml .github/workflows/home-core-resolve.yml
+          grep -RIl '^<<<<<<<\|^=======\|^>>>>>>>' scripts/capture-lifemap-founder-proof.mjs tests/native-doorway-proof.mjs urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx urai-tier1/src/spatial/memory/useSelectedMemory.ts urai-tier1/src/spatial/world/interactionCollisionRepair.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts urai-tier1/tests/selected-memory-production-contract.test.mjs && exit 1 || true
           git add -A
           git commit -m "merge: converge accepted Home onto core"
           git push origin HEAD:agent/home-onto-core-resolve-20260729
