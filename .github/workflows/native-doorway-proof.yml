@@ -51,6 +51,8 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
+      - name: Prove doorway interaction ownership before Chromium
+        run: node --test tests/native-doorway-proof-contract.test.mjs
       - name: Build static app
         run: pnpm build:static
       - name: Serve static app

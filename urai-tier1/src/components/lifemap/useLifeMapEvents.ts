@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
 import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import { canonicalLifeMapDemoNodes } from "./canonicalLifeMapDemoNodes";
+import { lifeMapDisplayPosition } from "./lifeMapLayout";
 import {
   lifeMapEras,
   mapLifeMapEventToNode,
@@ -29,6 +30,7 @@ type LifeMapEventState = {
 const NODE_TYPES = ["memory", "season", "ritual", "forecast", "threshold", "relationship", "recovery", "legacy"] as const satisfies readonly LifeMapNodeType[];
 const SOURCE_TYPES = ["audio", "conversation", "ritual", "forecast", "manual_seed", "system_generated", "relationship", "recovery", "legacy"] as const satisfies readonly LifeMapEventSourceType[];
 const ERA_TYPES = ["all", "season", "relationship", "recovery", "work", "family", "threshold", "custom", "system_generated"] as const satisfies readonly LifeMapEraType[];
+const positionedDemoNodes = canonicalLifeMapDemoNodes.map((node) => ({ ...node, position: lifeMapDisplayPosition(node) }));
 
 function asNodeType(value: unknown): LifeMapNodeType {
   return typeof value === "string" && NODE_TYPES.includes(value as LifeMapNodeType) ? value as LifeMapNodeType : "memory";
@@ -106,7 +108,7 @@ function resolveUserId(explicitUserId?: string): string | null {
 export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const explicitDemo = useMemo(() => explicitDemoEnabled(userId), [userId]);
   const resolvedUserId = useMemo(() => resolveUserId(userId), [userId]);
-  const [nodes, setNodes] = useState<LifeMapNode[]>(() => explicitDemo ? canonicalLifeMapDemoNodes : []);
+  const [nodes, setNodes] = useState<LifeMapNode[]>(() => explicitDemo ? positionedDemoNodes : []);
   const [eras, setEras] = useState<LifeMapEra[]>(() => explicitDemo ? lifeMapEras : []);
   const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
   const [erasLoading, setErasLoading] = useState(!explicitDemo);
@@ -116,7 +118,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   useEffect(() => {
     let cancelled = false;
     if (explicitDemo) {
-      setNodes(canonicalLifeMapDemoNodes);
+      setNodes(positionedDemoNodes);
       setEventsLoading(false);
       setEventsError(null);
       return () => { cancelled = true; };

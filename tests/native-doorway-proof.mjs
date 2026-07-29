@@ -20,9 +20,9 @@ const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 async function activate(page, target, method, hitPoint) {
   if (method === 'pointer') return page.mouse.click(hitPoint.center.x, hitPoint.center.y)
   if (method === 'touch') return page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
-  await target.focus()
+  await target.evaluate((node) => node.focus({ preventScroll: true }))
   if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
-  return target.press('Enter', { noWaitAfter: true })
+  return page.keyboard.press('Enter')
 }
 
 async function resolveTarget(page, doorway) {
@@ -65,7 +65,7 @@ async function prove(browser, doorway, testCase) {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const target = await resolveTarget(page, doorway)
-    await target.scrollIntoViewIfNeeded()
+    if (testCase.method !== 'keyboard') await target.scrollIntoViewIfNeeded()
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
     record.hitPoint = await inspectHitPoint(target)
@@ -93,7 +93,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 6, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 7, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
