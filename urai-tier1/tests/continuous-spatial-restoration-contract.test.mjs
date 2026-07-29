@@ -79,3 +79,10 @@ test('Life Map owner and legacy veil suppression remain full viewport', () => {
   assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
   assert.match(css, /prefers-reduced-motion: reduce/)
 })
+
+test('Home portal phases remain observable under a saturated browser host', () => {
+  assert.match(assetHome, /const traversalHold = reducedMotion \? 80 : 560/)
+  assert.match(assetHome, /const closingHold = reducedMotion \? 60 : 360/)
+  assert.match(assetHome, /schedule\(traversalDelay,[\s\S]*setPhase\('traversal'\)[\s\S]*schedule\(traversalHold,[\s\S]*setPhase\('closing'\)[\s\S]*schedule\(closingHold,[\s\S]*requestUraiWorldTravel/)
+  assert.doesNotMatch(assetHome, /const closingDelay =|const travelDelay =/)
+})
