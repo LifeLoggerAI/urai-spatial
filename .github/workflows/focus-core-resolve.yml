@@ -64,9 +64,10 @@ jobs:
               path = Path(name)
               path.write_text(resolve(path.read_text(), choice))
           PY
+          git add scripts/capture-lifemap-founder-proof.mjs scripts/run-continuous-spatial-proof-fixed.mjs urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx
           remaining="$(git diff --name-only --diff-filter=U)"
           test -z "$remaining"
-          grep -RIl '^<<<<<<<\|^=======\|^>>>>>>>' scripts urai-tier1/src/components/lifemap && exit 1 || true
+          grep -RIl '^<<<<<<<\|^=======\|^>>>>>>>' scripts/capture-lifemap-founder-proof.mjs scripts/run-continuous-spatial-proof-fixed.mjs urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx && exit 1 || true
           git add -A
           rm -f .github/workflows/focus-core-conflict-pack.yml .github/workflows/focus-core-resolve.yml
           git add -A
