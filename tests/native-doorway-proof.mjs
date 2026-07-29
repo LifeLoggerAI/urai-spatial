@@ -75,6 +75,7 @@ async function prove(browser, doorway, testCase) {
       return declaredNonDominant && visuallyQuiet && spatiallyBounded
     })
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
+    if (testCase.method !== 'keyboard') await target.scrollIntoViewIfNeeded()
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
