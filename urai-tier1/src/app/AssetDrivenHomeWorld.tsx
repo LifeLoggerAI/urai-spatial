@@ -16,6 +16,7 @@ import {
   useMovementInput,
   type MovementInput,
 } from '@/spatial/navigation/EmbodiedNavigation'
+import { resolveReadyUraiSensoryAssetPath } from '@/spatial/assets/sensoryAssetManifest'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 const SPAWN = new THREE.Vector3(0, 0, 7.2)
@@ -439,15 +440,16 @@ function requestedReviewOrbState(reviewMode: boolean): OrbState | null {
 
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
   const [reviewMode, setReviewMode] = useState(false)
-useEffect(() => {
-  setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
-}, [])
+  useEffect(() => {
+    setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
+  }, [])
   const forcedAssetFailure = useMemo(() => reviewMode && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetFailure') === '1', [reviewMode])
   const forcedOrbState = useMemo(() => requestedReviewOrbState(reviewMode), [reviewMode])
   const { scene, loading } = useHomePersonalizedScene()
   const chamber = resolveHomeRuntimeAsset('home-entry-chamber-model-v1', reviewMode)
   const portal = resolveHomeRuntimeAsset('portal-ring-master-glb-v1', reviewMode)
   const orb = resolveHomeRuntimeAsset('urai-orb-avatar-glb-v1', reviewMode)
+  const ambientAudioPath = resolveReadyUraiSensoryAssetPath('ambientAudio')
   const reducedMotion = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
   const audioRef = useRef<HTMLAudioElement>(null)
   const [muted, setMuted] = useState(true)
@@ -479,19 +481,20 @@ useEffect(() => {
   }, [forcedOrbState, scene.mode])
 
   useEffect(() => {
-  const shouldHold = reviewMode && new URLSearchParams(window.location.search).get('homeLoadingHold') === '1'
-  if (!shouldHold) {
-    setReviewLoadingHeld(false)
-    return
-  }
-  setReviewLoadingHeld(true)
-  const timer = window.setTimeout(() => setReviewLoadingHeld(false), 1800)
-  return () => window.clearTimeout(timer)
-}, [reviewMode])
+    const shouldHold = reviewMode && new URLSearchParams(window.location.search).get('homeLoadingHold') === '1'
+    if (!shouldHold) {
+      setReviewLoadingHeld(false)
+      return
+    }
+    setReviewLoadingHeld(true)
+    const timer = window.setTimeout(() => setReviewLoadingHeld(false), 1800)
+    return () => window.clearTimeout(timer)
+  }, [reviewMode])
 
-const markAssetsReady = useCallback(() => setAssetsReady(true), [])
+  const markAssetsReady = useCallback(() => setAssetsReady(true), [])
 
   const toggleAudio = useCallback(async () => {
+    if (!ambientAudioPath) return
     const audio = audioRef.current
     if (!audio) return
     if (muted) {
@@ -502,7 +505,7 @@ const markAssetsReady = useCallback(() => setAssetsReady(true), [])
       audio.muted = true
       setMuted(true)
     }
-  }, [muted])
+  }, [ambientAudioPath, muted])
 
   const missingAsset = !chamber.path || !portal.path || !orb.path
   const canonicalFallback = [chamber.mode, portal.mode, orb.mode].includes('fallback')
@@ -512,6 +515,7 @@ const markAssetsReady = useCallback(() => setAssetsReady(true), [])
   if (canonicalFallback) return <HomeFallback reason="canonical-fallback" onOrbOpen={onOrbOpen} />
 
   const fallback = <HomeFallback reason="runtime-error" onOrbOpen={onOrbOpen} />
+  const sensoryMuted = muted || !ambientAudioPath
   return <AssetRuntimeBoundary fallback={fallback}>
     <div
       className="urai-asset-home-world"
@@ -525,32 +529,32 @@ const markAssetsReady = useCallback(() => setAssetsReady(true), [])
       data-home-portal-sequence={portalEvidence}
       data-home-nearby={nearbyState ?? 'none'}
       data-home-camera-mode={dragging ? 'look' : 'embodied'}
-      data-home-audio={muted ? 'muted' : 'enabled'}
+      data-home-audio={!ambientAudioPath ? 'silent-fallback' : muted ? 'muted' : 'enabled'}
       data-home-review-disclosure={reviewMode ? 'candidate-not-approved' : 'none'}
       data-home-assets-ready={assetsReady ? 'true' : 'false'}
       {...look}
     >
       <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.68, 7.2], fov: 52, near: 0.08, far: 140 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>
         <Suspense fallback={<Html center><div className="home-world-loading-canvas" role="status">Your private world is forming</div></Html>}>
-          <Scene chamberPath={chamber.path} portalPath={portal.path} orbPath={orb.path} scene={scene} orbState={orbState} setOrbState={setOrbState} onOrbOpen={onOrbOpen} reducedMotion={reducedMotion} muted={muted} input={input} yaw={yaw} pitch={pitch} target={target} position={position} velocity={velocity} nearby={nearby} nearbyState={nearbyState} setNearby={setNearbyState} setPortalEvidence={setPortalEvidence} onAssetsReady={markAssetsReady} interactionRef={interactionRef} />
+          <Scene chamberPath={chamber.path} portalPath={portal.path} orbPath={orb.path} scene={scene} orbState={orbState} setOrbState={setOrbState} onOrbOpen={onOrbOpen} reducedMotion={reducedMotion} muted={sensoryMuted} input={input} yaw={yaw} pitch={pitch} target={target} position={position} velocity={velocity} nearby={nearby} nearbyState={nearbyState} setNearby={setNearbyState} setPortalEvidence={setPortalEvidence} onAssetsReady={markAssetsReady} interactionRef={interactionRef} />
         </Suspense>
       </Canvas>
       {!assetsReady || reviewLoadingHeld ? <div className="home-world-loading" role="status" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
-      <audio ref={audioRef} src="/assets/urai/generated/audio/urai-ambient-bed-v1.opus" loop preload="none" muted aria-hidden="true" />
+      {ambientAudioPath ? <audio ref={audioRef} src={ambientAudioPath} loop preload="none" muted aria-hidden="true" /> : null}
       <div className="home-discreet-controls">
-        <button className="home-audio" type="button" aria-pressed={!muted} onClick={toggleAudio}>{muted ? 'Enable ambience' : 'Mute ambience'}</button>
+        <button className="home-audio" type="button" aria-pressed={ambientAudioPath ? !muted : false} aria-disabled={!ambientAudioPath} disabled={!ambientAudioPath} onClick={toggleAudio}>{ambientAudioPath ? (muted ? 'Enable ambience' : 'Mute ambience') : 'Ambience unavailable'}</button>
         <button className="home-why" type="button" aria-expanded={whyOpen} onClick={() => setWhyOpen((value) => !value)}>Why am I seeing this?</button>
       </div>
       {whyOpen ? <aside className="home-provenance" aria-label="Home source explanation"><strong>{scene.reviewFixture === 'safe-private' ? 'Disclosed safe-private fixture' : scene.mode === 'explicit-sample' ? 'Disclosed sample world' : loading ? 'World forming' : 'Private Home source'}</strong><p>{scene.environment.explanation}</p>{scene.places.slice(0, 4).map((place) => <p key={place.id}>{place.title}: {place.explanation}</p>)}<a href="/privacy-controls">Review consent</a><a href="/passport">Correct, hide, or delete sources</a></aside> : null}
       <MobileMovementPad input={input} label="Home movement controls" />
-      <div className="sr-only" aria-live="polite">{resolveOrbSensoryOutput(orbState, reducedMotion, muted).announcement}</div>
+      <div className="sr-only" aria-live="polite">{resolveOrbSensoryOutput(orbState, reducedMotion, sensoryMuted).announcement}</div>
       <style jsx>{`
         .urai-asset-home-world{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:${dragging ? 'grabbing' : 'grab'};background:#102521}
         .urai-asset-home-world :global(canvas){position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
         .home-world-loading{position:absolute;inset:0;z-index:35;display:grid;place-content:center;gap:14px;text-align:center;background:radial-gradient(circle at 50% 52%,rgba(80,139,119,.2),rgba(8,25,22,.94) 48%,#081b18 100%);color:#eef8f3;font:600 13px/1.3 system-ui;letter-spacing:.03em;pointer-events:none;transition:opacity .35s ease}.home-world-loading span{width:52px;height:52px;margin:auto;border:1px solid rgba(190,232,218,.34);border-radius:50%;box-shadow:0 0 34px rgba(109,201,174,.2),inset 0 0 22px rgba(109,201,174,.12);animation:home-forming-breath 1.8s ease-in-out infinite}.home-world-loading-canvas{padding:10px 14px;border:1px solid rgba(190,232,218,.25);border-radius:999px;background:rgba(8,25,22,.82);color:#eef8f3;font:600 12px/1.2 system-ui;white-space:nowrap}@keyframes home-forming-breath{50%{transform:scale(1.08);opacity:.68}}
         .home-discreet-controls{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:40;display:flex;gap:8px;align-items:center;opacity:.72;transition:opacity .2s ease}.home-discreet-controls:hover,.home-discreet-controls:focus-within{opacity:1}
         .home-why,.home-audio{min-height:42px;padding:0 13px;border:1px solid rgba(220,241,236,.18);border-radius:999px;background:rgba(7,18,19,.62);color:#eff9f5;font:600 11px/1 system-ui;backdrop-filter:blur(12px)}
-        .home-audio[aria-pressed="true"]{border-color:rgba(157,218,198,.48);background:rgba(20,54,45,.7)}
+        .home-audio[aria-pressed="true"]{border-color:rgba(157,218,198,.48);background:rgba(20,54,45,.7)}.home-audio:disabled{opacity:.58;cursor:not-allowed}
         .home-provenance{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(64px,calc(env(safe-area-inset-bottom) + 54px));z-index:41;width:min(360px,calc(100vw - 28px));max-height:50vh;overflow:auto;padding:16px;border:1px solid rgba(220,241,236,.2);border-radius:18px;background:rgba(7,18,19,.92);color:#eff9f5;font:500 12px/1.45 system-ui}.home-provenance p{margin:8px 0}.home-provenance a{display:inline-block;margin:8px 14px 0 0;color:#bde8e5}
         :global(.home-world-context){padding:8px 12px;border:1px solid rgba(230,246,240,.22);border-radius:999px;background:rgba(6,18,19,.7);color:#f3fbf8;font:650 12px/1 system-ui;white-space:nowrap;pointer-events:none}
         @media(max-width:700px){.home-discreet-controls{bottom:max(92px,calc(env(safe-area-inset-bottom) + 82px));max-width:calc(100vw - 28px);flex-wrap:wrap;opacity:.62}.home-provenance{bottom:max(142px,calc(env(safe-area-inset-bottom) + 132px));max-height:42vh}.home-audio,.home-why{font-size:10px;padding:0 11px}}
