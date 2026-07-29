@@ -23,10 +23,8 @@ jobs:
           set -euo pipefail
           git config user.name "urai-release-bot"
           git config user.email "actions@users.noreply.github.com"
-          set +e
-          git merge --no-ff --no-commit 6e7a7f59ea8537ad516c4dbdfd832718ebf0f507
-          merge_status=$?
-          set -e
+          merge_status=0
+          git merge --no-ff --no-commit 6e7a7f59ea8537ad516c4dbdfd832718ebf0f507 || merge_status=$?
           test "$merge_status" -ne 0
           python3 - <<'PY'
           from pathlib import Path
