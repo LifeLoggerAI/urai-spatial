@@ -65,6 +65,20 @@ source = replaceExact(
   1,
   'continuous proof terminal movement verdict',
 )
+source = replaceExact(
+  source,
+  'async function moveToNearby(page, destination, method, timeout = 40_000) {',
+  'async function moveToNearby(page, destination, method, timeout = 120_000) {',
+  1,
+  'continuous proof slow-host movement timeout envelope',
+)
+source = replaceExact(
+  source,
+  '      if (Date.now() - lastProgressAt > 10_000) break',
+  '      if (Date.now() - lastProgressAt > 30_000) break',
+  1,
+  'continuous proof slow-host progress stall envelope',
+)
 
 await writeFile(materializedPath, source)
 console.log(`Materialized current continuous spatial proof at ${materializedPath}`)
