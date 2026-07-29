@@ -24,6 +24,18 @@ source = replaceExact(
 )
 source = replaceExact(
   source,
+  `  const canvas = owner.locator('canvas').first()
+  const rect = await canvas.boundingBox()`,
+  `  const canvas = owner.locator('canvas').first()
+  const rect = await canvas.evaluate((node) => {
+    const bounds = node.getBoundingClientRect()
+    return { width: bounds.width, height: bounds.height }
+  })`,
+  1,
+  'continuous proof in-page canvas measurement',
+)
+source = replaceExact(
+  source,
   `  const requiredMode = expected.assetMode || (expectReady ? 'ready' : 'disclosed-review-candidate')
   const passed = result.ownerCount === 1`,
   `  const semanticNonDominant = await semantic.evaluate((node) => {
