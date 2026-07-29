@@ -26,46 +26,34 @@ jobs:
           mkdir proof
           unzip -q home-proof.zip -d proof
 
-      - name: Inventory packet
-        run: |
-          set -euo pipefail
-          find proof -type f -printf '%P\t%s\n' | sort > artifact-inventory.tsv
-          find proof -type f | grep -Ei '\.(png|jpg|jpeg|webp|gif)$' | sort > image-files.txt || true
-          find proof -type f | grep -Ei '\.(webm|mp4|mov)$' | sort > video-files.txt || true
-          find proof -type f | grep -Ei '\.(json|txt|md|log|html)$' | sort > evidence-files.txt || true
-          printf 'artifact_id=8717996891\nartifact_sha=51db7b3ba77a657659da34ca5e146e049dd03d31\nartifact_zip_sha256=ae4acc458786c68a4e2e10a0d14c920dd0433caaf68ac8deefdc747b1bf2e817\n' > authority.txt
-
-      - name: Build visual contact sheets and video frames
+      - name: Build bounded inspection packet
         run: |
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq imagemagick ffmpeg
           mkdir -p packet/thumbs packet/video-frames packet/text
-          while IFS= read -r f; do
+          find proof -type f -printf '%P\t%s\n' | sort > packet/artifact-inventory.tsv
+          printf 'artifact_id=8717996891\nartifact_sha=51db7b3ba77a657659da34ca5e146e049dd03d31\nartifact_zip_sha256=ae4acc458786c68a4e2e10a0d14c920dd0433caaf68ac8deefdc747b1bf2e817\n' > packet/authority.txt
+          while IFS= read -r -d '' f; do
             rel="${f#proof/}"
             key="$(printf '%s' "$rel" | sha256sum | cut -c1-16)"
-            convert "$f" -auto-orient -thumbnail '480x480>' -background black -gravity south -splice 0x42 -fill white -pointsize 16 -annotate +0+10 "$rel" "packet/thumbs/${key}.jpg" || true
-          done < image-files.txt
-          while IFS= read -r f; do
+            convert "$f" -auto-orient -thumbnail '720x720>' -quality 82 "packet/thumbs/${key}.jpg" || true
+            printf '%s\t%s\n' "$key" "$rel" >> packet/image-map.tsv
+          done < <(find proof -type f -iregex '.*\.\(png\|jpg\|jpeg\|webp\|gif\)' -print0)
+          while IFS= read -r -d '' f; do
             rel="${f#proof/}"
             key="$(printf '%s' "$rel" | sha256sum | cut -c1-16)"
-            ffmpeg -hide_banner -loglevel error -i "$f" -vf "fps=1/5,scale=480:-2" -frames:v 12 "packet/video-frames/${key}-%02d.jpg" || true
-          done < video-files.txt
-          find packet/thumbs packet/video-frames -type f -name '*.jpg' | sort > montage-input.txt
-          if test -s montage-input.txt; then
-            split -l 80 montage-input.txt packet/chunk-
-            for chunk in packet/chunk-*; do
-              montage @"$chunk" -tile 5x -geometry 480x480+8+8 "${chunk}.jpg"
-              rm "$chunk"
-            done
-          fi
-          while IFS= read -r f; do
+            ffmpeg -hide_banner -loglevel error -i "$f" -vf "fps=1/4,scale=720:-2" -frames:v 15 "packet/video-frames/${key}-%02d.jpg" || true
+            printf '%s\t%s\n' "$key" "$rel" >> packet/video-map.tsv
+          done < <(find proof -type f -iregex '.*\.\(webm\|mp4\|mov\)' -print0)
+          while IFS= read -r -d '' f; do
             rel="${f#proof/}"
             key="$(printf '%s' "$rel" | sha256sum | cut -c1-16)"
-            head -c 200000 "$f" > "packet/text/${key}.txt" || true
-          done < evidence-files.txt
-          cp authority.txt artifact-inventory.tsv image-files.txt video-files.txt evidence-files.txt packet/
-          du -ah packet | sort -h > packet/packet-sizes.txt
+            head -c 300000 "$f" > "packet/text/${key}.txt" || true
+            printf '%s\t%s\n' "$key" "$rel" >> packet/text-map.tsv
+          done < <(find proof -type f -iregex '.*\.\(json\|txt\|md\|log\|html\)' -print0)
+          find packet -type f -printf '%P\t%s\n' | sort > packet/packet-inventory.tsv
+          du -sb packet > packet/packet-size.txt
 
       - name: Upload bounded inspection packet
         uses: actions/upload-artifact@v4
