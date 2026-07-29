@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-28T22:24:00-05:00",
+  "canonicalBaseline": "748e50398d85effeaa4ed17aaf78d4076dddbb45",
+  "classification": {
+    "passportRoute": "launch-critical-functional-surface-present",
+    "statusRoute": "launch-critical-truth-and-fingerprint-surface",
+    "passportStatusSharedGlb": "post-launch-visual-upgrade-unless-separately-approved",
+    "productionClaim": "baseline-only-until-next-exact-merged-sha-is-deployed-and-custom-domain-verified"
+  },
+  "modelAuthority": {
+    "assetId": "passport-status-room-glb-v1",
+    "canonicalStatus": "missing",
+    "approvedHash": null,
+    "runtimePromotionAuthorized": false,
+    "fallbackAssetId": "passport-identity-plinth-proof-fallback",
+    "finding": "The absent final shared room model is real visual debt but does not remove the existing ownership-vault route, its procedural WebGL world, or its explicit no-WebGL fallback."
+  },
+  "existingPassportSurface": {
+    "owner": "urai-tier1/src/app/passport/PassportVaultClient.tsx",
+    "routeOwner": "passport-ownership-vault",
+    "world": "procedural Canvas vault with identity, consent, source, device, provenance, export, deletion, audit and recovery zones",
+    "states": ["loading", "private", "demo", "signed-out", "empty", "offline", "unavailable"],
+    "privacyBoundaries": [
+      "sample data requires explicit demo=1",
+      "unconfigured or unavailable private services never substitute sample data",
+      "exports and deletions require authorized recent authentication",
+      "nothing is called exported, ready or deleted until trusted backend state proves it"
+    ],
+    "accessibilityAndFallback": [
+      "skip link to vault controls",
+      "keyboard Home and Escape behavior",
+      "reduced-motion Float and controls behavior",
+      "no-WebGL fallback states that all records and actions remain available",
+      "live status messages and explicit demonstration disclosure"
+    ],
+    "existingVisualAssets": [
+      "urai-tier1/public/urai/assets/passport/passport-vault-fallback.svg",
+      "urai-tier1/public/assets/urai/bespoke/passport/passport-vault-bespoke-final.svg",
+      "urai-tier1/public/assets/urai/bespoke/passport/passport-vault-bespoke-final-mobile.svg",
+      "urai-tier1/public/assets/urai/final/tier2/passport/passport-vault-desktop.svg",
+      "urai-tier1/public/assets/urai/final/tier2/passport/passport-vault-mobile.svg",
+      "urai-tier1/public/assets/urai/final/tier2/passport/passport-consent-seal.svg",
+      "urai-tier1/public/assets/urai/final/tier2/passport/passport-ownership-panel.svg",
+      "urai-tier1/public/assets/urai/final/tier2/passport/passport-provenance-thread.svg"
+    ]
+  },
+  "existingStatusSurface": {
+    "owner": "urai-tier1/src/app/status/StatusReleaseAuthority.tsx",
+    "authority": "release-fingerprint.json on https://urai.app only",
+    "failClosed": true,
+    "candidateSubstitutionAllowed": false,
+    "headline": "Launch locked. Proof before expansion.",
+    "requiredBeforeNextReleaseClaim": [
+      "exact merged main SHA",
+      "protected deployment receipt",
+      "independently fetched public fingerprint",
+      "custom-domain desktop and mobile route smoke",
+      "distinct executable rollback SHA"
+    ]
+  },
+  "decision": {
+    "coreReleaseBlockedByMissingSharedModel": false,
+    "passportRouteMayBeRemovedOrCalledCompleteBecauseFallbackExists": false,
+    "statusMayReportNextCandidateAsLive": false,
+    "nextAction": "Keep the current functional Passport route and deterministic fallbacks in the core matrix. Produce and visually approve a final shared Passport/Status GLB in a separate asset lane without destabilizing Home, Life Map, Focus or Replay."
+  }
+}
