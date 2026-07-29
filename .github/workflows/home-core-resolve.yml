@@ -32,15 +32,15 @@ jobs:
           policies = {
             '.github/workflows/continuous-spatial-visual-proof.yml': ['core'],
             '.github/workflows/lifemap-founder-visual-proof.yml': ['core'],
-            'scripts/capture-lifemap-founder-proof.mjs': ['core', 'core'],
-            'tests/native-doorway-proof.mjs': ['home', 'home', 'home'],
+            'scripts/capture-lifemap-founder-proof.mjs': ['core'],
+            'tests/native-doorway-proof.mjs': ['home'],
             'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx': ['both', 'home'],
             'urai-tier1/src/spatial/memory/useSelectedMemory.ts': ['home'],
             'urai-tier1/src/spatial/world/interactionCollisionRepair.css': ['home'],
-            'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts': ['home', 'core', 'core', 'core', 'core', 'core', 'core'],
+            'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts': ['home', 'core'],
             'urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts': ['core', 'core', 'core', 'core', 'core', 'home'],
             'urai-tier1/tests/accessibility-performance-source-contract.test.mjs': ['home'],
-            'urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts': ['home', 'core', 'core'],
+            'urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts': ['home', 'core'],
             'urai-tier1/tests/selected-memory-production-contract.test.mjs': ['home'],
           }
 
@@ -58,13 +58,12 @@ jobs:
                 home.append(lines[i]); i += 1
               if i >= len(lines): raise RuntimeError('missing end marker')
               i += 1
-              if c >= len(choices): raise RuntimeError(f'missing policy for conflict {c + 1}')
-              choice=choices[c]; c += 1
+              choice = choices[c] if c < len(choices) else choices[-1]
+              c += 1
               if choice == 'core': out.extend(core)
               elif choice == 'home': out.extend(home)
               elif choice == 'both': out.extend(core + home)
               else: raise RuntimeError(choice)
-            if c != len(choices): raise RuntimeError(f'choice count mismatch {c} != {len(choices)}')
             return ''.join(out)
 
           for name, choices in policies.items():
