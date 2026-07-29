@@ -162,22 +162,25 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           && url.searchParams.get('entryPortal') === expected.entryPortal
           && url.searchParams.get('cameraCheckpoint') === expected.cameraCheckpoint
         const phaseNames = history.phases.map((entry) => String(entry.phase || ''))
-        const openingObserved = phaseNames.includes(\`\${destination}:opening\`)
-        const traversalObserved = phaseNames.includes(\`\${destination}:traversal\`)
-        const closingObserved = phaseNames.includes(\`\${destination}:closing\`)
-        // On a saturated software-rendered host, traversal and closing timers can
-        // commit in one React batch. Exact opening + closing + route identity still
-        // proves the full bounded lifecycle without accepting a URL-only success.
-        return routeSettled && openingObserved && closingObserved
+        const openingIndex = phaseNames.indexOf(\`\${destination}:opening\`)
+        const traversalIndex = phaseNames.indexOf(\`\${destination}:traversal\`)
+        const closingIndex = phaseNames.indexOf(\`\${destination}:closing\`)
+        const orderedLifecycle = openingIndex >= 0
+          && traversalIndex > openingIndex
+          && closingIndex > traversalIndex
+        return routeSettled && orderedLifecycle
       }, { expected: expectedRoute, key: historyKey, destination }, { timeout: 90_000, polling: 100 })
 
       routeEvidence = await page.evaluate(({ expected, key, destination }) => {
         const url = new URL(location.href)
         const history = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}')
         const phaseNames = history.phases.map((entry) => String(entry.phase || ''))
-        const openingObserved = phaseNames.includes(\`\${destination}:opening\`)
-        const traversalObserved = phaseNames.includes(\`\${destination}:traversal\`)
-        const closingObserved = phaseNames.includes(\`\${destination}:closing\`)
+        const openingIndex = phaseNames.indexOf(\`\${destination}:opening\`)
+        const traversalIndex = phaseNames.indexOf(\`\${destination}:traversal\`)
+        const closingIndex = phaseNames.indexOf(\`\${destination}:closing\`)
+        const orderedLifecycle = openingIndex >= 0
+          && traversalIndex > openingIndex
+          && closingIndex > traversalIndex
         return {
           href: url.href,
           pathname: url.pathname,
@@ -189,12 +192,10 @@ const repairedPortal = `async function capturePortalSequence(browser) {
             && url.searchParams.get('entryPortal') === expected.entryPortal
             && url.searchParams.get('cameraCheckpoint') === expected.cameraCheckpoint,
           phases: history.phases,
-          phaseObserved: history.phases.some((entry) => String(entry.phase || '').includes(':')),
-          openingObserved,
-          traversalObserved,
-          closingObserved,
-          lifecycleObserved: openingObserved && closingObserved,
-          traversalCoalescedByHost: openingObserved && closingObserved && !traversalObserved,
+          openingObserved: openingIndex >= 0,
+          traversalObserved: traversalIndex >= 0,
+          closingObserved: closingIndex >= 0,
+          lifecycleObserved: orderedLifecycle,
         }
       }, { expected: expectedRoute, key: historyKey, destination })
     } catch (error) {
@@ -203,9 +204,9 @@ const repairedPortal = `async function capturePortalSequence(browser) {
         const url = new URL(location.href)
         const phases = JSON.parse(sessionStorage.getItem(key) || '{"phases":[]}').phases
         const phaseNames = phases.map((entry) => String(entry.phase || ''))
-        const openingObserved = phaseNames.includes(\`\${destination}:opening\`)
-        const traversalObserved = phaseNames.includes(\`\${destination}:traversal\`)
-        const closingObserved = phaseNames.includes(\`\${destination}:closing\`)
+        const openingIndex = phaseNames.indexOf(\`\${destination}:opening\`)
+        const traversalIndex = phaseNames.indexOf(\`\${destination}:traversal\`)
+        const closingIndex = phaseNames.indexOf(\`\${destination}:closing\`)
         return {
           href: url.href,
           pathname: url.pathname,
@@ -213,11 +214,10 @@ const repairedPortal = `async function capturePortalSequence(browser) {
           cameraCheckpoint: url.searchParams.get('cameraCheckpoint'),
           from: url.searchParams.get('from'),
           phases,
-          openingObserved,
-          traversalObserved,
-          closingObserved,
-          lifecycleObserved: openingObserved && closingObserved,
-          traversalCoalescedByHost: openingObserved && closingObserved && !traversalObserved,
+          openingObserved: openingIndex >= 0,
+          traversalObserved: traversalIndex >= 0,
+          closingObserved: closingIndex >= 0,
+          lifecycleObserved: openingIndex >= 0 && traversalIndex > openingIndex && closingIndex > traversalIndex,
         }
       }, { key: historyKey, destination }).catch(() => null)
     }
@@ -225,10 +225,21 @@ const repairedPortal = `async function capturePortalSequence(browser) {
     screenshot = path.join(outputDir, \`\${id}-\${activationFailure ? 'failed' : 'settled'}-\${exactHead.slice(0, 12)}.png\`)
     await page.screenshot({ path: screenshot }).catch(() => {})
     const rawDiagnostics = diagnostics()
-    const ignoredAbortedRequests = rawDiagnostics.failedRequests.filter((request) => String(request.failure || '').includes('ERR_ABORTED'))
+    const proofOrigin = new URL(base).origin
+    const isBenignNavigationAbort = (request) => {
+      if (!routeEvidence?.routeSettled || !String(request.failure || '').includes('ERR_ABORTED')) return false
+      try {
+        const requestUrl = new URL(request.url)
+        return requestUrl.origin === proofOrigin
+          && /^\/assets\/urai\/final\/manifests\/v[234]-asset-factory-spatial-handoff\.json$/.test(requestUrl.pathname)
+      } catch {
+        return false
+      }
+    }
+    const ignoredAbortedRequests = rawDiagnostics.failedRequests.filter(isBenignNavigationAbort)
     const diagnosticResult = {
       ...rawDiagnostics,
-      failedRequests: rawDiagnostics.failedRequests.filter((request) => !String(request.failure || '').includes('ERR_ABORTED')),
+      failedRequests: rawDiagnostics.failedRequests.filter((request) => !isBenignNavigationAbort(request)),
       ignoredAbortedRequests,
     }
     const video = await closeAndRecordVideo(context, page, id)
