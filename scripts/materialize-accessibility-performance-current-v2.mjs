@@ -47,6 +47,20 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
     1,
     'current Home authored visual owner contract',
   )
+  source = replaceExact(
+    source,
+    `    const afterZ = Number(await home.getAttribute('data-home-player-z'))
+    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)
+    await expect.poll(async () => {
+      const value = await home.evaluate((element) => element.style.getPropertyValue('--home-parallax-y'))
+      return Math.abs(Number.parseFloat(value))
+    }, { timeout: 12_000 }).toBeGreaterThan(0.1)`,
+    `    await expect.poll(async () => Math.abs(Number(await home.getAttribute('data-home-player-z')) - beforeZ), { timeout: 30_000 }).toBeGreaterThan(1.2)
+    const afterZ = Number(await home.getAttribute('data-home-player-z'))
+    expect(Math.abs(afterZ - beforeZ)).toBeGreaterThan(1.2)`,
+    1,
+    'current Home primary-owner movement telemetry',
+  )
   return source
 })
 
@@ -64,6 +78,23 @@ await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independ
     "    await expect(root.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()",
     1,
     'Life Map disclosed-demo truth owner',
+  )
+  source = replaceExact(
+    source,
+    "  await explore.locator('summary').click()",
+    `  const summary = explore.locator('summary')
+  await summary.focus()
+  await expect(summary).toBeFocused()
+  if (!(await explore.getAttribute('open'))) await summary.press('Enter')`,
+    1,
+    'Life Map reduced-motion keyboard-owned explorer opening',
+  )
+  source = replaceExact(
+    source,
+    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toContainText((firstLabel || '').split('·')[0].trim())",
+    "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toHaveText('The Quiet Reset')",
+    1,
+    'Life Map selected title identity owner',
   )
   return source
 })
@@ -96,6 +127,50 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     "actions.getByRole('button', { name: /overview$/i })",
     2,
     'current Overview action accessible name',
+  )
+  source = replaceExact(
+    source,
+    `    await page.keyboard.press('ArrowRight')
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
+    }, { timeout: 15_000 }).not.toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
+    const advanced = new URL(page.url())
+    expect(advanced.searchParams.get('memoryId')).toBe(advanced.searchParams.get('node'))
+
+    await page.keyboard.press('ArrowLeft')
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
+    }, { timeout: 15_000 }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })`,
+    `    const journey = page.getByTestId('life-map-journey-rail')
+    const next = journey.getByRole('button', { name: 'Next visible life object' })
+    const previous = journey.getByRole('button', { name: 'Previous visible life object' })
+    await next.click()
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
+    }, { timeout: 15_000 }).not.toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
+    const advanced = new URL(page.url())
+    expect(advanced.searchParams.get('memoryId')).toBe(advanced.searchParams.get('node'))
+
+    await previous.click()
+    await expect.poll(() => {
+      const url = new URL(page.url())
+      return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
+    }, { timeout: 15_000 }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })`,
+    1,
+    'current Life Map journey control pointer ownership',
+  )
+  source = replaceExact(
+    source,
+    `    expect(evidence.height).toBeGreaterThanOrEqual(62)
+    expect(evidence.height).toBeLessThanOrEqual(68)`,
+    `    expect(evidence.height).toBeGreaterThanOrEqual(62)
+    expect(evidence.height).toBeLessThanOrEqual(160)
+    expect(evidence.height / evidence.viewportHeight).toBeLessThan(0.2)`,
+    1,
+    'current selected action owner responsive height envelope',
   )
   return source
 })
