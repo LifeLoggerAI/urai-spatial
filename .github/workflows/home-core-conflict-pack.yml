@@ -20,6 +20,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git config user.name "urai-release-bot"
+          git config user.email "actions@users.noreply.github.com"
           mkdir -p conflict-pack/files
           merge_status=0
           git merge --no-commit --no-ff 51db7b3ba77a657659da34ca5e146e049dd03d31 || merge_status=$?
