@@ -20,6 +20,13 @@ if (!stableOriginal.includes('const movementTimeout = Math.max(timeout, 300_000)
   throw new Error('Continuous proof movement envelope changed; refusing portal repair')
 }
 
+const enabledFocusMarker = '  .replace(existingDriver, stableDriver)'
+if (stableOriginal.split(enabledFocusMarker).length - 1 !== 1) {
+  throw new Error('Continuous proof stable source transform changed; refusing enabled-focus repair')
+}
+const stablePatched = stableOriginal.replace(enabledFocusMarker, `  .replace(existingDriver, stableDriver)
+  .replace("const editableControl = page.locator('.home-discreet-controls button').first()", "const editableControl = page.locator('.home-discreet-controls button:not(:disabled)').first()")`)
+
 const portalFrameWait = 'await waitFrames(page, 1)'
 if (portalOriginal.split(portalFrameWait).length - 1 !== 2) {
   throw new Error('Portal corrective steering frame-wait contract changed; refusing host-clock repair')
@@ -38,9 +45,11 @@ const portalPatched = portalOriginal
   .replaceAll(portalFrameWait, 'await waitForMovementFrame(page)')
   .replace(manifestRegexSource, escapedManifestRegexSource)
 
+await writeFile(stableRunnerUrl, stablePatched, 'utf8')
 await writeFile(portalRunnerUrl, portalPatched, 'utf8')
 try {
   await import(`${portalRunnerUrl.href}?hostClock=${Date.now()}`)
 } finally {
+  await writeFile(stableRunnerUrl, stableOriginal, 'utf8').catch(() => {})
   await writeFile(portalRunnerUrl, portalOriginal, 'utf8').catch(() => {})
 }
