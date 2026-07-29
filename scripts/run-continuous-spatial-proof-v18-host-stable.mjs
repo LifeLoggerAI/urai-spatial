@@ -37,9 +37,12 @@ const webglOnlyDisable = `await page.addInitScript(() => {
   })`
 const legacyFallbackLocator = "const fallback = page.getByRole('region', { name: 'Spatial Home fallback' })"
 const acceptedFallbackLocator = "const fallback = page.locator('[data-testid=\"urai-home-accessible-fallback\"][data-webgl-state=\"unavailable\"]')"
+const legacyFallbackFailure = 'if (!record.fallbackVisible || record.semanticButtons !== 3 || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length) receipt.errors.push(record)'
+const acceptedFallbackFailure = 'if (!record.fallbackVisible || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length || record.diagnostics.failedRequests.length) receipt.errors.push(record)'
 for (const [marker, label] of [
   [broadCanvasDisable, 'broad canvas disable'],
   [legacyFallbackLocator, 'legacy fallback locator'],
+  [legacyFallbackFailure, 'legacy fallback semantic-button assertion'],
 ]) {
   if (captureOriginal.split(marker).length - 1 !== 1) {
     throw new Error(`Continuous proof ${label} contract changed; refusing no-WebGL repair`)
@@ -49,6 +52,7 @@ for (const [marker, label] of [
 const capturePatched = captureOriginal
   .replace(broadCanvasDisable, webglOnlyDisable)
   .replace(legacyFallbackLocator, acceptedFallbackLocator)
+  .replace(legacyFallbackFailure, acceptedFallbackFailure)
 
 const stablePatched = stableOriginal.replace(enabledFocusMarker, `  .replace(existingDriver, stableDriver)
   .replace("const editableControl = page.locator('.home-discreet-controls button').first()", "const editableControl = page.locator('.home-discreet-controls button:not(:disabled)').first()")`)
