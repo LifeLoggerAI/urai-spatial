@@ -13,6 +13,11 @@ import {
   type MovementInput,
 } from '@/spatial/navigation/EmbodiedNavigation'
 import {
+  markFirstSpatialFrame,
+  useAdaptiveSpatialQuality,
+  type SpatialQualityProfile,
+} from '@/spatial/performance/useAdaptiveSpatialQuality'
+import {
   buildReplaySpatialScene,
   filterReplayAnchorsForTruthMode,
   replayEvidenceDescription,
@@ -62,6 +67,18 @@ function useWebGLAvailable() {
   }, [])
 
   return available
+}
+
+function ReplayFirstFrame({ profile }: { profile: SpatialQualityProfile }) {
+  const marked = useRef(false)
+
+  useFrame(() => {
+    if (marked.current || !profile.documentVisible) return
+    marked.current = true
+    markFirstSpatialFrame('/replay', profile.tier)
+  })
+
+  return null
 }
 
 function ReplayCamera({ model, activeSegmentId, input, mode, reducedMotion, yaw, pitch, walkTarget, shellRef }: CameraProps) {
@@ -278,21 +295,31 @@ function CompanionOrb({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function ReplayScene({ model, selected, onSelect, ...cameraProps }: CameraProps & { selected: ReplayWorldAnchor | null; onSelect: (anchor: ReplayWorldAnchor | null) => void }) {
+function ReplayScene({ profile, model, selected, onSelect, ...cameraProps }: CameraProps & { profile: SpatialQualityProfile; selected: ReplayWorldAnchor | null; onSelect: (anchor: ReplayWorldAnchor | null) => void }) {
   const floorClick = (event: ThreeEvent<MouseEvent>) => {
     if (cameraProps.mode === 'explore' && event.delta <= 7) {
       cameraProps.walkTarget.current = new THREE.Vector3(event.point.x, 0, event.point.z)
     }
   }
+  const starCount = cameraProps.reducedMotion ? Math.min(180, profile.particleCount) : Math.max(180, Math.round(profile.particleCount * 1.2))
+  const shadowMapSize = profile.tier === 'high' ? 1536 : 1024
 
   return (
     <>
       <color attach="background" args={['#02060c']} />
       <fog attach="fog" args={['#07111a', 5.5, 25]} />
-      <ambientLight intensity={0.48} />
-      <hemisphereLight intensity={0.7} color="#dff9ff" groundColor="#08141c" />
-      <directionalLight position={[4, 9, 6]} intensity={1.55} color="#f3f7ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-      <Stars radius={52} depth={28} count={620} factor={2.1} fade speed={cameraProps.reducedMotion ? 0 : 0.025} />
+      <ambientLight intensity={0.42} color="#c7efff" />
+      <hemisphereLight args={['#d7f3ff', '#07111a', 0.78]} />
+      <directionalLight
+        position={[4, 9, 6]}
+        intensity={1.45}
+        color="#e5f7ff"
+        castShadow={profile.shadows}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
+      />
+      <Stars radius={52} depth={28} count={starCount} factor={2.1} saturation={0.22} fade speed={cameraProps.reducedMotion ? 0 : 0.025} />
+      <ReplayFirstFrame profile={profile} />
       <ReplayCamera model={model} {...cameraProps} />
       <ReplayFloor onClick={floorClick} />
       <MemoryArchitecture />
@@ -325,6 +352,8 @@ function ReplayMovementHelp() {
 
 export default function ReplaySpatialWorld({ memory, progressMs, activeSegmentId, playing, mode, reducedMotion, onModeChange, onAnchorSelect, onExit }: Props) {
   const webglAvailable = useWebGLAvailable()
+  const profile = useAdaptiveSpatialQuality()
+  const effectiveReducedMotion = reducedMotion || profile.reducedMotion
   const shellRef = useRef<HTMLDivElement | null>(null)
   const [truthMode, setTruthMode] = useState<ReplayTruthMode>('evidence')
   const [selected, setSelected] = useState<ReplayWorldAnchor | null>(null)
@@ -371,7 +400,7 @@ export default function ReplaySpatialWorld({ memory, progressMs, activeSegmentId
     yaw,
     pitch,
     enabled: mode === 'explore',
-    sensitivity: reducedMotion ? 0.0023 : 0.0037,
+    sensitivity: effectiveReducedMotion ? 0.0023 : 0.0037,
   })
 
   if (webglAvailable === null) {
@@ -398,16 +427,32 @@ export default function ReplaySpatialWorld({ memory, progressMs, activeSegmentId
       data-replay-truth-mode={truthMode}
       data-replay-playing={playing ? 'true' : 'false'}
       data-replay-progress-ms={progressMs}
+      data-replay-quality-tier={profile.tier}
+      data-replay-particle-budget={profile.particleCount}
+      data-replay-shadows={profile.shadows ? 'true' : 'false'}
       {...look}
     >
-      <Canvas camera={{ position: [0, CAMERA_HEIGHT, 7.2], fov: 56, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows>
+      <Canvas
+        camera={{ position: [0, CAMERA_HEIGHT, 7.2], fov: 56, near: 0.08, far: 100 }}
+        dpr={[1, profile.pixelRatioMax]}
+        shadows={profile.shadows}
+        frameloop={profile.documentVisible ? 'always' : 'never'}
+        gl={{ antialias: profile.antialias, powerPreference: 'high-performance', alpha: false }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping
+          gl.toneMappingExposure = 1.08
+          gl.outputColorSpace = THREE.SRGBColorSpace
+          gl.setClearColor('#02060c', 1)
+        }}
+      >
         <Suspense fallback={null}>
           <ReplayScene
+            profile={profile}
             model={model}
             activeSegmentId={activeSegmentId}
             input={input}
             mode={mode}
-            reducedMotion={reducedMotion}
+            reducedMotion={effectiveReducedMotion}
             yaw={yaw}
             pitch={pitch}
             walkTarget={walkTarget}
