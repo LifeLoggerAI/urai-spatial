@@ -6,17 +6,25 @@ on:
       - ops/cancel-superseded-actions-20260729
     paths:
       - '.github/workflows/cancel-superseded-actions.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cancel-superseded-actions.yml'
 
 permissions:
   actions: write
   contents: read
 
 concurrency:
-  group: cancel-superseded-exact-sha-runs
+  group: cancel-superseded-exact-sha-runs-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   cancel:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      ((github.event_name == 'push' && github.ref_name == 'ops/cancel-superseded-actions-20260729') ||
+       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'ops/cancel-superseded-actions-20260729'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
