@@ -99,6 +99,25 @@ body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
   pointer-events: none !important;
 }
 
+/* Keep the closed mobile search affordance clear of the selected-memory action rail. */
+@media (max-width: 760px) {
+  body:has([data-testid="urai-true-3d-life-map"][data-life-map-mode="selected"]) .life-map-navigator:not([open]) {
+    top: max(220px, calc(env(safe-area-inset-top) + 200px)) !important;
+    right: 12px !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px);
+  }
+
+  body:has([data-testid="urai-true-3d-life-map"][data-life-map-mode="selected"]) .life-map-navigator:not([open]) summary {
+    min-width: 132px;
+    min-height: 48px;
+    display: grid;
+    place-items: center;
+    padding: 10px 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto !important;
