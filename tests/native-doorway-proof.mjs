@@ -17,16 +17,28 @@ const doorways = [
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
-async function activate(target, method) {
+async function activate(page, target, method) {
   if (method === 'keyboard') {
-    await target.focus()
+    await target.evaluate((node) => node.focus({ preventScroll: true }))
     if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('semantic target did not receive focus')
-    return target.press('Enter', { noWaitAfter: true })
+    await page.keyboard.press('Enter')
+    return { targetOwnsHitPoint: true, hitPoint: null }
   }
-  // Pointer and touch world traversal are covered by the spatial movement proof.
-  // This lane proves that the non-dominant semantic escape hatch remains operable
-  // without restoring persistent visible website chrome.
-  return target.evaluate((node) => node.click())
+
+  await target.evaluate((node) => node.focus({ preventScroll: true }))
+  const box = await target.boundingBox()
+  if (!box) throw new Error('semantic target has no browser hit box')
+  if (box.width < 44 || box.height < 44) throw new Error(`semantic target below 44px minimum: ${box.width}x${box.height}`)
+  const hitPoint = { center: { x: box.x + box.width / 2, y: box.y + box.height / 2 } }
+  const targetOwnsHitPoint = await target.evaluate((node, point) => {
+    const hit = document.elementFromPoint(point.x, point.y)
+    return hit === node || Boolean(hit && node.contains(hit))
+  }, hitPoint.center)
+  if (!targetOwnsHitPoint) throw new Error('semantic target does not own its browser-coordinate hit point')
+
+  if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
+  else await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
+  return { targetOwnsHitPoint, hitPoint }
 }
 
 async function resolveTarget(page, doorway) {
@@ -45,7 +57,7 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'attached-semantic-control', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
@@ -59,7 +71,10 @@ async function prove(browser, doorway, testCase) {
       return nav.classList.contains('sr-only') && (rect.width <= 2 || style.clip !== 'auto' || style.clipPath !== 'none')
     })
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
-    await activate(target, testCase.method)
+    if (testCase.method !== 'keyboard') await target.scrollIntoViewIfNeeded()
+    const activation = await activate(page, target, testCase.method)
+    record.targetOwnsHitPoint = activation.targetOwnsHitPoint
+    record.hitPoint = activation.hitPoint
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
     record.success = normalize(record.resultingUrl) === doorway.destination
@@ -82,7 +97,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 8, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByMovementProof: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 9, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
