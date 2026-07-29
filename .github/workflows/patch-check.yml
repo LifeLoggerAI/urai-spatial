@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: patch-check-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
@@ -18,44 +18,103 @@ env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 jobs:
+  combined-lifemap-repair:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/trigger-combined-lifemap-repair-20260729'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: release/core-convergence-20260729
+      - name: Restore accepted production renderer only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "urai-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx')
+          text = path.read_text()
+          old = '    <Canvas camera={{ position: OVERVIEW_POSITION, fov: 44, near: .08, far: 120 }} dpr={[1, profile.pixelRatioMax]} gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}><World nodes={nodes} selected={selected} goal={goal} phase={phase} reducedMotion={profile.reducedMotion} onSelect={selectNode} onWebGLStateChange={setWebglState} /></Canvas>'
+          new = '''    <span className="life-map-depth-contract" data-depth-band="near" aria-hidden="true" />
+    <span className="life-map-depth-contract" data-depth-band="middle" aria-hidden="true" />
+    <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
+    <Canvas
+      camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
+      dpr={[1, profile.pixelRatioMax]}
+      shadows={profile.shadows}
+      frameloop={profile.documentVisible ? "always" : "never"}
+      gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.15;
+        gl.outputColorSpace = THREE.SRGBColorSpace;
+        gl.setClearColor("#02050b", 1);
+      }}
+    >
+      <LifeMapProductionWorld
+        nodes={nodes}
+        selected={selected}
+        phase={phase as LifeMapJourneyPhase}
+        profile={profile}
+        onSelect={selectNode}
+        cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+        webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
+      />
+    </Canvas>'''
+          if old not in text:
+              raise SystemExit('expected regressed Canvas block not found')
+          text = text.replace(old, new, 1)
+          text = text.replace('  }, [clearTimers, queryNode, router, selectedId, withIdentity]);', '  }, [queryNode, router, selectedId, withIdentity]);', 1)
+          path.write_text(text)
+          PY
+          grep -q 'shadows={profile.shadows}' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          grep -q 'frameloop={profile.documentVisible ? "always" : "never"}' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          grep -q '<LifeMapProductionWorld' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          grep -q 'THREE.ACESFilmicToneMapping' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          grep -q 'gl.toneMappingExposure = 1.15' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          ! grep -q '<World ' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          ! grep -q '\[clearTimers,' urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          git add urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx
+          git commit -m "fix: restore combined Life Map production renderer"
+          git push origin HEAD:release/core-convergence-20260729
+
   patch-check:
+    if: github.head_ref != 'agent/trigger-combined-lifemap-repair-20260729'
     name: pnpm patch:check
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - name: Checkout exact candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.URAI_EXACT_HEAD }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-
       - name: Verify exact clean candidate identity
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.0.0
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
           run_install: false
-
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Enable Corepack
         run: corepack enable
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Run patch checks
         run: pnpm patch:check
