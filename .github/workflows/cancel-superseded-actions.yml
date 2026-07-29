@@ -1,0 +1,101 @@
+name: Cancel superseded exact-SHA runs
+
+on:
+  push:
+    branches:
+      - ops/cancel-superseded-actions-20260729
+    paths:
+      - '.github/workflows/cancel-superseded-actions.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: cancel-superseded-exact-sha-runs
+  cancel-in-progress: false
+
+jobs:
+  cancel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Cancel only nonterminal superseded runs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+          CURRENT_HOME_SHA: 21adcc49b521d8ab23d363074dd3f7da32604711
+          SUPERSEDED_SHAS: >-
+            aaa874081a6534d7c0e28e7ae465f377f5046e9e
+            59193500bfd477b80d19ee0c278b4b9db6f2489a
+            afb25c714579732edcc4958ae532673c990e9681
+            955acf9aefbb97f82b490bcc048bc70f7d3c5396
+            5cb33027d3cba1e2b2c351aac613b76e725da34f
+            0a994ba7cc69b394f75b1293906cee65d420f21f
+        run: |
+          set -euo pipefail
+          receipt_dir="$RUNNER_TEMP/cancel-superseded"
+          mkdir -p "$receipt_dir"
+          : > "$receipt_dir/cancelled.tsv"
+          : > "$receipt_dir/already-terminal.tsv"
+
+          for sha in $SUPERSEDED_SHAS; do
+            test "$sha" != "$CURRENT_HOME_SHA"
+            response="$receipt_dir/runs-$sha.json"
+            curl --fail --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${sha}&per_page=100" \
+              > "$response"
+
+            node - "$response" "$CURRENT_RUN_ID" <<'NODE' > "$receipt_dir/nonterminal-$sha.tsv"
+          const fs = require('node:fs')
+          const [file, currentRunId] = process.argv.slice(2)
+          const payload = JSON.parse(fs.readFileSync(file, 'utf8'))
+          for (const run of payload.workflow_runs || []) {
+            if (String(run.id) === String(currentRunId)) continue
+            if (run.status !== 'completed') process.stdout.write(`${run.id}\t${run.name}\t${run.head_sha}\t${run.status}\n`)
+          }
+          NODE
+
+            while IFS=$'\t' read -r run_id name head_sha status; do
+              test -n "$run_id" || continue
+              http_status="$(curl --silent --show-error --output "$receipt_dir/cancel-$run_id.txt" --write-out '%{http_code}' \
+                --request POST \
+                --header "Accept: application/vnd.github+json" \
+                --header "Authorization: Bearer $GH_TOKEN" \
+                --header "X-GitHub-Api-Version: 2022-11-28" \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel")"
+              if test "$http_status" = 202; then
+                printf '%s\t%s\t%s\t%s\n' "$run_id" "$name" "$head_sha" "$status" >> "$receipt_dir/cancelled.tsv"
+              elif test "$http_status" = 409; then
+                printf '%s\t%s\t%s\t%s\n' "$run_id" "$name" "$head_sha" "$status" >> "$receipt_dir/already-terminal.tsv"
+              else
+                echo "Unexpected cancel status $http_status for run $run_id" >&2
+                cat "$receipt_dir/cancel-$run_id.txt" >&2
+                exit 1
+              fi
+            done < "$receipt_dir/nonterminal-$sha.tsv"
+          done
+
+          cat > "$receipt_dir/receipt.json" <<EOF
+          {
+            "schemaVersion": "urai-cancel-superseded-runs-1",
+            "repository": "$GITHUB_REPOSITORY",
+            "runId": "$GITHUB_RUN_ID",
+            "currentHomeShaProtected": "$CURRENT_HOME_SHA",
+            "productionMutationAttempted": false,
+            "repositoryContentMutationAttempted": false,
+            "environmentMutationAttempted": false
+          }
+          EOF
+
+      - name: Upload cancellation receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: superseded-run-cancellation-${{ github.run_id }}
+          path: ${{ runner.temp }}/cancel-superseded
+          if-no-files-found: error
+          retention-days: 7
