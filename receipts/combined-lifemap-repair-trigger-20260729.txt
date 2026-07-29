@@ -1,0 +1,1 @@
+Trigger the bounded repository-native repair for the exact combined Life Map production renderer regression detected by Spatial Performance Budget run 30468035003. This file is temporary and must not ship.
