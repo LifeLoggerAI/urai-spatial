@@ -39,6 +39,23 @@ test('Replay owns movement help copy without widening the shared navigation API'
   assert.doesNotMatch(world, /MovementHelp realm="Life Map"/)
 })
 
+test('Replay adopts the shared adaptive spatial performance and cinematic output contract', () => {
+  assert.match(world, /useAdaptiveSpatialQuality/)
+  assert.match(world, /markFirstSpatialFrame\('\/replay', profile\.tier\)/)
+  assert.match(world, /dpr=\{\[1, profile\.pixelRatioMax\]\}/)
+  assert.match(world, /shadows=\{profile\.shadows\}/)
+  assert.match(world, /frameloop=\{profile\.documentVisible \? 'always' : 'never'\}/)
+  assert.match(world, /antialias: profile\.antialias/)
+  assert.match(world, /powerPreference: 'high-performance'/)
+  assert.match(world, /THREE\.ACESFilmicToneMapping/)
+  assert.match(world, /THREE\.SRGBColorSpace/)
+  assert.match(world, /data-replay-quality-tier=\{profile\.tier\}/)
+  assert.match(world, /data-replay-particle-budget=\{profile\.particleCount\}/)
+  assert.match(world, /data-replay-shadows=\{profile\.shadows \? 'true' : 'false'\}/)
+  assert.match(world, /const effectiveReducedMotion = reducedMotion \|\| profile\.reducedMotion/)
+  assert.match(world, /const starCount = cameraProps\.reducedMotion \? Math\.min\(180, profile\.particleCount\)/)
+})
+
 test('Replay truth modes are enforced in both policy and the rendered anchor graph', () => {
   assert.match(model, /ReplayTruthMode/)
   for (const mode of ["'evidence'", "'reflection'", "'cinematic'", "'private-journal'"]) assert.match(model, new RegExp(mode))
