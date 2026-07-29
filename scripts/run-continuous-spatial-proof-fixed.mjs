@@ -203,6 +203,80 @@ if (!source.includes('selected route reaches stable arrival before ownership ver
       }, null, { timeout: 30_000, polling: 25 })
       // selected route reaches stable arrival before ownership verification
     }`,
+if (!source.includes('selectedJourneyRailTopmost')) {
+  replaceRequired(
+    'selected journey rail paint and hit verifier',
+    /const singleSelectedActionOwner = selectedMemoryControlsVisible && replayControlVisible\s*const canvas/,
+    `const singleSelectedActionOwner = selectedMemoryControlsVisible && replayControlVisible
+      const selectedJourneyRailGeometry = await page.locator('[data-testid="life-map-journey-rail"][data-selected="true"]').evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const style = getComputedStyle(element)
+        const buttons = [...element.querySelectorAll('button')].map((button) => {
+          const buttonRect = button.getBoundingClientRect()
+          const centerX = buttonRect.left + buttonRect.width / 2
+          const centerY = buttonRect.top + buttonRect.height / 2
+          const topmost = document.elementFromPoint(centerX, centerY)
+          const buttonStyle = getComputedStyle(button)
+          return {
+            label: button.textContent?.trim() || '',
+            width: buttonRect.width,
+            height: buttonRect.height,
+            topmostOwned: topmost === button || Boolean(topmost && button.contains(topmost)),
+            pointerEvents: buttonStyle.pointerEvents,
+            visibility: buttonStyle.visibility,
+            opacity: Number.parseFloat(buttonStyle.opacity || '1'),
+          }
+        })
+        return {
+          height: rect.height,
+          width: rect.width,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          visibility: style.visibility,
+          opacity: Number.parseFloat(style.opacity || '1'),
+          pointerEvents: style.pointerEvents,
+          backgroundColor: style.backgroundColor,
+          borderTopWidth: Number.parseFloat(style.borderTopWidth || '0'),
+          buttons,
+        }
+      })
+      const selectedJourneyRailCompact = selectedJourneyRailGeometry.height >= 60
+        && selectedJourneyRailGeometry.height <= 66
+        && selectedJourneyRailGeometry.height / selectedJourneyRailGeometry.viewportHeight < 0.1
+      const selectedJourneyRailContained = selectedJourneyRailGeometry.left >= -1
+        && selectedJourneyRailGeometry.right <= selectedJourneyRailGeometry.viewportWidth + 1
+        && selectedJourneyRailGeometry.top >= -1
+        && selectedJourneyRailGeometry.bottom <= selectedJourneyRailGeometry.viewportHeight + 1
+      const selectedJourneyRailPainted = selectedJourneyRailGeometry.visibility === 'visible'
+        && selectedJourneyRailGeometry.opacity > 0.9
+        && selectedJourneyRailGeometry.pointerEvents !== 'none'
+        && selectedJourneyRailGeometry.backgroundColor !== 'rgba(0, 0, 0, 0)'
+        && selectedJourneyRailGeometry.borderTopWidth >= 1
+        && selectedJourneyRailGeometry.buttons.map((button) => button.label).join('|') === 'Previous|Next|Overview'
+      const selectedJourneyRailTopmost = selectedJourneyRailGeometry.buttons.every((button) => button.topmostOwned)
+      const selectedJourneyRailTargets = selectedJourneyRailGeometry.buttons.length === 3
+        && selectedJourneyRailGeometry.buttons.every((button) => button.width >= 48
+          && button.height >= 48
+          && button.pointerEvents !== 'none'
+          && button.visibility === 'visible'
+          && button.opacity > 0.9)
+      const canvas`,
+  )
+  replaceRequired(
+    'selected journey rail receipt',
+    /singleSelectedActionOwner,\s*canvasSized:/,
+    `singleSelectedActionOwner,
+        selectedJourneyRailCompact,
+        selectedJourneyRailContained,
+        selectedJourneyRailPainted,
+        selectedJourneyRailTopmost,
+        selectedJourneyRailTargets,
+        selectedJourneyRailGeometry,
+        canvasSized:`,
   )
 }
 
