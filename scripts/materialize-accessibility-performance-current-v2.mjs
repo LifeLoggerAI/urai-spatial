@@ -73,7 +73,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     input,
     "          label: button.textContent?.trim() || '',",
     "          label: button.querySelector('strong')?.textContent?.trim() || button.textContent?.trim() || '',",
-    3,
+    2,
     'current selected and journey action visual label owner',
   )
   source = replaceExact(
