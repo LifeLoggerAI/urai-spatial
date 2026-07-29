@@ -10,6 +10,7 @@ const REQUESTED_PORT = Number(new URL(REQUESTED_BASE_URL).port || 3000);
 const FALLBACK_PORT = Number(process.env.URAI_SPATIAL_TEST_PORT || REQUESTED_PORT + 1);
 const MEMORY_ID = 'demo:seed-memory-bloom';
 const MANIFEST_ID = 'demo-manifest';
+const EXPECTED_ROUTE_PATHS = new Set(['/focus', '/replay', '/unwind', '/life-map']);
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -121,6 +122,21 @@ async function expectInsideViewport(locator, page, label, padding = 2) {
   }
 }
 
+function normalizedPathname(url) {
+  return url.pathname.replace(/\/+$/, '') || '/';
+}
+
+function isExpectedSameOriginJourneyAbort(request, failure, baseUrl) {
+  if (failure !== 'net::ERR_ABORTED' || !request.isNavigationRequest()) return false;
+  try {
+    const requested = new URL(request.url());
+    const authority = new URL(baseUrl);
+    return requested.origin === authority.origin && EXPECTED_ROUTE_PATHS.has(normalizedPathname(requested));
+  } catch {
+    return false;
+  }
+}
+
 async function openDemoReplay(page, baseUrl) {
   const focusUrl = `${baseUrl}/focus?memoryId=${encodeURIComponent(MEMORY_ID)}&demo=1`;
   await page.goto(focusUrl, { waitUntil: 'domcontentloaded' });
@@ -190,11 +206,12 @@ async function validateReplay(page, report, screenshotName) {
 async function run() {
   const server = await startServer();
   const report = {
-    schemaVersion: 'urai-replay-tier5-report-5',
+    schemaVersion: 'urai-replay-tier5-report-6',
     screenshots: [],
     console: [],
     pageErrors: [],
     requestFailures: [],
+    ignoredJourneyAborts: [],
     audits: [],
     selectors: {},
     bodyHtml: '',
@@ -222,7 +239,10 @@ async function run() {
     });
     page.on('requestfailed', (request) => {
       const failure = request.failure()?.errorText || null;
-      if (failure === 'net::ERR_ABORTED' && request.isNavigationRequest()) return;
+      if (isExpectedSameOriginJourneyAbort(request, failure, server.baseUrl)) {
+        report.ignoredJourneyAborts.push({ url: request.url(), error: failure });
+        return;
+      }
       report.requestFailures.push({ url: request.url(), error: failure });
     });
 
@@ -248,7 +268,11 @@ async function run() {
 
     const modeContract = '[data-scene-mode="replay"]';
     report.audits.push(`canonical data-scene-mode contract retained: ${modeContract}`);
+    report.audits.push('only expected same-origin Focus, Replay, Life Map, and unwind navigation aborts are classified as benign');
 
+    if (report.requestFailures.length) {
+      throw new Error(`Unexpected request failures detected:\n${JSON.stringify(report.requestFailures, null, 2)}`);
+    }
     if (consoleErrors.length) throw new Error(`Console errors detected:\n${consoleErrors.join('\n')}`);
     console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl}.`);
   } catch (error) {
