@@ -25,7 +25,7 @@ jobs:
       - name: Download and extract exact retained artifact
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: '8713872767'
+          ARTIFACT_ID: '8715720001'
         run: |
           set -euo pipefail
           rm -rf diagnostic/raw diagnostic/out diagnostics/extracted
