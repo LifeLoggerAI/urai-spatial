@@ -89,11 +89,13 @@ async function waitForOverviewState(page, timeout = 30_000) {
   await page.waitForFunction(() => {
     const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
     const destination = new URL(window.location.href)
+    const memoryId = destination.searchParams.get('memoryId')
+    const node = destination.searchParams.get('node')
+    const identityIsAbsentOrRetained = (!memoryId && !node) || (memoryId === 'quiet-reset' && node === 'quiet-reset')
     return root?.getAttribute('data-life-map-mode') === 'overview'
       && destination.pathname.replace(/\/$/, '') === '/life-map'
       && destination.searchParams.get('overview') === '1'
-      && !destination.searchParams.has('memoryId')
-      && !destination.searchParams.has('node')
+      && identityIsAbsentOrRetained
   }, null, { timeout, polling: 25 })
 }
 
