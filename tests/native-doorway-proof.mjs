@@ -25,7 +25,6 @@ async function activate(page, target, method) {
     return { targetOwnsHitPoint: true, hitPoint: null }
   }
 
-  await target.evaluate((node) => node.focus({ preventScroll: true }))
   const box = await target.boundingBox()
   if (!box) throw new Error('semantic target has no browser hit box')
   if (box.width < 44 || box.height < 44) throw new Error(`semantic target below 44px minimum: ${box.width}x${box.height}`)
@@ -68,10 +67,14 @@ async function prove(browser, doorway, testCase) {
       if (!nav) return false
       const style = getComputedStyle(nav)
       const rect = nav.getBoundingClientRect()
-      return nav.classList.contains('sr-only') && (rect.width <= 2 || style.clip !== 'auto' || style.clipPath !== 'none')
+      const viewportArea = Math.max(1, window.innerWidth * window.innerHeight)
+      const navAreaRatio = Math.max(0, rect.width * rect.height) / viewportArea
+      const declaredNonDominant = nav.getAttribute('data-home-navigation-non-dominant') === 'true'
+      const visuallyQuiet = Number.parseFloat(style.opacity || '1') <= 0.05
+      const spatiallyBounded = rect.width <= 64 && navAreaRatio <= 0.03
+      return declaredNonDominant && visuallyQuiet && spatiallyBounded
     })
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
-    if (testCase.method !== 'keyboard') await target.scrollIntoViewIfNeeded()
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
@@ -97,7 +100,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 9, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 10, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
