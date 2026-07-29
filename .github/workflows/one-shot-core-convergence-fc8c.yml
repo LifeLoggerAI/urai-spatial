@@ -1,0 +1,123 @@
+name: One-shot core convergence fc8c
+
+on:
+  push:
+    branches:
+      - integration/core-worlds-production-20260729
+    paths:
+      - .github/workflows/one-shot-core-convergence-fc8c.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-core-convergence-fc8c
+  cancel-in-progress: false
+
+jobs:
+  converge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TARGET_BRANCH: integration/core-worlds-production-20260729
+      STARTING_CONVERGENCE_SHA: 86f532dea96bc3f25fac404d013580befb8411b3
+      OLD_HOME_SHA: 79bd5d4063e74aa9c43ef7108efbc019f44abe4f
+      HOME_SHA: fc8c41e7c1f401a7559ecfff1f3f3c432916828b
+      LIFE_MAP_SHA: 2e06f0bac204ba4d14b2b9129cf1eaa11c9605c4
+      FOCUS_SHA: 6e7a7f59ea8537ad516c4dbdfd832718ebf0f507
+      MAIN_SHA: 748e50398d85effeaa4ed17aaf78d4076dddbb45
+      RECEIPT_DIR: convergence-forge-receipt
+    steps:
+      - name: Check out convergence staging branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify immutable authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          test "$(git rev-parse HEAD^)" = "$STARTING_CONVERGENCE_SHA"
+          test "$(git rev-parse origin/feat/home-final-personalized-sanctuary-20260723)" = "$HOME_SHA"
+          test "$(git rev-parse origin/feat/life-map-aaa-final-production-20260723)" = "$LIFE_MAP_SHA"
+          test "$(git rev-parse origin/feat/focus-current-main-20260723)" = "$FOCUS_SHA"
+          test "$(git rev-parse origin/main)" = "$MAIN_SHA"
+          git merge-base --is-ancestor "$MAIN_SHA" "$STARTING_CONVERGENCE_SHA"
+          git merge-base --is-ancestor "$LIFE_MAP_SHA" "$STARTING_CONVERGENCE_SHA"
+          git merge-base --is-ancestor "$FOCUS_SHA" "$STARTING_CONVERGENCE_SHA"
+          git merge-base --is-ancestor "$OLD_HOME_SHA" "$STARTING_CONVERGENCE_SHA"
+          git merge-base --is-ancestor "$OLD_HOME_SHA" "$HOME_SHA"
+          mkdir -p "$RECEIPT_DIR"
+          printf '%s\n' \
+            "startingConvergence=$STARTING_CONVERGENCE_SHA" \
+            "oldHome=$OLD_HOME_SHA" \
+            "home=$HOME_SHA" \
+            "lifeMap=$LIFE_MAP_SHA" \
+            "focus=$FOCUS_SHA" \
+            "main=$MAIN_SHA" \
+            > "$RECEIPT_DIR/authorities.txt"
+
+      - name: Materialize exact Home repair delta over accepted convergence
+        id: apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --binary --full-index "$OLD_HOME_SHA" "$HOME_SHA" > /tmp/home-repairs.patch
+          cp /tmp/home-repairs.patch "$RECEIPT_DIR/home-repairs.patch"
+          set +e
+          git apply --3way --index /tmp/home-repairs.patch > "$RECEIPT_DIR/apply.log" 2>&1
+          apply_status=$?
+          set -e
+          printf '%s\n' "$apply_status" > "$RECEIPT_DIR/apply-exit-code.txt"
+          git status --short > "$RECEIPT_DIR/status-after-apply.txt"
+          git diff --name-only --diff-filter=U > "$RECEIPT_DIR/unmerged-paths.txt"
+          git diff --cc > "$RECEIPT_DIR/conflict-diff.txt" || true
+          if [ "$apply_status" -ne 0 ] || [ -s "$RECEIPT_DIR/unmerged-paths.txt" ]; then
+            echo "applied=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "applied=true" >> "$GITHUB_OUTPUT"
+
+      - name: Prove patch scope and remove executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -s "$RECEIPT_DIR/unmerged-paths.txt"
+          git diff --cached --check
+          git diff --cached --name-status > "$RECEIPT_DIR/materialized-files.txt"
+          test -s "$RECEIPT_DIR/materialized-files.txt"
+          git rm .github/workflows/one-shot-core-convergence-fc8c.yml
+          git diff --cached --check
+
+      - name: Commit exact materialized convergence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "converge(core): apply exact Home repairs over Life Map and Focus"
+          patch_commit="$(git rev-parse HEAD)"
+          printf '%s\n' "$patch_commit" > "$RECEIPT_DIR/patch-commit.txt"
+          git merge --strategy=ours --no-edit -m "converge(core): record accepted Home authority fc8c41e7" "$HOME_SHA"
+          final_head="$(git rev-parse HEAD)"
+          printf '%s\n' "$final_head" > "$RECEIPT_DIR/final-head.txt"
+          git show --no-patch --format='%H%n%P%n%s' HEAD > "$RECEIPT_DIR/final-commit.txt"
+          test "$(git rev-list --parents -n 1 HEAD | awk '{print NF}')" -ge 3
+          git merge-base --is-ancestor "$HOME_SHA" HEAD
+          git merge-base --is-ancestor "$LIFE_MAP_SHA" HEAD
+          git merge-base --is-ancestor "$FOCUS_SHA" HEAD
+          git merge-base --is-ancestor "$MAIN_SHA" HEAD
+          test -z "$(git status --porcelain --untracked-files=all | grep -v '^?? convergence-forge-receipt/' || true)"
+          git push origin "HEAD:$TARGET_BRANCH"
+
+      - name: Upload convergence forge receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: core-convergence-forge-fc8c-${{ github.run_id }}
+          path: convergence-forge-receipt
+          if-no-files-found: error
+          retention-days: 90
