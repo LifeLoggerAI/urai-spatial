@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from "./lifeMapData";
 import { requestLifeMapSelection } from "./lifeMapSelection";
@@ -31,6 +31,9 @@ export default function LifeMapSemanticNavigator() {
   const [typeFilter, setTypeFilter] = useState<LifeMapNodeType | "all">("all");
   const [eraFilter, setEraFilter] = useState("all");
   const [portalReady, setPortalReady] = useState(false);
+  const navigatorRef = useRef<HTMLDetailsElement>(null);
+  const desiredNavigatorOpenRef = useRef(false);
+  const selectionFallbackRef = useRef<number | null>(null);
   const selectedId = overviewRequested ? null : params.get("node") || params.get("memoryId");
   const selected = nodes.find((node) => node.id === selectedId) || null;
 
@@ -94,7 +97,7 @@ export default function LifeMapSemanticNavigator() {
     if (node) next.set("node", node);
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [params, router, withIdentity]);
+  }, [params, router, setNavigatorOpen, withIdentity]);
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes;
@@ -131,16 +134,10 @@ export default function LifeMapSemanticNavigator() {
     <button type="button" onClick={overview}>Overview</button>
   </nav>;
 
-  const journeyRail = <nav className="life-map-journey-rail" data-testid="life-map-journey-rail" data-selected={selected ? "true" : "false"} data-portal-owner="document-body" aria-label="Life Map journey controls">
-    <button type="button" onClick={() => step(-1)} aria-label="Previous visible life object">Previous</button>
-    <button type="button" onClick={() => step(1)} aria-label="Next visible life object">Next</button>
-    <button type="button" onClick={overview}>Overview</button>
-  </nav>;
-
   return <>
     {portalReady ? createPortal(journeyRail, document.body) : null}
 
-    <details className="life-map-navigator" data-life-map-navigator>
+    <details ref={navigatorRef} className="life-map-navigator" data-life-map-navigator>
       <summary>Search life</summary>
       <section aria-label="Search and filter Life Map">
         <label htmlFor="life-map-search">Search memories, people, dates, places, themes, and eras</label>
