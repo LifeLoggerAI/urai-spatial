@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test'
 
+const baseURL = 'http://127.0.0.1:3000'
 const homeOwnerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
 
 async function waitForHomeWorld(home: Locator) {
@@ -30,6 +31,7 @@ test.describe('Home mobile control separation evidence', () => {
 
     for (const viewport of viewports) {
       const context = await browser.newContext({
+        baseURL,
         viewport: { width: viewport.width, height: viewport.height },
         isMobile: true,
         hasTouch: true,
