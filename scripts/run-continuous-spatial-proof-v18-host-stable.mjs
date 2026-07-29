@@ -25,7 +25,18 @@ if (portalOriginal.split(portalFrameWait).length - 1 !== 2) {
   throw new Error('Portal corrective steering frame-wait contract changed; refusing host-clock repair')
 }
 
-const portalPatched = portalOriginal.replaceAll(portalFrameWait, 'await waitForMovementFrame(page)')
+// The portal runner embeds a regular-expression literal inside another template
+// literal. Preserve two source backslashes here so the generated capture module
+// receives one escaped slash/dot instead of the invalid /^/assets/.../ form.
+const manifestRegexSource = String.raw`&& /^\/assets\/urai\/final\/manifests\/v[234]-asset-factory-spatial-handoff\.json$/.test(requestUrl.pathname)`
+const escapedManifestRegexSource = String.raw`&& /^\\/assets\\/urai\\/final\\/manifests\\/v[234]-asset-factory-spatial-handoff\\.json$/.test(requestUrl.pathname)`
+if (portalOriginal.split(manifestRegexSource).length - 1 !== 1) {
+  throw new Error('Portal manifest-abort regex source changed; refusing nested escape repair')
+}
+
+const portalPatched = portalOriginal
+  .replaceAll(portalFrameWait, 'await waitForMovementFrame(page)')
+  .replace(manifestRegexSource, escapedManifestRegexSource)
 
 await writeFile(portalRunnerUrl, portalPatched, 'utf8')
 try {
