@@ -24,8 +24,32 @@ const enabledFocusMarker = '  .replace(existingDriver, stableDriver)'
 if (stableOriginal.split(enabledFocusMarker).length - 1 !== 1) {
   throw new Error('Continuous proof stable source transform changed; refusing enabled-focus repair')
 }
-const stablePatched = stableOriginal.replace(enabledFocusMarker, `  .replace(existingDriver, stableDriver)
+
+const broadCanvasDisable = "await page.addInitScript(() => { Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', { configurable: true, value: () => null }) })"
+const webglOnlyDisable = `await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
+      return original.apply(this, [type, ...args])
+    }
+  })`
+const legacyFallbackLocator = "const fallback = page.getByRole('region', { name: 'Spatial Home fallback' })"
+const acceptedFallbackLocator = "const fallback = page.locator('[data-testid=\"urai-home-accessible-fallback\"][data-webgl-state=\"unavailable\"]')"
+for (const [marker, label] of [
+  [broadCanvasDisable, 'broad canvas disable'],
+  [legacyFallbackLocator, 'legacy fallback locator'],
+]) {
+  if (stableOriginal.split(marker).length - 1 !== 1) {
+    throw new Error(`Continuous proof ${label} contract changed; refusing no-WebGL repair`)
+  }
+}
+
+const stablePatched = stableOriginal
+  .replace(enabledFocusMarker, `  .replace(existingDriver, stableDriver)
   .replace("const editableControl = page.locator('.home-discreet-controls button').first()", "const editableControl = page.locator('.home-discreet-controls button:not(:disabled)').first()")`)
+  .replace('const patched = original', `const patched = original
+  .replace(${JSON.stringify(broadCanvasDisable)}, ${JSON.stringify(webglOnlyDisable)})
+  .replace(${JSON.stringify(legacyFallbackLocator)}, ${JSON.stringify(acceptedFallbackLocator)})`)
 
 const portalFrameWait = 'await waitFrames(page, 1)'
 if (portalOriginal.split(portalFrameWait).length - 1 !== 2) {
