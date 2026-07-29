@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
