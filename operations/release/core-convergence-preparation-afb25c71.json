@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "preparedAt": "2026-07-28T22:20:00-05:00",
+  "classification": "PREPARATION_ONLY_NOT_MERGE_AUTHORITY",
+  "canonicalMain": "748e50398d85effeaa4ed17aaf78d4076dddbb45",
+  "rollbackTarget": "748e50398d85effeaa4ed17aaf78d4076dddbb45",
+  "candidateAuthorities": {
+    "home": {
+      "pr": 952,
+      "headAtPreparation": "afb25c714579732edcc4958ae532673c990e9681",
+      "state": "replacement-matrix-active-unaccepted",
+      "mustBeReResolvedBeforeComposition": true
+    },
+    "lifeMap": {
+      "pr": 953,
+      "head": "2e06f0bac204ba4d14b2b9129cf1eaa11c9605c4",
+      "state": "accepted-for-controlled-convergence-unmerged-undeployed",
+      "registeredWorkflowSuccesses": 25
+    },
+    "focus": {
+      "pr": 951,
+      "head": "6e7a7f59ea8537ad516c4dbdfd832718ebf0f507",
+      "state": "accepted-for-controlled-convergence-unmerged-undeployed",
+      "registeredWorkflowSuccesses": 27
+    },
+    "replay": {
+      "pr": 875,
+      "head": "ef68ef7590741c8ad17d8b3914120ea4fe0303cc",
+      "state": "preserved-diverged-nonmergeable-after-core"
+    }
+  },
+  "compositionSequence": [
+    {
+      "order": 1,
+      "source": "canonical main",
+      "action": "create a fresh integration branch from the then-current protected main SHA"
+    },
+    {
+      "order": 2,
+      "source": "accepted Home exact head",
+      "action": "compose Home first so the asset-driven supported-WebGL runtime, mobile separation, portals, Orb and fallback ownership become the shared shell baseline"
+    },
+    {
+      "order": 3,
+      "source": "Life Map 2e06f0bac204ba4d14b2b9129cf1eaa11c9605c4",
+      "action": "compose the accepted Life Map realm, semantic navigator, portrait density, selection and recovery behavior while preserving Home-owned shell and doorway runtime"
+    },
+    {
+      "order": 4,
+      "source": "Focus 6e7a7f59ea8537ad516c4dbdfd832718ebf0f507",
+      "action": "compose Focus chamber, selected-memory identity, destination stabilization, Back behavior and Focus accessibility while preserving accepted Home and Life Map ownership"
+    },
+    {
+      "order": 5,
+      "source": "Replay",
+      "action": "hold until combined core is accepted; reconcile Replay in a separate bounded follow-on branch"
+    }
+  ],
+  "sharedSurfaceOwnership": [
+    {
+      "surface": "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx",
+      "owner": "Home",
+      "preserveFrom": "final accepted Home exact head",
+      "consumers": ["Focus", "Replay"],
+      "resolution": "retain Home asset-driven runtime and semantic destinations; port only destination-specific hooks that remain required"
+    },
+    {
+      "surface": "urai-tier1/src/spatial/world/UraiWorldShell.tsx",
+      "owner": "Home shell with Life Map realm integration",
+      "preserveFrom": "final accepted Home exact head plus Life Map route owner",
+      "consumers": ["Life Map"],
+      "resolution": "retain mobile separation import and persistent shell; add Life Map production isolation without restoring obsolete Home chrome"
+    },
+    {
+      "surface": "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "owner": "Life Map",
+      "preserveFrom": "2e06f0bac204ba4d14b2b9129cf1eaa11c9605c4",
+      "consumers": ["Home", "Focus"],
+      "resolution": "Life Map production scene wins; preserve only Home/Focus bridge contracts that do not alter its accepted rendering and selection behavior"
+    },
+    {
+      "surface": "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "owner": "Life Map",
+      "preserveFrom": "2e06f0bac204ba4d14b2b9129cf1eaa11c9605c4",
+      "consumers": ["Home", "Focus"],
+      "resolution": "accepted semantic owner and portrait clearances win; carry Focus identity handoff through supported callbacks rather than replacing the navigator"
+    },
+    {
+      "surface": "urai-tier1/src/spatial/memory/useSelectedMemory.ts",
+      "owner": "Focus identity contract after Life Map selection",
+      "preserveFrom": "6e7a7f59ea8537ad516c4dbdfd832718ebf0f507",
+      "consumers": ["Home", "Replay"],
+      "resolution": "preserve public memoryId stability and explicit disclosed-sample internal resolution; reject history rewriting and unauthorized identity substitution"
+    },
+    {
+      "surface": "urai-tier1/src/spatial/world/WorldTransitionController.tsx",
+      "owner": "Focus transition contract integrated into Home portal runtime",
+      "preserveFrom": "Focus exact head plus final accepted Home portal sequence",
+      "consumers": ["Home"],
+      "resolution": "retain Home opening-traversal-closing-travel visual sequence and Focus destination/Back invariants"
+    },
+    {
+      "surface": "tests/native-doorway-proof.mjs",
+      "owner": "combined-core evidence",
+      "preserveFrom": "final accepted Home proof driver",
+      "consumers": ["Life Map", "Replay"],
+      "resolution": "prove all accepted pointer, keyboard and touch routes on the composed head; do not transfer branch-level receipts"
+    },
+    {
+      "surface": "accessibility-performance suites",
+      "owner": "combined-core evidence",
+      "preserveFrom": "union of current Home, Life Map and Focus requirements",
+      "consumers": ["Home", "Life Map", "Focus", "Replay"],
+      "resolution": "retain all 48px target, focus, reduced-motion, identity, route, movement, containment and no-WebGL assertions; zero flakes required"
+    }
+  ],
+  "knownOverlapSummary": {
+    "homeLifeMap": [
+      ".github/workflows/lifemap-founder-visual-proof.yml",
+      "tests/native-doorway-proof.mjs",
+      "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "urai-tier1/src/spatial/world/UraiWorldShell.tsx",
+      "urai-tier1/tests/spatial-missing-resource-diagnostic-contract.test.mjs"
+    ],
+    "homeFocus": [
+      ".github/workflows/continuous-spatial-visual-proof.yml",
+      "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx",
+      "urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx",
+      "urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx",
+      "urai-tier1/src/spatial/memory/useSelectedMemory.ts",
+      "urai-tier1/src/spatial/world/WorldTransitionController.tsx",
+      "urai-tier1/src/spatial/world/interactionCollisionRepair.css",
+      "urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts",
+      "urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts",
+      "urai-tier1/tests/accessibility-performance-source-contract.test.mjs",
+      "urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts",
+      "urai-tier1/tests/selected-memory-production-contract.test.mjs"
+    ],
+    "homeReplay": [
+      "tests/native-doorway-proof.mjs",
+      "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx",
+      "urai-tier1/src/spatial/memory/useSelectedMemory.ts",
+      "urai-tier1/src/spatial/world/interactionCollisionRepair.css",
+      "urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts",
+      "urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts",
+      "urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts"
+    ]
+  },
+  "requiredCombinedExactHeadMatrix": [
+    "Accessibility Performance Evidence with zero failures and zero flakes",
+    "Continuous Spatial Visual Proof with direct desktop/mobile/no-WebGL inspection",
+    "Home State Proof",
+    "Life Map Founder Visual Proof",
+    "Native Doorway Proof",
+    "Main Journey State Contract",
+    "Workflow Phase Boundaries",
+    "URAI Spatial CI",
+    "URAI Spatial Verify",
+    "Firebase Preview",
+    "Production Verify",
+    "Canonical Production Release verification without deployment before authorization",
+    "Privacy adoption and operational controls",
+    "Release Security Path Guard",
+    "Asset governance, promotion and independent ledger",
+    "Spatial Performance Budget",
+    "Frozen Lockfile Check",
+    "Automated Receipt Ledger",
+    "Location Map canonical verification",
+    "Passport ownership fallback verification",
+    "custom-domain post-deployment desktop and mobile smoke only after exact merged SHA deployment"
+  ],
+  "releaseRules": {
+    "branchAcceptanceTransfers": false,
+    "homeMustBeAcceptedBeforeComposition": true,
+    "allEvidenceMustMatchComposedHead": true,
+    "cancelledOrSkippedEqualsSuccess": false,
+    "flakyEqualsAcceptance": false,
+    "mergeBeforeVisualInspection": false,
+    "deployBeforeMergedShaEstablished": false,
+    "statusMayClaimLiveBeforeCustomDomainProof": false
+  }
+}
