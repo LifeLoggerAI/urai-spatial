@@ -80,6 +80,20 @@ canvas {
   height: 100%;
 }
 
+/* Semantic Life Map controls must own their visible hit points above the WebGL surface. */
+.life-map-navigator {
+  z-index: 2147483590 !important;
+  pointer-events: auto !important;
+  isolation: isolate;
+}
+
+.life-map-navigator[open],
+.life-map-navigator[open] section,
+.life-map-navigator[open] .semantic-results,
+.life-map-navigator[open] .life-map-semantic-result {
+  pointer-events: auto !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto !important;
