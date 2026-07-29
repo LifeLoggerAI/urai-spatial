@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/focus-onto-core-resolve-20260729
+  pull_request:
+    branches:
+      - release/core-convergence-20260729
   workflow_dispatch:
 
 permissions:
