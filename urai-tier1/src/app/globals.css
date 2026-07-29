@@ -94,6 +94,10 @@ canvas {
   pointer-events: auto !important;
 }
 
+body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] canvas {
+  pointer-events: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto !important;
