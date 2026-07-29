@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { resolveReadyAmbientAudioPath } from "./ambientAudioManifest";
 import type {
-  AmbientTrack,
   NarratorAudioLine,
   SpatialAudioPhase,
   VoiceEngine,
@@ -10,23 +10,15 @@ import type {
 
 const DEFAULT_ENGINE: VoiceEngine = "elevenlabs";
 
-const PHASE_TO_AMBIENT: Record<SpatialAudioPhase, AmbientTrack> = {
+const PHASE_TO_AMBIENT = {
   HOME: "home",
   ASCENT: "ascent",
   LIFEMAP: "lifemap",
   FOCUS: "focus",
   REPLAY: "replay",
-};
+} as const;
 
-const AMBIENT_SRC: Record<AmbientTrack, string> = {
-  home: "/audio/ambient/home.mp3",
-  ascent: "/audio/ambient/ascent.mp3",
-  lifemap: "/audio/ambient/lifemap.mp3",
-  focus: "/audio/ambient/focus.mp3",
-  replay: "/audio/ambient/replay.mp3",
-};
-
-function log(msg: string) {
+function log(_msg: string) {
 }
 
 function hasWindow() {
@@ -43,7 +35,7 @@ export function useAudioController() {
   const ambientARef = useRef<HTMLAudioElement | null>(null);
   const ambientBRef = useRef<HTMLAudioElement | null>(null);
   const activeAmbientRef = useRef<"A" | "B">("A");
-  const ambientTrackRef = useRef<AmbientTrack | null>(null);
+  const ambientTrackRef = useRef<(typeof PHASE_TO_AMBIENT)[SpatialAudioPhase] | null>(null);
   const fadeRafRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -66,6 +58,23 @@ export function useAudioController() {
     if (hasWindow()) {
       window.dispatchEvent(new CustomEvent("urai-audio-stop-all"));
     }
+  }, []);
+
+  const stopAmbient = useCallback(() => {
+    if (fadeRafRef.current) {
+      cancelAnimationFrame(fadeRafRef.current);
+      fadeRafRef.current = null;
+    }
+
+    for (const audio of [ambientARef.current, ambientBRef.current]) {
+      if (!audio) continue;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = "";
+      audio.volume = 0;
+    }
+
+    ambientTrackRef.current = null;
   }, []);
 
   const duckAmbient = useCallback((ducked: boolean) => {
@@ -96,18 +105,25 @@ export function useAudioController() {
     (phase: SpatialAudioPhase, intensity = 1) => {
       if (!hasWindow()) return;
 
+      const nextTrack = PHASE_TO_AMBIENT[phase];
+      const nextSrc = resolveReadyAmbientAudioPath(nextTrack);
+
+      if (!nextSrc) {
+        stopAmbient();
+        window.dispatchEvent(new CustomEvent("urai-audio-ambient-unavailable", {
+          detail: { phase, track: nextTrack, fallback: "silence" },
+        }));
+        return;
+      }
+
+      if (ambientTrackRef.current === nextTrack) return;
       ensureAmbient();
 
-      const nextTrack = PHASE_TO_AMBIENT[phase];
-      if (ambientTrackRef.current === nextTrack) return;
-
-      const nextSrc = AMBIENT_SRC[nextTrack];
       const current = activeAmbientRef.current === "A" ? ambientARef.current : ambientBRef.current;
       const nextKey = activeAmbientRef.current === "A" ? "B" : "A";
       const next = nextKey === "A" ? ambientARef.current : ambientBRef.current;
 
       if (!next) return;
-
 
       if (fadeRafRef.current) {
         cancelAnimationFrame(fadeRafRef.current);
@@ -118,6 +134,7 @@ export function useAudioController() {
       next.loop = true;
       next.volume = 0;
       next.play().catch(() => {
+        stopAmbient();
       });
 
       const started = performance.now();
@@ -149,12 +166,11 @@ export function useAudioController() {
 
       fadeRafRef.current = requestAnimationFrame(tick);
     },
-    [ensureAmbient],
+    [ensureAmbient, stopAmbient],
   );
 
   const playGoogle = useCallback(async (line: NarratorAudioLine, signal: AbortSignal) => {
     if (!hasWindow()) return;
-
 
     const utterance = new SpeechSynthesisUtterance(line.text);
     utterance.rate = 0.92;
@@ -173,12 +189,10 @@ export function useAudioController() {
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
     });
-
   }, []);
 
   const playElevenLabs = useCallback(async (line: NarratorAudioLine, signal: AbortSignal) => {
     if (!hasWindow()) return;
-
 
     const res = await fetch("/api/voice/elevenlabs", {
       method: "POST",
@@ -221,7 +235,6 @@ export function useAudioController() {
 
       audio.play().catch(reject);
     });
-
   }, []);
 
   const speak = useCallback(
@@ -250,7 +263,7 @@ export function useAudioController() {
         } else if (activeEngineRef.current === "google") {
           await playGoogle(line, controller.signal);
         }
-      } catch (err) {
+      } catch {
         if (!controller.signal.aborted && activeEngineRef.current === "elevenlabs") {
           try {
             await playGoogle(line, controller.signal);
@@ -275,15 +288,10 @@ export function useAudioController() {
   useEffect(() => {
     return () => {
       stopAllAudio();
-
-      if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
-
-      ambientARef.current?.pause();
-      ambientBRef.current?.pause();
-
+      stopAmbient();
       if (hasWindow()) window.speechSynthesis?.cancel();
     };
-  }, [stopAllAudio]);
+  }, [stopAllAudio, stopAmbient]);
 
   return useMemo(
     () => ({
@@ -295,8 +303,9 @@ export function useAudioController() {
         activeEngine: activeEngineRef.current,
         isSpeaking: isSpeakingRef.current,
         currentClipId: currentClipIdRef.current,
+        ambientTrack: ambientTrackRef.current,
       }),
     }),
-    [speak, stopAllAudio, setAmbientPhase, setVoiceEngine],
+    [setAmbientPhase, speak, stopAllAudio, setVoiceEngine],
   );
 }
