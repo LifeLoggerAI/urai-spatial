@@ -364,11 +364,21 @@ function Scene({ chamberPath, portalPath, orbPath, scene, orbState, setOrbState,
     setPhase('opening')
     setPortalEvidence(`${destination}:opening`)
     const traversalDelay = reducedMotion ? 90 : 620
-    const closingDelay = reducedMotion ? 170 : 1180
-    const travelDelay = reducedMotion ? 230 : 1540
-    timers.current.push(window.setTimeout(() => { setPhase('traversal'); setPortalEvidence(`${destination}:traversal`) }, traversalDelay))
-    timers.current.push(window.setTimeout(() => { setPhase('closing'); setPortalEvidence(`${destination}:closing`) }, closingDelay))
-    timers.current.push(window.setTimeout(() => requestUraiWorldTravel(route), travelDelay))
+    const traversalHold = reducedMotion ? 80 : 560
+    const closingHold = reducedMotion ? 60 : 360
+    const schedule = (delay: number, action: () => void) => {
+      const timer = window.setTimeout(action, delay)
+      timers.current.push(timer)
+    }
+    schedule(traversalDelay, () => {
+      setPhase('traversal')
+      setPortalEvidence(`${destination}:traversal`)
+      schedule(traversalHold, () => {
+        setPhase('closing')
+        setPortalEvidence(`${destination}:closing`)
+        schedule(closingHold, () => requestUraiWorldTravel(route))
+      })
+    })
   }
 
   const approach = (point: THREE.Vector3) => (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); target.current = point.clone() }
