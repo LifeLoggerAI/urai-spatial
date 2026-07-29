@@ -1,0 +1,103 @@
+name: Analyze Exact Core Convergence Merge
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/analyze-core-convergence-merge.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: analyze-core-convergence-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  STALE_INTEGRATED_SHA: 86f532dea96bc3f25fac404d013580befb8411b3
+  OLD_HOME_SHA: 79bd5d4063e74aa9c43ef7108efbc019f44abe4f
+  CURRENT_HOME_SHA: aaa874081a6534d7c0e28e7ae465f377f5046e9e
+
+jobs:
+  analyze:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'ops/analyze-core-convergence-20260729'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout tooling branch without persistent credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          show-progress: false
+
+      - name: Fetch exact public source objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          for sha in "$STALE_INTEGRATED_SHA" "$OLD_HOME_SHA" "$CURRENT_HOME_SHA"; do
+            [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+            git fetch --no-tags --no-recurse-submodules origin "$sha"
+            test "$(git cat-file -t "$sha")" = commit
+          done
+          test "$(git merge-base "$OLD_HOME_SHA" "$CURRENT_HOME_SHA")" = "$OLD_HOME_SHA"
+          test "$(git merge-base "$STALE_INTEGRATED_SHA" "$CURRENT_HOME_SHA")" = "$OLD_HOME_SHA"
+
+      - name: Materialize read-only three-way merge analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/core-convergence-analysis/worktree
+          mkdir -p artifacts/core-convergence-analysis/conflicts/base
+          mkdir -p artifacts/core-convergence-analysis/conflicts/integrated
+          mkdir -p artifacts/core-convergence-analysis/conflicts/home
+
+          git checkout --detach "$STALE_INTEGRATED_SHA"
+          set +e
+          git -c user.name='URAI convergence analyzer' \
+              -c user.email='convergence-analyzer@invalid.local' \
+              merge --no-commit --no-ff "$CURRENT_HOME_SHA" \
+              > artifacts/core-convergence-analysis/merge.stdout.txt \
+              2> artifacts/core-convergence-analysis/merge.stderr.txt
+          merge_status=$?
+          set -e
+          printf '%s\n' "$merge_status" > artifacts/core-convergence-analysis/merge-exit-code.txt
+          git status --porcelain=v1 > artifacts/core-convergence-analysis/status.txt
+          git diff --name-only --diff-filter=U > artifacts/core-convergence-analysis/conflict-paths.txt
+
+          git diff --name-only "$OLD_HOME_SHA" "$CURRENT_HOME_SHA" > artifacts/core-convergence-analysis/home-repair-paths.txt
+
+          while IFS= read -r path; do
+            test -n "$path" || continue
+            mkdir -p "artifacts/core-convergence-analysis/worktree/$(dirname "$path")"
+            if test -f "$path"; then
+              cp "$path" "artifacts/core-convergence-analysis/worktree/$path"
+            fi
+          done < artifacts/core-convergence-analysis/home-repair-paths.txt
+
+          while IFS= read -r path; do
+            test -n "$path" || continue
+            for stage in '1:base' '2:integrated' '3:home'; do
+              number=${stage%%:*}
+              label=${stage##*:}
+              mkdir -p "artifacts/core-convergence-analysis/conflicts/$label/$(dirname "$path")"
+              git show ":$number:$path" > "artifacts/core-convergence-analysis/conflicts/$label/$path" || true
+            done
+          done < artifacts/core-convergence-analysis/conflict-paths.txt
+
+          git diff --cached --binary > artifacts/core-convergence-analysis/auto-merged-index.patch || true
+          git diff --binary > artifacts/core-convergence-analysis/conflicted-worktree.patch || true
+          sha256sum artifacts/core-convergence-analysis/*.txt artifacts/core-convergence-analysis/*.patch \
+            > artifacts/core-convergence-analysis/SHA256SUMS
+
+      - name: Upload exact merge analysis
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: core-convergence-analysis-aaa874081a6534d7c0e28e7ae465f377f5046e9e
+          path: artifacts/core-convergence-analysis
+          if-no-files-found: error
+          retention-days: 7
