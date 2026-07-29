@@ -1,0 +1,92 @@
+name: Repair Home portal phase sequence
+
+on:
+  push:
+    branches:
+      - repair/home-ground-readiness-20260729
+    paths:
+      - .github/workflows/repair-home-portal-phase-sequence.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact repair authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: repair/home-ground-readiness-20260729
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply bounded portal phase repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source_path = Path('urai-tier1/src/app/AssetDrivenHomeWorld.tsx')
+          source = source_path.read_text()
+          old = """    const traversalDelay = reducedMotion ? 90 : 620
+    const closingDelay = reducedMotion ? 170 : 1180
+    const travelDelay = reducedMotion ? 230 : 1540
+    timers.current.push(window.setTimeout(() => { setPhase('traversal'); setPortalEvidence(`${destination}:traversal`) }, traversalDelay))
+    timers.current.push(window.setTimeout(() => { setPhase('closing'); setPortalEvidence(`${destination}:closing`) }, closingDelay))
+    timers.current.push(window.setTimeout(() => requestUraiWorldTravel(route), travelDelay))
+"""
+          new = """    const traversalDelay = reducedMotion ? 90 : 620
+    const traversalHold = reducedMotion ? 80 : 560
+    const closingHold = reducedMotion ? 60 : 360
+    const schedule = (delay: number, action: () => void) => {
+      const timer = window.setTimeout(action, delay)
+      timers.current.push(timer)
+    }
+    schedule(traversalDelay, () => {
+      setPhase('traversal')
+      setPortalEvidence(`${destination}:traversal`)
+      schedule(traversalHold, () => {
+        setPhase('closing')
+        setPortalEvidence(`${destination}:closing`)
+        schedule(closingHold, () => requestUraiWorldTravel(route))
+      })
+    })
+"""
+          if source.count(old) != 1:
+              raise SystemExit(f'expected exactly one portal timer block, found {source.count(old)}')
+          source_path.write_text(source.replace(old, new))
+
+          contract_path = Path('urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs')
+          contract = contract_path.read_text()
+          marker = "test('Home portal phases remain observable under a saturated browser host'"
+          if marker not in contract:
+              contract += """
+
+test('Home portal phases remain observable under a saturated browser host', () => {
+  assert.match(assetHome, /const traversalHold = reducedMotion \? 80 : 560/)
+  assert.match(assetHome, /const closingHold = reducedMotion \? 60 : 360/)
+  assert.match(assetHome, /schedule\(traversalDelay,[\s\S]*setPhase\('traversal'\)[\s\S]*schedule\(traversalHold,[\s\S]*setPhase\('closing'\)[\s\S]*schedule\(closingHold,[\s\S]*requestUraiWorldTravel/)
+  assert.doesNotMatch(assetHome, /const closingDelay =|const travelDelay =/)
+})
+"""
+          contract_path.write_text(contract)
+          PY
+
+          rm .github/workflows/repair-home-portal-phase-sequence.yml
+          git diff --check
+          (cd urai-tier1 && node --test tests/continuous-spatial-restoration-contract.test.mjs)
+
+      - name: Commit exact bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'URAI Release Automation'
+          git config user.email 'release-automation@urai.app'
+          git add -A
+          git diff --cached --quiet && { echo 'No repair delta produced'; exit 1; }
+          git commit -m 'fix(home): sequence portal phases through rendered states'
+          git push origin HEAD:repair/home-ground-readiness-20260729
