@@ -1,16 +1,16 @@
 name: Resolve Focus Onto Core
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/focus-onto-core-resolve-20260729
+      - release/core-convergence-20260729
 
 permissions:
   contents: write
 
 jobs:
   resolve:
-    if: contains(github.event.head_commit.message, 'execute exact focus merge')
+    if: github.head_ref == 'agent/focus-onto-core-resolve-20260729'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
