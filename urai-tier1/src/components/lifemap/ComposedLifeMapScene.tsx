@@ -257,15 +257,16 @@ export default function ComposedLifeMapScene() {
   }, [profile.reducedMotion, router, withIdentity]);
 
   const overview = useCallback(() => {
+    const retainedId = selectedId || queryNode;
     overviewPending.current = true;
     journeyToken.current += 1;
     setSelectedId(null);
     setPhase("overview");
     const next = withIdentity(new URLSearchParams());
+    if (retainedId) { next.set("memoryId", retainedId); next.set("node", retainedId); }
     next.set("overview", "1");
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
-  }, [router, withIdentity]);
-
+  }, [clearTimers, queryNode, router, selectedId, withIdentity]);
   const destinationHref = useCallback((route: "focus" | "replay") => {
     if (!selected) return "/life-map";
     const next = withIdentity(new URLSearchParams());
@@ -323,63 +324,12 @@ export default function ComposedLifeMapScene() {
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
-    <span className="life-map-depth-contract" data-depth-band="near" aria-hidden="true" />
-    <span className="life-map-depth-contract" data-depth-band="middle" aria-hidden="true" />
-    <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
-    <Canvas
-      camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
-      dpr={[1, profile.pixelRatioMax]}
-      shadows={profile.shadows}
-      frameloop={profile.documentVisible ? "always" : "never"}
-      gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
-      onCreated={({ gl }) => {
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15;
-        gl.outputColorSpace = THREE.SRGBColorSpace;
-        gl.setClearColor("#02050b", 1);
-      }}
-    >
-      <LifeMapProductionWorld
-        nodes={nodes}
-        selected={selected}
-        phase={phase as LifeMapJourneyPhase}
-        profile={profile}
-        onSelect={selectNode}
-        cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
-        webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
-      />
-    </Canvas>
-
-    <header className="life-map-title">
-      <span>URAI · LIFE MAP</span>
-      <strong>{selected ? selected.locked ? "Protected memory" : selected.title : "Your living universe"}</strong>
-      <em>{truthLabel(sourceMode)}</em>
-    </header>
-
-    <div className="life-map-status" role="status" aria-live="polite">
-      <span>{loading ? "Opening universe" : phaseLabel(phase)}</span>
-      <small>{selected ? `${artifactFamilyLabel(selected)} · ${selected.dateLabel}` : "Identity · chapters · relationships · future"}</small>
-    </div>
-
-    {thresholdsVisible ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}>
-      <button className="focus-threshold" onClick={() => router.push(destinationHref("focus"))}>
-        <span>Inspect</span><strong>Enter Focus</strong>
-      </button>
-      <button className="replay-threshold" disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}>
-        <span>Cross threshold</span><strong>Replay</strong>
-      </button>
-      <button className="overview-return" onClick={overview} aria-label="Return to Life Map overview">Overview</button>
-    </nav> : null}
-
-    {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive">
-      <h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2>
-      <p>Your selected memory, privacy state, and return position remain preserved.</p>
-      <button onClick={overview}>Open semantic overview</button>
-      <button onClick={() => router.push("/home")}>Return Home</button>
-    </section> : null}
-
-    <style jsx>{`
-      .life-map-root{position:fixed;inset:0;z-index:100;overflow:hidden;background:#02050b;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important;opacity:1!important;visibility:visible!important}.life-map-depth-contract{display:none}.life-map-title{position:absolute;z-index:12;top:max(22px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));display:grid;gap:5px;max-width:min(520px,calc(100vw - 44px));pointer-events:none;text-shadow:0 10px 34px #000}.life-map-title span,.life-map-title em{font:800 10px/1.2 Inter,system-ui;letter-spacing:.22em;text-transform:uppercase;color:rgba(211,243,255,.76);font-style:normal}.life-map-title strong{font:750 clamp(25px,4vw,48px)/.96 Inter,system-ui;letter-spacing:-.05em;max-width:12ch}.life-map-status{position:absolute;z-index:12;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));display:grid;justify-items:end;gap:4px;padding:10px 13px;border-right:1px solid rgba(225,243,255,.34);text-shadow:0 6px 20px #000;pointer-events:none}.life-map-status span{font:800 9px/1 Inter,system-ui;letter-spacing:.17em;text-transform:uppercase;color:#e9f8ff}.life-map-status small{font-size:10px;color:rgba(220,240,251,.62)}.life-map-thresholds{position:absolute;z-index:16;left:50%;bottom:max(24px,calc(env(safe-area-inset-bottom) + 14px));transform:translateX(-50%);display:grid;grid-template-columns:minmax(148px,1fr) minmax(148px,1fr) auto;gap:10px;width:min(560px,calc(100vw - 40px));align-items:stretch}.life-map-thresholds button,.life-map-recovery button{min-height:58px;border:1px solid rgba(220,248,255,.24);border-radius:18px;background:linear-gradient(145deg,rgba(8,22,35,.86),rgba(2,8,16,.78));color:#f8fbff;padding:9px 16px;font-weight:800;cursor:pointer;box-shadow:0 18px 50px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.05)}.life-map-thresholds button span{display:block;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(211,239,251,.62)}.life-map-thresholds button strong{display:block;margin-top:3px;font-size:14px}.life-map-thresholds .focus-threshold{border-color:rgba(159,231,255,.48)}.life-map-thresholds .replay-threshold{border-color:rgba(244,214,152,.48)}.life-map-thresholds .overview-return{min-width:58px;padding:0 12px;border-radius:999px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}.life-map-thresholds button:disabled{opacity:.36;cursor:not-allowed}.life-map-recovery{position:absolute;z-index:30;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.92)}.life-map-recovery h2,.life-map-recovery p{margin:0}.life-map-recovery p{max-width:42ch;color:rgba(231,244,252,.74)}:global(.life-map-world-label){display:grid;gap:3px;min-width:142px;padding:9px 11px;border:1px solid rgba(205,244,255,.18);border-radius:14px;background:rgba(2,7,18,.64);backdrop-filter:blur(12px);color:#fff;text-align:left;cursor:pointer;box-shadow:0 12px 34px rgba(0,0,0,.32)}:global(.life-map-world-label[data-active='true']){border-color:rgba(245,226,174,.74);background:rgba(14,30,43,.86)}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:9px;color:rgba(221,241,255,.68)}:global(.life-map-chapter-label){display:block;padding:5px 8px;border-left:1px solid rgba(210,240,255,.3);font:800 9px/1 Inter,system-ui;letter-spacing:.18em;text-transform:uppercase;color:rgba(222,244,255,.72);text-shadow:0 8px 28px #000}:global(.life-map-chapter-label[data-muted='true']){opacity:.42}@media(max-width:700px){.life-map-title{top:max(14px,env(safe-area-inset-top));left:14px;max-width:calc(100vw - 28px)}.life-map-title strong{font-size:28px;max-width:10ch}.life-map-status{top:max(15px,env(safe-area-inset-top));right:12px;max-width:44vw}.life-map-status small{display:none}.life-map-thresholds{bottom:max(12px,env(safe-area-inset-bottom));grid-template-columns:1fr 1fr;width:calc(100vw - 24px);gap:8px}.life-map-thresholds .overview-return{grid-column:1/-1;justify-self:center;min-height:44px;width:108px}.life-map-thresholds button{min-height:56px;padding:8px 10px}:global(.life-map-world-label){min-width:118px;padding:7px 8px}:global(.life-map-chapter-label){font-size:8px;letter-spacing:.14em}}@media(prefers-reduced-motion:reduce){.life-map-root *{transition:none!important;animation:none!important}}@media(forced-colors:active){.life-map-title,.life-map-status,.life-map-thresholds,.life-map-recovery{forced-color-adjust:auto}.life-map-thresholds button,.life-map-recovery button,:global(.life-map-world-label){border:2px solid CanvasText;background:Canvas;color:CanvasText}}
-    `}</style>
+    <Canvas camera={{ position: OVERVIEW_POSITION, fov: 44, near: .08, far: 120 }} dpr={[1, profile.pixelRatioMax]} gl={{ antialias: profile.antialias, powerPreference: "high-performance" }}><World nodes={nodes} selected={selected} goal={goal} phase={phase} reducedMotion={profile.reducedMotion} onSelect={selectNode} onWebGLStateChange={setWebglState} /></Canvas>
+    <header className="life-map-title"><span>URAI · LIFE MAP</span><strong>{selected ? selected.title : "Your private universe"}</strong><em>{truthLabel(sourceMode)}</em></header>
+    <div className="life-map-phase" role="status" aria-live="polite">{loading ? "Opening constellation" : phase}</div>
+    {selected ? <nav className="life-map-actions" aria-label="Selected memory actions"><button onClick={() => router.push(destinationHref("focus"))}>Enter Focus</button><button disabled={!selected.replayAvailable || selected.locked} onClick={() => router.push(destinationHref("replay"))}>Replay</button><button onClick={overview}>Overview</button></nav> : null}
+    <details className="life-map-help"><summary>Explore</summary><div><p>Choose a memory, use Escape to unwind, or select Overview.</p>{nodes.map((node) => <button key={node.id} onClick={() => selectNode(node)}>{node.title}: {node.summary}</button>)}</div></details>
+    {recovery ? <section className="life-map-recovery" role="status" aria-live="assertive"><h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2><p>Your selected memory and privacy state remain preserved.</p><button onClick={overview}>Open semantic overview</button><button onClick={() => router.push("/home")}>Return Home</button></section> : null}
+    <style jsx>{`.life-map-root{position:fixed;inset:0;overflow:hidden;background:#01030a;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important}.life-map-title{position:absolute;z-index:5;top:max(22px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));display:grid;gap:5px;max-width:min(560px,calc(100vw - 44px));pointer-events:none;text-shadow:0 12px 40px #000}.life-map-title span,.life-map-title em{font:800 10px/1.2 Inter,system-ui;letter-spacing:.22em;text-transform:uppercase;color:rgba(194,244,255,.72);font-style:normal}.life-map-title strong{font:800 clamp(26px,5vw,58px)/.95 Inter,system-ui;letter-spacing:-.055em}.life-map-phase{position:absolute;z-index:6;right:max(20px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));padding:9px 13px;border:1px solid rgba(190,241,255,.2);border-radius:999px;background:rgba(2,7,18,.58);font:800 9px/1 Inter,system-ui;letter-spacing:.16em;text-transform:uppercase}.life-map-actions{position:absolute;z-index:8;left:50%;bottom:max(26px,calc(env(safe-area-inset-bottom) + 14px));transform:translateX(-50%);display:flex;gap:8px;padding:8px;border:1px solid rgba(195,240,255,.18);border-radius:999px;background:rgba(2,7,18,.72)}.life-map-actions button,.life-map-help button,.life-map-recovery button{min-height:48px;border:1px solid rgba(220,248,255,.2);border-radius:999px;background:rgba(10,25,40,.84);color:#f8fbff;padding:0 18px;font-weight:800;cursor:pointer}.life-map-actions button:disabled{opacity:.38}.life-map-help{position:absolute;z-index:8;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));max-width:min(390px,calc(100vw - 40px));border:1px solid rgba(195,240,255,.18);border-radius:20px;background:rgba(2,7,18,.78)}.life-map-help:not([open]){width:auto!important;height:auto!important;min-height:0!important}.life-map-help:not([open])>:not(summary){display:none!important}.life-map-help summary{padding:14px 18px;font-weight:800;cursor:pointer}.life-map-help div{display:grid;max-height:48vh;overflow:auto;gap:8px;padding:0 12px 12px}.life-map-help button{text-align:left;height:auto;padding:12px 14px;border-radius:14px}.life-map-recovery{position:absolute;z-index:20;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.9)}:global(.life-map-world-label){display:grid;gap:3px;min-width:150px;padding:10px 12px;border:1px solid rgba(205,244,255,.18);border-radius:16px;background:rgba(2,7,18,.72);color:#fff;text-align:left;cursor:pointer}:global(.life-map-world-label[data-active='true']){border-color:rgba(215,250,255,.72);background:rgba(10,35,52,.9)}:global(.life-map-world-label strong){font-size:12px}:global(.life-map-world-label span){font-size:9px;color:rgba(221,241,255,.68)}@media(max-width:700px){.life-map-title{top:max(16px,env(safe-area-inset-top));left:16px;max-width:calc(100vw - 32px)}.life-map-title strong{font-size:30px}.life-map-phase{top:auto;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px));right:16px}.life-map-actions{bottom:max(16px,env(safe-area-inset-bottom));width:calc(100vw - 32px);justify-content:center}.life-map-actions button{flex:1;padding:0 10px}.life-map-help{right:16px;bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px))}.life-map-help[open]{left:16px;right:16px;width:auto;max-width:none;max-height:55svh}:global(.life-map-world-label){min-width:126px;padding:8px 9px}}@media(prefers-reduced-motion:reduce){.life-map-root *{transition:none!important;animation:none!important}}`}</style>
   </main>;
 }
