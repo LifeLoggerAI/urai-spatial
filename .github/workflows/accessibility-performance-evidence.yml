@@ -12,6 +12,7 @@ on:
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'playwright.accessibility.config.ts'
+      - 'scripts/materialize-accessibility-performance-current.mjs'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
@@ -85,6 +86,9 @@ jobs:
 
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Materialize current accessibility proof contract
+        run: node scripts/materialize-accessibility-performance-current.mjs
 
       - name: Run isolated accessibility and performance suite
         shell: bash
