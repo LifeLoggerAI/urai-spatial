@@ -53,10 +53,10 @@ source = replaceExact(
   source,
   `    reached,
     samples,`,
-  `    reached: reached || end.nearby === destination,
+  `    reached: end.nearby === destination && end.moving === 'false',
     samples,`,
   1,
-  'continuous proof terminal nearby telemetry acceptance',
+  'continuous proof stable terminal nearby telemetry acceptance',
 )
 source = replaceExact(
   source,
@@ -87,34 +87,42 @@ source = replaceExact(
   `  const settleActive = new Set()
   let end = await readMovementTelemetry(page, destination)
   const settleStartedAt = Date.now()
+  let settleAttempts = 0
   try {
-    while (Date.now() - settleStartedAt < 30_000 && (end.nearby !== destination || end.moving !== 'false')) {
-      const directions = desiredDirections(end, destination)
-      const desired = method === 'touch' && directions.length > 1
-        ? new Set([directions.find((direction) => direction === 'left' || direction === 'right') || directions[0]])
-        : new Set(directions)
+    while (Date.now() - settleStartedAt < 120_000 && settleAttempts < 12 && (end.nearby !== destination || end.moving !== 'false')) {
       if (end.nearby === destination) {
         await releaseDirections(page, method, settleActive)
-        await waitFrames(page, 1)
-      } else if (desired.size) {
+        await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-moving') === 'false', ownerSelector, { timeout: 30_000 }).catch(() => {})
+      } else {
+        const directions = desiredDirections(end, destination)
+        const desired = method === 'touch' && directions.length > 1
+          ? new Set([directions.find((direction) => direction === 'left' || direction === 'right') || directions[0]])
+          : new Set(directions)
+        if (!desired.size) break
+        const beforeFrames = end.renderedFrames
         if (method === 'keyboard') await setKeyboardDirections(page, settleActive, desired)
         else await setTouchDirections(page, settleActive, desired)
-        await delay(120)
+        await page.waitForFunction(({ selector, beforeFrames, destination }) => {
+          const owner = document.querySelector(selector)
+          const frames = Number.parseFloat(owner?.getAttribute('data-home-rendered-frames') || '')
+          return owner?.getAttribute('data-home-nearby') === destination
+            || (Number.isFinite(frames) && (beforeFrames == null || frames > beforeFrames))
+        }, { selector: ownerSelector, beforeFrames, destination }, { timeout: 30_000 }).catch(() => {})
         await releaseDirections(page, method, settleActive)
-        await waitFrames(page, 1)
-      } else {
-        await waitFrames(page, 1)
+        await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-moving') === 'false', ownerSelector, { timeout: 30_000 }).catch(() => {})
       }
       end = await readMovementTelemetry(page, destination)
       samples.push(end)
+      settleAttempts += 1
     }
   } finally {
     await releaseDirections(page, method, settleActive)
   }
+  await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-moving') === 'false', ownerSelector, { timeout: 30_000 }).catch(() => {})
   end = await readMovementTelemetry(page, destination)
   samples.push(end)`,
   1,
-  'continuous proof slow-host post-release destination stabilization',
+  'continuous proof telemetry-driven stable destination correction',
 )
 
 await writeFile(materializedPath, source)
