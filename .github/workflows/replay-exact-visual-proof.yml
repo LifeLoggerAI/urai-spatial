@@ -1,0 +1,182 @@
+name: Replay Exact Visual Proof
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/replay-exact-visual-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: replay-exact-visual-proof-af9a2325
+  cancel-in-progress: true
+
+env:
+  REPLAY_SOURCE_SHA: af9a23252cf2521b0b3c1deee678a04a78a01aaf
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+
+jobs:
+  replay-browser-proof:
+    if: github.repository == 'LifeLoggerAI/urai-spatial'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout immutable Replay source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.REPLAY_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean Replay source
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$REPLAY_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$REPLAY_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact dependency graph
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Prove Replay-owned source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/replay-exact-visual-proof
+          node tests/replay-memory-theater-contract.mjs \
+            | tee artifacts/replay-exact-visual-proof/replay-memory-theater-contract.log
+          node --test urai-tier1/tests/replay-spatial-world-contract.test.mjs \
+            | tee artifacts/replay-exact-visual-proof/replay-spatial-world-contract.log
+          node --test urai-tier1/tests/replay-product-controls-contract.test.mjs \
+            | tee artifacts/replay-exact-visual-proof/replay-product-controls-contract.log
+
+      - name: Typecheck and build immutable Replay source
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter urai-tier1 typecheck \
+            | tee artifacts/replay-exact-visual-proof/typecheck.log
+          pnpm build:static \
+            | tee artifacts/replay-exact-visual-proof/build-static.log
+
+      - name: Install exact Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium \
+            2>&1 | tee artifacts/replay-exact-visual-proof/playwright-install.log
+          pnpm --dir urai-tier1 exec playwright --version \
+            | tee artifacts/replay-exact-visual-proof/playwright-version.txt
+
+      - name: Serve exact static bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out \
+            > artifacts/replay-exact-visual-proof/http-server.log 2>&1 &
+          echo $! > artifacts/replay-exact-visual-proof/http-server.pid
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/replay/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Capture desktop and mobile Replay interaction proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          URAI_SPATIAL_USE_EXISTING_SERVER=true \
+          URAI_SPATIAL_BASE_URL=http://127.0.0.1:4173 \
+          URAI_SPATIAL_ARTIFACT_DIR=artifacts/replay-exact-visual-proof \
+            node tests/replay-tier5-lock.mjs \
+            2>&1 | tee artifacts/replay-exact-visual-proof/replay-tier5-capture.log
+
+      - name: Capture explicit no-WebGL Replay fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          import { createRequire } from 'node:module'
+
+          const requireFromTierOne = createRequire(new URL('./urai-tier1/package.json', import.meta.url))
+          const { chromium } = requireFromTierOne('playwright')
+          const out = 'artifacts/replay-exact-visual-proof'
+          const browser = await chromium.launch()
+          const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+          const page = await context.newPage()
+          const errors = []
+          page.on('pageerror', (error) => errors.push(error.message))
+          page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
+          await page.addInitScript(() => {
+            const nativeGetContext = HTMLCanvasElement.prototype.getContext
+            HTMLCanvasElement.prototype.getContext = function(type, ...args) {
+              if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
+              return nativeGetContext.call(this, type, ...args)
+            }
+          })
+          const memoryId = encodeURIComponent('demo:seed-memory-bloom')
+          await page.goto(`http://127.0.0.1:4173/replay/?memoryId=${memoryId}&manifestId=demo-manifest&demo=1`, { waitUntil: 'domcontentloaded' })
+          const client = page.getByTestId('cinematic-replay-client').first()
+          await client.waitFor({ state: 'visible', timeout: 30000 })
+          const preflight = client.getByTestId('replay-preflight').first()
+          if (await preflight.count()) {
+            await preflight.getByRole('button', { name: 'Enter Replay', exact: true }).click()
+          }
+          const fallback = page.getByTestId('replay-webgl-fallback').first()
+          await fallback.waitFor({ state: 'visible', timeout: 30000 })
+          const text = await fallback.textContent()
+          if (!text?.includes('Spatial rendering is unavailable')) throw new Error(`Unexpected Replay fallback copy: ${text}`)
+          await page.screenshot({ path: `${out}/04-mobile-no-webgl-replay.png`, fullPage: true })
+          const report = {
+            sourceSha: process.env.REPLAY_SOURCE_SHA,
+            viewport: page.viewportSize(),
+            fallbackVisible: await fallback.isVisible(),
+            fallbackText: text,
+            errors,
+          }
+          fs.writeFileSync(`${out}/replay-no-webgl-report.json`, JSON.stringify(report, null, 2))
+          if (errors.length) throw new Error(`Replay no-WebGL emitted errors: ${JSON.stringify(errors)}`)
+          await browser.close()
+          NODE
+
+      - name: Verify exact source remained clean
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$REPLAY_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Upload immutable Replay visual evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: replay-exact-visual-proof-${{ env.REPLAY_SOURCE_SHA }}
+          path: artifacts/replay-exact-visual-proof
+          if-no-files-found: error
+          retention-days: 90
