@@ -1,0 +1,47 @@
+name: Export Exact Home Repair Patch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/export-home-repair-patch.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.head.ref == 'ops/export-core-convergence-bundle-20260729'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout tooling branch with history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Export exact linear repair patch
+        shell: bash
+        env:
+          OLD_HOME_SHA: 79bd5d4063e74aa9c43ef7108efbc019f44abe4f
+          CURRENT_HOME_SHA: aaa874081a6534d7c0e28e7ae465f377f5046e9e
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/home-repair-patch
+          git fetch --no-tags origin "$OLD_HOME_SHA" "$CURRENT_HOME_SHA"
+          test "$(git merge-base "$OLD_HOME_SHA" "$CURRENT_HOME_SHA")" = "$OLD_HOME_SHA"
+          git diff --binary --full-index "$OLD_HOME_SHA" "$CURRENT_HOME_SHA" > artifacts/home-repair-patch/home-repair.patch
+          git diff --name-status "$OLD_HOME_SHA" "$CURRENT_HOME_SHA" > artifacts/home-repair-patch/name-status.txt
+          printf '%s\n' "$OLD_HOME_SHA" > artifacts/home-repair-patch/old-home-sha.txt
+          printf '%s\n' "$CURRENT_HOME_SHA" > artifacts/home-repair-patch/current-home-sha.txt
+          sha256sum artifacts/home-repair-patch/* > artifacts/home-repair-patch/SHA256SUMS
+
+      - name: Upload exact patch
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-repair-patch-aaa874081a6534d7c0e28e7ae465f377f5046e9e
+          path: artifacts/home-repair-patch
+          if-no-files-found: error
+          retention-days: 7
