@@ -35,6 +35,12 @@ patched = replaceOnce(
   `    await advanceClockToState(page, 'data-life-map-phase', 'arrival', 800)\n    await page.clock.runFor(120)\n    await shot(page, 'stable-arrival', 'arrival')`,
   'Founder arrival render frame',
 )
+patched = replaceOnce(
+  patched,
+  `    await selectQuietReset(page)\n    await page.keyboard.press('Escape')`,
+  `    await selectQuietReset(page)\n    await stable(page, 3)\n    await page.keyboard.press('Escape')`,
+  'Founder Escape selected-state handler frame',
+)
 
 await writeFile(runtimeUrl, patched, 'utf8')
 try {
