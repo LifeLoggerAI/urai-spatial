@@ -13,6 +13,7 @@ on:
       - '.github/workflows/accessibility-performance-evidence.yml'
       - 'playwright.accessibility.config.ts'
       - 'scripts/materialize-accessibility-performance-current.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v2.mjs'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
@@ -23,6 +24,7 @@ on:
       - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
+      - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/app/status/**'
       - 'urai-tier1/src/data/launchTruth.ts'
       - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
@@ -43,7 +45,7 @@ env:
 jobs:
   evidence:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 55
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -88,7 +90,7 @@ jobs:
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
       - name: Materialize current accessibility proof contract
-        run: node scripts/materialize-accessibility-performance-current.mjs
+        run: node scripts/materialize-accessibility-performance-current-v2.mjs
 
       - name: Run isolated accessibility and performance suite
         shell: bash
