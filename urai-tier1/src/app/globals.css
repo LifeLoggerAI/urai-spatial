@@ -94,7 +94,8 @@ canvas {
   pointer-events: auto !important;
 }
 
-body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] canvas {
+body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"],
+body:has(.life-map-navigator[open]) [data-testid="urai-true-3d-life-map"] * {
   pointer-events: none !important;
 }
 
