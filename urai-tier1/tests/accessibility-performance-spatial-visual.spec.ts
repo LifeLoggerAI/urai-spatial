@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('URAI visual ownership and containment evidence', () => {
-  test.describe.configure({ timeout: 60_000 })
+  // The software-rendered Actions host proved the complete Orb route contract in
+  // 27-30 seconds while the default 30-second test envelope clipped the first
+  // attempt. Preserve every visual, accessibility and destination assertion while
+  // allowing the deterministic route proof to complete without relying on retries.
+  test.describe.configure({ timeout: 90_000 })
 
   test('Home exposes one authored Orb with a transparent operable controller', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
@@ -120,6 +124,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })
     const controls = page.locator('details.life-map-help')
     const body = controls.locator(':scope > div')
+    await expect(controls).toBeVisible({ timeout: 30_000 })
     await expect(controls).not.toHaveAttribute('open', '')
     await expect(body).toBeHidden()
 

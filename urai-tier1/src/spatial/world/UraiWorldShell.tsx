@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { GroundGateway } from './GroundGateway'
 import { LifeMapIndependentInputBoundary } from './LifeMapIndependentInputBoundary'
+import { LifeMapRouteTransactionBridge } from './LifeMapRouteTransactionBridge'
 import { LifeMapSelectedActionRuntimeInvariant } from './LifeMapSelectedActionRuntimeInvariant'
 import { PersistentRealmAtmosphere } from './PersistentRealmAtmosphere'
 import { PersistentWorldCompanion } from './PersistentWorldCompanion'
@@ -19,6 +20,7 @@ import './secondaryRealmConvergence.css'
 import './lifeMapIndependentInteraction.css'
 import './embodiedExplorationLayout.css'
 import './interactionCollisionRepair.css'
+import './homeMobileControlSeparation.css'
 import './lifeMapSelectedActionHardening.css'
 import './lifeMapSelectedActionInvariant.css'
 import './lifeMapProductionIsolation.css'
@@ -45,6 +47,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       <PersistentRealmAtmosphere />
       {children}
       <GroundGateway />
+      {world.destination === 'life-map' ? <LifeMapRouteTransactionBridge /> : null}
       {world.destination === 'life-map' ? <LifeMapIndependentInputBoundary /> : null}
       {showWorldCompanion ? <PersistentWorldCompanion /> : null}
       <WorldTransitionController />

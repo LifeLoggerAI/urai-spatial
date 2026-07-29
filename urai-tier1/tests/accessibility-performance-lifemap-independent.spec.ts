@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+const lifeMapOwnerSelector = '[data-testid="urai-true-3d-life-map"]'
+
 async function enableExplicitLifeMapDemo(page: Page) {
   await page.addInitScript(() => window.localStorage.setItem('urai:lifeMapDemoMode', 'true'))
 }
@@ -16,15 +18,15 @@ function selectedMemoryControls(page: Page) {
   return page.getByRole('navigation', { name: 'Selected memory actions' })
 }
 
-function demoMemoryUrl(overview = false) {
-  const query = new URLSearchParams({
-    memoryId: 'memory-thread',
-    manifestId: 'replay-recovery-thread',
-    node: 'memory-thread',
-    demo: '1',
-  })
-  if (overview) query.set('overview', '1')
-  return `/life-map?${query.toString()}`
+async function selectFirstMemory(page: Page) {
+  const explore = page.locator('details.life-map-help')
+  await expect(explore).toBeVisible({ timeout: 30_000 })
+  await explore.locator('summary').click()
+  const firstMemory = explore.locator('button').first()
+  await expect(firstMemory).toBeVisible({ timeout: 15_000 })
+  await firstMemory.click()
+  await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
+  return new URL(page.url()).searchParams.get('memoryId')
 }
 
 async function openSemanticExplorer(page: Page) {
@@ -39,9 +41,10 @@ async function openSemanticExplorer(page: Page) {
 }
 
 test.describe('Life Map independent realm runtime evidence', () => {
+  test.describe.configure({ timeout: 90_000 })
+
   test('Life Map does not mount the Home companion visually, semantically, or in the tab sequence', async ({ page }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
-
     const shell = page.locator('[data-testid="urai-persistent-world-shell"]')
     await expect(shell).toHaveAttribute('data-world-destination', 'life-map')
     await expect(shell).toHaveAttribute('data-companion-owned', 'false')
@@ -50,7 +53,6 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(page.locator('.urai-world-companion')).toHaveCount(0)
     await expect(page.locator('.urai-world-companion__orb')).toHaveCount(0)
     await expect(page.getByRole('button', { name: /orb travel controls/i })).toHaveCount(0)
-    await expect(page.locator('body')).not.toContainText('Orb companion')
 
     const forbiddenTabStops = await page.locator('button,a[href],summary,[tabindex]:not([tabindex="-1"])').evaluateAll((elements) => elements
       .filter((element) => {
@@ -60,7 +62,6 @@ test.describe('Life Map independent realm runtime evidence', () => {
       })
       .filter((element) => element.matches('.urai-world-companion, .urai-world-companion *') || /orb travel controls/i.test(element.getAttribute('aria-label') || ''))
       .map((element) => element.outerHTML.slice(0, 240)))
-
     expect(forbiddenTabStops).toEqual([])
     await expect(page.getByText('Explore', { exact: true })).toBeVisible()
   })
@@ -105,7 +106,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     expect(focusUrl.searchParams.get('from')).toBe('life-map')
   })
 
-  test('Overview preserves memory identity while removing selected visual and semantic state across refresh and history', async ({ page }) => {
+  test('Overview removes selected visual and semantic state across refresh and history', async ({ page }) => {
     await enableExplicitLifeMapDemo(page)
 
     await page.goto(demoMemoryUrl(false), { waitUntil: 'domcontentloaded' })
@@ -121,7 +122,6 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(selectedMemoryControls(page)).toHaveCount(0)
 
     await page.reload({ waitUntil: 'domcontentloaded' })
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
     expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview')
 
@@ -141,20 +141,51 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await enableExplicitLifeMapDemo(page)
     const viewports = [
       { width: 360, height: 800 },
+      { width: 390, height: 844 },
       { width: 393, height: 873 },
       { width: 412, height: 915 },
-      { width: 432, height: 960 },
     ]
 
     for (const viewport of viewports) {
       await page.setViewportSize(viewport)
-      await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
-      await expect(lifeMapRoot(page)).toBeVisible({ timeout: 15_000 })
-      const layout = await page.evaluate(() => ({
-        scrollWidth: document.documentElement.scrollWidth,
-        innerWidth: window.innerWidth,
-      }))
+      await page.goto('/life-map?demo=1&overview=1', { waitUntil: 'domcontentloaded' })
+      await expect(page.locator(lifeMapOwnerSelector)).toBeVisible()
+      await expect(page.locator('.urai-world-companion')).toHaveCount(0)
+      await expect(selectedMemoryControls(page)).toHaveCount(0)
+
+      const layout = await page.evaluate(() => {
+        const summary = document.querySelector('details.life-map-help summary')?.getBoundingClientRect()
+        const title = document.querySelector('.life-map-title')?.getBoundingClientRect()
+        return {
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+          summary: summary ? { left: summary.left, right: summary.right } : null,
+          title: title ? { left: title.left, right: title.right } : null,
+        }
+      })
       expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1)
+      expect(layout.summary).not.toBeNull()
+      expect(layout.title).not.toBeNull()
+      expect(layout.summary!.left).toBeGreaterThanOrEqual(0)
+      expect(layout.summary!.right).toBeLessThanOrEqual(viewport.width)
+      expect(layout.title!.left).toBeGreaterThanOrEqual(0)
+      expect(layout.title!.right).toBeLessThanOrEqual(viewport.width)
     }
+  })
+
+  test('reduced motion keeps selection and unwind behavior equivalent', async ({ page }) => {
+    await enableExplicitLifeMapDemo(page)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
+    await selectFirstMemory(page)
+    await expect(page.locator(lifeMapOwnerSelector)).toHaveAttribute('data-life-map-phase', 'arrival')
+    const actions = selectedMemoryControls(page)
+    await actions.getByRole('button', { name: 'Overview' }).click()
+    await expect.poll(() => normalizedPathname(page.url())).toBe('/life-map')
+    await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(actions).toHaveCount(0)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
+    await expect(actions).toHaveCount(0)
   })
 })

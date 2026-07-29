@@ -1,0 +1,85 @@
+name: Repair Home Review Candidate Proof
+
+on:
+  push:
+    branches:
+      - feat/home-final-personalized-sanctuary-20260723
+    paths:
+      - .github/workflows/repair-home-review-candidate-proof-20260724.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-home-review-candidate-proof-20260724
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact Home branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feat/home-final-personalized-sanctuary-20260723
+          fetch-depth: 2
+
+      - name: Replace only the stale normal-mode expectation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/capture-continuous-spatial-proof-v18.mjs')
+          source = path.read_text()
+          old = """    if (expectReady) {
+                await waitForAssetHome(page)
+                result = { expected: 'ready', verification: await verifyHome(page, { mode: 'unavailable', fixture: 'none', orbState: 'warning', assetMode: 'ready' }) }
+              } else {
+                const fallback = page.locator(fallbackSelector).first()
+                await fallback.waitFor({ state: 'visible', timeout: 30_000 })
+                result = { expected: 'canonical-fallback', fallbackVisible: true }
+              }
+          """
+          new = """    await waitForAssetHome(page)
+              const expectedAssetMode = expectReady ? 'ready' : 'disclosed-review-candidate'
+              const verification = await verifyHome(page, {
+                mode: 'unavailable',
+                fixture: 'none',
+                orbState: 'warning',
+                assetMode: expectedAssetMode,
+              })
+              result = { expected: expectedAssetMode, verification }
+          """
+          if source.count(old) != 1:
+              raise SystemExit(f'expected one stale normal-mode block, found {source.count(old)}')
+          source = source.replace(old, new)
+          source = source.replace(
+              "    if ((expectReady && !result.verification?.passed) || diagnosticResult.pageErrors.length) receipt.errors.push(record)",
+              "    if (!result.verification?.passed || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)",
+          )
+          path.write_text(source)
+          PY
+
+      - name: Prove the repaired contract remains fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "const expectedAssetMode = expectReady ? 'ready' : 'disclosed-review-candidate'" scripts/capture-continuous-spatial-proof-v18.mjs
+          grep -F "if (!result.verification?.passed || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length)" scripts/capture-continuous-spatial-proof-v18.mjs
+          node --check scripts/capture-continuous-spatial-proof-v18.mjs
+          git diff --check
+          test "$(git diff --name-only)" = "scripts/capture-continuous-spatial-proof-v18.mjs"
+
+      - name: Commit exact bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LifeLoggerAI"
+          git config user.email "actions@users.noreply.github.com"
+          git add scripts/capture-continuous-spatial-proof-v18.mjs
+          git commit -m "Fix Home normal-mode review candidate proof"
+          git push origin HEAD:feat/home-final-personalized-sanctuary-20260723

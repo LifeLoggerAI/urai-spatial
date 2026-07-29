@@ -30,6 +30,8 @@ function asDemoMemoryId(memoryId: string | null) {
 function demoContinuationMemoryId(params: URLSearchParams, memoryId: string | null) {
   if (!memoryId) return null
 
+  // Keep public route identity stable while resolving the explicitly disclosed
+  // sample through its namespaced internal fixture identity.
   if (params.get('demo') === '1' && params.get('from') === 'life-map') {
     return asDemoMemoryId(memoryId)
   }

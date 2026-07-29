@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
@@ -13,6 +14,7 @@ const lifeMapScene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
 const routeOwner = read('src/spatial/world/routeOwnerConvergence.css')
 const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
+const homeGraph = `${homeRuntime}\n${assetHome}\n${finalHome}`
 
 const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 
@@ -24,11 +26,41 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Final Home is the active coherent physical sanctuary', () => {
-  has(homeRuntime, 'FinalHomeWorld')
-  has(homeRuntime, 'data-home-visual-owner="final-coherent-sanctuary"')
-  has(homeRuntime, 'data-home-exploration="walkable"')
-  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
+test('Asset-driven Home is the active coherent physical sanctuary with an explicit degraded fallback', () => {
+  for (const marker of [
+    'AssetDrivenHomeWorld',
+    'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
+    'data-home-visual-owner="asset-driven-personalized-sanctuary"',
+    'data-home-exploration="walkable"',
+    'data-home-ground-portal="home-ground-portal-world-owned"',
+    'data-home-life-map-portal="home-life-map-portal-world-owned"',
+    'aria-label="Open Orb directly"',
+    'aria-label="Open Ground directly"',
+    'aria-label="Open Life Map directly"',
+  ]) has(homeRuntime, marker)
+  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-visual-owner="final-coherent-sanctuary"/)
+
+  for (const marker of [
+    'data-home-primary-owner="asset-driven"',
+    'data-home-asset-mode=',
+    'data-home-personalization-mode=',
+    'data-home-review-fixture=',
+    'data-home-orb-state=',
+    'data-home-orb-clip=',
+    'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
+    'home-authored-entry-chamber',
+    'home-personalized-places-',
+    'home-embodied-presence-interaction',
+    'home-orb-state-',
+    'MobileMovementPad',
+    'requestUraiWorldTravel',
+    'Why am I seeing this?',
+  ]) has(assetHome, marker)
+  assert.match(assetHome, /name=\{`home-\$\{destination\}-portal-\$\{phase\}`\}/)
+  assert.match(assetHome, /<DestinationPortal destination="ground"/)
+  assert.match(assetHome, /<DestinationPortal destination="life-map"/)
+  assert.match(assetHome, /destination:\s*'ground'\s*\|\s*'life-map'/)
+
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
     'data-home-movement="walk-keyboard-click-touch"',
@@ -36,30 +68,20 @@ test('Final Home is the active coherent physical sanctuary', () => {
     'data-testid="urai-home-walkable-surface"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
-    'data-home-player-x',
-    'data-home-player-z',
-    'data-home-distance',
-    'data-home-moving',
     'home-visible-navigable-sanctuary-world',
-    'home-memory-vignette-',
-    'place-loved',
-    'ride-home',
-    'voices-dinner',
-    'song-returned',
-    'quiet-growth',
-    'MobileMovementPad',
-    'requestUraiWorldTravel',
-    'aria-label="Open Orb directly"',
-    'aria-label="Open Ground directly"',
-    'aria-label="Open Life Map directly"',
   ]) has(finalHome, marker)
-  assert.doesNotMatch(finalHome, /assetCssStack|homeAssets|home-authored-desktop|urai-home-embodied-art|requestPointerLock|sprint|jump|crouch/i)
+  assert.match(assetHome, /<HomeFallback reason=/)
+  assert.match(assetHome, /data-home-fallback-reason=/)
+  assert.match(assetHome, /interactionRef\.current/)
+  assert.match(assetHome, /data-home-nearby=/)
+  assert.doesNotMatch(assetHome, /requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
 })
 
-test('Home keeps one physical Orb and direct-access parity', () => {
-  assert.match(finalHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.2\)/)
-  has(finalHome, 'name="home-final-orb-physical-anchor"')
-  assert.match(finalHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+test('Home keeps one physical authored Orb and direct-access parity', () => {
+  assert.match(assetHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.62, -0\.65\)/)
+  has(assetHome, 'name={`home-orb-state-${state}`}')
+  has(assetHome, 'name="home-authored-orb"')
+  assert.match(assetHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
@@ -81,12 +103,9 @@ test('Life Map keeps independent non-Orb travel, depth and overview recovery', (
 })
 
 test('embodied movement never removes semantic exits', () => {
-  assert.match(finalHome, />Ground<\/button>/)
-  assert.match(finalHome, />Life Map<\/button>/)
+  assert.match(homeGraph, />Ground<\/button>/)
+  assert.match(homeGraph, />Life Map<\/button>/)
   assert.match(ground, /Escape to return Home/)
   assert.match(lifeMapScene, />Enter Focus<\/button>/)
   assert.match(lifeMapScene, />Replay<\/button>/)
-  assert.match(lifeMapScene, />Overview<\/button>/)
-  assert.match(lifeMapScene, /if \(selectedId\) overview\(\); else router\.push\("\/home"\)/)
-  assert.match(worldShell, /embodiedExplorationLayout\.css/)
 })

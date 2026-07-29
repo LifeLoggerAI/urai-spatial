@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "authority": {
+    "workflowRun": 30042154450,
+    "job": 89324429858,
+    "sourceHead": "5219a70b01544beaff5422ca492d5935aa88e91a",
+    "candidateArtifactId": 8577690093,
+    "candidateArtifactDigest": "sha256:6c0c5b0e0207086e0f254434e7310f5c2fdaebfb3f969dae9a58a281ef477ca0",
+    "legacyArtifactId": 8577690575,
+    "legacyArtifactDigest": "sha256:849af9ddbe2d0245e29154eb1013ca4088f0115a4c2ed8aecdc62013639a2c27"
+  },
+  "truthBoundary": {
+    "manifestPromotion": false,
+    "visualApproval": false,
+    "productionReady": false,
+    "reviewModeRequired": true
+  },
+  "decisions": [
+    {
+      "id": "home-entry-chamber-current",
+      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "bytes": 184160,
+      "triangleCount": 12934,
+      "boundsMeters": {
+        "min": [
+          -9.345,
+          -1.83,
+          -9.238
+        ],
+        "max": [
+          9.345,
+          5.0844,
+          7.452
+        ],
+        "size": [
+          18.69,
+          6.9144,
+          16.69
+        ]
+      },
+      "nodes": 160,
+      "materials": 13,
+      "textures": 0,
+      "animations": 4,
+      "compression": "meshopt",
+      "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required",
+      "classification": "authored compressed review candidate",
+      "reason": "Authored sanctuary v3 with open mobile-safe sightline, grounded terrain, masonry vaults, natural paths, portal alcoves, environmental growth, authored embodied presence, personalized-place anchors and four Home/presence clips. Remains review-only until exact-head visual acceptance.",
+      "animationClips": [
+        "Home_Breathing",
+        "Presence_Idle",
+        "Presence_Privacy",
+        "Presence_Forming"
+      ]
+    },
+    {
+      "id": "home-entry-chamber-legacy",
+      "sha256": "9d376de5e3a74ea4bd2a264b260489cda6e42fccefa73ff2a54bd76d26d203ea",
+      "bytes": 61052,
+      "triangleCount": 2158,
+      "nodes": 21,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed",
+      "classification": "comparison-only",
+      "reason": "Richer spatial node language and portal anchors, but historical branch provenance and visual acceptance remain unresolved."
+    },
+    {
+      "id": "portal-ring-current",
+      "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
+      "bytes": 73164,
+      "triangleCount": 7576,
+      "boundsMeters": {
+        "min": [
+          -1.9753,
+          -2.52,
+          -1.02
+        ],
+        "max": [
+          2,
+          2.9579,
+          1.2349
+        ],
+        "size": [
+          3.9753,
+          5.4779,
+          2.2549
+        ]
+      },
+      "nodes": 53,
+      "materials": 8,
+      "textures": 0,
+      "animations": 7,
+      "compression": "meshopt",
+      "classification": "authored compressed review candidate",
+      "reason": "Authored architectural masonry portal v3 with internal depth, traversal veil, named interaction nodes and seven directly bound state clips. Remains review-only until route-wide visual acceptance.",
+      "animationClips": [
+        "Portal_Closed",
+        "Portal_Available",
+        "Portal_Attention",
+        "Portal_Active",
+        "Portal_Opening",
+        "Portal_Traversal",
+        "Portal_Closing"
+      ],
+      "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required"
+    },
+    {
+      "id": "portal-ring-legacy",
+      "sha256": "a36f17d65ecbbd527582725b5cf3b1bc359538e42f80e22fb167947c94495adc",
+      "bytes": 160436,
+      "triangleCount": 6696,
+      "nodes": 35,
+      "materials": 5,
+      "textures": 0,
+      "animations": 0,
+      "compression": "uncompressed",
+      "classification": "comparison-only",
+      "reason": "Substantially richer silhouette and depth structure, but no animation clips and no current-contract visual or rights promotion receipt."
+    },
+    {
+      "id": "urai-orb-avatar-current",
+      "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
+      "bytes": 83984,
+      "triangleCount": 8776,
+      "boundsMeters": {
+        "min": [
+          -0.765,
+          -0.73,
+          -0.4873
+        ],
+        "max": [
+          0.756,
+          0.73,
+          0.4873
+        ],
+        "size": [
+          1.521,
+          1.46,
+          0.9746
+        ]
+      },
+      "nodes": 34,
+      "materials": 8,
+      "textures": 0,
+      "animations": 12,
+      "compression": "meshopt",
+      "classification": "authored compressed review candidate",
+      "reason": "Authored route-independent Orb v3 with layered petals, core, heart, aura, orbital systems and twelve directly bound state clips. Remains review-only until exact-head visual acceptance.",
+      "animationClips": [
+        "Orb_Resting",
+        "Orb_Idle",
+        "Orb_Attention",
+        "Orb_Listening",
+        "Orb_Thinking",
+        "Orb_Speaking",
+        "Orb_Guiding",
+        "Orb_Reflecting",
+        "Orb_Calming",
+        "Orb_Privacy",
+        "Orb_Degraded",
+        "Orb_Transition"
+      ],
+      "validation": "authored source lock, exact receipt hash, independent GLB audit, Khronos-compatible validation, route evidence and delegated founder visual acceptance still required"
+    },
+    {
+      "id": "global-cinematic-material-pack-current",
+      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+      "bytes": 673,
+      "classification": "review candidate",
+      "reason": "Valid internal JSON material vocabulary but not a texture pack and not sufficient to establish final environmental materials by itself."
+    },
+    {
+      "id": "life-map-galaxy-skybox-current",
+      "sha256": "f43eef43074193370e096ad1e2e57657b7083601c18e70b5d0307e75f7f671d9",
+      "bytes": 1415240,
+      "resolution": [
+        2048,
+        1024
+      ],
+      "classification": "review candidate",
+      "reason": "Technically decoded and materially stronger than the 64x32 legacy HDR, but Home does not promote or claim it in this lane."
+    },
+    {
+      "id": "spatial-particle-atlas-current",
+      "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+      "bytes": 622,
+      "resolution": [
+        1024,
+        1024
+      ],
+      "classification": "review candidate",
+      "reason": "Valid SVG source; production conversion to KTX2 or WebP remains required."
+    },
+    {
+      "id": "urai-loading-sequence-current",
+      "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+      "bytes": 612,
+      "classification": "technically approved but visually pending",
+      "reason": "Accessible deterministic sequence contract; final visual integration remains unreviewed."
+    },
+    {
+      "id": "urai-ambient-bed-current",
+      "sha256": "148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d",
+      "bytes": 352844,
+      "durationSeconds": 8,
+      "sampleRate": 22050,
+      "channels": 1,
+      "classification": "review candidate",
+      "reason": "Valid internal PCM candidate with silent fallback; final mix and production compression remain required."
+    }
+  ]
+}
