@@ -19,7 +19,7 @@ env:
 
 jobs:
   combined-lifemap-repair:
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/trigger-combined-lifemap-repair-20260729'
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/trigger-combined-lifemap-repair-v2-20260729'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
           git push origin HEAD:release/core-convergence-20260729
 
   patch-check:
-    if: github.head_ref != 'agent/trigger-combined-lifemap-repair-20260729'
+    if: github.head_ref != 'agent/trigger-combined-lifemap-repair-v2-20260729'
     name: pnpm patch:check
     runs-on: ubuntu-latest
     timeout-minutes: 30
