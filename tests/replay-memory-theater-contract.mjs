@@ -18,6 +18,7 @@ const replayWorldPath = 'urai-tier1/src/app/replay/ReplaySpatialWorld.tsx'
 const replayRecoveryPath = 'urai-tier1/src/app/replay/ReplayRecoveryState.tsx'
 const replayModelPath = 'urai-tier1/src/spatial/replay/replaySpatialModel.ts'
 const replayStatePath = 'urai-tier1/src/spatial/scene/replayState.ts'
+const replayTier5Path = 'tests/replay-tier5-lock.mjs'
 const autonomousIsolationPath = 'urai-tier1/src/app/urai-autonomous-v1-isolation.css'
 
 const replayPage = read(replayPagePath)
@@ -26,6 +27,7 @@ const replayWorld = read(replayWorldPath)
 const replayRecovery = read(replayRecoveryPath)
 const replayModel = read(replayModelPath)
 const replayState = read(replayStatePath)
+const replayTier5 = read(replayTier5Path)
 const autonomousIsolation = read(autonomousIsolationPath)
 
 for (const token of [
@@ -73,6 +75,17 @@ for (const token of [
   'useMovementInput',
   'useDragLook',
   'MobileMovementPad',
+  'ReplayMovementHelp',
+  'Move through Replay',
+  'useAdaptiveSpatialQuality',
+  "markFirstSpatialFrame('/replay', profile.tier)",
+  'profile.pixelRatioMax',
+  'profile.particleCount',
+  'profile.shadows',
+  'profile.documentVisible',
+  'THREE.ACESFilmicToneMapping',
+  'THREE.SRGBColorSpace',
+  'data-replay-quality-tier={profile.tier}',
   'data-replay-spatial-renderer="webgl-r3f"',
   'shell.dataset.replayCameraX',
   'shell.dataset.replayCameraZ',
@@ -114,6 +127,22 @@ for (const forbidden of [
 ]) assertNotIncludes(replayClientPath, replayClient, forbidden)
 
 for (const token of [
+  'EXPECTED_ROUTE_PATHS',
+  'isExpectedSameOriginJourneyAbort',
+  "failure !== 'net::ERR_ABORTED'",
+  'requested.origin === authority.origin',
+  'report.ignoredJourneyAborts.push',
+  'Unexpected request failures detected',
+  "schemaVersion: 'urai-replay-tier5-report-6'",
+]) assertIncludes(replayTier5Path, replayTier5, token)
+
+assertNotIncludes(
+  replayTier5Path,
+  replayTier5,
+  "if (failure === 'net::ERR_ABORTED' && request.isNavigationRequest()) return;",
+)
+
+for (const token of [
   "'replay_ready'",
   "'replay_playing'",
   "'replay_paused'",
@@ -134,4 +163,4 @@ for (const token of [
   'CinematicReplayClient owns /replay',
 ]) assertIncludes(autonomousIsolationPath, autonomousIsolation, token)
 
-console.log('Replay embodied spatial owner, recovery, evidence, playback, accessibility, and route-proof contract passed.')
+console.log('Replay embodied spatial owner, adaptive performance, recovery, evidence, playback, accessibility, and fail-closed route-proof contract passed.')
