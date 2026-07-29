@@ -131,6 +131,12 @@ export default function LifeMapSemanticNavigator() {
     <button type="button" onClick={overview}>Overview</button>
   </nav>;
 
+  const journeyRail = <nav className="life-map-journey-rail" data-testid="life-map-journey-rail" data-selected={selected ? "true" : "false"} data-portal-owner="document-body" aria-label="Life Map journey controls">
+    <button type="button" onClick={() => step(-1)} aria-label="Previous visible life object">Previous</button>
+    <button type="button" onClick={() => step(1)} aria-label="Next visible life object">Next</button>
+    <button type="button" onClick={overview}>Overview</button>
+  </nav>;
+
   return <>
     {portalReady ? createPortal(journeyRail, document.body) : null}
 

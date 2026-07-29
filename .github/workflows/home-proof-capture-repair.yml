@@ -1,0 +1,43 @@
+name: Home Proof Capture Repair
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/home-proof-capture-repair.yml'
+      - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'urai-tier1/tests/home-visual-authority-repair-contract.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      github.event.pull_request.head.ref == 'feat/home-final-personalized-sanctuary-20260723'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact trigger head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify truthful pre-promotion capture contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node urai-tier1/tests/home-visual-authority-repair-contract.test.mjs
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import fs from 'node:fs'
+          const source = fs.readFileSync('scripts/capture-continuous-spatial-proof-v18.mjs', 'utf8')
+          assert.match(source, /expectReady \? state\.query : candidateQuery\(state\.query\)/)
+          assert.match(source, /homeLoadingHold=1/)
+          assert.match(source, /getByText\('Your private world is forming', \{ exact: true \}\)\.filter\(\{ visible: true \}\)\.first\(\)/)
+          console.log('HOME_PRE_PROMOTION_CAPTURE_CONTRACT_PASSED')
+          NODE
+          git diff --exit-code

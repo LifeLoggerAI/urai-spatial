@@ -1,0 +1,47 @@
+/* Mobile Home owns two independent interaction regions: movement stays in the
+ * lower-left safe-area band, while ambience and provenance controls remain in
+ * the upper-right. This prevents either operable surface from covering the
+ * other across phone portrait, phone landscape, tablet, and coarse-pointer
+ * layouts where the movement pad is enabled. */
+@media (max-width: 900px), (pointer: coarse) {
+  .urai-world-runtime[data-world-destination='home']
+    .urai-asset-home-world
+    .home-discreet-controls {
+    position: absolute !important;
+    top: max(12px, env(safe-area-inset-top)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: max-content !important;
+    max-width: min(176px, calc(100vw - 24px)) !important;
+    gap: 8px !important;
+    z-index: 44 !important;
+  }
+
+  .urai-world-runtime[data-world-destination='home']
+    .urai-asset-home-world
+    .home-discreet-controls > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+  }
+
+  .urai-world-runtime[data-world-destination='home']
+    .urai-asset-home-world
+    .home-provenance {
+    position: absolute !important;
+    top: max(118px, calc(env(safe-area-inset-top) + 108px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: min(340px, calc(100vw - 24px)) !important;
+    max-height: min(56svh, calc(100svh - 148px - env(safe-area-inset-bottom))) !important;
+    box-sizing: border-box !important;
+    overflow: auto !important;
+    z-index: 45 !important;
+  }
+}

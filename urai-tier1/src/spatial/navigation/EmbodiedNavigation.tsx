@@ -247,8 +247,34 @@ export function stepEmbodiedMotion({
     position.copy(next)
     remainingDelta -= stepDelta
   }
+
+  const moving = velocity.lengthSq() > 0.0025
+  if (typeof document !== 'undefined') {
+    const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    if (owner) {
+      const spawnX = 0
+      const spawnZ = 7.2
+      owner.dataset.homeInputOwner = 'window-capture-movement'
+      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
+      owner.dataset.homeInputReady = 'true'
+      owner.dataset.homeInteractionReady = owner.dataset.homeAssetsReady === 'true' ? 'true' : 'false'
+      owner.dataset.homeReady = 'true'
+      owner.dataset.homePlayerX = position.x.toFixed(3)
+      owner.dataset.homePlayerZ = position.z.toFixed(3)
+      owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
+      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 0.65).toFixed(3)
+      owner.dataset.homeDistanceGround = Math.hypot(position.x + 4.55, position.z + 6.55).toFixed(3)
+      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 4.55, position.z + 6.65).toFixed(3)
+      owner.dataset.homeMoving = moving ? 'true' : 'false'
+      owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
+      owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`
+      const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)
+      owner.dataset.homeRenderedFrames = String(Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1)
+    }
+  }
+
   return {
-    moving: velocity.lengthSq() > 0.0025,
+    moving,
     hasTarget: target.current !== null,
   }
 }
@@ -298,7 +324,7 @@ export function MobileMovementPad({ input, label }: { input: MovementInput; labe
       <button type="button" aria-label="Move backward" data-active={active === 'back'} onPointerDown={() => press('back')} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}>↓</button>
       <button type="button" aria-label="Move right" data-active={active === 'right'} onPointerDown={() => press('right')} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}>→</button>
       <style jsx>{`
-        .urai-mobile-movement{display:none;position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));z-index:28;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;touch-action:none}
+        .urai-mobile-movement{display:grid;position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));z-index:28;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;touch-action:none}
         button{width:48px;height:48px;border:1px solid rgba(207,250,254,.25);border-radius:16px;background:rgba(2,12,26,.68);backdrop-filter:blur(14px);color:#fff;font:800 20px/1 system-ui;box-shadow:0 10px 30px rgba(0,0,0,.28)}button:first-child{grid-column:2}.urai-mobile-movement button:nth-child(2){grid-column:1;grid-row:2}.urai-mobile-movement button:nth-child(3){grid-column:2;grid-row:2}.urai-mobile-movement button:nth-child(4){grid-column:3;grid-row:2}button[data-active="true"],button:focus-visible{background:rgba(35,103,130,.9);outline:3px solid #fff;outline-offset:2px}
         @media(max-width:900px),(pointer:coarse){.urai-mobile-movement{display:grid}}
       `}</style>

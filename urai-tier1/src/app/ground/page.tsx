@@ -1,5 +1,7 @@
 import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
 import GroundCheckpointRestoreSignal from './GroundCheckpointRestoreSignal'
+import GroundFocusContainment from './GroundFocusContainment'
+import './ground-focus-containment.css'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 export const metadata = {
@@ -16,6 +18,7 @@ export default function GroundPage() {
       data-scene-id={groundScene.id}
     >
       <GroundCheckpointRestoreSignal />
+      <GroundFocusContainment />
       <GroundSpatialWorldClean />
     </main>
   )

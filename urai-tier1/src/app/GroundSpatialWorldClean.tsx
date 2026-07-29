@@ -129,7 +129,7 @@ export default function GroundSpatialWorldClean() {
   const prompt = nearby
     ? `${nearby.label}: cross the threshold`
     : moving
-      ? active ? `Following the route to ${active.label}` : "Moving through Ground"
+      ? `Moving through Ground · ${active ? `following the route to ${active.label}` : "exploring the Nexus"}`
       : active
         ? `${active.label} selected · follow the illuminated route`
         : "Arrival overlook · Ground Nexus ahead";

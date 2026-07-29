@@ -4,7 +4,8 @@ import test from 'node:test'
 
 const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-const home = read('src/app/FinalHomeWorld.tsx')
+const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
+const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -12,28 +13,32 @@ const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
 const groundArchitecture = read('src/app/ground/GroundContinuityArchitecture.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
-const homeGraph = `${homeRuntime}\n${home}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundScene}\n${groundArchitecture}`
 
-test('Home is one inhabitable sanctuary with embodied spatial interaction', () => {
+test('Home is one authored inhabitable sanctuary with embodied spatial interaction and a coherent degraded fallback', () => {
   for (const marker of [
-    'FinalHomeWorld',
-    'data-home-visual-owner="final-coherent-sanctuary"',
+    'AssetDrivenHomeWorld',
+    'data-home-visual-owner="asset-driven-personalized-sanctuary"',
+    'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'home-visible-navigable-sanctuary-world',
-    'home-memory-vignette-',
+    'home-personalized-places-',
     'data-testid="urai-home-embodied-avatar"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-walkable-surface"',
     'aria-label="Open Ground directly"',
     'aria-label="Open Life Map directly"',
+    'data-home-primary-owner="procedural-degraded-fallback"',
   ]) assert.ok(homeGraph.includes(marker), `missing Home convergence marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(home, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.doesNotMatch(homeGraph, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
+  assert.match(assetHome, /gl=\{\{[^}]*alpha:\s*false/s)
+  assert.match(assetHome, /function AuthoredHomeSanctuary\([\s\S]*?<HomeSanctuaryWorld\s+reducedMotion=/)
+  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
+  assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
 })
 
 test('Ground is one procedural architectural infrastructure world', () => {

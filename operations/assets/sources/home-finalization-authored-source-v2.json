@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 3,
+  "sourceId": "urai-home-authored-sanctuary-source-v3",
+  "authoredBy": "URAI Labs",
+  "ownership": "URAI Labs proprietary original geometry and animation authored for PR #952",
+  "license": "URAI Labs internal proprietary; redistribution governed by repository license and asset receipts",
+  "tool": "deterministic dependency-free Node.js glTF 2.0 authoring pipeline v3",
+  "generator": "scripts/author-home-finalization-assets.mjs",
+  "coordinateSystem": "glTF right-handed Y-up, meters",
+  "releaseBoundary": "review candidate only until exact-head visual evidence, governance decisions, manifest promotion, merge, and production verification complete",
+  "assets": [
+    {
+      "fileName": "home-entry-chamber-v1.glb",
+      "sha256": "9eb9336fcc6d0c233c8dc9f089139194ceed5da6299f0f668a76ff986162b141",
+      "bytes": 394968,
+      "triangleCount": 12934,
+      "nodes": 157,
+      "materials": 14,
+      "animations": 4,
+      "boundsMeters": {
+        "min": [
+          -9.345,
+          -1.83,
+          -9.238
+        ],
+        "max": [
+          9.345,
+          5.0844,
+          7.452
+        ],
+        "size": [
+          18.69,
+          6.9144,
+          16.69
+        ]
+      }
+    },
+    {
+      "fileName": "portal-ring-master-v1.glb",
+      "sha256": "a4834af5f7d8b248d5da1a3530a5ad4acd60ea7e2636cd804e8506c33b229169",
+      "bytes": 194000,
+      "triangleCount": 7576,
+      "nodes": 47,
+      "materials": 14,
+      "animations": 7,
+      "boundsMeters": {
+        "min": [
+          -1.9753,
+          -2.52,
+          -1.02
+        ],
+        "max": [
+          2,
+          2.9579,
+          1.2349
+        ],
+        "size": [
+          3.9753,
+          5.4779,
+          2.2549
+        ]
+      }
+    },
+    {
+      "fileName": "urai-orb-avatar-v1.glb",
+      "sha256": "3da59fbe002785bdc0b522df98db7201443ba1ca6a5a0b39b6408d216a97786b",
+      "bytes": 261164,
+      "triangleCount": 8776,
+      "nodes": 21,
+      "materials": 14,
+      "animations": 12,
+      "boundsMeters": {
+        "min": [
+          -0.765,
+          -0.73,
+          -0.4873
+        ],
+        "max": [
+          0.756,
+          0.73,
+          0.4873
+        ],
+        "size": [
+          1.521,
+          1.46,
+          0.9746
+        ]
+      }
+    }
+  ]
+}
