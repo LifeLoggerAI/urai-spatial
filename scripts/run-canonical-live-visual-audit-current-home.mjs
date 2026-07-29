@@ -10,30 +10,22 @@ function replaceOnce(source, before, after, label) {
   return source.replace(before, after)
 }
 
+for (const [label, marker] of [
+  ['canonical audit schema', `schemaVersion: 'urai-canonical-live-visual-audit-6'`],
+  ['Focus public identity route', `path: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
+  ['Replay public identity route', `path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
+  ['Focus public identity expectation', `const expectedPublicMemoryId = 'quiet-reset'`],
+  ['Focus fixture identity expectation', `const expectedFixtureMemoryId = 'demo:quiet-reset'`],
+]) {
+  if (!original.includes(marker)) throw new Error(`${label} is not present in the canonical audit authority`)
+}
+
 let patched = original
 patched = replaceOnce(
   patched,
   `selector: '.urai-final-home-world[data-home-spatial-renderer="webgl"], [data-testid="urai-home-accessible-fallback"]',`,
   `selector: '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world[data-home-spatial-renderer="webgl"], main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]',`,
   'canonical Home owner selector',
-)
-patched = replaceOnce(
-  patched,
-  `const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-5', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }`,
-  `const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-6', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }`,
-  'canonical audit schema',
-)
-patched = replaceOnce(
-  patched,
-  `{ id: 'focus', path: '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: '[data-testid="urai-final-focus-chamber"]', markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },`,
-  `{ id: 'focus', path: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="urai-final-focus-chamber"]', markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },`,
-  'Focus public identity route',
-)
-patched = replaceOnce(
-  patched,
-  `{ id: 'replay', path: '/replay?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: 'main', markers: ['The Quiet Reset'] },`,
-  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },`,
-  'Replay public identity route',
 )
 
 const oldHomeSettlement = `  if (route.id === 'home') {
@@ -86,31 +78,6 @@ const currentHomeSettlement = `  if (route.id === 'home') {
   }`
 
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
-patched = replaceOnce(
-  patched,
-  `    const expectedMemoryId = 'demo:quiet-reset'`,
-  `    const expectedPublicMemoryId = 'quiet-reset'\n    const expectedFixtureMemoryId = 'demo:quiet-reset'`,
-  'Focus identity expectations',
-)
-patched = replaceOnce(
-  patched,
-  `    record.expectedMemoryId = expectedMemoryId`,
-  `    record.expectedPublicMemoryId = expectedPublicMemoryId\n    record.expectedFixtureMemoryId = expectedFixtureMemoryId`,
-  'Focus identity receipt',
-)
-patched = replaceOnce(
-  patched,
-  `    record.passed = destination.searchParams.get('memoryId') === expectedMemoryId
-      && record.memoryId === expectedMemoryId
-      && record.memoryStatus === 'demo'`,
-  `    record.passed = destination.searchParams.get('memoryId') === expectedPublicMemoryId
-      && destination.searchParams.get('node') === expectedPublicMemoryId
-      && destination.searchParams.get('returnNode') === expectedPublicMemoryId
-      && destination.searchParams.get('demo') === '1'
-      && record.memoryId === expectedFixtureMemoryId
-      && record.memoryStatus === 'demo'`,
-  'Focus public and fixture identity proof',
-)
 
 await writeFile(runtimeUrl, patched, 'utf8')
 try {
