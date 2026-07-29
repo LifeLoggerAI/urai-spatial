@@ -79,6 +79,43 @@ source = replaceExact(
   1,
   'continuous proof slow-host progress stall envelope',
 )
+source = replaceExact(
+  source,
+  `  await waitFrames(page, 3)
+  const end = await readMovementTelemetry(page, destination)
+  samples.push(end)`,
+  `  const settleActive = new Set()
+  let end = await readMovementTelemetry(page, destination)
+  const settleStartedAt = Date.now()
+  try {
+    while (Date.now() - settleStartedAt < 30_000 && (end.nearby !== destination || end.moving !== 'false')) {
+      const directions = desiredDirections(end, destination)
+      const desired = method === 'touch' && directions.length > 1
+        ? new Set([directions.find((direction) => direction === 'left' || direction === 'right') || directions[0]])
+        : new Set(directions)
+      if (end.nearby === destination) {
+        await releaseDirections(page, method, settleActive)
+        await waitFrames(page, 1)
+      } else if (desired.size) {
+        if (method === 'keyboard') await setKeyboardDirections(page, settleActive, desired)
+        else await setTouchDirections(page, settleActive, desired)
+        await delay(120)
+        await releaseDirections(page, method, settleActive)
+        await waitFrames(page, 1)
+      } else {
+        await waitFrames(page, 1)
+      }
+      end = await readMovementTelemetry(page, destination)
+      samples.push(end)
+    }
+  } finally {
+    await releaseDirections(page, method, settleActive)
+  }
+  end = await readMovementTelemetry(page, destination)
+  samples.push(end)`,
+  1,
+  'continuous proof slow-host post-release destination stabilization',
+)
 
 await writeFile(materializedPath, source)
 console.log(`Materialized current continuous spatial proof at ${materializedPath}`)
