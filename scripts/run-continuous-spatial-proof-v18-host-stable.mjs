@@ -1,8 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
+const captureSourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const stableRunnerUrl = new URL('./run-continuous-spatial-proof-v18-stable.mjs', import.meta.url)
 const portalRunnerUrl = new URL('./run-continuous-spatial-proof-v18-portal-stable.mjs', import.meta.url)
 
+const captureOriginal = await readFile(captureSourceUrl, 'utf8')
 const stableOriginal = await readFile(stableRunnerUrl, 'utf8')
 const portalOriginal = await readFile(portalRunnerUrl, 'utf8')
 
@@ -39,17 +41,17 @@ for (const [marker, label] of [
   [broadCanvasDisable, 'broad canvas disable'],
   [legacyFallbackLocator, 'legacy fallback locator'],
 ]) {
-  if (stableOriginal.split(marker).length - 1 !== 1) {
+  if (captureOriginal.split(marker).length - 1 !== 1) {
     throw new Error(`Continuous proof ${label} contract changed; refusing no-WebGL repair`)
   }
 }
 
-const stablePatched = stableOriginal
-  .replace(enabledFocusMarker, `  .replace(existingDriver, stableDriver)
+const capturePatched = captureOriginal
+  .replace(broadCanvasDisable, webglOnlyDisable)
+  .replace(legacyFallbackLocator, acceptedFallbackLocator)
+
+const stablePatched = stableOriginal.replace(enabledFocusMarker, `  .replace(existingDriver, stableDriver)
   .replace("const editableControl = page.locator('.home-discreet-controls button').first()", "const editableControl = page.locator('.home-discreet-controls button:not(:disabled)').first()")`)
-  .replace('const patched = original', `const patched = original
-  .replace(${JSON.stringify(broadCanvasDisable)}, ${JSON.stringify(webglOnlyDisable)})
-  .replace(${JSON.stringify(legacyFallbackLocator)}, ${JSON.stringify(acceptedFallbackLocator)})`)
 
 const portalFrameWait = 'await waitFrames(page, 1)'
 if (portalOriginal.split(portalFrameWait).length - 1 !== 2) {
@@ -69,11 +71,13 @@ const portalPatched = portalOriginal
   .replaceAll(portalFrameWait, 'await waitForMovementFrame(page)')
   .replace(manifestRegexSource, escapedManifestRegexSource)
 
+await writeFile(captureSourceUrl, capturePatched, 'utf8')
 await writeFile(stableRunnerUrl, stablePatched, 'utf8')
 await writeFile(portalRunnerUrl, portalPatched, 'utf8')
 try {
   await import(`${portalRunnerUrl.href}?hostClock=${Date.now()}`)
 } finally {
+  await writeFile(captureSourceUrl, captureOriginal, 'utf8').catch(() => {})
   await writeFile(stableRunnerUrl, stableOriginal, 'utf8').catch(() => {})
   await writeFile(portalRunnerUrl, portalOriginal, 'utf8').catch(() => {})
 }
