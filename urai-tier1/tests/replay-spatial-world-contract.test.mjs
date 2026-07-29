@@ -33,6 +33,12 @@ test('Replay has bounded embodied movement, recovery, and WebGL fallback', () =>
   assert.match(recovery, /Sample Replay uses demonstration data only/)
 })
 
+test('Replay owns movement help copy without widening the shared navigation API', () => {
+  assert.match(world, /function ReplayMovementHelp/)
+  assert.match(world, /Move through Replay/)
+  assert.doesNotMatch(world, /MovementHelp realm="Life Map"/)
+})
+
 test('Replay truth modes are enforced in both policy and the rendered anchor graph', () => {
   assert.match(model, /ReplayTruthMode/)
   for (const mode of ["'evidence'", "'reflection'", "'cinematic'", "'private-journal'"]) assert.match(model, new RegExp(mode))
