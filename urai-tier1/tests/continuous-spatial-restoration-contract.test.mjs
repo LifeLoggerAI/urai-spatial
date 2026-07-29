@@ -18,6 +18,7 @@ const proof = read('../scripts/capture-continuous-spatial-proof-v18.mjs')
 const stateProof = read('../scripts/capture-home-state-proof.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const stateProofWorkflow = read('../.github/workflows/home-state-proof.yml')
+const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-stable.mjs')
 const groundOwner = read('src/app/ground/page.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -80,9 +81,12 @@ test('Life Map owner and legacy veil suppression remain full viewport', () => {
   assert.match(css, /prefers-reduced-motion: reduce/)
 })
 
-test('Home portal phases remain observable under a saturated browser host', () => {
+test('Home portal phases and generated manifest filter remain observable on a saturated host', () => {
   assert.match(assetHome, /const traversalHold = reducedMotion \? 80 : 560/)
   assert.match(assetHome, /const closingHold = reducedMotion \? 60 : 360/)
   assert.match(assetHome, /schedule\(traversalDelay,[\s\S]*setPhase\('traversal'\)[\s\S]*schedule\(traversalHold,[\s\S]*setPhase\('closing'\)[\s\S]*schedule\(closingHold,[\s\S]*requestUraiWorldTravel/)
   assert.doesNotMatch(assetHome, /const closingDelay =|const travelDelay =/)
+  assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
+  assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
+  assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))
 })
