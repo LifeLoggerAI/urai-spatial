@@ -1,6 +1,13 @@
 name: Autonomous Asset Factory
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/autonomous-asset-factory.yml'
+      - 'docs/AUTONOMOUS_ASSET_FACTORY.md'
+      - 'urai-tier1/config/asset-factory.json'
+      - 'urai-tier1/scripts/asset-factory/**'
+      - 'urai-tier1/src/spatial/assets/assetManifest.ts'
   workflow_dispatch:
   schedule:
     - cron: '17 9 * * *'
