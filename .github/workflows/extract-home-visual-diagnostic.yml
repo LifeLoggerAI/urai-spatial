@@ -1,0 +1,67 @@
+name: Extract Home Visual Diagnostic
+
+on:
+  push:
+    branches:
+      - diagnostics/extract-home-visual-receipt-20260729
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Download exact retained artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: '8713872767'
+        run: |
+          set -euo pipefail
+          mkdir -p diagnostic/raw diagnostic/out
+          curl --fail-with-body --location \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
+            --output diagnostic/raw/artifact.zip
+          unzip -l diagnostic/raw/artifact.zip > diagnostic/out/archive-list.txt
+          unzip -j diagnostic/raw/artifact.zip '*/receipt.json' -d diagnostic/out || unzip -j diagnostic/raw/artifact.zip 'receipt.json' -d diagnostic/out
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt_path = Path('diagnostic/out/receipt.json')
+          data = json.loads(receipt_path.read_text())
+          summary = {
+              'schemaVersion': data.get('schemaVersion'),
+              'exactHead': data.get('exactHead'),
+              'capturedAt': data.get('capturedAt'),
+              'captureCount': len(data.get('captures', [])),
+              'interactionCount': len(data.get('interactions', [])),
+              'errors': data.get('errors', []),
+              'interactions': data.get('interactions', []),
+          }
+          Path('diagnostic/out/failure-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          failed = []
+          for error in data.get('errors', []):
+              if isinstance(error, dict):
+                  screenshot = error.get('screenshot')
+                  if screenshot:
+                      failed.append(screenshot)
+          Path('diagnostic/out/failed-screenshots.txt').write_text('\n'.join(failed) + ('\n' if failed else ''))
+          PY
+          while IFS= read -r screenshot; do
+            [ -n "$screenshot" ] || continue
+            unzip -j diagnostic/raw/artifact.zip "*/${screenshot}" -d diagnostic/out || true
+          done < diagnostic/out/failed-screenshots.txt
+          rm -f diagnostic/raw/artifact.zip
+
+      - name: Upload bounded diagnostic packet
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-visual-diagnostic-ce5dc8b
+          path: diagnostic/out
+          if-no-files-found: error
+          retention-days: 30
