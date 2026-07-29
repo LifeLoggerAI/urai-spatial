@@ -1,9 +1,10 @@
 name: Repair Home portal phase sequence
 
 on:
-  push:
+  pull_request:
     branches:
-      - repair/home-ground-readiness-20260729
+      - main
+    types: [opened, synchronize, reopened]
     paths:
       - .github/workflows/repair-home-portal-phase-sequence.yml
 
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'repair/home-ground-readiness-20260729'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
