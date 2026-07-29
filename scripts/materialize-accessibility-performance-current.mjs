@@ -269,7 +269,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     source,
     "page.locator('.life-map-actions')",
     "page.getByRole('navigation', { name: 'Selected memory actions' })",
-    1,
+    2,
     'current selected Life Map action owner',
   )
   return source
