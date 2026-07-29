@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "enabled": false,
+  "mode": "plan-only",
+  "currency": "USD",
+  "dailyBudgetUsd": 25,
+  "perAssetBudgetUsd": 8,
+  "maxConcurrentJobs": 2,
+  "allowedStatuses": ["future", "missing"],
+  "allowedPriorities": ["critical", "high"],
+  "requiredHumanApproval": true,
+  "requireCommercialRights": true,
+  "requireProvenanceReceipt": true,
+  "requireValidationBeforePromotion": true,
+  "outputRoot": "public/assets/urai/generated",
+  "jobRoot": "artifacts/asset-factory/jobs",
+  "receiptRoot": "artifacts/asset-factory/receipts",
+  "providers": {
+    "image": null,
+    "model3d": null,
+    "audio": null,
+    "video": null
+  }
+}
