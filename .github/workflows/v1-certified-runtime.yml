@@ -3,7 +3,6 @@ name: V1 Certified Runtime Handoff
 on:
   pull_request:
     paths:
-      - operations/assets/ledgers/v1-certified-runtime-ledger.json
       - scripts/assets/verify-v1-certified-runtime.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
@@ -11,7 +10,6 @@ on:
   push:
     branches: [main]
     paths:
-      - operations/assets/ledgers/v1-certified-runtime-ledger.json
       - scripts/assets/verify-v1-certified-runtime.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
@@ -41,11 +39,13 @@ jobs:
         run: python -m pip install 'Pillow>=10,<12'
       - name: Compare certified V1 handoff with runtime
         run: python scripts/assets/verify-v1-certified-runtime.py
-      - name: Upload exact per-asset receipt
+      - name: Upload exact per-asset receipt and immutable ledger
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: v1-certified-runtime-${{ github.run_id }}
-          path: artifacts/assets/v1-runtime-certification.json
+          path: |
+            artifacts/assets/v1-runtime-certification.json
+            artifacts/assets/v1-certified-runtime-ledger.json
           if-no-files-found: error
           retention-days: 90
