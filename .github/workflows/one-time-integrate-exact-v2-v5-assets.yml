@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Prove one-marker integration authority
+      - name: Prove bounded integration authority
         shell: bash
         run: |
           set -euo pipefail
@@ -125,7 +125,6 @@ jobs:
           import json, pathlib, subprocess, sys
           payload=json.loads(pathlib.Path(sys.argv[1]).read_text())
           target=pathlib.Path(sys.argv[2])
-          expected={f'urai-{version}-exact-paid-{payload.get("artifacts", [{}])[0].get("workflow_run", {}).get("id", "")}' for version in ()}
           artifacts=[item for item in payload.get('artifacts', []) if item.get('name','').startswith('urai-v') and '-exact-paid-' in item.get('name','')]
           versions={item['name'].split('-')[1] for item in artifacts}
           if versions != {'v2','v3','v4','v5'} or len(artifacts) != 4:
@@ -133,7 +132,8 @@ jobs:
           receipt=[]
           for item in sorted(artifacts, key=lambda value: value['name']):
               zip_path=target / f"{item['id']}.zip"
-              subprocess.run(['gh','api',f"repos/LifeLoggerAI/asset-factory/actions/artifacts/{item['id']}/zip"], stdout=zip_path.open('wb'), check=True)
+              with zip_path.open('wb') as handle:
+                  subprocess.run(['gh','api',f"repos/LifeLoggerAI/asset-factory/actions/artifacts/{item['id']}/zip"], stdout=handle, check=True)
               receipt.append({key:item.get(key) for key in ('id','name','size_in_bytes','digest','expired','created_at','expires_at')})
           (target/'artifact-index.json').write_text(json.dumps(receipt, indent=2, sort_keys=True)+'\n')
           PY
@@ -185,7 +185,7 @@ jobs:
           out=pathlib.Path('docs/receipts/URAI-V2-V5-EXACT-ASSET-INTEGRATION-20260730.json')
           out.parent.mkdir(parents=True, exist_ok=True)
           out.write_text(json.dumps({'schemaVersion':'1.0.0','paidHeadSha':'c388b1ce3d6fc27ef30599eb6535605bff202fb7','copiedAssets':copied,'providerCallsExecuted':total_calls,'reservedEstimatedCostUsd':f'{total_reserved:.2f}','promotionAuthorized':False,'deploymentAuthorized':False,'versions':consolidated}, indent=2, sort_keys=True)+'\n')
-          print(json.dumps({'copiedAssets':copied,'providerCallsExecuted':total_calls,'reservedEstimatedCostUsd':f'{total_reserved:.2f)'}, sort_keys=True))
+          print(json.dumps({'copiedAssets':copied,'providerCallsExecuted':total_calls,'reservedEstimatedCostUsd':f'{total_reserved:.2f}'}, sort_keys=True))
           PY
 
       - name: Set up Python
