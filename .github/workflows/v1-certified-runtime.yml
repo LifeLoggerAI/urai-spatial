@@ -5,6 +5,7 @@ on:
     paths:
       - scripts/assets/verify-v1-certified-runtime.py
       - scripts/assets/run-v1-certified-runtime.py
+      - scripts/assets/build-v1-certified-runtime-ledger.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
       - urai-tier1/src/spatial/assets/uraiAssets.ts
@@ -13,17 +14,19 @@ on:
     paths:
       - scripts/assets/verify-v1-certified-runtime.py
       - scripts/assets/run-v1-certified-runtime.py
+      - scripts/assets/build-v1-certified-runtime-ledger.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
       - urai-tier1/src/spatial/assets/uraiAssets.ts
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
   certify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -42,7 +45,23 @@ jobs:
           python-version: '3.11'
       - name: Install image verifier
         run: python -m pip install 'Pillow>=10,<12'
-      - name: Validate immutable V1 ledger recovery
+      - name: Download immutable V1 source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/source/v1-original artifacts/source/v1-recovery artifacts/assets
+          gh api /repos/LifeLoggerAI/asset-factory/actions/artifacts/8741010314/zip > /tmp/v1-original.zip
+          gh api /repos/LifeLoggerAI/asset-factory/actions/artifacts/8742902079/zip > /tmp/v1-recovery.zip
+          unzip -q /tmp/v1-original.zip -d artifacts/source/v1-original
+          unzip -q /tmp/v1-recovery.zip -d artifacts/source/v1-recovery
+      - name: Rebuild immutable 53-row V1 ledger
+        run: |
+          python scripts/assets/build-v1-certified-runtime-ledger.py \
+            --original-root artifacts/source/v1-original \
+            --recovery-root artifacts/source/v1-recovery \
+            --output artifacts/assets/v1-certified-runtime-ledger.json
+      - name: Validate rebuilt V1 ledger
         run: python scripts/assets/run-v1-certified-runtime.py --self-test
       - name: Compare certified V1 handoff with runtime
         run: python scripts/assets/run-v1-certified-runtime.py
