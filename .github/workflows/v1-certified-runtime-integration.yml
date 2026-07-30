@@ -51,32 +51,47 @@ jobs:
       - name: Integrate exact certified WebP files
         run: |
           python - <<'PY'
-          import hashlib, json, pathlib, shutil
+          import hashlib
+          import json
+          import pathlib
+          from PIL import Image
+
           ledger = json.loads(pathlib.Path('artifacts/assets/v1-certified-runtime-ledger.json').read_text())
-          roots = [
-              pathlib.Path('artifacts/source/v1-recovery/image_asset_generator/spatial_handoff'),
-              pathlib.Path('artifacts/source/v1-original/image_asset_generator/spatial_handoff'),
-          ]
-          copied = []
+          source_root = pathlib.Path('artifacts/source/v1-recovery/image_asset_generator')
+          integrated = []
+
           for asset in ledger['assets']:
-              rel = pathlib.Path(asset['p'])
-              source = next((root / rel for root in roots if (root / rel).is_file()), None)
-              if source is None:
-                  raise SystemExit(f'missing certified source: {rel}')
-              digest = hashlib.sha256(source.read_bytes()).hexdigest()
-              if digest != asset['s']:
-                  raise SystemExit(f'certified source hash mismatch: {rel}: {digest} != {asset["s"]}')
-              destination = pathlib.Path('urai-tier1/public') / rel
+              source = source_root / asset['src']
+              if not source.is_file():
+                  raise SystemExit(f'missing certified PNG source: {source}')
+
+              source_digest = hashlib.sha256(source.read_bytes()).hexdigest()
+              if source_digest != asset['srcSha256']:
+                  raise SystemExit(
+                      f'certified PNG source hash mismatch: {asset["n"]}: '
+                      f'{source_digest} != {asset["srcSha256"]}'
+                  )
+
+              destination = pathlib.Path('urai-tier1/public') / asset['p']
               destination.parent.mkdir(parents=True, exist_ok=True)
-              shutil.copyfile(source, destination)
+              with Image.open(source) as image:
+                  image.load()
+                  image.save(destination, 'WEBP', method=6, lossless=True, exact=True)
+
               final_digest = hashlib.sha256(destination.read_bytes()).hexdigest()
               if final_digest != asset['s']:
-                  raise SystemExit(f'post-copy hash mismatch: {rel}')
-              copied.append(str(destination))
-          if len(copied) != 53:
-              raise SystemExit(f'expected 53 integrated assets, got {len(copied)}')
-          pathlib.Path('artifacts/assets/v1-integrated-paths.txt').write_text('\n'.join(copied) + '\n')
-          print(f'integrated {len(copied)} exact certified assets')
+                  raise SystemExit(
+                      f'exact WebP export hash mismatch: {asset["n"]}: '
+                      f'{final_digest} != {asset["s"]}'
+                  )
+              integrated.append(str(destination))
+
+          if len(integrated) != 53:
+              raise SystemExit(f'expected 53 integrated assets, got {len(integrated)}')
+          pathlib.Path('artifacts/assets/v1-integrated-paths.txt').write_text(
+              '\n'.join(integrated) + '\n', encoding='utf-8'
+          )
+          print(f'integrated {len(integrated)} exact certified assets')
           PY
       - name: Verify exact runtime acceptance
         run: python scripts/assets/run-v1-certified-runtime.py
