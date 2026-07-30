@@ -1,0 +1,124 @@
+name: Integrate Certified V1 Runtime Pack
+
+on:
+  push:
+    branches:
+      - certify/v1-runtime-handoff-20260729
+    paths:
+      - scripts/assets/integrate-v1-certified-runtime.py
+      - .github/workflows/v1-certified-runtime-integrate.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: v1-certified-runtime-integration
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ASSET_FACTORY_READ_TOKEN: ${{ secrets.ASSET_FACTORY_READ_TOKEN }}
+      FALLBACK_GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout certification branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: certify/v1-runtime-handoff-20260729
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+
+      - name: Install image verifier
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+
+      - name: Download immutable certified artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="${ASSET_FACTORY_READ_TOKEN:-${FALLBACK_GITHUB_TOKEN}}"
+          test -n "$token"
+          mkdir -p artifacts/v1-integration/downloads
+          download_artifact() {
+            local artifact_id="$1"
+            local output="$2"
+            local url="https://api.github.com/repos/LifeLoggerAI/asset-factory/actions/artifacts/${artifact_id}/zip"
+            code=$(curl -sS -L -o "$output" -w '%{http_code}' \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${token}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$url")
+            test "$code" = "200"
+            test -s "$output"
+          }
+          download_artifact 8742902079 artifacts/v1-integration/downloads/v1-certified-spatial-handoff.zip
+          download_artifact 8757895352 artifacts/v1-integration/downloads/v1-runtime-certification.zip
+          echo 'd42a4549fd5ebd90a761ced87a72d6765de6bb56403055af5c9cec8bda6ed731  artifacts/v1-integration/downloads/v1-certified-spatial-handoff.zip' | sha256sum -c -
+          echo '1701ecd63797c925f0824f63ef08883490e39d23ac2f896fb6f0ee743cffe49e  artifacts/v1-integration/downloads/v1-runtime-certification.zip' | sha256sum -c -
+
+      - name: Integrate and verify all 53 certified V1 assets
+        run: |
+          set -euo pipefail
+          python scripts/assets/integrate-v1-certified-runtime.py \
+            --repo-root . \
+            --recovery-zip artifacts/v1-integration/downloads/v1-certified-spatial-handoff.zip \
+            --ledger-zip artifacts/v1-integration/downloads/v1-runtime-certification.zip \
+            --work-dir artifacts/v1-integration/work \
+            --receipt artifacts/v1-integration/v1-certified-runtime-integration.json
+          python scripts/assets/verify-v1-certified-runtime.py \
+            --ledger artifacts/v1-integration/work/ledger/v1-certified-runtime-ledger.json \
+            --repo-root . \
+            --output artifacts/v1-integration/v1-certified-runtime-post-integration.json
+
+      - name: Prove closed provider boundary
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          test -z "${ASSET_RENDERER_API_KEY:-}"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(Path('artifacts/v1-integration/v1-certified-runtime-integration.json').read_text())
+          proof=json.loads(Path('artifacts/v1-integration/v1-certified-runtime-post-integration.json').read_text())
+          assert receipt['providerCalls'] == 0
+          assert receipt['spendUsd'] == '0.00'
+          assert receipt['integrated'] == 53
+          assert proof['summary']['accepted'] == 53
+          assert proof['summary']['rejected'] == 0
+          assert proof['summary']['missing'] == 0
+          PY
+
+      - name: Commit exact certified binaries and receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'urai-asset-integrator'
+          git config user.email 'actions@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai artifacts/v1-integration/v1-certified-runtime-integration.json artifacts/v1-integration/v1-certified-runtime-post-integration.json
+          if git diff --cached --quiet; then
+            echo 'Certified runtime already integrated; no commit required.'
+            exit 0
+          fi
+          changed=$(git diff --cached --name-only | wc -l | tr -d ' ')
+          test "$changed" -ge 53
+          git commit -m 'Integrate certified V1 runtime asset pack'
+          git push origin HEAD:certify/v1-runtime-handoff-20260729
+
+      - name: Upload immutable integration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v1-certified-runtime-integration-${{ github.run_id }}
+          retention-days: 90
+          if-no-files-found: warn
+          path: |
+            artifacts/v1-integration/v1-certified-runtime-integration.json
+            artifacts/v1-integration/v1-certified-runtime-post-integration.json
