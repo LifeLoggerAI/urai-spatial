@@ -1,0 +1,47 @@
+name: V2 Live Asset Reconciliation
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/v2-live-asset-reconciliation.yml
+      - urai-tier1/scripts/verify-v2-living-assets.mjs
+      - urai-tier1/src/spatial/assets/uraiV2Assets.ts
+      - urai-tier1/public/assets/urai/v2/**
+      - docs/receipts/V2_LIVE_ASSET_RECONCILIATION_20260729.md
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify exact clean candidate
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Verify all canonical V2 runtime files
+        working-directory: urai-tier1
+        env:
+          V2_ASSET_REQUIRED: '1'
+        run: node scripts/verify-v2-living-assets.mjs
+      - name: Prove zero provider and deployment authority
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          test -z "${ASSET_RENDERER_API_KEY:-}"
+          test -z "${FIREBASE_TOKEN:-}"
+      - name: Upload reconciliation receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v2-live-asset-reconciliation-${{ github.run_id }}
+          path: urai-tier1/v2-asset-proof.json
+          if-no-files-found: error
+          retention-days: 90
