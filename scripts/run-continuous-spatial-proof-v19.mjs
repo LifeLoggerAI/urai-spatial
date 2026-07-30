@@ -136,6 +136,25 @@ source = replaceExact(
   1,
   'continuous proof telemetry-driven stable destination correction',
 )
+source = replaceExact(
+  source,
+  `    await page.keyboard.press('Enter')
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === 'traversal', ownerSelector, { timeout: 10_000 })
+    const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')`,
+  `    await page.keyboard.press('Enter')
+    const expectedSequence = \`\${destination}:traversal\`
+    await page.waitForFunction(({ selector, expectedSequence }) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === expectedSequence, { selector: ownerSelector, expectedSequence }, { timeout: 30_000 })
+    const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')`,
+  1,
+  'continuous proof destination-qualified portal traversal contract',
+)
+source = replaceExact(
+  source,
+  "    if (sequence !== 'traversal' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)",
+  "    if (sequence !== expectedSequence || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)",
+  1,
+  'continuous proof destination-qualified portal traversal verdict',
+)
 
 await writeFile(materializedPath, source)
 console.log(`Materialized current continuous spatial proof at ${materializedPath}`)
