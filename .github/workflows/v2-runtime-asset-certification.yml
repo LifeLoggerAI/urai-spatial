@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - scripts/certify-v2-runtime-assets.py
+      - scripts/test-certify-v2-runtime-assets.py
       - .github/workflows/v2-runtime-asset-certification.yml
       - urai-tier1/src/spatial/assets/uraiV2Assets.ts
       - urai-tier1/public/assets/urai/v2/**
@@ -11,6 +12,7 @@ on:
     branches: [main]
     paths:
       - scripts/certify-v2-runtime-assets.py
+      - scripts/test-certify-v2-runtime-assets.py
       - .github/workflows/v2-runtime-asset-certification.yml
       - urai-tier1/src/spatial/assets/uraiV2Assets.ts
       - urai-tier1/public/assets/urai/v2/**
@@ -44,6 +46,8 @@ jobs:
           python-version: '3.11'
       - name: Install certification dependencies
         run: python -m pip install Pillow==11.3.0
+      - name: Run certification regression tests
+        run: python scripts/test-certify-v2-runtime-assets.py
       - name: Certify all 80 existing V2 runtime assets
         run: python scripts/certify-v2-runtime-assets.py
       - name: Prove zero-provider and zero-deployment authority
@@ -64,10 +68,11 @@ jobs:
           assert p['deploymentAuthorized'] is False
           PY
       - name: Upload complete V2 certification evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: v2-runtime-asset-certification-${{ github.run_id }}
           retention-days: 90
-          if-no-files-found: error
+          if-no-files-found: warn
           compression-level: 6
           path: urai-tier1/artifacts/v2-certification/**
