@@ -6,6 +6,7 @@ on:
       - scripts/assets/verify-v1-certified-runtime.py
       - scripts/assets/run-v1-certified-runtime.py
       - scripts/assets/build-v1-certified-runtime-ledger.py
+      - scripts/assets/integrate-v1-certified-runtime.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
       - urai-tier1/src/spatial/assets/uraiAssets.ts
@@ -15,13 +16,14 @@ on:
       - scripts/assets/verify-v1-certified-runtime.py
       - scripts/assets/run-v1-certified-runtime.py
       - scripts/assets/build-v1-certified-runtime-ledger.py
+      - scripts/assets/integrate-v1-certified-runtime.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
       - urai-tier1/src/spatial/assets/uraiAssets.ts
 
 permissions:
   actions: read
-  contents: read
+  contents: write
 
 jobs:
   certify:
@@ -33,7 +35,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
-          persist-credentials: false
+          persist-credentials: true
       - name: Verify exact clean candidate
         run: |
           set -euo pipefail
@@ -53,6 +55,7 @@ jobs:
           mkdir -p artifacts/source/v1-original artifacts/source/v1-recovery artifacts/assets
           gh api /repos/LifeLoggerAI/asset-factory/actions/artifacts/8741010314/zip > /tmp/v1-original.zip
           gh api /repos/LifeLoggerAI/asset-factory/actions/artifacts/8742902079/zip > /tmp/v1-recovery.zip
+          test "$(sha256sum /tmp/v1-recovery.zip | cut -d' ' -f1)" = 'd42a4549fd5ebd90a761ced87a72d6765de6bb56403055af5c9cec8bda6ed731'
           unzip -q /tmp/v1-original.zip -d artifacts/source/v1-original
           unzip -q /tmp/v1-recovery.zip -d artifacts/source/v1-recovery
       - name: Rebuild immutable 53-row V1 ledger
@@ -63,8 +66,34 @@ jobs:
             --output artifacts/assets/v1-certified-runtime-ledger.json
       - name: Validate rebuilt V1 ledger
         run: python scripts/assets/run-v1-certified-runtime.py --self-test
+      - name: Integrate exact certified V1 files
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          set -euo pipefail
+          source_root='artifacts/assets/v1-ledger-webp-staging/assets/urai'
+          target_root='urai-tier1/public/assets/urai'
+          test -d "$source_root"
+          test "$(find "$source_root" -type f -name '*.webp' | wc -l | tr -d ' ')" = '53'
+          mkdir -p "$target_root"
+          cp -a "$source_root"/. "$target_root"/
+          python scripts/assets/run-v1-certified-runtime.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai
+          if git diff --cached --quiet; then
+            echo 'Certified V1 runtime already integrated.'
+          else
+            test "$(git diff --cached --name-only -- 'urai-tier1/public/assets/urai/**/*.webp' 'urai-tier1/public/assets/urai/*.webp' | wc -l | tr -d ' ')" = '53'
+            git commit -m 'Integrate certified V1 runtime asset pack'
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
       - name: Compare certified V1 handoff with runtime
         run: python scripts/assets/run-v1-certified-runtime.py
+      - name: Prove zero-spend boundary
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          test -z "${ASSET_RENDERER_API_KEY:-}"
       - name: Upload exact per-asset receipt and immutable ledger
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
