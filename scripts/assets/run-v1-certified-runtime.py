@@ -22,6 +22,8 @@ EXPECTED_AUTHORITY = {
     "producer": "LifeLoggerAI/asset-factory",
     "providerCallsDuringRecertification": 0,
     "ready": 53,
+    "runtimeBudgetBytes": 1_048_576,
+    "runtimeDerivativePolicy": "lossless-when-bounded-otherwise-webp-q95",
     "sourceArtifactId": 8742902079,
     "sourceArtifactSha256": "d42a4549fd5ebd90a761ced87a72d6765de6bb56403055af5c9cec8bda6ed731",
     "sourceManifestSha256": "71591486803582a7468d375f05b341538c7fd5bd232bb330c16d6ce2ec5b155a",
@@ -46,13 +48,19 @@ def validate_ledger(ledger: object) -> dict:
         raise ValueError("rebuilt V1 artifact identity mismatch")
     if ledger.get("originalAssetsUnchanged") != 52 or ledger.get("recoveredAssets") != ["avatar_receptionist"]:
         raise ValueError("rebuilt V1 retained/recovered boundary mismatch")
+    if ledger.get("runtimeLosslessDerivatives") != 22 or ledger.get("runtimeLossyDerivatives") != 31:
+        raise ValueError("rebuilt V1 runtime derivative split mismatch")
     assets = ledger.get("assets")
     if not isinstance(assets, list) or len(assets) != 53:
         raise ValueError("rebuilt V1 ledger must contain exactly 53 assets")
 
     names: set[str] = set()
     paths: set[str] = set()
-    required = {"n", "p", "s", "x", "w", "h", "a", "r", "q", "srcSha256", "metadataSha256"}
+    required = {
+        "n", "p", "s", "x", "w", "h", "a", "r", "q", "srcSha256",
+        "masterPixelSha256", "metadataSha256", "runtimeBytes", "runtimeMaxBytes",
+        "runtimeEncoding", "runtimeQuality", "alphaExact", "minCompositePsnrDb",
+    }
     for asset in assets:
         if not isinstance(asset, dict) or not required.issubset(asset):
             raise ValueError("rebuilt V1 asset entry is incomplete")
@@ -66,15 +74,28 @@ def validate_ledger(ledger: object) -> dict:
             raise ValueError(f"invalid rebuilt V1 name: {name}")
         if not path.startswith("assets/urai/") or not path.endswith(".webp") or ".." in Path(path).parts:
             raise ValueError(f"invalid rebuilt V1 path: {path}")
-        for key in ("s", "x", "srcSha256", "metadataSha256"):
+        for key in ("s", "x", "srcSha256", "masterPixelSha256", "metadataSha256"):
             if not re.fullmatch(r"[0-9a-f]{64}", str(asset[key])):
                 raise ValueError(f"invalid rebuilt V1 {key}: {name}")
         if not isinstance(asset["w"], int) or not isinstance(asset["h"], int) or asset["w"] <= 0 or asset["h"] <= 0:
             raise ValueError(f"invalid rebuilt V1 dimensions: {name}")
-        if not isinstance(asset["a"], bool):
+        if not isinstance(asset["a"], bool) or asset["alphaExact"] is not True:
             raise ValueError(f"invalid rebuilt V1 alpha contract: {name}")
         if not isinstance(asset["q"], str) or len(asset["q"]) < 8:
             raise ValueError(f"invalid rebuilt V1 provider identity: {name}")
+        if not isinstance(asset["runtimeBytes"], int) or asset["runtimeBytes"] <= 0 or asset["runtimeBytes"] > 1_048_576:
+            raise ValueError(f"invalid rebuilt V1 runtime byte budget: {name}")
+        if asset["runtimeMaxBytes"] != 1_048_576:
+            raise ValueError(f"invalid rebuilt V1 runtime max bytes: {name}")
+        encoding = asset["runtimeEncoding"]
+        if encoding == "lossless-exact":
+            if asset["runtimeQuality"] is not None or asset["x"] != asset["masterPixelSha256"]:
+                raise ValueError(f"invalid lossless derivative contract: {name}")
+        elif encoding == "webp-q95":
+            if asset["runtimeQuality"] != 95 or float(asset["minCompositePsnrDb"]) < 37.0:
+                raise ValueError(f"invalid lossy derivative contract: {name}")
+        else:
+            raise ValueError(f"unknown rebuilt V1 runtime encoding: {name}")
 
     receptionist = next((asset for asset in assets if asset["n"] == "avatar_receptionist"), None)
     if not receptionist:
@@ -134,6 +155,8 @@ def main() -> int:
             "authority": ledger["authority"],
             "ledgerSha256": ledger_sha,
             "encodedByteMatchRequired": True,
+            "runtimeLosslessDerivatives": ledger["runtimeLosslessDerivatives"],
+            "runtimeLossyDerivatives": ledger["runtimeLossyDerivatives"],
         }, indent=2, sort_keys=True))
         return 0
 
