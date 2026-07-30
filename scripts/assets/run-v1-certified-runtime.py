@@ -13,6 +13,7 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[2]
 VERIFIER = ROOT / "scripts/assets/verify-v1-certified-runtime.py"
 LEDGER = ROOT / "artifacts/assets/v1-certified-runtime-ledger.json"
+REPORT = ROOT / "artifacts/assets/v1-runtime-certification.json"
 EXPECTED_AUTHORITY = {
     "consumer": "LifeLoggerAI/urai-spatial",
     "expectedOutputs": 53,
@@ -93,6 +94,25 @@ def load_ledger() -> tuple[dict, str]:
     return ledger, hashlib.sha256(raw).hexdigest()
 
 
+def enforce_encoded_byte_identity(report: object) -> dict:
+    if not isinstance(report, dict):
+        raise ValueError("V1 runtime report must be an object")
+    assets = report.get("assets")
+    if not isinstance(assets, list):
+        raise ValueError("V1 runtime report assets must be a list")
+
+    for row in assets:
+        if not isinstance(row, dict):
+            raise ValueError("V1 runtime report row must be an object")
+        row["accepted"] = bool(row.get("accepted") and row.get("byteMatch"))
+
+    report["accepted"] = sum(bool(row.get("accepted")) for row in assets)
+    report["rejected"] = len(assets) - report["accepted"]
+    report["byteMatches"] = sum(bool(row.get("byteMatch")) for row in assets)
+    report["encodedByteMatchRequired"] = True
+    return report
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true")
@@ -103,16 +123,29 @@ def main() -> int:
     module.load_ledger = lambda: ledger
 
     if args.self_test:
+        probe = enforce_encoded_byte_identity({
+            "assets": [{"accepted": True, "byteMatch": False}],
+        })
+        if probe["accepted"] != 0 or probe["rejected"] != 1:
+            raise RuntimeError("encoded-byte acceptance regression")
         print(json.dumps({
             "status": "passed",
             "assets": len(ledger["assets"]),
             "authority": ledger["authority"],
             "ledgerSha256": ledger_sha,
+            "encodedByteMatchRequired": True,
         }, indent=2, sort_keys=True))
         return 0
 
     print(json.dumps({"ledgerSha256": ledger_sha}, sort_keys=True), file=sys.stderr)
-    return int(module.main())
+    upstream_result = int(module.main())
+    if not REPORT.is_file():
+        raise FileNotFoundError(f"V1 runtime report was not produced: {REPORT}")
+    strict_report = enforce_encoded_byte_identity(json.loads(REPORT.read_text(encoding="utf-8")))
+    REPORT.write_text(json.dumps(strict_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    expected = strict_report.get("expected")
+    accepted = strict_report.get("accepted")
+    return 0 if upstream_result == 0 and expected == 53 and accepted == expected else 1
 
 
 if __name__ == "__main__":
