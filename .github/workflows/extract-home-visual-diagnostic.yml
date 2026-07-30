@@ -25,11 +25,12 @@ jobs:
       - name: Download and extract exact retained artifact
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: '8715720001'
+          ARTIFACT_ID: '8717996891'
+          EXPECTED_HEAD: '51db7b3ba77a657659da34ca5e146e049dd03d31'
         run: |
           set -euo pipefail
           rm -rf diagnostic/raw diagnostic/out diagnostics/extracted
-          mkdir -p diagnostic/raw diagnostic/out diagnostics/extracted
+          mkdir -p diagnostic/raw diagnostic/out diagnostics/extracted/screenshots
           curl --fail-with-body --location \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header "Accept: application/vnd.github+json" \
@@ -37,29 +38,89 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
             --output diagnostic/raw/artifact.zip
           unzip -l diagnostic/raw/artifact.zip > diagnostic/out/archive-list.txt
-          unzip -j diagnostic/raw/artifact.zip '*/receipt.json' -d diagnostic/out || unzip -j diagnostic/raw/artifact.zip 'receipt.json' -d diagnostic/out
           python - <<'PY'
           import json
+          import os
+          import shutil
+          import zipfile
           from pathlib import Path
-          data = json.loads(Path('diagnostic/out/receipt.json').read_text())
-          summary = {
-              'schemaVersion': data.get('schemaVersion'),
-              'exactHead': data.get('exactHead'),
-              'capturedAt': data.get('capturedAt'),
-              'captureCount': len(data.get('captures', [])),
-              'interactionCount': len(data.get('interactions', [])),
-              'errors': data.get('errors', []),
-              'interactions': data.get('interactions', []),
-          }
-          Path('diagnostics/extracted/failure-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
-          failed = [e.get('screenshot') for e in data.get('errors', []) if isinstance(e, dict) and e.get('screenshot')]
-          Path('diagnostics/extracted/failed-screenshots.txt').write_text('\n'.join(failed) + ('\n' if failed else ''))
+
+          archive = Path('diagnostic/raw/artifact.zip')
+          expected_head = os.environ['EXPECTED_HEAD']
+          output = Path('diagnostics/extracted')
+          screenshot_output = output / 'screenshots'
+
+          with zipfile.ZipFile(archive) as bundle:
+              names = bundle.namelist()
+              receipt_names = [name for name in names if name == 'receipt.json' or name.endswith('/receipt.json')]
+              if len(receipt_names) != 1:
+                  raise SystemExit(f'expected one receipt.json, found {receipt_names}')
+              receipt = json.loads(bundle.read(receipt_names[0]))
+              if receipt.get('exactHead') != expected_head:
+                  raise SystemExit(f"receipt exactHead {receipt.get('exactHead')} != {expected_head}")
+
+              captures = receipt.get('captures', [])
+              interactions = receipt.get('interactions', [])
+              errors = receipt.get('errors', [])
+
+              def compact(item):
+                  return {
+                      key: item.get(key)
+                      for key in (
+                          'id', 'label', 'method', 'destination', 'screenshot', 'video',
+                          'viewport', 'url', 'route', 'state', 'diagnostics', 'result',
+                          'fallbackVisible', 'semanticButtons'
+                      )
+                      if key in item
+                  }
+
+              summary = {
+                  'artifactId': int(os.environ['ARTIFACT_ID']),
+                  'schemaVersion': receipt.get('schemaVersion'),
+                  'exactHead': receipt.get('exactHead'),
+                  'capturedAt': receipt.get('capturedAt'),
+                  'captureCount': len(captures),
+                  'interactionCount': len(interactions),
+                  'errorCount': len(errors),
+                  'errors': errors,
+                  'captures': [compact(item) for item in captures],
+                  'interactions': [compact(item) for item in interactions],
+                  'topLevelDiagnostics': receipt.get('diagnostics'),
+                  'sensory': receipt.get('sensory'),
+              }
+              (output / 'receipt-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+
+              requested = []
+              for collection in (captures, interactions, errors):
+                  for item in collection:
+                      screenshot = item.get('screenshot') if isinstance(item, dict) else None
+                      if isinstance(screenshot, str) and screenshot and screenshot not in requested:
+                          requested.append(screenshot)
+
+              extracted = []
+              missing = []
+              for screenshot in requested:
+                  matches = [name for name in names if name == screenshot or name.endswith('/' + screenshot)]
+                  if len(matches) != 1:
+                      missing.append({'screenshot': screenshot, 'matches': matches})
+                      continue
+                  target = screenshot_output / Path(screenshot).name
+                  with bundle.open(matches[0]) as source, target.open('wb') as destination:
+                      shutil.copyfileobj(source, destination)
+                  extracted.append({'receiptPath': screenshot, 'archivePath': matches[0], 'output': str(target)})
+
+              manifest = {
+                  'expectedHead': expected_head,
+                  'requestedScreenshotCount': len(requested),
+                  'extractedScreenshotCount': len(extracted),
+                  'missing': missing,
+                  'files': extracted,
+              }
+              (output / 'screenshot-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+              if missing:
+                  raise SystemExit(f'missing or ambiguous retained screenshots: {missing}')
           PY
           cp diagnostic/out/archive-list.txt diagnostics/extracted/archive-list.txt
-          while IFS= read -r screenshot; do
-            [ -n "$screenshot" ] || continue
-            unzip -j diagnostic/raw/artifact.zip "*/${screenshot}" -d diagnostics/extracted || true
-          done < diagnostics/extracted/failed-screenshots.txt
           rm -rf diagnostic
 
       - name: Commit bounded diagnostic result
@@ -72,5 +133,5 @@ jobs:
             echo 'No diagnostic changes to commit.'
             exit 0
           fi
-          git commit -m 'chore(diagnostics): retain Home visual failure summary'
+          git commit -m 'chore(diagnostics): retain final Home visual acceptance packet'
           git push origin HEAD:diagnostics/extract-home-visual-receipt-20260729
