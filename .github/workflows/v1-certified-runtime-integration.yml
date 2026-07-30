@@ -1,0 +1,101 @@
+name: V1 Certified Runtime Integration
+
+on:
+  push:
+    branches:
+      - integrate/v1-certified-runtime-20260730-r2
+    paths:
+      - .github/workflows/v1-certified-runtime-integration.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact integration branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: integrate/v1-certified-runtime-20260730-r2
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Install verifier dependency
+        run: python -m pip install 'Pillow>=10,<12'
+      - name: Download immutable V1 authorities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/source/v1-original artifacts/source/v1-recovery artifacts/assets
+          gh api /repos/LifeLoggerAI/asset-factory/actions/artifacts/8741010314/zip > /tmp/v1-original.zip
+          gh api /repos/LifeLoggerAI/asset-factory/actions/artifacts/8742902079/zip > /tmp/v1-recovery.zip
+          unzip -q /tmp/v1-original.zip -d artifacts/source/v1-original
+          unzip -q /tmp/v1-recovery.zip -d artifacts/source/v1-recovery
+      - name: Rebuild immutable ledger
+        run: |
+          python scripts/assets/build-v1-certified-runtime-ledger.py \
+            --original-root artifacts/source/v1-original \
+            --recovery-root artifacts/source/v1-recovery \
+            --output artifacts/assets/v1-certified-runtime-ledger.json
+      - name: Integrate exact certified WebP files
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, shutil
+          ledger = json.loads(pathlib.Path('artifacts/assets/v1-certified-runtime-ledger.json').read_text())
+          roots = [
+              pathlib.Path('artifacts/source/v1-recovery/image_asset_generator/spatial_handoff'),
+              pathlib.Path('artifacts/source/v1-original/image_asset_generator/spatial_handoff'),
+          ]
+          copied = []
+          for asset in ledger['assets']:
+              rel = pathlib.Path(asset['p'])
+              source = next((root / rel for root in roots if (root / rel).is_file()), None)
+              if source is None:
+                  raise SystemExit(f'missing certified source: {rel}')
+              digest = hashlib.sha256(source.read_bytes()).hexdigest()
+              if digest != asset['s']:
+                  raise SystemExit(f'certified source hash mismatch: {rel}: {digest} != {asset["s"]}')
+              destination = pathlib.Path('urai-tier1/public') / rel
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(source, destination)
+              final_digest = hashlib.sha256(destination.read_bytes()).hexdigest()
+              if final_digest != asset['s']:
+                  raise SystemExit(f'post-copy hash mismatch: {rel}')
+              copied.append(str(destination))
+          if len(copied) != 53:
+              raise SystemExit(f'expected 53 integrated assets, got {len(copied)}')
+          pathlib.Path('artifacts/assets/v1-integrated-paths.txt').write_text('\n'.join(copied) + '\n')
+          print(f'integrated {len(copied)} exact certified assets')
+          PY
+      - name: Verify exact runtime acceptance
+        run: python scripts/assets/run-v1-certified-runtime.py
+      - name: Commit exact certified runtime binaries
+        run: |
+          set -euo pipefail
+          git config user.name 'LifeLoggerAI Asset Factory'
+          git config user.email 'actions@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai
+          if git diff --cached --quiet; then
+            echo 'No runtime binary changes required.'
+            exit 0
+          fi
+          git commit -m 'Integrate exact certified V1 runtime assets'
+          git push origin HEAD:integrate/v1-certified-runtime-20260730-r2
+      - name: Upload integration receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v1-certified-runtime-integration-${{ github.run_id }}
+          path: |
+            artifacts/assets/v1-certified-runtime-ledger.json
+            artifacts/assets/v1-runtime-certification.json
+            artifacts/assets/v1-integrated-paths.txt
+          if-no-files-found: warn
+          retention-days: 90
