@@ -2,18 +2,17 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import importlib.util
 import json
 import re
 import sys
-import zlib
 from pathlib import Path
 from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[2]
 VERIFIER = ROOT / "scripts/assets/verify-v1-certified-runtime.py"
+LEDGER = ROOT / "artifacts/assets/v1-certified-runtime-ledger.json"
 EXPECTED_AUTHORITY = {
     "consumer": "LifeLoggerAI/urai-spatial",
     "expectedOutputs": 53,
@@ -39,65 +38,59 @@ def load_module() -> ModuleType:
 
 def validate_ledger(ledger: object) -> dict:
     if not isinstance(ledger, dict):
-        raise ValueError("recovered V1 ledger must be an object")
+        raise ValueError("rebuilt V1 ledger must be an object")
     if ledger.get("authority") != EXPECTED_AUTHORITY:
-        raise ValueError("recovered V1 authority mismatch")
+        raise ValueError("rebuilt V1 authority mismatch")
+    if ledger.get("originalArtifactId") != 8741010314 or ledger.get("recoveryArtifactId") != 8742902079:
+        raise ValueError("rebuilt V1 artifact identity mismatch")
+    if ledger.get("originalAssetsUnchanged") != 52 or ledger.get("recoveredAssets") != ["avatar_receptionist"]:
+        raise ValueError("rebuilt V1 retained/recovered boundary mismatch")
     assets = ledger.get("assets")
     if not isinstance(assets, list) or len(assets) != 53:
-        raise ValueError("recovered V1 ledger must contain exactly 53 assets")
+        raise ValueError("rebuilt V1 ledger must contain exactly 53 assets")
 
     names: set[str] = set()
     paths: set[str] = set()
-    required = {"n", "p", "s", "x", "w", "h", "a", "r", "q"}
+    required = {"n", "p", "s", "x", "w", "h", "a", "r", "q", "srcSha256", "metadataSha256"}
     for asset in assets:
         if not isinstance(asset, dict) or not required.issubset(asset):
-            raise ValueError("recovered V1 asset entry is incomplete")
+            raise ValueError("rebuilt V1 asset entry is incomplete")
         name = str(asset["n"])
         path = str(asset["p"])
         if name in names or path in paths:
-            raise ValueError(f"duplicate recovered V1 identity: {name} / {path}")
+            raise ValueError(f"duplicate rebuilt V1 identity: {name} / {path}")
         names.add(name)
         paths.add(path)
         if not re.fullmatch(r"[a-z0-9_]+", name):
-            raise ValueError(f"invalid recovered V1 name: {name}")
+            raise ValueError(f"invalid rebuilt V1 name: {name}")
         if not path.startswith("assets/urai/") or not path.endswith(".webp") or ".." in Path(path).parts:
-            raise ValueError(f"invalid recovered V1 path: {path}")
-        for key in ("s", "x"):
+            raise ValueError(f"invalid rebuilt V1 path: {path}")
+        for key in ("s", "x", "srcSha256", "metadataSha256"):
             if not re.fullmatch(r"[0-9a-f]{64}", str(asset[key])):
-                raise ValueError(f"invalid recovered V1 {key}: {name}")
+                raise ValueError(f"invalid rebuilt V1 {key}: {name}")
         if not isinstance(asset["w"], int) or not isinstance(asset["h"], int) or asset["w"] <= 0 or asset["h"] <= 0:
-            raise ValueError(f"invalid recovered V1 dimensions: {name}")
+            raise ValueError(f"invalid rebuilt V1 dimensions: {name}")
         if not isinstance(asset["a"], bool):
-            raise ValueError(f"invalid recovered V1 alpha contract: {name}")
+            raise ValueError(f"invalid rebuilt V1 alpha contract: {name}")
         if not isinstance(asset["q"], str) or len(asset["q"]) < 8:
-            raise ValueError(f"invalid recovered V1 provider identity: {name}")
+            raise ValueError(f"invalid rebuilt V1 provider identity: {name}")
 
     receptionist = next((asset for asset in assets if asset["n"] == "avatar_receptionist"), None)
     if not receptionist:
-        raise ValueError("recovered receptionist entry is missing")
+        raise ValueError("rebuilt receptionist entry is missing")
     if receptionist["q"] != "req_bb92582789134dbdb24e6f9f8c66c8ae":
-        raise ValueError("recovered receptionist request identity mismatch")
+        raise ValueError("rebuilt receptionist request identity mismatch")
+    if receptionist["srcSha256"] != "d95bb0f4b2703e32b8cb2295dc42a2f900a9eaf749a48a3c7f334ab4edc29c05":
+        raise ValueError("rebuilt receptionist source hash mismatch")
     if (receptionist["w"], receptionist["h"], receptionist["a"]) != (1024, 1536, True):
-        raise ValueError("recovered receptionist geometry mismatch")
+        raise ValueError("rebuilt receptionist geometry mismatch")
     return ledger
 
 
-def recover_ledger(module: ModuleType) -> tuple[dict, str, str]:
-    encoded = "".join(str(module.LEDGER_ZLIB_B64).split())
-    packed = base64.b64decode(encoded, validate=True)
-    mode = "zlib-wrapper-verified"
-    try:
-        raw = zlib.decompress(packed)
-    except zlib.error as error:
-        if "incorrect data check" not in str(error):
-            raise
-        if len(packed) < 7:
-            raise ValueError("embedded V1 stream is too short for checksum recovery") from error
-        raw = zlib.decompress(packed[2:-4], -zlib.MAX_WBITS)
-        mode = "raw-deflate-after-wrapper-checksum-failure"
+def load_ledger() -> tuple[dict, str]:
+    raw = LEDGER.read_bytes()
     ledger = validate_ledger(json.loads(raw))
-    canonical = json.dumps(ledger, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return ledger, mode, hashlib.sha256(canonical).hexdigest()
+    return ledger, hashlib.sha256(raw).hexdigest()
 
 
 def main() -> int:
@@ -106,7 +99,7 @@ def main() -> int:
     args = parser.parse_args()
 
     module = load_module()
-    ledger, mode, semantic_sha = recover_ledger(module)
+    ledger, ledger_sha = load_ledger()
     module.load_ledger = lambda: ledger
 
     if args.self_test:
@@ -114,15 +107,11 @@ def main() -> int:
             "status": "passed",
             "assets": len(ledger["assets"]),
             "authority": ledger["authority"],
-            "recoveryMode": mode,
-            "semanticLedgerSha256": semantic_sha,
+            "ledgerSha256": ledger_sha,
         }, indent=2, sort_keys=True))
         return 0
 
-    print(json.dumps({
-        "ledgerRecoveryMode": mode,
-        "semanticLedgerSha256": semantic_sha,
-    }, sort_keys=True), file=sys.stderr)
+    print(json.dumps({"ledgerSha256": ledger_sha}, sort_keys=True), file=sys.stderr)
     return int(module.main())
 
 
