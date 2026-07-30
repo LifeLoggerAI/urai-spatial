@@ -186,12 +186,22 @@ export default function HomeSpatialRuntimeLayer() {
     }
   }, [homeRuntimeActive, recoveryKey, rendererState])
 
-  if (!homeRouteActive || webglAvailable !== true) return null
+  if (!homeRouteActive || webglAvailable === null) return null
 
-  if (rendererState === 'failed') {
+  if (webglAvailable === false || rendererState === 'failed') {
+    const unavailable = webglAvailable === false
     return (
-      <section className="urai-home-spatial-runtime-layer" data-urai-home-runtime="accessible-fallback-after-renderer-failure" data-webgl-ready="false" aria-label="Spatial Home fallback">
-        <div role="status" aria-live="polite" className="sr-only">The spatial renderer could not recover. Accessible Home controls remain available.</div>
+      <section
+        className="urai-home-spatial-runtime-layer"
+        data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : 'accessible-fallback-after-renderer-failure'}
+        data-webgl-ready="false"
+        aria-label="Spatial Home fallback"
+      >
+        <div role="status" aria-live="polite" className="sr-only">
+          {unavailable
+            ? 'WebGL is unavailable. Accessible Home controls remain available.'
+            : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
+        </div>
         <HomeSemanticNavigation />
         <HomeMovementPrompt />
         <HomeSpatialWorldFinal />
