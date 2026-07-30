@@ -1,1 +1,0 @@
-home-no-webgl-fallback-b71ea99bc636.png

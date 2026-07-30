@@ -1,0 +1,148 @@
+{
+  "expectedHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+  "requestedScreenshotCount": 28,
+  "extractedScreenshotCount": 28,
+  "missing": [],
+  "files": [
+    {
+      "receiptPath": "home-normal-root-desktop-51db7b3ba77a.png",
+      "archivePath": "home-normal-root-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-normal-root-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-normal-home-desktop-51db7b3ba77a.png",
+      "archivePath": "home-normal-home-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-normal-home-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-loading-desktop-51db7b3ba77a.png",
+      "archivePath": "home-loading-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-loading-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-dormant-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-dormant-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-dormant-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-idle-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-idle-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-idle-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-attention-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-attention-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-attention-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-listening-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-listening-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-listening-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-thinking-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-thinking-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-thinking-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-speaking-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-speaking-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-speaking-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-guiding-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-guiding-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-guiding-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-reflecting-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-reflecting-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-reflecting-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-calming-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-calming-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-calming-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-privacy-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-privacy-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-privacy-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-warning-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-warning-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-warning-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-orb-transition-desktop-51db7b3ba77a.png",
+      "archivePath": "home-orb-transition-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-orb-transition-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-no-webgl-fallback-51db7b3ba77a.png",
+      "archivePath": "home-no-webgl-fallback-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-no-webgl-fallback-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-keyboard-orb-desktop-nearby-51db7b3ba77a.png",
+      "archivePath": "home-keyboard-orb-desktop-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-keyboard-orb-desktop-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-keyboard-ground-desktop-nearby-51db7b3ba77a.png",
+      "archivePath": "home-keyboard-ground-desktop-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-keyboard-ground-desktop-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-keyboard-life-map-desktop-nearby-51db7b3ba77a.png",
+      "archivePath": "home-keyboard-life-map-desktop-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-keyboard-life-map-desktop-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-touch-orb-portrait-mobile-nearby-51db7b3ba77a.png",
+      "archivePath": "home-touch-orb-portrait-mobile-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-touch-orb-portrait-mobile-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-touch-ground-portrait-mobile-nearby-51db7b3ba77a.png",
+      "archivePath": "home-touch-ground-portrait-mobile-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-touch-ground-portrait-mobile-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-touch-life-map-portrait-mobile-nearby-51db7b3ba77a.png",
+      "archivePath": "home-touch-life-map-portrait-mobile-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-touch-life-map-portrait-mobile-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-touch-orb-landscape-mobile-nearby-51db7b3ba77a.png",
+      "archivePath": "home-touch-orb-landscape-mobile-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-touch-orb-landscape-mobile-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-touch-ground-landscape-mobile-nearby-51db7b3ba77a.png",
+      "archivePath": "home-touch-ground-landscape-mobile-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-touch-ground-landscape-mobile-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-touch-life-map-landscape-mobile-nearby-51db7b3ba77a.png",
+      "archivePath": "home-touch-life-map-landscape-mobile-nearby-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-touch-life-map-landscape-mobile-nearby-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-pointer-look-desktop-51db7b3ba77a.png",
+      "archivePath": "home-pointer-look-desktop-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-pointer-look-desktop-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-portal-ground-settled-51db7b3ba77a.png",
+      "archivePath": "home-portal-ground-settled-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-portal-ground-settled-51db7b3ba77a.png"
+    },
+    {
+      "receiptPath": "home-portal-life-map-settled-51db7b3ba77a.png",
+      "archivePath": "home-portal-life-map-settled-51db7b3ba77a.png",
+      "output": "diagnostics/extracted/screenshots/home-portal-life-map-settled-51db7b3ba77a.png"
+    }
+  ]
+}
