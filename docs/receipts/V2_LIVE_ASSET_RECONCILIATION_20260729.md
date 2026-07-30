@@ -1,6 +1,6 @@
 # URAI V2 Live Asset Reconciliation — 2026-07-29
 
-Authority: `LifeLoggerAI/asset-factory` issue `#206`
+Program tracker: issue `#206` in the generation repository.
 
 This lane performs zero provider calls and zero spend. It verifies the current `urai-spatial` runtime registry and requires every one of the 80 canonical V2 living-system asset paths to exist under `urai-tier1/public/assets/urai/v2`.
 
