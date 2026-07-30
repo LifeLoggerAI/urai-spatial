@@ -7,6 +7,7 @@ on:
       - scripts/assets/run-v1-certified-runtime.py
       - scripts/assets/build-v1-certified-runtime-ledger.py
       - scripts/assets/integrate-v1-certified-runtime.py
+      - scripts/assets/sync-v1-certified-handoff-manifest.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
       - urai-tier1/src/spatial/assets/uraiAssets.ts
@@ -17,6 +18,7 @@ on:
       - scripts/assets/run-v1-certified-runtime.py
       - scripts/assets/build-v1-certified-runtime-ledger.py
       - scripts/assets/integrate-v1-certified-runtime.py
+      - scripts/assets/sync-v1-certified-handoff-manifest.py
       - .github/workflows/v1-certified-runtime.yml
       - urai-tier1/public/assets/urai/**
       - urai-tier1/src/spatial/assets/uraiAssets.ts
@@ -66,25 +68,32 @@ jobs:
             --output artifacts/assets/v1-certified-runtime-ledger.json
       - name: Validate rebuilt V1 ledger
         run: python scripts/assets/run-v1-certified-runtime.py --self-test
-      - name: Integrate exact certified V1 files
+      - name: Integrate certified V1 files and synchronize authorities
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           set -euo pipefail
           source_root='artifacts/assets/v1-ledger-webp-staging/assets/urai'
           target_root='urai-tier1/public/assets/urai'
+          manifest='urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json'
           test -d "$source_root"
           test "$(find "$source_root" -type f -name '*.webp' | wc -l | tr -d ' ')" = '53'
           mkdir -p "$target_root"
           cp -a "$source_root"/. "$target_root"/
           python scripts/assets/run-v1-certified-runtime.py
+          python scripts/assets/sync-v1-certified-handoff-manifest.py \
+            --repo-root . \
+            --ledger artifacts/assets/v1-certified-runtime-ledger.json \
+            --manifest "$manifest"
+          node scripts/reconcile-asset-pack-independent-ledger.mjs --check \
+            --out artifacts/assets/v1-independent-ledger.json \
+            --csv artifacts/assets/v1-independent-ledger.csv
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add urai-tier1/public/assets/urai
+          git add urai-tier1/public/assets/urai "$manifest"
           if git diff --cached --quiet; then
-            echo 'Certified V1 runtime already integrated.'
+            echo 'Certified V1 runtime and authorities already synchronized.'
           else
-            test "$(git diff --cached --name-only -- 'urai-tier1/public/assets/urai/**/*.webp' 'urai-tier1/public/assets/urai/*.webp' | wc -l | tr -d ' ')" = '53'
-            git commit -m 'Integrate certified V1 runtime asset pack'
+            git commit -m 'Synchronize certified V1 runtime authorities'
             git push origin "HEAD:${{ github.head_ref }}"
           fi
       - name: Compare certified V1 handoff with runtime
@@ -102,5 +111,7 @@ jobs:
           path: |
             artifacts/assets/v1-runtime-certification.json
             artifacts/assets/v1-certified-runtime-ledger.json
+            artifacts/assets/v1-independent-ledger.json
+            artifacts/assets/v1-independent-ledger.csv
           if-no-files-found: warn
           retention-days: 90
