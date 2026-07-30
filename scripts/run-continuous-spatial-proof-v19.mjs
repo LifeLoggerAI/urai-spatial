@@ -142,7 +142,7 @@ source = replaceExact(
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === 'traversal', ownerSelector, { timeout: 10_000 })
     const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')`,
   `    await page.keyboard.press('Enter')
-    const expectedSequence = \`${destination}:traversal\`
+    const expectedSequence = \`\${destination}:traversal\`
     await page.waitForFunction(({ selector, expectedSequence }) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === expectedSequence, { selector: ownerSelector, expectedSequence }, { timeout: 30_000 })
     const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')`,
   1,
