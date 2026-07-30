@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "programAuthority": "LifeLoggerAI/asset-factory#206",
+  "paidRepository": "LifeLoggerAI/asset-factory",
+  "paidHeadSha": "c388b1ce3d6fc27ef30599eb6535605bff202fb7",
+  "paidAuthorizationId": "URAI-AF-V2-V5-EXACT-PAID-20260730-001",
+  "targetBranch": "certify/v2-runtime-estate-20260729",
+  "targetPullRequest": 978,
+  "expectedArtifacts": 4,
+  "expectedTargets": 151,
+  "expectedVersionCounts": {
+    "v2": 71,
+    "v3": 14,
+    "v4": 39,
+    "v5": 27
+  },
+  "maximumProviderCalls": 300,
+  "maximumReservedCostUsd": "300.00",
+  "promotionAuthorized": false,
+  "deploymentAuthorized": false
+}
