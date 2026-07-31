@@ -22,14 +22,17 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
   `    await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
     await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
     await expect(fallback.getByRole('button', { name: /open urai orb companion/i })).toBeVisible()`,
-  `    await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
+  `    await expect(fallback).toHaveCount(1)
+    await expect(fallback.getByRole('link', { name: /ground/i }).first()).toBeVisible()
     await expect(fallback.getByRole('link', { name: /life map/i }).first()).toBeVisible()
-    const navigation = page.getByRole('navigation', { name: 'Accessible Home destinations' })
+    await expect(page.getByRole('main', { name: 'URAI Home World threshold' })).toHaveCount(1)
+    const navigation = fallback.getByRole('navigation', { name: 'Accessible Home destinations' })
+    await expect(navigation).toHaveCount(1)
     await expect(navigation).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
     await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
     await expect(navigation.getByTestId('home-semantic-orb')).toHaveAccessibleName('Open URAI Orb companion')`,
   1,
-  'no-WebGL runtime-owned Orb accessibility contract',
+  'single-owner no-WebGL runtime accessibility contract',
 ))
 
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {
