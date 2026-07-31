@@ -1,0 +1,46 @@
+{
+  "deploymentAuthorized": false,
+  "originalRunId": 30543824770,
+  "promotionAuthorized": true,
+  "recoveryRunId": 30632551711,
+  "schemaVersion": "1.0.0",
+  "totalFailed": 0,
+  "totalGenerated": 151,
+  "totalPassed": 151,
+  "totalProviderCallsExecuted": 161,
+  "totalReservedEstimatedCostUsd": "161.00",
+  "versions": {
+    "v2": {
+      "failed": 0,
+      "generated": 71,
+      "passed": 71,
+      "providerCallsExecuted": 71,
+      "receiptSha256": "0dc033b75a879fa9ce1dcb7fac072ee37740ebeebf0484811bf5c10cd38a9e71",
+      "reservedEstimatedCostUsd": "71.00"
+    },
+    "v3": {
+      "failed": 0,
+      "generated": 14,
+      "passed": 14,
+      "providerCallsExecuted": 14,
+      "receiptSha256": "8a28a60b600206c0a1c8e88aab4e5ef72cbcbe603426b98d620451f69e9e0b00",
+      "reservedEstimatedCostUsd": "14.00"
+    },
+    "v4": {
+      "failed": 0,
+      "generated": 39,
+      "passed": 39,
+      "providerCallsExecuted": 49,
+      "receiptSha256": "dceff1b47c5d30071a6c3053718b81fbd79c983ab83760775a80c32ca6caf978",
+      "reservedEstimatedCostUsd": "49.00"
+    },
+    "v5": {
+      "failed": 0,
+      "generated": 27,
+      "passed": 27,
+      "providerCallsExecuted": 27,
+      "receiptSha256": "68a0f202474856e4792baa4a4316ace841e042be98f778e079ef27d02043f69f",
+      "reservedEstimatedCostUsd": "27.00"
+    }
+  }
+}
