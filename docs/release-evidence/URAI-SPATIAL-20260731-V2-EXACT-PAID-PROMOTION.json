@@ -4,7 +4,10 @@
   "deploymentAuthorized": false,
   "generatedReplacements": 71,
   "preservedTechnicalPasses": 9,
-  "programAuthority": "LifeLoggerAI/asset-factory#206",
+  "programAuthority": {
+    "repositoryId": 1150887894,
+    "issueNumber": 206
+  },
   "promotionAuthorized": true,
   "providerCallsExecutedByPromotion": 0,
   "providerCallsExecutedPreviously": 71,
