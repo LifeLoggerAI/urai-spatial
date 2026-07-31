@@ -1,0 +1,21 @@
+{
+  "artifactDigest": "sha256:8b9da5b188d76f55c2cf371fad99b4e7e9ff11d61481f915857fa3182e57578e",
+  "artifactId": 8763143473,
+  "deploymentAuthorized": false,
+  "generatedReplacements": 71,
+  "preservedTechnicalPasses": 9,
+  "programAuthority": {
+    "repositoryId": 1150887894,
+    "issueNumber": 206
+  },
+  "promotionAuthorized": true,
+  "providerCallsExecutedByPromotion": 0,
+  "providerCallsExecutedPreviously": 71,
+  "receiptSha256": "0dc033b75a879fa9ce1dcb7fac072ee37740ebeebf0484811bf5c10cd38a9e71",
+  "reservedEstimatedCostUsdPreviously": "71.00",
+  "schemaVersion": "1.0.0",
+  "sourceHeadSha": "c388b1ce3d6fc27ef30599eb6535605bff202fb7",
+  "sourceRunId": 30543824770,
+  "spendUsdByPromotion": "0.00",
+  "targetNamesSha256": "04276788e32e0937c7778949c8f1682832bbd573bdae3169f4cbeeebc2d84798"
+}

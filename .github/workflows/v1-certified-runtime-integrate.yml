@@ -1,0 +1,173 @@
+name: Integrate Certified V1 Runtime Pack
+
+on:
+  push:
+    branches:
+      - certify/v1-runtime-handoff-20260729
+    paths:
+      - scripts/assets/build-v1-certified-runtime-ledger.py
+      - scripts/assets/integrate-v1-certified-runtime.py
+      - scripts/assets/run-v1-certified-runtime.py
+      - scripts/assets/sync-v1-certified-handoff-manifest.py
+      - scripts/assets/verify-v1-certified-runtime.py
+      - .github/workflows/v1-certified-runtime-integrate.yml
+      - urai-tier1/public/assets/urai/**
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character candidate SHA to verify
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: v1-certified-runtime-integration-${{ github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      ASSET_FACTORY_READ_TOKEN: ${{ secrets.ASSET_FACTORY_READ_TOKEN }}
+      FALLBACK_GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+
+      - name: Install deterministic image verifier
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+
+      - name: Download immutable V1 source authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="${ASSET_FACTORY_READ_TOKEN:-${FALLBACK_GITHUB_TOKEN}}"
+          test -n "$token"
+          mkdir -p artifacts/source/v1-original artifacts/source/v1-recovery artifacts/assets artifacts/v1-integration
+          download_artifact() {
+            local artifact_id="$1"
+            local output="$2"
+            local url="https://api.github.com/repos/LifeLoggerAI/asset-factory/actions/artifacts/${artifact_id}/zip"
+            local code
+            code=$(curl -sS -L -o "$output" -w '%{http_code}' \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${token}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$url")
+            test "$code" = '200'
+            test -s "$output"
+          }
+          download_artifact 8741010314 /tmp/v1-original.zip
+          download_artifact 8742902079 /tmp/v1-recovery.zip
+          test "$(sha256sum /tmp/v1-recovery.zip | cut -d' ' -f1)" = 'd42a4549fd5ebd90a761ced87a72d6765de6bb56403055af5c9cec8bda6ed731'
+          unzip -q /tmp/v1-original.zip -d artifacts/source/v1-original
+          unzip -q /tmp/v1-recovery.zip -d artifacts/source/v1-recovery
+
+      - name: Rebuild exact deterministic 53-row derivative ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/assets/build-v1-certified-runtime-ledger.py \
+            --original-root artifacts/source/v1-original \
+            --recovery-root artifacts/source/v1-recovery \
+            --output artifacts/assets/v1-certified-runtime-ledger.json
+          test "$(sha256sum artifacts/assets/v1-certified-runtime-ledger.json | cut -d' ' -f1)" = 'd4834dc49e2bdfe835a2adcc4190bbb5ae14469c02e28083662f087231d1597b'
+          python scripts/assets/run-v1-certified-runtime.py --self-test
+
+      - name: Materialize and verify accepted runtime derivatives
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/assets/integrate-v1-certified-runtime.py \
+            --repo-root . \
+            --ledger artifacts/assets/v1-certified-runtime-ledger.json \
+            --staging-root artifacts/assets/v1-ledger-webp-staging \
+            --receipt artifacts/v1-integration/v1-certified-runtime-integration.json
+          python scripts/assets/sync-v1-certified-handoff-manifest.py \
+            --repo-root . \
+            --ledger artifacts/assets/v1-certified-runtime-ledger.json \
+            --manifest urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json
+          python scripts/assets/verify-v1-certified-runtime.py \
+            --ledger artifacts/assets/v1-certified-runtime-ledger.json \
+            --repo-root . \
+            --output artifacts/v1-integration/v1-certified-runtime-post-integration.json
+          node scripts/reconcile-asset-pack-independent-ledger.mjs --check \
+            --out artifacts/v1-integration/v1-independent-ledger.json \
+            --csv artifacts/v1-integration/v1-independent-ledger.csv
+
+      - name: Prove committed runtime has no stale or superseded bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- urai-tier1/public/assets/urai
+          test -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai)"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          ledger = json.loads(Path('artifacts/assets/v1-certified-runtime-ledger.json').read_text())
+          receipt = json.loads(Path('artifacts/v1-integration/v1-certified-runtime-integration.json').read_text())
+          proof = json.loads(Path('artifacts/v1-integration/v1-certified-runtime-post-integration.json').read_text())
+          assets = ledger['assets']
+          assert receipt['candidateSha'] == __import__('os').environ['URAI_EXACT_HEAD']
+          assert receipt['ledgerSha256'] == 'd4834dc49e2bdfe835a2adcc4190bbb5ae14469c02e28083662f087231d1597b'
+          assert receipt['accepted'] == 53 and receipt['rejected'] == 0 and receipt['missing'] == 0
+          assert receipt['losslessDerivatives'] == 22 and receipt['optimizedDerivatives'] == 31
+          assert receipt['maximumRuntimeBytes'] <= 1048576
+          assert receipt['minimumOptimizedCompositePsnrDb'] >= 37.0
+          assert receipt['providerCalls'] == 0 and receipt['spendUsd'] == '0.00'
+          assert proof['summary']['accepted'] == 53
+          assert proof['summary']['rejected'] == 0
+          assert proof['summary']['missing'] == 0
+          assert sum(asset['runtimeEncoding'] == 'lossless-exact' for asset in assets) == 22
+          assert sum(asset['runtimeEncoding'] == 'webp-q95' for asset in assets) == 31
+          assert all(asset['runtimeBytes'] <= 1048576 for asset in assets)
+          assert all(asset['alphaExact'] is True for asset in assets)
+          PY
+
+      - name: Prove closed provider and mutation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+          test -z "${ASSET_RENDERER_API_KEY:-}"
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+
+      - name: Upload exact-head immutable integration evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v1-certified-runtime-integration-${{ env.URAI_EXACT_HEAD }}
+          retention-days: 90
+          if-no-files-found: error
+          path: |
+            artifacts/assets/v1-certified-runtime-ledger.json
+            artifacts/v1-integration/v1-certified-runtime-integration.json
+            artifacts/v1-integration/v1-certified-runtime-post-integration.json
+            artifacts/v1-integration/v1-independent-ledger.json
+            artifacts/v1-integration/v1-independent-ledger.csv
