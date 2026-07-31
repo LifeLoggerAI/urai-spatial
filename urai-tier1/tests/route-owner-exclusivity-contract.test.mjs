@@ -7,6 +7,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const autonomous = read('src/app/UraiAutonomousV1Layer.tsx')
 const layout = read('src/app/layout.tsx')
 const homeOwner = read('src/app/FinalHomeThreshold.tsx')
+const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
 const ownerCss = read('src/spatial/world/routeOwnerConvergence.css')
 
@@ -23,12 +24,18 @@ test('duplicate-owner visual recovery and suppression rules stay retired', () =>
   assert.doesNotMatch(ownerCss, /uraiAutoFocus|uraiAutoReplay/)
 })
 
-test('Home retains a complete semantic fallback until WebGL is positively confirmed', () => {
+test('Home transfers settled ownership to the runtime boundary after capability resolution', () => {
   assert.match(homeOwner, /useWebGLAvailable/)
-  assert.match(homeOwner, /mounted && webglAvailable === true\) return null/)
+  assert.match(homeOwner, /mounted && webglAvailable !== null\) return null/)
   assert.match(homeOwner, /data-testid="urai-home-accessible-fallback"/)
   assert.match(homeOwner, /data-webgl-state=\{!mounted \|\| webglAvailable === null \? 'detecting' : 'unavailable'\}/)
   assert.match(homeOwner, /<HomeSpatialWorldFinal \/>/)
+
+  assert.match(homeRuntime, /webglAvailable === false/)
+  assert.match(homeRuntime, /data-testid="urai-home-accessible-fallback"/)
+  assert.match(homeRuntime, /role="region"/)
+  assert.match(homeRuntime, /aria-label="Spatial Home fallback"/)
+  assert.match(homeRuntime, /data-home-navigation-owner="runtime-boundary"/)
 })
 
 test('WebGL Home contains neither tutorial chrome nor a second DOM Orb control', () => {
