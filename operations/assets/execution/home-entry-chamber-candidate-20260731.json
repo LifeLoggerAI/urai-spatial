@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "programAuthority": "LifeLoggerAI/asset-factory#206",
+  "laneAuthority": "LifeLoggerAI/urai-spatial#524",
+  "baseSha": "4e1be3bdaf1ae463c34099045c1c8c231fe77827",
+  "targetAssetId": "home-entry-chamber-v1",
+  "targetPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+  "executionMode": "deterministic-candidate-forge-and-independent-validation",
+  "providerCallsAuthorized": 0,
+  "providerSpendAuthorizedUsd": "0.00",
+  "promotionAuthorized": false,
+  "mergeAuthorized": false,
+  "deploymentAuthorized": false,
+  "requiredEvidence": [
+    "generated candidate bundle",
+    "pinned legacy candidate comparison",
+    "GLB validator result",
+    "manifest budget verification",
+    "independent artifact audit",
+    "source and license receipt",
+    "SHA-256 and geometry metrics"
+  ]
+}
