@@ -14,6 +14,7 @@ on:
       - 'playwright.accessibility.config.ts'
       - 'scripts/materialize-accessibility-performance-current.mjs'
       - 'scripts/materialize-accessibility-performance-current-v2.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v3.mjs'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
@@ -90,7 +91,7 @@ jobs:
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
       - name: Materialize current accessibility proof contract
-        run: node scripts/materialize-accessibility-performance-current-v2.mjs
+        run: node scripts/materialize-accessibility-performance-current-v3.mjs
 
       - name: Run isolated accessibility and performance suite
         shell: bash
