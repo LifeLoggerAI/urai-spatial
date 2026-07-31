@@ -193,6 +193,8 @@ export default function HomeSpatialRuntimeLayer() {
     return (
       <section
         className="urai-home-spatial-runtime-layer"
+        data-testid="urai-home-accessible-fallback"
+        data-webgl-state={unavailable ? 'unavailable' : 'renderer-failed'}
         data-urai-home-runtime={unavailable ? 'accessible-fallback-without-webgl' : 'accessible-fallback-after-renderer-failure'}
         data-webgl-ready="false"
         aria-label="Spatial Home fallback"
