@@ -141,9 +141,11 @@ def main() -> int:
 
     module = load_module()
     ledger, ledger_sha = load_ledger()
-    module.load_ledger = lambda: ledger
+    module.load_ledger = lambda _path=None: ledger
 
     if args.self_test:
+        if module.load_ledger(Path("ignored-by-certified-wrapper.json")) is not ledger:
+            raise RuntimeError("verifier ledger adapter path compatibility regression")
         probe = enforce_encoded_byte_identity({
             "assets": [{"accepted": True, "byteMatch": False}],
         })
