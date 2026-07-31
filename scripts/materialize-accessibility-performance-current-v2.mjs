@@ -1,6 +1,5 @@
 import './materialize-accessibility-performance-current.mjs'
-import { readFile, readdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
+import { readFile, writeFile } from 'node:fs/promises'
 
 function replaceExact(source, from, to, expectedCount, label) {
   const count = source.split(from).length - 1
@@ -176,29 +175,13 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   return source
 })
 
-const testDirectory = 'urai-tier1/tests'
-const doorwayContinuityPattern = /expect\(\s*([^,\n]+?)\s*,\s*(`[^`]*controller target should remain[^`]*`)\s*\)\.toBe\(destination\.label\)/g
-const normalizedDoorwayContinuityPattern = /expect\(String\(([^\n]+?)\)\.toLowerCase\(\),\s*(`[^`]*controller target should remain[^`]*`)\)\.toBe\(destination\.id\)/g
-let doorwayContinuityRepairs = 0
-let normalizedDoorwayContinuityAssertions = 0
-for (const entry of await readdir(testDirectory)) {
-  if (!entry.startsWith('accessibility-performance-') || !entry.endsWith('.spec.ts')) continue
-  const testPath = path.join(testDirectory, entry)
-  const source = await readFile(testPath, 'utf8')
-  normalizedDoorwayContinuityAssertions += [...source.matchAll(normalizedDoorwayContinuityPattern)].length
-  const next = source.replace(doorwayContinuityPattern, (_match, actual, message) => {
-    doorwayContinuityRepairs += 1
-    return `expect(String(${actual}).toLowerCase(), ${message}).toBe(destination.id)`
-  })
-  if (next !== source) {
-    await writeFile(testPath, next)
-    console.log(`Normalized doorway controller identity at ${testPath}`)
-  }
+const canonicalHomeTravelPath = 'urai-tier1/tests/accessibility-performance-canonical-home-travel.spec.ts'
+const canonicalHomeTravel = await readFile(canonicalHomeTravelPath, 'utf8')
+const stableIdSelector = 'navigation.getByTestId(`home-semantic-${destination.id}`)'
+const accessibleNameAssertion = 'await expect(target).toHaveAccessibleName(destination.label)'
+const stableIdSelectorCount = canonicalHomeTravel.split(stableIdSelector).length - 1
+const accessibleNameAssertionCount = canonicalHomeTravel.split(accessibleNameAssertion).length - 1
+if (stableIdSelectorCount !== 1 || accessibleNameAssertionCount !== 1) {
+  throw new Error(`canonical Home destination identity authority expected one stable-id selector and one accessible-name assertion; found id=${stableIdSelectorCount}, name=${accessibleNameAssertionCount}`)
 }
-const doorwayContinuityAuthorityCount = doorwayContinuityRepairs + normalizedDoorwayContinuityAssertions
-if (doorwayContinuityAuthorityCount !== 1) {
-  throw new Error(`doorway controller identity authority expected exactly 1 legacy-or-normalized occurrence; found ${doorwayContinuityAuthorityCount}`)
-}
-if (doorwayContinuityRepairs === 0) {
-  console.log('Doorway controller identity was already normalized')
-}
+console.log('Canonical Home destination identity is bound to stable id and accessible label')
