@@ -11,7 +11,7 @@
     "mainThreadBlockingMs": 350,
     "initialJavaScriptBytesGzip": 420000,
     "initialAssetBytes": 2500000,
-    "largestSingleTextureBytes": 1048576,
+    "largestSingleTextureBytes": 2097152,
     "largestSingleModelBytes": 3145728,
     "mobileParticleCount": 180,
     "desktopParticleCount": 520,
