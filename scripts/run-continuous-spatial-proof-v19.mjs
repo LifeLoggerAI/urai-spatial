@@ -147,17 +147,64 @@ source = replaceExact(
     const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')`,
   `    await page.keyboard.press('Enter')
     const expectedSequence = \`\${destination}:traversal\`
-    await page.waitForFunction(({ selector, expectedSequence }) => document.querySelector(selector)?.getAttribute('data-home-portal-sequence') === expectedSequence, { selector: ownerSelector, expectedSequence }, { timeout: 30_000 })
-    const sequence = await page.locator(ownerSelector).getAttribute('data-home-portal-sequence')`,
+    const traversalHandle = await page.waitForFunction(({ selector, expectedSequence }) => {
+      const sequence = document.querySelector(selector)?.getAttribute('data-home-portal-sequence')
+      return sequence === expectedSequence ? sequence : false
+    }, { selector: ownerSelector, expectedSequence }, { timeout: 30_000 })
+    const sequence = await traversalHandle.jsonValue()
+    const diagnosticsAtTraversal = JSON.parse(JSON.stringify(diagnostics()))`,
   1,
   'continuous proof destination-qualified portal traversal contract',
 )
 source = replaceExact(
   source,
-  "    if (sequence !== 'traversal' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)",
-  "    if (sequence !== expectedSequence || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)",
+  `    const screenshot = path.join(outputDir, \`\${id}-\${exactHead.slice(0, 12)}.png\`)
+    await page.screenshot({ path: screenshot })
+    const diagnosticResult = diagnostics()
+    const video = await closeAndRecordVideo(context, page, id)
+    const record = { id, destination, sequence, screenshot: path.relative(outputDir, screenshot), video, diagnostics: diagnosticResult }
+    receipt.interactions.push(record)
+    if (sequence !== 'traversal' || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length) receipt.errors.push(record)`,
+  `    const screenshot = path.join(outputDir, \`\${id}-\${exactHead.slice(0, 12)}.png\`)
+    await page.screenshot({ path: screenshot })
+    const targetPathname = destination === 'ground' ? '/ground' : '/life-map'
+    await page.waitForURL((url) => (url.pathname.replace(/\\/+$/, '') || '/') === targetPathname, { timeout: 20_000 })
+    await page.waitForTimeout(250)
+    const landedUrl = page.url()
+    const landedPathname = new URL(landedUrl).pathname.replace(/\\/+$/, '') || '/'
+    const diagnosticResult = diagnostics()
+    const handoffFailedRequests = diagnosticResult.failedRequests.slice(diagnosticsAtTraversal.failedRequests.length)
+    const expectedAbortedHandoffRequests = handoffFailedRequests.filter((request) => request.failure === 'net::ERR_ABORTED')
+    const blockingHandoffFailedRequests = handoffFailedRequests.filter((request) => request.failure !== 'net::ERR_ABORTED')
+    const video = await closeAndRecordVideo(context, page, id)
+    const record = {
+      id,
+      destination,
+      sequence,
+      expectedSequence,
+      targetPathname,
+      landedPathname,
+      landedUrl,
+      screenshot: path.relative(outputDir, screenshot),
+      video,
+      diagnosticsAtTraversal,
+      diagnostics: diagnosticResult,
+      expectedAbortedHandoffRequests,
+      blockingHandoffFailedRequests,
+    }
+    receipt.interactions.push(record)
+    if (
+      sequence !== expectedSequence
+      || landedPathname !== targetPathname
+      || diagnosticsAtTraversal.pageErrors.length
+      || diagnosticsAtTraversal.consoleErrors.length
+      || diagnosticsAtTraversal.failedRequests.length
+      || diagnosticResult.pageErrors.length
+      || diagnosticResult.consoleErrors.length
+      || blockingHandoffFailedRequests.length
+    ) receipt.errors.push(record)`,
   1,
-  'continuous proof destination-qualified portal traversal verdict',
+  'continuous proof traversal-to-destination landing verdict',
 )
 
 await writeFile(materializedPath, source)
