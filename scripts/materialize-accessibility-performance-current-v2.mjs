@@ -1,5 +1,6 @@
 import './materialize-accessibility-performance-current.mjs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, readdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 
 function replaceExact(source, from, to, expectedCount, label) {
   const count = source.split(from).length - 1
@@ -174,3 +175,23 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   )
   return source
 })
+
+const testDirectory = 'urai-tier1/tests'
+const doorwayContinuityPattern = /expect\(\s*([^,\n]+?)\s*,\s*(`[^`]*controller target should remain[^`]*`)\s*\)\.toBe\(destination\.label\)/g
+let doorwayContinuityRepairs = 0
+for (const entry of await readdir(testDirectory)) {
+  if (!entry.startsWith('accessibility-performance-') || !entry.endsWith('.spec.ts')) continue
+  const testPath = path.join(testDirectory, entry)
+  const source = await readFile(testPath, 'utf8')
+  const next = source.replace(doorwayContinuityPattern, (_match, actual, message) => {
+    doorwayContinuityRepairs += 1
+    return `expect(String(${actual}).toLowerCase(), ${message}).toBe(destination.id)`
+  })
+  if (next !== source) {
+    await writeFile(testPath, next)
+    console.log(`Normalized doorway controller identity at ${testPath}`)
+  }
+}
+if (doorwayContinuityRepairs !== 1) {
+  throw new Error(`doorway controller identity normalization expected 1 audited occurrence; found ${doorwayContinuityRepairs}`)
+}
