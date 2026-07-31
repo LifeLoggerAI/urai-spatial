@@ -178,11 +178,14 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
 
 const testDirectory = 'urai-tier1/tests'
 const doorwayContinuityPattern = /expect\(\s*([^,\n]+?)\s*,\s*(`[^`]*controller target should remain[^`]*`)\s*\)\.toBe\(destination\.label\)/g
+const normalizedDoorwayContinuityPattern = /expect\(String\(([^\n]+?)\)\.toLowerCase\(\),\s*(`[^`]*controller target should remain[^`]*`)\)\.toBe\(destination\.id\)/g
 let doorwayContinuityRepairs = 0
+let normalizedDoorwayContinuityAssertions = 0
 for (const entry of await readdir(testDirectory)) {
   if (!entry.startsWith('accessibility-performance-') || !entry.endsWith('.spec.ts')) continue
   const testPath = path.join(testDirectory, entry)
   const source = await readFile(testPath, 'utf8')
+  normalizedDoorwayContinuityAssertions += [...source.matchAll(normalizedDoorwayContinuityPattern)].length
   const next = source.replace(doorwayContinuityPattern, (_match, actual, message) => {
     doorwayContinuityRepairs += 1
     return `expect(String(${actual}).toLowerCase(), ${message}).toBe(destination.id)`
@@ -192,6 +195,10 @@ for (const entry of await readdir(testDirectory)) {
     console.log(`Normalized doorway controller identity at ${testPath}`)
   }
 }
-if (doorwayContinuityRepairs !== 1) {
-  throw new Error(`doorway controller identity normalization expected 1 audited occurrence; found ${doorwayContinuityRepairs}`)
+const doorwayContinuityAuthorityCount = doorwayContinuityRepairs + normalizedDoorwayContinuityAssertions
+if (doorwayContinuityAuthorityCount !== 1) {
+  throw new Error(`doorway controller identity authority expected exactly 1 legacy-or-normalized occurrence; found ${doorwayContinuityAuthorityCount}`)
+}
+if (doorwayContinuityRepairs === 0) {
+  console.log('Doorway controller identity was already normalized')
 }
