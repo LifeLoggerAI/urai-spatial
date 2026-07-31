@@ -33,7 +33,7 @@ test('Home transfers settled ownership to the runtime boundary after capability 
 
   assert.match(homeRuntime, /webglAvailable === false/)
   assert.match(homeRuntime, /data-testid="urai-home-accessible-fallback"/)
-  assert.match(homeRuntime, /role="region"/)
+  assert.match(homeRuntime, /<section/)
   assert.match(homeRuntime, /aria-label="Spatial Home fallback"/)
   assert.match(homeRuntime, /data-home-navigation-owner="runtime-boundary"/)
 })
