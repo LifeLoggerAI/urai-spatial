@@ -112,14 +112,18 @@ source = replaceExact(
           : new Set(directions)
         if (!desired.size) break
         const beforeFrames = end.renderedFrames
-        if (method === 'keyboard') await setKeyboardDirections(page, settleActive, desired)
-        else await setTouchDirections(page, settleActive, desired)
-        await page.waitForFunction(({ selector, beforeFrames, destination }) => {
-          const owner = document.querySelector(selector)
-          const frames = Number.parseFloat(owner?.getAttribute('data-home-rendered-frames') || '')
-          return owner?.getAttribute('data-home-nearby') === destination
-            || (Number.isFinite(frames) && (beforeFrames == null || frames > beforeFrames))
-        }, { selector: ownerSelector, beforeFrames, destination }, { timeout: 30_000 }).catch(() => {})
+        if (method === 'keyboard') {
+          await setKeyboardDirections(page, settleActive, desired)
+          await page.waitForFunction(({ selector, beforeFrames, destination }) => {
+            const owner = document.querySelector(selector)
+            const frames = Number.parseFloat(owner?.getAttribute('data-home-rendered-frames') || '')
+            return owner?.getAttribute('data-home-nearby') === destination
+              || (Number.isFinite(frames) && (beforeFrames == null || frames > beforeFrames))
+          }, { selector: ownerSelector, beforeFrames, destination }, { timeout: 30_000 }).catch(() => {})
+        } else {
+          await setTouchDirections(page, settleActive, desired)
+          await page.waitForTimeout(120)
+        }
         await releaseDirections(page, method, settleActive)
         await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-moving') === 'false', ownerSelector, { timeout: 30_000 }).catch(() => {})
       }
