@@ -1,7 +1,5 @@
 export type UraiSpatialAssetType = 'model' | 'texture' | 'skybox' | 'portal' | 'world' | 'ui' | 'audio' | 'fallback'
-
 export type UraiSpatialAssetStatus = 'ready' | 'candidate' | 'fallback' | 'missing' | 'future'
-
 export type UraiSpatialTargetSurface =
   | 'home'
   | 'ground'
@@ -29,7 +27,6 @@ export interface UraiSpatialAssetManifestEntry {
 }
 
 export type UraiSpatialAssetResolutionSource = 'selected' | 'fallback' | 'unavailable'
-
 export interface UraiSpatialAssetResolution {
   readonly requestedAssetId: string
   readonly source: UraiSpatialAssetResolutionSource
@@ -40,9 +37,8 @@ export interface UraiSpatialAssetResolution {
 
 const generatedRoot = '/assets/urai/generated'
 const proofFallbackRoot = '/assets/urai/spatial'
-
 const createdAt = '2026-07-07'
-const updatedAt = '2026-07-10'
+const updatedAt = '2026-08-01'
 
 export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] = [
   {
@@ -50,10 +46,10 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     name: 'Home Entry Chamber GLB',
     type: 'model',
     path: `${generatedRoot}/models/home-entry-chamber-v1.glb`,
-    status: 'future',
+    status: 'ready',
     targetSurface: 'home',
     priority: 'critical',
-    notes: 'Selected Home environment. It may load only after review, compression, receipts and promotion mark it ready.',
+    notes: 'Accepted production Home environment. Exact binary authority and reviewed 18.69m width are retained in the 2026-08-01 promotion receipt.',
     createdAt,
     updatedAt,
     fallbackAssetId: 'home-entry-chamber-proof-fallback',
@@ -64,10 +60,10 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     name: 'Portal Ring Master GLB',
     type: 'portal',
     path: `${generatedRoot}/models/portal-ring-master-v1.glb`,
-    status: 'future',
+    status: 'ready',
     targetSurface: 'global',
     priority: 'critical',
-    notes: 'Selected reusable portal geometry for spatial transitions.',
+    notes: 'Accepted reusable portal geometry. Exact desktop, mobile and reduced-motion proof merged through PR #998.',
     createdAt,
     updatedAt,
     fallbackAssetId: 'portal-ring-proof-fallback',
@@ -148,10 +144,10 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     name: 'URAI Orb Avatar GLB',
     type: 'model',
     path: `${generatedRoot}/models/urai-orb-avatar-v1.glb`,
-    status: 'future',
+    status: 'ready',
     targetSurface: 'global',
     priority: 'critical',
-    notes: 'Selected spatial companion orb/avatar.',
+    notes: 'Accepted spatial companion Orb. Exact desktop, mobile and reduced-motion proof merged through PR #998.',
     createdAt,
     updatedAt,
     fallbackAssetId: 'urai-orb-proof-fallback',
@@ -192,7 +188,7 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'fallback',
     targetSurface: 'home',
     priority: 'critical',
-    notes: 'Deterministic proof geometry used until the selected Home chamber is ready.',
+    notes: 'Deterministic proof geometry retained as the Home error fallback.',
     createdAt,
     updatedAt,
   },
@@ -228,7 +224,7 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'fallback',
     targetSurface: 'global',
     priority: 'critical',
-    notes: 'Deterministic portal geometry used until the selected portal is ready.',
+    notes: 'Deterministic portal geometry retained as the selected Portal error fallback.',
     createdAt,
     updatedAt,
   },
@@ -324,7 +320,7 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'fallback',
     targetSurface: 'global',
     priority: 'critical',
-    notes: 'Deterministic companion orb geometry.',
+    notes: 'Deterministic companion Orb geometry retained as the selected Orb error fallback.',
     createdAt,
     updatedAt,
   },
@@ -355,7 +351,6 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
 ]
 
 export type UraiSpatialAssetId = (typeof uraiSpatialAssetManifest)[number]['id']
-
 export const criticalUraiSpatialAssetIds = uraiSpatialAssetManifest
   .filter((asset) => asset.priority === 'critical')
   .map((asset) => asset.id)
@@ -379,21 +374,10 @@ export function isUraiSpatialAssetReady(assetId: string): boolean {
 
 export function resolveUraiSpatialAsset(assetId: string): UraiSpatialAssetResolution {
   const selectedAsset = getUraiSpatialAsset(assetId)
-
-  if (!selectedAsset) {
-    return { requestedAssetId: assetId, source: 'unavailable', path: null, selectedAsset: null, fallbackAsset: null }
-  }
-
+  if (!selectedAsset) return { requestedAssetId: assetId, source: 'unavailable', path: null, selectedAsset: null, fallbackAsset: null }
   if (selectedAsset.status === 'fallback') {
-    return {
-      requestedAssetId: assetId,
-      source: 'fallback',
-      path: selectedAsset.path,
-      selectedAsset: null,
-      fallbackAsset: selectedAsset,
-    }
+    return { requestedAssetId: assetId, source: 'fallback', path: selectedAsset.path, selectedAsset: null, fallbackAsset: selectedAsset }
   }
-
   if (selectedAsset.status === 'ready') {
     return {
       requestedAssetId: assetId,
@@ -403,18 +387,10 @@ export function resolveUraiSpatialAsset(assetId: string): UraiSpatialAssetResolu
       fallbackAsset: getUraiSpatialFallbackAsset(assetId),
     }
   }
-
   const fallbackAsset = getUraiSpatialFallbackAsset(assetId)
   if (fallbackAsset?.status === 'fallback') {
-    return {
-      requestedAssetId: assetId,
-      source: 'fallback',
-      path: fallbackAsset.path,
-      selectedAsset,
-      fallbackAsset,
-    }
+    return { requestedAssetId: assetId, source: 'fallback', path: fallbackAsset.path, selectedAsset, fallbackAsset }
   }
-
   return { requestedAssetId: assetId, source: 'unavailable', path: null, selectedAsset, fallbackAsset }
 }
 
