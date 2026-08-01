@@ -1,0 +1,35 @@
+.locationAtlasHeader > div:first-child {
+  display: grid;
+  min-width: max-content;
+  gap: 3px;
+  align-content: center;
+}
+
+.locationAtlasHeader > div:first-child > span,
+.locationAtlasHeader > div:first-child > strong {
+  display: block;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.locationAtlasHeader > div:first-child > strong {
+  font-size: 16px;
+  font-weight: 760;
+  letter-spacing: -0.01em;
+  color: #f6fbff;
+}
+
+@media (max-width: 620px) {
+  .locationAtlasHeader > div:first-child {
+    min-width: 0;
+  }
+
+  .locationAtlasHeader > div:first-child > span {
+    max-width: 18ch;
+    line-height: 1.45;
+  }
+
+  .locationAtlasHeader > div:first-child > strong {
+    font-size: 16px;
+  }
+}
