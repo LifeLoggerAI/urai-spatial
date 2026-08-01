@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "home-entry-chamber-v1",
+  "assetId": "home-entry-chamber-model-v1",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+  "targetRoutes": ["/", "/home"],
+  "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+  "bytes": 184160,
+  "measured": {
+    "triangleCount": 12934,
+    "boundsMeters": {
+      "min": [-9.345, -1.83, -9.238],
+      "max": [9.345, 5.0844, 7.452],
+      "size": [18.69, 6.9144, 16.69]
+    },
+    "repairedEulerRotations": 2,
+    "nodeCount": 160,
+    "materialCount": 13,
+    "animationClips": ["Home_Breathing", "Presence_Idle", "Presence_Privacy", "Presence_Forming"]
+  },
+  "compressionStatus": "meshopt",
+  "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
+  "license": "URAI Labs internal proprietary production asset",
+  "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",
+  "authoredLicense": "URAI Labs internal proprietary; redistribution governed by repository license and asset receipts",
+  "acceptedSourceHead": "51db7b3ba77a657659da34ca5e146e049dd03d31",
+  "candidateRunId": 30416475488,
+  "candidateArtifactId": 8710341852,
+  "candidateArtifactDigest": "sha256:b14c3cfb15e58aa8a4bbe776a8ac1093f91541dcf7e1b56e999d96aeec687078",
+  "visualAcceptance": {
+    "accepted": true,
+    "continuousSpatialVisualProofRunId": 30432962277,
+    "continuousSpatialVisualProofJobId": 90514236242,
+    "visualArtifactId": 8717996891,
+    "visualArtifactDigest": "sha256:ae4acc458786c68a4e2e10a0d14c920dd0433caaf68ac8deefdc747b1bf2e817",
+    "independentProofPullRequest": 968,
+    "independentProofArtifactId": 8729425133,
+    "independentProofArtifactDigest": "sha256:8f7d7eaeb23f0e07d09a75c9da9d17d7117ec4209971d099e8db3f0b676a3834",
+    "decision": "accepted-for-controlled-core-convergence"
+  },
+  "fallbackAssetId": "home-entry-chamber-proof-fallback",
+  "releaseState": "production-ready",
+  "deploymentAuthorized": true,
+  "deploymentAuthorizedBy": "Adam Clamp / URAI Labs steward",
+  "deploymentAuthorizedAt": "2026-08-01T01:56:00-05:00",
+  "paidExecutionAuthorized": true,
+  "providerCallsForPromotion": 0,
+  "providerSpendForPromotionUsd": "0.00",
+  "providerRegenerationSkippedReason": "The exact accepted Meshopt binary was already present on current main; regeneration would spend credits without changing the reviewed artifact."
+}
