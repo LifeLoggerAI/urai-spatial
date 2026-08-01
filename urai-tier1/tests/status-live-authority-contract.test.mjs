@@ -18,14 +18,21 @@ test('Status server shell remains neutral until the protected fingerprint valida
   assert.doesNotMatch(page, /pending-current-main-evidence/)
 })
 
-test('Embedded build identity is limited to non-production preview origins', () => {
+test('Embedded build identity is limited to allowlisted non-production preview hosts', () => {
   assert.match(page, /PreviewBuildIdentity/)
   assert.match(page, /NEXT_PUBLIC_URAI_BUILD_SHA/)
   assert.doesNotMatch(page, /data-preview-build-identity=\{embeddedBuildSha\}/)
-  assert.match(previewIdentity, /window\.location\.origin !== 'https:\/\/urai\.app'/)
+  assert.match(previewIdentity, /isAllowedPreviewHostname\(window\.location\.hostname\)/)
+  assert.match(previewIdentity, /normalized === 'localhost'/)
+  assert.match(previewIdentity, /normalized === '127\.0\.0\.1'/)
+  assert.match(previewIdentity, /normalized === '\[::1\]'/)
+  assert.match(previewIdentity, /normalized\.endsWith\('\.web\.app'\)/)
+  assert.match(previewIdentity, /normalized\.endsWith\('\.firebaseapp\.com'\)/)
+  assert.doesNotMatch(previewIdentity, /window\.location\.origin !== 'https:\/\/urai\.app'/)
   assert.match(previewIdentity, /if \(!isPreviewOrigin\) return null/)
   assert.match(previewIdentity, /data-preview-build-identity=\{fullSha\}/)
   assert.match(previewIdentity, /Embedded build identity · non-authoritative/)
+  assert.match(previewIdentity, /allowlisted non-production preview origins/)
   assert.match(previewIdentity, /never substitutes for the protected urai\.app release fingerprint/)
   assert.match(previewIdentity, /grants no production authority/)
 })
