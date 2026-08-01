@@ -99,6 +99,22 @@ jobs:
           pnpm install --frozen-lockfile
           test "$(pnpm exec firebase --version)" = "15.22.3"
 
+      - name: Prove Playwright module resolution from inspection location
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf urai-tier1/.preview-inspection-runtime
+          mkdir -p urai-tier1/.preview-inspection-runtime
+          cat > urai-tier1/.preview-inspection-runtime/module-resolution.mjs <<'NODE'
+          import { chromium } from 'playwright'
+          if (!chromium || typeof chromium.launch !== 'function') {
+            throw new Error('Playwright Chromium API did not resolve from the Tier-1 inspection location')
+          }
+          NODE
+          node urai-tier1/.preview-inspection-runtime/module-resolution.mjs
+          rm -rf urai-tier1/.preview-inspection-runtime
+          test -z "$(git status --porcelain --untracked-files=all)"
+
       - name: Build exact full static preview
         env:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ steps.identity.outputs.candidate_sha }}
@@ -153,7 +169,7 @@ jobs:
           set -euo pipefail
           test "$PREVIEW_CHANNEL_ID" != live
           grep -q '^production_targeted=false$' preview-staging-receipt.txt
-          printf 'pull_request_dry_run=true\n' >> preview-staging-receipt.txt
+          printf 'pull_request_dry_run=true\nplaywright_module_resolution=true\n' >> preview-staging-receipt.txt
 
       - name: Deploy isolated Firebase preview channel
         if: github.event_name != 'pull_request'
@@ -217,8 +233,10 @@ jobs:
           CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
         run: |
           set -euo pipefail
-          mkdir -p preview-inspection/desktop preview-inspection/mobile
-          cat > "$RUNNER_TEMP/inspect-preview.mjs" <<'NODE'
+          mkdir -p preview-inspection/desktop preview-inspection/mobile urai-tier1/.preview-inspection-runtime
+          cleanup() { rm -rf urai-tier1/.preview-inspection-runtime; }
+          trap cleanup EXIT
+          cat > urai-tier1/.preview-inspection-runtime/inspect-preview.mjs <<'NODE'
           import { chromium } from 'playwright'
           import fs from 'node:fs/promises'
 
@@ -257,7 +275,9 @@ jobs:
           await browser.close()
           await fs.writeFile('preview-inspection/report.json', JSON.stringify({ base, sha, inspectedAt: new Date().toISOString(), report }, null, 2))
           NODE
-          node "$RUNNER_TEMP/inspect-preview.mjs"
+          node urai-tier1/.preview-inspection-runtime/inspect-preview.mjs
+          test -f preview-inspection/report.json
+          test "$(node -e "const r=require('./preview-inspection/report.json');process.stdout.write(String(r.report.length))")" = '18'
 
       - name: Publish preview summary
         if: github.event_name != 'pull_request'
