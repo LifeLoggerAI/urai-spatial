@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "urai-ecosystem-governance-1",
+  "status": "current-main-readiness-authority",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "baseCommit": "3a82a5e9cab21f84f797fb304ef428f928a579cc",
+  "productionAuthorityIssue": 999,
+  "publicNames": {
+    "consumer": "UrAi",
+    "professional": "RuAi",
+    "operator": "URAI Labs",
+    "mission": "URAI Foundation",
+    "ipOwner": "URAI IP Holdings"
+  },
+  "identityBoundaries": {
+    "consumer": "private permission-aware spatial life-replay companion",
+    "professional": "separate consent-governed clinician researcher and authorized-data portal",
+    "operator": "operating and product organization",
+    "mission": "mission and public-benefit organization; formation and program claims require external evidence",
+    "ipOwner": "intended intellectual-property owner; ownership claims require executed assignment or license evidence"
+  },
+  "systems": [
+    {
+      "id": "urai-consumer",
+      "classification": "implemented-verification-active",
+      "authority": ["brand/BRAND_AUTHORITY.md", "brand/v1-aaa-asset-program-matrix.json"],
+      "releaseBoundary": "canonical production remains issue-999 and DNS gated"
+    },
+    {
+      "id": "ruai-professional",
+      "classification": "prepared-external-execution-required",
+      "authority": ["governance/RUAI_ACCESS_AND_DATA_GOVERNANCE.md"],
+      "releaseBoundary": "no unrestricted access no clinical interpretation no production-ready claim"
+    },
+    {
+      "id": "organizational-structure",
+      "classification": "prepared-external-execution-required",
+      "authority": ["governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"],
+      "releaseBoundary": "filings signatures officer authority and legal instruments remain external"
+    },
+    {
+      "id": "ip-chain-of-title",
+      "classification": "prepared-external-execution-required",
+      "authority": ["governance/IP_CHAIN_OF_TITLE_READINESS.md"],
+      "releaseBoundary": "no patented patent-pending registered-mark or ownership claim without retained evidence"
+    },
+    {
+      "id": "economic-participation",
+      "classification": "future-scope-not-required-for-v1",
+      "authority": ["governance/ECONOMIC_PARTICIPATION_BOUNDARIES.md"],
+      "releaseBoundary": "no payout revenue-share earnings or regulated-data activation before legal tax payment and consent proof"
+    },
+    {
+      "id": "asset-spatial-production",
+      "classification": "implemented-verification-active",
+      "authority": ["brand/launch-asset-registry.json", "brand/asset-governance.schema.json", "operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md"],
+      "releaseBoundary": "certified V1 retained; V2-V5 isolated until separately admitted"
+    },
+    {
+      "id": "privacy-consent",
+      "classification": "implemented-verification-active",
+      "authority": ["brand/PRESS_PARTNER_CLAIM_REGISTER.md"],
+      "releaseBoundary": "no HIPAA anonymity end-to-end-encryption or absolute-security claims"
+    },
+    {
+      "id": "accessibility-sensory-safety",
+      "classification": "implemented-verification-active",
+      "authority": ["brand/MOTION_AUDIO_ACCESSIBILITY_SPEC.md"],
+      "releaseBoundary": "scope-specific evidence required; automated scans alone do not prove full conformance"
+    },
+    {
+      "id": "deployment-proof",
+      "classification": "implemented-verification-active",
+      "authority": ["operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md"],
+      "releaseBoundary": "exact-head checks preview isolation rollback and public fingerprint proof remain mandatory"
+    },
+    {
+      "id": "global-future-platform",
+      "classification": "prepared-external-execution-required",
+      "authority": ["brand/LOCALIZATION_20_READINESS.md"],
+      "releaseBoundary": "machine-prepared locales require native review; mobile store spatial clinician research and API expansion remain separately gated"
+    }
+  ],
+  "ruaiMinimumControls": {
+    "explicitUserConsent": true,
+    "purposeLimitation": true,
+    "leastPrivilegeRoles": true,
+    "tenantIsolation": true,
+    "auditLogRequired": true,
+    "revocationRequired": true,
+    "deletionPropagationRequired": true,
+    "reidentificationProhibited": true,
+    "privateMemoryDefaultDenied": true,
+    "medicalDecisionAutomationAuthorized": false
+  },
+  "economicMinimumControls": {
+    "earningsGuaranteesAllowed": false,
+    "automaticDataSaleAllowed": false,
+    "optInRequired": true,
+    "withdrawalAndRevocationRequired": true,
+    "taxAndPaymentOperationsRequired": true,
+    "legalReviewRequired": true,
+    "productionActivationAuthorized": false
+  },
+  "claimProhibitions": [
+    "production live before issue 999 proof",
+    "HIPAA compliant without scoped evidence",
+    "end-to-end encrypted without full-path evidence",
+    "anonymous or impossible to reidentify",
+    "medical diagnosis treatment or guaranteed outcomes",
+    "patented or patent pending without filing evidence",
+    "URAI IP Holdings owns assets without executed instruments",
+    "named partnerships or endorsements without written authority",
+    "user earnings or revenue share without implemented legal and payment controls",
+    "fully accessible without scope-specific retained evidence"
+  ],
+  "externalBlockers": [
+    {
+      "id": "dns-registrar",
+      "blocks": ["canonical-domain-cutover", "public-fingerprint-verification", "certificate-and-route-acceptance"],
+      "doesNotBlock": ["repository-work", "preview", "accessibility", "asset-governance", "organizational-readiness", "ip-readiness"]
+    },
+    {
+      "id": "legal-execution",
+      "blocks": ["entity-status-claims", "chain-of-title-claims", "regulated-data-licensing", "economic-participation-activation"]
+    },
+    {
+      "id": "native-locale-review",
+      "blocks": ["approved-localized-launch-claims"]
+    }
+  ],
+  "providerCalls": 0,
+  "spendUsd": "0.00",
+  "productionMutation": false
+}
