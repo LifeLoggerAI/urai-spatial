@@ -22,7 +22,7 @@ test('ecosystem registry is exact-stack bound, fail-closed, and names every gove
   assert.equal(registry.status, 'stacked-readiness-authority')
   assert.equal(registry.stackedBaseCommit, '1826d0eacba7eab98f9e844492696dff289028a7')
   assert.equal(registry.dependencies.trustedPreview.pullRequest, 1018)
-  assert.equal(registry.dependencies.trustedPreview.exactHead, '00caa02db5dac79e1334a959ce4bd6b4f7d79d7b')
+  assert.equal(registry.dependencies.trustedPreview.exactHead, '5dd029aea3e63fa307a4c9b8be6122ba65a39ab8')
   assert.equal(registry.dependencies.trustedPreview.requiredBeforeEcosystemMerge, true)
   assert.equal(registry.dependencies.consentGatedGeography.pullRequest, 1013)
   assert.equal(registry.dependencies.consentGatedGeography.exactHead, '1826d0eacba7eab98f9e844492696dff289028a7')
