@@ -15,9 +15,9 @@ const audio = readJson('operations/assets/spatial-audio-cue-manifest-v1.json')
 requireCondition(contract.authority.baseSha === ledger.baseSha, 'contract and ledger base SHA must match')
 requireCondition(contract.authority.canonicalManifest === 'operations/assets/launch-critical-assets.json', 'contract must reference the canonical launch manifest')
 requireCondition(contract.requiredVariants.includes('no-webgl-static'), 'contract must require no-WebGL static variants')
-requireCondition(ledger.paidProviderCalls === 0, 'this lane must record zero paid provider calls')
-requireCondition(ledger.productionDeployments === 0, 'this lane must record zero production deployments')
-requireCondition(ledger.assetPromotions === 0, 'this lane must record zero asset promotions')
+requireCondition(ledger.paidProviderCalls === 0, 'the preparation ledger must record zero paid provider calls')
+requireCondition(ledger.productionDeployments === 0, 'the preparation ledger must record zero production deployments')
+requireCondition(ledger.assetPromotions === 0, 'the preparation ledger must record zero asset promotions')
 
 const ids = new Set()
 const paths = new Set()
@@ -26,7 +26,38 @@ for (const asset of launch.assets) {
   requireCondition(!paths.has(asset.fixedPath), `duplicate launch asset path: ${asset.fixedPath}`)
   requireCondition(Boolean(asset.fallback), `launch asset ${asset.id} must retain a fallback`)
   requireCondition(Boolean(asset.license) && !/unknown/i.test(asset.license), `launch asset ${asset.id} must have a known license`)
-  requireCondition(asset.releaseState !== 'ready' && asset.releaseState !== 'production-ready', `launch asset ${asset.id} may not be marked ready or production-ready by the preparation lane`)
+
+  if (asset.releaseState === 'ready' || asset.releaseState === 'production-ready') {
+    const decisionPath = `operations/assets/promotion-decisions/${asset.id}.json`
+    requireCondition(existsSync(resolve(root, decisionPath)), `production launch asset ${asset.id} requires a governed promotion decision`)
+    if (existsSync(resolve(root, decisionPath))) {
+      const decision = readJson(decisionPath)
+      requireCondition(decision.mode === 'promotion', `production launch asset ${asset.id} decision must use promotion mode`)
+      requireCondition(decision.assetId === asset.id, `production launch asset ${asset.id} decision id must match`)
+      requireCondition(decision.canonicalPath === asset.fixedPath, `production launch asset ${asset.id} decision path must match`)
+      requireCondition(decision.source === asset.source, `production launch asset ${asset.id} decision source must match`)
+      requireCondition(decision.license === asset.license, `production launch asset ${asset.id} decision license must match`)
+      requireCondition(decision.fallback === asset.fallback, `production launch asset ${asset.id} decision fallback must match`)
+      requireCondition(decision.promote === true, `production launch asset ${asset.id} decision must explicitly promote`)
+      requireCondition(decision.humanReviewApproved === true, `production launch asset ${asset.id} requires human review approval`)
+      requireCondition(decision.visualProofVerified === true, `production launch asset ${asset.id} requires visual proof`)
+      requireCondition(decision.optimizationVerified === true, `production launch asset ${asset.id} requires optimization proof`)
+      requireCondition(decision.fallbackVerified === true, `production launch asset ${asset.id} requires fallback proof`)
+      requireCondition(decision.routeConsumptionVerified === true, `production launch asset ${asset.id} requires route-consumption proof`)
+      requireCondition(decision.licenseApproved === true, `production launch asset ${asset.id} requires license approval`)
+      requireCondition(Boolean(decision.receiptPath), `production launch asset ${asset.id} requires a production receipt`)
+      if (decision.receiptPath && existsSync(resolve(root, decision.receiptPath))) {
+        const receipt = readJson(decision.receiptPath)
+        requireCondition(receipt.fixedPath === asset.fixedPath, `production launch asset ${asset.id} receipt path must match`)
+        requireCondition(receipt.sha256 === decision.sha256, `production launch asset ${asset.id} receipt hash must match decision`)
+        requireCondition(receipt.bytes === decision.bytes, `production launch asset ${asset.id} receipt bytes must match decision`)
+        requireCondition(receipt.releaseState === 'production-ready', `production launch asset ${asset.id} receipt must be production-ready`)
+      } else {
+        requireCondition(false, `production launch asset ${asset.id} production receipt is missing`)
+      }
+    }
+  }
+
   ids.add(asset.id)
   paths.add(asset.fixedPath)
 }
