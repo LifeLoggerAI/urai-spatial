@@ -1,8 +1,10 @@
+import Link from 'next/link'
 import { Suspense } from 'react'
 import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAcceptanceBoundary'
 import { LocationMapNativeWheelBridge } from '@/spatial/places/LocationMapNativeWheelBridge'
 import '@/spatial/places/location-map-release-depth.css'
 import '@/spatial/places/location-map-mobile-release-fixes.css'
+import './geographic-route-bridge.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
 export default async function LocationMapPage() {
@@ -16,6 +18,10 @@ export default async function LocationMapPage() {
   return (
     <section data-launch-surface="premium-emotional-weather-atlas">
       <LocationMapNativeWheelBridge />
+      <aside className="locationMapGeographicBridge" aria-label="Geographic location layer">
+        <span>Optional supporting layer</span>
+        <Link href="/location-map/geographic/">Open consent-gated geographic places</Link>
+      </aside>
       <Suspense fallback={null}>
         <LocationMapAcceptanceBoundary
           places={places}
