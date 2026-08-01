@@ -17,6 +17,16 @@ test('Status server shell remains neutral until the protected fingerprint valida
   assert.doesNotMatch(page, /pending-current-main-evidence/)
 })
 
+test('Status exposes embedded preview identity without granting production authority', () => {
+  assert.match(page, /NEXT_PUBLIC_URAI_BUILD_SHA/)
+  assert.match(page, /data-preview-build-identity=\{embeddedBuildSha\}/)
+  assert.match(page, /data-testid="urai-embedded-build-identity"/)
+  assert.match(page, /Embedded build identity · non-authoritative/)
+  assert.match(page, /does not grant production certification/)
+  assert.match(page, /only the protected urai\.app release fingerprint can do that/)
+  assert.doesNotMatch(page, /data-production-certification="verified"/)
+})
+
 test('Canonical Status page is not covered by the legacy autonomous realm layer', () => {
   assert.match(legacyLayer, /Status are owned exclusively by their canonical route clients/)
   assert.doesNotMatch(legacyLayer, /pathname\.startsWith\("\/status"\)/)
