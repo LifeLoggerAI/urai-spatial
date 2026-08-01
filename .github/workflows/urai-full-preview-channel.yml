@@ -1,6 +1,16 @@
 name: URAI Full Public Preview Channel
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'urai-tier1/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.firebaserc'
+      - '.github/firebase.preview.json'
+      - '.github/workflows/urai-full-preview-channel.yml'
   push:
     branches: [main]
     paths:
@@ -23,7 +33,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: urai-full-public-preview
+  group: urai-full-public-preview-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -32,7 +42,7 @@ env:
 
 jobs:
   deploy-and-inspect:
-    name: Deploy exact preview and inspect desktop plus mobile
+    name: Build, stage, deploy, and inspect exact preview
     runs-on: ubuntu-latest
     timeout-minutes: 75
     outputs:
@@ -44,10 +54,11 @@ jobs:
         shell: bash
         env:
           REQUESTED_SHA: ${{ inputs.candidate_sha }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
           TRIGGER_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          CANDIDATE_SHA="${REQUESTED_SHA:-$TRIGGER_SHA}"
+          CANDIDATE_SHA="${REQUESTED_SHA:-${PR_SHA:-$TRIGGER_SHA}}"
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           printf 'candidate_sha=%s\n' "$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
 
@@ -104,7 +115,48 @@ jobs:
           grep -R --fixed-strings --include='*.html' -q 'PREVIEW — NOT PRODUCTION CERTIFIED' urai-tier1/out
           test -z "$(git status --porcelain --untracked-files=all)"
 
+      - name: Stage Firebase payload at config-relative public path
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          rm -rf .github/urai-tier1
+          mkdir -p .github/urai-tier1/out
+          cp -R urai-tier1/out/. .github/urai-tier1/out/
+          test -f .github/urai-tier1/out/index.html
+          grep -R --fixed-strings --include='*.html' -q "$CANDIDATE_SHA" .github/urai-tier1/out
+          grep -R --fixed-strings --include='*.html' -q 'PREVIEW — NOT PRODUCTION CERTIFIED' .github/urai-tier1/out
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const configPath = '.github/firebase.preview.json'
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+          const resolved = path.resolve(path.dirname(configPath), config.hosting.public)
+          const expected = path.resolve('.github/urai-tier1/out')
+          if (resolved !== expected) {
+            throw new Error(`Firebase preview public path mismatch: ${resolved} !== ${expected}`)
+          }
+          if (!fs.existsSync(path.join(resolved, 'index.html'))) {
+            throw new Error(`Firebase preview payload missing at ${resolved}`)
+          }
+          NODE
+          unexpected="$(git status --porcelain --untracked-files=all | grep -v '^?? .github/urai-tier1/' || true)"
+          test -z "$unexpected"
+          printf 'candidate_sha=%s\nconfig=.github/firebase.preview.json\nconfig_relative_public=.github/urai-tier1/out\nsource_output=urai-tier1/out\nproduction_targeted=false\n' \
+            "$CANDIDATE_SHA" > preview-staging-receipt.txt
+
+      - name: Prove pull-request preview remains credential free
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PREVIEW_CHANNEL_ID" != live
+          grep -q '^production_targeted=false$' preview-staging-receipt.txt
+          printf 'pull_request_dry_run=true\n' >> preview-staging-receipt.txt
+
       - name: Deploy isolated Firebase preview channel
+        if: github.event_name != 'pull_request'
         id: deploy
         shell: bash
         env:
@@ -116,6 +168,7 @@ jobs:
           test -n "$FIREBASE_SERVICE_ACCOUNT"
           test -n "$FIREBASE_PROJECT_ID"
           test "$PREVIEW_CHANNEL_ID" != live
+          test -f .github/urai-tier1/out/index.html
           CREDENTIALS_FILE="$RUNNER_TEMP/firebase-urai-full-preview.json"
           cleanup() { rm -f "$CREDENTIALS_FILE"; }
           trap cleanup EXIT
@@ -136,6 +189,7 @@ jobs:
             "$CANDIDATE_SHA" "$PREVIEW_CHANNEL_ID" "$PREVIEW_URL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > preview-receipt.txt
 
       - name: Verify preview identity and core routes
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -152,9 +206,11 @@ jobs:
           grep -R --fixed-strings -q 'PREVIEW — NOT PRODUCTION CERTIFIED' preview-http
 
       - name: Install Chromium
+        if: github.event_name != 'pull_request'
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Capture desktop and mobile inspection evidence
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -184,16 +240,17 @@ jobs:
             for (const route of routes) {
               const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'networkidle', timeout: 60000 })
               await page.waitForTimeout(1200)
+              if (!response || response.status() >= 400) throw new Error(`Bad response on ${profile.name} ${route}: ${response?.status()}`)
               const banner = await page.getByTestId('urai-global-preview-banner').textContent()
               if (!banner?.includes('PREVIEW') || !banner.includes('NOT PRODUCTION CERTIFIED')) throw new Error(`Missing preview banner on ${profile.name} ${route}`)
               const embedded = await page.locator('body').getAttribute('data-deployed-sha')
               if (embedded !== sha) throw new Error(`Wrong SHA on ${profile.name} ${route}: ${embedded}`)
               const certification = await page.locator('body').getAttribute('data-production-certification')
               if (certification !== 'not-certified-preview') throw new Error(`Wrong certification state on ${profile.name} ${route}: ${certification}`)
+              if (consoleErrors.length) throw new Error(`Console errors on ${profile.name} ${route}: ${consoleErrors.join(' | ')}`)
               const name = route === '/' ? 'root' : route.replaceAll('/', '_').replace(/^_+|_+$/g, '')
               await page.screenshot({ path: `preview-inspection/${profile.name}/${name}.png`, fullPage: true })
-              report.push({ profile: profile.name, route, status: response?.status() ?? null, banner, embedded, certification, consoleErrors: [...consoleErrors] })
-              consoleErrors.length = 0
+              report.push({ profile: profile.name, route, status: response.status(), banner, embedded, certification, consoleErrors: [] })
             }
             await context.close()
           }
@@ -203,6 +260,7 @@ jobs:
           node "$RUNNER_TEMP/inspect-preview.mjs"
 
       - name: Publish preview summary
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
@@ -215,14 +273,16 @@ jobs:
             echo "- Exact SHA: \`$CANDIDATE_SHA\`"
             echo "- Channel: \`$PREVIEW_CHANNEL_ID\`"
             echo '- Certification: **Preview — not production certified**'
-            echo '- Inspection: desktop 1440×1000 and mobile 390×844'
+            echo '- Inspection: nine routes at desktop 1440×1000 and mobile 390×844'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record preview URL on production authority issue
+        if: github.event_name != 'pull_request'
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
           CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
+          PREVIEW_CHANNEL_ID: ${{ env.PREVIEW_CHANNEL_ID }}
         with:
           script: |
             await github.rest.issues.createComment({
@@ -234,7 +294,8 @@ jobs:
                 '',
                 `- Preview URL: ${process.env.PREVIEW_URL}`,
                 `- Exact candidate SHA: \`${process.env.CANDIDATE_SHA}\``,
-                `- Channel: \`${process.env.PREVIEW_CHANNEL_ID || 'urai-full-preview'}\``,
+                `- Channel: \`${process.env.PREVIEW_CHANNEL_ID}\``,
+                '- Routes inspected: 9',
                 '- Desktop inspection: 1440×1000',
                 '- Mobile inspection: 390×844',
                 '- Production targeted: **false**',
@@ -252,6 +313,7 @@ jobs:
         with:
           name: urai-full-public-preview-${{ steps.identity.outputs.candidate_sha }}
           path: |
+            preview-staging-receipt.txt
             preview-deploy.json
             preview-deploy.stderr
             preview-receipt.txt
