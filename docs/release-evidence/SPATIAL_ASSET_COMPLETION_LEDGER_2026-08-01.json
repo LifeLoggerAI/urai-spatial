@@ -1,0 +1,162 @@
+{
+  "schemaVersion": "1.0.1",
+  "ledgerId": "URAI-SPATIAL-ASSET-COMPLETION-20260801-002",
+  "generatedAt": "2026-08-01T11:02:00Z",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "baseSha": "d1de96c629ebf652cf791f31a5306484ce3ab230",
+  "evidenceAuthority": {
+    "assetProgramIssue": "LifeLoggerAI/asset-factory#206",
+    "productionIssue": "LifeLoggerAI/urai-spatial#999",
+    "note": "References identify retained evidence sources only and do not claim live provider integration, production deployment, or public availability."
+  },
+  "summary": {
+    "runtimeImages": {
+      "v1": 53,
+      "v2": 80,
+      "v3": 14,
+      "v4": 39,
+      "v5": 27,
+      "total": 213,
+      "missing": 0,
+      "promotionReceipt": "docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json"
+    },
+    "launchCriticalModels": {
+      "promoted": 7,
+      "pending": 0,
+      "resolver": "urai-tier1/src/spatial/assets/promotedAssetResolver.ts",
+      "promotionState": "urai-tier1/src/spatial/assets/assetPromotionState.ts"
+    },
+    "sharedSensoryAssets": {
+      "ready": 3,
+      "candidate": 2,
+      "manifest": "urai-tier1/src/spatial/assets/sensoryAssetManifest.ts"
+    },
+    "providerCallsThisLane": 0,
+    "spendUsdThisLane": "0.00",
+    "deploymentAuthorized": false
+  },
+  "launchCriticalModels": [
+    {
+      "id": "home-entry-chamber-model-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "bytes": 184160,
+      "receipts": ["PR #986", "PR #987"]
+    },
+    {
+      "id": "portal-ring-master-glb-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
+      "bytes": 73164,
+      "receipts": ["PR #998", "artifact 8816835462"]
+    },
+    {
+      "id": "urai-orb-avatar-glb-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+      "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
+      "bytes": 83984,
+      "receipts": ["PR #998", "artifact 8816835462"]
+    },
+    {
+      "id": "ground-world-terrain-glb-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/ground-world-terrain-v1.gltf",
+      "receipts": ["PR #537"]
+    },
+    {
+      "id": "life-map-memory-star-glb-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/life-map-memory-star-v1.gltf",
+      "receipts": ["PR #538"]
+    },
+    {
+      "id": "focus-memory-chamber-glb-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/focus-memory-chamber-v1.gltf",
+      "receipts": ["PR #538"]
+    },
+    {
+      "id": "replay-memory-environment-glb-v1",
+      "state": "promoted",
+      "path": "/assets/urai/generated/models/replay-memory-environment-v1.gltf",
+      "receipts": ["PR #538"]
+    }
+  ],
+  "sharedSensoryAssets": [
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "state": "ready",
+      "path": "/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "fallback": "runtime-default-materials"
+    },
+    {
+      "id": "spatial-particle-atlas-v1",
+      "state": "ready",
+      "path": "/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+      "fallback": "shader-point-particles"
+    },
+    {
+      "id": "urai-loading-sequence-v1",
+      "state": "ready",
+      "path": "/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+      "fallback": "accessible-static-loading-state"
+    },
+    {
+      "id": "life-map-galaxy-skybox-v1",
+      "state": "candidate",
+      "path": "/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+      "blocker": "Rendered route proof and explicit promotion decision.",
+      "fallback": "life-map-sky-dome-proof-fallback"
+    },
+    {
+      "id": "urai-ambient-bed-v1",
+      "state": "candidate",
+      "path": "/assets/urai/generated/audio/urai-ambient-bed-v1.opus",
+      "blocker": "Reviewed final mix, codec and loudness receipt, plus muted and permission-denied route proof.",
+      "fallback": "silent-audio-with-user-controlled-enable"
+    }
+  ],
+  "runtimeImageEstate": {
+    "v1": {"ready": 53, "missing": 0, "receiptPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json", "receipts": ["PR #979"]},
+    "v2": {"ready": 80, "missing": 0, "generatedReplacements": 71, "preservedCertifiedSources": 9, "receipts": ["PR #982", "PR #993"]},
+    "v3": {"ready": 14, "missing": 0, "receipts": ["PR #982"]},
+    "v4": {"ready": 39, "missing": 0, "receipts": ["PR #982", "PR #223 in LifeLoggerAI/asset-factory"]},
+    "v5": {"ready": 27, "missing": 0, "receipts": ["PR #982"]}
+  },
+  "separateEvidenceGates": [
+    {
+      "gate": "physical XR and Quest device certification",
+      "state": "not established by file presence or browser simulation",
+      "productionClaimAllowed": false
+    },
+    {
+      "gate": "public custom-domain deployment fingerprint",
+      "state": "blocked by registrar and DNS recovery",
+      "authority": "issue #999",
+      "productionClaimAllowed": false
+    },
+    {
+      "gate": "ambient audio final approval",
+      "state": "candidate with truthful silence fallback",
+      "productionClaimAllowed": false
+    },
+    {
+      "gate": "HDR skybox promotion",
+      "state": "candidate with procedural sky fallback",
+      "productionClaimAllowed": false
+    }
+  ],
+  "executionDecision": {
+    "regenerateExistingAcceptedAssets": false,
+    "reason": "The accepted V1-V5 image estate and seven launch-critical model assets are already materialized and promoted; duplicate generation would waste credits and invalidate reviewed hashes.",
+    "nextRepositoryWork": [
+      "prove and promote the HDR skybox or retain its procedural fallback",
+      "finish and prove the ambient audio derivative or retain truthful silence",
+      "keep deployment fingerprint-gated behind DNS recovery",
+      "retain device-specific XR proof as a separate physical-device gate"
+    ]
+  }
+}
