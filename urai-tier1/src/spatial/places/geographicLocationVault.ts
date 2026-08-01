@@ -1,5 +1,5 @@
 export type GeographicPrecision = 'city' | 'approximate' | 'exact-private'
-export type GeographicPermissionState = 'idle' | 'requesting' | 'granted' | 'denied' | 'revoked' | 'unavailable' | 'offline' | 'error'
+export type GeographicPermissionState = 'idle' | 'requesting' | 'granted' | 'denied' | 'dismissed' | 'revoked' | 'unavailable' | 'unsupported' | 'offline' | 'timeout' | 'error'
 
 export type GeographicCoordinate = {
   latitude: number
@@ -100,5 +100,6 @@ export function createPin(input: {
 export function geolocationErrorState(code: number): GeographicPermissionState {
   if (code === 1) return 'denied'
   if (code === 2) return 'unavailable'
+  if (code === 3) return 'timeout'
   return 'error'
 }
