@@ -112,5 +112,6 @@ jobs:
             preview-evidence
             test-results
             playwright-report
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
