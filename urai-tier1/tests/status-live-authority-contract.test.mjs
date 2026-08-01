@@ -5,6 +5,7 @@ import test from 'node:test'
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const page = read('src/app/status/page.tsx')
 const authority = read('src/app/status/StatusReleaseAuthority.tsx')
+const previewIdentity = read('src/app/status/PreviewBuildIdentity.tsx')
 const launchTruth = read('src/data/launchTruth.ts')
 const legacyLayer = read('src/app/UraiAutonomousV1Layer.tsx')
 
@@ -17,14 +18,16 @@ test('Status server shell remains neutral until the protected fingerprint valida
   assert.doesNotMatch(page, /pending-current-main-evidence/)
 })
 
-test('Status exposes embedded preview identity without granting production authority', () => {
+test('Embedded build identity is limited to non-production preview origins', () => {
+  assert.match(page, /PreviewBuildIdentity/)
   assert.match(page, /NEXT_PUBLIC_URAI_BUILD_SHA/)
-  assert.match(page, /data-preview-build-identity=\{embeddedBuildSha\}/)
-  assert.match(page, /data-testid="urai-embedded-build-identity"/)
-  assert.match(page, /Embedded build identity · non-authoritative/)
-  assert.match(page, /does not grant production certification/)
-  assert.match(page, /only the protected urai\.app release fingerprint can do that/)
-  assert.doesNotMatch(page, /data-production-certification="verified"/)
+  assert.doesNotMatch(page, /data-preview-build-identity=\{embeddedBuildSha\}/)
+  assert.match(previewIdentity, /window\.location\.origin !== 'https:\/\/urai\.app'/)
+  assert.match(previewIdentity, /if \(!isPreviewOrigin\) return null/)
+  assert.match(previewIdentity, /data-preview-build-identity=\{fullSha\}/)
+  assert.match(previewIdentity, /Embedded build identity · non-authoritative/)
+  assert.match(previewIdentity, /never substitutes for the protected urai\.app release fingerprint/)
+  assert.match(previewIdentity, /grants no production authority/)
 })
 
 test('Canonical Status page is not covered by the legacy autonomous realm layer', () => {
