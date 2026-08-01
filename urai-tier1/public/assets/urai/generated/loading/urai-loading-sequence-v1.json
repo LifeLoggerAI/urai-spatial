@@ -3,11 +3,35 @@
   "durationMs": 2200,
   "accessibleLabel": "Preparing your spatial world",
   "frames": [
-    { "at": 0, "state": "dark-field", "opacity": 0 },
-    { "at": 250, "state": "orb-seed", "opacity": 0.35 },
-    { "at": 700, "state": "orb-awake", "opacity": 0.8 },
-    { "at": 1250, "state": "portal-forming", "opacity": 1 },
-    { "at": 1850, "state": "world-reveal", "opacity": 1 },
-    { "at": 2200, "state": "complete", "opacity": 0 }
+    {
+      "at": 0,
+      "state": "dark-field",
+      "opacity": 0
+    },
+    {
+      "at": 250,
+      "state": "orb-seed",
+      "opacity": 0.35
+    },
+    {
+      "at": 700,
+      "state": "orb-awake",
+      "opacity": 0.8
+    },
+    {
+      "at": 1250,
+      "state": "portal-forming",
+      "opacity": 1
+    },
+    {
+      "at": 1850,
+      "state": "world-reveal",
+      "opacity": 1
+    },
+    {
+      "at": 2200,
+      "state": "complete",
+      "opacity": 0
+    }
   ]
 }

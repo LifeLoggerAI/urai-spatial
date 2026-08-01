@@ -74,7 +74,7 @@ test.describe('URAI accessibility and performance evidence', () => {
     const companionTargets = await targetSize(page, '.urai-world-companion__menu button')
 
     await page.goto('/focus?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1', { waitUntil: 'domcontentloaded' })
-    const focusTargets = await targetSize(page, '.artifact, .unwind, .focusState button')
+    const focusTargets = await targetSize(page, '.focus-spatial-aperture-button, .focusControls button, .neutralActions button, .webglRecovery button')
 
     expect(companionTargets.length).toBeGreaterThan(0)
     expect(focusTargets.length).toBeGreaterThan(0)
@@ -160,6 +160,8 @@ test.describe('URAI accessibility and performance evidence', () => {
       const target = railTargets.nth(index)
       await target.focus()
       await expect(target).toBeFocused()
+      await target.evaluate((element) => element.scrollIntoView({ block: 'nearest', inline: 'center' }))
+      await page.waitForTimeout(250)
       focusContainment.push(await target.evaluate((element) => {
         const rect = element.getBoundingClientRect()
         const rail = element.closest<HTMLElement>('.ground-destination-compass')

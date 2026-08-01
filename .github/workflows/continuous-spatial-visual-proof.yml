@@ -12,7 +12,11 @@ on:
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof.mjs'
+      - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'scripts/run-continuous-spatial-proof-v19.mjs'
+      - 'scripts/run-continuous-spatial-proof-v20.mjs'
       - 'scripts/run-continuous-spatial-proof-fixed.mjs'
+      - 'scripts/run-continuous-spatial-proof-classified.mjs'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
@@ -43,7 +47,7 @@ env:
 jobs:
   browser-proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 75
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -139,7 +143,7 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/continuous-spatial-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/run-continuous-spatial-proof-fixed.mjs \
+            node scripts/run-continuous-spatial-proof-v20.mjs \
             2>&1 | tee artifacts/continuous-spatial-proof/capture.log
           capture_status=${PIPESTATUS[0]}
           set -e

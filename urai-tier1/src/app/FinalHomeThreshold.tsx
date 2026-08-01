@@ -5,10 +5,10 @@ import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 
 /**
- * Home has exactly one visual owner. The template-mounted WebGL runtime owns
- * capable devices; the DOM/CSS world is rendered first so no-JS, hydration
- * failure, capability detection, and no-WebGL paths always retain a complete
- * accessible Home. It is removed only after WebGL is positively confirmed.
+ * Home has exactly one settled visual owner. The template-mounted DOM/CSS
+ * threshold remains available before hydration and while capability detection
+ * is unresolved. Once capability resolves, HomeSpatialRuntimeLayer owns either
+ * the WebGL world or the complete no-WebGL accessible fallback.
  */
 export default function FinalHomeThreshold() {
   const webglAvailable = useWebGLAvailable()
@@ -18,7 +18,7 @@ export default function FinalHomeThreshold() {
     setMounted(true)
   }, [])
 
-  if (mounted && webglAvailable === true) return null
+  if (mounted && webglAvailable !== null) return null
 
   return (
     <div

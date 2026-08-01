@@ -1,5 +1,8 @@
 'use client'
 
+import './installR3FDataProps'
+import './lifeMapMobileTravelDensity.css'
+import './lifeMapSemanticNavigatorOwnership.css'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ComposedLifeMapScene from './ComposedLifeMapScene'

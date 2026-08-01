@@ -18,15 +18,25 @@ permissions:
 
 env:
   LEGACY_ASSET_HEAD: e4e94a501a64e7375a5cfdbe9547436fbc8e75a2
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   forge-and-verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
         with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
           fetch-depth: 1
+          persist-credentials: false
+      - name: Verify exact clean candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain)"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -72,7 +82,7 @@ jobs:
       - name: Upload reviewable candidate bundle
         uses: actions/upload-artifact@v4
         with:
-          name: urai-launch-critical-asset-candidates-${{ github.sha }}
+          name: urai-launch-critical-asset-candidates-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
           retention-days: 14
           path: |
@@ -82,7 +92,7 @@ jobs:
       - name: Upload legacy comparison evidence
         uses: actions/upload-artifact@v4
         with:
-          name: urai-legacy-asset-comparison-${{ github.sha }}
+          name: urai-legacy-asset-comparison-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
           retention-days: 14
           path: |

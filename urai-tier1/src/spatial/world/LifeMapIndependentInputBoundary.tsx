@@ -78,15 +78,17 @@ export function LifeMapIndependentInputBoundary() {
 
   return (
     <>
-      <details className="life-map-movement-help" data-movement-ui="true">
+      <details className="life-map-movement-help" data-movement-ui="true" data-life-map-movement-help="true">
         <summary>Explore Life Map</summary>
         <p>Choose an anchored memory to travel through the same universe. A/D or arrow keys move between memories. R, O, or Home returns to Overview. Escape unwinds the selected memory, then returns Home.</p>
       </details>
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
       <style jsx>{`
         .life-map-movement-help{position:fixed;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:72;max-width:min(330px,calc(100vw - 32px));border:1px solid rgba(198,244,255,.2);border-radius:16px;background:rgba(2,8,20,.74);box-shadow:0 18px 60px rgba(0,0,0,.42);backdrop-filter:blur(18px);color:rgba(239,250,255,.88);font:600 12px/1.5 Inter,ui-sans-serif,system-ui;touch-action:pan-y}
+        .life-map-movement-help:not([open]){width:max-content;min-width:0;min-height:48px;height:48px!important;max-height:48px;overflow:hidden}
+        .life-map-movement-help:not([open])>:not(summary){display:none!important}
         .life-map-movement-help summary{min-height:48px;display:flex;align-items:center;padding:0 16px;cursor:pointer;list-style:none;letter-spacing:.04em;font-weight:800}.life-map-movement-help summary::-webkit-details-marker{display:none}.life-map-movement-help p{margin:0;padding:0 16px 16px;color:rgba(214,239,248,.72)}.life-map-movement-help summary:focus-visible{outline:3px solid #fff;outline-offset:3px;border-radius:14px}
-        @media(max-width:700px){.life-map-movement-help{top:auto;right:max(12px,env(safe-area-inset-right));bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));max-width:min(250px,calc(100vw - 24px))}.life-map-movement-help:not([open]){opacity:.78}}
+        @media(max-width:700px){.life-map-movement-help{top:auto!important;right:max(12px,env(safe-area-inset-right));bottom:max(82px,calc(env(safe-area-inset-bottom) + 72px));max-width:min(250px,calc(100vw - 24px));max-height:min(55svh,480px)}.life-map-movement-help:not([open]){left:auto!important;width:max-content!important;min-width:0!important;min-height:48px!important;height:48px!important;max-height:48px!important;opacity:.9;overflow:hidden!important}}
       `}</style>
     </>
   )

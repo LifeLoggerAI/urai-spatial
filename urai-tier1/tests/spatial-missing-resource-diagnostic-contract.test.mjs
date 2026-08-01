@@ -33,7 +33,8 @@ test('Life Map event listeners remain offline when public Firebase configuration
   assert.match(lifeMapEventsSource, /firebasePublicEnvReady/)
   assert.equal((lifeMapEventsSource.match(/if \(!firebasePublicEnvReady\)/g) ?? []).length, 1)
   assert.match(lifeMapEventsSource, /if \(!resolvedUserId \|\| !firebasePublicEnvReady\) \{[\s\S]*setEras\(\[\]\)/)
-  assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setNodes\(canonicalLifeMapDemoNodes\)/)
+  assert.match(lifeMapEventsSource, /const positionedDemoNodes = canonicalLifeMapDemoNodes\.map/)
+  assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setNodes\(positionedDemoNodes\)/)
   assert.match(lifeMapEventsSource, /if \(explicitDemo\) \{[\s\S]*setEras\(lifeMapEras\)/)
   assert.match(lifeMapEventsSource, /if \(!firebasePublicEnvReady\) \{[\s\S]*setNodes\(\[\]\)/)
   assert.match(lifeMapEventsSource, /sourceMode: LifeMapSourceMode = explicitDemo[\s\S]*\? "explicit-demo"[\s\S]*: !firebasePublicEnvReady[\s\S]*\? "unavailable"/)
@@ -47,13 +48,20 @@ test('external requests are intercepted and aborted before send', () => {
   assert.match(diagnosticSource, /externalRequestsBlockedBeforeSend: true/)
 })
 
-test('only bounded local navigation, HMR and canonical manifest cancellations are ignored', () => {
+test('only bounded local navigation, HMR, promoted asset and canonical manifest cancellations are ignored', () => {
   assert.match(diagnosticSource, /parsed\.searchParams\.has\('_rsc'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/_next\/static\/webpack\/'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.js'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.json'\)/)
   assert.match(diagnosticSource, /entry\.method === 'GET'/)
   assert.match(diagnosticSource, /entry\.resourceType === 'fetch'/)
+  assert.match(diagnosticSource, /promotedGeneratedAssetPaths\.has\(parsed\.pathname\)/)
+  for (const path of [
+    'home-entry-chamber-v1\\.glb',
+    'portal-ring-master-v1\\.glb',
+    'urai-orb-avatar-v1\\.glb',
+  ]) assert.match(diagnosticSource, new RegExp(path))
+  assert.match(diagnosticSource, /promoted-generated-asset-navigation-cancellation/)
   assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/assets\/urai\/final\/manifests\/'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('-asset-factory-spatial-handoff\.json'\)/)
   assert.match(diagnosticSource, /canonical-local-manifest-navigation-cancellation/)
@@ -61,7 +69,7 @@ test('only bounded local navigation, HMR and canonical manifest cancellations ar
 })
 
 test('actionable findings fail and remain in a schema-bound artifact', () => {
-  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-4/)
+  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-5/)
   assert.match(diagnosticSource, /missing-resources\.json/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)

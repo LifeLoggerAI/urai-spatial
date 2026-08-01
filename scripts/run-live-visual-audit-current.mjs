@@ -21,4 +21,4 @@ requireFromTierOne('playwright')
 // destinationUrl.searchParams.get('demo') !== '1'
 // Life Map did not preserve truthful explicit-demo identity into Focus
 
-await import('./run-canonical-live-visual-audit.mjs')
+await import('./run-canonical-live-visual-audit-current-home.mjs')

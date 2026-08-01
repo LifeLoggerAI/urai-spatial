@@ -14,11 +14,14 @@ function monitor(page: Page): Evidence {
 }
 
 function isExpectedNavigationAbort(request: string) {
-  return request.includes('net::ERR_ABORTED') && (
-    request.includes('/location-map?')
-    || request.includes('/location-map/?')
-    || request.includes('/_next/static/css/app/location-map/')
-  )
+  const match = request.match(/^GET (http:\/\/(?:localhost:3000|127\.0\.0\.1:4173)\/\S+) :: net::ERR_ABORTED$/)
+  if (!match) return false
+  const url = new URL(match[1])
+  if (!url.searchParams.has('_rsc')) return false
+  return url.pathname === '/location-map'
+    || url.pathname === '/location-map/'
+    || url.pathname === '/location-map/index.txt'
+    || /^\/place\/place-seed-[a-z0-9-]+(?:\/|\/index\.txt)?$/.test(url.pathname)
 }
 
 async function attachJson(testInfo: TestInfo, name: string, value: unknown) {
@@ -196,6 +199,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.keyboard.press('Home')
     await expect(page.locator('.locationAtlasSelection')).toBeHidden()
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
+    await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
+    await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
 
     await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
     await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
@@ -242,7 +247,10 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const expectedOfflinePageErrors = offlinePageErrors.filter(message => message === 'Event' || message.includes('ERR_INTERNET_DISCONNECTED'))
     const expectedOfflineRequests = offlineRequests.filter(request => request.includes('ERR_INTERNET_DISCONNECTED'))
     const expectedOfflineProbeRequests = expectedOfflineRequests.filter(request => request.includes('/location-map/offline-probe-'))
-    const expectedNavigationAborts = errors.failedRequests.filter(isExpectedNavigationAbort)
+    const expectedNavigationAbortIndexes = new Set(errors.failedRequests.flatMap((request, index) => (
+      isExpectedNavigationAbort(request) ? [index] : []
+    )))
+    const expectedNavigationAborts = [...expectedNavigationAbortIndexes].map(index => errors.failedRequests[index])
     const unexpectedConsoleErrors = [
       ...errors.consoleErrors.slice(0, offlineStart.consoleErrors),
       ...offlineConsoleErrors.filter(message => !expectedOfflineConsoleErrors.includes(message)),
@@ -253,9 +261,9 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
       ...offlinePageErrors.filter(message => !expectedOfflinePageErrors.includes(message)),
       ...errors.pageErrors.slice(offlineEnd.pageErrors),
     ]
-    const unexpectedFailedRequests = errors.failedRequests.filter(request => (
+    const unexpectedFailedRequests = errors.failedRequests.filter((request, index) => (
       !expectedOfflineRequests.includes(request)
-      && !expectedNavigationAborts.includes(request)
+      && !expectedNavigationAbortIndexes.has(index)
     ))
     const expectedOfflineSignals = expectedOfflineConsoleErrors.length + expectedOfflinePageErrors.length + expectedOfflineRequests.length
     expect(expectedOfflineSignals).toBeGreaterThan(0)
@@ -342,8 +350,11 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
-    const expectedNavigationAborts = errors.failedRequests.filter(isExpectedNavigationAbort)
-    const unexpectedFailedRequests = errors.failedRequests.filter(request => !expectedNavigationAborts.includes(request))
+    const expectedNavigationAbortIndexes = new Set(errors.failedRequests.flatMap((request, index) => (
+      isExpectedNavigationAbort(request) ? [index] : []
+    )))
+    const expectedNavigationAborts = [...expectedNavigationAbortIndexes].map(index => errors.failedRequests[index])
+    const unexpectedFailedRequests = errors.failedRequests.filter((_, index) => !expectedNavigationAbortIndexes.has(index))
     expect(errors.consoleErrors).toEqual([])
     expect(errors.pageErrors).toEqual([])
     expect(unexpectedFailedRequests).toEqual([])

@@ -53,18 +53,19 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
-  const activeMemoryId = target.searchParams.get('memoryId') ?? target.searchParams.get('node')
-  if (activeMemoryId) {
-    if (request.destination === 'life-map') {
-      target.searchParams.set('node', activeMemoryId)
-      target.searchParams.delete('memoryId')
-    } else {
-      target.searchParams.set('memoryId', activeMemoryId)
-      target.searchParams.delete('node')
-    }
+  const memoryId = target.searchParams.get('memoryId')
+  const nodeId = target.searchParams.get('node')
+  if (request.destination === 'life-map') {
+    if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
+  } else if (!memoryId && nodeId) {
+    target.searchParams.set('memoryId', nodeId)
   }
 
   return `${target.pathname}${target.search}${target.hash}`
+}
+
+function normalizedPathname(value: string) {
+  return value.replace(/\/+$/, '') || '/'
 }
 
 function isEditableTarget(target: EventTarget | null) {
@@ -83,6 +84,7 @@ export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
+  const navigationWatchdog = useRef<number | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
@@ -92,9 +94,14 @@ export function WorldTransitionController() {
   useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
 
   const clearTimer = useCallback(() => {
-    if (timer.current === null) return
-    window.clearTimeout(timer.current)
-    timer.current = null
+    if (timer.current !== null) {
+      window.clearTimeout(timer.current)
+      timer.current = null
+    }
+    if (navigationWatchdog.current !== null) {
+      window.clearTimeout(navigationWatchdog.current)
+      navigationWatchdog.current = null
+    }
   }, [])
 
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
@@ -112,9 +119,20 @@ export function WorldTransitionController() {
     }
 
     const href = buildTravelHref(request)
+    const targetPathname = normalizedPathname(new URL(href, window.location.origin).pathname)
     timer.current = window.setTimeout(() => {
       router.push(href)
       timer.current = null
+
+      // A renderer recovery or a saturated browser main thread must not leave the
+      // world permanently in transition. Prefer client navigation, then use the
+      // same-origin document route only when the requested destination did not land.
+      navigationWatchdog.current = window.setTimeout(() => {
+        navigationWatchdog.current = null
+        if (normalizedPathname(window.location.pathname) !== targetPathname) {
+          window.location.assign(href)
+        }
+      }, 2500)
     }, transitionDuration(request.destination))
   }, [clearTimer, router])
 

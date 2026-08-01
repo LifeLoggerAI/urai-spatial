@@ -1,0 +1,290 @@
+{
+  "manifestId": "urai-launch-critical-assets-v1",
+  "generatedAt": "2026-07-26T01:15:31.954Z",
+  "candidateOnly": true,
+  "normalized": true,
+  "assetCount": 12,
+  "totalBytes": 2263087,
+  "assets": [
+    {
+      "id": "home-entry-chamber-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "bytes": 184160,
+      "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
+      "measured": {
+        "triangleCount": 12934,
+        "boundsMeters": {
+          "min": [
+            -9.345,
+            -1.83,
+            -9.238
+          ],
+          "max": [
+            9.345,
+            5.0844,
+            7.452
+          ],
+          "size": [
+            18.69,
+            6.9144,
+            16.69
+          ]
+        },
+        "repairedEulerRotations": 2,
+        "nodeCount": 160,
+        "materialCount": 13,
+        "animationClips": [
+          "Home_Breathing",
+          "Presence_Idle",
+          "Presence_Privacy",
+          "Presence_Forming"
+        ]
+      }
+    },
+    {
+      "id": "ground-world-terrain-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",
+      "bytes": 24936,
+      "sha256": "8068d71509d55035efeb869d827328aa5422a99f6a1f46c80db1424c8f32e1e8",
+      "measured": {
+        "triangleCount": 852,
+        "boundsMeters": {
+          "min": [
+            -11,
+            -2.54,
+            -9
+          ],
+          "max": [
+            11,
+            2.82,
+            9
+          ],
+          "size": [
+            22,
+            5.36,
+            18
+          ]
+        },
+        "repairedEulerRotations": 1
+      }
+    },
+    {
+      "id": "life-map-memory-star-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+      "bytes": 32204,
+      "sha256": "6fa964e1c51b66f83ccafa7c0c774185bee528dfbb673d8b906bc2dc181f9bcf",
+      "measured": {
+        "triangleCount": 1520,
+        "boundsMeters": {
+          "min": [
+            -1.105,
+            -1.105,
+            -0.8
+          ],
+          "max": [
+            1.105,
+            1.105,
+            0.8
+          ],
+          "size": [
+            2.21,
+            2.21,
+            1.6
+          ]
+        },
+        "repairedEulerRotations": 1
+      }
+    },
+    {
+      "id": "focus-memory-chamber-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+      "bytes": 72312,
+      "sha256": "fb88bf90b3757798a0cdbbd158e95c40e8e322524c9da1632be5a0ffef096d90",
+      "measured": {
+        "triangleCount": 3644,
+        "boundsMeters": {
+          "min": [
+            -2.59,
+            -2.59,
+            -7.2
+          ],
+          "max": [
+            2.59,
+            2.59,
+            0.09
+          ],
+          "size": [
+            5.18,
+            5.18,
+            7.29
+          ]
+        },
+        "repairedEulerRotations": 4
+      }
+    },
+    {
+      "id": "replay-memory-environment-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb",
+      "bytes": 22336,
+      "sha256": "51eca3cbf7f28d438fb7e09c868f8247d02eb65bfecb015828ce9edb806fe9f0",
+      "measured": {
+        "triangleCount": 828,
+        "boundsMeters": {
+          "min": [
+            -7,
+            -2.91,
+            -9.5
+          ],
+          "max": [
+            7,
+            3.2,
+            6.5
+          ],
+          "size": [
+            14,
+            6.11,
+            16
+          ]
+        },
+        "repairedEulerRotations": 1
+      }
+    },
+    {
+      "id": "urai-orb-avatar-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
+      "bytes": 83984,
+      "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
+      "measured": {
+        "triangleCount": 8776,
+        "boundsMeters": {
+          "min": [
+            -0.765,
+            -0.73,
+            -0.4873
+          ],
+          "max": [
+            0.756,
+            0.73,
+            0.4873
+          ],
+          "size": [
+            1.521,
+            1.46,
+            0.9746
+          ]
+        },
+        "repairedEulerRotations": 2,
+        "nodeCount": 34,
+        "materialCount": 8,
+        "animationClips": [
+          "Orb_Resting",
+          "Orb_Idle",
+          "Orb_Attention",
+          "Orb_Listening",
+          "Orb_Thinking",
+          "Orb_Speaking",
+          "Orb_Guiding",
+          "Orb_Reflecting",
+          "Orb_Calming",
+          "Orb_Privacy",
+          "Orb_Degraded",
+          "Orb_Transition"
+        ]
+      }
+    },
+    {
+      "id": "portal-ring-master-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "bytes": 73164,
+      "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
+      "measured": {
+        "triangleCount": 7576,
+        "boundsMeters": {
+          "min": [
+            -1.9753,
+            -2.52,
+            -1.02
+          ],
+          "max": [
+            2,
+            2.9579,
+            1.2349
+          ],
+          "size": [
+            3.9753,
+            5.4779,
+            2.2549
+          ]
+        },
+        "repairedEulerRotations": 2,
+        "nodeCount": 53,
+        "materialCount": 8,
+        "animationClips": [
+          "Portal_Closed",
+          "Portal_Available",
+          "Portal_Attention",
+          "Portal_Active",
+          "Portal_Opening",
+          "Portal_Traversal",
+          "Portal_Closing"
+        ]
+      }
+    },
+    {
+      "id": "life-map-galaxy-skybox-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+      "bytes": 1415240,
+      "sha256": "f43eef43074193370e096ad1e2e57657b7083601c18e70b5d0307e75f7f671d9",
+      "measured": {
+        "resolution": [
+          2048,
+          1024
+        ]
+      }
+    },
+    {
+      "id": "spatial-particle-atlas-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+      "bytes": 622,
+      "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+      "measured": {
+        "resolution": [
+          1024,
+          1024
+        ]
+      }
+    },
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "bytes": 673,
+      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+      "measured": {
+        "bytes": 673
+      }
+    },
+    {
+      "id": "urai-loading-sequence-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+      "bytes": 612,
+      "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+      "measured": {
+        "bytes": 612
+      }
+    },
+    {
+      "id": "urai-ambient-bed-v1",
+      "fixedPath": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav",
+      "bytes": 352844,
+      "sha256": "148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d",
+      "measured": {
+        "durationSeconds": 8,
+        "sampleRate": 22050,
+        "channels": 1
+      }
+    }
+  ],
+  "authoredHomeAssets": true,
+  "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json",
+  "authoredSourceId": "urai-home-authored-sanctuary-source-v3"
+}

@@ -1,0 +1,20 @@
+.focusCanvas div:has(.focus-spatial-aperture-button) {
+  display: contents !important;
+  transform: none !important;
+}
+
+.focus-spatial-aperture-button {
+  position: fixed !important;
+  left: 50vw !important;
+  top: calc(50vh + 176px) !important;
+  z-index: 20 !important;
+  min-width: 170px;
+  min-height: 48px;
+  transform: translate(-50%, -50%) !important;
+}
+
+@media (max-width: 700px) {
+  .focus-spatial-aperture-button {
+    top: calc(50vh + 128px) !important;
+  }
+}

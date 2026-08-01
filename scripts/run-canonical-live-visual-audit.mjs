@@ -16,9 +16,9 @@ const routes = [
     markers: [],
   },
   { id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },
-  { id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Sample constellation'] },
-  { id: 'focus', path: '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: '[data-testid="urai-final-focus-chamber"]', markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },
-  { id: 'replay', path: '/replay?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1', selector: 'main', markers: ['The Quiet Reset'] },
+  { id: 'life-map', path: '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', selector: '[data-testid="urai-true-3d-life-map"]', markers: ['Disclosed sample universe'] },
+  { id: 'focus', path: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="urai-final-focus-chamber"]', markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },
+  { id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },
   { id: 'mirror', path: '/mirror', selector: 'main', markers: ['Mirror does not judge.'] },
   { id: 'passport', path: '/passport', selector: 'main[data-route-owner="passport-ownership-vault"]', markers: ['UrAi Passport', 'Ownership key'] },
   { id: 'privacy-controls', path: '/privacy-controls', selector: 'main[data-route-owner="consent-sanctuary"]', markers: ['UrAi Consent Sanctuary', 'Enforcement'] },
@@ -29,7 +29,7 @@ const routes = [
 
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
-const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-5', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
+const receipt = { schemaVersion: 'urai-canonical-live-visual-audit-6', exactHead, base, capturedAt: new Date().toISOString(), routes: [], interactions: [] }
 let failed = false
 
 async function stable(page, frames = 3) {
@@ -118,9 +118,10 @@ async function proveLifeMapToFocus() {
     const map = page.locator('[data-testid="urai-true-3d-life-map"]')
     await map.waitFor({ state: 'visible', timeout: 30_000 })
     await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'selected', null, { timeout: 30_000, polling: 50 })
-    const actions = page.locator('.life-map-actions[aria-label="Selected memory actions"]')
+    const actions = page.locator('.life-map-thresholds[aria-label="Selected memory actions"]')
     await actions.waitFor({ state: 'visible', timeout: 30_000 })
-    const focus = actions.getByRole('button', { name: 'Enter Focus', exact: true })
+    const focus = actions.locator('button.focus-threshold')
+    if (!((await focus.innerText()).includes('Enter Focus'))) throw new Error('Current Life Map Focus threshold label is missing')
     const box = await focus.boundingBox()
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')
     await focus.click()
@@ -132,13 +133,18 @@ async function proveLifeMapToFocus() {
     const chamber = page.locator('[data-testid="urai-final-focus-chamber"]')
     await chamber.waitFor({ state: 'visible', timeout: 30_000 })
     const destination = new URL(page.url())
-    const expectedMemoryId = 'demo:quiet-reset'
+    const expectedPublicMemoryId = 'quiet-reset'
+    const expectedFixtureMemoryId = 'demo:quiet-reset'
     record.memoryStatus = await chamber.getAttribute('data-memory-status')
     record.memoryId = await chamber.getAttribute('data-memory-id')
     record.destination = destination.toString()
-    record.expectedMemoryId = expectedMemoryId
-    record.passed = destination.searchParams.get('memoryId') === expectedMemoryId
-      && record.memoryId === expectedMemoryId
+    record.expectedPublicMemoryId = expectedPublicMemoryId
+    record.expectedFixtureMemoryId = expectedFixtureMemoryId
+    record.passed = destination.searchParams.get('memoryId') === expectedPublicMemoryId
+      && destination.searchParams.get('node') === expectedPublicMemoryId
+      && destination.searchParams.get('returnNode') === expectedPublicMemoryId
+      && destination.searchParams.get('demo') === '1'
+      && record.memoryId === expectedFixtureMemoryId
       && record.memoryStatus === 'demo'
       && destination.searchParams.get('manifestId') === 'replay-recovery-thread'
       && destination.searchParams.get('from') === 'life-map'

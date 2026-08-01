@@ -85,6 +85,8 @@ function LifeMapAccessGate() {
   }, [query]);
 
   const openDemo = useCallback(() => {
+    const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+    if (pathname !== "/life-map") return;
     const next = new URLSearchParams(query);
     next.set("demo", "1");
     next.set("manifestId", DEMO_MANIFEST_ID);

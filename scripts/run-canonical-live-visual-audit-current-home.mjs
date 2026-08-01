@@ -1,0 +1,87 @@
+import { readFile, rm, writeFile } from 'node:fs/promises'
+
+const sourceUrl = new URL('./run-canonical-live-visual-audit.mjs', import.meta.url)
+const runtimeUrl = new URL(`./.run-canonical-live-visual-audit-${process.pid}-${Date.now()}.mjs`, import.meta.url)
+const original = await readFile(sourceUrl, 'utf8')
+
+function replaceOnce(source, before, after, label) {
+  const count = source.split(before).length - 1
+  if (count !== 1) throw new Error(`${label} contract changed; expected one source match and found ${count}`)
+  return source.replace(before, after)
+}
+
+for (const [label, marker] of [
+  ['canonical audit schema', `schemaVersion: 'urai-canonical-live-visual-audit-6'`],
+  ['Focus public identity route', `path: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
+  ['Replay public identity route', `path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
+  ['Focus public identity expectation', `const expectedPublicMemoryId = 'quiet-reset'`],
+  ['Focus fixture identity expectation', `const expectedFixtureMemoryId = 'demo:quiet-reset'`],
+]) {
+  if (!original.includes(marker)) throw new Error(`${label} is not present in the canonical audit authority`)
+}
+
+let patched = original
+patched = replaceOnce(
+  patched,
+  `selector: '.urai-final-home-world[data-home-spatial-renderer="webgl"], [data-testid="urai-home-accessible-fallback"]',`,
+  `selector: '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world[data-home-spatial-renderer="webgl"], main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]',`,
+  'canonical Home owner selector',
+)
+
+const oldHomeSettlement = `  if (route.id === 'home') {
+    await page.waitForFunction(() => {
+      const webglOwner = document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
+      if (webglOwner) {
+        const canvas = webglOwner.querySelector('canvas')
+        const rect = canvas?.getBoundingClientRect()
+        return webglOwner.getAttribute('data-home-ready') === 'true'
+          && webglOwner.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'
+          && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+      }
+      const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
+      const body = document.body.innerText || ''
+      return Boolean(fallback && body.includes('Own your life.') && body.includes('Threshold online'))
+    }, null, { timeout: 45_000, polling: 50 })
+  }`
+
+const currentHomeSettlement = `  if (route.id === 'home') {
+    await page.waitForFunction(() => {
+      const assetOwner = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (assetOwner) {
+        const canvas = assetOwner.querySelector('canvas')
+        const rect = canvas?.getBoundingClientRect()
+        return assetOwner.getAttribute('data-home-assets-ready') === 'true'
+          && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+      }
+
+      const webglOwner = document.querySelector('.urai-final-home-world[data-home-spatial-renderer="webgl"]')
+      if (webglOwner) {
+        const canvas = webglOwner.querySelector('canvas')
+        const rect = canvas?.getBoundingClientRect()
+        return webglOwner.getAttribute('data-home-ready') === 'true'
+          && webglOwner.getAttribute('data-home-visible-world') === 'final-physical-sanctuary-memory-rooms'
+          && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+      }
+
+      const authoredThreshold = document.querySelector('main.urai-home-spatial-world-final')
+      const fallback = document.querySelector('[data-testid="urai-home-accessible-fallback"]')
+      const owner = authoredThreshold || fallback
+      const rect = owner?.getBoundingClientRect()
+      const body = document.body.innerText || ''
+      return Boolean(owner
+        && rect
+        && rect.width >= 240
+        && rect.height >= 240
+        && body.includes('Own your life.')
+        && body.includes('Threshold online'))
+    }, null, { timeout: 45_000, polling: 50 })
+  }`
+
+patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
+
+await writeFile(runtimeUrl, patched, 'utf8')
+try {
+  await import(`${runtimeUrl.href}?currentHome=${Date.now()}`)
+} finally {
+  await rm(runtimeUrl, { force: true })
+}
