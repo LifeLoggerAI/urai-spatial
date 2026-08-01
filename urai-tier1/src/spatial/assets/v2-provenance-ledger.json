@@ -88,72 +88,63 @@
       "name": "v2_archivist_protected",
       "runtimeSha256": "28f17c9c6dcf52aad507d8c1da9e428a54399fa35fa7a85491da5db240b905e3",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_archivist",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_archivist"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/logistics-helper-working.webp",
       "name": "v2_logistics_helper_working",
       "runtimeSha256": "143a73915a5983cba8972a569ba51f33dfd6af23e3e3e5c6087410b25c5f125a",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_logistics_helper",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_logistics_helper"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/mirror-guide-mobile.webp",
       "name": "v2_mirror_guide_mobile",
       "runtimeSha256": "edf5c675562be3c9ad1a414ddbf0ddfd720ad62e1595abaecfcd02135f28d88a",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_mirror",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_mirror"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/operator-warning.webp",
       "name": "v2_operator_warning",
       "runtimeSha256": "0d61d340014e9046aee1842c57132021022afe09324e97c07f07c8ffa5df2166",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_operator",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_operator"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/privacy-steward-protecting.webp",
       "name": "v2_privacy_steward_protecting",
       "runtimeSha256": "1982a4e23ebb6e8e71542acf0020b97f184006f00af8a6d8481e72bd6d0f3e0e",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_privacy_steward",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_privacy_steward"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/relationship-liaison-blocked.webp",
       "name": "v2_relationship_liaison_blocked",
       "runtimeSha256": "e2655fb41d2432390f6102195b109809dfc0136dd72ca926c5382774c047f267",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_relationship_liaison",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_relationship_liaison"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/schedule-steward-approval.webp",
       "name": "v2_schedule_steward_approval",
       "runtimeSha256": "5e52fcf14d89caaca3c114d8b5cfd00fa305a8d94f979b7707066b58497a8207",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_schedule_steward",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_schedule_steward"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/trust-steward-mobile.webp",
       "name": "v2_trust_steward_mobile",
       "runtimeSha256": "7db5294d326484ac4c288f3f4cc00cddb26f10f8f8a0abf2d8fb97a7245299a6",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_protector",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_protector"
     },
     {
       "canonicalPath": "assets/urai/v2/helpers/wellness-guide-complete.webp",
       "name": "v2_wellness_guide_complete",
       "runtimeSha256": "c74130216fa3651d80a4f2c153b0fc6a6ca5a91e233379381f1115d3900c1415",
       "sourceArtifactId": 8742902079,
-      "sourceAssetName": "avatar_wellness_guide",
-      "sourceManifestPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json"
+      "sourceAssetName": "avatar_wellness_guide"
     }
   ],
   "programAuthority": "LifeLoggerAI/asset-factory#206",
