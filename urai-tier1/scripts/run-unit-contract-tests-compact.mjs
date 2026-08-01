@@ -5,6 +5,7 @@ const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
   'tests/geographic-location-vault.test.mjs',
+  'tests/geographic-maps-launch-policy.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
