@@ -31,7 +31,7 @@
       "fallback": "procedural-home-threshold",
       "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
       "license": "URAI Labs internal proprietary production asset",
-      "releaseState": "pending-final-review"
+      "releaseState": "production-ready"
     },
     {
       "id": "ground-world-terrain-v1",
