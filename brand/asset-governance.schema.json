@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urai.app/schemas/launch-asset-governance.schema.json",
+  "title": "UrAi Launch Asset Governance Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "filename", "kind", "version", "source", "provenance", "rightsStatus",
+    "sensitivity", "intendedUse", "accessibilityEquivalent", "optimization",
+    "approvalState", "deploymentState", "rollbackIdentity", "replacementLineage"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$" },
+    "filename": { "type": "string", "minLength": 1 },
+    "kind": { "enum": ["image", "vector", "model", "motion", "audio", "haptic", "template", "document", "token"] },
+    "version": { "type": "string", "minLength": 1 },
+    "dimensions": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "unit": { "enum": ["px", "m", "mm"] }
+      },
+      "required": ["width", "height", "unit"]
+    },
+    "durationMs": { "type": ["integer", "null"], "minimum": 0 },
+    "mediaType": { "type": ["string", "null"] },
+    "byteSize": { "type": ["integer", "null"], "minimum": 0 },
+    "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "source": { "type": "string", "minLength": 1 },
+    "provenance": { "type": "string", "minLength": 1 },
+    "rightsStatus": { "enum": ["owned", "licensed", "generated-with-recorded-terms", "public-domain", "pending-review", "restricted", "unknown"] },
+    "sensitivity": { "enum": ["public", "internal", "confidential", "personal-data-prohibited"] },
+    "intendedUse": {
+      "type": "object",
+      "required": ["product", "route", "component"],
+      "properties": {
+        "product": { "enum": ["UrAi", "RuAi", "URAI Labs", "URAI Foundation", "URAI IP Holdings", "shared"] },
+        "route": { "type": ["string", "null"] },
+        "component": { "type": ["string", "null"] }
+      }
+    },
+    "accessibilityEquivalent": { "type": "string", "minLength": 1 },
+    "optimization": { "type": "string", "minLength": 1 },
+    "approvalState": { "enum": ["draft", "automated-validated", "visual-review-pending", "rights-review-pending", "legal-review-pending", "approved", "rejected"] },
+    "deploymentState": { "enum": ["isolated", "preview", "integrated-not-live", "production", "retired"] },
+    "rollbackIdentity": { "type": "string", "minLength": 1 },
+    "replacementLineage": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}
