@@ -105,6 +105,16 @@ source = replaceExact(
 )
 source = replaceExact(
   source,
+  `  const page = await context.newPage()
+  return { context, page }`,
+  `  const page = await context.newPage()
+  page.setDefaultTimeout(90_000)
+  return { context, page }`,
+  1,
+  'continuous proof explicit slow-runner screenshot allowance',
+)
+source = replaceExact(
+  source,
   'const browser = await chromium.launch({ headless: true })',
   'let browser = await chromium.launch({ headless: true })',
   1,
@@ -116,13 +126,15 @@ source = replaceExact(
   await capturePortalSequence(browser)
   await captureFallback(browser)`,
   `  await capturePointerLook(browser)
+  await browser.close()
+  browser = await chromium.launch({ headless: true })
   await capturePortalSequence(browser)
   await browser.close()
   browser = await chromium.launch({ headless: true })
   await captureFallback(browser)`,
   1,
-  'continuous proof isolated fallback browser boundary',
+  'continuous proof isolated portal and fallback browser boundaries',
 )
 await writeFile(sourcePath, source)
-console.log(`Materialized released stable destination telemetry acceptance and isolated fallback capture at ${sourcePath}`)
+console.log(`Materialized stable destination telemetry with isolated portal/fallback capture and explicit screenshot allowance at ${sourcePath}`)
 await import('./run-continuous-spatial-proof-v19.mjs')
