@@ -42,6 +42,6 @@ test('generator is deterministic, local, and writes hashes', () => {
   assert.match(generator, /manifest\.json/)
   assert.match(generator, /providerCalls:\s*0/)
   assert.match(generator, /spendUsd:\s*'0\.00'/)
-  assert.doesNotMatch(generator, /fetch\(|https?:\/\//)
+  assert.doesNotMatch(generator, /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|node:https?|\baxios\b|\bundici\b/)
   assert.doesNotMatch(generator, /OpenAI|Maps|Places|Routes/)
 })
