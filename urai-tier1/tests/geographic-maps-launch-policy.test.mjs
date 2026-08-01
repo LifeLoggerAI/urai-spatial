@@ -31,12 +31,18 @@ test('geographic Maps credentials and cost controls fail closed', () => {
   assert.equal(policy.initialCostControls.increaseOnlyAfterMeasuredDemand, true)
 })
 
-test('cloud activation remains explicitly unauthorized without receipts', () => {
-  assert.equal(policy.activation.mapsJavascriptEnabled, false)
-  assert.equal(policy.activation.geocodingEnabled, false)
+test('provider services are observed enabled without authorizing product use', () => {
+  assert.equal(policy.providerServiceState.mapsJavascriptApiEnabled, true)
+  assert.equal(policy.providerServiceState.geocodingApiEnabled, true)
+  assert.equal(policy.providerServiceState.observedByNonMutatingAuditRun, '30703085166')
+  assert.equal(policy.providerServiceState.observedCandidateSha, '8e6f73fbf8c3df8b1d699d6d18a9b8f04648db53')
+  assert.equal(policy.providerServiceState.serviceEnablementMutationPerformedByThisLane, false)
   assert.equal(policy.activation.restrictedKeysCreated, false)
   assert.equal(policy.activation.quotasConfigured, false)
   assert.equal(policy.activation.budgetAlertsConfigured, false)
+  assert.equal(policy.activation.previewOriginVerified, false)
+  assert.equal(policy.activation.productionOriginVerified, false)
+  assert.equal(policy.activation.rollbackAndRotationDrillVerified, false)
   assert.equal(policy.activation.productionUseAuthorized, false)
   assert.ok(policy.requiredReceiptsBeforeProductionUse.length >= 8)
 })
