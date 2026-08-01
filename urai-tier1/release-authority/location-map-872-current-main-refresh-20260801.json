@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "urai-location-map-release-refresh-1",
+  "trackingIssue": 872,
+  "canonicalPullRequest": 889,
+  "canonicalReleaseHead": "d33af5f1272066097aef2699e06eafc52368dcfa",
+  "sourceMainSha": "6812c6b9e26acfaa3191996a92048e86b9b545d0",
+  "reason": "Refresh exact-head Location Map verification, protected production deployment, public runtime smoke, rollback proof, and retained release evidence on the current main authority.",
+  "productBehaviorChanged": false,
+  "runtimeLocationMapFilesChangedSinceCoreConvergence": false,
+  "evidencePolicy": {
+    "reusePreRefreshPublicRuntimeEvidence": false,
+    "requireExactMergedMainSha": true,
+    "requireProtectedProductionSuccess": true,
+    "requirePublicDesktopMobileAccessibilityConsoleNetworkSmoke": true,
+    "requireRestorableRollbackProof": true,
+    "requireDriveReceiptUpdateBeforeIssueClosure": true,
+    "requireFounderAcceptanceBeforeIssueClosure": true
+  },
+  "createdAt": "2026-08-01T08:05:00Z"
+}
