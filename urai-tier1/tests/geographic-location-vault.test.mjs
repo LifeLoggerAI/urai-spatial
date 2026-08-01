@@ -28,5 +28,6 @@ test('creates, parses, exports, and rejects malformed pins', () => {
 test('maps browser permission failures to truthful states', () => {
   assert.equal(geolocationErrorState(1), 'denied')
   assert.equal(geolocationErrorState(2), 'unavailable')
-  assert.equal(geolocationErrorState(3), 'error')
+  assert.equal(geolocationErrorState(3), 'timeout')
+  assert.equal(geolocationErrorState(99), 'error')
 })
