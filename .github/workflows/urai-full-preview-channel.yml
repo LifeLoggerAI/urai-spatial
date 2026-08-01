@@ -277,7 +277,7 @@ jobs:
           NODE
           node urai-tier1/.preview-inspection-runtime/inspect-preview.mjs
           test -f preview-inspection/report.json
-          test "$(node -e "const r=require('./preview-inspection/report.json');process.stdout.write(String(r.report.length))")" = '18'
+          test "$(node -e 'const r=require("./preview-inspection/report.json");process.stdout.write(String(r.report.length))')" = '18'
 
       - name: Publish preview summary
         if: github.event_name != 'pull_request'
