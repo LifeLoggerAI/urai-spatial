@@ -53,6 +53,7 @@ import './spatial-first-root-launch.css'
 import './urai-design-system.css'
 import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
+import './location-map-header-evidence-fix.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
