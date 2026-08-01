@@ -1,0 +1,109 @@
+{
+  "$schema": "./asset-governance.schema.json",
+  "registryVersion": "1.0.0-provisional",
+  "status": "provisional-founder-authority",
+  "controllingIssue": 1014,
+  "productionAuthorityIssue": 999,
+  "baseCommit": "3a82a5e9cab21f84f797fb304ef428f928a579cc",
+  "sourceLineage": {
+    "geometryId": "urai-ring-orb-v1",
+    "registry": "urai-tier1/src/brand/urai-brand.registry.ts",
+    "generator": "urai-tier1/scripts/generate-urai-brand-svgs.mjs",
+    "selectionReason": "Strongest existing deterministic source with stable ring-and-orb geometry, light and dark behavior, accessible SVG metadata, and established export lineage."
+  },
+  "publicNames": {
+    "consumer": "UrAi",
+    "portal": "RuAi",
+    "operator": "URAI Labs",
+    "foundation": "URAI Foundation",
+    "ipOwner": "URAI IP Holdings"
+  },
+  "geometry": {
+    "viewBox": "0 0 1024 1024",
+    "center": [512, 512],
+    "ringRadius": 318,
+    "ringStroke": 44,
+    "coreRadius": 96,
+    "clearSpacePxAt1024": 160,
+    "maskableEssentialDiameterPercent": 66,
+    "smallSizeSimplificationBelowPx": 32
+  },
+  "typography": {
+    "family": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "primaryWeight": 700,
+    "trackingEm": 0.02
+  },
+  "identities": {
+    "urai": {
+      "displayName": "UrAi",
+      "role": "consumer",
+      "ink": "#10131A",
+      "paper": "#F7F8FB",
+      "primary": "#7C5CFF",
+      "secondary": "#4ED7C8",
+      "structuralModifier": "open-pulse",
+      "description": "Warm companion identity using the canonical ring and orb with a restrained lower-right pulse opening."
+    },
+    "ruai": {
+      "displayName": "RuAi",
+      "role": "authorized-portal",
+      "ink": "#111827",
+      "paper": "#F8FAFC",
+      "primary": "#315B7D",
+      "secondary": "#2C7A6B",
+      "structuralModifier": "evidence-notch",
+      "description": "Restrained portal identity using the same ring and orb with a top evidence notch and baseline marker so distinction does not depend on color."
+    }
+  },
+  "masters": [
+    {"id":"urai-primary-light","identity":"urai","kind":"primary","mode":"light","width":1600,"height":520},
+    {"id":"urai-primary-dark","identity":"urai","kind":"primary","mode":"dark","width":1600,"height":520},
+    {"id":"urai-compact-light","identity":"urai","kind":"compact","mode":"light","width":1024,"height":1024},
+    {"id":"urai-compact-dark","identity":"urai","kind":"compact","mode":"dark","width":1024,"height":1024},
+    {"id":"urai-orb-light","identity":"urai","kind":"orb","mode":"light","width":1024,"height":1024},
+    {"id":"urai-orb-dark","identity":"urai","kind":"orb","mode":"dark","width":1024,"height":1024},
+    {"id":"urai-monochrome","identity":"urai","kind":"orb","mode":"monochrome","width":1024,"height":1024},
+    {"id":"ruai-primary-light","identity":"ruai","kind":"primary","mode":"light","width":1600,"height":520},
+    {"id":"ruai-primary-dark","identity":"ruai","kind":"primary","mode":"dark","width":1600,"height":520},
+    {"id":"ruai-compact-light","identity":"ruai","kind":"compact","mode":"light","width":1024,"height":1024},
+    {"id":"ruai-compact-dark","identity":"ruai","kind":"compact","mode":"dark","width":1024,"height":1024},
+    {"id":"ruai-monochrome","identity":"ruai","kind":"compact","mode":"monochrome","width":1024,"height":1024}
+  ],
+  "derivatives": [
+    {"id":"favicon-16","file":"favicon-16.png","format":"png","width":16,"height":16,"source":"urai-orb-light","use":"browser favicon","background":"transparent","safeZone":"small-simplified"},
+    {"id":"favicon-32","file":"favicon-32.png","format":"png","width":32,"height":32,"source":"urai-orb-light","use":"browser favicon","background":"transparent","safeZone":"standard"},
+    {"id":"favicon-48","file":"favicon-48.png","format":"png","width":48,"height":48,"source":"urai-orb-light","use":"browser favicon","background":"transparent","safeZone":"standard"},
+    {"id":"favicon-svg","file":"favicon.svg","format":"svg","width":1024,"height":1024,"source":"urai-orb-light","use":"scalable browser icon","background":"transparent","safeZone":"standard"},
+    {"id":"apple-touch","file":"apple-touch-icon.png","format":"png","width":180,"height":180,"source":"urai-compact-light","use":"Apple Touch icon","background":"opaque","safeZone":"standard"},
+    {"id":"pwa-192","file":"pwa-192.png","format":"png","width":192,"height":192,"source":"urai-compact-light","use":"PWA icon","background":"opaque","safeZone":"standard"},
+    {"id":"pwa-512","file":"pwa-512.png","format":"png","width":512,"height":512,"source":"urai-compact-light","use":"PWA icon","background":"opaque","safeZone":"standard"},
+    {"id":"pwa-maskable-192","file":"pwa-maskable-192.png","format":"png","width":192,"height":192,"source":"urai-orb-light","use":"PWA maskable icon","background":"opaque","safeZone":"maskable-66"},
+    {"id":"pwa-maskable-512","file":"pwa-maskable-512.png","format":"png","width":512,"height":512,"source":"urai-orb-light","use":"PWA maskable icon","background":"opaque","safeZone":"maskable-66"},
+    {"id":"android-foreground","file":"android-foreground-432.png","format":"png","width":432,"height":432,"source":"urai-orb-light","use":"Android adaptive foreground","background":"transparent","safeZone":"maskable-66"},
+    {"id":"android-background","file":"android-background-432.png","format":"png","width":432,"height":432,"source":"urai-compact-light","use":"Android adaptive background","background":"opaque","safeZone":"full"},
+    {"id":"notification","file":"notification-monochrome-96.png","format":"png","width":96,"height":96,"source":"urai-monochrome","use":"notification monochrome icon","background":"transparent","safeZone":"standard"},
+    {"id":"windows-70","file":"windows-70.png","format":"png","width":70,"height":70,"source":"urai-compact-light","use":"Windows tile","background":"opaque","safeZone":"standard"},
+    {"id":"windows-150","file":"windows-150.png","format":"png","width":150,"height":150,"source":"urai-compact-light","use":"Windows tile","background":"opaque","safeZone":"standard"},
+    {"id":"windows-310","file":"windows-310.png","format":"png","width":310,"height":310,"source":"urai-compact-light","use":"Windows tile","background":"opaque","safeZone":"standard"},
+    {"id":"store-apple","file":"store-apple-1024.png","format":"png","width":1024,"height":1024,"source":"urai-compact-light","use":"Apple store master","background":"opaque","safeZone":"standard"},
+    {"id":"store-play","file":"store-play-512.png","format":"png","width":512,"height":512,"source":"urai-orb-light","use":"Google Play store master","background":"opaque","safeZone":"maskable-66"},
+    {"id":"social-avatar","file":"social-avatar-1080.png","format":"png","width":1080,"height":1080,"source":"urai-compact-dark","use":"social avatar","background":"opaque","safeZone":"circle-safe"},
+    {"id":"email-avatar","file":"email-avatar-512.png","format":"png","width":512,"height":512,"source":"urai-compact-light","use":"email avatar","background":"opaque","safeZone":"circle-safe"},
+    {"id":"github-avatar","file":"github-avatar-512.png","format":"png","width":512,"height":512,"source":"urai-compact-dark","use":"GitHub avatar","background":"opaque","safeZone":"circle-safe"},
+    {"id":"splash-mark-svg","file":"splash-mark.svg","format":"svg","width":1024,"height":1024,"source":"urai-orb-dark","use":"splash mark source","background":"transparent","safeZone":"standard"},
+    {"id":"splash-mark-png","file":"splash-mark-1024.png","format":"png","width":1024,"height":1024,"source":"urai-orb-dark","use":"splash mark","background":"transparent","safeZone":"standard"},
+    {"id":"loading-mark","file":"loading-mark.svg","format":"svg","width":1024,"height":1024,"source":"urai-orb-dark","use":"static reduced-motion loading equivalent","background":"transparent","safeZone":"standard"},
+    {"id":"ruai-social-avatar","file":"ruai-social-avatar-1080.png","format":"png","width":1080,"height":1080,"source":"ruai-compact-dark","use":"RuAi social avatar","background":"opaque","safeZone":"circle-safe"}
+  ],
+  "admission": {
+    "providerCalls": 0,
+    "spendUsd": "0.00",
+    "productionPublished": false,
+    "storePublished": false,
+    "requiresExactHeadEvidence": true,
+    "requiresHumanVisualReview": true,
+    "certifiedV1ImagesRegenerated": false,
+    "promotedModelsRegenerated": false,
+    "v2plusAdmitted": false
+  }
+}
