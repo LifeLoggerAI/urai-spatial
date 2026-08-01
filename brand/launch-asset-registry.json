@@ -1,0 +1,71 @@
+{
+  "$schema": "./asset-governance.schema.json",
+  "registryVersion": "1.0.0-draft",
+  "baseCommit": "8e0754942543d143e4a48a952ac553525928184a",
+  "productionAuthorityIssue": 999,
+  "policy": {
+    "publicProductName": "UrAi",
+    "portalProductName": "RuAi",
+    "certifiedV1Immutable": true,
+    "productionExposureFailClosed": true,
+    "nativeReviewRequiredForTranslations": true
+  },
+  "families": [
+    {
+      "id": "brand-master",
+      "status": "needs-human-approval",
+      "scope": ["urai-full", "urai-compact", "urai-orb", "ruai-lockup"],
+      "blocker": "Strongest existing approved master must be selected and measured before derivatives are generated."
+    },
+    {
+      "id": "platform-icons",
+      "status": "needs-generation",
+      "scope": ["favicon", "apple-touch", "pwa", "android", "maskable", "windows", "store-master", "social-avatar", "email-avatar", "github-avatar", "notification-monochrome"],
+      "dependsOn": ["brand-master"]
+    },
+    {
+      "id": "social-launch-templates",
+      "status": "needs-implementation",
+      "scope": ["open-graph", "x-card", "linkedin", "discord", "slack", "product-hunt", "kickstarter", "gofundme", "press", "youtube", "tiktok", "reels", "shorts", "private-beta", "coming-soon", "now-live", "steward-story", "veteran-led"],
+      "format": "structured-template-with-replaceable-text"
+    },
+    {
+      "id": "store-listing",
+      "status": "needs-implementation",
+      "scope": ["phone", "tablet", "privacy", "accessibility", "passive-replay", "companion-orb", "life-map", "memory-replay", "promo-banner", "preview-storyboard"],
+      "evidenceRule": "Use certified runtime captures only; do not reconstruct misleading screens."
+    },
+    {
+      "id": "motion-system",
+      "status": "existing-but-not-fully-validated",
+      "scope": ["orb", "portal", "sky-starfield", "constellation", "aura", "recovery-bloom", "memory-selection", "replay", "companion-panel", "reduced-motion", "low-performance"]
+    },
+    {
+      "id": "audio-system",
+      "status": "needs-rights-review",
+      "scope": ["sonic-logo", "orb-activation", "insight", "warning", "ritual", "portal", "memory", "ambient", "narrator-presets"],
+      "rightsRule": "No candidate can enter production without source and rights evidence."
+    },
+    {
+      "id": "accessibility-haptics",
+      "status": "needs-validation",
+      "scope": ["alert", "confirmation", "morse", "navigation", "social", "mindfulness", "visual-audio-equivalents", "audio-descriptions", "high-contrast", "forced-colors", "large-text", "reduced-transparency", "keyboard", "screen-reader"]
+    },
+    {
+      "id": "localization-20",
+      "status": "machine-preparation-only",
+      "scope": ["string-inventory", "locale-files", "fallbacks", "expansion-tests", "rtl", "screenshot-masters", "captions", "audio-description", "formatting"],
+      "approval": "native-review-required"
+    },
+    {
+      "id": "ruai-system",
+      "status": "needs-implementation",
+      "scope": ["lockup", "professional-theme", "dataset-cards", "consent", "provenance", "revenue-share", "research-disclaimer", "clinical-disclaimer", "restricted", "empty", "unavailable", "permission-denied", "outreach"]
+    },
+    {
+      "id": "v2-v5-experimental",
+      "status": "future-only",
+      "isolation": "Must not enter certified V1 runtime paths without separate validation and release authority."
+    }
+  ]
+}
