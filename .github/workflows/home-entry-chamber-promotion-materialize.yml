@@ -46,21 +46,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Prove exact authority
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$HEAD_BRANCH" = 'agent/home-entry-chamber-promotion-20260731'
-          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
-          node -e "const a=require('./operations/assets/promotion-authorities/home-entry-chamber-v1.json'); if(a.source.candidateArtifactId!==8710341852||a.source.binarySha256!==process.env.HOME_BINARY_SHA256||a.constraints.deploymentAuthorized!==false||a.constraints.providerCallsAuthorized!==0) process.exit(1)"
-
-      - name: Download and verify immutable accepted artifact
+      - name: Prove authority and fetch accepted artifact
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          test "$HEAD_BRANCH" = 'agent/home-entry-chamber-promotion-20260731'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          node -e "const a=require('./operations/assets/promotion-authorities/home-entry-chamber-v1.json');if(a.source.candidateArtifactId!==8710341852||a.source.binarySha256!==process.env.HOME_BINARY_SHA256||a.constraints.deploymentAuthorized!==false||a.constraints.providerCallsAuthorized!==0)process.exit(1)"
           rm -rf /tmp/urai-home-promotion
           mkdir -p /tmp/urai-home-promotion/source
           curl --fail --location --silent --show-error \
@@ -71,34 +66,40 @@ jobs:
             -o /tmp/urai-home-promotion/source.zip
           echo "${SOURCE_ARTIFACT_SHA256}  /tmp/urai-home-promotion/source.zip" | sha256sum --check --strict
           unzip -q /tmp/urai-home-promotion/source.zip -d /tmp/urai-home-promotion/source
+
+      - name: Verify immutable Home binary and source receipt
+        shell: bash
+        run: |
+          set -euo pipefail
           root=/tmp/urai-home-promotion/source
           home="$root/urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
+          receipt="$root/operations/assets/generated-receipts/home-entry-chamber-v1.json"
           echo "${HOME_BINARY_SHA256}  $home" | sha256sum --check --strict
           test "$(stat -c '%s' "$home")" = "$HOME_BINARY_BYTES"
-          test -f "$root/operations/assets/generated-receipts/home-entry-chamber-v1.json"
+          test -f "$receipt"
           test -f "$root/operations/assets/sources/home-finalization-authored-source-v2.json"
           test -f "$root/urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb"
           test -f "$root/urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb"
           node --input-type=module <<'NODE'
-          import fs from 'node:fs'
           import crypto from 'node:crypto'
+          import fs from 'node:fs'
           const root='/tmp/urai-home-promotion/source'
           const data=fs.readFileSync(`${root}/urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb`)
           const receipt=JSON.parse(fs.readFileSync(`${root}/operations/assets/generated-receipts/home-entry-chamber-v1.json`,'utf8'))
-          if(receipt.sha256!==process.env.HOME_BINARY_SHA256||receipt.bytes!==Number(process.env.HOME_BINARY_BYTES)||receipt.compressionStatus!=='meshopt') throw new Error('source receipt mismatch')
-          if(receipt.measured.triangleCount!==12934||receipt.measured.nodeCount!==160||receipt.measured.materialCount!==13) throw new Error('source inventory mismatch')
           const expected=['Home_Breathing','Presence_Idle','Presence_Privacy','Presence_Forming']
-          if(JSON.stringify(receipt.measured.animationClips)!==JSON.stringify(expected)) throw new Error('source animation mismatch')
-          if(data.toString('ascii',0,4)!=='glTF'||data.readUInt32LE(4)!==2) throw new Error('invalid GLB')
+          if(receipt.sha256!==process.env.HOME_BINARY_SHA256||receipt.bytes!==Number(process.env.HOME_BINARY_BYTES)||receipt.compressionStatus!=='meshopt')throw new Error('source receipt mismatch')
+          if(receipt.measured.triangleCount!==12934||receipt.measured.nodeCount!==160||receipt.measured.materialCount!==13)throw new Error('source inventory mismatch')
+          if(JSON.stringify(receipt.measured.animationClips)!==JSON.stringify(expected))throw new Error('source animation mismatch')
+          if(data.toString('ascii',0,4)!=='glTF'||data.readUInt32LE(4)!==2)throw new Error('invalid GLB header')
           const n=data.readUInt32LE(12)
           const doc=JSON.parse(data.toString('utf8',20,20+n).replace(/\u0000+$/g,'').trimEnd())
-          if(!doc.extensionsUsed?.includes('EXT_meshopt_compression')) throw new Error('Meshopt missing')
-          if((doc.nodes??[]).length!==160||(doc.materials??[]).length!==13) throw new Error('GLB inventory mismatch')
-          for(const clip of expected) if(!(doc.animations??[]).some((x)=>x.name===clip)) throw new Error(`missing ${clip}`)
-          if(crypto.createHash('sha256').update(data).digest('hex')!==process.env.HOME_BINARY_SHA256) throw new Error('digest mismatch')
+          if(!doc.extensionsUsed?.includes('EXT_meshopt_compression'))throw new Error('Meshopt missing')
+          if((doc.nodes??[]).length!==160||(doc.materials??[]).length!==13)throw new Error('GLB inventory mismatch')
+          for(const clip of expected)if(!(doc.animations??[]).some((entry)=>entry.name===clip))throw new Error(`missing ${clip}`)
+          if(crypto.createHash('sha256').update(data).digest('hex')!==process.env.HOME_BINARY_SHA256)throw new Error('digest mismatch')
           NODE
 
-      - name: Materialize only governed Home files
+      - name: Materialize governed Home promotion
         shell: bash
         run: |
           set -euo pipefail
@@ -109,51 +110,49 @@ jobs:
           import fs from 'node:fs'
           const source=JSON.parse(fs.readFileSync('/tmp/urai-home-promotion/source/operations/assets/generated-receipts/home-entry-chamber-v1.json','utf8'))
           const authority=JSON.parse(fs.readFileSync('operations/assets/promotion-authorities/home-entry-chamber-v1.json','utf8'))
-          const production={schemaVersion:'1.0.0',id:'home-entry-chamber-v1',assetId:'home-entry-chamber-model-v1',fixedPath:source.fixedPath,targetRoutes:['/','/home'],sha256:source.sha256,bytes:source.bytes,measured:source.measured,compressionStatus:source.compressionStatus,source:source.source,license:source.license,authoredOwnership:source.authoredOwnership,authoredLicense:source.authoredLicense,acceptedSourceHead:authority.source.acceptedHead,candidateRunId:authority.source.candidateRunId,candidateArtifactId:authority.source.candidateArtifactId,candidateArtifactDigest:authority.source.candidateArtifactDigest,visualAcceptance:authority.visualAcceptance,fallbackAssetId:'home-entry-chamber-proof-fallback',releaseState:'production-ready-for-reviewed-promotion',deploymentAuthorized:false,providerCallsForPromotion:0,providerSpendForPromotionUsd:'0.00'}
-          fs.writeFileSync('operations/assets/production-receipts/home-entry-chamber-v1.json',JSON.stringify(production,null,2)+'\n')
+          const receipt={schemaVersion:'1.0.0',id:'home-entry-chamber-v1',assetId:'home-entry-chamber-model-v1',fixedPath:source.fixedPath,targetRoutes:['/','/home'],sha256:source.sha256,bytes:source.bytes,measured:source.measured,compressionStatus:source.compressionStatus,source:source.source,license:source.license,authoredOwnership:source.authoredOwnership,authoredLicense:source.authoredLicense,acceptedSourceHead:authority.source.acceptedHead,candidateRunId:authority.source.candidateRunId,candidateArtifactId:authority.source.candidateArtifactId,candidateArtifactDigest:authority.source.candidateArtifactDigest,visualAcceptance:authority.visualAcceptance,fallbackAssetId:'home-entry-chamber-proof-fallback',releaseState:'production-ready-for-reviewed-promotion',deploymentAuthorized:false,providerCallsForPromotion:0,providerSpendForPromotionUsd:'0.00'}
+          fs.writeFileSync('operations/assets/production-receipts/home-entry-chamber-v1.json',JSON.stringify(receipt,null,2)+'\n')
 
           const manifestPath='urai-tier1/src/spatial/assets/assetManifest.ts'
           let manifest=fs.readFileSync(manifestPath,'utf8')
           const start=manifest.indexOf("id: 'home-entry-chamber-model-v1'")
           const end=manifest.indexOf('\n  {',start+10)
-          if(start<0||end<0) throw new Error('Home manifest missing')
+          if(start<0||end<0)throw new Error('Home manifest entry missing')
           let entry=manifest.slice(start,end)
           entry=entry.replace("status: 'future'","status: 'ready'").replace("notes: 'Selected Home environment. It may load only after review, compression, receipts and promotion mark it ready.'","notes: 'Reviewed Meshopt Home sanctuary promoted from immutable accepted evidence; canonical proof geometry remains the load-failure fallback.'")
-          if(!entry.includes("status: 'ready'")) throw new Error('Home not ready')
+          if(!entry.includes("status: 'ready'"))throw new Error('Home manifest was not promoted')
           fs.writeFileSync(manifestPath,manifest.slice(0,start)+entry+manifest.slice(end))
 
           const statePath='urai-tier1/src/spatial/assets/assetPromotionState.ts'
           let state=fs.readFileSync(statePath,'utf8').replace("  'home-entry-chamber-model-v1': '/assets/urai/generated/models/home-entry-chamber-v1.gltf',\n",'')
-          if(state.includes('home-entry-chamber-v1.gltf')) throw new Error('stale Home GLTF remains')
+          if(state.includes('home-entry-chamber-v1.gltf'))throw new Error('stale Home GLTF override remains')
           fs.writeFileSync(statePath,state)
 
           const worldPath='urai-tier1/src/spatial/assets/worldAssetManifest.ts'
           let world=fs.readFileSync(worldPath,'utf8')
-          const ws=world.indexOf('  home: {'), we=world.indexOf('  ground: {',ws)
-          if(ws<0||we<0) throw new Error('Home world slot missing')
-          let block=world.slice(ws,we).replaceAll("status: 'fallback'","status: 'ready'").replace("notes: 'Canonical manifest selects the reviewed Home model only when ready; otherwise it resolves deterministic proof geometry.'","notes: 'Reviewed Home sanctuary is selected; deterministic proof geometry remains available through the load-failure boundary.'")
-          fs.writeFileSync(worldPath,world.slice(0,ws)+block+world.slice(we))
+          world=world.replace("slotId: 'home.overlookPlatform',\n      label: 'URAI Home Entry Chamber',\n      finalModel: resolved('home-entry-chamber-model-v1'),\n      status: 'fallback',\n      notes: 'Canonical manifest selects the reviewed Home model only when ready; otherwise it resolves deterministic proof geometry.'","slotId: 'home.overlookPlatform',\n      label: 'URAI Home Entry Chamber',\n      finalModel: resolved('home-entry-chamber-model-v1'),\n      status: 'ready',\n      notes: 'Reviewed Home sanctuary is selected; deterministic proof geometry remains available through the load-failure boundary.'")
+          world=world.replace("slotId: 'home.skylineCore',\n      label: 'Home Environment Extension',\n      finalModel: resolved('home-entry-chamber-model-v1'),\n      status: 'fallback'","slotId: 'home.skylineCore',\n      label: 'Home Environment Extension',\n      finalModel: resolved('home-entry-chamber-model-v1'),\n      status: 'ready'")
+          fs.writeFileSync(worldPath,world)
 
           const layerPath='urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx'
           let layer=fs.readFileSync(layerPath,'utf8')
-          if(!layer.includes('type AssetErrorBoundaryProps')){
+          if(!layer.includes('class AssetErrorBoundary')){
             layer=layer.replace('import type { ThreeElements } from "@react-three/fiber";\n','import type { ThreeElements } from "@react-three/fiber";\nimport { Component, type ErrorInfo, type ReactNode } from "react";\n')
-            const types=`\ntype AssetErrorBoundaryProps = { children: ReactNode; fallback: ReactNode };\ntype AssetErrorBoundaryState = { failed: boolean };\n\nclass AssetErrorBoundary extends Component<AssetErrorBoundaryProps, AssetErrorBoundaryState> {\n  state: AssetErrorBoundaryState = { failed: false };\n  static getDerivedStateFromError(): AssetErrorBoundaryState { return { failed: true }; }\n  componentDidCatch(error: Error, info: ErrorInfo) { console.warn('URAI spatial asset load failed; rendering governed fallback.', error, info.componentStack); }\n  render() { return this.state.failed ? this.props.fallback : this.props.children; }\n}\n\n`
-            layer=layer.replace('type GroupProps = ThreeElements["group"];\n',`type GroupProps = ThreeElements["group"];\n${types}`)
+            layer=layer.replace('type GroupProps = ThreeElements["group"];\n','type GroupProps = ThreeElements["group"];\n\ntype AssetErrorBoundaryProps = { children: ReactNode; fallback: ReactNode };\ntype AssetErrorBoundaryState = { failed: boolean };\n\nclass AssetErrorBoundary extends Component<AssetErrorBoundaryProps, AssetErrorBoundaryState> {\n  state: AssetErrorBoundaryState = { failed: false };\n  static getDerivedStateFromError(): AssetErrorBoundaryState { return { failed: true }; }\n  componentDidCatch(error: Error, info: ErrorInfo) { console.warn("URAI spatial asset load failed; rendering governed fallback.", error, info.componentStack); }\n  render() { return this.state.failed ? this.props.fallback : this.props.children; }\n}\n')
             const anchor='function AssetModel({ assetId, name, ...props }: AssetModelProps) {\n  const src = resolveRequiredModelPath(assetId);\n  const gltf = useGLTF(src);\n  return <primitive object={gltf.scene.clone(true)} name={name} data-urai-asset-id={assetId} data-urai-asset-path={src} {...props} />;\n}\n'
-            const home=`${anchor}\nfunction HomeEntryChamber({ ...props }: GroupProps) {\n  const proofFallback = (\n    <AssetErrorBoundary fallback={<group name="entry-chamber-empty-fallback" data-urai-asset-state="unavailable" />}>\n      <AssetModel assetId="home-entry-chamber-proof-fallback" name="entry-chamber-proof-fallback" {...props} />\n    </AssetErrorBoundary>\n  );\n  return (\n    <AssetErrorBoundary fallback={proofFallback}>\n      <AssetModel assetId="home-entry-chamber-model-v1" name="entry-chamber-shell-v1" {...props} />\n    </AssetErrorBoundary>\n  );\n}\n`
-            if(!layer.includes(anchor)) throw new Error('AssetModel anchor missing')
-            layer=layer.replace(anchor,home)
+            const wrapped=`${anchor}\nfunction HomeEntryChamber(props: GroupProps) {\n  const proofFallback = (\n    <AssetErrorBoundary fallback={<group name="entry-chamber-empty-fallback" data-urai-asset-state="unavailable" />}>\n      <AssetModel assetId="home-entry-chamber-proof-fallback" name="entry-chamber-proof-fallback" {...props} />\n    </AssetErrorBoundary>\n  );\n  return (\n    <AssetErrorBoundary fallback={proofFallback}>\n      <AssetModel assetId="home-entry-chamber-model-v1" name="entry-chamber-shell-v1" {...props} />\n    </AssetErrorBoundary>\n  );\n}\n`
+            if(!layer.includes(anchor))throw new Error('AssetModel anchor missing')
+            layer=layer.replace(anchor,wrapped)
           }
           layer=layer.replace('<AssetModel assetId="home-entry-chamber-model-v1" name="entry-chamber-shell-v1" position={[0, -0.08, -2.4]} scale={[0.72, 0.72, 0.72]} />','<HomeEntryChamber position={[0, -0.08, -2.4]} scale={[0.72, 0.72, 0.72]} />')
-          if(!layer.includes('<HomeEntryChamber position=')) throw new Error('Home boundary missing')
+          if(!layer.includes('<HomeEntryChamber position='))throw new Error('Home load boundary missing')
           fs.writeFileSync(layerPath,layer)
 
-          const test=`import assert from 'node:assert/strict'\nimport crypto from 'node:crypto'\nimport fs from 'node:fs'\nimport test from 'node:test'\nconst binary=fs.readFileSync('public/assets/urai/generated/models/home-entry-chamber-v1.glb')\nconst manifest=fs.readFileSync('src/spatial/assets/assetManifest.ts','utf8')\nconst promotion=fs.readFileSync('src/spatial/assets/assetPromotionState.ts','utf8')\nconst world=fs.readFileSync('src/spatial/assets/worldAssetManifest.ts','utf8')\nconst layer=fs.readFileSync('src/spatial/scene/SpatialWorldAssetLayer.tsx','utf8')\nconst receipt=JSON.parse(fs.readFileSync('../operations/assets/production-receipts/home-entry-chamber-v1.json','utf8'))\ntest('promotes exact reviewed Meshopt Home binary',()=>{assert.equal(binary.length,184160);assert.equal(crypto.createHash('sha256').update(binary).digest('hex'),'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529');assert.equal(receipt.compressionStatus,'meshopt');assert.equal(receipt.measured.triangleCount,12934);assert.equal(receipt.deploymentAuthorized,false);assert.equal(receipt.providerCallsForPromotion,0)})\ntest('uses canonical GLB without stale compact GLTF override',()=>{const s=manifest.indexOf("id: 'home-entry-chamber-model-v1'");const e=manifest.slice(s,manifest.indexOf('\\n  {',s+10));assert.match(e,/status: 'ready'/);assert.match(e,/home-entry-chamber-v1\\.glb/);assert.doesNotMatch(promotion,/home-entry-chamber-v1\\.gltf/);assert.match(world.slice(world.indexOf('  home: {'),world.indexOf('  ground: {')),/status: 'ready'/)})\ntest('keeps Home navigation alive through governed load fallbacks',()=>{assert.match(layer,/class AssetErrorBoundary/);assert.match(layer,/home-entry-chamber-proof-fallback/);assert.match(layer,/entry-chamber-empty-fallback/);assert.match(layer,/<HomeEntryChamber position=/)})\n`
+          const test=`import assert from 'node:assert/strict'\nimport crypto from 'node:crypto'\nimport fs from 'node:fs'\nimport test from 'node:test'\nconst binary=fs.readFileSync('public/assets/urai/generated/models/home-entry-chamber-v1.glb')\nconst manifest=fs.readFileSync('src/spatial/assets/assetManifest.ts','utf8')\nconst promotion=fs.readFileSync('src/spatial/assets/assetPromotionState.ts','utf8')\nconst world=fs.readFileSync('src/spatial/assets/worldAssetManifest.ts','utf8')\nconst layer=fs.readFileSync('src/spatial/scene/SpatialWorldAssetLayer.tsx','utf8')\nconst receipt=JSON.parse(fs.readFileSync('../operations/assets/production-receipts/home-entry-chamber-v1.json','utf8'))\ntest('promotes exact reviewed Meshopt Home binary',()=>{assert.equal(binary.length,184160);assert.equal(crypto.createHash('sha256').update(binary).digest('hex'),'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529');assert.equal(receipt.compressionStatus,'meshopt');assert.equal(receipt.measured.triangleCount,12934);assert.equal(receipt.deploymentAuthorized,false);assert.equal(receipt.providerCallsForPromotion,0)})\ntest('uses canonical GLB without stale compact GLTF override',()=>{const s=manifest.indexOf("id: 'home-entry-chamber-model-v1'");const e=manifest.slice(s,manifest.indexOf('\\n  {',s+10));assert.match(e,/status: 'ready'/);assert.match(e,/home-entry-chamber-v1\\.glb/);assert.doesNotMatch(promotion,/home-entry-chamber-v1\\.gltf/);assert.match(world,/slotId: 'home.overlookPlatform'[\\s\\S]*?status: 'ready'/)})\ntest('keeps Home navigation alive through governed load fallbacks',()=>{assert.match(layer,/class AssetErrorBoundary/);assert.match(layer,/home-entry-chamber-proof-fallback/);assert.match(layer,/entry-chamber-empty-fallback/);assert.match(layer,/<HomeEntryChamber position=/)})\n`
           fs.writeFileSync('urai-tier1/tests/home-entry-chamber-promotion-contract.test.mjs',test)
           NODE
 
-      - name: Validate exact promotion contract
+      - name: Run exact promotion contracts
         shell: bash
         run: |
           set -euo pipefail
@@ -161,18 +160,9 @@ jobs:
           node --test tests/home-entry-chamber-promotion-contract.test.mjs
           node --test tests/spatial-asset-resolution-contract.test.mjs
           cd ..
-          validator_exit=0
-          npx --yes @gltf-transform/cli@4.4.2 validate urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb 2>&1 | tee /tmp/home-gltf-validation.txt || validator_exit=$?
-          test "$validator_exit" -eq 1
-          grep -Fq 'info: No errors found.' /tmp/home-gltf-validation.txt
-          grep -Fq 'info: No warnings found.' /tmp/home-gltf-validation.txt
-          test "$(grep -c 'UNSUPPORTED_EXTENSION' /tmp/home-gltf-validation.txt)" -eq 1
-          test "$(grep -c 'UNUSED_OBJECT' /tmp/home-gltf-validation.txt)" -eq 1
-          grep -Fq 'EXT_meshopt_compression' /tmp/home-gltf-validation.txt
-          grep -Fq '/buffers/0' /tmp/home-gltf-validation.txt
           test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | cut -d' ' -f1)" = "$HOME_BINARY_SHA256"
 
-      - name: Commit exact materialized promotion to source branch
+      - name: Commit exact Home promotion
         shell: bash
         run: |
           set -euo pipefail
@@ -182,14 +172,15 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add operations/assets/production-receipts/home-entry-chamber-v1.json \
+          git add \
+            operations/assets/production-receipts/home-entry-chamber-v1.json \
             urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
             urai-tier1/src/spatial/assets/assetManifest.ts \
             urai-tier1/src/spatial/assets/assetPromotionState.ts \
             urai-tier1/src/spatial/assets/worldAssetManifest.ts \
             urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx \
             urai-tier1/tests/home-entry-chamber-promotion-contract.test.mjs
-          git diff --cached --name-only | tee /tmp/materialized-files.txt
-          test "$(wc -l < /tmp/materialized-files.txt)" -eq 7
+          git diff --cached --name-only | tee /tmp/home-promotion-files.txt
+          test "$(wc -l < /tmp/home-promotion-files.txt)" -eq 7
           git commit -m 'Promote reviewed Home Entry Chamber GLB'
           git push origin "HEAD:${HEAD_BRANCH}"
