@@ -46,9 +46,10 @@ jobs:
         run: |
           set -euo pipefail
           promotion=false
+          changed_files="${RUNNER_TEMP}/launch-critical-changed-files.txt"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > changed-files.txt
-            if grep -Eq '^operations/assets/(promotion-decisions|production-receipts)/.+\.json$' changed-files.txt; then
+            git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > "$changed_files"
+            if grep -Eq '^operations/assets/(promotion-decisions|production-receipts)/.+\.json$' "$changed_files"; then
               promotion=true
             fi
           fi
