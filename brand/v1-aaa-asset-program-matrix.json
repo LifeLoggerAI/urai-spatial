@@ -1,0 +1,156 @@
+{
+  "$schema": "./asset-governance.schema.json",
+  "matrixVersion": "1.0.0",
+  "generatedAt": "2026-08-01T11:41:00Z",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "baseCommit": "7da6833613dde2df6c1153b9c14143bb0ba310e2",
+  "productionAuthorityIssue": 999,
+  "purpose": "Current-main execution matrix for non-DNS-dependent UrAi V1 asset, runtime, accessibility, motion, audio, performance, and launch-media work.",
+  "statusVocabulary": [
+    "certified-production-ready",
+    "usable-requires-polish",
+    "missing",
+    "duplicate-obsolete",
+    "blocked-external",
+    "v2plus-prohibited-v1"
+  ],
+  "truthBoundaries": {
+    "productionLiveClaimAllowed": false,
+    "dnsDependentWorkExcluded": true,
+    "certifiedV1ImmutableWithoutObjectiveImprovementProof": true,
+    "paidGenerationRequiresBoundedReceipt": true,
+    "providerCallsThisLane": 0,
+    "spendUsdThisLane": "0.00"
+  },
+  "authorities": [
+    "brand/BRAND_AUTHORITY.md",
+    "brand/design-tokens.json",
+    "brand/asset-governance.schema.json",
+    "brand/APPROVAL_QUEUE.md",
+    "brand/launch-asset-registry.json",
+    "docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json",
+    "urai-tier1/src/spatial/assets/sensoryAssetManifest.ts"
+  ],
+  "surfaces": [
+    {
+      "id": "brand-master",
+      "status": "blocked-external",
+      "scope": ["urai-full", "urai-compact", "urai-orb", "monochrome", "accessibility-variants"],
+      "evidence": ["brand/BRAND_AUTHORITY.md", "brand/APPROVAL_QUEUE.md"],
+      "blocker": "Human visual master selection and approval are required before production-authoritative derivatives."
+    },
+    {
+      "id": "platform-icons",
+      "status": "blocked-external",
+      "scope": ["favicon", "apple-touch", "pwa", "android", "maskable", "store-master", "notification-monochrome"],
+      "evidence": ["brand/launch-asset-registry.json"],
+      "blocker": "Depends on approved brand master and visual comparison at required sizes."
+    },
+    {
+      "id": "runtime-image-estate-v1",
+      "status": "certified-production-ready",
+      "scope": ["53-certified-v1-runtime-images"],
+      "evidence": ["docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json"],
+      "notes": ["No missing V1 runtime images are recorded.", "Do not regenerate without objective improvement evidence."]
+    },
+    {
+      "id": "runtime-image-estate-v2-v5",
+      "status": "v2plus-prohibited-v1",
+      "scope": ["v2", "v3", "v4", "v5"],
+      "evidence": ["docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json"],
+      "notes": ["Assets are recorded but remain isolated from certified V1 runtime authority unless separately validated."]
+    },
+    {
+      "id": "launch-critical-models",
+      "status": "certified-production-ready",
+      "scope": ["home-entry-chamber", "portal-ring", "urai-orb", "ground", "life-map", "focus", "replay"],
+      "evidence": ["docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json"]
+    },
+    {
+      "id": "home-sanctuary-and-layering",
+      "status": "usable-requires-polish",
+      "scope": ["sky", "ground", "figure", "four-silhouettes", "orb-placement", "faint-home-stars", "responsive-crops"],
+      "evidence": ["docs/AAA_LAUNCH_POLISH_EXECUTION_RECEIPT.md", "brand/launch-asset-registry.json"],
+      "acceptance": ["orb-bottom-center-not-touching-feet", "sky-opens-starfield", "orb-opens-companion", "no-layer-seams", "mobile-safe-cropping"]
+    },
+    {
+      "id": "sky-and-starfield-system",
+      "status": "usable-requires-polish",
+      "scope": ["dawn", "day", "dusk", "night", "parallax-left", "parallax-center", "parallax-right", "zoomed-starfield", "cloud", "weather", "seasonal", "trauma-fog"],
+      "evidence": ["brand/launch-asset-registry.json"],
+      "notes": ["HDR skybox remains candidate-only with a procedural fallback."]
+    },
+    {
+      "id": "orb-mood-and-aura-system",
+      "status": "usable-requires-polish",
+      "scope": ["idle", "speaking", "event", "eight-mood-families", "aura-overlays", "reduced-motion"],
+      "evidence": ["brand/launch-asset-registry.json", "docs/AAA_LAUNCH_POLISH_EXECUTION_RECEIPT.md"]
+    },
+    {
+      "id": "product-surface-assets",
+      "status": "usable-requires-polish",
+      "scope": ["companion", "timeline", "memory-gallery", "dream-map", "rituals", "recovery-bloom", "constellations", "badges", "navigation", "markers", "containers", "narrator-ui"],
+      "evidence": ["brand/launch-asset-registry.json"]
+    },
+    {
+      "id": "motion-system",
+      "status": "usable-requires-polish",
+      "scope": ["orb", "portal", "sky-starfield", "constellation", "aura", "recovery-bloom", "memory-selection", "replay", "companion-panel", "loading", "reduced-motion", "low-performance"],
+      "evidence": ["brand/launch-asset-registry.json"],
+      "acceptance": ["loop-clean", "subtle", "reduced-motion-equivalent", "no-critical-animation-only-information"]
+    },
+    {
+      "id": "sensory-ready-assets",
+      "status": "certified-production-ready",
+      "scope": ["global-cinematic-material-pack-v1", "spatial-particle-atlas-v1", "urai-loading-sequence-v1"],
+      "evidence": ["urai-tier1/src/spatial/assets/sensoryAssetManifest.ts", "operations/assets/production-receipts/sensory-layer-v1.json"]
+    },
+    {
+      "id": "ambient-audio",
+      "status": "blocked-external",
+      "scope": ["ambient-bed", "chimes", "ritual-gong", "narrator-state-mappings"],
+      "evidence": ["brand/APPROVAL_QUEUE.md", "urai-tier1/src/spatial/assets/sensoryAssetManifest.ts"],
+      "blocker": "Final mix, codec, loudness, rights, muted, and permission-denied proof are required before promotion."
+    },
+    {
+      "id": "accessibility-and-haptics",
+      "status": "usable-requires-polish",
+      "scope": ["contrast", "large-text", "keyboard", "focus", "screen-reader", "touch-targets", "captions", "visual-audio-alerts", "haptics", "forced-colors", "reduced-transparency", "blind-narration", "deaf-environment-alerts"],
+      "evidence": ["brand/APPROVAL_QUEUE.md", "brand/launch-asset-registry.json"],
+      "manualVerification": ["screen-reader", "forced-colors", "large-text", "vestibular-safety", "haptic-distinction"]
+    },
+    {
+      "id": "performance-and-delivery",
+      "status": "usable-requires-polish",
+      "scope": ["responsive-derivatives", "compression", "texture-budgets", "caching", "preload", "lazy-load", "gpu-cost", "memory", "cls", "initial-render", "interaction-latency", "mobile-network"],
+      "evidence": ["scripts/verify-production-sensory-assets.mjs", "urai-tier1/package.json"]
+    },
+    {
+      "id": "social-and-launch-media",
+      "status": "usable-requires-polish",
+      "scope": ["open-graph", "social-cards", "press", "crowdfunding", "video-platforms", "private-beta", "coming-soon", "steward-story", "veteran-led"],
+      "evidence": ["brand/launch-asset-registry.json", "docs/AAA_LAUNCH_POLISH_EXECUTION_RECEIPT.md"],
+      "notes": ["Only certified runtime captures may be represented as product screens."]
+    },
+    {
+      "id": "store-listing-foundations",
+      "status": "blocked-external",
+      "scope": ["phone", "tablet", "privacy", "accessibility", "passive-replay", "companion-orb", "life-map", "memory-replay", "promo-banner", "preview-storyboard"],
+      "evidence": ["brand/launch-asset-registry.json", "brand/APPROVAL_QUEUE.md"],
+      "blocker": "Final approved brand derivatives, certified runtime captures, platform-owner submission, and legal questionnaire actions remain required."
+    },
+    {
+      "id": "production-custom-domain",
+      "status": "blocked-external",
+      "scope": ["urai.app", "release-fingerprint", "rollback-proof", "strict-public-smoke"],
+      "evidence": ["LifeLoggerAI/urai-spatial#999"],
+      "blocker": "Registrar and DNS recovery plus exact-current-main protected deployment evidence."
+    }
+  ],
+  "nextExecutableActions": [
+    "Complete the exact-head validation and merge of the non-authoritative preview build identity lane.",
+    "Add route-level proof for the candidate HDR skybox or retain its procedural fallback.",
+    "Complete rights and final-mix evidence for ambient audio or retain truthful silence.",
+    "Expand automated matrix coverage for dimensions, alpha, duplicate detection, manifest coverage, responsive screenshots, reduced motion, accessibility, console errors, and failed requests."
+  ]
+}
