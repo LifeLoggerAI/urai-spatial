@@ -1,0 +1,78 @@
+name: Public Brand Derivative Proof
+
+on:
+  pull_request:
+    paths:
+      - 'brand/VISUAL_MASTER_AUTHORITY.md'
+      - 'brand/REJECTED_VISUAL_ALTERNATES.md'
+      - 'brand/public-identity-registry.json'
+      - 'urai-tier1/scripts/generate-public-brand-derivatives.mjs'
+      - 'urai-tier1/tests/public-brand-derivatives-contract.test.mjs'
+      - '.github/workflows/public-brand-derivative-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Prove exact clean head
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Validate authority and generate derivatives
+        working-directory: urai-tier1
+        run: |
+          set -euo pipefail
+          node --test tests/public-brand-derivatives-contract.test.mjs
+          node scripts/generate-public-brand-derivatives.mjs
+      - name: Verify deterministic regeneration
+        working-directory: urai-tier1
+        run: |
+          set -euo pipefail
+          cp -R brand/exports/public "$RUNNER_TEMP/public-first"
+          rm -rf brand/exports/public
+          node scripts/generate-public-brand-derivatives.mjs
+          diff -rq --exclude=manifest.json "$RUNNER_TEMP/public-first" brand/exports/public
+          node - <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const registry = JSON.parse(fs.readFileSync('../brand/public-identity-registry.json', 'utf8'))
+          const out = 'brand/exports/public'
+          const manifest = JSON.parse(fs.readFileSync(path.join(out, 'manifest.json'), 'utf8'))
+          const pngs = registry.derivatives.filter(x => x.format === 'png')
+          for (const item of pngs) {
+            const data = fs.readFileSync(path.join(out, item.file))
+            if (data.readUInt32BE(16) !== item.width || data.readUInt32BE(20) !== item.height) throw new Error(`dimension mismatch ${item.file}`)
+          }
+          if (manifest.providerCalls !== 0 || manifest.spendUsd !== '0.00' || manifest.productionPublished !== false) throw new Error('unsafe manifest boundary')
+          NODE
+      - name: Build retained evidence
+        working-directory: urai-tier1
+        run: |
+          set -euo pipefail
+          mkdir -p brand/evidence
+          cp brand/exports/public/manifest.json brand/evidence/
+          find brand/exports/public -type f -print0 | sort -z | xargs -0 sha256sum > brand/evidence/SHA256SUMS
+          printf 'exact_head=%s\nprovider_calls=0\nspend_usd=0.00\nproduction_published=false\n' "$EXACT_HEAD" > brand/evidence/receipt.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: public-brand-derivatives-${{ env.EXACT_HEAD }}
+          path: |
+            urai-tier1/brand/exports/public
+            urai-tier1/brand/evidence
+          if-no-files-found: error
+          retention-days: 365
