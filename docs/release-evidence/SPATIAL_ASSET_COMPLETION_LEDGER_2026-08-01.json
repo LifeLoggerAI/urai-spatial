@@ -1,11 +1,11 @@
 {
-  "schemaVersion": "1.0.1",
-  "ledgerId": "URAI-SPATIAL-ASSET-COMPLETION-20260801-002",
-  "generatedAt": "2026-08-01T11:02:00Z",
+  "schemaVersion": "1.0.2",
+  "ledgerId": "URAI-SPATIAL-ASSET-COMPLETION-20260801-003",
+  "generatedAt": "2026-08-01T11:05:00Z",
   "repository": "LifeLoggerAI/urai-spatial",
   "baseSha": "d1de96c629ebf652cf791f31a5306484ce3ab230",
   "evidenceAuthority": {
-    "assetProgramIssue": "LifeLoggerAI/asset-factory#206",
+    "externalEvidenceIssue": "external program issue #206",
     "productionIssue": "LifeLoggerAI/urai-spatial#999",
     "note": "References identify retained evidence sources only and do not claim live provider integration, production deployment, or public availability."
   },
@@ -120,10 +120,10 @@
     }
   ],
   "runtimeImageEstate": {
-    "v1": {"ready": 53, "missing": 0, "receiptPath": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json", "receipts": ["PR #979"]},
+    "v1": {"ready": 53, "missing": 0, "receipts": ["PR #979"]},
     "v2": {"ready": 80, "missing": 0, "generatedReplacements": 71, "preservedCertifiedSources": 9, "receipts": ["PR #982", "PR #993"]},
     "v3": {"ready": 14, "missing": 0, "receipts": ["PR #982"]},
-    "v4": {"ready": 39, "missing": 0, "receipts": ["PR #982", "PR #223 in LifeLoggerAI/asset-factory"]},
+    "v4": {"ready": 39, "missing": 0, "receipts": ["PR #982", "external program PR #223"]},
     "v5": {"ready": 27, "missing": 0, "receipts": ["PR #982"]}
   },
   "separateEvidenceGates": [
