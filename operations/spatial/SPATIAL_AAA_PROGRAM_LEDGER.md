@@ -12,9 +12,9 @@ Converge UrAi onto one coherent, persistent, embodied spatial world while preser
 
 ## Exact dependency authority
 
-1. Trusted preview PR #1018 — `00caa02db5dac79e1334a959ce4bd6b4f7d79d7b`.
+1. Trusted preview PR #1018 — repaired exact head `5dd029aea3e63fa307a4c9b8be6122ba65a39ab8`.
 2. Consent-gated geography PR #1013 — `1826d0eacba7eab98f9e844492696dff289028a7`, stacked behind #1018.
-3. Ecosystem governance — this branch, stacked behind #1013.
+3. Ecosystem governance PR #1019 — this branch, stacked behind #1013.
 4. Protected production — final exact `main` only, governed by issue #999.
 
 No workflow or artifact from an earlier head transfers merge authority to a newer head.
@@ -53,11 +53,11 @@ An isolated 3D route that cannot satisfy this contract is not accepted as a spat
 
 ### Wave A — launch-critical dependency closure
 
-- A1: finish and inspect PR #1018 exact-head visual proof;
-- A2: merge #1018 only if the unchanged head is accepted;
+- A1: finish and inspect PR #1018 repaired exact-head matrix and visual proof;
+- A2: merge #1018 only if exact head `5dd029ae…` remains unchanged and accepted;
 - A3: run and inspect the isolated post-merge Firebase preview channel;
 - A4: retarget #1013 to resulting `main`, run the replacement matrix, inspect cloud/privacy/visual evidence;
-- A5: retarget this ecosystem lane to resulting `main`, run the replacement matrix, inspect governance and native doorway evidence.
+- A5: retarget #1019 to resulting `main`, run the replacement matrix, inspect governance and native doorway evidence.
 
 ### Wave B — external production authority
 
@@ -79,7 +79,9 @@ An isolated 3D route that cannot satisfy this contract is not accepted as a spat
 
 ## Superseded failure reconciliation
 
-Former ecosystem head `9dcf54008ea10cb40af06cfe0afcc74069acf815` failed Native Doorway proof only for desktop semantic-pointer Home → Ground while keyboard, mobile touch, and all tested Life Map paths passed. Current preview head `00caa02d…` has a successful Native Doorway workflow, but this branch must still obtain its own replacement exact-head evidence after dependency convergence.
+Former ecosystem head `9dcf54008ea10cb40af06cfe0afcc74069acf815` failed Native Doorway proof only for desktop semantic-pointer Home → Ground while keyboard, mobile touch, and all tested Life Map paths passed.
+
+Former preview head `00caa02db5dac79e1334a959ce4bd6b4f7d79d7b` completed all captured visual and interaction assertions without console, page, or request errors, but its first portal-sequence screenshot exceeded Playwright's default hosted-runner timeout. The repaired head `5dd029ae…` isolates portal and fallback phases in fresh Chromium processes and applies an explicit screenshot allowance without weakening any product assertion. It must obtain its own complete replacement evidence.
 
 ## Acceptance rules
 
