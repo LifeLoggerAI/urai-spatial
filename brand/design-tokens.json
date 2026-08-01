@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0-draft",
+  "status": "pending-visual-master-approval",
+  "names": {
+    "consumer": "UrAi",
+    "portal": "RuAi",
+    "operator": "URAI Labs",
+    "foundation": "URAI Foundation",
+    "ipOwner": "URAI IP Holdings"
+  },
+  "color": {
+    "urai": {
+      "ink": { "hex": "#10131A", "rgb": [16, 19, 26], "hsl": [222, 24, 8] },
+      "paper": { "hex": "#F7F8FB", "rgb": [247, 248, 251], "hsl": [225, 33, 98] },
+      "orb": { "hex": "#7C5CFF", "rgb": [124, 92, 255], "hsl": [252, 100, 68] },
+      "aqua": { "hex": "#4ED7C8", "rgb": [78, 215, 200], "hsl": [173, 63, 57] },
+      "warm": { "hex": "#FFB36A", "rgb": [255, 179, 106], "hsl": [29, 100, 71] },
+      "danger": { "hex": "#C83E4D", "rgb": [200, 62, 77], "hsl": [353, 56, 51] }
+    },
+    "ruai": {
+      "ink": { "hex": "#111827", "rgb": [17, 24, 39], "hsl": [221, 39, 11] },
+      "paper": { "hex": "#F8FAFC", "rgb": [248, 250, 252], "hsl": [210, 40, 98] },
+      "primary": { "hex": "#315B7D", "rgb": [49, 91, 125], "hsl": [207, 44, 34] },
+      "evidence": { "hex": "#2C7A6B", "rgb": [44, 122, 107], "hsl": [168, 47, 33] },
+      "restricted": { "hex": "#8A5A20", "rgb": [138, 90, 32], "hsl": [33, 62, 33] }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "ui": ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+      "display": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+    },
+    "fontWeight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 },
+    "fontSizePx": { "caption": 12, "body": 16, "bodyLarge": 18, "title": 24, "display": 40 }
+  },
+  "spacePx": { "1": 4, "2": 8, "3": 12, "4": 16, "6": 24, "8": 32, "12": 48, "16": 64 },
+  "radiusPx": { "small": 8, "medium": 16, "large": 24, "pill": 999 },
+  "motionMs": { "instant": 0, "fast": 160, "standard": 240, "slow": 420, "ambient": 1200 },
+  "minimumMarkSizePx": { "full": 96, "compact": 48, "orb": 24 },
+  "contrast": {
+    "target": "WCAG-AA",
+    "normalText": 4.5,
+    "largeText": 3,
+    "essentialUI": 3
+  },
+  "notes": [
+    "Color values are an initial reviewable authority and must be visually reconciled against the strongest existing approved master before production promotion.",
+    "No font files are bundled by this token set.",
+    "Gradients are decorative and may not be the sole state indicator."
+  ]
+}
