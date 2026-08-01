@@ -161,16 +161,14 @@ jobs:
           node --test tests/home-entry-chamber-promotion-contract.test.mjs
           node --test tests/spatial-asset-resolution-contract.test.mjs
           cd ..
-          set +e
-          npx --yes @gltf-transform/cli@4.4.2 validate urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb 2>&1 | tee /tmp/home-gltf-validation.txt
-          validator_exit=${PIPESTATUS[0]}
-          set -e
+          validator_exit=0
+          npx --yes @gltf-transform/cli@4.4.2 validate urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb 2>&1 | tee /tmp/home-gltf-validation.txt || validator_exit=$?
           test "$validator_exit" -eq 1
           grep -Fq 'info: No errors found.' /tmp/home-gltf-validation.txt
           grep -Fq 'info: No warnings found.' /tmp/home-gltf-validation.txt
           test "$(grep -c 'UNSUPPORTED_EXTENSION' /tmp/home-gltf-validation.txt)" -eq 1
           test "$(grep -c 'UNUSED_OBJECT' /tmp/home-gltf-validation.txt)" -eq 1
-          grep -Fq "EXT_meshopt_compression" /tmp/home-gltf-validation.txt
+          grep -Fq 'EXT_meshopt_compression' /tmp/home-gltf-validation.txt
           grep -Fq '/buffers/0' /tmp/home-gltf-validation.txt
           test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | cut -d' ' -f1)" = "$HOME_BINARY_SHA256"
 
