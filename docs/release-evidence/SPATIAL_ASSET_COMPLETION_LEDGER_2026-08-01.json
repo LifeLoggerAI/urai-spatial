@@ -4,7 +4,7 @@
   "generatedAt": "2026-08-01T10:31:00Z",
   "repository": "LifeLoggerAI/urai-spatial",
   "baseSha": "8e0754942543d143e4a48a952ac553525928184a",
-  "programAuthority": "LifeLoggerAI/asset-factory#206",
+  "programAuthority": "upstream asset program issue #206",
   "productionAuthority": "LifeLoggerAI/urai-spatial#999",
   "summary": {
     "providerBackedRuntimeImages": {
@@ -120,7 +120,7 @@
     "v1": {
       "ready": 53,
       "missing": 0,
-      "manifest": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json",
+      "manifest": "final V1 spatial handoff manifest",
       "evidence": ["PR #979"]
     },
     "v2": {
@@ -138,7 +138,7 @@
     "v4": {
       "ready": 39,
       "missing": 0,
-      "evidence": ["PR #982", "asset-factory PR #223"]
+      "evidence": ["PR #982", "upstream asset program PR #223"]
     },
     "v5": {
       "ready": 27,
