@@ -74,13 +74,21 @@
     "production-origin-smoke-test-after-protected-deploy",
     "rollback-and-key-rotation-drill"
   ],
+  "providerServiceState": {
+    "mapsJavascriptApiEnabled": true,
+    "geocodingApiEnabled": true,
+    "observedByNonMutatingAuditRun": "30703085166",
+    "observedCandidateSha": "8e6f73fbf8c3df8b1d699d6d18a9b8f04648db53",
+    "serviceEnablementMutationPerformedByThisLane": false
+  },
   "activation": {
-    "mapsJavascriptEnabled": false,
-    "geocodingEnabled": false,
     "restrictedKeysCreated": false,
     "quotasConfigured": false,
     "budgetAlertsConfigured": false,
+    "previewOriginVerified": false,
+    "productionOriginVerified": false,
+    "rollbackAndRotationDrillVerified": false,
     "productionUseAuthorized": false,
-    "reason": "Cloud-console configuration and exact receipts remain external to the repository lane."
+    "reason": "The two governed provider services are enabled, but restricted credentials, quotas, budget alerts, origin proof, rollback, rotation, and production authorization remain unproven."
   }
 }
