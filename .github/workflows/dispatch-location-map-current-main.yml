@@ -14,7 +14,7 @@ permissions:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     steps:
       - name: Dispatch protected current-main production and retain receipt
         uses: actions/github-script@v7
@@ -23,8 +23,16 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const workflow_id = 'spatial-live-deploy.yml';
-            const releaseSha = context.sha;
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            async function resolveCurrentMainSha() {
+              const branch = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+              const sha = branch.data.commit.sha;
+              if (typeof sha !== 'string' || !/^[0-9a-f]{40}$/i.test(sha)) {
+                throw new Error(`Invalid current main SHA: ${sha}`);
+              }
+              return sha;
+            }
 
             async function readLiveFingerprint() {
               for (let attempt = 1; attempt <= 5; attempt += 1) {
@@ -66,8 +74,31 @@ jobs:
               return response.data.workflow_runs;
             }
 
-            const fingerprint = await readLiveFingerprint();
-            const rollbackSha = fingerprint.releaseSha;
+            async function writeReceiptIssue(title, body) {
+              const searched = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue in:title "${title}"`,
+                per_page: 20
+              });
+              const existing = searched.data.items.find((item) => item.title === title) || null;
+              if (existing) {
+                await github.rest.issues.update({ owner, repo, issue_number: existing.number, body });
+                return existing.html_url;
+              }
+              const created = await github.rest.issues.create({ owner, repo, title, body });
+              return created.data.html_url;
+            }
+
+            let releaseSha = await resolveCurrentMainSha();
+            let fingerprint = await readLiveFingerprint();
+            let rollbackSha = fingerprint.releaseSha;
+
+            const confirmedMainSha = await resolveCurrentMainSha();
+            if (confirmedMainSha !== releaseSha) {
+              core.warning(`main advanced while preparing dispatch: ${releaseSha} -> ${confirmedMainSha}`);
+              releaseSha = confirmedMainSha;
+              fingerprint = await readLiveFingerprint();
+              rollbackSha = fingerprint.releaseSha;
+            }
 
             if (rollbackSha === releaseSha) {
               const body = [
@@ -79,18 +110,20 @@ jobs:
                 `- Live fingerprint: \`${rollbackSha}\``,
                 '- Result: already live; duplicate deployment refused'
               ].join('\n');
-              await github.rest.issues.create({
-                owner,
-                repo,
-                title: `Location Map production ${releaseSha.slice(0, 12)} — already live`,
-                body
-              });
+              const title = `Location Map production ${releaseSha.slice(0, 12)} — already live`;
+              const issueUrl = await writeReceiptIssue(title, body);
+              core.notice(`Retained receipt: ${issueUrl}`);
               core.summary.addRaw(body).write();
               return;
             }
 
+            const finalMainSha = await resolveCurrentMainSha();
+            if (finalMainSha !== releaseSha) {
+              throw new Error(`main advanced immediately before dispatch: ${releaseSha} -> ${finalMainSha}; refusing stale deployment`);
+            }
+
             const before = await listProtectedRuns();
-            const excluded = new Set(before.filter((run) => run.head_sha === releaseSha).map((run) => run.id));
+            const excludedRunIds = new Set(before.map((candidate) => candidate.id));
 
             await github.rest.actions.createWorkflowDispatch({
               owner,
@@ -105,19 +138,24 @@ jobs:
             });
 
             let run = null;
-            for (let attempt = 0; attempt < 90 && !run; attempt += 1) {
-              const runs = await listProtectedRuns();
-              run = runs.find((candidate) => candidate.head_sha === releaseSha && !excluded.has(candidate.id)) || null;
-              if (!run) await sleep(10_000);
+            for (let attempt = 0; attempt < 180 && !run; attempt += 1) {
+              await sleep(5_000);
+              const listed = await listProtectedRuns();
+              run = listed.find((candidate) =>
+                candidate.head_sha === releaseSha &&
+                !excludedRunIds.has(candidate.id)
+              ) || null;
             }
-            if (!run) throw new Error(`No protected deployment run appeared for ${releaseSha}`);
+            if (!run) throw new Error(`No new protected DEPLOY_URAI_APP run appeared for ${releaseSha}`);
 
-            for (let attempt = 0; attempt < 240 && run.status !== 'completed'; attempt += 1) {
+            for (let attempt = 0; attempt < 2040 && run.status !== 'completed'; attempt += 1) {
               await sleep(10_000);
               const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
               run = response.data;
             }
-            if (run.status !== 'completed') throw new Error(`Protected deployment run ${run.id} did not complete`);
+            if (run.status !== 'completed') {
+              throw new Error(`Protected deployment run ${run.id} did not complete within the bounded 340-minute receipt window`);
+            }
 
             const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
               owner,
@@ -134,6 +172,7 @@ jobs:
               '- Evidence refresh: PR #988',
               `- Released current main: \`${releaseSha}\``,
               `- Rollback authority: \`${rollbackSha}\``,
+              '- Dispatch identity: newly created by this dispatcher after snapshotting all prior workflow run IDs',
               `- Protected run: ${run.html_url}`,
               `- Conclusion: \`${run.conclusion || 'none'}\``,
               '',
@@ -141,12 +180,9 @@ jobs:
               ...jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`)
             ].join('\n');
 
-            await github.rest.issues.create({
-              owner,
-              repo,
-              title: `Location Map production ${releaseSha.slice(0, 12)} — ${run.conclusion || 'none'}`,
-              body
-            });
+            const title = `Location Map production ${releaseSha.slice(0, 12)} — ${run.conclusion || 'none'}`;
+            const issueUrl = await writeReceiptIssue(title, body);
+            core.notice(`Retained receipt: ${issueUrl}`);
             core.summary.addRaw(body).write();
 
             if (run.conclusion !== 'success') {
