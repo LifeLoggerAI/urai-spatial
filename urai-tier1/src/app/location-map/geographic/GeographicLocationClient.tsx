@@ -30,13 +30,17 @@ function downloadJson(value: unknown, filename: string) {
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
+  anchor.hidden = true
+  document.body.appendChild(anchor)
   anchor.click()
-  URL.revokeObjectURL(url)
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 export default function GeographicLocationClient() {
   const [permission, setPermission] = useState<GeographicPermissionState>('idle')
   const [consented, setConsented] = useState(false)
+  const [storageAvailable, setStorageAvailable] = useState(true)
   const [coordinate, setCoordinate] = useState<GeographicCoordinate | null>(null)
   const [precision, setPrecision] = useState<GeographicPrecision>('approximate')
   const [title, setTitle] = useState('Current place')
@@ -49,6 +53,8 @@ export default function GeographicLocationClient() {
       setConsented(localStorage.getItem(LOCATION_CONSENT_KEY) === 'granted')
       setPins(parsePins(localStorage.getItem(LOCATION_PINS_KEY)))
     } catch {
+      setStorageAvailable(false)
+      setConsented(false)
       setMessage('Private browser storage is unavailable. No location data can be retained on this device.')
     }
   }, [])
@@ -62,11 +68,43 @@ export default function GeographicLocationClient() {
     return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
   }, [])
 
+  useEffect(() => {
+    if (!('permissions' in navigator) || typeof navigator.permissions.query !== 'function') return
+    let active = true
+    let status: PermissionStatus | undefined
+    const syncPermission = () => {
+      if (!active || !status) return
+      if (status.state === 'denied') {
+        setConsented(false)
+        setCoordinate(null)
+        setPermission('revoked')
+        setMessage('Browser location permission is denied or revoked. No coordinate is retained in memory.')
+      } else if (status.state === 'prompt') {
+        setPermission((state) => state === 'granted' ? 'dismissed' : state)
+      }
+    }
+    navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+      if (!active) return
+      status = result
+      syncPermission()
+      status.addEventListener('change', syncPermission)
+    }).catch(() => undefined)
+    return () => {
+      active = false
+      status?.removeEventListener('change', syncPermission)
+    }
+  }, [])
+
   const displayCoordinate = useMemo(() => coordinate ? applyPrecision(coordinate, precision) : null, [coordinate, precision])
 
   const requestLocation = () => {
+    if (!storageAvailable) {
+      setPermission('error')
+      setMessage('Location remains off because private browser storage is unavailable. Nothing was requested or stored.')
+      return
+    }
     if (!('geolocation' in navigator)) {
-      setPermission('unavailable')
+      setPermission('unsupported')
       setMessage('This browser does not provide geolocation. The symbolic Life Map remains available.')
       return
     }
@@ -83,7 +121,16 @@ export default function GeographicLocationClient() {
         setMessage('The browser returned an invalid coordinate. Nothing was stored.')
         return
       }
-      try { localStorage.setItem(LOCATION_CONSENT_KEY, 'granted') } catch { /* fail closed below */ }
+      try {
+        localStorage.setItem(LOCATION_CONSENT_KEY, 'granted')
+      } catch {
+        setStorageAvailable(false)
+        setConsented(false)
+        setCoordinate(null)
+        setPermission('error')
+        setMessage('Consent could not be retained privately, so UrAi discarded the coordinate and kept location off.')
+        return
+      }
       setConsented(true)
       setCoordinate(next)
       setPermission('granted')
@@ -91,12 +138,18 @@ export default function GeographicLocationClient() {
     }, (error) => {
       const state = geolocationErrorState(error.code)
       setPermission(state)
-      setMessage(state === 'denied' ? 'Location permission was denied. No coordinates were stored.' : state === 'unavailable' ? 'Location is unavailable right now. No coordinates were stored.' : 'The location request failed. No coordinates were stored.')
+      setMessage(state === 'denied'
+        ? 'Location permission was denied or dismissed. No coordinates were stored.'
+        : state === 'unavailable'
+          ? 'Location is unavailable right now. No coordinates were stored.'
+          : state === 'timeout'
+            ? 'The location request timed out. No coordinates were stored.'
+            : 'The location request failed. No coordinates were stored.')
     }, { enableHighAccuracy: false, timeout: 12_000, maximumAge: 60_000 })
   }
 
   const savePin = () => {
-    if (!coordinate || !consented) return
+    if (!coordinate || !consented || !storageAvailable) return
     try {
       const pin = createPin({ title, coordinate, readablePlace: readablePlace || 'Unnamed private place', precision })
       const next = [pin, ...pins]
@@ -109,7 +162,7 @@ export default function GeographicLocationClient() {
   }
 
   const revoke = () => {
-    try { localStorage.removeItem(LOCATION_CONSENT_KEY) } catch { /* no-op */ }
+    try { localStorage.removeItem(LOCATION_CONSENT_KEY) } catch { setStorageAvailable(false) }
     setConsented(false)
     setCoordinate(null)
     setPermission('revoked')
@@ -117,9 +170,14 @@ export default function GeographicLocationClient() {
   }
 
   const deleteAll = () => {
-    try { localStorage.removeItem(LOCATION_PINS_KEY) } catch { /* no-op */ }
-    setPins([])
-    setMessage('All locally stored geographic memory pins were deleted.')
+    try {
+      localStorage.removeItem(LOCATION_PINS_KEY)
+      setPins([])
+      setMessage('All locally stored geographic memory pins were deleted.')
+    } catch {
+      setStorageAvailable(false)
+      setMessage('Private browser storage is unavailable, so deletion could not be verified on this device.')
+    }
   }
 
   return <main className="geoLayer" data-location-layer="geographic-support" data-permission-state={permission}>
@@ -131,7 +189,7 @@ export default function GeographicLocationClient() {
     <section className="geoConsent" aria-labelledby="geo-consent-title">
       <p id="geo-consent-title">This layer never starts background collection. Browser location is requested only after you press the button below.</p>
       <div className="geoActions">
-        <button type="button" onClick={requestLocation} disabled={permission === 'requesting' || permission === 'offline'}>{permission === 'requesting' ? 'Requesting…' : 'Use current location'}</button>
+        <button type="button" onClick={requestLocation} disabled={permission === 'requesting' || permission === 'offline' || !storageAvailable}>{permission === 'requesting' ? 'Requesting…' : 'Use current location'}</button>
         <button type="button" onClick={revoke} disabled={!consented}>Revoke UrAi location consent</button>
       </div>
       <p role="status" aria-live="polite">{message}</p>
@@ -148,7 +206,7 @@ export default function GeographicLocationClient() {
       <label>Label<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
       <label>Readable place<input value={readablePlace} onChange={(event) => setReadablePlace(event.target.value)} placeholder="Neighborhood, city, or private label" /></label>
       <fieldset><legend>Stored precision</legend>{(Object.keys(precisionLabels) as GeographicPrecision[]).map((value) => <label key={value}><input type="radio" name="precision" checked={precision === value} onChange={() => setPrecision(value)} />{precisionLabels[value]}</label>)}</fieldset>
-      <button type="button" onClick={savePin} disabled={!coordinate || !consented}>Save memory pin</button>
+      <button type="button" onClick={savePin} disabled={!coordinate || !consented || !storageAvailable}>Save memory pin</button>
     </section>
 
     <section className="geoPins" aria-labelledby="geo-pins-title">
