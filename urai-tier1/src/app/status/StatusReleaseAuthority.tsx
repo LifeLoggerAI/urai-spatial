@@ -168,14 +168,14 @@ export default function StatusReleaseAuthority() {
           {state.kind === 'loading' && (
             <div className="rounded-2xl border border-cyan-100/15 bg-cyan-100/[0.06] p-5">
               <strong className="block text-2xl">Reading protected fingerprint…</strong>
-              <p className="mt-3 text-sm">No live or candidate SHA is displayed while authority is unresolved.</p>
+              <p className="mt-3 text-sm">The protected production release SHA is hidden while authority is unresolved; the separate embedded build identity remains diagnostic-only.</p>
             </div>
           )}
           {state.kind === 'preview' && (
             <div className="rounded-2xl border border-violet-200/25 bg-violet-200/[0.08] p-5">
               <span className="text-xs font-black uppercase tracking-[0.18em] text-violet-200">Tracked {totalRoutes} public routes</span>
               <strong className="mt-2 block text-2xl">Production fingerprint is read only on urai.app.</strong>
-              <p className="mt-3 text-sm">This proof origin does not request or substitute a live or candidate SHA.</p>
+              <p className="mt-3 text-sm">This proof origin does not request or substitute the protected production fingerprint; any embedded build identity is non-authoritative.</p>
             </div>
           )}
           {state.kind === 'error' && (
