@@ -7,11 +7,20 @@ type PreviewBuildIdentityProps = {
   shortSha: string
 }
 
+function isAllowedPreviewHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase()
+  return normalized === 'localhost'
+    || normalized === '127.0.0.1'
+    || normalized === '[::1]'
+    || normalized.endsWith('.web.app')
+    || normalized.endsWith('.firebaseapp.com')
+}
+
 export default function PreviewBuildIdentity({ fullSha, shortSha }: PreviewBuildIdentityProps) {
   const [isPreviewOrigin, setIsPreviewOrigin] = useState(false)
 
   useEffect(() => {
-    setIsPreviewOrigin(window.location.origin !== 'https://urai.app')
+    setIsPreviewOrigin(isAllowedPreviewHostname(window.location.hostname))
   }, [])
 
   if (!isPreviewOrigin) return null
@@ -32,7 +41,7 @@ export default function PreviewBuildIdentity({ fullSha, shortSha }: PreviewBuild
           </code>
         </div>
         <p className="max-w-2xl text-xs font-semibold leading-5 text-violet-50/75">
-          This commit identity is exposed only on non-production preview origins for diagnostics. It never substitutes for the protected urai.app release fingerprint and grants no production authority.
+          This commit identity is exposed only on allowlisted non-production preview origins for diagnostics. It never substitutes for the protected urai.app release fingerprint and grants no production authority.
         </p>
       </div>
     </aside>
