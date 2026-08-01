@@ -23,5 +23,12 @@
   "receiptPath": "operations/assets/production-receipts/home-entry-chamber-v1.json",
   "paidExecutionAuthorized": true,
   "deploymentAuthorized": true,
-  "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed."
+  "metadataCorrection": {
+    "field": "targetBoundsMeters[0]",
+    "previousValue": 18,
+    "correctedValue": 18.69,
+    "reason": "Aligns the governed target contract with the exact independently reviewed production binary; no binary, runtime, route, license, spend, or deployment authority changed.",
+    "approvedAt": "2026-08-01T03:08:00-05:00"
+  },
+  "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed. This follow-up metadata correction aligns the manifest X-axis target to the reviewed 18.69m binary bound without altering the asset."
 }
