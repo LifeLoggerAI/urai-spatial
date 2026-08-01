@@ -2,10 +2,21 @@
 
 import { useGLTF } from "@react-three/drei";
 import type { ThreeElements } from "@react-three/fiber";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { resolvePromotedUraiSpatialAssetPath } from "../assets/promotedAssetResolver";
 import SpatialSensoryLayer from "./SpatialSensoryLayer";
 
 type GroupProps = ThreeElements["group"];
+
+type AssetErrorBoundaryProps = { children: ReactNode; fallback: ReactNode };
+type AssetErrorBoundaryState = { failed: boolean };
+
+class AssetErrorBoundary extends Component<AssetErrorBoundaryProps, AssetErrorBoundaryState> {
+  state: AssetErrorBoundaryState = { failed: false };
+  static getDerivedStateFromError(): AssetErrorBoundaryState { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.warn("URAI spatial asset load failed; rendering governed fallback.", error, info.componentStack); }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
 
 type AssetModelProps = GroupProps & {
   assetId: string;
@@ -27,6 +38,19 @@ function AssetModel({ assetId, name, ...props }: AssetModelProps) {
   return <primitive object={gltf.scene.clone(true)} name={name} data-urai-asset-id={assetId} data-urai-asset-path={src} {...props} />;
 }
 
+function HomeEntryChamber(props: GroupProps) {
+  const proofFallback = (
+    <AssetErrorBoundary fallback={<group name="entry-chamber-empty-fallback" data-urai-asset-state="unavailable" />}>
+      <AssetModel assetId="home-entry-chamber-proof-fallback" name="entry-chamber-proof-fallback" {...props} />
+    </AssetErrorBoundary>
+  );
+  return (
+    <AssetErrorBoundary fallback={proofFallback}>
+      <AssetModel assetId="home-entry-chamber-model-v1" name="entry-chamber-shell-v1" {...props} />
+    </AssetErrorBoundary>
+  );
+}
+
 export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
   const showHome = phase === "HOME" || phase === "ASCENT" || phase === "LIFEMAP";
   const showGround = phase === "GROUND" || phase === "HOME";
@@ -41,7 +65,7 @@ export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
       <SpatialSensoryLayer />
       {showHome && (
         <group name="entry-chamber-assets">
-          <AssetModel assetId="home-entry-chamber-model-v1" name="entry-chamber-shell-v1" position={[0, -0.08, -2.4]} scale={[0.72, 0.72, 0.72]} />
+          <HomeEntryChamber position={[0, -0.08, -2.4]} scale={[0.72, 0.72, 0.72]} />
           <AssetModel assetId="home-entry-floor-ring-proof-fallback" name="entry-floor-ring-v1" position={[0, -0.03, -0.55]} scale={[0.94, 0.94, 0.94]} />
           <AssetModel assetId="urai-orb-avatar-glb-v1" name="central-orb-v1" position={[-0.52, 1.05, 0]} scale={[0.44, 0.44, 0.44]} />
           <AssetModel assetId="portal-ring-master-glb-v1" name="entry-ground-portal-ring-v1" position={[0, -0.24, -4.8]} rotation={[Math.PI / 2, 0, 0]} scale={[0.52, 0.52, 0.52]} />

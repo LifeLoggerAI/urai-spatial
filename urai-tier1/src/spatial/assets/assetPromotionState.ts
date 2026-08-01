@@ -10,7 +10,6 @@ export const uraiPromotedAssetIds = new Set<string>([
 
 export const uraiPromotedAssetPathOverrides: Readonly<Record<string, string>> = {
   'urai-orb-avatar-glb-v1': '/assets/urai/generated/models/urai-orb-avatar-v1.gltf',
-  'home-entry-chamber-model-v1': '/assets/urai/generated/models/home-entry-chamber-v1.gltf',
   'ground-world-terrain-glb-v1': '/assets/urai/generated/models/ground-world-terrain-v1.gltf',
   'life-map-memory-star-glb-v1': '/assets/urai/generated/models/life-map-memory-star-v1.gltf',
   'focus-memory-chamber-glb-v1': '/assets/urai/generated/models/focus-memory-chamber-v1.gltf',

@@ -20,14 +20,14 @@ export const worldAssetManifest = {
       slotId: 'home.overlookPlatform',
       label: 'URAI Home Entry Chamber',
       finalModel: resolved('home-entry-chamber-model-v1'),
-      status: 'fallback',
-      notes: 'Canonical manifest selects the reviewed Home model only when ready; otherwise it resolves deterministic proof geometry.',
+      status: 'ready',
+      notes: 'Reviewed Home sanctuary is selected; deterministic proof geometry remains available through the load-failure boundary.',
     },
     skylineCore: {
       slotId: 'home.skylineCore',
       label: 'Home Environment Extension',
       finalModel: resolved('home-entry-chamber-model-v1'),
-      status: 'fallback',
+      status: 'ready',
       notes: 'No independent /assets/models skyline authority remains. Future skyline work must enter the selected generated namespace.',
     },
     groundAperture: {
