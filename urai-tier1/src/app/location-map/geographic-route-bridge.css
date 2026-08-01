@@ -1,0 +1,54 @@
+.locationMapGeographicBridge {
+  position: fixed;
+  top: clamp(5.75rem, 10vh, 7rem);
+  right: clamp(0.75rem, 2vw, 1.75rem);
+  z-index: 120;
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(16rem, calc(100vw - 1.5rem));
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(175, 238, 255, 0.22);
+  border-radius: 1rem;
+  background: rgba(3, 13, 25, 0.82);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(18px);
+}
+
+.locationMapGeographicBridge span {
+  color: rgba(220, 248, 255, 0.72);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.locationMapGeographicBridge a {
+  color: #ecfdff;
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.locationMapGeographicBridge a:focus-visible {
+  outline: 3px solid #8eeaff;
+  outline-offset: 4px;
+  border-radius: 0.35rem;
+}
+
+@media (max-width: 760px) {
+  .locationMapGeographicBridge {
+    top: auto;
+    right: 0.75rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem);
+    min-width: 0;
+    max-width: calc(100vw - 1.5rem);
+    padding: 0.55rem 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .locationMapGeographicBridge {
+    scroll-behavior: auto;
+  }
+}
