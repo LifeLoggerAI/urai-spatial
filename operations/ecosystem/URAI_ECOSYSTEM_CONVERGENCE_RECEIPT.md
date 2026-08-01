@@ -19,12 +19,14 @@ Production authority: issue `#999`
 
 | Lane | Authority | Exact head at rebuild | Boundary |
 |---|---|---|---|
-| Trusted isolated preview | PR #1018 | `00caa02db5dac79e1334a959ce4bd6b4f7d79d7b` | must merge and retain accepted exact-head visual proof first |
+| Trusted isolated preview | PR #1018 | `5dd029aea3e63fa307a4c9b8be6122ba65a39ab8` | repaired replacement matrix and accepted exact-head visual proof required before merge |
 | Consent-gated geography | PR #1013 | `1826d0eacba7eab98f9e844492696dff289028a7` | stacked behind #1018; provider services observed enabled but product use remains unauthorized |
-| Ecosystem governance | this branch | exact branch head resolved by GitHub after rebuild | stacked behind #1013; complete replacement matrix required |
+| Ecosystem governance | PR #1019 | exact branch head resolved by GitHub after rebuild | stacked behind #1013; complete replacement matrix required |
 | Protected production | issue #999 | exact final `main` only | DNS, fingerprint, rollback, public smoke, and acceptance remain mandatory |
 
-The former PR #1016 head `9dcf54008ea10cb40af06cfe0afcc74069acf815` is superseded evidence only. It diverged before preview and geography and failed Native Doorway proof for desktop semantic-pointer Home → Ground. Current preview authority has a successful Native Doorway workflow, but this replacement branch must still prove its own unchanged exact head.
+The former PR #1016 head `9dcf54008ea10cb40af06cfe0afcc74069acf815` is superseded evidence only. It diverged before preview and geography and failed Native Doorway proof for desktop semantic-pointer Home → Ground.
+
+The former preview head `00caa02db5dac79e1334a959ce4bd6b4f7d79d7b` is also diagnostic only. Its retained visual receipt proved all completed captures and interactions clean, but the first portal-sequence screenshot exceeded the default hosted-runner timeout. PR #1018 advanced to `5dd029ae…` with fresh-browser isolation and an explicit screenshot allowance; all replacement evidence must come from that newer exact head.
 
 ## Provider-state truth
 
@@ -111,9 +113,9 @@ Professional data access, payment/payout systems, institutional licensing, nativ
 
 ## Merge order
 
-1. Accept and merge exact PR #1018 preview authority.
+1. Accept and merge exact PR #1018 preview authority only after its repaired replacement matrix and artifacts are accepted.
 2. Retarget PR #1013 to resulting `main`, rerun and inspect replacement evidence, then merge only if unchanged and accepted.
-3. Retarget this ecosystem branch to resulting `main`, rerun and inspect the complete replacement matrix, then merge only if unchanged and accepted.
+3. Retarget PR #1019 to resulting `main`, rerun and inspect the complete replacement matrix, then merge only if unchanged and accepted.
 4. Restore registrar and DNS authority.
 5. Dispatch exactly one protected production run from exact current `main`.
 
