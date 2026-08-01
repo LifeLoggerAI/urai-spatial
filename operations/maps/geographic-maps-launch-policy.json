@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "urai-geographic-maps-policy-1",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "firebaseProject": "urai-4dc1d",
+    "legacyProjectProhibitedUnlessReauthorized": "urai-web-frontend"
+  },
+  "productBoundary": {
+    "symbolicLifeMapRemainsPrimary": true,
+    "geographicLayerIsSupporting": true,
+    "backgroundCollectionBeforeConsent": false,
+    "preciseLocationAnalytics": false
+  },
+  "apiAllowlist": [
+    "maps-javascript-api",
+    "geocoding-api"
+  ],
+  "apiDenylistUntilDirectlyRequired": [
+    "places-api-new",
+    "routes-api"
+  ],
+  "credentials": {
+    "separateKeys": [
+      "development-browser",
+      "preview-browser",
+      "production-browser",
+      "server-geocoding"
+    ],
+    "browserKeysMustUseHttpReferrerRestrictions": true,
+    "serverCredentialMustNotBeExposedToBrowser": true,
+    "apiRestrictionsRequired": true,
+    "unrestrictedKeysAllowed": false,
+    "repositorySecretsAllowed": false,
+    "expectedEnvironmentVariables": [
+      "NEXT_PUBLIC_URAI_MAPS_BROWSER_KEY",
+      "URAI_GEOCODING_SERVER_CREDENTIAL"
+    ]
+  },
+  "referrerPolicy": {
+    "development": [
+      "http://localhost:*/*",
+      "http://127.0.0.1:*/*"
+    ],
+    "preview": [
+      "https://*.web.app/*",
+      "https://*.firebaseapp.com/*"
+    ],
+    "production": [
+      "https://urai.app/*",
+      "https://www.urai.app/*"
+    ]
+  },
+  "initialCostControls": {
+    "monthlyBudgetUsd": 50,
+    "budgetAlertPercentages": [
+      50,
+      75,
+      90,
+      100
+    ],
+    "dailyRequestCaps": {
+      "maps-javascript-api": 2500,
+      "geocoding-api": 1000
+    },
+    "increaseOnlyAfterMeasuredDemand": true
+  },
+  "requiredReceiptsBeforeProductionUse": [
+    "project-id-verification",
+    "enabled-api-list",
+    "key-name-and-restriction-summary-without-secret-values",
+    "quota-configuration",
+    "budget-and-alert-configuration",
+    "preview-origin-smoke-test",
+    "production-origin-smoke-test-after-protected-deploy",
+    "rollback-and-key-rotation-drill"
+  ],
+  "providerServiceState": {
+    "mapsJavascriptApiEnabled": true,
+    "geocodingApiEnabled": true,
+    "observedByNonMutatingAuditRun": "30703085166",
+    "observedCandidateSha": "8e6f73fbf8c3df8b1d699d6d18a9b8f04648db53",
+    "serviceEnablementMutationPerformedByThisLane": false
+  },
+  "activation": {
+    "restrictedKeysCreated": false,
+    "quotasConfigured": false,
+    "budgetAlertsConfigured": false,
+    "previewOriginVerified": false,
+    "productionOriginVerified": false,
+    "rollbackAndRotationDrillVerified": false,
+    "productionUseAuthorized": false,
+    "reason": "The two governed provider services are enabled, but restricted credentials, quotas, budget alerts, origin proof, rollback, rotation, and production authorization remain unproven."
+  }
+}
