@@ -12,6 +12,7 @@ function read(relativePath) {
 const manifest = read('src/spatial/assets/assetManifest.ts')
 const worldManifest = read('src/spatial/assets/worldAssetManifest.ts')
 const assetLayer = read('src/spatial/scene/SpatialWorldAssetLayer.tsx')
+const promotedResolver = read('src/spatial/assets/promotedAssetResolver.ts')
 
 test('canonical manifest separates selected and proof fallback namespaces', () => {
   assert.match(manifest, /const generatedRoot = '\/assets\/urai\/generated'/)
@@ -36,8 +37,10 @@ test('resolver chooses selected assets only when ready and otherwise uses explic
   assert.match(manifest, /source: 'unavailable'/)
 })
 
-test('active spatial model layer resolves asset ids instead of hardcoded paths', () => {
-  assert.match(assetLayer, /resolveUraiSpatialAssetPath/)
+test('active spatial model layer resolves asset ids through the governed promotion resolver', () => {
+  assert.match(assetLayer, /resolvePromotedUraiSpatialAssetPath/)
+  assert.match(promotedResolver, /isUraiAssetPromoted/)
+  assert.match(promotedResolver, /uraiPromotedAssetPathOverrides/)
   assert.match(assetLayer, /assetId="home-entry-chamber-model-v1"/)
   assert.match(assetLayer, /assetId="ground-world-terrain-glb-v1"/)
   assert.match(assetLayer, /assetId="life-map-memory-star-glb-v1"/)
