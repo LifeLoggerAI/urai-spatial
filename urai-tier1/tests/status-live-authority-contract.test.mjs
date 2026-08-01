@@ -17,6 +17,16 @@ test('Status server shell remains neutral until the protected fingerprint valida
   assert.doesNotMatch(page, /pending-current-main-evidence/)
 })
 
+test('Status exposes embedded preview identity without granting production authority', () => {
+  assert.match(page, /NEXT_PUBLIC_URAI_BUILD_SHA/)
+  assert.match(page, /data-preview-build-identity=\{embeddedBuildSha\}/)
+  assert.match(page, /data-testid="urai-embedded-build-identity"/)
+  assert.match(page, /Embedded build identity · non-authoritative/)
+  assert.match(page, /does not grant production certification/)
+  assert.match(page, /only the protected urai\.app release fingerprint can do that/)
+  assert.doesNotMatch(page, /data-production-certification="verified"/)
+})
+
 test('Canonical Status page is not covered by the legacy autonomous realm layer', () => {
   assert.match(legacyLayer, /Status are owned exclusively by their canonical route clients/)
   assert.doesNotMatch(legacyLayer, /pathname\.startsWith\("\/status"\)/)
@@ -37,8 +47,8 @@ test('Only canonical production requests and validates the complete protected fi
   assert.match(authority, /item\.liveUrl !== 'https:\/\/urai\.app'/)
   assert.match(authority, /item\.deploymentScope !== 'hosting-only'/)
   assert.match(authority, /Workflow run ID is invalid/)
-  assert.match(authority, /does not request or substitute a live or candidate SHA/)
-  assert.match(authority, /No live or candidate SHA is displayed while authority is unresolved/)
+  assert.match(authority, /does not request or substitute the protected production fingerprint/)
+  assert.match(authority, /protected production release SHA is hidden while authority is unresolved/)
   assert.match(authority, /role="alert"/)
 })
 
