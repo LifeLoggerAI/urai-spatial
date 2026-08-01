@@ -32,6 +32,7 @@ env:
   EXPECTED_REPOSITORY: LifeLoggerAI/urai-spatial
   EXPECTED_PROJECT_ID: urai-4dc1d
   TARGET_SERVICES: maps-backend.googleapis.com geocoding-backend.googleapis.com
+  CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   audit-existing-firebase-bridge:
@@ -43,6 +44,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
@@ -52,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Authenticate with existing Firebase deployment identity
@@ -86,7 +88,7 @@ jobs:
             mutationPerformed: false,
             projectId: process.env.EXPECTED_PROJECT_ID,
             repository: process.env.GITHUB_REPOSITORY,
-            candidateSha: process.env.GITHUB_SHA,
+            candidateSha: process.env.CANDIDATE_SHA,
             activeAccount: process.env.ACTIVE_ACCOUNT,
             governedServices: process.env.TARGET_SERVICES.split(' '),
             enabledGovernedServices: enabled,
@@ -99,7 +101,7 @@ jobs:
       - name: Retain non-mutating cloud audit receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-maps-cloud-audit-${{ github.sha }}
+          name: urai-maps-cloud-audit-${{ env.CANDIDATE_SHA }}
           path: |
             maps-cloud-audit.json
             enabled-governed.txt
@@ -118,6 +120,7 @@ jobs:
       - name: Checkout exact main candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ env.CANDIDATE_SHA }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
@@ -135,7 +138,7 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
           test "$GITHUB_REF" = 'refs/heads/main'
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
           case "$OPERATION:$CONFIRMATION" in
             audit:AUDIT_URAI_MAPS|enable:ENABLE_URAI_MAPS_APIS) ;;
@@ -219,7 +222,7 @@ jobs:
             authMode: process.env.AUTH_MODE,
             projectId: process.env.EXPECTED_PROJECT_ID,
             repository: process.env.GITHUB_REPOSITORY,
-            candidateSha: process.env.GITHUB_SHA,
+            candidateSha: process.env.CANDIDATE_SHA,
             activeAccount: process.env.ACTIVE_ACCOUNT,
             governedServices: process.env.TARGET_SERVICES.split(' '),
             enabledBefore: lines('enabled-before-governed.txt'),
@@ -236,7 +239,7 @@ jobs:
             echo
             echo "- Operation: $OPERATION"
             echo "- Project: $EXPECTED_PROJECT_ID"
-            echo "- Exact SHA: \`$GITHUB_SHA\`"
+            echo "- Exact SHA: \`$CANDIDATE_SHA\`"
             echo "- Authentication mode: $AUTH_MODE"
             echo '- Production deployment: **false**'
             echo '- API key creation: **false**'
@@ -245,7 +248,7 @@ jobs:
       - name: Retain exact cloud bootstrap receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-maps-cloud-bootstrap-${{ github.sha }}-${{ inputs.operation }}
+          name: urai-maps-cloud-bootstrap-${{ env.CANDIDATE_SHA }}-${{ inputs.operation }}
           path: |
             maps-cloud-bootstrap-receipt.json
             enabled-before-governed.txt
