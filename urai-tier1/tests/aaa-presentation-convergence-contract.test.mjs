@@ -80,7 +80,7 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
     if (stream.status === 'separate-physical-gate') {
       assert.ok(physicalGateWorkstreams.has(stream.id), `non-physical workstream assigned to physical gate: ${stream.id}`)
       const blocker = assertSubstantiveProse(stream.blocker, 40, `physical-device blocker: ${stream.id}`)
-      assert.match(blocker, /device|hardware|physical|quest|xr|ar/i, `physical gate lacks device-specific blocker: ${stream.id}`)
+      assert.match(blocker, /\b(?:device|hardware|physical|quest|xr|ar)\b/i, `physical gate lacks device-specific blocker: ${stream.id}`)
     }
 
     if (stream.status === 'accepted') {
@@ -131,6 +131,7 @@ function validateEvidenceReference(streamId, reference) {
     const resolved = path.resolve(repositoryRoot, reference)
     assert.ok(resolved.startsWith(`${repositoryRoot}${path.sep}`), `evidence path escapes repository: ${streamId}`)
     assert.ok(fs.existsSync(resolved), `missing evidence path: ${streamId}: ${reference}`)
+    assert.ok(fs.statSync(resolved).isFile(), `evidence path must identify a regular file: ${streamId}: ${reference}`)
     return
   }
 
