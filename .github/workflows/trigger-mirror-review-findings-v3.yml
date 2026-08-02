@@ -14,7 +14,7 @@ concurrency:
 
 env:
   TARGET_BRANCH: feat/mirror-embodied-spatial-realm-v2-20260801
-  REVIEWED_HEAD: 6f6859be35c9cf0a4603bf6cff879ad4c799ed3f
+  REVIEWED_HEAD: 33e57b954cd4b4b32561573ae7c8b3d0bb754161
   EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
 
 jobs:
@@ -46,21 +46,16 @@ jobs:
           test "${#changed[@]}" -eq 1
           test "${changed[0]}" = '.github/workflows/trigger-mirror-review-findings-v3.yml'
 
-      - name: Correct generated fixture contract literal
+      - name: Verify reviewed generator is current
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('scripts/repair-mirror-review-findings.py')
-          text = path.read_text()
-          old = '''assert.equal(bareEntrySource.includes("const ACCEPTANCE_FIXTURES_ENABLED = process.env.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1'"), true)'''
-          new = '''assert.equal(bareEntrySource.includes("const ACCEPTANCE_FIXTURES_ENABLED = process.env.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1';"), true)'''
-          count = text.count(old)
-          if count != 1:
-              raise AssertionError(f'expected one generated fixture assertion, found {count}')
-          path.write_text(text.replace(old, new, 1))
-          PY
+          set -euo pipefail
+          grep -F "assert.match(bareEntrySource, /ACCEPTANCE_FIXTURES_ENABLED && Boolean" scripts/repair-mirror-review-findings.py
+          grep -F "assert.match(proofWorkflowSource, /NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'/)" scripts/repair-mirror-review-findings.py
+          if grep -F "assert.equal(bareEntrySource.includes(\"const ACCEPTANCE_FIXTURES_ENABLED" scripts/repair-mirror-review-findings.py; then
+            echo 'Obsolete exact source-literal assertion remains in reviewed generator' >&2
+            exit 1
+          fi
 
       - name: Apply reviewed source corrections
         run: python scripts/repair-mirror-review-findings.py
