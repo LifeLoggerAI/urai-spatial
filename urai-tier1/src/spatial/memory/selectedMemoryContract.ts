@@ -94,6 +94,7 @@ export type SelectedMemoryResult =
   | { status: 'unavailable' | 'deleted' | 'unauthorized' | 'corrupt'; memory: null; message: string }
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,120}$/
+const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
@@ -101,9 +102,11 @@ function stringValue(value: unknown) {
 
 function isoDateValue(value: unknown) {
   const text = stringValue(value)
-  if (!text) return null
+  if (!text || !CANONICAL_UTC_TIMESTAMP.test(text)) return null
   const timestamp = Date.parse(text)
-  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null
+  if (!Number.isFinite(timestamp)) return null
+  const canonical = new Date(timestamp).toISOString()
+  return canonical === text ? canonical : null
 }
 
 function numberValue(value: unknown, fallback: number) {
