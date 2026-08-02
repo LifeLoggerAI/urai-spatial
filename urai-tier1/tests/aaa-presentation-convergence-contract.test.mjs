@@ -37,8 +37,8 @@ const allowedStatuses = new Set([
 const humanGateWorkstreams = new Set(['brand-platform-outputs', 'private-memory-film'])
 const externalGateWorkstreams = new Set(['final-exact-release-capture', 'finite-time'])
 const physicalGateWorkstreams = new Set(['physical-xr-certification'])
-const humanGatePattern = /^Human gate:\s+\S/i
-const externalGatePattern = /^External gate:\s+\S/i
+const humanGatePattern = /^Human gate:\s+\S/
+const externalGatePattern = /^External gate:\s+\S/
 const workflowReferencePattern = /^github-actions:[1-9]\d*$/
 const digestReferencePattern = /^sha256:[a-f0-9]{64}$/
 
