@@ -41,6 +41,11 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
   assert.equal(authority.repository, 'LifeLoggerAI/urai-spatial')
   assert.equal(authority.authorityIssue, 'LifeLoggerAI/urai-spatial#1030')
 
+  const declaredStatuses = authority.statusVocabulary
+  assert.ok(Array.isArray(declaredStatuses), 'status vocabulary must be an array')
+  assert.equal(new Set(declaredStatuses).size, declaredStatuses.length, 'duplicate status vocabulary entries')
+  assert.deepEqual([...declaredStatuses].sort(), [...allowedStatuses].sort(), 'status vocabulary must match allowed statuses exactly')
+
   assert.equal(authority.acceptedEstate.runtimeImages.ready, 213)
   assert.equal(authority.acceptedEstate.runtimeImages.missing, 0)
   assert.equal(authority.acceptedEstate.launchCriticalModels.promoted, 7)
@@ -77,7 +82,7 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
     if (stream.status === 'intentionally-fallback') {
       const omission = assertSubstantiveProse(stream.omission, 20, `omission reason: ${stream.id}`)
       const fallback = assertSubstantiveProse(stream.fallback, 10, `safe fallback: ${stream.id}`)
-      assert.notEqual(omission.toLowerCase(), fallback.toLowerCase(), `fallback must differ from omission: ${stream.id}`)
+      assert.notEqual(normalizeWordContent(omission), normalizeWordContent(fallback), `fallback must differ from omission: ${stream.id}`)
     }
   }
 
@@ -99,6 +104,10 @@ function assertSubstantiveProse(value, minimumLength, label) {
   const words = normalized.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) ?? []
   assert.ok(words.length >= 3, `non-substantive ${label}`)
   return normalized
+}
+
+function normalizeWordContent(value) {
+  return (value.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) ?? []).join(' ').toLowerCase()
 }
 
 function validateEvidenceReference(streamId, reference) {
