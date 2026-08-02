@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-// Final exact-head trigger receipt: the assertions below are unchanged behavior gates.
+// Final mobile-clearance exact-head trigger; behavior assertions remain unchanged.
 const autoRealms = fs.readFileSync(new URL('../src/app/UraiAutonomousV1Realms.tsx', import.meta.url), 'utf8')
 const mirrorClient = fs.readFileSync(new URL('../src/app/mirror/MirrorSpatialClient.tsx', import.meta.url), 'utf8')
 
