@@ -159,7 +159,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   )
   source = replaceExact(
     source,
-    "controls.locator(':scope > div')",
+    "controls.locator('.life-map-help__body')",
     "controls.locator(':scope > section')",
     1,
     'visual Life Map semantic navigator body',
