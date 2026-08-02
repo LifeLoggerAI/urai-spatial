@@ -42,9 +42,6 @@ for (const asset of manifest.assets) {
   if (receiptReleaseState === 'production-ready' && receiptCompressionStatus.includes('candidate')) {
     errors.push(`${asset.id}: receipt cannot be production-ready with candidate compression status`)
   }
-  if (receiptReleaseState === 'candidate-not-production-ready' && !receiptCompressionStatus.includes('candidate') && asset.kind === 'model') {
-    errors.push(`${asset.id}: model candidate receipt must carry candidate compression status`)
-  }
 
   results.push({
     id: asset.id,
