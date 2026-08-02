@@ -1,0 +1,205 @@
+name: One-shot Mirror review-findings repair
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-mirror-review-findings
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: feat/mirror-embodied-spatial-realm-v2-20260801
+  REVIEWED_HEAD: 9d63387d64c7fb60e67ba19f2bb31d4ce00ca1fc
+  EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  repair:
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.event.pull_request.head.ref == 'feat/mirror-embodied-spatial-realm-v2-20260801'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact staged branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Verify bounded staging authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git merge-base --is-ancestor "$REVIEWED_HEAD" HEAD
+          mapfile -t changed < <(git diff --name-only "$REVIEWED_HEAD"...HEAD)
+          test "${#changed[@]}" -eq 1
+          test "${changed[0]}" = ".github/workflows/one-shot-mirror-review-findings.yml"
+
+      - name: Apply reviewed Mirror corrections
+        shell: python
+        run: |
+          from pathlib import Path
+
+          guard = Path('urai-tier1/src/app/mirror/MirrorBareEntryGuard.tsx')
+          guard_text = guard.read_text()
+          guard_anchor = "const EXPLICIT_DEMO_HREF = '/mirror?memoryId=demo%3Amirror-preview&node=mirror-preview&demo=1'\n"
+          guard_flag = "const ACCEPTANCE_FIXTURES_ENABLED = process.env.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1'\n"
+          assert guard_text.count(guard_anchor) == 1
+          assert 'ACCEPTANCE_FIXTURES_ENABLED' not in guard_text
+          guard_text = guard_text.replace(guard_anchor, guard_anchor + guard_flag, 1)
+          old_guard = "const isEvidenceFixture = Boolean(params.get('mirrorFixture'))"
+          new_guard = "const isEvidenceFixture = ACCEPTANCE_FIXTURES_ENABLED && Boolean(params.get('mirrorFixture'))"
+          assert guard_text.count(old_guard) == 1
+          guard.write_text(guard_text.replace(old_guard, new_guard, 1))
+
+          client = Path('urai-tier1/src/app/mirror/MirrorSpatialClient.tsx')
+          client_text = client.read_text()
+          camera_anchor = 'const CAMERA_HEIGHT = 1.68\n'
+          client_flag = "const ACCEPTANCE_FIXTURES_ENABLED = process.env.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1'\n"
+          assert client_text.count(camera_anchor) == 1
+          assert 'NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES' not in client_text
+          client_text = client_text.replace(camera_anchor, camera_anchor + client_flag, 1)
+
+          old_effect = "useEffect(() => {\n  setFixture(new URLSearchParams(window.location.search).get('mirrorFixture'))\n}, [])"
+          new_effect = "useEffect(() => {\n  const requestedFixture = new URLSearchParams(window.location.search).get('mirrorFixture')\n  setFixture(ACCEPTANCE_FIXTURES_ENABLED ? requestedFixture : null)\n}, [])"
+          assert client_text.count(old_effect) == 1
+          client_text = client_text.replace(old_effect, new_effect, 1)
+
+          fallback_start = client_text.index('  if (!webglAvailable) return <main className="mirrorFallback"')
+          fallback_end_marker = '<style>{fallbackCss}</style></main>'
+          fallback_end = client_text.index(fallback_end_marker, fallback_start) + len(fallback_end_marker)
+          replacement = '''  if (!webglAvailable) return <main className="mirrorFallback" data-testid="mirror-webgl-fallback"><section>
++    <p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} reflection`}</p>
++    <h1>{memory.title}</h1>
++    <p>Spatial rendering is unavailable. The source-backed reflection remains available through semantic controls.</p>
++    <div className="fallbackPatterns">{patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}>{pattern.label} · {pattern.confidenceLabel}</button>)}</div>
++    {selected ? <article className="fallbackInspection" aria-label={`${selected.label} evidence`}>
++      <button type="button" onClick={() => selectPattern(null)}>Close {selected.label}</button>
++      <p>{selected.evidenceState.replace('-', ' ')}</p>
++      <h2>{selected.label}</h2>
++      <strong>{selected.explanation}</strong>
++      <dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl>
++      {selected.fragments.length ? <ul>{selected.fragments.map((fragment) => <li key={fragment.id}><strong>{fragment.label}</strong><span>{fragment.certainty}</span></li>)}</ul> : <p>No source fragments are available for this pattern.</p>}
++    </article> : null}
++    <nav aria-label="Mirror fallback transitions"><button type="button" onClick={goReplay}>Return to Replay</button><button type="button" onClick={goPassport}>Open Passport</button></nav>
++  </section><style>{fallbackCss}</style></main>'''.replace('\n+', '\n')
+          client_text = client_text[:fallback_start] + replacement + client_text[fallback_end:]
+
+          aside_old = '<aside className="mirrorInspection" aria-live="polite" aria-label={`${selected.label} evidence`}>'
+          aside_new = '<aside className="mirrorInspection" data-movement-ui="true" aria-live="polite" aria-label={`${selected.label} evidence`}>'
+          assert client_text.count(aside_old) == 1
+          client_text = client_text.replace(aside_old, aside_new, 1)
+
+          inspection_css = '.mirrorInspection{position:absolute;'
+          assert client_text.count(inspection_css) == 1
+          client_text = client_text.replace(inspection_css, '.mirrorInspection{touch-action:pan-y;overscroll-behavior:contain;position:absolute;', 1)
+
+          fallback_css_end = client_text.index('`\nconst worldCss', client_text.index('const fallbackCss = `'))
+          fallback_extra = '.fallbackPatterns{display:grid;gap:8px;margin:20px 0}.fallbackInspection{margin:18px 0;padding:18px;border:1px solid #bdeff333;border-radius:18px;background:#071722}.fallbackInspection h2{font:500 2rem/1 Georgia,serif}.fallbackInspection dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fallbackInspection dl div,.fallbackInspection li{padding:10px;border:1px solid #bdeff322;border-radius:12px}.fallbackInspection dt{font-size:10px;text-transform:uppercase;letter-spacing:.12em}.fallbackInspection dd{margin:4px 0 0}.fallbackInspection ul{display:grid;gap:8px;padding:0;list-style:none}.fallbackInspection li strong,.fallbackInspection li span{display:block}.fallbackInspection nav{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:620px){.fallbackInspection dl{grid-template-columns:1fr}}'
+          client_text = client_text[:fallback_css_end] + fallback_extra + client_text[fallback_css_end:]
+          client.write_text(client_text)
+
+          workflow = Path('.github/workflows/mirror-release-proof.yml')
+          workflow_text = workflow.read_text()
+          env_anchor = "  PLAYWRIGHT_BROWSERS_PATH: '0'\n"
+          env_line = "  NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'\n"
+          assert workflow_text.count(env_anchor) == 1
+          assert 'NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES' not in workflow_text
+          workflow.write_text(workflow_text.replace(env_anchor, env_anchor + env_line, 1))
+
+          contract = Path('urai-tier1/tests/mirror-spatial-realm-contract.test.mjs')
+          contract_text = contract.read_text()
+          workflow_anchor = "const navigationSource = fs.readFileSync(new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url), 'utf8')\n"
+          workflow_read = "const proofWorkflowSource = fs.readFileSync(new URL('../../.github/workflows/mirror-release-proof.yml', import.meta.url), 'utf8')\n"
+          assert contract_text.count(workflow_anchor) == 1
+          assert 'proofWorkflowSource' not in contract_text
+          contract_text = contract_text.replace(workflow_anchor, workflow_anchor + workflow_read, 1)
+          contract_text += "\n\ntest('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail closed', () => {\n  assert.match(clientSource, /NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES/)\n  assert.match(bareEntrySource, /ACCEPTANCE_FIXTURES_ENABLED && Boolean\\(params\\.get\\('mirrorFixture'\\)\\)/)\n  assert.match(proofWorkflowSource, /NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'/)\n  assert.match(clientSource, /data-movement-ui=\"true\"/)\n  assert.match(clientSource, /touch-action:pan-y/)\n  assert.match(clientSource, /className=\"fallbackInspection\"/)\n  assert.match(clientSource, /selected\\.uncertainty/)\n  assert.match(clientSource, /selected\\.provenance/)\n})\n"
+          contract.write_text(contract_text)
+
+          proof = Path('tests/mirror-release-proof.mjs')
+          proof_text = proof.read_text()
+          insert_before = 'await fs.mkdir(shotDir, { recursive: true })\n'
+          fallback_function = '''async function proveSemanticFallback(browser) {
++  const name = 'no-webgl-semantic-fallback'
++  const { context, page, consoleErrors, failedRequests } = await createPage(browser, 'desktop', { disableWebGL: true })
++  try {
++    const response = await page.goto(absolute(`/mirror?${demoQuery}`), { waitUntil: 'domcontentloaded', timeout: 60000 })
++    if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for semantic fallback`)
++    const fallback = page.getByTestId('mirror-webgl-fallback')
++    await fallback.waitFor({ state: 'visible', timeout: 45000 })
++    await fallback.getByRole('button', { name: /^Body rhythm/ }).click()
++    const inspector = fallback.locator('article[aria-label="Body rhythm evidence"]')
++    await inspector.waitFor({ state: 'visible' })
++    await inspector.getByText('Uncertainty', { exact: true }).waitFor({ state: 'visible' })
++    await inspector.getByText(/owner-authorized|demonstration data/).waitFor({ state: 'visible' })
++    const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback')
++    await assertCleanEvidence(consoleErrors, failedRequests)
++    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), consoleErrors, failedRequests })
++  } catch (error) {
++    const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback-failure').catch(() => '')
++    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
++  } finally {
++    await context.close()
++  }
++}
++
++'''.replace('\n+', '\n')
+          assert proof_text.count(insert_before) == 1
+          proof_text = proof_text.replace(insert_before, fallback_function + insert_before, 1)
+          old_fallback_call = "  await proveState(browser, { name: 'no-webgl-semantic-fallback', route: `/mirror?${demoQuery}`, disableWebGL: true, marker: '[data-testid=\"mirror-webgl-fallback\"]', text: 'Spatial rendering is unavailable.' })"
+          new_fallback_call = '  await proveSemanticFallback(browser)'
+          assert proof_text.count(old_fallback_call) == 1
+          proof_text = proof_text.replace(old_fallback_call, new_fallback_call, 1)
+          mobile_anchor = "    const inspector = page.locator('aside[aria-label=\"Body rhythm evidence\"]')\n    await inspector.waitFor({ state: 'visible' })\n"
+          mobile_check = "    if (deviceName === 'mobile') {\n      const geometry = await inspector.evaluate((element) => ({ clientHeight: element.clientHeight, scrollHeight: element.scrollHeight }))\n      if (geometry.scrollHeight <= geometry.clientHeight) throw new Error(`mobile inspector is not scrollable: ${geometry.clientHeight}/${geometry.scrollHeight}`)\n      await inspector.evaluate((element) => element.scrollTo({ top: element.scrollHeight, behavior: 'instant' }))\n      await page.waitForTimeout(100)\n      const scrollTop = await inspector.evaluate((element) => element.scrollTop)\n      if (scrollTop <= 0) throw new Error('mobile inspector touch-scroll surface did not move')\n    }\n"
+          assert proof_text.count(mobile_anchor) == 1
+          proof.write_text(proof_text.replace(mobile_anchor, mobile_anchor + mobile_check, 1))
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen graph
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Verify full Tier-1 boundary
+        run: |
+          pnpm --filter urai-tier1 test
+          pnpm --filter urai-tier1 typecheck
+          pnpm --filter urai-tier1 build
+
+      - name: Commit clean reviewed corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/one-shot-mirror-review-findings.yml
+          git add .github/workflows/mirror-release-proof.yml \
+            tests/mirror-release-proof.mjs \
+            urai-tier1/src/app/mirror/MirrorBareEntryGuard.tsx \
+            urai-tier1/src/app/mirror/MirrorSpatialClient.tsx \
+            urai-tier1/tests/mirror-spatial-realm-contract.test.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "6"
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Close Mirror review findings"
+          git push origin "HEAD:$TARGET_BRANCH"
