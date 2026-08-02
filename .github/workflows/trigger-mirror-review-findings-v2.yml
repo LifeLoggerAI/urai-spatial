@@ -14,7 +14,7 @@ concurrency:
 
 env:
   TARGET_BRANCH: feat/mirror-embodied-spatial-realm-v2-20260801
-  REVIEWED_HEAD: 9d63387d64c7fb60e67ba19f2bb31d4ce00ca1fc
+  REVIEWED_HEAD: 069f864cf531a4bfb1297eee2c7c55770dc4ad53
   EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
 
 jobs:
