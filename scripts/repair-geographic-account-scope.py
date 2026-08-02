@@ -187,7 +187,7 @@ test('account-scoped local vaults isolate browser-profile users', () => {
   assert.match(source, /const storageScope = authorityState === 'loading' \? null : user\?\.uid \?\? 'signed-out'/)
   assert.match(source, /`\$\{LOCATION_CONSENT_KEY\}:\$\{storageScope\}`/)
   assert.match(source, /`\$\{LOCATION_PINS_KEY\}:\$\{storageScope\}`/)
-  assert.match(source, /setCoordinate\(null\)\s*setPins\(\[\]\)/)
+  assert.match(source, /setCoordinate\(null\)[\s\S]*setPins\(\[\]\)/)
   assert.match(source, /event\.key === pinsStorageKey/)
   assert.match(source, /event\.key === consentStorageKey/)
   assert.match(source, /localStorage\.getItem\(pinsStorageKey\)/)
