@@ -121,8 +121,10 @@ export function buildMirrorPatterns(memory: SelectedMemory): MirrorPattern[] {
   const relationshipSources: MirrorSource[] = [baseSource, ...memory.people.map((person) => source(memory, `person:${person.id}`, 'Authorized person reference', 'person'))]
 
   const emotionEvidence = memory.emotionalArc.length + (memory.emotionalState ? 1 : 0)
-  const repeatedEmotionLabels = memory.emotionalArc.map((entry) => entry.trim().toLowerCase()).filter(Boolean)
-  const emotionConflicting = new Set(repeatedEmotionLabels).size > 2 && repeatedEmotionLabels.length > 3
+  // Emotional label diversity is not an explicit contradiction signal. Until the
+  // source contract carries typed contradiction evidence, normal memories remain
+  // non-conflicting and only the bounded acceptance fixture can exercise that UI.
+  const emotionConflicting = false
   const emotionConfidence = emotionEvidence >= 2 ? clampConfidence(0.32 + Math.min(emotionEvidence, 5) * 0.1) : null
   const emotionSources: MirrorSource[] = [baseSource]
   if (memory.emotionalState) emotionSources.push(source(memory, `emotion:${memory.id}`, 'Recorded emotional state', 'emotion'))
