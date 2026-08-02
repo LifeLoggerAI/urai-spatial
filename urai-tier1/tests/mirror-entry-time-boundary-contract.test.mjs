@@ -8,11 +8,14 @@ const guard = read('../src/app/mirror/MirrorBareEntryGuard.tsx')
 const parser = read('../src/spatial/memory/selectedMemoryContract.ts')
 const model = read('../src/spatial/mirror/mirrorPatternModel.ts')
 
-test('bare Mirror entry never mounts the interactive client underneath the guard', () => {
-  assert.doesNotMatch(page, /MirrorSpatialClient/)
-  assert.match(page, /<MirrorBareEntryGuard \/>/)
+test('bare Mirror entry keeps explicit route ownership without mounting the client underneath the guard', () => {
+  assert.match(page, /import MirrorSpatialClient from '\.\/MirrorSpatialClient'/)
+  assert.match(page, /<MirrorBareEntryGuard>\s*<MirrorSpatialClient \/>\s*<\/MirrorBareEntryGuard>/)
+  assert.doesNotMatch(guard, /import MirrorSpatialClient/)
   assert.match(guard, /type EntryState = 'checking' \| 'bare' \| 'contextual'/)
-  assert.match(guard, /if \(entryState === 'contextual'\) return <MirrorSpatialClient \/>/)
+  assert.match(guard, /children: ReactNode/)
+  assert.match(guard, /MirrorBareEntryGuard\(\{ children \}: MirrorBareEntryGuardProps\)/)
+  assert.match(guard, /if \(entryState === 'contextual'\) return <>\{children\}<\/>/)
   assert.match(guard, /if \(entryState === 'checking'\)/)
   assert.match(guard, /data-testid="mirror-bare-entry"/)
 })
