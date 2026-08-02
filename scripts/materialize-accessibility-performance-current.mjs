@@ -258,12 +258,5 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
 
   test('selected Life Map action owner is topmost, contained, and directly operable on portrait mobile',`
   source = replaceRegex(source, journeyPattern, journeyReplacement, 1, 'current Life Map mobile journey proof')
-  source = replaceExact(
-    source,
-    "page.locator('.life-map-actions')",
-    "page.getByRole('navigation', { name: 'Selected memory actions' })",
-    2,
-    'current selected Life Map action owner',
-  )
   return source
 })
