@@ -8,6 +8,7 @@ const pageSource = fs.readFileSync(new URL('../src/app/mirror/page.tsx', import.
 const bareEntrySource = fs.readFileSync(new URL('../src/app/mirror/MirrorBareEntryGuard.tsx', import.meta.url), 'utf8')
 const clientSource = fs.readFileSync(new URL('../src/app/mirror/MirrorSpatialClient.tsx', import.meta.url), 'utf8')
 const modelSource = fs.readFileSync(new URL('../src/spatial/mirror/mirrorPatternModel.ts', import.meta.url), 'utf8')
+const navigationSource = fs.readFileSync(new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url), 'utf8')
 
 test('Mirror route has one embodied spatial owner and no promotional-image owner', () => {
   assert.match(pageSource, /MirrorSpatialClient/)
@@ -95,4 +96,11 @@ test('Mirror fixtures remain deterministic and never silently substitute demo fo
   assert.equal(partial.slice(1).every((pattern) => pattern.evidenceState === 'insufficient'), true)
   const conflicting = applyMirrorFixture(patterns, 'conflicting')
   assert.equal(conflicting.find((pattern) => pattern.id === 'emotional-recurrence')?.evidenceState, 'conflicting')
+})
+
+
+test('Mirror movement help identifies the active realm', () => {
+  assert.match(clientSource, /<MovementHelp realm="Mirror"/)
+  assert.doesNotMatch(clientSource, /<MovementHelp realm="Life Map"/)
+  assert.match(navigationSource, /realm: 'Home' \| 'Ground' \| 'Life Map' \| 'Mirror'/)
 })

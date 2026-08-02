@@ -312,7 +312,7 @@ useEffect(() => {
     <nav className="mirrorThresholds" aria-label="Mirror world transitions"><button type="button" onClick={goReplay}>Replay threshold</button><button type="button" onClick={goPassport}>Passport threshold</button><button type="button" onClick={unwind}>{selected ? 'Overview' : 'Previous realm'}</button></nav>
     <button className="mirrorOrb" type="button" onClick={() => { if (selected) setActiveFragment(selected.fragments[0] ?? null); else selectPattern(patterns[0] ?? null) }} aria-label={selected ? `Ask the Orb to explain ${selected.label}` : 'Ask the Orb to guide this reflection'}><span aria-hidden="true" /></button>
     <p className="mirrorAnnouncement" role="status" aria-live="polite">{activeFragment ? `${activeFragment.label}, ${activeFragment.certainty} evidence.` : selected ? `${selected.label} selected. ${selected.confidenceLabel}.` : 'Mirror overview.'}</p>
-    <MovementHelp realm="Life Map" summary="Mirror is a calm evidence-aware reflection chamber." controls="Use WASD, arrows, touch movement, drag to look, Enter to inspect, Escape to return, and R or Home to reset." />
+    <MovementHelp realm="Mirror" summary="Mirror is a calm evidence-aware reflection chamber." controls="Use WASD, arrows, touch movement, drag to look, Enter to inspect, Escape to return, and R or Home to reset." />
     <MobileMovementPad input={input} label="Mirror movement controls" />
     <style>{worldCss}</style>
   </main>
