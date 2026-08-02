@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0.0",
+  "programId": "URAI-AAA-PRESENTATION-CONVERGENCE-20260802",
+  "authorityIssue": "LifeLoggerAI/urai-spatial#1030",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "statusVocabulary": [
+    "accepted",
+    "active",
+    "blocked-human",
+    "blocked-external",
+    "separate-physical-gate",
+    "intentionally-fallback"
+  ],
+  "truthBoundaries": {
+    "productionLiveClaimAllowed": false,
+    "automaticPaidGenerationAllowed": false,
+    "automaticRetryOrRemixAllowed": false,
+    "acceptedAssetRegenerationAllowed": false,
+    "privateIdentityMediaAllowedInPublicRepo": false,
+    "generatedUiMayBeRepresentedAsProduct": false,
+    "finalPublicMediaRequiresExactReleaseSha": true,
+    "providerCallsThisChange": 0,
+    "spendUsdThisChange": "0.00"
+  },
+  "acceptedEstate": {
+    "runtimeImages": {"ready": 213, "missing": 0},
+    "launchCriticalModels": {"promoted": 7, "pending": 0},
+    "sharedSensoryAssets": {"ready": 3, "candidate": 2}
+  },
+  "workstreams": [
+    {"id":"spatial-visual-convergence","status":"active","outputs":["home-sanctuary-cohesion","responsive-crop-matrix","sky-starfield-hdr-decision","orb-aura-portal-consistency","mirror-privacy-geography-fallback-consistency"],"acceptance":["desktop-mobile-tablet-proof","reduced-motion-proof","no-webgl-proof","zero-console-page-and-blocking-request-errors"]},
+    {"id":"motion-convergence","status":"active","outputs":["orb-idle-speaking-event","portal-activation-traversal","home-ascent-lifemap-focus-replay-unwind","constellation-recovery-companion-loading","low-performance-and-reduced-motion-equivalents"],"acceptance":["clean-loops","stable-framing","no-animation-only-critical-information"]},
+    {"id":"audio-haptics","status":"active","outputs":["ambient-bed-or-truthful-silence","route-and-interface-sound-family","narrator-state-mapping","haptic-pattern-family","visual-and-audio-equivalents"],"acceptance":["loudness","codec","loop","rights","mute","permission-denied","manual-distinction"]},
+    {"id":"final-exact-release-capture","status":"blocked-external","blocker":"Requires one accepted final Spatial release SHA after the active Mirror, geography, and governance dependency chain stabilizes.","outputs":["route-and-state-capture-matrix","product-walkthrough","accessibility-demonstration","product-capture-receipt","sha256-inventory"]},
+    {"id":"brand-platform-outputs","status":"blocked-human","blocker":"Requires human acceptance of the final UrAi and RuAi visual masters and visual QA at every target size.","outputs":["favicon","apple-touch","pwa","maskable","store","social","email","github","splash","loading"]},
+    {"id":"before-rest-world-film","status":"active","outputs":["accepted-provider-motion","exact-sha-product-capture","directed-narration","six-act-score-and-sound-design","1080p-master-captioned-and-phone-cuts","poster-thumbnail-captions-and-receipts"],"acceptance":["visual","factual","privacy","provenance","caption","audio","human-approval"]},
+    {"id":"waiting-room-launch-media","status":"active","outputs":["day-zero-film","primary-teaser","crowdfunding-film","fourteen-day-episode-package","vertical-square-landscape-derivatives","localized-and-rtl-layouts"],"acceptance":["live-demo-prototype-vision-classification","claim-register","media-provenance"]},
+    {"id":"private-memory-film","status":"blocked-human","blocker":"Requires approved private reference media, consent and rights records, private compositor/provider execution, counsel review, and final human acceptance.","outputs":["4k-cinematic-master","4k-counsel-master","1080p-private-review","stereo-and-5.1","stems","captions","evidence-and-qc"]},
+    {"id":"finite-time","status":"blocked-external","blocker":"Foundry and orchestration contracts exist; final render authority, accepted playable media, full audio, QC, and delivery evidence remain separate.","outputs":["proof-chapter","picture","audio","captions","provenance","qc","final-master"]},
+    {"id":"physical-xr-certification","status":"separate-physical-gate","outputs":["quest-device-proof","controller-and-hand-tracking","ar-placement","scale","stereo-comfort","thermal-and-performance","device-accessibility"]},
+    {"id":"performance-delivery","status":"active","outputs":["responsive-derivatives","compression-and-texture-budgets","preload-lazy-load-and-cache-policy","gpu-memory-cls-and-latency-budgets","slow-network-and-corrupt-asset-fallbacks"]},
+    {"id":"public-defensibility","status":"active","outputs":["evidence-index","claim-classification","rights-and-provenance","accessibility-equivalents","rollback-authority","human-approval-record"]}
+  ],
+  "completionRule": "Every public-facing asset must be accepted, intentionally omitted with a safe fallback, or blocked by an explicitly named human, external, or physical-device gate. No unfinished artifact may be labeled final, live, certified, counsel-approved, identity-verified, or production-ready without its exact evidence."
+}
