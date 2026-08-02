@@ -1,6 +1,6 @@
 name: Trigger reviewed governance materializer on PR sync
 
-# A synchronize event executes this already-registered workflow.
+# Exact-step extraction preserves the reviewed workflow's heredocs verbatim.
 on:
   pull_request:
     types: [synchronize]
@@ -48,23 +48,16 @@ jobs:
           ]
 
           for index, name in enumerate(names):
-              marker = f'- name: {name}'
-              start = next(i for i, line in enumerate(lines) if line.strip() == marker)
-              step_indent = len(lines[start]) - len(lines[start].lstrip())
-              run_line = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == 'run: |')
-              block = []
-              for line in lines[run_line + 1:]:
-                  indent = len(line) - len(line.lstrip())
-                  if line.strip() and indent == step_indent and line.lstrip().startswith('- name:'):
-                      break
-                  block.append(line)
-              nonblank = [len(line) - len(line.lstrip()) for line in block if line.strip()]
-              if not nonblank:
-                  raise SystemExit(f'empty materializer block: {name}')
-              trim = min(nonblank)
-              Path(f'/tmp/governance-step-{index}.sh').write_text(
-                  '\n'.join(line[trim:] if line.strip() else '' for line in block) + '\n'
+              marker = f'      - name: {name}'
+              start = lines.index(marker)
+              run_line = next(i for i in range(start + 1, len(lines)) if lines[i] == '        run: |')
+              end = next(
+                  (i for i in range(run_line + 1, len(lines)) if lines[i].startswith('      - name: ')),
+                  len(lines),
               )
+              prefix = '          '
+              block = [line[len(prefix):] if line.startswith(prefix) else line for line in lines[run_line + 1:end]]
+              Path(f'/tmp/governance-step-{index}.sh').write_text('\n'.join(block).rstrip() + '\n')
 
       - name: Verify exact source authority
         run: bash /tmp/governance-step-0.sh
