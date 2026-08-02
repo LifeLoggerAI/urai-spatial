@@ -64,8 +64,7 @@ test('external blockers remain bounded and claims fail closed', () => {
   const blockers = new Map(registry.externalBlockers.map((item) => [item.id, item]))
   for (const id of ['dns-registrar','legal-execution','native-locale-review']) assert.ok(blockers.has(id))
   assert.ok(blockers.get('dns-registrar').doesNotBlock.includes('repository-work'))
-  const prohibited = registry.claimProhibitions.join('
-')
+  const prohibited = registry.claimProhibitions.join('\n')
   for (const claim of ['HIPAA','patent pending','named partnerships','user earnings','fully accessible']) assert.match(prohibited, new RegExp(claim, 'i'))
 })
 
