@@ -88,6 +88,17 @@ test('Mirror model derives typed evidence-aware patterns from authorized memory'
   assert.match(modelSource, /does not infer another person’s private thoughts or intent/)
 })
 
+test('compatible emotional diversity never fabricates conflicting evidence', () => {
+  const memory = buildExplicitDemoMemory('demo:compatible-emotions')
+  memory.emotionalArc = ['calm', 'hopeful', 'happy', 'proud']
+  const recurrence = buildMirrorPatterns(memory).find((pattern) => pattern.id === 'emotional-recurrence')
+  assert.ok(recurrence)
+  assert.notEqual(recurrence.evidenceState, 'conflicting')
+  assert.notEqual(recurrence.confidenceLabel, 'Conflicting evidence')
+  assert.match(modelSource, /const emotionConflicting = false/)
+  assert.doesNotMatch(modelSource, /new Set\(repeatedEmotionLabels\)/)
+})
+
 test('Mirror fixtures remain deterministic and never silently substitute demo for private failures', () => {
   const patterns = buildMirrorPatterns(buildExplicitDemoMemory('demo:fixture'))
   assert.equal(applyMirrorFixture(patterns, 'empty').length, 0)
