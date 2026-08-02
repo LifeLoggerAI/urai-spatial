@@ -7,6 +7,7 @@ import { applyMirrorFixture, buildMirrorPatterns } from '../src/spatial/mirror/m
 const pageSource = fs.readFileSync(new URL('../src/app/mirror/page.tsx', import.meta.url), 'utf8')
 const bareEntrySource = fs.readFileSync(new URL('../src/app/mirror/MirrorBareEntryGuard.tsx', import.meta.url), 'utf8')
 const clientSource = fs.readFileSync(new URL('../src/app/mirror/MirrorSpatialClient.tsx', import.meta.url), 'utf8')
+const mobileInspectionCss = fs.readFileSync(new URL('../src/app/mirror/mirror-mobile-inspection.css', import.meta.url), 'utf8')
 const modelSource = fs.readFileSync(new URL('../src/spatial/mirror/mirrorPatternModel.ts', import.meta.url), 'utf8')
 const navigationSource = fs.readFileSync(new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url), 'utf8')
 const proofWorkflowSource = fs.readFileSync(new URL('../../.github/workflows/mirror-release-proof.yml', import.meta.url), 'utf8')
@@ -106,7 +107,6 @@ test('Mirror movement help identifies the active realm', () => {
   assert.match(navigationSource, /realm: 'Home' \| 'Ground' \| 'Life Map' \| 'Mirror'/)
 })
 
-
 test('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail closed', () => {
   assert.match(clientSource, /NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES/)
   assert.match(bareEntrySource, /ACCEPTANCE_FIXTURES_ENABLED && Boolean\(params\.get\('mirrorFixture'\)\)/)
@@ -116,4 +116,10 @@ test('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail c
   assert.match(clientSource, /className="fallbackInspection"/)
   assert.match(clientSource, /selected\.uncertainty/)
   assert.match(clientSource, /selected\.provenance/)
+})
+
+test('mobile inspection transfers pointer ownership from WebGL to threshold navigation', () => {
+  assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) canvas\s*\{[^}]*pointer-events:\s*none\s*!important/s)
+  assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds\s*\{[^}]*z-index:\s*40\s*!important[^}]*pointer-events:\s*auto/s)
+  assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds button\s*\{[^}]*pointer-events:\s*auto/s)
 })
