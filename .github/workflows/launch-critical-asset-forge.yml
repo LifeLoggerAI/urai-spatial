@@ -103,8 +103,10 @@ jobs:
       - name: Verify manifest, receipts and budgets
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
-      - name: Independently audit isolated candidate bundle
+      - name: Independently audit and retain exact candidate bundle
         if: steps.mode.outputs.promotion != 'true'
+        env:
+          URAI_CANDIDATE_BUNDLE_ROOT: .urai-artifacts/launch-critical-candidate-bundle
         run: node scripts/audit-launch-critical-candidate-bundle.mjs
       - name: Strictly decode every Radiance HDR scanline
         if: steps.mode.outputs.promotion != 'true'
@@ -141,17 +143,14 @@ jobs:
       - name: Compare current and pinned legacy candidates
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/compare-legacy-asset-candidates.mjs --legacy-root comparison/legacy --legacy-head "$LEGACY_ASSET_HEAD"
-      - name: Upload reviewable candidate bundle
+      - name: Upload exact audited candidate bundle
         if: steps.mode.outputs.promotion != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-asset-candidates-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
           retention-days: 14
-          path: |
-            urai-tier1/public/assets/urai/generated/
-            operations/assets/generated-receipts/
-            operations/assets/launch-critical-assets.json
+          path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload governed promotion evidence
         if: steps.mode.outputs.promotion == 'true'
         uses: actions/upload-artifact@v4
