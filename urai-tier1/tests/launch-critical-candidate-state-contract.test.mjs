@@ -37,11 +37,18 @@ test('candidate bundle audit is isolated from canonical promotion authority', ()
   assert.doesNotMatch(candidateAuditor, /fs\.writeFileSync\(path\.join\(sourceRoot, manifestRelativePath\)/)
 })
 
-test('forge workflow audits governed production before isolated candidates', () => {
-  const governedAudit = 'node scripts/audit-launch-critical-artifact.mjs'
+test('forge workflow verifies governed production before isolated candidates', () => {
+  const governedVerifier = 'node scripts/verify-governed-asset-promotion.mjs'
+  const governedContract = 'node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs'
+  const candidateForge = 'node scripts/forge-launch-critical-assets.mjs'
+  const candidateVerifier = 'node scripts/verify-launch-critical-assets.mjs'
   const candidateAudit = 'node scripts/audit-launch-critical-candidate-bundle.mjs'
-  assert.match(workflow, /Independently audit governed production state before candidate generation/)
+  assert.match(workflow, /Verify governed production authority before candidate generation/)
+  assert.match(workflow, /Run governed Home production contract before candidate generation/)
+  assert.match(workflow, /Prove governed Home binary immutable before candidate generation/)
   assert.match(workflow, /Independently audit isolated candidate bundle/)
-  assert.equal(workflow.indexOf(governedAudit) < workflow.indexOf('node scripts/forge-launch-critical-assets.mjs'), true)
-  assert.equal(workflow.indexOf(candidateAudit) > workflow.indexOf('node scripts/verify-launch-critical-assets.mjs'), true)
+  assert.equal(workflow.indexOf(governedVerifier) < workflow.indexOf(candidateForge), true)
+  assert.equal(workflow.indexOf(governedContract) < workflow.indexOf(candidateForge), true)
+  assert.equal(workflow.indexOf(candidateAudit) > workflow.indexOf(candidateVerifier), true)
+  assert.doesNotMatch(workflow, /Independently audit governed production state before candidate generation/)
 })
