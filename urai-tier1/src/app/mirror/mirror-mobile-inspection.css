@@ -1,0 +1,5 @@
+@media (max-width: 760px) {
+  .mirrorWorld:has(.mirrorInspection) .urai-mobile-movement {
+    display: none !important;
+  }
+}
