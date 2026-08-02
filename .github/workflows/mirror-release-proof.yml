@@ -78,7 +78,7 @@ jobs:
         run: pnpm --dir urai-tier1 exec playwright install chromium --with-deps
 
       - name: Prove Mirror release candidate
-        run: node tests/mirror-release-proof.mjs
+        run: node tests/mirror-release-proof-runner.mjs
 
       - name: Prove mobile inspection is unobstructed
         run: node tests/mirror-mobile-inspection-proof.mjs
