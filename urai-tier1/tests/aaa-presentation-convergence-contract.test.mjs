@@ -33,8 +33,8 @@ const allowedStatuses = new Set([
   'intentionally-fallback',
 ])
 
+const physicalGateWorkstreams = new Set(['physical-xr-certification'])
 const workflowReferencePattern = /^github-actions:[1-9]\d*$/
-const artifactReferencePattern = /^artifact:[A-Za-z0-9][A-Za-z0-9._-]{2,}$/
 const digestReferencePattern = /^sha256:[a-f0-9]{64}$/
 
 test('AAA presentation convergence authority is complete and fail closed', () => {
@@ -72,17 +72,30 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
   for (const stream of authority.workstreams) {
     assert.ok(allowedStatuses.has(stream.status), `invalid status: ${stream.id}`)
     assert.ok(Array.isArray(stream.outputs) && stream.outputs.length > 0, `missing outputs: ${stream.id}`)
+
     if (stream.status.startsWith('blocked-')) {
       assertSubstantiveProse(stream.blocker, 20, `blocker: ${stream.id}`)
     }
+
+    if (stream.status === 'separate-physical-gate') {
+      assert.ok(physicalGateWorkstreams.has(stream.id), `non-physical workstream assigned to physical gate: ${stream.id}`)
+      const blocker = assertSubstantiveProse(stream.blocker, 40, `physical-device blocker: ${stream.id}`)
+      assert.match(blocker, /device|hardware|physical|quest|xr|ar/i, `physical gate lacks device-specific blocker: ${stream.id}`)
+    }
+
     if (stream.status === 'accepted') {
       assert.ok(Array.isArray(stream.evidence) && stream.evidence.length > 0, `missing acceptance evidence: ${stream.id}`)
       for (const reference of stream.evidence) validateEvidenceReference(stream.id, reference)
     }
+
     if (stream.status === 'intentionally-fallback') {
       const omission = assertSubstantiveProse(stream.omission, 20, `omission reason: ${stream.id}`)
-      const fallback = assertSubstantiveProse(stream.fallback, 10, `safe fallback: ${stream.id}`)
-      assert.notEqual(normalizeWordContent(omission), normalizeWordContent(fallback), `fallback must differ from omission: ${stream.id}`)
+      assert.ok(stream.fallback && typeof stream.fallback === 'object' && !Array.isArray(stream.fallback), `fallback must be a structured behavior: ${stream.id}`)
+      const behavior = assertSubstantiveProse(stream.fallback.behavior, 20, `fallback behavior: ${stream.id}`)
+      assertSubstantiveProse(stream.fallback.trigger, 15, `fallback trigger: ${stream.id}`)
+      assert.ok(Array.isArray(stream.fallback.evidence) && stream.fallback.evidence.length > 0, `fallback evidence is required: ${stream.id}`)
+      for (const reference of stream.fallback.evidence) validateEvidenceReference(stream.id, reference)
+      assert.notEqual(normalizeWordContent(omission), normalizeWordContent(behavior), `fallback behavior must differ from omission: ${stream.id}`)
     }
   }
 
@@ -127,8 +140,7 @@ function validateEvidenceReference(streamId, reference) {
   }
 
   if (reference.startsWith('artifact:')) {
-    assert.match(reference, artifactReferencePattern, `invalid artifact reference: ${streamId}`)
-    return
+    assert.fail(`direct artifact identifiers are not resolvable evidence; use a committed receipt, workflow run, or digest: ${streamId}: ${reference}`)
   }
 
   if (reference.startsWith('sha256:')) {
