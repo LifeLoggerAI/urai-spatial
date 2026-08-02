@@ -1,14 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import MirrorSpatialClient from './MirrorSpatialClient'
+import { useEffect, useState, type ReactNode } from 'react'
 
 const EXPLICIT_DEMO_HREF = '/mirror?memoryId=demo%3Amirror-preview&node=mirror-preview&demo=1'
 const ACCEPTANCE_FIXTURES_ENABLED = process.env.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1'
 
 type EntryState = 'checking' | 'bare' | 'contextual'
 
-export default function MirrorBareEntryGuard() {
+type MirrorBareEntryGuardProps = {
+  children: ReactNode
+}
+
+export default function MirrorBareEntryGuard({ children }: MirrorBareEntryGuardProps) {
   const [entryState, setEntryState] = useState<EntryState>('checking')
 
   useEffect(() => {
@@ -22,7 +25,7 @@ export default function MirrorBareEntryGuard() {
     return <main className="mirrorEntryCheck" aria-busy="true" aria-label="Checking Mirror entry context" />
   }
 
-  if (entryState === 'contextual') return <MirrorSpatialClient />
+  if (entryState === 'contextual') return <>{children}</>
 
   return (
     <main className="mirrorBareEntry" data-testid="mirror-bare-entry" data-demo-disclosure="required">
