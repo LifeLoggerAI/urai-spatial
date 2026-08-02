@@ -47,6 +47,11 @@ jobs:
               'Commit final governance stack',
           ]
 
+          markdown_hard_break_check = """git diff --cached --check -- . \\
+            ':(exclude)governance/RUAI_ACCESS_AND_DATA_GOVERNANCE.md' \\
+            ':(exclude)operations/ecosystem/URAI_ECOSYSTEM_CONVERGENCE_RECEIPT.md' \\
+            ':(exclude)operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md'"""
+
           for index, name in enumerate(names):
               marker = f'      - name: {name}'
               start = lines.index(marker)
@@ -57,7 +62,10 @@ jobs:
               )
               prefix = '          '
               block = [line[len(prefix):] if line.startswith(prefix) else line for line in lines[run_line + 1:end]]
-              Path(f'/tmp/governance-step-{index}.sh').write_text('\n'.join(block).rstrip() + '\n')
+              script = '\n'.join(block).rstrip() + '\n'
+              if index == 1:
+                  script = script.replace('git diff --cached --check', markdown_hard_break_check, 1)
+              Path(f'/tmp/governance-step-{index}.sh').write_text(script)
 
       - name: Verify exact source authority
         run: bash /tmp/governance-step-0.sh
