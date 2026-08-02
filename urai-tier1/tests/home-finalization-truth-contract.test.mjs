@@ -17,6 +17,7 @@ const doorwayProof = read('../tests/native-doorway-proof.mjs')
 const authoring = read('../scripts/author-home-finalization-assets.mjs')
 const authoredVerifier = read('../scripts/verify-home-finalization-authored-assets.mjs')
 const visualProof = read('../scripts/capture-continuous-spatial-proof-v18.mjs')
+const visualProofWrapper = read('../scripts/run-continuous-spatial-proof-v19-portal-stable.mjs')
 
 const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 
@@ -163,6 +164,14 @@ test('personalized state changes actual world composition and exposes provenance
   assert.match(assetOwner, /Correct, hide, or delete sources/)
 })
 
+test('continuous Home keyboard proof focuses an enabled discreet control and preserves movement focus clearing', () => {
+  has(visualProofWrapper, "page.locator('.home-discreet-controls button:not(:disabled)').first()")
+  has(visualProofWrapper, "Home proof could not establish editable-control focus before movement regression")
+  has(visualProofWrapper, "method === 'keyboard' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable)")
+  assert.match(visualProofWrapper, /focusCount !== 1/)
+  assert.match(visualProofWrapper, /Home keyboard focus assertion was weakened or removed/)
+  assert.match(visualProofWrapper, /Home keyboard focus-clear regression assertion was weakened or removed/)
+})
 
 test('v18 exact-head evidence covers root parity mobile states motion portals accessibility and failures', () => {
   for (const marker of [
