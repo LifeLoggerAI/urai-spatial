@@ -1,3 +1,4 @@
+import './mirror-mobile-inspection.css'
 import MirrorBareEntryGuard from './MirrorBareEntryGuard'
 import MirrorSpatialClient from './MirrorSpatialClient'
 
