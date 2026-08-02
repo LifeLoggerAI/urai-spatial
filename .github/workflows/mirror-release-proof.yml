@@ -17,6 +17,7 @@ env:
   URAI_AUDIT_BASE_URL: http://127.0.0.1:4173
   URAI_MIRROR_PROOF_OUT_DIR: mirror-release-proof
   PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'
 
 jobs:
   mirror-release-proof:
