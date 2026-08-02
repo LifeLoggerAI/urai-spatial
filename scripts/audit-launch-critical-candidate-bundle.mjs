@@ -19,14 +19,13 @@ try {
   }
 
   copyText(
-    path.join(sourceRoot, manifestRelativePath),
     path.join(auditRoot, manifestRelativePath),
     JSON.stringify(candidateManifest, null, 2) + '\n',
   )
 
   for (const asset of manifest.assets) {
     copyFile(asset.fixedPath)
-    copyFile(path.posix.join(manifest.receiptRoot, `${asset.id}.json`))
+    copyCandidateReceipt(path.posix.join(manifest.receiptRoot, `${asset.id}.json`), asset.id)
   }
 
   const auditorPath = path.join(sourceRoot, 'scripts/audit-launch-critical-artifact.mjs')
@@ -51,7 +50,17 @@ function copyFile(relativePath) {
   fs.copyFileSync(source, destination)
 }
 
-function copyText(_source, destination, content) {
+function copyCandidateReceipt(relativePath, assetId) {
+  const source = path.join(sourceRoot, relativePath)
+  const destination = path.join(auditRoot, relativePath)
+  const receipt = JSON.parse(fs.readFileSync(source, 'utf8'))
+  if (receipt.releaseState !== 'candidate-not-production-ready') {
+    throw new Error(`candidate receipt ${assetId} must declare candidate-not-production-ready; found ${String(receipt.releaseState || 'missing')}`)
+  }
+  copyText(destination, JSON.stringify(receipt, null, 2) + '\n')
+}
+
+function copyText(destination, content) {
   fs.mkdirSync(path.dirname(destination), { recursive: true })
   fs.writeFileSync(destination, content, 'utf8')
 }
