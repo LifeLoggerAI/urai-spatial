@@ -1,0 +1,106 @@
+name: One-shot Mirror canonical owner repair
+
+on:
+  pull_request:
+    types: [reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-mirror-canonical-owner-repair
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: feat/mirror-embodied-spatial-realm-v2-20260801
+  EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  repair:
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.event.pull_request.head.ref == 'feat/mirror-embodied-spatial-realm-v2-20260801'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact Mirror branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 1
+          persist-credentials: true
+          show-progress: false
+
+      - name: Verify exact clean authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Apply bounded Mirror ownership and hydration repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          auto = Path('urai-tier1/src/app/UraiAutonomousV1Realms.tsx')
+          source = auto.read_text()
+          old = '  if (pathname.startsWith("/mirror")) return realms.mirror;'
+          new = '  if (pathname.startsWith("/mirror")) return null; // Canonical embodied Mirror owns this route.'
+          if old not in source:
+              raise SystemExit('expected autonomous Mirror resolver line not found')
+          auto.write_text(source.replace(old, new, 1))
+
+          client = Path('urai-tier1/src/app/mirror/MirrorSpatialClient.tsx')
+          source = client.read_text()
+          old = "  const fixture = useMemo(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('mirrorFixture'), [])"
+          new = """  const [fixture, setFixture] = useState<string | null>(null)
+          useEffect(() => {
+            setFixture(new URLSearchParams(window.location.search).get('mirrorFixture'))
+          }, [])"""
+          if old not in source:
+              raise SystemExit('expected render-time Mirror fixture lookup not found')
+          client.write_text(source.replace(old, new, 1))
+
+          regression = Path('urai-tier1/tests/mirror-canonical-owner-hydration-contract.test.mjs')
+          regression.write_text('''import assert from 'node:assert/strict'\nimport fs from 'node:fs'\nimport test from 'node:test'\n\nconst autoRealms = fs.readFileSync(new URL('../src/app/UraiAutonomousV1Realms.tsx', import.meta.url), 'utf8')\nconst mirrorClient = fs.readFileSync(new URL('../src/app/mirror/MirrorSpatialClient.tsx', import.meta.url), 'utf8')\n\ntest('canonical embodied Mirror suppresses the retired autonomous overlay owner', () => {\n  assert.match(autoRealms, /if \\(pathname\\.startsWith\\(\\\"\\/mirror\\\"\\)\\) return null/)\n  assert.doesNotMatch(autoRealms, /if \\(pathname\\.startsWith\\(\\\"\\/mirror\\\"\\)\\) return realms\\.mirror/)\n})\n\ntest('Mirror fixture state is hydration-safe and parsed only after mount', () => {\n  assert.match(mirrorClient, /const \\[fixture, setFixture\\] = useState<string \\| null>\\(null\\)/)\n  assert.match(mirrorClient, /useEffect\\(\\(\\) => \\{\\s*setFixture\\(new URLSearchParams\\(window\\.location\\.search\\)\\.get\\('mirrorFixture'\\)\\)\\s*\\}, \\[\\]\\)/)\n  assert.doesNotMatch(mirrorClient, /typeof window === 'undefined' \\? null : new URLSearchParams/)\n})\n''')
+
+          runner = Path('urai-tier1/scripts/run-unit-contract-tests-compact.mjs')
+          source = runner.read_text()
+          anchor = "  'tests/mirror-spatial-realm-contract.test.mjs',\n"
+          addition = anchor + "  'tests/mirror-canonical-owner-hydration-contract.test.mjs',\n"
+          if anchor not in source:
+              raise SystemExit('Mirror compact-runner anchor not found')
+          if 'mirror-canonical-owner-hydration-contract.test.mjs' not in source:
+              source = source.replace(anchor, addition, 1)
+          runner.write_text(source)
+          PY
+
+          git rm .github/workflows/one-shot-mirror-canonical-owner-repair.yml
+          git add \
+            urai-tier1/src/app/UraiAutonomousV1Realms.tsx \
+            urai-tier1/src/app/mirror/MirrorSpatialClient.tsx \
+            urai-tier1/tests/mirror-canonical-owner-hydration-contract.test.mjs \
+            urai-tier1/scripts/run-unit-contract-tests-compact.mjs
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '5'
+
+      - name: Verify repaired source boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'if (pathname.startsWith("/mirror")) return null' urai-tier1/src/app/UraiAutonomousV1Realms.tsx
+          ! grep -Fq 'if (pathname.startsWith("/mirror")) return realms.mirror' urai-tier1/src/app/UraiAutonomousV1Realms.tsx
+          grep -Fq 'const [fixture, setFixture] = useState<string | null>(null)' urai-tier1/src/app/mirror/MirrorSpatialClient.tsx
+          ! grep -Fq "typeof window === 'undefined' ? null : new URLSearchParams" urai-tier1/src/app/mirror/MirrorSpatialClient.tsx
+          grep -Fq 'mirror-canonical-owner-hydration-contract.test.mjs' urai-tier1/scripts/run-unit-contract-tests-compact.mjs
+
+      - name: Commit exact repair to Mirror branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Repair Mirror canonical ownership and hydration'
+          git push origin "HEAD:$TARGET_BRANCH"
