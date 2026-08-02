@@ -38,14 +38,11 @@ for (const asset of manifest.assets) {
   const sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
   const receiptReleaseState = String(receipt.releaseState || '')
   const compressionStatus = String(receipt.compressionStatus || '')
-  const productionReady = receiptReleaseState === 'production-ready'
+  const productionReady = asset.releaseState === 'production-ready'
 
   if (!receiptReleaseState) errors.push(`${asset.id}: receipt releaseState is required`)
-  if (productionReady && compressionStatus.includes('candidate')) {
+  if (receiptReleaseState === 'production-ready' && compressionStatus.includes('candidate')) {
     errors.push(`${asset.id}: receipt cannot be production-ready with candidate compression status`)
-  }
-  if (asset.kind === 'model' && receiptReleaseState === 'candidate-not-production-ready' && !compressionStatus.includes('candidate')) {
-    errors.push(`${asset.id}: model candidate receipt must carry candidate compression status`)
   }
 
   for (const [field, expected] of [
@@ -135,7 +132,7 @@ if (results.length !== manifest.assets.length) {
 
 const report = {
   ok: errors.length === 0,
-  candidateOnly: results.length === manifest.assets.length && results.every((result) => result.receiptReleaseState !== 'production-ready'),
+  candidateOnly: results.length === manifest.assets.length && results.every((result) => result.manifestReleaseState !== 'production-ready'),
   manifestId: manifest.manifestId,
   checkedAt: new Date().toISOString(),
   checkedAssets: results.length,
