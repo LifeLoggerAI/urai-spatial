@@ -16,3 +16,10 @@ test('Mirror fixture state is hydration-safe and parsed only after mount', () =>
   assert.match(mirrorClient, /useEffect\(\(\) => \{\s*setFixture\(new URLSearchParams\(window\.location\.search\)\.get\('mirrorFixture'\)\)\s*\}, \[\]\)/)
   assert.doesNotMatch(mirrorClient, /typeof window === 'undefined' \? null : new URLSearchParams/)
 })
+
+test('mobile Mirror reserves a clear touch zone for the Orb', () => {
+  assert.match(mirrorClient, /\.mirrorOrb\{position:absolute;z-index:22;/)
+  assert.match(mirrorClient, /\.mirrorInspection\{left:12px;right:12px;top:max\(72px,calc\(env\(safe-area-inset-top\) \+ 62px\)\);bottom:max\(238px,calc\(env\(safe-area-inset-bottom\) \+ 232px\)\);width:auto;max-height:none\}/)
+  assert.doesNotMatch(mirrorClient, /\.mirrorOrb\{position:absolute;z-index:19;/)
+  assert.doesNotMatch(mirrorClient, /max-height:calc\(100svh - 250px\)/)
+})
