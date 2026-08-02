@@ -9,6 +9,7 @@ on:
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
+      - 'scripts/verify-governed-asset-promotion.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
       - 'scripts/audit-launch-critical-candidate-bundle.mjs'
       - 'scripts/validate-radiance-hdr.mjs'
