@@ -95,18 +95,19 @@ export type SelectedMemoryResult =
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,120}$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+const MAX_REPLAY_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
 function isoDateValue(value: unknown) {
-  const text = stringValue(value)
-  if (!text || !CANONICAL_UTC_TIMESTAMP.test(text)) return null
-  const timestamp = Date.parse(text)
+  if (typeof value !== 'string' || !value || value.trim() !== value) return null
+  if (!CANONICAL_UTC_TIMESTAMP.test(value)) return null
+  const timestamp = Date.parse(value)
   if (!Number.isFinite(timestamp)) return null
   const canonical = new Date(timestamp).toISOString()
-  return canonical === text ? canonical : null
+  return canonical === value ? canonical : null
 }
 
 function numberValue(value: unknown, fallback: number) {
@@ -191,12 +192,30 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     const label = stringValue(value.label)
     const caption = stringValue(value.caption)
     const narratorLine = stringValue(value.narratorLine)
+    const startsAtMs = numberValue(value.startsAtMs, -1)
+    const durationMs = numberValue(value.durationMs, -1)
     if (!label || !caption || !narratorLine) return []
-    return [{ id: segmentId, label, caption, narratorLine, startsAtMs: numberValue(value.startsAtMs, 0), durationMs: numberValue(value.durationMs, 0) }]
+    if (!Number.isSafeInteger(startsAtMs) || startsAtMs < 0) return []
+    if (!Number.isSafeInteger(durationMs) || durationMs <= 0) return []
+    return [{ id: segmentId, label, caption, narratorLine, startsAtMs, durationMs }]
   })
-  if (segments.length !== 4 || segments.some((segment) => segment.durationMs <= 0)) {
+  const segmentDurationMs = segments.reduce((total, segment) => total + segment.durationMs, 0)
+  if (
+    segments.length !== 4
+    || !Number.isSafeInteger(segmentDurationMs)
+    || segmentDurationMs <= 0
+    || segmentDurationMs > MAX_REPLAY_DURATION_MS
+  ) {
     return { status: 'corrupt', memory: null, message: 'The replay manifest is incomplete.' }
   }
+
+  const requestedDurationMs = replay?.durationMs
+  const replayDurationMs = typeof requestedDurationMs === 'number'
+    && Number.isSafeInteger(requestedDurationMs)
+    && requestedDurationMs > 0
+    && requestedDurationMs <= MAX_REPLAY_DURATION_MS
+    ? requestedDurationMs
+    : segmentDurationMs
 
   const people = Array.isArray(raw.people) ? raw.people.flatMap((item) => {
     if (!item || typeof item !== 'object') return []
@@ -236,7 +255,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
       replayManifest: {
         id: replayId,
         version: numberValue(replay?.version, 1),
-        durationMs: numberValue(replay?.durationMs, segments.reduce((total, segment) => total + segment.durationMs, 0)),
+        durationMs: replayDurationMs,
         segments,
         transcript: stringValue(replay?.transcript) ?? undefined,
         audioUrl: stringValue(replay?.audioUrl) ?? undefined,
