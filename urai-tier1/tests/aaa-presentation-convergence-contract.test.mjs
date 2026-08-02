@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const authorityPath = new URL('../../operations/assets/aaa-presentation-convergence.json', import.meta.url)
+const authorityPath = new URL('../../operations/presentation/aaa-presentation-convergence.json', import.meta.url)
 const authority = JSON.parse(fs.readFileSync(authorityPath, 'utf8'))
 
 const requiredWorkstreams = [
