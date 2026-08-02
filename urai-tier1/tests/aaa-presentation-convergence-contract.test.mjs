@@ -37,8 +37,8 @@ const allowedStatuses = new Set([
 const humanGateWorkstreams = new Set(['brand-platform-outputs', 'private-memory-film'])
 const externalGateWorkstreams = new Set(['final-exact-release-capture', 'finite-time'])
 const physicalGateWorkstreams = new Set(['physical-xr-certification'])
-const humanGatePattern = /\b(?:human|acceptance|consent|rights|counsel|reference media|visual qa)\b/i
-const externalGatePattern = /\b(?:external|release sha|dependency chain|foundry|orchestration|render authority|delivery evidence|provider)\b/i
+const humanGatePattern = /^Human gate:\s+\S/i
+const externalGatePattern = /^External gate:\s+\S/i
 const workflowReferencePattern = /^github-actions:[1-9]\d*$/
 const digestReferencePattern = /^sha256:[a-f0-9]{64}$/
 
@@ -81,13 +81,13 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
     if (stream.status === 'blocked-human') {
       assert.ok(humanGateWorkstreams.has(stream.id), `non-human workstream assigned to human gate: ${stream.id}`)
       const blocker = assertSubstantiveProse(stream.blocker, 20, `human blocker: ${stream.id}`)
-      assert.match(blocker, humanGatePattern, `human gate lacks identifiable human authority: ${stream.id}`)
+      assert.match(blocker, humanGatePattern, `human gate lacks explicit Human gate declaration: ${stream.id}`)
     }
 
     if (stream.status === 'blocked-external') {
       assert.ok(externalGateWorkstreams.has(stream.id), `non-external workstream assigned to external gate: ${stream.id}`)
       const blocker = assertSubstantiveProse(stream.blocker, 20, `external blocker: ${stream.id}`)
-      assert.match(blocker, externalGatePattern, `external gate lacks identifiable external dependency: ${stream.id}`)
+      assert.match(blocker, externalGatePattern, `external gate lacks explicit External gate declaration: ${stream.id}`)
     }
 
     if (stream.status === 'separate-physical-gate') {
