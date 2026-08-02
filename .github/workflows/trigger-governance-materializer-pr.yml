@@ -62,6 +62,9 @@ jobs:
       - name: Verify exact source authority
         run: bash /tmp/governance-step-0.sh
 
+      - name: Create reviewed receipt directories
+        run: mkdir -p governance operations/ecosystem operations/spatial urai-tier1/tests urai-tier1/scripts
+
       - name: Apply reviewed governance source
         run: bash /tmp/governance-step-1.sh
 
