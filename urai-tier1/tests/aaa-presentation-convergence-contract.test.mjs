@@ -37,6 +37,8 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
   assert.equal(authority.acceptedEstate.runtimeImages.missing, 0)
   assert.equal(authority.acceptedEstate.launchCriticalModels.promoted, 7)
   assert.equal(authority.acceptedEstate.launchCriticalModels.pending, 0)
+  assert.equal(authority.acceptedEstate.sharedSensoryAssets.ready, 3)
+  assert.equal(authority.acceptedEstate.sharedSensoryAssets.candidate, 2)
 
   const boundaries = authority.truthBoundaries
   assert.equal(boundaries.productionLiveClaimAllowed, false)
@@ -49,11 +51,11 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
   assert.equal(boundaries.providerCallsThisChange, 0)
   assert.equal(boundaries.spendUsdThisChange, '0.00')
 
-  const byId = new Map(authority.workstreams.map((stream) => [stream.id, stream]))
-  for (const id of requiredWorkstreams) {
-    assert.ok(byId.has(id), `missing workstream: ${id}`)
-  }
+  const workstreamIds = authority.workstreams.map((stream) => stream.id)
+  assert.equal(new Set(workstreamIds).size, workstreamIds.length, 'duplicate workstream ids')
+  assert.deepEqual([...workstreamIds].sort(), [...requiredWorkstreams].sort(), 'workstream set must match the bounded authority exactly')
 
+  const byId = new Map(authority.workstreams.map((stream) => [stream.id, stream]))
   for (const stream of authority.workstreams) {
     assert.ok(allowedStatuses.has(stream.status), `invalid status: ${stream.id}`)
     assert.ok(Array.isArray(stream.outputs) && stream.outputs.length > 0, `missing outputs: ${stream.id}`)
