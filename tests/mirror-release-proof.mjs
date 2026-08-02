@@ -130,6 +130,14 @@ async function proveOverview(browser, deviceName) {
     await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-selected-pattern') === 'body-rhythm')
     const inspector = page.locator('aside[aria-label="Body rhythm evidence"]')
     await inspector.waitFor({ state: 'visible' })
+    if (deviceName === 'mobile') {
+      const geometry = await inspector.evaluate((element) => ({ clientHeight: element.clientHeight, scrollHeight: element.scrollHeight }))
+      if (geometry.scrollHeight <= geometry.clientHeight) throw new Error(`mobile inspector is not scrollable: ${geometry.clientHeight}/${geometry.scrollHeight}`)
+      await inspector.evaluate((element) => { element.scrollTop = element.scrollHeight })
+      await page.waitForTimeout(100)
+      const scrollTop = await inspector.evaluate((element) => element.scrollTop)
+      if (scrollTop <= 0) throw new Error('mobile inspector touch-scroll surface did not move')
+    }
     if (!new URL(page.url()).searchParams.has('pattern')) throw new Error('selected pattern was not restored into URL state')
 
     const range = inspector.locator('input[type="range"]')
@@ -192,6 +200,30 @@ async function proveTransition(browser, destination, buttonName) {
   }
 }
 
+async function proveSemanticFallback(browser) {
+  const name = 'no-webgl-semantic-fallback'
+  const { context, page, consoleErrors, failedRequests } = await createPage(browser, 'desktop', { disableWebGL: true })
+  try {
+    const response = await page.goto(absolute(`/mirror?${demoQuery}`), { waitUntil: 'domcontentloaded', timeout: 60000 })
+    if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for semantic fallback`)
+    const fallback = page.getByTestId('mirror-webgl-fallback')
+    await fallback.waitFor({ state: 'visible', timeout: 45000 })
+    await fallback.getByRole('button', { name: /^Body rhythm/ }).click()
+    const inspector = fallback.locator('article[aria-label="Body rhythm evidence"]')
+    await inspector.waitFor({ state: 'visible' })
+    await inspector.getByText('Uncertainty', { exact: true }).waitFor({ state: 'visible' })
+    await inspector.getByText(/owner-authorized|demonstration data/).waitFor({ state: 'visible' })
+    const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback')
+    await assertCleanEvidence(consoleErrors, failedRequests)
+    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), consoleErrors, failedRequests })
+  } catch (error) {
+    const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback-failure').catch(() => '')
+    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
+  } finally {
+    await context.close()
+  }
+}
+
 await fs.mkdir(shotDir, { recursive: true })
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-webgl'] })
 
@@ -217,7 +249,7 @@ try {
     },
   })
   await proveState(browser, { name: 'reduced-motion', route: `/mirror?${demoQuery}`, reducedMotion: true, marker: '[data-testid="mirror-spatial-world"]', text: 'Mirror' })
-  await proveState(browser, { name: 'no-webgl-semantic-fallback', route: `/mirror?${demoQuery}`, disableWebGL: true, marker: '[data-testid="mirror-webgl-fallback"]', text: 'Spatial rendering is unavailable.' })
+  await proveSemanticFallback(browser)
   await proveTransition(browser, 'replay', 'Replay threshold')
   await proveTransition(browser, 'passport', 'Passport threshold')
 } finally {

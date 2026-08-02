@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 const EXPLICIT_DEMO_HREF = '/mirror?memoryId=demo%3Amirror-preview&node=mirror-preview&demo=1'
+const ACCEPTANCE_FIXTURES_ENABLED = process.env.NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES === '1'
 
 export default function MirrorBareEntryGuard() {
   const [bareEntry, setBareEntry] = useState(false)
@@ -10,7 +11,7 @@ export default function MirrorBareEntryGuard() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const hasMemoryContext = Boolean(params.get('memoryId') ?? params.get('node'))
-    const isEvidenceFixture = Boolean(params.get('mirrorFixture'))
+    const isEvidenceFixture = ACCEPTANCE_FIXTURES_ENABLED && Boolean(params.get('mirrorFixture'))
     setBareEntry(!hasMemoryContext && !isEvidenceFixture)
   }, [])
 

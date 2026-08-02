@@ -9,6 +9,7 @@ const bareEntrySource = fs.readFileSync(new URL('../src/app/mirror/MirrorBareEnt
 const clientSource = fs.readFileSync(new URL('../src/app/mirror/MirrorSpatialClient.tsx', import.meta.url), 'utf8')
 const modelSource = fs.readFileSync(new URL('../src/spatial/mirror/mirrorPatternModel.ts', import.meta.url), 'utf8')
 const navigationSource = fs.readFileSync(new URL('../src/spatial/navigation/EmbodiedNavigation.tsx', import.meta.url), 'utf8')
+const proofWorkflowSource = fs.readFileSync(new URL('../../.github/workflows/mirror-release-proof.yml', import.meta.url), 'utf8')
 
 test('Mirror route has one embodied spatial owner and no promotional-image owner', () => {
   assert.match(pageSource, /MirrorSpatialClient/)
@@ -103,4 +104,16 @@ test('Mirror movement help identifies the active realm', () => {
   assert.match(clientSource, /<MovementHelp realm="Mirror"/)
   assert.doesNotMatch(clientSource, /<MovementHelp realm="Life Map"/)
   assert.match(navigationSource, /realm: 'Home' \| 'Ground' \| 'Life Map' \| 'Mirror'/)
+})
+
+
+test('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail closed', () => {
+  assert.match(clientSource, /NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES/)
+  assert.match(bareEntrySource, /ACCEPTANCE_FIXTURES_ENABLED && Boolean\(params\.get\('mirrorFixture'\)\)/)
+  assert.match(proofWorkflowSource, /NEXT_PUBLIC_URAI_ACCEPTANCE_FIXTURES: '1'/)
+  assert.match(clientSource, /data-movement-ui="true"/)
+  assert.match(clientSource, /touch-action:pan-y/)
+  assert.match(clientSource, /className="fallbackInspection"/)
+  assert.match(clientSource, /selected\.uncertainty/)
+  assert.match(clientSource, /selected\.provenance/)
 })
