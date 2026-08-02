@@ -7,7 +7,7 @@ test.use({ baseURL })
 test.describe('URAI visual ownership and containment evidence', () => {
   test('Home direct destination controls remain non-dominant and accessible', async ({ page }) => {
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
+    const navigation = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     await expect(navigation).toBeVisible({ timeout: 30_000 })
     await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
     await expect(navigation.getByRole('button', { name: 'Open Ground directly', exact: true })).toBeVisible()
