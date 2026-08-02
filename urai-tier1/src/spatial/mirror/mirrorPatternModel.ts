@@ -78,11 +78,16 @@ function permission(memory: SelectedMemory): MirrorSource['permission'] {
 }
 
 function timeRange(memory: SelectedMemory) {
-  const end = memory.occurredAt
-  const start = memory.replayManifest.segments.length
-    ? new Date(new Date(end).getTime() - memory.replayManifest.durationMs).toISOString()
-    : end
-  return { start, end }
+  const endMs = Date.parse(memory.occurredAt)
+  const durationMs = memory.replayManifest.durationMs
+  if (!Number.isFinite(endMs) || !Number.isSafeInteger(durationMs) || durationMs <= 0) {
+    return { start: memory.occurredAt, end: memory.occurredAt }
+  }
+  const startMs = endMs - durationMs
+  if (!Number.isFinite(startMs) || startMs < -8640000000000000 || startMs > 8640000000000000) {
+    return { start: memory.occurredAt, end: memory.occurredAt }
+  }
+  return { start: new Date(startMs).toISOString(), end: memory.occurredAt }
 }
 
 function source(memory: SelectedMemory, id: string, label: string, kind: MirrorSource['kind']): MirrorSource {
