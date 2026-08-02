@@ -1,5 +1,6 @@
 name: Trigger reviewed governance materializer on PR sync
 
+# Second synchronize event executes this already-registered workflow.
 on:
   pull_request:
     types: [synchronize]
