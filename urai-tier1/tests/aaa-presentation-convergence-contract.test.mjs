@@ -29,6 +29,8 @@ const allowedStatuses = new Set([
   'intentionally-fallback',
 ])
 
+const evidenceReferencePattern = /^(operations\/|urai-tier1\/|github-actions:|artifact:|sha256:)/
+
 test('AAA presentation convergence authority is complete and fail closed', () => {
   assert.equal(authority.repository, 'LifeLoggerAI/urai-spatial')
   assert.equal(authority.authorityIssue, 'LifeLoggerAI/urai-spatial#1030')
@@ -62,6 +64,19 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
     if (stream.status.startsWith('blocked-')) {
       assert.equal(typeof stream.blocker, 'string', `missing blocker: ${stream.id}`)
       assert.ok(stream.blocker.length > 20, `weak blocker: ${stream.id}`)
+    }
+    if (stream.status === 'accepted') {
+      assert.ok(Array.isArray(stream.evidence) && stream.evidence.length > 0, `missing acceptance evidence: ${stream.id}`)
+      for (const reference of stream.evidence) {
+        assert.equal(typeof reference, 'string', `invalid evidence reference: ${stream.id}`)
+        assert.match(reference, evidenceReferencePattern, `unbounded evidence reference: ${stream.id}`)
+      }
+    }
+    if (stream.status === 'intentionally-fallback') {
+      assert.equal(typeof stream.omission, 'string', `missing omission reason: ${stream.id}`)
+      assert.ok(stream.omission.length > 20, `weak omission reason: ${stream.id}`)
+      assert.equal(typeof stream.fallback, 'string', `missing safe fallback: ${stream.id}`)
+      assert.ok(stream.fallback.length > 10, `weak safe fallback: ${stream.id}`)
     }
   }
 
