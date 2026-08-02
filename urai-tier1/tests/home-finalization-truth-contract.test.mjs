@@ -13,6 +13,7 @@ const assetOwner = read('src/app/AssetDrivenHomeWorld.tsx')
 const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const fallback = read('src/app/FinalHomeWorld.tsx')
+const selectedMemoryContract = read('src/spatial/memory/selectedMemoryContract.ts')
 const doorwayProof = read('../tests/native-doorway-proof.mjs')
 const authoring = read('../scripts/author-home-finalization-assets.mjs')
 const authoredVerifier = read('../scripts/verify-home-finalization-authored-assets.mjs')
@@ -56,6 +57,14 @@ test('normal production personalization cannot silently consume disclosed sample
   assert.match(personalizationHook, /users', user\.uid, 'memories'/)
   assert.match(personalizationHook, /setDataAvailable\(false\)/)
   assert.match(personalization, /No substitute memories or sample records were mounted/)
+})
+
+test('selected memory parsing rejects malformed timestamps before Mirror rendering', () => {
+  assert.match(selectedMemoryContract, /function isoDateValue\(value: unknown\)/)
+  assert.match(selectedMemoryContract, /const timestamp = Date\.parse\(text\)/)
+  assert.match(selectedMemoryContract, /Number\.isFinite\(timestamp\) \? new Date\(timestamp\)\.toISOString\(\) : null/)
+  assert.match(selectedMemoryContract, /const occurredAt = isoDateValue\(raw\.occurredAt\)/)
+  assert.match(selectedMemoryContract, /if \(!title \|\| !occurredAt \|\| !summary/)
 })
 
 test('every required Orb state maps to a directly bound authored GLB clip', () => {
