@@ -22,6 +22,7 @@ const tests = [
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
+  'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/post-deploy-ground-smoke-contract.test.mjs',
   'tests/persistent-world-doorway-regression.test.mjs',
