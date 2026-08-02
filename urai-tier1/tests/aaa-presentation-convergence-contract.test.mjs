@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(testDirectory, '../..')
+const realRepositoryRoot = fs.realpathSync(repositoryRoot)
 const authorityPath = path.join(repositoryRoot, 'operations/presentation/aaa-presentation-convergence.json')
 const authority = JSON.parse(fs.readFileSync(authorityPath, 'utf8'))
 
@@ -131,7 +132,11 @@ function validateEvidenceReference(streamId, reference) {
     const resolved = path.resolve(repositoryRoot, reference)
     assert.ok(resolved.startsWith(`${repositoryRoot}${path.sep}`), `evidence path escapes repository: ${streamId}`)
     assert.ok(fs.existsSync(resolved), `missing evidence path: ${streamId}: ${reference}`)
-    assert.ok(fs.statSync(resolved).isFile(), `evidence path must identify a regular file: ${streamId}: ${reference}`)
+    const metadata = fs.lstatSync(resolved)
+    assert.equal(metadata.isSymbolicLink(), false, `evidence path must not be a symbolic link: ${streamId}: ${reference}`)
+    assert.ok(metadata.isFile(), `evidence path must identify a regular file: ${streamId}: ${reference}`)
+    const realResolved = fs.realpathSync(resolved)
+    assert.ok(realResolved.startsWith(`${realRepositoryRoot}${path.sep}`), `evidence target escapes repository: ${streamId}: ${reference}`)
     return
   }
 
