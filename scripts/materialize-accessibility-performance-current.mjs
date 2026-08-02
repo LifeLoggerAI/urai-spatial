@@ -152,13 +152,6 @@ function demoMemoryUrl(overview: boolean) {
 await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
   let source = replaceExact(
     input,
-    "page.locator('.urai-final-home-world')",
-    "page.locator('.urai-asset-home-world[data-home-primary-owner=\"asset-driven\"]')",
-    1,
-    'visual Home primary owner',
-  )
-  source = replaceExact(
-    source,
     "page.locator('details.life-map-help')",
     "page.locator('details.life-map-navigator')",
     1,
