@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import path from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
-const authorityPath = new URL('../../operations/presentation/aaa-presentation-convergence.json', import.meta.url)
+const testDirectory = path.dirname(fileURLToPath(import.meta.url))
+const repositoryRoot = path.resolve(testDirectory, '../..')
+const authorityPath = path.join(repositoryRoot, 'operations/presentation/aaa-presentation-convergence.json')
 const authority = JSON.parse(fs.readFileSync(authorityPath, 'utf8'))
 
 const requiredWorkstreams = [
@@ -29,7 +33,9 @@ const allowedStatuses = new Set([
   'intentionally-fallback',
 ])
 
-const evidenceReferencePattern = /^(operations\/|urai-tier1\/|github-actions:|artifact:|sha256:)/
+const workflowReferencePattern = /^github-actions:[1-9]\d*$/
+const artifactReferencePattern = /^artifact:[A-Za-z0-9][A-Za-z0-9._-]{2,}$/
+const digestReferencePattern = /^sha256:[a-f0-9]{64}$/
 
 test('AAA presentation convergence authority is complete and fail closed', () => {
   assert.equal(authority.repository, 'LifeLoggerAI/urai-spatial')
@@ -63,20 +69,17 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
     assert.ok(Array.isArray(stream.outputs) && stream.outputs.length > 0, `missing outputs: ${stream.id}`)
     if (stream.status.startsWith('blocked-')) {
       assert.equal(typeof stream.blocker, 'string', `missing blocker: ${stream.id}`)
-      assert.ok(stream.blocker.length > 20, `weak blocker: ${stream.id}`)
+      assert.ok(stream.blocker.trim().length > 20, `weak blocker: ${stream.id}`)
     }
     if (stream.status === 'accepted') {
       assert.ok(Array.isArray(stream.evidence) && stream.evidence.length > 0, `missing acceptance evidence: ${stream.id}`)
-      for (const reference of stream.evidence) {
-        assert.equal(typeof reference, 'string', `invalid evidence reference: ${stream.id}`)
-        assert.match(reference, evidenceReferencePattern, `unbounded evidence reference: ${stream.id}`)
-      }
+      for (const reference of stream.evidence) validateEvidenceReference(stream.id, reference)
     }
     if (stream.status === 'intentionally-fallback') {
       assert.equal(typeof stream.omission, 'string', `missing omission reason: ${stream.id}`)
-      assert.ok(stream.omission.length > 20, `weak omission reason: ${stream.id}`)
+      assert.ok(stream.omission.trim().length > 20, `weak omission reason: ${stream.id}`)
       assert.equal(typeof stream.fallback, 'string', `missing safe fallback: ${stream.id}`)
-      assert.ok(stream.fallback.length > 10, `weak safe fallback: ${stream.id}`)
+      assert.ok(stream.fallback.trim().length > 10, `weak safe fallback: ${stream.id}`)
     }
   }
 
@@ -89,3 +92,32 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
   assert.match(authority.completionRule, /Every public-facing asset/)
   assert.match(authority.completionRule, /No unfinished artifact/)
 })
+
+function validateEvidenceReference(streamId, reference) {
+  assert.equal(typeof reference, 'string', `invalid evidence reference: ${streamId}`)
+  assert.equal(reference, reference.trim(), `untrimmed evidence reference: ${streamId}`)
+
+  if (reference.startsWith('operations/') || reference.startsWith('urai-tier1/')) {
+    const resolved = path.resolve(repositoryRoot, reference)
+    assert.ok(resolved.startsWith(`${repositoryRoot}${path.sep}`), `evidence path escapes repository: ${streamId}`)
+    assert.ok(fs.existsSync(resolved), `missing evidence path: ${streamId}: ${reference}`)
+    return
+  }
+
+  if (reference.startsWith('github-actions:')) {
+    assert.match(reference, workflowReferencePattern, `invalid workflow run reference: ${streamId}`)
+    return
+  }
+
+  if (reference.startsWith('artifact:')) {
+    assert.match(reference, artifactReferencePattern, `invalid artifact reference: ${streamId}`)
+    return
+  }
+
+  if (reference.startsWith('sha256:')) {
+    assert.match(reference, digestReferencePattern, `invalid SHA-256 reference: ${streamId}`)
+    return
+  }
+
+  assert.fail(`unbounded evidence reference: ${streamId}: ${reference}`)
+}
