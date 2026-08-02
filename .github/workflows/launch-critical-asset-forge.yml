@@ -149,6 +149,7 @@ jobs:
         with:
           name: urai-launch-critical-asset-candidates-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
           path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload governed promotion evidence
