@@ -17,14 +17,6 @@ async function transformFile(path, transform) {
   console.log(`Materialized current accessibility-performance v2 proof at ${path}`)
 }
 
-await transformFile('urai-tier1/tests/accessibility-performance-canonical-home-travel.spec.ts', (input) => replaceExact(
-  input,
-  '      test.setTimeout(90_000)',
-  '      test.setTimeout(180_000)',
-  1,
-  'canonical Home travel software-renderer timeout envelope',
-))
-
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {
   let source = replaceExact(
     input,
@@ -104,29 +96,15 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     input,
     "          label: button.textContent?.trim() || '',",
     "          label: button.querySelector('strong')?.textContent?.trim() || button.textContent?.trim() || '',",
-    2,
-    'current selected and journey action visual label owner',
-  )
-  source = replaceExact(
-    source,
-    "actions.getByRole('button', { name: 'Enter Focus', exact: true })",
-    "actions.getByRole('button', { name: /Enter Focus$/ })",
     1,
-    'current Focus action accessible name',
-  )
-  source = replaceExact(
-    source,
-    "actions.getByRole('button', { name: 'Replay', exact: true })",
-    "actions.getByRole('button', { name: /Replay$/ })",
-    1,
-    'current Replay action accessible name',
+    'current journey action visual label owner',
   )
   source = replaceExact(
     source,
     "actions.getByRole('button', { name: 'Overview', exact: true })",
     "actions.getByRole('button', { name: /overview$/i })",
-    2,
-    'current Overview action accessible name',
+    1,
+    'current journey Overview accessible name',
   )
   source = replaceExact(
     source,
@@ -161,16 +139,6 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     }, { timeout: 15_000 }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })`,
     1,
     'current Life Map journey control pointer ownership',
-  )
-  source = replaceExact(
-    source,
-    `    expect(evidence.height).toBeGreaterThanOrEqual(62)
-    expect(evidence.height).toBeLessThanOrEqual(68)`,
-    `    expect(evidence.height).toBeGreaterThanOrEqual(62)
-    expect(evidence.height).toBeLessThanOrEqual(160)
-    expect(evidence.height / evidence.viewportHeight).toBeLessThan(0.2)`,
-    1,
-    'current selected action owner responsive height envelope',
   )
   return source
 })
