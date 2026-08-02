@@ -1,0 +1,76 @@
+name: Trigger reviewed governance materializer
+
+on:
+  push:
+    branches:
+      - reconcile/ecosystem-authority-after-geography-v4-20260801
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trigger-governance-materializer
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: reconcile/ecosystem-authority-after-geography-v4-20260801
+  EXPECTED_HEAD: ${{ github.sha }}
+  REVIEWED_GOVERNANCE_HEAD: db50fa80708d771eb9012d35a82638f8b8440985
+
+jobs:
+  materialize:
+    if: github.repository == 'LifeLoggerAI/urai-spatial'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Extract reviewed materializer blocks
+        shell: python
+        run: |
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/one-shot-governance-after-geography.yml')
+          lines = workflow.read_text().splitlines()
+          names = [
+              'Verify exact clean authorities',
+              'Apply reviewed policy and current stack authority',
+              'Verify combined governance boundary',
+              'Commit final governance stack',
+          ]
+
+          for index, name in enumerate(names):
+              marker = f'- name: {name}'
+              start = next(i for i, line in enumerate(lines) if line.strip() == marker)
+              run_line = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == 'run: |')
+              run_indent = len(lines[run_line]) - len(lines[run_line].lstrip())
+              block = []
+              for line in lines[run_line + 1:]:
+                  if line.strip() and len(line) - len(line.lstrip()) <= run_indent:
+                      break
+                  block.append(line)
+              nonblank = [len(line) - len(line.lstrip()) for line in block if line.strip()]
+              trim = min(nonblank)
+              script = '\n'.join(line[trim:] if line.strip() else '' for line in block) + '\n'
+              Path(f'/tmp/governance-step-{index}.sh').write_text(script)
+
+      - name: Verify exact source authority
+        run: bash /tmp/governance-step-0.sh
+
+      - name: Apply reviewed governance source
+        run: bash /tmp/governance-step-1.sh
+
+      - name: Remove trigger wrapper
+        run: git rm .github/workflows/trigger-governance-materializer.yml
+
+      - name: Verify final governance boundary
+        run: bash /tmp/governance-step-2.sh
+
+      - name: Commit final governance stack
+        run: bash /tmp/governance-step-3.sh
