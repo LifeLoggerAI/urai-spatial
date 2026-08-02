@@ -1,0 +1,380 @@
+name: One-shot governance after geography
+
+on:
+  pull_request:
+    types: [reopened]
+    branches:
+      - feat/geographic-location-launch-minimum-v5-20260801
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-governance-after-geography
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: reconcile/ecosystem-authority-after-geography-v4-20260801
+  EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+  REVIEWED_GOVERNANCE_HEAD: db50fa80708d771eb9012d35a82638f8b8440985
+
+jobs:
+  materialize:
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.event.pull_request.head.ref == 'reconcile/ecosystem-authority-after-geography-v4-20260801'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact governance branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Verify exact clean authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git fetch --no-tags origin "$REVIEWED_GOVERNANCE_HEAD"
+          git cat-file -e "$REVIEWED_GOVERNANCE_HEAD^{commit}"
+
+      - name: Apply reviewed policy and current stack authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          policies=(
+            governance/ECONOMIC_PARTICIPATION_BOUNDARIES.md
+            governance/IP_CHAIN_OF_TITLE_READINESS.md
+            governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md
+            governance/RUAI_ACCESS_AND_DATA_GOVERNANCE.md
+          )
+          git checkout "$REVIEWED_GOVERNANCE_HEAD" -- "${policies[@]}"
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          old_head = 'db50fa80708d771eb9012d35a82638f8b8440985'
+          mirror = '804e2477719bc008cb59449e931a4fbd592a8a9f'
+          geography = 'a48d58775afe2236c38bf52a9e98e3c566cdd0b7'
+          main = '3e88a085e137a727aa65b4cc7e6aa107e27e2b9d'
+
+          # Preserve all reviewed machine controls, then replace only dependency authority.
+          registry = json.loads(__import__('subprocess').check_output([
+              'git', 'show', f'{old_head}:governance/urai-ecosystem-governance.json'
+          ], text=True))
+          registry['stackedBaseCommit'] = geography
+          registry['currentMainAtRebuild'] = main
+          preview = registry['dependencies']['trustedPreview']
+          registry['dependencies'] = {
+              'trustedPreview': preview,
+              'embodiedMirror': {
+                  'pullRequest': 1026,
+                  'exactHead': mirror,
+                  'exactHeadWorkflowCount': 24,
+                  'browserCaseCount': 13,
+                  'requiredBeforeEcosystemMerge': True,
+              },
+              'consentGatedGeography': {
+                  'pullRequest': 1027,
+                  'exactHead': geography,
+                  'exactHeadWorkflowCount': 7,
+                  'requiredBeforeEcosystemMerge': True,
+              },
+          }
+          Path('governance/urai-ecosystem-governance.json').write_text(json.dumps(registry, indent=2) + '\n')
+
+          convergence = f'''# URAI Ecosystem Convergence Receipt
+
+Recorded: 2026-08-02  
+Status: exact stacked launch-readiness convergence; not a production-live, legal-formation, filing, partnership, certification, or provider-activation receipt  
+Repository: `LifeLoggerAI/urai-spatial`  
+Current `main` at rebuild: `{main}`  
+Stacked base: `{geography}`  
+Branch: `reconcile/ecosystem-authority-after-geography-v4-20260801`  
+Production authority: issue `#999`
+
+## Evidence priority
+
+1. Current exact-head GitHub source and workflow state.
+2. Current protected-cloud and deployed-fingerprint evidence.
+3. Signed, filed, paid, or externally issued primary receipts.
+4. Historical repository or Drive records only after reconciliation to current SHAs.
+5. Plans and narratives, which do not prove execution.
+
+## Exact dependency chain
+
+| Lane | Authority | Exact authority | Boundary |
+|---|---|---|---|
+| Trusted preview | PR #1018 | head `5dd029aea3e63fa307a4c9b8be6122ba65a39ab8`; external merge `36c31888d097dfacaebf162e785c2cbb0ff012fb` | merged externally; this source-only execution did not perform the merge |
+| Preview repairs | PRs #1021/#1023 | current `main@{main}` | static staging and Tier-1 Playwright resolution retained |
+| Embodied Mirror | PR #1026 | `{mirror}` | 24/24 exact-head workflows and 13/13 dedicated browser cases green; draft, mergeable, unmerged |
+| Consent-gated geography | PR #1027 | `{geography}` | 7/7 exact-head stacked workflows green; draft, mergeable, unmerged |
+| Ecosystem governance | replacement of PR #1025 | exact branch head resolved after materialization | stacked directly behind exact PR #1027 |
+| Protected production | issue #999 | final exact `main` only | DNS, fingerprint, rollback, public smoke, and acceptance remain mandatory |
+
+Former PRs #1013, #1017, #1019, #1020, #1022, #1024, and #1025 are superseded or externally consumed as recorded. No stale workflow or artifact transfers authority.
+
+## Mirror evidence boundary
+
+Exact Mirror head `{mirror}` passed 24 workflows and 13 dedicated desktop/mobile/privacy/accessibility/transition cases. The final receipt retained 13 screenshots with zero console errors and zero failed requests. The canonical route has one embodied owner, hydration-safe fixture parsing, mobile Orb clearance, Replay continuity, Passport exit, reduced motion, semantic no-WebGL fallback, and explicit demo/private boundaries.
+
+## Geography and provider-state truth
+
+Exact geography head `{geography}` passed 7 stacked workflows with Mirror contracts preserved. Non-mutating Maps audit run `30726539123`, artifact `8826542369`, digest `sha256:3ec2d70588383923f21e3a953d6d5ae7f0a3a2b701e4be03bcb04ec7f862b21d`, observed Maps and Geocoding backends enabled in project `urai-4dc1d`. It performed no mutation. Restricted keys, quotas, budgets, origins, rollback, rotation, and production-use authorization remain unproved.
+
+## Governance classification
+
+- UrAi consumer product: implemented; exact stacked verification active.
+- RuAi professional layer: prepared; explicit consent, purpose limitation, least privilege, tenant isolation, audit, revocation, deletion propagation, and default-deny private-memory/exact-location controls required.
+- URAI Labs, Foundation, and IP Holdings: prepared; formation, officer authority, assignments, licenses, and ownership claims require executed external evidence.
+- Economic participation: future scope; no automatic data sale, payout, revenue share, guaranteed earnings, marketplace, or cash-value activation.
+- Accessibility and sensory safety: implemented by scope; no universal certification claim.
+
+## Machine-verifiable controls
+
+- `governance/urai-ecosystem-governance.json`
+- the four governance policy documents
+- `urai-tier1/tests/urai-ecosystem-governance-contract.test.mjs`
+- compact runner registration preserving Mirror, geography, and governance contracts
+
+## Merge order
+
+1. Obtain genuine eligible non-author review for exact Mirror PR #1026.
+2. Consume exact Mirror only after separate authorization and expected-head protection.
+3. Rebuild PR #1027 on resulting exact `main`, rerun all evidence, review, and consume only after separate authorization.
+4. Rebuild this governance layer on resulting exact `main`, rerun all evidence, review, and consume only after separate authorization.
+5. Restore registrar/DNS authority and dispatch exactly one separately authorized protected production run.
+
+## Cost and mutation receipt
+
+- Paid provider calls: 0
+- Spend: USD 0.00
+- Merge performed: no
+- Production deployment: no
+- DNS, credential, IAM, billing, provider, legal, email, Drive, or production-data mutation: no
+
+## Current verdict
+
+**The source dependency chain is exact and evidence-backed through Mirror PR #1026, geography PR #1027, and this final governance child. Production and external authority remain fail-closed.**
+'''
+          Path('operations/ecosystem/URAI_ECOSYSTEM_CONVERGENCE_RECEIPT.md').write_text(convergence)
+
+          ledger = f'''# UrAi Spatial AAA Program Ledger
+
+Status: active exact stacked execution authority during registrar/DNS hold  
+Repository: `LifeLoggerAI/urai-spatial`  
+Current `main`: `{main}`  
+Stacked base: `{geography}`  
+Program branch: `reconcile/ecosystem-authority-after-geography-v4-20260801`  
+Production authority: issue `#999`
+
+## Objective
+
+Converge UrAi onto one coherent, persistent, embodied spatial world while preserving privacy, accessibility, fallbacks, exact-head evidence, and preview/production separation. DNS blocks canonical-domain cutover only; it does not excuse repository defects or stale authority.
+
+## Exact dependency authority
+
+1. Trusted preview #1018 and repairs #1021/#1023 — current `main@{main}`.
+2. Embodied Mirror PR #1026 — `{mirror}`, 24/24 workflows and 13/13 browser cases green, draft and unmerged.
+3. Consent-gated geography PR #1027 — `{geography}`, 7/7 stacked workflows green, draft and unmerged.
+4. Ecosystem governance — this exact replacement branch, stacked directly behind PR #1027.
+5. Protected production — final exact `main` only under issue #999.
+
+No evidence from an earlier head transfers merge authority to a newer head.
+
+## Frozen boundaries
+
+- Certified V1 asset lineage remains governed.
+- Mirror has one canonical embodied owner and may not restore the retired overlay.
+- Symbolic Life Map remains primary; geography is explicit-action supporting context.
+- Provider service enablement does not equal credential or product-use authorization.
+- Unsupported medical, HIPAA, anonymity, encryption, patent, partnership, earnings, and universal-accessibility claims remain prohibited.
+
+## Shared integration contract
+
+Every embodied realm must share canvas/route ownership, persistent world state, camera and transition language, lifecycle/disposal, world coordinates, Orb continuity where permitted, quality tiers, asset lifecycle, keyboard/pointer/touch/reduced-motion/fallback inputs, no-WebGL behavior, exact diagnostics, and consent/privacy/export/deletion boundaries.
+
+## Launch-critical waves
+
+- A1 current preview authority: complete on `main`.
+- A2 Mirror #1026: exact-green, awaiting genuine review and separate merge authorization.
+- A3 geography #1027: exact-green behind Mirror, awaiting review and separate authorization.
+- A4 governance v4: active behind geography; fresh exact evidence required.
+- A5 protected production: locked behind issue #999 and external DNS authority.
+
+## Exact evidence boundaries
+
+### Mirror
+
+Head `{mirror}`: 24/24 workflows, 13/13 dedicated browser cases, desktop/mobile movement, evidence states, reduced motion, no-WebGL fallback, Replay/Passport transitions, zero console errors, and zero failed requests.
+
+### Geography
+
+Head `{geography}`: 7/7 stacked workflows. Mirror regressions remain registered. Geography stays opt-in, local-only, precision-scoped, exportable, deletable, and non-provider until restricted credential/origin/budget/rollback evidence exists.
+
+### Governance
+
+Governance completion requires machine-verifiable default-deny controls, truthful dependency SHAs, prohibited-claim enforcement, bounded external blockers, and zero production/provider/legal mutation.
+
+## Merge discipline
+
+- dependency order only and only after separate authorization;
+- expected-head protection;
+- no force-push, test weakening, or stale evidence transfer;
+- genuine eligible non-author review required;
+- rebuild downstream children after every accepted parent merge;
+- record final `main`, workflows, artifacts, limitations, rollback, cost, and mutation state.
+
+## External blocker boundary
+
+Registrar/DNS, legal execution, professional-data credentials, restricted Maps credentials, payment/payout systems, native locale approval, and named partnerships remain external actions. Repository work and exact evidence continue independently.
+'''
+          Path('operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md').write_text(ledger)
+
+          test_source = f'''import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+
+const root = path.resolve(import.meta.dirname, '..', '..')
+const governancePath = path.join(root, 'governance', 'urai-ecosystem-governance.json')
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
+
+const requiredDocs = [
+  'RUAI_ACCESS_AND_DATA_GOVERNANCE.md',
+  'ORGANIZATIONAL_OPERATING_BOUNDARIES.md',
+  'IP_CHAIN_OF_TITLE_READINESS.md',
+  'ECONOMIC_PARTICIPATION_BOUNDARIES.md',
+]
+
+test('ecosystem registry binds the final exact dependency chain', () => {{
+  const registry = JSON.parse(fs.readFileSync(governancePath, 'utf8'))
+  assert.equal(registry.schemaVersion, 'urai-ecosystem-governance-1')
+  assert.equal(registry.status, 'stacked-readiness-authority')
+  assert.equal(registry.stackedBaseCommit, '{geography}')
+  assert.equal(registry.currentMainAtRebuild, '{main}')
+  assert.equal(registry.dependencies.trustedPreview.pullRequest, 1018)
+  assert.equal(registry.dependencies.trustedPreview.mergedIntoMain, true)
+  assert.equal(registry.dependencies.embodiedMirror.pullRequest, 1026)
+  assert.equal(registry.dependencies.embodiedMirror.exactHead, '{mirror}')
+  assert.equal(registry.dependencies.embodiedMirror.exactHeadWorkflowCount, 24)
+  assert.equal(registry.dependencies.embodiedMirror.browserCaseCount, 13)
+  assert.equal(registry.dependencies.embodiedMirror.requiredBeforeEcosystemMerge, true)
+  assert.equal(registry.dependencies.consentGatedGeography.pullRequest, 1027)
+  assert.equal(registry.dependencies.consentGatedGeography.exactHead, '{geography}')
+  assert.equal(registry.dependencies.consentGatedGeography.exactHeadWorkflowCount, 7)
+  assert.equal(registry.dependencies.consentGatedGeography.requiredBeforeEcosystemMerge, true)
+  assert.equal(registry.productionAuthorityIssue, 999)
+  assert.equal(registry.providerCalls, 0)
+  assert.equal(registry.spendUsd, '0.00')
+  assert.equal(registry.productionMutation, false)
+}})
+
+test('RuAi remains consent-scoped and default-deny', () => {{
+  const registry = JSON.parse(fs.readFileSync(governancePath, 'utf8'))
+  for (const key of ['explicitUserConsent','purposeLimitation','leastPrivilegeRoles','tenantIsolation','auditLogRequired','revocationRequired','deletionPropagationRequired','reidentificationProhibited','privateMemoryDefaultDenied','exactLocationDefaultDenied']) assert.equal(registry.ruaiMinimumControls[key], true)
+  assert.equal(registry.ruaiMinimumControls.medicalDecisionAutomationAuthorized, false)
+  const ruai = read('governance/RUAI_ACCESS_AND_DATA_GOVERNANCE.md')
+  for (const phrase of ['Access is denied unless','No role inherits unrestricted access','Private memory content and exact location are denied unless explicitly included','Cross-tenant and cross-user access must fail closed','No production-ready claim is authorized']) assert.match(ruai, new RegExp(phrase.replace(/[.*+?^${{}}()|[\\]\\\\]/g, '\\\\$&')))
+}})
+
+test('organizational, IP, and economic claims remain conditional', () => {{
+  for (const filename of requiredDocs) assert.ok(fs.existsSync(path.join(root, 'governance', filename)), `missing ${{filename}}`)
+  const organizations = read('governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md')
+  assert.match(organizations, /external legal formation, filings, signatures, and officer authority are not created/i)
+  assert.match(organizations, /URAI IP Holdings does not own user memories/i)
+  const ip = read('governance/IP_CHAIN_OF_TITLE_READINESS.md')
+  assert.match(ip, /does not create, assign, file, register, or perfect legal rights/i)
+  assert.match(ip, /Patent pending.*prohibited until a qualifying filing receipt exists/i)
+  const economics = read('governance/ECONOMIC_PARTICIPATION_BOUNDARIES.md')
+  assert.match(economics, /No guaranteed income/i)
+  assert.match(economics, /No automatic sale, license, or sharing of user data/i)
+  assert.match(economics, /future scope, not required for V1/i)
+}})
+
+test('external blockers remain bounded and claims fail closed', () => {{
+  const registry = JSON.parse(fs.readFileSync(governancePath, 'utf8'))
+  const blockers = new Map(registry.externalBlockers.map((item) => [item.id, item]))
+  for (const id of ['dns-registrar','legal-execution','native-locale-review']) assert.ok(blockers.has(id))
+  assert.ok(blockers.get('dns-registrar').doesNotBlock.includes('repository-work'))
+  const prohibited = registry.claimProhibitions.join('\n')
+  for (const claim of ['HIPAA','patent pending','named partnerships','user earnings','fully accessible']) assert.match(prohibited, new RegExp(claim, 'i'))
+}})
+
+test('receipts describe Mirror, geography, governance, and protected production truthfully', () => {{
+  const convergence = read('operations/ecosystem/URAI_ECOSYSTEM_CONVERGENCE_RECEIPT.md')
+  const ledger = read('operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md')
+  for (const source of [convergence, ledger]) {{
+    assert.match(source, /PR #1026/)
+    assert.match(source, /{mirror}/)
+    assert.match(source, /24\/24/)
+    assert.match(source, /13\/13/)
+    assert.match(source, /PR #1027/)
+    assert.match(source, /{geography}/)
+    assert.match(source, /7\/7/)
+    assert.match(source, /issue `?#999`?/i)
+  }}
+  assert.match(convergence, /No stale workflow or artifact transfers authority/)
+  assert.match(ledger, /No evidence from an earlier head transfers merge authority/)
+}})
+'''
+          Path('urai-tier1/tests/urai-ecosystem-governance-contract.test.mjs').write_text(test_source)
+
+          runner = Path('urai-tier1/scripts/run-unit-contract-tests-compact.mjs')
+          source = runner.read_text()
+          anchor = "  'tests/maps-cloud-bootstrap-contract.test.mjs',\n"
+          addition = anchor + "  'tests/urai-ecosystem-governance-contract.test.mjs',\n"
+          if anchor not in source:
+              raise SystemExit('governance compact-runner anchor not found')
+          if 'urai-ecosystem-governance-contract.test.mjs' not in source:
+              source = source.replace(anchor, addition, 1)
+          for required in [
+              'mirror-spatial-realm-contract.test.mjs',
+              'mirror-canonical-owner-hydration-contract.test.mjs',
+              'geographic-location-vault.test.mjs',
+              'geographic-maps-launch-policy.test.mjs',
+              'maps-cloud-bootstrap-contract.test.mjs',
+              'urai-ecosystem-governance-contract.test.mjs',
+          ]:
+              if required not in source:
+                  raise SystemExit(f'missing combined contract: {required}')
+          runner.write_text(source)
+          PY
+
+          git rm .github/workflows/one-shot-governance-after-geography.yml
+          git add \
+            governance/ECONOMIC_PARTICIPATION_BOUNDARIES.md \
+            governance/IP_CHAIN_OF_TITLE_READINESS.md \
+            governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md \
+            governance/RUAI_ACCESS_AND_DATA_GOVERNANCE.md \
+            governance/urai-ecosystem-governance.json \
+            operations/ecosystem/URAI_ECOSYSTEM_CONVERGENCE_RECEIPT.md \
+            operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md \
+            urai-tier1/tests/urai-ecosystem-governance-contract.test.mjs \
+            urai-tier1/scripts/run-unit-contract-tests-compact.mjs
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '10'
+
+      - name: Verify combined governance boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '804e2477719bc008cb59449e931a4fbd592a8a9f' governance/urai-ecosystem-governance.json
+          grep -Fq 'a48d58775afe2236c38bf52a9e98e3c566cdd0b7' governance/urai-ecosystem-governance.json
+          grep -Fq 'mirror-canonical-owner-hydration-contract.test.mjs' urai-tier1/scripts/run-unit-contract-tests-compact.mjs
+          grep -Fq 'geographic-location-vault.test.mjs' urai-tier1/scripts/run-unit-contract-tests-compact.mjs
+          grep -Fq 'urai-ecosystem-governance-contract.test.mjs' urai-tier1/scripts/run-unit-contract-tests-compact.mjs
+          test ! -e .github/workflows/one-shot-governance-after-geography.yml
+
+      - name: Commit final governance stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Stack ecosystem governance after Mirror and geography'
+          git push origin "HEAD:$TARGET_BRANCH"
