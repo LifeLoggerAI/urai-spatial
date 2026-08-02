@@ -41,13 +41,16 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-mirror-ready') === 'true', null, { timeout: 45000 })
 
   const movementPad = page.locator('.urai-mobile-movement')
+  const orb = page.locator('.mirrorOrb')
   await movementPad.waitFor({ state: 'visible' })
+  await orb.waitFor({ state: 'visible' })
 
   const rail = page.locator('section[aria-label="Reflection patterns"]')
   await rail.getByRole('button', { name: /^Rhythm/ }).click()
   const inspector = page.locator('aside[aria-label="Body rhythm evidence"]')
   await inspector.waitFor({ state: 'visible' })
   await movementPad.waitFor({ state: 'hidden' })
+  await orb.waitFor({ state: 'hidden' })
 
   const range = inspector.locator('input[type="range"]')
   const max = Number(await range.getAttribute('max'))
@@ -85,6 +88,20 @@ try {
   })
   if (!statusGeometry.visibleWithinInspector) throw new Error(`fragment status is clipped: ${JSON.stringify(statusGeometry)}`)
 
+  const thresholds = page.locator('.mirrorThresholds')
+  const passport = thresholds.getByRole('button', { name: 'Passport threshold' })
+  const passportHit = await passport.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    return {
+      rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+      unobstructed: Boolean(hit && (hit === element || element.contains(hit))),
+    }
+  })
+  if (!passportHit.unobstructed) throw new Error(`Passport threshold is obstructed during inspection: ${JSON.stringify(passportHit)}`)
+
   const screenshot = 'screenshots/mobile-mirror-inspector-unobstructed.png'
   await page.screenshot({ path: path.join(outDir, screenshot), fullPage: false, animations: 'disabled' })
 
@@ -92,12 +109,15 @@ try {
   if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.join(' | ')}`)
 
   receipt = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exactSha,
     status: 'passed',
     screenshot,
     movementPadVisibleInOverview: true,
     movementPadHiddenDuringInspection: true,
+    orbVisibleInOverview: true,
+    orbHiddenDuringInspection: true,
+    passportThresholdUnobstructed: true,
     finalFragmentUnobstructed: true,
     fragmentStatusVisibleWithinInspector: true,
     consoleErrors,
@@ -107,7 +127,7 @@ try {
   const screenshot = 'screenshots/mobile-mirror-inspector-failure.png'
   await page.screenshot({ path: path.join(outDir, screenshot), fullPage: false, animations: 'disabled' }).catch(() => {})
   receipt = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exactSha,
     status: 'failed',
     screenshot,
