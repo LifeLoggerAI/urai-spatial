@@ -23,8 +23,15 @@ test('requires explicit main-only confirmation before mutation', () => {
   assert.match(workflow, /if: inputs\.operation == 'enable'/)
 })
 
-test('uses dedicated cloud authentication and never creates an API key', () => {
-  assert.match(workflow, /GCP_WIF_PROVIDER/)
+test('pull-request cloud audit uses a dedicated read-only WIF identity', () => {
+  assert.match(workflow, /GCP_MAPS_AUDIT_SERVICE_ACCOUNT/)
+  assert.match(workflow, /credentialClass: 'dedicated-read-only-wif'/)
+  assert.match(workflow, /id-token: write/)
+  assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_JSON/)
+  assert.doesNotMatch(workflow, /Audit existing Firebase credential bridge/)
+})
+
+test('manual mutation remains separately confirmed and creates no API key', () => {
   assert.match(workflow, /GCP_MAPS_ADMIN_SERVICE_ACCOUNT/)
   assert.match(workflow, /GCP_MAPS_ADMIN_CREDENTIALS_JSON/)
   assert.doesNotMatch(workflow, /gcloud alpha services api-keys create/)
@@ -32,7 +39,8 @@ test('uses dedicated cloud authentication and never creates an API key', () => {
   assert.match(workflow, /apiKeyCreated: false/)
 })
 
-test('retains before and after receipts without deploying production', () => {
+test('retains receipts without deploying production', () => {
+  assert.match(workflow, /maps-cloud-audit\.json/)
   assert.match(workflow, /enabled-before-governed\.txt/)
   assert.match(workflow, /enabled-after-governed\.txt/)
   assert.match(workflow, /maps-cloud-bootstrap-receipt\.json/)
