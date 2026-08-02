@@ -59,10 +59,13 @@ test('normal production personalization cannot silently consume disclosed sample
   assert.match(personalization, /No substitute memories or sample records were mounted/)
 })
 
-test('selected memory parsing rejects malformed timestamps before Mirror rendering', () => {
-  assert.match(selectedMemoryContract, /function isoDateValue\(value: unknown\)/)
+test('selected memory parsing rejects ambiguous malformed and normalized timestamps before Mirror rendering', () => {
+  assert.match(selectedMemoryContract, /const CANONICAL_UTC_TIMESTAMP =/)
+  assert.match(selectedMemoryContract, /!CANONICAL_UTC_TIMESTAMP\.test\(text\)/)
   assert.match(selectedMemoryContract, /const timestamp = Date\.parse\(text\)/)
-  assert.match(selectedMemoryContract, /Number\.isFinite\(timestamp\) \? new Date\(timestamp\)\.toISOString\(\) : null/)
+  assert.match(selectedMemoryContract, /if \(!Number\.isFinite\(timestamp\)\) return null/)
+  assert.match(selectedMemoryContract, /const canonical = new Date\(timestamp\)\.toISOString\(\)/)
+  assert.match(selectedMemoryContract, /return canonical === text \? canonical : null/)
   assert.match(selectedMemoryContract, /const occurredAt = isoDateValue\(raw\.occurredAt\)/)
   assert.match(selectedMemoryContract, /if \(!title \|\| !occurredAt \|\| !summary/)
 })
@@ -173,9 +176,10 @@ test('personalized state changes actual world composition and exposes provenance
   assert.match(assetOwner, /Correct, hide, or delete sources/)
 })
 
-test('continuous Home keyboard proof focuses an enabled discreet control and preserves movement focus clearing', () => {
-  has(visualProofWrapper, "page.locator('.home-discreet-controls button:not(:disabled)').first()")
-  has(visualProofWrapper, "Home proof could not establish editable-control focus before movement regression")
+test('continuous Home keyboard proof materializes an enabled discreet control and preserves movement focus clearing', () => {
+  assert.match(visualProofWrapper, /focusReplacement = .*button:not\(:disabled\)/)
+  has(visualProofWrapper, 'portalPatched.replace(focusTarget, focusReplacement)')
+  has(visualProofWrapper, 'Home proof could not establish editable-control focus before movement regression')
   has(visualProofWrapper, "method === 'keyboard' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable)")
   assert.match(visualProofWrapper, /focusCount !== 1/)
   assert.match(visualProofWrapper, /Home keyboard focus assertion was weakened or removed/)
