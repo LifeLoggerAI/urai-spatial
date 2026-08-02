@@ -20,11 +20,15 @@ test('bare Mirror entry keeps explicit route ownership without mounting the clie
   assert.match(guard, /data-testid="mirror-bare-entry"/)
 })
 
-test('memory timestamps remain exact and replay durations remain bounded', () => {
+test('memory timestamps and replay manifests remain exact and bounded', () => {
   assert.match(parser, /value\.trim\(\) !== value/)
+  assert.match(parser, /const CANONICAL_REPLAY_PHASES = \['memory', 'emotion', 'pattern', 'return'\] as const/)
   assert.match(parser, /const MAX_REPLAY_DURATION_MS = 7 \* 24 \* 60 \* 60 \* 1000/)
   assert.match(parser, /Number\.isSafeInteger\(startsAtMs\)/)
   assert.match(parser, /Number\.isSafeInteger\(durationMs\)/)
+  assert.match(parser, /const replayPhaseIds = new Set\(segments\.map\(\(\{ id: phaseId \}\) => phaseId\)\)/)
+  assert.match(parser, /replayPhaseIds\.size !== CANONICAL_REPLAY_PHASES\.length/)
+  assert.match(parser, /CANONICAL_REPLAY_PHASES\.some\(\(phase\) => !replayPhaseIds\.has\(phase\)\)/)
   assert.match(parser, /requestedDurationMs <= MAX_REPLAY_DURATION_MS/)
   assert.match(parser, /: segmentDurationMs/)
 })
