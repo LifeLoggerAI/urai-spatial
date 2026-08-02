@@ -98,7 +98,7 @@ test('Mirror fixtures remain deterministic and never silently substitute demo fo
   assert.equal(conflicting.find((pattern) => pattern.id === 'emotional-recurrence')?.evidenceState, 'conflicting')
 })
 
-
+// Owner-authored validation marker after the self-deleting accessibility materializer.
 test('Mirror movement help identifies the active realm', () => {
   assert.match(clientSource, /<MovementHelp realm="Mirror"/)
   assert.doesNotMatch(clientSource, /<MovementHelp realm="Life Map"/)
