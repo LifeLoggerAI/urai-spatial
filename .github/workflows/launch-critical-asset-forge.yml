@@ -76,9 +76,23 @@ jobs:
           test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
           test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
           test -z "$(git status --porcelain)"
-      - name: Independently audit governed production state before candidate generation
+      - name: Verify governed production authority before candidate generation
         if: steps.mode.outputs.promotion != 'true'
-        run: node scripts/audit-launch-critical-artifact.mjs
+        env:
+          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-decisions/home-entry-chamber-v1.json
+        run: node scripts/verify-governed-asset-promotion.mjs
+      - name: Run governed Home production contract before candidate generation
+        if: steps.mode.outputs.promotion != 'true'
+        working-directory: urai-tier1
+        run: node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
+      - name: Prove governed Home binary immutable before candidate generation
+        if: steps.mode.outputs.promotion != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
+          test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
+          test -z "$(git status --porcelain)"
       - name: Forge deterministic launch candidates
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/forge-launch-critical-assets.mjs
