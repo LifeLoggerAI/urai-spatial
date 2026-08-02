@@ -62,8 +62,10 @@ jobs:
           pnpm --filter urai-tier1 exec node --import tsx --test tests/urai-ecosystem-governance-contract.test.mjs
 
       - name: Write exact candidate receipt
-        shell: node
+        shell: bash
         run: |
+          set -euo pipefail
+          node <<'NODE'
           const fs = require('node:fs')
           const registry = JSON.parse(fs.readFileSync('governance/urai-ecosystem-governance.json', 'utf8'))
           const receipt = {
@@ -84,6 +86,7 @@ jobs:
           }
           fs.mkdirSync('artifacts/governance', { recursive: true })
           fs.writeFileSync('artifacts/governance/exact-governance-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`)
+          NODE
 
       - name: Retain exact governance receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
