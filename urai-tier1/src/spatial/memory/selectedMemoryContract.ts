@@ -95,6 +95,7 @@ export type SelectedMemoryResult =
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,120}$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+const CANONICAL_REPLAY_PHASES = ['memory', 'emotion', 'pattern', 'return'] as const
 const MAX_REPLAY_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
 function stringValue(value: unknown) {
@@ -199,9 +200,12 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     if (!Number.isSafeInteger(durationMs) || durationMs <= 0) return []
     return [{ id: segmentId, label, caption, narratorLine, startsAtMs, durationMs }]
   })
+  const replayPhaseIds = new Set(segments.map(({ id: phaseId }) => phaseId))
   const segmentDurationMs = segments.reduce((total, segment) => total + segment.durationMs, 0)
   if (
-    segments.length !== 4
+    segments.length !== CANONICAL_REPLAY_PHASES.length
+    || replayPhaseIds.size !== CANONICAL_REPLAY_PHASES.length
+    || CANONICAL_REPLAY_PHASES.some((phase) => !replayPhaseIds.has(phase))
     || !Number.isSafeInteger(segmentDurationMs)
     || segmentDurationMs <= 0
     || segmentDurationMs > MAX_REPLAY_DURATION_MS
