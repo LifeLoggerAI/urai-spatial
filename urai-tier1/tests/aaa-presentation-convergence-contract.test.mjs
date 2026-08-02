@@ -68,18 +68,16 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
     assert.ok(allowedStatuses.has(stream.status), `invalid status: ${stream.id}`)
     assert.ok(Array.isArray(stream.outputs) && stream.outputs.length > 0, `missing outputs: ${stream.id}`)
     if (stream.status.startsWith('blocked-')) {
-      assert.equal(typeof stream.blocker, 'string', `missing blocker: ${stream.id}`)
-      assert.ok(stream.blocker.trim().length > 20, `weak blocker: ${stream.id}`)
+      assertSubstantiveProse(stream.blocker, 20, `blocker: ${stream.id}`)
     }
     if (stream.status === 'accepted') {
       assert.ok(Array.isArray(stream.evidence) && stream.evidence.length > 0, `missing acceptance evidence: ${stream.id}`)
       for (const reference of stream.evidence) validateEvidenceReference(stream.id, reference)
     }
     if (stream.status === 'intentionally-fallback') {
-      assert.equal(typeof stream.omission, 'string', `missing omission reason: ${stream.id}`)
-      assert.ok(stream.omission.trim().length > 20, `weak omission reason: ${stream.id}`)
-      assert.equal(typeof stream.fallback, 'string', `missing safe fallback: ${stream.id}`)
-      assert.ok(stream.fallback.trim().length > 10, `weak safe fallback: ${stream.id}`)
+      const omission = assertSubstantiveProse(stream.omission, 20, `omission reason: ${stream.id}`)
+      const fallback = assertSubstantiveProse(stream.fallback, 10, `safe fallback: ${stream.id}`)
+      assert.notEqual(omission.toLowerCase(), fallback.toLowerCase(), `fallback must differ from omission: ${stream.id}`)
     }
   }
 
@@ -92,6 +90,16 @@ test('AAA presentation convergence authority is complete and fail closed', () =>
   assert.match(authority.completionRule, /Every public-facing asset/)
   assert.match(authority.completionRule, /No unfinished artifact/)
 })
+
+function assertSubstantiveProse(value, minimumLength, label) {
+  assert.equal(typeof value, 'string', `missing ${label}`)
+  const normalized = value.trim().replace(/\s+/g, ' ')
+  assert.ok(normalized.length > minimumLength, `weak ${label}`)
+  assert.match(normalized, /[A-Za-z0-9]/, `placeholder-only ${label}`)
+  const words = normalized.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) ?? []
+  assert.ok(words.length >= 3, `non-substantive ${label}`)
+  return normalized
+}
 
 function validateEvidenceReference(streamId, reference) {
   assert.equal(typeof reference, 'string', `invalid evidence reference: ${streamId}`)
