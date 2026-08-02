@@ -3,4 +3,19 @@
   .mirrorWorld:has(.mirrorInspection) .mirrorOrb {
     display: none !important;
   }
+
+  .mirrorWorld:has(.mirrorInspection) canvas {
+    pointer-events: none !important;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorThresholds {
+    z-index: 40 !important;
+    pointer-events: auto;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorThresholds button {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+  }
 }
