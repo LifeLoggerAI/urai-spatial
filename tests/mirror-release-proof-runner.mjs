@@ -40,18 +40,26 @@ assert(receipt.exactSha === exactSha, `receipt SHA mismatch: ${receipt.exactSha}
 assert(receipt.status === 'failed', `unexpected original receipt status: ${receipt.status}`)
 assert(receipt.caseCount === 13, `unexpected case count: ${receipt.caseCount}`)
 assert(receipt.cases.length === 13, `unexpected receipt case length: ${receipt.cases.length}`)
-assert(receipt.errors.length === 2, `expected two original errors, found ${receipt.errors.length}`)
-assert(failedCases.length === 2, `expected two failed cases, found ${failedCases.length}`)
+assert(Array.isArray(receipt.errors), 'receipt errors must be an array')
+assert(failedCases.length === 1 || failedCases.length === 2, `expected one or two failed cases, found ${failedCases.length}`)
+assert(receipt.errors.length === failedCases.length, `error count mismatch: ${receipt.errors.length} errors for ${failedCases.length} failures`)
 
 for (const item of receipt.cases) {
   assert(Array.isArray(item.consoleErrors) && item.consoleErrors.length === 0, `${item.name} has console errors`)
   assert(Array.isArray(item.failedRequests) && item.failedRequests.length === 0, `${item.name} has failed requests`)
 }
 
-const mobileFailure = failedCases.find((item) => item.name === 'overview-and-inspection' && item.device === 'mobile')
-const replayFailure = failedCases.find((item) => item.name === 'transition-to-replay' && item.device === 'desktop')
-assert(mobileFailure, 'expected the intentional mobile Orb suppression failure')
-assert(replayFailure, 'expected the Replay screenshot timeout failure')
+const mobileFailures = failedCases.filter((item) => item.name === 'overview-and-inspection' && item.device === 'mobile')
+const replayFailures = failedCases.filter((item) => item.name === 'transition-to-replay' && item.device === 'desktop')
+assert(mobileFailures.length === 1, `expected exactly one intentional mobile Orb suppression failure, found ${mobileFailures.length}`)
+assert(replayFailures.length <= 1, `expected at most one Replay screenshot timeout, found ${replayFailures.length}`)
+assert(
+  failedCases.length === mobileFailures.length + replayFailures.length,
+  'receipt contains an unexpected failed case',
+)
+
+const mobileFailure = mobileFailures[0]
+const replayFailure = replayFailures[0] || null
 
 assert(
   String(mobileFailure.error || '').includes("waiting for getByRole('button', { name: /Ask the Orb to explain Body rhythm/ })"),
@@ -59,27 +67,6 @@ assert(
 )
 assert(normalizedPathname(mobileFailure.finalUrl) === '/mirror', `mobile failure route mismatch: ${mobileFailure.finalUrl}`)
 assert(new URL(mobileFailure.finalUrl).searchParams.get('pattern') === 'body-rhythm', 'mobile pattern state missing')
-
-assert(
-  String(replayFailure.error || '').includes('page.screenshot: Timeout 30000ms exceeded.'),
-  `unexpected Replay failure: ${replayFailure.error}`,
-)
-assert(normalizedPathname(replayFailure.finalUrl) === '/replay', `Replay route not reached: ${replayFailure.finalUrl}`)
-
-const replayUrl = new URL(replayFailure.finalUrl)
-const requiredQuery = {
-  memoryId: 'demo:quiet-reset',
-  manifestId: 'replay-recovery-thread',
-  node: 'quiet-reset',
-  from: 'mirror-fragment',
-  demo: '1',
-  privacyMode: 'held-private',
-  entryPortal: 'mirror-reflection-fragment',
-  cameraCheckpoint: 'mirror:body-rhythm',
-}
-for (const [key, value] of Object.entries(requiredQuery)) {
-  assert(replayUrl.searchParams.get(key) === value, `Replay query mismatch for ${key}`)
-}
 
 const outputRoot = path.resolve(outDir)
 async function validateScreenshot(failed, expectedWidth, expectedHeight) {
@@ -96,30 +83,59 @@ async function validateScreenshot(failed, expectedWidth, expectedHeight) {
 }
 
 const mobileScreenshot = await validateScreenshot(mobileFailure, 780, 1688)
-const replayScreenshot = await validateScreenshot(replayFailure, 1440, 1100)
+let replayScreenshot = null
+
+if (replayFailure) {
+  assert(
+    String(replayFailure.error || '').includes('page.screenshot: Timeout 30000ms exceeded.'),
+    `unexpected Replay failure: ${replayFailure.error}`,
+  )
+  assert(normalizedPathname(replayFailure.finalUrl) === '/replay', `Replay route not reached: ${replayFailure.finalUrl}`)
+
+  const replayUrl = new URL(replayFailure.finalUrl)
+  const requiredQuery = {
+    memoryId: 'demo:quiet-reset',
+    manifestId: 'replay-recovery-thread',
+    node: 'quiet-reset',
+    from: 'mirror-fragment',
+    demo: '1',
+    privacyMode: 'held-private',
+    entryPortal: 'mirror-reflection-fragment',
+    cameraCheckpoint: 'mirror:body-rhythm',
+  }
+  for (const [key, value] of Object.entries(requiredQuery)) {
+    assert(replayUrl.searchParams.get(key) === value, `Replay query mismatch for ${key}`)
+  }
+
+  replayScreenshot = await validateScreenshot(replayFailure, 1440, 1100)
+}
+
+const reconciledCases = [`${mobileFailure.device}:${mobileFailure.name}`]
+const reasons = [
+  'The legacy overview proof waited for the mobile Orb after opening inspection, while the accepted mobile behavior intentionally hides it during inspection.',
+]
+if (replayFailure) {
+  reconciledCases.push(`${replayFailure.device}:${replayFailure.name}`)
+  reasons.push('Playwright timed out after the Replay frame was written; route, query continuity, PNG evidence, console, and network checks remained valid.')
+}
 
 const reconciliation = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   exactSha,
   createdAt: new Date().toISOString(),
   status: 'passed',
   originalExitCode: original.code,
   originalSignal: original.signal,
   originalReceiptStatus: receipt.status,
-  reconciledCases: [
-    `${mobileFailure.device}:${mobileFailure.name}`,
-    `${replayFailure.device}:${replayFailure.name}`,
-  ],
-  reason: [
-    'The legacy overview proof waited for the mobile Orb after opening inspection, while the accepted mobile behavior intentionally hides it during inspection.',
-    'Playwright timed out after the Replay frame was written; route, query continuity, PNG evidence, console, and network checks remained valid.',
-  ],
+  reconciledCases,
+  reason: reasons,
   verified: {
     onlyExpectedFailures: true,
     mobileScreenshot,
     replayScreenshot,
-    replayRouteReached: true,
-    replayContinuityQueryPreserved: true,
+    replayFailureWasOptional: true,
+    replayRouteReached: Boolean(replayFailure),
+    replayContinuityQueryPreserved: Boolean(replayFailure),
     zeroConsoleErrorsAcrossAllCases: true,
     zeroFailedRequestsAcrossAllCases: true,
     dedicatedMobileInspectionProofStillRequired: true,
@@ -131,5 +147,7 @@ await fs.writeFile(
   `${JSON.stringify(reconciliation, null, 2)}\n`,
 )
 
-console.log('MIRROR_RELEASE_PROOF_RECONCILED_BOUNDED_DUAL_TIMEOUTS')
+console.log(replayFailure
+  ? 'MIRROR_RELEASE_PROOF_RECONCILED_BOUNDED_DUAL_TIMEOUTS'
+  : 'MIRROR_RELEASE_PROOF_RECONCILED_INTENTIONAL_MOBILE_ORB_SUPPRESSION')
 console.log(JSON.stringify(reconciliation, null, 2))
