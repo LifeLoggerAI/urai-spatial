@@ -28,8 +28,10 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
 }
 
 function commitHardFallback(href: string) {
-  window.history.pushState(window.history.state, '', href)
-  window.location.reload()
+  // Commit exactly one browser-history entry. The previous pushState + reload
+  // sequence could race the client router and leave duplicate destination
+  // entries, causing one Back action to remain on the destination route.
+  window.location.assign(href)
 }
 
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
