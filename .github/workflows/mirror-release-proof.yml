@@ -80,6 +80,9 @@ jobs:
       - name: Prove Mirror release candidate
         run: node tests/mirror-release-proof.mjs
 
+      - name: Prove mobile inspection is unobstructed
+        run: node tests/mirror-mobile-inspection-proof.mjs
+
       - name: Upload Mirror release proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
