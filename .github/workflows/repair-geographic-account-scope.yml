@@ -15,7 +15,7 @@ concurrency:
 
 env:
   TARGET_BRANCH: feat/geographic-location-launch-minimum-v5-20260801
-  REVIEWED_HEAD: 551399bb5bbabd74e6139720f9c9eb8d01a9900b
+  REVIEWED_HEAD: 574ea40bc3d6cd476b909d5ed9b31ff074d1b432
   EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
 
 jobs:
