@@ -36,7 +36,17 @@ for (const asset of manifest.assets) {
   const bytes = fs.readFileSync(assetPath)
   const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
   const sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
-  const productionReady = asset.releaseState === 'production-ready'
+  const receiptReleaseState = String(receipt.releaseState || '')
+  const compressionStatus = String(receipt.compressionStatus || '')
+  const productionReady = receiptReleaseState === 'production-ready'
+
+  if (!receiptReleaseState) errors.push(`${asset.id}: receipt releaseState is required`)
+  if (productionReady && compressionStatus.includes('candidate')) {
+    errors.push(`${asset.id}: receipt cannot be production-ready with candidate compression status`)
+  }
+  if (asset.kind === 'model' && receiptReleaseState === 'candidate-not-production-ready' && !compressionStatus.includes('candidate')) {
+    errors.push(`${asset.id}: model candidate receipt must carry candidate compression status`)
+  }
 
   for (const [field, expected] of [
     ['id', asset.id],
@@ -107,7 +117,16 @@ for (const asset of manifest.assets) {
     errors.push(`${asset.id}: production-ready particle atlas remains SVG instead of KTX2/WebP`)
   }
 
-  results.push({ id: asset.id, fixedPath: asset.fixedPath, bytes: bytes.length, sha256, releaseState: asset.releaseState, measured })
+  results.push({
+    id: asset.id,
+    fixedPath: asset.fixedPath,
+    bytes: bytes.length,
+    sha256,
+    compressionStatus,
+    manifestReleaseState: asset.releaseState,
+    receiptReleaseState,
+    measured,
+  })
 }
 
 if (results.length !== manifest.assets.length) {
@@ -116,7 +135,7 @@ if (results.length !== manifest.assets.length) {
 
 const report = {
   ok: errors.length === 0,
-  candidateOnly: manifest.assets.every((asset) => asset.releaseState !== 'production-ready'),
+  candidateOnly: results.length === manifest.assets.length && results.every((result) => result.receiptReleaseState !== 'production-ready'),
   manifestId: manifest.manifestId,
   checkedAt: new Date().toISOString(),
   checkedAssets: results.length,
