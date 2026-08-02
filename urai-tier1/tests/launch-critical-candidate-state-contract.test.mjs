@@ -29,9 +29,11 @@ test('independent launch-critical auditor enforces manifest promotion authority'
   assert.doesNotMatch(auditor, /model candidate receipt must carry candidate compression status/)
 })
 
-test('candidate bundle audit is isolated from canonical promotion authority', () => {
+test('candidate bundle audit is isolated and rejects production receipt authority', () => {
   assert.match(candidateAuditor, /fs\.mkdtempSync/)
   assert.match(candidateAuditor, /releaseState: 'candidate-not-production-ready'/)
+  assert.match(candidateAuditor, /receipt\.releaseState !== 'candidate-not-production-ready'/)
+  assert.match(candidateAuditor, /candidate receipt .* must declare candidate-not-production-ready/)
   assert.match(candidateAuditor, /cwd: auditRoot/)
   assert.match(candidateAuditor, /fs\.rmSync\(auditRoot, \{ recursive: true, force: true \}\)/)
   assert.doesNotMatch(candidateAuditor, /fs\.writeFileSync\(path\.join\(sourceRoot, manifestRelativePath\)/)
@@ -47,6 +49,7 @@ test('forge workflow verifies governed production before isolated candidates', (
   assert.match(workflow, /Run governed Home production contract before candidate generation/)
   assert.match(workflow, /Prove governed Home binary immutable before candidate generation/)
   assert.match(workflow, /Independently audit isolated candidate bundle/)
+  assert.match(workflow, /- 'scripts\/verify-governed-asset-promotion\.mjs'/)
   assert.equal(workflow.indexOf(governedVerifier) < workflow.indexOf(candidateForge), true)
   assert.equal(workflow.indexOf(governedContract) < workflow.indexOf(candidateForge), true)
   assert.equal(workflow.indexOf(candidateAudit) > workflow.indexOf(candidateVerifier), true)
