@@ -7,7 +7,16 @@ import { spawnSync } from 'node:child_process'
 const sourceRoot = process.cwd()
 const manifestRelativePath = 'operations/assets/launch-critical-assets.json'
 const manifest = JSON.parse(fs.readFileSync(path.join(sourceRoot, manifestRelativePath), 'utf8'))
-const auditRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-launch-candidate-audit-'))
+const requestedAuditRoot = process.env.URAI_CANDIDATE_BUNDLE_ROOT?.trim()
+const auditRoot = requestedAuditRoot
+  ? path.resolve(sourceRoot, requestedAuditRoot)
+  : fs.mkdtempSync(path.join(os.tmpdir(), 'urai-launch-candidate-audit-'))
+const retainAuditRoot = Boolean(requestedAuditRoot)
+
+if (retainAuditRoot) {
+  fs.rmSync(auditRoot, { recursive: true, force: true })
+  fs.mkdirSync(auditRoot, { recursive: true })
+}
 
 try {
   const candidateManifest = {
@@ -38,9 +47,10 @@ try {
   if (result.stdout) process.stdout.write(result.stdout)
   if (result.stderr) process.stderr.write(result.stderr)
   if (result.error) throw result.error
-  process.exitCode = result.status ?? 1
+  if ((result.status ?? 1) !== 0) process.exitCode = result.status ?? 1
+  else if (retainAuditRoot) console.log(`Retained exact audited candidate bundle at ${auditRoot}`)
 } finally {
-  fs.rmSync(auditRoot, { recursive: true, force: true })
+  if (!retainAuditRoot) fs.rmSync(auditRoot, { recursive: true, force: true })
 }
 
 function copyFile(relativePath) {
