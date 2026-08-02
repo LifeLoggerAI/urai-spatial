@@ -99,6 +99,13 @@ function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
+function isoDateValue(value: unknown) {
+  const text = stringValue(value)
+  if (!text) return null
+  const timestamp = Date.parse(text)
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null
+}
+
 function numberValue(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
 }
@@ -161,7 +168,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
   const title = stringValue(raw.title)
-  const occurredAt = stringValue(raw.occurredAt)
+  const occurredAt = isoDateValue(raw.occurredAt)
   const summary = stringValue(raw.summary)
   const emotionalState = stringValue(raw.emotionalState ?? raw.emotion)
   const replay = raw.replayManifest && typeof raw.replayManifest === 'object' ? raw.replayManifest as Record<string, unknown> : null
