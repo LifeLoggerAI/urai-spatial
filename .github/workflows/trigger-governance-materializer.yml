@@ -1,5 +1,6 @@
 name: Trigger reviewed governance materializer
 
+# Second push executes this already-registered branch workflow.
 on:
   push:
     branches:
