@@ -9,6 +9,7 @@ const files = [
   "src/spatial/realms/sceneRegistry.ts",
   "src/spatial/realms/RealmShell.tsx",
   "src/app/mirror/page.tsx",
+  "src/app/mirror/MirrorSpatialClient.tsx",
   "src/app/legacy/page.tsx",
   "src/app/passport/page.tsx",
   "src/app/council/page.tsx",
@@ -38,8 +39,13 @@ for (const route of ["legacy", "council", "dream"]) {
 }
 
 const mirror = readFileSync(join(app, "src/app/mirror/page.tsx"), "utf8");
-assert.match(mirror, /reflection-realm/, "Mirror route must render the final reflection realm owner.");
-assert.match(mirror, /mirror-reflection-main/, "Mirror route must use the final mirror asset.");
+const mirrorClient = readFileSync(join(app, "src/app/mirror/MirrorSpatialClient.tsx"), "utf8");
+assert.match(mirror, /MirrorSpatialClient/, "Mirror route must render the canonical spatial client.");
+assert.match(mirror, /mirror-embodied-reflection-chamber/, "Mirror route must publish the embodied route fingerprint.");
+assert.match(mirrorClient, /data-mirror-renderer="webgl-r3f"/, "Mirror client must own the React Three Fiber chamber.");
+assert.match(mirrorClient, /privacy-safe-user-reflection/, "Mirror must retain its privacy-safe embodied reflection.");
+assert.doesNotMatch(mirror, /mirror-reflection-main\.webp|reflection-realm/, "Mirror route must not restore the rejected static owner.");
+assert.doesNotMatch(mirror, /See the pattern clearly|Reflection stack/, "Mirror route must not restore promotional composition copy.");
 
 const passport = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
 assert.match(passport, /PassportVaultClient/, "Passport route must render the canonical Ownership Vault owner.");
@@ -49,4 +55,4 @@ const ground = readFileSync(join(app, "src/app/ground/page.tsx"), "utf8");
 assert.match(ground, /walkable-first-person-ground-layer/, "Ground route must render the final ground world.");
 assert.match(ground, /getSceneDefinition/, "Ground route must preserve scene registry contract.");
 
-console.log("URAI realm routes canon passed: shell realms and canonical route owners are preserved.");
+console.log("URAI realm routes canon passed: shell realms and canonical spatial route owners are preserved.");
