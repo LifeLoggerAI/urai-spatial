@@ -1,6 +1,6 @@
 name: Trigger reviewed governance materializer on PR sync
 
-# Second synchronize event executes this already-registered workflow.
+# A synchronize event executes this already-registered workflow.
 on:
   pull_request:
     types: [synchronize]
@@ -37,6 +37,7 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+
           workflow = Path('.github/workflows/one-shot-governance-after-geography.yml')
           lines = workflow.read_text().splitlines()
           names = [
@@ -45,18 +46,25 @@ jobs:
               'Verify combined governance boundary',
               'Commit final governance stack',
           ]
+
           for index, name in enumerate(names):
               marker = f'- name: {name}'
               start = next(i for i, line in enumerate(lines) if line.strip() == marker)
+              step_indent = len(lines[start]) - len(lines[start].lstrip())
               run_line = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == 'run: |')
-              run_indent = len(lines[run_line]) - len(lines[run_line].lstrip())
               block = []
               for line in lines[run_line + 1:]:
-                  if line.strip() and len(line) - len(line.lstrip()) <= run_indent:
+                  indent = len(line) - len(line.lstrip())
+                  if line.strip() and indent == step_indent and line.lstrip().startswith('- name:'):
                       break
                   block.append(line)
-              trim = min(len(line) - len(line.lstrip()) for line in block if line.strip())
-              Path(f'/tmp/governance-step-{index}.sh').write_text('\n'.join(line[trim:] if line.strip() else '' for line in block) + '\n')
+              nonblank = [len(line) - len(line.lstrip()) for line in block if line.strip()]
+              if not nonblank:
+                  raise SystemExit(f'empty materializer block: {name}')
+              trim = min(nonblank)
+              Path(f'/tmp/governance-step-{index}.sh').write_text(
+                  '\n'.join(line[trim:] if line.strip() else '' for line in block) + '\n'
+              )
 
       - name: Verify exact source authority
         run: bash /tmp/governance-step-0.sh
