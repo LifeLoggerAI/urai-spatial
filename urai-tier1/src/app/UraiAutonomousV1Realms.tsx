@@ -133,7 +133,7 @@ const realms: Record<string, RealmConfig> = {
 };
 
 function resolveRealm(pathname: string): RealmConfig | null {
-  if (pathname.startsWith("/mirror")) return realms.mirror;
+  if (pathname.startsWith("/mirror")) return null; // Canonical embodied Mirror owns this route.
   if (pathname.startsWith("/passport")) return realms.passport;
   if (pathname.startsWith("/privacy-controls")) return realms.privacy;
   if (pathname.startsWith("/location-map")) return realms.location;

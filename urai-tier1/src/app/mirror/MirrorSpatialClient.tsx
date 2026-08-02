@@ -203,7 +203,10 @@ export default function MirrorSpatialClient() {
   const [activeFragment, setActiveFragment] = useState<MirrorFragment | null>(null)
   const [temporalIndex, setTemporalIndex] = useState(0)
   const [online, setOnline] = useState(true)
-  const fixture = useMemo(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('mirrorFixture'), [])
+  const [fixture, setFixture] = useState<string | null>(null)
+useEffect(() => {
+  setFixture(new URLSearchParams(window.location.search).get('mirrorFixture'))
+}, [])
   const patterns = useMemo(() => memory ? applyMirrorFixture(buildMirrorPatterns(memory), fixture) : [], [fixture, memory])
 
   useEffect(() => {
