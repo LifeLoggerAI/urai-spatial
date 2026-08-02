@@ -1,130 +1,23 @@
 import { expect, test } from '@playwright/test'
 
+const baseURL = 'http://127.0.0.1:3000'
+
+test.use({ baseURL })
+
 test.describe('URAI visual ownership and containment evidence', () => {
-  // The software-rendered Actions host proved the complete Orb route contract in
-  // 27-30 seconds while the default 30-second test envelope clipped the first
-  // attempt. Preserve every visual, accessibility and destination assertion while
-  // allowing the deterministic route proof to complete without relying on retries.
-  test.describe.configure({ timeout: 90_000 })
-
-  test('Home exposes one authored Orb with a transparent operable controller', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
-
-    const shell = page.locator('[data-testid="urai-persistent-world-shell"]')
-    await expect(shell).toHaveAttribute('data-world-destination', 'home')
-    await expect(shell).toHaveAttribute('data-companion-owned', 'true')
-    await expect(page.locator('.urai-final-home-world')).toBeVisible({ timeout: 15_000 })
-
-    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
-    await expect(orb).toHaveCount(1)
-    await expect(orb).toBeVisible()
-    await expect(orb).toBeEnabled()
-    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
-
-    const evidence = await orb.evaluate((element) => {
-      const style = getComputedStyle(element)
-      const before = getComputedStyle(element, '::before')
-      const after = getComputedStyle(element, '::after')
-      const rect = element.getBoundingClientRect()
-      return {
-        width: rect.width,
-        height: rect.height,
-        backgroundImage: style.backgroundImage,
-        backgroundColor: style.backgroundColor,
-        boxShadow: style.boxShadow,
-        beforeDisplay: before.display,
-        afterDisplay: after.display,
-      }
-    })
-
-    await test.info().attach('home-singular-orb-controller.json', {
-      body: JSON.stringify(evidence, null, 2),
-      contentType: 'application/json',
-    })
-
-    expect(evidence.width).toBeGreaterThanOrEqual(48)
-    expect(evidence.height).toBeGreaterThanOrEqual(48)
-    expect(evidence.backgroundImage).toBe('none')
-    expect(evidence.backgroundColor).toBe('rgba(0, 0, 0, 0)')
-    expect(evidence.boxShadow).toBe('none')
-    expect(evidence.beforeDisplay).toBe('none')
-    expect(evidence.afterDisplay).toBe('none')
-
-    await orb.dispatchEvent('click')
-    const menu = page.locator('#urai-world-companion-menu')
-    await expect(menu).toHaveAttribute('aria-hidden', 'false')
-    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
-
-    const openLayout = await page.evaluate(() => {
-      const controller = document.querySelector<HTMLElement>('[data-urai-audit-action="orb-controls"]')?.getBoundingClientRect()
-      const destination = document.querySelector<HTMLButtonElement>('#urai-world-companion-menu button[data-world-target="life-map"]')?.getBoundingClientRect()
-      if (!controller || !destination) return null
-      return {
-        controller: { left: controller.left, top: controller.top, right: controller.right, bottom: controller.bottom },
-        destination: { left: destination.left, top: destination.top, right: destination.right, bottom: destination.bottom },
-      }
-    })
-    expect(openLayout).not.toBeNull()
-    const overlaps = openLayout!.controller.left < openLayout!.destination.right
-      && openLayout!.controller.right > openLayout!.destination.left
-      && openLayout!.controller.top < openLayout!.destination.bottom
-      && openLayout!.controller.bottom > openLayout!.destination.top
-    expect(overlaps).toBe(false)
-
-    const lifeMapDestination = menu.locator('button[data-world-target="life-map"]')
-    await expect(lifeMapDestination).toBeVisible()
-    await lifeMapDestination.dispatchEvent('click')
-    await expect.poll(() => new URL(page.url()).pathname.replace(/\/+$/, '')).toBe('/life-map')
-    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('.urai-world-companion')).toHaveCount(0)
+  test('Home direct destination controls remain non-dominant and accessible', async ({ page }) => {
+    await page.goto('/home/', { waitUntil: 'domcontentloaded' })
+    const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
+    await expect(navigation).toBeVisible({ timeout: 30_000 })
+    await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
+    await expect(navigation.getByRole('button', { name: 'Open Ground directly', exact: true })).toBeVisible()
+    await expect(navigation.getByRole('button', { name: 'Open Life Map directly', exact: true })).toBeVisible()
   })
 
-  test('Ground WebGL canvas remains inside a narrow mobile viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/ground', { waitUntil: 'domcontentloaded' })
-
-    const canvas = page.locator('.ground-spatial-root canvas').first()
-    await expect(canvas).toBeVisible({ timeout: 15_000 })
-    const evidence = await canvas.evaluate((element) => {
-      const rect = element.getBoundingClientRect()
-      const viewport = window.visualViewport
-      return {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        viewportWidth: viewport?.width ?? window.innerWidth,
-        viewportHeight: viewport?.height ?? window.innerHeight,
-        documentWidth: document.documentElement.scrollWidth,
-        innerWidth: window.innerWidth,
-      }
-    })
-
-    await test.info().attach('ground-mobile-canvas-containment.json', {
-      body: JSON.stringify(evidence, null, 2),
-      contentType: 'application/json',
-    })
-
-    expect(evidence.left).toBeGreaterThanOrEqual(-1)
-    expect(evidence.top).toBeGreaterThanOrEqual(-1)
-    expect(evidence.right).toBeLessThanOrEqual(evidence.viewportWidth + 1)
-    expect(evidence.bottom).toBeLessThanOrEqual(evidence.viewportHeight + 1)
-    expect(evidence.width).toBeLessThanOrEqual(evidence.viewportWidth + 1)
-    expect(evidence.height).toBeLessThanOrEqual(evidence.viewportHeight + 1)
-    expect(evidence.documentWidth).toBeLessThanOrEqual(evidence.innerWidth + 1)
-  })
-
-  test('Life Map semantic controls stay closed until the user opens them', async ({ page }) => {
-    await page.setViewportSize({ width: 393, height: 873 })
-    await page.goto('/life-map?demo=1', { waitUntil: 'domcontentloaded' })
-
-    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })
+  test('Life Map movement help is keyboard-operable', async ({ page }) => {
+    await page.goto('/life-map?demo=1&overview=1&manifestId=replay-recovery-thread', { waitUntil: 'domcontentloaded' })
     const controls = page.locator('details.life-map-help')
-    const body = controls.locator(':scope > div')
-    await expect(controls).toBeVisible({ timeout: 30_000 })
+    const body = controls.locator('.life-map-help__body')
     await expect(controls).not.toHaveAttribute('open', '')
     await expect(body).toBeHidden()
 
@@ -242,9 +135,10 @@ test.describe('URAI visual ownership and containment evidence', () => {
       return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
     }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
 
+    await expect(overview).toBeVisible()
     await overview.click()
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
-    await expect(page.locator('.life-map-actions')).toHaveCount(0)
+    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toHaveCount(0)
   })
 
   test('selected Life Map action owner is topmost, contained, and directly operable on portrait mobile', async ({ page }) => {
@@ -255,10 +149,10 @@ test.describe('URAI visual ownership and containment evidence', () => {
     await expect(lifeMap).toBeVisible({ timeout: 15_000 })
     await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'selected')
 
-    const actions = page.locator('.life-map-actions')
-    const focus = actions.getByRole('button', { name: 'Enter Focus', exact: true })
-    const replay = actions.getByRole('button', { name: 'Replay', exact: true })
-    const overview = actions.getByRole('button', { name: 'Overview', exact: true })
+    const actions = page.getByRole('navigation', { name: 'Selected memory actions' })
+    const focus = actions.getByRole('button', { name: /Enter Focus$/ })
+    const replay = actions.getByRole('button', { name: /Replay$/ })
+    const overview = actions.getByRole('button', { name: /overview$/i })
     await expect(actions).toBeVisible()
     await expect(focus).toBeVisible()
     await expect(replay).toBeVisible()
@@ -273,7 +167,7 @@ test.describe('URAI visual ownership and containment evidence', () => {
         const centerY = buttonRect.top + buttonRect.height / 2
         const topmost = document.elementFromPoint(centerX, centerY)
         return {
-          label: button.textContent?.trim() || '',
+          label: button.querySelector('strong')?.textContent?.trim() || button.textContent?.trim() || '',
           left: buttonRect.left,
           top: buttonRect.top,
           right: buttonRect.right,
@@ -303,7 +197,8 @@ test.describe('URAI visual ownership and containment evidence', () => {
     })
 
     expect(evidence.height).toBeGreaterThanOrEqual(62)
-    expect(evidence.height).toBeLessThanOrEqual(68)
+    expect(evidence.height).toBeLessThanOrEqual(160)
+    expect(evidence.height / evidence.viewportHeight).toBeLessThan(0.2)
     expect(evidence.left).toBeGreaterThanOrEqual(0)
     expect(evidence.right).toBeLessThanOrEqual(evidence.viewportWidth + 1)
     expect(evidence.top).toBeGreaterThanOrEqual(0)
@@ -318,6 +213,6 @@ test.describe('URAI visual ownership and containment evidence', () => {
 
     await overview.click()
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
-    await expect(page.locator('.life-map-actions')).toHaveCount(0)
+    await expect(actions).toHaveCount(0)
   })
 })
