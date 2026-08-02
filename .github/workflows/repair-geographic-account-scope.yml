@@ -1,9 +1,10 @@
 name: Repair geographic account scope
 
 on:
-  push:
+  pull_request:
+    types: [synchronize]
     branches:
-      - feat/geographic-location-launch-minimum-v5-20260801
+      - feat/mirror-embodied-spatial-realm-v2-20260801
 
 permissions:
   contents: write
@@ -14,19 +15,19 @@ concurrency:
 
 env:
   TARGET_BRANCH: feat/geographic-location-launch-minimum-v5-20260801
-  REVIEWED_HEAD: 347cc804b7ec6387d1c48e36de87edb7609fd718
-  EXPECTED_HEAD: ${{ github.sha }}
+  REVIEWED_HEAD: 551399bb5bbabd74e6139720f9c9eb8d01a9900b
+  EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
 
 jobs:
   repair:
-    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.ref == 'refs/heads/feat/geographic-location-launch-minimum-v5-20260801'
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.event.pull_request.head.ref == 'feat/geographic-location-launch-minimum-v5-20260801'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - name: Checkout exact staged branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ env.EXPECTED_HEAD }}
+          ref: ${{ env.TARGET_BRANCH }}
           fetch-depth: 0
           persist-credentials: true
           show-progress: false
