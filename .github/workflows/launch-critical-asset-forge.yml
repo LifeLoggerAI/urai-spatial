@@ -10,6 +10,7 @@ on:
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
+      - 'scripts/audit-launch-critical-candidate-bundle.mjs'
       - 'scripts/validate-radiance-hdr.mjs'
       - 'scripts/compare-legacy-asset-candidates.mjs'
       - '.github/workflows/launch-critical-asset-forge.yml'
@@ -75,6 +76,9 @@ jobs:
           test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
           test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
           test -z "$(git status --porcelain)"
+      - name: Independently audit governed production state before candidate generation
+        if: steps.mode.outputs.promotion != 'true'
+        run: node scripts/audit-launch-critical-artifact.mjs
       - name: Forge deterministic launch candidates
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/forge-launch-critical-assets.mjs
@@ -84,9 +88,9 @@ jobs:
       - name: Verify manifest, receipts and budgets
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
-      - name: Independently audit generated formats and metrics
+      - name: Independently audit isolated candidate bundle
         if: steps.mode.outputs.promotion != 'true'
-        run: node scripts/audit-launch-critical-artifact.mjs
+        run: node scripts/audit-launch-critical-candidate-bundle.mjs
       - name: Strictly decode every Radiance HDR scanline
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/validate-radiance-hdr.mjs
