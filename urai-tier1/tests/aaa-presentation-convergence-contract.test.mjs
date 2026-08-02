@@ -124,6 +124,18 @@ function normalizeWordContent(value) {
   return (value.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) ?? []).join(' ').toLowerCase()
 }
 
+function assertNoSymlinkComponents(resolved, streamId, reference) {
+  const relative = path.relative(repositoryRoot, resolved)
+  assert.ok(relative && !relative.startsWith('..') && !path.isAbsolute(relative), `evidence path escapes repository: ${streamId}`)
+
+  let current = repositoryRoot
+  for (const component of relative.split(path.sep)) {
+    current = path.join(current, component)
+    const metadata = fs.lstatSync(current)
+    assert.equal(metadata.isSymbolicLink(), false, `evidence path component must not be a symbolic link: ${streamId}: ${reference}: ${path.relative(repositoryRoot, current)}`)
+  }
+}
+
 function validateEvidenceReference(streamId, reference) {
   assert.equal(typeof reference, 'string', `invalid evidence reference: ${streamId}`)
   assert.equal(reference, reference.trim(), `untrimmed evidence reference: ${streamId}`)
@@ -132,11 +144,12 @@ function validateEvidenceReference(streamId, reference) {
     const resolved = path.resolve(repositoryRoot, reference)
     assert.ok(resolved.startsWith(`${repositoryRoot}${path.sep}`), `evidence path escapes repository: ${streamId}`)
     assert.ok(fs.existsSync(resolved), `missing evidence path: ${streamId}: ${reference}`)
+    assertNoSymlinkComponents(resolved, streamId, reference)
     const metadata = fs.lstatSync(resolved)
-    assert.equal(metadata.isSymbolicLink(), false, `evidence path must not be a symbolic link: ${streamId}: ${reference}`)
     assert.ok(metadata.isFile(), `evidence path must identify a regular file: ${streamId}: ${reference}`)
     const realResolved = fs.realpathSync(resolved)
     assert.ok(realResolved.startsWith(`${realRepositoryRoot}${path.sep}`), `evidence target escapes repository: ${streamId}: ${reference}`)
+    assert.equal(path.relative(realRepositoryRoot, realResolved), path.relative(repositoryRoot, resolved), `evidence canonical path must match repository path: ${streamId}: ${reference}`)
     return
   }
 
