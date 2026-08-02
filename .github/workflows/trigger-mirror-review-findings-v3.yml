@@ -9,12 +9,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: trigger-mirror-review-findings-final-${{ github.event.pull_request.head.sha }}
+  group: trigger-mirror-review-findings-publish-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 env:
   TARGET_BRANCH: feat/mirror-embodied-spatial-realm-v2-20260801
-  REVIEWED_HEAD: 33e57b954cd4b4b32561573ae7c8b3d0bb754161
+  REVIEWED_HEAD: 00fcc738f0a520693446ae2c1a2ac59c50491b21
   EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
 
 jobs:
@@ -84,22 +84,21 @@ jobs:
           pnpm --filter urai-tier1 typecheck
           pnpm --filter urai-tier1 build
 
-      - name: Commit clean reviewed corrections
+      - name: Publish non-workflow reviewed corrections
         shell: bash
         run: |
           set -euo pipefail
-          git rm .github/workflows/one-shot-mirror-review-findings.yml
-          git rm .github/workflows/trigger-mirror-review-findings-v2.yml
-          git rm .github/workflows/trigger-mirror-review-findings-v3.yml
           git rm scripts/repair-mirror-review-findings.py
-          git add .github/workflows/mirror-release-proof.yml \
-            tests/mirror-release-proof.mjs \
+          git add tests/mirror-release-proof.mjs \
             urai-tier1/src/app/mirror/MirrorBareEntryGuard.tsx \
             urai-tier1/src/app/mirror/MirrorSpatialClient.tsx \
             urai-tier1/tests/mirror-spatial-realm-contract.test.mjs
-          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "9"
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "5"
           git diff --cached --check
+          mapfile -t remaining < <(git diff --name-only)
+          test "${#remaining[@]}" -eq 1
+          test "${remaining[0]}" = '.github/workflows/mirror-release-proof.yml'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Close Mirror automated review findings"
+          git commit -m "Close Mirror product review findings"
           git push origin "HEAD:$TARGET_BRANCH"
