@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { applyPrecision, createPin, exportPins, geolocationErrorState, isValidCoordinate, parsePins } from '../src/spatial/places/geographicLocationVault.ts'
 
+// Final exact-head trigger for the combined Mirror + geography stack.
 test('validates coordinate bounds and malformed values', () => {
   assert.equal(isValidCoordinate({ latitude: 32.5, longitude: -94.7, accuracyMeters: 12 }), true)
   assert.equal(isValidCoordinate({ latitude: 91, longitude: 0 }), false)
