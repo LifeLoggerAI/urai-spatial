@@ -213,7 +213,9 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   const finalSegment = chronologicalSegments.at(-1)
   const finalSegmentEndMs = finalSegment ? finalSegment.startsAtMs + finalSegment.durationMs : -1
   if (
-    segments.length !== CANONICAL_REPLAY_PHASES.length
+    replaySegments.length !== CANONICAL_REPLAY_PHASES.length
+    || segments.length !== replaySegments.length
+    || segments.length !== CANONICAL_REPLAY_PHASES.length
     || replayPhaseIds.size !== CANONICAL_REPLAY_PHASES.length
     || CANONICAL_REPLAY_PHASES.some((phase) => !replayPhaseIds.has(phase))
     || !hasCanonicalChronology
