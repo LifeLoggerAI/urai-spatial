@@ -201,11 +201,21 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     return [{ id: segmentId, label, caption, narratorLine, startsAtMs, durationMs }]
   })
   const replayPhaseIds = new Set(segments.map(({ id: phaseId }) => phaseId))
-  const segmentDurationMs = segments.reduce((total, segment) => total + segment.durationMs, 0)
+  const chronologicalSegments = [...segments].sort((left, right) => left.startsAtMs - right.startsAtMs)
+  const chronologicalPhaseIds = chronologicalSegments.map(({ id: phaseId }) => phaseId)
+  const hasCanonicalChronology = CANONICAL_REPLAY_PHASES.every((phase, index) => chronologicalPhaseIds[index] === phase)
+  const hasNonOverlappingChronology = chronologicalSegments.every((segment, index) => {
+    if (index === 0) return segment.startsAtMs === 0
+    const previous = chronologicalSegments[index - 1]
+    return segment.startsAtMs >= previous.startsAtMs + previous.durationMs
+  })
+  const segmentDurationMs = chronologicalSegments.reduce((total, segment) => total + segment.durationMs, 0)
   if (
     segments.length !== CANONICAL_REPLAY_PHASES.length
     || replayPhaseIds.size !== CANONICAL_REPLAY_PHASES.length
     || CANONICAL_REPLAY_PHASES.some((phase) => !replayPhaseIds.has(phase))
+    || !hasCanonicalChronology
+    || !hasNonOverlappingChronology
     || !Number.isSafeInteger(segmentDurationMs)
     || segmentDurationMs <= 0
     || segmentDurationMs > MAX_REPLAY_DURATION_MS
@@ -265,7 +275,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         id: replayId,
         version: numberValue(replay?.version, 1),
         durationMs: replayDurationMs,
-        segments,
+        segments: chronologicalSegments,
         transcript: stringValue(replay?.transcript) ?? undefined,
         audioUrl: stringValue(replay?.audioUrl) ?? undefined,
       },
