@@ -16,6 +16,7 @@ for (const [label, marker] of [
   ['Replay public identity route', `path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
   ['Focus public identity expectation', `const expectedPublicMemoryId = 'quiet-reset'`],
   ['Focus fixture identity expectation', `const expectedFixtureMemoryId = 'demo:quiet-reset'`],
+  ['retired Mirror audit marker', `markers: ['Mirror does not judge.']`],
 ]) {
   if (!original.includes(marker)) throw new Error(`${label} is not present in the canonical audit authority`)
 }
@@ -26,6 +27,13 @@ patched = replaceOnce(
   `selector: '.urai-final-home-world[data-home-spatial-renderer="webgl"], [data-testid="urai-home-accessible-fallback"]',`,
   `selector: '.urai-asset-home-world[data-home-primary-owner="asset-driven"], .urai-final-home-world[data-home-spatial-renderer="webgl"], main.urai-home-spatial-world-final, [data-testid="urai-home-accessible-fallback"]',`,
   'canonical Home owner selector',
+)
+
+patched = replaceOnce(
+  patched,
+  `{ id: 'mirror', path: '/mirror', selector: 'main', markers: ['Mirror does not judge.'] },`,
+  `{ id: 'mirror', path: '/mirror', selector: '[data-testid="mirror-bare-entry"]', markers: ['Choose what Mirror may open.', 'Open disclosed demo', 'Open Passport'] },`,
+  'current Mirror bare entry',
 )
 
 const oldHomeSettlement = `  if (route.id === 'home') {
