@@ -4,18 +4,22 @@
     display: none !important;
   }
 
+  /* React Three Fiber owns a full-viewport host div around the canvas. Disable
+     pointer ownership on both layers while the semantic inspector is active. */
+  .mirrorWorld:has(.mirrorInspection) > div,
   .mirrorWorld:has(.mirrorInspection) canvas {
     pointer-events: none !important;
   }
 
   .mirrorWorld:has(.mirrorInspection) .mirrorThresholds {
-    z-index: 40 !important;
+    z-index: 100 !important;
+    isolation: isolate;
     pointer-events: auto;
   }
 
   .mirrorWorld:has(.mirrorInspection) .mirrorThresholds button {
     position: relative;
-    z-index: 1;
+    z-index: 101;
     pointer-events: auto;
   }
 }
