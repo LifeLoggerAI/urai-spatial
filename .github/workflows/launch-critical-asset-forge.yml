@@ -9,7 +9,9 @@ on:
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
+      - 'scripts/verify-governed-asset-promotion.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
+      - 'scripts/audit-launch-critical-candidate-bundle.mjs'
       - 'scripts/validate-radiance-hdr.mjs'
       - 'scripts/compare-legacy-asset-candidates.mjs'
       - '.github/workflows/launch-critical-asset-forge.yml'
@@ -75,6 +77,23 @@ jobs:
           test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
           test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
           test -z "$(git status --porcelain)"
+      - name: Verify governed production authority before candidate generation
+        if: steps.mode.outputs.promotion != 'true'
+        env:
+          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-decisions/home-entry-chamber-v1.json
+        run: node scripts/verify-governed-asset-promotion.mjs
+      - name: Run governed Home production contract before candidate generation
+        if: steps.mode.outputs.promotion != 'true'
+        working-directory: urai-tier1
+        run: node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
+      - name: Prove governed Home binary immutable before candidate generation
+        if: steps.mode.outputs.promotion != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
+          test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
+          test -z "$(git status --porcelain)"
       - name: Forge deterministic launch candidates
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/forge-launch-critical-assets.mjs
@@ -84,9 +103,11 @@ jobs:
       - name: Verify manifest, receipts and budgets
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
-      - name: Independently audit generated formats and metrics
+      - name: Independently audit and retain exact candidate bundle
         if: steps.mode.outputs.promotion != 'true'
-        run: node scripts/audit-launch-critical-artifact.mjs
+        env:
+          URAI_CANDIDATE_BUNDLE_ROOT: .urai-artifacts/launch-critical-candidate-bundle
+        run: node scripts/audit-launch-critical-candidate-bundle.mjs
       - name: Strictly decode every Radiance HDR scanline
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/validate-radiance-hdr.mjs
@@ -122,17 +143,15 @@ jobs:
       - name: Compare current and pinned legacy candidates
         if: steps.mode.outputs.promotion != 'true'
         run: node scripts/compare-legacy-asset-candidates.mjs --legacy-root comparison/legacy --legacy-head "$LEGACY_ASSET_HEAD"
-      - name: Upload reviewable candidate bundle
+      - name: Upload exact audited candidate bundle
         if: steps.mode.outputs.promotion != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-asset-candidates-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 14
-          path: |
-            urai-tier1/public/assets/urai/generated/
-            operations/assets/generated-receipts/
-            operations/assets/launch-critical-assets.json
+          path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload governed promotion evidence
         if: steps.mode.outputs.promotion == 'true'
         uses: actions/upload-artifact@v4

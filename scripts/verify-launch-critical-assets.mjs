@@ -34,8 +34,13 @@ for (const asset of manifest.assets) {
   if (asset.kind === 'model' && receipt.measured?.triangleCount > asset.maxTriangles) {
     errors.push(`${asset.id}: ${receipt.measured.triangleCount} triangles exceeds ${asset.maxTriangles}`)
   }
-  if (asset.releaseState === 'production-ready' && receipt.compressionStatus.includes('candidate')) {
-    errors.push(`${asset.id}: cannot be production-ready with candidate compression status`)
+
+  const receiptReleaseState = String(receipt.releaseState || '').trim()
+  const receiptCompressionStatus = String(receipt.compressionStatus || '').trim()
+  if (!receiptReleaseState) errors.push(`${asset.id}: receipt release state is required`)
+  if (!receiptCompressionStatus) errors.push(`${asset.id}: receipt compression status is required`)
+  if (receiptReleaseState === 'production-ready' && receiptCompressionStatus.includes('candidate')) {
+    errors.push(`${asset.id}: receipt cannot be production-ready with candidate compression status`)
   }
 
   results.push({
@@ -43,8 +48,9 @@ for (const asset of manifest.assets) {
     path: asset.fixedPath,
     bytes: bytes.length,
     sha256,
-    compressionStatus: receipt.compressionStatus,
-    releaseState: asset.releaseState,
+    compressionStatus: receiptCompressionStatus,
+    manifestReleaseState: asset.releaseState,
+    receiptReleaseState,
     measured: receipt.measured,
   })
 }
