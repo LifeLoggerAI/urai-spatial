@@ -179,7 +179,8 @@ test('personalized state changes actual world composition and exposes provenance
 
 test('continuous Home keyboard proof materializes an enabled discreet control and preserves movement focus clearing', () => {
   assert.match(visualProofWrapper, /focusReplacement = .*button:not\(:disabled\)/)
-  assert.match(visualProofWrapper, /const patched = portalPatched\s*\.replace\(focusTarget, focusReplacement\)/s)
+  assert.match(visualProofWrapper, /'const patched = portalPatched',/)
+  assert.match(visualProofWrapper, /'\s*\.replace\(focusTarget, focusReplacement\)',/)
   has(visualProofWrapper, 'Home proof could not establish editable-control focus before movement regression')
   has(visualProofWrapper, "method === \\'keyboard\\' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable)")
   assert.match(visualProofWrapper, /focusCount !== 1/)
