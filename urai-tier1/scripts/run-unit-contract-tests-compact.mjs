@@ -8,6 +8,7 @@ const tests = [
   'tests/geographic-location-client-contract.test.mjs',
   'tests/geographic-maps-launch-policy.test.mjs',
   'tests/maps-cloud-bootstrap-contract.test.mjs',
+  'tests/urai-ecosystem-governance-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
