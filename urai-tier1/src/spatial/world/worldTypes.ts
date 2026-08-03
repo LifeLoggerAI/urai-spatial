@@ -28,6 +28,7 @@ export type UraiWorldState = {
   placeId?: string
   replayManifestId?: string
   privacyMode?: UraiPrivacyMode
+  demo?: boolean
 }
 
 export type UraiWorldContextPatch = Partial<
@@ -41,6 +42,7 @@ export type UraiWorldContextPatch = Partial<
     | 'placeId'
     | 'replayManifestId'
     | 'privacyMode'
+    | 'demo'
   >
 >
 
