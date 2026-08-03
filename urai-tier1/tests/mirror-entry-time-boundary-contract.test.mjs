@@ -29,8 +29,9 @@ test('memory timestamps and replay manifests remain exact and bounded', () => {
   assert.match(parser, /const replayPhaseIds = new Set\(segments\.map\(\(\{ id: phaseId \}\) => phaseId\)\)/)
   assert.match(parser, /replayPhaseIds\.size !== CANONICAL_REPLAY_PHASES\.length/)
   assert.match(parser, /CANONICAL_REPLAY_PHASES\.some\(\(phase\) => !replayPhaseIds\.has\(phase\)\)/)
-  assert.match(parser, /requestedDurationMs <= MAX_REPLAY_DURATION_MS/)
-  assert.match(parser, /: segmentDurationMs/)
+  assert.match(parser, /const finalSegmentEndMs = finalSegment \? finalSegment\.startsAtMs \+ finalSegment\.durationMs : -1/)
+  assert.match(parser, /requestedDurationMs >= finalSegmentEndMs/)
+  assert.match(parser, /: finalSegmentEndMs/)
 })
 
 test('duplicate person identities fail into the corrupt-memory boundary', () => {
