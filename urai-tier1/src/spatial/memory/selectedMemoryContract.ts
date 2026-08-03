@@ -210,6 +210,8 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     return segment.startsAtMs >= previous.startsAtMs + previous.durationMs
   })
   const segmentDurationMs = chronologicalSegments.reduce((total, segment) => total + segment.durationMs, 0)
+  const finalSegment = chronologicalSegments.at(-1)
+  const finalSegmentEndMs = finalSegment ? finalSegment.startsAtMs + finalSegment.durationMs : -1
   if (
     segments.length !== CANONICAL_REPLAY_PHASES.length
     || replayPhaseIds.size !== CANONICAL_REPLAY_PHASES.length
@@ -219,6 +221,9 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     || !Number.isSafeInteger(segmentDurationMs)
     || segmentDurationMs <= 0
     || segmentDurationMs > MAX_REPLAY_DURATION_MS
+    || !Number.isSafeInteger(finalSegmentEndMs)
+    || finalSegmentEndMs <= 0
+    || finalSegmentEndMs > MAX_REPLAY_DURATION_MS
   ) {
     return { status: 'corrupt', memory: null, message: 'The replay manifest is incomplete.' }
   }
@@ -226,10 +231,10 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   const requestedDurationMs = replay?.durationMs
   const replayDurationMs = typeof requestedDurationMs === 'number'
     && Number.isSafeInteger(requestedDurationMs)
-    && requestedDurationMs > 0
+    && requestedDurationMs >= finalSegmentEndMs
     && requestedDurationMs <= MAX_REPLAY_DURATION_MS
     ? requestedDurationMs
-    : segmentDurationMs
+    : finalSegmentEndMs
 
   const people = Array.isArray(raw.people) ? raw.people.flatMap((item) => {
     if (!item || typeof item !== 'object') return []
