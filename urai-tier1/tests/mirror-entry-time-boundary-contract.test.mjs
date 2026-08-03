@@ -33,6 +33,12 @@ test('memory timestamps and replay manifests remain exact and bounded', () => {
   assert.match(parser, /: segmentDurationMs/)
 })
 
+test('duplicate person identities fail into the corrupt-memory boundary', () => {
+  assert.match(parser, /const personIds = new Set\(people\.map\(\(\{ id: personId \}\) => personId\)\)/)
+  assert.match(parser, /personIds\.size !== people\.length/)
+  assert.match(parser, /This memory contains duplicate person references\./)
+})
+
 test('Mirror time-range construction falls back rather than throwing', () => {
   assert.match(model, /const endMs = Date\.parse\(memory\.occurredAt\)/)
   assert.match(model, /!Number\.isSafeInteger\(durationMs\) \|\| durationMs <= 0/)
