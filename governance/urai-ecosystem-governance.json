@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "urai-ecosystem-governance-2",
+  "status": "post-geography-governance-candidate",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "stackedBaseCommit": "2c22eb8256425cce242ff61d3a2c732d492e3c5e",
+  "currentMainAtRebuild": "2c22eb8256425cce242ff61d3a2c732d492e3c5e",
+  "dependencies": {
+    "trustedPreview": {
+      "pullRequest": 1018,
+      "exactHead": "5dd029aea3e63fa307a4c9b8be6122ba65a39ab8",
+      "mergeCommit": "36c31888d097dfacaebf162e785c2cbb0ff012fb",
+      "mergedIntoMain": true,
+      "followUpRepairPullRequests": [1021, 1023],
+      "currentMainAfterRepairs": "3e88a085e137a727aa65b4cc7e6aa107e27e2b9d",
+      "requiredBeforeEcosystemMerge": false
+    },
+    "embodiedMirror": {
+      "pullRequest": 1026,
+      "exactHead": "fdf9c268f8c3425acbd8d923c6e1d53a3863e04a",
+      "mergeCommit": "81bc0694bbad8abe02de9e34b3fac6b6277ade8c",
+      "exactHeadWorkflowCount": 28,
+      "browserCaseCount": 13,
+      "mergedIntoMain": true,
+      "requiredBeforeEcosystemMerge": true
+    },
+    "consentGatedGeography": {
+      "pullRequest": 1034,
+      "supersededPullRequest": 1027,
+      "exactHead": "0ae5da483c05863e5b0838b0b384edfce20cf555",
+      "mergeCommit": "2c22eb8256425cce242ff61d3a2c732d492e3c5e",
+      "registeredWorkflowCount": 25,
+      "completedSuccessfulWorkflowCountAtAudit": 23,
+      "pendingWorkflowCountAtAudit": 2,
+      "mergedIntoMain": true,
+      "requiredBeforeEcosystemMerge": true
+    }
+  },
+  "productionAuthorityIssue": 999,
+  "publicNames": {
+    "consumer": "UrAi",
+    "professional": "RuAi",
+    "operator": "URAI Labs",
+    "mission": "URAI Foundation",
+    "ipOwner": "URAI IP Holdings"
+  },
+  "identityBoundaries": {
+    "consumer": "private permission-aware spatial life-replay companion",
+    "professional": "separate consent-governed clinician researcher and authorized-data portal",
+    "operator": "operating and product organization",
+    "mission": "mission and public-benefit organization; formation and program claims require external evidence",
+    "ipOwner": "intended intellectual-property owner; ownership claims require executed assignment or license evidence"
+  },
+  "systems": [
+    {"id":"urai-consumer","classification":"implemented-verification-active","authority":["brand/BRAND_AUTHORITY.md","brand/v1-aaa-asset-program-matrix.json"],"releaseBoundary":"canonical production remains issue-999, billing, registrar, DNS and protected-release gated"},
+    {"id":"ruai-professional","classification":"prepared-external-execution-required","authority":["governance/RUAI_ACCESS_AND_DATA_GOVERNANCE.md"],"releaseBoundary":"no unrestricted access, clinical interpretation, or production-ready claim"},
+    {"id":"organizational-structure","classification":"prepared-external-execution-required","authority":["governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"],"releaseBoundary":"filings, signatures, officer authority and legal instruments remain external"},
+    {"id":"ip-chain-of-title","classification":"prepared-external-execution-required","authority":["governance/IP_CHAIN_OF_TITLE_READINESS.md"],"releaseBoundary":"no patented, patent-pending, registered-mark or ownership claim without retained evidence"},
+    {"id":"economic-participation","classification":"future-scope-not-required-for-v1","authority":["governance/ECONOMIC_PARTICIPATION_BOUNDARIES.md"],"releaseBoundary":"no payout, revenue-share, earnings or regulated-data activation before legal, tax, payment and consent proof"},
+    {"id":"privacy-consent","classification":"implemented-verification-active","authority":["operations/maps/geographic-maps-launch-policy.json"],"releaseBoundary":"exact location remains explicit, scoped, revocable and fail-closed"},
+    {"id":"deployment-proof","classification":"implemented-verification-active","authority":["operations/spatial/SPATIAL_AAA_PROGRAM_LEDGER.md"],"releaseBoundary":"one frozen-SHA protected release with fingerprint and rollback proof remains mandatory"}
+  ],
+  "ruaiMinimumControls": {
+    "explicitUserConsent": true,
+    "purposeLimitation": true,
+    "leastPrivilegeRoles": true,
+    "tenantIsolation": true,
+    "auditLogRequired": true,
+    "revocationRequired": true,
+    "deletionPropagationRequired": true,
+    "reidentificationProhibited": true,
+    "privateMemoryDefaultDenied": true,
+    "exactLocationDefaultDenied": true,
+    "medicalDecisionAutomationAuthorized": false
+  },
+  "economicMinimumControls": {
+    "earningsGuaranteesAllowed": false,
+    "automaticDataSaleAllowed": false,
+    "optInRequired": true,
+    "withdrawalAndRevocationRequired": true,
+    "taxAndPaymentOperationsRequired": true,
+    "legalReviewRequired": true,
+    "productionActivationAuthorized": false
+  },
+  "claimProhibitions": [
+    "production live before issue 999 proof",
+    "HIPAA compliant without scoped evidence",
+    "end-to-end encrypted without full-path evidence",
+    "anonymous or impossible to reidentify",
+    "medical diagnosis treatment or guaranteed outcomes",
+    "patented or patent pending without filing evidence",
+    "URAI IP Holdings owns assets without executed instruments",
+    "named partnerships or endorsements without written authority",
+    "user earnings or revenue share without implemented legal and payment controls",
+    "fully accessible without scope-specific retained evidence"
+  ],
+  "externalBlockers": [
+    {"id":"dns-registrar","blocks":["canonical-domain-cutover","public-fingerprint-verification","certificate-and-route-acceptance"],"doesNotBlock":["repository-work","preview","accessibility","asset-governance","organizational-readiness","ip-readiness"]},
+    {"id":"cloud-billing","blocks":["stable-protected-production","paid-provider-activation"],"doesNotBlock":["source-verification","nonmutating-preview-proof"]},
+    {"id":"legal-execution","blocks":["entity-status-claims","chain-of-title-claims","regulated-data-licensing","economic-participation-activation"]},
+    {"id":"native-locale-review","blocks":["approved-localized-launch-claims"]}
+  ],
+  "providerCalls": 0,
+  "spendUsd": "0.00",
+  "productionMutation": false
+}
