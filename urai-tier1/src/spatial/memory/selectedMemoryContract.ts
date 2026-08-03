@@ -228,6 +228,11 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     const label = stringValue(value.label)
     return personId && label ? [{ id: personId, label, relationship: stringValue(value.relationship) ?? undefined }] : []
   }) : []
+  const personIds = new Set(people.map(({ id: personId }) => personId))
+  if (personIds.size !== people.length) {
+    return { status: 'corrupt', memory: null, message: 'This memory contains duplicate person references.' }
+  }
+
   const placeRaw = raw.place && typeof raw.place === 'object' ? raw.place as Record<string, unknown> : null
   const placeLabel = placeRaw ? stringValue(placeRaw.label) : null
   const privacy = raw.privacy === 'hidden' || raw.privacy === 'shareable' ? raw.privacy : 'private'
