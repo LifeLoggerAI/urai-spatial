@@ -111,7 +111,6 @@ test('Mirror fixtures remain deterministic and never silently substitute demo fo
   assert.equal(conflicting.find((pattern) => pattern.id === 'emotional-recurrence')?.evidenceState, 'conflicting')
 })
 
-// Owner-authored validation marker after the self-deleting accessibility materializer.
 test('Mirror movement help identifies the active realm', () => {
   assert.match(clientSource, /<MovementHelp realm="Mirror"/)
   assert.doesNotMatch(clientSource, /<MovementHelp realm="Life Map"/)
@@ -129,8 +128,9 @@ test('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail c
   assert.match(clientSource, /selected\.provenance/)
 })
 
-test('mobile inspection transfers pointer ownership from WebGL to threshold navigation', () => {
+test('mobile inspection transfers pointer ownership from all overlays to threshold navigation', () => {
+  assert.match(mobileInspectionCss, /body:has\(\.mirrorWorld \.mirrorInspection\) \.urai-world-companion\s*\{[^}]*display:\s*none\s*!important[^}]*pointer-events:\s*none\s*!important/s)
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) canvas\s*\{[^}]*pointer-events:\s*none\s*!important/s)
-  assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds\s*\{[^}]*z-index:\s*40\s*!important[^}]*pointer-events:\s*auto/s)
+  assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds\s*\{[^}]*z-index:\s*100\s*!important[^}]*pointer-events:\s*auto/s)
   assert.match(mobileInspectionCss, /\.mirrorWorld:has\(\.mirrorInspection\) \.mirrorThresholds button\s*\{[^}]*pointer-events:\s*auto/s)
 })
