@@ -75,7 +75,8 @@ async function createPage(browser, deviceName, options = {}) {
 
 async function screenshot(page, name) {
   const relative = path.join('screenshots', `${name}.png`)
-  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled' })
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60000 })
   return relative
 }
 
@@ -148,10 +149,16 @@ async function proveOverview(browser, deviceName) {
       if (await fragmentButtons.count()) await fragmentButtons.last().click()
     }
 
-    await page.getByRole('button', { name: /Ask the Orb to explain Body rhythm/ }).click()
+    const orb = page.getByRole('button', { name: /Ask the Orb to explain Body rhythm/ })
+    if (deviceName === 'desktop') {
+      await orb.click()
+    } else {
+      await orb.waitFor({ state: 'hidden' })
+    }
+
     const shot = await screenshot(page, `${deviceName}-mirror-selected-body-rhythm`)
     await assertCleanEvidence(consoleErrors, failedRequests)
-    pushCase(name, deviceName, 'passed', { screenshot: shot, startCameraZ: startZ, finalCameraZ: movedZ, finalUrl: page.url(), consoleErrors, failedRequests })
+    pushCase(name, deviceName, 'passed', { screenshot: shot, startCameraZ: startZ, finalCameraZ: movedZ, mobileOrbHiddenDuringInspection: deviceName === 'mobile', finalUrl: page.url(), consoleErrors, failedRequests })
   } catch (error) {
     const shot = await screenshot(page, `${deviceName}-mirror-overview-failure`).catch(() => '')
     pushCase(name, deviceName, 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
@@ -257,7 +264,7 @@ try {
 }
 
 const receipt = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   exactSha,
   baseUrl,
   createdAt: new Date().toISOString(),
