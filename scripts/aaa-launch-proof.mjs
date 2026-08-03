@@ -72,7 +72,7 @@ const routeExpectations = [
   { route: '/life-map', markers: ['Step inside the map.', 'Life Map independent memory universe', 'Map controls'] },
   { route: `/focus?${demoMemoryQuery}`, markers: ['The Quiet Reset', 'Selected memory', 'Enter Replay'] },
   { route: `/replay?${demoMemoryQuery}`, markers: ['The Quiet Reset', 'Memory', 'Play'] },
-  { route: '/mirror', markers: ['Mirror does not judge.', 'Patterns become visible without turning your life into a score.'] },
+  { route: '/mirror', markers: ['Choose what Mirror may open.', 'Open disclosed demo', 'Open Passport'] },
   { route: '/passport', markers: ['Your life remains yours.', 'OWNERSHIP VAULT'] },
   {
     route: '/status',
