@@ -24,9 +24,20 @@ const constructionReplacement = [
   'if (focusCount !== 1) {',
   '  throw new Error(`Home keyboard focus selector expected one audited occurrence; found ${focusCount}`)',
   '}',
-  'const patched = portalPatched.replace(focusTarget, focusReplacement)',
+  'const visibilityTarget = "const style = getComputedStyle(node)\\n    const rect = node.getBoundingClientRect()\\n    return style.display !== \'none\' && style.visibility !== \'hidden\' && Number.parseFloat(style.opacity || \'1\') > 0.02"',
+  'const visibilityReplacement = "const style = getComputedStyle(node)\\n    const rect = node.getBoundingClientRect()\\n    let effectiveOpacity = 1\\n    for (let current = node; current instanceof Element; current = current.parentElement) {\\n      const currentStyle = getComputedStyle(current)\\n      if (currentStyle.display === \'none\' || currentStyle.visibility === \'hidden\') return false\\n      effectiveOpacity *= Number.parseFloat(currentStyle.opacity || \'1\')\\n    }\\n    return effectiveOpacity > 0.02"',
+  'const visibilityCount = portalPatched.split(visibilityTarget).length - 1',
+  'if (visibilityCount !== 1) {',
+  '  throw new Error(`Home effective visibility predicate expected one audited occurrence; found ${visibilityCount}`)',
+  '}',
+  'const patched = portalPatched',
+  '  .replace(focusTarget, focusReplacement)',
+  '  .replace(visibilityTarget, visibilityReplacement)',
   'if (!patched.includes(focusReplacement)) {',
   "  throw new Error('Home keyboard focus repair was not materialized')",
+  '}',
+  'if (!patched.includes("effectiveOpacity *= Number.parseFloat(currentStyle.opacity || \'1\')")) {',
+  "  throw new Error('Home ancestor-opacity visibility repair was not materialized')",
   '}',
   'if (!patched.includes("if (!editableFocusProven) throw new Error(\'Home proof could not establish editable-control focus before movement regression\')")) {',
   "  throw new Error('Home keyboard focus assertion was weakened or removed')",
@@ -46,6 +57,9 @@ const patched = original
 
 if (!patched.includes("button:not(:disabled)")) {
   throw new Error('Generated portal wrapper does not contain the enabled-control repair')
+}
+if (!patched.includes('Home ancestor-opacity visibility repair was not materialized')) {
+  throw new Error('Generated portal wrapper does not retain the effective visibility guard')
 }
 if (!patched.includes('Home keyboard focus assertion was weakened or removed')) {
   throw new Error('Generated portal wrapper does not retain the focus assertion guard')
