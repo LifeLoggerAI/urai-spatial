@@ -164,6 +164,8 @@ export function WorldTransitionController() {
       const currentWorld = worldRef.current
       if (event.defaultPrevented || event.key !== 'Escape' || isEditableTarget(event.target)) return
       if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
+      // Life Map and Location Map own their realm-specific Escape contracts.
+      // The global reverse-travel fallback must not race either realm-owned handler.
       if (currentWorld.destination === 'life-map' || currentWorld.destination === 'location-map') return
       event.preventDefault()
       reverseTravel()
