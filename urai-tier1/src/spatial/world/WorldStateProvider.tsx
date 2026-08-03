@@ -59,6 +59,7 @@ function contextFromLocation(): UraiWorldContextPatch {
   const replayManifestId = params.get('manifestId') ?? undefined
   const privacyMode = privacyModeFrom(params.get('privacyMode') ?? params.get('state'))
   const entryPortal = params.get('entryPortal') ?? params.get('from') ?? undefined
+  const demo = params.get('demo') === '1'
 
   return {
     ...(memoryId ? { memoryId } : {}),
@@ -68,6 +69,7 @@ function contextFromLocation(): UraiWorldContextPatch {
     ...(replayManifestId ? { replayManifestId } : {}),
     ...(privacyMode ? { privacyMode } : {}),
     ...(entryPortal ? { entryPortal } : {}),
+    ...(demo ? { demo: true } : {}),
   }
 }
 
