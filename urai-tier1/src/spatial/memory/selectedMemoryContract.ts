@@ -94,9 +94,21 @@ export type SelectedMemoryResult =
   | { status: 'unavailable' | 'deleted' | 'unauthorized' | 'corrupt'; memory: null; message: string }
 
 const SAFE_TOKEN = /^[A-Za-z0-9._:-]{1,120}$/
+const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+const CANONICAL_REPLAY_PHASES = ['memory', 'emotion', 'pattern', 'return'] as const
+const MAX_REPLAY_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
 function stringValue(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function isoDateValue(value: unknown) {
+  if (typeof value !== 'string' || !value || value.trim() !== value) return null
+  if (!CANONICAL_UTC_TIMESTAMP.test(value)) return null
+  const timestamp = Date.parse(value)
+  if (!Number.isFinite(timestamp)) return null
+  const canonical = new Date(timestamp).toISOString()
+  return canonical === value ? canonical : null
 }
 
 function numberValue(value: unknown, fallback: number) {
@@ -161,7 +173,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   if (!ownerId || ownerId !== expectedOwnerId) return { status: 'unauthorized', memory: null, message: 'This memory is not available to this account.' }
 
   const title = stringValue(raw.title)
-  const occurredAt = stringValue(raw.occurredAt)
+  const occurredAt = isoDateValue(raw.occurredAt)
   const summary = stringValue(raw.summary)
   const emotionalState = stringValue(raw.emotionalState ?? raw.emotion)
   const replay = raw.replayManifest && typeof raw.replayManifest === 'object' ? raw.replayManifest as Record<string, unknown> : null
@@ -181,12 +193,50 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     const label = stringValue(value.label)
     const caption = stringValue(value.caption)
     const narratorLine = stringValue(value.narratorLine)
+    const startsAtMs = numberValue(value.startsAtMs, -1)
+    const durationMs = numberValue(value.durationMs, -1)
     if (!label || !caption || !narratorLine) return []
-    return [{ id: segmentId, label, caption, narratorLine, startsAtMs: numberValue(value.startsAtMs, 0), durationMs: numberValue(value.durationMs, 0) }]
+    if (!Number.isSafeInteger(startsAtMs) || startsAtMs < 0) return []
+    if (!Number.isSafeInteger(durationMs) || durationMs <= 0) return []
+    return [{ id: segmentId, label, caption, narratorLine, startsAtMs, durationMs }]
   })
-  if (segments.length !== 4 || segments.some((segment) => segment.durationMs <= 0)) {
+  const replayPhaseIds = new Set(segments.map(({ id: phaseId }) => phaseId))
+  const chronologicalSegments = [...segments].sort((left, right) => left.startsAtMs - right.startsAtMs)
+  const chronologicalPhaseIds = chronologicalSegments.map(({ id: phaseId }) => phaseId)
+  const hasCanonicalChronology = CANONICAL_REPLAY_PHASES.every((phase, index) => chronologicalPhaseIds[index] === phase)
+  const hasNonOverlappingChronology = chronologicalSegments.every((segment, index) => {
+    if (index === 0) return segment.startsAtMs === 0
+    const previous = chronologicalSegments[index - 1]
+    return segment.startsAtMs >= previous.startsAtMs + previous.durationMs
+  })
+  const segmentDurationMs = chronologicalSegments.reduce((total, segment) => total + segment.durationMs, 0)
+  const finalSegment = chronologicalSegments.at(-1)
+  const finalSegmentEndMs = finalSegment ? finalSegment.startsAtMs + finalSegment.durationMs : -1
+  if (
+    replaySegments.length !== CANONICAL_REPLAY_PHASES.length
+    || segments.length !== replaySegments.length
+    || segments.length !== CANONICAL_REPLAY_PHASES.length
+    || replayPhaseIds.size !== CANONICAL_REPLAY_PHASES.length
+    || CANONICAL_REPLAY_PHASES.some((phase) => !replayPhaseIds.has(phase))
+    || !hasCanonicalChronology
+    || !hasNonOverlappingChronology
+    || !Number.isSafeInteger(segmentDurationMs)
+    || segmentDurationMs <= 0
+    || segmentDurationMs > MAX_REPLAY_DURATION_MS
+    || !Number.isSafeInteger(finalSegmentEndMs)
+    || finalSegmentEndMs <= 0
+    || finalSegmentEndMs > MAX_REPLAY_DURATION_MS
+  ) {
     return { status: 'corrupt', memory: null, message: 'The replay manifest is incomplete.' }
   }
+
+  const requestedDurationMs = replay?.durationMs
+  const replayDurationMs = typeof requestedDurationMs === 'number'
+    && Number.isSafeInteger(requestedDurationMs)
+    && requestedDurationMs >= finalSegmentEndMs
+    && requestedDurationMs <= MAX_REPLAY_DURATION_MS
+    ? requestedDurationMs
+    : finalSegmentEndMs
 
   const people = Array.isArray(raw.people) ? raw.people.flatMap((item) => {
     if (!item || typeof item !== 'object') return []
@@ -195,6 +245,11 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     const label = stringValue(value.label)
     return personId && label ? [{ id: personId, label, relationship: stringValue(value.relationship) ?? undefined }] : []
   }) : []
+  const personIds = new Set(people.map(({ id: personId }) => personId))
+  if (personIds.size !== people.length) {
+    return { status: 'corrupt', memory: null, message: 'This memory contains duplicate person references.' }
+  }
+
   const placeRaw = raw.place && typeof raw.place === 'object' ? raw.place as Record<string, unknown> : null
   const placeLabel = placeRaw ? stringValue(placeRaw.label) : null
   const privacy = raw.privacy === 'hidden' || raw.privacy === 'shareable' ? raw.privacy : 'private'
@@ -226,8 +281,8 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
       replayManifest: {
         id: replayId,
         version: numberValue(replay?.version, 1),
-        durationMs: numberValue(replay?.durationMs, segments.reduce((total, segment) => total + segment.durationMs, 0)),
-        segments,
+        durationMs: replayDurationMs,
+        segments: chronologicalSegments,
         transcript: stringValue(replay?.transcript) ?? undefined,
         audioUrl: stringValue(replay?.audioUrl) ?? undefined,
       },

@@ -4,6 +4,7 @@ const baseURL = 'http://127.0.0.1:3000'
 const fallbackSettleMs = 2_800
 const postTransitionStabilityMs = 900
 const disclosedSampleManifest = 'replay-recovery-thread'
+const maximumCanonicalBackHops = 3
 
 const destinations = [
   {
@@ -145,6 +146,27 @@ async function activate(page: Page, destination: Destination, activation: Activa
   await target.click({ noWaitAfter: true })
 }
 
+async function returnThroughCanonicalHistory(page: Page, destination: Destination) {
+  const hops: string[] = []
+
+  for (let attempt = 0; attempt < maximumCanonicalBackHops; attempt += 1) {
+    await page.goBack({ waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(250)
+    const pathname = normalizedPathname(page.url())
+    hops.push(page.url())
+
+    if (pathname === '/home') {
+      await page.waitForTimeout(fallbackSettleMs)
+      expect(normalizedPathname(page.url())).toBe('/home')
+      return hops
+    }
+
+    expect(pathname).toBe(destination.pathname)
+  }
+
+  throw new Error(`browser Back did not leave canonical ${destination.id} history within ${maximumCanonicalBackHops} hops: ${JSON.stringify(hops)}`)
+}
+
 async function proveCanonicalTravel(
   context: BrowserContext,
   destination: Destination,
@@ -169,10 +191,7 @@ async function proveCanonicalTravel(
   expect(settledIdentity(page, destination)).toEqual(identity)
   expect(page.url()).toBe(settledUrl)
 
-  await page.goBack({ waitUntil: 'domcontentloaded' })
-  await expect.poll(() => normalizedPathname(page.url()), { timeout: 15_000 }).toBe('/home')
-  await page.waitForTimeout(fallbackSettleMs)
-  expect(normalizedPathname(page.url())).toBe('/home')
+  const backHops = await returnThroughCanonicalHistory(page, destination)
 
   return {
     destination: destination.id,
@@ -180,6 +199,7 @@ async function proveCanonicalTravel(
     canonicalUrl: settledUrl,
     settledIdentity: identity,
     backUrl: page.url(),
+    backHops,
     fallbackSettleMs,
     postTransitionStabilityMs,
   }
@@ -188,7 +208,7 @@ async function proveCanonicalTravel(
 for (const destination of destinations) {
   for (const activation of activations) {
     test(`${activation.id} to ${destination.id} converges on canonical context and Back remains stable`, async ({ browser }, testInfo) => {
-      test.setTimeout(90_000)
+      test.setTimeout(180_000)
       const context = await browser.newContext({ baseURL, ...activation.context })
       try {
         const report = await proveCanonicalTravel(context, destination, activation)

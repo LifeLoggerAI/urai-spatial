@@ -152,13 +152,6 @@ function demoMemoryUrl(overview: boolean) {
 await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
   let source = replaceExact(
     input,
-    "page.locator('.urai-final-home-world')",
-    "page.locator('.urai-asset-home-world[data-home-primary-owner=\"asset-driven\"]')",
-    1,
-    'visual Home primary owner',
-  )
-  source = replaceExact(
-    source,
     "page.locator('details.life-map-help')",
     "page.locator('details.life-map-navigator')",
     1,
@@ -166,7 +159,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   )
   source = replaceExact(
     source,
-    "controls.locator(':scope > div')",
+    "controls.locator('.life-map-help__body')",
     "controls.locator(':scope > section')",
     1,
     'visual Life Map semantic navigator body',
@@ -265,12 +258,5 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
 
   test('selected Life Map action owner is topmost, contained, and directly operable on portrait mobile',`
   source = replaceRegex(source, journeyPattern, journeyReplacement, 1, 'current Life Map mobile journey proof')
-  source = replaceExact(
-    source,
-    "page.locator('.life-map-actions')",
-    "page.getByRole('navigation', { name: 'Selected memory actions' })",
-    2,
-    'current selected Life Map action owner',
-  )
   return source
 })

@@ -13,6 +13,9 @@ on:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof.mjs'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
+      - 'scripts/run-continuous-spatial-proof-v18-portal-stable.mjs'
+      - 'scripts/run-continuous-spatial-proof-v19-portal-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v19.mjs'
       - 'scripts/run-continuous-spatial-proof-v20.mjs'
       - 'scripts/run-continuous-spatial-proof-fixed.mjs'
@@ -143,11 +146,146 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/continuous-spatial-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/run-continuous-spatial-proof-v20.mjs \
+            node scripts/run-continuous-spatial-proof-v19-portal-stable.mjs \
             2>&1 | tee artifacts/continuous-spatial-proof/capture.log
           capture_status=${PIPESTATUS[0]}
+          printf '%s\n' "$capture_status" > artifacts/continuous-spatial-proof/capture-exit-code.txt
           set -e
           exit "$capture_status"
+
+      - name: Create compact exact-head diagnostic receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/continuous-spatial-proof
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises'
+
+          const outputDir = 'artifacts/continuous-spatial-proof'
+          const sourcePath = `${outputDir}/receipt.json`
+          let receipt = null
+          let parseError = null
+          try {
+            receipt = JSON.parse(await readFile(sourcePath, 'utf8'))
+          } catch (error) {
+            parseError = String(error)
+          }
+
+          const diagnostics = (value) => ({
+            consoleErrors: value?.consoleErrors || [],
+            pageErrors: value?.pageErrors || [],
+            failedRequests: value?.failedRequests || [],
+            ignoredAbortedRequests: value?.ignoredAbortedRequests || [],
+          })
+          const errorDetail = (value) => value ? ({
+            message: value?.message || String(value),
+            stack: value?.stack || null,
+          }) : null
+          const movement = (value) => value ? ({
+            method: value.method || null,
+            target: value.target || null,
+            start: value.start || null,
+            end: value.end || null,
+            elapsedMs: value.elapsedMs ?? null,
+            distanceTravelled: value.distanceTravelled ?? null,
+            bestDistanceToTarget: value.bestDistanceToTarget ?? null,
+            reached: value.reached ?? null,
+            maxPulses: value.maxPulses ?? null,
+            pulsesUsed: value.pulsesUsed ?? null,
+            phaseLabels: (value.phases || []).map((phase) => phase?.label || phase?.direction || null),
+          }) : null
+          const route = (value) => value ? ({
+            href: value.href || null,
+            pathname: value.pathname || null,
+            entryPortal: value.entryPortal || null,
+            cameraCheckpoint: value.cameraCheckpoint || null,
+            from: value.from || null,
+            expected: value.expected || null,
+            routeSettled: value.routeSettled ?? null,
+            openingObserved: value.openingObserved ?? null,
+            traversalObserved: value.traversalObserved ?? null,
+            closingObserved: value.closingObserved ?? null,
+            lifecycleObserved: value.lifecycleObserved ?? null,
+            phases: value.phases || [],
+          }) : null
+          const error = (value) => ({
+            fatal: value?.fatal || null,
+            stack: value?.stack || null,
+            id: value?.id || null,
+            destination: value?.destination || null,
+            method: value?.method || null,
+            videoError: errorDetail(value?.videoError),
+            activationFailure: errorDetail(value?.activationFailure),
+            movementFailure: errorDetail(value?.movementFailure || value?.result?.movementFailure),
+            movement: movement(value?.movement || value?.result?.movement),
+            finalTelemetry: value?.finalTelemetry || value?.result?.finalTelemetry || null,
+            routeEvidence: route(value?.routeEvidence),
+            diagnostics: diagnostics(value?.diagnostics),
+            screenshot: value?.screenshot || null,
+            video: value?.video || null,
+          })
+
+          const compact = {
+            schemaVersion: 'urai-continuous-spatial-visual-proof-compact-1',
+            exactHead: process.env.URAI_EXACT_HEAD || null,
+            sourceReceiptPresent: Boolean(receipt),
+            sourceSchemaVersion: receipt?.schemaVersion || null,
+            capturedAt: receipt?.capturedAt || null,
+            expectReady: receipt?.expectReady ?? null,
+            captureCount: receipt?.captures?.length || 0,
+            interactionCount: receipt?.interactions?.length || 0,
+            errorCount: receipt?.errors?.length || 0,
+            parseError,
+            captures: (receipt?.captures || []).map((record) => ({
+              id: record.id || null,
+              route: record.route || null,
+              query: record.query || null,
+              viewport: record.viewport || null,
+              screenshot: record.screenshot || null,
+              video: record.video || null,
+              passed: record.verification?.passed ?? null,
+              fallbackVisible: record.fallbackVisible ?? null,
+              semanticButtons: record.semanticButtons ?? null,
+              diagnostics: diagnostics(record.diagnostics),
+            })),
+            interactions: (receipt?.interactions || []).map((record) => ({
+              id: record.id || null,
+              method: record.method || null,
+              destination: record.destination || null,
+              screenshot: record.screenshot || null,
+              video: record.video || null,
+              videoError: errorDetail(record.videoError),
+              nearby: record.result?.nearby || null,
+              contextVisible: record.result?.contextVisible ?? null,
+              editableFocusProven: record.result?.editableFocusProven ?? null,
+              movementFailure: errorDetail(record.result?.movementFailure || record.movementFailure),
+              movement: movement(record.movement || record.result?.movement),
+              finalTelemetry: record.finalTelemetry || record.result?.finalTelemetry || null,
+              activationFailure: errorDetail(record.activationFailure),
+              routeEvidence: route(record.routeEvidence),
+              diagnostics: diagnostics(record.diagnostics),
+            })),
+            errors: (receipt?.errors || []).map(error),
+          }
+          await writeFile(`${outputDir}/compact-receipt.json`, `${JSON.stringify(compact, null, 2)}\n`)
+          NODE
+
+      - name: Upload compact exact-head diagnostic receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: continuous-spatial-visual-proof-compact-${{ env.URAI_EXACT_HEAD }}
+          path: |
+            artifacts/continuous-spatial-proof/compact-receipt.json
+            artifacts/continuous-spatial-proof/capture-exit-code.txt
+            artifacts/continuous-spatial-proof/build-static-exit-code.txt
+            artifacts/continuous-spatial-proof/playwright-install-exit-code.txt
+            artifacts/continuous-spatial-proof/playwright-version.txt
+            artifacts/continuous-spatial-proof/http-server.log
+          if-no-files-found: error
+          retention-days: 365
+          compression-level: 9
 
       - name: Upload exact-head visual receipt
         if: always()

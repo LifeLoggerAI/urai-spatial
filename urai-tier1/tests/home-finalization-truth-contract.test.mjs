@@ -13,10 +13,12 @@ const assetOwner = read('src/app/AssetDrivenHomeWorld.tsx')
 const manifest = read('src/spatial/assets/assetManifest.ts')
 const runtime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const fallback = read('src/app/FinalHomeWorld.tsx')
+const selectedMemoryContract = read('src/spatial/memory/selectedMemoryContract.ts')
 const doorwayProof = read('../tests/native-doorway-proof.mjs')
 const authoring = read('../scripts/author-home-finalization-assets.mjs')
 const authoredVerifier = read('../scripts/verify-home-finalization-authored-assets.mjs')
 const visualProof = read('../scripts/capture-continuous-spatial-proof-v18.mjs')
+const visualProofWrapper = read('../scripts/run-continuous-spatial-proof-v19-portal-stable.mjs')
 
 const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 
@@ -55,6 +57,18 @@ test('normal production personalization cannot silently consume disclosed sample
   assert.match(personalizationHook, /users', user\.uid, 'memories'/)
   assert.match(personalizationHook, /setDataAvailable\(false\)/)
   assert.match(personalization, /No substitute memories or sample records were mounted/)
+})
+
+test('selected memory parsing rejects ambiguous malformed and normalized timestamps before Mirror rendering', () => {
+  assert.match(selectedMemoryContract, /const CANONICAL_UTC_TIMESTAMP =/)
+  assert.match(selectedMemoryContract, /value\.trim\(\) !== value/)
+  assert.match(selectedMemoryContract, /!CANONICAL_UTC_TIMESTAMP\.test\(value\)/)
+  assert.match(selectedMemoryContract, /const timestamp = Date\.parse\(value\)/)
+  assert.match(selectedMemoryContract, /if \(!Number\.isFinite\(timestamp\)\) return null/)
+  assert.match(selectedMemoryContract, /const canonical = new Date\(timestamp\)\.toISOString\(\)/)
+  assert.match(selectedMemoryContract, /return canonical === value \? canonical : null/)
+  assert.match(selectedMemoryContract, /const occurredAt = isoDateValue\(raw\.occurredAt\)/)
+  assert.match(selectedMemoryContract, /if \(!title \|\| !occurredAt \|\| !summary/)
 })
 
 test('every required Orb state maps to a directly bound authored GLB clip', () => {
@@ -163,6 +177,16 @@ test('personalized state changes actual world composition and exposes provenance
   assert.match(assetOwner, /Correct, hide, or delete sources/)
 })
 
+test('continuous Home keyboard proof materializes an enabled discreet control and preserves movement focus clearing', () => {
+  assert.match(visualProofWrapper, /focusReplacement = .*button:not\(:disabled\)/)
+  assert.match(visualProofWrapper, /'const patched = portalPatched',/)
+  assert.match(visualProofWrapper, /'\s*\.replace\(focusTarget, focusReplacement\)',/)
+  has(visualProofWrapper, 'Home proof could not establish editable-control focus before movement regression')
+  has(visualProofWrapper, "method === \\'keyboard\\' && (!result.editableFocusProven || !result.focusClear?.blurred || result.focusClear.afterEditable)")
+  assert.match(visualProofWrapper, /focusCount !== 1/)
+  assert.match(visualProofWrapper, /Home keyboard focus assertion was weakened or removed/)
+  assert.match(visualProofWrapper, /Home keyboard focus-clear regression assertion was weakened or removed/)
+})
 
 test('v18 exact-head evidence covers root parity mobile states motion portals accessibility and failures', () => {
   for (const marker of [

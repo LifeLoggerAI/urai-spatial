@@ -284,7 +284,7 @@ export function MovementHelp({
   summary,
   controls,
 }: {
-  realm: 'Home' | 'Ground' | 'Life Map'
+  realm: 'Home' | 'Ground' | 'Life Map' | 'Mirror'
   summary: string
   controls: string
 }) {

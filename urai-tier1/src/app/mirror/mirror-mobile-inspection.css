@@ -1,0 +1,35 @@
+body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 760px) {
+  body:has(.mirrorWorld .mirrorInspection) .urai-world-companion {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .urai-mobile-movement,
+  .mirrorWorld:has(.mirrorInspection) .mirrorOrb {
+    display: none !important;
+  }
+
+  /* React Three Fiber owns a full-viewport host div around the canvas. Disable
+     pointer ownership on both layers while the semantic inspector is active. */
+  .mirrorWorld:has(.mirrorInspection) > div,
+  .mirrorWorld:has(.mirrorInspection) canvas {
+    pointer-events: none !important;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorThresholds {
+    z-index: 100 !important;
+    isolation: isolate;
+    pointer-events: auto;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorThresholds button {
+    position: relative;
+    z-index: 101;
+    pointer-events: auto;
+  }
+}
