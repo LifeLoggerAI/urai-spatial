@@ -24,6 +24,7 @@ const tests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
+  'tests/release-proof-visibility-and-mirror-layering-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/post-deploy-ground-smoke-contract.test.mjs',
   'tests/persistent-world-doorway-regression.test.mjs',
