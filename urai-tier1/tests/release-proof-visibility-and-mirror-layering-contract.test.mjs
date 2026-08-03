@@ -19,7 +19,8 @@ test('continuous visual proof measures effective ancestor opacity', () => {
   assert.match(visualWrapper, /ancestor-opacity visibility repair was not materialized/)
 })
 
-test('mobile Mirror inspector removes all competing hit owners and pins semantic thresholds above overlays', () => {
+test('Mirror inspector removes competing help and mobile hit owners while pinning semantic thresholds', () => {
+  assert.match(mirrorMobile, /body:has\(\.mirrorWorld \.mirrorInspection\) \.urai-movement-help/)
   assert.match(mirrorMobile, /body:has\(\.mirrorWorld \.mirrorInspection\) \.urai-world-companion/)
   assert.match(mirrorMobile, /display: none !important/)
   assert.match(mirrorMobile, /> div,/)
@@ -33,12 +34,14 @@ test('mobile Mirror inspector removes all competing hit owners and pins semantic
   assert.match(mirrorMobile, /pointer-events: auto/)
 })
 
-test('selected-memory replay fragments are canonicalized by timestamp and reject invalid chronology', () => {
+test('selected-memory replay fragments are canonicalized by timestamp and cover the final segment', () => {
   assert.match(selectedMemory, /const chronologicalSegments = \[\.\.\.segments\]\.sort/)
   assert.match(selectedMemory, /left\.startsAtMs - right\.startsAtMs/)
   assert.match(selectedMemory, /const hasCanonicalChronology = CANONICAL_REPLAY_PHASES\.every/)
   assert.match(selectedMemory, /const hasNonOverlappingChronology = chronologicalSegments\.every/)
   assert.match(selectedMemory, /segment\.startsAtMs === 0/)
+  assert.match(selectedMemory, /const finalSegmentEndMs = finalSegment \? finalSegment\.startsAtMs \+ finalSegment\.durationMs : -1/)
+  assert.match(selectedMemory, /requestedDurationMs >= finalSegmentEndMs/)
   assert.match(selectedMemory, /segments: chronologicalSegments/)
 })
 
