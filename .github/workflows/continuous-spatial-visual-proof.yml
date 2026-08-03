@@ -13,6 +13,9 @@ on:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof.mjs'
       - 'scripts/capture-continuous-spatial-proof-v18.mjs'
+      - 'scripts/run-continuous-spatial-proof-v18-stable.mjs'
+      - 'scripts/run-continuous-spatial-proof-v18-portal-stable.mjs'
+      - 'scripts/run-continuous-spatial-proof-v19-portal-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v19.mjs'
       - 'scripts/run-continuous-spatial-proof-v20.mjs'
       - 'scripts/run-continuous-spatial-proof-fixed.mjs'
@@ -143,7 +146,7 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/continuous-spatial-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-            node scripts/run-continuous-spatial-proof-v20.mjs \
+            node scripts/run-continuous-spatial-proof-v19-portal-stable.mjs \
             2>&1 | tee artifacts/continuous-spatial-proof/capture.log
           capture_status=${PIPESTATUS[0]}
           set -e

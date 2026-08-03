@@ -2,12 +2,6 @@ import { expect, test, type Page } from '@playwright/test'
 
 const focusDemo = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 
-async function holdKey(page: Page, key: string, duration = 1_800) {
-  await page.keyboard.down(key)
-  await page.waitForTimeout(duration)
-  await page.keyboard.up(key)
-}
-
 async function disableWebGL(page: Page) {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext
@@ -34,8 +28,12 @@ test.describe('Focus exact-head accessibility and movement evidence', () => {
     await expect(focus).toHaveAttribute('data-node', 'quiet-reset')
 
     const before = Number(await focus.getAttribute('data-focus-distance'))
-    await holdKey(page, 'w')
-    await expect.poll(async () => Number(await focus.getAttribute('data-focus-distance')), { timeout: 12_000 }).toBeGreaterThan(before + 0.5)
+    await page.keyboard.down('w')
+    try {
+      await expect.poll(async () => Number(await focus.getAttribute('data-focus-distance')), { timeout: 12_000 }).toBeGreaterThan(before + 0.5)
+    } finally {
+      await page.keyboard.up('w')
+    }
     await expect(focus).toHaveAttribute('data-focus-camera-x', /-?\d+\.\d{3}/)
     await expect(focus).toHaveAttribute('data-focus-camera-y', /-?\d+\.\d{3}/)
     await expect(focus).toHaveAttribute('data-focus-camera-z', /-?\d+\.\d{3}/)

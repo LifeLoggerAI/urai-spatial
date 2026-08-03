@@ -18,6 +18,7 @@ const CONTEXT_KEYS = [
   'placeId',
   'manifestId',
   'privacyMode',
+  'demo',
 ] as const
 
 function prefersReducedMotion() {
@@ -50,6 +51,7 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.placeId) target.searchParams.set('placeId', context.placeId)
   if (context?.replayManifestId) target.searchParams.set('manifestId', context.replayManifestId)
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
+  if (context?.demo) target.searchParams.set('demo', '1')
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
@@ -124,9 +126,6 @@ export function WorldTransitionController() {
       router.push(href)
       timer.current = null
 
-      // A renderer recovery or a saturated browser main thread must not leave the
-      // world permanently in transition. Prefer client navigation, then use the
-      // same-origin document route only when the requested destination did not land.
       navigationWatchdog.current = window.setTimeout(() => {
         navigationWatchdog.current = null
         if (normalizedPathname(window.location.pathname) !== targetPathname) {
@@ -153,6 +152,7 @@ export function WorldTransitionController() {
         placeId: currentWorld.placeId,
         replayManifestId: currentWorld.replayManifestId,
         privacyMode: currentWorld.privacyMode,
+        demo: currentWorld.demo,
       },
     })
   }, [executeTravel])
