@@ -61,6 +61,8 @@ test('selected-memory replay fragments are canonicalized by timestamp and cover 
   assert.match(selectedMemory, /const hasCanonicalChronology = CANONICAL_REPLAY_PHASES\.every/)
   assert.match(selectedMemory, /const hasNonOverlappingChronology = chronologicalSegments\.every/)
   assert.match(selectedMemory, /segment\.startsAtMs === 0/)
+  assert.match(selectedMemory, /replaySegments\.length !== CANONICAL_REPLAY_PHASES\.length/)
+  assert.match(selectedMemory, /segments\.length !== replaySegments\.length/)
   assert.match(selectedMemory, /const finalSegmentEndMs = finalSegment \? finalSegment\.startsAtMs \+ finalSegment\.durationMs : -1/)
   assert.match(selectedMemory, /requestedDurationMs >= finalSegmentEndMs/)
   assert.match(selectedMemory, /segments: chronologicalSegments/)
