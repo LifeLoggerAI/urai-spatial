@@ -178,6 +178,10 @@ jobs:
             failedRequests: value?.failedRequests || [],
             ignoredAbortedRequests: value?.ignoredAbortedRequests || [],
           })
+          const errorDetail = (value) => value ? ({
+            message: value?.message || String(value),
+            stack: value?.stack || null,
+          }) : null
           const movement = (value) => value ? ({
             method: value.method || null,
             target: value.target || null,
@@ -207,17 +211,13 @@ jobs:
           }) : null
           const error = (value) => ({
             fatal: value?.fatal || null,
+            stack: value?.stack || null,
             id: value?.id || null,
             destination: value?.destination || null,
             method: value?.method || null,
-            activationFailure: value?.activationFailure ? {
-              message: value.activationFailure.message || null,
-              stack: value.activationFailure.stack || null,
-            } : null,
-            movementFailure: value?.movementFailure ? {
-              message: value.movementFailure.message || String(value.movementFailure),
-              stack: value.movementFailure.stack || null,
-            } : null,
+            videoError: errorDetail(value?.videoError),
+            activationFailure: errorDetail(value?.activationFailure),
+            movementFailure: errorDetail(value?.movementFailure),
             movement: movement(value?.movement || value?.result?.movement),
             finalTelemetry: value?.finalTelemetry || value?.result?.finalTelemetry || null,
             routeEvidence: route(value?.routeEvidence),
@@ -255,16 +255,14 @@ jobs:
               destination: record.destination || null,
               screenshot: record.screenshot || null,
               video: record.video || null,
+              videoError: errorDetail(record.videoError),
               nearby: record.result?.nearby || null,
               contextVisible: record.result?.contextVisible ?? null,
               editableFocusProven: record.result?.editableFocusProven ?? null,
-              movementFailure: record.result?.movementFailure || null,
+              movementFailure: errorDetail(record.result?.movementFailure || record.movementFailure),
               movement: movement(record.movement || record.result?.movement),
               finalTelemetry: record.finalTelemetry || record.result?.finalTelemetry || null,
-              activationFailure: record.activationFailure ? {
-                message: record.activationFailure.message || null,
-                stack: record.activationFailure.stack || null,
-              } : null,
+              activationFailure: errorDetail(record.activationFailure),
               routeEvidence: route(record.routeEvidence),
               diagnostics: diagnostics(record.diagnostics),
             })),
