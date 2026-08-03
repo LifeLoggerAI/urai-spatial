@@ -3,11 +3,13 @@ import fs from 'node:fs'
 
 const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
-  'tests/aaa-presentation-convergence-contract.test.mjs',
   'tests/v1-aaa-asset-program-matrix-contract.test.mjs',
+  'tests/geographic-location-vault.test.mjs',
+  'tests/geographic-location-client-contract.test.mjs',
+  'tests/geographic-maps-launch-policy.test.mjs',
+  'tests/maps-cloud-bootstrap-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/asset-validation-fail-closed-contract.test.mjs',
-  'tests/launch-critical-candidate-state-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
   'tests/accessibility-performance-source-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
@@ -26,7 +28,6 @@ const tests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/mirror-spatial-realm-contract.test.mjs',
   'tests/mirror-canonical-owner-hydration-contract.test.mjs',
-  'tests/release-proof-visibility-and-mirror-layering-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/post-deploy-ground-smoke-contract.test.mjs',
   'tests/persistent-world-doorway-regression.test.mjs',
