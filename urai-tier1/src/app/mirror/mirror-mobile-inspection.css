@@ -1,3 +1,8 @@
+body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 @media (max-width: 760px) {
   body:has(.mirrorWorld .mirrorInspection) .urai-world-companion {
     display: none !important;
