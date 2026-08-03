@@ -217,7 +217,7 @@ jobs:
             method: value?.method || null,
             videoError: errorDetail(value?.videoError),
             activationFailure: errorDetail(value?.activationFailure),
-            movementFailure: errorDetail(value?.movementFailure),
+            movementFailure: errorDetail(value?.movementFailure || value?.result?.movementFailure),
             movement: movement(value?.movement || value?.result?.movement),
             finalTelemetry: value?.finalTelemetry || value?.result?.finalTelemetry || null,
             routeEvidence: route(value?.routeEvidence),
