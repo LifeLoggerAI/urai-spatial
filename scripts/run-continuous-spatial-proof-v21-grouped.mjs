@@ -16,8 +16,8 @@ const receiptReplacement = `  expectReady,\n  group,\n  captures: [],`
 if (original.split(receiptTarget).length - 1 !== 1) throw new Error('Receipt contract changed')
 
 const executionStart = `const browser = await chromium.launch({ headless: true })`
-const executionIndex = original.indexOf(executionStart)
-if (executionIndex < 0 || original.indexOf(executionStart, executionIndex + 1) >= 0) throw new Error('Execution contract changed')
+const originalExecutionIndex = original.indexOf(executionStart)
+if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecutionIndex + 1) >= 0) throw new Error('Execution contract changed')
 
 const execution = `const browser = await chromium.launch({ headless: true })
 try {
@@ -50,10 +50,14 @@ await writeFile(path.join(outputDir, 'receipt.json'), \`${'${'}JSON.stringify(re
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.errors.length) process.exit(1)`
 
-const grouped = original
+const patchedPrefix = original
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
-  .slice(0, executionIndex) + execution
+const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
+if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) {
+  throw new Error('Patched execution contract changed')
+}
+const grouped = patchedPrefix.slice(0, patchedExecutionIndex) + execution
 
 const requiredSemanticGuards = [
   ['diagnostic failure guard', 'diagnosticResult.failedRequests.length'],
@@ -63,6 +67,12 @@ const requiredSemanticGuards = [
 ]
 for (const [label, marker] of requiredSemanticGuards) {
   if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)
+}
+if (!grouped.includes('const browser = await chromium.launch({ headless: true })')) {
+  throw new Error('Grouped browser execution was not materialized')
+}
+if (grouped.includes('|| const browser = await chromium.launch')) {
+  throw new Error('Grouped execution splice corrupted the preceding assertion')
 }
 
 await writeFile(sourceUrl, grouped, 'utf8')
