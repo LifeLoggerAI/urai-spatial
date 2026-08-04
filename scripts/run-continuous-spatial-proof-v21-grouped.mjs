@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { SourceTextModule } from 'node:vm'
 
 const sourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const stableRunnerUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
@@ -12,7 +13,7 @@ const openReplacement = `    ...(process.env.URAI_PROOF_RECORD_VIDEO === 'true' 
 if (original.split(openTarget).length - 1 !== 1) throw new Error('Video context contract changed')
 
 const receiptTarget = `  expectReady,\n  captures: [],`
-const receiptReplacement = `  expectReady,\n  group,\n  captures: [],`
+const receiptReplacement = `  expectReady,\n  group: ${JSON.stringify(group)},\n  captures: [],`
 if (original.split(receiptTarget).length - 1 !== 1) throw new Error('Receipt contract changed')
 
 const executionStart = `const browser = await chromium.launch({ headless: true })`
@@ -21,22 +22,22 @@ if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecu
 
 const execution = `const browser = await chromium.launch({ headless: true })
 try {
-  if (group === 'visual' || group === 'all') {
+  if (${JSON.stringify(group)} === 'visual' || ${JSON.stringify(group)} === 'all') {
     await captureHomeState(browser, viewports[0], { id: 'home-normal-root', route: '/', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' })
     await captureHomeState(browser, viewports[0], { id: 'home-normal-home', route: '/home/', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' })
     await captureLoading(browser, viewports[0])
     await captureOrbStates(browser)
   }
-  if (group === 'desktop' || group === 'all') {
+  if (${JSON.stringify(group)} === 'desktop' || ${JSON.stringify(group)} === 'all') {
     for (const destination of ['orb', 'ground', 'life-map']) await captureInteraction(browser, viewports[0], 'keyboard', destination)
     await capturePointerLook(browser)
   }
-  if (group === 'mobile' || group === 'all') {
+  if (${JSON.stringify(group)} === 'mobile' || ${JSON.stringify(group)} === 'all') {
     for (const spec of viewports.filter((value) => value.isMobile)) {
       for (const destination of ['orb', 'ground', 'life-map']) await captureInteraction(browser, spec, 'touch', destination)
     }
   }
-  if (group === 'portal-fallback' || group === 'all') {
+  if (${JSON.stringify(group)} === 'portal-fallback' || ${JSON.stringify(group)} === 'all') {
     await capturePortalSequence(browser)
     await captureFallback(browser)
   }
@@ -74,6 +75,10 @@ if (!grouped.includes('const browser = await chromium.launch({ headless: true })
 if (grouped.includes('|| const browser = await chromium.launch')) {
   throw new Error('Grouped execution splice corrupted the preceding assertion')
 }
+if (grouped.includes('\n  group,\n')) {
+  throw new Error('Grouped receipt retained an undefined shorthand group binding')
+}
+new SourceTextModule(grouped)
 
 await writeFile(sourceUrl, grouped, 'utf8')
 try {
