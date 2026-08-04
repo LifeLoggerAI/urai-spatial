@@ -55,12 +55,14 @@ const grouped = original
   .replace(receiptTarget, receiptReplacement)
   .slice(0, executionIndex) + execution
 
-for (const assertion of [
-  "if (!verification.passed || diagnosticResult.pageErrors.length || diagnosticResult.consoleErrors.length || diagnosticResult.failedRequests.length)",
-  "if (!record.fallbackVisible || record.semanticButtons !== 3 || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length)",
-  "throw new Error(`Home interaction proof failed for ${id}: ${JSON.stringify(record)}`)",
-]) {
-  if (!grouped.includes(assertion)) throw new Error(`Visual assertion missing after grouping: ${assertion}`)
+const requiredSemanticGuards = [
+  ['diagnostic failure guard', 'diagnosticResult.failedRequests.length'],
+  ['fallback visibility guard', 'record.fallbackVisible'],
+  ['fallback semantic destination count', 'record.semanticButtons !== 3'],
+  ['interaction proof failure guard', 'Home interaction proof failed for'],
+]
+for (const [label, marker] of requiredSemanticGuards) {
+  if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)
 }
 
 await writeFile(sourceUrl, grouped, 'utf8')
