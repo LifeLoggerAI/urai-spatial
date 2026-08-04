@@ -151,12 +151,12 @@ function ArchitecturalShell({ reducedMotion }: { reducedMotion: boolean }) {
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.115, -1.1]} receiveShadow>
         <planeGeometry args={[20, 22]} />
-        <meshStandardMaterial color="#030a12" roughness={.78} metalness={.18} />
+        <meshStandardMaterial color="#06131d" roughness={.76} metalness={.16} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.075, -1.25]} receiveShadow>
         <planeGeometry args={[3.65, 20.5]} />
-        <meshPhysicalMaterial color="#082938" roughness={.2} metalness={.42} clearcoat={.92} clearcoatRoughness={.24} />
+        <meshPhysicalMaterial color="#0b3442" roughness={.24} metalness={.36} clearcoat={.84} clearcoatRoughness={.28} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.064, -1.25]}>
@@ -202,8 +202,8 @@ function ArchitecturalShell({ reducedMotion }: { reducedMotion: boolean }) {
         </group>
       ))}
 
-      {[-7.9, -5.2, -2.5, .2, 2.9, 5.6].map((z, index) => (
-        <SanctuaryRib key={z} z={z} intensity={index === 2 || index === 3 ? .34 : .2} />
+      {[-6.8, -2.8, 1.2, 5.2].map((z, index) => (
+        <SanctuaryRib key={z} z={z} intensity={index === 1 || index === 2 ? .22 : .14} />
       ))}
 
       <mesh position={[0, .02, -1.15]} receiveShadow>
@@ -227,7 +227,7 @@ function ArchitecturalShell({ reducedMotion }: { reducedMotion: boolean }) {
         <circleGeometry args={[1.68, 96]} />
         <meshPhysicalMaterial color="#071a26" emissive="#1b5360" emissiveIntensity={.16} transparent opacity={.94} roughness={.28} metalness={.28} side={THREE.DoubleSide} />
       </mesh>
-      <pointLight position={[0, 2.3, -8.9]} color="#78d8df" intensity={2.1} distance={9} decay={2} />
+      <pointLight position={[0, 2.3, -8.9]} color="#78d8df" intensity={2.65} distance={11} decay={2} />
       <pointLight position={[0, 4.9, -1.4]} color="#a99be4" intensity={1.1} distance={16} decay={2} />
     </group>
   )

@@ -19,7 +19,7 @@ import {
 import { resolveReadyUraiSensoryAssetPath } from '@/spatial/assets/sensoryAssetManifest'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-const SPAWN = new THREE.Vector3(0, 0, 7.2)
+const SPAWN = new THREE.Vector3(0, 0, 8.0)
 const BOUNDS = { minX: -8.2, maxX: 8.2, minZ: -9.8, maxZ: 8.2 }
 const ORB_POSITION = new THREE.Vector3(0, 1.62, -0.65)
 const GROUND_POSITION = new THREE.Vector3(-4.55, 0.25, -6.55)
@@ -270,7 +270,7 @@ function OrbRepresentation({ path, state, reducedMotion, muted, nearby, onActiva
   const color = output.light.temperature === 'warm' ? '#efc27c' : output.light.temperature === 'violet' ? '#b7a0ff' : '#b9ece5'
   const stateScale = state === 'speaking' ? 1.08 : state === 'attention' ? 1.06 : state === 'transition' ? 1.12 : state === 'privacy' ? 0.94 : 1
   return <group position={ORB_POSITION} name={`home-orb-state-${state}`} onClick={onActivate} userData={{ clip: ORB_CLIP[state] }}>
-    <AnimatedAsset path={path} name="home-authored-orb" clips={[ORB_CLIP[state]]} reducedMotion={reducedMotion} scale={[1.22 * stateScale, 1.22 * stateScale, 1.22 * stateScale]} />
+    <AnimatedAsset path={path} name="home-authored-orb" clips={[ORB_CLIP[state]]} reducedMotion={reducedMotion} scale={[1.38 * stateScale, 1.38 * stateScale, 1.38 * stateScale]} />
     <pointLight color={color} intensity={output.light.intensity * (nearby ? 2.2 : 1.4)} distance={8.5} decay={2} castShadow />
     <mesh scale={nearby ? 1.38 : state === 'warning' ? 1.12 : 1}>
       <sphereGeometry args={[0.78, 32, 24]} />
@@ -336,7 +336,7 @@ function Player({ input, yaw, pitch, target, position, velocity, nearby, setNear
     }
     nearby.current = next
     if (next !== previous.current) { previous.current = next; setNearby(next) }
-    camera.position.set(position.current.x, 1.68, position.current.z)
+    camera.position.set(position.current.x, 1.82, position.current.z)
     direction.current.set(-Math.sin(yaw.current) * Math.cos(pitch.current), Math.sin(pitch.current), -Math.cos(yaw.current) * Math.cos(pitch.current))
     camera.lookAt(lookAt.current.copy(camera.position).add(direction.current))
   })
@@ -416,7 +416,7 @@ function Scene({ chamberPath, portalPath, orbPath, scene, orbState, setOrbState,
     <hemisphereLight intensity={1.48} color="#e8f4ea" groundColor="#1b3d33" />
     <directionalLight position={[6, 12, 7]} intensity={2.5} color="#ffe4b4" castShadow shadow-mapSize={[1536, 1536]} />
     <directionalLight position={[-8, 7, -8]} intensity={1.05} color="#91b5ee" />
-    <pointLight position={[0, 5, 4]} intensity={1.0} color="#b8eadb" distance={18} decay={2} />
+    <pointLight position={[0, 5, 4]} intensity={1.42} color="#b8eadb" distance={20} decay={2} />
     <SceneReady onReady={onAssetsReady} />
     <AuthoredHomeSanctuary sourcePath={chamberPath} reducedMotion={reducedMotion} walkTarget={target} playerPosition={position} />
     <PersonalizedPlaces scene={scene} reducedMotion={reducedMotion} />
@@ -442,6 +442,19 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
   const [reviewMode, setReviewMode] = useState(false)
   useEffect(() => {
     setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
+  }, [])
+  const [mobileControlsVisible, setMobileControlsVisible] = useState(false)
+  useEffect(() => {
+    const coarsePointer = window.matchMedia('(pointer: coarse)')
+    const narrowViewport = window.matchMedia('(max-width: 900px)')
+    const synchronize = () => setMobileControlsVisible(coarsePointer.matches || narrowViewport.matches)
+    synchronize()
+    coarsePointer.addEventListener('change', synchronize)
+    narrowViewport.addEventListener('change', synchronize)
+    return () => {
+      coarsePointer.removeEventListener('change', synchronize)
+      narrowViewport.removeEventListener('change', synchronize)
+    }
   }, [])
   const forcedAssetFailure = useMemo(() => reviewMode && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetFailure') === '1', [reviewMode])
   const forcedOrbState = useMemo(() => requestedReviewOrbState(reviewMode), [reviewMode])
@@ -534,7 +547,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-assets-ready={assetsReady ? 'true' : 'false'}
       {...look}
     >
-      <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.68, 7.2], fov: 52, near: 0.08, far: 140 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>
+      <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.82, 8.0], fov: 48, near: 0.08, far: 140 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>
         <Suspense fallback={<Html center><div className="home-world-loading-canvas" role="status">Your private world is forming</div></Html>}>
           <Scene chamberPath={chamber.path} portalPath={portal.path} orbPath={orb.path} scene={scene} orbState={orbState} setOrbState={setOrbState} onOrbOpen={onOrbOpen} reducedMotion={reducedMotion} muted={sensoryMuted} input={input} yaw={yaw} pitch={pitch} target={target} position={position} velocity={velocity} nearby={nearby} nearbyState={nearbyState} setNearby={setNearbyState} setPortalEvidence={setPortalEvidence} onAssetsReady={markAssetsReady} interactionRef={interactionRef} />
         </Suspense>
@@ -546,7 +559,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
         <button className="home-why" type="button" aria-expanded={whyOpen} onClick={() => setWhyOpen((value) => !value)}>Why am I seeing this?</button>
       </div>
       {whyOpen ? <aside className="home-provenance" aria-label="Home source explanation"><strong>{scene.reviewFixture === 'safe-private' ? 'Disclosed safe-private fixture' : scene.mode === 'explicit-sample' ? 'Disclosed sample world' : loading ? 'World forming' : 'Private Home source'}</strong><p>{scene.environment.explanation}</p>{scene.places.slice(0, 4).map((place) => <p key={place.id}>{place.title}: {place.explanation}</p>)}<a href="/privacy-controls">Review consent</a><a href="/passport">Correct, hide, or delete sources</a></aside> : null}
-      <MobileMovementPad input={input} label="Home movement controls" />
+      {mobileControlsVisible ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
       <div className="sr-only" aria-live="polite">{resolveOrbSensoryOutput(orbState, reducedMotion, sensoryMuted).announcement}</div>
       <style jsx>{`
         .urai-asset-home-world{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:${dragging ? 'grabbing' : 'grab'};background:#102521}

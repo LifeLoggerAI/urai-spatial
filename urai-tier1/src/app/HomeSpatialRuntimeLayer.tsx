@@ -21,14 +21,6 @@ function HomeSemanticNavigation() {
   )
 }
 
-function HomeMovementPrompt() {
-  return (
-    <button type="button" className="home-movement-prompt" tabIndex={-1} aria-label="Move through Home">
-      Move through Home
-    </button>
-  )
-}
-
 function nearbyContext(value: HomeNearby) {
   if (value === 'orb') return 'The Orb is ready for you'
   if (value === 'ground') return 'The living path descends into Ground'
@@ -205,8 +197,7 @@ export default function HomeSpatialRuntimeLayer() {
             : 'The spatial renderer could not recover. Accessible Home controls remain available.'}
         </div>
         <HomeSemanticNavigation />
-        <HomeMovementPrompt />
-        <HomeSpatialWorldFinal />
+          <HomeSpatialWorldFinal />
         <style jsx global>{runtimeStyles}</style>
       </section>
     )
@@ -232,7 +223,6 @@ export default function HomeSpatialRuntimeLayer() {
       {rendererState === 'recovering' ? <div role="status" aria-live="polite" className="sr-only">Restoring the spatial Home renderer.</div> : null}
       {!assetsReady ? <div className="home-runtime-loading" role="status" aria-label="Your private world is forming" aria-live="polite"><span aria-hidden="true" /><strong>Your private world is forming</strong></div> : null}
       <HomeSemanticNavigation />
-      <HomeMovementPrompt />
       <AssetDrivenHomeWorld key={recoveryKey} webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
       {context ? <div className="home-world-context" role="status" aria-live="polite">{context}</div> : null}
       <style jsx global>{runtimeStyles}</style>
