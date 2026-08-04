@@ -1,0 +1,126 @@
+name: Dispatch frozen URAI full preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/dispatch-frozen-full-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: dispatch-frozen-urai-full-preview-20260804
+  cancel-in-progress: false
+
+env:
+  EXPECTED_DISPATCH_BRANCH: dispatch/full-preview-frozen-20260804
+  FROZEN_CANDIDATE_SHA: cc5809337c4185fa9e50806924820abb16e1b533
+  TARGET_WORKFLOW: urai-full-preview-channel.yml
+  DISPATCHER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+  EVENT_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact dispatcher head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.DISPATCHER_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove bounded dispatcher identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$DISPATCHER_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git merge-base --is-ancestor "$FROZEN_CANDIDATE_SHA" "$DISPATCHER_SHA"
+          changed="$(git diff --name-only "$FROZEN_CANDIDATE_SHA" "$DISPATCHER_SHA")"
+          test "$changed" = '.github/workflows/dispatch-frozen-full-preview.yml'
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            test "$EVENT_HEAD_REF" = "$EXPECTED_DISPATCH_BRANCH"
+            test "$EVENT_BASE_REF" = main
+          fi
+
+      - name: Prove target is isolated preview only
+        shell: bash
+        run: |
+          set -euo pipefail
+          frozen_text="$(git show "$FROZEN_CANDIDATE_SHA:.github/workflows/$TARGET_WORKFLOW")"
+          dispatcher_text="$(git show "$DISPATCHER_SHA:.github/workflows/$TARGET_WORKFLOW")"
+          test "$dispatcher_text" = "$frozen_text"
+          printf '%s' "$dispatcher_text" | grep -Fq 'PREVIEW_CHANNEL_ID: urai-full-preview'
+          printf '%s' "$dispatcher_text" | grep -Fq 'test "$PREVIEW_CHANNEL_ID" != live'
+          printf '%s' "$dispatcher_text" | grep -Fq 'production_targeted=false'
+          printf '%s' "$dispatcher_text" | grep -Fq 'production_certified=false'
+          if printf '%s' "$dispatcher_text" | grep -Fq 'DEPLOY_URAI_APP'; then
+            echo 'Preview workflow contains production confirmation marker' >&2
+            exit 1
+          fi
+
+      - name: Request exact frozen full preview
+        id: dispatch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          receipt_dir="$RUNNER_TEMP/frozen-full-preview-dispatch"
+          mkdir -p "$receipt_dir"
+          node - <<'NODE' > "$receipt_dir/request.json"
+          process.stdout.write(`${JSON.stringify({
+            ref: process.env.EXPECTED_DISPATCH_BRANCH,
+            inputs: { candidate_sha: process.env.FROZEN_CANDIDATE_SHA },
+          })}\n`)
+          NODE
+          status="$(curl --silent --show-error --output "$receipt_dir/response.txt" --write-out '%{http_code}' \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/dispatches" \
+            --data-binary "@$receipt_dir/request.json")"
+          test "$status" = '204'
+          cat > "$receipt_dir/receipt.json" <<EOF
+          {
+            "schemaVersion": "urai-frozen-full-preview-dispatch-2",
+            "requestedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "repository": "$GITHUB_REPOSITORY",
+            "dispatcherBranch": "$EXPECTED_DISPATCH_BRANCH",
+            "dispatcherSha": "$DISPATCHER_SHA",
+            "targetWorkflow": "$TARGET_WORKFLOW",
+            "targetRef": "$EXPECTED_DISPATCH_BRANCH",
+            "candidateSha": "$FROZEN_CANDIDATE_SHA",
+            "previewChannel": "urai-full-preview",
+            "httpStatus": $status,
+            "productionTargeted": false,
+            "dnsMutation": false,
+            "billingMutation": false
+          }
+          EOF
+          echo "receipt_dir=$receipt_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload dispatch receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: frozen-full-preview-dispatch-${{ env.DISPATCHER_SHA }}
+          path: ${{ steps.dispatch.outputs.receipt_dir }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Prove no source mutation
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$DISPATCHER_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
