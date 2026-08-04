@@ -1,7 +1,7 @@
-import { readFile, unlink, writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 const sourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
-const generatedUrl = new URL('./.capture-continuous-spatial-proof-v21-grouped.generated.mjs', import.meta.url)
+const stableRunnerUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
 const original = await readFile(sourceUrl, 'utf8')
 const group = process.env.URAI_PROOF_GROUP || 'all'
 const allowed = new Set(['visual', 'desktop', 'mobile', 'portal-fallback', 'all'])
@@ -50,7 +50,7 @@ await writeFile(path.join(outputDir, 'receipt.json'), \`${'${'}JSON.stringify(re
 console.log(JSON.stringify(receipt, null, 2))
 if (receipt.errors.length) process.exit(1)`
 
-const patched = original
+const grouped = original
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
   .slice(0, executionIndex) + execution
@@ -60,12 +60,12 @@ for (const assertion of [
   "if (!record.fallbackVisible || record.semanticButtons !== 3 || record.diagnostics.pageErrors.length || record.diagnostics.consoleErrors.length)",
   "throw new Error(`Home interaction proof failed for ${id}: ${JSON.stringify(record)}`)",
 ]) {
-  if (!patched.includes(assertion)) throw new Error(`Visual assertion missing after grouping: ${assertion}`)
+  if (!grouped.includes(assertion)) throw new Error(`Visual assertion missing after grouping: ${assertion}`)
 }
 
-await writeFile(generatedUrl, patched, 'utf8')
+await writeFile(sourceUrl, grouped, 'utf8')
 try {
-  await import(`${generatedUrl.href}?group=${encodeURIComponent(group)}&exact=${Date.now()}`)
+  await import(`${stableRunnerUrl.href}?group=${encodeURIComponent(group)}&exact=${Date.now()}`)
 } finally {
-  await unlink(generatedUrl).catch(() => {})
+  await writeFile(sourceUrl, original, 'utf8').catch(() => {})
 }
