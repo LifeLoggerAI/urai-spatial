@@ -1,5 +1,5 @@
+import { spawnSync } from 'node:child_process'
 import { readFile, writeFile } from 'node:fs/promises'
-import { SourceTextModule } from 'node:vm'
 
 const sourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const stableRunnerUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
@@ -20,24 +20,25 @@ const executionStart = `const browser = await chromium.launch({ headless: true }
 const originalExecutionIndex = original.indexOf(executionStart)
 if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecutionIndex + 1) >= 0) throw new Error('Execution contract changed')
 
+const groupLiteral = JSON.stringify(group)
 const execution = `const browser = await chromium.launch({ headless: true })
 try {
-  if (${JSON.stringify(group)} === 'visual' || ${JSON.stringify(group)} === 'all') {
+  if (${groupLiteral} === 'visual' || ${groupLiteral} === 'all') {
     await captureHomeState(browser, viewports[0], { id: 'home-normal-root', route: '/', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' })
     await captureHomeState(browser, viewports[0], { id: 'home-normal-home', route: '/home/', query: 'homePrivateFixture=1', mode: 'private-personalized', fixture: 'safe-private', orbState: 'idle' })
     await captureLoading(browser, viewports[0])
     await captureOrbStates(browser)
   }
-  if (${JSON.stringify(group)} === 'desktop' || ${JSON.stringify(group)} === 'all') {
+  if (${groupLiteral} === 'desktop' || ${groupLiteral} === 'all') {
     for (const destination of ['orb', 'ground', 'life-map']) await captureInteraction(browser, viewports[0], 'keyboard', destination)
     await capturePointerLook(browser)
   }
-  if (${JSON.stringify(group)} === 'mobile' || ${JSON.stringify(group)} === 'all') {
+  if (${groupLiteral} === 'mobile' || ${groupLiteral} === 'all') {
     for (const spec of viewports.filter((value) => value.isMobile)) {
       for (const destination of ['orb', 'ground', 'life-map']) await captureInteraction(browser, spec, 'touch', destination)
     }
   }
-  if (${JSON.stringify(group)} === 'portal-fallback' || ${JSON.stringify(group)} === 'all') {
+  if (${groupLiteral} === 'portal-fallback' || ${groupLiteral} === 'all') {
     await capturePortalSequence(browser)
     await captureFallback(browser)
   }
@@ -78,10 +79,13 @@ if (grouped.includes('|| const browser = await chromium.launch')) {
 if (grouped.includes('\n  group,\n')) {
   throw new Error('Grouped receipt retained an undefined shorthand group binding')
 }
-new SourceTextModule(grouped)
 
 await writeFile(sourceUrl, grouped, 'utf8')
 try {
+  const syntax = spawnSync(process.execPath, ['--check', sourceUrl.pathname], { encoding: 'utf8' })
+  if (syntax.status !== 0) {
+    throw new Error(`Grouped visual proof syntax check failed:\n${syntax.stderr || syntax.stdout}`)
+  }
   await import(`${stableRunnerUrl.href}?group=${encodeURIComponent(group)}&exact=${Date.now()}`)
 } finally {
   await writeFile(sourceUrl, original, 'utf8').catch(() => {})
