@@ -1,0 +1,137 @@
+name: Home provider preview composition repair
+
+on:
+  push:
+    branches:
+      - fix/home-provider-preview-composition-20260804
+    paths:
+      - '.github/workflows/home-provider-preview-composition-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-provider-preview-composition-repair-20260804
+  cancel-in-progress: false
+
+env:
+  REPAIR_BRANCH: fix/home-provider-preview-composition-20260804
+  FROZEN_PARENT: cc5809337c4185fa9e50806924820abb16e1b533
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove bounded authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/$REPAIR_BRANCH"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git merge-base --is-ancestor "$FROZEN_PARENT" "$GITHUB_SHA"
+          changed="$(git diff --name-only "$FROZEN_PARENT" "$GITHUB_SHA")"
+          test "$changed" = '.github/workflows/home-provider-preview-composition-repair.yml'
+
+      - name: Apply exact Home composition repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+
+          const replaceExact = (path, before, after, label) => {
+            const source = fs.readFileSync(path, 'utf8')
+            const count = source.split(before).length - 1
+            if (count !== 1) throw new Error(`${label}: expected exactly one match in ${path}, found ${count}`)
+            fs.writeFileSync(path, source.replace(before, after))
+          }
+
+          const runtime = 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+          replaceExact(
+            runtime,
+            '      <HomeSemanticNavigation />\n      <HomeMovementPrompt />\n      <AssetDrivenHomeWorld key={recoveryKey}',
+            '      <HomeSemanticNavigation />\n      <AssetDrivenHomeWorld key={recoveryKey}',
+            'remove normal-WebGL movement pill',
+          )
+          replaceExact(runtime, "home.dataset.homePlayerZ ?? '7.6'", "home.dataset.homePlayerZ ?? '9.6'", 'parallax default spawn')
+          replaceExact(runtime, 'const zOffset = playerZ - 7.6', 'const zOffset = playerZ - 9.6', 'parallax spawn origin')
+
+          const world = 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+          replaceExact(world, 'const SPAWN = new THREE.Vector3(0, 0, 7.2)', 'const SPAWN = new THREE.Vector3(0, 0, 9.6)', 'camera spawn depth')
+          replaceExact(world, 'const pitch = useRef(-0.04)', 'const pitch = useRef(-0.09)', 'initial camera pitch')
+          replaceExact(
+            world,
+            "const reset = useCallback(() => { position.current.copy(SPAWN); velocity.current.set(0, 0, 0); target.current = null; yaw.current = 0; pitch.current = -0.04 }, [])",
+            "const reset = useCallback(() => { position.current.copy(SPAWN); velocity.current.set(0, 0, 0); target.current = null; yaw.current = 0; pitch.current = -0.09 }, [])",
+            'reset camera pitch',
+          )
+          replaceExact(world, 'camera.position.set(position.current.x, 1.68, position.current.z)', 'camera.position.set(position.current.x, 1.96, position.current.z)', 'camera eye height')
+          replaceExact(
+            world,
+            'camera={{ position: [0, 1.68, 7.2], fov: 52, near: 0.08, far: 140 }}',
+            'camera={{ position: [0, 1.96, 9.6], fov: 40, near: 0.08, far: 140 }}',
+            'initial camera framing',
+          )
+          replaceExact(
+            world,
+            'opacity:.72;transition:opacity .2s ease',
+            'opacity:.28;transition:opacity .2s ease',
+            'de-emphasize provenance controls',
+          )
+          replaceExact(
+            world,
+            '.home-audio:disabled{opacity:.58;cursor:not-allowed}',
+            '.home-audio:disabled{display:none}',
+            'remove unavailable ambience control from visual frame',
+          )
+
+          const navigation = 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
+          replaceExact(
+            navigation,
+            '.urai-mobile-movement{display:grid;position:absolute;',
+            '.urai-mobile-movement{display:none;position:absolute;',
+            'hide mobile pad on desktop by default',
+          )
+          replaceExact(navigation, 'const spawnZ = 7.2', 'const spawnZ = 9.6', 'movement telemetry spawn')
+
+          const testPath = 'urai-tier1/tests/home-provider-preview-composition-contract.test.mjs'
+          fs.writeFileSync(testPath, `import assert from 'node:assert/strict'\nimport fs from 'node:fs'\nimport test from 'node:test'\n\nconst read = (path) => fs.readFileSync(new URL(\`../\${path}\`, import.meta.url), 'utf8')\n\ntest('Home provider preview starts from a composed desktop camera', () => {\n  const source = read('src/app/AssetDrivenHomeWorld.tsx')\n  assert.match(source, /const SPAWN = new THREE\\.Vector3\\(0, 0, 9\\.6\\)/)\n  assert.match(source, /camera=\\{\\{ position: \\[0, 1\\.96, 9\\.6\\], fov: 40/)\n  assert.match(source, /camera\\.position\\.set\\(position\\.current\\.x, 1\\.96, position\\.current\\.z\\)/)\n  assert.doesNotMatch(source, /camera=\\{\\{ position: \\[0, 1\\.68, 7\\.2\\], fov: 52/)\n})\n\ntest('normal WebGL Home omits the permanent movement pill', () => {\n  const source = read('src/app/HomeSpatialRuntimeLayer.tsx')\n  const normalRuntime = source.slice(source.indexOf('const context = nearbyContext'), source.lastIndexOf('</section>'))\n  assert.doesNotMatch(normalRuntime, /<HomeMovementPrompt \\/>/)\n  assert.match(source, /data-webgl-ready=\\"false\\"/)\n})\n\ntest('desktop does not render the mobile movement pad', () => {\n  const source = read('src/spatial/navigation/EmbodiedNavigation.tsx')\n  assert.match(source, /\\.urai-mobile-movement\\{display:none;position:absolute;/)\n  assert.match(source, /@media\\(max-width:900px\\),\\(pointer:coarse\\)\\{\\.urai-mobile-movement\\{display:grid\\}\\}/)\n})\n\ntest('unavailable ambience and provenance controls are non-dominant', () => {\n  const source = read('src/app/AssetDrivenHomeWorld.tsx')\n  assert.match(source, /home-discreet-controls\\{[^}]*opacity:\\.28/)\n  assert.match(source, /\\.home-audio:disabled\\{display:none\\}/)\n})\n`)
+          NODE
+
+      - name: Verify source repair contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/home-provider-preview-composition-contract.test.mjs
+          test -z "$(git diff --check)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' \
+            urai-tier1/src/app/AssetDrivenHomeWorld.tsx \
+            urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx \
+            urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx \
+            urai-tier1/tests/home-provider-preview-composition-contract.test.mjs | sort)"
+
+      - name: Commit bounded repair
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            urai-tier1/src/app/AssetDrivenHomeWorld.tsx \
+            urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx \
+            urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx \
+            urai-tier1/tests/home-provider-preview-composition-contract.test.mjs
+          git commit -m 'Repair Home provider-preview composition and desktop controls'
+          git push origin "HEAD:$REPAIR_BRANCH"
