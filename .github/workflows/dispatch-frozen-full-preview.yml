@@ -21,6 +21,8 @@ env:
   FROZEN_CANDIDATE_SHA: cc5809337c4185fa9e50806924820abb16e1b533
   TARGET_WORKFLOW: urai-full-preview-channel.yml
   DISPATCHER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+  EVENT_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
 
 jobs:
   dispatch:
@@ -45,20 +47,22 @@ jobs:
           changed="$(git diff --name-only "$FROZEN_CANDIDATE_SHA" "$DISPATCHER_SHA")"
           test "$changed" = '.github/workflows/dispatch-frozen-full-preview.yml'
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            test "${{ github.event.pull_request.head.ref }}" = "$EXPECTED_DISPATCH_BRANCH"
-            test "${{ github.event.pull_request.base.ref }}" = main
+            test "$EVENT_HEAD_REF" = "$EXPECTED_DISPATCH_BRANCH"
+            test "$EVENT_BASE_REF" = main
           fi
 
       - name: Prove target is isolated preview only
         shell: bash
         run: |
           set -euo pipefail
-          source_text="$(git show "$FROZEN_CANDIDATE_SHA:.github/workflows/$TARGET_WORKFLOW")"
-          printf '%s' "$source_text" | grep -Fq 'PREVIEW_CHANNEL_ID: urai-full-preview'
-          printf '%s' "$source_text" | grep -Fq 'test "$PREVIEW_CHANNEL_ID" != live'
-          printf '%s' "$source_text" | grep -Fq 'production_targeted=false'
-          printf '%s' "$source_text" | grep -Fq 'production_certified=false'
-          if printf '%s' "$source_text" | grep -Fq 'DEPLOY_URAI_APP'; then
+          frozen_text="$(git show "$FROZEN_CANDIDATE_SHA:.github/workflows/$TARGET_WORKFLOW")"
+          dispatcher_text="$(git show "$DISPATCHER_SHA:.github/workflows/$TARGET_WORKFLOW")"
+          test "$dispatcher_text" = "$frozen_text"
+          printf '%s' "$dispatcher_text" | grep -Fq 'PREVIEW_CHANNEL_ID: urai-full-preview'
+          printf '%s' "$dispatcher_text" | grep -Fq 'test "$PREVIEW_CHANNEL_ID" != live'
+          printf '%s' "$dispatcher_text" | grep -Fq 'production_targeted=false'
+          printf '%s' "$dispatcher_text" | grep -Fq 'production_certified=false'
+          if printf '%s' "$dispatcher_text" | grep -Fq 'DEPLOY_URAI_APP'; then
             echo 'Preview workflow contains production confirmation marker' >&2
             exit 1
           fi
@@ -74,7 +78,7 @@ jobs:
           mkdir -p "$receipt_dir"
           node - <<'NODE' > "$receipt_dir/request.json"
           process.stdout.write(`${JSON.stringify({
-            ref: 'main',
+            ref: process.env.EXPECTED_DISPATCH_BRANCH,
             inputs: { candidate_sha: process.env.FROZEN_CANDIDATE_SHA },
           })}\n`)
           NODE
@@ -88,13 +92,13 @@ jobs:
           test "$status" = '204'
           cat > "$receipt_dir/receipt.json" <<EOF
           {
-            "schemaVersion": "urai-frozen-full-preview-dispatch-1",
+            "schemaVersion": "urai-frozen-full-preview-dispatch-2",
             "requestedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "repository": "$GITHUB_REPOSITORY",
             "dispatcherBranch": "$EXPECTED_DISPATCH_BRANCH",
             "dispatcherSha": "$DISPATCHER_SHA",
             "targetWorkflow": "$TARGET_WORKFLOW",
-            "targetRef": "main",
+            "targetRef": "$EXPECTED_DISPATCH_BRANCH",
             "candidateSha": "$FROZEN_CANDIDATE_SHA",
             "previewChannel": "urai-full-preview",
             "httpStatus": $status,
