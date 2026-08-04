@@ -1,0 +1,58 @@
+/*
+ * Provider-preview composition correction.
+ *
+ * The exact frozen preview exposed a real desktop presentation defect at
+ * 1366x768: the asset-driven sanctuary was framed too tightly, mobile movement
+ * controls leaked onto a fine-pointer desktop, and permanent proof-style UI
+ * competed with the world. Keep this layer narrowly scoped to the supported
+ * WebGL Home owner and preserve mobile/coarse-pointer controls.
+ */
+
+@media (min-width: 901px) and (pointer: fine) {
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] > .home-movement-prompt,
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .urai-mobile-movement {
+    display: none !important;
+  }
+
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"]
+    .urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas {
+    width: 112% !important;
+    height: 112% !important;
+    left: -6% !important;
+    top: -6% !important;
+    transform: scale(0.9);
+    transform-origin: 50% 54%;
+  }
+
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"]
+    .urai-asset-home-world[data-home-primary-owner="asset-driven"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 18;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 56%, rgba(119, 222, 211, 0.13), transparent 31%),
+      linear-gradient(180deg, rgba(1, 8, 18, 0.04), transparent 30%, rgba(1, 8, 18, 0.2));
+  }
+
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls {
+    opacity: 0.22 !important;
+  }
+
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls:hover,
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls:focus-within {
+    opacity: 0.86 !important;
+  }
+
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-audio:disabled {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"]
+    .urai-asset-home-world[data-home-primary-owner="asset-driven"] canvas {
+    transition: none !important;
+  }
+}
