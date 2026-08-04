@@ -135,3 +135,5 @@ jobs:
             urai-tier1/tests/home-provider-preview-composition-contract.test.mjs
           git commit -m 'Repair Home provider-preview composition and desktop controls'
           git push origin "HEAD:$REPAIR_BRANCH"
+
+# retriggered after Draft PR creation on 2026-08-04
