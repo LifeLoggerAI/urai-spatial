@@ -1,0 +1,96 @@
+name: Home Source Repair Executor V3
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/home-source-repair-executor-v3.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  EXPECTED_PARENT: ad7afb0a2553b091cad44478674a4137241e7000
+  EXPECTED_BRANCH: fix/home-provider-preview-composition-20260804
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/home-provider-preview-composition-20260804'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact executor head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove executor-only successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/home-source-repair-executor-v3.yml"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Apply canonical Home source repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises'
+          const replaceOnce = (source, before, after, label) => {
+            const count = source.split(before).length - 1
+            if (count !== 1) throw new Error(`${label}: expected one match, found ${count}`)
+            return source.replace(before, after)
+          }
+
+          const runtimePath = 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+          let runtime = await readFile(runtimePath, 'utf8')
+          runtime = replaceOnce(runtime, `function HomeMovementPrompt() {\n  return (\n    <button type="button" className="home-movement-prompt" tabIndex={-1} aria-label="Move through Home">\n      Move through Home\n    </button>\n  )\n}\n\n`, '', 'remove permanent movement prompt component')
+          const promptCall = '      <HomeMovementPrompt />\n'
+          const promptCount = runtime.split(promptCall).length - 1
+          if (promptCount !== 2) throw new Error(`remove movement prompt calls: expected 2, found ${promptCount}`)
+          runtime = runtime.split(promptCall).join('')
+          await writeFile(runtimePath, runtime)
+
+          const worldPath = 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+          let world = await readFile(worldPath, 'utf8')
+          world = replaceOnce(world, `const SPAWN = new THREE.Vector3(0, 0, 7.2)`, `const SPAWN = new THREE.Vector3(0, 0, 8.0)`, 'move spawn back')
+          world = replaceOnce(world, `    camera.position.set(position.current.x, 1.68, position.current.z)`, `    camera.position.set(position.current.x, 1.82, position.current.z)`, 'raise camera')
+          world = replaceOnce(world, `  useEffect(() => {\n    setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')\n  }, [])\n`, `  useEffect(() => {\n    setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')\n  }, [])\n  const [mobileControlsVisible, setMobileControlsVisible] = useState(false)\n  useEffect(() => {\n    const coarsePointer = window.matchMedia('(pointer: coarse)')\n    const narrowViewport = window.matchMedia('(max-width: 900px)')\n    const synchronize = () => setMobileControlsVisible(coarsePointer.matches || narrowViewport.matches)\n    synchronize()\n    coarsePointer.addEventListener('change', synchronize)\n    narrowViewport.addEventListener('change', synchronize)\n    return () => {\n      coarsePointer.removeEventListener('change', synchronize)\n      narrowViewport.removeEventListener('change', synchronize)\n    }\n  }, [])\n`, 'gate mobile controls')
+          world = replaceOnce(world, `      <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.68, 7.2], fov: 52, near: 0.08, far: 140 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>`, `      <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 1.82, 8.0], fov: 48, near: 0.08, far: 140 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>`, 'correct canonical camera')
+          world = replaceOnce(world, `      <MobileMovementPad input={input} label="Home movement controls" />`, `      {mobileControlsVisible ? <MobileMovementPad input={input} label="Home movement controls" /> : null}`, 'prevent desktop mobile controls')
+          world = replaceOnce(world, `    <AnimatedAsset path={path} name="home-authored-orb" clips={[ORB_CLIP[state]]} reducedMotion={reducedMotion} scale={[1.22 * stateScale, 1.22 * stateScale, 1.22 * stateScale]} />`, `    <AnimatedAsset path={path} name="home-authored-orb" clips={[ORB_CLIP[state]]} reducedMotion={reducedMotion} scale={[1.38 * stateScale, 1.38 * stateScale, 1.38 * stateScale]} />`, 'strengthen Orb focal anchor')
+          world = replaceOnce(world, `    <pointLight position={[0, 5, 4]} intensity={1.0} color="#b8eadb" distance={18} decay={2} />`, `    <pointLight position={[0, 5, 4]} intensity={1.42} color="#b8eadb" distance={20} decay={2} />`, 'restore depth separation')
+          await writeFile(worldPath, world)
+
+          const sanctuaryPath = 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+          let sanctuary = await readFile(sanctuaryPath, 'utf8')
+          sanctuary = replaceOnce(sanctuary, `{[-7.9, -5.2, -2.5, .2, 2.9, 5.6].map((z, index) => (\n        <SanctuaryRib key={z} z={z} intensity={index === 2 || index === 3 ? .34 : .2} />\n      ))}`, `{[-6.8, -2.8, 1.2, 5.2].map((z, index) => (\n        <SanctuaryRib key={z} z={z} intensity={index === 1 || index === 2 ? .22 : .14} />\n      ))}`, 'reduce rib dominance')
+          sanctuary = replaceOnce(sanctuary, `<meshStandardMaterial color="#030a12" roughness={.78} metalness={.18} />`, `<meshStandardMaterial color="#06131d" roughness={.76} metalness={.16} />`, 'lift foreground floor')
+          sanctuary = replaceOnce(sanctuary, `<meshPhysicalMaterial color="#082938" roughness={.2} metalness={.42} clearcoat={.92} clearcoatRoughness={.24} />`, `<meshPhysicalMaterial color="#0b3442" roughness={.24} metalness={.36} clearcoat={.84} clearcoatRoughness={.28} />`, 'lift central path')
+          sanctuary = replaceOnce(sanctuary, `<pointLight position={[0, 2.3, -8.9]} color="#78d8df" intensity={2.1} distance={9} decay={2} />`, `<pointLight position={[0, 2.3, -8.9]} color="#78d8df" intensity={2.65} distance={11} decay={2} />`, 'strengthen background anchor')
+          await writeFile(sanctuaryPath, sanctuary)
+
+          await writeFile('urai-tier1/src/app/home-provider-preview-composition.css', `/* Canonical Home release composition boundaries. */\n.urai-home-spatial-runtime-layer[data-webgl-ready="true"] > .home-movement-prompt{display:none!important}\n.urai-home-spatial-runtime-layer[data-webgl-ready="true"] .urai-asset-home-world[data-home-primary-owner="asset-driven"]::after{content:"";position:absolute;inset:0;z-index:18;pointer-events:none;background:radial-gradient(circle at 50% 58%,rgba(119,222,211,.08),transparent 34%),linear-gradient(180deg,rgba(1,8,18,.02),transparent 34%,rgba(1,8,18,.12))}\n@media(min-width:901px) and (pointer:fine){.urai-home-spatial-runtime-layer[data-webgl-ready="true"] .urai-mobile-movement{display:none!important}.urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls{opacity:.14!important}.urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls:hover,.urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls:focus-within{opacity:.84!important}}\n.urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-audio:disabled{display:none!important}\n`)
+
+          await writeFile('urai-tier1/tests/home-canonical-release-composition-contract.test.mjs', `import assert from 'node:assert/strict'\nimport fs from 'node:fs'\nimport test from 'node:test'\nconst appFile=(path)=>fs.readFileSync(new URL('../src/app/'+path,import.meta.url),'utf8')\ntest('permanent movement proof prompt is absent',()=>{const s=appFile('HomeSpatialRuntimeLayer.tsx');assert.doesNotMatch(s,/function HomeMovementPrompt/);assert.doesNotMatch(s,/<HomeMovementPrompt \\/>/)})\ntest('desktop does not mount mobile controls',()=>{const s=appFile('AssetDrivenHomeWorld.tsx');assert.match(s,/mobileControlsVisible/);assert.match(s,/coarsePointer\.matches \\|\\| narrowViewport\.matches/);assert.match(s,/mobileControlsVisible \\? <MobileMovementPad/)})\ntest('canonical camera is corrected',()=>{const s=appFile('AssetDrivenHomeWorld.tsx');assert.match(s,/SPAWN = new THREE\.Vector3\\(0, 0, 8\.0\\)/);assert.match(s,/position: \\[0, 1\.82, 8\.0\\], fov: 48/)})\ntest('sanctuary depth hierarchy is source-owned',()=>{const s=appFile('HomeSanctuaryWorld.tsx');assert.match(s,/\\[-6\.8, -2\.8, 1\.2, 5\.2\\]/);assert.match(s,/color="#06131d"/);assert.match(s,/color="#0b3442"/);assert.match(s,/intensity=\\{2\.65\\}/)})\ntest('Orb is the authored focal anchor',()=>{const s=appFile('AssetDrivenHomeWorld.tsx');assert.match(s,/scale=\\{\\[1\.38 \\* stateScale/);assert.match(s,/home-authored-orb/)})\n`)
+          NODE
+
+      - name: Verify and publish clean product successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/home-canonical-release-composition-contract.test.mjs
+          rm .github/workflows/home-source-repair-executor-v3.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Repair canonical Home source composition'
+          test ! -e .github/workflows/home-source-repair-executor-v3.yml
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git push origin "HEAD:$EXPECTED_BRANCH"
