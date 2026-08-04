@@ -1,9 +1,9 @@
 name: Dispatch frozen URAI full preview
 
 on:
-  push:
+  pull_request:
     branches:
-      - dispatch/full-preview-frozen-20260804
+      - main
     paths:
       - '.github/workflows/dispatch-frozen-full-preview.yml'
   workflow_dispatch:
@@ -20,17 +20,18 @@ env:
   EXPECTED_DISPATCH_BRANCH: dispatch/full-preview-frozen-20260804
   FROZEN_CANDIDATE_SHA: cc5809337c4185fa9e50806924820abb16e1b533
   TARGET_WORKFLOW: urai-full-preview-channel.yml
+  DISPATCHER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   dispatch:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Checkout exact dispatcher branch
+      - name: Checkout exact dispatcher head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
+          ref: ${{ env.DISPATCHER_SHA }}
+          fetch-depth: 0
           persist-credentials: false
           show-progress: false
 
@@ -38,12 +39,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = "refs/heads/$EXPECTED_DISPATCH_BRANCH"
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$DISPATCHER_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
-          git merge-base --is-ancestor "$FROZEN_CANDIDATE_SHA" "$GITHUB_SHA"
-          changed="$(git diff --name-only "$FROZEN_CANDIDATE_SHA" "$GITHUB_SHA")"
+          git merge-base --is-ancestor "$FROZEN_CANDIDATE_SHA" "$DISPATCHER_SHA"
+          changed="$(git diff --name-only "$FROZEN_CANDIDATE_SHA" "$DISPATCHER_SHA")"
           test "$changed" = '.github/workflows/dispatch-frozen-full-preview.yml'
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            test "${{ github.event.pull_request.head.ref }}" = "$EXPECTED_DISPATCH_BRANCH"
+            test "${{ github.event.pull_request.base.ref }}" = main
+          fi
 
       - name: Prove target is isolated preview only
         shell: bash
@@ -88,7 +92,7 @@ jobs:
             "requestedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "repository": "$GITHUB_REPOSITORY",
             "dispatcherBranch": "$EXPECTED_DISPATCH_BRANCH",
-            "dispatcherSha": "$GITHUB_SHA",
+            "dispatcherSha": "$DISPATCHER_SHA",
             "targetWorkflow": "$TARGET_WORKFLOW",
             "targetRef": "main",
             "candidateSha": "$FROZEN_CANDIDATE_SHA",
@@ -104,7 +108,7 @@ jobs:
       - name: Upload dispatch receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: frozen-full-preview-dispatch-${{ github.sha }}
+          name: frozen-full-preview-dispatch-${{ env.DISPATCHER_SHA }}
           path: ${{ steps.dispatch.outputs.receipt_dir }}
           if-no-files-found: error
           retention-days: 90
@@ -114,5 +118,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$DISPATCHER_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
