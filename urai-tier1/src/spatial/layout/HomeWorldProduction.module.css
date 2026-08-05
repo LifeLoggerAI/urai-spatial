@@ -1,11 +1,17 @@
 .world {
-  position: relative;
-  min-height: 100svh;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: #020506;
+  background: #111722;
+  cursor: grab;
+  touch-action: none;
 }
+
+.world[data-home-camera-mode='look'] { cursor: grabbing; }
 
 .canvas {
   position: absolute !important;
@@ -21,159 +27,95 @@
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(0,0,0,.48), transparent 28%, transparent 68%, rgba(0,0,0,.6)),
-    linear-gradient(90deg, rgba(0,0,0,.32), transparent 28%, transparent 72%, rgba(0,0,0,.32));
+    linear-gradient(180deg, rgba(2, 6, 14, .4), transparent 30%, transparent 68%, rgba(2, 5, 10, .56)),
+    radial-gradient(circle at 50% 46%, transparent 0 38%, rgba(1, 4, 10, .24) 72%, rgba(1, 3, 8, .58) 100%);
 }
 
 .brand,
-.hero,
-.portalLink,
-.routeRail {
+.worldHint,
+.destinationNames {
   position: absolute;
   z-index: 10;
+  pointer-events: none;
+  text-shadow: 0 14px 42px rgba(0, 0, 0, .8);
 }
 
 .brand {
-  left: clamp(18px, 3vw, 42px);
-  top: clamp(18px, 3vw, 38px);
+  left: clamp(18px, 3vw, 44px);
+  top: clamp(18px, 3vw, 40px);
   display: grid;
   gap: .34rem;
-  pointer-events: none;
 }
 
 .brand strong {
-  font-size: .9rem;
-  letter-spacing: .54em;
+  font-size: .94rem;
+  letter-spacing: .58em;
   font-weight: 850;
 }
 
 .brand span {
-  color: rgba(236,246,244,.6);
-  font-size: .62rem;
-  letter-spacing: .18em;
+  color: rgba(236, 246, 244, .66);
+  font-size: .6rem;
+  letter-spacing: .22em;
   text-transform: uppercase;
 }
 
-.hero {
+.worldHint {
   left: 50%;
-  top: clamp(92px, 15vh, 150px);
-  width: min(760px, calc(100vw - 40px));
+  bottom: max(26px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  text-align: center;
-  pointer-events: none;
-  text-shadow: 0 18px 52px rgba(0,0,0,.72);
-}
-
-.hero p {
-  margin: 0 0 .9rem;
-  color: rgba(167,239,244,.72);
-  font-size: .62rem;
-  font-weight: 850;
-  letter-spacing: .38em;
-}
-
-.hero h1 {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.8rem, 6.2vw, 6.8rem);
-  line-height: .92;
-  font-weight: 400;
-  letter-spacing: -.055em;
-}
-
-.hero span {
-  display: block;
-  max-width: 680px;
-  margin: 1.1rem auto 0;
-  color: rgba(239,244,240,.7);
-  font-size: clamp(.88rem, 1.4vw, 1.06rem);
-  line-height: 1.6;
-}
-
-.portalLink {
-  bottom: clamp(92px, 12vh, 130px);
-  display: grid;
-  gap: .34rem;
-  width: min(250px, 34vw);
-  padding: 1rem 1.1rem;
-  border: 1px solid rgba(226,244,239,.14);
-  border-radius: 18px;
-  color: #f8f5ee;
-  text-decoration: none;
-  background: rgba(4,10,10,.44);
-  box-shadow: 0 22px 70px rgba(0,0,0,.34), inset 0 0 24px rgba(255,255,255,.025);
+  padding: .68rem 1rem;
+  border: 1px solid rgba(232, 245, 241, .12);
+  border-radius: 999px;
+  background: rgba(4, 10, 14, .42);
+  color: rgba(245, 249, 248, .78);
   backdrop-filter: blur(14px);
-  transition: transform .25s ease, border-color .25s ease, background .25s ease;
-}
-
-.portalLink:hover,
-.portalLink:focus-visible {
-  transform: translateY(-4px);
-  border-color: rgba(213,247,245,.42);
-  background: rgba(6,16,15,.64);
-  outline: none;
-}
-
-.portalLink span {
-  color: rgba(168,238,244,.76);
-  font-size: .56rem;
-  font-weight: 900;
-  letter-spacing: .26em;
-}
-
-.portalLink strong {
-  font-size: .92rem;
-  line-height: 1.28;
-}
-
-.groundLink { left: clamp(18px, 8vw, 120px); }
-.lifeMapLink { right: clamp(18px, 8vw, 120px); text-align: right; }
-
-.routeRail {
-  left: 50%;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  display: flex;
-  gap: .35rem;
-  transform: translateX(-50%);
-  padding: .42rem;
-  border: 1px solid rgba(232,245,241,.1);
-  border-radius: 999px;
-  background: rgba(2,7,7,.58);
-  backdrop-filter: blur(16px);
-}
-
-.routeRail a {
-  padding: .62rem .82rem;
-  border-radius: 999px;
-  color: rgba(242,245,242,.7);
-  text-decoration: none;
   font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .04em;
+  font-weight: 760;
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
-.routeRail a:hover,
-.routeRail a:focus-visible {
-  color: #fff;
-  background: rgba(255,255,255,.07);
-  outline: none;
+.destinationNames {
+  left: 0;
+  right: 0;
+  bottom: clamp(110px, 16vh, 176px);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 clamp(28px, 8vw, 130px);
+  color: rgba(244, 239, 220, .72);
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .34em;
 }
 
-@media (max-width: 720px) {
-  .hero { top: 112px; }
-  .hero span { max-width: 330px; font-size: .84rem; }
-  .portalLink {
-    bottom: 88px;
-    width: calc(50vw - 24px);
-    padding: .86rem;
+.world :global(.urai-mobile-movement) {
+  z-index: 14;
+  opacity: .82;
+}
+
+@media (min-width: 901px) and (pointer: fine) {
+  .world :global(.urai-mobile-movement) { display: none; }
+}
+
+@media (max-width: 700px) {
+  .brand { top: max(14px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); }
+  .destinationNames {
+    bottom: 152px;
+    padding: 0 22px;
+    font-size: .52rem;
+    letter-spacing: .2em;
   }
-  .groundLink { left: 12px; }
-  .lifeMapLink { right: 12px; }
-  .portalLink strong { font-size: .78rem; }
-  .routeRail { width: calc(100vw - 24px); justify-content: center; }
-  .routeRail a { padding: .58rem .66rem; font-size: .62rem; }
+  .worldHint {
+    bottom: max(18px, env(safe-area-inset-bottom));
+    max-width: calc(100vw - 190px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: .56rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .portalLink { transition: none; }
+  .worldHint { backdrop-filter: none; }
 }
