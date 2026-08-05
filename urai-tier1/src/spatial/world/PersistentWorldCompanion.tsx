@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
   requestUraiWorldReturn,
@@ -11,42 +12,17 @@ import {
 import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
-const PRIMARY_DESTINATIONS: readonly UraiDestination[] = [
-  'home',
-  'infrastructure-hub',
-  'life-map',
-  'focus',
-  'replay',
-]
-
-const SECONDARY_DESTINATIONS: readonly UraiDestination[] = [
-  'mirror',
-  'passport',
-  'privacy-controls',
-  'location-map',
-]
-
-const CONTEXT_KEYS = [
-  'memoryId',
-  'node',
-  'thread',
-  'personId',
-  'placeId',
-  'manifestId',
-  'privacyMode',
-] as const
+const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']
+const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map']
+const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode'] as const
 
 function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
-
   for (const key of CONTEXT_KEYS) {
-    if (!target.searchParams.has(key) && current.has(key)) {
-      target.searchParams.set(key, current.get(key) ?? '')
-    }
+    if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
-
   const context = request.context
   if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -56,15 +32,11 @@ function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-
   const memoryId = target.searchParams.get('memoryId')
   const nodeId = target.searchParams.get('node')
   if (request.destination === 'life-map') {
     if (!nodeId && memoryId) target.searchParams.set('node', memoryId)
-  } else if (!memoryId && nodeId) {
-    target.searchParams.set('memoryId', nodeId)
-  }
-
+  } else if (!memoryId && nodeId) target.searchParams.set('memoryId', nodeId)
   return `${target.pathname}${target.search}${target.hash}`
 }
 
@@ -77,24 +49,15 @@ export function PersistentWorldCompanion() {
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
   const restoreFocusRef = useRef(false)
-
-  const primaryDestinations = useMemo(
-    () => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
-    [],
-  )
-  const secondaryDestinations = useMemo(
-    () => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
-    [],
-  )
+  const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
+  const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
 
   const closeCompanion = useCallback((restoreFocus = true) => {
     restoreFocusRef.current = restoreFocus
     setOpen(false)
   }, [])
 
-  useEffect(() => {
-    setHydrated(true)
-  }, [])
+  useEffect(() => setHydrated(true), [])
 
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
@@ -118,7 +81,6 @@ export function PersistentWorldCompanion() {
       firstControl?.focus()
       return
     }
-
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
       orbRef.current?.focus()
@@ -141,7 +103,6 @@ export function PersistentWorldCompanion() {
       closeCompanion(true)
       return
     }
-
     const target = definitionForDestination(destination)
     const request: UraiWorldTravelRequest = {
       destination,
@@ -158,10 +119,6 @@ export function PersistentWorldCompanion() {
       },
     }
     const href = buildCompanionTravelHref(request)
-
-    // The visible control owns the canonical URL immediately. The world event still
-    // starts spatial transition state, but it can no longer unmount this controller
-    // before its deferred router write commits.
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
     closeCompanion(false)
@@ -191,38 +148,17 @@ export function PersistentWorldCompanion() {
   ))
 
   return (
-    <aside
-      className="urai-world-companion"
-      data-open={open ? 'true' : 'false'}
-      data-phase={phase}
-      data-destination={world.destination}
-    >
-      <div
-        ref={menuRef}
-        id="urai-world-companion-menu"
-        className="urai-world-companion__menu"
-        aria-hidden={!open}
-        inert={!open ? true : undefined}
-      >
+    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination}>
+      <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={!open} inert={!open ? true : undefined}>
         <p>{current.label}</p>
-        <nav aria-label="Travel through the URAI world">
-          {destinationButtons(primaryDestinations)}
-        </nav>
-        <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">
-          {destinationButtons(secondaryDestinations)}
-        </nav>
+        <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
+        <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
         {world.destination !== 'home' ? (
-          <button
-            type="button"
-            className="urai-world-companion__return"
-            aria-label="Return through the world"
-            disabled={!hydrated || phase !== 'idle'}
-            data-return="true"
-            onClick={returnThroughWorld}
-          >
+          <button type="button" className="urai-world-companion__return" aria-label="Return through the world" disabled={!hydrated || phase !== 'idle'} data-return="true" onClick={returnThroughWorld}>
             Return
           </button>
         ) : null}
+        <OrbConversationPanel />
       </div>
       <button
         ref={orbRef}

@@ -1,0 +1,63 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
+const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
+const orbPanel = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
+const narratorPlayback = fs.readFileSync(new URL('../src/spatial/narrator/narratorPlayback.ts', import.meta.url), 'utf8')
+const companion = fs.readFileSync(new URL('../src/spatial/world/PersistentWorldCompanion.tsx', import.meta.url), 'utf8')
+const portalProof = fs.readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url), 'utf8')
+
+test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancellation-bounded', () => {
+  assert.match(providerFunctions, /api\.openai\.com\/v1\/moderations/)
+  assert.match(providerFunctions, /omni-moderation-latest/)
+  assert.match(providerFunctions, /api\.openai\.com\/v1\/responses/)
+  assert.match(providerFunctions, /store: false/)
+  assert.match(providerFunctions, /stream: true/)
+  assert.match(providerFunctions, /safety_identifier/)
+  assert.match(providerFunctions, /type: 'json_schema'/)
+  assert.match(providerFunctions, /strict: true/)
+  assert.match(providerFunctions, /response\.output_text\.delta/)
+  assert.match(providerFunctions, /Idempotency-Key/)
+})
+
+test('Orb UI keeps external consent off and excludes rejected provider turns from future context', () => {
+  assert.match(openAiClient, /getAuth\(app\)\.currentUser/)
+  assert.match(openAiClient, /Authorization/)
+  assert.match(openAiClient, /deterministicOrbFallback/)
+  assert.equal((orbPanel.match(/useState\(false\)/g) ?? []).length >= 2, true)
+  assert.match(orbPanel, /Allow this message and bounded recent context to be processed by OpenAI/)
+  assert.match(orbPanel, /if \(liveResult\) \{[\s\S]*setHistory/)
+  assert.doesNotMatch(orbPanel, /content: resolved\.message/)
+  assert.match(orbPanel, /role="status"/)
+  assert.match(orbPanel, /aria-live="polite"/)
+  assert.match(orbPanel, />Stop</)
+  assert.match(orbPanel, /Voice muted/)
+  assert.match(orbPanel, /Replay/)
+  assert.match(companion, /<OrbConversationPanel \/>/)
+})
+
+test('portal proof only ignores an exact settled GET document navigation abort', () => {
+  assert.match(portalProof, /method: request\.method\(\)/)
+  assert.match(portalProof, /resourceType: request\.resourceType\(\)/)
+  assert.match(portalProof, /isNavigationRequest: request\.isNavigationRequest\(\)/)
+  assert.match(portalProof, /request\.method === 'GET'/)
+  assert.match(portalProof, /request\.resourceType === 'document'/)
+  assert.match(portalProof, /request\.isNavigationRequest === true/)
+  assert.match(portalProof, /requestUrl\.href === routeEvidence\.href/)
+  assert.match(portalProof, /routeEvidence\?\.lifecycleObserved/)
+})
+
+test('ElevenLabs is rights-bound, duration-bounded, single-attempt and session-consented', () => {
+  assert.match(providerFunctions, /ELEVENLABS_ALLOWED_VOICE_IDS/)
+  assert.match(providerFunctions, /VOICE_NOT_AUTHORIZED/)
+  assert.match(providerFunctions, /Math\.ceil\(text\.length \/ 14\) > 120/)
+  assert.match(providerFunctions, /text-to-speech\/\$\{encodeURIComponent\(voiceId\)\}\/stream/)
+  assert.match(providerFunctions, /enable_logging/)
+  assert.doesNotMatch(narratorClient, /for \(let attempt/)
+  assert.match(narratorClient, /MAX_MEMORY_CACHE_ENTRIES = 12/)
+  assert.match(narratorPlayback, /private externalVoiceConsent = false/)
+  assert.match(narratorPlayback, /setExternalVoiceConsent/)
+})

@@ -38,12 +38,21 @@
 
 @media (max-width: 760px) {
   .locationMapGeographicBridge {
-    top: auto;
+    top: calc(env(safe-area-inset-top, 0px) + 6.25rem);
     right: 0.75rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem);
+    bottom: auto;
     min-width: 0;
+    width: min(17rem, calc(100vw - 1.5rem));
     max-width: calc(100vw - 1.5rem);
-    padding: 0.55rem 0.7rem;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .locationMapGeographicBridge span {
+    font-size: 0.58rem;
+  }
+
+  .locationMapGeographicBridge a {
+    font-size: 0.76rem;
   }
 }
 
