@@ -7,9 +7,11 @@ const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.t
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
-const openAiRoute = fs.readFileSync(new URL('../src/app/api/urai/orb/openai/route.ts', import.meta.url), 'utf8')
-const narratorRoute = fs.readFileSync(new URL('../src/app/api/urai/narrator/elevenlabs/route.ts', import.meta.url), 'utf8')
-const voiceRoute = fs.readFileSync(new URL('../src/app/api/voice/elevenlabs/route.ts', import.meta.url), 'utf8')
+const staticProviderRoutes = [
+  new URL('../src/app/api/urai/orb/openai/route.ts', import.meta.url),
+  new URL('../src/app/api/urai/narrator/elevenlabs/route.ts', import.meta.url),
+  new URL('../src/app/api/voice/elevenlabs/route.ts', import.meta.url),
+]
 
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
   assert.deepEqual(firebaseConfig.hosting.rewrites, [
@@ -35,11 +37,8 @@ test('provider functions bind secrets, auth, consent, throttling, privacy and ca
   assert.doesNotMatch(providerFunctions, /console\.(log|info|warn|error)\([^)]*(message|text|context)/)
 })
 
-test('browser clients are same-origin and static API owners fail closed', () => {
+test('browser clients are same-origin and no static route can shadow provider rewrites', () => {
   assert.match(openAiClient, /fetch\('\/api\/urai\/orb\/openai'/)
   assert.match(narratorClient, /fetch\("\/api\/urai\/narrator\/elevenlabs"/)
-  for (const route of [openAiRoute, narratorRoute, voiceRoute]) {
-    assert.match(route, /PROVIDER_FUNCTION_REQUIRED/)
-    assert.doesNotMatch(route, /(OPENAI|ELEVENLABS)_API_KEY/)
-  }
+  for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false)
 })
