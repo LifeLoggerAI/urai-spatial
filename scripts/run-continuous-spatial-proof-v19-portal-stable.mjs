@@ -21,7 +21,10 @@ const manifestReplacement = `&& (
           || (requestUrl.pathname.startsWith('/_next/static/chunks/') && requestUrl.pathname.endsWith('.js'))
           || (requestUrl.pathname.startsWith('/_next/static/css/') && requestUrl.pathname.endsWith('.css'))
           || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
-          || (requestUrl.href === routeEvidence.href
+          || (request.method === 'GET'
+            && request.resourceType === 'document'
+            && request.isNavigationRequest === true
+            && requestUrl.href === routeEvidence.href
             && requestUrl.pathname === expectedRoute.pathname
             && requestUrl.searchParams.get('entryPortal') === expectedRoute.entryPortal
             && requestUrl.searchParams.get('cameraCheckpoint') === expectedRoute.cameraCheckpoint)
@@ -111,6 +114,15 @@ const patched = original
 
 if (!patched.includes("routeEvidence?.lifecycleObserved")) {
   throw new Error('Generated portal wrapper does not require a completed portal lifecycle before ignoring aborts')
+}
+if (!patched.includes("request.method === 'GET'")) {
+  throw new Error('Generated portal wrapper does not restrict the settled-route abort to GET')
+}
+if (!patched.includes("request.resourceType === 'document'")) {
+  throw new Error('Generated portal wrapper does not restrict the settled-route abort to a document request')
+}
+if (!patched.includes('request.isNavigationRequest === true')) {
+  throw new Error('Generated portal wrapper does not restrict the settled-route abort to a navigation request')
 }
 if (!patched.includes("requestUrl.href === routeEvidence.href")) {
   throw new Error('Generated portal wrapper does not bind an ignored document abort to the exact settled route URL')
