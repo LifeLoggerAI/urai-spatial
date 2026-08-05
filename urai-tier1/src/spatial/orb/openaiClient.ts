@@ -21,10 +21,26 @@ export type OrbProviderEvent =
   | ({ type: 'done' } & OrbProviderResult)
   | { type: 'error'; code: string; message: string }
 
+const DEFINITE_EXTERNAL_ATTEMPT_CODES = new Set([
+  'MODERATION_UNAVAILABLE',
+  'INPUT_BLOCKED',
+  'OPENAI_REQUEST_FAILED',
+  'OPENAI_RESPONSE_FAILED',
+  'OPENAI_RESPONSE_INCOMPLETE',
+  'INVALID_PROVIDER_RESPONSE',
+])
+
 export class OrbProviderAttemptError extends Error {
   constructor(readonly code = 'EXTERNAL_PROVIDER_ATTEMPT_FAILED') {
-    super('An external OpenAI safety or response request was attempted but no external answer was used.')
+    super('An OpenAI safety or response request was attempted but no external answer was used.')
     this.name = 'OrbProviderAttemptError'
+  }
+}
+
+export class OrbProviderAttemptUncertainError extends Error {
+  constructor() {
+    super('A consented external request may have been attempted, but its processing state could not be confirmed.')
+    this.name = 'OrbProviderAttemptUncertainError'
   }
 }
 
@@ -46,7 +62,14 @@ export function deterministicOrbFallback(message = ''): OrbProviderResult {
 export function attemptedExternalOrbFallback(message = ''): OrbProviderResult {
   return fallbackResult(
     message,
-    'OpenAI safety or response processing was attempted with your consent, but no external answer was used. This response is a deterministic local fallback.',
+    'An OpenAI safety or response request was attempted with your consent, but no external answer was used. This response is a deterministic local fallback.',
+  )
+}
+
+export function uncertainExternalOrbFallback(message = ''): OrbProviderResult {
+  return fallbackResult(
+    message,
+    'A consented external request may have been attempted, but its processing state could not be confirmed. No external answer was used; this response is a deterministic local fallback.',
   )
 }
 
@@ -81,18 +104,19 @@ export async function requestOpenAIOrb(input: {
     })
   } catch (error) {
     if (input.signal.aborted) throw error
-    throw new OrbProviderAttemptError('EXTERNAL_REQUEST_FAILED')
+    throw new OrbProviderAttemptUncertainError()
   }
 
   if (!response.ok || !response.body) {
-    let code = 'EXTERNAL_PROVIDER_ATTEMPT_FAILED'
+    let code = 'PROVIDER_BOUNDARY_FAILURE'
     try {
       const payload = await response.json() as { error?: unknown }
       if (payload.error) code = String(payload.error)
     } catch {
-      // The response status still proves that the consented external boundary was attempted.
+      // Unknown boundary failures remain local-only unless a provider-stage code proves an external attempt.
     }
-    throw new OrbProviderAttemptError(code)
+    if (DEFINITE_EXTERNAL_ATTEMPT_CODES.has(code)) throw new OrbProviderAttemptError(code)
+    return null
   }
 
   const reader = response.body.getReader()
