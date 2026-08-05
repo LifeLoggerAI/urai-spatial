@@ -105,9 +105,13 @@ jobs:
           const [path, head] = process.argv.slice(2)
           const receipt = JSON.parse(await readFile(path, 'utf8'))
           if (receipt.exactHead !== head) throw new Error('Exact-head receipt mismatch')
+          if (receipt.captureTransport !== 'chrome-devtools-protocol-page-captureScreenshot') throw new Error('Unexpected capture transport')
           if (receipt.captures.length !== 4) throw new Error('Expected four route captures')
           if (receipt.errors.length) throw new Error(`Receipt contains ${receipt.errors.length} errors`)
           if (!receipt.captures.every((capture) => capture.passed)) throw new Error('A route capture did not pass')
+          const expected = new Set(['shadow:desktop', 'shadow:mobile', 'council:desktop', 'council:mobile'])
+          for (const capture of receipt.captures) expected.delete(`${capture.realm}:${capture.viewport}`)
+          if (expected.size) throw new Error(`Missing captures: ${[...expected].join(', ')}`)
           NODE
 
       - name: Upload exact-head Shadow and Council proof
