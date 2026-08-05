@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
   requestUraiWorldReturn,
@@ -78,23 +79,15 @@ export function PersistentWorldCompanion() {
   const orbRef = useRef<HTMLButtonElement>(null)
   const restoreFocusRef = useRef(false)
 
-  const primaryDestinations = useMemo(
-    () => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
-    [],
-  )
-  const secondaryDestinations = useMemo(
-    () => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
-    [],
-  )
+  const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
+  const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
 
   const closeCompanion = useCallback((restoreFocus = true) => {
     restoreFocusRef.current = restoreFocus
     setOpen(false)
   }, [])
 
-  useEffect(() => {
-    setHydrated(true)
-  }, [])
+  useEffect(() => setHydrated(true), [])
 
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
@@ -114,11 +107,9 @@ export function PersistentWorldCompanion() {
   useEffect(() => {
     if (open) {
       restoreFocusRef.current = false
-      const firstControl = menuRef.current?.querySelector<HTMLElement>('button:not([disabled])')
-      firstControl?.focus()
+      menuRef.current?.querySelector<HTMLElement>('button:not([disabled])')?.focus()
       return
     }
-
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
       orbRef.current?.focus()
@@ -191,12 +182,7 @@ export function PersistentWorldCompanion() {
   ))
 
   return (
-    <aside
-      className="urai-world-companion"
-      data-open={open ? 'true' : 'false'}
-      data-phase={phase}
-      data-destination={world.destination}
-    >
+    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination}>
       <div
         ref={menuRef}
         id="urai-world-companion-menu"
@@ -205,9 +191,7 @@ export function PersistentWorldCompanion() {
         inert={!open ? true : undefined}
       >
         <p>{current.label}</p>
-        <nav aria-label="Travel through the URAI world">
-          {destinationButtons(primaryDestinations)}
-        </nav>
+        <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">
           {destinationButtons(secondaryDestinations)}
         </nav>
@@ -223,6 +207,7 @@ export function PersistentWorldCompanion() {
             Return
           </button>
         ) : null}
+        <OrbConversationPanel />
       </div>
       <button
         ref={orbRef}
