@@ -10,6 +10,8 @@ const ROUTE_CLASSES = [
   "urai-route-focus",
   "urai-route-replay",
   "urai-route-mirror",
+  "urai-route-shadow",
+  "urai-route-council",
   "urai-route-passport",
   "urai-route-status",
   "urai-route-privacy-controls",
@@ -35,6 +37,8 @@ function routeClassFor(pathname: string): string | null {
   if (pathname.startsWith("/focus")) return "urai-route-focus";
   if (pathname.startsWith("/replay")) return "urai-route-replay";
   if (pathname.startsWith("/mirror")) return "urai-route-mirror";
+  if (pathname.startsWith("/shadow")) return "urai-route-shadow";
+  if (pathname.startsWith("/council")) return "urai-route-council";
   if (pathname.startsWith("/passport")) return "urai-route-passport";
   if (pathname.startsWith("/status")) return "urai-route-status";
   if (pathname.startsWith("/privacy-controls")) return "urai-route-privacy-controls";

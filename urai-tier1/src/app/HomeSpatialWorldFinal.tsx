@@ -8,8 +8,9 @@ const portals = [
   { id: "world", href: "/ground?from=home", eyebrow: "Below", label: "Ground", detail: "walk the lower layer" },
   { id: "life", href: "/life-map?from=home-sky", eyebrow: "Above", label: "Life Map", detail: "enter memory sky" },
   { id: "mirror", href: "/mirror", eyebrow: "Reflect", label: "Mirror", detail: "private patterns" },
+  { id: "shadow", href: "/shadow", eyebrow: "Integrate", label: "Shadow", detail: "walk the hidden field" },
   { id: "passport", href: "/passport", eyebrow: "Own", label: "Passport", detail: "consent vault" },
-  { id: "status", href: "/status", eyebrow: "Live", label: "Status", detail: "system field" },
+  { id: "council", href: "/council", eyebrow: "Guide", label: "Council", detail: "stewardship chamber" },
 ] as const;
 
 const stars = Array.from({ length: 72 }, (_, index) => index);
@@ -253,8 +254,9 @@ export default function HomeSpatialWorldFinal() {
           <Link href="/ground?from=orb">Ground</Link>
           <Link href="/life-map?from=orb-sky">Life Map</Link>
           <Link href="/mirror">Mirror</Link>
+          <Link href="/shadow">Shadow</Link>
           <Link href="/passport">Passport</Link>
-          <Link href="/status">Status</Link>
+          <Link href="/council">Council</Link>
         </div>
       </aside>
 

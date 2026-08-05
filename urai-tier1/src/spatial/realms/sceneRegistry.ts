@@ -1,4 +1,4 @@
-export type SpatialSceneId = 'home' | 'life-map' | 'location-map' | 'mirror' | 'legacy' | 'passport' | 'council' | 'dream' | 'ground'
+export type SpatialSceneId = 'home' | 'life-map' | 'location-map' | 'mirror' | 'shadow' | 'legacy' | 'passport' | 'council' | 'dream' | 'ground'
 
 export type SpatialSceneDefinition = {
   id: SpatialSceneId
@@ -16,6 +16,7 @@ export const SCENE_REGISTRY: Record<SpatialSceneId, SpatialSceneDefinition> = {
   'life-map': { id: 'life-map', title: 'LifeMap', route: '/life-map', cameraPreset: 'orbit', lightingPreset: 'soft', privacyLevel: 'private', exitRoute: '/', fallbackRoute: '/' },
   'location-map': { id: 'location-map', title: 'Location Map', route: '/location-map', cameraPreset: 'wide', lightingPreset: 'soft', privacyLevel: 'private', exitRoute: '/', fallbackRoute: '/' },
   mirror: { id: 'mirror', title: 'Mirror', route: '/mirror', cameraPreset: 'close', lightingPreset: 'bright', privacyLevel: 'private', exitRoute: '/', fallbackRoute: '/' },
+  shadow: { id: 'shadow', title: 'Shadow Realm', route: '/shadow', cameraPreset: 'close', lightingPreset: 'dim', privacyLevel: 'private', exitRoute: '/mirror', fallbackRoute: '/' },
   legacy: { id: 'legacy', title: 'Legacy', route: '/legacy', cameraPreset: 'wide', lightingPreset: 'soft', privacyLevel: 'private', exitRoute: '/', fallbackRoute: '/' },
   passport: { id: 'passport', title: 'Passport', route: '/passport', cameraPreset: 'wide', lightingPreset: 'vault', privacyLevel: 'private', exitRoute: '/', fallbackRoute: '/' },
   council: { id: 'council', title: 'Council', route: '/council', cameraPreset: 'orbit', lightingPreset: 'soft', privacyLevel: 'private', exitRoute: '/', fallbackRoute: '/' },

@@ -1,6 +1,17 @@
-import { RealmShell } from '@/spatial/realms/RealmShell'
+import SpatialRealmExperience from '@/spatial/realms/SpatialRealmExperience'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
-export default function CouncilRealmPage() {
-  return <RealmShell scene={getSceneDefinition('council')} summary="A private council realm for reflective guidance, continuity review, and calm decision support inside URAI Spatial." />
+export const metadata = {
+  title: 'URAI Council Chamber',
+  description: 'Enter the URAI Council as a navigable spatial stewardship chamber.',
+}
+
+export default function CouncilRoutePage() {
+  const scene = getSceneDefinition('council')
+
+  return (
+    <section data-testid="urai-council-route" data-scene-id={scene.id}>
+      <SpatialRealmExperience realm="council" />
+    </section>
+  )
 }

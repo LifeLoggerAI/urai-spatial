@@ -111,10 +111,11 @@ test('Mirror fixtures remain deterministic and never silently substitute demo fo
   assert.equal(conflicting.find((pattern) => pattern.id === 'emotional-recurrence')?.evidenceState, 'conflicting')
 })
 
-test('Mirror movement help identifies the active realm', () => {
+test('Mirror movement help identifies the active realm and accepts authored realm titles', () => {
   assert.match(clientSource, /<MovementHelp realm="Mirror"/)
   assert.doesNotMatch(clientSource, /<MovementHelp realm="Life Map"/)
-  assert.match(navigationSource, /realm: 'Home' \| 'Ground' \| 'Life Map' \| 'Mirror'/)
+  assert.match(navigationSource, /realm: string/)
+  assert.match(navigationSource, /<summary>Move through \{realm\}<\/summary>/)
 })
 
 test('Mirror acceptance fixtures, mobile scrolling, and semantic fallback fail closed', () => {
