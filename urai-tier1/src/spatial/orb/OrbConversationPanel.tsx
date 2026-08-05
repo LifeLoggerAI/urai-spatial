@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
 import styles from './OrbConversationPanel.module.css'
 import {
+  attemptedExternalOrbFallback,
   deterministicOrbFallback,
+  OrbProviderAttemptError,
   requestOpenAIOrb,
   type OrbConversationMessage,
   type OrbProviderResult,
@@ -93,12 +95,16 @@ export default function OrbConversationPanel() {
       setMessage('')
       setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
       if (!voiceMuted) speakLocally(resolved.message)
-    } catch {
+    } catch (error) {
       if (controller.signal.aborted) return
-      const fallback = deterministicOrbFallback(trimmed)
+      const fallback = error instanceof OrbProviderAttemptError
+        ? attemptedExternalOrbFallback(trimmed)
+        : deterministicOrbFallback(trimmed)
       setResult(fallback)
       setStreamedText(fallback.message)
-      setStatus('Live provider unavailable; local fallback response ready.')
+      setStatus(error instanceof OrbProviderAttemptError
+        ? 'External provider attempt did not return an answer; truthful local fallback ready.'
+        : 'Live provider unavailable before external processing; local fallback response ready.')
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
