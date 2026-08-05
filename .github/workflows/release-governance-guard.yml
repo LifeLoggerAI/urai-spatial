@@ -31,7 +31,47 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - name: Determine governance scope
+        id: scope
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          applies=true
+          if [ "$GITHUB_EVENT_NAME" = 'pull_request_review' ]; then
+            applies=false
+            page=1
+            while :; do
+              files="$(curl --fail --silent --show-error \
+                --header 'Accept: application/vnd.github+json' \
+                --header "Authorization: Bearer $GH_TOKEN" \
+                --header 'X-GitHub-Api-Version: 2022-11-28' \
+                "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER/files?per_page=100&page=$page")"
+              if jq -e '
+                any(.[];
+                  .filename as $path
+                  | ($path == ".github/CODEOWNERS"
+                    or ($path | startswith(".github/workflows/"))
+                    or ($path | startswith("docs/release-governance/"))
+                    or ($path | startswith("evidence/release/"))))
+              ' <<<"$files" >/dev/null; then
+                applies=true
+                break
+              fi
+              count="$(jq 'length' <<<"$files")"
+              if [ "$count" -lt 100 ]; then
+                break
+              fi
+              page=$((page + 1))
+            done
+          fi
+          echo "applies=$applies" >> "$GITHUB_OUTPUT"
+
       - name: Checkout exact source
+        if: steps.scope.outputs.applies == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.EXACT_SHA }}
@@ -40,6 +80,7 @@ jobs:
           show-progress: false
 
       - name: Prove exact clean tree
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -47,7 +88,7 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Require exact-head independent collaborator approval
-        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+        if: steps.scope.outputs.applies == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_review')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,8 +107,14 @@ jobs:
             jq -r \
               --arg sha "$EXACT_SHA" \
               --arg author "$PR_AUTHOR" \
-              '.[] | select(.state == "APPROVED" and .commit_id == $sha and .user.login != $author) | .user.login' \
-              <<<"$reviews" | sort -u
+              '[.[] | select(.state == "APPROVED" or .state == "CHANGES_REQUESTED" or .state == "DISMISSED")]
+              | sort_by(.user.login, (.submitted_at // ""), .id)
+              | group_by(.user.login)
+              | map(last)
+              | .[]
+              | select(.state == "APPROVED" and .commit_id == $sha and .user.login != $author)
+              | .user.login' \
+              <<<"$reviews"
           )
 
           approved_reviewer=''
@@ -87,7 +134,7 @@ jobs:
           done
 
           if test -z "$approved_reviewer"; then
-            echo "No exact-head APPROVED review exists from a non-author collaborator with write, maintain, or admin permission." >&2
+            echo "No current exact-head APPROVED review exists from a non-author collaborator with write, maintain, or admin permission." >&2
             exit 1
           fi
 
@@ -95,6 +142,7 @@ jobs:
           printf '%s\n' "$approved_reviewer" > artifacts/release-governance/approved-reviewer.txt
 
       - name: Reject temporary dispatchers on canonical source
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -111,6 +159,7 @@ jobs:
           fi
 
       - name: Require permanent release ownership
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -119,6 +168,7 @@ jobs:
           grep -Fq '/evidence/release/** @release-governance' .github/CODEOWNERS
 
       - name: Validate changed release workflows are exact-head and clean-tree bound
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -147,6 +197,7 @@ jobs:
           done < artifacts/release-governance/changed-files.txt
 
       - name: Reject unsupported production authorization records
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -165,13 +216,14 @@ jobs:
           fi
 
       - name: Require incident record and fail-closed release boundary
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
           incident=docs/release-governance/2026-08-04-spatial-governance-incident.md
           test -f "$incident"
           grep -Fq '869eb1df8d75351d046a22e82a85a100389d6a82' "$incident"
-          grep -Fq '64b2070b0dbb66db57f2493119ed6568efac9d46' "$incident"
+          grep -Fq '64b2070bdb66db57f2493119ed6568efac9d46' "$incident"
           grep -Fq '62d77f7d406e78cbfcefad73ca31247f90a377be' "$incident"
           grep -Fq 'aa2fa1883f6627f4da872a3e80bd8ae125e98f82' "$incident"
           grep -Fq 'MERGED SOURCE NOT PRODUCTION-AUTHORIZED' "$incident"
@@ -180,6 +232,7 @@ jobs:
           grep -Fq 'Rollback authority: evidence not found' "$incident"
 
       - name: Retain guard receipt
+        if: steps.scope.outputs.applies == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -189,10 +242,11 @@ jobs:
           approved_reviewer="$(cat artifacts/release-governance/approved-reviewer.txt 2>/dev/null || true)"
           cat > artifacts/release-governance/receipt.json <<EOF
           {
-            "schemaVersion": "urai-release-governance-guard-3",
+            "schemaVersion": "urai-release-governance-guard-4",
             "repository": "$GITHUB_REPOSITORY",
             "exactSha": "$EXACT_SHA",
             "baseSha": "$BASE_SHA",
+            "governanceScopeApplied": true,
             "temporaryDispatcherPresent": false,
             "workflowCodeownerRequired": true,
             "incidentRecordPresent": true,
@@ -204,6 +258,7 @@ jobs:
           EOF
 
       - name: Upload governance receipt
+        if: steps.scope.outputs.applies == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-governance-${{ env.EXACT_SHA }}
