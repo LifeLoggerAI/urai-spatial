@@ -52,6 +52,8 @@ test('Orb fallback disclosure distinguishes local-only, definite external, and u
   assert.match(openAiClient, /if \(DEFINITE_EXTERNAL_ATTEMPT_CODES\.has\(code\)\) throw new OrbProviderAttemptError\(code\)/)
   assert.match(openAiClient, /return null/)
   assert.match(openAiClient, /throw new OrbProviderAttemptError\(event\.code\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_STREAM_FAILED'\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_RESPONSE_INCOMPLETE'\)/)
   assert.match(orbPanel, /error instanceof OrbProviderAttemptError/)
   assert.match(orbPanel, /error instanceof OrbProviderAttemptUncertainError/)
   assert.match(orbPanel, /attemptedExternalOrbFallback\(trimmed\)/)
