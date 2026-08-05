@@ -19,6 +19,7 @@ const tests = [
   'tests/exact-static-release-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/final-aaa-world-convergence-contract.test.mjs',
+  'tests/final-review-boundary-contract.test.mjs',
   'tests/firebase-hosting-capture-workflow-contract.test.mjs',
   'tests/firebase-hosting-recovery-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
