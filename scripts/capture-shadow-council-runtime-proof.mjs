@@ -17,7 +17,7 @@ const viewports = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-shadow-council-runtime-proof-5',
+  schemaVersion: 'urai-shadow-council-runtime-proof-6',
   exactHead,
   base,
   capturedAt: new Date().toISOString(),
@@ -148,6 +148,10 @@ async function captureRealm(browser, realm, viewport) {
         document.querySelector('.urai-mobile-movement'),
         document.querySelector('.urai-spatial-realm-prompt'),
       ),
+      orbPortals: overlap(
+        document.querySelector('.urai-world-companion__orb'),
+        document.querySelector('.urai-spatial-realm-portals'),
+      ),
     }
   })
   const movementDistance = Math.hypot(final.x - start.x, final.z - start.z)
@@ -173,6 +177,7 @@ async function captureRealm(browser, realm, viewport) {
     titleHelpClearance: clearances.titleHelp,
     mobilePadPortalClearance: clearances.mobilePadPortals,
     mobilePadPromptClearance: clearances.mobilePadPrompt,
+    orbPortalClearance: clearances.orbPortals,
     canvas: canvasBox ? { width: Math.round(canvasBox.width), height: Math.round(canvasBox.height) } : null,
     consoleErrors,
     pageErrors,
@@ -188,6 +193,7 @@ async function captureRealm(browser, realm, viewport) {
     && capture.titleHelpClearance?.clear === true
     && capture.mobilePadPortalClearance?.clear === true
     && capture.mobilePadPromptClearance?.clear === true
+    && capture.orbPortalClearance?.clear === true
     && capture.canvas?.width >= 240
     && capture.canvas?.height >= 240
     && capture.movementDistance >= 0.25
