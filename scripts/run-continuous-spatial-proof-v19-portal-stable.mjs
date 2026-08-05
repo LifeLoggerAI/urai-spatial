@@ -61,7 +61,7 @@ const constructionReplacement = [
   '  throw new Error(`Home semantic control result expected one audited occurrence; found ${controlResultCount}`)',
   '}',
   'const controlPassTarget = "&& result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2"',
-  'const controlPassReplacement = "&& result.semanticButtons === 3 && result.semanticVisible === 0\\n    && result.discreetButtons === 2 && result.provenanceVisible === 1 && !result.provenanceDisabled\\n    && result.provenanceLabel === \'Why am I seeing this?\' && result.provenanceExpanded === \'false\'\\n    && ((result.ambienceDisabled && result.ambienceVisible === 0 && result.discreetVisible === 1)\\n      || (!result.ambienceDisabled && result.ambienceVisible === 1 && result.discreetVisible === 2))"',
+  'const controlPassReplacement = "&& result.semanticButtons === 3 && result.semanticVisible === 0\\n    && result.discreetButtons === 2 && result.provenanceVisible === 1 && !result.provenanceDisabled\\n    && result.provenanceLabel === \'Why am I seeing this?\' && result.provenanceExpanded === \'false\'\\n    && result.ambienceVisible === 1\\n    && ((result.ambienceDisabled && result.discreetVisible === 2)\\n      || (!result.ambienceDisabled && result.discreetVisible === 2))"',
   'const controlPassCount = portalPatched.split(controlPassTarget).length - 1',
   'if (controlPassCount !== 1) {',
   '  throw new Error(`Home semantic control acceptance expected one audited occurrence; found ${controlPassCount}`)',
@@ -82,8 +82,8 @@ const constructionReplacement = [
   'if (!patched.includes("effectiveOpacity *= Number.parseFloat(currentStyle.opacity || \'1\')")) {',
   "  throw new Error('Home ancestor-opacity visibility repair was not materialized')",
   '}',
-  'if (!patched.includes("result.ambienceDisabled && result.ambienceVisible === 0 && result.discreetVisible === 1")) {',
-  "  throw new Error('Home unavailable-ambience semantic acceptance was not materialized')",
+  'if (!patched.includes("result.ambienceVisible === 1")) {',
+  "  throw new Error('Home unavailable ambience visibility assertion was not materialized')",
   '}',
   'if (!patched.includes("result.provenanceLabel === \'Why am I seeing this?\'")) {',
   "  throw new Error('Home provenance accessible-name assertion was not materialized')",
@@ -123,8 +123,8 @@ if (!patched.includes("button:not(:disabled)")) {
 if (!patched.includes('data-urai-proof-editable-focus')) {
   throw new Error('Generated portal wrapper does not contain the focus-isolation probe')
 }
-if (!patched.includes('Home unavailable-ambience semantic acceptance was not materialized')) {
-  throw new Error('Generated portal wrapper does not retain semantic ambience-state acceptance')
+if (!patched.includes('Home unavailable ambience visibility assertion was not materialized')) {
+  throw new Error('Generated portal wrapper does not retain unavailable ambience visibility enforcement')
 }
 if (!patched.includes('Home provenance accessible-name assertion was not materialized')) {
   throw new Error('Generated portal wrapper does not retain provenance accessible-name acceptance')
