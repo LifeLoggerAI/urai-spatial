@@ -15,8 +15,8 @@ const routes = [
   ["src/app/replay/page.tsx", "FinalReplayFilm"],
   ["src/app/location-map/page.tsx", "LocationMapAcceptanceBoundary"],
   ["src/app/passport/page.tsx", "PassportVaultClient"],
-  ["src/app/shadow/page.tsx", "SpatialRealmExperience"],
-  ["src/app/council/page.tsx", "SpatialRealmExperience"],
+  ["src/app/shadow/page.tsx", "SpatialRealmRuntime"],
+  ["src/app/council/page.tsx", "SpatialRealmRuntime"],
   ["src/app/legacy/page.tsx", "RealmShell"],
   ["src/app/dream/page.tsx", "RealmShell"],
   ["src/app/ground/page.tsx", "walkable-first-person-ground-layer"],
@@ -31,6 +31,12 @@ for (const [file, expected] of routes) {
     assert.doesNotMatch(text, /FinalPassportVault/, "Passport route must not restore the retired poster owner.");
   }
 }
+
+const spatialRuntimePath = join(app, "src", "spatial", "realms", "SpatialRealmRuntime.tsx");
+assert.equal(existsSync(spatialRuntimePath), true, "Capability-aware spatial realm runtime must exist.");
+const spatialRuntime = readFileSync(spatialRuntimePath, "utf8");
+assert.match(spatialRuntime, /SpatialRealmExperience/, "Capability-aware runtime must preserve the canonical R3F owner.");
+assert.match(spatialRuntime, /semantic-no-webgl-fallback/, "Capability-aware runtime must preserve semantic no-WebGL access.");
 
 const passportClientPath = join(app, "src", "app", "passport", "PassportVaultClient.tsx");
 assert.equal(existsSync(passportClientPath), true, "Canonical Passport Ownership Vault client must exist.");
