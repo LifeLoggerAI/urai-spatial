@@ -8,6 +8,7 @@ const app = join(root, "urai-tier1");
 const files = [
   "src/spatial/realms/sceneRegistry.ts",
   "src/spatial/realms/RealmShell.tsx",
+  "src/spatial/realms/SpatialRealmRuntime.tsx",
   "src/spatial/realms/SpatialRealmExperience.tsx",
   "src/app/mirror/page.tsx",
   "src/app/mirror/MirrorSpatialClient.tsx",
@@ -40,6 +41,12 @@ for (const route of ["legacy", "dream"]) {
   assert.match(content, /getSceneDefinition/, `${route} route must use sceneRegistry.`);
 }
 
+const spatialRuntime = readFileSync(join(app, "src/spatial/realms/SpatialRealmRuntime.tsx"), "utf8");
+assert.match(spatialRuntime, /SpatialRealmExperience/, "SpatialRealmRuntime must preserve the canonical R3F owner when WebGL is available.");
+assert.match(spatialRuntime, /semantic-no-webgl-fallback/, "SpatialRealmRuntime must provide semantic no-WebGL access.");
+assert.match(spatialRuntime, /data-reduced-motion/, "SpatialRealmRuntime must publish reduced-motion evidence.");
+assert.match(spatialRuntime, /requestUraiWorldTravel/, "SpatialRealmRuntime fallback destinations must use unified world travel.");
+
 const spatialRealm = readFileSync(join(app, "src/spatial/realms/SpatialRealmExperience.tsx"), "utf8");
 assert.match(spatialRealm, /Canvas/, "SpatialRealmExperience must own a React Three Fiber Canvas.");
 assert.match(spatialRealm, /useMovementInput/, "SpatialRealmExperience must support embodied movement input.");
@@ -53,7 +60,7 @@ assert.doesNotMatch(spatialRealm, /return \(\) => window\.cancelAnimationFrame\(
 
 for (const route of ["shadow", "council"]) {
   const content = readFileSync(join(app, `src/app/${route}/page.tsx`), "utf8");
-  assert.match(content, /SpatialRealmExperience/, `${route} route must render the canonical navigable spatial experience.`);
+  assert.match(content, /SpatialRealmRuntime/, `${route} route must render the capability-aware spatial runtime.`);
   assert.match(content, new RegExp(`realm="${route}"`), `${route} route must mount its matching realm.`);
   assert.match(content, /getSceneDefinition/, `${route} route must use sceneRegistry.`);
   assert.doesNotMatch(content, /RealmShell/, `${route} route must not fall back to the flat shell owner.`);
@@ -76,4 +83,4 @@ const ground = readFileSync(join(app, "src/app/ground/page.tsx"), "utf8");
 assert.match(ground, /walkable-first-person-ground-layer/, "Ground route must render the final ground world.");
 assert.match(ground, /getSceneDefinition/, "Ground route must preserve scene registry contract.");
 
-console.log("URAI realm routes canon passed: shell realms and canonical navigable spatial route owners are preserved.");
+console.log("URAI realm routes canon passed: shell realms and capability-aware navigable spatial route owners are preserved.");
