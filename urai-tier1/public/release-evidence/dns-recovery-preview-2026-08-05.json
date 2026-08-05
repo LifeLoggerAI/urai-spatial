@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "urai-dns-recovery-preview-1",
+  "recordedAt": "2026-08-05T15:43:00Z",
+  "canonicalMainSha": "51afd7e6beb894321d21cdf5ff1ca3b5ceabe5a1",
+  "failedProtectedRunId": 31020405262,
+  "failedReceiptIssue": 1058,
+  "failureStage": "precredential-boundary-revalidation",
+  "failureReason": "Public DNS lookup for urai.app returned ENOTFOUND before Firebase deployment began.",
+  "verifiedPassedGates": [
+    "rollback-proof",
+    "exact-head-release-verification",
+    "exact-static-build",
+    "clean-authority-attestation"
+  ],
+  "productionDeployed": false,
+  "customDomainLive": false,
+  "recoveryAction": "Trigger the existing isolated Firebase preview-channel workflow from this governed evidence commit. The preview must remain visibly labeled PREVIEW — NOT PRODUCTION CERTIFIED and must not be represented as the canonical urai.app production release.",
+  "productionRetryCondition": "Authoritative DNS and TLS for urai.app resolve publicly, after which exactly one protected production retry may target the then-current exact main with a proven rollback SHA.",
+  "driveFailureReceiptId": "1VFons3O-JDwEJjSpEiWsQEJ2VRSSJUWq"
+}
