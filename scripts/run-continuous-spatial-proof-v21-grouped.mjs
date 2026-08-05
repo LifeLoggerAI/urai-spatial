@@ -4,6 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 const sourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const stableRunnerUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
 const original = await readFile(sourceUrl, 'utf8')
+const originalStableRunner = await readFile(stableRunnerUrl, 'utf8')
 const group = process.env.URAI_PROOF_GROUP || 'all'
 const allowed = new Set(['visual', 'desktop', 'mobile', 'portal-fallback', 'all'])
 if (!allowed.has(group)) throw new Error(`Unsupported URAI_PROOF_GROUP: ${group}`)
@@ -80,13 +81,30 @@ if (grouped.includes('\n  group,\n')) {
   throw new Error('Grouped receipt retained an undefined shorthand group binding')
 }
 
+const hiddenUnavailableTarget = "result.ambienceDisabled && result.ambienceVisible === 0 && result.discreetVisible === 1"
+const visibleUnavailableReplacement = "result.ambienceDisabled && result.ambienceVisible === 1 && result.discreetVisible === 2"
+const hiddenUnavailableCount = originalStableRunner.split(hiddenUnavailableTarget).length - 1
+if (hiddenUnavailableCount !== 2) {
+  throw new Error(`Unavailable ambience proof expected two stale hidden-control predicates; found ${hiddenUnavailableCount}`)
+}
+const repairedStableRunner = originalStableRunner.replaceAll(hiddenUnavailableTarget, visibleUnavailableReplacement)
+if (!repairedStableRunner.includes(visibleUnavailableReplacement)) {
+  throw new Error('Visible disabled ambience acceptance was not materialized')
+}
+
 await writeFile(sourceUrl, grouped, 'utf8')
+await writeFile(stableRunnerUrl, repairedStableRunner, 'utf8')
 try {
   const syntax = spawnSync(process.execPath, ['--check', sourceUrl.pathname], { encoding: 'utf8' })
   if (syntax.status !== 0) {
     throw new Error(`Grouped visual proof syntax check failed:\n${syntax.stderr || syntax.stdout}`)
   }
+  const stableSyntax = spawnSync(process.execPath, ['--check', stableRunnerUrl.pathname], { encoding: 'utf8' })
+  if (stableSyntax.status !== 0) {
+    throw new Error(`Stable visual proof syntax check failed:\n${stableSyntax.stderr || stableSyntax.stdout}`)
+  }
   await import(`${stableRunnerUrl.href}?group=${encodeURIComponent(group)}&exact=${Date.now()}`)
 } finally {
   await writeFile(sourceUrl, original, 'utf8').catch(() => {})
+  await writeFile(stableRunnerUrl, originalStableRunner, 'utf8').catch(() => {})
 }
