@@ -9,7 +9,7 @@ test('app template loads the bounded Home composition correction', () => {
   assert.match(template, /import '\.\/home-provider-preview-composition\.css'/)
 })
 
-test('fine-pointer desktop omits the touch-only pad while mounting accessible keyboard controls', () => {
+test('fine-pointer desktop omits the touch-only pad while mounting functional accessible keyboard controls', () => {
   const css = appFile('home-provider-preview-composition.css')
   const template = appFile('template.tsx')
   const controls = appFile('HomeAccessibleMovementControls.tsx')
@@ -21,6 +21,12 @@ test('fine-pointer desktop omits the touch-only pad while mounting accessible ke
   assert.match(controls, /aria-label="Move left"/)
   assert.match(controls, /aria-label="Move backward"/)
   assert.match(controls, /aria-label="Move right"/)
+  assert.match(controls, /onKeyDown/)
+  assert.match(controls, /onKeyUp/)
+  assert.match(controls, /event\.key !== 'Enter' && event\.key !== ' '/)
+  assert.match(controls, /window\.addEventListener\('blur', releaseActive\)/)
+  assert.match(controls, /window\.addEventListener\('pagehide', releaseActive\)/)
+  assert.match(controls, /document\.addEventListener\('visibilitychange', releaseWhenHidden\)/)
 })
 
 test('desktop composition expands then scales the canvas without leaving uncovered edges', () => {
