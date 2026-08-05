@@ -17,7 +17,8 @@
 
 @media (min-width: 901px) and (pointer: fine) {
   .urai-home-spatial-runtime-layer[data-webgl-ready="true"] > .home-movement-prompt,
-  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .urai-mobile-movement {
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .urai-mobile-movement,
+  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls {
     display: none !important;
   }
 
@@ -30,15 +31,6 @@
     top: -6% !important;
     transform: scale(0.9);
     transform-origin: 50% 54%;
-  }
-
-  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls {
-    opacity: 0.22 !important;
-  }
-
-  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls:hover,
-  .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-discreet-controls:focus-within {
-    opacity: 0.84 !important;
   }
 }
 
