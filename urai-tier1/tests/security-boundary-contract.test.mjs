@@ -3,21 +3,19 @@ import fs from "node:fs";
 import test from "node:test";
 
 const providerFunctions = fs.readFileSync(new URL("../../apps/functions/src/providerFunctions.ts", import.meta.url), "utf8");
-const voiceRoute = fs.readFileSync(new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url), "utf8");
-const narratorRoute = fs.readFileSync(new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url), "utf8");
-const openAiRoute = fs.readFileSync(new URL("../src/app/api/urai/orb/openai/route.ts", import.meta.url), "utf8");
+const staticProviderRoutes = [
+  new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url),
+  new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url),
+  new URL("../src/app/api/urai/orb/openai/route.ts", import.meta.url),
+];
 const narratorClient = fs.readFileSync(new URL("../src/spatial/narrator/elevenlabsClient.ts", import.meta.url), "utf8");
 const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narratorPlayback.ts", import.meta.url), "utf8");
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
 
-test("static provider routes fail closed without secrets", () => {
-  for (const route of [voiceRoute, narratorRoute, openAiRoute]) {
-    assert.match(route, /PROVIDER_FUNCTION_REQUIRED/);
-    assert.match(route, /private, no-store, max-age=0/);
-    assert.doesNotMatch(route, /(OPENAI|ELEVENLABS)_API_KEY/);
-  }
+test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
+  for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
 });
 
 test("Firebase provider functions require revoked-token checks, saved consent, durable throttling and private responses", () => {
