@@ -45,7 +45,8 @@ export default function HomeAccessibleMovementControls() {
   if (!homeRouteActive || !fineDesktop) return null
 
   const press = (direction: Direction) => {
-    if (active && active !== direction) emitMovementKey(active, 'keyup')
+    if (active === direction) return
+    if (active) emitMovementKey(active, 'keyup')
     setActive(direction)
     emitMovementKey(direction, 'keydown')
   }
@@ -55,12 +56,36 @@ export default function HomeAccessibleMovementControls() {
     setActive((current) => current === direction ? null : current)
   }
 
+  const handleKeyDown = (direction: Direction, event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    if (!event.repeat) press(direction)
+  }
+
+  const handleKeyUp = (direction: Direction, event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    release(direction)
+  }
+
+  const movementButtonProps = (direction: Direction) => ({
+    'data-active': active === direction,
+    'aria-pressed': active === direction,
+    onPointerDown: () => press(direction),
+    onPointerUp: () => release(direction),
+    onPointerCancel: () => release(direction),
+    onPointerLeave: () => active === direction && release(direction),
+    onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => handleKeyDown(direction, event),
+    onKeyUp: (event: React.KeyboardEvent<HTMLButtonElement>) => handleKeyUp(direction, event),
+    onBlur: () => active === direction && release(direction),
+  })
+
   return (
     <div className="home-accessible-movement" role="group" aria-label="Home movement controls" data-movement-ui="true">
-      <button type="button" aria-label="Move forward" data-active={active === 'forward'} onPointerDown={() => press('forward')} onPointerUp={() => release('forward')} onPointerCancel={() => release('forward')} onPointerLeave={() => active === 'forward' && release('forward')}>↑</button>
-      <button type="button" aria-label="Move left" data-active={active === 'left'} onPointerDown={() => press('left')} onPointerUp={() => release('left')} onPointerCancel={() => release('left')} onPointerLeave={() => active === 'left' && release('left')}>←</button>
-      <button type="button" aria-label="Move backward" data-active={active === 'backward'} onPointerDown={() => press('backward')} onPointerUp={() => release('backward')} onPointerCancel={() => release('backward')} onPointerLeave={() => active === 'backward' && release('backward')}>↓</button>
-      <button type="button" aria-label="Move right" data-active={active === 'right'} onPointerDown={() => press('right')} onPointerUp={() => release('right')} onPointerCancel={() => release('right')} onPointerLeave={() => active === 'right' && release('right')}>→</button>
+      <button type="button" aria-label="Move forward" {...movementButtonProps('forward')}>↑</button>
+      <button type="button" aria-label="Move left" {...movementButtonProps('left')}>←</button>
+      <button type="button" aria-label="Move backward" {...movementButtonProps('backward')}>↓</button>
+      <button type="button" aria-label="Move right" {...movementButtonProps('right')}>→</button>
       <style jsx>{`
         .home-accessible-movement{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:52;display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:4px;opacity:.08;transition:opacity .18s ease;pointer-events:auto}
         .home-accessible-movement:hover,.home-accessible-movement:focus-within{opacity:1}
