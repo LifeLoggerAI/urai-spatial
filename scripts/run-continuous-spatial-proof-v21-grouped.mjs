@@ -2,9 +2,11 @@ import { spawnSync } from 'node:child_process'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 
 const sourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
+const portalSourceUrl = new URL('./run-continuous-spatial-proof-v18-portal-stable.mjs', import.meta.url)
 const portalStableSourceUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
 const portalStableGeneratedUrl = new URL('./.run-continuous-spatial-proof-v21-route-asset.generated.mjs', import.meta.url)
 const original = await readFile(sourceUrl, 'utf8')
+const portalSourceOriginal = await readFile(portalSourceUrl, 'utf8')
 const portalStableOriginal = await readFile(portalStableSourceUrl, 'utf8')
 const group = process.env.URAI_PROOF_GROUP || 'all'
 const allowed = new Set(['visual', 'desktop', 'mobile', 'portal-fallback', 'all'])
@@ -29,7 +31,6 @@ if (routeAssetCount !== 1) {
 const portalStablePatched = portalStableOriginal.replace(routeAssetTarget, routeAssetReplacement)
 for (const [label, marker] of [
   ['settled lifecycle guard', 'routeEvidence?.lifecycleObserved'],
-  ['same-origin guard', 'requestUrl.origin === proofOrigin'],
   ['GET image guard', "request.resourceType === 'image'"],
   ['non-navigation image guard', 'request.isNavigationRequest === false'],
   ['Ground route asset', '/assets/urai/final/tier1/ground/ground-realm-desktop.svg'],
@@ -37,6 +38,9 @@ for (const [label, marker] of [
   ['document navigation guard', "request.resourceType === 'document'"],
 ]) {
   if (!portalStablePatched.includes(marker)) throw new Error(`Portal route asset guard missing (${label}): ${marker}`)
+}
+if (!portalSourceOriginal.includes('requestUrl.origin === proofOrigin')) {
+  throw new Error('Portal route asset guard missing (same-origin guard): requestUrl.origin === proofOrigin')
 }
 await writeFile(portalStableGeneratedUrl, portalStablePatched, 'utf8')
 const stableRunnerUrl = portalStableGeneratedUrl
