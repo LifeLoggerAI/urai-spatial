@@ -46,7 +46,7 @@ await writeFile(portalStableGeneratedUrl, portalStablePatched, 'utf8')
 const stableRunnerUrl = portalStableGeneratedUrl
 
 const openTarget = `    recordVideo: { dir: videoDir, size: { width: spec.width, height: spec.height } },`
-const openReplacement = `    ...(process.env.URAI_PROOF_RECORD_VIDEO === 'true' ? { recordVideo: { dir: videoDir, size: { width: spec.width, height: spec.height } } : {}),`
+const openReplacement = `    ...(process.env.URAI_PROOF_RECORD_VIDEO === 'true' ? { recordVideo: { dir: videoDir, size: { width: spec.width, height: spec.height } } } : {}),`
 if (original.split(openTarget).length - 1 !== 1) throw new Error('Video context contract changed')
 
 const receiptTarget = `  expectReady,\n  captures: [],`
