@@ -21,7 +21,10 @@ const manifestReplacement = `&& (
           || (requestUrl.pathname.startsWith('/_next/static/chunks/') && requestUrl.pathname.endsWith('.js'))
           || (requestUrl.pathname.startsWith('/_next/static/css/') && requestUrl.pathname.endsWith('.css'))
           || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
-          || (requestUrl.href === routeEvidence.href
+          || (request.method === 'GET'
+            && request.resourceType === 'document'
+            && request.isNavigationRequest === true
+            && requestUrl.href === routeEvidence.href
             && requestUrl.pathname === expectedRoute.pathname
             && requestUrl.searchParams.get('entryPortal') === expectedRoute.entryPortal
             && requestUrl.searchParams.get('cameraCheckpoint') === expectedRoute.cameraCheckpoint)
@@ -34,6 +37,12 @@ if (manifestCount !== 1) {
 const constructionTarget = 'const patched = original.slice(0, portalStart) + repairedPortal + original.slice(portalEnd)'
 const constructionReplacement = [
   'const portalPatched = original.slice(0, portalStart) + repairedPortal + original.slice(portalEnd)',
+  'const diagnosticsTarget = "page.on(\'requestfailed\', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || \'unknown\' }))"',
+  'const diagnosticsReplacement = "page.on(\'requestfailed\', (request) => failedRequests.push({ url: request.url(), method: request.method(), resourceType: request.resourceType(), isNavigationRequest: request.isNavigationRequest(), failure: request.failure()?.errorText || \'unknown\' }))"',
+  'const diagnosticsCount = portalPatched.split(diagnosticsTarget).length - 1',
+  'if (diagnosticsCount !== 1) {',
+  '  throw new Error(`Home failed-request diagnostics expected one audited occurrence; found ${diagnosticsCount}`)',
+  '}',
   'const focusTarget = "page.locator(\'.home-discreet-controls button\').first()"',
   'const focusReplacement = "page.locator(\'.home-discreet-controls button:not(:disabled)\').first()"',
   'const focusCount = portalPatched.split(focusTarget).length - 1',
@@ -71,12 +80,16 @@ const constructionReplacement = [
   '  throw new Error(`Home semantic control acceptance expected one audited occurrence; found ${controlPassCount}`)',
   '}',
   'const patched = portalPatched',
+  '  .replace(diagnosticsTarget, diagnosticsReplacement)',
   '  .replace(focusTarget, focusReplacement)',
   '  .replace(focusBlockTarget, focusBlockReplacement)',
   '  .replace(visibilityTarget, visibilityReplacement)',
   '  .replace(controlSetupTarget, controlSetupReplacement)',
   '  .replace(controlResultTarget, controlResultReplacement)',
   '  .replace(controlPassTarget, controlPassReplacement)',
+  'if (!patched.includes("resourceType: request.resourceType()")) {',
+  "  throw new Error('Home failed-request resource metadata was not materialized')",
+  '}',
   'if (!patched.includes(focusReplacement)) {',
   "  throw new Error('Home keyboard focus repair was not materialized')",
   '}',
@@ -112,6 +125,15 @@ const patched = original
 if (!patched.includes("routeEvidence?.lifecycleObserved")) {
   throw new Error('Generated portal wrapper does not require a completed portal lifecycle before ignoring aborts')
 }
+if (!patched.includes("request.method === 'GET'")) {
+  throw new Error('Generated portal wrapper does not require GET for an ignored destination document abort')
+}
+if (!patched.includes("request.resourceType === 'document'")) {
+  throw new Error('Generated portal wrapper does not require document resource type for an ignored destination abort')
+}
+if (!patched.includes('request.isNavigationRequest === true')) {
+  throw new Error('Generated portal wrapper does not require a navigation request for an ignored destination abort')
+}
 if (!patched.includes("requestUrl.href === routeEvidence.href")) {
   throw new Error('Generated portal wrapper does not bind an ignored document abort to the exact settled route URL')
 }
@@ -129,6 +151,9 @@ if (!patched.includes("requestUrl.pathname.startsWith('/_next/static/chunks/')")
 }
 if (!patched.includes("requestUrl.pathname.startsWith('/_next/static/css/')")) {
   throw new Error('Generated portal wrapper does not retain the bounded route stylesheet abort predicate')
+}
+if (!patched.includes('Home failed-request resource metadata was not materialized')) {
+  throw new Error('Generated portal wrapper does not retain failed-request metadata enforcement')
 }
 if (!patched.includes("button:not(:disabled)")) {
   throw new Error('Generated portal wrapper does not contain the enabled-control repair')
