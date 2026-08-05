@@ -189,17 +189,26 @@ export const openAiOrbProvider = onRequest({
     await consumeRateLimit(uid, 'openai', 8)
 
     const apiKey = OPENAI_API_KEY.value()
+    const moderationInput = [
+      ...context.map((item, index) => `Context ${index + 1} (${item.role}): ${item.content}`),
+      `Current user message: ${message}`,
+    ]
     const moderationController = new AbortController()
     const moderationTimeout = setTimeout(() => moderationController.abort(), 8_000)
     const moderation = await fetch('https://api.openai.com/v1/moderations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'omni-moderation-latest', input: message }),
+      body: JSON.stringify({ model: 'omni-moderation-latest', input: moderationInput }),
       signal: moderationController.signal,
     }).finally(() => clearTimeout(moderationTimeout))
     if (!moderation.ok) throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'The live Orb safety check is unavailable.')
     const moderationResult = await moderation.json() as { results?: Array<{ flagged?: boolean }> }
-    if (moderationResult.results?.[0]?.flagged) throw new ProviderError(400, 'INPUT_BLOCKED', 'This message cannot be sent to the live provider.')
+    if (!Array.isArray(moderationResult.results) || moderationResult.results.length !== moderationInput.length) {
+      throw new ProviderError(503, 'MODERATION_UNAVAILABLE', 'The live Orb safety check returned an incomplete result.')
+    }
+    if (moderationResult.results.some((result) => result.flagged === true)) {
+      throw new ProviderError(400, 'INPUT_BLOCKED', 'This conversation cannot be sent to the live provider.')
+    }
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 30_000)
