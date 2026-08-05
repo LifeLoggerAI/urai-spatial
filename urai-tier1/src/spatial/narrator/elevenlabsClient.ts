@@ -2,6 +2,7 @@ import { getAuth } from "firebase/auth";
 import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
 import type { NarratorLine } from "./narratorTypes";
 
+const MAX_MEMORY_CACHE_ENTRIES = 12;
 const memoryCache = new Map<string, Blob>();
 
 function hashLine(line: NarratorLine): string {
@@ -14,6 +15,16 @@ function hashLine(line: NarratorLine): string {
   return `urai-narrator-${Math.abs(hash).toString(36)}`;
 }
 
+function remember(key: string, blob: Blob) {
+  memoryCache.delete(key);
+  memoryCache.set(key, blob);
+  while (memoryCache.size > MAX_MEMORY_CACHE_ENTRIES) {
+    const oldest = memoryCache.keys().next().value as string | undefined;
+    if (!oldest) break;
+    memoryCache.delete(oldest);
+  }
+}
+
 export async function requestNarratorAudio(
   line: NarratorLine,
   signal?: AbortSignal,
@@ -21,46 +32,43 @@ export async function requestNarratorAudio(
 ): Promise<Blob | null> {
   // Provider narration remains disabled until the current user explicitly opts
   // into sending this text to the configured external voice processor.
-  if (!externalProcessingConsent || !firebasePublicEnvReady) return null;
+  if (!externalProcessingConsent || !firebasePublicEnvReady || signal?.aborted) return null;
 
   const user = getAuth(app).currentUser;
   if (!user) return null;
   const token = await user.getIdToken();
-  if (!token) return null;
+  if (!token || signal?.aborted) return null;
 
   const key = hashLine(line);
-  const mem = memoryCache.get(key);
-  if (mem) return mem;
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      const res = await fetch("/api/urai/narrator/elevenlabs", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        signal,
-        body: JSON.stringify({
-          text: line.text,
-          voiceId: line.voiceId,
-          tone: line.tone,
-          externalProcessingConsent: true,
-        }),
-      });
-      if (!res.ok) throw new Error(`Narrator audio request failed: ${res.status}`);
-      const blob = await res.blob();
-      memoryCache.set(key, blob);
-      return blob;
-    } catch (err) {
-      if (signal?.aborted) return null;
-      if (attempt === 2) {
-        console.warn("[NARRATOR] ElevenLabs fallback", err);
-        return null;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
-    }
+  const cached = memoryCache.get(key);
+  if (cached) {
+    memoryCache.delete(key);
+    memoryCache.set(key, cached);
+    return cached;
   }
 
-  return null;
+  try {
+    const res = await fetch("/api/urai/narrator/elevenlabs", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      signal,
+      body: JSON.stringify({
+        text: line.text,
+        voiceId: line.voiceId,
+        tone: line.tone,
+        externalProcessingConsent: true,
+      }),
+    });
+    if (!res.ok || signal?.aborted) return null;
+    const blob = await res.blob();
+    if (!blob.size || signal?.aborted) return null;
+    remember(key, blob);
+    return blob;
+  } catch {
+    return null;
+  }
 }
