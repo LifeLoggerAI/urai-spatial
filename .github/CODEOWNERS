@@ -3,3 +3,8 @@
 /urai-tier1/src/canon/tier1.ts @founder @release-governance
 /CANON_MIGRATION_PROCESS.md @founder @release-governance
 /.canon-migration/ @founder @release-governance
+
+# Release workflows and production authority require release-governance ownership
+/.github/workflows/** @release-governance
+/docs/release-governance/** @release-governance
+/evidence/release/** @release-governance
