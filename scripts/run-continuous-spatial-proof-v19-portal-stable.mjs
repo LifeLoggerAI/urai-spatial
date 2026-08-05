@@ -20,7 +20,7 @@ const manifestReplacement = `&& (
           ].includes(requestUrl.pathname)
           || (/^\\/_next\\/static\\/chunks\\/.+\\.js$/.test(requestUrl.pathname))
           || (/^\\/_next\\/static\\/css\\/.+\\.css$/.test(requestUrl.pathname))
-          || (requestUrl.pathname === \`${expectedRoute.pathname}index.txt\` && requestUrl.searchParams.has('_rsc'))
+          || (requestUrl.pathname === \`\${expectedRoute.pathname}index.txt\` && requestUrl.searchParams.has('_rsc'))
         )`
 const manifestCount = original.split(manifestTarget).length - 1
 if (manifestCount !== 1) {
