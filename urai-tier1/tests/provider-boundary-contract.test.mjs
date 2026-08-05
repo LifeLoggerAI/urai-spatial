@@ -39,6 +39,18 @@ test('Orb UI keeps external consent off and excludes rejected provider turns fro
   assert.match(companion, /<OrbConversationPanel \/>/)
 })
 
+test('Orb fallback disclosure distinguishes local-only operation from an attempted external boundary', () => {
+  assert.match(openAiClient, /class OrbProviderAttemptError extends Error/)
+  assert.match(openAiClient, /attemptedExternalOrbFallback/)
+  assert.match(openAiClient, /OpenAI safety or response processing was attempted with your consent/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_REQUEST_FAILED'\)/)
+  assert.match(openAiClient, /if \(!response\.ok \|\| !response\.body\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\(event\.code\)/)
+  assert.match(orbPanel, /error instanceof OrbProviderAttemptError/)
+  assert.match(orbPanel, /attemptedExternalOrbFallback\(trimmed\)/)
+  assert.doesNotMatch(orbPanel, /setHistory\([\s\S]*attemptedExternalOrbFallback/)
+})
+
 test('portal proof only ignores an exact settled GET document navigation abort', () => {
   assert.match(portalProof, /method: request\.method\(\)/)
   assert.match(portalProof, /resourceType: request\.resourceType\(\)/)
