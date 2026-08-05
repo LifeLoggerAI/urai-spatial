@@ -21,6 +21,10 @@ const manifestReplacement = `&& (
           || (requestUrl.pathname.startsWith('/_next/static/chunks/') && requestUrl.pathname.endsWith('.js'))
           || (requestUrl.pathname.startsWith('/_next/static/css/') && requestUrl.pathname.endsWith('.css'))
           || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
+          || (requestUrl.href === routeEvidence.href
+            && requestUrl.pathname === expectedRoute.pathname
+            && requestUrl.searchParams.get('entryPortal') === expectedRoute.entryPortal
+            && requestUrl.searchParams.get('cameraCheckpoint') === expectedRoute.cameraCheckpoint)
         )`
 const manifestCount = original.split(manifestTarget).length - 1
 if (manifestCount !== 1) {
@@ -107,6 +111,15 @@ const patched = original
 
 if (!patched.includes("routeEvidence?.lifecycleObserved")) {
   throw new Error('Generated portal wrapper does not require a completed portal lifecycle before ignoring aborts')
+}
+if (!patched.includes("requestUrl.href === routeEvidence.href")) {
+  throw new Error('Generated portal wrapper does not bind an ignored document abort to the exact settled route URL')
+}
+if (!patched.includes("requestUrl.searchParams.get('entryPortal') === expectedRoute.entryPortal")) {
+  throw new Error('Generated portal wrapper does not bind an ignored document abort to the expected entry portal')
+}
+if (!patched.includes("requestUrl.searchParams.get('cameraCheckpoint') === expectedRoute.cameraCheckpoint")) {
+  throw new Error('Generated portal wrapper does not bind an ignored document abort to the expected camera checkpoint')
 }
 if (!patched.includes("requestUrl.pathname === expectedRoute.pathname + 'index.txt'")) {
   throw new Error('Generated portal wrapper does not retain the exact destination RSC abort boundary')
