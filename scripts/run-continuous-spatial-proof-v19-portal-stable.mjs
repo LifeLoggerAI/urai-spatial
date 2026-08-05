@@ -18,8 +18,8 @@ const manifestReplacement = `&& (
             '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
             '/assets/urai/final/manifests/v4-asset-factory-spatial-handoff.json',
           ].includes(requestUrl.pathname)
-          || (/^\\/_next\\/static\\/chunks\\/.+\\.js$/.test(requestUrl.pathname))
-          || (/^\\/_next\\/static\\/css\\/.+\\.css$/.test(requestUrl.pathname))
+          || (requestUrl.pathname.startsWith('/_next/static/chunks/') && requestUrl.pathname.endsWith('.js'))
+          || (requestUrl.pathname.startsWith('/_next/static/css/') && requestUrl.pathname.endsWith('.css'))
           || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
         )`
 const manifestCount = original.split(manifestTarget).length - 1
@@ -74,10 +74,10 @@ if (!patched.includes("routeEvidence?.lifecycleObserved")) {
 if (!patched.includes("requestUrl.pathname === expectedRoute.pathname + 'index.txt'")) {
   throw new Error('Generated portal wrapper does not retain the exact destination RSC abort boundary')
 }
-if (!patched.includes("/^\\/_next\\/static\\/chunks\\/.+\\.js$/")) {
+if (!patched.includes("requestUrl.pathname.startsWith('/_next/static/chunks/')")) {
   throw new Error('Generated portal wrapper does not retain the bounded route chunk abort predicate')
 }
-if (!patched.includes("/^\\/_next\\/static\\/css\\/.+\\.css$/")) {
+if (!patched.includes("requestUrl.pathname.startsWith('/_next/static/css/')")) {
   throw new Error('Generated portal wrapper does not retain the bounded route stylesheet abort predicate')
 }
 if (!patched.includes("button:not(:disabled)")) {
