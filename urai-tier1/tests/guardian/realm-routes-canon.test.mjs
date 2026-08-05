@@ -47,6 +47,9 @@ assert.match(spatialRealm, /stepEmbodiedMotion/, "SpatialRealmExperience must ad
 assert.match(spatialRealm, /MobileMovementPad/, "SpatialRealmExperience must retain mobile movement controls.");
 assert.match(spatialRealm, /requestUraiWorldTravel/, "SpatialRealmExperience portals must use the unified world travel runtime.");
 assert.match(spatialRealm, /data-spatial-exploration="walkable"/, "SpatialRealmExperience must publish walkable exploration ownership.");
+assert.match(spatialRealm, /let second: number \| null = null/, "SpatialRealmExperience must retain the nested animation frame id for cleanup.");
+assert.match(spatialRealm, /if \(second !== null\) window\.cancelAnimationFrame\(second\)/, "SpatialRealmExperience must cancel the nested animation frame during cleanup.");
+assert.doesNotMatch(spatialRealm, /return \(\) => window\.cancelAnimationFrame\(second\)/, "SpatialRealmExperience must not return ignored cleanup from inside an animation-frame callback.");
 
 for (const route of ["shadow", "council"]) {
   const content = readFileSync(join(app, `src/app/${route}/page.tsx`), "utf8");
