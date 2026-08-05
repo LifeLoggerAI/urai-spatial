@@ -17,7 +17,7 @@ const viewports = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-shadow-council-runtime-proof-3',
+  schemaVersion: 'urai-shadow-council-runtime-proof-4',
   exactHead,
   base,
   capturedAt: new Date().toISOString(),
@@ -108,7 +108,23 @@ async function captureRealm(browser, realm, viewport) {
   const canvasBox = await canvas.boundingBox()
   const portals = page.getByRole('navigation', { name: new RegExp(`${realm === 'shadow' ? 'Shadow Realm' : 'Council Chamber'} destinations`, 'i') }).getByRole('button')
   const portalCount = await portals.count()
-  const headingVisible = await page.getByRole('heading', { name: realm === 'shadow' ? 'Shadow Realm' : 'Council Chamber' }).isVisible()
+  const heading = page.getByRole('heading', { name: realm === 'shadow' ? 'Shadow Realm' : 'Council Chamber' })
+  const headingVisible = await heading.isVisible()
+  const titleHelpClearance = await page.evaluate(() => {
+    const header = document.querySelector('.urai-spatial-realm-header')
+    const help = document.querySelector('.urai-movement-help')
+    if (!(header instanceof HTMLElement) || !(help instanceof HTMLElement)) return null
+    const headerRect = header.getBoundingClientRect()
+    const helpRect = help.getBoundingClientRect()
+    const overlapX = Math.max(0, Math.min(headerRect.right, helpRect.right) - Math.max(headerRect.left, helpRect.left))
+    const overlapY = Math.max(0, Math.min(headerRect.bottom, helpRect.bottom) - Math.max(headerRect.top, helpRect.top))
+    return {
+      clear: overlapX * overlapY === 0,
+      headerBottom: Math.round(headerRect.bottom),
+      helpTop: Math.round(helpRect.top),
+      overlapArea: Math.round(overlapX * overlapY),
+    }
+  })
   const movementDistance = Math.hypot(final.x - start.x, final.z - start.z)
   const screenshot = `${realm}-${viewport.id}-${exactHead.slice(0, 12)}.png`
   await settleViewport(page)
@@ -129,6 +145,7 @@ async function captureRealm(browser, realm, viewport) {
     exploration: final.exploration,
     portalCount,
     headingVisible,
+    titleHelpClearance,
     canvas: canvasBox ? { width: Math.round(canvasBox.width), height: Math.round(canvasBox.height) } : null,
     consoleErrors,
     pageErrors,
@@ -141,6 +158,7 @@ async function captureRealm(browser, realm, viewport) {
     && capture.exploration === 'walkable'
     && capture.portalCount === 3
     && capture.headingVisible
+    && capture.titleHelpClearance?.clear === true
     && capture.canvas?.width >= 240
     && capture.canvas?.height >= 240
     && capture.movementDistance >= 0.25
