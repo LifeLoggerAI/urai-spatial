@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
   requestUraiWorldReturn,
@@ -159,9 +160,6 @@ export function PersistentWorldCompanion() {
     }
     const href = buildCompanionTravelHref(request)
 
-    // The visible control owns the canonical URL immediately. The world event still
-    // starts spatial transition state, but it can no longer unmount this controller
-    // before its deferred router write commits.
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
     closeCompanion(false)
@@ -223,6 +221,7 @@ export function PersistentWorldCompanion() {
             Return
           </button>
         ) : null}
+        <OrbConversationPanel />
       </div>
       <button
         ref={orbRef}
