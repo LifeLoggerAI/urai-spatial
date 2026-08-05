@@ -17,10 +17,11 @@ const viewports = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-shadow-council-runtime-proof-2',
+  schemaVersion: 'urai-shadow-council-runtime-proof-3',
   exactHead,
   base,
   capturedAt: new Date().toISOString(),
+  captureTransport: 'chrome-devtools-protocol-page-captureScreenshot',
   captures: [],
   errors: [],
 }
@@ -34,6 +35,23 @@ async function settleViewport(page) {
     await document.fonts.ready
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
   })
+}
+
+async function captureViewportThroughCdp(context, page, targetPath) {
+  const session = await context.newCDPSession(page)
+  try {
+    await session.send('Page.bringToFront')
+    const result = await session.send('Page.captureScreenshot', {
+      format: 'png',
+      fromSurface: true,
+      captureBeyondViewport: false,
+      optimizeForSpeed: true,
+    })
+    if (!result?.data) throw new Error('CDP screenshot returned no image data')
+    await writeFile(targetPath, Buffer.from(result.data, 'base64'))
+  } finally {
+    await session.detach().catch(() => {})
+  }
 }
 
 async function captureRealm(browser, realm, viewport) {
@@ -91,12 +109,7 @@ async function captureRealm(browser, realm, viewport) {
   const movementDistance = Math.hypot(final.x - start.x, final.z - start.z)
   const screenshot = `${realm}-${viewport.id}-${exactHead.slice(0, 12)}.png`
   await settleViewport(page)
-  await page.screenshot({
-    path: path.join(outputDir, screenshot),
-    fullPage: false,
-    caret: 'hide',
-    timeout: 60_000,
-  })
+  await captureViewportThroughCdp(context, page, path.join(outputDir, screenshot))
 
   const capture = {
     realm,
