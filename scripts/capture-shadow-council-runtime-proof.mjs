@@ -17,7 +17,7 @@ const viewports = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-shadow-council-runtime-proof-4',
+  schemaVersion: 'urai-shadow-council-runtime-proof-5',
   exactHead,
   base,
   capturedAt: new Date().toISOString(),
@@ -110,19 +110,44 @@ async function captureRealm(browser, realm, viewport) {
   const portalCount = await portals.count()
   const heading = page.getByRole('heading', { name: realm === 'shadow' ? 'Shadow Realm' : 'Council Chamber' })
   const headingVisible = await heading.isVisible()
-  const titleHelpClearance = await page.evaluate(() => {
-    const header = document.querySelector('.urai-spatial-realm-header')
-    const help = document.querySelector('.urai-movement-help')
-    if (!(header instanceof HTMLElement) || !(help instanceof HTMLElement)) return null
-    const headerRect = header.getBoundingClientRect()
-    const helpRect = help.getBoundingClientRect()
-    const overlapX = Math.max(0, Math.min(headerRect.right, helpRect.right) - Math.max(headerRect.left, helpRect.left))
-    const overlapY = Math.max(0, Math.min(headerRect.bottom, helpRect.bottom) - Math.max(headerRect.top, helpRect.top))
+  const clearances = await page.evaluate(() => {
+    const overlap = (first, second) => {
+      if (!(first instanceof HTMLElement) || !(second instanceof HTMLElement)) return null
+      const firstRect = first.getBoundingClientRect()
+      const secondRect = second.getBoundingClientRect()
+      const overlapX = Math.max(0, Math.min(firstRect.right, secondRect.right) - Math.max(firstRect.left, secondRect.left))
+      const overlapY = Math.max(0, Math.min(firstRect.bottom, secondRect.bottom) - Math.max(firstRect.top, secondRect.top))
+      return {
+        clear: overlapX * overlapY === 0,
+        overlapArea: Math.round(overlapX * overlapY),
+        first: {
+          left: Math.round(firstRect.left),
+          top: Math.round(firstRect.top),
+          right: Math.round(firstRect.right),
+          bottom: Math.round(firstRect.bottom),
+        },
+        second: {
+          left: Math.round(secondRect.left),
+          top: Math.round(secondRect.top),
+          right: Math.round(secondRect.right),
+          bottom: Math.round(secondRect.bottom),
+        },
+      }
+    }
+
     return {
-      clear: overlapX * overlapY === 0,
-      headerBottom: Math.round(headerRect.bottom),
-      helpTop: Math.round(helpRect.top),
-      overlapArea: Math.round(overlapX * overlapY),
+      titleHelp: overlap(
+        document.querySelector('.urai-spatial-realm-header'),
+        document.querySelector('.urai-movement-help'),
+      ),
+      mobilePadPortals: overlap(
+        document.querySelector('.urai-mobile-movement'),
+        document.querySelector('.urai-spatial-realm-portals'),
+      ),
+      mobilePadPrompt: overlap(
+        document.querySelector('.urai-mobile-movement'),
+        document.querySelector('.urai-spatial-realm-prompt'),
+      ),
     }
   })
   const movementDistance = Math.hypot(final.x - start.x, final.z - start.z)
@@ -145,7 +170,9 @@ async function captureRealm(browser, realm, viewport) {
     exploration: final.exploration,
     portalCount,
     headingVisible,
-    titleHelpClearance,
+    titleHelpClearance: clearances.titleHelp,
+    mobilePadPortalClearance: clearances.mobilePadPortals,
+    mobilePadPromptClearance: clearances.mobilePadPrompt,
     canvas: canvasBox ? { width: Math.round(canvasBox.width), height: Math.round(canvasBox.height) } : null,
     consoleErrors,
     pageErrors,
@@ -159,6 +186,8 @@ async function captureRealm(browser, realm, viewport) {
     && capture.portalCount === 3
     && capture.headingVisible
     && capture.titleHelpClearance?.clear === true
+    && capture.mobilePadPortalClearance?.clear === true
+    && capture.mobilePadPromptClearance?.clear === true
     && capture.canvas?.width >= 240
     && capture.canvas?.height >= 240
     && capture.movementDistance >= 0.25
