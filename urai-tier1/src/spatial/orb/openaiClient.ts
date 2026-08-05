@@ -124,20 +124,26 @@ export async function requestOpenAIOrb(input: {
   let buffer = ''
   let finalResult: OrbProviderResult | null = null
 
-  while (true) {
-    const { value, done } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    for (const line of lines) {
-      if (!line.trim()) continue
-      let event: OrbProviderEvent
-      try { event = JSON.parse(line) as OrbProviderEvent } catch { continue }
-      input.onEvent?.(event)
-      if (event.type === 'done') finalResult = event
-      if (event.type === 'error') throw new OrbProviderAttemptError(event.code)
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (!line.trim()) continue
+        let event: OrbProviderEvent
+        try { event = JSON.parse(line) as OrbProviderEvent } catch { continue }
+        input.onEvent?.(event)
+        if (event.type === 'done') finalResult = event
+        if (event.type === 'error') throw new OrbProviderAttemptError(event.code)
+      }
     }
+  } catch (error) {
+    if (input.signal.aborted) throw error
+    if (error instanceof OrbProviderAttemptError) throw error
+    throw new OrbProviderAttemptError('EXTERNAL_STREAM_FAILED')
   }
 
   if (!finalResult) throw new OrbProviderAttemptError('EXTERNAL_RESPONSE_INCOMPLETE')
