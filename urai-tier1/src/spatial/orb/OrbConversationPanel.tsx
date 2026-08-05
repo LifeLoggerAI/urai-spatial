@@ -1,0 +1,176 @@
+'use client'
+
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
+import styles from './OrbConversationPanel.module.css'
+import {
+  deterministicOrbFallback,
+  requestOpenAIOrb,
+  type OrbConversationMessage,
+  type OrbProviderResult,
+} from './openaiClient'
+
+function speakLocally(text: string) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.rate = 0.9
+  utterance.pitch = 0.96
+  utterance.lang = 'en-US'
+  window.speechSynthesis.speak(utterance)
+}
+
+export default function OrbConversationPanel() {
+  const [message, setMessage] = useState('')
+  const [history, setHistory] = useState<OrbConversationMessage[]>([])
+  const [result, setResult] = useState<OrbProviderResult | null>(null)
+  const [streamedText, setStreamedText] = useState('')
+  const [status, setStatus] = useState('Orb conversation is idle.')
+  const [busy, setBusy] = useState(false)
+  const [aiConsent, setAiConsent] = useState(false)
+  const [externalVoiceConsent, setExternalVoiceConsent] = useState(false)
+  const [voiceMuted, setVoiceMuted] = useState(true)
+  const aborter = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    narratorPlayback.setExternalVoiceConsent(externalVoiceConsent)
+    return () => narratorPlayback.setExternalVoiceConsent(false)
+  }, [externalVoiceConsent])
+
+  useEffect(() => () => {
+    aborter.current?.abort()
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+  }, [])
+
+  const stop = () => {
+    aborter.current?.abort()
+    aborter.current = null
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    setBusy(false)
+    setStatus('Orb response stopped.')
+  }
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const trimmed = message.trim()
+    if (!trimmed || busy) return
+    if (!aiConsent) {
+      setStatus('Turn on OpenAI processing consent before sending.')
+      return
+    }
+
+    aborter.current?.abort()
+    const controller = new AbortController()
+    aborter.current = controller
+    setBusy(true)
+    setResult(null)
+    setStreamedText('')
+    setStatus('Orb is responding through the live provider.')
+
+    try {
+      const liveResult = await requestOpenAIOrb({
+        message: trimmed,
+        context: history,
+        aiProcessingConsent: true,
+        signal: controller.signal,
+        onEvent: (providerEvent) => {
+          if (providerEvent.type === 'delta') setStreamedText((current) => current + providerEvent.text)
+          else if (providerEvent.type === 'status') setStatus('Orb is preparing a response.')
+        },
+      })
+      if (controller.signal.aborted) return
+
+      const resolved = liveResult ?? deterministicOrbFallback(trimmed)
+      setResult(resolved)
+      setStreamedText(resolved.message)
+      setHistory((current) => [
+        ...current.slice(-6),
+        { role: 'user', content: trimmed },
+        { role: 'assistant', content: resolved.message },
+      ])
+      setMessage('')
+      setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
+      if (!voiceMuted) speakLocally(resolved.message)
+    } catch {
+      if (controller.signal.aborted) return
+      const fallback = deterministicOrbFallback(trimmed)
+      setResult(fallback)
+      setStreamedText(fallback.message)
+      setStatus('Live provider unavailable; local fallback response ready.')
+    } finally {
+      if (aborter.current === controller) aborter.current = null
+      if (!controller.signal.aborted) setBusy(false)
+    }
+  }
+
+  return (
+    <details className={styles.panel}>
+      <summary>Talk with Orb</summary>
+      <div className={styles.body}>
+        <p className={styles.disclosure}>
+          OpenAI processing and external narrator voice processing are separate, optional permissions. Both start off.
+        </p>
+        <form onSubmit={submit} aria-busy={busy}>
+          <label htmlFor="urai-orb-message">Message for Orb</label>
+          <textarea
+            id="urai-orb-message"
+            value={message}
+            maxLength={2000}
+            rows={3}
+            disabled={busy}
+            onChange={(event) => setMessage(event.target.value)}
+          />
+          <label className={styles.consent}>
+            <input
+              type="checkbox"
+              checked={aiConsent}
+              disabled={busy}
+              onChange={(event) => setAiConsent(event.target.checked)}
+            />
+            Allow this message and bounded recent context to be processed by OpenAI.
+          </label>
+          <label className={styles.consent}>
+            <input
+              type="checkbox"
+              checked={externalVoiceConsent}
+              onChange={(event) => setExternalVoiceConsent(event.target.checked)}
+            />
+            Allow future narrator lines to use the configured external voice provider this session.
+          </label>
+          <div className={styles.actions}>
+            <button type="submit" disabled={busy || !message.trim() || !aiConsent}>Send</button>
+            <button type="button" disabled={!busy} onClick={stop}>Stop</button>
+            <button
+              type="button"
+              aria-pressed={!voiceMuted}
+              onClick={() => {
+                setVoiceMuted((current) => {
+                  const next = !current
+                  if (next && typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+                  return next
+                })
+              }}
+            >
+              {voiceMuted ? 'Voice muted' : 'Voice on'}
+            </button>
+            <button type="button" disabled={!result || voiceMuted} onClick={() => result && speakLocally(result.message)}>
+              Replay
+            </button>
+          </div>
+        </form>
+        <p className={styles.status} role="status" aria-live="polite" aria-atomic="true">
+          {status}
+        </p>
+        {streamedText ? (
+          <section className={styles.response} aria-label="Orb response">
+            <p>{streamedText}</p>
+            {result ? <small>{result.disclosure}</small> : null}
+            {result?.suggestedActions.length ? (
+              <ul>{result.suggestedActions.map((action) => <li key={action}>{action}</li>)}</ul>
+            ) : null}
+          </section>
+        ) : null}
+      </div>
+    </details>
+  )
+}

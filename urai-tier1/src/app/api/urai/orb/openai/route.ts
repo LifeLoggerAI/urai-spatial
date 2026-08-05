@@ -5,7 +5,7 @@ export async function POST() {
   return Response.json(
     {
       error: 'PROVIDER_FUNCTION_REQUIRED',
-      message: 'External voice processing is available only through the authenticated Firebase provider function.',
+      message: 'Live Orb processing is available only through the authenticated Firebase provider function.',
     },
     {
       status: 503,
