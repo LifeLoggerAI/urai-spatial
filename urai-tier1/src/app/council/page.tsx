@@ -19,6 +19,18 @@ export default function CouncilRoutePage() {
             right: max(10px, env(safe-area-inset-right)) !important;
             max-width: 190px !important;
           }
+
+          [data-testid="urai-council-route"] .urai-mobile-movement {
+            bottom: max(10px, env(safe-area-inset-bottom)) !important;
+          }
+
+          [data-testid="urai-council-route"] .urai-spatial-realm-portals {
+            left: auto !important;
+            right: max(12px, env(safe-area-inset-right)) !important;
+            transform: none !important;
+            width: calc(100vw - 180px) !important;
+            max-width: 210px !important;
+          }
         }
       `}</style>
     </section>
