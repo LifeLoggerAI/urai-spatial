@@ -43,7 +43,9 @@
 }
 
 .urai-home-spatial-runtime-layer[data-webgl-ready="true"] .home-audio:disabled {
-  display: none !important;
+  display: inline-flex !important;
+  opacity: 0.72 !important;
+  cursor: not-allowed;
 }
 
 @media (prefers-reduced-motion: reduce) {
