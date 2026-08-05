@@ -2,7 +2,7 @@
 
 import { Line, Sparkles, Stars } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
@@ -13,6 +13,85 @@ type Point3 = [number, number, number];
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
+
+function RenderProofRepublisher() {
+  const { gl, scene } = useThree();
+  const root = useRef<HTMLElement | null>(null);
+  const frames = useRef(0);
+  const invalidated = useRef(true);
+  const invalidationFrame = useRef<number | null>(null);
+  const lastSignature = useRef("");
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    root.current = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+
+    const writeInvalid = () => {
+      const element = root.current;
+      if (element) {
+        element.dataset.lifeMapRenderReady = "false";
+        element.dataset.lifeMapVisibleObjects = "0";
+        element.dataset.lifeMapVisibleAnchors = "0";
+        element.dataset.lifeMapRenderCalls = "0";
+        element.dataset.lifeMapRenderTriangles = "0";
+      }
+      if (invalidated.current) invalidationFrame.current = window.requestAnimationFrame(writeInvalid);
+    };
+
+    const invalidate = () => {
+      invalidated.current = true;
+      frames.current = 0;
+      lastSignature.current = "";
+      if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      writeInvalid();
+    };
+
+    canvas.addEventListener("webglcontextlost", invalidate, false);
+    canvas.addEventListener("webglcontextrestored", invalidate, false);
+    invalidate();
+
+    return () => {
+      invalidated.current = false;
+      if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      canvas.removeEventListener("webglcontextlost", invalidate, false);
+      canvas.removeEventListener("webglcontextrestored", invalidate, false);
+    };
+  }, [gl]);
+
+  useFrame(() => {
+    frames.current += 1;
+    if (frames.current < 4) return;
+
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    if (!invalidated.current && lastSignature.current === signature) return;
+
+    invalidated.current = false;
+    if (invalidationFrame.current !== null) {
+      window.cancelAnimationFrame(invalidationFrame.current);
+      invalidationFrame.current = null;
+    }
+    lastSignature.current = signature;
+
+    const element = root.current ?? gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    if (!element) return;
+    element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
+    element.dataset.lifeMapVisibleObjects = String(objects);
+    element.dataset.lifeMapVisibleAnchors = String(anchors);
+    element.dataset.lifeMapRenderCalls = String(calls);
+    element.dataset.lifeMapRenderTriangles = String(triangles);
+  });
+
+  return null;
+}
 
 function seeded(index: number, salt: number) {
   const value = Math.sin(index * 91.317 + salt * 13.77) * 43758.5453;
@@ -202,6 +281,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       <directionalLight position={[9, 14, 10]} intensity={2.8} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
       <directionalLight position={[-10, 8, -16]} intensity={1.35} color="#a78bfa" />
       {webglRecovery}
+      <RenderProofRepublisher />
       {cameraRig}
       <SpatialParallax reducedMotion={profile.reducedMotion} />
       <Stars radius={120} depth={84} count={starCount} factor={2.15} saturation={0.22} fade speed={profile.reducedMotion ? 0 : 0.018} />
