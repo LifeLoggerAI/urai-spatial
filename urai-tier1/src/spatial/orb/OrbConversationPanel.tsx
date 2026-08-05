@@ -83,11 +83,13 @@ export default function OrbConversationPanel() {
       const resolved = liveResult ?? deterministicOrbFallback(trimmed)
       setResult(resolved)
       setStreamedText(resolved.message)
-      setHistory((current) => [
-        ...current.slice(-6),
-        { role: 'user', content: trimmed },
-        { role: 'assistant', content: resolved.message },
-      ])
+      if (liveResult) {
+        setHistory((current) => [
+          ...current.slice(-6),
+          { role: 'user', content: trimmed },
+          { role: 'assistant', content: liveResult.message },
+        ])
+      }
       setMessage('')
       setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
       if (!voiceMuted) speakLocally(resolved.message)

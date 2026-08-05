@@ -8,6 +8,7 @@ const orbPanel = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPane
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const narratorPlayback = fs.readFileSync(new URL('../src/spatial/narrator/narratorPlayback.ts', import.meta.url), 'utf8')
 const companion = fs.readFileSync(new URL('../src/spatial/world/PersistentWorldCompanion.tsx', import.meta.url), 'utf8')
+const portalProof = fs.readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url), 'utf8')
 
 test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancellation-bounded', () => {
   assert.match(providerFunctions, /api\.openai\.com\/v1\/moderations/)
@@ -22,18 +23,31 @@ test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancell
   assert.match(providerFunctions, /Idempotency-Key/)
 })
 
-test('Orb UI keeps external consent off and exposes text, stop, mute and replay', () => {
+test('Orb UI keeps external consent off and excludes rejected provider turns from future context', () => {
   assert.match(openAiClient, /getAuth\(app\)\.currentUser/)
   assert.match(openAiClient, /Authorization/)
   assert.match(openAiClient, /deterministicOrbFallback/)
   assert.equal((orbPanel.match(/useState\(false\)/g) ?? []).length >= 2, true)
   assert.match(orbPanel, /Allow this message and bounded recent context to be processed by OpenAI/)
+  assert.match(orbPanel, /if \(liveResult\) \{[\s\S]*setHistory/)
+  assert.doesNotMatch(orbPanel, /content: resolved\.message/)
   assert.match(orbPanel, /role="status"/)
   assert.match(orbPanel, /aria-live="polite"/)
   assert.match(orbPanel, />Stop</)
   assert.match(orbPanel, /Voice muted/)
   assert.match(orbPanel, /Replay/)
   assert.match(companion, /<OrbConversationPanel \/>/)
+})
+
+test('portal proof only ignores an exact settled GET document navigation abort', () => {
+  assert.match(portalProof, /method: request\.method\(\)/)
+  assert.match(portalProof, /resourceType: request\.resourceType\(\)/)
+  assert.match(portalProof, /isNavigationRequest: request\.isNavigationRequest\(\)/)
+  assert.match(portalProof, /request\.method === 'GET'/)
+  assert.match(portalProof, /request\.resourceType === 'document'/)
+  assert.match(portalProof, /request\.isNavigationRequest === true/)
+  assert.match(portalProof, /requestUrl\.href === routeEvidence\.href/)
+  assert.match(portalProof, /routeEvidence\?\.lifecycleObserved/)
 })
 
 test('ElevenLabs is rights-bound, duration-bounded, single-attempt and session-consented', () => {
