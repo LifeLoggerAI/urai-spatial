@@ -39,6 +39,32 @@ test('Orb UI keeps external consent off and excludes rejected provider turns fro
   assert.match(companion, /<OrbConversationPanel \/>/)
 })
 
+test('Orb fallback disclosure distinguishes local-only, definite external, and uncertain transport states', () => {
+  assert.match(openAiClient, /DEFINITE_EXTERNAL_ATTEMPT_CODES/)
+  assert.match(openAiClient, /'INPUT_BLOCKED'/)
+  assert.match(openAiClient, /class OrbProviderAttemptError extends Error/)
+  assert.match(openAiClient, /class OrbProviderAttemptUncertainError extends Error/)
+  assert.match(openAiClient, /attemptedExternalOrbFallback/)
+  assert.match(openAiClient, /uncertainExternalOrbFallback/)
+  assert.match(openAiClient, /An OpenAI safety or response request was attempted with your consent/)
+  assert.match(openAiClient, /A consented external request may have been attempted/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptUncertainError\(\)/)
+  assert.match(openAiClient, /if \(DEFINITE_EXTERNAL_ATTEMPT_CODES\.has\(code\)\) throw new OrbProviderAttemptError\(code\)/)
+  assert.match(openAiClient, /return null/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\(event\.code\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_STREAM_FAILED'\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_RESPONSE_INCOMPLETE'\)/)
+  assert.match(orbPanel, /error instanceof OrbProviderAttemptError/)
+  assert.match(orbPanel, /error instanceof OrbProviderAttemptUncertainError/)
+  assert.match(orbPanel, /attemptedExternalOrbFallback\(trimmed\)/)
+  assert.match(orbPanel, /uncertainExternalOrbFallback\(trimmed\)/)
+
+  const fallbackBranch = orbPanel.match(/\} catch \(error\) \{([\s\S]*?)\n    \} finally \{/)
+  assert.ok(fallbackBranch, 'Orb fallback branch must remain explicit')
+  assert.doesNotMatch(fallbackBranch[1], /setHistory/)
+  assert.match(orbPanel, /if \(liveResult\) \{[\s\S]*?setHistory\([\s\S]*?liveResult\.message[\s\S]*?\n      \}/)
+})
+
 test('portal proof only ignores an exact settled GET document navigation abort', () => {
   assert.match(portalProof, /method: request\.method\(\)/)
   assert.match(portalProof, /resourceType: request\.resourceType\(\)/)
