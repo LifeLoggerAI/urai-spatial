@@ -71,10 +71,17 @@ async function captureRuntime(browser, route, viewport, mode = 'standard') {
   try {
     const response = await page.goto(record.url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     record.status = response?.status() ?? null
+    const runtimeSelector = `[data-testid="urai-${route.id}-spatial-realm"]`
     const runtime = page.getByTestId(`urai-${route.id}-spatial-realm`)
     await runtime.waitFor({ state: 'visible', timeout: 45_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-realm-ready') === 'true', `[data-testid="urai-${route.id}-spatial-realm"]`, { timeout: 45_000 })
+    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-realm-ready') === 'true', runtimeSelector, { timeout: 45_000 })
     const canvas = runtime.locator('canvas').first()
+    await page.waitForFunction((selector) => {
+      const canvasNode = document.querySelector(selector)?.querySelector('canvas')
+      if (!canvasNode) return false
+      const rect = canvasNode.getBoundingClientRect()
+      return rect.width >= 240 && rect.height >= 240
+    }, runtimeSelector, { timeout: 20_000, polling: 'raf' })
     const box = await canvas.boundingBox()
     const destinations = page.getByRole('navigation', { name: `${route.title} destinations` }).getByRole('button')
     const boundary = page.getByTestId(`urai-${route.id}-runtime-boundary`)
