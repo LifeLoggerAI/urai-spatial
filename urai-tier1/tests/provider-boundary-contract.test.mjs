@@ -56,7 +56,11 @@ test('Orb fallback disclosure distinguishes local-only, definite external, and u
   assert.match(orbPanel, /error instanceof OrbProviderAttemptUncertainError/)
   assert.match(orbPanel, /attemptedExternalOrbFallback\(trimmed\)/)
   assert.match(orbPanel, /uncertainExternalOrbFallback\(trimmed\)/)
-  assert.doesNotMatch(orbPanel, /setHistory\([\s\S]*attemptedExternalOrbFallback/)
+
+  const fallbackBranch = orbPanel.match(/\} catch \(error\) \{([\s\S]*?)\n    \} finally \{/)
+  assert.ok(fallbackBranch, 'Orb fallback branch must remain explicit')
+  assert.doesNotMatch(fallbackBranch[1], /setHistory/)
+  assert.match(orbPanel, /if \(liveResult\) \{[\s\S]*?setHistory\([\s\S]*?liveResult\.message[\s\S]*?\n      \}/)
 })
 
 test('portal proof only ignores an exact settled GET document navigation abort', () => {
