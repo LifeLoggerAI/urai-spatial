@@ -4,9 +4,9 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useMemo, useRef, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 
-type MemoryKind = 'home' | 'ride' | 'family' | 'music' | 'tree'
+type MemoryKind = 'home' | 'family' | 'music' | 'tree'
 
-type MemoryVignetteSpec = {
+type MemoryGardenSpec = {
   id: string
   kind: MemoryKind
   position: [number, number, number]
@@ -21,25 +21,11 @@ type HomeSanctuaryWorldProps = {
   onMemoryOpen: (memoryId: string) => void
 }
 
-const MEMORY_VIGNETTES: MemoryVignetteSpec[] = [
-  { id: 'place-loved', kind: 'home', position: [-4.75, 0.02, 3.05], color: '#eecb92', scale: 1 },
-  { id: 'ride-home', kind: 'ride', position: [4.72, 0.02, 1.15], color: '#78d8df', scale: .94 },
-  { id: 'voices-dinner', kind: 'family', position: [-4.78, 0.02, -1.2], color: '#b9a8e8', scale: .98 },
-  { id: 'song-returned', kind: 'music', position: [4.72, 0.02, -3.9], color: '#dfa1c8', scale: .92 },
-  { id: 'quiet-growth', kind: 'tree', position: [-4.5, 0.02, -6.55], color: '#91d2a4', scale: 1 },
-]
-
-const FLOOR_STONES = [
-  { z: 6.2, x: -.08, width: 2.5, depth: 1.05, turn: -.015 },
-  { z: 4.8, x: .12, width: 2.8, depth: 1.08, turn: .02 },
-  { z: 3.35, x: -.12, width: 2.62, depth: 1.04, turn: -.018 },
-  { z: 1.88, x: .08, width: 2.92, depth: 1.08, turn: .014 },
-  { z: .38, x: -.08, width: 2.68, depth: 1.06, turn: -.012 },
-  { z: -1.12, x: .1, width: 2.95, depth: 1.07, turn: .015 },
-  { z: -2.64, x: -.11, width: 2.72, depth: 1.04, turn: -.012 },
-  { z: -4.18, x: .08, width: 2.9, depth: 1.08, turn: .012 },
-  { z: -5.74, x: -.08, width: 2.66, depth: 1.04, turn: -.01 },
-  { z: -7.35, x: .06, width: 2.84, depth: 1.08, turn: .01 },
+const MEMORY_GARDENS: readonly MemoryGardenSpec[] = [
+  { id: 'place-loved', kind: 'home', position: [-4.45, 0, 1.55], color: '#e6c58f', scale: 1.02 },
+  { id: 'voices-dinner', kind: 'family', position: [4.55, 0, -.75], color: '#b8a8dc', scale: .98 },
+  { id: 'song-returned', kind: 'music', position: [-4.05, 0, -4.65], color: '#dba4bd', scale: .94 },
+  { id: 'quiet-growth', kind: 'tree', position: [3.95, 0, -5.35], color: '#8fc79b', scale: 1.04 },
 ]
 
 function seeded(index: number, salt: number) {
@@ -47,12 +33,43 @@ function seeded(index: number, salt: number) {
   return value - Math.floor(value)
 }
 
-function approachPoint(spec: MemoryVignetteSpec) {
+function approachPoint(spec: MemoryGardenSpec) {
   const side = Math.sign(spec.position[0]) || 1
-  return new THREE.Vector3(spec.position[0] - side * 1.75, 0, spec.position[2] + .28)
+  return new THREE.Vector3(spec.position[0] - side * 1.45, 0, spec.position[2] + .34)
 }
 
-function SanctuarySky({ reducedMotion }: { reducedMotion: boolean }) {
+function leafShape(scale = 1) {
+  const shape = new THREE.Shape()
+  shape.moveTo(0, -.82 * scale)
+  shape.bezierCurveTo(.62 * scale, -.48 * scale, .58 * scale, .32 * scale, 0, .9 * scale)
+  shape.bezierCurveTo(-.58 * scale, .32 * scale, -.62 * scale, -.48 * scale, 0, -.82 * scale)
+  return shape
+}
+
+function Leaf({ position, rotation, scale, color = '#345f4f', emissive = '#5a9c7d' }: {
+  position: [number, number, number]
+  rotation: [number, number, number]
+  scale: [number, number, number]
+  color?: string
+  emissive?: string
+}) {
+  const geometry = useMemo(() => new THREE.ExtrudeGeometry(leafShape(1), {
+    depth: .07,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    bevelSize: .04,
+    bevelThickness: .04,
+    curveSegments: 18,
+  }), [])
+
+  return (
+    <mesh geometry={geometry} position={position} rotation={rotation} scale={scale} castShadow receiveShadow>
+      <meshPhysicalMaterial color={color} emissive={emissive} emissiveIntensity={.045} roughness={.78} clearcoat={.12} />
+    </mesh>
+  )
+}
+
+function LivingSky({ reducedMotion }: { reducedMotion: boolean }) {
   const material = useRef<THREE.ShaderMaterial>(null)
   const uniforms = useMemo(() => ({ uTime: { value: 0 } }), [])
 
@@ -62,8 +79,8 @@ function SanctuarySky({ reducedMotion }: { reducedMotion: boolean }) {
   })
 
   return (
-    <mesh name="home-living-sky-dome" scale={[42, 24, 42]}>
-      <sphereGeometry args={[1, 64, 36]} />
+    <mesh name="home-moonlit-living-sky" scale={[46, 28, 46]}>
+      <sphereGeometry args={[1, 72, 40]} />
       <shaderMaterial
         ref={material}
         side={THREE.BackSide}
@@ -88,26 +105,26 @@ function SanctuarySky({ reducedMotion }: { reducedMotion: boolean }) {
           }
 
           void main() {
-            float horizon = smoothstep(0.02, 0.96, vUv.y);
-            vec3 low = vec3(0.006, 0.025, 0.052);
-            vec3 mid = vec3(0.018, 0.082, 0.105);
-            vec3 high = vec3(0.035, 0.028, 0.105);
-            vec3 color = mix(low, mid, smoothstep(0.02, 0.55, horizon));
-            color = mix(color, high, smoothstep(0.58, 1.0, horizon));
+            float horizon = smoothstep(0.02, 0.92, vUv.y);
+            vec3 low = vec3(0.025, 0.055, 0.070);
+            vec3 mid = vec3(0.055, 0.105, 0.115);
+            vec3 high = vec3(0.050, 0.040, 0.100);
+            vec3 color = mix(low, mid, smoothstep(0.0, 0.50, horizon));
+            color = mix(color, high, smoothstep(0.54, 1.0, horizon));
 
-            float ribbonA = sin(vUv.x * 16.0 + vUv.y * 9.0 + uTime * 0.035) * 0.5 + 0.5;
-            float ribbonB = sin(vUv.x * 9.0 - vUv.y * 13.0 - uTime * 0.025) * 0.5 + 0.5;
-            float aurora = smoothstep(0.76, 1.0, ribbonA * ribbonB) * smoothstep(0.25, 0.88, vUv.y);
-            color += vec3(0.035, 0.17, 0.17) * aurora * 0.42;
-            color += vec3(0.10, 0.045, 0.17) * aurora * 0.26;
+            float veilA = sin(vUv.x * 12.0 + vUv.y * 7.0 + uTime * 0.018) * 0.5 + 0.5;
+            float veilB = sin(vUv.x * 7.0 - vUv.y * 11.0 - uTime * 0.014) * 0.5 + 0.5;
+            float veil = smoothstep(0.79, 1.0, veilA * veilB) * smoothstep(0.18, 0.84, vUv.y);
+            color += vec3(0.035, 0.13, 0.105) * veil * 0.34;
+            color += vec3(0.10, 0.055, 0.12) * veil * 0.16;
 
-            vec2 starCell = floor(vUv * vec2(560.0, 280.0));
-            float star = step(0.9974, hash(starCell));
-            float starMask = smoothstep(0.34, 0.9, vUv.y);
-            color += vec3(0.72, 0.92, 1.0) * star * starMask * 0.65;
+            vec2 starCell = floor(vUv * vec2(520.0, 260.0));
+            float star = step(0.9977, hash(starCell));
+            color += vec3(0.76, 0.90, 0.94) * star * smoothstep(0.38, 0.9, vUv.y) * 0.58;
 
-            float zenith = pow(max(vPosition.y, 0.0), 4.0);
-            color += vec3(0.04, 0.055, 0.12) * zenith;
+            float moon = smoothstep(0.045, 0.0, distance(vUv, vec2(0.68, 0.73)));
+            color += vec3(0.78, 0.84, 0.80) * moon * 0.34;
+            color += vec3(0.16, 0.14, 0.22) * pow(max(vPosition.y, 0.0), 4.0);
             gl_FragColor = vec4(color, 1.0);
           }
         `}
@@ -116,190 +133,296 @@ function SanctuarySky({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function SanctuaryRib({ z, intensity = .24 }: { z: number; intensity?: number }) {
+function MoonlitTerrain() {
+  const geometry = useMemo(() => {
+    const surface = new THREE.PlaneGeometry(22, 24, 72, 72)
+    const position = surface.attributes.position
+    for (let index = 0; index < position.count; index += 1) {
+      const x = position.getX(index)
+      const y = position.getY(index)
+      const edge = Math.max(0, Math.abs(x) - 5.4) * .055
+      const wave = Math.sin(x * .48 + y * .09) * .055 + Math.sin(y * .34 - x * .12) * .035
+      const sanctuaryDip = Math.exp(-((x * x) / 18 + ((y - .8) * (y - .8)) / 42)) * -.08
+      position.setZ(index, wave + edge + sanctuaryDip)
+    }
+    surface.computeVertexNormals()
+    return surface
+  }, [])
+
+  return (
+    <mesh name="home-grounded-horizon" geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -.2, -1.25]} receiveShadow>
+      <meshStandardMaterial color="#20332e" roughness={.9} metalness={.04} />
+    </mesh>
+  )
+}
+
+function SanctuaryPath() {
+  const outer = useMemo(() => {
+    const shape = new THREE.Shape()
+    const left: [number, number][] = [[-1.55, 8.9], [-1.35, 6.1], [-1.18, 3.7], [-1.08, 1.4], [-.98, -.65], [-.88, -3.25], [-.78, -7.9]]
+    const right: [number, number][] = [[1.55, 8.9], [1.35, 6.1], [1.18, 3.7], [1.08, 1.4], [.98, -.65], [.88, -3.25], [.78, -7.9]]
+    shape.moveTo(left[0][0], left[0][1])
+    left.slice(1).forEach(([x, y]) => shape.lineTo(x, y))
+    right.slice().reverse().forEach(([x, y]) => shape.lineTo(x, y))
+    shape.closePath()
+    return shape
+  }, [])
+  const inner = useMemo(() => {
+    const shape = new THREE.Shape()
+    const left: [number, number][] = [[-.52, 8.9], [-.48, 5.9], [-.42, 3.2], [-.38, .5], [-.34, -2.6], [-.28, -7.9]]
+    const right: [number, number][] = [[.52, 8.9], [.48, 5.9], [.42, 3.2], [.38, .5], [.34, -2.6], [.28, -7.9]]
+    shape.moveTo(left[0][0], left[0][1])
+    left.slice(1).forEach(([x, y]) => shape.lineTo(x, y))
+    right.slice().reverse().forEach(([x, y]) => shape.lineTo(x, y))
+    shape.closePath()
+    return shape
+  }, [])
+
+  return (
+    <group name="home-calm-orb-approach-path">
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -.105, 0]} receiveShadow>
+        <shapeGeometry args={[outer]} />
+        <meshPhysicalMaterial color="#263b36" roughness={.48} metalness={.08} clearcoat={.34} clearcoatRoughness={.66} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -.095, 0]}>
+        <shapeGeometry args={[inner]} />
+        <meshBasicMaterial color="#9cbcae" transparent opacity={.055} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+}
+
+function GroundMist({ reducedMotion, position, scale, opacity }: {
+  reducedMotion: boolean
+  position: [number, number, number]
+  scale: [number, number, number]
+  opacity: number
+}) {
+  const material = useRef<THREE.ShaderMaterial>(null)
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uOpacity: { value: opacity } }), [opacity])
+  useFrame(({ clock }) => {
+    if (!material.current || reducedMotion) return
+    material.current.uniforms.uTime.value = clock.elapsedTime
+  })
+  return (
+    <mesh position={position} rotation={[-Math.PI / 2, 0, 0]} scale={scale}>
+      <planeGeometry args={[1, 1, 1, 1]} />
+      <shaderMaterial
+        ref={material}
+        transparent
+        depthWrite={false}
+        blending={THREE.NormalBlending}
+        uniforms={uniforms}
+        vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+        fragmentShader={`
+          uniform float uTime;
+          uniform float uOpacity;
+          varying vec2 vUv;
+          void main(){
+            vec2 centered=vUv-.5;
+            float edge=smoothstep(.52,.12,length(centered));
+            float drift=.72+.28*sin((vUv.x*7.0)+(vUv.y*5.0)+uTime*.05);
+            gl_FragColor=vec4(.34,.52,.47,edge*drift*uOpacity);
+          }
+        `}
+      />
+    </mesh>
+  )
+}
+
+function OrganicBough({ side, z }: { side: -1 | 1; z: number }) {
   const geometry = useMemo(() => {
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-7.2, .12, z),
-      new THREE.Vector3(-6.7, 3.25, z),
-      new THREE.Vector3(-3.55, 5.28, z),
-      new THREE.Vector3(0, 5.78, z),
-      new THREE.Vector3(3.55, 5.28, z),
-      new THREE.Vector3(6.7, 3.25, z),
-      new THREE.Vector3(7.2, .12, z),
-    ], false, 'catmullrom', .42)
-    return new THREE.TubeGeometry(curve, 96, .055, 8, false)
-  }, [z])
+      new THREE.Vector3(side * 7.7, .15, z + 4.2),
+      new THREE.Vector3(side * 7.05, 1.35, z + 2.6),
+      new THREE.Vector3(side * 6.1, 2.65, z + 1.2),
+      new THREE.Vector3(side * 5.55, 3.7, z - .15),
+      new THREE.Vector3(side * 5.2, 4.35, z - 1.7),
+    ], false, 'catmullrom', .52)
+    return new THREE.TubeGeometry(curve, 72, .18, 12, false)
+  }, [side, z])
 
   return (
-    <group>
-      <mesh geometry={geometry}>
-        <meshStandardMaterial color="#18364a" emissive="#74dce4" emissiveIntensity={intensity} roughness={.34} metalness={.58} />
+    <group name={`home-${side < 0 ? 'west' : 'east'}-living-canopy`}>
+      <mesh geometry={geometry} castShadow receiveShadow>
+        <meshStandardMaterial color="#243c33" roughness={.86} metalness={.03} />
       </mesh>
-      <mesh position={[0, 5.54, z]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.02, .022, 8, 96]} />
-        <meshBasicMaterial color="#b7a8e9" transparent opacity={.18} depthWrite={false} toneMapped={false} />
-      </mesh>
+      {[0, 1, 2, 3].map((index) => (
+        <Leaf
+          key={index}
+          position={[side * (6.55 - index * .36), 1.35 + index * .72, z + 2.0 - index * .76]}
+          rotation={[.12, side * .32, side * (-.42 + index * .18)]}
+          scale={[.48 + index * .06, .76 + index * .05, .34]}
+          color={index % 2 ? '#2f5a48' : '#345f4f'}
+          emissive={index % 2 ? '#7eae82' : '#68a58b'}
+        />
+      ))}
     </group>
   )
 }
 
-function ArchitecturalShell({ reducedMotion }: { reducedMotion: boolean }) {
+function OrbSanctum() {
+  const basinPoints = useMemo(() => [
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(.72, .02),
+    new THREE.Vector2(1.28, .10),
+    new THREE.Vector2(1.76, .24),
+    new THREE.Vector2(2.08, .38),
+    new THREE.Vector2(2.18, .48),
+  ], [])
+
   return (
-    <group name="home-sanctuary-spatial-architecture">
-      <fog attach="fog" args={['#06111f', 9.5, 34]} />
-      <SanctuarySky reducedMotion={reducedMotion} />
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.115, -1.1]} receiveShadow>
-        <planeGeometry args={[20, 22]} />
-        <meshStandardMaterial color="#06131d" roughness={.76} metalness={.16} />
+    <group name="home-orb-sanctum-primary-focal-anchor" position={[0, -.08, -.65]} userData={{ visualPriority: 'primary', worldRole: 'emotional-core' }}>
+      <mesh receiveShadow castShadow>
+        <latheGeometry args={[basinPoints, 96]} />
+        <meshPhysicalMaterial color="#263b35" roughness={.5} metalness={.06} clearcoat={.28} clearcoatRoughness={.58} />
       </mesh>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.075, -1.25]} receiveShadow>
-        <planeGeometry args={[3.65, 20.5]} />
-        <meshPhysicalMaterial color="#0b3442" roughness={.24} metalness={.36} clearcoat={.84} clearcoatRoughness={.28} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .49, 0]}>
+        <circleGeometry args={[1.84, 96]} />
+        <meshPhysicalMaterial color="#172a27" emissive="#8ac4ad" emissiveIntensity={.045} roughness={.4} metalness={.02} clearcoat={.18} />
       </mesh>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.064, -1.25]}>
-        <planeGeometry args={[2.62, 20.35]} />
-        <meshBasicMaterial color="#0b4350" transparent opacity={.22} depthWrite={false} toneMapped={false} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .505, 0]}>
+        <circleGeometry args={[1.16, 96]} />
+        <meshBasicMaterial color="#d4b57c" transparent opacity={.095} depthWrite={false} />
       </mesh>
-
-      {FLOOR_STONES.map((stone, index) => (
-        <group key={stone.z} position={[stone.x, -.012 + index * .0008, stone.z]} rotation={[0, stone.turn, 0]}>
-          <mesh receiveShadow scale={[1, 1, stone.depth / stone.width]}>
-            <cylinderGeometry args={[stone.width * .51, stone.width * .55, .105, 48]} />
-            <meshStandardMaterial color={index % 2 ? '#0c2230' : '#102b38'} roughness={.52} metalness={.3} />
-          </mesh>
-          <mesh position={[0, .058, -.22]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, stone.depth / stone.width, 1]}>
-            <ringGeometry args={[stone.width * .31, stone.width * .325, 64, 1, .15, Math.PI * .7]} />
-            <meshBasicMaterial color={index % 3 === 1 ? '#b4a6e4' : '#6cd8df'} transparent opacity={.32} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
-          </mesh>
-        </group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .512, 0]}>
+        <circleGeometry args={[.72, 96]} />
+        <meshBasicMaterial color="#09100f" transparent opacity={.28} depthWrite={false} />
+      </mesh>
+      {[-1.9, -1.05, 1.05, 1.9].map((x, index) => (
+        <Leaf key={x} position={[x, .53, .36 + Math.abs(x) * .14]} rotation={[-Math.PI / 2, 0, x < 0 ? -.58 : .58]} scale={[.32 + index * .02, .58, .18]} emissive="#b1b77d" />
       ))}
-
-      {[-1, 1].map((side) => (
-        <group key={side} name={`home-sanctuary-${side < 0 ? 'west' : 'east'}-garden-wall`}>
-          <mesh position={[side * 7.35, 1.15, -1.2]} rotation={[0, side * -.025, 0]} receiveShadow>
-            <boxGeometry args={[.28, 2.45, 20.2]} />
-            <meshStandardMaterial color="#07131f" roughness={.72} metalness={.22} />
-          </mesh>
-          <mesh position={[side * 6.82, .18, -1.2]} receiveShadow>
-            <boxGeometry args={[1.12, .36, 20.2]} />
-            <meshStandardMaterial color="#0a1b25" roughness={.64} metalness={.24} />
-          </mesh>
-          {[-7.5, -4.5, -1.5, 1.5, 4.5].map((z, index) => (
-            <group key={z} position={[side * 6.72, .38, z]}>
-              <mesh position={[0, .26, 0]}>
-                <cylinderGeometry args={[.28, .42, .72, 16]} />
-                <meshStandardMaterial color="#112c2e" roughness={.72} />
-              </mesh>
-              <mesh position={[-side * .05, .9, 0]} scale={[.72, .42, .72]}>
-                <icosahedronGeometry args={[.62, 2]} />
-                <meshStandardMaterial color={index % 2 ? '#183c36' : '#14383d'} emissive={index % 2 ? '#70b88a' : '#69c6ca'} emissiveIntensity={.08} roughness={.88} />
-              </mesh>
-            </group>
-          ))}
-        </group>
-      ))}
-
-      {[-6.8, -2.8, 1.2, 5.2].map((z, index) => (
-        <SanctuaryRib key={z} z={z} intensity={index === 1 || index === 2 ? .22 : .14} />
-      ))}
-
-      <mesh position={[0, .02, -1.15]} receiveShadow>
-        <cylinderGeometry args={[2.08, 2.32, .18, 72]} />
-        <meshPhysicalMaterial color="#0b2733" roughness={.3} metalness={.42} clearcoat={.82} />
-      </mesh>
-      <mesh position={[0, .125, -1.15]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.38, 1.47, 96]} />
-        <meshBasicMaterial color="#78d8df" transparent opacity={.46} toneMapped={false} side={THREE.DoubleSide} />
-      </mesh>
-
-      <mesh position={[0, 2.45, -10.05]} receiveShadow>
-        <boxGeometry args={[15.2, 5.1, .38]} />
-        <meshStandardMaterial color="#040b13" roughness={.72} metalness={.2} />
-      </mesh>
-      <mesh position={[0, 2.3, -9.81]}>
-        <ringGeometry args={[1.68, 1.79, 96]} />
-        <meshBasicMaterial color="#75dce3" transparent opacity={.52} toneMapped={false} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[0, 2.3, -9.86]}>
-        <circleGeometry args={[1.68, 96]} />
-        <meshPhysicalMaterial color="#071a26" emissive="#1b5360" emissiveIntensity={.16} transparent opacity={.94} roughness={.28} metalness={.28} side={THREE.DoubleSide} />
-      </mesh>
-      <pointLight position={[0, 2.3, -8.9]} color="#78d8df" intensity={2.65} distance={11} decay={2} />
-      <pointLight position={[0, 4.9, -1.4]} color="#a99be4" intensity={1.1} distance={16} decay={2} />
+      <pointLight position={[0, 1.45, .35]} color="#f2d29a" intensity={2.05} distance={10} decay={2} castShadow />
+      <pointLight position={[0, .7, -1.15]} color="#89c9b3" intensity={.8} distance={7} decay={2} />
+      <spotLight position={[0, 7, 3]} color="#f5dfb4" intensity={2.2} distance={16} angle={.34} penumbra={.92} castShadow />
     </group>
   )
 }
 
-function MemoryObject({ kind, color }: { kind: MemoryKind; color: string }) {
-  const shared = <meshStandardMaterial color={color} emissive={color} emissiveIntensity={.27} roughness={.4} metalness={.1} />
+function DestinationAlcove({ side, destination }: { side: -1 | 1; destination: 'ground' | 'life-map' }) {
+  const accent = destination === 'ground' ? '#7eb99a' : '#979bc9'
+  const position: [number, number, number] = [side * 4.55, 0, -6.7]
+  const arch = useMemo(() => {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.5, .04, 0),
+      new THREE.Vector3(-1.3, 1.55, -.05),
+      new THREE.Vector3(-.72, 2.72, -.12),
+      new THREE.Vector3(0, 3.08, -.16),
+      new THREE.Vector3(.72, 2.72, -.12),
+      new THREE.Vector3(1.3, 1.55, -.05),
+      new THREE.Vector3(1.5, .04, 0),
+    ], false, 'catmullrom', .46)
+    return new THREE.TubeGeometry(curve, 72, .15, 12, false)
+  }, [])
+
+  return (
+    <group name={`home-destination-alcove-${destination}`} position={position} rotation={[0, side * -.22, 0]} userData={{ visualPriority: 'supporting', destination }}>
+      <mesh geometry={arch} castShadow receiveShadow>
+        <meshStandardMaterial color="#2b3b35" emissive={accent} emissiveIntensity={.035} roughness={.84} metalness={.04} />
+      </mesh>
+      <mesh position={[0, 1.3, -.36]} scale={[1.48, 1.65, .42]} receiveShadow>
+        <dodecahedronGeometry args={[1, 2]} />
+        <meshStandardMaterial color="#172722" emissive={accent} emissiveIntensity={.018} roughness={.94} metalness={.01} />
+      </mesh>
+      <mesh position={[0, .08, .35]} scale={[1.65, .34, 1.05]} receiveShadow castShadow>
+        <dodecahedronGeometry args={[1, 2]} />
+        <meshStandardMaterial color="#263c33" roughness={.88} metalness={.02} />
+      </mesh>
+      <Leaf position={[side * -.75, .6, .55]} rotation={[.12, side * .28, side * -.52]} scale={[.48, .82, .32]} emissive={accent} />
+      <Leaf position={[side * .7, .8, .42]} rotation={[-.08, side * -.24, side * .46]} scale={[.42, .7, .3]} emissive={accent} />
+      <pointLight position={[0, 1.25, .42]} color={accent} intensity={.34} distance={4.8} decay={2} />
+    </group>
+  )
+}
+
+function EmbodiedSelfSilhouette() {
+  const body = useMemo(() => {
+    const shape = new THREE.Shape()
+    shape.moveTo(-.2, 0)
+    shape.bezierCurveTo(-.38, .55, -.52, 1.08, -.42, 1.5)
+    shape.bezierCurveTo(-.34, 1.82, -.2, 2.08, 0, 2.18)
+    shape.bezierCurveTo(.2, 2.08, .34, 1.82, .42, 1.5)
+    shape.bezierCurveTo(.52, 1.08, .38, .55, .2, 0)
+    shape.closePath()
+    return shape
+  }, [])
+
+  return (
+    <group name="home-embodied-self-silhouette" position={[-1.72, .02, 1.05]} rotation={[0, .16, 0]} userData={{ presentation: 'deliberately-authored-silhouette' }}>
+      <mesh castShadow>
+        <extrudeGeometry args={[body, { depth: .18, bevelEnabled: true, bevelSegments: 3, bevelSize: .05, bevelThickness: .05, curveSegments: 24 }]} />
+        <meshStandardMaterial color="#17231f" emissive="#668a7c" emissiveIntensity={.04} roughness={.92} metalness={.01} />
+      </mesh>
+      <mesh position={[0, 2.46, .09]} castShadow>
+        <dodecahedronGeometry args={[.28, 2]} />
+        <meshStandardMaterial color="#1c2824" emissive="#71958a" emissiveIntensity={.035} roughness={.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .015, .05]}>
+        <circleGeometry args={[.58, 48]} />
+        <meshBasicMaterial color="#050807" transparent opacity={.32} depthWrite={false} />
+      </mesh>
+      <pointLight position={[.35, 1.6, -.65]} color="#7fa79b" intensity={.22} distance={3.2} decay={2} />
+    </group>
+  )
+}
+
+function MemorySculpture({ kind, color }: { kind: MemoryKind; color: string }) {
+  const material = <meshStandardMaterial color={color} emissive={color} emissiveIntensity={.1} roughness={.72} metalness={.02} />
   if (kind === 'home') return (
-    <group position={[0, .82, .02]}>
-      <mesh><boxGeometry args={[.92, .58, .62]} />{shared}</mesh>
-      <mesh position={[0, .52, 0]} rotation={[0, Math.PI / 4, 0]}><coneGeometry args={[.65, .55, 4]} />{shared}</mesh>
-      <mesh position={[0, -.06, .34]}><boxGeometry args={[.2, .36, .04]} /><meshStandardMaterial color="#071018" roughness={.9} /></mesh>
-    </group>
-  )
-  if (kind === 'ride') return (
-    <group position={[0, .76, 0]}>
-      {[-.43, .43].map((x) => <mesh key={x} position={[x, -.18, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[.29, .05, 12, 32]} />{shared}</mesh>)}
-      <mesh rotation={[0, 0, -.08]}><boxGeometry args={[1.02, .07, .07]} />{shared}</mesh>
-      <mesh position={[-.14, .25, 0]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[.04, .04, .62, 10]} />{shared}</mesh>
+    <group position={[0, .54, .05]}>
+      <mesh scale={[.82, .5, .62]} castShadow><dodecahedronGeometry args={[.62, 1]} />{material}</mesh>
+      <mesh position={[0, .48, -.04]} rotation={[0, .12, 0]} castShadow><coneGeometry args={[.62, .42, 5]} />{material}</mesh>
+      <mesh position={[0, -.02, .45]} scale={[.16, .36, .05]}><boxGeometry /><meshStandardMaterial color="#203028" roughness={.9} /></mesh>
     </group>
   )
   if (kind === 'family') return (
-    <group position={[0, .62, 0]}>
-      {[-.42, 0, .42].map((x, index) => <group key={x} position={[x, index === 1 ? .1 : 0, 0]}>
-        <mesh position={[0, .4, 0]}><sphereGeometry args={[.145, 18, 18]} />{shared}</mesh>
-        <mesh><capsuleGeometry args={[.14, .42, 8, 14]} />{shared}</mesh>
-      </group>)}
+    <group position={[0, .42, 0]}>
+      {[-.38, 0, .38].map((x, index) => (
+        <group key={x} position={[x, index === 1 ? .12 : 0, index === 1 ? -.08 : .04]}>
+          <mesh position={[0, .48, 0]}><dodecahedronGeometry args={[.12, 1]} />{material}</mesh>
+          <mesh scale={[.18, .46, .16]}><dodecahedronGeometry args={[.5, 1]} />{material}</mesh>
+        </group>
+      ))}
     </group>
   )
   if (kind === 'music') return (
-    <group position={[0, .72, 0]}>
-      <mesh position={[-.24, -.18, 0]}><sphereGeometry args={[.2, 20, 20]} />{shared}</mesh>
-      <mesh position={[.25, -.08, 0]}><sphereGeometry args={[.17, 20, 20]} />{shared}</mesh>
-      <mesh position={[.02, .27, 0]}><boxGeometry args={[.075, .84, .075]} />{shared}</mesh>
-      <mesh position={[.31, .66, 0]}><boxGeometry args={[.62, .075, .075]} />{shared}</mesh>
+    <group position={[0, .45, 0]}>
+      <mesh position={[-.28, .02, 0]}><dodecahedronGeometry args={[.2, 2]} />{material}</mesh>
+      <mesh position={[.22, .16, 0]}><dodecahedronGeometry args={[.16, 2]} />{material}</mesh>
+      <mesh position={[.04, .52, 0]} scale={[.07, .62, .07]}><boxGeometry />{material}</mesh>
+      <mesh position={[.28, .83, 0]} scale={[.52, .07, .07]}><boxGeometry />{material}</mesh>
     </group>
   )
   return (
-    <group position={[0, .62, 0]}>
-      <mesh><cylinderGeometry args={[.09, .15, .92, 12]} /><meshStandardMaterial color="#6f5543" roughness={.78} /></mesh>
-      {[[-.22, .58, 0], [.24, .57, -.03], [0, .87, 0], [-.06, 1.08, -.05]].map(([x, y, z], index) => <mesh key={index} position={[x, y, z]}><icosahedronGeometry args={[index === 2 ? .34 : .27, 1]} />{shared}</mesh>)}
+    <group position={[0, .25, 0]}>
+      <mesh scale={[.14, .95, .14]}><dodecahedronGeometry args={[.62, 1]} /><meshStandardMaterial color="#5e4b38" roughness={.94} /></mesh>
+      <Leaf position={[-.22, .78, 0]} rotation={[.12, .12, -.52]} scale={[.34, .58, .24]} color="#3e694f" emissive={color} />
+      <Leaf position={[.26, .92, -.04]} rotation={[-.08, -.16, .48]} scale={[.38, .64, .24]} color="#426f55" emissive={color} />
+      <Leaf position={[0, 1.24, -.06]} rotation={[Math.PI / 2, 0, 0]} scale={[.42, .58, .22]} color="#4a7559" emissive={color} />
     </group>
   )
 }
 
-function MemoryVignette({ spec, reducedMotion, walkTarget, playerPosition, onMemoryOpen }: {
-  spec: MemoryVignetteSpec
+function MemoryGarden({ spec, reducedMotion, walkTarget, playerPosition, onMemoryOpen }: {
+  spec: MemoryGardenSpec
   reducedMotion: boolean
   walkTarget: MutableRefObject<THREE.Vector3 | null>
   playerPosition: MutableRefObject<THREE.Vector3>
   onMemoryOpen: (memoryId: string) => void
 }) {
   const group = useRef<THREE.Group>(null)
-  const halo = useRef<THREE.Mesh>(null)
-  const haloMaterial = useRef<THREE.MeshBasicMaterial>(null)
-  const lensMaterial = useRef<THREE.MeshPhysicalMaterial>(null)
   const nearRef = useRef(false)
   const color = useMemo(() => new THREE.Color(spec.color), [spec.color])
 
   useFrame(({ clock }, delta) => {
-    if (!group.current || !halo.current || !haloMaterial.current || !lensMaterial.current) return
+    if (!group.current) return
     const dx = playerPosition.current.x - spec.position[0]
     const dz = playerPosition.current.z - spec.position[2]
-    const near = Math.hypot(dx, dz) < 2.15
+    const near = Math.hypot(dx, dz) < 1.9
     nearRef.current = near
-    const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * .48 + spec.position[0]) * .012
-    const targetScale = spec.scale * pulse * (near ? 1.045 : 1)
-    const current = group.current.scale.x
-    group.current.scale.setScalar(THREE.MathUtils.damp(current, targetScale, 5.5, delta))
-    if (!reducedMotion) halo.current.rotation.z += delta * (near ? .11 : .035)
-    haloMaterial.current.opacity = THREE.MathUtils.damp(haloMaterial.current.opacity, near ? .74 : .34, 6, delta)
-    lensMaterial.current.emissiveIntensity = THREE.MathUtils.damp(lensMaterial.current.emissiveIntensity, near ? .22 : .08, 6, delta)
+    const breath = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * .28 + spec.position[0]) * .006
+    const targetScale = spec.scale * breath * (near ? 1.025 : 1)
+    group.current.scale.setScalar(THREE.MathUtils.damp(group.current.scale.x, targetScale, 5.5, delta))
   })
 
   const activate = (event: ThreeEvent<MouseEvent>) => {
@@ -308,62 +431,77 @@ function MemoryVignette({ spec, reducedMotion, walkTarget, playerPosition, onMem
     else walkTarget.current = approachPoint(spec)
   }
 
-  const side = Math.sign(spec.position[0]) || 1
   return (
-    <group ref={group} position={spec.position} name={`home-memory-vignette-${spec.id}`} data-memory-id={spec.id}>
-      <mesh position={[0, .02, 0]} receiveShadow onClick={activate}>
-        <cylinderGeometry args={[1.08, 1.28, .12, 56]} />
-        <meshStandardMaterial color="#0a1c25" emissive={color} emissiveIntensity={.08} roughness={.48} metalness={.34} />
+    <group ref={group} position={spec.position} name={`home-personal-memory-garden-${spec.id}`} userData={{ memoryId: spec.id, visualLanguage: 'living-place-not-icon-bubble' }}>
+      <mesh position={[0, .02, 0]} scale={[1.4, .28, 1.08]} receiveShadow castShadow onClick={activate}>
+        <dodecahedronGeometry args={[1, 2]} />
+        <meshStandardMaterial color="#263b32" emissive={color} emissiveIntensity={.018} roughness={.9} metalness={.01} />
       </mesh>
-      <mesh position={[0, 1.22, .04]} onClick={activate}>
-        <circleGeometry args={[1.02, 64]} />
-        <meshPhysicalMaterial ref={lensMaterial} color="#0a1a25" emissive={color} emissiveIntensity={.08} transparent opacity={.52} transmission={.18} roughness={.24} metalness={.18} side={THREE.DoubleSide} depthWrite={false} />
+      <MemorySculpture kind={spec.kind} color={spec.color} />
+      <Leaf position={[-.72, .32, .25]} rotation={[.08, .18, -.62]} scale={[.34, .62, .22]} emissive={spec.color} />
+      <Leaf position={[.68, .28, .18]} rotation={[-.06, -.22, .54]} scale={[.32, .58, .22]} emissive={spec.color} />
+      <mesh position={[0, .82, .45]} onClick={activate}>
+        <boxGeometry args={[2.4, 1.9, 1.2]} />
+        <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
       </mesh>
-      <mesh ref={halo} position={[0, 1.22, .08]} onClick={activate}>
-        <torusGeometry args={[1.04, .035, 10, 96]} />
-        <meshBasicMaterial ref={haloMaterial} color={color} transparent opacity={.34} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh position={[-side * 1.02, 1.04, -.08]} rotation={[0, 0, side * -.13]}>
-        <capsuleGeometry args={[.055, 1.82, 8, 14]} />
-        <meshStandardMaterial color="#183342" emissive={color} emissiveIntensity={.16} roughness={.36} metalness={.52} />
-      </mesh>
-      <mesh position={[side * 1.02, 1.04, -.08]} rotation={[0, 0, side * .13]}>
-        <capsuleGeometry args={[.055, 1.82, 8, 14]} />
-        <meshStandardMaterial color="#183342" emissive={color} emissiveIntensity={.16} roughness={.36} metalness={.52} />
-      </mesh>
-      <MemoryObject kind={spec.kind} color={spec.color} />
-      <pointLight position={[0, 1.35, .62]} color={color} intensity={1.55} distance={4.8} decay={2} />
+      <pointLight position={[0, 1.0, .5]} color={color} intensity={.36} distance={4.3} decay={2} />
     </group>
   )
 }
 
-function SanctuaryDust({ reducedMotion }: { reducedMotion: boolean }) {
+function SanctuaryAtmosphere({ reducedMotion }: { reducedMotion: boolean }) {
   const points = useRef<THREE.Points>(null)
   const positions = useMemo(() => {
-    const data = new Float32Array(220 * 3)
-    for (let index = 0; index < 220; index += 1) {
+    const data = new Float32Array(150 * 3)
+    for (let index = 0; index < 150; index += 1) {
       data[index * 3] = (seeded(index, 1) - .5) * 17
-      data[index * 3 + 1] = .35 + seeded(index, 2) * 5.1
-      data[index * 3 + 2] = -10.2 + seeded(index, 3) * 19.5
+      data[index * 3 + 1] = .3 + seeded(index, 2) * 4.8
+      data[index * 3 + 2] = -9.8 + seeded(index, 3) * 18.2
     }
     return data
   }, [])
-  useFrame((_, delta) => { if (points.current && !reducedMotion) points.current.rotation.y += delta * .0035 })
+
+  useFrame((_, delta) => {
+    if (points.current && !reducedMotion) points.current.rotation.y += delta * .0022
+  })
+
   return (
-    <points ref={points} name="home-sanctuary-memory-dust">
-      <bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry>
-      <pointsMaterial color="#d7f6f7" size={.026} sizeAttenuation transparent opacity={.34} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </points>
+    <group name="home-restrained-living-atmosphere">
+      <GroundMist reducedMotion={reducedMotion} position={[0, .06, -.7]} scale={[14, 6.4, 1]} opacity={.12} />
+      <GroundMist reducedMotion={reducedMotion} position={[0, .12, -6.2]} scale={[17, 5.6, 1]} opacity={.08} />
+      <points ref={points}>
+        <bufferGeometry><bufferAttribute attach="attributes-position" args={[positions, 3]} /></bufferGeometry>
+        <pointsMaterial color="#d8eee5" size={.022} sizeAttenuation transparent opacity={.28} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </points>
+    </group>
   )
 }
 
 export default function HomeSanctuaryWorld({ reducedMotion, walkTarget, playerPosition, onMemoryOpen }: HomeSanctuaryWorldProps) {
   return (
-    <group name="home-visible-navigable-sanctuary-world" data-testid="urai-home-visible-world">
-      <ArchitecturalShell reducedMotion={reducedMotion} />
-      <SanctuaryDust reducedMotion={reducedMotion} />
-      {MEMORY_VIGNETTES.map((spec) => (
-        <MemoryVignette
+    <group
+      name="home-visible-navigable-sanctuary-world"
+      data-testid="urai-home-visible-world"
+      userData={{
+        worldIdentity: 'personal-sanctuary',
+        visualLanguage: 'moonlit-obsidian-jade-sanctuary',
+        orbHierarchy: 'primary',
+        destinationHierarchy: 'supporting',
+        directVisualReviewRequired: true,
+      }}
+    >
+      <LivingSky reducedMotion={reducedMotion} />
+      <MoonlitTerrain />
+      <SanctuaryPath />
+      <OrganicBough side={-1} z={-.3} />
+      <OrganicBough side={1} z={-1.8} />
+      <OrbSanctum />
+      <DestinationAlcove side={-1} destination="ground" />
+      <DestinationAlcove side={1} destination="life-map" />
+      <EmbodiedSelfSilhouette />
+      <SanctuaryAtmosphere reducedMotion={reducedMotion} />
+      {MEMORY_GARDENS.map((spec) => (
+        <MemoryGarden
           key={spec.id}
           spec={spec}
           reducedMotion={reducedMotion}
