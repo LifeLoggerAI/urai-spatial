@@ -1,0 +1,158 @@
+name: Release Governance Guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - '.github/CODEOWNERS'
+      - 'docs/release-governance/**'
+      - 'evidence/release/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-governance-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  EXACT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXACT_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Reject temporary dispatchers on canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e .github/workflows/dispatch-frozen-full-preview.yml
+          mapfile -d '' workflow_files < <(
+            find .github/workflows -type f \( -name '*.yml' -o -name '*.yaml' \) \
+              ! -name 'release-governance-guard.yml' -print0
+          )
+          if ((${#workflow_files[@]})) && grep -IlE \
+            'temporary dispatcher|diagnostic deployment dispatcher|Do not merge this PR' \
+            "${workflow_files[@]}"; then
+            echo 'Temporary or diagnostic dispatcher language is forbidden in canonical workflows.' >&2
+            exit 1
+          fi
+
+      - name: Require permanent release ownership
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '/.github/workflows/** @release-governance' .github/CODEOWNERS
+          grep -Fq '/docs/release-governance/** @release-governance' .github/CODEOWNERS
+          grep -Fq '/evidence/release/** @release-governance' .github/CODEOWNERS
+
+      - name: Validate changed release workflows are exact-head and clean-tree bound
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$BASE_SHA"
+          if test -z "$base" || test "$base" = '0000000000000000000000000000000000000000' || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            base="$(git rev-parse HEAD^)"
+          fi
+          mkdir -p artifacts/release-governance
+          git diff --name-only "$base" "$EXACT_SHA" > artifacts/release-governance/changed-files.txt
+          : > artifacts/release-governance/validated-release-workflows.txt
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/*.yml|.github/workflows/*.yaml)
+                test "$path" != '.github/workflows/release-governance-guard.yml' || continue
+                test -f "$path" || continue
+                if printf '%s\n' "$path" | grep -Eqi 'deploy|production|release|preview' \
+                  || grep -Eqi 'actions:[[:space:]]*write|environment:[[:space:]]*production|firebase[[:space:]]+deploy|gcloud[[:space:]]+run[[:space:]]+deploy' "$path"; then
+                  grep -Eq 'github\.event\.pull_request\.head\.sha|github\.sha|inputs\.(candidate_sha|verification_sha|release_sha)' "$path"
+                  grep -Eq 'persist-credentials:[[:space:]]*false' "$path"
+                  grep -Eq 'git rev-parse HEAD' "$path"
+                  grep -Eq 'git status --porcelain' "$path"
+                  printf '%s\n' "$path" >> artifacts/release-governance/validated-release-workflows.txt
+                fi
+                ;;
+            esac
+          done < artifacts/release-governance/changed-files.txt
+
+      - name: Reject unsupported production authorization records
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release-governance
+          : > artifacts/release-governance/validated-production-records.txt
+          if test -d evidence/release; then
+            while IFS= read -r record; do
+              test -n "$record" || continue
+              for field in exactMergedMainSha providerProject providerSite providerVersion previewUrl founderDecision independentApproval rollbackTarget; do
+                grep -Eq "\"$field\"[[:space:]]*:" "$record"
+              done
+              grep -Eq '"founderDecision"[[:space:]]*:[[:space:]]*"APPROVE HOME"' "$record"
+              grep -Eq '"productionTargeted"[[:space:]]*:[[:space:]]*true' "$record"
+              printf '%s\n' "$record" >> artifacts/release-governance/validated-production-records.txt
+            done < <(grep -RIlE '"production(Authorized|Certified)"[[:space:]]*:[[:space:]]*true' evidence/release || true)
+          fi
+
+      - name: Require incident record and fail-closed release boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          incident=docs/release-governance/2026-08-04-spatial-governance-incident.md
+          test -f "$incident"
+          grep -Fq '869eb1df8d75351d046a22e82a85a100389d6a82' "$incident"
+          grep -Fq '64b2070b0dbb66db57f2493119ed6568efac9d46' "$incident"
+          grep -Fq '62d77f7d406e78cbfcefad73ca31247f90a377be' "$incident"
+          grep -Fq 'MERGED SOURCE NOT PRODUCTION-AUTHORIZED' "$incident"
+          grep -Fq 'Independent approval: evidence not found' "$incident"
+          grep -Fq 'Provider production identity: evidence not found' "$incident"
+          grep -Fq 'Rollback authority: evidence not found' "$incident"
+
+      - name: Retain guard receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release-governance
+          changed_release_count="$(wc -l < artifacts/release-governance/validated-release-workflows.txt | tr -d ' ')"
+          production_record_count="$(wc -l < artifacts/release-governance/validated-production-records.txt | tr -d ' ')"
+          cat > artifacts/release-governance/receipt.json <<EOF
+          {
+            "schemaVersion": "urai-release-governance-guard-2",
+            "repository": "$GITHUB_REPOSITORY",
+            "exactSha": "$EXACT_SHA",
+            "baseSha": "$BASE_SHA",
+            "temporaryDispatcherPresent": false,
+            "workflowCodeownerRequired": true,
+            "incidentRecordPresent": true,
+            "changedReleaseWorkflowsValidated": $changed_release_count,
+            "productionAuthorizationRecordsValidated": $production_record_count,
+            "productionAuthorized": false
+          }
+          EOF
+
+      - name: Upload governance receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-governance-${{ env.EXACT_SHA }}
+          path: artifacts/release-governance
+          if-no-files-found: error
+          retention-days: 90
