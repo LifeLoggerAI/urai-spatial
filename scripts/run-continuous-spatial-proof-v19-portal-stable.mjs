@@ -48,10 +48,31 @@ const constructionReplacement = [
   'if (visibilityCount !== 1) {',
   '  throw new Error(`Home effective visibility predicate expected one audited occurrence; found ${visibilityCount}`)',
   '}',
+  'const controlSetupTarget = "  const semanticButtons = semantic.getByRole(\'button\')\\n  const canvas = owner.locator(\'canvas\').first()"',
+  'const controlSetupReplacement = "  const semanticButtons = semantic.getByRole(\'button\')\\n  const discreetButtons = page.locator(\'.home-discreet-controls button\')\\n  const provenanceControl = page.locator(\'.home-discreet-controls .home-why\')\\n  const ambienceControl = page.locator(\'.home-discreet-controls .home-audio\')\\n  const canvas = owner.locator(\'canvas\').first()"',
+  'const controlSetupCount = portalPatched.split(controlSetupTarget).length - 1',
+  'if (controlSetupCount !== 1) {',
+  '  throw new Error(`Home semantic control setup expected one audited occurrence; found ${controlSetupCount}`)',
+  '}',
+  'const controlResultTarget = "    semanticVisible: await visibleCount(semanticButtons),\\n    discreetControls: await visibleCount(page.locator(\'.home-discreet-controls button\')),"',
+  'const controlResultReplacement = "    semanticVisible: await visibleCount(semanticButtons),\\n    discreetButtons: await discreetButtons.count(),\\n    discreetVisible: await visibleCount(discreetButtons),\\n    provenanceVisible: await visibleCount(provenanceControl),\\n    provenanceDisabled: await provenanceControl.isDisabled().catch(() => true),\\n    provenanceLabel: (await provenanceControl.textContent())?.trim() || null,\\n    provenanceExpanded: await provenanceControl.getAttribute(\'aria-expanded\'),\\n    ambienceVisible: await visibleCount(ambienceControl),\\n    ambienceDisabled: await ambienceControl.isDisabled().catch(() => true),"',
+  'const controlResultCount = portalPatched.split(controlResultTarget).length - 1',
+  'if (controlResultCount !== 1) {',
+  '  throw new Error(`Home semantic control result expected one audited occurrence; found ${controlResultCount}`)',
+  '}',
+  'const controlPassTarget = "&& result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2"',
+  'const controlPassReplacement = "&& result.semanticButtons === 3 && result.semanticVisible === 0\\n    && result.discreetButtons === 2 && result.provenanceVisible === 1 && !result.provenanceDisabled\\n    && result.provenanceLabel === \'Why am I seeing this?\' && result.provenanceExpanded === \'false\'\\n    && ((result.ambienceDisabled && result.ambienceVisible === 0 && result.discreetVisible === 1)\\n      || (!result.ambienceDisabled && result.ambienceVisible === 1 && result.discreetVisible === 2))"',
+  'const controlPassCount = portalPatched.split(controlPassTarget).length - 1',
+  'if (controlPassCount !== 1) {',
+  '  throw new Error(`Home semantic control acceptance expected one audited occurrence; found ${controlPassCount}`)',
+  '}',
   'const patched = portalPatched',
   '  .replace(focusTarget, focusReplacement)',
   '  .replace(focusBlockTarget, focusBlockReplacement)',
   '  .replace(visibilityTarget, visibilityReplacement)',
+  '  .replace(controlSetupTarget, controlSetupReplacement)',
+  '  .replace(controlResultTarget, controlResultReplacement)',
+  '  .replace(controlPassTarget, controlPassReplacement)',
   'if (!patched.includes(focusReplacement)) {',
   "  throw new Error('Home keyboard focus repair was not materialized')",
   '}',
@@ -60,6 +81,12 @@ const constructionReplacement = [
   '}',
   'if (!patched.includes("effectiveOpacity *= Number.parseFloat(currentStyle.opacity || \'1\')")) {',
   "  throw new Error('Home ancestor-opacity visibility repair was not materialized')",
+  '}',
+  'if (!patched.includes("result.ambienceDisabled && result.ambienceVisible === 0 && result.discreetVisible === 1")) {',
+  "  throw new Error('Home unavailable-ambience semantic acceptance was not materialized')",
+  '}',
+  'if (!patched.includes("result.provenanceLabel === \'Why am I seeing this?\'")) {',
+  "  throw new Error('Home provenance accessible-name assertion was not materialized')",
   '}',
   'if (!patched.includes("if (!editableFocusProven) throw new Error(\'Home proof could not establish editable-control focus before movement regression\')")) {',
   "  throw new Error('Home keyboard focus assertion was weakened or removed')",
@@ -95,6 +122,12 @@ if (!patched.includes("button:not(:disabled)")) {
 }
 if (!patched.includes('data-urai-proof-editable-focus')) {
   throw new Error('Generated portal wrapper does not contain the focus-isolation probe')
+}
+if (!patched.includes('Home unavailable-ambience semantic acceptance was not materialized')) {
+  throw new Error('Generated portal wrapper does not retain semantic ambience-state acceptance')
+}
+if (!patched.includes('Home provenance accessible-name assertion was not materialized')) {
+  throw new Error('Generated portal wrapper does not retain provenance accessible-name acceptance')
 }
 if (!patched.includes('Home ancestor-opacity visibility repair was not materialized')) {
   throw new Error('Generated portal wrapper does not retain the effective visibility guard')
