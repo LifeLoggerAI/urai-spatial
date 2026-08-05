@@ -1,12 +1,45 @@
 import { spawnSync } from 'node:child_process'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 
 const sourceUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
-const stableRunnerUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
+const portalStableSourceUrl = new URL('./run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url)
+const portalStableGeneratedUrl = new URL('./.run-continuous-spatial-proof-v21-route-asset.generated.mjs', import.meta.url)
 const original = await readFile(sourceUrl, 'utf8')
+const portalStableOriginal = await readFile(portalStableSourceUrl, 'utf8')
 const group = process.env.URAI_PROOF_GROUP || 'all'
 const allowed = new Set(['visual', 'desktop', 'mobile', 'portal-fallback', 'all'])
 if (!allowed.has(group)) throw new Error(`Unsupported URAI_PROOF_GROUP: ${group}`)
+
+const routeAssetTarget = `          || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
+          || (request.method === 'GET'
+            && request.resourceType === 'document'`
+const routeAssetReplacement = `          || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
+          || (request.method === 'GET'
+            && request.resourceType === 'image'
+            && request.isNavigationRequest === false
+            && requestUrl.pathname === (destination === 'ground'
+              ? '/assets/urai/final/tier1/ground/ground-realm-desktop.svg'
+              : '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg'))
+          || (request.method === 'GET'
+            && request.resourceType === 'document'`
+const routeAssetCount = portalStableOriginal.split(routeAssetTarget).length - 1
+if (routeAssetCount !== 1) {
+  throw new Error(`Portal destination asset abort predicate expected one audited occurrence; found ${routeAssetCount}`)
+}
+const portalStablePatched = portalStableOriginal.replace(routeAssetTarget, routeAssetReplacement)
+for (const [label, marker] of [
+  ['settled lifecycle guard', 'routeEvidence?.lifecycleObserved'],
+  ['same-origin guard', 'requestUrl.origin === proofOrigin'],
+  ['GET image guard', "request.resourceType === 'image'"],
+  ['non-navigation image guard', 'request.isNavigationRequest === false'],
+  ['Ground route asset', '/assets/urai/final/tier1/ground/ground-realm-desktop.svg'],
+  ['Life Map route asset', '/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg'],
+  ['document navigation guard', "request.resourceType === 'document'"],
+]) {
+  if (!portalStablePatched.includes(marker)) throw new Error(`Portal route asset guard missing (${label}): ${marker}`)
+}
+await writeFile(portalStableGeneratedUrl, portalStablePatched, 'utf8')
+const stableRunnerUrl = portalStableGeneratedUrl
 
 const openTarget = `    recordVideo: { dir: videoDir, size: { width: spec.width, height: spec.height } },`
 const openReplacement = `    ...(process.env.URAI_PROOF_RECORD_VIDEO === 'true' ? { recordVideo: { dir: videoDir, size: { width: spec.width, height: spec.height } } } : {}),`
@@ -89,4 +122,5 @@ try {
   await import(`${stableRunnerUrl.href}?group=${encodeURIComponent(group)}&exact=${Date.now()}`)
 } finally {
   await writeFile(sourceUrl, original, 'utf8').catch(() => {})
+  await unlink(portalStableGeneratedUrl).catch(() => {})
 }

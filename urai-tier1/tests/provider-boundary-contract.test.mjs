@@ -9,6 +9,7 @@ const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenla
 const narratorPlayback = fs.readFileSync(new URL('../src/spatial/narrator/narratorPlayback.ts', import.meta.url), 'utf8')
 const companion = fs.readFileSync(new URL('../src/spatial/world/PersistentWorldCompanion.tsx', import.meta.url), 'utf8')
 const portalProof = fs.readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v19-portal-stable.mjs', import.meta.url), 'utf8')
+const groupedPortalProof = fs.readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url), 'utf8')
 
 test('OpenAI Orb is authenticated, moderated, non-stored, structured and cancellation-bounded', () => {
   assert.match(providerFunctions, /api\.openai\.com\/v1\/moderations/)
@@ -39,7 +40,33 @@ test('Orb UI keeps external consent off and excludes rejected provider turns fro
   assert.match(companion, /<OrbConversationPanel \/>/)
 })
 
-test('portal proof only ignores an exact settled GET document navigation abort', () => {
+test('Orb fallback disclosure distinguishes local-only, definite external, and uncertain transport states', () => {
+  assert.match(openAiClient, /DEFINITE_EXTERNAL_ATTEMPT_CODES/)
+  assert.match(openAiClient, /'INPUT_BLOCKED'/)
+  assert.match(openAiClient, /class OrbProviderAttemptError extends Error/)
+  assert.match(openAiClient, /class OrbProviderAttemptUncertainError extends Error/)
+  assert.match(openAiClient, /attemptedExternalOrbFallback/)
+  assert.match(openAiClient, /uncertainExternalOrbFallback/)
+  assert.match(openAiClient, /An OpenAI safety or response request was attempted with your consent/)
+  assert.match(openAiClient, /A consented external request may have been attempted/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptUncertainError\(\)/)
+  assert.match(openAiClient, /if \(DEFINITE_EXTERNAL_ATTEMPT_CODES\.has\(code\)\) throw new OrbProviderAttemptError\(code\)/)
+  assert.match(openAiClient, /return null/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\(event\.code\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_STREAM_FAILED'\)/)
+  assert.match(openAiClient, /throw new OrbProviderAttemptError\('EXTERNAL_RESPONSE_INCOMPLETE'\)/)
+  assert.match(orbPanel, /error instanceof OrbProviderAttemptError/)
+  assert.match(orbPanel, /error instanceof OrbProviderAttemptUncertainError/)
+  assert.match(orbPanel, /attemptedExternalOrbFallback\(trimmed\)/)
+  assert.match(orbPanel, /uncertainExternalOrbFallback\(trimmed\)/)
+
+  const fallbackBranch = orbPanel.match(/\} catch \(error\) \{([\s\S]*?)\n    \} finally \{/)
+  assert.ok(fallbackBranch, 'Orb fallback branch must remain explicit')
+  assert.doesNotMatch(fallbackBranch[1], /setHistory/)
+  assert.match(orbPanel, /if \(liveResult\) \{[\s\S]*?setHistory\([\s\S]*?liveResult\.message[\s\S]*?\n      \}/)
+})
+
+test('portal proof only ignores exact settled lifecycle aborts for bounded destination resources', () => {
   assert.match(portalProof, /method: request\.method\(\)/)
   assert.match(portalProof, /resourceType: request\.resourceType\(\)/)
   assert.match(portalProof, /isNavigationRequest: request\.isNavigationRequest\(\)/)
@@ -48,6 +75,15 @@ test('portal proof only ignores an exact settled GET document navigation abort',
   assert.match(portalProof, /request\.isNavigationRequest === true/)
   assert.match(portalProof, /requestUrl\.href === routeEvidence\.href/)
   assert.match(portalProof, /routeEvidence\?\.lifecycleObserved/)
+
+  assert.match(groupedPortalProof, /routeEvidence\?\.lifecycleObserved/)
+  assert.match(groupedPortalProof, /requestUrl\.origin === proofOrigin/)
+  assert.match(groupedPortalProof, /request\.method === 'GET'/)
+  assert.match(groupedPortalProof, /request\.resourceType === 'image'/)
+  assert.match(groupedPortalProof, /request\.isNavigationRequest === false/)
+  assert.match(groupedPortalProof, /ground-realm-desktop\.svg/)
+  assert.match(groupedPortalProof, /lifemap-galaxy-field-desktop\.svg/)
+  assert.match(groupedPortalProof, /request\.resourceType === 'document'/)
 })
 
 test('ElevenLabs is rights-bound, duration-bounded, single-attempt and session-consented', () => {
