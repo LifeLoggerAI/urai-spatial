@@ -361,11 +361,14 @@ export default function SpatialRealmExperience({ realm }: { realm: SpatialRealmK
   const look = useDragLook({ yaw, pitch, sensitivity: reducedMotion ? 0.0022 : 0.0036, onDragState: setDragging })
 
   useEffect(() => {
+    let second: number | null = null
     const first = window.requestAnimationFrame(() => {
-      const second = window.requestAnimationFrame(() => setReady(true))
-      return () => window.cancelAnimationFrame(second)
+      second = window.requestAnimationFrame(() => setReady(true))
     })
-    return () => window.cancelAnimationFrame(first)
+    return () => {
+      window.cancelAnimationFrame(first)
+      if (second !== null) window.cancelAnimationFrame(second)
+    }
   }, [])
 
   return (
