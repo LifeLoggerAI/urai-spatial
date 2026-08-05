@@ -2,36 +2,43 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
+const providerFunctions = fs.readFileSync(new URL("../../apps/functions/src/providerFunctions.ts", import.meta.url), "utf8");
 const voiceRoute = fs.readFileSync(new URL("../src/app/api/voice/elevenlabs/route.ts", import.meta.url), "utf8");
 const narratorRoute = fs.readFileSync(new URL("../src/app/api/urai/narrator/elevenlabs/route.ts", import.meta.url), "utf8");
+const openAiRoute = fs.readFileSync(new URL("../src/app/api/urai/orb/openai/route.ts", import.meta.url), "utf8");
 const narratorClient = fs.readFileSync(new URL("../src/spatial/narrator/elevenlabsClient.ts", import.meta.url), "utf8");
+const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narratorPlayback.ts", import.meta.url), "utf8");
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
 
-for (const [name, route] of [["voice", voiceRoute], ["narrator", narratorRoute]]) {
-  test(`${name} proxy requires identity, consent, bounded input, throttling, timeout, and private caching`, () => {
-    assert.match(route, /verifyFirebaseUser/);
-    assert.match(route, /status: 401/);
-    assert.match(route, /MAX_BODY_BYTES/);
-    assert.match(route, /MAX_TEXT_CHARS/);
-    assert.match(route, /externalProcessingConsent/);
-    assert.match(route, /status: 429/);
-    assert.match(route, /AbortSignal\.timeout/);
+test("static provider routes fail closed without secrets", () => {
+  for (const route of [voiceRoute, narratorRoute, openAiRoute]) {
+    assert.match(route, /PROVIDER_FUNCTION_REQUIRED/);
     assert.match(route, /private, no-store, max-age=0/);
-    assert.match(route, /encodeURIComponent\(voiceId\)/);
-    assert.doesNotMatch(route, /public, max-age=31536000, immutable/);
-    assert.doesNotMatch(route, /private, max-age=31536000, immutable/);
-  });
-}
+    assert.doesNotMatch(route, /(OPENAI|ELEVENLABS)_API_KEY/);
+  }
+});
 
-test("active narrator client fails closed without consent and avoids persistent browser audio caching", () => {
+test("Firebase provider functions require revoked-token checks, saved consent, durable throttling and private responses", () => {
+  assert.match(providerFunctions, /verifyIdToken\([^,]+, true\)/);
+  assert.match(providerFunctions, /privacyPolicy\/current/);
+  assert.match(providerFunctions, /fully-enforced/);
+  assert.match(providerFunctions, /providerRateLimits/);
+  assert.match(providerFunctions, /defineSecret\('OPENAI_API_KEY'\)/);
+  assert.match(providerFunctions, /defineSecret\('ELEVENLABS_API_KEY'\)/);
+  assert.match(providerFunctions, /private, no-store, max-age=0/);
+  assert.doesNotMatch(providerFunctions, /NEXT_PUBLIC_(OPENAI|ELEVENLABS)/);
+});
+
+test("active narrator client and controller fail closed until session consent", () => {
   assert.match(narratorClient, /externalProcessingConsent = false/);
-  assert.match(narratorClient, /if \(!externalProcessingConsent \|\| !firebasePublicEnvReady\) return null/);
+  assert.match(narratorClient, /signal\?\.aborted/);
   assert.match(narratorClient, /getAuth\(app\)\.currentUser/);
   assert.match(narratorClient, /getIdToken\(\)/);
   assert.match(narratorClient, /Authorization/);
-  assert.match(narratorClient, /externalProcessingConsent: true/);
+  assert.match(narratorPlayback, /private externalVoiceConsent = false/);
+  assert.match(narratorPlayback, /setExternalVoiceConsent/);
   assert.doesNotMatch(narratorClient, /caches\.open/);
   assert.doesNotMatch(narratorClient, /cache\.put/);
 });
