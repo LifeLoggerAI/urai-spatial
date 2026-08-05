@@ -7,7 +7,8 @@ const root = process.cwd()
 const source = JSON.parse(fs.readFileSync(path.join(root, 'operations/assets/sources/home-finalization-authored-source-v2.json'), 'utf8'))
 const decisions = JSON.parse(fs.readFileSync(path.join(root, 'operations/assets/home-finalization-candidate-decisions.json'), 'utf8'))
 const manifestSource = fs.readFileSync(path.join(root, 'urai-tier1/src/spatial/assets/assetManifest.ts'), 'utf8')
-const runtimeSource = fs.readFileSync(path.join(root, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
+const routeOwnerSource = fs.readFileSync(path.join(root, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
+const runtimeSource = fs.readFileSync(path.join(root, 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'), 'utf8')
 const errors = []
 const contracts = [
   {
@@ -32,18 +33,24 @@ if (decisions.truthBoundary?.manifestPromotion !== false || decisions.truthBound
 if (decisions.truthBoundary?.reviewModeRequired !== true) errors.push('review mode must remain required')
 
 for (const marker of [
-  'HomeSanctuaryWorld',
-  'useAnimations',
-  'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
-  'data-home-orb-clip=',
-  'Portal_Opening',
-  'Portal_Traversal',
-  'Portal_Closing',
+  "HomeWorldProduction",
+  'data-home-primary-owner="asset-driven"',
+  'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+  'data-home-movement="walk-keyboard-click-touch"',
+  'data-home-pointer-lock="false"',
+  'home-authored-terrain',
+  'home-authored-embodied-self',
+  'home-orb-sanctuary',
+  'home-ground-portal-world-owned',
+  'home-life-map-portal-world-owned',
+  'requestUraiWorldTravel',
+  'stepEmbodiedMotion',
+  '<Canvas',
 ]) {
-  if (!runtimeSource.includes(marker)) errors.push(`runtime sanctuary or authored interaction binding missing: ${marker}`)
+  if (!`${routeOwnerSource}\n${runtimeSource}`.includes(marker)) errors.push(`live Home cinematic binding missing: ${marker}`)
 }
-for (const forbidden of ['data-home-animation-owner="gltf-authored-clips"', 'latheGeometry', 'torusKnotGeometry', 'home-candidate-orb', 'Review candidate composition — visually improved, still unapproved.']) {
-  if (runtimeSource.includes(forbidden)) errors.push(`retired procedural or rejected visual marker remains: ${forbidden}`)
+for (const forbidden of ['data-home-animation-owner="gltf-authored-clips"', 'home-candidate-orb', 'Review candidate composition — visually improved, still unapproved.']) {
+  if (`${routeOwnerSource}\n${runtimeSource}`.includes(forbidden)) errors.push(`retired procedural or rejected visual marker remains: ${forbidden}`)
 }
 
 for (const contract of contracts) {
@@ -70,7 +77,7 @@ for (const contract of contracts) {
   else if (!/status: 'future'/.test(manifestSource.slice(manifestStart, manifestStart + 800))) errors.push(`${contract.assetId}: canonical manifest was promoted before visual acceptance`)
 }
 
-const report = { ok: errors.length === 0, sourceId: source.sourceId, checked: contracts.map(({ assetId }) => assetId), errors }
+const report = { ok: errors.length === 0, sourceId: source.sourceId, checked: contracts.map(({ assetId }) => assetId), runtimeOwner: 'HomeWorldProduction', errors }
 console.log(JSON.stringify(report, null, 2))
 if (errors.length) process.exit(1)
 
