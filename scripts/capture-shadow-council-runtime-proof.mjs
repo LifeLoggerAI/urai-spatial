@@ -17,7 +17,7 @@ const viewports = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-shadow-council-runtime-proof-1',
+  schemaVersion: 'urai-shadow-council-runtime-proof-2',
   exactHead,
   base,
   capturedAt: new Date().toISOString(),
@@ -29,6 +29,13 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function settleViewport(page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  })
+}
+
 async function captureRealm(browser, realm, viewport) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
@@ -37,6 +44,7 @@ async function captureRealm(browser, realm, viewport) {
     reducedMotion: 'reduce',
   })
   const page = await context.newPage()
+  page.setDefaultTimeout(60_000)
   const consoleErrors = []
   const pageErrors = []
   const failedRequests = []
@@ -65,7 +73,7 @@ async function captureRealm(browser, realm, viewport) {
   await page.keyboard.down('w')
   await delay(900)
   await page.keyboard.up('w')
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  await settleViewport(page)
 
   const final = await shell.evaluate((node) => ({
     x: Number(node.getAttribute('data-realm-camera-x')),
@@ -82,7 +90,13 @@ async function captureRealm(browser, realm, viewport) {
   const headingVisible = await page.getByRole('heading', { name: realm === 'shadow' ? 'Shadow Realm' : 'Council Chamber' }).isVisible()
   const movementDistance = Math.hypot(final.x - start.x, final.z - start.z)
   const screenshot = `${realm}-${viewport.id}-${exactHead.slice(0, 12)}.png`
-  await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })
+  await settleViewport(page)
+  await page.screenshot({
+    path: path.join(outputDir, screenshot),
+    fullPage: false,
+    caret: 'hide',
+    timeout: 60_000,
+  })
 
   const capture = {
     realm,
