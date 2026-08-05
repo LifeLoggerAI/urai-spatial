@@ -8,6 +8,29 @@
     ],
     "cleanUrls": true,
     "trailingSlash": false,
+    "rewrites": [
+      {
+        "source": "/api/urai/orb/openai",
+        "function": {
+          "functionId": "openAiOrbProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/narrator/elevenlabs",
+        "function": {
+          "functionId": "elevenLabsVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/voice/elevenlabs",
+        "function": {
+          "functionId": "elevenLabsVoiceProvider",
+          "region": "us-central1"
+        }
+      }
+    ],
     "predeploy": [
       "pnpm --filter urai-tier1 typecheck"
     ]
