@@ -8,6 +8,8 @@ const compactRunnerSource = fs.readFileSync(new URL('../scripts/run-unit-contrac
 const requiredFocusedTests = [
   'tests/body-biometric-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
+  'tests/provider-boundary-contract.test.mjs',
+  'tests/security-boundary-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
