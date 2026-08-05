@@ -1,4 +1,4 @@
-import SpatialRealmExperience from '@/spatial/realms/SpatialRealmExperience'
+import SpatialRealmRuntime from '@/spatial/realms/SpatialRealmRuntime'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 export const metadata = {
@@ -11,7 +11,7 @@ export default function CouncilRoutePage() {
 
   return (
     <section data-testid="urai-council-route" data-scene-id={scene.id}>
-      <SpatialRealmExperience realm="council" />
+      <SpatialRealmRuntime realm="council" />
     </section>
   )
 }
