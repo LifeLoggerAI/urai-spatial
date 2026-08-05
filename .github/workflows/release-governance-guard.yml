@@ -8,12 +8,15 @@ on:
       - '.github/CODEOWNERS'
       - 'docs/release-governance/**'
       - 'evidence/release/**'
+  pull_request_review:
+    types: [submitted, edited, dismissed]
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: release-governance-${{ github.event.pull_request.head.sha || github.sha }}
@@ -42,6 +45,54 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXACT_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Require exact-head independent collaborator approval
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          reviews="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER/reviews?per_page=100")"
+
+          mapfile -t candidates < <(
+            jq -r \
+              --arg sha "$EXACT_SHA" \
+              --arg author "$PR_AUTHOR" \
+              '.[] | select(.state == "APPROVED" and .commit_id == $sha and .user.login != $author) | .user.login' \
+              <<<"$reviews" | sort -u
+          )
+
+          approved_reviewer=''
+          for reviewer in "${candidates[@]}"; do
+            permission="$(curl --fail --silent --show-error \
+              --header 'Accept: application/vnd.github+json' \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$GITHUB_API_URL/repos/$REPOSITORY/collaborators/$reviewer/permission" \
+              | jq -r '.permission // empty')"
+            case "$permission" in
+              admin|maintain|write)
+                approved_reviewer="$reviewer"
+                break
+                ;;
+            esac
+          done
+
+          if test -z "$approved_reviewer"; then
+            echo "No exact-head APPROVED review exists from a non-author collaborator with write, maintain, or admin permission." >&2
+            exit 1
+          fi
+
+          mkdir -p artifacts/release-governance
+          printf '%s\n' "$approved_reviewer" > artifacts/release-governance/approved-reviewer.txt
 
       - name: Reject temporary dispatchers on canonical source
         shell: bash
@@ -122,6 +173,7 @@ jobs:
           grep -Fq '869eb1df8d75351d046a22e82a85a100389d6a82' "$incident"
           grep -Fq '64b2070b0dbb66db57f2493119ed6568efac9d46' "$incident"
           grep -Fq '62d77f7d406e78cbfcefad73ca31247f90a377be' "$incident"
+          grep -Fq 'aa2fa1883f6627f4da872a3e80bd8ae125e98f82' "$incident"
           grep -Fq 'MERGED SOURCE NOT PRODUCTION-AUTHORIZED' "$incident"
           grep -Fq 'Independent approval: evidence not found' "$incident"
           grep -Fq 'Provider production identity: evidence not found' "$incident"
@@ -134,15 +186,17 @@ jobs:
           mkdir -p artifacts/release-governance
           changed_release_count="$(wc -l < artifacts/release-governance/validated-release-workflows.txt | tr -d ' ')"
           production_record_count="$(wc -l < artifacts/release-governance/validated-production-records.txt | tr -d ' ')"
+          approved_reviewer="$(cat artifacts/release-governance/approved-reviewer.txt 2>/dev/null || true)"
           cat > artifacts/release-governance/receipt.json <<EOF
           {
-            "schemaVersion": "urai-release-governance-guard-2",
+            "schemaVersion": "urai-release-governance-guard-3",
             "repository": "$GITHUB_REPOSITORY",
             "exactSha": "$EXACT_SHA",
             "baseSha": "$BASE_SHA",
             "temporaryDispatcherPresent": false,
             "workflowCodeownerRequired": true,
             "incidentRecordPresent": true,
+            "independentApprovedReviewer": "$approved_reviewer",
             "changedReleaseWorkflowsValidated": $changed_release_count,
             "productionAuthorizationRecordsValidated": $production_record_count,
             "productionAuthorized": false
