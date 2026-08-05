@@ -20,7 +20,7 @@ const manifestReplacement = `&& (
           ].includes(requestUrl.pathname)
           || (/^\\/_next\\/static\\/chunks\\/.+\\.js$/.test(requestUrl.pathname))
           || (/^\\/_next\\/static\\/css\\/.+\\.css$/.test(requestUrl.pathname))
-          || (requestUrl.pathname === \`\${expectedRoute.pathname}index.txt\` && requestUrl.searchParams.has('_rsc'))
+          || (requestUrl.pathname === expectedRoute.pathname + 'index.txt' && requestUrl.searchParams.has('_rsc'))
         )`
 const manifestCount = original.split(manifestTarget).length - 1
 if (manifestCount !== 1) {
@@ -71,7 +71,7 @@ const patched = original
 if (!patched.includes("routeEvidence?.lifecycleObserved")) {
   throw new Error('Generated portal wrapper does not require a completed portal lifecycle before ignoring aborts')
 }
-if (!patched.includes("requestUrl.pathname === `${expectedRoute.pathname}index.txt`")) {
+if (!patched.includes("requestUrl.pathname === expectedRoute.pathname + 'index.txt'")) {
   throw new Error('Generated portal wrapper does not retain the exact destination RSC abort boundary')
 }
 if (!patched.includes("/^\\/_next\\/static\\/chunks\\/.+\\.js$/")) {
