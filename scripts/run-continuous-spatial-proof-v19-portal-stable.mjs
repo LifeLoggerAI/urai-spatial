@@ -30,11 +30,11 @@ if (manifestCount !== 1) {
 const constructionTarget = 'const patched = original.slice(0, portalStart) + repairedPortal + original.slice(portalEnd)'
 const constructionReplacement = [
   'const portalPatched = original.slice(0, portalStart) + repairedPortal + original.slice(portalEnd)',
-  'const focusTarget = "page.locator(\'.home-discreet-controls button\').first()"',
-  'const focusReplacement = "page.locator(\'.home-discreet-controls button:not(:disabled)\').first()"',
-  'const focusCount = portalPatched.split(focusTarget).length - 1',
+  'const focusBlockTarget = "const editableControl = page.locator(\'.home-discreet-controls button\').first()\\n      await editableControl.focus()"',
+  'const focusBlockReplacement = "await page.evaluate(() => {\\n        document.querySelector(\'[data-urai-proof-editable-focus]\')?.remove()\\n        const probe = document.createElement(\'input\')\\n        probe.type = \'text\'\\n        probe.setAttribute(\'data-urai-proof-editable-focus\', \'true\')\\n        probe.setAttribute(\'aria-label\', \'Keyboard movement focus-isolation proof\')\\n        probe.style.position = \'fixed\'\\n        probe.style.left = \'-10000px\'\\n        probe.style.top = \'0\'\\n        probe.style.width = \'1px\'\\n        probe.style.height = \'1px\'\\n        document.body.appendChild(probe)\\n      })\\n      const editableControl = page.locator(\'[data-urai-proof-editable-focus]\').first()\\n      await editableControl.focus()"',
+  'const focusCount = portalPatched.split(focusBlockTarget).length - 1',
   'if (focusCount !== 1) {',
-  '  throw new Error(`Home keyboard focus selector expected one audited occurrence; found ${focusCount}`)',
+  '  throw new Error(`Home keyboard focus block expected one audited occurrence; found ${focusCount}`)',
   '}',
   'const visibilityTarget = "const style = getComputedStyle(node)\\n    const rect = node.getBoundingClientRect()\\n    return style.display !== \'none\' && style.visibility !== \'hidden\' && Number.parseFloat(style.opacity || \'1\') > 0.02"',
   'const visibilityReplacement = "const style = getComputedStyle(node)\\n    const rect = node.getBoundingClientRect()\\n    let effectiveOpacity = 1\\n    for (let current = node; current instanceof Element; current = current.parentElement) {\\n      const currentStyle = getComputedStyle(current)\\n      if (currentStyle.display === \'none\' || currentStyle.visibility === \'hidden\') return false\\n      effectiveOpacity *= Number.parseFloat(currentStyle.opacity || \'1\')\\n    }\\n    return effectiveOpacity > 0.02"',
@@ -43,10 +43,10 @@ const constructionReplacement = [
   '  throw new Error(`Home effective visibility predicate expected one audited occurrence; found ${visibilityCount}`)',
   '}',
   'const patched = portalPatched',
-  '  .replace(focusTarget, focusReplacement)',
+  '  .replace(focusBlockTarget, focusBlockReplacement)',
   '  .replace(visibilityTarget, visibilityReplacement)',
-  'if (!patched.includes(focusReplacement)) {',
-  "  throw new Error('Home keyboard focus repair was not materialized')",
+  'if (!patched.includes("data-urai-proof-editable-focus")) {',
+  "  throw new Error('Home keyboard focus-isolation probe was not materialized')",
   '}',
   'if (!patched.includes("effectiveOpacity *= Number.parseFloat(currentStyle.opacity || \'1\')")) {',
   "  throw new Error('Home ancestor-opacity visibility repair was not materialized')",
@@ -80,8 +80,8 @@ if (!patched.includes("requestUrl.pathname.startsWith('/_next/static/chunks/')")
 if (!patched.includes("requestUrl.pathname.startsWith('/_next/static/css/')")) {
   throw new Error('Generated portal wrapper does not retain the bounded route stylesheet abort predicate')
 }
-if (!patched.includes("button:not(:disabled)")) {
-  throw new Error('Generated portal wrapper does not contain the enabled-control repair')
+if (!patched.includes('data-urai-proof-editable-focus')) {
+  throw new Error('Generated portal wrapper does not contain the focus-isolation probe')
 }
 if (!patched.includes('Home ancestor-opacity visibility repair was not materialized')) {
   throw new Error('Generated portal wrapper does not retain the effective visibility guard')
