@@ -14,6 +14,7 @@ class NarratorPlaybackController {
   private minimumSilenceMs = 1200; /* URAI_SILENCE_BREATH_V1 */
   private lastSpokenAt = 0;
   private listeners = new Set<Listener>();
+  private externalVoiceConsent = false;
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);
@@ -21,6 +22,11 @@ class NarratorPlaybackController {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  setExternalVoiceConsent(allowed: boolean) {
+    this.externalVoiceConsent = allowed === true;
+    if (!this.externalVoiceConsent && this.aborter) this.aborter.abort();
   }
 
   private emit(line: NarratorLine | null, visible: boolean) {
@@ -64,9 +70,8 @@ class NarratorPlaybackController {
       return;
     }
 
-    
-/* URAI_EMOTIONAL_SPACING_V1 */
-if (now - this.lastSpokenAt < this.minimumSilenceMs && line.priority < 90) {
+    /* URAI_EMOTIONAL_SPACING_V1 */
+    if (now - this.lastSpokenAt < this.minimumSilenceMs && line.priority < 90) {
       console.info("[NARRATOR] blocked silence window:", line.id);
       return;
     }
@@ -76,18 +81,19 @@ if (now - this.lastSpokenAt < this.minimumSilenceMs && line.priority < 90) {
     this.lastSpokenAt = now;
     this.recentIds.push(line.id);
     while (this.recentIds.length > 8) this.recentIds.shift();
-    this.recentIds.push(line.id);
-    while (this.recentIds.length > 8) this.recentIds.shift();
 
     console.info("[NARRATOR] play:", line.id);
     this.emit(line, true);
 
-    
-/* URAI_MICRO_JITTER_V1 */
-const jitter = Math.floor(Math.random() * 140);
-this.delayTimer = setTimeout(async () => {
+    /* URAI_MICRO_JITTER_V1 */
+    const jitter = Math.floor(Math.random() * 140);
+    this.delayTimer = setTimeout(async () => {
       this.aborter = new AbortController();
-      const blob = await requestNarratorAudio(line, this.aborter.signal);
+      const blob = await requestNarratorAudio(
+        line,
+        this.aborter.signal,
+        this.externalVoiceConsent,
+      );
 
       if (!blob) {
         this.fallbackSpeech(line);
