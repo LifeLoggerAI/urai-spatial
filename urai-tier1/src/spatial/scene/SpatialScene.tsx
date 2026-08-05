@@ -10,6 +10,7 @@ import NarratorCaptionBridge from "../narrator/NarratorCaptionBridge";
 import ThreeSceneRoot from "../effects/ThreeSceneRoot";
 import SpatialAudioNarratorBridge from "../narrator/SpatialAudioNarratorBridge";
 import DualLayerNarratorBridge from "../narrator/DualLayerNarratorBridge";
+import { GenesisSpatialAssets } from "../assets/GenesisSpatialAssets";
 
 import CompanionOrb from "../companion/CompanionOrb";
 import CompanionCard from "../companion/CompanionCard";
@@ -24,6 +25,7 @@ const FIRST_LIGHT_KEY = "urai:first-light-complete";
 
 export default function SpatialScene() {
   const phase = useSceneStore((s) => s.phase);
+  const progress = useSceneStore((s) => s.progress);
   const selectedStarId = useSceneStore((s) => s.selectedStarId);
   const selectedStarPosition = useSceneStore((s) => s.selectedStarPosition);
   const focusStar = useSceneStore((s) => s.focusStar);
@@ -98,8 +100,14 @@ export default function SpatialScene() {
       <DualLayerNarratorBridge />
 
       <ThreeSceneRoot>
-        <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} emotionalSync={expression} />
-        <HomeWorld />
+        <CinematicCameraRig
+          phase={phase}
+          ascentProgress={progress}
+          selectedStarPosition={selectedStarPosition}
+          emotionalSync={expression}
+        />
+        <GenesisSpatialAssets phase={phase} />
+        {(phase === "HOME" || phase === "ASCENT") && <HomeWorld />}
 
         <LifeMapStarfield
           phase={phase}
