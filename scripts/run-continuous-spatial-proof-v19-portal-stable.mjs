@@ -4,15 +4,27 @@ const sourceUrl = new URL('./run-continuous-spatial-proof-v18-portal-stable.mjs'
 const generatedUrl = new URL('./.run-continuous-spatial-proof-v19-portal-stable.generated.mjs', import.meta.url)
 const original = await readFile(sourceUrl, 'utf8')
 
+const lifecycleGuardTarget = "if (!routeEvidence?.routeSettled || !String(request.failure || '').includes('ERR_ABORTED')) return false"
+const lifecycleGuardReplacement = "if (!routeEvidence?.routeSettled || !routeEvidence?.lifecycleObserved || !String(request.failure || '').includes('ERR_ABORTED')) return false"
+const lifecycleGuardCount = original.split(lifecycleGuardTarget).length - 1
+if (lifecycleGuardCount !== 1) {
+  throw new Error(`Portal-stable lifecycle abort guard expected one audited occurrence; found ${lifecycleGuardCount}`)
+}
+
 const manifestTarget = String.raw`&& /^\/assets\/urai\/final\/manifests\/v[234]-asset-factory-spatial-handoff\.json$/.test(requestUrl.pathname)`
-const manifestReplacement = `&& [
+const manifestReplacement = `&& (
+          [
             '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
             '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
             '/assets/urai/final/manifests/v4-asset-factory-spatial-handoff.json',
-          ].includes(requestUrl.pathname)`
+          ].includes(requestUrl.pathname)
+          || (/^\\/_next\\/static\\/chunks\\/.+\\.js$/.test(requestUrl.pathname))
+          || (/^\\/_next\\/static\\/css\\/.+\\.css$/.test(requestUrl.pathname))
+          || (requestUrl.pathname === \`${expectedRoute.pathname}index.txt\` && requestUrl.searchParams.has('_rsc'))
+        )`
 const manifestCount = original.split(manifestTarget).length - 1
 if (manifestCount !== 1) {
-  throw new Error(`Portal-stable manifest predicate expected one audited occurrence; found ${manifestCount}`)
+  throw new Error(`Portal-stable navigation-abort predicate expected one audited occurrence; found ${manifestCount}`)
 }
 
 const constructionTarget = 'const patched = original.slice(0, portalStart) + repairedPortal + original.slice(portalEnd)'
@@ -52,9 +64,22 @@ if (constructionCount !== 1) {
 }
 
 const patched = original
+  .replace(lifecycleGuardTarget, lifecycleGuardReplacement)
   .replace(manifestTarget, manifestReplacement)
   .replace(constructionTarget, constructionReplacement)
 
+if (!patched.includes("routeEvidence?.lifecycleObserved")) {
+  throw new Error('Generated portal wrapper does not require a completed portal lifecycle before ignoring aborts')
+}
+if (!patched.includes("requestUrl.pathname === `${expectedRoute.pathname}index.txt`")) {
+  throw new Error('Generated portal wrapper does not retain the exact destination RSC abort boundary')
+}
+if (!patched.includes("/^\\/_next\\/static\\/chunks\\/.+\\.js$/")) {
+  throw new Error('Generated portal wrapper does not retain the bounded route chunk abort predicate')
+}
+if (!patched.includes("/^\\/_next\\/static\\/css\\/.+\\.css$/")) {
+  throw new Error('Generated portal wrapper does not retain the bounded route stylesheet abort predicate')
+}
 if (!patched.includes("button:not(:disabled)")) {
   throw new Error('Generated portal wrapper does not contain the enabled-control repair')
 }
