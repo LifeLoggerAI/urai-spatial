@@ -13,6 +13,12 @@ export default function CouncilRoutePage() {
     <section data-testid="urai-council-route" data-scene-id={scene.id}>
       <SpatialRealmExperience realm="council" />
       <style>{`
+        [data-testid="urai-council-route"] .urai-spatial-realm-portals {
+          left: auto !important;
+          right: calc(50% + 52px) !important;
+          transform: none !important;
+        }
+
         @media (max-width: 700px) {
           [data-testid="urai-council-route"] .urai-movement-help {
             top: max(194px, calc(env(safe-area-inset-top) + 184px)) !important;
@@ -25,11 +31,22 @@ export default function CouncilRoutePage() {
           }
 
           [data-testid="urai-council-route"] .urai-spatial-realm-portals {
-            left: auto !important;
-            right: max(12px, env(safe-area-inset-right)) !important;
-            transform: none !important;
-            width: calc(100vw - 180px) !important;
-            max-width: 210px !important;
+            right: max(10px, env(safe-area-inset-right)) !important;
+            bottom: max(10px, env(safe-area-inset-bottom)) !important;
+            width: 132px !important;
+            max-width: 132px !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+            overflow: visible !important;
+            padding: 0 !important;
+          }
+
+          [data-testid="urai-council-route"] .urai-spatial-realm-portals button {
+            width: 100% !important;
+            min-height: 38px !important;
+            justify-content: flex-start !important;
+            padding: 0 10px !important;
+            font-size: 11px !important;
           }
         }
       `}</style>
