@@ -16,6 +16,7 @@ const focusedContractTests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
+  'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
