@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
@@ -49,6 +49,9 @@ async function captureViewportThroughCdp(context, page, targetPath) {
     })
     if (!result?.data) throw new Error('CDP screenshot returned no image data')
     await writeFile(targetPath, Buffer.from(result.data, 'base64'))
+    const evidence = await stat(targetPath)
+    if (evidence.size < 1024) throw new Error(`CDP screenshot is unexpectedly small: ${evidence.size} bytes`)
+    return evidence.size
   } finally {
     await session.detach().catch(() => {})
   }
@@ -109,7 +112,7 @@ async function captureRealm(browser, realm, viewport) {
   const movementDistance = Math.hypot(final.x - start.x, final.z - start.z)
   const screenshot = `${realm}-${viewport.id}-${exactHead.slice(0, 12)}.png`
   await settleViewport(page)
-  await captureViewportThroughCdp(context, page, path.join(outputDir, screenshot))
+  const screenshotBytes = await captureViewportThroughCdp(context, page, path.join(outputDir, screenshot))
 
   const capture = {
     realm,
@@ -117,6 +120,7 @@ async function captureRealm(browser, realm, viewport) {
     url,
     httpStatus: response?.status() ?? null,
     screenshot,
+    screenshotBytes,
     startCamera: start,
     finalCamera: { x: final.x, z: final.z },
     movementDistance,
@@ -140,6 +144,7 @@ async function captureRealm(browser, realm, viewport) {
     && capture.canvas?.width >= 240
     && capture.canvas?.height >= 240
     && capture.movementDistance >= 0.25
+    && capture.screenshotBytes >= 1024
     && consoleErrors.length === 0
     && pageErrors.length === 0
     && failedRequests.length === 0
