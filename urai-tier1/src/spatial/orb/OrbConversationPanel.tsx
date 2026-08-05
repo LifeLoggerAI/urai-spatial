@@ -7,7 +7,9 @@ import {
   attemptedExternalOrbFallback,
   deterministicOrbFallback,
   OrbProviderAttemptError,
+  OrbProviderAttemptUncertainError,
   requestOpenAIOrb,
+  uncertainExternalOrbFallback,
   type OrbConversationMessage,
   type OrbProviderResult,
 } from './openaiClient'
@@ -99,12 +101,16 @@ export default function OrbConversationPanel() {
       if (controller.signal.aborted) return
       const fallback = error instanceof OrbProviderAttemptError
         ? attemptedExternalOrbFallback(trimmed)
-        : deterministicOrbFallback(trimmed)
+        : error instanceof OrbProviderAttemptUncertainError
+          ? uncertainExternalOrbFallback(trimmed)
+          : deterministicOrbFallback(trimmed)
       setResult(fallback)
       setStreamedText(fallback.message)
       setStatus(error instanceof OrbProviderAttemptError
         ? 'External provider attempt did not return an answer; truthful local fallback ready.'
-        : 'Live provider unavailable before external processing; local fallback response ready.')
+        : error instanceof OrbProviderAttemptUncertainError
+          ? 'External processing state could not be confirmed; cautious local fallback ready.'
+          : 'Live provider unavailable before external processing; local fallback response ready.')
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
