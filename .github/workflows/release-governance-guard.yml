@@ -223,7 +223,7 @@ jobs:
           incident=docs/release-governance/2026-08-04-spatial-governance-incident.md
           test -f "$incident"
           grep -Fq '869eb1df8d75351d046a22e82a85a100389d6a82' "$incident"
-          grep -Fq '64b2070bdb66db57f2493119ed6568efac9d46' "$incident"
+          grep -Fq '64b2070b0dbb66db57f2493119ed6568efac9d46' "$incident"
           grep -Fq '62d77f7d406e78cbfcefad73ca31247f90a377be' "$incident"
           grep -Fq 'aa2fa1883f6627f4da872a3e80bd8ae125e98f82' "$incident"
           grep -Fq 'MERGED SOURCE NOT PRODUCTION-AUTHORIZED' "$incident"
