@@ -84,7 +84,13 @@ function attachDiagnostics(page, label) {
     if (message.type() === 'error') consoleErrors.push(message.text())
   })
   page.on('pageerror', (error) => pageErrors.push(String(error)))
-  page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
+  page.on('requestfailed', (request) => failedRequests.push({
+    url: request.url(),
+    method: request.method(),
+    resourceType: request.resourceType(),
+    isNavigationRequest: request.isNavigationRequest(),
+    failure: request.failure()?.errorText || 'unknown',
+  }))
   return () => ({ label, consoleErrors, pageErrors, failedRequests })
 }
 
