@@ -39,7 +39,8 @@ test('semantic selection retains one bounded route fail-safe only when real sele
 test('mounted 3D artifacts retain independent pointer activation ownership', () => {
   assert.doesNotMatch(world, /life-map-world-label|handleWorldLabelClick|document\.addEventListener\("click"/)
   assert.match(world, /name=\{`life-map-artifact-\$\{resolveArtifactFamily\(node\)\}-\$\{node\.id\}`\}/)
-  assert.match(world, /data-artifact-family=\{resolveArtifactFamily\(node\)\}/)
+  assert.match(world, /userData=\{\{ artifactFamily: resolveArtifactFamily\(node\), importance: importance\.toFixed\(2\), semanticLabel, chapterId: chapter\.id, runtimeAsset: MEMORY_STAR_MODEL \}\}/)
+  assert.doesNotMatch(world, /data-artifact-family=/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
 })
