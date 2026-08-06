@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "repository": "LifeLoggerAI/urai-spatial",
+  "pullRequest": 1068,
+  "branch": "agent/replace-failed-home-lifemap-visuals",
+  "correctedHead": "709a166e6b5a31ce2681d255f45827c629fc8ab7",
+  "corrections": [
+    "Life Map intimate memory chamber ownership",
+    "Life Map adaptive particle and star tiers",
+    "Life Map reduced-motion animation guard",
+    "R3F-safe Life Map semantic metadata",
+    "Home readiness tied to loaded assets and rendered frames"
+  ],
+  "visualApproval": false,
+  "mergeAuthorized": false,
+  "deploymentAuthorized": false,
+  "driveLedgerAuthorized": false,
+  "status": "corrected-source-awaiting-exact-head-verification-and-manual-visual-review"
+}
