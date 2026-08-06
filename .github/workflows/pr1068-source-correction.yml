@@ -1,17 +1,15 @@
-# Second push activates this one-shot corrective workflow.
 name: PR1068 Source Correction
 
 on:
-  push:
-    branches:
-      - agent/replace-failed-home-lifemap-visuals
+  pull_request:
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   correct-source:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event.pull_request.head.ref == 'agent/replace-failed-home-lifemap-visuals' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout corrective branch
@@ -19,6 +17,7 @@ jobs:
         with:
           ref: agent/replace-failed-home-lifemap-visuals
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Apply bounded production-source corrections
         shell: bash
