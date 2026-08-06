@@ -1,8 +1,0 @@
-{
-  "schemaVersion": "1.0.0",
-  "baseSha": "ed4a88ebd1fc9f909152bf06fd16f274ccefdbd3",
-  "authorScriptSha256": "da52ce200bcd3e7df1c6cff746b4c2669dd409f6ba112a402e369c93c7feb97c",
-  "branch": "agent/replace-failed-home-lifemap-visuals",
-  "mode": "materialize-authored-non-primitive-glb-pack",
-  "generatedSubstitutesAllowed": false
-}
