@@ -69,7 +69,7 @@ test('visual repair preserves adaptive performance and evidence budgets', () => 
   assert.match(world, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 150 : 240/)
   assert.match(world, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)
   assert.match(world, /profile\.tier === "low" \? 70 : 160/)
-  assert.match(world, /<CinematicPostProcessing active=\{profile\.postprocessing\}/)
+  assert.match(world, /<CinematicPostProcessing active=\{profile\.postprocessing\} reducedMotion=\{profile\.reducedMotion\} \/>/)
   assert.match(world, /if \(!root\.current \|\| reducedMotion\) return/)
   assert.match(world, /useGLTF\.preload\(MEMORY_STAR_MODEL\)/)
   assert.match(world, /useGLTF\.preload\(MEMORY_CHAMBER_MODEL\)/)
