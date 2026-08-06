@@ -14,8 +14,7 @@ on:
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
-      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'
-      - 'urai-tier1/tests/lifemap-review-repair-contract.test.mjs'
+      - 'urai-tier1/tests/lifemap-*.test.mjs'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -34,8 +33,7 @@ on:
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
-      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'
-      - 'urai-tier1/tests/lifemap-review-repair-contract.test.mjs'
+      - 'urai-tier1/tests/lifemap-*.test.mjs'
 
 permissions:
   contents: read
@@ -102,7 +100,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/lifemap-founder-proof
-          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/lifemap-review-repair-contract.test.mjs | tee artifacts/lifemap-founder-proof/lifemap-contract.log
+          node --test \
+            urai-tier1/tests/lifemap-aaa-composition-contract.test.mjs \
+            urai-tier1/tests/lifemap-scene-behavior.test.mjs \
+            urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \
+            urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
+            | tee artifacts/lifemap-founder-proof/lifemap-contract.log
           pnpm --dir urai-tier1 typecheck | tee artifacts/lifemap-founder-proof/typecheck.log
           pnpm build:static 2>&1 | tee artifacts/lifemap-founder-proof/build-static.log
 
