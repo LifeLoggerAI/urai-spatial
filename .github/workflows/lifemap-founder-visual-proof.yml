@@ -1,6 +1,21 @@
 name: Life Map Founder Visual Proof
 
 on:
+  push:
+    branches:
+      - agent/replace-failed-home-lifemap-visuals
+    paths:
+      - '.github/workflows/lifemap-founder-visual-proof.yml'
+      - 'scripts/capture-lifemap-founder-proof.mjs'
+      - 'scripts/capture-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/run-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/run-continuous-spatial-proof-v21-grouped.mjs'
+      - 'scripts/verify-lifemap-canvas-proof.mjs'
+      - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/spatial/lifemap/**'
+      - 'urai-tier1/src/app/life-map/**'
+      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'
+      - 'urai-tier1/tests/lifemap-review-repair-contract.test.mjs'
   workflow_dispatch:
     inputs:
       verification_sha:
