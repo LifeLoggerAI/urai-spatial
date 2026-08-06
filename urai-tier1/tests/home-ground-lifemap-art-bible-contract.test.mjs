@@ -5,54 +5,69 @@ import test from 'node:test'
 const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
-const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
-const groundArchitecture = read('src/app/ground/GroundContinuityArchitecture.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
+const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
-const homeGraph = `${homeRuntime}\n${assetHome}\n${fallbackHome}`
-const groundGraph = `${groundOwner}\n${groundScene}\n${groundArchitecture}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${fallbackHome}`
+const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one authored inhabitable sanctuary with embodied spatial interaction and a coherent degraded fallback', () => {
+test('Home is one authored inhabitable sanctuary with embodied cinematic interaction and a coherent degraded fallback', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
+    'HomeWorldProduction',
     'data-home-visual-owner="asset-driven-personalized-sanctuary"',
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'home-visible-navigable-sanctuary-world',
-    'home-personalized-places-',
     'data-testid="urai-home-embodied-avatar"',
     'data-testid="urai-home-webgl-orb"',
-    'data-testid="urai-home-walkable-surface"',
-    'aria-label="Open Ground directly"',
-    'aria-label="Open Life Map directly"',
-    'data-home-primary-owner="procedural-degraded-fallback"',
+    'home-authored-terrain',
+    'home-mountain-horizon',
+    'home-lantern-village',
+    'home-orb-sanctuary',
+    'stepEmbodiedMotion',
+    'MobileMovementPad',
   ]) assert.ok(homeGraph.includes(marker), `missing Home convergence marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(assetHome, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(assetHome, /function AuthoredHomeSanctuary\([\s\S]*?<HomeSanctuaryWorld\s+reducedMotion=/)
+  assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*false/s)
+  assert.match(homeProduction, /name={`home-\${type}-portal-world-owned`}/)
+  assert.match(homeProduction, /<WorldPortal type="ground"/)
+  assert.match(homeProduction, /<WorldPortal type="life-map"/)
+  assert.match(homeProduction, /requestUraiWorldTravel/)
+  assert.match(homeProduction, /EffectComposer/)
+  assert.match(homeProduction, /<Bloom\b/)
+  assert.match(homeProduction, /<Vignette\b/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
-  assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls|EffectComposer|<Bloom\b|<Vignette\b/)
+  assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls/)
 })
 
-test('Ground is one procedural architectural infrastructure world', () => {
+test('Ground is one embodied cinematic infrastructure world', () => {
   for (const marker of [
     'data-ground-visual-owner="shared-continuity-architecture"',
     'data-ground-no-compositing-bands="true"',
-    'GroundContinuityArchitecture',
-    'EmbodiedGroundScene',
+    'data-ground-exploration="walkable"',
+    'data-ground-pointer-lock="false"',
+    'data-ground-destination',
     'ground-continuity-architectural-shell',
     'ground-walkable-navigation-surface',
     'ground-walkable-path-network',
     'ground-central-nexus',
     'ground-enterable-threshold-',
     'ground-workforce-and-council-presences',
+    'stepEmbodiedMotion',
+    'useMovementInput',
+    'MobileMovementPad',
+    'EffectComposer',
+    '<Bloom',
+    '<Vignette',
   ]) assert.ok(groundGraph.includes(marker), `missing Ground architectural-owner marker: ${marker}`)
 
   for (const form of ['pavilion', 'sanctuary', 'council', 'transit', 'restorative', 'archive', 'reflection', 'vault', 'observatory', 'aperture', 'theater']) {
@@ -62,17 +77,32 @@ test('Ground is one procedural architectural infrastructure world', () => {
     assert.ok(groundModel.includes(signature), `missing chamber signature: ${signature}`)
   }
 
-  assert.match(groundOwner, /data-ground-layer/)
-  assert.match(groundOwner, /max-width:48px/)
-  assert.match(groundOwner, /aria-label.*emotionalSentence/s)
+  assert.match(groundOwner, /min-height:48px/)
+  assert.match(groundOwner, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
   assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*false/s)
   assert.match(groundOwner, /gl\.setClearColor\(0x020812, 1\)/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
   assert.doesNotMatch(groundGraph, /assetCssStack\(groundAssets\.|ground-authored-art|--ground-provider-/)
-  assert.doesNotMatch(groundScene, /<color attach="background"|WorldEnvelope|LayeredTerraces|InitialOverlook|EffectComposer|<Bloom\b|<Vignette\b/)
 })
 
-test('Life Map loading and reduced capability remain authored private experiences', () => {
+test('Life Map is a layered cinematic memory universe with truthful private fallbacks', () => {
+  for (const marker of [
+    'life-map-white-gold-life-core',
+    'life-map-authored-chapter-regions',
+    'life-map-light-bridges',
+    'life-map-curved-semantic-paths',
+    'life-map-foreground-observatory',
+    'life-map-relationship-observatory',
+    'life-map-goal-horizon',
+    'life-map-achievement-monument',
+    'life-map-privacy-vault',
+    'life-map-emotional-weather',
+    'life-map-archive-particles',
+    'life-map-far-future-horizon',
+    'life-map-selected-arrival-sanctuary',
+    'CinematicPostProcessing',
+  ]) assert.match(lifeMapWorld, new RegExp(marker))
+
   assert.match(lifeMap, /data-testid="urai-life-map-authored-fallback"/)
   assert.match(lifeMap, /data-life-map-fallback="authored-semantic"/)
   assert.match(lifeMap, /assetCssStack\(lifeMapAssets\.primary\)/)
