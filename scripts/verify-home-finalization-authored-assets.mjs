@@ -9,6 +9,7 @@ const decisions = JSON.parse(fs.readFileSync(path.join(root, 'operations/assets/
 const manifestSource = fs.readFileSync(path.join(root, 'urai-tier1/src/spatial/assets/assetManifest.ts'), 'utf8')
 const routeOwnerSource = fs.readFileSync(path.join(root, 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'), 'utf8')
 const runtimeSource = fs.readFileSync(path.join(root, 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'), 'utf8')
+const liveHomeSource = `${routeOwnerSource}\n${runtimeSource}`
 const errors = []
 const contracts = [
   {
@@ -33,7 +34,7 @@ if (decisions.truthBoundary?.manifestPromotion !== false || decisions.truthBound
 if (decisions.truthBoundary?.reviewModeRequired !== true) errors.push('review mode must remain required')
 
 for (const marker of [
-  "HomeWorldProduction",
+  'HomeWorldProduction',
   'data-home-primary-owner="asset-driven"',
   'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
   'data-home-movement="walk-keyboard-click-touch"',
@@ -41,16 +42,24 @@ for (const marker of [
   'home-authored-terrain',
   'home-authored-embodied-self',
   'home-orb-sanctuary',
-  'home-ground-portal-world-owned',
-  'home-life-map-portal-world-owned',
   'requestUraiWorldTravel',
   'stepEmbodiedMotion',
   '<Canvas',
 ]) {
-  if (!`${routeOwnerSource}\n${runtimeSource}`.includes(marker)) errors.push(`live Home cinematic binding missing: ${marker}`)
+  if (!liveHomeSource.includes(marker)) errors.push(`live Home cinematic binding missing: ${marker}`)
 }
+
+if (!runtimeSource.includes('name={`home-${type}-portal-world-owned`}')) {
+  errors.push('live Home cinematic binding missing: typed world-owned portal identity')
+}
+for (const portalType of ['ground', 'life-map']) {
+  if (!runtimeSource.includes(`<WorldPortal type="${portalType}"`)) {
+    errors.push(`live Home cinematic binding missing: home-${portalType}-portal-world-owned`)
+  }
+}
+
 for (const forbidden of ['data-home-animation-owner="gltf-authored-clips"', 'home-candidate-orb', 'Review candidate composition — visually improved, still unapproved.']) {
-  if (`${routeOwnerSource}\n${runtimeSource}`.includes(forbidden)) errors.push(`retired procedural or rejected visual marker remains: ${forbidden}`)
+  if (liveHomeSource.includes(forbidden)) errors.push(`retired procedural or rejected visual marker remains: ${forbidden}`)
 }
 
 for (const contract of contracts) {
