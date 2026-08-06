@@ -3,9 +3,10 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Float, Sparkles, Stars } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
-import { useCallback, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from "@/spatial/navigation/EmbodiedNavigation";
+import { useSceneStore } from "@/spatial/store/useSceneStore";
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from "@/spatial/world/worldEvents";
 import styles from "./HomeWorldProduction.module.css";
 
@@ -14,6 +15,7 @@ const SPAWN = new THREE.Vector3(0, 0, 8.5);
 const ORB = new THREE.Vector3(0, 1.52, -4.2);
 const GROUND_PORTAL = new THREE.Vector3(-6.1, 1.5, -10.5);
 const LIFE_MAP_PORTAL = new THREE.Vector3(6.2, 4.6, -12.8);
+const ASCENT_DURATION_SECONDS = 3.4;
 type Nearby = "orb" | "ground" | "life-map" | "self" | null;
 
 type HomeWorldProductionProps = {
@@ -55,6 +57,7 @@ function Terrain({ walkTarget }: { walkTarget: MutableRefObject<THREE.Vector3 | 
   const river = useMemo(makeRiver, []);
   const onWalk = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
+    if (useSceneStore.getState().inputLocked) return;
     walkTarget.current = new THREE.Vector3(
       THREE.MathUtils.clamp(event.point.x, HOME_BOUNDS.minX, HOME_BOUNDS.maxX),
       0,
@@ -101,7 +104,7 @@ function Village() {
 }
 
 function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
-  return <group name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen(); }}><Float speed={1.1} rotationIntensity={0.18} floatIntensity={0.34}><mesh data-testid="urai-home-webgl-orb"><sphereGeometry args={[0.74, 64, 64]} /><meshPhysicalMaterial color="#e9f7ff" emissive="#6e8dff" emissiveIntensity={2.8} metalness={0.08} roughness={0.08} transmission={0.75} thickness={0.9} clearcoat={1} transparent opacity={0.92} /></mesh><mesh rotation={[Math.PI / 2.8, 0.2, 0.4]}><torusGeometry args={[1.02, 0.032, 10, 96]} /><meshBasicMaterial color="#ffe5a3" toneMapped={false} /></mesh><mesh rotation={[0.4, Math.PI / 2.4, -0.3]}><torusGeometry args={[1.18, 0.018, 10, 96]} /><meshBasicMaterial color="#9fd7ff" toneMapped={false} /></mesh></Float><pointLight color="#8ea8ff" intensity={10} distance={14} decay={2} /></group>;
+  return <group name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); if (!useSceneStore.getState().inputLocked) onOpen(); }}><Float speed={1.1} rotationIntensity={0.18} floatIntensity={0.34}><mesh data-testid="urai-home-webgl-orb"><sphereGeometry args={[0.74, 64, 64]} /><meshPhysicalMaterial color="#e9f7ff" emissive="#6e8dff" emissiveIntensity={2.8} metalness={0.08} roughness={0.08} transmission={0.75} thickness={0.9} clearcoat={1} transparent opacity={0.92} /></mesh><mesh rotation={[Math.PI / 2.8, 0.2, 0.4]}><torusGeometry args={[1.02, 0.032, 10, 96]} /><meshBasicMaterial color="#ffe5a3" toneMapped={false} /></mesh><mesh rotation={[0.4, Math.PI / 2.4, -0.3]}><torusGeometry args={[1.18, 0.018, 10, 96]} /><meshBasicMaterial color="#9fd7ff" toneMapped={false} /></mesh></Float><pointLight color="#8ea8ff" intensity={10} distance={14} decay={2} /></group>;
 }
 
 function EmbodiedSelf({ root }: { root: MutableRefObject<THREE.Group | null> }) {
@@ -110,7 +113,16 @@ function EmbodiedSelf({ root }: { root: MutableRefObject<THREE.Group | null> }) 
 
 function WorldPortal({ type, position, onEnter }: { type: "ground" | "life-map"; position: THREE.Vector3; onEnter: () => void }) {
   const color = type === "ground" ? "#b18cff" : "#f0cf7d";
-  return <group name={`home-${type}-portal-world-owned`} position={position} onClick={(event) => { event.stopPropagation(); onEnter(); }}><mesh><torusGeometry args={[1.46, 0.12, 18, 120]} /><meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={2.6} roughness={0.12} metalness={0.24} /></mesh><mesh position={[0, 0, -0.05]}><circleGeometry args={[1.27, 80]} /><meshBasicMaterial color={color} transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} /></mesh><pointLight color={color} intensity={7} distance={11} decay={2} /></group>;
+  return <group name={`home-${type}-portal-world-owned`} position={position} onClick={(event) => { event.stopPropagation(); if (!useSceneStore.getState().inputLocked) onEnter(); }}><mesh><torusGeometry args={[1.46, 0.12, 18, 120]} /><meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={2.6} roughness={0.12} metalness={0.24} /></mesh><mesh position={[0, 0, -0.05]}><circleGeometry args={[1.27, 80]} /><meshBasicMaterial color={color} transparent opacity={0.16} side={THREE.DoubleSide} depthWrite={false} /></mesh><pointLight color={color} intensity={7} distance={11} decay={2} /></group>;
+}
+
+function cubicPoint(target: THREE.Vector3, p0: THREE.Vector3, p1: THREE.Vector3, p2: THREE.Vector3, p3: THREE.Vector3, t: number) {
+  const inverse = 1 - t;
+  target.set(0, 0, 0)
+    .addScaledVector(p0, inverse * inverse * inverse)
+    .addScaledVector(p1, 3 * inverse * inverse * t)
+    .addScaledVector(p2, 3 * inverse * t * t)
+    .addScaledVector(p3, t * t * t);
 }
 
 function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void }) {
@@ -118,7 +130,50 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
   const position = useRef(SPAWN.clone());
   const velocity = useRef(new THREE.Vector3());
   const lastNearby = useRef<Nearby>(null);
-  useFrame((_, delta) => {
+  const ascentStartedAt = useRef<number | null>(null);
+  const ascentCameraStart = useRef(new THREE.Vector3());
+  const ascentLookStart = useRef(new THREE.Vector3());
+  const ascentCameraPoint = useRef(new THREE.Vector3());
+  const ascentLookPoint = useRef(new THREE.Vector3());
+  const travelIssued = useRef(false);
+
+  useFrame(({ clock }, delta) => {
+    const scene = useSceneStore.getState();
+    if (scene.phase === "ASCENT") {
+      if (ascentStartedAt.current === null) {
+        ascentStartedAt.current = clock.elapsedTime;
+        ascentCameraStart.current.copy(camera.position);
+        ascentLookStart.current.set(position.current.x, 1.2 + pitch.current, position.current.z - 1.8);
+        velocity.current.set(0, 0, 0);
+        target.current = null;
+        lastNearby.current = null;
+        onNearby(null);
+      }
+      const linear = THREE.MathUtils.clamp((clock.elapsedTime - ascentStartedAt.current) / ASCENT_DURATION_SECONDS, 0, 1);
+      const eased = THREE.MathUtils.smootherstep(linear, 0, 1);
+      const p0 = ascentCameraStart.current;
+      const p1 = new THREE.Vector3(p0.x * 0.72, Math.max(9, p0.y + 8), p0.z - 4);
+      const p2 = new THREE.Vector3(1.6, 22, -16);
+      const p3 = new THREE.Vector3(0, 34, -34);
+      cubicPoint(ascentCameraPoint.current, p0, p1, p2, p3, eased);
+      camera.position.copy(ascentCameraPoint.current);
+      ascentLookPoint.current.copy(ascentLookStart.current).lerp(new THREE.Vector3(0, 12, -28), eased);
+      camera.lookAt(ascentLookPoint.current);
+      if (avatar.current) avatar.current.visible = linear < 0.48;
+      scene.setProgress(linear);
+      if (linear >= 1 && !travelIssued.current) {
+        travelIssued.current = true;
+        requestUraiWorldTravel({ destination: "life-map", href: "/life-map/?from=home-sky", entryPortal: "home-sky", cameraCheckpoint: "home-sky-ascent-complete" });
+      }
+      return;
+    }
+
+    if (ascentStartedAt.current !== null) {
+      ascentStartedAt.current = null;
+      travelIssued.current = false;
+      if (avatar.current) avatar.current.visible = true;
+    }
+
     stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: position.current, velocity: velocity.current, target, bounds: HOME_BOUNDS, speed: 4.4, acceleration: 11, deceleration: 14 });
     if (target.current && position.current.distanceTo(target.current) < 0.2) target.current = null;
     if (avatar.current) { avatar.current.position.copy(position.current); avatar.current.rotation.y = yaw.current; }
@@ -145,16 +200,38 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
   const [ready, setReady] = useState(false);
   const [nearby, setNearby] = useState<Nearby>(null);
   const [dragging, setDragging] = useState(false);
+  const phase = useSceneStore((state) => state.phase);
+  const progress = useSceneStore((state) => state.progress);
+  const inputLocked = useSceneStore((state) => state.inputLocked);
   const yaw = useRef(0);
   const pitch = useRef(-0.08);
   const target = useRef<THREE.Vector3 | null>(null);
   const avatar = useRef<THREE.Group | null>(null);
   const onGround = useCallback(() => requestUraiWorldTravel({ destination: "infrastructure-hub", href: "/ground/", entryPortal: "home-ground", cameraCheckpoint: "home-ground-descent" }), []);
   const onLifeMap = useCallback(() => requestUraiWorldTravel({ destination: "life-map", href: "/life-map/?from=home-sky", entryPortal: "home-sky", cameraCheckpoint: "home-sky-ascent" }), []);
-  const interaction = useCallback(() => { if (nearby === "orb") onOrbOpen(); if (nearby === "ground") onGround(); if (nearby === "life-map") onLifeMap(); }, [nearby, onGround, onLifeMap, onOrbOpen]);
+  const interaction = useCallback(() => {
+    if (useSceneStore.getState().inputLocked) return;
+    if (nearby === "orb") onOrbOpen();
+    if (nearby === "ground") onGround();
+    if (nearby === "life-map") onLifeMap();
+  }, [nearby, onGround, onLifeMap, onOrbOpen]);
   const reset = useCallback(() => { yaw.current = 0; pitch.current = -0.08; target.current = SPAWN.clone(); }, []);
   const input = useMovementInput({ onInteract: interaction, onReset: reset });
   const look = useDragLook({ yaw, pitch, sensitivity: 0.0034, onDragState: setDragging });
+
+  useEffect(() => {
+    const cancelAscent = (event: KeyboardEvent) => {
+      const scene = useSceneStore.getState();
+      if (event.key !== "Escape" || scene.phase !== "ASCENT") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      scene.setPhase("HOME");
+      scene.unlock();
+    };
+    window.addEventListener("keydown", cancelAscent, true);
+    return () => window.removeEventListener("keydown", cancelAscent, true);
+  }, []);
+
   if (!webglAvailable) return null;
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="final-physical-sanctuary-memory-rooms" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="silent-fallback" data-home-assets-ready={ready ? "true" : "false"} data-home-nearby={nearby ?? "none"} data-home-camera-mode={dragging ? "look" : "embodied"} data-testid="home-visible-navigable-sanctuary-world" {...look}><Canvas className={styles.canvas} shadows dpr={[1, 1.75]} camera={{ position: [0, 3.35, 14], fov: 48, near: 0.08, far: 180 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={() => setReady(true)}><HomeScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={onOrbOpen} onGround={onGround} onLifeMap={onLifeMap} /></Canvas><header className={styles.brand} aria-label="URAI"><strong>URAI</strong><span>Always connected</span></header><div className={styles.worldHint} role="status" aria-live="polite">{nearby === "orb" ? "The Orb is ready" : nearby === "ground" ? "Enter Ground" : nearby === "life-map" ? "Ascend to Life Map" : "Walk the living world"}</div><div className={styles.destinationNames} aria-hidden="true"><span>GROUND</span><span>LIFE MAP</span></div><MobileMovementPad input={input} label="Home movement controls" /><span className="sr-only">Open Ground directly. Open Life Map directly. Open URAI Orb companion.</span></main>;
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="final-physical-sanctuary-memory-rooms" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="silent-fallback" data-home-assets-ready={ready ? "true" : "false"} data-home-nearby={nearby ?? "none"} data-home-camera-mode={phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied"} data-home-scene-phase={phase} data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"} data-home-input-locked={inputLocked ? "true" : "false"} data-testid="home-visible-navigable-sanctuary-world" {...look}><Canvas className={styles.canvas} shadows dpr={[1, 1.75]} camera={{ position: [0, 3.35, 14], fov: 48, near: 0.08, far: 180 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={() => setReady(true)}><HomeScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={onOrbOpen} onGround={onGround} onLifeMap={onLifeMap} /></Canvas><header className={styles.brand} aria-label="URAI"><strong>URAI</strong><span>Always connected</span></header><div className={styles.worldHint} role="status" aria-live="polite">{phase === "ASCENT" ? "Ascending to Life Map" : nearby === "orb" ? "The Orb is ready" : nearby === "ground" ? "Enter Ground" : nearby === "life-map" ? "Ascend to Life Map" : "Walk the living world"}</div><div className={styles.destinationNames} aria-hidden="true"><span>GROUND</span><span>LIFE MAP</span></div><MobileMovementPad input={input} label="Home movement controls" /><span className="sr-only">Open Ground directly. Ascend to Life Map. Open URAI Orb companion.</span></main>;
 }
