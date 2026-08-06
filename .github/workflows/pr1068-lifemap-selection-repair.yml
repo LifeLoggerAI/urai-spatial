@@ -1,0 +1,49 @@
+name: PR1068 Life Map Selection Repair
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair-selection:
+    if: github.event.pull_request.head.ref == 'agent/replace-failed-home-lifemap-visuals' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout corrective branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: agent/replace-failed-home-lifemap-visuals
+          fetch-depth: 0
+
+      - name: Make semantic selection deterministic
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs')
+          const file = 'urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx'
+          let source = fs.readFileSync(file, 'utf8')
+          const before = `    requestLifeMapSelection(node.id, source);\n    selectionFallbackRef.current = window.setTimeout(() => {\n      selectionFallbackRef.current = null;\n      const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');\n      const route = new URL(window.location.href);\n      const routeSelectedId = route.searchParams.get("node") || route.searchParams.get("memoryId");\n      if (root?.dataset.lifeMapMode === "selected" && routeSelectedId === node.id) return;\n      const next = withIdentity(new URLSearchParams());\n      next.set("memoryId", node.id);\n      next.set("node", node.id);\n      if (node.eraId) next.set("era", node.eraId);\n      router.replace(\`/life-map?\${next.toString()}\`, { scroll: false });\n    }, 120);`
+          const after = `    requestLifeMapSelection(node.id, source);\n    const next = withIdentity(new URLSearchParams());\n    next.set("memoryId", node.id);\n    next.set("node", node.id);\n    if (node.eraId) next.set("era", node.eraId);\n    router.replace(\`/life-map?\${next.toString()}\`, { scroll: false });`
+          if (!source.includes(before)) throw new Error('Life Map navigator fallback block did not match exact head')
+          source = source.replace(before, after)
+          if (!source.includes('requestLifeMapSelection(node.id, source);')) throw new Error('Selection event was not preserved')
+          if (!source.includes('router.replace(`/life-map?${next.toString()}`, { scroll: false });')) throw new Error('Immediate route identity was not installed')
+          fs.writeFileSync(file, source)
+          NODE
+
+      - name: Commit exact repair and remove workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr1068-lifemap-selection-repair.yml
+          git add urai-tier1/src/components/lifemap/LifeMapSemanticNavigator.tsx
+          git diff --cached --check
+          git commit -m "Make Life Map semantic selection deterministic"
+          git push origin HEAD:agent/replace-failed-home-lifemap-visuals
