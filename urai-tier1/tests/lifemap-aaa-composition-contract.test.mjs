@@ -53,6 +53,26 @@ test('pattern memories retain authored settling geometry inside the selected arr
   assert.doesNotMatch(arrival, /ringGeometry|torusGeometry|icosahedronGeometry|octahedronGeometry|tetrahedronGeometry/)
 })
 
+test('authored animation clips honor reduced motion with stable readable poses', () => {
+  assert.match(world, /const LifeMapReducedMotionContext = createContext\(false\)/)
+  assert.match(world, /<LifeMapReducedMotionContext\.Provider value=\{profile\.reducedMotion\}>/)
+  const star = sliceBetween(world, 'function AuthoredMemoryStar', 'function LifeCore')
+  assert.match(star, /const reducedMotion = useContext\(LifeMapReducedMotionContext\)/)
+  assert.match(star, /chosen\.setEffectiveTimeScale\(reducedMotion \? 0 : 1\)/)
+  assert.match(star, /chosen\.paused = reducedMotion/)
+  assert.match(star, /if \(reducedMotion\) chosen\.time = chosen\.getClip\(\)\.duration \* \(active \? 0\.62 : 0\.35\)/)
+  const emotion = sliceBetween(world, 'function EmotionArtifact', 'function PatternArtifact')
+  assert.match(emotion, /speed=\{reducedMotion \? 0 : 0\.08\}/)
+  const arrival = sliceBetween(world, 'function ArrivalSanctuary', 'function IntimateMemoryChamber')
+  assert.match(arrival, /arrival\.setEffectiveTimeScale\(reducedMotion \? 0 : 1\)/)
+  assert.match(arrival, /arrival\.paused = reducedMotion/)
+  assert.match(arrival, /if \(reducedMotion\) arrival\.time = arrival\.getClip\(\)\.duration/)
+  assert.match(arrival, /breathing\.setEffectiveTimeScale\(reducedMotion \? 0 : 1\)/)
+  assert.match(arrival, /breathing\.paused = reducedMotion/)
+  assert.match(arrival, /if \(reducedMotion\) breathing\.time = breathing\.getClip\(\)\.duration \* 0\.35/)
+  assert.match(arrival, /\[actions, phase, reducedMotion, selected\]/)
+})
+
 test('overview composition is opaque, authored, and independently framed for portrait', () => {
   assert.match(world, /function ChapterTerritories/)
   assert.match(world, /function ForegroundObservatory/)
