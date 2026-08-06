@@ -30,6 +30,18 @@ const receipt = {
   errors: [],
 }
 
+async function settleAnimationFrames(page, frameCount) {
+  await page.evaluate((frames) => new Promise((resolve) => {
+    let completed = 0
+    const advance = () => {
+      completed += 1
+      if (completed >= frames) resolve()
+      else window.requestAnimationFrame(advance)
+    }
+    window.requestAnimationFrame(advance)
+  }), frameCount)
+}
+
 async function readVisualEvidence(page) {
   return page.evaluate(() => {
     const canvas = document.querySelector('.urai-asset-home-world canvas')
@@ -96,7 +108,7 @@ async function capture(state, options = {}) {
       ownerSelector,
       { timeout: 45_000 },
     )
-    await page.waitForTimeout(options.forcedColors === 'active' ? 600 : 2200)
+    await settleAnimationFrames(page, options.forcedColors === 'active' ? 24 : 90)
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
@@ -171,7 +183,7 @@ try {
   )
   await context.setOffline(true)
   await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await page.waitForTimeout(750)
+  await settleAnimationFrames(page, 30)
   transition.status = response?.status()
   transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
   transition.primaryOwner = await owner.getAttribute('data-home-primary-owner')
