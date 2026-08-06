@@ -387,7 +387,7 @@ function IntimateMemoryChamber({ selected, phase, reducedMotion }: { selected: L
   });
   if (!selected || phase !== "arrival") return null;
   return (
-    <group ref={group} name="life-map-intimate-memory-chamber" userData={{ scaleMode: "intimate", depthBand: "near" }} position={selected.position}>
+    <group ref={group} name="life-map-intimate-memory-chamber" userData={{ scaleMode: "intimate", depthBand: "near", legacySemanticOwner: "life-map-selected-arrival-sanctuary" }} position={selected.position}>
       <mesh position={[0, -1.12, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.3, 4.6, 160]} />
         <meshBasicMaterial color={selected.aura} transparent opacity={0.13} toneMapped={false} />
