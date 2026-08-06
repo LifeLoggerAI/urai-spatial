@@ -39,7 +39,7 @@ for (const [assetPath, proof] of Object.entries(expected)) {
 
 const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 const receipt = {
-  schemaVersion: 'urai-portal-orb-proof-3',
+  schemaVersion: 'urai-portal-orb-proof-4',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeMode: 'procedural-live-with-staged-unpromoted-glb-assets',
@@ -94,7 +94,7 @@ for (const spec of cases) {
     record.accessibleRuntimeText = (await owner.textContent()) || ''
     record.orbOwned = record.accessibleRuntimeText.includes('Open URAI Orb companion')
     record.groundPortalOwned = record.accessibleRuntimeText.includes('Open Ground directly')
-    record.lifeMapPortalOwned = record.accessibleRuntimeText.includes('Open Life Map directly')
+    record.lifeMapAscentOwned = record.accessibleRuntimeText.includes('Ascend to Life Map')
     record.visual = await page.evaluate(() => {
       const canvas = document.querySelector('.urai-asset-home-world canvas')
       if (!(canvas instanceof HTMLCanvasElement)) return { available: false, reason: 'missing-canvas' }
@@ -158,7 +158,7 @@ for (const spec of cases) {
       && record.movement === 'walk-keyboard-click-touch'
       && record.orbOwned
       && record.groundPortalOwned
-      && record.lifeMapPortalOwned
+      && record.lifeMapAscentOwned
       && record.visualPassed
       && record.screenshotBytes > 12_000
       && pageErrors.length === 0
