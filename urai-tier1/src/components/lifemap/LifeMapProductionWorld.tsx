@@ -1,6 +1,6 @@
 "use client";
 
-import { Line, Sparkles, Stars } from "@react-three/drei";
+import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
@@ -22,11 +22,39 @@ import {
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
+
+const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
+const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
 const CYAN = "#78e7ff";
 const VIOLET = "#b18cff";
+
+function prepareAuthoredModel(source: THREE.Object3D, aura: string) {
+  const clone = source.clone(true);
+  const auraColor = new THREE.Color(aura);
+  clone.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+    object.frustumCulled = true;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    const next = materials.map((material) => {
+      const cloned = material.clone();
+      if (cloned instanceof THREE.MeshStandardMaterial) {
+        cloned.emissive.copy(auraColor);
+        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity, 0.5);
+        cloned.roughness = Math.min(cloned.roughness, 0.48);
+        if (cloned instanceof THREE.MeshPhysicalMaterial) cloned.clearcoat = Math.max(cloned.clearcoat, 0.35);
+      }
+      return cloned;
+    });
+    object.material = Array.isArray(object.material) ? next : next[0];
+  });
+  clone.userData.runtimeAsset = source.userData.runtimeAsset || "authored-life-map-asset";
+  return clone;
+}
 
 function RenderProofRepublisher() {
   const { gl, scene } = useThree();
@@ -140,9 +168,7 @@ function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0
     next.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     return next;
   }, [count, depth, height, radius, seed]);
-
   useEffect(() => () => geometry.dispose(), [geometry]);
-
   return (
     <points geometry={geometry}>
       <pointsMaterial color={color} size={size} sizeAttenuation transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
@@ -156,10 +182,7 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
     depthWrite: false,
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
-    uniforms: {
-      uTime: { value: 0 },
-      uSelected: { value: selected ? 1 : 0 },
-    },
+    uniforms: { uTime: { value: 0 }, uSelected: { value: selected ? 1 : 0 } },
     vertexShader: `
       uniform float uTime;
       uniform float uSelected;
@@ -199,42 +222,41 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
       }
     `,
   }), [selected]);
-
   useEffect(() => () => material.dispose(), [material]);
   useFrame(({ clock }) => {
     material.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime;
     material.uniforms.uSelected.value = selected ? 1 : 0;
   });
-
   return (
     <group name="life-map-temporal-landscape">
       <mesh position={[0, -2.65, -10]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[72, 76, 112, 112]} />
         <primitive object={material} attach="material" />
       </mesh>
-      <mesh position={[0, -4.9, -18]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[9, 27, 196]} />
-        <meshBasicMaterial color={VIOLET} transparent opacity={selected ? 0.025 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
       <FieldParticles seed={880} count={selected ? 120 : 280} radius={31} depth={34} height={3.8} color={CYAN} opacity={selected ? 0.16 : 0.28} size={0.045} />
     </group>
   );
 }
 
-function AuraSeed({ color, active = false, scale = 1 }: { color: string; active?: boolean; scale?: number }) {
+function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], clip }: {
+  aura: string;
+  active: boolean;
+  scale?: number;
+  rotation?: Point3;
+  clip?: "MemoryStar_Idle" | "MemoryStar_Selected" | "MemoryStar_Focus";
+}) {
+  const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
+  const root = useRef<THREE.Group>(null);
+  const model = useMemo(() => prepareAuthoredModel(scene, aura), [aura, scene]);
+  const { actions } = useAnimations(animations, root);
+  useEffect(() => {
+    const chosen = actions[clip || (active ? "MemoryStar_Selected" : "MemoryStar_Idle")] || actions.MemoryStar_Idle;
+    chosen?.reset().fadeIn(0.28).play();
+    return () => { chosen?.fadeOut(0.18); };
+  }, [actions, active, clip]);
   return (
-    <group scale={scale}>
-      <mesh castShadow>
-        <icosahedronGeometry args={[active ? 0.36 : 0.26, 4]} />
-        <meshPhysicalMaterial color="#f8fdff" emissive={color} emissiveIntensity={active ? 3.2 : 1.65} transmission={0.22} thickness={0.5} roughness={0.08} clearcoat={1} iridescence={0.42} />
-      </mesh>
-      {[0.42, 0.58, 0.78].map((radius, index) => (
-        <mesh key={radius} rotation={[Math.PI / 2 + index * 0.37, index * 0.71, index * 0.23]}>
-          <torusGeometry args={[radius, active ? 0.018 : 0.012, 10, 96]} />
-          <meshBasicMaterial color={index === 1 ? GOLD : color} transparent opacity={active ? 0.7 - index * 0.1 : 0.38 - index * 0.07} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-        </mesh>
-      ))}
-      <pointLight color={color} intensity={active ? 10 : 3.2} distance={active ? 14 : 7} decay={2} />
+    <group ref={root} scale={scale} rotation={rotation} userData={{ runtimeAsset: MEMORY_STAR_MODEL, authored: true }}>
+      <primitive object={model} />
     </group>
   );
 }
@@ -243,20 +265,25 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
   const root = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return;
-    root.current.rotation.y = clock.elapsedTime * 0.07;
-    root.current.rotation.z = Math.sin(clock.elapsedTime * 0.16) * 0.075;
+    root.current.rotation.y = clock.elapsedTime * 0.05;
+    root.current.rotation.z = Math.sin(clock.elapsedTime * 0.16) * 0.055;
   });
   return (
     <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden}>
-      <AuraSeed color={GOLD} active scale={1.65} />
-      {[1.45, 2.1, 2.95, 3.8].map((radius, index) => (
-        <mesh key={radius} rotation={[index * 0.51, Math.PI / 2 + index * 0.33, index * 0.18]}>
-          <torusGeometry args={[radius, 0.022 + index * 0.005, 12, 160]} />
-          <meshBasicMaterial color={index % 2 ? ICE : GOLD} transparent opacity={0.46 - index * 0.065} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-        </mesh>
-      ))}
+      <AuthoredMemoryStar aura={GOLD} active scale={2.35} clip="MemoryStar_Focus" />
+      <Current points={[[-5.6, 0.15, 0.5], [-2.7, 1.6, -0.7], [0, 0.4, -1.2], [2.8, -1.2, -0.6], [5.8, 0.18, 0.4]]} color={GOLD} opacity={0.42} width={0.025} />
+      <Current points={[[0.4, -4.8, 0.8], [-1.4, -2.1, -0.5], [0, 0, -1.4], [1.6, 2.2, -0.4], [-0.2, 5, 0.7]]} color={ICE} opacity={0.32} width={0.018} />
       <Sparkles count={tier === "low" ? 26 : 58} scale={[8, 6, 8]} size={2.4} speed={reducedMotion ? 0 : 0.12} opacity={0.6} color={GOLD} />
       <pointLight color={GOLD} intensity={tier === "low" ? 9 : 18} distance={34} decay={2} />
+    </group>
+  );
+}
+
+function ChapterAnchor({ aura, index }: { aura: string; index: number }) {
+  return (
+    <group rotation={[index * 0.18, index * 0.33, index * 0.11]}>
+      <AuthoredMemoryStar aura={aura} active={false} scale={0.82 + index * 0.035} />
+      <Current points={[[-2.3, -0.25, 0.7], [-1.2, 0.6, -0.45], [0.15, 0.95, -0.85], [2.45, 0.15, 0.35]]} color={aura} opacity={0.4} width={0.023} />
     </group>
   );
 }
@@ -268,14 +295,7 @@ function ChapterTerritories({ selected }: { selected: LifeMapNode | null }) {
       {LIFE_MAP_CHAPTERS.map((chapter, index) => (
         <group key={chapter.id} position={chapter.position} rotation={chapter.rotation}>
           <FieldParticles seed={index * 71 + 19} count={56} radius={2.8} depth={3.8} height={2.6} color={chapter.aura} opacity={0.54} size={0.065} />
-          {[1.15, 1.8, 2.55].map((radius, ring) => (
-            <mesh key={radius} rotation={[Math.PI / 2 + ring * 0.31, ring * 0.48, 0]}>
-              <torusGeometry args={[radius, 0.018 + ring * 0.004, 10, 128]} />
-              <meshBasicMaterial color={ring === 1 ? ICE : chapter.aura} transparent opacity={0.24 - ring * 0.045} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-            </mesh>
-          ))}
-          <Current points={[[-2.25, -0.35, 0.6], [-1.15, 0.5, -0.45], [0.2, 0.92, -0.8], [2.35, 0.2, 0.35]]} color={chapter.aura} opacity={0.42} width={0.024} />
-          <AuraSeed color={chapter.aura} scale={0.72 + index * 0.035} />
+          <ChapterAnchor aura={chapter.aura} index={index} />
         </group>
       ))}
     </group>
@@ -286,13 +306,8 @@ function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return (
     <group name="life-map-foreground-observatory" position={[0, -1.5, 4.1]}>
-      {[2.5, 4.2, 6.3, 8.8].map((radius, index) => (
-        <mesh key={radius} rotation={[-Math.PI / 2, 0, index * 0.16]}>
-          <ringGeometry args={[radius - 0.025, radius + 0.025, 192]} />
-          <meshBasicMaterial color={index % 2 ? CYAN : VIOLET} transparent opacity={0.18 - index * 0.026} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-        </mesh>
-      ))}
-      <Current points={[[-8, 0.2, 0], [-4, 0.65, -1.2], [0, 0.25, -2.2], [4.2, 0.75, -1.1], [8.3, 0.18, 0.2]]} color={CYAN} opacity={0.23} width={0.034} />
+      <Current points={[[-10, 0.1, 0.4], [-5.2, 0.72, -1.3], [0, 0.2, -2.6], [5.1, 0.78, -1.2], [10.2, 0.08, 0.3]]} color={CYAN} opacity={0.26} width={0.038} />
+      <Current points={[[-7.4, -0.45, -0.4], [-3.4, 0.25, -1.8], [0.2, -0.2, -2.8], [3.8, 0.3, -1.7], [7.6, -0.42, -0.3]]} color={VIOLET} opacity={0.18} width={0.025} />
       <FieldParticles seed={730} count={90} radius={9.5} depth={3} height={1.9} color={ICE} opacity={0.22} size={0.04} />
     </group>
   );
@@ -303,30 +318,21 @@ function OverviewLandmarks({ selected }: { selected: LifeMapNode | null }) {
   return (
     <>
       <group name="life-map-relationship-observatory" position={[5.7, 0.55, -7.2]}>
-        <AuraSeed color={CYAN} scale={1.35} />
+        <AuthoredMemoryStar aura={CYAN} active={false} scale={1.3} />
         <FieldParticles seed={515} count={44} radius={2.8} depth={3.2} height={2.4} color={ICE} opacity={0.58} size={0.06} />
       </group>
       <group name="life-map-goal-horizon" position={[-6.8, 2.3, -15.6]}>
         <Current points={[[0, -2.4, 0], [0.2, -0.2, -0.4], [0.45, 2.8, -1.2]]} color={GOLD} opacity={0.75} width={0.044} />
-        <AuraSeed color={GOLD} scale={0.75} />
+        <AuthoredMemoryStar aura={GOLD} active={false} scale={0.7} />
         <pointLight color={GOLD} intensity={4.5} distance={14} decay={2} />
       </group>
       <group name="life-map-achievement-monument" position={[7.2, -0.1, -13.4]}>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <mesh key={level} position={[0, -0.75 + level * 0.38, -level * 0.08]} rotation={[0, level * 0.45, 0]} scale={1 - level * 0.11}>
-            <octahedronGeometry args={[0.82, 2]} />
-            <meshPhysicalMaterial color="#3a2a18" emissive={GOLD} emissiveIntensity={0.48 + level * 0.12} roughness={0.26} clearcoat={0.82} />
-          </mesh>
-        ))}
+        <AuthoredMemoryStar aura={GOLD} active={false} scale={1.05} rotation={[0.15, 0.65, 0.1]} />
+        <Current points={[[-1.5, -0.7, 0.3], [-0.7, 0.2, -0.3], [0, 1.2, -0.8], [0.7, 2.1, -0.35], [1.5, 3.1, 0.2]]} color={GOLD} opacity={0.42} width={0.035} />
       </group>
       <group name="life-map-privacy-vault" position={[-7.4, -0.5, -10.5]}>
-        <AuraSeed color="#8d74ad" scale={0.68} />
-        {[0.9, 1.35, 1.9, 2.55].map((radius, index) => (
-          <mesh key={radius} rotation={[Math.PI / 2 + index * 0.45, index * 0.65, 0]}>
-            <torusGeometry args={[radius, 0.045 - index * 0.006, 12, 128]} />
-            <meshStandardMaterial color="#342845" emissive="#8d74ad" emissiveIntensity={0.7} transparent opacity={0.62 - index * 0.09} depthWrite={false} />
-          </mesh>
-        ))}
+        <AuthoredMemoryStar aura="#8d74ad" active={false} scale={0.64} rotation={[0.5, 0.4, 0.2]} />
+        <FieldParticles seed={811} count={38} radius={2.5} depth={3.4} height={2.6} color="#8d74ad" opacity={0.32} size={0.052} />
       </group>
     </>
   );
@@ -350,40 +356,40 @@ function MemoryWeather({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 function VisualArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} /><mesh rotation={[0.42, 0.65, 0]} scale={active ? 0.72 : 0.5}><torusGeometry args={[0.62, 0.035, 12, 112]} /><meshBasicMaterial color={ICE} transparent opacity={0.68} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh></group>;
+  return <AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.18 : 0.92} rotation={[0.22, 0.55, 0.1]} />;
 }
 function AudioArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.82} />{[-0.38, 0, 0.38].map((z, index) => <Current key={z} points={[[-0.8, 0, z], [-0.35, index * 0.24, z], [0.15, -index * 0.16, z], [0.82, 0.05, z]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.95 : 0.54} width={0.034} />)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78, 0, z], [-0.3, index * 0.2, z], [0.18, -index * 0.14, z], [0.82, 0.04, z]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.82 : 0.42} width={0.025} />)}</group>;
 }
 function RelationshipArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.72} /><group position={[-0.58, 0.08, 0]}><AuraSeed color={ICE} scale={0.4} /></group><group position={[0.58, 0.18, -0.08]}><AuraSeed color={node.aura} scale={0.4} /></group><Line points={[[-0.58, 0.08, 0], [0, 0.55, -0.28], [0.58, 0.18, -0.08]]} color={node.aura} lineWidth={active ? 1.4 : 0.8} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.1 : 0.82} /><Line points={[[-0.72, 0.02, 0.18], [0, 0.72, -0.4], [0.72, 0.08, 0.12]]} color={node.aura} lineWidth={active ? 1.4 : 0.8} /></group>;
 }
 function PlaceArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.84} />{[0.72, 1.02].map((radius, index) => <mesh key={radius} rotation={[-Math.PI / 2, 0, index * 0.4]}><ringGeometry args={[radius - 0.025, radius + 0.025, 96]} /><meshBasicMaterial color={node.aura} transparent opacity={0.52 - index * 0.13} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.2 : 0.9} rotation={[-0.25, 0.18, 0.08]} /><Current points={[[-1.1, -0.35, 0.4], [-0.45, -0.1, -0.35], [0.35, -0.15, -0.6], [1.1, -0.32, 0.2]]} color={node.aura} opacity={active ? 0.66 : 0.3} width={0.022} /></group>;
 }
 function EmotionArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={1.05} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={0.08} opacity={0.72} color={node.aura} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={0.08} opacity={0.72} color={node.aura} /></group>;
 }
 function PatternArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.7} />{[-0.34, 0, 0.34].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.92 : 0.48} width={0.031} />)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{[-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.92 : 0.48} width={0.031} />)}</group>;
 }
 function AchievementArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={GOLD} active={active} scale={0.64} />{[0, 1, 2, 3].map((level) => <mesh key={level} position={[0, -0.46 + level * 0.28, -level * 0.07]} rotation={[0, level * 0.5, 0]} scale={0.72 - level * 0.1}><octahedronGeometry args={[0.72, 2]} /><meshPhysicalMaterial color="#43331e" emissive={GOLD} emissiveIntensity={active ? 1.2 : 0.52} roughness={0.22} clearcoat={0.8} /></mesh>)}</group>;
+  return <group><AuthoredMemoryStar aura={GOLD} active={active} scale={active ? 1.24 : 0.9} rotation={[0.12, 0.72, 0.2]} /><Current points={[[-0.9, -0.65, 0.2], [-0.35, 0.05, -0.2], [0.05, 0.75, -0.5], [0.55, 1.42, -0.18], [0.95, 2.05, 0.2]]} color={GOLD} opacity={active ? 0.82 : 0.38} width={0.03} /></group>;
 }
 function GoalArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={active ? GOLD : node.aura} active={active} scale={0.68} /><Current points={[[0, -0.78, 0], [0.06, 0.15, -0.18], [0.38, 1.15, -0.52]]} color={active ? GOLD : node.aura} opacity={0.92} width={0.045} /></group>;
+  return <group><AuthoredMemoryStar aura={active ? GOLD : node.aura} active={active} scale={active ? 1.16 : 0.86} /><Current points={[[0, -0.78, 0], [0.06, 0.15, -0.18], [0.38, 1.15, -0.52]]} color={active ? GOLD : node.aura} opacity={0.92} width={0.045} /></group>;
 }
 function FutureArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.58} />{[-0.45, 0, 0.45].map((x, index) => <mesh key={x} position={[x, 0.28 + index * 0.14, 0]} scale={[0.42, active ? 1.5 : 1.05, 0.42]}><tetrahedronGeometry args={[0.54, 1]} /><meshPhysicalMaterial color={node.aura} emissive={node.aura} emissiveIntensity={0.9} transmission={0.16} roughness={0.18} clearcoat={1} /></mesh>)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.18 : 0.84} rotation={[0.35, -0.4, 0.15]} /><Current points={[[-0.8, -0.3, 0.15], [-0.25, 0.4, -0.45], [0.35, 1.15, -0.72], [0.9, 1.85, -0.28]]} color={node.aura} opacity={active ? 0.76 : 0.34} width={0.027} /></group>;
 }
 function EverydayArtifact({ node, active }: ArtifactProps) {
-  return <AuraSeed color={node.aura} active={active} scale={0.72} />;
+  return <AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.02 : 0.76} />;
 }
 function ArchiveArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.58} />{[0.62, 0.9, 1.22].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2 + index * 0.52, index * 0.6, 0]}><torusGeometry args={[radius, 0.034 - index * 0.006, 12, 104]} /><meshBasicMaterial color={index === 1 ? ICE : node.aura} transparent opacity={0.62 - index * 0.12} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.08 : 0.78} rotation={[0.25, 0.2, 0.55]} /><FieldParticles seed={77} count={active ? 34 : 18} radius={1.4} depth={2.2} height={1.7} color={ICE} opacity={active ? 0.42 : 0.22} size={0.042} /></group>;
 }
 function ProtectedArtifact({ node, active }: ArtifactProps) {
-  return <group><AuraSeed color={node.aura} active={active} scale={0.5} />{[0.74, 1.04, 1.38].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2 + index * 0.72, index * 0.88, index * 0.3]}><torusGeometry args={[radius, 0.058 - index * 0.01, 12, 120]} /><meshStandardMaterial color="#32263f" emissive={node.aura} emissiveIntensity={0.62} transparent opacity={0.64 - index * 0.1} depthWrite={false} /></mesh>)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.0 : 0.7} rotation={[0.5, 0.7, 0.2]} /><FieldParticles seed={91} count={24} radius={1.65} depth={2.4} height={2} color={node.aura} opacity={0.24} size={0.045} /></group>;
 }
 
 function ArtifactShape(props: ArtifactProps) {
@@ -422,7 +428,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       visible={visible}
       scale={active ? 1.72 : 0.9 + importance * 0.38}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
-      userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id }}
+      userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
     >
       <ArtifactShape node={node} active={active} />
@@ -433,13 +439,13 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
 }
 
 function PathPulse({ curve, color, reducedMotion, offset }: { curve: THREE.QuadraticBezierCurve3; color: string; reducedMotion: boolean; offset: number }) {
-  const pulse = useRef<THREE.Mesh>(null);
+  const pulse = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     if (!pulse.current || reducedMotion) return;
     const t = (clock.elapsedTime * 0.055 + offset) % 1;
     pulse.current.position.copy(curve.getPoint(t));
   });
-  return <mesh ref={pulse} position={curve.getPoint(offset % 1)} name="life-map-living-pulse"><octahedronGeometry args={[0.075, 2]} /><meshBasicMaterial color={color} toneMapped={false} /></mesh>;
+  return <group ref={pulse} position={curve.getPoint(offset % 1)} name="life-map-living-pulse"><Sparkles count={3} scale={0.16} size={3} speed={0} opacity={0.9} color={color} /><pointLight color={color} intensity={1.6} distance={2.8} /></group>;
 }
 
 function SemanticPath({ source, target, active, reducedMotion, index }: { source: LifeMapNode; target: LifeMapNode; active: boolean; reducedMotion: boolean; index: number }) {
@@ -489,29 +495,42 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   );
 }
 
-function IntimateMemoryChamber({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
+function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
+  const { scene, animations } = useGLTF(MEMORY_CHAMBER_MODEL);
   const group = useRef<THREE.Group>(null);
+  const chamber = useMemo(() => selected ? prepareAuthoredModel(scene, selected.aura) : scene.clone(true), [scene, selected]);
+  const { actions } = useAnimations(animations, group);
+  useEffect(() => {
+    if (!selected || phase !== "arrival") return;
+    const arrival = actions.Focus_Arrival;
+    const breathing = actions.Focus_Breathing;
+    arrival?.reset().setLoop(THREE.LoopOnce, 1).fadeIn(0.2).play();
+    breathing?.reset().fadeIn(0.65).play();
+    return () => { arrival?.fadeOut(0.18); breathing?.fadeOut(0.25); };
+  }, [actions, phase, selected]);
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return;
-    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.07) * 0.04;
+    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.07) * 0.035;
   });
   if (!selected || phase !== "arrival") return null;
   return (
-    <group ref={group} name="life-map-intimate-memory-chamber" userData={{ scaleMode: "intimate", depthBand: "near", legacySemanticOwner: "life-map-selected-arrival-sanctuary" }} position={selected.position}>
-      <mesh scale={5.8}>
-        <icosahedronGeometry args={[1, 5]} />
-        <meshPhysicalMaterial color="#071626" emissive={selected.aura} emissiveIntensity={0.22} transparent opacity={0.11} transmission={0.22} roughness={0.28} side={THREE.BackSide} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, -1.45, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.1, 5.2, 196]} />
-        <meshBasicMaterial color={selected.aura} transparent opacity={0.14} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      {[2.2, 3.15, 4.2, 5.25].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2 + index * 0.44, index * 0.72, index * 0.21]}><torusGeometry args={[radius, 0.026 + index * 0.004, 12, 160]} /><meshBasicMaterial color={index === 1 ? GOLD : selected.aura} transparent opacity={0.34 - index * 0.045} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>)}
-      <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.52} size={0.07} />
-      <Sparkles count={96} scale={[10, 8, 10]} size={2.6} speed={reducedMotion ? 0 : 0.08} opacity={0.58} color={ICE} />
+    <group
+      ref={group}
+      name="life-map-selected-arrival-sanctuary"
+      userData={{ scaleMode: "intimate", depthBand: "near", semanticOwner: "life-map-intimate-memory-chamber", runtimeAsset: MEMORY_CHAMBER_MODEL }}
+      position={selected.position}
+      scale={1.18}
+    >
+      <primitive object={chamber} />
+      <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
+      <Sparkles count={96} scale={[10, 8, 10]} size={2.6} speed={reducedMotion ? 0 : 0.08} opacity={0.48} color={ICE} />
       <pointLight color={selected.aura} intensity={16} distance={32} decay={2} />
     </group>
   );
+}
+
+function IntimateMemoryChamber(props: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
+  return <ArrivalSanctuary {...props} />;
 }
 
 function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
@@ -589,3 +608,6 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     </>
   );
 }
+
+useGLTF.preload(MEMORY_STAR_MODEL);
+useGLTF.preload(MEMORY_CHAMBER_MODEL);
