@@ -119,7 +119,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
   const velocity = useRef(new THREE.Vector3());
   const lastNearby = useRef<Nearby>(null);
   useFrame((_, delta) => {
-    stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: position.current, velocity: velocity.current, target, bounds: HOME_BOUNDS, speed: 4.4 });
+    stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: position.current, velocity: velocity.current, target, bounds: HOME_BOUNDS, speed: 4.4, acceleration: 11, deceleration: 14 });
     if (target.current && position.current.distanceTo(target.current) < 0.2) target.current = null;
     if (avatar.current) { avatar.current.position.copy(position.current); avatar.current.rotation.y = yaw.current; }
     const desired = new THREE.Vector3(position.current.x, 3.1 + pitch.current * 1.4, position.current.z + 7.4).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current).add(new THREE.Vector3(position.current.x, 0, position.current.z));
