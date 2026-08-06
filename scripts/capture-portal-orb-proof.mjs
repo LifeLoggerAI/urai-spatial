@@ -10,10 +10,23 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
-const expected = {
-  [portalPath]: { sha256: '6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5', bytes: 73164 },
-  [orbPath]: { sha256: '34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c', bytes: 83984 },
+const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
+const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
+
+if (finalPackReceipt.packId !== 'urai-final-glb-production-pack-v1') {
+  throw new Error(`unexpected final GLB receipt packId: ${finalPackReceipt.packId}`)
 }
+
+const expected = Object.fromEntries(
+  [portalPath, orbPath].map((assetPath) => {
+    const fileName = path.basename(assetPath)
+    const record = finalPackReceipt.assets?.find((asset) => asset.fileName === fileName)
+    if (!record || typeof record.sha256 !== 'string' || !Number.isInteger(record.bytes)) {
+      throw new Error(`final GLB receipt is missing a complete identity for ${fileName}`)
+    }
+    return [assetPath, { sha256: record.sha256, bytes: record.bytes }]
+  }),
+)
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' },
   { id: 'mobile', viewport: { width: 390, height: 844 }, reducedMotion: 'no-preference', isMobile: true, hasTouch: true },
@@ -30,6 +43,7 @@ for (const [assetPath, proof] of Object.entries(expected)) {
     bytes: bytes.length,
     sha256: digest,
     verified,
+    receipt: path.relative(process.cwd(), finalPackReceiptPath),
     runtimePromotion: false,
   }
   if (!verified) {
@@ -39,10 +53,11 @@ for (const [assetPath, proof] of Object.entries(expected)) {
 
 const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 const receipt = {
-  schemaVersion: 'urai-portal-orb-proof-4',
+  schemaVersion: 'urai-portal-orb-proof-5',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeMode: 'procedural-live-with-staged-unpromoted-glb-assets',
+  runtimeMode: 'final-glb-pack-live-with-visual-approval-pending',
+  finalPackReceipt: path.relative(process.cwd(), finalPackReceiptPath),
   stagedAssetIdentity,
   visualGate: {
     minimumViewportCoverage: 0.82,
