@@ -1,0 +1,97 @@
+name: PR1068 Source Correction
+
+on:
+  push:
+    branches:
+      - agent/replace-failed-home-lifemap-visuals
+
+permissions:
+  contents: write
+
+jobs:
+  correct-source:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout corrective branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: agent/replace-failed-home-lifemap-visuals
+          fetch-depth: 0
+
+      - name: Apply bounded production-source corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          const lifeMapPath = 'urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx'
+          let lifeMap = fs.readFileSync(lifeMapPath, 'utf8')
+
+          // DOM-style data attributes are invalid on R3F/Three.js objects. Semantic
+          // ownership remains represented by stable object names and supported userData.
+          lifeMap = lifeMap.replace(/\sdata-[a-z0-9-]+=(?:"[^"]*"|\{[^}]*\})/g, '')
+
+          lifeMap = lifeMap.replace(
+            'function ArrivalSanctuary({ selected, phase }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase }) {\n  if (!selected || phase !== "arrival") return null;\n  return (\n    <group name="life-map-selected-arrival-sanctuary" position={selected.position}>',
+            'function IntimateMemoryChamber({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {\n  const group = useRef<THREE.Group>(null);\n  useFrame(({ clock }) => {\n    if (!group.current || reducedMotion) return;\n    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.08) * 0.025;\n  });\n  if (!selected || phase !== "arrival") return null;\n  return (\n    <group ref={group} name="life-map-intimate-memory-chamber" userData={{ scaleMode: "intimate", depthBand: "near" }} position={selected.position}>'
+          )
+
+          if (!lifeMap.includes('life-map-intimate-memory-chamber')) {
+            throw new Error('Failed to install the intimate memory chamber contract.')
+          }
+
+          lifeMap = lifeMap.replace(
+            '<ArrivalSanctuary selected={selected} phase={phase} />',
+            '<IntimateMemoryChamber selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />'
+          )
+          lifeMap = lifeMap.replace(
+            'count={qualityTier === "low" ? 150 : qualityTier === "medium" ? 260 : 420}',
+            'count={qualityTier === "low" ? 80 : qualityTier === "medium" ? 150 : 240}'
+          )
+          lifeMap = lifeMap.replace(
+            'const starCount = profile.tier === "low" ? 620 : profile.tier === "medium" ? 1100 : 1900;',
+            'const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;'
+          )
+
+          for (const expected of [
+            'life-map-intimate-memory-chamber',
+            'qualityTier === "low" ? 80 : qualityTier === "medium" ? 150 : 240',
+            'profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160',
+            'if (!group.current || reducedMotion) return',
+          ]) {
+            if (!lifeMap.includes(expected)) throw new Error(`Missing required production contract: ${expected}`)
+          }
+          if (/\sdata-[a-z0-9-]+=/.test(lifeMap)) {
+            throw new Error('Unsupported R3F data-* props remain in LifeMapProductionWorld.tsx')
+          }
+          fs.writeFileSync(lifeMapPath, lifeMap)
+
+          const navigationPath = 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
+          let navigation = fs.readFileSync(navigationPath, 'utf8')
+          navigation = navigation.replace(
+            "      owner.dataset.homeInteractionReady = owner.dataset.homeAssetsReady === 'true' ? 'true' : 'false'\n      owner.dataset.homeReady = 'true'",
+            "      const assetsReady = owner.dataset.homeAssetsReady === 'true'\n      owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'\n      owner.dataset.homeReady = 'false'"
+          )
+          navigation = navigation.replace(
+            "      const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)\n      owner.dataset.homeRenderedFrames = String(Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1)",
+            "      const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)\n      const nextRenderedFrames = Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1\n      owner.dataset.homeRenderedFrames = String(nextRenderedFrames)\n      owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'"
+          )
+          if (!navigation.includes("owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'")) {
+            throw new Error('Failed to bind truthful Home readiness telemetry.')
+          }
+          fs.writeFileSync(navigationPath, navigation)
+          NODE
+
+      - name: Commit exact source correction and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr1068-source-correction.yml
+          git add urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx
+          git diff --cached --check
+          git commit -m "Fix Life Map performance and truthful Home readiness contracts"
+          git push origin HEAD:agent/replace-failed-home-lifemap-visuals
