@@ -7,9 +7,7 @@ const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mj
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
 const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
 const groundModel = fs.readFileSync('src/app/ground/GroundWorldModel.ts', 'utf8')
-const groundScene = fs.readFileSync('src/app/ground/EmbodiedGroundScene.tsx', 'utf8')
-const groundArchitecture = fs.readFileSync('src/app/ground/GroundContinuityArchitecture.tsx', 'utf8')
-const groundGraph = `${ground}\n${groundModel}\n${groundScene}\n${groundArchitecture}`
+const groundGraph = `${ground}\n${groundModel}`
 const canonicalGround = ground.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ').trim()
 
 const obsoleteTitle = 'Street-level city world'
@@ -23,18 +21,21 @@ const expectedGroundMarkers = [
   'ground-spatial-root',
   'ground-destination-compass',
   'data-ground-destination',
-  'data-workforce-state',
-  'data-service-availability',
   'data-ground-visual-owner="shared-continuity-architecture"',
   'data-ground-no-compositing-bands="true"',
-  'GroundContinuityArchitecture',
-  'EmbodiedGroundScene',
+  'data-ground-exploration="walkable"',
+  'data-ground-pointer-lock="false"',
+  'data-testid="urai-ground-walkable-surface"',
   'ground-continuity-architectural-shell',
   'ground-walkable-navigation-surface',
   'ground-walkable-path-network',
   'ground-central-nexus',
   'ground-enterable-threshold-',
   'ground-workforce-and-council-presences',
+  'stepEmbodiedMotion',
+  'useMovementInput',
+  'useDragLook',
+  'MobileMovementPad',
   'Reception',
   'Privacy Sanctuary',
   'Council',
@@ -58,13 +59,14 @@ const liveGroundMarkers = [
 ]
 
 const liveGroundVisualCopy = [
-  'URAI Ground',
-  'Private infrastructure, embodied.',
+  'URAI GROUND',
+  'Private infrastructure beneath the living world',
+  'Walk deeper. Approach a chamber.',
   'Reception',
   'Archive',
 ]
 
-test('post-deploy Ground smoke remains tied to the embodied architectural destination world', () => {
+test('post-deploy Ground smoke remains tied to the live embodied destination world', () => {
   for (const marker of expectedGroundMarkers) {
     assert.ok(groundGraph.includes(marker), `missing embodied Ground marker: ${marker}`)
   }
@@ -94,13 +96,12 @@ test('obsolete Ground copy, provider wallpaper ownership and opaque blockouts ar
     assert.ok(!smoke.includes(`'${copy}'`), `post-deploy smoke still requires retired Ground copy: ${copy}`)
   }
   assert.match(canonicalGround, /DESTINATIONS\.map/)
-  assert.match(groundScene, /ground-enterable-threshold-/)
-  assert.match(groundScene, /ground-workforce-and-council-presences/)
-  assert.match(groundArchitecture, /ground-continuity-architectural-shell/)
+  assert.match(canonicalGround, /ground-enterable-threshold-/)
+  assert.match(canonicalGround, /ground-workforce-and-council-presences/)
+  assert.match(canonicalGround, /ground-continuity-architectural-shell/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
   assert.doesNotMatch(groundGraph, /ground-authored-art|--ground-provider-|assetCssStack\(groundAssets\./)
-  assert.doesNotMatch(groundScene, /WorldEnvelope|LayeredTerraces|InitialOverlook/)
-  assert.doesNotMatch(groundScene, /<color attach="background"/)
+  assert.doesNotMatch(canonicalGround, /requestPointerLock|sprint|jump|crouch/i)
   assert.match(canonicalGround, /aria-current=\{activeId\s*===\s*destination\.id\s*\?\s*'location'\s*:\s*undefined\}/)
   assert.match(canonicalGround, /min-height:48px/)
   assert.doesNotMatch(canonicalGround, /min-height:44px/)

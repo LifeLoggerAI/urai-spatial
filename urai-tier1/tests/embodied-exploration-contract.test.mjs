@@ -6,15 +6,21 @@ const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, imp
 const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
-const groundScene = read('src/app/ground/EmbodiedGroundScene.tsx')
+const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMapBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')
 const lifeMapScene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
+const lifeMapProduction = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
 const routeOwner = read('src/spatial/world/routeOwnerConvergence.css')
 const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${finalHome}`
+const worldEvents = read('src/spatial/world/worldEvents.ts')
+const worldTransitions = read('src/spatial/world/WorldTransitionController.tsx')
+const sceneStore = read('src/spatial/store/useSceneStore.ts')
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${finalHome}`
+const groundGraph = `${ground}\n${groundModel}`
 
 const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 
@@ -26,7 +32,7 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Asset-driven Home is the active coherent physical sanctuary with an explicit degraded fallback', () => {
+test('Home is the live embodied cinematic sanctuary with an explicit degraded fallback', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
@@ -40,26 +46,32 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
   ]) has(homeRuntime, marker)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-visual-owner="final-coherent-sanctuary"/)
 
+  has(assetHome, 'HomeWorldProduction')
+  assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
+
   for (const marker of [
     'data-home-primary-owner="asset-driven"',
-    'data-home-asset-mode=',
-    'data-home-personalization-mode=',
-    'data-home-review-fixture=',
-    'data-home-orb-state=',
-    'data-home-orb-clip=',
-    'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
-    'home-authored-entry-chamber',
-    'home-personalized-places-',
-    'home-embodied-presence-interaction',
-    'home-orb-state-',
+    'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+    'data-home-movement="walk-keyboard-click-touch"',
+    'data-home-pointer-lock="false"',
+    'data-testid="urai-home-webgl-orb"',
+    'data-testid="urai-home-embodied-avatar"',
+    'home-authored-terrain',
+    'home-mountain-horizon',
+    'home-lantern-village',
+    'home-orb-sanctuary',
+    'home-authored-embodied-self',
+    'stepEmbodiedMotion',
+    'useMovementInput',
+    'useDragLook',
     'MobileMovementPad',
     'requestUraiWorldTravel',
-    'Why am I seeing this?',
-  ]) has(assetHome, marker)
-  assert.match(assetHome, /name=\{`home-\$\{destination\}-portal-\$\{phase\}`\}/)
-  assert.match(assetHome, /<DestinationPortal destination="ground"/)
-  assert.match(assetHome, /<DestinationPortal destination="life-map"/)
-  assert.match(assetHome, /destination:\s*'ground'\s*\|\s*'life-map'/)
+    '<Canvas',
+  ]) has(homeProduction, marker)
+  assert.match(homeProduction, /name=\{`home-\$\{type\}-portal-world-owned`\}/)
+  assert.match(homeProduction, /<WorldPortal type="ground"/)
+  assert.match(homeProduction, /<WorldPortal type="life-map"/)
+  assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
 
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
@@ -67,45 +79,70 @@ test('Asset-driven Home is the active coherent physical sanctuary with an explic
     'data-home-pointer-lock="false"',
     'data-testid="urai-home-walkable-surface"',
     'data-testid="urai-home-webgl-orb"',
-    'data-testid="urai-home-embodied-avatar"',
     'home-visible-navigable-sanctuary-world',
   ]) has(finalHome, marker)
-  assert.match(assetHome, /<HomeFallback reason=/)
-  assert.match(assetHome, /data-home-fallback-reason=/)
-  assert.match(assetHome, /interactionRef\.current/)
-  assert.match(assetHome, /data-home-nearby=/)
-  assert.doesNotMatch(assetHome, /requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
+  assert.match(homeRuntime, /accessible-fallback-after-renderer-failure/)
+  assert.match(homeRuntime, /<HomeSpatialWorldFinal \/>/)
 })
 
-test('Home keeps one physical authored Orb and direct-access parity', () => {
-  assert.match(assetHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.62, -0\.65\)/)
-  has(assetHome, 'name={`home-orb-state-${state}`}')
-  has(assetHome, 'name="home-authored-orb"')
-  assert.match(assetHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+test('Home keeps one physical Orb owner and semantic access parity', () => {
+  assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
+  has(homeProduction, 'name="home-orb-sanctuary"')
+  has(homeProduction, 'data-testid="urai-home-webgl-orb"')
+  assert.match(homeProduction, /<OrbSanctuary onOpen=\{onOrbOpen\} \/>/)
+  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\); \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
+  assert.match(homeRuntime, />Ground<\/button>/)
+  assert.match(homeRuntime, />Life Map<\/button>/)
 })
 
-test('Ground remains walkable infrastructure with paths and collision ownership', () => {
-  for (const marker of ['EmbodiedGroundScene', 'data-ground-exploration="walkable"', 'data-ground-pointer-lock="false"', 'aria-label="Ground destinations"', 'MobileMovementPad']) has(ground, marker)
-  for (const marker of ['ground-walkable-navigation-surface', 'ground-walkable-path-network', 'ground-central-nexus', 'ground-enterable-threshold-', 'ground-workforce-and-council-presences', 'GROUND_OBSTACLES']) has(groundScene, marker)
+test('Ground remains walkable infrastructure with paths, boundaries and semantic exits', () => {
+  for (const marker of [
+    'data-ground-exploration="walkable"',
+    'data-ground-pointer-lock="false"',
+    'aria-label="Ground destinations"',
+    'data-testid="urai-ground-private-workforce-world"',
+    'data-testid="urai-ground-walkable-surface"',
+    'ground-continuity-architectural-shell',
+    'ground-walkable-navigation-surface',
+    'ground-walkable-path-network',
+    'ground-central-nexus',
+    'ground-enterable-threshold-',
+    'ground-workforce-and-council-presences',
+    'data-ground-destination',
+    'stepEmbodiedMotion',
+    'useMovementInput',
+    'useDragLook',
+    'MobileMovementPad',
+    'const BOUNDS =',
+    'obstacles:',
+  ]) has(groundGraph, marker)
+  assert.match(ground, /onEscape:\s*\(\) => router\.push\("\/home\?returnFrom=ground"\)/)
+  assert.match(ground, /onFocus=\{\(event\) => event\.currentTarget\.scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)\}/)
+  assert.match(ground, /min-height:48px/)
   assert.match(embodiedLayout, /data-world-destination='infrastructure-hub'[\s\S]*\.urai-movement-help/)
-  assert.doesNotMatch(groundScene, /requestPointerLock|sprint|jump|crouch/i)
+  assert.doesNotMatch(ground, /requestPointerLock|sprint|jump|crouch/i)
 })
 
-test('Life Map keeps independent non-Orb travel, depth and overview recovery', () => {
+test('Life Map keeps independent non-Orb travel, semantic depth and overview recovery', () => {
   for (const marker of ['KeyA', 'ArrowLeft', 'KeyQ', 'KeyD', 'ArrowRight', 'KeyE', 'cycle(-1)', 'cycle(1)', 'urai:life-map-overview', 'life-map-movement-help']) has(lifeMapBoundary, marker)
   for (const marker of ['type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival"', 'goalForNode', 'CameraRig', 'life-map-depth-near', 'life-map-depth-middle', 'life-map-depth-far', 'setPhase("departure")', 'setPhase("travel")', 'setPhase("approach")', 'setPhase("arrival")', 'data-life-map-phase={phase}', 'data-home-companion-owned="false"']) has(lifeMapScene, marker)
+  for (const marker of ['life-map-light-bridges', 'life-map-privacy-vault', 'life-map-emotional-weather', 'life-map-far-future-horizon', 'QuadraticBezierCurve3']) has(lifeMapProduction, marker)
   assert.match(embodiedLayout, /data-world-destination='life-map'[\s\S]*\.life-map-movement-help/)
   assert.doesNotMatch(lifeMapBoundary, /Orb companion|PersistentWorldCompanion|requestPointerLock/)
   assert.doesNotMatch(lifeMapScene, /PersistentWorldCompanion|requestPointerLock/)
 })
 
-test('embodied movement never removes semantic exits', () => {
-  assert.match(homeGraph, />Ground<\/button>/)
-  assert.match(homeGraph, />Life Map<\/button>/)
-  assert.match(ground, /Escape to return Home/)
+test('travel infrastructure preserves fallback, route ownership and canonical ascent capability', () => {
+  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS']) has(worldEvents, marker)
+  for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
+  for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
+  assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
+})
+
+test('embodied movement never removes semantic Focus and Replay exits', () => {
   assert.match(lifeMapScene, />Enter Focus<\/button>/)
   assert.match(lifeMapScene, />Replay<\/button>/)
 })

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { spawn } from 'node:child_process'
 
 const home = os.homedir()
 
@@ -69,6 +70,21 @@ function formatMiB(bytes) {
   return `${Math.round(bytes / 1024 / 1024)} MiB`
 }
 
+async function runNodeScript(scriptPath) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [scriptPath], {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: 'inherit',
+    })
+    child.once('error', reject)
+    child.once('exit', (code, signal) => {
+      if (code === 0) resolve()
+      else reject(new Error(`URAI asset forge failed (${signal || code})`))
+    })
+  })
+}
+
 for (const targetPath of pathsToRemove) {
   if (process.env.URAI_LOW_DISK_BUILD_VERBOSE === 'true') {
     const size = await dirSize(targetPath)
@@ -77,6 +93,11 @@ for (const targetPath of pathsToRemove) {
   await rm(targetPath)
 }
 
+const assetForge = path.join(process.cwd(), 'scripts', 'author-final-glb-pack.mjs')
+const assetVerifier = path.join(process.cwd(), 'scripts', 'verify-final-glb-pack.mjs')
+await runNodeScript(assetForge)
+await runNodeScript(assetVerifier)
+
 if (process.env.URAI_LOW_DISK_BUILD_VERBOSE === 'true') {
-  console.log('[URAI Spatial] Low-disk build cleanup complete.')
+  console.log('[URAI Spatial] Low-disk build cleanup and final GLB materialization complete.')
 }

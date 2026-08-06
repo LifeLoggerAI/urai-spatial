@@ -1,8 +1,10 @@
+import { useSceneStore } from '../store/useSceneStore'
 import type { UraiWorldTravelRequest } from './worldTypes'
 
 export const URAI_WORLD_TRAVEL_EVENT = 'urai:world-travel'
 export const URAI_WORLD_RETURN_EVENT = 'urai:world-return'
 export const URAI_WORLD_ORB_OPEN_EVENT = 'urai:world-orb-open'
+export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
@@ -34,8 +36,24 @@ function commitHardFallback(href: string) {
   window.location.assign(href)
 }
 
+function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
+  if (request.destination !== 'life-map') return false
+  if (request.entryPortal !== 'home-sky' || request.cameraCheckpoint !== 'home-sky-ascent') return false
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (pathname !== '/' && pathname !== '/home') return false
+  return Boolean(document.querySelector('.urai-asset-home-world canvas'))
+}
+
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
+
+  if (shouldBeginHomeAscent(request)) {
+    const scene = useSceneStore.getState()
+    if (scene.phase !== 'ASCENT') scene.enterLifeMap()
+    window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_HOME_ASCENT_EVENT, { detail: request }))
+    return
+  }
+
   const now = Date.now()
   const fingerprint = JSON.stringify(request)
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
@@ -81,5 +99,6 @@ declare global {
     [URAI_WORLD_TRAVEL_EVENT]: CustomEvent<UraiWorldTravelRequest>
     [URAI_WORLD_RETURN_EVENT]: Event
     [URAI_WORLD_ORB_OPEN_EVENT]: Event
+    [URAI_HOME_ASCENT_EVENT]: CustomEvent<UraiWorldTravelRequest>
   }
 }

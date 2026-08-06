@@ -1,240 +1,113 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
+import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useRef, useState, type FocusEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { MobileMovementPad, MovementHelp, useDragLook, useMovementInput } from "@/spatial/navigation/EmbodiedNavigation";
-import { DESTINATIONS, STATE_LABEL, type GroundDestination, type GroundLayer } from "./ground/GroundWorldModel";
-import { EmbodiedGroundScene, type GroundCheckpoint } from "./ground/EmbodiedGroundScene";
+import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from "@/spatial/navigation/EmbodiedNavigation";
+import { DESTINATIONS, type GroundDestination } from "./ground/GroundWorldModel";
 
-const CHECKPOINT_KEY = "urai:ground:checkpoint";
-const LAYERS: GroundLayer[] = ["threshold", "civic", "continuity", "deep"];
+const GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";
+const BOUNDS = { minX: -13, maxX: 13, minZ: -13, maxZ: 13 };
+const SPAWN = new THREE.Vector3(0, 0, 8.5);
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(query.matches);
-    update();
-    query.addEventListener?.("change", update);
-    return () => query.removeEventListener?.("change", update);
-  }, []);
-  return reduced;
+type PlayerProps = { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; onNearby: (value: GroundDestination | null) => void };
+
+function prepareModel(source: THREE.Object3D) {
+  source.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+  });
+  return source;
 }
 
-function readCheckpoint(): GroundCheckpoint | null {
-  try {
-    const value = window.sessionStorage.getItem(CHECKPOINT_KEY);
-    if (!value) return null;
-    const parsed = JSON.parse(value) as GroundCheckpoint;
-    return Number.isFinite(parsed.x) && Number.isFinite(parsed.z) ? parsed : null;
-  } catch {
-    return null;
-  }
+function GroundWorld({ target, activeId, onSelect }: { target: MutableRefObject<THREE.Vector3 | null>; activeId: string | null; onSelect: (destination: GroundDestination) => void }) {
+  const { scene, animations } = useGLTF(GROUND_MODEL);
+  const root = useRef<THREE.Group>(null);
+  const world = useMemo(() => prepareModel(scene.clone(true)), [scene]);
+  const { actions } = useAnimations(animations, root);
+
+  useEffect(() => {
+    actions.Ground_Pulse?.reset().fadeIn(0.35).play();
+    actions.Nexus_Idle?.reset().fadeIn(0.35).play();
+    return () => { actions.Ground_Pulse?.fadeOut(0.2); actions.Nexus_Idle?.fadeOut(0.2); };
+  }, [actions]);
+
+  useEffect(() => {
+    for (const destination of DESTINATIONS) {
+      const node = world.getObjectByName(`ground-destination-${destination.id}`);
+      if (node) node.scale.setScalar(activeId === destination.id ? 1.08 : 1);
+    }
+  }, [activeId, world]);
+
+  const onWorldClick = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+    let object: THREE.Object3D | null = event.object;
+    while (object) {
+      const destination = DESTINATIONS.find((item) => object?.name === `ground-destination-${item.id}` || object?.name.startsWith(`${item.id}-`));
+      if (destination) { onSelect(destination); return; }
+      object = object.parent;
+    }
+    target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ));
+  };
+
+  return <group ref={root} name="ground-continuity-architectural-shell" data-ground-runtime-asset={GROUND_MODEL} onClick={onWorldClick}><primitive object={world} /><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.08, 0]} name="ground-walkable-navigation-surface" data-testid="urai-ground-walkable-surface" onClick={onWorldClick}><planeGeometry args={[28, 28]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh></group>;
+}
+
+function Player({ input, yaw, pitch, target, onNearby }: PlayerProps) {
+  const { camera } = useThree();
+  const position = useRef(SPAWN.clone());
+  const velocity = useRef(new THREE.Vector3());
+  const lookAt = useRef(new THREE.Vector3());
+  const nearbyRef = useRef<string | null>(null);
+  useFrame((_, delta) => {
+    stepEmbodiedMotion({ position: position.current, velocity: velocity.current, input, target, yaw: yaw.current, delta, speed: 4.1, acceleration: 11, deceleration: 13, bounds: BOUNDS, obstacles: [{ x: 0, z: -1, radius: 2.2 }] });
+    camera.position.set(position.current.x, 1.9, position.current.z);
+    lookAt.current.set(position.current.x - Math.sin(yaw.current) * Math.cos(pitch.current), 1.9 + Math.sin(pitch.current), position.current.z - Math.cos(yaw.current) * Math.cos(pitch.current));
+    camera.lookAt(lookAt.current);
+    let nearest: GroundDestination | null = null;
+    let best = 3.2;
+    for (const destination of DESTINATIONS) {
+      const distance = Math.hypot(position.current.x - destination.position[0], position.current.z - destination.position[2]);
+      if (distance < best) { best = distance; nearest = destination; }
+    }
+    const id = nearest?.id ?? null;
+    if (id !== nearbyRef.current) { nearbyRef.current = id; onNearby(nearest); }
+  });
+  return null;
+}
+
+function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; activeId: string | null; onNearby: (value: GroundDestination | null) => void; onSelect: (destination: GroundDestination) => void }) {
+  return <><color attach="background" args={["#01040a"]} /><fogExp2 attach="fog" args={["#050b14", 0.024]} /><ambientLight intensity={0.42} color="#d2efff" /><hemisphereLight args={["#b9dcff", "#020306", 1.15]} /><directionalLight position={[8, 18, 8]} intensity={3.4} color="#dff5ff" castShadow shadow-mapSize={[2048, 2048]} /><directionalLight position={[-10, 7, -12]} intensity={1.6} color="#9a7cff" /><Stars radius={130} depth={80} count={950} factor={1.9} saturation={0.12} fade speed={0.02} /><Sparkles count={150} scale={[30, 14, 30]} position={[0, 4, 0]} size={1.25} speed={0.08} opacity={0.2} color="#bcecff" /><Player input={input} yaw={yaw} pitch={pitch} target={target} onNearby={onNearby} /><GroundWorld target={target} activeId={activeId} onSelect={onSelect} /><EffectComposer multisampling={0}><Bloom intensity={1.18} luminanceThreshold={0.52} luminanceSmoothing={0.25} mipmapBlur /><Vignette eskil={false} offset={0.13} darkness={0.64} /></EffectComposer></>;
 }
 
 export default function GroundSpatialWorldClean() {
   const router = useRouter();
-  const reducedMotion = useReducedMotion();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [nearby, setNearby] = useState<GroundDestination | null>(null);
-  const [moving, setMoving] = useState(false);
-  const [resetVersion, setResetVersion] = useState(0);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [guideDestination, setGuideDestination] = useState<GroundDestination | null>(null);
-  const [requestedCheckpoint, setRequestedCheckpoint] = useState<GroundCheckpoint | null>(null);
-  const [openLayer, setOpenLayer] = useState<GroundLayer>("threshold");
-  const [groundReady, setGroundReady] = useState(false);
-  const [arrival, setArrival] = useState<"entering" | "settled">("entering");
   const yaw = useRef(0);
   const pitch = useRef(-0.05);
-  const walkTarget = useRef<THREE.Vector3 | null>(null);
-  const nearbyId = useRef<string | null>(null);
-  const active = DESTINATIONS.find((destination) => destination.id === activeId) ?? null;
+  const target = useRef<THREE.Vector3 | null>(null);
+  const enter = useCallback((destination: GroundDestination) => router.push(destination.href), [router]);
+  const interact = useCallback(() => { if (nearby) enter(nearby); }, [enter, nearby]);
+  const reset = useCallback(() => { yaw.current = 0; pitch.current = -0.05; target.current = SPAWN.clone(); }, []);
+  const input = useMovementInput({ onEscape: () => router.push("/home?returnFrom=ground"), onInteract: interact, onReset: reset });
+  const look = useDragLook({ yaw, pitch, sensitivity: 0.0034, onDragState: setDragging });
+  const focusDestination = useCallback((destination: GroundDestination) => { setActiveId(destination.id); target.current = new THREE.Vector3(destination.camera[0], 0, destination.camera[2]); }, []);
 
-  const storeCheckpoint = useCallback((checkpoint: GroundCheckpoint) => {
-    try { window.sessionStorage.setItem(CHECKPOINT_KEY, JSON.stringify(checkpoint)); } catch { /* storage is best effort */ }
-  }, []);
-
-  const goNow = useCallback((destination: GroundDestination) => {
-    storeCheckpoint({ x: destination.camera[0], z: destination.camera[2], yaw: 0, pitch: -0.05, district: destination.id });
-    router.push(destination.href);
-  }, [router, storeCheckpoint]);
-
-  const guideTo = useCallback((destination: GroundDestination) => {
-    setActiveId(destination.id);
-    setOpenLayer(destination.layer);
-    if (reducedMotion) {
-      setRequestedCheckpoint({ x: destination.camera[0], z: destination.camera[2], yaw: 0, pitch: -0.05, district: destination.id });
-      setResetVersion((value) => value + 1);
-    } else {
-      setGuideDestination(destination);
-    }
-  }, [reducedMotion]);
-
-  const enterDestination = useCallback((destination: GroundDestination) => {
-    setGuideDestination(null);
-    goNow(destination);
-  }, [goNow]);
-
-  const resetOrientation = useCallback(() => {
-    yaw.current = 0;
-    pitch.current = -0.05;
-    walkTarget.current = null;
-    nearbyId.current = null;
-    setNearby(null);
-    setMoving(false);
-    setGuideDestination(null);
-    setRequestedCheckpoint({ x: 0, z: 8.2, yaw: 0, pitch: -0.05 });
-    setResetVersion((value) => value + 1);
-  }, []);
-
-  const input = useMovementInput({
-    onEscape: () => {
-      router.push("/home?returnFrom=ground");
-    },
-    onInteract: () => {
-      const destination = DESTINATIONS.find((candidate) => candidate.id === nearbyId.current);
-      if (destination) enterDestination(destination);
-    },
-    onReset: resetOrientation,
-  });
-  const look = useDragLook({ yaw, pitch, sensitivity: reducedMotion ? 0.0022 : 0.0036, onDragState: setDragging });
-
-  useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get("district");
-    const destination = DESTINATIONS.find((candidate) => candidate.id === requested);
-    if (destination) {
-      setActiveId(destination.id);
-      setOpenLayer(destination.layer);
-      setRequestedCheckpoint({ x: destination.camera[0], z: destination.camera[2], yaw: 0, pitch: -0.05, district: destination.id });
-    } else {
-      setRequestedCheckpoint(readCheckpoint());
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!groundReady) return;
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => setArrival("settled"));
-    });
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-    };
-  }, [groundReady]);
-
-  const prompt = nearby
-    ? `${nearby.label}: cross the threshold`
-    : moving
-      ? `Moving through Ground · ${active ? `following the route to ${active.label}` : "exploring the Nexus"}`
-      : active
-        ? `${active.label} selected · follow the illuminated route`
-        : "Arrival overlook · Ground Nexus ahead";
-
-  return (
-    <main
-      className="ground-spatial-root"
-      aria-label="URAI Ground embodied private infrastructure"
-      data-testid="urai-ground-private-workforce-world"
-      data-ground-visual-owner="three-dimensional-infrastructure-world"
-      data-ground-no-compositing-bands="true"
-      data-ground-exploration="walkable"
-      data-ground-pointer-lock="false"
-      data-ground-ready={groundReady ? "true" : "false"}
-      data-ground-arrival={arrival}
-      data-ground-camera-mode={dragging ? "look" : moving ? "walking" : "embodied-idle"}
-      {...look}
-    >
-      <div className="ground-title" aria-hidden="true">
-        <span>URAI Ground</span>
-        <strong>Private infrastructure, embodied.</strong>
-        <em>{active ? `${active.layer} layer · ${active.signature}` : "Arrival overlook · Ground Nexus ahead"}</em>
-      </div>
-      <Suspense fallback={<div className="ground-loader" role="status">Building the protected Ground</div>}>
-        <Canvas
-          shadows
-          dpr={[1, 1.5]}
-          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          onCreated={({ gl }) => { gl.setClearColor(0x020812, 1); setGroundReady(true); }}
-          onPointerMissed={() => { if (!nearby) setActiveId(null); }}
-        >
-          <EmbodiedGroundScene
-            active={active}
-            input={input}
-            yaw={yaw}
-            pitch={pitch}
-            walkTarget={walkTarget}
-            nearbyId={nearbyId}
-            resetVersion={resetVersion}
-            reducedMotion={reducedMotion}
-            requestedCheckpoint={requestedCheckpoint}
-            guideDestination={guideDestination}
-            onApproach={guideTo}
-            onEnter={enterDestination}
-            onNearbyChange={(destination) => {
-              setNearby(destination);
-              if (destination) {
-                setActiveId(destination.id);
-                setOpenLayer(destination.layer);
-              }
-            }}
-            onMovementState={setMoving}
-            onCheckpointChange={storeCheckpoint}
-          />
-        </Canvas>
-      </Suspense>
-      <div className="ground-movement-prompt" role="status" aria-live="polite">
-        <strong>{prompt}</strong>
-        <span>{nearby ? "Press Enter or tap the chamber again" : "WASD / arrows · click floor · drag to look"}</span>
-      </div>
-      <MovementHelp realm="Ground" summary="Walk from the overlook through the Nexus and approach a chamber. The directory can guide you spatially or take you there immediately." controls="WASD or arrows move. Click floor to walk. Drag to look. Enter crosses a nearby threshold. R resets. Escape returns Home." />
-      <MobileMovementPad input={input} label="Ground movement controls" />
-      <section className="ground-directory" data-movement-ui="true" aria-label="Ground destination directory">
-        <div className="ground-layer-tabs" role="tablist" aria-label="Ground layers">
-          {LAYERS.map((layer) => <button key={layer} type="button" role="tab" aria-selected={openLayer === layer} onClick={() => setOpenLayer(layer)}>{layer}</button>)}
-        </div>
-        <nav className="ground-destination-compass ground-rail" aria-label="Ground destinations">
-          {DESTINATIONS.map((destination) => {
-            if (destination.layer !== openLayer) return null;
-            const shared = {
-              "data-ground-destination": destination.id,
-              "data-workforce-state": destination.workforceState,
-              "data-service-availability": destination.availability,
-              "data-ground-layer": destination.layer,
-              "aria-label": `${destination.label}. ${destination.detail}. ${destination.signature}. ${destination.emotionalSentence} Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}. Guide me through Ground.`,
-              onFocus: (event: FocusEvent<HTMLButtonElement>) => {
-                setActiveId(destination.id);
-                event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
-              },
-              onMouseEnter: () => setActiveId(destination.id),
-            };
-            return (
-              <div className="ground-destination-entry" key={destination.id}>
-                <button type="button" aria-current={activeId === destination.id ? "location" : undefined} {...shared} onClick={() => guideTo(destination)}>
-                  <span aria-hidden="true" style={{ background: destination.color }} /><strong>{destination.label}</strong><i aria-hidden="true">{destination.workforceState === "blocked" ? "×" : destination.ownerBoundary ? "◇" : "→"}</i>
-                </button>
-                <button type="button" className="ground-go-now" aria-label={`Go now to ${destination.label}`} onClick={() => goNow(destination)}>Go now</button>
-              </div>
-            );
-          })}
-        </nav>
-      </section>
-      <p className="ground-accessible-instruction">Walk with WASD or arrow keys, click valid floor to move, drag to look, press Enter at a nearby threshold, choose Guide me for spatial travel, choose Go now for immediate travel, press R to reset orientation, and Escape to return Home.</p>
-      <style jsx>{`
-        .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#071015;color:#f8fbff;isolation:isolate;outline:none;font-family:Inter,ui-sans-serif,system-ui;touch-action:none;cursor:grab}.ground-spatial-root[data-ground-camera-mode='look']{cursor:grabbing}
-        .ground-title{position:absolute;top:max(20px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));z-index:5;display:grid;gap:4px;pointer-events:none;text-shadow:0 12px 40px rgba(0,0,0,.72)}
-        .ground-title span{font:800 10px/1 Inter;letter-spacing:.24em;text-transform:uppercase;color:rgba(165,243,252,.82)}.ground-title strong{font:800 clamp(18px,2.2vw,30px)/1.05 Inter;letter-spacing:-.035em}.ground-title em{font:700 10px/1.2 Inter;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:rgba(203,239,255,.64)}
-        .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;touch-action:none}.ground-loader{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#071015;color:rgba(226,246,255,.78);letter-spacing:.16em;text-transform:uppercase;font-size:12px}
-        .ground-movement-prompt{position:absolute;left:50%;bottom:max(124px,calc(env(safe-area-inset-bottom) + 112px));z-index:7;transform:translateX(-50%);display:grid;gap:3px;min-width:min(430px,calc(100vw - 32px));padding:10px 16px;border:1px solid rgba(207,250,254,.18);border-radius:18px;background:rgba(2,10,22,.7);backdrop-filter:blur(16px);text-align:center;pointer-events:none}.ground-movement-prompt strong{font:800 11px/1.2 Inter;letter-spacing:.08em;text-transform:uppercase}.ground-movement-prompt span{font:600 10px/1.3 Inter;color:rgba(199,235,247,.7)}
-        .ground-directory{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(96px,calc(env(safe-area-inset-right) + 84px));bottom:max(12px,env(safe-area-inset-bottom));z-index:9;display:grid;gap:5px;min-width:0}.ground-layer-tabs{display:flex;gap:5px;min-width:0;max-width:100%;overflow-x:auto;scrollbar-width:none}.ground-layer-tabs button{min-height:34px;padding:6px 12px;border:1px solid rgba(174,225,255,.14);border-radius:999px;background:rgba(2,10,22,.68);color:rgba(239,249,255,.74);text-transform:capitalize;font:750 10px/1 Inter}.ground-layer-tabs button[aria-selected='true']{background:rgba(207,250,254,.9);color:#061017}
-        .ground-destination-compass{display:flex;gap:6px;box-sizing:border-box;min-width:0;max-width:100%;overflow-x:auto;padding:2px;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scrollbar-width:none;touch-action:pan-x;scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right))}.ground-destination-compass::-webkit-scrollbar,.ground-layer-tabs::-webkit-scrollbar{display:none}.ground-destination-entry{display:flex;flex:0 0 auto;gap:4px}.ground-destination-entry>button{display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:8px 12px;border:1px solid rgba(174,225,255,.18);border-radius:15px;background:linear-gradient(180deg,rgba(11,28,43,.85),rgba(1,7,18,.82));color:rgba(239,249,255,.86);font:700 10px/1 Inter;cursor:pointer;white-space:nowrap}.ground-destination-entry>button:first-child{max-width:48px;overflow:hidden;transition:max-width .22s ease,border-color .18s ease,transform .18s ease}.ground-destination-entry>button:first-child:hover,.ground-destination-entry>button:first-child:focus-visible,.ground-destination-entry>button:first-child[aria-current]{max-width:240px;transform:translateY(-2px)}.ground-destination-entry>button:first-child strong{opacity:0;max-width:0;overflow:hidden;transition:opacity .18s ease,max-width .22s ease}.ground-destination-entry>button:first-child:hover strong,.ground-destination-entry>button:first-child:focus-visible strong,.ground-destination-entry>button:first-child[aria-current] strong{opacity:1;max-width:180px}.ground-destination-entry>button:first-child span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 16px currentColor}.ground-destination-entry>button[aria-current]{border-color:rgba(207,250,254,.76);background:linear-gradient(180deg,rgba(20,57,79,.96),rgba(5,22,35,.94));outline:2px solid rgba(255,255,255,.84);outline-offset:2px}.ground-destination-entry i{font-style:normal}.ground-go-now{padding-inline:10px!important;color:#a5f3fc!important}
-        .ground-accessible-instruction{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}:global(.ground-active-label){display:grid;gap:5px;min-width:210px;max-width:300px;padding:13px 15px;border:1px solid rgba(207,250,254,.34);border-radius:18px;background:linear-gradient(180deg,rgba(7,22,35,.94),rgba(1,7,18,.9));box-shadow:0 18px 60px rgba(0,0,0,.52);backdrop-filter:blur(18px);text-align:center;pointer-events:none}:global(.ground-active-label strong){font-size:11px;letter-spacing:.12em;text-transform:uppercase}:global(.ground-active-label span),:global(.ground-active-label small){font-size:9px;color:rgba(235,244,255,.76)}:global(.ground-active-label em){font-size:8px;font-style:normal;color:#a5f3fc;text-transform:uppercase;letter-spacing:.09em}
-        @media(max-width:700px){.ground-title{top:max(15px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}.ground-title strong{font-size:18px}.ground-movement-prompt{bottom:max(246px,calc(env(safe-area-inset-bottom) + 236px));min-width:min(320px,calc(100vw - 24px))}.ground-directory{left:max(170px,calc(env(safe-area-inset-left) + 158px));right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));padding-left:0;box-sizing:border-box;min-width:0;max-width:calc(100vw - max(182px,calc(env(safe-area-inset-left) + 170px)))}.ground-layer-tabs,.ground-destination-compass{width:100%;max-width:100%;min-width:0}.ground-layer-tabs button{min-height:38px}.ground-destination-entry>button{min-height:48px;font-size:9px;transition:none}}
-        @media(prefers-reduced-motion:reduce){.ground-spatial-root *{scroll-behavior:auto!important}.ground-destination-entry>button,.ground-layer-tabs button{transition:none!important}.ground-destination-compass :is(a,button) strong{transition:none}}
-      `}</style>
-    </main>
-  );
+  return <main className="ground-spatial-root" aria-label="URAI Ground embodied private infrastructure" data-testid="urai-ground-private-workforce-world" data-ground-visual-owner="final-glb-infrastructure-world" data-ground-runtime-assets="ground-world-terrain-v1.glb" data-ground-no-compositing-bands="true" data-ground-exploration="walkable" data-ground-pointer-lock="false" data-ground-ready={ready ? "true" : "false"} data-ground-camera-mode={dragging ? "look" : "embodied-idle"} {...look}>
+    <Canvas shadows dpr={[1, 1.6]} camera={{ position: [0, 1.9, 8.5], fov: 56, near: 0.08, far: 180 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.setClearColor(0x01040a, 1); gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; setReady(true); }}><GroundScene input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={(destination) => { setNearby(destination); if (destination) setActiveId(destination.id); }} onSelect={focusDestination} /></Canvas>
+    <header className="ground-brand" aria-hidden="true"><span>URAI GROUND</span><strong>{nearby ? nearby.label : "Private infrastructure beneath the living world"}</strong></header>
+    <div className="ground-prompt" role="status" aria-live="polite">{nearby ? `Enter ${nearby.label}` : "Walk deeper. Approach a chamber."}</div>
+    <nav className="ground-directory ground-destination-compass" aria-label="Ground destinations">{DESTINATIONS.map((destination) => <button key={destination.id} type="button" data-ground-destination={destination.id} aria-current={activeId === destination.id ? "location" : undefined} onClick={() => focusDestination(destination)}><span style={{ background: destination.color }} /><strong>{destination.label}</strong></button>)}</nav>
+    <MobileMovementPad input={input} label="Ground movement controls" />
+    <style jsx>{`.ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#01040a;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}.ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important}.ground-brand{position:absolute;z-index:10;left:max(20px,env(safe-area-inset-left));top:max(20px,env(safe-area-inset-top));display:grid;gap:5px;pointer-events:none;text-shadow:0 12px 40px rgba(0,0,0,.76)}.ground-brand span{font:850 10px/1 system-ui;letter-spacing:.28em;color:#a5f3fc}.ground-brand strong{font:700 clamp(17px,2vw,28px)/1.1 system-ui;letter-spacing:-.03em}.ground-prompt{position:absolute;z-index:10;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:10px 16px;border:1px solid rgba(207,250,254,.16);border-radius:999px;background:rgba(2,10,22,.56);backdrop-filter:blur(14px);font:750 11px/1 system-ui;letter-spacing:.1em;text-transform:uppercase;pointer-events:none;white-space:nowrap}.ground-directory{position:absolute;z-index:12;right:max(14px,env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:grid;gap:6px;max-height:72vh;overflow:auto;padding:6px;scrollbar-width:none}.ground-directory::-webkit-scrollbar{display:none}.ground-directory button{display:flex;align-items:center;gap:8px;min-width:48px;max-width:190px;padding:9px 11px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(3,10,18,.5);color:#eef8ff;backdrop-filter:blur(12px);cursor:pointer}.ground-directory button span{width:7px;height:7px;border-radius:50%}.ground-directory strong{font:700 10px/1 system-ui;letter-spacing:.06em}.ground-directory button[aria-current="location"]{border-color:rgba(165,243,252,.48);background:rgba(8,28,40,.78)}@media(max-width:760px){.ground-brand{left:16px;top:16px}.ground-directory{left:0;right:0;top:auto;bottom:72px;transform:none;display:flex;overflow-x:auto;padding:0 14px}.ground-directory button{flex:0 0 auto}.ground-prompt{bottom:126px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}`}</style>
+  </main>;
 }
+
+useGLTF.preload(GROUND_MODEL);

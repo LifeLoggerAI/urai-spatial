@@ -8,7 +8,8 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const manifest = read('src/spatial/assets/sensoryAssetManifest.ts')
 const sensoryLayer = read('src/spatial/scene/SpatialSensoryLayer.tsx')
 const worldLayer = read('src/spatial/scene/SpatialWorldAssetLayer.tsx')
-const homeWorld = read('src/app/AssetDrivenHomeWorld.tsx')
+const homeRouteOwner = read('src/app/AssetDrivenHomeWorld.tsx')
+const homeWorld = read('src/spatial/layout/HomeWorldProduction.tsx')
 const receipt = JSON.parse(read('../operations/assets/production-receipts/sensory-layer-v1.json'))
 
 test('only evidence-backed sensory assets are ready', () => {
@@ -68,13 +69,12 @@ test('loading animation timing is relative to the mounted sensory layer', () => 
   assert.doesNotMatch(sensoryLayer, /\(clock\.elapsedTime \* 1000\) \/ loadingDurationMs/)
 })
 
-test('candidate ambient audio is not mounted as a production asset', () => {
+test('candidate ambient audio remains fail-closed on the live Home owner', () => {
+  const liveHome = `${homeRouteOwner}\n${homeWorld}`
+  assert.match(homeRouteOwner, /HomeWorldProduction/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
-  assert.doesNotMatch(homeWorld, /src="\/assets\/urai\/generated\/audio\/urai-ambient-bed-v1\.opus"/)
-  assert.match(homeWorld, /resolveReadyUraiSensoryAssetPath\('ambientAudio'\)/)
-  assert.match(homeWorld, /ambientAudioPath \? <audio[\s\S]*src=\{ambientAudioPath\}/)
-  assert.match(homeWorld, /data-home-audio=\{!ambientAudioPath \? 'silent-fallback'/)
-  assert.match(homeWorld, /disabled=\{!ambientAudioPath\}/)
-  assert.match(homeWorld, /Ambience unavailable/)
+  assert.doesNotMatch(liveHome, /urai-ambient-bed-v1\.opus/)
+  assert.doesNotMatch(homeWorld, /<audio\b/)
+  assert.match(homeWorld, /data-home-audio="silent-fallback"/)
 })

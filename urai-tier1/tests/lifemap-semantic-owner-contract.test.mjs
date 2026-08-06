@@ -10,8 +10,7 @@ const founder = await readFile(new URL('../../scripts/capture-lifemap-founder-pr
 
 test('semantic navigator invokes the authoritative world selection transaction without hidden re-entry', () => {
   assert.match(navigator, /className="life-map-semantic-result" data-life-map-semantic-result data-life-map-node-id=\{node\.id\} role="listitem"/)
-  assert.doesNotMatch(navigator, /className="life-map-world-label"[^>]*role="listitem"/)
-  assert.doesNotMatch(navigator, /function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
+  assert.doesNotMatch(navigator, /className="life-map-world-label"|function activateWorldLabel|owner\.click\(\)|activateWorldLabel\(node\)/)
   assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(selection, /LIFE_MAP_SELECTION_EVENT = 'urai:life-map-select-node'/)
   assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
@@ -37,15 +36,15 @@ test('semantic selection retains one bounded route fail-safe only when real sele
   assert.doesNotMatch(navigator, /requestLifeMapSelection\(node\.id, source\)[\s\S]*router\.replace\([^)]*\);\s*\}/)
 })
 
-test('mounted world labels retain independent pointer activation ownership', () => {
-  assert.match(world, /className="life-map-world-label" data-life-map-node-id=\{node\.id\}/)
-  assert.match(world, /data-active=\{active \? "true" : "false"\}/)
-  assert.match(world, /button\.life-map-world-label\[data-life-map-node-id\]/)
-  assert.match(world, /document\.addEventListener\("click", handleWorldLabelClick, true\)/)
+test('mounted 3D artifacts retain independent pointer activation ownership', () => {
+  assert.doesNotMatch(world, /life-map-world-label|handleWorldLabelClick|document\.addEventListener\("click"/)
+  assert.match(world, /name=\{`life-map-artifact-\$\{resolveArtifactFamily\(node\)\}-\$\{node\.id\}`\}/)
+  assert.match(world, /data-artifact-family=\{resolveArtifactFamily\(node\)\}/)
+  assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
 })
 
-test('pointer keyboard and touch semantic paths converge on one single-fire click owner', () => {
+test('pointer keyboard and touch semantic paths converge on one single-fire selection transaction', () => {
   assert.match(navigator, /event\.detail === 0 \? "keyboard" : "pointer"/)
   assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
   assert.doesNotMatch(navigator, /onTouchEnd=/)
