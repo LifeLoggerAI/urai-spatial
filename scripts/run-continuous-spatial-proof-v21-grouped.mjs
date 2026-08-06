@@ -53,6 +53,10 @@ const receiptTarget = `  expectReady,\n  captures: [],`
 const receiptReplacement = `  expectReady,\n  group: ${JSON.stringify(group)},\n  captures: [],`
 if (original.split(receiptTarget).length - 1 !== 1) throw new Error('Receipt contract changed')
 
+const canvasRectTarget = `  const rect = await canvas.boundingBox()`
+const canvasRectReplacement = `  const rect = await canvas.evaluate((element) => {\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  })`
+if (original.split(canvasRectTarget).length - 1 !== 1) throw new Error('Canvas measurement contract changed')
+
 const executionStart = `const browser = await chromium.launch({ headless: true })`
 const originalExecutionIndex = original.indexOf(executionStart)
 if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecutionIndex + 1) >= 0) throw new Error('Execution contract changed')
@@ -92,6 +96,7 @@ if (receipt.errors.length) process.exit(1)`
 const patchedPrefix = original
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
+  .replace(canvasRectTarget, canvasRectReplacement)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) {
   throw new Error('Patched execution contract changed')
@@ -103,6 +108,7 @@ const requiredSemanticGuards = [
   ['fallback visibility guard', 'record.fallbackVisible'],
   ['fallback semantic destination count', 'record.semanticButtons !== 3'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
+  ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
 ]
 for (const [label, marker] of requiredSemanticGuards) {
   if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)
