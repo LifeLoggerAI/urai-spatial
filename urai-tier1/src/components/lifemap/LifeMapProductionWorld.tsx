@@ -2,7 +2,7 @@
 
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
@@ -23,6 +23,7 @@ export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approac
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
 
+const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
 const DEEP = "#01030a";
@@ -245,15 +246,21 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
   rotation?: Point3;
   clip?: "MemoryStar_Idle" | "MemoryStar_Selected" | "MemoryStar_Focus";
 }) {
+  const reducedMotion = useContext(LifeMapReducedMotionContext);
   const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
   const root = useRef<THREE.Group>(null);
   const model = useMemo(() => prepareAuthoredModel(scene, aura), [aura, scene]);
   const { actions } = useAnimations(animations, root);
   useEffect(() => {
     const chosen = actions[clip || (active ? "MemoryStar_Selected" : "MemoryStar_Idle")] || actions.MemoryStar_Idle;
-    chosen?.reset().fadeIn(0.28).play();
-    return () => { chosen?.fadeOut(0.18); };
-  }, [actions, active, clip]);
+    if (!chosen) return;
+    chosen.reset().play();
+    chosen.setEffectiveTimeScale(reducedMotion ? 0 : 1);
+    chosen.paused = reducedMotion;
+    if (reducedMotion) chosen.time = chosen.getClip().duration * (active ? 0.62 : 0.35);
+    else chosen.fadeIn(0.28);
+    return () => { chosen.fadeOut(0.18); chosen.stop(); };
+  }, [actions, active, clip, reducedMotion]);
   return (
     <group ref={root} scale={scale} rotation={rotation} userData={{ runtimeAsset: MEMORY_STAR_MODEL, authored: true }}>
       <primitive object={model} />
@@ -368,7 +375,8 @@ function PlaceArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.2 : 0.9} rotation={[-0.25, 0.18, 0.08]} /><Current points={[[-1.1, -0.35, 0.4], [-0.45, -0.1, -0.35], [0.35, -0.15, -0.6], [1.1, -0.32, 0.2]]} color={node.aura} opacity={active ? 0.66 : 0.3} width={0.022} /></group>;
 }
 function EmotionArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={0.08} opacity={0.72} color={node.aura} /></group>;
+  const reducedMotion = useContext(LifeMapReducedMotionContext);
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={0.72} color={node.aura} /></group>;
 }
 function PatternArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{[-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.92 : 0.48} width={0.031} />)}</group>;
@@ -504,10 +512,28 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
     if (!selected || phase !== "arrival") return;
     const arrival = actions.Focus_Arrival;
     const breathing = actions.Focus_Breathing;
-    arrival?.reset().setLoop(THREE.LoopOnce, 1).fadeIn(0.2).play();
-    breathing?.reset().fadeIn(0.65).play();
-    return () => { arrival?.fadeOut(0.18); breathing?.fadeOut(0.25); };
-  }, [actions, phase, selected]);
+    if (arrival) {
+      arrival.reset().setLoop(THREE.LoopOnce, 1).play();
+      arrival.clampWhenFinished = true;
+      arrival.setEffectiveTimeScale(reducedMotion ? 0 : 1);
+      arrival.paused = reducedMotion;
+      if (reducedMotion) arrival.time = arrival.getClip().duration;
+      else arrival.fadeIn(0.2);
+    }
+    if (breathing) {
+      breathing.reset().play();
+      breathing.setEffectiveTimeScale(reducedMotion ? 0 : 1);
+      breathing.paused = reducedMotion;
+      if (reducedMotion) breathing.time = breathing.getClip().duration * 0.35;
+      else breathing.fadeIn(0.65);
+    }
+    return () => {
+      arrival?.fadeOut(0.18);
+      breathing?.fadeOut(0.25);
+      arrival?.stop();
+      breathing?.stop();
+    };
+  }, [actions, phase, reducedMotion, selected]);
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return;
     group.current.rotation.y = Math.sin(clock.elapsedTime * 0.07) * 0.035;
@@ -568,44 +594,46 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   }, [nodes, onSelect]);
 
   return (
-    <>
-      <color attach="background" args={[DEEP]} />
-      <fog attach="fog" args={["#061020", 14, 88]} />
-      <ambientLight intensity={0.34} color="#ccecff" />
-      <hemisphereLight args={["#dff8ff", "#02030a", 0.82]} />
-      <directionalLight position={[9, 14, 10]} intensity={2.25} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
-      <directionalLight position={[-10, 8, -16]} intensity={1.6} color={VIOLET} />
-      {webglRecovery}
-      <RenderProofRepublisher />
-      {cameraRig}
-      <group name="life-map-authored-environment">
-        <mesh><sphereGeometry args={[86, 48, 36]} /><meshBasicMaterial color="#020713" side={THREE.BackSide} /></mesh>
-        <FieldParticles seed={1220} count={profile.tier === "low" ? 120 : 320} radius={42} depth={70} height={32} color={VIOLET} opacity={0.16} size={0.065} />
-      </group>
-      <group name="life-map-temporal-horizon">
-        <Current points={[[-28, 8, -42], [-12, 10, -48], [0, 7, -54], [13, 11, -48], [28, 8, -42]]} color={CYAN} opacity={0.08} width={0.18} />
-      </group>
-      <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
-      <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
-        <LifeCore hidden={Boolean(selected)} reducedMotion={profile.reducedMotion} tier={profile.tier} />
-        <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
-        <ChapterTerritories selected={selected} />
-        <ForegroundObservatory selected={selected} />
-        <OverviewLandmarks selected={selected} />
-        <group name="life-map-memory-artifact-families">
-          {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
+    <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
+      <>
+        <color attach="background" args={[DEEP]} />
+        <fog attach="fog" args={["#061020", 14, 88]} />
+        <ambientLight intensity={0.34} color="#ccecff" />
+        <hemisphereLight args={["#dff8ff", "#02030a", 0.82]} />
+        <directionalLight position={[9, 14, 10]} intensity={2.25} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
+        <directionalLight position={[-10, 8, -16]} intensity={1.6} color={VIOLET} />
+        {webglRecovery}
+        <RenderProofRepublisher />
+        {cameraRig}
+        <group name="life-map-authored-environment">
+          <mesh><sphereGeometry args={[86, 48, 36]} /><meshBasicMaterial color="#020713" side={THREE.BackSide} /></mesh>
+          <FieldParticles seed={1220} count={profile.tier === "low" ? 120 : 320} radius={42} depth={70} height={32} color={VIOLET} opacity={0.16} size={0.065} />
         </group>
-        <group name="life-map-selected-relationship-context" />
-        <IntimateMemoryChamber selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
-      </group>
-      <MemoryWeather reducedMotion={profile.reducedMotion} />
-      <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
-      <group name="life-map-far-future-horizon">
-        <Stars radius={120} depth={84} count={starCount} factor={2.25} saturation={0.32} fade speed={profile.reducedMotion ? 0 : 0.018} />
-        <Sparkles count={profile.tier === "low" ? 70 : 160} scale={[48, 26, 72]} position={[0, 3, -18]} size={1.35} speed={profile.reducedMotion ? 0 : 0.08} opacity={0.28} color="#d9f7ff" />
-      </group>
-      <CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} />
-    </>
+        <group name="life-map-temporal-horizon">
+          <Current points={[[-28, 8, -42], [-12, 10, -48], [0, 7, -54], [13, 11, -48], [28, 8, -42]]} color={CYAN} opacity={0.08} width={0.18} />
+        </group>
+        <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
+        <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
+          <LifeCore hidden={Boolean(selected)} reducedMotion={profile.reducedMotion} tier={profile.tier} />
+          <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
+          <ChapterTerritories selected={selected} />
+          <ForegroundObservatory selected={selected} />
+          <OverviewLandmarks selected={selected} />
+          <group name="life-map-memory-artifact-families">
+            {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
+          </group>
+          <group name="life-map-selected-relationship-context" />
+          <IntimateMemoryChamber selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
+        </group>
+        <MemoryWeather reducedMotion={profile.reducedMotion} />
+        <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
+        <group name="life-map-far-future-horizon">
+          <Stars radius={120} depth={84} count={starCount} factor={2.25} saturation={0.32} fade speed={profile.reducedMotion ? 0 : 0.018} />
+          <Sparkles count={profile.tier === "low" ? 70 : 160} scale={[48, 26, 72]} position={[0, 3, -18]} size={1.35} speed={profile.reducedMotion ? 0 : 0.08} opacity={0.28} color="#d9f7ff" />
+        </group>
+        <CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} />
+      </>
+    </LifeMapReducedMotionContext.Provider>
   );
 }
 
