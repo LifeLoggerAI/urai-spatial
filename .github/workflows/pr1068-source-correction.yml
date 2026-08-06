@@ -66,6 +66,7 @@ jobs:
           if (/\sdata-[a-z0-9-]+=/.test(lifeMap)) {
             throw new Error('Unsupported R3F data-* props remain in LifeMapProductionWorld.tsx')
           }
+          lifeMap = lifeMap.replace(/[ \t]+$/gm, '')
           fs.writeFileSync(lifeMapPath, lifeMap)
 
           const navigationPath = 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
