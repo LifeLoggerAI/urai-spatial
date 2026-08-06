@@ -36,6 +36,30 @@ function prepareModel(source: THREE.Object3D) {
   return source;
 }
 
+function bindGroundAuthoredRegions(source: THREE.Object3D) {
+  const thresholds: Record<string, string[]> = {};
+  for (const destination of DESTINATIONS) {
+    const matched: THREE.Object3D[] = [];
+    source.traverse((object) => {
+      if (
+        object.name === `ground-destination-${destination.id}` ||
+        object.name.startsWith(`${destination.id}-`)
+      ) matched.push(object);
+    });
+    if (!matched.length) {
+      throw new Error(`Authored Ground is missing destination geometry for ground-enterable-threshold-${destination.id}.`);
+    }
+    thresholds[destination.id] = matched.map((object) => object.name);
+    for (const object of matched) {
+      object.userData.uraiEnterableThreshold = `ground-enterable-threshold-${destination.id}`;
+      object.userData.destinationHref = destination.href;
+      object.userData.destinationLabel = destination.label;
+    }
+  }
+  source.userData.uraiEnterableThresholds = thresholds;
+  return source;
+}
+
 function GroundWorld({
   target,
   activeId,
@@ -47,7 +71,7 @@ function GroundWorld({
 }) {
   const { scene, animations } = useGLTF(GROUND_MODEL);
   const root = useRef<THREE.Group>(null);
-  const world = useMemo(() => prepareModel(scene.clone(true)), [scene]);
+  const world = useMemo(() => bindGroundAuthoredRegions(prepareModel(scene.clone(true))), [scene]);
   const { actions } = useAnimations(animations, root);
 
   useEffect(() => {
@@ -70,11 +94,16 @@ function GroundWorld({
     event.stopPropagation();
     let object: THREE.Object3D | null = event.object;
     while (object) {
-      const destination = DESTINATIONS.find(
-        (item) =>
-          object?.name === `ground-destination-${item.id}` ||
-          object?.name.startsWith(`${item.id}-`),
-      );
+      const threshold = typeof object.userData.uraiEnterableThreshold === "string"
+        ? object.userData.uraiEnterableThreshold
+        : null;
+      const destination = threshold
+        ? DESTINATIONS.find((item) => threshold === `ground-enterable-threshold-${item.id}`)
+        : DESTINATIONS.find(
+            (item) =>
+              object?.name === `ground-destination-${item.id}` ||
+              object?.name.startsWith(`${item.id}-`),
+          );
       if (destination) {
         onSelect(destination);
         return;
@@ -92,14 +121,14 @@ function GroundWorld({
     <group
       ref={root}
       name="ground-continuity-architectural-shell"
-      data-ground-runtime-asset={GROUND_MODEL}
+      userData={{ runtimeAsset: GROUND_MODEL, semanticOwner: "ground-continuity-architectural-shell" }}
       onClick={onWorldClick}
     >
-      <group name="ground-walkable-path-network" data-ground-node-family="path-bridge-* engraved-path-*">
-        <group name="ground-central-nexus" data-ground-node-family="ground-central-nexus nexus-core">
+      <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
+        <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group
             name="ground-workforce-and-council-presences"
-            data-ground-node-family="ground-destination-council council-* workforce-*"
+            userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}
           >
             <primitive object={world} />
           </group>
@@ -109,7 +138,7 @@ function GroundWorld({
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, 0.08, 0]}
         name="ground-walkable-navigation-surface"
-        data-testid="urai-ground-walkable-surface"
+        userData={{ semanticOwner: "urai-ground-walkable-surface" }}
         onClick={onWorldClick}
       >
         <planeGeometry args={[28, 28]} />
@@ -262,6 +291,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-pointer-lock="false"
       data-ground-ready={ready ? "true" : "false"}
       data-ground-camera-mode={dragging ? "look" : "embodied-idle"}
+      data-ground-enterable-thresholds={DESTINATIONS.map((destination) => `ground-enterable-threshold-${destination.id}`).join(" ")}
       {...look}
     >
       <Canvas
@@ -304,10 +334,9 @@ export default function GroundSpatialWorldClean() {
             type="button"
             data-ground-destination={destination.id}
             aria-current={activeId === destination.id ? "location" : undefined}
-            onClick={(event) => {
-              focusDestination(destination);
-              event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
-            }}
+            onFocus={(event) => event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" })}
+            onClick={() => focusDestination(destination)}
+            onDoubleClick={() => enter(destination)}
           >
             <span style={{ background: destination.color }} />
             <strong>{destination.label}</strong>
@@ -315,6 +344,7 @@ export default function GroundSpatialWorldClean() {
         ))}
       </nav>
       <MobileMovementPad input={input} label="Ground movement controls" />
+      <span className="sr-only" data-testid="urai-ground-walkable-surface">The authored Ground navigation surface is active.</span>
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#01040a;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
         .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important}
