@@ -1,0 +1,72 @@
+name: URAI Corrective Asset Materialization
+
+on:
+  push:
+    branches:
+      - agent/replace-failed-home-lifemap-visuals
+    paths:
+      - operations/corrective-materialization/ready.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: urai-corrective-materialization
+  cancel-in-progress: false
+
+jobs:
+  materialize-authored-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/replace-failed-home-lifemap-visuals
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify exact staging authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "agent/replace-failed-home-lifemap-visuals"
+          test -f operations/corrective-materialization/ready.json
+          test "$(jq -r .baseSha operations/corrective-materialization/ready.json)" = "ed4a88ebd1fc9f909152bf06fd16f274ccefdbd3"
+          test "$(jq -r .backdropArchiveSha256 operations/corrective-materialization/ready.json)" = "da9d0d4cdb9bef16775fe9e9a3718deda15c3d6a74a491afa5b6492808c527ee"
+
+      - name: Install bounded asset authoring dependencies
+        run: python -m pip install --disable-pip-version-check --no-cache-dir numpy==2.2.6 pillow==11.3.0 scikit-image==0.25.2
+
+      - name: Restore canonical Drive-derived backdrops
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat operations/corrective-materialization/backdrops.part-* | base64 --decode > /tmp/urai-canon-backdrops.zip
+          echo "da9d0d4cdb9bef16775fe9e9a3718deda15c3d6a74a491afa5b6492808c527ee  /tmp/urai-canon-backdrops.zip" | sha256sum --check
+          mkdir -p urai-tier1/public/assets/urai/generated/backdrops
+          unzip -o /tmp/urai-canon-backdrops.zip -d urai-tier1/public/assets/urai/generated/backdrops
+
+      - name: Author textured non-primitive GLB pack
+        run: python scripts/author-urai-aaa-assets.py
+
+      - name: Verify immutable pack and browser contract
+        run: |
+          node scripts/author-final-glb-pack.mjs
+          node scripts/verify-final-glb-pack.mjs
+
+      - name: Commit exact generated binaries and remove one-time staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "URAI Corrective Asset Materializer"
+          git config user.email "actions@github.com"
+          git add urai-tier1/public/assets/urai/generated/models
+          git add urai-tier1/public/assets/urai/generated/backdrops
+          git add operations/assets/generated-receipts/urai-final-glb-pack-v1.json
+          git rm -r operations/corrective-materialization
+          git rm .github/workflows/urai-corrective-materialize.yml
+          git commit -m "Materialize authored URAI AAA spatial assets"
+          git push origin HEAD:agent/replace-failed-home-lifemap-visuals
