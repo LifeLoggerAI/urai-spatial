@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Float, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from "@/spatial/navigation/EmbodiedNavigation";
 import { useSceneStore } from "@/spatial/store/useSceneStore";
@@ -14,12 +14,34 @@ const HOME_MODEL = "/assets/urai/generated/models/home-entry-chamber-v1.glb";
 const PORTAL_MODEL = "/assets/urai/generated/models/portal-ring-master-v1.glb";
 const ORB_MODEL = "/assets/urai/generated/models/urai-orb-avatar-v1.glb";
 const HOME_BOUNDS = { minX: -9, maxX: 9, minZ: -9, maxZ: 9 };
-const SPAWN = new THREE.Vector3(0, 0, 7);
-const ORB = new THREE.Vector3(0, 1.35, -0.7);
-const GROUND_PORTAL = new THREE.Vector3(-5, 0.35, -7);
-const LIFE_MAP_PORTAL = new THREE.Vector3(5, 0.35, -7);
+const SPAWN = new THREE.Vector3(0, 0, 7.2);
+const ORB = new THREE.Vector3(0, 1.35, -0.65);
+const GROUND_PORTAL = new THREE.Vector3(-4.55, 0.35, -6.55);
+const LIFE_MAP_PORTAL = new THREE.Vector3(4.55, 0.35, -6.65);
 const ASCENT_DURATION_SECONDS = 3.4;
+const HOME_MOUNTAIN_NODE_PREFIX = "horizon-mountain-";
+const HOME_VILLAGE_NODE_PREFIXES = ["inhabited-village-", "village-tower-", "village-roof-"] as const;
+const ORB_CLIPS = {
+  dormant: "Orb_Resting",
+  idle: "Orb_Idle",
+  attention: "Orb_Attention",
+  listening: "Orb_Listening",
+  thinking: "Orb_Thinking",
+  speaking: "Orb_Speaking",
+  guiding: "Orb_Guiding",
+  reflecting: "Orb_Reflecting",
+  calming: "Orb_Calming",
+  privacy: "Orb_Privacy",
+  warning: "Orb_Degraded",
+  transition: "Orb_Transition",
+} as const;
+const DISABLED_RAYCAST = () => undefined;
+
+type OrbState = keyof typeof ORB_CLIPS;
 type Nearby = "orb" | "ground" | "life-map" | "self" | null;
+type PortalSequence = "idle" | "traversal";
+
+const HomeOrbStateContext = createContext<OrbState>("idle");
 
 type HomeWorldProductionProps = {
   onOrbOpen?: () => void;
@@ -36,11 +58,29 @@ function prepareModel(source: THREE.Object3D) {
   return source;
 }
 
+function bindHomeAuthoredRegions(source: THREE.Object3D) {
+  const mountainNodes: THREE.Object3D[] = [];
+  const villageNodes: THREE.Object3D[] = [];
+  source.traverse((object) => {
+    if (object.name.startsWith(HOME_MOUNTAIN_NODE_PREFIX)) mountainNodes.push(object);
+    if (HOME_VILLAGE_NODE_PREFIXES.some((prefix) => object.name.startsWith(prefix))) villageNodes.push(object);
+  });
+  if (!mountainNodes.length) throw new Error("Authored Home is missing horizon-mountain-* nodes for home-mountain-horizon.");
+  if (!villageNodes.length) throw new Error("Authored Home is missing inhabited-village-*, village-tower-*, and village-roof-* nodes for home-lantern-village.");
+  for (const node of mountainNodes) node.userData.uraiAuthoredRegion = "home-mountain-horizon";
+  for (const node of villageNodes) node.userData.uraiAuthoredRegion = "home-lantern-village";
+  source.userData.uraiAuthoredRegions = {
+    "home-mountain-horizon": mountainNodes.map((node) => node.name),
+    "home-lantern-village": villageNodes.map((node) => node.name),
+  };
+  return source;
+}
+
 function HomeEnvironment({ walkTarget }: { walkTarget: MutableRefObject<THREE.Vector3 | null> }) {
   const { scene, animations } = useGLTF(HOME_MODEL);
   const root = useRef<THREE.Group>(null);
   const world = useMemo(() => {
-    const clone = prepareModel(scene.clone(true));
+    const clone = bindHomeAuthoredRegions(prepareModel(scene.clone(true)));
     for (const hiddenName of ["embodied-presence-root", "ground-alcove-root", "life-map-alcove-root"]) {
       const hidden = clone.getObjectByName(hiddenName);
       if (hidden) hidden.visible = false;
@@ -63,9 +103,19 @@ function HomeEnvironment({ walkTarget }: { walkTarget: MutableRefObject<THREE.Ve
     );
   };
   return (
-    <group ref={root} name="home-authored-terrain" data-home-runtime-asset={HOME_MODEL}>
+    <group
+      ref={root}
+      name="home-authored-terrain"
+      userData={{ runtimeAsset: HOME_MODEL, authoredRegions: ["home-mountain-horizon", "home-lantern-village"] }}
+    >
       <primitive object={world} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.08, 0]} onClick={onWalk}>
+      <mesh
+        name="home-walkable-navigation-surface"
+        userData={{ interactionRole: "walkable-surface" }}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.08, 0]}
+        onClick={onWalk}
+      >
         <planeGeometry args={[19, 19]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
@@ -74,26 +124,26 @@ function HomeEnvironment({ walkTarget }: { walkTarget: MutableRefObject<THREE.Ve
 }
 
 function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
+  const interactive = !useSceneStore((store) => store.inputLocked);
+  const state = useContext(HomeOrbStateContext);
   const { scene, animations } = useGLTF(ORB_MODEL);
   const root = useRef<THREE.Group>(null);
   const orb = useMemo(() => prepareModel(scene.clone(true)), [scene]);
   const { actions } = useAnimations(animations, root);
+  const clip = ORB_CLIPS[state];
   useEffect(() => {
-    const action = actions.Orb_Idle || actions.Orb_Resting;
+    const action = actions[clip] || actions.Orb_Idle || actions.Orb_Resting;
     action?.reset().fadeIn(0.35).play();
     return () => { action?.fadeOut(0.2); };
-  }, [actions]);
+  }, [actions, clip]);
   return (
     <group
       ref={root}
       name="home-orb-sanctuary"
-      data-testid="urai-home-webgl-orb"
-      data-home-runtime-asset={ORB_MODEL}
+      userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }}
       position={ORB}
-      onClick={(event) => {
-        event.stopPropagation();
-        if (!useSceneStore.getState().inputLocked) onOpen();
-      }}
+      raycast={interactive ? undefined : DISABLED_RAYCAST}
+      onClick={(event) => { event.stopPropagation(); onOpen(); }}
     >
       <Float speed={1.05} rotationIntensity={0.12} floatIntensity={0.24}>
         <primitive object={orb} />
@@ -108,11 +158,12 @@ function EmbodiedSelf({ root: outerRoot }: { root: MutableRefObject<THREE.Group 
   const animationRoot = useRef<THREE.Group>(null);
   const avatar = useMemo(() => {
     const source = scene.getObjectByName("embodied-presence-root");
-    if (!source) return new THREE.Group();
+    if (!source) throw new Error("Authored Home is missing embodied-presence-root.");
     const clone = prepareModel(source.clone(true));
     clone.position.set(0, 0, 0);
     clone.rotation.set(0, 0, 0);
     clone.scale.setScalar(0.92);
+    clone.userData.semanticOwner = "urai-home-embodied-avatar";
     return clone;
   }, [scene]);
   const { actions } = useAnimations(animations, animationRoot);
@@ -122,7 +173,7 @@ function EmbodiedSelf({ root: outerRoot }: { root: MutableRefObject<THREE.Group 
     return () => { action?.fadeOut(0.2); };
   }, [actions]);
   return (
-    <group ref={outerRoot} name="home-authored-embodied-self" data-testid="urai-home-embodied-avatar" position={SPAWN}>
+    <group ref={outerRoot} name="home-authored-embodied-self" userData={{ semanticOwner: "urai-home-embodied-avatar" }} position={SPAWN}>
       <group ref={animationRoot}>
         <primitive object={avatar} />
       </group>
@@ -131,6 +182,7 @@ function EmbodiedSelf({ root: outerRoot }: { root: MutableRefObject<THREE.Group 
 }
 
 function WorldPortal({ type, position, onEnter }: { type: "ground" | "life-map"; position: THREE.Vector3; onEnter: () => void }) {
+  const interactive = !useSceneStore((store) => store.inputLocked);
   const { scene, animations } = useGLTF(PORTAL_MODEL);
   const root = useRef<THREE.Group>(null);
   const portal = useMemo(() => prepareModel(scene.clone(true)), [scene]);
@@ -144,12 +196,13 @@ function WorldPortal({ type, position, onEnter }: { type: "ground" | "life-map";
     <group
       ref={root}
       name={`home-${type}-portal-world-owned`}
-      data-home-runtime-asset={PORTAL_MODEL}
+      userData={{ runtimeAsset: PORTAL_MODEL, destination: type }}
       position={position}
       scale={type === "life-map" ? 0.84 : 0.78}
+      raycast={interactive ? undefined : DISABLED_RAYCAST}
       onClick={(event) => {
         event.stopPropagation();
-        if (!useSceneStore.getState().inputLocked) onEnter();
+        onEnter();
       }}
     >
       <primitive object={portal} />
@@ -228,7 +281,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
     cameraDesired.current.copy(position.current).add(cameraOffset.current);
     camera.position.lerp(cameraDesired.current, 1 - Math.pow(0.0009, delta));
     camera.lookAt(position.current.x, 1.25 + pitch.current, position.current.z - 1.7);
-    const distances: readonly [Nearby, THREE.Vector3, number][] = [["orb", ORB, 2.15], ["ground", GROUND_PORTAL, 2.7], ["life-map", LIFE_MAP_PORTAL, 2.7]];
+    const distances: readonly [Nearby, THREE.Vector3, number][] = [["orb", ORB, 1.8], ["ground", GROUND_PORTAL, 2.2], ["life-map", LIFE_MAP_PORTAL, 2.2]];
     let next: Nearby = null;
     let best = Infinity;
     for (const [name, point, radius] of distances) {
@@ -243,7 +296,19 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
   return null;
 }
 
-function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onGround, onLifeMap }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onLifeMap: () => void; }) {
+function SceneReadiness({ onReady }: { onReady: () => void }) {
+  const frames = useRef(0);
+  const reported = useRef(false);
+  useFrame(() => {
+    frames.current += 1;
+    if (reported.current || frames.current < 3) return;
+    reported.current = true;
+    onReady();
+  });
+  return null;
+}
+
+function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onGround, onLifeMap, orbState, onSceneReady }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onLifeMap: () => void; orbState: OrbState; onSceneReady: () => void; }) {
   return (
     <>
       <color attach="background" args={["#05080f"]} />
@@ -254,10 +319,13 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
       <pointLight position={[0, 9, -10]} color="#ffb56d" intensity={7} distance={42} decay={2} />
       <Stars radius={110} depth={74} count={1700} factor={2.1} saturation={0.16} fade speed={0.045} />
       <Sparkles count={180} scale={[25, 12, 30]} position={[0, 4, -5]} size={1.25} speed={0.1} opacity={0.24} color="#ffe7b6" />
+      <SceneReadiness onReady={onSceneReady} />
       <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} />
       <HomeEnvironment walkTarget={target} />
       <EmbodiedSelf root={avatar} />
-      <OrbSanctuary onOpen={onOrbOpen} />
+      <HomeOrbStateContext.Provider value={orbState}>
+        <OrbSanctuary onOpen={onOrbOpen} />
+      </HomeOrbStateContext.Provider>
       <WorldPortal type="ground" position={GROUND_PORTAL} onEnter={onGround} />
       <WorldPortal type="life-map" position={LIFE_MAP_PORTAL} onEnter={onLifeMap} />
       <EffectComposer multisampling={0}>
@@ -269,9 +337,14 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
 }
 
 export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: HomeWorldProductionProps) {
-  const [ready, setReady] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const [nearby, setNearby] = useState<Nearby>(null);
   const [dragging, setDragging] = useState(false);
+  const [assetMode, setAssetMode] = useState("ready");
+  const [reviewFixture, setReviewFixture] = useState("none");
+  const [orbState, setOrbState] = useState<OrbState>("idle");
+  const [portalSequence, setPortalSequence] = useState<PortalSequence>("idle");
   const phase = useSceneStore((state) => state.phase);
   const progress = useSceneStore((state) => state.progress);
   const inputLocked = useSceneStore((state) => state.inputLocked);
@@ -279,21 +352,39 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
   const pitch = useRef(-0.08);
   const target = useRef<THREE.Vector3 | null>(null);
   const avatar = useRef<THREE.Group | null>(null);
-  const onGround = useCallback(() => requestUraiWorldTravel({ destination: "infrastructure-hub", href: "/ground/", entryPortal: "home-ground", cameraCheckpoint: "home-ground-descent" }), []);
-  const onLifeMap = useCallback(() => requestUraiWorldTravel({ destination: "life-map", href: "/life-map/?from=home-sky", entryPortal: "home-sky", cameraCheckpoint: "home-sky-ascent" }), []);
+
+  const beginPortalTravel = useCallback((travel: () => void) => {
+    if (useSceneStore.getState().inputLocked) return;
+    setPortalSequence("traversal");
+    travel();
+  }, []);
+  const onGround = useCallback(() => beginPortalTravel(() => requestUraiWorldTravel({ destination: "infrastructure-hub", href: "/ground/", entryPortal: "home-ground", cameraCheckpoint: "home-ground-descent" })), [beginPortalTravel]);
+  const onLifeMap = useCallback(() => beginPortalTravel(() => requestUraiWorldTravel({ destination: "life-map", href: "/life-map/?from=home-sky", entryPortal: "home-sky", cameraCheckpoint: "home-sky-ascent" })), [beginPortalTravel]);
+  const openOrb = useCallback(() => {
+    if (!useSceneStore.getState().inputLocked) onOrbOpen();
+  }, [onOrbOpen]);
   const interaction = useCallback(() => {
     if (useSceneStore.getState().inputLocked) return;
-    if (nearby === "orb") onOrbOpen();
+    if (nearby === "orb") openOrb();
     if (nearby === "ground") onGround();
     if (nearby === "life-map") onLifeMap();
-  }, [nearby, onGround, onLifeMap, onOrbOpen]);
+  }, [nearby, onGround, onLifeMap, openOrb]);
   const reset = useCallback(() => {
     yaw.current = 0;
     pitch.current = -0.08;
     target.current = SPAWN.clone();
+    setPortalSequence("idle");
   }, []);
   const input = useMovementInput({ onInteract: interaction, onReset: reset });
   const look = useDragLook({ yaw, pitch, sensitivity: 0.0034, onDragState: setDragging });
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setAssetMode(query.get("homeAssetReview") === "1" ? "disclosed-review-candidate" : "ready");
+    setReviewFixture(query.get("homePrivateFixture") === "1" ? "safe-private" : "none");
+    const requestedState = query.get("homeOrbState");
+    if (requestedState && requestedState in ORB_CLIPS) setOrbState(requestedState as OrbState);
+  }, []);
 
   useEffect(() => {
     const cancelAscent = (event: KeyboardEvent) => {
@@ -303,12 +394,15 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
       event.stopImmediatePropagation();
       scene.setPhase("HOME");
       scene.unlock();
+      setPortalSequence("idle");
     };
     window.addEventListener("keydown", cancelAscent, true);
     return () => window.removeEventListener("keydown", cancelAscent, true);
   }, []);
 
   if (!webglAvailable) return null;
+  const ready = canvasReady && sceneReady;
+  const orbClip = ORB_CLIPS[orbState];
   return (
     <main
       className={`${styles.world} urai-asset-home-world`}
@@ -321,11 +415,19 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
       data-home-audio="silent-fallback"
       data-home-assets-ready={ready ? "true" : "false"}
       data-home-runtime-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb"
+      data-home-authored-regions="home-mountain-horizon home-lantern-village"
       data-home-nearby={nearby ?? "none"}
       data-home-camera-mode={phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied"}
       data-home-scene-phase={phase}
       data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"}
       data-home-input-locked={inputLocked ? "true" : "false"}
+      data-home-portal-sequence={portalSequence}
+      data-home-asset-mode={assetMode}
+      data-home-personalization-mode="private-personalized"
+      data-home-review-fixture={reviewFixture}
+      data-home-orb-state={orbState}
+      data-home-orb-clip={orbClip}
+      data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"
       data-testid="home-visible-navigable-sanctuary-world"
       {...look}
     >
@@ -339,15 +441,17 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.08;
-          setReady(true);
+          setCanvasReady(true);
         }}
       >
-        <HomeScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={onOrbOpen} onGround={onGround} onLifeMap={onLifeMap} />
+        <HomeScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={onGround} onLifeMap={onLifeMap} orbState={orbState} onSceneReady={() => setSceneReady(true)} />
       </Canvas>
       <header className={styles.brand} aria-label="URAI"><strong>URAI</strong><span>Always connected</span></header>
       <div className={styles.worldHint} role="status" aria-live="polite">{phase === "ASCENT" ? "Ascending to Life Map" : nearby === "orb" ? "The Orb is ready" : nearby === "ground" ? "Enter Ground" : nearby === "life-map" ? "Ascend to Life Map" : "Walk the living world"}</div>
       <div className={styles.destinationNames} aria-hidden="true"><span>GROUND</span><span>LIFE MAP</span></div>
       <MobileMovementPad input={input} label="Home movement controls" />
+      <span className="sr-only" data-testid="urai-home-webgl-orb">The authored Orb companion is present in the Home scene.</span>
+      <span className="sr-only" data-testid="urai-home-embodied-avatar">Your authored embodied presence is active in the Home scene.</span>
       <span className="sr-only">Open Ground directly. Ascend to Life Map. Open URAI Orb companion.</span>
     </main>
   );
