@@ -1,3 +1,4 @@
+# Second push activates this one-shot corrective workflow.
 name: PR1068 Source Correction
 
 on:
@@ -34,7 +35,7 @@ jobs:
           lifeMap = lifeMap.replace(/\sdata-[a-z0-9-]+=(?:"[^"]*"|\{[^}]*\})/g, '')
 
           lifeMap = lifeMap.replace(
-            'function ArrivalSanctuary({ selected, phase }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase }) {\n  if (!selected || phase !== "arrival") return null;\n  return (\n    <group name="life-map-selected-arrival-sanctuary" position={selected.position}>',
+            'function ArrivalSanctuary({ selected, phase }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase }) {\n  if (!selected || phase !== "arrival") return null;\n  return (\n    <group name="life-map-selected-arrival-sanctuary" data-scale="intimate" data-depth-band="near" position={selected.position}>',
             'function IntimateMemoryChamber({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {\n  const group = useRef<THREE.Group>(null);\n  useFrame(({ clock }) => {\n    if (!group.current || reducedMotion) return;\n    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.08) * 0.025;\n  });\n  if (!selected || phase !== "arrival") return null;\n  return (\n    <group ref={group} name="life-map-intimate-memory-chamber" userData={{ scaleMode: "intimate", depthBand: "near" }} position={selected.position}>'
           )
 
