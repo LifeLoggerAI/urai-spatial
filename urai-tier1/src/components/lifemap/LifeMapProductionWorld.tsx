@@ -153,7 +153,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
     root.current.rotation.z = Math.sin(clock.elapsedTime * 0.18) * 0.08;
   });
   return (
-    <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden} data-life-core="white-gold-layered">
+    <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden}>
       {[1, 1.45, 1.95].map((scale, index) => (
         <mesh key={scale} scale={scale} rotation={[index * 0.46, index * 0.72, 0]}>
           <torusKnotGeometry args={[0.62, 0.032 + index * 0.011, 160, 20, 2 + index, 3]} />
@@ -172,9 +172,9 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
 function ChapterTerritories({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return (
-    <group name="life-map-authored-chapter-regions" data-scale="cosmic-overview" data-depth-band="middle">
+    <group name="life-map-authored-chapter-regions">
       {LIFE_MAP_CHAPTERS.map((chapter, index) => (
-        <group key={chapter.id} position={chapter.position} rotation={chapter.rotation} data-chapter-region={chapter.id}>
+        <group key={chapter.id} position={chapter.position} rotation={chapter.rotation}>
           <Island seed={index + 7} position={[0, -0.68, 0]} scale={[2.1, 1.42, 1]} color={index % 2 ? "#132b3d" : "#102735"} aura={chapter.aura} />
           <Island seed={index + 21} position={[0.16, -0.49, -0.14]} scale={[1.38, 0.85, 1]} color="#1d4350" aura={chapter.aura} />
           <Current points={[[-1.35, -0.24, 0.1], [-0.55, 0.22, -0.25], [0.25, 0.42, -0.42], [1.35, 0.08, -0.08]]} color={chapter.aura} opacity={0.3} width={0.022} />
@@ -188,7 +188,7 @@ function ChapterTerritories({ selected }: { selected: LifeMapNode | null }) {
 function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return (
-    <group name="life-map-foreground-observatory" data-depth-band="near" position={[0, -1.8, 3.2]}>
+    <group name="life-map-foreground-observatory" position={[0, -1.8, 3.2]}>
       <Island seed={71} position={[0, 0, 0]} scale={[4.9, 1.45, 1]} color="#081b28" aura="#6fb2c8" />
       <Island seed={74} position={[0, 0.14, -0.35]} scale={[3.05, 0.78, 1]} color="#153b49" aura="#8de7ff" />
       <mesh position={[0, 0.46, -0.8]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -203,19 +203,19 @@ function OverviewLandmarks({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return (
     <>
-      <group name="life-map-relationship-observatory" data-depth-band="middle" position={[5.7, 0.55, -7.2]}>
+      <group name="life-map-relationship-observatory" position={[5.7, 0.55, -7.2]}>
         <Crystal position={[-0.9, 0, 0]} color={ICE} aura="#8de7ff" scale={[0.32, 0.52, 0.32]} />
         <Crystal position={[0, 0.55, -0.38]} color={ICE} aura="#8de7ff" scale={[0.4, 0.68, 0.4]} />
         <Crystal position={[0.9, 0.12, -0.1]} color={ICE} aura="#8de7ff" scale={[0.32, 0.52, 0.32]} />
       </group>
-      <group name="life-map-goal-horizon" data-depth-band="far" position={[-6.8, 2.3, -15.6]}>
+      <group name="life-map-goal-horizon" position={[-6.8, 2.3, -15.6]}>
         <Current points={[[0, -0.8, 0], [0, 0.2, -0.2], [0.25, 1.8, -0.6]]} color={GOLD} opacity={0.62} width={0.032} />
         <pointLight color={GOLD} intensity={3.4} distance={12} decay={2} />
       </group>
-      <group name="life-map-achievement-monument" data-depth-band="far" position={[7.2, -0.1, -13.4]}>
+      <group name="life-map-achievement-monument" position={[7.2, -0.1, -13.4]}>
         {[0, 1, 2, 3].map((level) => <Island key={level} seed={102 + level} position={[0, -0.5 + level * 0.2, 0]} scale={[1.05 - level * 0.16, 0.62 - level * 0.08, 1]} color="#473719" aura={GOLD} />)}
       </group>
-      <group name="life-map-privacy-vault" data-depth-band="far" position={[-7.4, -0.5, -10.5]}>
+      <group name="life-map-privacy-vault" position={[-7.4, -0.5, -10.5]}>
         {[0.72, 1.02, 1.34].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2, index * 0.65, 0]}><torusGeometry args={[radius, 0.075 - index * 0.012, 16, 96]} /><meshStandardMaterial color="#342845" emissive="#725c8f" emissiveIntensity={0.38} /></mesh>)}
       </group>
     </>
@@ -229,7 +229,7 @@ function MemoryWeather({ reducedMotion }: { reducedMotion: boolean }) {
     root.current.rotation.z = Math.sin(clock.elapsedTime * 0.04) * 0.04;
   });
   return (
-    <group ref={root} name="life-map-emotional-weather" data-depth-band="far" position={[0, 5.8, -20]}>
+    <group ref={root} name="life-map-emotional-weather" position={[0, 5.8, -20]}>
       {[-8, -4, 0, 4, 8].map((x, index) => (
         <Current key={x} points={[[x - 3, Math.sin(index) * 0.8, 0], [x, 1.2 + Math.cos(index) * 0.5, -1.8], [x + 3.2, Math.sin(index * 2) * 0.8, -0.2]]} color={index % 2 ? "#a78bfa" : "#6fdcff"} opacity={0.12} width={0.05} />
       ))}
@@ -310,10 +310,10 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       visible={visible}
       scale={active ? 1.72 : 0.9 + importance * 0.38}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
-      data-artifact-family={resolveArtifactFamily(node)}
-      data-importance={importance.toFixed(2)}
-      data-chapter={chapter.id}
-      data-semantic-label={semanticLabel}
+
+
+
+
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
     >
       <ArtifactShape node={node} active={active} />
@@ -344,7 +344,7 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const kind = resolvePathKind(source, target);
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return (
-    <group data-path-kind={kind}>
+    <group>
       <Line points={curve.getPoints(36)} color={color} lineWidth={active ? 1.05 : 0.48} transparent opacity={kind === "protected" ? 0.08 : active ? 0.48 : 0.14} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
       {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * 0.19) % 1} /> : null}
     </group>
@@ -369,7 +369,7 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
     return result;
   }, [nodes]);
   return (
-    <group name="life-map-curved-semantic-paths" data-depth-band="middle">
+    <group name="life-map-curved-semantic-paths">
       {links.map((link, index) => {
         const active = Boolean(selected && (selected.id === link.source.id || selected.id === link.target.id));
         if (selected && phase === "arrival" && !active) return null;
@@ -379,10 +379,15 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   );
 }
 
-function ArrivalSanctuary({ selected, phase }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase }) {
+function IntimateMemoryChamber({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!group.current || reducedMotion) return;
+    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.08) * 0.025;
+  });
   if (!selected || phase !== "arrival") return null;
   return (
-    <group name="life-map-selected-arrival-sanctuary" data-scale="intimate" data-depth-band="near" position={selected.position}>
+    <group ref={group} name="life-map-intimate-memory-chamber" userData={{ scaleMode: "intimate", depthBand: "near" }} position={selected.position}>
       <mesh position={[0, -1.12, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.3, 4.6, 160]} />
         <meshBasicMaterial color={selected.aura} transparent opacity={0.13} toneMapped={false} />
@@ -395,8 +400,8 @@ function ArrivalSanctuary({ selected, phase }: { selected: LifeMapNode | null; p
 
 function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
   return (
-    <group name="life-map-archive-particles" data-depth-band="far">
-      <Stars radius={58} depth={38} count={qualityTier === "low" ? 150 : qualityTier === "medium" ? 260 : 420} factor={1.1} saturation={0.2} fade speed={reducedMotion ? 0 : 0.012} />
+    <group name="life-map-archive-particles">
+      <Stars radius={58} depth={38} count={qualityTier === "low" ? 80 : qualityTier === "medium" ? 150 : 240} factor={1.1} saturation={0.2} fade speed={reducedMotion ? 0 : 0.012} />
     </group>
   );
 }
@@ -414,7 +419,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   const portrait = size.height > size.width;
   const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.5, 0.92, 0.74] : [1.12, 1.1, 1.04];
   const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.36, 1.3] : [0, -0.28, 1.18];
-  const starCount = profile.tier === "low" ? 620 : profile.tier === "medium" ? 1100 : 1900;
+  const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {
     const handleSelectionRequest = (event: Event) => {
@@ -438,24 +443,24 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       {webglRecovery}
       <RenderProofRepublisher />
       {cameraRig}
-      <group name="life-map-authored-environment" data-depth-band="far"><mesh><sphereGeometry args={[86, 40, 28]} /><meshBasicMaterial color="#030916" side={THREE.BackSide} /></mesh></group>
-      <group name="life-map-temporal-horizon" data-depth-band="far" />
+      <group name="life-map-authored-environment"><mesh><sphereGeometry args={[86, 40, 28]} /><meshBasicMaterial color="#030916" side={THREE.BackSide} /></mesh></group>
+      <group name="life-map-temporal-horizon" />
       <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
-        <group name="life-map-temporal-landscape" data-depth-band="middle" />
+        <group name="life-map-temporal-landscape" />
         <LifeCore hidden={Boolean(selected)} reducedMotion={profile.reducedMotion} tier={profile.tier} />
-        <group name="life-map-light-bridges" data-depth-band="middle"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
+        <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
         <ChapterTerritories selected={selected} />
         <ForegroundObservatory selected={selected} />
         <OverviewLandmarks selected={selected} />
-        <group name="life-map-memory-artifact-families" data-depth-band="middle">
+        <group name="life-map-memory-artifact-families">
           {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
         </group>
-        <group name="life-map-selected-relationship-context" data-depth-band="middle" />
-        <ArrivalSanctuary selected={selected} phase={phase} />
+        <group name="life-map-selected-relationship-context" />
+        <IntimateMemoryChamber selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
       </group>
       <MemoryWeather reducedMotion={profile.reducedMotion} />
       <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
-      <group name="life-map-far-future-horizon" data-depth-band="far">
+      <group name="life-map-far-future-horizon">
         <Stars radius={120} depth={84} count={starCount} factor={2.05} saturation={0.18} fade speed={profile.reducedMotion ? 0 : 0.018} />
         <Sparkles count={profile.tier === "low" ? 70 : 160} scale={[48, 26, 72]} position={[0, 3, -18]} size={1.05} speed={profile.reducedMotion ? 0 : 0.08} opacity={0.18} color="#d9f7ff" />
       </group>
