@@ -132,6 +132,34 @@ jobs:
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
           node scripts/verify-lifemap-canvas-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/canvas-proof.log
 
+      - name: Seal exact-head founder receipt
+        shell: bash
+        env:
+          URAI_REPOSITORY: ${{ github.repository }}
+          URAI_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          URAI_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+          URAI_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          receipt_dir=artifacts/lifemap-founder-proof
+          test -d "$receipt_dir"
+          printf '%s\n' "$URAI_EXACT_HEAD" > "$receipt_dir/verified-head.txt"
+          cat > "$receipt_dir/exact-head-receipt.json" <<JSON
+          {
+            "repository": "$URAI_REPOSITORY",
+            "verification_sha": "$URAI_EXACT_HEAD",
+            "workflow_run_id": "$URAI_WORKFLOW_RUN_ID",
+            "workflow_run_attempt": "$URAI_WORKFLOW_RUN_ATTEMPT",
+            "event": "$URAI_EVENT_NAME"
+          }
+          JSON
+          find "$receipt_dir" -type f ! -name 'sha256sums.txt' -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$receipt_dir/sha256sums.txt"
+          grep -F "$URAI_EXACT_HEAD" "$receipt_dir/exact-head-receipt.json"
+          test -s "$receipt_dir/sha256sums.txt"
+
       - name: Upload exact-head founder receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
