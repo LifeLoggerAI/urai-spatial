@@ -168,10 +168,10 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
         if (object.visible) objects += 1;
         if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
       });
-      const calls = Math.max(completedFrames.current, gl.info.render.calls, 1);
+      const calls = gl.info.render.calls;
       const triangles = gl.info.render.triangles;
       const ready = calls > 0 && objects > 20 && anchors >= 8;
-      const signature = `${phase}:${ready}:${objects}:${anchors}:${triangles}`;
+      const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
       if (publishedPhase.current === phase && publishedSignature.current === signature) {
         if (!ready) invalidate();
         return;
@@ -259,7 +259,7 @@ export default function ComposedLifeMapScene() {
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
-  const [, setRenderProof] = useState<RenderProof>({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
+  const [renderProof, setRenderProof] = useState<RenderProof>({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
@@ -364,6 +364,11 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
+    data-life-map-render-ready={renderProof.ready ? "true" : "false"}
+    data-life-map-visible-objects={renderProof.objects}
+    data-life-map-visible-anchors={renderProof.anchors}
+    data-life-map-render-calls={renderProof.calls}
+    data-life-map-render-triangles={renderProof.triangles}
     data-webgl-state={webglState}
     data-home-companion-owned="false"
   >
