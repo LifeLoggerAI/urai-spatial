@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Float, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from "@/spatial/navigation/EmbodiedNavigation";
 import { useSceneStore } from "@/spatial/store/useSceneStore";
@@ -59,14 +59,14 @@ type MaterialLift = {
 };
 
 const MATERIAL_LIFTS: Record<string, MaterialLift> = {
-  "sculpted-stone": { color: "#b4c4b8", emissive: "#2f403a", emissiveIntensity: 0.82, roughness: 0.68, metalness: 0.1 },
-  "provenance-gold": { color: "#f5c970", emissive: "#815016", emissiveIntensity: 1.36, roughness: 0.27, metalness: 0.55 },
-  "celestial-glass": { color: "#8fe1ee", emissive: "#11627f", emissiveIntensity: 1.65, roughness: 0.18, metalness: 0.04, opacity: 0.8, transmission: 0.15 },
-  "threshold-violet": { color: "#9a72ee", emissive: "#4b2496", emissiveIntensity: 1.5, roughness: 0.24, metalness: 0.08, opacity: 0.84, transmission: 0.08 },
-  "living-organic": { color: "#67bd76", emissive: "#19492b", emissiveIntensity: 0.9, roughness: 0.76, metalness: 0.01 },
-  "flowing-water": { color: "#57c8e6", emissive: "#0e678d", emissiveIntensity: 1.45, roughness: 0.12, metalness: 0.01, opacity: 0.84, transmission: 0.2 },
-  "moon-ivory": { color: "#f5eedc", emissive: "#705d40", emissiveIntensity: 0.8, roughness: 0.36, metalness: 0.08 },
-  "ember-memory": { color: "#ee8451", emissive: "#9c310f", emissiveIntensity: 1.45, roughness: 0.32, metalness: 0.08 },
+  "sculpted-stone": { color: "#918f7b", emissive: "#282b22", emissiveIntensity: 0.54, roughness: 0.76, metalness: 0.06 },
+  "provenance-gold": { color: "#ddb76c", emissive: "#65410f", emissiveIntensity: 0.96, roughness: 0.34, metalness: 0.42 },
+  "celestial-glass": { color: "#6cb9c2", emissive: "#104a5e", emissiveIntensity: 1.08, roughness: 0.2, metalness: 0.03, opacity: 0.72, transmission: 0.16 },
+  "threshold-violet": { color: "#7b62bd", emissive: "#351b68", emissiveIntensity: 1.1, roughness: 0.3, metalness: 0.05, opacity: 0.78, transmission: 0.06 },
+  "living-organic": { color: "#4f8456", emissive: "#102f1b", emissiveIntensity: 0.48, roughness: 0.82, metalness: 0.0 },
+  "flowing-water": { color: "#55aebe", emissive: "#0a4458", emissiveIntensity: 0.9, roughness: 0.16, metalness: 0.0, opacity: 0.72, transmission: 0.24 },
+  "moon-ivory": { color: "#ded7c1", emissive: "#554b35", emissiveIntensity: 0.48, roughness: 0.44, metalness: 0.04 },
+  "ember-memory": { color: "#d27043", emissive: "#6e230d", emissiveIntensity: 0.92, roughness: 0.4, metalness: 0.04 },
 };
 
 function liftMaterial(material: THREE.Material) {
@@ -92,6 +92,15 @@ function liftMaterial(material: THREE.Material) {
   }
   clone.needsUpdate = true;
   return clone;
+}
+
+function nameVariation(name: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < name.length; index += 1) {
+    hash ^= name.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0) / 4294967295;
 }
 
 function prepareModel(source: THREE.Object3D) {
@@ -125,11 +134,32 @@ function bindHomeAuthoredRegions(source: THREE.Object3D) {
   return source;
 }
 
+function composeSanctuary(source: THREE.Object3D) {
+  source.traverse((object) => {
+    // The old foreground vault ribs visually turned Home into a generated tunnel.
+    // Keep their authored data in the GLB but remove them from the launch composition.
+    if (object.name.startsWith("sanctuary-vault-")) object.visible = false;
+    if (!(object instanceof THREE.Mesh)) return;
+    const organic = object.name.startsWith("vegetation-")
+      || object.name.startsWith("living-grove-")
+      || object.name.startsWith("inhabited-village-")
+      || object.name.startsWith("village-tower-")
+      || object.name.startsWith("village-roof-");
+    if (!organic) return;
+    const variation = nameVariation(object.name);
+    const scale = 0.82 + variation * 0.34;
+    object.scale.x *= scale;
+    object.scale.z *= 0.88 + (1 - variation) * 0.28;
+    object.rotation.y += (variation - 0.5) * 0.72;
+  });
+  return source;
+}
+
 function HomeEnvironment({ walkTarget }: { walkTarget: MutableRefObject<THREE.Vector3 | null> }) {
   const { scene, animations } = useGLTF(HOME_MODEL);
   const root = useRef<THREE.Group>(null);
   const world = useMemo(() => {
-    const clone = bindHomeAuthoredRegions(prepareModel(scene.clone(true)));
+    const clone = composeSanctuary(bindHomeAuthoredRegions(prepareModel(scene.clone(true))));
     for (const hiddenName of ["embodied-presence-root", "ground-alcove-root", "life-map-alcove-root"]) {
       const hidden = clone.getObjectByName(hiddenName);
       if (hidden) hidden.visible = false;
@@ -176,10 +206,10 @@ function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
     return () => { action?.fadeOut(0.2); };
   }, [actions, clip]);
   return (
-    <group ref={root} name="home-orb-sanctuary" userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }} position={ORB} scale={1.28} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onOpen(); }}>
-      <Float speed={1.05} rotationIntensity={0.12} floatIntensity={0.24}><primitive object={orb} /></Float>
-      <pointLight color="#a9efff" intensity={16} distance={20} decay={2} position={[0, 2.8, 4.2]} />
-      <pointLight color="#ffd79a" intensity={7} distance={13} decay={2} position={[-3.5, 2.2, 3]} />
+    <group ref={root} name="home-orb-sanctuary" userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }} position={ORB} scale={0.92} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onOpen(); }}>
+      <Float speed={0.72} rotationIntensity={0.08} floatIntensity={0.16}><primitive object={orb} /></Float>
+      <pointLight color="#a9efff" intensity={10} distance={16} decay={2} position={[0, 2.4, 3.2]} />
+      <pointLight color="#ffd79a" intensity={6} distance={12} decay={2} position={[-2.8, 2.0, 2.5]} />
     </group>
   );
 }
@@ -193,7 +223,7 @@ function EmbodiedSelf({ root: outerRoot }: { root: MutableRefObject<THREE.Group 
     const clone = prepareModel(source.clone(true));
     clone.position.set(0, 0, 0);
     clone.rotation.set(0, 0, 0);
-    clone.scale.setScalar(0.58);
+    clone.scale.setScalar(0.52);
     clone.userData.semanticOwner = "urai-home-embodied-avatar";
     return clone;
   }, [scene]);
@@ -218,9 +248,9 @@ function WorldPortal({ type, position, onEnter }: { type: "ground" | "life-map";
     return () => { action?.fadeOut(0.2); };
   }, [actions]);
   return (
-    <group ref={root} name={`home-${type}-portal-world-owned`} userData={{ runtimeAsset: PORTAL_MODEL, destination: type }} position={position} scale={type === "life-map" ? 0.64 : 0.6} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onEnter(); }}>
+    <group ref={root} name={`home-${type}-portal-world-owned`} userData={{ runtimeAsset: PORTAL_MODEL, destination: type }} position={position} scale={type === "life-map" ? 0.5 : 0.47} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onEnter(); }}>
       <primitive object={portal} />
-      <pointLight color={type === "ground" ? "#bd9cff" : "#ffd487"} intensity={8} distance={15} decay={2} position={[0, 3, 3]} />
+      <pointLight color={type === "ground" ? "#a991db" : "#f2cc83"} intensity={5.8} distance={13} decay={2} position={[0, 2.6, 2.4]} />
     </group>
   );
 }
@@ -243,6 +273,14 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
   const travelIssued = useRef(false);
   const cameraOffset = useRef(new THREE.Vector3());
   const cameraDesired = useRef(new THREE.Vector3());
+
+  const placeHomeCamera = useCallback(() => {
+    const portrait = size.height > size.width;
+    camera.position.set(position.current.x, portrait ? 3.7 : 4.25, position.current.z + (portrait ? 13.6 : 15.0));
+    camera.lookAt(position.current.x, 0.95 + pitch.current, position.current.z - (portrait ? 6.6 : 7.8));
+  }, [camera, pitch, size.height, size.width]);
+
+  useLayoutEffect(() => { placeHomeCamera(); }, [placeHomeCamera]);
 
   useFrame(({ clock }, delta) => {
     const scene = useSceneStore.getState();
@@ -285,10 +323,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
     if (target.current && position.current.distanceTo(target.current) < 0.2) target.current = null;
     if (avatar.current) { avatar.current.position.copy(position.current); avatar.current.rotation.y = yaw.current; }
     const portrait = size.height > size.width;
-    cameraOffset.current.set(0, (portrait ? 6.4 : 6.8) + pitch.current * 1.2, portrait ? 18.5 : 19.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
+    cameraOffset.current.set(0, (portrait ? 3.7 : 4.25) + pitch.current * 0.95, portrait ? 13.6 : 15.0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     cameraDesired.current.copy(position.current).add(cameraOffset.current);
-    camera.position.lerp(cameraDesired.current, 1 - Math.pow(0.002, delta));
-    camera.lookAt(position.current.x, 0.95 + pitch.current, position.current.z - (portrait ? 9.8 : 10.8));
+    camera.position.lerp(cameraDesired.current, 1 - Math.pow(0.0018, delta));
+    camera.lookAt(position.current.x, 0.95 + pitch.current, position.current.z - (portrait ? 6.6 : 7.8));
     const distances: readonly [Nearby, THREE.Vector3, number][] = [["orb", ORB, 1.8], ["ground", GROUND_PORTAL, 2.2], ["life-map", LIFE_MAP_PORTAL, 2.2]];
     let next: Nearby = null;
     let best = Infinity;
@@ -319,16 +357,16 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
 function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onGround, onLifeMap, orbState, onSceneReady }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onLifeMap: () => void; orbState: OrbState; onSceneReady: () => void; }) {
   return (
     <>
-      <color attach="background" args={["#24465a"]} />
-      <fogExp2 attach="fog" args={["#3b6270", 0.009]} />
-      <ambientLight intensity={1.3} color="#f4f6e9" />
-      <hemisphereLight args={["#fff2d7", "#2b4938", 2.45]} />
-      <directionalLight position={[8, 18, 14]} intensity={6.8} color="#ffd6a2" />
-      <directionalLight position={[-10, 9, -2]} intensity={3.1} color="#a9e7ff" />
-      <pointLight position={[0, 10, -8]} color="#ffc780" intensity={11} distance={50} decay={2} />
-      <pointLight position={[8, 5, 5]} color="#a9e8ff" intensity={5.2} distance={32} decay={2} />
-      <Stars radius={115} depth={76} count={680} factor={1.45} saturation={0.1} fade speed={0.025} />
-      <Sparkles count={90} scale={[25, 12, 30]} position={[0, 4, -5]} size={0.9} speed={0.05} opacity={0.13} color="#ffe8bd" />
+      <color attach="background" args={["#667878"]} />
+      <fogExp2 attach="fog" args={["#718175", 0.012]} />
+      <ambientLight intensity={1.18} color="#f3ead6" />
+      <hemisphereLight args={["#ffe9c8", "#334b39", 2.15]} />
+      <directionalLight position={[8, 18, 14]} intensity={7.2} color="#ffd09a" />
+      <directionalLight position={[-10, 9, -2]} intensity={1.7} color="#b8dce0" />
+      <pointLight position={[0, 10, -8]} color="#ffbd74" intensity={10} distance={48} decay={2} />
+      <pointLight position={[7, 4, 4]} color="#c6e7dc" intensity={3.4} distance={28} decay={2} />
+      <Stars radius={115} depth={76} count={320} factor={1.0} saturation={0.08} fade speed={0.015} />
+      <Sparkles count={58} scale={[24, 10, 28]} position={[0, 3.6, -5]} size={0.75} speed={0.035} opacity={0.1} color="#f8dfb2" />
       <SceneReadiness onReady={onSceneReady} />
       <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} />
       <HomeEnvironment walkTarget={target} />
@@ -336,7 +374,7 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
       <HomeOrbStateContext.Provider value={orbState}><OrbSanctuary onOpen={onOrbOpen} /></HomeOrbStateContext.Provider>
       <WorldPortal type="ground" position={GROUND_PORTAL} onEnter={onGround} />
       <WorldPortal type="life-map" position={LIFE_MAP_PORTAL} onEnter={onLifeMap} />
-      <EffectComposer multisampling={0}><Bloom intensity={0.62} luminanceThreshold={0.68} luminanceSmoothing={0.2} mipmapBlur /><Vignette eskil={false} offset={0.12} darkness={0.08} /></EffectComposer>
+      <EffectComposer multisampling={0}><Bloom intensity={0.42} luminanceThreshold={0.72} luminanceSmoothing={0.18} mipmapBlur /><Vignette eskil={false} offset={0.12} darkness={0.05} /></EffectComposer>
     </>
   );
 }
@@ -422,13 +460,13 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
     >
       <Canvas
         className={styles.canvas}
-        dpr={[1, 1.15]}
-        camera={{ position: [0, 6.8, 26.7], fov: 52, near: 0.08, far: 180 }}
+        dpr={[1, 1.1]}
+        camera={{ position: [0, 4.25, 22.2], fov: 48, near: 0.08, far: 180 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.4;
+          gl.toneMappingExposure = 1.34;
           setCanvasReady(true);
         }}
       >
