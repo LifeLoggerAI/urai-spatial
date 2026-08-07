@@ -142,13 +142,15 @@ function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
       name="home-orb-sanctuary"
       userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }}
       position={ORB}
+      scale={1.28}
       raycast={interactive ? undefined : DISABLED_RAYCAST}
       onClick={(event) => { event.stopPropagation(); onOpen(); }}
     >
       <Float speed={1.05} rotationIntensity={0.12} floatIntensity={0.24}>
         <primitive object={orb} />
       </Float>
-      <pointLight color="#8fe8ff" intensity={12} distance={15} decay={2} />
+      <pointLight color="#9cecff" intensity={15} distance={18} decay={2} />
+      <pointLight color="#ffd99a" intensity={5.5} distance={9} decay={2} position={[0, -0.35, 1.1]} />
     </group>
   );
 }
@@ -198,7 +200,7 @@ function WorldPortal({ type, position, onEnter }: { type: "ground" | "life-map";
       name={`home-${type}-portal-world-owned`}
       userData={{ runtimeAsset: PORTAL_MODEL, destination: type }}
       position={position}
-      scale={type === "life-map" ? 0.84 : 0.78}
+      scale={type === "life-map" ? 0.64 : 0.6}
       raycast={interactive ? undefined : DISABLED_RAYCAST}
       onClick={(event) => {
         event.stopPropagation();
@@ -206,7 +208,7 @@ function WorldPortal({ type, position, onEnter }: { type: "ground" | "life-map";
       }}
     >
       <primitive object={portal} />
-      <pointLight color={type === "ground" ? "#b18cff" : "#f5cf78"} intensity={8} distance={12} decay={2} />
+      <pointLight color={type === "ground" ? "#b18cff" : "#f5cf78"} intensity={6.2} distance={11} decay={2} />
     </group>
   );
 }
@@ -240,7 +242,7 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
       if (ascentStartedAt.current === null) {
         ascentStartedAt.current = clock.elapsedTime;
         ascentCameraStart.current.copy(camera.position);
-        ascentLookStart.current.set(position.current.x, 1.25 + pitch.current, position.current.z - 1.7);
+        ascentLookStart.current.set(position.current.x, 1.25 + pitch.current, position.current.z - 2.8);
         velocity.current.set(0, 0, 0);
         target.current = null;
         lastNearby.current = null;
@@ -277,10 +279,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
       avatar.current.position.copy(position.current);
       avatar.current.rotation.y = yaw.current;
     }
-    cameraOffset.current.set(0, 3.15 + pitch.current * 1.35, 7.2).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
+    cameraOffset.current.set(0, 4.35 + pitch.current * 1.35, 10.6).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     cameraDesired.current.copy(position.current).add(cameraOffset.current);
     camera.position.lerp(cameraDesired.current, 1 - Math.pow(0.0009, delta));
-    camera.lookAt(position.current.x, 1.25 + pitch.current, position.current.z - 1.7);
+    camera.lookAt(position.current.x, 1.55 + pitch.current, position.current.z - 3.1);
     const distances: readonly [Nearby, THREE.Vector3, number][] = [["orb", ORB, 1.8], ["ground", GROUND_PORTAL, 2.2], ["life-map", LIFE_MAP_PORTAL, 2.2]];
     let next: Nearby = null;
     let best = Infinity;
@@ -297,11 +299,20 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby }: { input: Mov
 }
 
 function SceneReadiness({ onReady }: { onReady: () => void }) {
+  const { scene } = useThree();
   const frames = useRef(0);
   const reported = useRef(false);
   useFrame(() => {
     frames.current += 1;
-    if (reported.current || frames.current < 3) return;
+    if (reported.current || frames.current < 12) return;
+    const required = [
+      "home-authored-terrain",
+      "home-authored-embodied-self",
+      "home-orb-sanctuary",
+      "home-ground-portal-world-owned",
+      "home-life-map-portal-world-owned",
+    ];
+    if (!required.every((name) => scene.getObjectByName(name))) return;
     reported.current = true;
     onReady();
   });
@@ -311,14 +322,15 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
 function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onGround, onLifeMap, orbState, onSceneReady }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; avatar: MutableRefObject<THREE.Group | null>; onNearby: (value: Nearby) => void; onOrbOpen: () => void; onGround: () => void; onLifeMap: () => void; orbState: OrbState; onSceneReady: () => void; }) {
   return (
     <>
-      <color attach="background" args={["#05080f"]} />
-      <fogExp2 attach="fog" args={["#121827", 0.022]} />
-      <ambientLight intensity={0.42} color="#c8dcff" />
-      <hemisphereLight args={["#d9edff", "#080608", 1.25]} />
-      <directionalLight position={[-8, 18, 10]} intensity={4.8} color="#ffd5a0" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-far={90} />
-      <pointLight position={[0, 9, -10]} color="#ffb56d" intensity={7} distance={42} decay={2} />
-      <Stars radius={110} depth={74} count={1700} factor={2.1} saturation={0.16} fade speed={0.045} />
-      <Sparkles count={180} scale={[25, 12, 30]} position={[0, 4, -5]} size={1.25} speed={0.1} opacity={0.24} color="#ffe7b6" />
+      <color attach="background" args={["#122338"]} />
+      <fogExp2 attach="fog" args={["#2a4050", 0.017]} />
+      <ambientLight intensity={0.78} color="#dbeaff" />
+      <hemisphereLight args={["#edf6ff", "#241711", 1.85]} />
+      <directionalLight position={[-8, 18, 10]} intensity={5.6} color="#ffd7a3" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-far={90} />
+      <pointLight position={[0, 9, -10]} color="#ffbc78" intensity={8.6} distance={46} decay={2} />
+      <pointLight position={[7, 5, 5]} color="#9bdfff" intensity={3.4} distance={30} decay={2} />
+      <Stars radius={110} depth={74} count={1500} factor={1.9} saturation={0.14} fade speed={0.04} />
+      <Sparkles count={150} scale={[25, 12, 30]} position={[0, 4, -5]} size={1.1} speed={0.08} opacity={0.2} color="#ffe7b6" />
       <SceneReadiness onReady={onSceneReady} />
       <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} />
       <HomeEnvironment walkTarget={target} />
@@ -329,8 +341,8 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
       <WorldPortal type="ground" position={GROUND_PORTAL} onEnter={onGround} />
       <WorldPortal type="life-map" position={LIFE_MAP_PORTAL} onEnter={onLifeMap} />
       <EffectComposer multisampling={0}>
-        <Bloom intensity={1.28} luminanceThreshold={0.58} luminanceSmoothing={0.28} mipmapBlur />
-        <Vignette eskil={false} offset={0.15} darkness={0.48} />
+        <Bloom intensity={0.94} luminanceThreshold={0.62} luminanceSmoothing={0.24} mipmapBlur />
+        <Vignette eskil={false} offset={0.17} darkness={0.24} />
       </EffectComposer>
     </>
   );
@@ -435,12 +447,12 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
         className={styles.canvas}
         shadows
         dpr={[1, 1.75]}
-        camera={{ position: [0, 3.35, 14], fov: 48, near: 0.08, far: 180 }}
+        camera={{ position: [0, 4.4, 17.8], fov: 52, near: 0.08, far: 180 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.08;
+          gl.toneMappingExposure = 1.24;
           setCanvasReady(true);
         }}
       >
