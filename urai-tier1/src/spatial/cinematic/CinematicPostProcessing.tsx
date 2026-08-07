@@ -18,7 +18,7 @@ export default function CinematicPostProcessing({
   reducedMotion?: boolean
   budget?: SpatialRenderBudget
 }) {
-  const { gl } = useThree()
+  const { gl, scene } = useThree()
   const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
@@ -33,11 +33,42 @@ export default function CinematicPostProcessing({
     const previousAutoReset = gl.info.autoReset
     gl.info.autoReset = false
     gl.info.reset()
+
+    if (!lifeMapOwner) {
+      return () => {
+        gl.info.autoReset = previousAutoReset
+        gl.info.reset()
+      }
+    }
+
+    const originalRender = gl.render.bind(gl)
+    let completedFrames = 0
+    gl.render = ((sceneArg, cameraArg) => {
+      originalRender(sceneArg, cameraArg)
+      completedFrames += 1
+      if (completedFrames < 2) return
+
+      let objects = 0
+      let anchors = 0
+      scene.traverse((object) => {
+        if (object.visible) objects += 1
+        if (object.visible && object.name.startsWith('life-map-')) anchors += 1
+      })
+      const calls = gl.info.render.calls
+      const triangles = gl.info.render.triangles
+      lifeMapOwner.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? 'true' : 'false'
+      lifeMapOwner.dataset.lifeMapVisibleObjects = String(objects)
+      lifeMapOwner.dataset.lifeMapVisibleAnchors = String(anchors)
+      lifeMapOwner.dataset.lifeMapRenderCalls = String(calls)
+      lifeMapOwner.dataset.lifeMapRenderTriangles = String(triangles)
+    }) as typeof gl.render
+
     return () => {
+      gl.render = originalRender
       gl.info.autoReset = previousAutoReset
       gl.info.reset()
     }
-  }, [active, gl])
+  }, [active, gl, scene])
 
   const chromaticOffset = useMemo(() => new Vector2(0.00045, 0.00035), [])
 
