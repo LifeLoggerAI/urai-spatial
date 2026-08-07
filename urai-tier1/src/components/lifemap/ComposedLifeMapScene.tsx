@@ -372,7 +372,7 @@ export default function ComposedLifeMapScene() {
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
       dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
-      frameloop={profile.documentVisible ? "always" : "never"}
+      frameloop="always"
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -381,6 +381,8 @@ export default function ComposedLifeMapScene() {
         gl.setClearColor("#02050b", 1);
       }}
     >
+      <WebGLRecoveryBridge onStateChange={setWebglState} />
+      <RenderProofBridge phase={phase} onProof={setRenderProof} />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
@@ -389,7 +391,7 @@ export default function ComposedLifeMapScene() {
           profile={profile}
           onSelect={selectNode}
           cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
-          webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
+          webglRecovery={null}
         />
       </Suspense>
     </Canvas>
