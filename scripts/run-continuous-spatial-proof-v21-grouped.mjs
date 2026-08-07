@@ -65,6 +65,10 @@ const discreetPassTarget = `    && result.semanticButtons === 3 && result.semant
 const semanticPassReplacement = `    && result.semanticButtons === 3 && result.semanticVisible === 0\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'`
 if (original.split(discreetPassTarget).length - 1 !== 1) throw new Error('Home semantic navigation pass contract changed')
 
+const editableFocusTarget = `      const editableControl = page.locator('.home-discreet-controls button').first()`
+const editableFocusReplacement = `      const editableControl = page.getByRole('navigation', { name: 'Accessible Home destinations' }).getByRole('button').first()`
+if (original.split(editableFocusTarget).length - 1 !== 1) throw new Error('Home editable-focus regression contract changed')
+
 const executionStart = `const browser = await chromium.launch({ headless: true })`
 const originalExecutionIndex = original.indexOf(executionStart)
 if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecutionIndex + 1) >= 0) throw new Error('Execution contract changed')
@@ -107,6 +111,7 @@ const patchedPrefix = original
   .replace(canvasRectTarget, canvasRectReplacement)
   .replace(discreetControlsTarget, semanticOwnershipReplacement)
   .replace(discreetPassTarget, semanticPassReplacement)
+  .replace(editableFocusTarget, editableFocusReplacement)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) {
   throw new Error('Patched execution contract changed')
@@ -121,6 +126,7 @@ const requiredSemanticGuards = [
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
   ['semantic navigation non-dominance', "semanticNavigationNonDominant === 'true'"],
+  ['editable focus regression owner', "Accessible Home destinations"],
 ]
 for (const [label, marker] of requiredSemanticGuards) {
   if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)
