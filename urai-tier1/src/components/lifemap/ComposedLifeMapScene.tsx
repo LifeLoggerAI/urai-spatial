@@ -242,14 +242,15 @@ function phaseLabel(phase: JourneyPhase) {
 export default function ComposedLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
-  const profile = useAdaptiveSpatialQuality();
-  const lifeMapProfile = useMemo(() => ({
-    ...profile,
-    tier: profile.tier === "high" ? "medium" as const : profile.tier,
-    pixelRatioMax: Math.min(profile.pixelRatioMax, 1.25),
+  const adaptiveProfile = useAdaptiveSpatialQuality();
+  const profile = useMemo(() => ({
+    ...adaptiveProfile,
+    tier: adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
+    pixelRatioMax: Math.min(adaptiveProfile.pixelRatioMax, 1.25),
     shadows: false,
     postprocessing: false,
-  }), [profile]);
+    antialias: false,
+  }), [adaptiveProfile]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
@@ -377,10 +378,10 @@ export default function ComposedLifeMapScene() {
     <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
     <Canvas
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
-      dpr={[1, lifeMapProfile.pixelRatioMax]}
+      dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
-      frameloop="always"
-      gl={{ antialias: lifeMapProfile.antialias, powerPreference: "high-performance", alpha: false }}
+      frameloop={profile.documentVisible ? "always" : "never"}
+      gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.15;
@@ -395,9 +396,9 @@ export default function ComposedLifeMapScene() {
           nodes={nodes}
           selected={selected}
           phase={phase as LifeMapJourneyPhase}
-          profile={lifeMapProfile}
+          profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={lifeMapProfile.reducedMotion} />}
+          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
         />
       </Suspense>
