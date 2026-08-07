@@ -1,9 +1,10 @@
 'use client'
 
 import { EffectComposer, Bloom, Vignette, ChromaticAberration, DepthOfField } from '@react-three/postprocessing'
+import { useThree } from '@react-three/fiber'
 import { BlendFunction } from 'postprocessing'
 import { Vector2 } from 'three'
-import { useMemo, type ReactElement } from 'react'
+import { useEffect, useMemo, type ReactElement } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
@@ -17,6 +18,7 @@ export default function CinematicPostProcessing({
   reducedMotion?: boolean
   budget?: SpatialRenderBudget
 }) {
+  const { gl } = useThree()
   const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
@@ -24,6 +26,17 @@ export default function CinematicPostProcessing({
     () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
     [budget, sharedVisualBudget, effectiveReducedMotion],
   )
+
+  useEffect(() => {
+    if (!active) return
+    const previousAutoReset = gl.info.autoReset
+    gl.info.autoReset = false
+    gl.info.reset()
+    return () => {
+      gl.info.autoReset = previousAutoReset
+      gl.info.reset()
+    }
+  }, [active, gl])
 
   const chromaticOffset = useMemo(() => new Vector2(0.00045, 0.00035), [])
 
