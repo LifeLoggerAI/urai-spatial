@@ -48,11 +48,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - name: Install exact lockfile
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Prove doorway interaction ownership before Chromium
-        run: node --test tests/native-doorway-proof-contract.test.mjs
+        run: |
+          node --test tests/native-doorway-proof-contract.test.mjs
+          node --check scripts/run-with-ci-webgl.mjs
       - name: Build static app
         run: pnpm build:static
       - name: Serve static app
@@ -71,7 +71,7 @@ jobs:
       - name: Install exact Chromium
         run: pnpm --dir urai-tier1 exec playwright install chromium --with-deps
       - name: Prove native doorways
-        run: node tests/native-doorway-proof.mjs
+        run: node scripts/run-with-ci-webgl.mjs tests/native-doorway-proof.mjs
       - name: Upload native doorway receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
