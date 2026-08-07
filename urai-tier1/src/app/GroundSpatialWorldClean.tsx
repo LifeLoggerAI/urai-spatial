@@ -344,7 +344,7 @@ export default function GroundSpatialWorldClean() {
       <Canvas
         shadows
         dpr={[1, 1.3]}
-        camera={{ position: [0, 3.35, 12.2], fov: 52, near: 0.08, far: 180 }}
+        camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x102b38, 1);
