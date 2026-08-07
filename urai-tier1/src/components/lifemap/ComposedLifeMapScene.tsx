@@ -350,7 +350,7 @@ export default function ComposedLifeMapScene() {
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
       dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
-      frameloop={profile.documentVisible ? "always" : "demand"}
+      frameloop={profile.documentVisible ? "always" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
