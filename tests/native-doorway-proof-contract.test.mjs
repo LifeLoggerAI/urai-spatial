@@ -7,8 +7,13 @@ const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.u
 test('keyboard doorway activation bypasses moving-target geometric stability', () => {
   assert.match(proof, /node\.focus\(\{ preventScroll: true \}\)/)
   assert.match(proof, /page\.keyboard\.press\('Enter'\)/)
-  assert.match(proof, /if \(testCase\.method !== 'keyboard'\) await target\.scrollIntoViewIfNeeded\(\)/)
   assert.doesNotMatch(proof, /await target\.focus\(\)[\s\S]*target\.press\('Enter'/)
+})
+
+test('pointer and touch use deterministic browser scrolling before hit proof', () => {
+  assert.match(proof, /node\.scrollIntoView\(\{ block: 'nearest', inline: 'nearest', behavior: 'auto' \}\)/)
+  assert.match(proof, /requestAnimationFrame\(resolve\)/)
+  assert.match(proof, /semantic target geometry is still moving/)
 })
 
 test('pointer and touch retain real browser-coordinate hit ownership', () => {
