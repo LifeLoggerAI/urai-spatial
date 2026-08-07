@@ -1,5 +1,5 @@
-import { LegacyScrollPortal } from "@/components/spatial/legacy-scroll-portal";
+import LifeMapSemanticRoute from '@/spatial/realms/LifeMapSemanticRoute'
 
 export default function SpatialLegacyPage() {
-  return <LegacyScrollPortal />;
+  return <LifeMapSemanticRoute kind="legacy" />
 }
