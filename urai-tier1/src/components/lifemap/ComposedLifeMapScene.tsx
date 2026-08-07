@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
@@ -128,24 +128,22 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
 
 function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (proof: RenderProof) => void }) {
   const { gl, scene, invalidate } = useThree();
-  const renderedFrames = useRef(0);
+  const completedFrames = useRef(0);
   const publishedPhase = useRef<JourneyPhase | null>(null);
   const publishedSignature = useRef("");
 
   useEffect(() => {
-    renderedFrames.current = 0;
+    completedFrames.current = 0;
     publishedPhase.current = null;
     publishedSignature.current = "";
     onProof({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
     invalidate();
   }, [invalidate, onProof, phase]);
 
-  useEffect(() => {
-    const previousAfterRender = scene.onAfterRender;
-    const publishAfterRealRender: THREE.Object3D["onAfterRender"] = (...args) => {
-      previousAfterRender?.apply(scene, args);
-      renderedFrames.current += 1;
-      if (renderedFrames.current < 2) {
+  useFrame(() => {
+    queueMicrotask(() => {
+      completedFrames.current += 1;
+      if (completedFrames.current < 4) {
         invalidate();
         return;
       }
@@ -155,7 +153,7 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
         if (object.visible) objects += 1;
         if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
       });
-      const calls = Math.max(renderedFrames.current, gl.info.render.calls);
+      const calls = Math.max(completedFrames.current, gl.info.render.calls);
       const triangles = gl.info.render.triangles;
       const ready = calls > 0 && objects > 20 && anchors >= 8;
       const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
@@ -164,12 +162,8 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
       publishedSignature.current = signature;
       onProof({ ready, objects, anchors, calls, triangles });
       if (!ready) invalidate();
-    };
-    scene.onAfterRender = publishAfterRealRender;
-    return () => {
-      if (scene.onAfterRender === publishAfterRealRender) scene.onAfterRender = previousAfterRender;
-    };
-  }, [gl, invalidate, onProof, phase, scene]);
+    });
+  });
 
   return null;
 }
@@ -368,15 +362,17 @@ export default function ComposedLifeMapScene() {
         gl.setClearColor("#02050b", 1);
       }}
     >
-      <LifeMapProductionWorld
-        nodes={nodes}
-        selected={selected}
-        phase={phase as LifeMapJourneyPhase}
-        profile={profile}
-        onSelect={selectNode}
-        cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
-        webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
-      />
+      <Suspense fallback={null}>
+        <LifeMapProductionWorld
+          nodes={nodes}
+          selected={selected}
+          phase={phase as LifeMapJourneyPhase}
+          profile={profile}
+          onSelect={selectNode}
+          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
+        />
+      </Suspense>
     </Canvas>
 
     <header className="life-map-title">
