@@ -68,17 +68,29 @@ async function goto(page, route, selector = '[data-testid="urai-true-3d-life-map
   if (selector === '[data-testid="urai-true-3d-life-map"]') {
     await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
     const scene = page.locator(selector).first()
-    await scene.waitFor({ state: 'attached', timeout: 45_000 })
-    await page.waitForFunction((sceneSelector) => {
-      const root = document.querySelector(sceneSelector)
-      if (!(root instanceof HTMLElement)) return false
+    await scene.waitFor({ state: 'visible', timeout: 45_000 })
+    const geometry = await scene.evaluate((root) => {
       const rect = root.getBoundingClientRect()
       const style = getComputedStyle(root)
-      return rect.width >= 240 && rect.height >= 240
-        && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth
-        && style.display !== 'none' && style.visibility !== 'hidden'
-        && Number.parseFloat(style.opacity || '1') > 0.02
-    }, selector, { timeout: 45_000, polling: 25 })
+      return {
+        width: rect.width,
+        height: rect.height,
+        bottom: rect.bottom,
+        right: rect.right,
+        top: rect.top,
+        left: rect.left,
+        viewportWidth: innerWidth,
+        viewportHeight: innerHeight,
+        display: style.display,
+        visibility: style.visibility,
+        opacity: Number.parseFloat(style.opacity || '1'),
+      }
+    })
+    const geometryValid = geometry.width >= 240 && geometry.height >= 240
+      && geometry.bottom > 0 && geometry.right > 0 && geometry.top < geometry.viewportHeight && geometry.left < geometry.viewportWidth
+      && geometry.display !== 'none' && geometry.visibility !== 'hidden'
+      && geometry.opacity > 0.02
+    if (!geometryValid) throw new Error(`Life Map canonical root geometry invalid: ${JSON.stringify(geometry)}`)
   } else {
     await page.locator(selector).first().waitFor({ state: 'visible', timeout: 45_000 })
   }
