@@ -28,7 +28,8 @@ export default function CinematicPostProcessing({
   )
 
   useEffect(() => {
-    if (!active) return
+    const lifeMapOwner = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+    if (!active && !lifeMapOwner) return
     const previousAutoReset = gl.info.autoReset
     gl.info.autoReset = false
     gl.info.reset()
