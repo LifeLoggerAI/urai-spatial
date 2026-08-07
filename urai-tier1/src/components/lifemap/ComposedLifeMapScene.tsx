@@ -378,7 +378,7 @@ export default function ComposedLifeMapScene() {
     <Canvas
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
       dpr={[1, lifeMapProfile.pixelRatioMax]}
-      shadows={lifeMapProfile.shadows}
+      shadows={profile.shadows}
       frameloop="always"
       gl={{ antialias: lifeMapProfile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
