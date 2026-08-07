@@ -161,7 +161,7 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
     publishedSignature.current = signature;
     onProof({ ready, objects, anchors, calls, triangles });
     if (!ready) invalidate();
-  });
+  }, 2);
   return null;
 }
 
