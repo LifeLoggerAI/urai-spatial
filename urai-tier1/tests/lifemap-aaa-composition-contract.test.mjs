@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import path from 'node:path'
 import test from 'node:test'
 
-const root = process.cwd()
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
+const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
