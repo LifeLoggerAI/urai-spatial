@@ -80,7 +80,10 @@ test('overview composition is opaque, authored, and independently framed for por
   assert.match(world, /const portrait = size\.height > size\.width/)
   assert.match(world, /portrait \? \[0\.54, 0\.96, 0\.78\]/)
   assert.match(world, /portrait \? \[0, -0\.18, 1\.1\]/)
-  assert.match(world, /<AuthoredMemoryStar aura=\{chapter\.aura\}/)
+  const chapterAnchor = sliceBetween(world, 'function ChapterAnchor', 'function ChapterTerritories')
+  const chapterTerritories = sliceBetween(world, 'function ChapterTerritories', 'function ForegroundObservatory')
+  assert.match(chapterAnchor, /<AuthoredMemoryStar aura=\{aura\}/)
+  assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} \/>/)
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
