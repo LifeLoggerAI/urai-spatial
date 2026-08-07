@@ -132,6 +132,15 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
   const publishedPhase = useRef<JourneyPhase | null>(null);
   const publishedSignature = useRef("");
   useEffect(() => {
+    const previousAutoReset = gl.info.autoReset;
+    gl.info.autoReset = false;
+    gl.info.reset();
+    return () => {
+      gl.info.autoReset = previousAutoReset;
+      gl.info.reset();
+    };
+  }, [gl]);
+  useEffect(() => {
     frames.current = 0;
     publishedPhase.current = null;
     publishedSignature.current = "";
@@ -161,7 +170,7 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
     publishedSignature.current = signature;
     onProof({ ready, objects, anchors, calls, triangles });
     if (!ready) invalidate();
-  }, 2);
+  });
   return null;
 }
 
