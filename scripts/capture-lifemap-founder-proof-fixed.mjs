@@ -8,10 +8,13 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
+const rawPr = String(process.env.URAI_PR_NUMBER || '').trim()
+const pr = rawPr ? Number.parseInt(rawPr, 10) : null
+if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 const receipt = {
   schemaVersion: 'urai-lifemap-founder-proof-10',
   repository: 'LifeLoggerAI/urai-spatial',
-  pr: 953,
+  pr,
   exactHead,
   runId: process.env.GITHUB_RUN_ID || 'local',
   runner: 'checked-in-stable-module',
