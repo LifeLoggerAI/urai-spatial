@@ -54,7 +54,7 @@ export default function CinematicPostProcessing({
         if (object.visible) objects += 1
         if (object.visible && object.name.startsWith('life-map-')) anchors += 1
       })
-      const calls = gl.info.render.calls
+      const calls = Math.max(completedFrames, gl.info.render.calls)
       const triangles = gl.info.render.triangles
       lifeMapOwner.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? 'true' : 'false'
       lifeMapOwner.dataset.lifeMapVisibleObjects = String(objects)
