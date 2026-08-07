@@ -162,17 +162,13 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
     queueMicrotask(() => {
       if (readyPublished.current && publishedPhase.current === phase) return;
       completedFrames.current += 1;
-      if (completedFrames.current < 4) {
-        invalidate();
-        return;
-      }
       let objects = 0;
       let anchors = 0;
       scene.traverse((object) => {
         if (object.visible) objects += 1;
         if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
       });
-      const calls = Math.max(completedFrames.current, gl.info.render.calls);
+      const calls = Math.max(completedFrames.current, gl.info.render.calls, 1);
       const triangles = gl.info.render.triangles;
       const ready = calls > 0 && objects > 20 && anchors >= 8;
       const signature = `${phase}:${ready}:${objects}:${anchors}:${triangles}`;
