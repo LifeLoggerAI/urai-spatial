@@ -50,10 +50,10 @@
 }
 
 /* Keep the canonical Life Map scene explicitly viewport-bound. Percentage sizing
- * against the persistent world shell can collapse during static-export hydration
- * even though the route owner itself is visible. The scene stays non-isolated so
- * selected Focus and Replay controls remain in the intended shared stacking band. */
-.urai-world-runtime[data-world-destination='life-map'] .life-map-root {
+ * against the persistent world shell can collapse during static-export hydration,
+ * and the world-state destination can lag the route owner for the first frames.
+ * The scene itself therefore owns this invariant independent of shell state. */
+.life-map-root {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
