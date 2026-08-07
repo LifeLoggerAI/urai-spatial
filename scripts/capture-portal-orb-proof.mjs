@@ -46,20 +46,19 @@ for (const [assetPath, proof] of Object.entries(expected)) {
     receipt: path.relative(process.cwd(), finalPackReceiptPath),
     runtimePromotion: false,
   }
-  if (!verified) {
-    throw new Error(`binary identity mismatch for ${assetPath}: bytes=${bytes.length} sha256=${digest}`)
-  }
+  if (!verified) throw new Error(`binary identity mismatch for ${assetPath}: bytes=${bytes.length} sha256=${digest}`)
 }
 
-const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
 const receipt = {
-  schemaVersion: 'urai-portal-orb-proof-5',
+  schemaVersion: 'urai-portal-orb-proof-6',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeMode: 'final-glb-pack-live-with-visual-approval-pending',
   finalPackReceipt: path.relative(process.cwd(), finalPackReceiptPath),
   stagedAssetIdentity,
   visualGate: {
+    source: 'retained-canvas-png',
+    sampling: 'distributed-3x3-neighborhood',
     minimumViewportCoverage: 0.82,
     minimumLuminanceRange: 12,
     minimumVisibleSamples: 3,
@@ -68,7 +67,89 @@ const receipt = {
   errors: [],
 }
 
+async function settleAnimationFrames(page, frameCount) {
+  await page.evaluate((frames) => new Promise((resolve) => {
+    let completed = 0
+    const advance = () => {
+      completed += 1
+      if (completed >= frames) resolve()
+      else window.requestAnimationFrame(advance)
+    }
+    window.requestAnimationFrame(advance)
+  }), frameCount)
+}
+
+async function canvasVisualEvidence(page) {
+  const canvas = page.locator('.urai-asset-home-world canvas').first()
+  await canvas.waitFor({ state: 'visible', timeout: 45_000 })
+  const bounds = await canvas.boundingBox()
+  const viewport = page.viewportSize()
+  if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
+  const visibleWidth = Math.max(0, Math.min(bounds.x + bounds.width, viewport.width) - Math.max(bounds.x, 0))
+  const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - Math.max(bounds.y, 0))
+  const viewportCoverage = visibleWidth * visibleHeight / Math.max(1, viewport.width * viewport.height)
+  const buffer = await canvas.screenshot({ animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
+  const sample = await page.evaluate(async ({ dataUrl }) => {
+    const image = new Image()
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve
+      image.onerror = () => reject(new Error('retained canvas PNG could not be decoded'))
+    })
+    image.src = dataUrl
+    await loaded
+    const surface = document.createElement('canvas')
+    surface.width = Math.max(1, image.naturalWidth)
+    surface.height = Math.max(1, image.naturalHeight)
+    const context = surface.getContext('2d', { willReadFrequently: true })
+    if (!context) return { available: false, reason: 'missing-2d-sampler' }
+    context.drawImage(image, 0, 0)
+    const points = [
+      [0.18, 0.2], [0.5, 0.2], [0.82, 0.2],
+      [0.18, 0.5], [0.5, 0.5], [0.82, 0.5],
+      [0.18, 0.8], [0.5, 0.8], [0.82, 0.8],
+    ]
+    const luminance = points.map(([xRatio, yRatio]) => {
+      const x = Math.max(0, Math.min(surface.width - 3, Math.round(surface.width * xRatio) - 1))
+      const y = Math.max(0, Math.min(surface.height - 3, Math.round(surface.height * yRatio) - 1))
+      const pixels = context.getImageData(x, y, Math.min(3, surface.width), Math.min(3, surface.height)).data
+      let total = 0
+      let count = 0
+      for (let index = 0; index < pixels.length; index += 4) {
+        total += pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722
+        count += 1
+      }
+      return Math.round(total / Math.max(1, count))
+    })
+    return {
+      available: true,
+      pngWidth: surface.width,
+      pngHeight: surface.height,
+      luminance,
+      luminanceRange: Math.max(...luminance) - Math.min(...luminance),
+      visibleSamples: luminance.filter((value) => value >= 8).length,
+    }
+  }, { dataUrl })
+  return { ...sample, viewportCoverage, bounds: { width: bounds.width, height: bounds.height }, canvasPngBytes: buffer.length }
+}
+
+async function waitForVisualEvidence(page, frameBudget = 240) {
+  let evidence = null
+  for (let elapsed = 0; elapsed < frameBudget; elapsed += 30) {
+    await settleAnimationFrames(page, 30)
+    evidence = await canvasVisualEvidence(page)
+    if (evidence.available === true
+      && evidence.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
+      && evidence.luminanceRange >= receipt.visualGate.minimumLuminanceRange
+      && evidence.visibleSamples >= receipt.visualGate.minimumVisibleSamples) return evidence
+  }
+  return evidence
+}
+
 for (const spec of cases) {
+  // A fresh browser per case prevents one WebGL proof case from contaminating another
+  // through GPU/context resource retention, especially reduced-motion verification.
+  const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({
     viewport: spec.viewport,
     reducedMotion: spec.reducedMotion,
@@ -79,19 +160,10 @@ for (const spec of cases) {
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
 
-  const record = {
-    id: spec.id,
-    viewport: spec.viewport,
-    reducedMotion: spec.reducedMotion,
-    pageErrors,
-    passed: false,
-  }
+  const record = { id: spec.id, viewport: spec.viewport, reducedMotion: spec.reducedMotion, pageErrors, passed: false }
 
   try {
-    const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60_000,
-    })
+    const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForFunction(
@@ -99,7 +171,6 @@ for (const spec of cases) {
       null,
       { timeout: 45_000 },
     )
-    await page.waitForTimeout(1800)
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
@@ -110,61 +181,16 @@ for (const spec of cases) {
     record.orbOwned = record.accessibleRuntimeText.includes('Open URAI Orb companion')
     record.groundPortalOwned = record.accessibleRuntimeText.includes('Open Ground directly')
     record.lifeMapAscentOwned = record.accessibleRuntimeText.includes('Ascend to Life Map')
-    record.visual = await page.evaluate(() => {
-      const canvas = document.querySelector('.urai-asset-home-world canvas')
-      if (!(canvas instanceof HTMLCanvasElement)) return { available: false, reason: 'missing-canvas' }
-      const bounds = canvas.getBoundingClientRect()
-      const viewportArea = Math.max(1, window.innerWidth * window.innerHeight)
-      const visibleWidth = Math.max(0, Math.min(bounds.right, window.innerWidth) - Math.max(bounds.left, 0))
-      const visibleHeight = Math.max(0, Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, 0))
-      const viewportCoverage = visibleWidth * visibleHeight / viewportArea
-      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
-      if (!gl) return { available: false, reason: 'missing-webgl-context', viewportCoverage, bounds: { width: bounds.width, height: bounds.height } }
-      const width = gl.drawingBufferWidth
-      const height = gl.drawingBufferHeight
-      const points = [
-        [0.18, 0.2], [0.5, 0.2], [0.82, 0.2],
-        [0.18, 0.5], [0.5, 0.5], [0.82, 0.5],
-        [0.18, 0.8], [0.5, 0.8], [0.82, 0.8],
-      ]
-      const pixel = new Uint8Array(4)
-      const luminance = []
-      for (const [xRatio, yRatio] of points) {
-        gl.readPixels(
-          Math.min(width - 1, Math.max(0, Math.floor(width * xRatio))),
-          Math.min(height - 1, Math.max(0, Math.floor(height * yRatio))),
-          1,
-          1,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          pixel,
-        )
-        luminance.push(Math.round(pixel[0] * 0.2126 + pixel[1] * 0.7152 + pixel[2] * 0.0722))
-      }
-      const minimum = Math.min(...luminance)
-      const maximum = Math.max(...luminance)
-      return {
-        available: true,
-        viewportCoverage,
-        bounds: { width: bounds.width, height: bounds.height },
-        drawingBuffer: { width, height },
-        luminance,
-        luminanceRange: maximum - minimum,
-        visibleSamples: luminance.filter((value) => value >= 8).length,
-      }
-    })
-    record.visualPassed = record.visual.available === true
+    record.visual = await waitForVisualEvidence(page)
+    record.visualPassed = record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
       && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
       && record.visual.visibleSamples >= receipt.visualGate.minimumVisibleSamples
 
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
-    const screenshot = await page.screenshot({
-      path: path.join(outputDir, record.screenshot),
-      fullPage: false,
-      timeout: 90_000,
-    })
+    const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
     record.screenshotBytes = screenshot.length
+    record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
 
     record.passed = record.status === 200
       && record.canvasReady === 'true'
@@ -182,10 +208,10 @@ for (const spec of cases) {
   } finally {
     receipt.cases.push(record)
     if (!record.passed) receipt.errors.push(record)
-    await context.close()
+    await context.close().catch(() => {})
+    await browser.close().catch(() => {})
   }
 }
 
-await browser.close()
 await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
