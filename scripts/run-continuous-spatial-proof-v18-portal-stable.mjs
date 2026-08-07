@@ -121,7 +121,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
     const query = expectReady ? 'homePrivateFixture=1' : candidateQuery('homePrivateFixture=1')
     const expectedRoute = destination === 'ground'
       ? { pathname: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }
-      : { pathname: '/life-map/', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' }
+      : { pathname: '/life-map/', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }
     const historyKey = \`urai-portal-proof:\${destination}\`
     let movement = null
     let activationFailure = null
