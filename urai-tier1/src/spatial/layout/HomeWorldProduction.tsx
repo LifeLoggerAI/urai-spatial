@@ -551,9 +551,9 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
     setOrbState("transition");
     setPortalSequence(`${destination}:opening`);
     portalTimers.current = [
-      window.setTimeout(() => setPortalSequence(`${destination}:traversal`), 180),
-      window.setTimeout(() => setPortalSequence(`${destination}:closing`), 560),
-      window.setTimeout(() => { setOrbState("idle"); travel(); }, 820),
+      window.setTimeout(() => setPortalSequence(`${destination}:traversal`), 320),
+      window.setTimeout(() => setPortalSequence(`${destination}:closing`), 1050),
+      window.setTimeout(() => { setOrbState("idle"); travel(); }, 1750),
     ];
   }, [clearPortalTimers]);
   const onGround = useCallback(() => beginPortalTravel("ground", () => requestUraiWorldTravel({ destination: "infrastructure-hub", href: "/ground/", entryPortal: "home-ground", cameraCheckpoint: "home-ground-descent" })), [beginPortalTravel]);
