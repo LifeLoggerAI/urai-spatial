@@ -1,10 +1,9 @@
 'use client'
 
 import { EffectComposer, Bloom, Vignette, ChromaticAberration, DepthOfField } from '@react-three/postprocessing'
-import { useFrame, useThree } from '@react-three/fiber'
 import { BlendFunction } from 'postprocessing'
 import { Vector2 } from 'three'
-import { useEffect, useMemo, useRef, type ReactElement } from 'react'
+import { useMemo, type ReactElement } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
@@ -18,9 +17,6 @@ export default function CinematicPostProcessing({
   reducedMotion?: boolean
   budget?: SpatialRenderBudget
 }) {
-  const { gl, scene } = useThree()
-  const completedRenderFrames = useRef(0)
-  const diagnosticLogged = useRef(false)
   const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
@@ -28,50 +24,6 @@ export default function CinematicPostProcessing({
     () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
     [budget, sharedVisualBudget, effectiveReducedMotion],
   )
-
-  useEffect(() => {
-    const previousAutoReset = gl.info.autoReset
-    if (active) {
-      gl.info.autoReset = false
-      gl.info.reset()
-    }
-    return () => {
-      if (active) {
-        gl.info.autoReset = previousAutoReset
-        gl.info.reset()
-      }
-    }
-  }, [active, gl])
-
-  useFrame(() => {
-    queueMicrotask(() => {
-      const lifeMapOwner = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      if (!lifeMapOwner) return
-      completedRenderFrames.current += 1
-      if (completedRenderFrames.current < 4) return
-
-      let objects = 0
-      let anchors = 0
-      scene.traverse((object) => {
-        if (object.visible) objects += 1
-        if (object.visible && object.name.startsWith('life-map-')) anchors += 1
-      })
-      const calls = Math.max(completedRenderFrames.current, gl.info.render.calls)
-      const triangles = gl.info.render.triangles
-      const ready = calls > 0 && objects > 20 && anchors >= 8
-      lifeMapOwner.dataset.lifeMapRenderReady = ready ? 'true' : 'false'
-      lifeMapOwner.dataset.lifeMapVisibleObjects = String(objects)
-      lifeMapOwner.dataset.lifeMapVisibleAnchors = String(anchors)
-      lifeMapOwner.dataset.lifeMapRenderCalls = String(calls)
-      lifeMapOwner.dataset.lifeMapRenderTriangles = String(triangles)
-
-      if (!diagnosticLogged.current && typeof window !== 'undefined' && window.location.hostname === '127.0.0.1') {
-        diagnosticLogged.current = true
-        const rect = lifeMapOwner.getBoundingClientRect()
-        console.warn(`URAI_LIFEMAP_RENDER_PROOF ready=${ready} objects=${objects} anchors=${anchors} calls=${calls} triangles=${triangles} root=${Math.round(rect.width)}x${Math.round(rect.height)}`)
-      }
-    })
-  })
 
   const chromaticOffset = useMemo(() => new Vector2(0.00045, 0.00035), [])
 
