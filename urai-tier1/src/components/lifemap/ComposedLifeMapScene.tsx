@@ -127,7 +127,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
 }
 
 function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (proof: RenderProof) => void }) {
-  const { gl, scene } = useThree();
+  const { gl, scene, invalidate } = useThree();
   const frames = useRef(0);
   const publishedPhase = useRef<JourneyPhase | null>(null);
   const publishedSignature = useRef("");
@@ -135,10 +135,14 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
     frames.current = 0;
     publishedPhase.current = null;
     publishedSignature.current = "";
-  }, [phase]);
+    invalidate();
+  }, [invalidate, phase]);
   useFrame(() => {
     frames.current += 1;
-    if (frames.current < 4) return;
+    if (frames.current < 4) {
+      invalidate();
+      return;
+    }
     let objects = 0;
     let anchors = 0;
     scene.traverse((object) => {
@@ -149,10 +153,14 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
     const triangles = gl.info.render.triangles;
     const ready = calls > 0 && objects > 20 && anchors >= 8;
     const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
-    if (publishedPhase.current === phase && publishedSignature.current === signature) return;
+    if (publishedPhase.current === phase && publishedSignature.current === signature) {
+      if (!ready) invalidate();
+      return;
+    }
     publishedPhase.current = phase;
     publishedSignature.current = signature;
     onProof({ ready, objects, anchors, calls, triangles });
+    if (!ready) invalidate();
   });
   return null;
 }
@@ -342,7 +350,7 @@ export default function ComposedLifeMapScene() {
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
       dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
-      frameloop={profile.documentVisible ? "always" : "never"}
+      frameloop={profile.documentVisible ? "always" : "demand"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
