@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Float, Sky, Sparkles, useAnimations, useGLTF } from "@react-three/drei";
+import { Float, Sky, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
@@ -501,6 +501,7 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
     <>
       <color attach="background" args={["#b9d7d3"]} />
       <Sky distance={450000} sunPosition={[-18, 10, -48]} turbidity={3.1} rayleigh={1.8} mieCoefficient={0.004} mieDirectionalG={0.76} />
+      <Stars radius={140} depth={46} count={12} factor={0.12} saturation={0} fade speed={0.001} />
       <fogExp2 attach="fog" args={["#b9cbbd", 0.011]} />
       <ambientLight intensity={0.88} color="#fff0d7" />
       <hemisphereLight args={["#e8f5ef", "#53664a", 1.42]} />
