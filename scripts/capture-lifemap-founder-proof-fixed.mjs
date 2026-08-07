@@ -65,7 +65,23 @@ async function openPage(options = {}) {
 async function goto(page, route, selector = '[data-testid="urai-true-3d-life-map"]') {
   const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
   if (!response || response.status() !== 200) throw new Error(`${route} returned ${response?.status()}`)
-  await page.locator(selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+  if (selector === '[data-testid="urai-true-3d-life-map"]') {
+    await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
+    const scene = page.locator(selector).first()
+    await scene.waitFor({ state: 'attached', timeout: 45_000 })
+    await page.waitForFunction((sceneSelector) => {
+      const root = document.querySelector(sceneSelector)
+      if (!(root instanceof HTMLElement)) return false
+      const rect = root.getBoundingClientRect()
+      const style = getComputedStyle(root)
+      return rect.width >= 240 && rect.height >= 240
+        && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth
+        && style.display !== 'none' && style.visibility !== 'hidden'
+        && Number.parseFloat(style.opacity || '1') > 0.02
+    }, selector, { timeout: 45_000, polling: 25 })
+  } else {
+    await page.locator(selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+  }
   await stable(page)
 }
 
