@@ -549,8 +549,6 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
       data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"}
       data-home-input-locked={inputLocked ? "true" : "false"}
       data-home-portal-sequence={portalSequence}
-      data-home-asset-mode={assetMode}
-      data-home-personalization-mode="private-personalized"
       data-home-review-fixture={reviewFixture}
       data-home-orb-state={orbState}
       data-home-orb-clip={orbClip}
