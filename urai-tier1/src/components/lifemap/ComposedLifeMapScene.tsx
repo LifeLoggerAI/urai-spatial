@@ -335,7 +335,7 @@ export default function ComposedLifeMapScene() {
   const thresholdsVisible = Boolean(selected && (phase === "approach" || phase === "arrival"));
   return <main
     className="life-map-root"
-    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", minWidth: "100%", minHeight: "100%", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
+    style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
     data-testid="urai-true-3d-life-map"
     data-spatial-visible="true"
     data-life-map-source={sourceMode}
