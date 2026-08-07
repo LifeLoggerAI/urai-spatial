@@ -1,4 +1,4 @@
-import SpatialRealmExperience from '@/spatial/realms/SpatialRealmExperience'
+import SpatialRealmRuntime from '@/spatial/realms/SpatialRealmRuntime'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 export const metadata = {
@@ -11,7 +11,7 @@ export default function ShadowRoutePage() {
 
   return (
     <section data-testid="urai-shadow-route" data-scene-id={scene.id}>
-      <SpatialRealmExperience realm="shadow" />
+      <SpatialRealmRuntime realm="shadow" />
     </section>
   )
 }
