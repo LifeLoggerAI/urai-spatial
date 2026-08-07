@@ -130,23 +130,29 @@ function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (
   const { gl, scene } = useThree();
   const frames = useRef(0);
   const publishedPhase = useRef<JourneyPhase | null>(null);
+  const publishedSignature = useRef("");
+  useEffect(() => {
+    frames.current = 0;
+    publishedPhase.current = null;
+    publishedSignature.current = "";
+  }, [phase]);
   useFrame(() => {
     frames.current += 1;
-    if (frames.current < 4 || publishedPhase.current === phase) return;
+    if (frames.current < 4) return;
     let objects = 0;
     let anchors = 0;
     scene.traverse((object) => {
       if (object.visible) objects += 1;
       if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
     });
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const ready = calls > 0 && objects > 20 && anchors >= 8;
+    const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
+    if (publishedPhase.current === phase && publishedSignature.current === signature) return;
     publishedPhase.current = phase;
-    onProof({
-      ready: gl.info.render.calls > 0 && objects > 20 && anchors >= 8,
-      objects,
-      anchors,
-      calls: gl.info.render.calls,
-      triangles: gl.info.render.triangles,
-    });
+    publishedSignature.current = signature;
+    onProof({ ready, objects, anchors, calls, triangles });
   });
   return null;
 }
