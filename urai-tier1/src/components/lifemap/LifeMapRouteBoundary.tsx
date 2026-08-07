@@ -23,26 +23,6 @@ export default function LifeMapRouteBoundary() {
       })
     })
 
-    const geometryDiagnostic = window.setTimeout(() => {
-      if (window.location.hostname !== '127.0.0.1') return
-      const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      const canonical = document.querySelector<HTMLElement>('[data-testid="urai-r3f-canonical-lifemap"]')
-      const snapshot = (element: HTMLElement | null) => {
-        if (!element) return null
-        const rect = element.getBoundingClientRect()
-        const style = getComputedStyle(element)
-        return {
-          rect: [Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom), Math.round(rect.width), Math.round(rect.height)],
-          display: style.display,
-          visibility: style.visibility,
-          opacity: style.opacity,
-          position: style.position,
-          transform: style.transform,
-        }
-      }
-      console.warn(`URAI_LIFEMAP_GEOMETRY ${JSON.stringify({ viewport: [innerWidth, innerHeight], root: snapshot(root), canonical: snapshot(canonical) })}`)
-    }, 1000)
-
     const primeOverviewIdentity = () => {
       const current = new URLSearchParams(window.location.search)
       current.delete('memoryId')
@@ -66,7 +46,6 @@ export default function LifeMapRouteBoundary() {
     return () => {
       window.cancelAnimationFrame(firstFrame)
       if (secondFrame) window.cancelAnimationFrame(secondFrame)
-      window.clearTimeout(geometryDiagnostic)
       document.removeEventListener('click', primeOverview, true)
     }
   }, [router])
