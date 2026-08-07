@@ -50,7 +50,7 @@ for (const [assetPath, proof] of Object.entries(expected)) {
 }
 
 const receipt = {
-  schemaVersion: 'urai-portal-orb-proof-6',
+  schemaVersion: 'urai-portal-orb-proof-7',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeMode: 'final-glb-pack-live-with-visual-approval-pending',
@@ -85,10 +85,18 @@ async function canvasVisualEvidence(page) {
   const bounds = await canvas.boundingBox()
   const viewport = page.viewportSize()
   if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
-  const visibleWidth = Math.max(0, Math.min(bounds.x + bounds.width, viewport.width) - Math.max(bounds.x, 0))
-  const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - Math.max(bounds.y, 0))
+  const clipX = Math.max(0, bounds.x)
+  const clipY = Math.max(0, bounds.y)
+  const visibleWidth = Math.max(0, Math.min(bounds.x + bounds.width, viewport.width) - clipX)
+  const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - clipY)
   const viewportCoverage = visibleWidth * visibleHeight / Math.max(1, viewport.width * viewport.height)
-  const buffer = await canvas.screenshot({ animations: 'disabled', caret: 'hide', timeout: 90_000 })
+  if (visibleWidth < 1 || visibleHeight < 1) return { available: false, reason: 'canvas-outside-viewport', viewportCoverage }
+  const buffer = await page.screenshot({
+    animations: 'disabled',
+    caret: 'hide',
+    timeout: 90_000,
+    clip: { x: clipX, y: clipY, width: visibleWidth, height: visibleHeight },
+  })
   const dataUrl = `data:image/png;base64,${buffer.toString('base64')}`
   const sample = await page.evaluate(async ({ dataUrl }) => {
     const image = new Image()
