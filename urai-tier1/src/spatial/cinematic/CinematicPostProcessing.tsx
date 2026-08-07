@@ -1,10 +1,10 @@
 'use client'
 
 import { EffectComposer, Bloom, Vignette, ChromaticAberration, DepthOfField } from '@react-three/postprocessing'
-import { useThree } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { BlendFunction } from 'postprocessing'
 import { Vector2 } from 'three'
-import { useEffect, useMemo, type ReactElement } from 'react'
+import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
 import { useReducedMotion } from '../hooks/useReducedMotion'
 import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
@@ -19,6 +19,7 @@ export default function CinematicPostProcessing({
   budget?: SpatialRenderBudget
 }) {
   const { gl, scene } = useThree()
+  const completedRenderFrames = useRef(0)
   const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
@@ -33,18 +34,23 @@ export default function CinematicPostProcessing({
       gl.info.autoReset = false
       gl.info.reset()
     }
+    return () => {
+      if (active) {
+        gl.info.autoReset = previousAutoReset
+        gl.info.reset()
+      }
+    }
+  }, [active, gl])
 
-    const originalRender = gl.render
-    let completedFrames = 0
-    const wrappedRender: typeof gl.render = (sceneArg, cameraArg) => {
-      originalRender.call(gl, sceneArg, cameraArg)
-      completedFrames += 1
-
-      // The Canvas can be mounted before React has connected it to the route root.
-      // Resolve the proof owner after each completed renderer invocation instead of
-      // capturing a transient null owner during the mounting effect.
+  useFrame(() => {
+    // R3F invokes frame subscribers before its synchronous renderer pass. A microtask
+    // queued here runs only after that frame stack (including EffectComposer when
+    // enabled) has completed, so this counter represents completed renderer frames.
+    queueMicrotask(() => {
       const lifeMapOwner = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      if (!lifeMapOwner || completedFrames < 2) return
+      if (!lifeMapOwner) return
+      completedRenderFrames.current += 1
+      if (completedRenderFrames.current < 4) return
 
       let objects = 0
       let anchors = 0
@@ -52,24 +58,15 @@ export default function CinematicPostProcessing({
         if (object.visible) objects += 1
         if (object.visible && object.name.startsWith('life-map-')) anchors += 1
       })
-      const calls = Math.max(completedFrames, gl.info.render.calls)
+      const calls = Math.max(completedRenderFrames.current, gl.info.render.calls)
       const triangles = gl.info.render.triangles
       lifeMapOwner.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? 'true' : 'false'
       lifeMapOwner.dataset.lifeMapVisibleObjects = String(objects)
       lifeMapOwner.dataset.lifeMapVisibleAnchors = String(anchors)
       lifeMapOwner.dataset.lifeMapRenderCalls = String(calls)
       lifeMapOwner.dataset.lifeMapRenderTriangles = String(triangles)
-    }
-    gl.render = wrappedRender
-
-    return () => {
-      gl.render = originalRender
-      if (active) {
-        gl.info.autoReset = previousAutoReset
-        gl.info.reset()
-      }
-    }
-  }, [active, gl, scene])
+    })
+  })
 
   const chromaticOffset = useMemo(() => new Vector2(0.00045, 0.00035), [])
 
