@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/capture-portal-orb-proof.mjs'
+      - 'scripts/run-with-ci-webgl.mjs'
       - '.github/workflows/portal-orb-exact-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/home/**'
@@ -58,14 +59,17 @@ jobs:
           URAI_FIREBASE_STATIC_EXPORT: 'true'
         run: pnpm build:static
       - name: Install Chromium
-        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+        run: |
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+          node --check scripts/run-with-ci-webgl.mjs
       - name: Capture exact desktop, mobile, and reduced-motion proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:4173/home/ >/dev/null && break; sleep 1; done
-          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/portal-orb-proof node scripts/capture-portal-orb-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/portal-orb-proof \
+            node scripts/run-with-ci-webgl.mjs scripts/capture-portal-orb-proof.mjs
       - name: Retain exact proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
