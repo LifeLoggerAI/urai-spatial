@@ -1,8 +1,0 @@
-{
-  "pr": 1068,
-  "purpose": "Trigger the bounded semantic compatibility repair workflow after its introduction commit.",
-  "visualApproval": false,
-  "mergeAuthorized": false,
-  "deploymentAuthorized": false,
-  "driveLedgerAuthorized": false
-}
