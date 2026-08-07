@@ -14,6 +14,7 @@ const files = [
   "src/spatial/council/councilAgentSchema.ts",
   "src/spatial/council/CouncilRealm.tsx",
   "src/app/council/page.tsx",
+  "src/spatial/realms/SpatialRealmRuntime.tsx",
   "src/spatial/realms/SpatialRealmExperience.tsx",
   "src/spatial/sound/soundCueRegistry.ts",
   "src/spatial/haptics/hapticCueRegistry.ts",
@@ -44,10 +45,15 @@ assert.match(council, /CouncilAgent/, "CouncilAgent schema must exist.");
 assert.match(council, /DEMO_COUNCIL_AGENTS/, "Demo Council agents must exist.");
 
 const councilRoute = readFileSync(join(app, "src/app/council/page.tsx"), "utf8");
-assert.match(councilRoute, /SpatialRealmExperience/, "Council route must render the canonical navigable spatial owner.");
+assert.match(councilRoute, /SpatialRealmRuntime/, "Council route must render the capability-aware spatial owner.");
 assert.match(councilRoute, /realm="council"/, "Council route must mount the Council spatial realm.");
 assert.match(councilRoute, /getSceneDefinition/, "Council route must use sceneRegistry.");
 assert.doesNotMatch(councilRoute, /RealmShell/, "Council route must not regress to the flat shell owner.");
+
+const spatialRuntime = readFileSync(join(app, "src/spatial/realms/SpatialRealmRuntime.tsx"), "utf8");
+assert.match(spatialRuntime, /SpatialRealmExperience/, "Council runtime boundary must preserve the canonical navigable R3F owner.");
+assert.match(spatialRuntime, /semantic-no-webgl-fallback/, "Council runtime boundary must preserve semantic no-WebGL access.");
+assert.match(spatialRuntime, /requestUraiWorldTravel/, "Council fallback destinations must use unified world travel.");
 
 const spatialRealm = readFileSync(join(app, "src/spatial/realms/SpatialRealmExperience.tsx"), "utf8");
 assert.match(spatialRealm, /CouncilRealmEnvironment/, "Council must own authored chamber geometry and atmosphere.");
@@ -69,4 +75,4 @@ assert.match(performance, /RENDER_LEVEL_PROFILES/, "Render level profiles must e
 assert.match(performance, /spatial-fallback/, "Render level profile must include fallback route.");
 assert.match(performance, /chooseRenderLevel/, "Render level chooser must exist.");
 
-console.log("URAI Passport, navigable Council, sound, haptics, and performance canon passed.");
+console.log("URAI Passport, capability-aware Council, sound, haptics, and performance canon passed.");
