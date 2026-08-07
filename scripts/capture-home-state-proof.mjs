@@ -17,7 +17,7 @@ const states = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-home-state-proof-4',
+  schemaVersion: 'urai-home-state-proof-3',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeContract: 'live-owner-stability-accessibility-and-retained-canvas-evidence',
