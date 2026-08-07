@@ -243,6 +243,13 @@ export default function ComposedLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
   const profile = useAdaptiveSpatialQuality();
+  const lifeMapProfile = useMemo(() => ({
+    ...profile,
+    tier: profile.tier === "high" ? "medium" as const : profile.tier,
+    pixelRatioMax: Math.min(profile.pixelRatioMax, 1.25),
+    shadows: false,
+    postprocessing: false,
+  }), [profile]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
@@ -370,10 +377,10 @@ export default function ComposedLifeMapScene() {
     <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
     <Canvas
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
-      dpr={[1, profile.pixelRatioMax]}
-      shadows={profile.shadows}
+      dpr={[1, lifeMapProfile.pixelRatioMax]}
+      shadows={lifeMapProfile.shadows}
       frameloop="always"
-      gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
+      gl={{ antialias: lifeMapProfile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.15;
@@ -388,9 +395,9 @@ export default function ComposedLifeMapScene() {
           nodes={nodes}
           selected={selected}
           phase={phase as LifeMapJourneyPhase}
-          profile={profile}
+          profile={lifeMapProfile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={lifeMapProfile.reducedMotion} />}
           webglRecovery={null}
         />
       </Suspense>
