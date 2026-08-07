@@ -128,49 +128,49 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
 
 function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (proof: RenderProof) => void }) {
   const { gl, scene, invalidate } = useThree();
-  const frames = useRef(0);
+  const renderedFrames = useRef(0);
   const publishedPhase = useRef<JourneyPhase | null>(null);
   const publishedSignature = useRef("");
+
   useEffect(() => {
-    const previousAutoReset = gl.info.autoReset;
-    gl.info.autoReset = false;
-    gl.info.reset();
-    return () => {
-      gl.info.autoReset = previousAutoReset;
-      gl.info.reset();
-    };
-  }, [gl]);
-  useEffect(() => {
-    frames.current = 0;
+    renderedFrames.current = 0;
     publishedPhase.current = null;
     publishedSignature.current = "";
+    onProof({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
     invalidate();
-  }, [invalidate, phase]);
-  useFrame(() => {
-    frames.current += 1;
-    if (frames.current < 4) {
-      invalidate();
-      return;
-    }
-    let objects = 0;
-    let anchors = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-    });
-    const calls = gl.info.render.calls;
-    const triangles = gl.info.render.triangles;
-    const ready = calls > 0 && objects > 20 && anchors >= 8;
-    const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
-    if (publishedPhase.current === phase && publishedSignature.current === signature) {
+  }, [invalidate, onProof, phase]);
+
+  useEffect(() => {
+    const previousAfterRender = scene.onAfterRender;
+    const publishAfterRealRender: THREE.Object3D["onAfterRender"] = (...args) => {
+      previousAfterRender?.apply(scene, args);
+      renderedFrames.current += 1;
+      if (renderedFrames.current < 2) {
+        invalidate();
+        return;
+      }
+      let objects = 0;
+      let anchors = 0;
+      scene.traverse((object) => {
+        if (object.visible) objects += 1;
+        if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+      });
+      const calls = gl.info.render.calls;
+      const triangles = gl.info.render.triangles;
+      const ready = calls > 0 && objects > 20 && anchors >= 8;
+      const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
+      if (publishedPhase.current === phase && publishedSignature.current === signature) return;
+      publishedPhase.current = phase;
+      publishedSignature.current = signature;
+      onProof({ ready, objects, anchors, calls, triangles });
       if (!ready) invalidate();
-      return;
-    }
-    publishedPhase.current = phase;
-    publishedSignature.current = signature;
-    onProof({ ready, objects, anchors, calls, triangles });
-    if (!ready) invalidate();
-  });
+    };
+    scene.onAfterRender = publishAfterRealRender;
+    return () => {
+      if (scene.onAfterRender === publishAfterRealRender) scene.onAfterRender = previousAfterRender;
+    };
+  }, [gl, invalidate, onProof, phase, scene]);
+
   return null;
 }
 
