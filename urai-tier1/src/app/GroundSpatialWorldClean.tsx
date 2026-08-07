@@ -17,7 +17,7 @@ import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./
 
 const GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";
 const BOUNDS = { minX: -14, maxX: 14, minZ: -34, maxZ: 11 };
-const SPAWN = new THREE.Vector3(0, 0, 8.5);
+const SPAWN = new THREE.Vector3(0, 0, 4);
 
 const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, number]> = {
   pavilion: [1.55, 0.62, 1.7],
@@ -234,7 +234,7 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     if (activeDestination && Math.hypot(position.current.x - activeDestination.camera[0], position.current.z - activeDestination.camera[2]) < 5.5) {
       lookAt.current.set(activeDestination.lookAt[0], activeDestination.lookAt[1], activeDestination.lookAt[2]);
     } else {
-      forward.current.set(0, 0, -5.8).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
+      forward.current.set(0, 0, -12.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
       lookAt.current.copy(position.current).add(forward.current);
       lookAt.current.y = 1.25 + pitch.current;
     }
@@ -344,7 +344,7 @@ export default function GroundSpatialWorldClean() {
       <Canvas
         shadows
         dpr={[1, 1.3]}
-        camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
+        camera={{ position: [0, 3.35, 12.2], fov: 52, near: 0.08, far: 180 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x102b38, 1);
