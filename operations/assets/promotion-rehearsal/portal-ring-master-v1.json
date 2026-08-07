@@ -4,14 +4,14 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "portal-ring-master-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-  "bytes": 73164,
-  "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
+  "bytes": 242072,
+  "sha256": "18a7d77e778bf8561a278f3e0a4e380c192a227c07a17b91265c70dab461d2c9",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-portal-ring",
   "license": "URAI Labs internal proprietary production asset",
-  "producer": "URAI deterministic authored sanctuary pipeline",
-  "reviewer": "governed-promotion-rehearsal",
-  "reviewedAt": "2026-07-25T20:50:00-05:00",
+  "producer": "URAI deterministic authored sanctuary v3 pipeline",
+  "reviewer": "governed-replacement-rehearsal",
+  "reviewedAt": "2026-08-07T18:05:00-05:00",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -20,5 +20,5 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": true,
-  "notes": "Fail-closed rehearsal for unchanged asset bytes. This records governance coverage only; it does not promote the asset, claim visual approval, or change the pending-final-review manifest state."
+  "notes": "Fail-closed exact-binary replacement rehearsal. This record binds the candidate identity but does not promote it or substitute for independent human visual approval."
 }
