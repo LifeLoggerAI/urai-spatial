@@ -28,25 +28,23 @@ export default function CinematicPostProcessing({
   )
 
   useEffect(() => {
-    const lifeMapOwner = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-    if (!active && !lifeMapOwner) return
     const previousAutoReset = gl.info.autoReset
-    gl.info.autoReset = false
-    gl.info.reset()
-
-    if (!lifeMapOwner) {
-      return () => {
-        gl.info.autoReset = previousAutoReset
-        gl.info.reset()
-      }
+    if (active) {
+      gl.info.autoReset = false
+      gl.info.reset()
     }
 
-    const originalRender = gl.render.bind(gl)
+    const originalRender = gl.render
     let completedFrames = 0
-    gl.render = ((sceneArg, cameraArg) => {
-      originalRender(sceneArg, cameraArg)
+    const wrappedRender: typeof gl.render = (sceneArg, cameraArg) => {
+      originalRender.call(gl, sceneArg, cameraArg)
       completedFrames += 1
-      if (completedFrames < 2) return
+
+      // The Canvas can be mounted before React has connected it to the route root.
+      // Resolve the proof owner after each completed renderer invocation instead of
+      // capturing a transient null owner during the mounting effect.
+      const lifeMapOwner = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+      if (!lifeMapOwner || completedFrames < 2) return
 
       let objects = 0
       let anchors = 0
@@ -61,12 +59,15 @@ export default function CinematicPostProcessing({
       lifeMapOwner.dataset.lifeMapVisibleAnchors = String(anchors)
       lifeMapOwner.dataset.lifeMapRenderCalls = String(calls)
       lifeMapOwner.dataset.lifeMapRenderTriangles = String(triangles)
-    }) as typeof gl.render
+    }
+    gl.render = wrappedRender
 
     return () => {
       gl.render = originalRender
-      gl.info.autoReset = previousAutoReset
-      gl.info.reset()
+      if (active) {
+        gl.info.autoReset = previousAutoReset
+        gl.info.reset()
+      }
     }
   }, [active, gl, scene])
 
