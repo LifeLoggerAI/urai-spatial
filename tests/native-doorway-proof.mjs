@@ -25,6 +25,7 @@ async function activate(page, target, method) {
     return { targetOwnsHitPoint: true, hitPoint: null }
   }
 
+  await target.evaluate((node) => node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' }))
   await target.evaluate(async (node) => {
     const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
     const before = node.getBoundingClientRect()
