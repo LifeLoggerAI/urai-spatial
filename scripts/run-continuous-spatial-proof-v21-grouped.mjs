@@ -57,6 +57,14 @@ const canvasRectTarget = `  const rect = await canvas.boundingBox()`
 const canvasRectReplacement = `  const rect = await canvas.evaluate((element) => {\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  })`
 if (original.split(canvasRectTarget).length - 1 !== 1) throw new Error('Canvas measurement contract changed')
 
+const discreetControlsTarget = `    discreetControls: await visibleCount(page.locator('.home-discreet-controls button')),`
+const semanticOwnershipReplacement = `    semanticNavigationOwner: await semantic.getAttribute('data-home-navigation-owner'),\n    semanticNavigationNonDominant: await semantic.getAttribute('data-home-navigation-non-dominant'),`
+if (original.split(discreetControlsTarget).length - 1 !== 1) throw new Error('Home semantic navigation measurement contract changed')
+
+const discreetPassTarget = `    && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2`
+const semanticPassReplacement = `    && result.semanticButtons === 3 && result.semanticVisible === 0\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'`
+if (original.split(discreetPassTarget).length - 1 !== 1) throw new Error('Home semantic navigation pass contract changed')
+
 const executionStart = `const browser = await chromium.launch({ headless: true })`
 const originalExecutionIndex = original.indexOf(executionStart)
 if (originalExecutionIndex < 0 || original.indexOf(executionStart, originalExecutionIndex + 1) >= 0) throw new Error('Execution contract changed')
@@ -97,6 +105,8 @@ const patchedPrefix = original
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
   .replace(canvasRectTarget, canvasRectReplacement)
+  .replace(discreetControlsTarget, semanticOwnershipReplacement)
+  .replace(discreetPassTarget, semanticPassReplacement)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) {
   throw new Error('Patched execution contract changed')
@@ -109,6 +119,8 @@ const requiredSemanticGuards = [
   ['fallback semantic destination count', 'record.semanticButtons !== 3'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
+  ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
+  ['semantic navigation non-dominance', "semanticNavigationNonDominant === 'true'"],
 ]
 for (const [label, marker] of requiredSemanticGuards) {
   if (!grouped.includes(marker)) throw new Error(`Visual assertion missing after grouping (${label}): ${marker}`)
@@ -121,6 +133,9 @@ if (grouped.includes('|| const browser = await chromium.launch')) {
 }
 if (grouped.includes('\n  group,\n')) {
   throw new Error('Grouped receipt retained an undefined shorthand group binding')
+}
+if (grouped.includes('.home-discreet-controls')) {
+  throw new Error('Grouped Home proof retained the retired discreet-controls contract')
 }
 
 await writeFile(sourceUrl, grouped, 'utf8')
