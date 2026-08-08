@@ -10,7 +10,6 @@ const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const providerDesktop = '/assets/urai/replay/replay-memory-film-main.webp'
-const providerMobile = '/assets/urai/replay/replay-memory-film-mobile.webp'
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -21,7 +20,7 @@ if (orbBytes.length !== orbReceipt.bytes || orbSha256 !== orbReceipt.sha256) thr
 
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 }, expectedProvider: providerDesktop },
-  { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, expectedProvider: providerMobile },
+  { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, expectedProvider: providerDesktop },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', expectedProvider: providerDesktop },
 ]
 
@@ -91,6 +90,8 @@ for (const spec of cases) {
     record.providerEnvironment = await owner.getAttribute('data-home-provider-environment')
     record.generatedScenery = await owner.getAttribute('data-home-generated-scenery')
     record.physicalBase = await owner.getAttribute('data-home-physical-base')
+    record.visualOwnership = await owner.getAttribute('data-home-visual-ownership')
+    record.desktopMobileWorld = await owner.getAttribute('data-home-desktop-mobile-world')
     record.embodiedSelf = await owner.getAttribute('data-home-embodied-self')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
@@ -113,7 +114,9 @@ for (const spec of cases) {
       && record.transitionAffordances === 'ground-environmental-descent life-map-sky-lookout'
       && record.providerEnvironment === providerDesktop
       && record.generatedScenery === 'suppressed'
-      && record.physicalBase === 'authored-terrain'
+      && record.physicalBase === 'authored-coherent-world'
+      && record.visualOwnership === 'three-dimensional-geometry'
+      && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-shadow'
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
