@@ -1,0 +1,2 @@
+PR #1069 exact-head CI synchronization marker.
+This temporary marker exists only to produce a user-authorized successor after a GitHub Actions bot repair commit.
