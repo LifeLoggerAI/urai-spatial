@@ -1,7 +1,6 @@
 import CinematicReplayClient from './CinematicReplayClient'
 
 const FinalReplayFilm = CinematicReplayClient
-const tierShellAuditMarker = 'TierOneExperience'
 
 const routeFingerprintStyle = {
   position: 'absolute',
@@ -36,7 +35,6 @@ function ReplayRouteProofSurface() {
       data-mode="replay"
       data-replay-phase="replay_playing"
       data-playing="true"
-      data-tier-shell-audit={tierShellAuditMarker}
       style={proofSurfaceStyle}
     >
       <p>URAI Replay · Source: Life Map</p>
