@@ -1,5 +1,5 @@
 html.urai-v4-assets-ready .urai-xr-portal {
-  background-image: linear-gradient(180deg, rgba(0,2,9,.14), rgba(0,2,9,.78)), url('/assets/urai/xr/quest-entry-main.webp') !important;
+  background-image: linear-gradient(180deg, rgba(0,2,9,.14), rgba(0,2,9,.78)), url('/assets/urai/xr/xr-entry/quest-entry-main.webp') !important;
   background-size: cover !important;
   background-position: center !important;
 }
@@ -10,7 +10,7 @@ html.urai-v4-assets-ready .urai-xr-portal[data-quest-proof='manual-device-requir
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 42%, rgba(165,243,252,.2), transparent 18%), url('/assets/urai/xr/proof-pending-state.webp');
+  background: radial-gradient(circle at 50% 42%, rgba(165,243,252,.2), transparent 18%), url('/assets/urai/xr/xr-entry/proof-pending-state.webp');
   background-size: cover;
   background-position: center;
   opacity: .42;
@@ -21,7 +21,7 @@ html.urai-v4-assets-ready .urai-xr-portal__portal-door--life {
 }
 
 html.urai-v4-assets-ready .urai-xr-portal__portal-door--ground {
-  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.62)), url('/assets/urai/xr/desktop-preview.webp') !important;
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.62)), url('/assets/urai/xr/xr-entry/desktop-preview.webp') !important;
 }
 
 html.urai-v4-assets-ready .urai-xr-portal__portal-door--life,
@@ -32,6 +32,6 @@ html.urai-v4-assets-ready .urai-xr-portal__portal-door--ground {
 
 @media (max-width: 760px) {
   html.urai-v4-assets-ready .urai-xr-portal {
-    background-image: linear-gradient(180deg, rgba(0,2,9,.12), rgba(0,2,9,.82)), url('/assets/urai/xr/mobile-ar-state.webp') !important;
+    background-image: linear-gradient(180deg, rgba(0,2,9,.12), rgba(0,2,9,.82)), url('/assets/urai/xr/xr-entry/mobile-ar-state.webp') !important;
   }
 }
