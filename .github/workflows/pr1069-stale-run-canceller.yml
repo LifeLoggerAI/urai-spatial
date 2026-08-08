@@ -1,0 +1,22 @@
+name: PR1069 Stale Run Canceller
+
+on:
+  push:
+    branches:
+      - ops/pr1069-stale-actions-cleanup-20260808
+    paths:
+      - '.github/workflows/pr1069-stale-run-canceller.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-release-proof-1069-8c9f4ab0240efb471ba35195a4abb98d72f97006
+  cancel-in-progress: true
+
+jobs:
+  no-runner-required:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Concurrency-only stale-run cancellation trigger.'
