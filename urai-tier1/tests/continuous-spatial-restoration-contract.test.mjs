@@ -10,7 +10,8 @@ const includesCanonical = (source, marker) => canonical(source).includes(canonic
 const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -27,7 +28,7 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${homeCss}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}`
 const groundGraph = `${ground}\n${groundModel}`
 const groundCanonical = canonical(ground)
 
@@ -35,6 +36,7 @@ test('app template mounts current WebGL owners without certified-route redirects
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProduction/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
   assert.match(homeProduction, /data-home-real-world-first="true"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
@@ -44,7 +46,7 @@ test('app template mounts current WebGL owners without certified-route redirects
 
 test('Home remains one embodied authored 3D environment with accessible natural thresholds and recovery', () => {
   for (const marker of [
-    'HomeWorldProduction',
+    'HomeWorldProductionFinal',
     'Stars',
     'HOME_PROVIDER_ENVIRONMENT',
     'replay-memory-film-main.webp',
@@ -78,10 +80,10 @@ test('Home remains one embodied authored 3D environment with accessible natural 
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
   assert.match(homeCss, /opacity:\s*\.2/)
-  assert.match(homeProduction, /function preparePhysicalTerrain/)
-  assert.match(homeProduction, /object\.visible = visible/)
-  assert.match(homeProduction, /rejectedProp/)
-  assert.match(homeProduction, /rejectedLowPolyScenery/)
+  assert.match(homeProduction, /function prepareAuthoredSanctuary/)
+  assert.match(homeProduction, /object\.visible = !rejected/)
+  assert.match(homeProduction, /world\.userData\.suppressedPortalProps = true/)
+  assert.match(homeProduction, /world\.userData\.centeredForHomeCamera = true/)
   assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
   assert.match(homeProduction, /ContactShadows/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
@@ -107,14 +109,14 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
   assert.match(worldEvents, /return\s*\n\s*}/)
-  assert.match(homeProduction, /if \(scene\.phase === "ASCENT"\)/)
-  assert.match(homeProduction, /scene\.setProgress\(linear\)/)
+  assert.match(homeProduction, /if \(store\.phase === "ASCENT"\)/)
+  assert.match(homeProduction, /store\.setProgress\(linear\)/)
   assert.match(homeProduction, /cameraCheckpoint: "home-sky-ascent-complete"/)
   assert.match(homeProduction, /data-home-camera-mode=\{groundDescent \? "descent" : phase === "ASCENT" \? "ascent"/)
   assert.match(homeProduction, /data-home-ascent-progress=/)
   assert.match(homeProduction, /data-home-input-locked=/)
-  assert.match(homeProduction, /scene\.setPhase\("HOME"\)/)
-  assert.match(homeProduction, /scene\.unlock\(\)/)
+  assert.match(homeProduction, /store\.setPhase\("HOME"\)/)
+  assert.match(homeProduction, /store\.unlock\(\)/)
   assert.doesNotMatch(homeProduction, /<CinematicCameraRig|<SpatialSceneClient/)
 })
 
