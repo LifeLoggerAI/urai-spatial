@@ -17,19 +17,23 @@ const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one believable provider-natural real-world environment with URAI intelligence embedded inside it', () => {
+test('Home is one believable authored 3D real-world environment with atmospheric imagery only', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-visual-owner="asset-driven-personalized-sanctuary"',
     'data-home-primary-owner="asset-driven"',
     'data-home-real-world-first="true"',
+    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
     'data-home-world-character="believable-natural-inhabitable-environment"',
     'data-home-visible-portals="false"',
     'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
     'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-provider-role="atmospheric-support-only"',
     'data-home-generated-scenery="suppressed"',
-    'data-home-physical-base="authored-terrain"',
+    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
@@ -39,22 +43,30 @@ test('Home is one believable provider-natural real-world environment with URAI i
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
+    'home-reflecting-water',
     'home-orb-sanctuary',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'stepEmbodiedMotion',
     'MobileMovementPad',
-  ]) assert.ok(homeGraph.includes(marker), `missing Home real-world convergence marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing Home coherent 3D convergence marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
   assert.match(homeCss, /replay-memory-film-main\.webp/)
-  assert.match(homeCss, /replay-memory-film-mobile\.webp/)
+  assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
+  assert.match(homeCss, /opacity:\s*\.2/)
+  assert.match(homeCss, /@media \(max-width: 700px\)[\s\S]*replay-memory-film-main\.webp/)
   assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*true/s)
   assert.match(homeProduction, /gl\.setClearColor\(0x000000, 0\)/)
   assert.match(homeProduction, /function preparePhysicalTerrain/)
-  assert.match(homeProduction, /object\.visible = terrain/)
+  assert.match(homeProduction, /const rejectedProp = \/portal\|ring\|threshold\|village\|mannequin\|avatar\|doorway\|debug\|marker\|label\//)
+  assert.match(homeProduction, /const rejectedLowPolyScenery = \/mountain\|tree\|vegetation\//)
+  assert.match(homeProduction, /object\.visible = visible/)
+  assert.match(homeProduction, /visibleMeshCount < 3/)
+  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
   assert.match(homeProduction, /suppressedGeneratedScenery: true/)
+  assert.match(homeProduction, /ContactShadows/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
   assert.match(homeProduction, /function LifeMapSkyLookout/)
   assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
