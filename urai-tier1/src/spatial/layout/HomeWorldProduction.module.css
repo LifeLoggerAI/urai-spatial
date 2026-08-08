@@ -6,7 +6,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: linear-gradient(180deg, #837b62 0%, #716d58 46%, #4d4c3d 100%);
+  background: linear-gradient(180deg, #a8ad96 0%, #7f8b75 48%, #59624f 100%);
   cursor: grab;
   touch-action: none;
 }
@@ -42,7 +42,9 @@
   z-index: 2;
   width: 100% !important;
   height: 100% !important;
-  filter: brightness(1.02) saturate(.98) contrast(1.025);
+  background:
+    radial-gradient(circle at 72% 14%, rgba(247, 220, 169, .98) 0 7%, rgba(210, 206, 169, .965) 18%, rgba(158, 174, 151, .95) 39%, rgba(105, 124, 105, .945) 64%, rgba(70, 82, 67, .95) 100%);
+  filter: brightness(1.22) saturate(1.04) contrast(1.015);
 }
 
 .world::after {
@@ -52,8 +54,8 @@
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(13, 15, 12, .03), transparent 28%, transparent 76%, rgba(10, 11, 9, .16)),
-    radial-gradient(circle at 50% 45%, transparent 0 66%, rgba(8, 9, 7, .035) 84%, rgba(5, 6, 5, .08) 100%);
+    linear-gradient(180deg, rgba(13, 15, 12, .015), transparent 30%, transparent 78%, rgba(10, 11, 9, .09)),
+    radial-gradient(circle at 50% 45%, transparent 0 72%, rgba(8, 9, 7, .02) 88%, rgba(5, 6, 5, .045) 100%);
 }
 
 .brand,
@@ -67,7 +69,7 @@
 .brand {
   left: clamp(18px, 3vw, 44px);
   top: clamp(18px, 3vw, 40px);
-  opacity: .3;
+  opacity: .34;
 }
 
 .brand strong {
@@ -81,10 +83,10 @@
   bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   padding: .48rem .72rem;
-  border: 1px solid rgba(232, 240, 234, .1);
+  border: 1px solid rgba(232, 240, 234, .12);
   border-radius: 999px;
-  background: rgba(15, 18, 14, .24);
-  color: rgba(246, 249, 247, .78);
+  background: rgba(15, 18, 14, .22);
+  color: rgba(246, 249, 247, .82);
   backdrop-filter: blur(9px);
   font-size: .6rem;
   font-weight: 650;
@@ -93,13 +95,13 @@
 
 .world :global(.urai-mobile-movement) {
   z-index: 14;
-  opacity: .56;
+  opacity: .62;
   transition: opacity .2s ease;
 }
 
 .world :global(.urai-mobile-movement:focus-within),
 .world :global(.urai-mobile-movement:hover) {
-  opacity: .92;
+  opacity: .94;
 }
 
 @media (min-width: 901px) and (pointer: fine) {
@@ -115,6 +117,11 @@
     background-position: center 50%;
     transform: scale(1.045);
     opacity: .16;
+  }
+  .canvas {
+    background:
+      radial-gradient(circle at 70% 13%, rgba(247, 221, 172, .98) 0 6%, rgba(211, 207, 171, .965) 17%, rgba(157, 173, 150, .95) 38%, rgba(101, 121, 102, .945) 63%, rgba(67, 79, 65, .95) 100%);
+    filter: brightness(1.26) saturate(1.035) contrast(1.01);
   }
   .brand {
     top: max(14px, env(safe-area-inset-top));
