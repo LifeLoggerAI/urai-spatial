@@ -9,12 +9,12 @@ const SESSION_KEY = 'urai:spatial-audio-consent-v1'
 const MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
 const AMBIENT_CAPTIONS: Record<SpatialAudioPhase, string> = {
-  HOME: 'Soft wind, distant leaves, and a low sanctuary tone.',
-  GROUND: 'Quiet civic space, footsteps at a distance, and restrained environmental movement.',
-  ASCENT: 'A spacious tonal field with subtle memory-star shimmer.',
-  LIFEMAP: 'A spacious tonal field with subtle memory-star shimmer.',
-  FOCUS: 'A close, stable tone supporting sustained attention.',
-  REPLAY: 'A restrained cinematic bed that follows the memory sequence.',
+  HOME: 'A soft filtered-noise bed with low sustained sanctuary tones.',
+  GROUND: 'A low filtered environmental bed with restrained sustained tones.',
+  ASCENT: 'A spacious filtered-noise field with layered harmonic tones.',
+  LIFEMAP: 'A spacious filtered-noise field with layered harmonic tones.',
+  FOCUS: 'A close, steady filtered-noise bed with stable low tones.',
+  REPLAY: 'A restrained filtered-noise cinematic bed with slow harmonic tones.',
 }
 
 const CUE_CAPTIONS: Record<SpatialAudioCue, string> = {
