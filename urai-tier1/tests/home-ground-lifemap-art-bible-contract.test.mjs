@@ -16,13 +16,17 @@ const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one authored inhabitable sanctuary with embodied cinematic interaction and a coherent degraded fallback', () => {
+test('Home is one believable real-world-first environment with URAI intelligence embedded inside it', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-visual-owner="asset-driven-personalized-sanctuary"',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+    'data-home-real-world-first="true"',
+    'data-home-world-character="believable-natural-inhabitable-environment"',
+    'data-home-visible-portals="false"',
+    'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
+    'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'home-visible-navigable-sanctuary-world',
@@ -30,21 +34,28 @@ test('Home is one authored inhabitable sanctuary with embodied cinematic interac
     'data-testid="urai-home-webgl-orb"',
     'home-authored-terrain',
     'home-mountain-horizon',
-    'home-lantern-village',
+    'home-living-vegetation',
     'home-orb-sanctuary',
+    'home-ground-environmental-threshold',
+    'home-life-map-sky-lookout',
     'stepEmbodiedMotion',
     'MobileMovementPad',
-  ]) assert.ok(homeGraph.includes(marker), `missing Home convergence marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing Home real-world convergence marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(homeProduction, /name={`home-\${type}-portal-world-owned`}/)
-  assert.match(homeProduction, /<WorldPortal type="ground"/)
-  assert.match(homeProduction, /<WorldPortal type="life-map"/)
+  assert.match(homeProduction, /function GroundThresholdLandmark/)
+  assert.match(homeProduction, /function LifeMapSkyLookout/)
+  assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
+  assert.match(homeProduction, /cameraCheckpoint: "home-sky-ascent-complete"/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(homeProduction, /EffectComposer/)
   assert.match(homeProduction, /<Bloom\b/)
   assert.match(homeProduction, /<Vignette\b/)
+  assert.match(homeProduction, /organicTexture/)
+  assert.match(homeProduction, /reliefTexture/)
+  assert.match(homeProduction, /PRESENCE_SHADOW_TEXTURE/)
+  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|destinationNames|home-life-map-portal-world-owned|home-ground-portal-world-owned/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
   assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls/)
 })
