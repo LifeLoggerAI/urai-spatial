@@ -53,13 +53,16 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
   for (const marker of [
     'data-home-primary-owner="asset-driven"',
     'data-home-real-world-first="true"',
-    'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
     'data-home-world-character="believable-natural-inhabitable-environment"',
     'data-home-visible-portals="false"',
     'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
     'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-provider-role="atmospheric-support-only"',
     'data-home-generated-scenery="suppressed"',
-    'data-home-physical-base="authored-terrain"',
+    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
@@ -68,6 +71,7 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
+    'home-reflecting-water',
     'home-orb-sanctuary',
     'home-authored-embodied-self',
     'home-ground-environmental-threshold',
@@ -81,7 +85,9 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
   assert.match(homeProduction, /function preparePhysicalTerrain/)
-  assert.match(homeProduction, /object\.visible = terrain/)
+  assert.match(homeProduction, /object\.visible = visible/)
+  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
+  assert.match(homeProduction, /ContactShadows/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
   assert.match(homeProduction, /function LifeMapSkyLookout/)
   assert.doesNotMatch(homeProduction, /WorldPortal|PORTAL_MODEL|home-ground-portal-world-owned|home-life-map-portal-world-owned|dodecahedronGeometry|requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
@@ -150,7 +156,7 @@ test('Life Map keeps independent non-Orb travel, semantic depth and overview rec
 })
 
 test('travel infrastructure preserves fallback, route ownership and canonical ascent capability', () => {
-  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS']) has(worldEvents, marker)
+  for (const marker of ['URAI_WORLD_TRAVEL_EVENT', 'buildFallbackHref', 'commitHardFallback', 'WORLD_TRAVEL_FALLBACK_MS', 'markHomeAscentClosing']) has(worldEvents, marker)
   for (const marker of ['beginTravelRef.current(request)', 'transitionDuration(request.destination)', 'router.push(href)', 'navigationWatchdog']) has(worldTransitions, marker)
   for (const marker of ['enterLifeMap: () => set({ mode: "ASCENT"', 'phase: "ASCENT"', 'isTransitioning: true', 'inputLocked: true', 'progress: 0']) has(sceneStore, marker)
   assert.match(worldTransitions, /currentWorld\.destination === 'life-map' \|\| currentWorld\.destination === 'location-map'/)
