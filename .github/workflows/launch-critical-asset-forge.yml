@@ -18,7 +18,7 @@ on:
       - '.github/workflows/launch-critical-asset-forge.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   LEGACY_ASSET_HEAD: e4e94a501a64e7375a5cfdbe9547436fbc8e75a2
@@ -68,52 +68,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: One-shot repair known malformed Focus cap normals
-        if: github.event_name == 'pull_request' && steps.mode.outputs.replacement == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          FILE: urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb
-          BAD_SHA: e27bbc6bdcb4e173c331d5dae2b2865ab75556e2e74ee8a854e1a3725d7d57f6
-          FIXED_SHA: 3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0
-        run: |
-          set -euo pipefail
-          current="$(sha256sum "$FILE" | awk '{print $1}')"
-          if [ "$current" != "$BAD_SHA" ]; then
-            echo "Focus asset is not the known malformed binary; one-shot repair is not applicable."
-            exit 0
-          fi
-          node <<'NODE'
-          const fs = require('node:fs')
-          const file = process.env.FILE
-          const buffer = Buffer.from(fs.readFileSync(file))
-          const jsonLength = buffer.readUInt32LE(12)
-          const json = JSON.parse(buffer.subarray(20, 20 + jsonLength).toString('utf8').trim())
-          const binaryStart = 20 + jsonLength + 8
-          const primitive = json.meshes?.[12]?.primitives?.[0]
-          const normalAccessorIndex = primitive?.attributes?.NORMAL
-          const accessor = json.accessors?.[normalAccessorIndex]
-          const view = json.bufferViews?.[accessor?.bufferView]
-          if (normalAccessorIndex !== 49 || accessor?.componentType !== 5126 || accessor?.count !== 62 || accessor?.type !== 'VEC3' || view?.byteLength !== 744) {
-            throw new Error('Focus normal repair contract no longer matches the known malformed binary')
-          }
-          for (const [vertex, normal] of [[60, [0, -1, 0]], [61, [0, 1, 0]]]) {
-            const offset = binaryStart + view.byteOffset + vertex * 12
-            normal.forEach((value, component) => buffer.writeFloatLE(value, offset + component * 4))
-          }
-          fs.writeFileSync(file, buffer)
-          NODE
-          test "$(wc -c < "$FILE" | tr -d ' ')" = "622812"
-          test "$(sha256sum "$FILE" | awk '{print $1}')" = "$FIXED_SHA"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$FILE"
-          git commit -m 'Repair Focus chamber cap normals'
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${PR_HEAD_REF}"
-          echo 'Repaired Focus binary pushed; this stale-head run intentionally stops so the new exact head can verify cleanly.'
-          exit 1
 
       - name: Validate every changed governed promotion decision
         if: steps.mode.outputs.promotion == 'true'
