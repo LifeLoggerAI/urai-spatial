@@ -6,6 +6,7 @@ const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
@@ -13,10 +14,10 @@ const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${fallbackHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one believable real-world-first environment with URAI intelligence embedded inside it', () => {
+test('Home is one believable provider-natural real-world environment with URAI intelligence embedded inside it', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
@@ -26,6 +27,9 @@ test('Home is one believable real-world-first environment with URAI intelligence
     'data-home-world-character="believable-natural-inhabitable-environment"',
     'data-home-visible-portals="false"',
     'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
+    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-generated-scenery="suppressed"',
+    'data-home-physical-base="authored-terrain"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
@@ -43,7 +47,14 @@ test('Home is one believable real-world-first environment with URAI intelligence
   ]) assert.ok(homeGraph.includes(marker), `missing Home real-world convergence marker: ${marker}`)
 
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*false/s)
+  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
+  assert.match(homeCss, /replay-memory-film-main\.webp/)
+  assert.match(homeCss, /replay-memory-film-mobile\.webp/)
+  assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*true/s)
+  assert.match(homeProduction, /gl\.setClearColor\(0x000000, 0\)/)
+  assert.match(homeProduction, /function preparePhysicalTerrain/)
+  assert.match(homeProduction, /object\.visible = terrain/)
+  assert.match(homeProduction, /suppressedGeneratedScenery: true/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
   assert.match(homeProduction, /function LifeMapSkyLookout/)
   assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
@@ -52,10 +63,8 @@ test('Home is one believable real-world-first environment with URAI intelligence
   assert.match(homeProduction, /EffectComposer/)
   assert.match(homeProduction, /<Bloom\b/)
   assert.match(homeProduction, /<Vignette\b/)
-  assert.match(homeProduction, /organicTexture/)
-  assert.match(homeProduction, /reliefTexture/)
   assert.match(homeProduction, /PRESENCE_SHADOW_TEXTURE/)
-  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|destinationNames|home-life-map-portal-world-owned|home-ground-portal-world-owned/)
+  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|destinationNames|home-life-map-portal-world-owned|home-ground-portal-world-owned|dodecahedronGeometry/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
   assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls/)
 })
