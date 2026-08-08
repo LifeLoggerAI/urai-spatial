@@ -20,6 +20,9 @@ const routes = [
   ["src/app/legacy/page.tsx", "LifeMapSemanticRoute"],
   ["src/app/dream/page.tsx", "LifeMapSemanticRoute"],
   ["src/app/spatial/legacy/page.tsx", "LifeMapSemanticRoute"],
+  ["src/app/spatial/life-map/page.tsx", "SpatialLifeMapCanonical"],
+  ["src/app/spatial/life-map-r3f/page.tsx", "SpatialLifeMapCanonical"],
+  ["src/app/spatial/life-map-orbit/page.tsx", "SpatialLifeMapCanonical"],
   ["src/app/ground/page.tsx", "walkable-first-person-ground-layer"],
 ];
 
@@ -33,6 +36,9 @@ for (const [file, expected] of routes) {
   }
   if (["src/app/legacy/page.tsx", "src/app/dream/page.tsx", "src/app/spatial/legacy/page.tsx"].includes(file)) {
     assert.doesNotMatch(text, /RealmShell|LegacyScrollPortal/, `${file} must not restore a superseded shell or demo portal.`);
+  }
+  if (file.includes("spatial/life-map")) {
+    assert.doesNotMatch(text, /candidate for comparison|import LifeMapScene from/, `${file} must not expose a parallel Life Map candidate.`);
   }
 }
 
