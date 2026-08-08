@@ -4,33 +4,21 @@ import path from 'node:path'
 import test from 'node:test'
 
 const root = process.cwd()
-
-function read(relativePath) {
+const read = (relativePath) => {
   const absolutePath = path.join(root, relativePath)
   assert.ok(fs.existsSync(absolutePath), `missing expected file: ${relativePath}`)
   return fs.readFileSync(absolutePath, 'utf8')
 }
 
 const model = read('src/spatial/world/uraiSpatialWorldModel.ts')
-const tierOne = read('src/spatial/layout/TierOneExperience.tsx')
-const homeScene = read('src/scene/HomeScene.tsx')
+const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
+const lifeMap = read('src/components/lifemap/ComposedLifeMapScene.tsx')
 const integrationContract = read('src/lib/spatial-system-contract.ts')
 
 test('URAI Spatial exposes the required 3D world modes and world state', () => {
-  for (const token of [
-    "'home'",
-    "'ascent'",
-    "'lifeMap'",
-    "'focus'",
-    "'replay'",
-    "'mirror'",
-    "'unwinding'",
-    'type UraiSpatialWorldState',
-    'navigationStack',
-    'fallbackMode',
-    'webglAvailable',
-  ]) {
-    assert.match(model, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  for (const token of ["'home'", "'ascent'", "'lifeMap'", "'focus'", "'replay'", "'mirror'", "'unwinding'", 'type UraiSpatialWorldState', 'navigationStack', 'fallbackMode', 'webglAvailable']) {
+    assert.ok(model.includes(token), `world model missing ${token}`)
   }
 })
 
@@ -53,25 +41,20 @@ test('Life Map star and replay data use true x/y/z world positions', () => {
   assert.match(model, /replayPathExists/)
 })
 
-test('TierOneExperience declares the real 3D world layer and camera attributes around the R3F scene', () => {
-  assert.match(tierOne, /data-testid="urai-spatial-world-root"/)
-  assert.match(tierOne, /data-urai-world-layer="3d"/)
-  assert.match(tierOne, /data-urai-dom-role="accessible-control-overlay"/)
-  assert.match(tierOne, /data-urai-world-mode=\{worldMode\}/)
-  assert.match(tierOne, /data-urai-camera-position=\{cameraPreset\.position\.join/)
-  assert.match(tierOne, /data-urai-camera-target=\{cameraPreset\.target\.join/)
-  assert.match(tierOne, /data-urai-camera-fov=\{cameraPreset\.fov\}/)
+test('canonical Home runtime owns real WebGL only on Home paths', () => {
+  assert.match(homeRuntime, /normalizedPathname === '\/' \|\| normalizedPathname === '\/home'/)
+  assert.match(homeRuntime, /AssetDrivenHomeWorld/)
+  assert.match(homeRuntime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
+  assert.match(homeCanvas, /Canvas/)
+  assert.doesNotMatch(homeRuntime, /TierOneExperience|UraiSpatialStage/)
 })
 
-test('HomeScene remains the real React Three Fiber world renderer', () => {
-  assert.match(homeScene, /import \{ Canvas \} from '@react-three\/fiber'/)
-  assert.match(homeScene, /<Canvas shadows/)
-  assert.match(homeScene, /<PerspectiveCamera makeDefault/)
-  assert.match(homeScene, /<CinematicCameraRig/)
-  assert.match(homeScene, /<Sky \/>/)
-  assert.match(homeScene, /<Atmosphere \/>/)
-  assert.match(homeScene, /<ConstellationLayer/)
-  assert.match(homeScene, /<CinematicParticles/)
+test('canonical Life Map remains a true React Three Fiber 3D world', () => {
+  assert.match(lifeMap, /import \{ Canvas/)
+  assert.match(lifeMap, /<Canvas/)
+  assert.match(lifeMap, /data-testid="urai-true-3d-life-map"/)
+  assert.match(lifeMap, /THREE\.Vector3/)
+  assert.match(lifeMap, /goalForNode/)
 })
 
 test('system integration contract exposes the 3D world proof', () => {
