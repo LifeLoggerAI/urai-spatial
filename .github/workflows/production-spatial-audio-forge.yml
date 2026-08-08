@@ -61,7 +61,7 @@ jobs:
           set -euo pipefail
           python3 scripts/generate-production-spatial-audio.py
 
-      - name: Prove bounded output set
+      - name: Prove bounded output set and exact receipt provenance
         shell: bash
         run: |
           set -euo pipefail
@@ -72,8 +72,11 @@ jobs:
           test -s operations/assets/production-receipts/spatial-audio-production-v1.json
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
           receipt=json.loads(Path('operations/assets/production-receipts/spatial-audio-production-v1.json').read_text())
+          assert receipt['sourceHead'] == os.environ['SOURCE_SHA']
+          assert receipt['sourceHeadSemantics'] == 'exact-forge-input-head'
           assert receipt['verification']['passed'] is True
           assert receipt['historicalEightSecondProofBedPromoted'] is False
           assert len(receipt['assets']) == 8
