@@ -1,10 +1,10 @@
-import SpatialLifeMapCanonical from '@/spatial/lifemap/SpatialLifeMapCanonical'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'URAI Life Map',
-  description: 'The canonical URAI Spatial Life Map.',
+  description: 'Compatibility entry for the canonical URAI Life Map.',
 }
 
-export default function SpatialLifeMapOrbitPage() {
-  return <SpatialLifeMapCanonical />
+export default function SpatialLifeMapOrbitCompatibilityPage() {
+  redirect('/life-map?from=spatial-life-map-orbit')
 }
