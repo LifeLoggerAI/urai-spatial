@@ -54,8 +54,7 @@ jobs:
           : > "$changed_files"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > "$changed_files"
-            if grep -Eq '^operations/assets/promotion-decisions/.+\.json$' "$changed_files" || \
-               (grep -E '^operations/assets/production-receipts/.+\.json$' "$changed_files" | grep -Ev '^operations/assets/production-receipts/spatial-audio-production-v1\.json$' | grep -q .); then
+            if grep -Eq '^operations/assets/promotion-decisions/.+\.json$' "$changed_files"; then
               promotion=true
             fi
             if (grep -E '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files" | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' | grep -q .); then
