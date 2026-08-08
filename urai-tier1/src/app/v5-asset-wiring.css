@@ -1,0 +1,142 @@
+/* V5 provider assets are conditional visual layers on existing canonical owners.
+ * The authored 3D/runtime owner remains primary; provider imagery never replaces
+ * navigation, semantics, privacy controls, or physical scene geometry.
+ */
+
+html.urai-v5-assets-ready .ground-spatial-root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(3,8,14,.16), rgba(3,8,14,.66)), url('/assets/urai/v5/operations-world-main.webp') center/cover no-repeat;
+  opacity: .18;
+  mix-blend-mode: soft-light;
+}
+
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObject-work .uraiGroundObjectBody { background-image: url('/assets/urai/v5/work-table.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObject-reception .uraiGroundObjectBody { background-image: url('/assets/urai/v5/schedule-room.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObject-logistics .uraiGroundObjectBody { background-image: url('/assets/urai/v5/logistics-hub.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObject-wellness .uraiGroundObjectBody { background-image: url('/assets/urai/v5/wellness-lab.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObject-memory .uraiGroundObjectBody { background-image: url('/assets/urai/v5/communications-room.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObject-privacy .uraiGroundObjectBody { background-image: url('/assets/urai/v5/jobs-orchestration.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundObjectBody { background-size: cover !important; background-position: center !important; }
+
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(1) i { background-image: url('/assets/urai/v5/analytics-observatory.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(2) i { background-image: url('/assets/urai/v5/privacy-steward.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(3) i { background-image: url('/assets/urai/v5/operations-team.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(4) i { background-image: url('/assets/urai/v5/operations-launch-key-art.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(5) i { background-image: url('/assets/urai/v5/autonomous-city.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(6) i { background-image: url('/assets/urai/v5/final-avatar.webp') !important; }
+html.urai-v5-assets-ready .uraiAutoGround .uraiGroundCouncil figure i { background-size: cover !important; background-position: center !important; }
+
+html.urai-v5-assets-ready .urai-spatial-realm-experience[data-spatial-realm='council'] {
+  background-image: linear-gradient(180deg, rgba(2,7,17,.06), rgba(2,7,17,.38)), url('/assets/urai/v5/council-chamber.webp');
+  background-size: cover;
+  background-position: center;
+}
+html.urai-v5-assets-ready .urai-spatial-realm-experience[data-spatial-realm='council']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: url('/assets/urai/v5/world-council.webp') center/cover no-repeat;
+  opacity: .09;
+  mix-blend-mode: screen;
+}
+
+html.urai-v5-assets-ready .urai-spatial-realm-experience[data-spatial-realm='shadow'] {
+  background-image: linear-gradient(180deg, rgba(2,3,10,.1), rgba(2,3,10,.5)), url('/assets/urai/v5/legacy-archive.webp');
+  background-size: cover;
+  background-position: center;
+}
+html.urai-v5-assets-ready .urai-spatial-realm-experience[data-spatial-realm='shadow']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: url('/assets/urai/v5/private-public-boundary.webp') center/cover no-repeat;
+  opacity: .08;
+  mix-blend-mode: screen;
+}
+
+html.urai-v5-assets-ready .urai-world-runtime[data-world-destination='home']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: url('/assets/urai/v5/life-layer-main.webp') center/cover no-repeat;
+  opacity: .055;
+  mix-blend-mode: soft-light;
+}
+html.urai-v5-assets-ready .urai-world-runtime[data-world-destination='home']::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: url('/assets/urai/v5/global-emotional-weather.webp') center/cover no-repeat;
+  opacity: .04;
+  mix-blend-mode: screen;
+}
+
+html.urai-v5-assets-ready [data-testid='urai-true-3d-life-map'] {
+  background-image: linear-gradient(180deg, rgba(2,3,10,.08), rgba(2,3,10,.42)), url('/assets/urai/v5/memory-universe.webp');
+  background-size: cover;
+  background-position: center;
+}
+html.urai-v5-assets-ready [data-testid='urai-true-3d-life-map']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url('/assets/urai/v5/cross-device-continuum.webp') center/cover no-repeat;
+  opacity: .045;
+  mix-blend-mode: screen;
+}
+
+html.urai-v5-assets-ready .uraiAutoPassport {
+  background-image: linear-gradient(180deg, rgba(2,3,10,.12), rgba(2,3,10,.58)), url('/assets/urai/v5/identity-vault.webp') !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html.urai-v5-assets-ready .uraiAutoMirror {
+  background-image: linear-gradient(180deg, rgba(2,3,10,.12), rgba(2,3,10,.58)), url('/assets/urai/v5/launch-key-art.webp') !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+html.urai-v5-assets-ready .urai-world-companion__menu {
+  background-image: linear-gradient(180deg, rgba(4,10,20,.94), rgba(4,10,20,.98)), url('/assets/urai/v5/orb-command.webp');
+  background-size: cover;
+  background-position: center;
+}
+html.urai-v5-assets-ready .urai-world-companion__orb span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: url('/assets/urai/v5/final-orb.webp') center/cover no-repeat;
+  opacity: .74;
+}
+
+@media (max-width: 760px) {
+  html.urai-v5-assets-ready .ground-spatial-root::before {
+    background-image: linear-gradient(180deg, rgba(3,8,14,.14), rgba(3,8,14,.7)), url('/assets/urai/v5/operations-world-mobile.webp');
+  }
+  html.urai-v5-assets-ready .urai-world-runtime[data-world-destination='home']::before {
+    background-image: url('/assets/urai/v5/life-layer-mobile.webp');
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.urai-v5-assets-ready .urai-spatial-realm-experience::before,
+  html.urai-v5-assets-ready .urai-spatial-realm-experience::after,
+  html.urai-v5-assets-ready .urai-world-runtime::before,
+  html.urai-v5-assets-ready .urai-world-runtime::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
