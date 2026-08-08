@@ -24,6 +24,7 @@ const routes = [
 ];
 const canonicalRedirectTargets = new Map([
   ['/ascent', '/home?from=ascent'],
+  ['/unwind', '/life-map?from=unwind&overview=1'],
 ]);
 const promotedGeneratedAssetPaths = new Set([
   '/assets/urai/generated/models/home-entry-chamber-v1.glb',
