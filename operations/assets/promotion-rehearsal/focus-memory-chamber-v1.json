@@ -5,13 +5,13 @@
   "assetId": "focus-memory-chamber-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
   "bytes": 622812,
-  "sha256": "e27bbc6bdcb4e173c331d5dae2b2865ab75556e2e74ee8a854e1a3725d7d57f6",
+  "sha256": "3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "fallback": "procedural-focus-chamber",
   "license": "URAI Labs internal production asset",
   "producer": "URAI deterministic authored asset pack",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-08-07T18:05:00-05:00",
+  "reviewedAt": "2026-08-08T04:10:38Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -19,6 +19,6 @@
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": true,
-  "notes": "Fail-closed exact-binary replacement rehearsal. This record binds the candidate identity but does not promote it or substitute for independent human visual approval."
+  "exactHeadChecksPassed": false,
+  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the authored Focus asset after correcting only the malformed cap normals. This record binds candidate identity, does not promote it, and remains pending exact-head and visual verification."
 }
