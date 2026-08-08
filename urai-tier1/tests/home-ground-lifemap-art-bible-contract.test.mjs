@@ -5,7 +5,8 @@ import test from 'node:test'
 const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
@@ -14,7 +15,7 @@ const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
 test('Home is one believable authored 3D real-world environment with atmospheric imagery only', () => {
@@ -51,6 +52,7 @@ test('Home is one believable authored 3D real-world environment with atmospheric
     'MobileMovementPad',
   ]) assert.ok(homeGraph.includes(marker), `missing Home coherent 3D convergence marker: ${marker}`)
 
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
   assert.match(homeCss, /replay-memory-film-main\.webp/)
@@ -59,10 +61,9 @@ test('Home is one believable authored 3D real-world environment with atmospheric
   assert.match(homeCss, /@media \(max-width: 700px\)[\s\S]*replay-memory-film-main\.webp/)
   assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*true/s)
   assert.match(homeProduction, /gl\.setClearColor\(0x000000, 0\)/)
-  assert.match(homeProduction, /function preparePhysicalTerrain/)
-  assert.match(homeProduction, /const rejectedProp = \/portal\|ring\|threshold\|village\|mannequin\|avatar\|doorway\|debug\|marker\|label\|embodied\|presence\|alcove\|waterfall\//)
-  assert.match(homeProduction, /const rejectedLowPolyScenery = \/mountain\|tree\|vegetation\|living-growth\|memory-place-anchor\//)
-  assert.match(homeProduction, /object\.visible = visible/)
+  assert.match(homeProduction, /function prepareAuthoredSanctuary/)
+  assert.match(homeProduction, /const rejected = \/portal\|ring\|threshold\|village\|mannequin\|avatar\|debug\|marker\|label\|embodied\|presence\|memory-place-anchor\|living-growth\//)
+  assert.match(homeProduction, /object\.visible = !rejected/)
   assert.match(homeProduction, /visibleMeshCount < 3/)
   assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
   assert.match(homeProduction, /suppressedGeneratedScenery: true/)
