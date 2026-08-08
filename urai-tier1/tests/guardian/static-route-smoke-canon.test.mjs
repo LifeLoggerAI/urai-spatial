@@ -17,8 +17,9 @@ const routes = [
   ["src/app/passport/page.tsx", "PassportVaultClient"],
   ["src/app/shadow/page.tsx", "SpatialRealmRuntime"],
   ["src/app/council/page.tsx", "SpatialRealmRuntime"],
-  ["src/app/legacy/page.tsx", "RealmShell"],
-  ["src/app/dream/page.tsx", "RealmShell"],
+  ["src/app/legacy/page.tsx", "LifeMapSemanticRoute"],
+  ["src/app/dream/page.tsx", "LifeMapSemanticRoute"],
+  ["src/app/spatial/legacy/page.tsx", "LifeMapSemanticRoute"],
   ["src/app/ground/page.tsx", "walkable-first-person-ground-layer"],
 ];
 
@@ -30,7 +31,17 @@ for (const [file, expected] of routes) {
   if (file === "src/app/passport/page.tsx") {
     assert.doesNotMatch(text, /FinalPassportVault/, "Passport route must not restore the retired poster owner.");
   }
+  if (["src/app/legacy/page.tsx", "src/app/dream/page.tsx", "src/app/spatial/legacy/page.tsx"].includes(file)) {
+    assert.doesNotMatch(text, /RealmShell|LegacyScrollPortal/, `${file} must not restore a superseded shell or demo portal.`);
+  }
 }
+
+const semanticRoutePath = join(app, "src", "spatial", "realms", "LifeMapSemanticRoute.tsx");
+assert.equal(existsSync(semanticRoutePath), true, "Life Map semantic route convergence owner must exist.");
+const semanticRoute = readFileSync(semanticRoutePath, "utf8");
+assert.match(semanticRoute, /\/life-map\?from=\$\{kind\}&overview=1/, "Legacy and Dream aliases must resolve to canonical Life Map.");
+assert.doesNotMatch(semanticRoute, /Camera:|Lighting:|Fallback:/, "Semantic convergence surface must not expose diagnostic metadata.");
+assert.equal(existsSync(join(app, "src", "spatial", "realms", "RealmShell.tsx")), false, "Obsolete RealmShell must stay removed.");
 
 const spatialRuntimePath = join(app, "src", "spatial", "realms", "SpatialRealmRuntime.tsx");
 assert.equal(existsSync(spatialRuntimePath), true, "Capability-aware spatial realm runtime must exist.");
