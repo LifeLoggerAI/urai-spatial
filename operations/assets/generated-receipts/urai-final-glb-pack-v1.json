@@ -51,8 +51,8 @@
     },
     {
       "fileName": "focus-memory-chamber-v1.glb",
-      "bytes": 622812,
-      "sha256": "3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0",
+      "bytes": 622516,
+      "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
       "triangleCount": 17334,
       "nodes": 35,
       "animations": ["Focus_Arrival", "Focus_Breathing", "Focus_Exit"],
