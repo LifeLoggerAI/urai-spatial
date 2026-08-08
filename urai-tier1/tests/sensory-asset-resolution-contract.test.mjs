@@ -9,7 +9,8 @@ const manifest = read('src/spatial/assets/sensoryAssetManifest.ts')
 const sensoryLayer = read('src/spatial/scene/SpatialSensoryLayer.tsx')
 const worldLayer = read('src/spatial/scene/SpatialWorldAssetLayer.tsx')
 const homeRouteOwner = read('src/app/AssetDrivenHomeWorld.tsx')
-const homeWorld = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeWorldEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeWorld = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const receipt = JSON.parse(read('../operations/assets/production-receipts/sensory-layer-v1.json'))
 
 test('only evidence-backed sensory assets are ready', () => {
@@ -70,8 +71,9 @@ test('loading animation timing is relative to the mounted sensory layer', () => 
 })
 
 test('candidate ambient audio remains fail-closed on the live Home owner', () => {
-  const liveHome = `${homeRouteOwner}\n${homeWorld}`
+  const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
+  assert.match(homeWorldEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(liveHome, /urai-ambient-bed-v1\.opus/)
