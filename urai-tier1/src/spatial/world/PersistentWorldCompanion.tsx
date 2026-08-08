@@ -15,6 +15,8 @@ import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 const PRIMARY_DESTINATIONS: readonly UraiDestination[] = ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']
 const SECONDARY_DESTINATIONS: readonly UraiDestination[] = ['mirror', 'passport', 'privacy-controls', 'location-map']
 const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode'] as const
+const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
+const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
 function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
@@ -45,6 +47,7 @@ export function PersistentWorldCompanion() {
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const [audioEnabled, setAudioEnabled] = useState(false)
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
@@ -57,12 +60,29 @@ export function PersistentWorldCompanion() {
     setOpen(false)
   }, [])
 
-  useEffect(() => setHydrated(true), [])
+  useEffect(() => {
+    setHydrated(true)
+    try {
+      setAudioEnabled(sessionStorage.getItem(AUDIO_CONSENT_KEY) === 'true' && sessionStorage.getItem(AUDIO_MUTE_KEY) === 'false')
+    } catch {
+      setAudioEnabled(false)
+    }
+  }, [])
 
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
-    else setOpen(true)
+    else {
+      setOpen(true)
+      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+    }
   }, [closeCompanion, open])
+
+  const toggleAudio = useCallback(() => {
+    const enabled = !audioEnabled
+    setAudioEnabled(enabled)
+    window.dispatchEvent(new CustomEvent('urai:audio-consent', { detail: { enabled } }))
+    window.dispatchEvent(new CustomEvent('urai:audio-mute', { detail: { muted: !enabled } }))
+  }, [audioEnabled])
 
   useEffect(() => {
     const openCompanion = () => setOpen(true)
@@ -148,7 +168,7 @@ export function PersistentWorldCompanion() {
   ))
 
   return (
-    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination}>
+    <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
       <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={!open} inert={!open ? true : undefined}>
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
@@ -158,6 +178,16 @@ export function PersistentWorldCompanion() {
             Return
           </button>
         ) : null}
+        <button
+          type="button"
+          aria-pressed={audioEnabled}
+          aria-label={audioEnabled ? 'Mute spatial sound' : 'Enable spatial sound'}
+          data-world-target="spatial-audio-toggle"
+          disabled={!hydrated}
+          onClick={toggleAudio}
+        >
+          {audioEnabled ? 'Sound on' : 'Sound off'}
+        </button>
         <OrbConversationPanel />
       </div>
       <button
