@@ -1,9 +1,10 @@
 name: Production Spatial Audio Forge
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/real-world-home-production-completion-20260808
+      - main
+    types: [opened, synchronize, reopened]
     paths:
       - 'scripts/generate-production-spatial-audio.py'
       - '.github/workflows/production-spatial-audio-forge.yml'
@@ -13,28 +14,36 @@ permissions:
   contents: write
 
 concurrency:
-  group: urai-production-spatial-audio-${{ github.ref }}
+  group: urai-production-spatial-audio-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   forge-and-promote:
-    if: github.actor != 'github-actions[bot]'
+    if: >-
+      github.actor != 'github-actions[bot]' &&
+      (github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 1069)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
     steps:
-      - name: Checkout exact branch head
+      - name: Checkout exact PR source head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ env.SOURCE_SHA }}
           fetch-depth: 1
           persist-credentials: true
 
-      - name: Prove source identity
+      - name: Prove exact source identity and live branch binding
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
           test -z "$(git status --porcelain --untracked-files=all)"
+          remote_sha="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | awk '{print $1}')"
+          test -n "$remote_sha"
+          test "$remote_sha" = "$SOURCE_SHA"
 
       - name: Install deterministic forge dependency
         shell: bash
@@ -71,10 +80,15 @@ jobs:
           assert all(a['durationSeconds'] >= 59 for a in receipt['assets'] if a['role'] == 'ambient')
           PY
 
+      - name: Re-prove live branch has not moved
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_sha="$(git ls-remote --heads origin "refs/heads/${TARGET_BRANCH}" | awk '{print $1}')"
+          test "$remote_sha" = "$SOURCE_SHA"
+
       - name: Commit canonical binary pack to controlling PR branch
         shell: bash
-        env:
-          TARGET_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           git add \
