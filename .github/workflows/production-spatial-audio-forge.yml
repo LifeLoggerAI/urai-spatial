@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.SOURCE_SHA }}
-          fetch-depth: 1
+          fetch-depth: 2
           persist-credentials: false
 
       - name: Prove exact source identity and live branch binding
@@ -46,7 +46,24 @@ jobs:
           test -n "$remote_sha"
           test "$remote_sha" = "$SOURCE_SHA"
 
+      - name: Decide whether audio forge inputs changed
+        id: forge
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=false
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event.action }}" == "opened" ]]; then
+            required=true
+          elif [[ "${{ github.event.action }}" == "synchronize" ]]; then
+            if git diff --name-only "${SOURCE_SHA}^" "${SOURCE_SHA}" | grep -Eq '^(scripts/generate-production-spatial-audio\.py|\.github/workflows/production-spatial-audio-forge\.yml)$'; then
+              required=true
+            fi
+          fi
+          echo "required=$required" >> "$GITHUB_OUTPUT"
+          echo "AUDIO_FORGE_REQUIRED=$required"
+
       - name: Install deterministic forge dependencies
+        if: steps.forge.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -57,12 +74,14 @@ jobs:
           ffprobe -version | head -1
 
       - name: Forge and verify production Opus pack
+        if: steps.forge.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
           python3 scripts/generate-production-spatial-audio.py
 
       - name: Prove bounded output set and exact receipt provenance
+        if: steps.forge.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -87,6 +106,7 @@ jobs:
           PY
 
       - name: Re-prove live branch has not moved
+        if: steps.forge.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -94,6 +114,7 @@ jobs:
           test "$remote_sha" = "$SOURCE_SHA"
 
       - name: Commit canonical binary pack to controlling PR branch
+        if: steps.forge.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
