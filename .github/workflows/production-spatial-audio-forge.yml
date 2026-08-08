@@ -33,7 +33,7 @@ jobs:
         with:
           ref: ${{ env.SOURCE_SHA }}
           fetch-depth: 1
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Prove exact source identity and live branch binding
         shell: bash
@@ -94,6 +94,8 @@ jobs:
 
       - name: Commit canonical binary pack to controlling PR branch
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git add \
@@ -110,6 +112,7 @@ jobs:
             echo 'Production audio pack already matches deterministic forge.'
             exit 0
           fi
+          gh auth setup-git
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
           git commit -m 'Promote verified production spatial audio pack'
