@@ -71,6 +71,7 @@ const routeOwnerChecks = [
       'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
       'urai-tier1/src/app/AssetDrivenHomeWorld.tsx',
       'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx',
+      'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx',
     ],
     renderMode: 'asset-driven-spatial',
     required: [
