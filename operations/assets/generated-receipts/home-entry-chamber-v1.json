@@ -3,14 +3,42 @@
   "id": "home-entry-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
   "bytes": 1786808,
-  "sha256": "dbd74bfc61ff997a95d2cbb45cf246ceadac4036a5e95817abcf1ad998b621b9",
-  "measured": {"triangleCount":12934,"boundsMeters":{"min":[-9.345,-1.83,-9.238],"max":[9.345,5.0844,7.452],"size":[18.69,6.9144,16.69]},"repairedEulerRotations":2,"nodeCount":160,"materialCount":13,"animationClips":["Home_Breathing","Presence_Idle","Presence_Privacy","Presence_Forming"]},
+  "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
+  "measured": {
+    "triangleCount": 12934,
+    "boundsMeters": {
+      "min": [
+        -9.345,
+        -1.83,
+        -9.238
+      ],
+      "max": [
+        9.345,
+        5.0844,
+        7.452
+      ],
+      "size": [
+        18.69,
+        6.9144,
+        16.69
+      ]
+    },
+    "repairedEulerRotations": 2,
+    "nodeCount": 160,
+    "materialCount": 13,
+    "animationClips": [
+      "Home_Breathing",
+      "Presence_Idle",
+      "Presence_Privacy",
+      "Presence_Forming"
+    ]
+  },
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-home-threshold",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-06T03:30:00Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
+  "generatedAt": "2026-08-08T23:04:50.713Z",
   "releaseState": "candidate-not-production-ready"
 }
