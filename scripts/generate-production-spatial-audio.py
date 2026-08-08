@@ -37,11 +37,11 @@ AMBIENT = {
 }
 
 CAPTIONS = {
-    "home-ambient-v1": "Soft wind, distant leaves, and a low sanctuary tone.",
-    "ground-ambient-v1": "Quiet civic space, footsteps at a distance, and restrained environmental movement.",
-    "life-map-ambient-v1": "A spacious tonal field with subtle memory-star shimmer.",
-    "focus-ambient-v1": "A close, stable tone supporting sustained attention.",
-    "replay-ambient-v1": "A restrained cinematic bed that follows the memory sequence.",
+    "home-ambient-v1": "A soft filtered-noise bed with low sustained sanctuary tones.",
+    "ground-ambient-v1": "A low filtered environmental bed with restrained sustained tones.",
+    "life-map-ambient-v1": "A spacious filtered-noise field with layered harmonic tones.",
+    "focus-ambient-v1": "A close, steady filtered-noise bed with stable low tones.",
+    "replay-ambient-v1": "A restrained filtered-noise cinematic bed with slow harmonic tones.",
     "portal-transition-v1": "A brief rising spatial tone marking realm travel.",
     "orb-confirm-v1": "A soft two-note confirmation.",
     "ui-error-v1": "A low, brief error tone accompanied by visible text.",
