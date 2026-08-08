@@ -196,11 +196,13 @@ def main() -> None:
     if failures:
         raise SystemExit("\n".join(failures))
 
+    source_head = os.environ.get("SOURCE_SHA") or os.environ.get("GITHUB_SHA", "local")
     receipt = {
         "schemaVersion": "urai-spatial-production-audio-1",
         "status": "production-integrated-candidate",
         "generatedAt": os.environ.get("GITHUB_RUN_ID", "local"),
-        "sourceHead": os.environ.get("GITHUB_SHA", "local"),
+        "sourceHead": source_head,
+        "sourceHeadSemantics": "exact-forge-input-head",
         "owner": "URAI Labs",
         "provenance": "Deterministic URAI production sound forge; original procedural synthesis; no third-party sampled media.",
         "license": "URAI Labs internal production asset",
@@ -218,7 +220,7 @@ def main() -> None:
         "verification": {"passed": True, "failures": failures},
     }
     RECEIPT.write_text(json.dumps(receipt, indent=2) + "\n")
-    print(json.dumps({"ok": True, "assets": len(records), "receipt": str(RECEIPT.relative_to(ROOT))}, indent=2))
+    print(json.dumps({"ok": True, "assets": len(records), "receipt": str(RECEIPT.relative_to(ROOT)), "sourceHead": source_head}, indent=2))
 
 
 if __name__ == "__main__":
