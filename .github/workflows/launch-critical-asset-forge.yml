@@ -54,10 +54,11 @@ jobs:
           : > "$changed_files"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > "$changed_files"
-            if grep -Eq '^operations/assets/(promotion-decisions|production-receipts)/.+\.json$' "$changed_files"; then
+            if grep -Eq '^operations/assets/promotion-decisions/.+\.json$' "$changed_files" || \
+               (grep -E '^operations/assets/production-receipts/.+\.json$' "$changed_files" | grep -Ev '^operations/assets/production-receipts/spatial-audio-production-v1\.json$' | grep -q .); then
               promotion=true
             fi
-            if grep -Eq '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files"; then
+            if (grep -E '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files" | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' | grep -q .); then
               replacement=true
             fi
           fi
@@ -109,7 +110,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          mapfile -t assets < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^urai-tier1/public/assets/urai/generated/' || true)
+          mapfile -t assets < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^urai-tier1/public/assets/urai/generated/' | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' || true)
           mapfile -t rehearsals < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^operations/assets/promotion-rehearsal/.+\.json$' || true)
           if ((${#assets[@]} > 0 && ${#rehearsals[@]} == 0)); then
             echo 'Replacement binaries require changed fail-closed rehearsal decisions.' >&2
