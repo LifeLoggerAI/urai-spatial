@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: urai-production-spatial-audio-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   forge-and-promote:
