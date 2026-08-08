@@ -1,15 +1,17 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "family": "urai-sensory-layer-v1",
-  "releaseState": "candidate",
-  "reviewedAt": "2026-07-11T13:40:00Z",
+  "releaseState": "production-integrated-candidate",
+  "reviewedAt": "2026-08-08T20:00:00Z",
   "routes": ["/", "/home", "/ground", "/life-map", "/focus", "/replay"],
   "activation": {
     "consumer": "urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx",
     "component": "urai-tier1/src/spatial/scene/SpatialSensoryLayer.tsx",
-    "marker": "<SpatialSensoryLayer />",
+    "audioRuntime": "urai-tier1/src/spatial/audio/SpatialAmbientRuntime.tsx",
+    "audioController": "urai-tier1/src/spatial/audio/useAudioController.ts",
+    "marker": "<SpatialSensoryLayer /> + <SpatialAmbientRuntime />",
     "reversible": true,
-    "rollback": "Remove the SpatialSensoryLayer mount; model and procedural fallbacks remain unchanged."
+    "rollback": "Remove the sensory/audio runtime mounts; model/procedural and silent accessibility fallbacks remain available."
   },
   "assets": [
     {
@@ -37,18 +39,27 @@
       "validation": ["JSON parsed", "2200ms deterministic sequence", "accessible label retained", "under 262144-byte budget"]
     }
   ],
+  "integratedProductionAudio": {
+    "id": "production-spatial-audio-v1",
+    "status": "ready",
+    "assetCount": 8,
+    "ambientCount": 5,
+    "cueCount": 3,
+    "receipt": "operations/assets/production-receipts/spatial-audio-production-v1.json",
+    "runtimeOwner": "urai-tier1/src/spatial/audio/SpatialAmbientRuntime.tsx",
+    "controller": "urai-tier1/src/spatial/audio/useAudioController.ts",
+    "mutedByDefaultUntilConsent": true,
+    "essentialInformationMayDependOnAudio": false,
+    "fallback": "silent-audio-with-user-controlled-enable"
+  },
   "excludedCandidates": [
     {
       "id": "life-map-galaxy-skybox-v1",
       "reason": "Exact HDR binary and rendered-route proof are not available."
-    },
-    {
-      "id": "urai-ambient-bed-v1",
-      "reason": "Candidate audio is not mounted by the promoted sensory component and lacks rendered-route proof."
     }
   ],
   "verificationCommand": "node scripts/verify-production-sensory-assets.mjs",
   "verificationResult": "pending-exact-head-ci",
   "license": "URAI Labs internal production assets",
-  "provenance": "Deterministic URAI forge; receipt regenerated from exact committed ready-asset bytes; no external provider or private-life data used"
+  "provenance": "Deterministic URAI forge; receipt regenerated from exact committed ready-asset bytes; production audio is separately hash/loudness/codec verified and runtime consent-controlled."
 }
