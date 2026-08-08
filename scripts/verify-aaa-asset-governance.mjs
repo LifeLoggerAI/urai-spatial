@@ -76,13 +76,16 @@ for (const pattern of haptics.patterns) {
 const audioIds = new Set()
 const audioPaths = new Set()
 for (const cue of audio.cues) {
+  const audioPath = cue.path ?? cue.candidatePath
+  const supportedFallback = cue.fallback === 'silence' || cue.fallback === 'none' || (cue.fallback === 'visible-status-text' && cue.role === 'ui')
   requireCondition(!audioIds.has(cue.id), `duplicate audio cue id: ${cue.id}`)
-  requireCondition(!audioPaths.has(cue.candidatePath), `duplicate audio cue path: ${cue.candidatePath}`)
+  requireCondition(Boolean(audioPath), `audio cue ${cue.id} requires a path`)
+  if (audioPath) requireCondition(!audioPaths.has(audioPath), `duplicate audio cue path: ${audioPath}`)
   requireCondition(Boolean(cue.caption), `audio cue ${cue.id} requires caption metadata`)
-  requireCondition(cue.fallback === 'silence' || cue.fallback === 'none', `audio cue ${cue.id} has an unsupported fallback`)
+  requireCondition(supportedFallback, `audio cue ${cue.id} has an unsupported fallback`)
   requireCondition(cue.maxBytes > 0, `audio cue ${cue.id} requires a positive byte budget`)
   audioIds.add(cue.id)
-  audioPaths.add(cue.candidatePath)
+  if (audioPath) audioPaths.add(audioPath)
 }
 
 for (const path of [
