@@ -11,9 +11,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
   return (
     <div
       data-home-authored-region-contract="true"
-      data-home-spatial-regions="home-mountain-horizon home-lantern-village"
+      data-home-spatial-regions="home-mountain-horizon home-living-vegetation"
       data-home-mountain-source="horizon-mountain-*"
-      data-home-village-source="inhabited-village-* village-tower-* village-roof-*"
+      data-home-vegetation-source="living-growth-*"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
