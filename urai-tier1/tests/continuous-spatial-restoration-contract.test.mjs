@@ -42,20 +42,23 @@ test('app template mounts current WebGL owners without certified-route redirects
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('Home remains one embodied provider-natural environment with accessible natural thresholds and recovery', () => {
+test('Home remains one embodied authored 3D environment with accessible natural thresholds and recovery', () => {
   for (const marker of [
     'HomeWorldProduction',
     'Stars',
     'HOME_PROVIDER_ENVIRONMENT',
     'replay-memory-film-main.webp',
-    'replay-memory-film-mobile.webp',
     'data-home-primary-owner="asset-driven"',
     'data-home-real-world-first="true"',
+    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
     'data-home-visible-portals="false"',
     'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
     'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-provider-role="atmospheric-support-only"',
     'data-home-generated-scenery="suppressed"',
-    'data-home-physical-base="authored-terrain"',
+    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
@@ -64,6 +67,7 @@ test('Home remains one embodied provider-natural environment with accessible nat
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
+    'home-reflecting-water',
     'home-orb-sanctuary',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
@@ -72,8 +76,14 @@ test('Home remains one embodied provider-natural environment with accessible nat
     'MobileMovementPad',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
+  assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
+  assert.match(homeCss, /opacity:\s*\.2/)
   assert.match(homeProduction, /function preparePhysicalTerrain/)
-  assert.match(homeProduction, /object\.visible = terrain/)
+  assert.match(homeProduction, /object\.visible = visible/)
+  assert.match(homeProduction, /rejectedProp/)
+  assert.match(homeProduction, /rejectedLowPolyScenery/)
+  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
+  assert.match(homeProduction, /ContactShadows/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
   assert.match(homeProduction, /function LifeMapSkyLookout/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
@@ -86,11 +96,14 @@ test('Home remains one embodied provider-natural environment with accessible nat
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
-test('Home Life Map entry is one canonical sky ascent transaction with one camera authority', () => {
+test('Home Life Map entry is one canonical sky ascent transaction with one camera authority and a closing handoff', () => {
   assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0 \}\)/)
   assert.match(worldEvents, /function shouldBeginHomeAscent/)
+  assert.match(worldEvents, /function markHomeAscentClosing/)
   assert.match(worldEvents, /request\.entryPortal !== 'home-sky'/)
   assert.match(worldEvents, /request\.cameraCheckpoint !== 'home-sky-ascent'/)
+  assert.match(worldEvents, /request\.cameraCheckpoint !== 'home-sky-ascent-complete'/)
+  assert.match(worldEvents, /owner\.setAttribute\('data-home-portal-sequence', 'life-map:closing'\)/)
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
   assert.match(worldEvents, /return\s*\n\s*}/)
@@ -148,7 +161,7 @@ test('browser proof and supplemental state proof cover required exact-head evide
   for (const marker of ["schemaVersion: 'urai-home-state-proof-3'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
-  assert.match(proofWorkflow, /capture-continuous-spatial-proof-v18\.mjs/)
+  assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
   assert.match(stateProofWorkflow, /capture-home-state-proof\.mjs/)
 })
 
