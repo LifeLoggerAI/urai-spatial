@@ -6,9 +6,33 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: #899a8e;
+  background: #292a22;
   cursor: grab;
   touch-action: none;
+}
+
+.world::before {
+  content: "";
+  position: absolute;
+  inset: -1.5%;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, rgba(24, 22, 15, .05), rgba(18, 17, 12, .03) 42%, rgba(15, 15, 12, .22) 100%),
+    radial-gradient(circle at 50% 42%, rgba(241, 204, 126, .08), transparent 38%),
+    url('/assets/urai/replay/replay-memory-film-main.webp');
+  background-size: cover;
+  background-position: center 52%;
+  background-repeat: no-repeat;
+  filter: saturate(.98) contrast(1.025) brightness(.96);
+  transform: scale(1.018);
+  opacity: 1;
+  transition: opacity 900ms ease, filter 900ms ease;
+}
+
+.world[data-home-scene-phase='ASCENT']::before {
+  opacity: 0;
+  filter: saturate(.72) contrast(1.08) brightness(.34);
 }
 
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
@@ -16,9 +40,10 @@
 .canvas {
   position: absolute !important;
   inset: 0;
+  z-index: 1;
   width: 100% !important;
   height: 100% !important;
-  filter: brightness(1.01) saturate(.93) contrast(1.035);
+  filter: brightness(1.01) saturate(.94) contrast(1.02);
 }
 
 .world::after {
@@ -28,8 +53,8 @@
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(18, 25, 22, .03), transparent 35%, transparent 78%, rgba(12, 17, 14, .09)),
-    radial-gradient(circle at 50% 46%, transparent 0 62%, rgba(8, 12, 10, .035) 84%, rgba(5, 8, 7, .08) 100%);
+    linear-gradient(180deg, rgba(11, 13, 10, .025), transparent 34%, transparent 76%, rgba(10, 11, 9, .14)),
+    radial-gradient(circle at 50% 46%, transparent 0 62%, rgba(8, 9, 7, .04) 84%, rgba(5, 6, 5, .1) 100%);
 }
 
 .brand,
@@ -43,11 +68,11 @@
 .brand {
   left: clamp(18px, 3vw, 44px);
   top: clamp(18px, 3vw, 40px);
-  opacity: .48;
+  opacity: .34;
 }
 
 .brand strong {
-  font-size: .72rem;
+  font-size: .68rem;
   letter-spacing: .5em;
   font-weight: 760;
 }
@@ -56,20 +81,20 @@
   left: 50%;
   bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  padding: .52rem .78rem;
-  border: 1px solid rgba(232, 240, 234, .13);
+  padding: .48rem .72rem;
+  border: 1px solid rgba(232, 240, 234, .1);
   border-radius: 999px;
-  background: rgba(17, 25, 21, .28);
-  color: rgba(246, 249, 247, .8);
-  backdrop-filter: blur(10px);
-  font-size: .61rem;
+  background: rgba(15, 18, 14, .24);
+  color: rgba(246, 249, 247, .78);
+  backdrop-filter: blur(9px);
+  font-size: .6rem;
   font-weight: 650;
-  letter-spacing: .08em;
+  letter-spacing: .07em;
 }
 
 .world :global(.urai-mobile-movement) {
   z-index: 14;
-  opacity: .64;
+  opacity: .56;
   transition: opacity .2s ease;
 }
 
@@ -83,6 +108,15 @@
 }
 
 @media (max-width: 700px) {
+  .world::before {
+    inset: -2%;
+    background-image:
+      linear-gradient(180deg, rgba(24, 22, 15, .04), rgba(18, 17, 12, .02) 44%, rgba(15, 15, 12, .2) 100%),
+      radial-gradient(circle at 52% 40%, rgba(241, 204, 126, .07), transparent 37%),
+      url('/assets/urai/replay/replay-memory-film-mobile.webp');
+    background-position: center 48%;
+    transform: scale(1.014);
+  }
   .brand {
     top: max(14px, env(safe-area-inset-top));
     left: max(16px, env(safe-area-inset-left));
@@ -98,6 +132,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .world::before { transition: none; }
   .worldHint { backdrop-filter: none; }
   .world :global(.urai-mobile-movement) { transition: none; }
 }
