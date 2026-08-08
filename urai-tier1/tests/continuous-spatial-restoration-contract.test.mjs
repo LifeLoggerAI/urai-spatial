@@ -11,6 +11,7 @@ const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
@@ -26,7 +27,7 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${homeCss}`
 const groundGraph = `${ground}\n${groundModel}`
 const groundCanonical = canonical(ground)
 
@@ -41,15 +42,20 @@ test('app template mounts current WebGL owners without certified-route redirects
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('Home remains one embodied real-world environment with accessible natural thresholds and recovery', () => {
+test('Home remains one embodied provider-natural environment with accessible natural thresholds and recovery', () => {
   for (const marker of [
     'HomeWorldProduction',
-    'Sky',
     'Stars',
+    'HOME_PROVIDER_ENVIRONMENT',
+    'replay-memory-film-main.webp',
+    'replay-memory-film-mobile.webp',
     'data-home-primary-owner="asset-driven"',
     'data-home-real-world-first="true"',
     'data-home-visible-portals="false"',
     'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
+    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-generated-scenery="suppressed"',
+    'data-home-physical-base="authored-terrain"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
@@ -66,6 +72,8 @@ test('Home remains one embodied real-world environment with accessible natural t
     'MobileMovementPad',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
+  assert.match(homeProduction, /function preparePhysicalTerrain/)
+  assert.match(homeProduction, /object\.visible = terrain/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
   assert.match(homeProduction, /function LifeMapSkyLookout/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
@@ -74,7 +82,7 @@ test('Home remains one embodied real-world environment with accessible natural t
   assert.match(homeRuntime, /webglcontextlost/)
   assert.match(homeRuntime, /webglcontextrestored/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
-  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames/)
+  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
@@ -103,7 +111,7 @@ test('Home Ground entry is a physical environmental descent rather than a floati
   assert.match(homeProduction, /transition: "physical-descent"/)
   assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
   assert.match(homeProduction, /GROUND_DESCENT/)
-  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"/)
+  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
 })
 
 test('visual overrides cannot veil active spatial owners', () => {
