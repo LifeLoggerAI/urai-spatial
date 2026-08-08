@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "passport-status-room-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb",
+  "targetRoutes": ["/passport"],
   "bytes": 347512,
   "sha256": "19dc8b098dff6e9ba78f7c577d07cb84d2cada9a25c3a0ab289d4c7724bcac56",
   "measured": {"triangleCount":7878,"nodeCount":48,"materialCount":8,"animationClips":["Passport_Idle","Passport_Grant","Status_Pulse","Privacy_Lock"]},
