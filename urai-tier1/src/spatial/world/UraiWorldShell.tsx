@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import SpatialAmbientRuntime from '@/spatial/audio/SpatialAmbientRuntime'
 import { GroundGateway } from './GroundGateway'
 import { LifeMapIndependentInputBoundary } from './LifeMapIndependentInputBoundary'
 import { LifeMapRouteTransactionBridge } from './LifeMapRouteTransactionBridge'
@@ -27,9 +28,6 @@ import './lifeMapProductionIsolation.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
-  // Life Map and Location Map are independent route-owned realms. Home keeps
-  // the shared controller mounted, while these worlds own their complete input
-  // and composition surfaces without a competing persistent Orb.
   const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'location-map'
 
   return (
@@ -43,6 +41,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-camera-checkpoint={world.cameraCheckpoint ?? ''}
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
     >
+      <SpatialAmbientRuntime />
       <LifeMapSelectedActionRuntimeInvariant />
       <PersistentRealmAtmosphere />
       {children}
