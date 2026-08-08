@@ -35,43 +35,50 @@ test('app template mounts current WebGL owners without certified-route redirects
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProduction/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
+  assert.match(homeProduction, /data-home-real-world-first="true"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('Home remains one embodied cinematic sanctuary with accessible thresholds and recovery', () => {
+test('Home remains one embodied real-world environment with accessible natural thresholds and recovery', () => {
   for (const marker of [
     'HomeWorldProduction',
+    'Sky',
     'Stars',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+    'data-home-real-world-first="true"',
+    'data-home-visible-portals="false"',
+    'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
+    'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
     'home-mountain-horizon',
-    'home-lantern-village',
+    'home-living-vegetation',
     'home-orb-sanctuary',
+    'home-ground-environmental-threshold',
+    'home-life-map-sky-lookout',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
-  assert.match(homeProduction, /name={`home-\${type}-portal-world-owned`}/)
-  assert.match(homeProduction, /<WorldPortal type="ground"/)
-  assert.match(homeProduction, /<WorldPortal type="life-map"/)
+  assert.match(homeProduction, /function GroundThresholdLandmark/)
+  assert.match(homeProduction, /function LifeMapSkyLookout/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(groundGateway, /Open the ground and descend into Hidden Infrastructure/)
   assert.match(homeRuntime, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /webglcontextlost/)
   assert.match(homeRuntime, /webglcontextrestored/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
+  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
-test('Home Life Map entry is one canonical ascent transaction with one camera authority', () => {
+test('Home Life Map entry is one canonical sky ascent transaction with one camera authority', () => {
   assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0 \}\)/)
   assert.match(worldEvents, /function shouldBeginHomeAscent/)
   assert.match(worldEvents, /request\.entryPortal !== 'home-sky'/)
@@ -82,13 +89,21 @@ test('Home Life Map entry is one canonical ascent transaction with one camera au
   assert.match(homeProduction, /if \(scene\.phase === "ASCENT"\)/)
   assert.match(homeProduction, /scene\.setProgress\(linear\)/)
   assert.match(homeProduction, /cameraCheckpoint: "home-sky-ascent-complete"/)
-  assert.match(homeProduction, /data-home-camera-mode=\{phase === "ASCENT" \? "ascent"/)
+  assert.match(homeProduction, /data-home-camera-mode=\{groundDescent \? "descent" : phase === "ASCENT" \? "ascent"/)
   assert.match(homeProduction, /data-home-ascent-progress=/)
   assert.match(homeProduction, /data-home-input-locked=/)
-  assert.match(homeProduction, /event\.key !== "Escape" \|\| scene\.phase !== "ASCENT"/)
   assert.match(homeProduction, /scene\.setPhase\("HOME"\)/)
   assert.match(homeProduction, /scene\.unlock\(\)/)
   assert.doesNotMatch(homeProduction, /<CinematicCameraRig|<SpatialSceneClient/)
+})
+
+test('Home Ground entry is a physical environmental descent rather than a floating menu portal', () => {
+  assert.match(homeProduction, /GROUND_DESCENT_DURATION_SECONDS/)
+  assert.match(homeProduction, /home-ground-environmental-threshold/)
+  assert.match(homeProduction, /transition: "physical-descent"/)
+  assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
+  assert.match(homeProduction, /GROUND_DESCENT/)
+  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"/)
 })
 
 test('visual overrides cannot veil active spatial owners', () => {
@@ -137,13 +152,12 @@ test('Life Map owner and legacy veil suppression remain full viewport', () => {
   assert.match(css, /prefers-reduced-motion: reduce/)
 })
 
-test('Home portals and generated manifest filter remain observable on a saturated host', () => {
-  assert.match(homeProduction, /name={`home-\${type}-portal-world-owned`}/)
-  assert.match(homeProduction, /<WorldPortal type="ground"[\s\S]*onEnter={onGround}/)
-  assert.match(homeProduction, /<WorldPortal type="life-map"[\s\S]*onEnter={onLifeMap}/)
+test('Home environmental thresholds and generated manifest filter remain observable on a saturated host', () => {
+  assert.match(homeProduction, /home-ground-environmental-threshold/)
+  assert.match(homeProduction, /home-life-map-sky-lookout/)
   assert.match(homeProduction, /destination: "infrastructure-hub"/)
   assert.match(homeProduction, /destination: "life-map"/)
-  assert.match(homeProduction, /Ascend to Life Map/)
+  assert.match(homeProduction, /Look to the sky/)
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
   assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))
