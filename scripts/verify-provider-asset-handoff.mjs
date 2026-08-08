@@ -86,7 +86,7 @@ const routeOwnerChecks = [
       'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
       'data-home-embodied-self="privacy-preserving-shadow"',
       'data-home-movement="walk-keyboard-click-touch"',
-      'data-home-audio="silent-fallback"',
+      'data-home-audio="production-opus-consent-controlled"',
       'home-authored-terrain',
       'home-mountain-horizon',
       'home-living-vegetation',
