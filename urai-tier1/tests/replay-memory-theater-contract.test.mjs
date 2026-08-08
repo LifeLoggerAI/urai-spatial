@@ -12,10 +12,10 @@ function read(relativePath) {
 }
 
 const replayPage = read('src/app/replay/page.tsx')
+const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const finalMemorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
 const replayUnwindButton = read('src/app/replay/ReplayUnwindButton.tsx')
 const replayRoute = read('src/app/replay/[replayId]/page.tsx')
-const tierOneExperience = read('src/spatial/layout/TierOneExperience.tsx')
 
 test('replay route remains wired to the final cinematic memory film owner', () => {
   assert.match(replayPage, /FinalReplayFilm/)
@@ -51,11 +51,8 @@ test('replay unwind affordance preserves safe return behavior', () => {
   assert.match(replayUnwindButton, /Return to Focus/)
 })
 
-test('TierOneExperience preserves replay mode as a first-class fallback scene state', () => {
-  assert.match(tierOneExperience, /mode\?: SceneMode/)
-  assert.match(tierOneExperience, /const replayMode = "replay"/)
-  assert.match(tierOneExperience, /mode !== replayMode/)
-  assert.match(tierOneExperience, /mode === replayMode/)
-  assert.match(tierOneExperience, /replayActive/)
-  assert.match(tierOneExperience, /data-mode=\{mode\}/)
+test('Replay owns its route directly and returns through the canonical world boundary', () => {
+  assert.match(replayClient, /requestUraiWorldReturn/)
+  assert.doesNotMatch(replayPage + replayClient, /TierOneExperience|UraiV1Experience|UraiSpatialStage/)
+  assert.equal(fs.existsSync(path.join(root, 'src/spatial/layout/TierOneExperience.tsx')), false)
 })
