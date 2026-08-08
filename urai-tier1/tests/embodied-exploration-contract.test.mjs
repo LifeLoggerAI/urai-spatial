@@ -57,6 +57,9 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'data-home-world-character="believable-natural-inhabitable-environment"',
     'data-home-visible-portals="false"',
     'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
+    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-generated-scenery="suppressed"',
+    'data-home-physical-base="authored-terrain"',
     'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
@@ -76,9 +79,12 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'requestUraiWorldTravel',
     '<Canvas',
   ]) has(homeProduction, marker)
+  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
+  assert.match(homeProduction, /function preparePhysicalTerrain/)
+  assert.match(homeProduction, /object\.visible = terrain/)
   assert.match(homeProduction, /function GroundThresholdLandmark/)
   assert.match(homeProduction, /function LifeMapSkyLookout/)
-  assert.doesNotMatch(homeProduction, /WorldPortal|PORTAL_MODEL|home-ground-portal-world-owned|home-life-map-portal-world-owned|requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
+  assert.doesNotMatch(homeProduction, /WorldPortal|PORTAL_MODEL|home-ground-portal-world-owned|home-life-map-portal-world-owned|dodecahedronGeometry|requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
 
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
@@ -96,7 +102,8 @@ test('Home keeps one physical Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<OrbSanctuary onOpen=\{onOrbOpen\} reducedMotion=\{reducedMotion\} \/>/)
+  assert.match(homeProduction, /<HomeReducedMotionContext\.Provider value=\{reducedMotion\}>/)
+  assert.match(homeProduction, /<OrbSanctuary onOpen=\{onOrbOpen\} \/>/)
   assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\); \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
