@@ -19,7 +19,6 @@ const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as cons
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
 type CameraGoal = { position: [number, number, number]; target: [number, number, number] };
-type RenderProof = { ready: boolean; objects: number; anchors: number; calls: number; triangles: number };
 
 function safeToken(value: string | null, fallback = "") {
   return (value || fallback).replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 120);
@@ -126,67 +125,6 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
   return null;
 }
 
-function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (proof: RenderProof) => void }) {
-  const { gl, scene, invalidate } = useThree();
-  const completedFrames = useRef(0);
-  const publishedPhase = useRef<JourneyPhase | null>(null);
-  const publishedSignature = useRef("");
-  const readyPublished = useRef(false);
-
-  const resetProof = useCallback(() => {
-    completedFrames.current = 0;
-    publishedPhase.current = null;
-    publishedSignature.current = "";
-    readyPublished.current = false;
-    onProof({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
-    invalidate();
-  }, [invalidate, onProof]);
-
-  useEffect(() => {
-    resetProof();
-  }, [phase, resetProof]);
-
-  useEffect(() => {
-    const canvas = gl.domElement;
-    const invalidateProof = () => resetProof();
-    canvas.addEventListener("webglcontextlost", invalidateProof, false);
-    canvas.addEventListener("webglcontextrestored", invalidateProof, false);
-    return () => {
-      canvas.removeEventListener("webglcontextlost", invalidateProof, false);
-      canvas.removeEventListener("webglcontextrestored", invalidateProof, false);
-    };
-  }, [gl, resetProof]);
-
-  useFrame(() => {
-    if (readyPublished.current && publishedPhase.current === phase) return;
-    queueMicrotask(() => {
-      if (readyPublished.current && publishedPhase.current === phase) return;
-      completedFrames.current += 1;
-      let objects = 0;
-      let anchors = 0;
-      scene.traverse((object) => {
-        if (object.visible) objects += 1;
-        if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-      });
-      const calls = gl.info.render.calls;
-      const triangles = gl.info.render.triangles;
-      const ready = calls > 0 && objects > 20 && anchors >= 8;
-      const signature = `${phase}:${ready}:${objects}:${anchors}:${calls}:${triangles}`;
-      if (publishedPhase.current === phase && publishedSignature.current === signature) {
-        if (!ready) invalidate();
-        return;
-      }
-      publishedPhase.current = phase;
-      publishedSignature.current = signature;
-      readyPublished.current = ready;
-      onProof({ ready, objects, anchors, calls, triangles });
-      if (!ready) invalidate();
-    });
-  });
-
-  return null;
-}
-
 function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLState) => void }) {
   const { gl } = useThree();
   useEffect(() => {
@@ -259,7 +197,6 @@ export default function ComposedLifeMapScene() {
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
-  const [renderProof, setRenderProof] = useState<RenderProof>({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
@@ -364,11 +301,6 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
-    data-life-map-render-ready={renderProof.ready ? "true" : "false"}
-    data-life-map-visible-objects={renderProof.objects}
-    data-life-map-visible-anchors={renderProof.anchors}
-    data-life-map-render-calls={renderProof.calls}
-    data-life-map-render-triangles={renderProof.triangles}
     data-webgl-state={webglState}
     data-home-companion-owned="false"
   >
@@ -390,7 +322,6 @@ export default function ComposedLifeMapScene() {
       }}
     >
       <WebGLRecoveryBridge onStateChange={setWebglState} />
-      <RenderProofBridge phase={phase} onProof={setRenderProof} />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
