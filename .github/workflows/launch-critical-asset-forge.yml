@@ -145,10 +145,10 @@ jobs:
           done
           test -z "$(git status --porcelain)"
 
-      - name: Verify governed production authority before candidate generation
+      - name: Verify fail-closed rehearsal control before candidate generation
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         env:
-          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-decisions/home-entry-chamber-v1.json
+          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-rehearsal/spatial-particle-atlas-v1.json
         run: node scripts/verify-governed-asset-promotion.mjs
       - name: Run governed Home production contract before candidate generation
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
