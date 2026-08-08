@@ -7,19 +7,16 @@ const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-intera
 const newOwner = "result.animationOwner === 'provider-natural-world-plus-authored-physical-interactions'"
 if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
-const proximityContracts = [
-  { from: 'radius: 1.35', to: 'radius: 1.55', expected: 1, label: 'orb' },
-  { from: 'radius: 2.2', to: 'radius: 2.45', expected: 2, label: 'environmental-thresholds' },
-]
-
-let patched = original.replace(oldOwner, newOwner)
-for (const contract of proximityContracts) {
-  const count = patched.split(contract.from).length - 1
-  if (count !== contract.expected) {
-    throw new Error(`Continuous proof ${contract.label} proximity contract changed: expected ${contract.expected}, found ${count}`)
-  }
-  patched = patched.replaceAll(contract.from, contract.to)
+const staleEnvironmentalRadius = 'radius: 2.2'
+const runtimeEnvironmentalRadius = 'radius: 2.45'
+const staleEnvironmentalCount = original.split(staleEnvironmentalRadius).length - 1
+if (staleEnvironmentalCount !== 2) {
+  throw new Error(`Continuous proof environmental-threshold proximity contract changed: expected 2, found ${staleEnvironmentalCount}`)
 }
+
+const patched = original
+  .replace(oldOwner, newOwner)
+  .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
 
 await writeFile(captureUrl, patched, 'utf8')
 try {
