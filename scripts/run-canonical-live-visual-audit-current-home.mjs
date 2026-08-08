@@ -87,6 +87,40 @@ const currentHomeSettlement = `  if (route.id === 'home') {
 
 patched = replaceOnce(patched, oldHomeSettlement, currentHomeSettlement, 'current Home readiness')
 
+const oldGroundSettlement = `  if (route.id === 'ground') {
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      return root?.getAttribute('data-ground-ready') === 'true' && root?.getAttribute('data-ground-arrival') === 'settled'
+    }, null, { timeout: 30_000, polling: 50 })
+  }`
+const currentGroundSettlement = `  if (route.id === 'ground') {
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      const canvas = root?.querySelector('canvas')
+      const rect = canvas?.getBoundingClientRect()
+      return root?.getAttribute('data-ground-ready') === 'true'
+        && Boolean(rect && rect.width >= 240 && rect.height >= 240)
+    }, null, { timeout: 30_000, polling: 50 })
+  }`
+patched = replaceOnce(patched, oldGroundSettlement, currentGroundSettlement, 'current Ground readiness')
+
+const oldFocusTouchTarget = `    const box = await focus.boundingBox()
+    if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')`
+const currentFocusTouchTarget = `    const box = await focus.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return { width: rect.width, height: rect.height }
+    })
+    if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')`
+patched = replaceOnce(patched, oldFocusTouchTarget, currentFocusTouchTarget, 'Focus touch target geometry')
+
+for (const [label, marker] of [
+  ['Ground current owner readiness', `root?.getAttribute('data-ground-ready') === 'true'`],
+  ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
+  ['Focus DOM geometry', `element.getBoundingClientRect()`],
+]) {
+  if (!patched.includes(marker)) throw new Error(`${label} was not materialized in current visual audit`)
+}
+
 await writeFile(runtimeUrl, patched, 'utf8')
 try {
   await import(`${runtimeUrl.href}?currentHome=${Date.now()}`)
