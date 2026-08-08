@@ -6,7 +6,8 @@ const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, imp
 const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -19,7 +20,7 @@ const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const worldTransitions = read('src/spatial/world/WorldTransitionController.tsx')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${finalHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${finalHome}`
 const groundGraph = `${ground}\n${groundModel}`
 
 const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
@@ -49,6 +50,7 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
 
   has(assetHome, 'HomeWorldProduction')
   assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
 
   for (const marker of [
     'data-home-primary-owner="asset-driven"',
