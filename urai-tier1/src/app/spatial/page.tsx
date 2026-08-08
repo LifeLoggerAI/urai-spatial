@@ -1,11 +1,10 @@
-import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'URAI Spatial',
-  description:
-    'URAI Spatial opens into the guardian-approved TierOneExperience shell with Ground, Life Map, Focus, Replay, Passport, and Status paths.',
+  description: 'Enter the canonical URAI Home spatial runtime.',
 }
 
 export default function SpatialPage() {
-  return <TierOneExperience />
+  redirect('/home?from=spatial')
 }
