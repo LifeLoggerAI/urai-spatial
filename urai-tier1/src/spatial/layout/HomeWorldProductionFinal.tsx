@@ -2,7 +2,6 @@
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { ContactShadows, Float, Sky, Stars, useAnimations, useGLTF } from "@react-three/drei";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from "@/spatial/navigation/EmbodiedNavigation";
@@ -356,7 +355,6 @@ function HomeScene(props: { input: MovementInput; yaw: MutableRefObject<number>;
       <GroundThresholdLandmark onEnter={props.onGround} />
       <LifeMapSkyLookout onEnter={props.onLifeMap} />
       {!cosmic ? <ContactShadows position={[0, 0.02, -2]} opacity={0.32} scale={23} blur={2.5} far={9} resolution={512} frames={props.reducedMotion ? 1 : Infinity} /> : null}
-      <EffectComposer multisampling={0}><Bloom intensity={0.03} luminanceThreshold={1.15} luminanceSmoothing={0.22} mipmapBlur /><Vignette eskil={false} offset={0.2} darkness={0.045} /></EffectComposer>
     </>
   );
 }
