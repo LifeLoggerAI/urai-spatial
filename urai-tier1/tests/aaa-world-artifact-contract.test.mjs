@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 
 async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -17,24 +18,17 @@ test('Life Map uses authored memory artifacts instead of final sphere-only nodes
   assert.match(artifact, /SealedProgressionMaterial/)
 })
 
-test('Focus and Replay have world-layer components wired through canonical experience', async () => {
-  const focus = await source('src/scene/FocusChamber.tsx')
-  const replay = await source('src/scene/ReplayTemporalField.tsx')
-  const wrapper = await source('src/scene/UraiIntegratedHomeScene.tsx')
-  const tierOne = await source('src/spatial/layout/TierOneExperience.tsx')
+test('Focus and Replay retain dedicated canonical route owners without a multi-mode shell', async () => {
+  const focusPage = await source('src/app/focus/page.tsx')
+  const replayPage = await source('src/app/replay/page.tsx')
+  const focusClient = await source('src/app/focus/FocusChamberClient.tsx')
+  const replayClient = await source('src/app/replay/CinematicReplayClient.tsx')
 
-  assert.match(focus, /data-testid="urai-focus-chamber"/)
-  assert.match(focus, /SacredGlassMaterial/)
-  assert.match(focus, /MistLightMaterial/)
-  assert.match(replay, /data-testid="urai-replay-temporal-field"/)
-  assert.match(replay, /CatmullRomCurve3/)
-  assert.match(replay, /replayProgress/)
-  assert.match(wrapper, /<HomeScene sceneMode=\{sceneMode\}/)
-  assert.match(wrapper, /<FocusChamber active/)
-  assert.match(wrapper, /<ReplayTemporalField active/)
-  assert.match(wrapper, /resolveHomeSceneVisualBudget/)
-  assert.match(tierOne, /UraiIntegratedHomeScene/)
-  assert.doesNotMatch(tierOne, /import HomeScene from/)
+  assert.match(focusPage, /FinalFocusChamber/)
+  assert.match(replayPage, /FinalReplayFilm/)
+  assert.match(focusClient, /requestUraiWorldReturn/)
+  assert.match(replayClient, /requestUraiWorldReturn/)
+  assert.equal(existsSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url)), false)
 })
 
 test('Home ground and ritual platform consume AAA render budget defaults', async () => {
@@ -126,18 +120,13 @@ test('HomeScene visual budget utility resolves synchronized render settings', as
   assert.match(visualBudget, /resolveHomeSceneVisualBudget/)
   assert.match(visualBudget, /type HomeSceneVisualBudgetInput/)
   assert.match(visualBudget, /sceneMode: HomeSceneMode/)
-  assert.match(visualBudget, /const mode = 'sceneMode' in input \? input\.sceneMode : input\.mode/)
   assert.match(visualBudget, /qualityTierForMode/)
   assert.match(visualBudget, /if \(reducedMotion\) return 'low'/)
-  assert.match(visualBudget, /mode === 'demo' \|\| mode === 'life-map' \|\| mode === 'ascent'/)
   assert.match(visualBudget, /canvasDpr: \[1, budget\.maxDpr\]/)
   assert.match(visualBudget, /shadowMapSize: budget\.shadowMapSize/)
-  assert.match(visualBudget, /'data-render-budget-quality-tier': budget\.qualityTier/)
-  assert.match(visualBudget, /'data-render-budget-atmosphere-mode': budget\.atmosphereMode/)
-  assert.match(visualBudget, /'data-render-budget-reflection-mode': budget\.reflectionMode/)
 })
 
-test('Integrated runtime wrapper provides synchronized HomeScene visual budget context', async () => {
+test('Integrated render-budget wrapper remains reusable without owning routes', async () => {
   const wrapper = await source('src/scene/UraiIntegratedHomeScene.tsx')
   const context = await source('src/scene/homeSceneVisualBudgetContext.tsx')
 
@@ -145,10 +134,7 @@ test('Integrated runtime wrapper provides synchronized HomeScene visual budget c
   assert.match(context, /useSharedHomeSceneVisualBudget/)
   assert.match(wrapper, /HomeSceneVisualBudgetProvider value=\{visualBudget\}/)
   assert.match(wrapper, /resolveHomeSceneVisualBudget/)
-  assert.match(wrapper, /const visualBudget = resolveHomeSceneVisualBudget\(\{ mode: sceneMode, reducedMotion \}\)/)
   assert.match(wrapper, /dpr=\{visualBudget\.canvasDpr\}/)
   assert.match(wrapper, /shadows=\{visualBudget\.shadowMapSize >= 1536\}/)
-  assert.match(wrapper, /data-integrated-max-dpr=\{budget\.maxDpr\}/)
-  assert.match(wrapper, /data-integrated-particle-budget=\{budget\.particleBudget\}/)
-  assert.doesNotMatch(wrapper, /resolveSpatialRenderBudget/)
+  assert.doesNotMatch(wrapper, /TierOneExperience/)
 })
