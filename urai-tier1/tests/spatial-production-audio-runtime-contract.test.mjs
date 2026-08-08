@@ -10,6 +10,8 @@ const runtime = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/SpatialAm
 const shell = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/UraiWorldShell.tsx'), 'utf8')
 const companion = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/PersistentWorldCompanion.tsx'), 'utf8')
 const orbConversation = fs.readFileSync(path.join(tierRoot, 'src/spatial/orb/OrbConversationPanel.tsx'), 'utf8')
+const generator = fs.readFileSync(path.join(repositoryRoot, 'scripts/generate-production-spatial-audio.py'), 'utf8')
+const forgeWorkflow = fs.readFileSync(path.join(repositoryRoot, '.github/workflows/production-spatial-audio-forge.yml'), 'utf8')
 const receipt = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'operations/assets/production-receipts/spatial-audio-production-v1.json'), 'utf8'))
 
 const expectedAssets = [
@@ -40,6 +42,15 @@ test('production audio receipt proves the eight-file verified Opus pack', () => 
   const ambient = receipt.assets.filter((entry) => entry.role === 'ambient')
   assert.equal(ambient.length, 5)
   assert.ok(ambient.every((entry) => entry.durationSeconds >= 59), 'all ambient beds must be long-form')
+})
+
+test('production audio receipt generation binds provenance to the exact forge input head', () => {
+  assert.match(generator, /source_head = os\.environ\.get\("SOURCE_SHA"\) or os\.environ\.get\("GITHUB_SHA", "local"\)/)
+  assert.match(generator, /"sourceHead": source_head/)
+  assert.match(generator, /"sourceHeadSemantics": "exact-forge-input-head"/)
+  assert.match(forgeWorkflow, /SOURCE_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/)
+  assert.match(forgeWorkflow, /receipt\['sourceHead'\] == os\.environ\['SOURCE_SHA'\]/)
+  assert.match(forgeWorkflow, /receipt\['sourceHeadSemantics'\] == 'exact-forge-input-head'/)
 })
 
 test('canonical controller loads only promoted production audio paths', () => {
