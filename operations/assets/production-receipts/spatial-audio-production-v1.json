@@ -1,8 +1,8 @@
 {
   "schemaVersion": "urai-spatial-production-audio-1",
   "status": "production-integrated-candidate",
-  "generatedAt": "31278061448",
-  "sourceHead": "38879332b8e26a7173b6b05fad2878be07ca9878",
+  "generatedAt": "31279740806",
+  "sourceHead": "813e72d15990296dfd6632d948ba5c4e2874ef40",
   "sourceHeadSemantics": "exact-forge-input-head",
   "owner": "URAI Labs",
   "provenance": "Deterministic URAI production sound forge; original procedural synthesis; no third-party sampled media.",
@@ -20,7 +20,7 @@
     {
       "path": "/assets/urai/generated/audio/home-ambient-v1.opus",
       "bytes": 393330,
-      "sha256": "9a0ac6cb797d2bdd2486ce3c46de551c3a812a0e67179f4d9a3996bce8d24814",
+      "sha256": "1e33ec8145a5b64d73df210457d296c816d9f76c4b7970bdeebabeb194997587",
       "durationSeconds": 60.0065,
       "codec": "opus",
       "channels": 2,
@@ -36,7 +36,7 @@
     {
       "path": "/assets/urai/generated/audio/ground-ambient-v1.opus",
       "bytes": 498125,
-      "sha256": "7a25bb5504061f64b154ae1972753563c16820fb4649813a4de685617a6f38ca",
+      "sha256": "71c38c9e852988fe00e1605301996f12029a4aa0ce1e29f4734dc66f96957e16",
       "durationSeconds": 60.0065,
       "codec": "opus",
       "channels": 2,
@@ -52,7 +52,7 @@
     {
       "path": "/assets/urai/generated/audio/life-map-ambient-v1.opus",
       "bytes": 353074,
-      "sha256": "b27a39d63351aebf222d1e8efac9345aeb28fe7964d84ae294223911094981b3",
+      "sha256": "ae8ee7bb0fe339dbd8a43ad96a8b71ee3560c3642b58b2d0e889560d843747ed",
       "durationSeconds": 60.0065,
       "codec": "opus",
       "channels": 2,
@@ -68,7 +68,7 @@
     {
       "path": "/assets/urai/generated/audio/focus-ambient-v1.opus",
       "bytes": 466961,
-      "sha256": "bf1aa1b506b8d8ab4d5439d710daa250de6bf611a5fe3764386891899568712d",
+      "sha256": "7c2ccea550652e6be261603d484a163a9cdbe0f19b07e959a22c8382cc188dea",
       "durationSeconds": 60.0065,
       "codec": "opus",
       "channels": 2,
@@ -84,7 +84,7 @@
     {
       "path": "/assets/urai/generated/audio/replay-ambient-v1.opus",
       "bytes": 432415,
-      "sha256": "62900da8006dcc8a0ec87b3f57df8dd88646d39d0cc9c9a6a5889d8b50e7f471",
+      "sha256": "1b0a5208d0a0c83ce079d50e9cf96b5fb5b0eeb1384cb253354c45fd8cb3c4cb",
       "durationSeconds": 60.0065,
       "codec": "opus",
       "channels": 2,
@@ -100,7 +100,7 @@
     {
       "path": "/assets/urai/generated/audio/portal-transition-v1.opus",
       "bytes": 17054,
-      "sha256": "69b3681fc6fe29d07999cee1f430e7282ebb15aae3cb4e9f938ede5b3e28191d",
+      "sha256": "ea9122def5fdb51f944232007350ef307ce5e5efb34e16dca8218d35e5c0e405",
       "durationSeconds": 2.6065,
       "codec": "opus",
       "channels": 2,
@@ -116,7 +116,7 @@
     {
       "path": "/assets/urai/generated/audio/orb-confirm-v1.opus",
       "bytes": 10532,
-      "sha256": "38c8d607845a1d3820ad762b8914abe28833d312489068c124154f2eab997a2f",
+      "sha256": "dc2d0709c25a8ff7c5d4d746492872ddd7a2c9efe16c9672cec22adfd9fed43a",
       "durationSeconds": 0.9065,
       "codec": "opus",
       "channels": 2,
@@ -132,7 +132,7 @@
     {
       "path": "/assets/urai/generated/audio/ui-error-v1.opus",
       "bytes": 4936,
-      "sha256": "8009cd6cdc5e38e5c7b346d6681de64f459321e2064a54e852c6141337667337",
+      "sha256": "13877ffcc18b83435fdf693ccd45c3dd3df6376dc75879e1f75ca18e0aef80e9",
       "durationSeconds": 0.7265,
       "codec": "opus",
       "channels": 2,
