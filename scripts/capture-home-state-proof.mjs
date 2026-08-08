@@ -176,7 +176,7 @@ async function capture(state, options = {}) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'final-physical-sanctuary-memory-rooms'
+      && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.pointerLock
       && record.accessibilityPassed
@@ -223,7 +223,7 @@ try {
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'final-physical-sanctuary-memory-rooms'
+    && transition.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {
