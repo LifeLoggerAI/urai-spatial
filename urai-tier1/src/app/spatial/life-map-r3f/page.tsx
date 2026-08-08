@@ -1,10 +1,10 @@
-import SpatialLifeMapCanonical from '@/spatial/lifemap/SpatialLifeMapCanonical'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: 'URAI R3F Life Map',
-  description: 'The React Three Fiber canonical URAI Life Map.',
+  title: 'URAI Life Map',
+  description: 'Compatibility entry for the canonical URAI Life Map.',
 }
 
-export default function SpatialLifeMapR3fPage() {
-  return <SpatialLifeMapCanonical />
+export default function SpatialLifeMapR3fCompatibilityPage() {
+  redirect('/life-map?from=spatial-life-map-r3f')
 }

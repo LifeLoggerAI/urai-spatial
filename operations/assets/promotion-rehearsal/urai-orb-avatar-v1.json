@@ -4,14 +4,14 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "urai-orb-avatar-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
-  "bytes": 83984,
-  "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
+  "bytes": 403220,
+  "sha256": "ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-orb",
   "license": "URAI Labs internal proprietary production asset",
-  "producer": "URAI deterministic authored sanctuary pipeline",
-  "reviewer": "governed-promotion-rehearsal",
-  "reviewedAt": "2026-07-25T20:50:00-05:00",
+  "producer": "URAI deterministic authored sanctuary v3 pipeline",
+  "reviewer": "governed-replacement-rehearsal",
+  "reviewedAt": "2026-08-07T18:05:00-05:00",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -20,5 +20,5 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": true,
-  "notes": "Fail-closed rehearsal for unchanged asset bytes. This records governance coverage only; it does not promote the asset, claim visual approval, or change the pending-final-review manifest state."
+  "notes": "Fail-closed exact-binary replacement rehearsal. This record binds the candidate identity but does not promote it or substitute for independent human visual approval."
 }

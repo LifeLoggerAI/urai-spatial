@@ -1,10 +1,10 @@
-import LifeMapScene from '@/spatial/lifemap/LifeMapScene'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
-  title: 'URAI Orbit Life Map',
-  description: 'OrbitControls React Three Fiber URAI Life Map candidate for comparison.',
+  title: 'URAI Life Map',
+  description: 'Compatibility entry for the canonical URAI Life Map.',
 }
 
-export default function SpatialLifeMapOrbitPage() {
-  return <LifeMapScene />
+export default function SpatialLifeMapOrbitCompatibilityPage() {
+  redirect('/life-map?from=spatial-life-map-orbit')
 }

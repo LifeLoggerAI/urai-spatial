@@ -44,8 +44,9 @@ test('ascent transition has a bounded timer and reduced-motion escape hatch', ()
 
 test('destination becomes interactive through canonical Life Map-owned controls', () => {
   assert.match(sceneSource, /data-testid="urai-true-3d-life-map"/)
-  assert.match(worldSource, /data-semantic-label=\{semanticLabel\}/)
-  assert.match(worldSource, /data-artifact-family=\{resolveArtifactFamily\(node\)\}/)
+  assert.match(worldSource, /const semanticLabel = artifactFamilyLabel\(node\)/)
+  assert.match(worldSource, /userData=\{\{[^}]*artifactFamily: resolveArtifactFamily\(node\)[^}]*semanticLabel[^}]*runtimeAsset: MEMORY_STAR_MODEL[^}]*\}\}/s)
+  assert.doesNotMatch(worldSource, /data-semantic-label|data-artifact-family/)
   assert.match(worldSource, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
   assert.match(sceneSource, /aria-label="Selected memory actions"/)
   assert.match(sceneSource, /Enter Focus/)

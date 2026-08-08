@@ -16,6 +16,7 @@ on:
       - 'scripts/run-continuous-spatial-proof-v18-portal-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v19-portal-stable.mjs'
       - 'scripts/run-continuous-spatial-proof-v21-grouped.mjs'
+      - 'scripts/run-with-ci-webgl.mjs'
       - 'urai-tier1/src/app/**'
       - 'urai-tier1/src/spatial/**'
       - 'urai-tier1/src/components/lifemap/**'
@@ -93,6 +94,7 @@ jobs:
           set -euo pipefail
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
           pnpm --dir urai-tier1 exec playwright --version
+          node --check scripts/run-with-ci-webgl.mjs
 
       - name: Capture bounded spatial proof group
         shell: bash
@@ -113,7 +115,7 @@ jobs:
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
           URAI_PROOF_GROUP="$URAI_PROOF_GROUP" \
           URAI_PROOF_RECORD_VIDEO="$URAI_PROOF_RECORD_VIDEO" \
-            node scripts/run-continuous-spatial-proof-v21-grouped.mjs 2>&1 | tee "$output/capture.log"
+            node scripts/run-with-ci-webgl.mjs scripts/run-continuous-spatial-proof-v21-grouped.mjs 2>&1 | tee "$output/capture.log"
 
       - name: Prove complete group receipt
         shell: bash

@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
@@ -19,7 +19,6 @@ const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as cons
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
 type CameraGoal = { position: [number, number, number]; target: [number, number, number] };
-type RenderProof = { ready: boolean; objects: number; anchors: number; calls: number; triangles: number };
 
 function safeToken(value: string | null, fallback = "") {
   return (value || fallback).replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 120);
@@ -126,31 +125,6 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
   return null;
 }
 
-function RenderProofBridge({ phase, onProof }: { phase: JourneyPhase; onProof: (proof: RenderProof) => void }) {
-  const { gl, scene } = useThree();
-  const frames = useRef(0);
-  const publishedPhase = useRef<JourneyPhase | null>(null);
-  useFrame(() => {
-    frames.current += 1;
-    if (frames.current < 4 || publishedPhase.current === phase) return;
-    let objects = 0;
-    let anchors = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-    });
-    publishedPhase.current = phase;
-    onProof({
-      ready: gl.info.render.calls > 0 && objects > 20 && anchors >= 8,
-      objects,
-      anchors,
-      calls: gl.info.render.calls,
-      triangles: gl.info.render.triangles,
-    });
-  });
-  return null;
-}
-
 function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLState) => void }) {
   const { gl } = useThree();
   useEffect(() => {
@@ -206,7 +180,15 @@ function phaseLabel(phase: JourneyPhase) {
 export default function ComposedLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
-  const profile = useAdaptiveSpatialQuality();
+  const adaptiveProfile = useAdaptiveSpatialQuality();
+  const profile = useMemo(() => ({
+    ...adaptiveProfile,
+    tier: adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
+    pixelRatioMax: Math.min(adaptiveProfile.pixelRatioMax, 1.25),
+    shadows: false,
+    postprocessing: false,
+    antialias: false,
+  }), [adaptiveProfile]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
@@ -215,7 +197,6 @@ export default function ComposedLifeMapScene() {
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
   const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
-  const [renderProof, setRenderProof] = useState<RenderProof>({ ready: false, objects: 0, anchors: 0, calls: 0, triangles: 0 });
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
@@ -312,6 +293,7 @@ export default function ComposedLifeMapScene() {
   const thresholdsVisible = Boolean(selected && (phase === "approach" || phase === "arrival"));
   return <main
     className="life-map-root"
+    style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
     data-testid="urai-true-3d-life-map"
     data-spatial-visible="true"
     data-life-map-source={sourceMode}
@@ -319,11 +301,6 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
-    data-life-map-render-ready={renderProof.ready ? "true" : "false"}
-    data-life-map-visible-objects={renderProof.objects}
-    data-life-map-visible-anchors={renderProof.anchors}
-    data-life-map-render-calls={renderProof.calls}
-    data-life-map-render-triangles={renderProof.triangles}
     data-webgl-state={webglState}
     data-home-companion-owned="false"
   >
@@ -344,15 +321,18 @@ export default function ComposedLifeMapScene() {
         gl.setClearColor("#02050b", 1);
       }}
     >
-      <LifeMapProductionWorld
-        nodes={nodes}
-        selected={selected}
-        phase={phase as LifeMapJourneyPhase}
-        profile={profile}
-        onSelect={selectNode}
-        cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
-        webglRecovery={<><WebGLRecoveryBridge onStateChange={setWebglState} /><RenderProofBridge phase={phase} onProof={setRenderProof} /></>}
-      />
+      <WebGLRecoveryBridge onStateChange={setWebglState} />
+      <Suspense fallback={null}>
+        <LifeMapProductionWorld
+          nodes={nodes}
+          selected={selected}
+          phase={phase as LifeMapJourneyPhase}
+          profile={profile}
+          onSelect={selectNode}
+          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          webglRecovery={null}
+        />
+      </Suspense>
     </Canvas>
 
     <header className="life-map-title">

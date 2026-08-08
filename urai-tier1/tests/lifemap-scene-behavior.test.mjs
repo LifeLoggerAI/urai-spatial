@@ -54,9 +54,11 @@ test('Life Map establishes authored foreground middle distance and horizon depth
     'life-map-far-future-horizon',
   ]) assert.match(world, new RegExp(marker))
   assert.match(world, /fog attach="fog"/)
-  assert.match(world, /data-scale="cosmic-overview"/)
-  assert.match(world, /data-scale="intimate"/)
-  for (const band of ['near', 'middle', 'far']) assert.match(world, new RegExp(`data-depth-band="${band}"`))
+  assert.match(world, /name="life-map-world-stage" scale={stageScale} position={stagePosition}/)
+  assert.match(world, /scaleMode: "intimate"/)
+  assert.match(world, /depthBand: "near"/)
+  assert.match(world, /life-map-authored-chapter-regions/)
+  assert.match(world, /life-map-far-future-horizon/)
 })
 
 test('Life Map uses deterministic sequential travel compositions with a safe selected-memory stand-off', () => {
@@ -85,9 +87,8 @@ test('Production artifacts are differentiated by meaning rather than generic bub
     assert.match(world, new RegExp(`function ${component}`))
   }
   assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
-  assert.match(world, /data-artifact-family={resolveArtifactFamily\(node\)}/)
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
-  assert.match(world, /data-importance={importance\.toFixed\(2\)}/)
+  assert.match(world, /scale={active \? 1\.72 : 0\.9 \+ importance \* 0\.38}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
 

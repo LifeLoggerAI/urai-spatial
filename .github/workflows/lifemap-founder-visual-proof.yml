@@ -1,6 +1,21 @@
 name: Life Map Founder Visual Proof
 
 on:
+  push:
+    branches:
+      - agent/replace-failed-home-lifemap-visuals
+    paths:
+      - '.github/workflows/lifemap-founder-visual-proof.yml'
+      - 'scripts/capture-lifemap-founder-proof.mjs'
+      - 'scripts/capture-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/run-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/run-with-ci-webgl.mjs'
+      - 'scripts/run-continuous-spatial-proof-v21-grouped.mjs'
+      - 'scripts/verify-lifemap-canvas-proof.mjs'
+      - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/spatial/lifemap/**'
+      - 'urai-tier1/src/app/life-map/**'
+      - 'urai-tier1/tests/lifemap-*.test.mjs'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -14,12 +29,13 @@ on:
       - 'scripts/capture-lifemap-founder-proof.mjs'
       - 'scripts/capture-lifemap-founder-proof-fixed.mjs'
       - 'scripts/run-lifemap-founder-proof-fixed.mjs'
+      - 'scripts/run-with-ci-webgl.mjs'
+      - 'scripts/run-continuous-spatial-proof-v21-grouped.mjs'
       - 'scripts/verify-lifemap-canvas-proof.mjs'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
-      - 'urai-tier1/tests/lifemap-founder-harness-contract.test.mjs'
-      - 'urai-tier1/tests/lifemap-review-repair-contract.test.mjs'
+      - 'urai-tier1/tests/lifemap-*.test.mjs'
 
 permissions:
   contents: read
@@ -30,7 +46,9 @@ concurrency:
 
 env:
   URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  URAI_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
   PLAYWRIGHT_BROWSERS_PATH: '0'
+  NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
 
 jobs:
   proof:
@@ -78,6 +96,7 @@ jobs:
           mkdir -p artifacts/lifemap-founder-proof
           node --check scripts/capture-lifemap-founder-proof-fixed.mjs | tee artifacts/lifemap-founder-proof/founder-runner-syntax.log
           node --check scripts/verify-lifemap-canvas-proof.mjs | tee artifacts/lifemap-founder-proof/canvas-runner-syntax.log
+          node --check scripts/run-with-ci-webgl.mjs | tee artifacts/lifemap-founder-proof/webgl-wrapper-syntax.log
           node scripts/run-lifemap-founder-proof-fixed.mjs --validate-only | tee artifacts/lifemap-founder-proof/founder-launcher-validation.log
           node --test urai-tier1/tests/lifemap-founder-harness-contract.test.mjs | tee artifacts/lifemap-founder-proof/founder-harness-contract.log
 
@@ -86,7 +105,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/lifemap-founder-proof
-          node --test urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/lifemap-review-repair-contract.test.mjs | tee artifacts/lifemap-founder-proof/lifemap-contract.log
+          node --test \
+            urai-tier1/tests/lifemap-aaa-composition-contract.test.mjs \
+            urai-tier1/tests/lifemap-scene-behavior.test.mjs \
+            urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \
+            urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
+            | tee artifacts/lifemap-founder-proof/lifemap-contract.log
           pnpm --dir urai-tier1 typecheck | tee artifacts/lifemap-founder-proof/typecheck.log
           pnpm build:static 2>&1 | tee artifacts/lifemap-founder-proof/build-static.log
 
@@ -107,11 +131,39 @@ jobs:
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/lifemap-founder-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-          node scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
+          node scripts/run-with-ci-webgl.mjs scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_CANVAS_PROOF_DIR=artifacts/lifemap-founder-proof/canvas-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
-          node scripts/verify-lifemap-canvas-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/canvas-proof.log
+          node scripts/run-with-ci-webgl.mjs scripts/verify-lifemap-canvas-proof.mjs 2>&1 | tee artifacts/lifemap-founder-proof/canvas-proof.log
+
+      - name: Seal exact-head founder receipt
+        shell: bash
+        env:
+          URAI_REPOSITORY: ${{ github.repository }}
+          URAI_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          URAI_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+          URAI_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          receipt_dir=artifacts/lifemap-founder-proof
+          test -d "$receipt_dir"
+          printf '%s\n' "$URAI_EXACT_HEAD" > "$receipt_dir/verified-head.txt"
+          cat > "$receipt_dir/exact-head-receipt.json" <<JSON
+          {
+            "repository": "$URAI_REPOSITORY",
+            "verification_sha": "$URAI_EXACT_HEAD",
+            "workflow_run_id": "$URAI_WORKFLOW_RUN_ID",
+            "workflow_run_attempt": "$URAI_WORKFLOW_RUN_ATTEMPT",
+            "event": "$URAI_EVENT_NAME"
+          }
+          JSON
+          find "$receipt_dir" -type f ! -name 'sha256sums.txt' -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$receipt_dir/sha256sums.txt"
+          grep -F "$URAI_EXACT_HEAD" "$receipt_dir/exact-head-receipt.json"
+          test -s "$receipt_dir/sha256sums.txt"
 
       - name: Upload exact-head founder receipt
         if: always()

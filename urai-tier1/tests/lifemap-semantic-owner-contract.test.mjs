@@ -27,19 +27,18 @@ test('selection delivery is one synchronous authoritative request with no duplic
   assert.doesNotMatch(selection, /route\.searchParams|synthetic-selected|test-only-selected|forceSelected/)
 })
 
-test('semantic selection retains one bounded route fail-safe only when real selected state was not reached', () => {
-  assert.match(navigator, /selectionFallbackRef = useRef<number \| null>\(null\)/)
-  assert.match(navigator, /requestLifeMapSelection\(node\.id, source\);[\s\S]*selectionFallbackRef\.current = window\.setTimeout/)
-  assert.match(navigator, /root\?\.dataset\.lifeMapMode === "selected" && routeSelectedId === node\.id/)
+test('semantic selection emits one authoritative event and synchronizes route identity without fallback retries', () => {
+  assert.match(navigator, /requestLifeMapSelection\(node\.id, source\)/)
   assert.match(navigator, /next\.set\("memoryId", node\.id\)[\s\S]*next\.set\("node", node\.id\)[\s\S]*router\.replace/)
-  assert.match(navigator, /\}, 120\);/)
-  assert.doesNotMatch(navigator, /requestLifeMapSelection\(node\.id, source\)[\s\S]*router\.replace\([^)]*\);\s*\}/)
+  assert.doesNotMatch(navigator, /selectionFallbackRef|window\.setTimeout\([\s\S]*router\.replace|root\?\.dataset\.lifeMapMode|routeSelectedId/)
+  assert.doesNotMatch(navigator, /requestLifeMapSelection\(node\.id, source\)[\s\S]*requestLifeMapSelection\(node\.id, source\)/)
 })
 
 test('mounted 3D artifacts retain independent pointer activation ownership', () => {
   assert.doesNotMatch(world, /life-map-world-label|handleWorldLabelClick|document\.addEventListener\("click"/)
   assert.match(world, /name=\{`life-map-artifact-\$\{resolveArtifactFamily\(node\)\}-\$\{node\.id\}`\}/)
-  assert.match(world, /data-artifact-family=\{resolveArtifactFamily\(node\)\}/)
+  assert.match(world, /userData=\{\{ artifactFamily: resolveArtifactFamily\(node\), importance: importance\.toFixed\(2\), semanticLabel, chapterId: chapter\.id, runtimeAsset: MEMORY_STAR_MODEL \}\}/)
+  assert.doesNotMatch(world, /data-artifact-family=/)
   assert.match(world, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onSelect\(node\); \}\}/)
   assert.match(world, /if \(node\) onSelect\(node\)/)
 })

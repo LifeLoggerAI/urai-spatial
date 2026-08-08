@@ -16,11 +16,11 @@ const warnings = []
 const visited = new Set()
 
 const canonicalSceneOwners = new Map([
-  ['/home', ['FinalHomeThreshold', 'HomeSpatialWorldFinal']],
-  ['/ascent', ['RootModeExperience']],
-  ['/life-map', ['RealLifeMapGalaxy']],
-  ['/demo', ['TierOneExperience']],
-  ['/demo/life-map', ['TierOneExperience', 'LifeMapAscentGate']],
+  ['/home', ['FinalHomeThreshold']],
+  ['/ascent', ['redirect(', '/home?from=ascent']],
+  ['/life-map', ['SpatialLifeMapCanonical']],
+  ['/demo', ['CutOneReplayFilmPage']],
+  ['/demo/life-map', ['redirect(', '/life-map?demo=1&from=demo-life-map']],
   ['/focus', ['FinalFocusChamber']],
   ['/replay', ['FinalReplayFilm']],
 ])
@@ -75,10 +75,10 @@ for (const route of tierOneRoutes) {
   if (route.kind === 'scene' && route.route !== '/') {
     const ownerTokens = canonicalSceneOwners.get(route.route) ?? []
     const usesCanonicalOwner = ownerTokens.length > 0 && ownerTokens.every((token) => text.includes(token))
-    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene') || usesCanonicalOwner
-    if (!usesTierShell) {
-      const ownerHint = ownerTokens.length ? ` or canonical owner tokens ${ownerTokens.join(' + ')}` : ''
-      failures.push(`${route.route} must use TierOneExperience, HomeScene${ownerHint}`)
+    const usesHomeScene = text.includes('HomeScene')
+    if (!usesCanonicalOwner && !usesHomeScene) {
+      const ownerHint = ownerTokens.length ? ` canonical owner tokens ${ownerTokens.join(' + ')}` : ' a canonical scene owner'
+      failures.push(`${route.route} must use${ownerHint}`)
     }
   }
 
@@ -126,6 +126,14 @@ for (const file of sceneRouteFiles) {
   for (const legacyImport of legacySceneImports) {
     if (text.includes(legacyImport)) failures.push(`${file} still imports legacy scene path ${legacyImport}`)
   }
+}
+
+for (const retired of [
+  'src/spatial/layout/TierOneExperience.tsx',
+  'src/components/urai/UraiV1Experience.tsx',
+  'src/app/RootModeExperience.tsx',
+]) {
+  if (fs.existsSync(retired)) failures.push(`retired parallel runtime must not exist: ${retired}`)
 }
 
 const root = read('src/app/page.tsx')

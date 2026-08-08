@@ -27,6 +27,9 @@ export const legacySceneImports = [
   '../../spatial/client/SpatialSceneClient',
   '@/spatial/scene/SpatialScene',
   '@/spatial/scene/FocusRouteStage',
+  '@/spatial/layout/TierOneExperience',
+  '@/components/urai/UraiV1Experience',
+  '@/spatial/v1/UraiSpatialStage',
 ]
 
 export const requiredTierOneFiles = [
@@ -41,7 +44,9 @@ export const requiredTierOneFiles = [
   'src/spatial/cinematic/cameraPaths.ts',
   'src/spatial/constellation/ConstellationLayer.tsx',
   'src/spatial/layout/SpatialShell.tsx',
-  'src/spatial/layout/TierOneExperience.tsx',
+  'src/app/FinalHomeThreshold.tsx',
+  'src/app/HomeSpatialRuntimeLayer.tsx',
+  'src/spatial/lifemap/SpatialLifeMapCanonical.tsx',
   'src/spatial/layout/TierOneStaticShell.tsx',
   'src/spatial/narrator/NarratorVoice.tsx',
   'src/spatial/narrator/NarratorHud.tsx',

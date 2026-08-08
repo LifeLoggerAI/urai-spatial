@@ -8,10 +8,14 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
+const rawPr = String(process.env.URAI_PR_NUMBER || '').trim()
+const pr = rawPr ? Number.parseInt(rawPr, 10) : null
+if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
+
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-10',
+  schemaVersion: 'urai-lifemap-founder-proof-11',
   repository: 'LifeLoggerAI/urai-spatial',
-  pr: 953,
+  pr,
   exactHead,
   runId: process.env.GITHUB_RUN_ID || 'local',
   runner: 'checked-in-stable-module',
@@ -19,24 +23,26 @@ const receipt = {
   captures: [],
   browserEvents: [],
 }
+
 let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
+const ROOT = '[data-testid="urai-true-3d-life-map"]'
 
 async function stable(page, frames = 4) {
-  await page.evaluate((count) => new Promise((resolve) => {
-    let remaining = count
-    const next = () => { remaining -= 1; if (remaining <= 0) resolve(); else requestAnimationFrame(next) }
-    requestAnimationFrame(next)
-  }), frames)
+  await page.waitForTimeout(Math.max(80, frames * 20))
 }
 
 function recordPageEvents(page, label) {
   page.on('console', (message) => {
-    if (message.type() === 'error' || message.type() === 'warning') receipt.browserEvents.push({ label, kind: `console:${message.type()}`, text: message.text() })
+    if (message.type() === 'error' || message.type() === 'warning') {
+      receipt.browserEvents.push({ label, kind: `console:${message.type()}`, text: message.text() })
+    }
   })
   page.on('pageerror', (error) => receipt.browserEvents.push({ label, kind: 'pageerror', text: String(error) }))
-  page.on('requestfailed', (request) => receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}` }))
+  page.on('requestfailed', (request) => {
+    receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}` })
+  })
 }
 
 async function openPage(options = {}) {
@@ -47,56 +53,85 @@ async function openPage(options = {}) {
     hasTouch: Boolean(options.hasTouch),
     isMobile: Boolean(options.isMobile),
   })
-  if (options.disableWebGL) await context.addInitScript(() => {
-    const original = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function patched(type, ...args) {
-      if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) return null
-      return original.call(this, type, ...args)
-    }
-  })
+  if (options.disableWebGL) {
+    await context.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext
+      HTMLCanvasElement.prototype.getContext = function patched(type, ...args) {
+        if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) return null
+        return original.call(this, type, ...args)
+      }
+    })
+  }
   const page = await context.newPage()
   recordPageEvents(page, options.label || 'page')
   return { context, page }
 }
 
-async function goto(page, route, selector = '[data-testid="urai-true-3d-life-map"]') {
+async function poll(label, sample, predicate, timeout = 30_000, interval = 75) {
+  const deadline = Date.now() + timeout
+  let last
+  while (Date.now() < deadline) {
+    try {
+      last = await sample()
+      if (predicate(last)) return last
+    } catch (error) {
+      last = String(error)
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval))
+  }
+  throw new Error(`${label} timed out after ${timeout}ms; last=${JSON.stringify(last)}`)
+}
+
+async function goto(page, route, selector = ROOT) {
   const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 })
   if (!response || response.status() !== 200) throw new Error(`${route} returned ${response?.status()}`)
-  await page.locator(selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+  if (selector === ROOT) {
+    await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
+    const scene = page.locator(selector).first()
+    await scene.waitFor({ state: 'visible', timeout: 45_000 })
+    const box = await scene.boundingBox()
+    const viewport = page.viewportSize()
+    const geometryValid = box && viewport
+      && box.width >= 240 && box.height >= 240
+      && box.x + box.width > 0 && box.y + box.height > 0
+      && box.x < viewport.width && box.y < viewport.height
+    if (!geometryValid) throw new Error(`Life Map canonical root geometry invalid: ${JSON.stringify({ box, viewport })}`)
+  } else {
+    await page.locator(selector).first().waitFor({ state: 'visible', timeout: 45_000 })
+  }
   await stable(page)
 }
 
 async function waitForState(page, attribute, expected, timeout = 30_000) {
-  await page.waitForFunction(({ attribute, expected }) => {
-    const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
-    return root?.getAttribute(attribute) === expected
-  }, { attribute, expected }, { timeout, polling: 25 })
+  const root = page.locator(ROOT).first()
+  await poll(`${attribute}=${expected}`, () => root.getAttribute(attribute), (value) => value === expected, timeout, 50)
 }
 
 async function waitForRenderedWorld(page, timeout = 30_000) {
-  await page.waitForFunction(() => {
-    const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
-    if (!root) return false
-    const ready = root.getAttribute('data-life-map-render-ready') === 'true'
-    const anchors = Number(root.getAttribute('data-life-map-visible-anchors') || 0)
-    const objects = Number(root.getAttribute('data-life-map-visible-objects') || 0)
-    const calls = Number(root.getAttribute('data-life-map-render-calls') || 0)
-    return ready && anchors >= 8 && objects > 20 && calls > 0
-  }, null, { timeout, polling: 50 })
+  const root = page.locator(ROOT).first()
+  return poll('rendered Life Map world', async () => ({
+    ready: await root.getAttribute('data-life-map-render-ready'),
+    anchors: Number(await root.getAttribute('data-life-map-visible-anchors') || 0),
+    objects: Number(await root.getAttribute('data-life-map-visible-objects') || 0),
+    calls: Number(await root.getAttribute('data-life-map-render-calls') || 0),
+  }), (state) => state.ready === 'true' && state.anchors >= 8 && state.objects > 20 && state.calls > 0, timeout, 75)
 }
 
 async function waitForOverviewState(page, timeout = 30_000) {
-  await page.waitForFunction(() => {
-    const root = document.querySelector('[data-testid="urai-true-3d-life-map"]')
-    const destination = new URL(window.location.href)
+  const root = page.locator(ROOT).first()
+  return poll('overview route/state', async () => ({
+    mode: await root.getAttribute('data-life-map-mode'),
+    url: page.url(),
+  }), ({ mode, url }) => {
+    const destination = new URL(url)
     const memoryId = destination.searchParams.get('memoryId')
     const node = destination.searchParams.get('node')
     const identityIsAbsentOrRetained = (!memoryId && !node) || (memoryId === 'quiet-reset' && node === 'quiet-reset')
-    return root?.getAttribute('data-life-map-mode') === 'overview'
+    return mode === 'overview'
       && destination.pathname.replace(/\/$/, '') === '/life-map'
       && destination.searchParams.get('overview') === '1'
       && identityIsAbsentOrRetained
-  }, null, { timeout, polling: 25 })
+  }, timeout, 50)
 }
 
 async function canvasSignal(page, screenshotBuffer) {
@@ -157,30 +192,54 @@ async function canvasSignal(page, screenshotBuffer) {
 }
 
 async function captureScreenshot(page, file) {
-  const buffer = await page.screenshot({ path: path.join(outputDir, file), fullPage: false, animations: 'disabled', caret: 'hide', scale: 'device', timeout: 60_000 })
+  const buffer = await page.screenshot({
+    path: path.join(outputDir, file),
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide',
+    scale: 'device',
+    timeout: 60_000,
+  })
   return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
+}
+
+async function readRootState(root) {
+  const entries = await Promise.all([
+    ['source', 'data-life-map-source'],
+    ['phase', 'data-life-map-phase'],
+    ['mode', 'data-life-map-mode'],
+    ['scale', 'data-life-map-scale'],
+    ['renderReady', 'data-life-map-render-ready'],
+    ['objects', 'data-life-map-visible-objects'],
+    ['anchors', 'data-life-map-visible-anchors'],
+    ['calls', 'data-life-map-render-calls'],
+    ['triangles', 'data-life-map-render-triangles'],
+    ['webgl', 'data-webgl-state'],
+    ['privateMounted', 'data-private-memory-mounted'],
+    ['fallback', 'data-life-map-fallback'],
+  ].map(async ([key, attribute]) => [key, await root.getAttribute(attribute)]))
+  return Object.fromEntries(entries)
 }
 
 async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
-  const root = page.locator('[data-testid="urai-true-3d-life-map"], [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]').first()
-  const state = await root.count() ? await root.evaluate((node) => ({
-    source: node.getAttribute('data-life-map-source'),
-    phase: node.getAttribute('data-life-map-phase'),
-    mode: node.getAttribute('data-life-map-mode'),
-    scale: node.getAttribute('data-life-map-scale'),
-    renderReady: node.getAttribute('data-life-map-render-ready'),
-    objects: node.getAttribute('data-life-map-visible-objects'),
-    anchors: node.getAttribute('data-life-map-visible-anchors'),
-    calls: node.getAttribute('data-life-map-render-calls'),
-    triangles: node.getAttribute('data-life-map-render-triangles'),
-    webgl: node.getAttribute('data-webgl-state'),
-    privateMounted: node.getAttribute('data-private-memory-mounted'),
-    fallback: node.getAttribute('data-life-map-fallback'),
-  })) : {}
+  const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
+  const state = await root.count() ? await readRootState(root) : {}
   const { buffer, ...screenshot } = await captureScreenshot(page, file)
   const signal = await canvasSignal(page, buffer)
-  receipt.captures.push({ order: receipt.captures.length + 1, id, file, route: page.url(), viewport: page.viewportSize(), captureState, state, screenshot, signal, timestamp: new Date().toISOString(), ...extra })
+  receipt.captures.push({
+    order: receipt.captures.length + 1,
+    id,
+    file,
+    route: page.url(),
+    viewport: page.viewportSize(),
+    captureState,
+    state,
+    screenshot,
+    signal,
+    timestamp: new Date().toISOString(),
+    ...extra,
+  })
 }
 
 function selectedActions(page) {
@@ -188,10 +247,7 @@ function selectedActions(page) {
 }
 
 function selectedAction(page, label) {
-  return selectedActions(page)
-    .locator('button')
-    .filter({ has: page.getByText(label, { exact: true }) })
-    .first()
+  return selectedActions(page).locator('button').filter({ has: page.getByText(label, { exact: true }) }).first()
 }
 
 async function selectQuietReset(page, options = {}) {
@@ -212,11 +268,15 @@ async function selectQuietReset(page, options = {}) {
   await waitForState(page, 'data-life-map-mode', 'selected')
 }
 
+async function waitForPath(page, destinationPath, timeout = 30_000) {
+  await poll(`path=${destinationPath}`, () => Promise.resolve(page.url()), (url) => new URL(url).pathname.replace(/\/$/, '') === destinationPath, timeout, 50)
+}
+
 async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedAction(page, name)
   await action.waitFor({ state: 'visible', timeout: 20_000 })
   await action.click()
-  await page.waitForFunction((expectedPath) => window.location.pathname.replace(/\/$/, '') === expectedPath, destinationPath, { timeout: 30_000, polling: 50 })
+  await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
 }
@@ -264,13 +324,13 @@ async function desktopJourney() {
     const canvas = page.locator('canvas').first()
     const box = await canvas.boundingBox()
     if (!box) throw new Error('canvas has no box')
-    await page.mouse.move(box.x + box.width * .5, box.y + box.height * .5)
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5)
     await stable(page, 12)
     await shot(page, 'depth-travel-frame-1', 'parallax-1')
-    await page.mouse.move(box.x + box.width * .2, box.y + box.height * .32, { steps: 18 })
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.32, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-2', 'parallax-2')
-    await page.mouse.move(box.x + box.width * .82, box.y + box.height * .68, { steps: 18 })
+    await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
 
@@ -323,12 +383,15 @@ async function desktopJourney() {
     await page.keyboard.press('Escape')
     await waitForOverviewState(page)
     await shot(page, 'escape-unwind', 'escape-unwind')
-  } finally { await context.close() }
+  } finally {
+    await context.close()
+  }
 }
 
 async function mobileAndReduced() {
   const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
   const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+
   const mobile = await openPage({ viewport: { width: 390, height: 844 }, label: 'portrait', hasTouch: true, isMobile: true })
   try {
     await goto(mobile.page, overviewRoute)
@@ -341,7 +404,9 @@ async function mobileAndReduced() {
     await waitForRenderedWorld(mobile.page)
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
     await shot(mobile.page, 'portrait-mobile-selected', 'mobile-selected', { memoryId: 'quiet-reset', interaction: 'touch' })
-  } finally { await mobile.context.close() }
+  } finally {
+    await mobile.context.close()
+  }
 
   const tall = await openPage({ viewport: { width: 430, height: 932 }, label: 'portrait-tall', hasTouch: true, isMobile: true })
   try {
@@ -352,7 +417,9 @@ async function mobileAndReduced() {
     await waitForRenderedWorld(tall.page)
     await waitForState(tall.page, 'data-life-map-phase', 'arrival')
     await shot(tall.page, 'portrait-tall-selected', 'mobile-tall-selected', { memoryId: 'quiet-reset' })
-  } finally { await tall.context.close() }
+  } finally {
+    await tall.context.close()
+  }
 
   const reduced = await openPage({ reducedMotion: 'reduce', label: 'reduced-motion' })
   try {
@@ -360,16 +427,37 @@ async function mobileAndReduced() {
     await waitForRenderedWorld(reduced.page)
     await waitForState(reduced.page, 'data-life-map-phase', 'arrival')
     await shot(reduced.page, 'reduced-motion-arrival', 'reduced-motion-arrival', { memoryId: 'quiet-reset' })
-  } finally { await reduced.context.close() }
+  } finally {
+    await reduced.context.close()
+  }
 }
 
 async function privacyAndRecovery() {
   const signed = await openPage({ label: 'signed-out' })
-  try { await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]'); await shot(signed.page, 'signed-out-private-threshold', 'signed-out') } finally { await signed.context.close() }
+  try {
+    await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
+    await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
+  } finally {
+    await signed.context.close()
+  }
+
   const sample = await openPage({ label: 'disclosed-demo' })
-  try { await goto(sample.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'); await waitForRenderedWorld(sample.page); await shot(sample.page, 'explicit-disclosed-sample', 'explicit-demo') } finally { await sample.context.close() }
+  try {
+    await goto(sample.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+    await waitForRenderedWorld(sample.page)
+    await shot(sample.page, 'explicit-disclosed-sample', 'explicit-demo')
+  } finally {
+    await sample.context.close()
+  }
+
   const fallback = await openPage({ disableWebGL: true, label: 'no-webgl' })
-  try { await goto(fallback.page, '/life-map/?demo=1', '[data-testid="urai-life-map-authored-fallback"]'); await shot(fallback.page, 'no-webgl-fallback', 'no-webgl') } finally { await fallback.context.close() }
+  try {
+    await goto(fallback.page, '/life-map/?demo=1', '[data-testid="urai-life-map-authored-fallback"]')
+    await shot(fallback.page, 'no-webgl-fallback', 'no-webgl')
+  } finally {
+    await fallback.context.close()
+  }
+
   const recovery = await openPage({ label: 'context-recovery' })
   try {
     await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
@@ -396,7 +484,9 @@ async function privacyAndRecovery() {
     await waitForRenderedWorld(recovery.page)
     await shot(recovery.page, 'webgl-recovered', 'context-recovered', { memoryId: 'quiet-reset' })
     await shot(recovery.page, 'context-recovery-state-preserved', 'context-recovered-selected', { memoryId: 'quiet-reset' })
-  } finally { await recovery.context.close() }
+  } finally {
+    await recovery.context.close()
+  }
 }
 
 try {

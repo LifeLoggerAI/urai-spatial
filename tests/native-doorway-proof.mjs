@@ -25,6 +25,16 @@ async function activate(page, target, method) {
     return { targetOwnsHitPoint: true, hitPoint: null }
   }
 
+  await target.evaluate((node) => node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' }))
+  await target.evaluate(async (node) => {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+    const before = node.getBoundingClientRect()
+    await frame()
+    await frame()
+    const after = node.getBoundingClientRect()
+    const drift = Math.max(Math.abs(before.x - after.x), Math.abs(before.y - after.y), Math.abs(before.width - after.width), Math.abs(before.height - after.height))
+    if (drift > 1) throw new Error(`semantic target geometry is still moving: ${drift.toFixed(2)}px`)
+  })
   const box = await target.boundingBox()
   if (!box) throw new Error('semantic target has no browser hit box')
   if (box.width < 44 || box.height < 44) throw new Error(`semantic target below 44px minimum: ${box.width}x${box.height}`)
@@ -41,10 +51,17 @@ async function activate(page, target, method) {
 }
 
 async function resolveTarget(page, doorway) {
-  const semanticLayer = page.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]').first()
-  await semanticLayer.waitFor({ state: 'attached', timeout: 45000 })
-  const target = semanticLayer.getByTestId(doorway.testId)
-  await target.waitFor({ state: 'attached', timeout: 15000 })
+  const target = page.getByTestId(doorway.testId)
+  await target.waitFor({ state: 'visible', timeout: 45000 })
+  const ownership = await target.evaluate((node) => {
+    const nav = node.closest('nav.home-semantic-navigation')
+    return {
+      owner: nav?.getAttribute('data-home-navigation-owner') || '',
+      nonDominant: nav?.getAttribute('data-home-navigation-non-dominant') || '',
+    }
+  })
+  if (ownership.owner !== 'runtime-boundary') throw new Error(`semantic target has unexpected owner ${ownership.owner || 'none'}`)
+  if (ownership.nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
   const accessibleName = await target.getAttribute('aria-label')
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
@@ -75,7 +92,6 @@ async function prove(browser, doorway, testCase) {
       return declaredNonDominant && visuallyQuiet && spatiallyBounded
     })
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
-    if (testCase.method !== 'keyboard') await target.scrollIntoViewIfNeeded()
     const activation = await activate(page, target, testCase.method)
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint

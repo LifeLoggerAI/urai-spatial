@@ -4,52 +4,41 @@ import path from 'node:path'
 import test from 'node:test'
 
 const root = process.cwd()
-
-function read(relativePath) {
+const read = (relativePath) => {
   const absolutePath = path.join(root, relativePath)
   assert.ok(fs.existsSync(absolutePath), `missing expected file: ${relativePath}`)
   return fs.readFileSync(absolutePath, 'utf8')
 }
 
-const tierOne = read('src/spatial/layout/TierOneExperience.tsx')
-const continuity = read('src/spatial/layout/SpatialCinematicContinuityLayer.tsx')
+const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const lifeMap = read('src/components/lifemap/ComposedLifeMapScene.tsx')
+const focus = read('src/app/focus/FocusChamberClient.tsx')
+const replay = read('src/app/replay/CinematicReplayClient.tsx')
 const lifemapNavigation = read('src/spatial/interaction/LifeMapNavigationOverlay.tsx')
 
-test('TierOneExperience mounts the shared cinematic continuity layer across locked routes', () => {
-  assert.match(tierOne, /import \{ SpatialCinematicContinuityLayer \} from "\.\/SpatialCinematicContinuityLayer"/)
-  assert.match(tierOne, /<SpatialCinematicContinuityLayer mode=\{mode\} \/>/)
+test('cinematic continuity is carried by canonical route owners, not a global TierOne overlay', () => {
+  assert.match(homeRuntime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
+  assert.match(lifeMap, /data-testid="urai-true-3d-life-map"/)
+  assert.match(focus, /requestUraiWorldReturn/)
+  assert.match(replay, /requestUraiWorldReturn/)
+  assert.equal(fs.existsSync(path.join(root, 'src/spatial/layout/SpatialCinematicContinuityLayer.tsx')), false)
+  assert.equal(fs.existsSync(path.join(root, 'src/spatial/layout/TierOneExperience.tsx')), false)
 })
 
-test('generic route card is not mounted for cinematic locked modes', () => {
-  assert.match(tierOne, /function shouldShowRouteCard/)
-  assert.match(tierOne, /mode === "focus"/)
-  assert.match(tierOne, /mode === "replay"/)
-  assert.match(tierOne, /mode === "mirror"/)
-  assert.match(tierOne, /mode === "unwind"/)
-  assert.match(tierOne, /return false/)
-})
-
-test('continuity layer contains shared URAI symbolic atmosphere', () => {
-  for (const token of [
-    'data-testid="urai-cinematic-continuity"',
-    'urai-cinematic-continuity__orb-thread',
-    'urai-cinematic-continuity__council',
-    'urai-cinematic-continuity__threshold',
-    'urai-cinematic-continuity__recovery',
-    'urai-cinematic-continuity__social',
-    '@media (prefers-reduced-motion: reduce)',
-    '@media (max-width: 760px)',
-  ]) {
-    assert.match(continuity, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-  }
+test('Home and Life Map preserve atmospheric and reduced-motion continuity', () => {
+  assert.match(homeRuntime, /home-world-context/)
+  assert.match(homeRuntime, /prefers-reduced-motion:reduce/)
+  assert.match(lifeMap, /life-map__threshold-bloom/)
+  assert.match(lifeMap, /profile\.reducedMotion/)
+  assert.match(lifeMap, /aria-label="URAI Life Map"/)
 })
 
 test('Life Map navigation speaks in symbolic layer language instead of mechanical UI language only', () => {
-  assert.match(lifemapNavigation, /Why am I seeing this\?/) 
-  assert.match(lifemapNavigation, /emotional nebulae/) 
-  assert.match(lifemapNavigation, /recovery paths/) 
-  assert.match(lifemapNavigation, /ritual and threshold markers/) 
-  assert.match(lifemapNavigation, /relationship clusters/) 
-  assert.match(lifemapNavigation, /Council guide lights/) 
-  assert.match(lifemapNavigation, /aria-label="Life Map time lens and memory explanation"/) 
+  assert.match(lifemapNavigation, /Why am I seeing this\?/)
+  assert.match(lifemapNavigation, /emotional nebulae/)
+  assert.match(lifemapNavigation, /recovery paths/)
+  assert.match(lifemapNavigation, /ritual and threshold markers/)
+  assert.match(lifemapNavigation, /relationship clusters/)
+  assert.match(lifemapNavigation, /Council guide lights/)
+  assert.match(lifemapNavigation, /aria-label="Life Map time lens and memory explanation"/)
 })

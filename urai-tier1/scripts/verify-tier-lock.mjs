@@ -6,9 +6,10 @@ const checks = [
   'src/app/page.tsx',
   'src/app/home/page.tsx',
   'src/app/FinalHomeThreshold.tsx',
-  'src/app/HomeSpatialWorldFinal.tsx',
-  'src/spatial/layout/TierOneExperience.tsx',
-  'src/scene/HomeScene.tsx',
+  'src/app/HomeSpatialRuntimeLayer.tsx',
+  'src/spatial/lifemap/SpatialLifeMapCanonical.tsx',
+  'src/app/focus/page.tsx',
+  'src/app/replay/page.tsx',
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md',
 ]
 
@@ -23,46 +24,33 @@ const fileNeedles = {
     "tier: 4",
     "status: 'locked'",
     "status: 'completed locked'",
-    'Home -> Ascent -> LifeMap -> Focus -> Replay -> Esc unwind -> Focus -> LifeMap -> Home',
   ],
   'src/spatial/hud/CanonicalTierLockHud.tsx': [
     'data-urai-canon-tier-lock',
     'CANON_TIER_LOCK_LINE',
     'URAI_SPATIAL_TIER_LOCKS',
   ],
-  'src/app/page.tsx': [
-    'FinalHomeThreshold',
+  'src/app/page.tsx': ['FinalHomeThreshold'],
+  'src/app/home/page.tsx': ['FinalHomeThreshold'],
+  'src/app/FinalHomeThreshold.tsx': ['HomeSpatialWorldFinal'],
+  'src/app/HomeSpatialRuntimeLayer.tsx': [
+    "normalizedPathname === '/' || normalizedPathname === '/home'",
+    'data-urai-home-runtime=',
+    'data-testid="urai-home-accessible-fallback"',
+    "href: '/life-map/?from=home-sky'",
   ],
-  'src/app/home/page.tsx': [
-    'FinalHomeThreshold',
+  'src/spatial/lifemap/SpatialLifeMapCanonical.tsx': [
+    'data-testid="urai-r3f-canonical-lifemap"',
+    'useWebGLCapability',
+    'LifeMapRouteBoundary',
   ],
-  'src/app/FinalHomeThreshold.tsx': [
-    'HomeSpatialWorldFinal',
-  ],
-  'src/app/HomeSpatialWorldFinal.tsx': [
-    'data-urai-route="genesis-home-world"',
-    'data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"',
-    'href="/ground?from=home"',
-    'href="/life-map?from=home-sky"',
-    'Step inside yourself',
-  ],
-  'src/spatial/layout/TierOneExperience.tsx': [
-    '@/scene/HomeScene',
-    '<HomeScene sceneMode={mode} />',
-  ],
-  'src/scene/HomeScene.tsx': [
-    "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'",
-    "router.push('/ascent')",
-    "router.push('/life-map')",
-    'data-scene-mode={sceneMode}',
-  ],
+  'src/app/focus/page.tsx': ['FinalFocusChamber'],
+  'src/app/replay/page.tsx': ['FinalReplayFilm'],
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md': [
     'Tier-1 locked',
     'Tier-2 completed locked',
     'Tier-3 locked',
     'Tier-4 locked',
-    'Canon proof - Tier-1 locked / Tier-2 completed locked / Tier-3 locked / Tier-4 locked',
-    'Home -> Ascent -> LifeMap -> Focus -> Replay -> Esc unwind -> Focus -> LifeMap -> Home',
   ],
 }
 
@@ -84,8 +72,19 @@ for (const file of checks) {
   }
 }
 
+for (const retired of [
+  'src/spatial/layout/TierOneExperience.tsx',
+  'src/components/urai/UraiV1Experience.tsx',
+  'src/app/RootModeExperience.tsx',
+]) {
+  if (fs.existsSync(retired)) {
+    console.error(`[tier-lock] retired parallel runtime still exists: ${retired}`)
+    failed = true
+  }
+}
+
 const home = fs.existsSync('src/app/page.tsx') ? fs.readFileSync('src/app/page.tsx', 'utf8') : ''
-for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial', '@/spatial/scene/SpatialScene', 'UraiV1Experience']) {
+for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial', '@/spatial/scene/SpatialScene', 'UraiV1Experience', 'TierOneExperience']) {
   if (home.includes(forbidden)) {
     console.error(`[tier-lock] home invariant violation: ${forbidden}`)
     failed = true
@@ -100,4 +99,4 @@ if (!pkg.scripts || pkg.scripts['verify:tier-lock'] !== 'node scripts/verify-tie
 
 if (failed) process.exit(1)
 
-console.log('[tier-lock] verified: FinalHomeThreshold owns Home while TierOneExperience remains the spatial shell')
+console.log('[tier-lock] verified: canonical Home, Life Map, Focus, and Replay owners are converged with legacy multi-mode runtimes retired')

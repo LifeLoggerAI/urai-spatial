@@ -257,8 +257,9 @@ export function stepEmbodiedMotion({
       owner.dataset.homeInputOwner = 'window-capture-movement'
       owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
       owner.dataset.homeInputReady = 'true'
-      owner.dataset.homeInteractionReady = owner.dataset.homeAssetsReady === 'true' ? 'true' : 'false'
-      owner.dataset.homeReady = 'true'
+      const assetsReady = owner.dataset.homeAssetsReady === 'true'
+      owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'
+      owner.dataset.homeReady = 'false'
       owner.dataset.homePlayerX = position.x.toFixed(3)
       owner.dataset.homePlayerZ = position.z.toFixed(3)
       owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
@@ -269,7 +270,9 @@ export function stepEmbodiedMotion({
       owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
       owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`
       const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)
-      owner.dataset.homeRenderedFrames = String(Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1)
+      const nextRenderedFrames = Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1
+      owner.dataset.homeRenderedFrames = String(nextRenderedFrames)
+      owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'
     }
   }
 

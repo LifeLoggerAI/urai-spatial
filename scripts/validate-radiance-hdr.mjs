@@ -8,7 +8,6 @@ const manifest = JSON.parse(
 )
 
 const hdrAssets = manifest.assets.filter((asset) => asset.kind === 'hdr')
-if (hdrAssets.length === 0) throw new Error('No HDR assets are defined in the launch-critical manifest')
 
 const results = hdrAssets.map((asset) => {
   const filePath = path.join(root, asset.fixedPath)

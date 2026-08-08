@@ -1,5 +1,5 @@
-import UraiV1Experience from '@/components/urai/UraiV1Experience'
+import { redirect } from 'next/navigation'
 
-export default function AdamClampPublicDemoPage() {
-  return <UraiV1Experience mode="demo" profileLabel="Adam's Public URAI Field" />
+export default function AdamClampPublicCompatibilityPage() {
+  redirect('/life-map?demo=1&from=public-profile&handle=adamclamp')
 }

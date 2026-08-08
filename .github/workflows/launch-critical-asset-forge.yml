@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - 'operations/assets/**'
+      - 'urai-tier1/public/assets/urai/generated/**'
       - 'urai-tier1/tests/home-entry-governed-production-contract.test.mjs'
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/normalize-launch-critical-assets.mjs'
@@ -40,7 +41,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain)"
-      - name: Select candidate-forge or governed-promotion path
+      - name: Select candidate-forge, governed-replacement, or promotion path
         id: mode
         shell: bash
         env:
@@ -48,71 +49,130 @@ jobs:
         run: |
           set -euo pipefail
           promotion=false
+          replacement=false
           changed_files="${RUNNER_TEMP}/launch-critical-changed-files.txt"
+          : > "$changed_files"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > "$changed_files"
             if grep -Eq '^operations/assets/(promotion-decisions|production-receipts)/.+\.json$' "$changed_files"; then
               promotion=true
             fi
+            if grep -Eq '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files"; then
+              replacement=true
+            fi
           fi
           echo "promotion=$promotion" >> "$GITHUB_OUTPUT"
+          echo "replacement=$replacement" >> "$GITHUB_OUTPUT"
           echo "GOVERNED_PROMOTION_PATH=$promotion"
+          echo "GOVERNED_REPLACEMENT_PATH=$replacement"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify governed production promotion
+
+      - name: Validate every changed governed promotion decision
         if: steps.mode.outputs.promotion == 'true'
+        shell: bash
         env:
-          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-decisions/home-entry-chamber-v1.json
-        run: node scripts/verify-governed-asset-promotion.mjs
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          mapfile -t decisions < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^operations/assets/promotion-decisions/.+\.json$' || true)
+          if ((${#decisions[@]} == 0)); then
+            echo 'Promotion path requires at least one changed promotion decision.' >&2
+            exit 1
+          fi
+          for decision in "${decisions[@]}"; do
+            URAI_ASSET_PROMOTION_DECISION="$decision" node scripts/verify-governed-asset-promotion.mjs
+          done
       - name: Run exact Home production contract
         if: steps.mode.outputs.promotion == 'true'
         working-directory: urai-tier1
         run: node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
-      - name: Prove promoted binary remains immutable
+      - name: Prove promoted Home binary matches its immutable decision
         if: steps.mode.outputs.promotion == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
-          test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
+          decision=operations/assets/promotion-decisions/home-entry-chamber-v1.json
+          test -f "$decision"
+          expected_bytes="$(node -e "const fs=require('node:fs');const v=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(String(v.bytes))" "$decision")"
+          expected_sha="$(node -e "const fs=require('node:fs');const v=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(String(v.sha256))" "$decision")"
+          actual=urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+          test "$(wc -c < "$actual" | tr -d ' ')" = "$expected_bytes"
+          test "$(sha256sum "$actual" | awk '{print $1}')" = "$expected_sha"
           test -z "$(git status --porcelain)"
+
+      - name: Validate exact replacement rehearsal decisions
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          mapfile -t assets < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^urai-tier1/public/assets/urai/generated/' || true)
+          mapfile -t rehearsals < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^operations/assets/promotion-rehearsal/.+\.json$' || true)
+          if ((${#assets[@]} > 0 && ${#rehearsals[@]} == 0)); then
+            echo 'Replacement binaries require changed fail-closed rehearsal decisions.' >&2
+            exit 1
+          fi
+          for decision in "${rehearsals[@]}"; do
+            URAI_ASSET_PROMOTION_DECISION="$decision" node scripts/verify-governed-asset-promotion.mjs
+          done
+          for asset in "${assets[@]}"; do
+            matched=0
+            for decision in "${rehearsals[@]}"; do
+              canonical="$(node -e "const fs=require('node:fs');const v=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.stdout.write(String(v.canonicalPath||''))" "$decision")"
+              if [[ "$canonical" == "$asset" ]]; then matched=1; break; fi
+            done
+            if ((matched == 0)); then
+              echo "Replacement binary lacks a matching rehearsal decision: $asset" >&2
+              exit 1
+            fi
+          done
+      - name: Verify exact replacement manifest, receipts and budgets
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        run: node scripts/verify-launch-critical-assets.mjs
+      - name: Strictly decode replacement Radiance HDR scanlines
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        run: node scripts/validate-radiance-hdr.mjs
+      - name: Validate every replacement GLB with Khronos-compatible validator
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in urai-tier1/public/assets/urai/generated/models/*.glb; do
+            npx --yes @gltf-transform/cli@4.2.1 validate "$file"
+          done
+          test -z "$(git status --porcelain)"
+
       - name: Verify governed production authority before candidate generation
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         env:
           URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-decisions/home-entry-chamber-v1.json
         run: node scripts/verify-governed-asset-promotion.mjs
       - name: Run governed Home production contract before candidate generation
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         working-directory: urai-tier1
         run: node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
-      - name: Prove governed Home binary immutable before candidate generation
-        if: steps.mode.outputs.promotion != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(wc -c < urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb)" = '184160'
-          test "$(sha256sum urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb | awk '{print $1}')" = 'b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529'
-          test -z "$(git status --porcelain)"
       - name: Forge deterministic launch candidates
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/forge-launch-critical-assets.mjs
       - name: Normalize formats and repair glTF rotations
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/normalize-launch-critical-assets.mjs
       - name: Verify manifest, receipts and budgets
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
       - name: Independently audit and retain exact candidate bundle
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         env:
           URAI_CANDIDATE_BUNDLE_ROOT: .urai-artifacts/launch-critical-candidate-bundle
         run: node scripts/audit-launch-critical-candidate-bundle.mjs
       - name: Strictly decode every Radiance HDR scanline
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/validate-radiance-hdr.mjs
       - name: Validate every candidate GLB with Khronos-compatible validator
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -120,7 +180,7 @@ jobs:
             npx --yes @gltf-transform/cli@4.2.1 validate "$file"
           done
       - name: Extract pinned legacy comparison candidates
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -141,10 +201,10 @@ jobs:
             git show "$LEGACY_ASSET_HEAD:$file" > "$destination"
           done
       - name: Compare current and pinned legacy candidates
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/compare-legacy-asset-candidates.mjs --legacy-root comparison/legacy --legacy-head "$LEGACY_ASSET_HEAD"
       - name: Upload exact audited candidate bundle
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-asset-candidates-${{ env.URAI_EXACT_HEAD }}
@@ -152,20 +212,32 @@ jobs:
           include-hidden-files: true
           retention-days: 14
           path: .urai-artifacts/launch-critical-candidate-bundle/
+      - name: Upload exact replacement evidence
+        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-launch-critical-replacement-${{ env.URAI_EXACT_HEAD }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            operations/assets/launch-critical-assets.json
+            operations/assets/generated-receipts/
+            operations/assets/promotion-rehearsal/
+            urai-tier1/public/assets/urai/generated/
       - name: Upload governed promotion evidence
         if: steps.mode.outputs.promotion == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: urai-home-governed-promotion-${{ env.URAI_EXACT_HEAD }}
+          name: urai-governed-promotion-${{ env.URAI_EXACT_HEAD }}
           if-no-files-found: error
           retention-days: 365
           path: |
             operations/assets/launch-critical-assets.json
-            operations/assets/promotion-decisions/home-entry-chamber-v1.json
-            operations/assets/production-receipts/home-entry-chamber-v1.json
+            operations/assets/promotion-decisions/
+            operations/assets/production-receipts/
             urai-tier1/tests/home-entry-governed-production-contract.test.mjs
       - name: Upload legacy comparison evidence
-        if: steps.mode.outputs.promotion != 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-legacy-asset-comparison-${{ env.URAI_EXACT_HEAD }}

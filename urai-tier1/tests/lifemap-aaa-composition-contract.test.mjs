@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import path from 'node:path'
 import test from 'node:test'
 
-const root = process.cwd()
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
+const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
@@ -18,7 +16,7 @@ function sliceBetween(source, start, end) {
 }
 
 test('semantic result requests the authoritative world owner without hidden-label re-entry', () => {
-  assert.match(world, /import \{ Line, Sparkles, Stars \} from "@react-three\/drei"/)
+  assert.match(world, /import \{[^}]*Line[^}]*Sparkles[^}]*Stars[^}]*useAnimations[^}]*useGLTF[^}]*\} from "@react-three\/drei"/)
   assert.doesNotMatch(world, /\bHtml\b|life-map-world-label|handleWorldLabelClick|document\.addEventListener\("click"/)
   assert.match(world, /window\.addEventListener\(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest\)/)
   assert.match(world, /const detail = readLifeMapSelection\(event\)/)
@@ -32,6 +30,8 @@ test('semantic result requests the authoritative world owner without hidden-labe
 })
 
 test('pattern memories retain authored settling geometry inside the selected arrival sanctuary', () => {
+  assert.match(world, /const MEMORY_STAR_MODEL = "\/assets\/urai\/generated\/models\/life-map-memory-star-v1\.glb"/)
+  assert.match(world, /const MEMORY_CHAMBER_MODEL = "\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb"/)
   assert.match(world, /function PatternArtifact/)
   assert.match(world, /family === "pattern"\) return <PatternArtifact/)
   assert.match(world, /function ArrivalSanctuary/)
@@ -40,10 +40,35 @@ test('pattern memories retain authored settling geometry inside the selected arr
   assert.match(pattern, /\[-0\.22, 0, 0\.22\]\.map/)
   assert.match(pattern, /<Current key=\{y\}/)
   assert.match(pattern, /color=\{index === 1 \? ICE : node\.aura\}/)
-  const arrival = sliceBetween(world, 'function ArrivalSanctuary', 'function ArchiveParticles')
+  assert.match(pattern, /<AuthoredMemoryStar aura=\{node\.aura\}/)
+  const arrival = sliceBetween(world, 'function ArrivalSanctuary', 'function IntimateMemoryChamber')
+  assert.match(arrival, /useGLTF\(MEMORY_CHAMBER_MODEL\)/)
+  assert.match(arrival, /useAnimations\(animations, group\)/)
   assert.match(arrival, /if \(!selected \|\| phase !== "arrival"\) return null/)
-  assert.match(arrival, /<ringGeometry args=\{\[1\.3, 4\.6, 160\]\}/)
-  assert.match(arrival, /<pointLight color=\{selected\.aura\} intensity=\{12\}/)
+  assert.match(arrival, /runtimeAsset: MEMORY_CHAMBER_MODEL/)
+  assert.match(arrival, /<primitive object=\{chamber\} \/>/)
+  assert.match(arrival, /<pointLight color=\{selected\.aura\} intensity=\{16\}/)
+  assert.doesNotMatch(arrival, /ringGeometry|torusGeometry|icosahedronGeometry|octahedronGeometry|tetrahedronGeometry/)
+})
+
+test('authored animation clips honor reduced motion with stable readable poses', () => {
+  assert.match(world, /const LifeMapReducedMotionContext = createContext\(false\)/)
+  assert.match(world, /<LifeMapReducedMotionContext\.Provider value=\{profile\.reducedMotion\}>/)
+  const star = sliceBetween(world, 'function AuthoredMemoryStar', 'function LifeCore')
+  assert.match(star, /const reducedMotion = useContext\(LifeMapReducedMotionContext\)/)
+  assert.match(star, /chosen\.setEffectiveTimeScale\(reducedMotion \? 0 : 1\)/)
+  assert.match(star, /chosen\.paused = reducedMotion/)
+  assert.match(star, /if \(reducedMotion\) chosen\.time = chosen\.getClip\(\)\.duration \* \(active \? 0\.62 : 0\.35\)/)
+  const emotion = sliceBetween(world, 'function EmotionArtifact', 'function PatternArtifact')
+  assert.match(emotion, /speed=\{reducedMotion \? 0 : 0\.08\}/)
+  const arrival = sliceBetween(world, 'function ArrivalSanctuary', 'function IntimateMemoryChamber')
+  assert.match(arrival, /arrival\.setEffectiveTimeScale\(reducedMotion \? 0 : 1\)/)
+  assert.match(arrival, /arrival\.paused = reducedMotion/)
+  assert.match(arrival, /if \(reducedMotion\) arrival\.time = arrival\.getClip\(\)\.duration/)
+  assert.match(arrival, /breathing\.setEffectiveTimeScale\(reducedMotion \? 0 : 1\)/)
+  assert.match(arrival, /breathing\.paused = reducedMotion/)
+  assert.match(arrival, /if \(reducedMotion\) breathing\.time = breathing\.getClip\(\)\.duration \* 0\.35/)
+  assert.match(arrival, /\[actions, phase, reducedMotion, selected\]/)
 })
 
 test('overview composition is opaque, authored, and independently framed for portrait', () => {
@@ -51,17 +76,24 @@ test('overview composition is opaque, authored, and independently framed for por
   assert.match(world, /function ForegroundObservatory/)
   assert.match(world, /life-map-authored-chapter-regions/)
   assert.match(world, /life-map-foreground-observatory/)
-  assert.match(world, /name="life-map-authored-environment"[\s\S]*<sphereGeometry args=\{\[86, 40, 28\]\}[\s\S]*side=\{THREE\.BackSide\}/)
+  assert.match(world, /name="life-map-authored-environment"[\s\S]*<sphereGeometry args=\{\[86, 48, 36\]\}[\s\S]*side=\{THREE\.BackSide\}/)
   assert.match(world, /const portrait = size\.height > size\.width/)
-  assert.match(world, /portrait \? \[0\.5, 0\.92, 0\.74\]/)
-  assert.match(world, /portrait \? \[0, -0\.36, 1\.3\]/)
+  assert.match(world, /portrait \? \[0\.54, 0\.96, 0\.78\]/)
+  assert.match(world, /portrait \? \[0, -0\.18, 1\.1\]/)
+  const chapterAnchor = sliceBetween(world, 'function ChapterAnchor', 'function ChapterTerritories')
+  const chapterTerritories = sliceBetween(world, 'function ChapterTerritories', 'function ForegroundObservatory')
+  assert.match(chapterAnchor, /<AuthoredMemoryStar aura=\{aura\}/)
+  assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} \/>/)
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
-  assert.match(world, /qualityTier === "low" \? 150 : qualityTier === "medium" \? 260 : 420/)
-  assert.match(world, /profile\.tier === "low" \? 620 : profile\.tier === "medium" \? 1100 : 1900/)
+  assert.match(world, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 150 : 240/)
+  assert.match(world, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)
   assert.match(world, /profile\.tier === "low" \? 70 : 160/)
-  assert.match(world, /active=\{profile\.postprocessing\}/)
+  assert.match(world, /<CinematicPostProcessing active=\{profile\.postprocessing\} reducedMotion=\{profile\.reducedMotion\} \/>/)
   assert.match(world, /if \(!root\.current \|\| reducedMotion\) return/)
+  assert.match(world, /useGLTF\.preload\(MEMORY_STAR_MODEL\)/)
+  assert.match(world, /useGLTF\.preload\(MEMORY_CHAMBER_MODEL\)/)
+  assert.doesNotMatch(world, /<torusGeometry|<ringGeometry|<icosahedronGeometry|<octahedronGeometry|<tetrahedronGeometry/)
   for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-selected-arrival-sanctuary']) assert.match(world, new RegExp(marker))
 })

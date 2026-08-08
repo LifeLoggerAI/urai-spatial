@@ -68,6 +68,8 @@ test('Ground is one embodied cinematic infrastructure world', () => {
     'EffectComposer',
     '<Bloom',
     '<Vignette',
+    'liftedMaterial',
+    'camera.position.lerp',
   ]) assert.ok(groundGraph.includes(marker), `missing Ground architectural-owner marker: ${marker}`)
 
   for (const form of ['pavilion', 'sanctuary', 'council', 'transit', 'restorative', 'archive', 'reflection', 'vault', 'observatory', 'aperture', 'theater']) {
@@ -80,7 +82,12 @@ test('Ground is one embodied cinematic infrastructure world', () => {
   assert.match(groundOwner, /min-height:48px/)
   assert.match(groundOwner, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
   assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(groundOwner, /gl\.setClearColor\(0x020812, 1\)/)
+  assert.match(groundOwner, /<color attach="background" args=\{\["#102b38"\]\} \/>/)
+  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#173843", 0\.012\]\}/)
+  assert.match(groundOwner, /gl\.setClearColor\(0x102b38, 1\)/)
+  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.35/)
+  assert.match(groundOwner, /camera=\{\{ position: \[0, 8\.8, 25\], fov: 52/)
+  assert.match(groundOwner, /\.ground-spatial-root\{[^}]*background:#102b38/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
   assert.doesNotMatch(groundGraph, /assetCssStack\(groundAssets\.|ground-authored-art|--ground-provider-/)
 })

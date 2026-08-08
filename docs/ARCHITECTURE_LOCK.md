@@ -1,169 +1,106 @@
 # URAI Spatial Architecture Lock
 
-Status: V1 launch canonicalization
+Status: launch canonicalization locked
 Owner: URAI Spatial
 Repo: LifeLoggerAI/urai-spatial
 
-This document locks the current URAI Spatial runtime architecture so future patches do not split scene authority across multiple engines.
+This document locks the current URAI Spatial runtime architecture so future patches do not split scene authority across parallel engines.
 
-## Canonical runtime path
+## Canonical runtime owners
 
-The canonical V1 launch path is:
-
-```txt
-Next.js route
-  -> src/spatial/layout/TierOneExperience.tsx
-  -> src/scene/HomeScene.tsx
-  -> React Three Fiber Canvas
-  -> cinematic camera, sky, ground, orb, constellation, manifest renderer, particles, postprocessing, narrator
-```
-
-The canonical spatial sequence is:
+The launch-facing runtime is intentionally split by destination ownership, not by duplicate mode shells:
 
 ```txt
-Home -> Ascent -> Life Map -> Focus -> Replay -> Mirror
+/ and /home
+  -> FinalHomeThreshold
+  -> WorldRuntimeBoundary
+  -> HomeSpatialRuntimeLayer
+  -> HomeSpatialCanvas / HomeSpatialWorldFinal
+
+/life-map
+  -> life-map route layout
+  -> SpatialLifeMapCanonical
+  -> LifeMapRouteBoundary
+  -> ComposedLifeMapScene
+
+/focus
+  -> FocusChamberClient (FinalFocusChamber)
+
+/replay
+  -> CinematicReplayClient (FinalReplayFilm)
+
+/privacy-controls
+  -> ConsentSanctuaryClient
 ```
 
-Route/state mapping:
+There is no launch `TierOneExperience`, `RootModeExperience`, `UraiV1Experience`, or `UraiSpatialStage` owner. Those retired multi-mode runtimes must not be restored.
 
-- `/` and `/home` render `mode="home"`.
-- `/ascent` renders `mode="ascent"` as a short cinematic transition state.
-- `/life-map` renders `mode="life-map"`.
-- `/focus` renders `mode="focus"`.
-- `/replay` renders `mode="replay"`.
-- `/mirror` renders `mode="mirror"`.
+## Compatibility routes
 
-`ascent` is a first-class canonical mode, but it is a transition layer rather than a destination. Home sky/orb activation routes to `/ascent`; the ascent state auto-advances to `/life-map` after the transition duration.
+Compatibility URLs do not mount another WebGL scene. They redirect into the real owner whose runtime boundary matches the destination pathname.
 
-This path is responsible for:
+- `/spatial`, `/spatial/v1`, `/v1`, `/ascent`, and `/spatial-fallback` resolve to canonical Home.
+- `/spatial/life-map`, `/spatial/life-map-r3f`, `/spatial/life-map-orbit`, and `/unwind` resolve to canonical Life Map.
+- `/u/[handle]`, `/u/adamclamp`, and `/demo/life-map` preserve disclosed sample-demo semantics by redirecting into canonical Life Map with demo query context.
+- `/privacy` resolves to the canonical Consent Sanctuary at `/privacy-controls`.
 
-- `/` and `/home` home atmosphere
-- `/ascent` cinematic rise into the Life Map
-- `/life-map` constellation view
-- `/focus` focused memory state
-- `/replay` cinematic replay state
-- `/mirror` launch-safe mirror/detail state
-- sky-click navigation into Ascent, then Life Map
-- constellation node selection
-- focus panel and replay entry
-- Escape unwind behavior
-- narrator voice and HUD integration
+A compatibility route must never directly mount a canonical WebGL component when that component's runtime authority only activates for another pathname.
 
-## Canonical data path
+## Canonical spatial sequence
 
-The canonical V1 data path is:
+The product sequence remains:
 
 ```txt
-assetManifests Firestore collection or deterministic seed manifests
-  -> useConstellationManifests
-  -> ConstellationLayer
-  -> selected manifest
-  -> ManifestRenderer / FocusActionPanel / Replay route
+Home -> camera ascent -> Life Map -> selected memory -> Focus -> Replay -> recovery -> Life Map -> Home
 ```
 
-Rules:
-
-1. Demo state must remain deterministic.
-2. Firestore-backed state must be optional at launch.
-3. `NEXT_PUBLIC_URAI_MANIFEST_FIRESTORE=true` enables live manifest loading.
-4. If Firestore is unavailable, the app must fall back to seed manifests without breaking Home, Ascent, Life Map, Focus, or Replay.
-5. Memory stars should be generated from manifest/memory objects, not duplicated as disconnected hardcoded systems.
-
-## Legacy / migration-candidate path
-
-The following path exists but is not the canonical V1 route authority:
-
-```txt
-src/spatial/scene/SpatialScene.tsx
-  -> ThreeSceneRoot
-  -> HomeWorld
-  -> LifeMapStarfield
-  -> useSceneStore
-  -> narrator bridges / companion / first-light onboarding
-```
-
-This path may contain valuable systems, but it must not compete with the canonical path.
-
-Migration rule:
-
-- Migrate useful systems into `HomeScene` or adjacent canonical modules.
-- Do not add new launch behavior to the legacy path unless it is explicitly imported by the canonical path.
-- If no imports depend on a legacy module after validation, quarantine or remove it in a cleanup PR.
-
-Known contradiction in this path:
-
-- `ThreeSceneRoot` uses `pointerEvents: "none"` and `aria-hidden="true"` while children contain interactive click/focus handlers.
-- If this path is reactivated, interactive controls must live outside the pointer-disabled wrapper or the wrapper must become mode-aware.
+Ascent is a Home-owned camera transition, not a second destination runtime. Home sky activation begins the transition and navigates to `/life-map?from=home-sky` after the bounded camera move. Reduced-motion users retain an immediate bounded path.
 
 ## Scene authority rules
 
-1. `HomeScene` owns routed runtime state for V1 launch.
-2. `ascent` is the only canonical bridge between Home and Life Map.
-3. `ConstellationLayer` owns Life Map node layout and selection for V1 launch.
-4. `ManifestRenderer` owns selected asset/manifest rendering.
-5. `CinematicCameraRig` owns camera movement in the canonical path.
-6. Narrator UI/voice must attach to the canonical routed state, not to duplicate state stores.
-7. Zustand scene state in legacy modules must not become a second source of truth unless intentionally merged.
+1. `FinalHomeThreshold` is the route-level Home entry and capability-safe initial owner.
+2. `HomeSpatialRuntimeLayer` owns settled Home WebGL only on `/` and `/home` and owns the legitimate no-WebGL Home fallback.
+3. `SpatialLifeMapCanonical` is owned by the `/life-map` route layout and must not be mounted on alias paths.
+4. `ComposedLifeMapScene` owns the single canonical Life Map Canvas and selected-memory camera journey.
+5. `FocusChamberClient` owns Focus; `CinematicReplayClient` owns Replay.
+6. Shadow and Council use their capability-aware `SpatialRealmRuntime` owner with semantic no-WebGL access.
+7. Compatibility URLs use redirects, not duplicate scene trees.
+8. Narrator, state, camera, fallback, and proof systems may observe a canonical owner but may not create a second launch-facing product runtime.
 
-## V1 launch acceptance
+## Canonical data path
 
-URAI Spatial V1 is launch-locked when all of the following pass:
+User-owned memory and field data flows into canonical scene adapters. Explicit public-demo paths may use deterministic sample data, but sample/demo ownership must remain disclosed and must not become another product engine.
 
-- `/` renders Home.
-- `/home` renders Home.
-- `/ascent` renders the cinematic ascent transition.
-- `/ascent` auto-advances to `/life-map`.
-- `/life-map` renders the Life Map / constellation state.
-- `/focus` renders focused memory state.
-- `/replay` renders replay state.
-- `/mirror` renders the mirror/detail fallback without breaking spatial shell.
-- Sky click enters Ascent, then Life Map.
-- Constellation node click opens focus panel.
-- Focus panel can start replay.
-- Escape unwinds replay -> focus -> life-map -> home.
-- No microphone permission prompt appears on load.
-- Firestore manifest failure falls back to seed manifests.
-- Reduced-motion users are not trapped in continuous motion.
-- Typecheck passes.
-- Build passes.
-- Unit tests pass.
-- E2E lock tests pass.
-- Replay tier-5 lock tests pass.
-- Canon/tier checks pass.
+Rules:
 
-## Completion sequence
+1. Production user data remains consent and owner scoped.
+2. Public demo routes use sample data only.
+3. Provider absence must fail safely or use an explicitly designed fallback; it must not silently substitute a technical/demo scene.
+4. Memory stars are derived from the canonical Life Map model rather than duplicated hardcoded systems.
+5. No client route may claim a provider, approval, deployment, or data source that is not actually active.
 
-### Phase 1: Canonicalize
+## Legacy / migration-candidate path
 
-- Keep `TierOneExperience -> HomeScene` as V1 runtime authority.
-- Lock `Home -> Ascent -> Life Map -> Focus -> Replay -> Mirror` in route and interaction tests.
-- Mark legacy modules as migration candidates.
+Legacy modules can remain only when a current canonical owner imports them for a specific reusable primitive. A self-contained legacy scene, mode router, or stage with no legitimate consumer is dead code and should be removed rather than preserved as an alternate runtime.
 
-### Phase 2: Data lock
+The legacy `src/spatial/scene/SpatialScene.tsx` family remains migration-candidate code unless current route evidence proves a canonical import. It must not become a second route authority.
 
-- Promote seed manifests to deterministic demo fixtures.
-- Document Firestore `assetManifests` contract.
-- Add adapter utilities only where they feed the canonical `ConstellationLayer` / `ManifestRenderer` route.
+## Launch acceptance
 
-### Phase 3: Interaction lock
+URAI Spatial launch acceptance requires:
 
-- Lock sky click, ascent auto-advance, node click, focus panel, replay entry, and Escape unwind.
-- Ensure keyboard and reduced-motion paths remain accessible.
-
-### Phase 4: Cinematic upgrade
-
-- Add deterministic GPU/star particle budget.
-- Add phase-aware camera/director improvements.
-- Add quality presets for bloom/depth/vignette/chromatic effects.
-- Add mobile gesture polish.
-- Keep reduced-motion fallback.
-
-### Phase 5: Ship lock
-
-- Run the full validation chain.
-- Close roadmap issues only after acceptance criteria pass.
-- Tag the repo when V1 is locked.
+- `/` and `/home` render the same canonical Home world and capability fallback.
+- Home Ground, Orb, portals, and sky ascent are one continuous world.
+- Home ascent resolves into canonical `/life-map` without a blank alias-mounted canvas.
+- Life Map has one Canvas owner, deterministic camera travel, selected-memory controls, Focus, Replay, overview, Escape recovery, mobile composition, reduced-motion behavior, and WebGL loss/recovery handling.
+- Shadow and Council retain legitimate no-WebGL fallbacks.
+- Compatibility URLs resolve to canonical owners without parallel product runtimes.
+- No debug/demo/diagnostic chrome appears on user-facing launch surfaces.
+- Privacy routes resolve to the canonical consent system.
+- Typecheck, tests, production build, Firebase checks, accessibility, performance, privacy, security, spatial navigation, and release readiness pass on one unchanged exact head.
+- Required visual proof is inspected at full resolution against the URAI visual canon.
+- Governed assets and independent release approval are truthful and exact-head bound.
 
 ## Definition of done
 
-URAI Spatial is complete for V1 when it has one canonical runtime architecture, no duplicate scene authority, deterministic demo and optional Firestore-backed memory constellations, locked Home -> Ascent -> Life Map -> Focus -> Replay -> Mirror navigation, no accessibility regressions, no unwanted microphone prompt, passing validation, and a clear split between V1 launch lock and V2/AAA expansion work.
+URAI Spatial is release-complete when it has one coherent Home world, one canonical Life Map runtime, canonical Focus/Replay/realm owners, compatibility redirects instead of parallel engines, no obsolete multi-mode launch stage, no accessibility/privacy/security regressions, exact-head terminal validation, acceptable full-resolution visual evidence, truthful governance, protected merge, protected production deployment from `main`, and verified live behavior on `urai.app`.

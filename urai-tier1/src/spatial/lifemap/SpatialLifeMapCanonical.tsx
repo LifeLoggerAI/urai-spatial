@@ -98,7 +98,7 @@ function LifeMapAccessGate() {
   if (mode === "checking" || webglAvailable === null) return <LifeMapLoading label="Checking the private threshold" />;
   if (mode === "signed-out") return <SignedOutLifeMap onOpenDemo={openDemo} onReturnHome={() => router.push("/home")} />;
   if (!webglAvailable) return <LifeMapLoading label="WebGL is unavailable. Semantic navigation remains available" />;
-  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><Suspense fallback={<LifeMapLoading label="Preserving your map while the spatial field opens" />}><LifeMapRouteBoundary /></Suspense></section>;
+  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" data-life-map-access={mode} aria-label="URAI canonical spatial Life Map" style={{ position:"fixed", inset:0, zIndex:100, width:"100vw", height:"100svh", minHeight:"100svh", overflow:"hidden", background:"#01030a" }}><LifeMapRouteBoundary /></section>;
 }
 
 export default function SpatialLifeMapCanonical() {

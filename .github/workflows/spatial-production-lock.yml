@@ -43,15 +43,20 @@ jobs:
           test -f urai-tier1/package.json
           test -f urai-tier1/src/app/page.tsx
           test -f urai-tier1/src/app/home/page.tsx
+          test -f urai-tier1/src/app/FinalHomeThreshold.tsx
+          test -f urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx
           test -f urai-tier1/src/app/ascent/page.tsx
           test -f urai-tier1/src/app/life-map/page.tsx
+          test -f urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx
           test -f urai-tier1/src/app/focus/page.tsx
           test -f urai-tier1/src/app/replay/page.tsx
           test -f urai-tier1/src/app/mirror/page.tsx
           test -f urai-tier1/src/app/loading.tsx
           test -f urai-tier1/src/app/error.tsx
           test -f urai-tier1/src/app/not-found.tsx
-          test -f urai-tier1/src/spatial/layout/TierOneExperience.tsx
+          test ! -e urai-tier1/src/spatial/layout/TierOneExperience.tsx
+          test ! -e urai-tier1/src/components/urai/UraiV1Experience.tsx
+          test ! -e urai-tier1/src/app/RootModeExperience.tsx
           test -f urai-tier1/src/scene/HomeScene.tsx
           test -f urai-tier1/src/spatial/constellation/ConstellationLayer.tsx
           test -f docs/ARCHITECTURE_LOCK.md

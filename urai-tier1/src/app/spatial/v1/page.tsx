@@ -1,5 +1,10 @@
-import UraiSpatialStage from '@/spatial/v1/UraiSpatialStage';
+import { redirect } from 'next/navigation'
 
-export default function UraiSpatialV1PreviewPage() {
-  return <UraiSpatialStage />;
+export const metadata = {
+  title: 'URAI Spatial',
+  description: 'Compatibility entry for the canonical URAI Home spatial runtime.',
+}
+
+export default function UraiSpatialV1CompatibilityPage() {
+  redirect('/home?from=spatial-v1')
 }

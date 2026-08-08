@@ -1,5 +1,10 @@
-import UraiV1Experience from "@/components/urai/UraiV1Experience";
+import { redirect } from 'next/navigation'
 
-export default function PrivacyPage() {
-  return <UraiV1Experience mode="privacy" />;
+export const metadata = {
+  title: 'URAI Privacy',
+  description: 'Open the canonical URAI Consent Sanctuary and privacy controls.',
+}
+
+export default function PrivacyCompatibilityPage() {
+  redirect('/privacy-controls?from=privacy')
 }

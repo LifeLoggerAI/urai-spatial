@@ -157,8 +157,7 @@ try {
     await route.abort('blockedbyclient');
   });
 
-  const page = await context.newPage();
-  page.on('response', (response) => {
+  context.on('response', (response) => {
     if (response.status() < 400) return;
     httpFailures.push({
       kind: 'http-error',
@@ -168,7 +167,7 @@ try {
       resourceType: response.request().resourceType(),
     });
   });
-  page.on('requestfailed', (request) => {
+  context.on('requestfailed', (request) => {
     failedRequests.push({
       kind: 'request-failed',
       status: 0,
@@ -180,14 +179,19 @@ try {
   });
 
   for (const route of routes) {
-    const response = await page.goto(`${baseUrl}${route}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60_000,
-    });
-    if (!response || response.status() !== 200) {
-      throw new Error(`Spatial diagnostic route failed: ${route} (${response?.status() ?? 'no response'})`);
+    const page = await context.newPage();
+    try {
+      const response = await page.goto(`${baseUrl}${route}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60_000,
+      });
+      if (!response || response.status() !== 200) {
+        throw new Error(`Spatial diagnostic route failed: ${route} (${response?.status() ?? 'no response'})`);
+      }
+      await page.waitForTimeout(1_000);
+    } finally {
+      await page.close().catch(() => undefined);
     }
-    await page.waitForTimeout(1_000);
   }
 
   const blockedKeys = new Set(blockedExternalRequests.map((entry) => `${entry.method}:${entry.url}`));

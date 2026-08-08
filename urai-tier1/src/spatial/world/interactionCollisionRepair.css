@@ -49,15 +49,17 @@
   pointer-events: auto !important;
 }
 
-/* The composed Life Map scene used a fixed isolated root, so selected Focus and
- * Replay controls could be CSS-visible while remaining painted below sibling
- * semantic chrome. Keep the scene viewport-bound without creating that nested
- * stacking context, then give the single selected action owner an explicit band. */
-.urai-world-runtime[data-world-destination='life-map'] .life-map-root {
-  position: absolute !important;
+/* Keep the canonical Life Map scene explicitly viewport-bound. Percentage sizing
+ * against the persistent world shell can collapse during static-export hydration,
+ * and the world-state destination can lag the route owner for the first frames.
+ * The scene itself therefore owns this invariant independent of shell state. */
+.life-map-root {
+  position: fixed !important;
   inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-width: 100vw !important;
+  min-height: 100svh !important;
   isolation: auto !important;
 }
 

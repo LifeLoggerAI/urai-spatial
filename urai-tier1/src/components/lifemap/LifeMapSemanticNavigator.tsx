@@ -33,7 +33,6 @@ export default function LifeMapSemanticNavigator() {
   const [portalReady, setPortalReady] = useState(false);
   const navigatorRef = useRef<HTMLDetailsElement>(null);
   const desiredNavigatorOpenRef = useRef(false);
-  const selectionFallbackRef = useRef<number | null>(null);
   const selectedId = overviewRequested ? null : params.get("node") || params.get("memoryId");
   const selected = nodes.find((node) => node.id === selectedId) || null;
 
@@ -59,10 +58,6 @@ export default function LifeMapSemanticNavigator() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => () => {
-    if (selectionFallbackRef.current !== null) window.clearTimeout(selectionFallbackRef.current);
-  }, []);
-
   const withIdentity = useCallback((next: URLSearchParams) => {
     if (explicitDemo) next.set("demo", "1");
     const manifestId = params.get("manifestId");
@@ -72,20 +67,12 @@ export default function LifeMapSemanticNavigator() {
 
   const selectNode = useCallback((node: LifeMapNode, source: "semantic" | "keyboard" | "pointer" = "semantic") => {
     setNavigatorOpen(false);
-    if (selectionFallbackRef.current !== null) window.clearTimeout(selectionFallbackRef.current);
     requestLifeMapSelection(node.id, source);
-    selectionFallbackRef.current = window.setTimeout(() => {
-      selectionFallbackRef.current = null;
-      const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
-      const route = new URL(window.location.href);
-      const routeSelectedId = route.searchParams.get("node") || route.searchParams.get("memoryId");
-      if (root?.dataset.lifeMapMode === "selected" && routeSelectedId === node.id) return;
-      const next = withIdentity(new URLSearchParams());
-      next.set("memoryId", node.id);
-      next.set("node", node.id);
-      if (node.eraId) next.set("era", node.eraId);
-      router.replace(`/life-map?${next.toString()}`, { scroll: false });
-    }, 120);
+    const next = withIdentity(new URLSearchParams());
+    next.set("memoryId", node.id);
+    next.set("node", node.id);
+    if (node.eraId) next.set("era", node.eraId);
+    router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [router, setNavigatorOpen, withIdentity]);
 
   const overview = useCallback(() => {

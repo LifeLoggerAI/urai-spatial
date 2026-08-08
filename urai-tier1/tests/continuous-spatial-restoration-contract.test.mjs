@@ -122,8 +122,9 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-2'", 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  for (const marker of ["schemaVersion: 'urai-home-state-proof-3'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
+  assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /capture-continuous-spatial-proof-v18\.mjs/)
   assert.match(stateProofWorkflow, /capture-home-state-proof\.mjs/)
 })
