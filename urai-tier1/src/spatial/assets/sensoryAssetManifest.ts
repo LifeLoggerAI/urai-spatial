@@ -3,6 +3,7 @@ export type UraiSensoryAssetStatus = 'ready' | 'candidate' | 'fallback'
 export type UraiSensoryAssetEntry = {
   readonly id: string
   readonly path: string
+  readonly paths?: readonly string[]
   readonly status: UraiSensoryAssetStatus
   readonly routes: readonly string[]
   readonly fallback: string
@@ -43,12 +44,22 @@ export const uraiSensoryAssetManifest = {
     license: 'URAI Labs internal production asset; not promoted without rendered-route proof',
   },
   ambientAudio: {
-    id: 'urai-ambient-bed-v1',
-    path: '/assets/urai/generated/audio/urai-ambient-bed-v1.opus',
-    status: 'candidate',
-    routes: ['/home', '/life-map', '/focus', '/replay'],
+    id: 'production-spatial-audio-v1',
+    path: '/assets/urai/generated/audio/home-ambient-v1.opus',
+    paths: [
+      '/assets/urai/generated/audio/home-ambient-v1.opus',
+      '/assets/urai/generated/audio/ground-ambient-v1.opus',
+      '/assets/urai/generated/audio/life-map-ambient-v1.opus',
+      '/assets/urai/generated/audio/focus-ambient-v1.opus',
+      '/assets/urai/generated/audio/replay-ambient-v1.opus',
+      '/assets/urai/generated/audio/portal-transition-v1.opus',
+      '/assets/urai/generated/audio/orb-confirm-v1.opus',
+      '/assets/urai/generated/audio/ui-error-v1.opus',
+    ],
+    status: 'ready',
+    routes: ['/home', '/ground', '/life-map', '/focus', '/replay'],
     fallback: 'silent-audio-with-user-controlled-enable',
-    license: 'URAI Labs internal production asset; not promoted without rendered-route proof',
+    license: 'URAI Labs internal production assets; verified by spatial-audio-production-v1 receipt',
   },
 } as const satisfies Record<string, UraiSensoryAssetEntry>
 
