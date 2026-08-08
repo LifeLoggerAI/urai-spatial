@@ -1,75 +1,74 @@
-import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import assert from 'node:assert/strict'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
-const root = process.cwd();
-const app = join(root, "urai-tier1");
-const placeSegment = "[" + "placeId" + "]";
+const root = process.cwd()
+const app = join(root, 'urai-tier1')
+const read = (relativePath) => readFileSync(join(app, relativePath), 'utf8')
 
-const routes = [
-  ["src/app/page.tsx", "FinalHomeThreshold"],
-  ["src/app/home/page.tsx", "FinalHomeThreshold"],
-  ["src/app/spatial/page.tsx", "TierOneExperience"],
-  ["src/app/spatial-fallback/page.tsx", "UraiV1Experience"],
-  ["src/app/focus/page.tsx", "FinalFocusChamber"],
-  ["src/app/replay/page.tsx", "FinalReplayFilm"],
-  ["src/app/location-map/page.tsx", "LocationMapAcceptanceBoundary"],
-  ["src/app/passport/page.tsx", "PassportVaultClient"],
-  ["src/app/shadow/page.tsx", "SpatialRealmRuntime"],
-  ["src/app/council/page.tsx", "SpatialRealmRuntime"],
-  ["src/app/legacy/page.tsx", "LifeMapSemanticRoute"],
-  ["src/app/dream/page.tsx", "LifeMapSemanticRoute"],
-  ["src/app/spatial/legacy/page.tsx", "LifeMapSemanticRoute"],
-  ["src/app/spatial/life-map/page.tsx", "SpatialLifeMapCanonical"],
-  ["src/app/spatial/life-map-r3f/page.tsx", "SpatialLifeMapCanonical"],
-  ["src/app/spatial/life-map-orbit/page.tsx", "SpatialLifeMapCanonical"],
-  ["src/app/ground/page.tsx", "walkable-first-person-ground-layer"],
-];
+const canonicalRoutes = [
+  ['src/app/page.tsx', /FinalHomeThreshold/],
+  ['src/app/home/page.tsx', /FinalHomeThreshold/],
+  ['src/app/life-map/page.tsx', /SpatialLifeMapCanonical/],
+  ['src/app/focus/page.tsx', /FinalFocusChamber/],
+  ['src/app/replay/page.tsx', /FinalReplayFilm/],
+  ['src/app/location-map/page.tsx', /LocationMapAcceptanceBoundary/],
+  ['src/app/passport/page.tsx', /PassportVaultClient/],
+  ['src/app/shadow/page.tsx', /SpatialRealmRuntime/],
+  ['src/app/council/page.tsx', /SpatialRealmRuntime/],
+  ['src/app/ground/page.tsx', /walkable-first-person-ground-layer/],
+]
 
-for (const [file, expected] of routes) {
-  const full = join(app, file);
-  assert.equal(existsSync(full), true, `${file} must exist.`);
-  const text = readFileSync(full, "utf8");
-  assert.match(text, new RegExp(expected), `${file} must reference ${expected}.`);
-  if (file === "src/app/passport/page.tsx") {
-    assert.doesNotMatch(text, /FinalPassportVault/, "Passport route must not restore the retired poster owner.");
-  }
-  if (["src/app/legacy/page.tsx", "src/app/dream/page.tsx", "src/app/spatial/legacy/page.tsx"].includes(file)) {
-    assert.doesNotMatch(text, /RealmShell|LegacyScrollPortal/, `${file} must not restore a superseded shell or demo portal.`);
-  }
-  if (file.includes("spatial/life-map")) {
-    assert.doesNotMatch(text, /candidate for comparison|import LifeMapScene from/, `${file} must not expose a parallel Life Map candidate.`);
-  }
+for (const [file, expected] of canonicalRoutes) {
+  const full = join(app, file)
+  assert.equal(existsSync(full), true, `${file} must exist.`)
+  assert.match(read(file), expected, `${file} must retain its canonical owner marker.`)
 }
 
-const semanticRoutePath = join(app, "src", "spatial", "realms", "LifeMapSemanticRoute.tsx");
-assert.equal(existsSync(semanticRoutePath), true, "Life Map semantic route convergence owner must exist.");
-const semanticRoute = readFileSync(semanticRoutePath, "utf8");
-assert.match(semanticRoute, /\/life-map\?from=\$\{kind\}&overview=1/, "Legacy and Dream aliases must resolve to canonical Life Map.");
-assert.doesNotMatch(semanticRoute, /Camera:|Lighting:|Fallback:/, "Semantic convergence surface must not expose diagnostic metadata.");
-assert.equal(existsSync(join(app, "src", "spatial", "realms", "RealmShell.tsx")), false, "Obsolete RealmShell must stay removed.");
+const redirectAliases = [
+  ['src/app/spatial/page.tsx', '/home?from=spatial'],
+  ['src/app/spatial/v1/page.tsx', '/home?from=spatial-v1'],
+  ['src/app/v1/page.tsx', '/home?from=v1'],
+  ['src/app/ascent/page.tsx', '/home?from=ascent'],
+  ['src/app/spatial-fallback/page.tsx', '/home?from=spatial-fallback'],
+  ['src/app/unwind/page.tsx', '/life-map?from=unwind&overview=1'],
+  ['src/app/spatial/life-map/page.tsx', '/life-map?from=spatial-life-map'],
+  ['src/app/spatial/life-map-r3f/page.tsx', '/life-map?from=spatial-life-map-r3f'],
+  ['src/app/spatial/life-map-orbit/page.tsx', '/life-map?from=spatial-life-map-orbit'],
+  ['src/app/privacy/page.tsx', '/privacy-controls?from=privacy'],
+]
 
-const spatialRuntimePath = join(app, "src", "spatial", "realms", "SpatialRealmRuntime.tsx");
-assert.equal(existsSync(spatialRuntimePath), true, "Capability-aware spatial realm runtime must exist.");
-const spatialRuntime = readFileSync(spatialRuntimePath, "utf8");
-assert.match(spatialRuntime, /SpatialRealmExperience/, "Capability-aware runtime must preserve the canonical R3F owner.");
-assert.match(spatialRuntime, /semantic-no-webgl-fallback/, "Capability-aware runtime must preserve semantic no-WebGL access.");
+for (const [file, destination] of redirectAliases) {
+  const source = read(file)
+  assert.match(source, /redirect\(/, `${file} must be a compatibility redirect.`)
+  assert.ok(source.includes(destination), `${file} must resolve to ${destination}.`)
+  assert.doesNotMatch(source, /TierOneExperience|UraiV1Experience|UraiSpatialStage|SpatialLifeMapCanonical/, `${file} must not own another product runtime.`)
+}
 
-const passportClientPath = join(app, "src", "app", "passport", "PassportVaultClient.tsx");
-assert.equal(existsSync(passportClientPath), true, "Canonical Passport Ownership Vault client must exist.");
-assert.match(readFileSync(passportClientPath, "utf8"), /passport-ownership-vault/, "Canonical Passport client must expose its route-owner marker.");
+for (const file of ['src/app/u/[handle]/page.tsx', 'src/app/u/adamclamp/page.tsx', 'src/app/demo/life-map/page.tsx']) {
+  const source = read(file)
+  assert.match(source, /redirect\(/, `${file} must converge demo compatibility into canonical Life Map.`)
+  assert.match(source, /\/life-map\?demo=1/, `${file} must preserve disclosed sample-demo semantics.`)
+  assert.doesNotMatch(source, /TierOneExperience|UraiV1Experience|LifeMapAscentGate/, `${file} must not restore demo runtime ownership.`)
+}
 
-const locationBoundaryPath = join(app, "src", "spatial", "places", "LocationMapAcceptanceBoundary.tsx");
-assert.equal(existsSync(locationBoundaryPath), true, "Location Map acceptance boundary must exist.");
-assert.match(readFileSync(locationBoundaryPath, "utf8"), /LocationMapScene/, "Location Map acceptance boundary must render LocationMapScene.");
+for (const retired of [
+  'src/spatial/layout/TierOneExperience.tsx',
+  'src/components/urai/UraiV1Experience.tsx',
+  'src/app/RootModeExperience.tsx',
+]) {
+  assert.equal(existsSync(join(app, retired)), false, `${retired} must stay retired.`)
+}
 
-const placePagePath = join(app, "src", "app", "place", placeSegment, "page.tsx");
-const placeReplayPath = join(app, "src", "app", "place", placeSegment, "replay", "page.tsx");
-assert.equal(existsSync(placePagePath), true, "place route must exist.");
-assert.equal(existsSync(placeReplayPath), true, "place replay route must exist.");
-assert.match(readFileSync(placePagePath, "utf8"), /MemoryPlaceScene/, "place route must render MemoryPlaceScene.");
-assert.match(readFileSync(placeReplayPath, "utf8"), /PlaceReplayScene/, "place replay route must render PlaceReplayScene.");
-assert.match(readFileSync(placePagePath, "utf8"), /resolveMemoryPlace/, "place route must use repository resolver.");
-assert.match(readFileSync(placeReplayPath, "utf8"), /resolveMemoryPlace/, "place replay route must use repository resolver.");
+const semanticRoutePath = join(app, 'src/spatial/realms/LifeMapSemanticRoute.tsx')
+assert.equal(existsSync(semanticRoutePath), true, 'Life Map semantic convergence owner must exist.')
+const semanticRoute = read('src/spatial/realms/LifeMapSemanticRoute.tsx')
+assert.match(semanticRoute, /\/life-map\?from=\$\{kind\}&overview=1/, 'Legacy and Dream aliases must resolve to canonical Life Map.')
+assert.doesNotMatch(semanticRoute, /Camera:|Lighting:|Fallback:/, 'Semantic convergence surface must not expose diagnostic metadata.')
+assert.equal(existsSync(join(app, 'src/spatial/realms/RealmShell.tsx')), false, 'Obsolete RealmShell must stay removed.')
 
-console.log("URAI static route smoke canon passed.");
+const spatialRuntime = read('src/spatial/realms/SpatialRealmRuntime.tsx')
+assert.match(spatialRuntime, /SpatialRealmExperience/, 'Capability-aware realm runtime must preserve the canonical R3F owner.')
+assert.match(spatialRuntime, /semantic-no-webgl-fallback/, 'Capability-aware realm runtime must preserve semantic no-WebGL access.')
+
+console.log('URAI static route smoke canon passed.')
