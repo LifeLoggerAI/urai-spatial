@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mirror-release-proof-1069-8c9f4ab0240efb471ba35195a4abb98d72f97006
+  group: urai-app-verify-1069-04b2df769b28ef0ec17affb44158aaf3e4ed304f
   cancel-in-progress: true
 
 jobs:
