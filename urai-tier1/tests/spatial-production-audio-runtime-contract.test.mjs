@@ -62,6 +62,8 @@ test('shared world runtime owns explicit consent, mute, route ambience and acces
   assert.match(runtime, /urai:audio-consent/)
   assert.match(runtime, /urai:audio-mute/)
   assert.match(runtime, /urai:audio-cue/)
+  assert.match(runtime, /const handleConsent[\s\S]*if \(spatialPhase\)[\s\S]*audio\.setAmbientPhase\(spatialPhase\)/)
+  assert.match(runtime, /const handleMute[\s\S]*if \(consented && spatialPhase\) audio\.setAmbientPhase\(spatialPhase\)/)
   assert.match(runtime, /role="status"/)
   assert.match(runtime, /aria-live="polite"/)
   assert.match(runtime, /data-audio-consent/)
