@@ -89,7 +89,7 @@ contains("verification/launch-lock.json", "locked_until_verified", "launch lock 
 contains("verification/signoffs.md", "Status: PENDING", "pending signoff markers");
 contains("docs/ARCHITECTURE_LOCK.md", "FinalHomeThreshold", "canonical Home architecture owner");
 contains("docs/ARCHITECTURE_LOCK.md", "SpatialLifeMapCanonical", "canonical Life Map architecture owner");
-contains("docs/ARCHITECTURE_LOCK.md", "HomeScene.tsx", "canonical architecture scene");
+contains("docs/ARCHITECTURE_LOCK.md", "HomeSpatialWorldFinal", "canonical architecture scene");
 containsLower("docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md", "legacy / migration-candidate", "legacy path declaration");
 contains(".github/workflows/spatial-production-lock.yml", "pnpm/action-setup@v4", "CI pnpm setup");
 contains(".github/workflows/spatial-production-lock.yml", "pnpm runtime:authority", "CI runtime authority check");
