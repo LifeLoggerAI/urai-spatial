@@ -213,7 +213,7 @@ jobs:
           retention-days: 14
           path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload exact replacement evidence
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-replacement-${{ env.URAI_EXACT_HEAD }}
