@@ -9,6 +9,7 @@ const controller = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/useAud
 const runtime = fs.readFileSync(path.join(tierRoot, 'src/spatial/audio/SpatialAmbientRuntime.tsx'), 'utf8')
 const shell = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/UraiWorldShell.tsx'), 'utf8')
 const companion = fs.readFileSync(path.join(tierRoot, 'src/spatial/world/PersistentWorldCompanion.tsx'), 'utf8')
+const orbConversation = fs.readFileSync(path.join(tierRoot, 'src/spatial/orb/OrbConversationPanel.tsx'), 'utf8')
 const receipt = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'operations/assets/production-receipts/spatial-audio-production-v1.json'), 'utf8'))
 
 const expectedAssets = [
@@ -74,4 +75,10 @@ test('Orb controls expose user-owned sound enable and mute behavior', () => {
   assert.match(companion, /urai:audio-consent/)
   assert.match(companion, /urai:audio-mute/)
   assert.match(companion, /cue: 'orb-confirm'/)
+})
+
+test('Orb provider success and failure paths emit production confirmation and error cues', () => {
+  assert.match(orbConversation, /emitAudioCue\('orb-confirm'\)/)
+  assert.match(orbConversation, /emitAudioCue\('error'\)/)
+  assert.match(orbConversation, /catch \(error\)[\s\S]*emitAudioCue\('error'\)/)
 })
