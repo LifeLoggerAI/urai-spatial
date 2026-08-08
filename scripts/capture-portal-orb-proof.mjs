@@ -82,7 +82,10 @@ async function settleAnimationFrames(page, frameCount) {
 async function canvasVisualEvidence(page) {
   const canvas = page.locator('.urai-asset-home-world canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const bounds = await canvas.boundingBox()
+  const bounds = await canvas.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
   const viewport = page.viewportSize()
   if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
   const clipX = Math.max(0, bounds.x)
