@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Float, Stars, useAnimations, useGLTF } from "@react-three/drei";
+import { ContactShadows, Float, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
@@ -49,14 +49,14 @@ const HomeOrbStateContext = createContext<OrbState>("idle");
 const HomeReducedMotionContext = createContext(false);
 
 function organicTexture(low: [number, number, number], high: [number, number, number], seed: number, repeat: number) {
-  const size = 128;
+  const size = 192;
   const data = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
-      const broad = Math.sin((x + seed * 9) * 0.063) * 0.16 + Math.cos((y - seed * 5) * 0.071) * 0.13;
+      const broad = Math.sin((x + seed * 9) * 0.047) * 0.14 + Math.cos((y - seed * 5) * 0.053) * 0.12;
       const fine = Math.sin(x * 12.9898 + y * 78.233 + seed * 37.719) * 43758.5453;
       const noise = fine - Math.floor(fine);
-      const t = THREE.MathUtils.clamp(0.45 + broad + (noise - 0.5) * 0.17, 0, 1);
+      const t = THREE.MathUtils.clamp(0.46 + broad + (noise - 0.5) * 0.12, 0, 1);
       const offset = (y * size + x) * 4;
       data[offset] = Math.round(THREE.MathUtils.lerp(low[0], high[0], t));
       data[offset + 1] = Math.round(THREE.MathUtils.lerp(low[1], high[1], t));
@@ -77,14 +77,14 @@ function organicTexture(low: [number, number, number], high: [number, number, nu
 }
 
 function reliefTexture(seed: number, repeat: number) {
-  const size = 128;
+  const size = 192;
   const data = new Uint8Array(size * size * 4);
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
-      const broad = Math.sin((x + seed) * 0.08) * 0.16 + Math.cos((y - seed) * 0.074) * 0.14;
+      const broad = Math.sin((x + seed) * 0.057) * 0.15 + Math.cos((y - seed) * 0.061) * 0.13;
       const fine = Math.sin(x * 17.171 + y * 43.117 + seed * 11.31) * 17341.317;
       const noise = fine - Math.floor(fine);
-      const value = Math.round(THREE.MathUtils.clamp(0.52 + broad + (noise - 0.5) * 0.13, 0, 1) * 255);
+      const value = Math.round(THREE.MathUtils.clamp(0.52 + broad + (noise - 0.5) * 0.1, 0, 1) * 255);
       const offset = (y * size + x) * 4;
       data[offset] = value;
       data[offset + 1] = value;
@@ -130,44 +130,79 @@ function presenceShadowTexture() {
   return texture;
 }
 
-const TERRAIN_TEXTURE = organicTexture([47, 45, 30], [91, 91, 53], 3, 8);
-const TERRAIN_RELIEF = reliefTexture(7, 10);
+const TERRAIN_TEXTURE = organicTexture([48, 52, 36], [101, 100, 67], 3, 7);
+const TERRAIN_RELIEF = reliefTexture(7, 8);
+const STONE_TEXTURE = organicTexture([83, 77, 66], [137, 126, 108], 11, 5);
+const STONE_RELIEF = reliefTexture(13, 6);
+const PATH_TEXTURE = organicTexture([92, 79, 61], [156, 137, 104], 17, 8);
+const PATH_RELIEF = reliefTexture(19, 10);
+const WOOD_TEXTURE = organicTexture([67, 45, 29], [121, 83, 48], 23, 7);
 const PRESENCE_SHADOW_TEXTURE = presenceShadowTexture();
+
+function materialForAuthoredMesh(name: string, source: THREE.Material | THREE.Material[]) {
+  const inherited = Array.isArray(source) ? source[0] : source;
+  const base = inherited instanceof THREE.MeshStandardMaterial ? inherited.clone() : new THREE.MeshStandardMaterial();
+  const id = name.toLowerCase();
+  base.metalness = 0;
+  base.roughness = 0.9;
+  base.transparent = false;
+  base.opacity = 1;
+  if (/terrain|ground|moss|earth|garden/.test(id)) {
+    base.color.set("#72734f");
+    base.map = TERRAIN_TEXTURE;
+    base.bumpMap = TERRAIN_RELIEF;
+    base.bumpScale = 0.12;
+    base.roughness = 1;
+  } else if (/path|step|walk|terrace/.test(id)) {
+    base.color.set("#9b8665");
+    base.map = PATH_TEXTURE;
+    base.bumpMap = PATH_RELIEF;
+    base.bumpScale = 0.08;
+  } else if (/wood|beam|timber|bark/.test(id)) {
+    base.color.set("#765138");
+    base.map = WOOD_TEXTURE;
+    base.bumpMap = TERRAIN_RELIEF;
+    base.bumpScale = 0.05;
+  } else if (/water|pool|stream/.test(id)) {
+    base.color.set("#587d7b");
+    base.roughness = 0.16;
+    base.metalness = 0.08;
+  } else {
+    base.color.multiply(new THREE.Color("#b7aa93"));
+    base.map = STONE_TEXTURE;
+    base.bumpMap = STONE_RELIEF;
+    base.bumpScale = 0.055;
+    base.roughness = 0.94;
+  }
+  base.emissive.set("#090a07");
+  base.emissiveIntensity = 0.004;
+  base.needsUpdate = true;
+  return base;
+}
 
 function preparePhysicalTerrain(source: THREE.Object3D) {
   const world = source.clone(true);
+  let visibleMeshCount = 0;
   let terrainCount = 0;
   world.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) {
-      if (object.name && object.name !== "Scene" && object.name !== "home-entry-chamber-root") object.visible = false;
-      return;
-    }
-    const terrain = object.name.includes("sanctuary-terrain");
-    object.visible = terrain;
-    if (!terrain) return;
-    terrainCount += 1;
-    const material = object.material instanceof THREE.MeshStandardMaterial
-      ? object.material.clone()
-      : new THREE.MeshStandardMaterial();
-    material.color.set("#6f704f");
-    material.map = TERRAIN_TEXTURE;
-    material.bumpMap = TERRAIN_RELIEF;
-    material.bumpScale = 0.12;
-    material.roughness = 1;
-    material.metalness = 0;
-    material.emissive.set("#080904");
-    material.emissiveIntensity = 0.006;
-    material.transparent = true;
-    material.opacity = 0.42;
-    material.depthWrite = true;
-    material.needsUpdate = true;
-    object.material = material;
-    object.castShadow = false;
+    if (!(object instanceof THREE.Mesh)) return;
+    const id = object.name.toLowerCase();
+    const rejectedProp = /portal|ring|threshold|village|mannequin|avatar|doorway|debug|marker|label/.test(id);
+    const rejectedLowPolyScenery = /mountain|tree|vegetation/.test(id);
+    const visible = !rejectedProp && !rejectedLowPolyScenery;
+    object.visible = visible;
+    if (!visible) return;
+    visibleMeshCount += 1;
+    if (id.includes("sanctuary-terrain") || /terrain|ground/.test(id)) terrainCount += 1;
+    object.material = materialForAuthoredMesh(object.name, object.material);
+    object.castShadow = !/terrain|ground|water|pool/.test(id);
     object.receiveShadow = true;
     object.frustumCulled = false;
   });
-  if (!terrainCount) throw new Error("Home physical terrain is missing from the authored GLB.");
-  world.userData.uraiVisibleWorld = "provider-natural-environment-plus-authored-physical-terrain";
+  if (!terrainCount || visibleMeshCount < 3) throw new Error("Home authored 3D world is missing required physical geometry.");
+  world.userData.uraiVisibleWorld = "authored-coherent-three-dimensional-sanctuary";
+  world.userData.suppressedPortalProps = true;
+  world.userData.suppressedLowPolyScenery = true;
   return world;
 }
 
@@ -177,9 +212,9 @@ function prepareOrb(source: THREE.Object3D) {
     if (!(object instanceof THREE.Mesh)) return;
     if (object.material instanceof THREE.MeshStandardMaterial) {
       const material = object.material.clone();
-      material.roughness = Math.max(0.34, material.roughness);
-      material.metalness = Math.min(0.52, material.metalness);
-      material.emissiveIntensity *= 0.62;
+      material.roughness = Math.max(0.4, material.roughness);
+      material.metalness = Math.min(0.38, material.metalness);
+      material.emissiveIntensity *= 0.42;
       material.needsUpdate = true;
       object.material = material;
     }
@@ -210,7 +245,8 @@ function HomeEnvironment({ walkTarget }: { walkTarget: MutableRefObject<THREE.Ve
       userData={{
         runtimeAsset: HOME_MODEL,
         visualEnvironment: HOME_PROVIDER_ENVIRONMENT,
-        physicalBase: "authored-terrain-only",
+        physicalBase: "authored-coherent-world",
+        providerImageRole: "atmospheric-support-only",
         suppressedGeneratedScenery: true,
         regions: ["home-mountain-horizon", "home-living-vegetation"],
       }}
@@ -219,6 +255,22 @@ function HomeEnvironment({ walkTarget }: { walkTarget: MutableRefObject<THREE.Ve
       <mesh name="home-walkable-navigation-surface" userData={{ interactionRole: "walkable-surface" }} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]} onClick={onWalk}>
         <planeGeometry args={[19, 19]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+      </mesh>
+      <mesh name="home-mountain-horizon" position={[0, -0.34, -15]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[14, 96]} />
+        <meshStandardMaterial color="#636249" map={TERRAIN_TEXTURE} bumpMap={TERRAIN_RELIEF} bumpScale={0.1} roughness={1} />
+      </mesh>
+      <group name="home-living-vegetation" userData={{ role: "subtle-ground-cover-not-placeholder-trees" }}>
+        {[-7.7, -5.8, -3.4, 3.2, 5.5, 7.5].map((x, index) => (
+          <mesh key={x} position={[x, 0.2, -4.8 - (index % 3) * 1.4]} scale={[1.4, 0.45, 1.15]} castShadow receiveShadow>
+            <sphereGeometry args={[0.72, 32, 22]} />
+            <meshStandardMaterial color={index % 2 ? "#59694b" : "#687352"} map={TERRAIN_TEXTURE} bumpMap={TERRAIN_RELIEF} bumpScale={0.04} roughness={1} />
+          </mesh>
+        ))}
+      </group>
+      <mesh name="home-reflecting-water" position={[0, 0.02, -6.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[2.25, 96]} />
+        <meshPhysicalMaterial color="#527775" roughness={0.12} metalness={0.08} clearcoat={0.75} clearcoatRoughness={0.16} transparent opacity={0.72} />
       </mesh>
     </group>
   );
@@ -242,12 +294,12 @@ function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
   }, [actions, clip, reducedMotion]);
 
   return (
-    <group ref={root} name="home-orb-sanctuary" userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }} position={ORB} scale={0.24} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onOpen(); }}>
-      <Float speed={reducedMotion ? 0 : 0.32} rotationIntensity={reducedMotion ? 0 : 0.012} floatIntensity={reducedMotion ? 0 : 0.035}>
+    <group ref={root} name="home-orb-sanctuary" userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }} position={ORB} scale={0.19} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onOpen(); }}>
+      <Float speed={reducedMotion ? 0 : 0.28} rotationIntensity={reducedMotion ? 0 : 0.01} floatIntensity={reducedMotion ? 0 : 0.026}>
         <primitive object={orb} />
       </Float>
-      <pointLight color="#d7edf0" intensity={1.1} distance={4.2} decay={2} position={[0, 1.25, 0.75]} />
-      <pointLight color="#e4c28d" intensity={0.42} distance={3.6} decay={2} position={[-0.8, 0.45, 0.45]} />
+      <pointLight color="#d9e8e4" intensity={0.58} distance={3.1} decay={2} position={[0, 1.05, 0.55]} />
+      <pointLight color="#deb985" intensity={0.22} distance={2.8} decay={2} position={[-0.7, 0.3, 0.4]} />
     </group>
   );
 }
@@ -257,7 +309,7 @@ function EmbodiedPresenceShadow({ root }: { root: MutableRefObject<THREE.Group |
     <group ref={root} name="home-authored-embodied-self" userData={{ semanticOwner: "urai-home-embodied-avatar", representation: "privacy-preserving-ground-shadow" }} position={SPAWN} raycast={DISABLED_RAYCAST}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.125, -0.32]} renderOrder={2}>
         <planeGeometry args={[0.92, 2.05]} />
-        <meshBasicMaterial map={PRESENCE_SHADOW_TEXTURE} transparent opacity={0.3} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial map={PRESENCE_SHADOW_TEXTURE} transparent opacity={0.28} depthWrite={false} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -270,7 +322,7 @@ function GroundThresholdLandmark({ onEnter }: { onEnter: () => void }) {
         <boxGeometry args={[3.1, 1.4, 3.4]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      <pointLight position={[0, 0.08, -0.6]} color="#c2a879" intensity={0.16} distance={3.4} decay={2} />
+      <pointLight position={[0, 0.08, -0.6]} color="#c2a879" intensity={0.12} distance={3.1} decay={2} />
     </group>
   );
 }
@@ -282,7 +334,7 @@ function LifeMapSkyLookout({ onEnter }: { onEnter: () => void }) {
         <boxGeometry args={[3.1, 1.7, 3.4]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      <pointLight position={[0, 1.1, -0.35]} color="#d5dfcf" intensity={0.12} distance={3.2} decay={2} />
+      <pointLight position={[0, 1.1, -0.35]} color="#d5dfcf" intensity={0.1} distance={3} decay={2} />
     </group>
   );
 }
@@ -325,10 +377,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
   const placeHomeCamera = useCallback(() => {
     const portrait = size.height > size.width;
     cameraForward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current));
-    cameraDesired.current.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.6 : 1.66, portrait ? 0.32 : 0.26).applyAxisAngle(upAxis.current, yaw.current));
+    cameraDesired.current.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.58 : 1.66, portrait ? 0.32 : 0.26).applyAxisAngle(upAxis.current, yaw.current));
     camera.position.copy(cameraDesired.current);
-    lookDesired.current.copy(position.current).addScaledVector(cameraForward.current, 7.5);
-    camera.lookAt(lookDesired.current.x, 1.48 + pitch.current, lookDesired.current.z);
+    lookDesired.current.copy(position.current).addScaledVector(cameraForward.current, portrait ? 6.2 : 7.5);
+    camera.lookAt(lookDesired.current.x, 1.44 + pitch.current, lookDesired.current.z);
   }, [camera, pitch, size.height, size.width, yaw]);
 
   useLayoutEffect(() => { placeHomeCamera(); }, [placeHomeCamera]);
@@ -429,10 +481,10 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, groundDescent,
 
     const portrait = size.height > size.width;
     cameraForward.current.set(Math.sin(yaw.current), 0, -Math.cos(yaw.current));
-    cameraDesired.current.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.6 : 1.66, portrait ? 0.32 : 0.26).applyAxisAngle(upAxis.current, yaw.current));
+    cameraDesired.current.copy(position.current).add(new THREE.Vector3(0, portrait ? 1.58 : 1.66, portrait ? 0.32 : 0.26).applyAxisAngle(upAxis.current, yaw.current));
     camera.position.lerp(cameraDesired.current, 1 - Math.pow(0.0008, delta));
-    lookDesired.current.copy(position.current).addScaledVector(cameraForward.current, 7.5);
-    camera.lookAt(lookDesired.current.x, 1.48 + pitch.current, lookDesired.current.z);
+    lookDesired.current.copy(position.current).addScaledVector(cameraForward.current, portrait ? 6.2 : 7.5);
+    camera.lookAt(lookDesired.current.x, 1.44 + pitch.current, lookDesired.current.z);
 
     const distances: readonly [Nearby, THREE.Vector3, number][] = [
       ["orb", ORB, 1.55],
@@ -463,7 +515,7 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
   useFrame(() => {
     frames.current += 1;
     if (reported.current || frames.current < 4) return;
-    const required = ["home-authored-terrain", "home-authored-embodied-self", "home-orb-sanctuary", "home-ground-environmental-threshold", "home-life-map-sky-lookout"];
+    const required = ["home-authored-terrain", "home-authored-embodied-self", "home-orb-sanctuary", "home-ground-environmental-threshold", "home-life-map-sky-lookout", "home-mountain-horizon", "home-living-vegetation"];
     if (!required.every((name) => scene.getObjectByName(name))) return;
     reported.current = true;
     onReady();
@@ -494,10 +546,11 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
     <>
       {cosmic ? <color attach="background" args={["#07111b"]} /> : null}
       {cosmic ? <Stars radius={160} depth={58} count={920} factor={2.1} saturation={0.08} fade speed={reducedMotion ? 0 : 0.08} /> : null}
-      {cosmic ? <fogExp2 attach="fog" args={["#101b28", 0.0024]} /> : <fogExp2 attach="fog" args={["#4d4936", 0.0045]} />}
-      <ambientLight intensity={0.35} color="#dfd4bf" />
-      <hemisphereLight args={["#d7c99f", "#25261d", 0.7]} />
-      <directionalLight position={[-14, 18, 9]} intensity={1.45} color="#dfb86f" castShadow shadow-mapSize={[1536, 1536]} shadow-camera-near={0.5} shadow-camera-far={46} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} />
+      {cosmic ? <fogExp2 attach="fog" args={["#101b28", 0.0024]} /> : <fogExp2 attach="fog" args={["#77745d", 0.022]} />}
+      <ambientLight intensity={0.42} color="#e4ddcb" />
+      <hemisphereLight args={["#d9ccb0", "#313126", 0.82]} />
+      <directionalLight position={[-12, 18, 7]} intensity={1.7} color="#e3bd79" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-near={0.5} shadow-camera-far={48} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} />
+      <directionalLight position={[8, 9, -12]} intensity={0.22} color="#b9d5d0" />
       <SceneReadiness onReady={onSceneReady} />
       <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} groundDescent={groundDescent} onGroundComplete={onGroundComplete} reducedMotion={reducedMotion} />
       <HomeEnvironment walkTarget={target} />
@@ -507,9 +560,10 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
       </HomeReducedMotionContext.Provider>
       <GroundThresholdLandmark onEnter={onGround} />
       <LifeMapSkyLookout onEnter={onLifeMap} />
+      {!cosmic ? <ContactShadows position={[0, 0.04, -1]} opacity={0.28} scale={22} blur={2.4} far={8} resolution={512} frames={reducedMotion ? 1 : Infinity} /> : null}
       <EffectComposer multisampling={0}>
-        <Bloom intensity={0.035} luminanceThreshold={1.12} luminanceSmoothing={0.28} mipmapBlur />
-        <Vignette eskil={false} offset={0.24} darkness={0.025} />
+        <Bloom intensity={0.022} luminanceThreshold={1.15} luminanceSmoothing={0.25} mipmapBlur />
+        <Vignette eskil={false} offset={0.22} darkness={0.018} />
       </EffectComposer>
     </>
   );
@@ -645,21 +699,24 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
       data-urai-true-3d="true"
       data-home-primary-owner="asset-driven"
       data-home-real-world-first="true"
-      data-home-visible-world="final-physical-sanctuary-memory-rooms"
+      data-home-visible-world="authored-coherent-three-dimensional-sanctuary"
       data-home-world-character="believable-natural-inhabitable-environment"
       data-home-visible-portals="false"
       data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"
       data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}
-      data-home-provider-regions="home-mountain-horizon home-living-vegetation"
+      data-home-provider-role="atmospheric-support-only"
+      data-home-provider-regions="home-atmospheric-horizon"
       data-home-generated-scenery="suppressed"
-      data-home-physical-base="authored-terrain"
+      data-home-physical-base="authored-coherent-world"
+      data-home-visual-ownership="three-dimensional-geometry"
+      data-home-desktop-mobile-world="same-scene"
       data-home-embodied-self="privacy-preserving-shadow"
       data-home-movement="walk-keyboard-click-touch"
       data-home-pointer-lock="false"
       data-home-audio="silent-fallback"
       data-home-assets-ready={ready ? "true" : "false"}
-      data-home-runtime-assets="replay-memory-film-main.webp home-entry-chamber-v1.glb urai-orb-avatar-v1.glb"
-      data-home-authored-regions="home-mountain-horizon home-living-vegetation"
+      data-home-runtime-assets="home-entry-chamber-v1.glb urai-orb-avatar-v1.glb replay-memory-film-main.webp"
+      data-home-authored-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water"
       data-home-nearby={nearby ?? "none"}
       data-home-camera-mode={groundDescent ? "descent" : phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied-first-person"}
       data-home-scene-phase={groundDescent ? "GROUND_DESCENT" : phase}
@@ -683,7 +740,7 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 0.92;
+          gl.toneMappingExposure = 0.96;
           gl.setClearColor(0x000000, 0);
           setCanvasReady(true);
         }}
