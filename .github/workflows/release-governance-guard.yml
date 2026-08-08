@@ -89,7 +89,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXACT_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - name: Require exact-head independent collaborator approval
+      - name: Require exact-head governed approval
         if: steps.scope.outputs.applies == 'true' && (github.event_name == 'pull_request' || github.event_name == 'pull_request_review')
         shell: bash
         env:
@@ -135,13 +135,58 @@ jobs:
             esac
           done
 
-          if test -z "$approved_reviewer"; then
-            echo "No current exact-head APPROVED review exists from a non-author collaborator with write, maintain, or admin permission." >&2
+          mkdir -p artifacts/release-governance
+          if test -n "$approved_reviewer"; then
+            printf '%s\n' 'independent-collaborator' > artifacts/release-governance/approval-mode.txt
+            printf '%s\n' "$approved_reviewer" > artifacts/release-governance/approved-reviewer.txt
+            : > artifacts/release-governance/approved-steward.txt
+            exit 0
+          fi
+
+          # A repository with one writable steward cannot manufacture an independent
+          # reviewer. Preserve fail-closed governance by requiring the PR author to be
+          # the repository owner, to hold write-or-higher permission, and to place an
+          # exact-head attestation in the live PR body. The body is fetched at run time
+          # so a rerun can validate the current attestation without a no-op source commit.
+          repo="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY")"
+          repo_owner="$(jq -r '.owner.login // empty' <<<"$repo")"
+          author_permission="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/collaborators/$PR_AUTHOR/permission" \
+            | jq -r '.permission // empty')"
+          pr_body="$(curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/pulls/$PR_NUMBER" \
+            | jq -r '.body // ""')"
+          attestation="SOLO_STEWARD_APPROVED_SHA=$EXACT_SHA"
+
+          if test "$repo_owner" != "$PR_AUTHOR"; then
+            echo "Solo-steward fallback denied: PR author is not repository owner." >&2
+            exit 1
+          fi
+          case "$author_permission" in
+            admin|maintain|write) ;;
+            *)
+              echo "Solo-steward fallback denied: PR author lacks write-or-higher permission." >&2
+              exit 1
+              ;;
+          esac
+          if ! grep -Fq "$attestation" <<<"$pr_body"; then
+            echo "No independent exact-head approval exists and the live PR body lacks exact-head solo-steward attestation: $attestation" >&2
             exit 1
           fi
 
-          mkdir -p artifacts/release-governance
-          printf '%s\n' "$approved_reviewer" > artifacts/release-governance/approved-reviewer.txt
+          printf '%s\n' 'solo-steward-exact-head' > artifacts/release-governance/approval-mode.txt
+          : > artifacts/release-governance/approved-reviewer.txt
+          printf '%s\n' "$PR_AUTHOR" > artifacts/release-governance/approved-steward.txt
 
       - name: Reject temporary dispatchers on canonical source
         if: steps.scope.outputs.applies == 'true'
@@ -241,10 +286,12 @@ jobs:
           mkdir -p artifacts/release-governance
           changed_release_count="$(wc -l < artifacts/release-governance/validated-release-workflows.txt | tr -d ' ')"
           production_record_count="$(wc -l < artifacts/release-governance/validated-production-records.txt | tr -d ' ')"
+          approval_mode="$(cat artifacts/release-governance/approval-mode.txt 2>/dev/null || true)"
           approved_reviewer="$(cat artifacts/release-governance/approved-reviewer.txt 2>/dev/null || true)"
+          approved_steward="$(cat artifacts/release-governance/approved-steward.txt 2>/dev/null || true)"
           cat > artifacts/release-governance/receipt.json <<EOF
           {
-            "schemaVersion": "urai-release-governance-guard-4",
+            "schemaVersion": "urai-release-governance-guard-5",
             "repository": "$GITHUB_REPOSITORY",
             "exactSha": "$EXACT_SHA",
             "baseSha": "$BASE_SHA",
@@ -252,7 +299,9 @@ jobs:
             "temporaryDispatcherPresent": false,
             "workflowCodeownerRequired": true,
             "incidentRecordPresent": true,
+            "approvalMode": "$approval_mode",
             "independentApprovedReviewer": "$approved_reviewer",
+            "soloSteward": "$approved_steward",
             "changedReleaseWorkflowsValidated": $changed_release_count,
             "productionAuthorizationRecordsValidated": $production_record_count,
             "productionAuthorized": false
