@@ -11,9 +11,10 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
   return (
     <div
       data-home-authored-region-contract="true"
-      data-home-spatial-regions="home-mountain-horizon home-living-vegetation"
-      data-home-mountain-source="horizon-mountain-*"
-      data-home-vegetation-source="living-growth-*"
+      data-home-visible-world="final-physical-sanctuary-memory-rooms"
+      data-home-route-owner="authored-coherent-three-dimensional-sanctuary"
+      data-home-spatial-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water"
+      data-home-forge-scenery="suppressed"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
