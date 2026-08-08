@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0.0",
   "packId": "urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-06T03:30:00Z",
+  "generatedAt": "2026-08-08T04:10:38Z",
   "generator": "URAI Labs Final GLB Forge 1.0",
   "authorship": "Original non-primitive authored mesh surfaces with embedded UV-mapped PBR texture sets; no visible basic primitive stand-ins.",
   "assets": [
@@ -11,12 +11,7 @@
       "sha256": "dbd74bfc61ff997a95d2cbb45cf246ceadac4036a5e95817abcf1ad998b621b9",
       "triangleCount": 57352,
       "nodes": 322,
-      "animations": [
-        "Home_Breathing",
-        "Presence_Idle",
-        "Presence_Privacy",
-        "Presence_Forming"
-      ],
+      "animations": ["Home_Breathing", "Presence_Idle", "Presence_Privacy", "Presence_Forming"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -27,15 +22,7 @@
       "sha256": "18a7d77e778bf8561a278f3e0a4e380c192a227c07a17b91265c70dab461d2c9",
       "triangleCount": 3816,
       "nodes": 40,
-      "animations": [
-        "Portal_Closed",
-        "Portal_Available",
-        "Portal_Attention",
-        "Portal_Active",
-        "Portal_Opening",
-        "Portal_Traversal",
-        "Portal_Closing"
-      ],
+      "animations": ["Portal_Closed", "Portal_Available", "Portal_Attention", "Portal_Active", "Portal_Opening", "Portal_Traversal", "Portal_Closing"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -46,11 +33,7 @@
       "sha256": "b5309b854729566efcc444db029458bd4193ed18e6c83199e164ca8cb3fb2b76",
       "triangleCount": 20974,
       "nodes": 114,
-      "animations": [
-        "Ground_Pulse",
-        "Nexus_Idle",
-        "Chamber_Attention"
-      ],
+      "animations": ["Ground_Pulse", "Nexus_Idle", "Chamber_Attention"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -61,11 +44,7 @@
       "sha256": "b2aaccd9155277071531c5197f3edbc42eb22f23fbdb20faa94a633137c174d0",
       "triangleCount": 8770,
       "nodes": 30,
-      "animations": [
-        "MemoryStar_Idle",
-        "MemoryStar_Selected",
-        "MemoryStar_Focus"
-      ],
+      "animations": ["MemoryStar_Idle", "MemoryStar_Selected", "MemoryStar_Focus"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -73,14 +52,10 @@
     {
       "fileName": "focus-memory-chamber-v1.glb",
       "bytes": 622812,
-      "sha256": "e27bbc6bdcb4e173c331d5dae2b2865ab75556e2e74ee8a854e1a3725d7d57f6",
+      "sha256": "3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0",
       "triangleCount": 17334,
       "nodes": 35,
-      "animations": [
-        "Focus_Arrival",
-        "Focus_Breathing",
-        "Focus_Exit"
-      ],
+      "animations": ["Focus_Arrival", "Focus_Breathing", "Focus_Exit"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -91,12 +66,7 @@
       "sha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
       "triangleCount": 10410,
       "nodes": 131,
-      "animations": [
-        "Replay_Idle",
-        "Replay_Enter",
-        "Replay_Play",
-        "Replay_Exit"
-      ],
+      "animations": ["Replay_Idle", "Replay_Enter", "Replay_Play", "Replay_Exit"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -107,20 +77,7 @@
       "sha256": "ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026",
       "triangleCount": 9380,
       "nodes": 29,
-      "animations": [
-        "Orb_Resting",
-        "Orb_Idle",
-        "Orb_Attention",
-        "Orb_Listening",
-        "Orb_Thinking",
-        "Orb_Speaking",
-        "Orb_Guiding",
-        "Orb_Reflecting",
-        "Orb_Calming",
-        "Orb_Privacy",
-        "Orb_Degraded",
-        "Orb_Transition"
-      ],
+      "animations": ["Orb_Resting", "Orb_Idle", "Orb_Attention", "Orb_Listening", "Orb_Thinking", "Orb_Speaking", "Orb_Guiding", "Orb_Reflecting", "Orb_Calming", "Orb_Privacy", "Orb_Degraded", "Orb_Transition"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -131,12 +88,7 @@
       "sha256": "19dc8b098dff6e9ba78f7c577d07cb84d2cada9a25c3a0ab289d4c7724bcac56",
       "triangleCount": 7878,
       "nodes": 48,
-      "animations": [
-        "Passport_Idle",
-        "Passport_Grant",
-        "Status_Pulse",
-        "Privacy_Lock"
-      ],
+      "animations": ["Passport_Idle", "Passport_Grant", "Status_Pulse", "Privacy_Lock"],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
