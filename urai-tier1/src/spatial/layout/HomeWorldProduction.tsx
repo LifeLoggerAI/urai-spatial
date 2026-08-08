@@ -187,8 +187,8 @@ function preparePhysicalTerrain(source: THREE.Object3D) {
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     const id = object.name.toLowerCase();
-    const rejectedProp = /portal|ring|threshold|village|mannequin|avatar|doorway|debug|marker|label/.test(id);
-    const rejectedLowPolyScenery = /mountain|tree|vegetation/.test(id);
+    const rejectedProp = /portal|ring|threshold|village|mannequin|avatar|doorway|debug|marker|label|embodied|presence|alcove|waterfall/.test(id);
+    const rejectedLowPolyScenery = /mountain|tree|vegetation|living-growth|memory-place-anchor/.test(id);
     const visible = !rejectedProp && !rejectedLowPolyScenery;
     object.visible = visible;
     if (!visible) return;
@@ -546,11 +546,11 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
     <>
       {cosmic ? <color attach="background" args={["#07111b"]} /> : null}
       {cosmic ? <Stars radius={160} depth={58} count={920} factor={2.1} saturation={0.08} fade speed={reducedMotion ? 0 : 0.08} /> : null}
-      {cosmic ? <fogExp2 attach="fog" args={["#101b28", 0.0024]} /> : <fogExp2 attach="fog" args={["#77745d", 0.022]} />}
-      <ambientLight intensity={0.42} color="#e4ddcb" />
-      <hemisphereLight args={["#d9ccb0", "#313126", 0.82]} />
-      <directionalLight position={[-12, 18, 7]} intensity={1.7} color="#e3bd79" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-near={0.5} shadow-camera-far={48} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} />
-      <directionalLight position={[8, 9, -12]} intensity={0.22} color="#b9d5d0" />
+      {cosmic ? <fogExp2 attach="fog" args={["#101b28", 0.0024]} /> : <fogExp2 attach="fog" args={["#8b8975", 0.017]} />}
+      <ambientLight intensity={0.62} color="#eee6d4" />
+      <hemisphereLight args={["#e1d5bd", "#37372c", 0.96]} />
+      <directionalLight position={[-12, 18, 7]} intensity={2.0} color="#e7c483" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-near={0.5} shadow-camera-far={48} shadow-camera-left={-18} shadow-camera-right={18} shadow-camera-top={18} shadow-camera-bottom={-18} />
+      <directionalLight position={[8, 9, -12]} intensity={0.3} color="#c4ded8" />
       <SceneReadiness onReady={onSceneReady} />
       <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} groundDescent={groundDescent} onGroundComplete={onGroundComplete} reducedMotion={reducedMotion} />
       <HomeEnvironment walkTarget={target} />
@@ -560,10 +560,10 @@ function HomeScene({ input, yaw, pitch, target, avatar, onNearby, onOrbOpen, onG
       </HomeReducedMotionContext.Provider>
       <GroundThresholdLandmark onEnter={onGround} />
       <LifeMapSkyLookout onEnter={onLifeMap} />
-      {!cosmic ? <ContactShadows position={[0, 0.04, -1]} opacity={0.28} scale={22} blur={2.4} far={8} resolution={512} frames={reducedMotion ? 1 : Infinity} /> : null}
+      {!cosmic ? <ContactShadows position={[0, 0.04, -1]} opacity={0.24} scale={22} blur={2.6} far={8} resolution={512} frames={reducedMotion ? 1 : Infinity} /> : null}
       <EffectComposer multisampling={0}>
-        <Bloom intensity={0.022} luminanceThreshold={1.15} luminanceSmoothing={0.25} mipmapBlur />
-        <Vignette eskil={false} offset={0.22} darkness={0.018} />
+        <Bloom intensity={0.018} luminanceThreshold={1.2} luminanceSmoothing={0.25} mipmapBlur />
+        <Vignette eskil={false} offset={0.24} darkness={0.012} />
       </EffectComposer>
     </>
   );
@@ -740,7 +740,7 @@ export function HomeWorldProduction({ onOrbOpen = requestUraiWorldOrbOpen, webgl
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 0.96;
+          gl.toneMappingExposure = 1.08;
           gl.setClearColor(0x000000, 0);
           setCanvasReady(true);
         }}
