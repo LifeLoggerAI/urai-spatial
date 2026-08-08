@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "life-map-memory-star-v1",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb",
+  "bytes": 373236,
+  "sha256": "b2aaccd9155277071531c5197f3edbc42eb22f23fbdb20faa94a633137c174d0",
+  "measured": {"triangleCount":8770,"nodeCount":30,"materialCount":8,"animationClips":["MemoryStar_Idle","MemoryStar_Selected","MemoryStar_Focus"]},
+  "compressionStatus": "meshopt",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "procedural-memory-star",
+  "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
+  "license": "URAI Labs internal production asset",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
+  "generatedAt": "2026-08-06T03:30:00Z",
+  "releaseState": "candidate-not-production-ready"
+}

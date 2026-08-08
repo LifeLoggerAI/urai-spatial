@@ -2,58 +2,15 @@
   "schemaVersion": 1,
   "id": "portal-ring-master-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-  "targetRoutes": [
-    "/",
-    "/home",
-    "/ground",
-    "/life-map",
-    "/focus",
-    "/replay"
-  ],
-  "bytes": 73164,
-  "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
-  "measured": {
-    "triangleCount": 7576,
-    "boundsMeters": {
-      "min": [
-        -1.9753,
-        -2.52,
-        -1.02
-      ],
-      "max": [
-        2,
-        2.9579,
-        1.2349
-      ],
-      "size": [
-        3.9753,
-        5.4779,
-        2.2549
-      ]
-    },
-    "repairedEulerRotations": 2,
-    "nodeCount": 53,
-    "materialCount": 8,
-    "animationClips": [
-      "Portal_Closed",
-      "Portal_Available",
-      "Portal_Attention",
-      "Portal_Active",
-      "Portal_Opening",
-      "Portal_Traversal",
-      "Portal_Closing"
-    ]
-  },
+  "bytes": 242072,
+  "sha256": "18a7d77e778bf8561a278f3e0a4e380c192a227c07a17b91265c70dab461d2c9",
+  "measured": {"triangleCount":7576,"boundsMeters":{"min":[-1.9753,-2.52,-1.02],"max":[2,2.9579,1.2349],"size":[3.9753,5.4779,2.2549]},"repairedEulerRotations":2,"nodeCount":53,"materialCount":8,"animationClips":["Portal_Closed","Portal_Available","Portal_Attention","Portal_Active","Portal_Opening","Portal_Traversal","Portal_Closing"]},
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-portal-ring",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "scripts/author-home-finalization-assets.mjs v3 + pinned @gltf-transform/cli Meshopt compression + independent validation",
-  "generatedAt": "2026-07-26T01:15:31.694Z",
-  "releaseState": "candidate-not-production-ready",
-  "absolutePath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
-  "authoredOwnership": "URAI Labs proprietary original geometry and animation authored for PR #952",
-  "authoredLicense": "URAI Labs internal proprietary; redistribution governed by repository license and asset receipts",
-  "authoredSourceReceipt": "operations/assets/sources/home-finalization-authored-source-v2.json"
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
+  "generatedAt": "2026-08-06T03:30:00Z",
+  "releaseState": "candidate-not-production-ready"
 }
