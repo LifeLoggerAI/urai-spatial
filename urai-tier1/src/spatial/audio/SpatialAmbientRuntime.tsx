@@ -61,13 +61,24 @@ export function SpatialAmbientRuntime() {
         sessionStorage.setItem(SESSION_KEY, enabled ? 'true' : 'false')
         sessionStorage.setItem(MUTE_KEY, enabled ? 'false' : 'true')
       } catch { /* session storage is optional */ }
-      if (!enabled) audio.stopAllAudio()
+      if (!enabled) {
+        audio.stopAllAudio()
+        return
+      }
+      if (spatialPhase) {
+        setLiveCaption(AMBIENT_CAPTIONS[spatialPhase])
+        audio.setAmbientPhase(spatialPhase)
+      }
     }
     const handleMute = (event: Event) => {
       const nextMuted = Boolean((event as CustomEvent<{ muted?: boolean }>).detail?.muted)
       setMuted(nextMuted)
       try { sessionStorage.setItem(MUTE_KEY, nextMuted ? 'true' : 'false') } catch { /* optional */ }
-      if (nextMuted) audio.stopAmbient()
+      if (nextMuted) {
+        audio.stopAmbient()
+        return
+      }
+      if (consented && spatialPhase) audio.setAmbientPhase(spatialPhase)
     }
     const handleCue = (event: Event) => {
       const cue = (event as CustomEvent<{ cue?: SpatialAudioCue }>).detail?.cue
@@ -83,7 +94,7 @@ export function SpatialAmbientRuntime() {
       window.removeEventListener('urai:audio-mute', handleMute)
       window.removeEventListener('urai:audio-cue', handleCue)
     }
-  }, [audio, consented, muted])
+  }, [audio, consented, muted, spatialPhase])
 
   useEffect(() => {
     if (!spatialPhase) {
