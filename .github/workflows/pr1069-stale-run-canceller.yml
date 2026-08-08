@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mirror-release-proof-1069-04b2df769b28ef0ec17affb44158aaf3e4ed304f
+  group: urai-spatial-ci-1069-04b2df769b28ef0ec17affb44158aaf3e4ed304f
   cancel-in-progress: true
 
 jobs:
