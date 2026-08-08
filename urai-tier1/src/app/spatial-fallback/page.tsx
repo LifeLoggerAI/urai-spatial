@@ -1,5 +1,10 @@
-import UraiV1Experience from '@/components/urai/UraiV1Experience'
+import { redirect } from 'next/navigation'
 
-export default function SpatialFallbackPage() {
-  return <UraiV1Experience mode="home" profileLabel="Spatial fallback" />
+export const metadata = {
+  title: 'URAI Home',
+  description: 'Compatibility entry for the canonical Home capability-aware fallback.',
+}
+
+export default function SpatialFallbackCompatibilityPage() {
+  redirect('/home?from=spatial-fallback')
 }
