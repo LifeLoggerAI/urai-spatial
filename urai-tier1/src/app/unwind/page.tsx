@@ -1,19 +1,10 @@
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import { redirect } from 'next/navigation'
 
-export default function UnwindPage() {
-  return (
-    <main data-testid="urai-scene-stage" data-mode="unwind" data-scene-mode="unwind">
-      <TierOneExperience mode="unwind" />
-      <section
-        data-testid="urai-unwind-scene"
-        aria-label="Unwind recovery scene"
-        style={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          opacity: 0.001,
-        }}
-      />
-    </main>
-  );
+export const metadata = {
+  title: 'URAI Unwind',
+  description: 'Return safely to the canonical Life Map overview.',
+}
+
+export default function UnwindCompatibilityPage() {
+  redirect('/life-map?from=unwind&overview=1')
 }
