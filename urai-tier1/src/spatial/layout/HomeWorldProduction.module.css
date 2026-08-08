@@ -6,7 +6,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: linear-gradient(180deg, #a8ad96 0%, #7f8b75 48%, #59624f 100%);
+  background: linear-gradient(180deg, #c4cbb8 0%, #a8b29b 40%, #78836c 72%, #596250 100%);
   cursor: grab;
   touch-action: none;
 }
@@ -18,14 +18,14 @@
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(180deg, rgba(38, 35, 25, .34), rgba(42, 41, 31, .42) 46%, rgba(31, 31, 25, .72) 100%),
+    linear-gradient(180deg, rgba(53, 55, 44, .14), rgba(57, 61, 48, .18) 48%, rgba(45, 50, 39, .28) 100%),
     url('/assets/urai/replay/replay-memory-film-main.webp');
   background-size: cover;
   background-position: center 50%;
   background-repeat: no-repeat;
-  filter: saturate(.72) contrast(.92) brightness(.78) blur(1px);
-  transform: scale(1.035);
-  opacity: .2;
+  filter: saturate(.6) contrast(.86) brightness(.9) blur(2px);
+  transform: scale(1.045);
+  opacity: .07;
   transition: opacity 900ms ease, filter 900ms ease;
 }
 
@@ -43,8 +43,8 @@
   width: 100% !important;
   height: 100% !important;
   background:
-    radial-gradient(circle at 72% 14%, rgba(247, 220, 169, .98) 0 7%, rgba(210, 206, 169, .965) 18%, rgba(158, 174, 151, .95) 39%, rgba(105, 124, 105, .945) 64%, rgba(70, 82, 67, .95) 100%);
-  filter: brightness(1.22) saturate(1.04) contrast(1.015);
+    radial-gradient(circle at 73% 12%, rgba(251, 230, 187, .98) 0 7%, rgba(221, 220, 186, .97) 18%, rgba(185, 198, 174, .96) 39%, rgba(137, 154, 129, .955) 64%, rgba(94, 108, 88, .96) 100%);
+  filter: brightness(1.72) saturate(.9) contrast(.9);
 }
 
 .world::after {
@@ -54,8 +54,8 @@
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(13, 15, 12, .015), transparent 30%, transparent 78%, rgba(10, 11, 9, .09)),
-    radial-gradient(circle at 50% 45%, transparent 0 72%, rgba(8, 9, 7, .02) 88%, rgba(5, 6, 5, .045) 100%);
+    linear-gradient(180deg, rgba(255, 250, 228, .025), transparent 34%, rgba(204, 217, 191, .035) 58%, rgba(20, 25, 19, .035) 100%),
+    radial-gradient(circle at 50% 42%, transparent 0 74%, rgba(8, 9, 7, .015) 90%, rgba(5, 6, 5, .035) 100%);
 }
 
 .brand,
@@ -63,13 +63,13 @@
   position: absolute;
   z-index: 10;
   pointer-events: none;
-  text-shadow: 0 8px 28px rgba(0, 0, 0, .34);
+  text-shadow: 0 8px 28px rgba(0, 0, 0, .28);
 }
 
 .brand {
   left: clamp(18px, 3vw, 44px);
   top: clamp(18px, 3vw, 40px);
-  opacity: .34;
+  opacity: .26;
 }
 
 .brand strong {
@@ -82,26 +82,27 @@
   left: 50%;
   bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  padding: .48rem .72rem;
-  border: 1px solid rgba(232, 240, 234, .12);
+  padding: .42rem .68rem;
+  border: 1px solid rgba(232, 240, 234, .08);
   border-radius: 999px;
-  background: rgba(15, 18, 14, .22);
-  color: rgba(246, 249, 247, .82);
-  backdrop-filter: blur(9px);
-  font-size: .6rem;
+  background: rgba(15, 18, 14, .12);
+  color: rgba(246, 249, 247, .68);
+  backdrop-filter: blur(8px);
+  font-size: .56rem;
   font-weight: 650;
   letter-spacing: .07em;
+  opacity: .7;
 }
 
 .world :global(.urai-mobile-movement) {
   z-index: 14;
-  opacity: .62;
+  opacity: .5;
   transition: opacity .2s ease;
 }
 
 .world :global(.urai-mobile-movement:focus-within),
 .world :global(.urai-mobile-movement:hover) {
-  opacity: .94;
+  opacity: .9;
 }
 
 @media (min-width: 901px) and (pointer: fine) {
@@ -112,16 +113,16 @@
   .world::before {
     inset: -3%;
     background-image:
-      linear-gradient(180deg, rgba(38, 35, 25, .38), rgba(42, 41, 31, .45) 46%, rgba(31, 31, 25, .74) 100%),
+      linear-gradient(180deg, rgba(53, 55, 44, .16), rgba(57, 61, 48, .2) 48%, rgba(45, 50, 39, .3) 100%),
       url('/assets/urai/replay/replay-memory-film-main.webp');
     background-position: center 50%;
-    transform: scale(1.045);
-    opacity: .16;
+    transform: scale(1.055);
+    opacity: .05;
   }
   .canvas {
     background:
-      radial-gradient(circle at 70% 13%, rgba(247, 221, 172, .98) 0 6%, rgba(211, 207, 171, .965) 17%, rgba(157, 173, 150, .95) 38%, rgba(101, 121, 102, .945) 63%, rgba(67, 79, 65, .95) 100%);
-    filter: brightness(1.26) saturate(1.035) contrast(1.01);
+      radial-gradient(circle at 72% 12%, rgba(251, 230, 188, .98) 0 6%, rgba(221, 220, 187, .97) 17%, rgba(184, 198, 174, .96) 38%, rgba(135, 153, 128, .955) 63%, rgba(92, 106, 86, .96) 100%);
+    filter: brightness(1.82) saturate(.88) contrast(.88);
   }
   .brand {
     top: max(14px, env(safe-area-inset-top));
@@ -133,7 +134,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: .55rem;
+    font-size: .52rem;
   }
 }
 
