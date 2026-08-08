@@ -11,6 +11,10 @@ for (const asset of manifest.assets) {
   const absolutePath = path.join(repoRoot, asset.fixedPath)
   if (!fs.existsSync(absolutePath)) throw new Error(`Missing generated asset: ${asset.fixedPath}`)
 
+  // Passport is produced and governed by its dedicated ownership-vault lane.
+  // Candidate-forge normalization must not rewrite that retained binary or its receipt.
+  if (asset.id === 'passport-status-room-v1') continue
+
   if (asset.kind === 'model') {
     const repaired = repairGlb(fs.readFileSync(absolutePath))
     fs.writeFileSync(absolutePath, repaired.payload)
