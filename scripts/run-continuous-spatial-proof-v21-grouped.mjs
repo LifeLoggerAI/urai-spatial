@@ -53,6 +53,28 @@ const canvasRectTarget = `  const rect = await canvas.boundingBox()`
 const canvasRectReplacement = `  const rect = await canvas.evaluate((element) => {\n    const bounds = element.getBoundingClientRect()\n    return { width: bounds.width, height: bounds.height }\n  })`
 if (original.split(canvasRectTarget).length - 1 !== 1) throw new Error('Canvas measurement contract changed')
 
+const loadingVisibilityTarget = `      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
+        .some((node) => {
+          const style = getComputedStyle(node)
+          const rect = node.getBoundingClientRect()
+          return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+            && rect.width > 4 && rect.height > 4
+        })`
+const loadingVisibilityReplacement = `      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
+        .some((node) => {
+          const rect = node.getBoundingClientRect()
+          if (rect.width <= 4 || rect.height <= 4) return false
+          if (typeof node.checkVisibility === 'function') {
+            return node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+          }
+          for (let current = node; current instanceof Element; current = current.parentElement) {
+            const style = getComputedStyle(current)
+            if (style.display === 'none' || style.visibility === 'hidden' || Number.parseFloat(style.opacity || '1') <= 0.02) return false
+          }
+          return true
+        })`
+if (original.split(loadingVisibilityTarget).length - 1 !== 1) throw new Error('Loading visibility contract changed')
+
 const discreetControlsTarget = `    discreetControls: await visibleCount(page.locator('.home-discreet-controls button')),`
 const semanticOwnershipReplacement = `    semanticNavigationOwner: await semantic.getAttribute('data-home-navigation-owner'),\n    semanticNavigationNonDominant: await semantic.getAttribute('data-home-navigation-non-dominant'),\n    semanticNavigationOpacity: await semantic.evaluate((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')),`
 if (original.split(discreetControlsTarget).length - 1 !== 1) throw new Error('Home semantic navigation measurement contract changed')
@@ -109,6 +131,7 @@ const patchedPrefix = original
   .replace(openTarget, openReplacement)
   .replace(receiptTarget, receiptReplacement)
   .replace(canvasRectTarget, canvasRectReplacement)
+  .replace(loadingVisibilityTarget, loadingVisibilityReplacement)
   .replace(discreetControlsTarget, semanticOwnershipReplacement)
   .replace(discreetPassTarget, semanticPassReplacement)
   .replace(retiredModePassTarget, retiredModePassReplacement)
@@ -123,6 +146,7 @@ const requiredSemanticGuards = [
   ['fallback semantic destination count', 'record.semanticButtons !== 3'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
+  ['ancestor-aware loading visibility', "node.checkVisibility"],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
   ['semantic navigation non-dominance', "semanticNavigationNonDominant === 'true'"],
   ['semantic navigation opacity', 'semanticNavigationOpacity <= 0.02'],
