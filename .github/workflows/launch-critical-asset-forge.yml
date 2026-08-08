@@ -165,9 +165,29 @@ jobs:
             echo "Unsupported Home releaseState: $release_state" >&2
             exit 1
           fi
-      - name: Forge deterministic launch candidates
+      - name: Forge deterministic launch candidates while retaining governed Passport candidate
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
-        run: node scripts/forge-launch-critical-assets.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=operations/assets/launch-critical-assets.json
+          backup="${RUNNER_TEMP}/launch-critical-assets.full.json"
+          cp "$manifest" "$backup"
+          restore_manifest() { cp "$backup" "$manifest"; }
+          trap restore_manifest EXIT
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const path = 'operations/assets/launch-critical-assets.json'
+          const manifest = JSON.parse(fs.readFileSync(path, 'utf8'))
+          const retained = manifest.assets.find((asset) => asset.id === 'passport-status-room-v1')
+          if (!retained) throw new Error('passport-status-room-v1 missing from launch manifest')
+          manifest.assets = manifest.assets.filter((asset) => asset.id !== 'passport-status-room-v1')
+          fs.writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
+          NODE
+          node scripts/forge-launch-critical-assets.mjs
+          restore_manifest
+          trap - EXIT
+          node scripts/verify-launch-critical-assets.mjs
       - name: Normalize formats and repair glTF rotations
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/normalize-launch-critical-assets.mjs
