@@ -15,7 +15,7 @@
   content: "";
   position: absolute;
   inset: -2%;
-  z-index: 0;
+  z-index: 3;
   pointer-events: none;
   background-image:
     linear-gradient(180deg, rgba(53, 55, 44, .14), rgba(57, 61, 48, .18) 48%, rgba(45, 50, 39, .28) 100%),
@@ -26,6 +26,7 @@
   filter: saturate(.6) contrast(.86) brightness(.9) blur(2px);
   transform: scale(1.045);
   opacity: .07;
+  mix-blend-mode: soft-light;
   transition: opacity 900ms ease, filter 900ms ease;
 }
 
