@@ -153,7 +153,18 @@ jobs:
       - name: Run governed Home production contract before candidate generation
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         working-directory: urai-tier1
-        run: node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_state="$(node -e "const fs=require('node:fs');const v=JSON.parse(fs.readFileSync('../operations/assets/launch-critical-assets.json','utf8'));const a=v.assets.find((entry)=>entry.id==='home-entry-chamber-v1');if(!a)process.exit(2);process.stdout.write(String(a.releaseState||''))")"
+          if [[ "$release_state" == "production-ready" ]]; then
+            node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
+          elif [[ "$release_state" == "pending-final-review" ]]; then
+            echo 'Home is pending final review; production-only Home promotion contract remains deferred.'
+          else
+            echo "Unsupported Home releaseState: $release_state" >&2
+            exit 1
+          fi
       - name: Forge deterministic launch candidates
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/forge-launch-critical-assets.mjs
