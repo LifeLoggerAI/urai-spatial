@@ -95,7 +95,7 @@ test('offline state is explicit and sensitive operations remain disabled', async
   await openDemo(page)
   await context.setOffline(true)
   await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-  await expect(page.getByRole('status')).toContainText('Offline')
+  await expect(page.getByRole('status').filter({ hasText: 'Offline' })).toContainText('Offline')
   await expect(page.getByRole('button', { name: 'Unlock and request export' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Unlock and create deletion request' })).toBeDisabled()
   await page.screenshot({ path: path.join(evidenceRoot, 'offline-vault.png'), fullPage: true })
