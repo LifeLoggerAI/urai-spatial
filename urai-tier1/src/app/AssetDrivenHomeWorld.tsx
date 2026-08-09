@@ -15,18 +15,28 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     const owner = ownerRef.current
     if (!owner) return
 
-    const hardenCanvasSemantics = () => {
+    const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
         canvas.setAttribute('aria-hidden', 'true')
         canvas.setAttribute('role', 'presentation')
         canvas.setAttribute('tabindex', '-1')
       })
+
+      const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!world) return
+      const query = new URLSearchParams(window.location.search)
+      world.setAttribute('data-home-asset-mode', query.get('homeAssetReview') === '1' ? 'disclosed-review-candidate' : 'ready')
+      world.setAttribute('data-home-personalization-mode', query.get('homePrivateFixture') === '1' ? 'private-personalized' : 'standard')
     }
 
-    hardenCanvasSemantics()
-    const observer = new MutationObserver(hardenCanvasSemantics)
+    hardenHomeOwnership()
+    const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, { childList: true, subtree: true })
-    return () => observer.disconnect()
+    window.addEventListener('popstate', hardenHomeOwnership)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('popstate', hardenHomeOwnership)
+    }
   }, [])
 
   return (
