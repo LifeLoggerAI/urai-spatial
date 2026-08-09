@@ -1,0 +1,2 @@
+PR #1069 repaired Passport exact-head CI synchronization marker.
+Temporary by design; removed immediately after successor synchronization.
