@@ -97,7 +97,7 @@
 
 .world :global(.urai-mobile-movement) {
   z-index: 14;
-  opacity: .28;
+  opacity: .18;
   transition: opacity .2s ease;
 }
 
