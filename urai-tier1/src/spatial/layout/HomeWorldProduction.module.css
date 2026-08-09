@@ -96,6 +96,7 @@
 }
 
 .world :global(.urai-mobile-movement) {
+  display: none;
   z-index: 14;
   opacity: .18;
   transition: opacity .2s ease;
@@ -122,6 +123,10 @@
 
 @media (min-width: 901px) and (pointer: fine) {
   .world :global(.urai-mobile-movement) { display: none; }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .world :global(.urai-mobile-movement) { display: grid; }
 }
 
 @media (max-width: 700px) {
