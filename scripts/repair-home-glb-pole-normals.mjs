@@ -39,6 +39,22 @@ const configs = [
     generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Life Map shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1',
     note: 'Fail-closed exact-binary replacement rehearsal rebound to the bounded Life Map memory-star shard pole-normal repair. Only the two invalid terminal NORMAL vectors on memory-star-shard-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and founder acceptance.',
   },
+  {
+    label: 'Passport status room',
+    assetId: 'passport-status-room-v1',
+    glbPath: 'urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb',
+    receiptPath: 'operations/assets/generated-receipts/passport-status-room-v1.json',
+    rehearsalPath: 'operations/assets/promotion-rehearsal/passport-status-room-v1.json',
+    targetMesh: 'passport-identity-core-geometry',
+    bottomIndex: 98,
+    topIndex: 99,
+    badMinY: '-0.6554224491119385',
+    badMaxY: '0.6529991626739502',
+    badVectorTolerance: 5e-4,
+    packFileName: 'passport-status-room-v1.glb',
+    generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1',
+    note: 'Fail-closed exact-binary replacement rehearsal rebound to the bounded Passport identity-core pole-normal repair. Only the two invalid terminal NORMAL vectors on passport-identity-core-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance.',
+  },
 ]
 
 function fail(message) {
@@ -155,7 +171,8 @@ function repairAsset(config, pack) {
   const top = readVec3(repaired, topOffset)
   const alreadyFixed = close(bottom[0], 0) && close(bottom[1], -1) && close(bottom[2], 0)
     && close(top[0], 0) && close(top[1], 1) && close(top[2], 0)
-  const knownBad = vectorLength(bottom) < 1e-4 && vectorLength(top) < 1e-4
+  const tolerance = config.badVectorTolerance ?? 1e-4
+  const knownBad = vectorLength(bottom) < tolerance && vectorLength(top) < tolerance
   if (!alreadyFixed && !knownBad) {
     fail(`${config.label} pole NORMAL values are neither the known-invalid state nor the repaired state: bottom=${JSON.stringify(bottom)} top=${JSON.stringify(top)}`)
   }
@@ -280,17 +297,15 @@ const results = configs.map((config) => repairAsset(config, pack))
 if (results.some((result) => result.packChanged)) writeJson(PACK_PATH, pack)
 
 const proofRepair = repairHomeStateProofContract()
-const lifeMap = results.find((result) => result.label === 'Life Map memory star')
 
-// The existing launch-critical workflow stages the shared pack receipt itself. Pre-stage the
-// additional Life Map/proof files only when this bounded successor repair is active, so the
-// workflow's existing guarded commit includes the exact binary and source corrections atomically.
-if (process.env.GITHUB_ACTIONS === 'true' && lifeMap?.changed) {
-  execFileSync('git', ['add',
-    'urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb',
-    'operations/assets/generated-receipts/life-map-memory-star-v1.json',
-    'operations/assets/promotion-rehearsal/life-map-memory-star-v1.json',
-  ], { stdio: 'inherit' })
+// The launch-critical workflow stages the shared pack receipt itself. Pre-stage every
+// additional bounded asset repair here so its guarded successor commit remains atomic.
+if (process.env.GITHUB_ACTIONS === 'true') {
+  for (const result of results) {
+    if (!result.changed || result.label === 'Home') continue
+    const config = configs.find((entry) => entry.label === result.label)
+    execFileSync('git', ['add', config.glbPath, config.receiptPath, config.rehearsalPath], { stdio: 'inherit' })
+  }
   if (proofRepair.changed) execFileSync('git', ['add', CAPTURE_PROOF_PATH], { stdio: 'inherit' })
 }
 
