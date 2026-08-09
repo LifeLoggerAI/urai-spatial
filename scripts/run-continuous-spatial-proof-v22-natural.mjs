@@ -4,7 +4,7 @@ const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
 const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'owned-sanctuary-plus-gltf-interactions'"
+const newOwner = "result.animationOwner === 'owned-sanctuary-cc0-nature-authored-orb'"
 if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
