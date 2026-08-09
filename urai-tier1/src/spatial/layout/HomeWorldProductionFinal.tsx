@@ -262,7 +262,7 @@ function LifeMapSkyLookout({ onEnter }: { onEnter: () => void }) {
 }
 
 function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
-  return <group ref={root} name="home-authored-embodied-self" position={SPAWN}><mesh position={[0, 0.01, 0.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.42, 1, 1]}><circleGeometry args={[0.38, 40]} /><meshBasicMaterial color="#000806" transparent opacity={0.08} depthWrite={false} /></mesh></group>;
+  return <group ref={root} name="home-authored-embodied-self" position={SPAWN} userData={{ representation: "privacy-preserving-first-person-presence" }}><mesh position={[0, 0.01, 0.25]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.42, 1, 1]}><circleGeometry args={[0.38, 40]} /><meshBasicMaterial color="#000806" transparent opacity={0.08} depthWrite={false} /></mesh></group>;
 }
 
 function cubicPoint(target: THREE.Vector3, p0: THREE.Vector3, p1: THREE.Vector3, p2: THREE.Vector3, p3: THREE.Vector3, t: number) {
