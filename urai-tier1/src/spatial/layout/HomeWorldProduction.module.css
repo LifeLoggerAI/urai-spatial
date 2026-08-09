@@ -6,7 +6,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: linear-gradient(180deg, #c4cbb8 0%, #a8b29b 40%, #78836c 72%, #596250 100%);
+  background: linear-gradient(180deg, #aebbb2 0%, #94a59b 38%, #748271 70%, #596251 100%);
   cursor: grab;
   touch-action: none;
 }
@@ -18,21 +18,21 @@
   z-index: 3;
   pointer-events: none;
   background-image:
-    linear-gradient(180deg, rgba(53, 55, 44, .14), rgba(57, 61, 48, .18) 48%, rgba(45, 50, 39, .28) 100%),
+    linear-gradient(180deg, rgba(49, 54, 48, .08), rgba(49, 55, 48, .10) 48%, rgba(38, 45, 38, .15) 100%),
     url('/assets/urai/replay/replay-memory-film-main.webp');
   background-size: cover;
   background-position: center 50%;
   background-repeat: no-repeat;
-  filter: saturate(.6) contrast(.86) brightness(.9) blur(2px);
+  filter: saturate(.7) contrast(.92) brightness(.92) blur(2.4px);
   transform: scale(1.045);
-  opacity: .07;
+  opacity: .028;
   mix-blend-mode: soft-light;
   transition: opacity 900ms ease, filter 900ms ease;
 }
 
 .world[data-home-scene-phase='ASCENT']::before {
   opacity: 0;
-  filter: saturate(.6) contrast(1.05) brightness(.24) blur(3px);
+  filter: saturate(.62) contrast(1.05) brightness(.24) blur(3px);
 }
 
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
@@ -44,8 +44,8 @@
   width: 100% !important;
   height: 100% !important;
   background:
-    radial-gradient(circle at 73% 12%, rgba(251, 230, 187, .98) 0 7%, rgba(221, 220, 186, .97) 18%, rgba(185, 198, 174, .96) 39%, rgba(137, 154, 129, .955) 64%, rgba(94, 108, 88, .96) 100%);
-  filter: brightness(1.72) saturate(.9) contrast(.9);
+    radial-gradient(circle at 73% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(199, 207, 187, .88) 20%, rgba(154, 172, 155, .82) 45%, rgba(111, 130, 110, .78) 70%, rgba(73, 88, 73, .78) 100%);
+  filter: saturate(.96) contrast(1.025);
 }
 
 .world::after {
@@ -55,8 +55,8 @@
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(255, 250, 228, .025), transparent 34%, rgba(204, 217, 191, .035) 58%, rgba(20, 25, 19, .035) 100%),
-    radial-gradient(circle at 50% 42%, transparent 0 74%, rgba(8, 9, 7, .015) 90%, rgba(5, 6, 5, .035) 100%);
+    linear-gradient(180deg, rgba(255, 250, 229, .018), transparent 38%, rgba(202, 216, 194, .022) 62%, rgba(18, 24, 20, .04) 100%),
+    radial-gradient(circle at 50% 42%, transparent 0 77%, rgba(8, 10, 8, .022) 92%, rgba(5, 7, 5, .05) 100%);
 }
 
 .brand,
@@ -64,13 +64,13 @@
   position: absolute;
   z-index: 10;
   pointer-events: none;
-  text-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+  text-shadow: 0 8px 28px rgba(0, 0, 0, .24);
 }
 
 .brand {
   left: clamp(18px, 3vw, 44px);
   top: clamp(18px, 3vw, 40px);
-  opacity: .26;
+  opacity: .2;
 }
 
 .brand strong {
@@ -84,26 +84,40 @@
   bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   padding: .42rem .68rem;
-  border: 1px solid rgba(232, 240, 234, .08);
+  border: 1px solid rgba(232, 240, 234, .07);
   border-radius: 999px;
-  background: rgba(15, 18, 14, .12);
-  color: rgba(246, 249, 247, .68);
+  background: rgba(15, 18, 14, .1);
+  color: rgba(246, 249, 247, .64);
   backdrop-filter: blur(8px);
   font-size: .56rem;
   font-weight: 650;
   letter-spacing: .07em;
-  opacity: .7;
+  opacity: .66;
 }
 
 .world :global(.urai-mobile-movement) {
   z-index: 14;
-  opacity: .5;
+  opacity: .28;
   transition: opacity .2s ease;
+}
+
+.world :global(.urai-mobile-movement button) {
+  border-color: rgba(231, 246, 240, .12) !important;
+  background: rgba(18, 27, 23, .18) !important;
+  color: rgba(255, 255, 255, .62) !important;
+  box-shadow: 0 7px 22px rgba(0, 0, 0, .11) !important;
+  backdrop-filter: blur(9px) !important;
 }
 
 .world :global(.urai-mobile-movement:focus-within),
 .world :global(.urai-mobile-movement:hover) {
   opacity: .9;
+}
+
+.world :global(.urai-mobile-movement button:focus-visible),
+.world :global(.urai-mobile-movement button[data-active='true']) {
+  background: rgba(31, 78, 68, .72) !important;
+  color: #fff !important;
 }
 
 @media (min-width: 901px) and (pointer: fine) {
@@ -114,16 +128,16 @@
   .world::before {
     inset: -3%;
     background-image:
-      linear-gradient(180deg, rgba(53, 55, 44, .16), rgba(57, 61, 48, .2) 48%, rgba(45, 50, 39, .3) 100%),
+      linear-gradient(180deg, rgba(50, 56, 50, .08), rgba(52, 59, 51, .10) 48%, rgba(39, 46, 39, .15) 100%),
       url('/assets/urai/replay/replay-memory-film-main.webp');
     background-position: center 50%;
     transform: scale(1.055);
-    opacity: .05;
+    opacity: .02;
   }
   .canvas {
     background:
-      radial-gradient(circle at 72% 12%, rgba(251, 230, 188, .98) 0 6%, rgba(221, 220, 187, .97) 17%, rgba(184, 198, 174, .96) 38%, rgba(135, 153, 128, .955) 63%, rgba(92, 106, 86, .96) 100%);
-    filter: brightness(1.82) saturate(.88) contrast(.88);
+      radial-gradient(circle at 72% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(200, 208, 188, .88) 19%, rgba(153, 171, 155, .82) 44%, rgba(109, 128, 109, .79) 69%, rgba(72, 87, 72, .79) 100%);
+    filter: saturate(.95) contrast(1.02);
   }
   .brand {
     top: max(14px, env(safe-area-inset-top));
@@ -136,6 +150,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: .52rem;
+  }
+  .world :global(.urai-mobile-movement) {
+    opacity: .22;
   }
 }
 
