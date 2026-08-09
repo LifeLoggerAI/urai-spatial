@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
 
 type Props = {
@@ -8,8 +9,29 @@ type Props = {
 }
 
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
+  const ownerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const owner = ownerRef.current
+    if (!owner) return
+
+    const hardenCanvasSemantics = () => {
+      owner.querySelectorAll('canvas').forEach((canvas) => {
+        canvas.setAttribute('aria-hidden', 'true')
+        canvas.setAttribute('role', 'presentation')
+        canvas.setAttribute('tabindex', '-1')
+      })
+    }
+
+    hardenCanvasSemantics()
+    const observer = new MutationObserver(hardenCanvasSemantics)
+    observer.observe(owner, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div
+      ref={ownerRef}
       data-home-authored-region-contract="true"
       data-home-visible-world="final-physical-sanctuary-memory-rooms"
       data-home-route-owner="authored-coherent-three-dimensional-sanctuary"
