@@ -70,13 +70,17 @@ const TERRAIN_GEOMETRY = makeTerrainGeometry();
 
 function prepareAuthoredSanctuary(source: THREE.Object3D) {
   const world = source.clone(true);
-  const rejected = /portal|menu|debug|placeholder|proof|candidate/i;
+  const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/i;
+  let visibleMeshCount = 0;
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     object.visible = !rejected.test(object.name);
     object.castShadow = false;
     object.receiveShadow = true;
+    if (object.visible) visibleMeshCount += 1;
   });
+  if (visibleMeshCount < 3) world.userData.usesSupplementalNaturalGeometry = true;
+  world.userData.suppressedForgeScenery = true;
   world.userData.suppressedPortalProps = true;
   world.userData.centeredForHomeCamera = true;
   world.userData.providerImageRole = "atmospheric-support-only";
@@ -145,7 +149,7 @@ function NaturalHorizon() {
   return <group name="home-mountain-horizon" userData={{ role: "layered-atmospheric-depth" }}><Ridge z={-34} width={90} height={10} opacity={0.32} /><Ridge z={-52} width={128} height={16} opacity={0.22} /></group>;
 }
 
-function LivingGround({ reducedMotion }: { reducedMotion: boolean }) {
+function NaturalVegetation({ reducedMotion }: { reducedMotion: boolean }) {
   const ref = useRef<THREE.Points>(null);
   const geometry = useMemo(() => {
     const positions = new Float32Array(180 * 3);
@@ -162,6 +166,32 @@ function LivingGround({ reducedMotion }: { reducedMotion: boolean }) {
   }, []);
   useFrame(({ clock }) => { if (!reducedMotion && ref.current) ref.current.position.y = Math.sin(clock.elapsedTime * 0.26) * 0.035; });
   return <group name="home-living-vegetation" userData={{ role: "subtle-living-ground" }}><points ref={ref} geometry={geometry}><pointsMaterial color="#d3f4c7" size={0.045} transparent opacity={0.45} depthWrite={false} toneMapped={false} /></points></group>;
+}
+
+function SanctuaryPath() {
+  return (
+    <group name="home-sanctuary-path" position={[0, terrainHeight(0, -4.8) + 0.03, -4.8]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1, 1.6, 1]}>
+        <circleGeometry args={[2.3, 96]} />
+        <meshStandardMaterial color="#65706a" roughness={0.82} metalness={0.02} transparent opacity={0.36} />
+      </mesh>
+    </group>
+  );
+}
+
+function SanctuaryPavilion() {
+  return (
+    <group name="home-sanctuary-pavilion" position={[0, terrainHeight(0, -5.85) + 0.04, -5.85]}>
+      <mesh position={[0, 0.18, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.55, 1, 1]}>
+        <circleGeometry args={[1.42, 128]} />
+        <meshStandardMaterial color="#4d5f59" roughness={0.88} metalness={0.04} />
+      </mesh>
+      <mesh position={[0, 0.52, 0]} scale={[1.55, 0.22, 1.55]}>
+        <cylinderGeometry args={[1, 1, 1, 96]} />
+        <meshStandardMaterial color="#2b3835" roughness={0.92} metalness={0.03} transparent opacity={0.74} />
+      </mesh>
+    </group>
+  );
 }
 
 function ReflectingWater() {
@@ -324,7 +354,7 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
   useFrame(() => {
     frames.current += 1;
     if (reported.current || frames.current < 4) return;
-    const required = ["home-authored-terrain", "home-authored-embodied-self", "home-orb-sanctuary", "home-ground-environmental-threshold", "home-life-map-sky-lookout", "home-mountain-horizon", "home-living-vegetation"];
+    const required = ["home-authored-terrain", "home-authored-embodied-self", "home-orb-sanctuary", "home-ground-environmental-threshold", "home-life-map-sky-lookout", "home-mountain-horizon", "home-living-vegetation", "home-sanctuary-pavilion", "home-sanctuary-path"];
     if (!required.every((name) => scene.getObjectByName(name))) return;
     reported.current = true;
     onReady();
@@ -345,7 +375,9 @@ function HomeScene(props: { input: MovementInput; yaw: MutableRefObject<number>;
       <directionalLight position={[11, 18, -14]} intensity={cosmic ? 0.32 : 1.25} color="#d5e8e4" castShadow />
       <Terrain walkTarget={props.target} />
       <NaturalHorizon />
-      <LivingGround reducedMotion={props.reducedMotion} />
+      <NaturalVegetation reducedMotion={props.reducedMotion} />
+      <SanctuaryPath />
+      <SanctuaryPavilion />
       <ReflectingWater />
       <ReducedMotionContext.Provider value={props.reducedMotion}>
         <OrbSanctuary onOpen={props.onOrbOpen} />
