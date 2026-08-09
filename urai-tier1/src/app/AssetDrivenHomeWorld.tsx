@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
+import { HomeWorldProductionV2 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV2'
 
 type Props = {
   onOrbOpen: () => void
