@@ -3,14 +3,45 @@
   "id": "portal-ring-master-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
   "bytes": 242072,
-  "sha256": "18a7d77e778bf8561a278f3e0a4e380c192a227c07a17b91265c70dab461d2c9",
-  "measured": {"triangleCount":7576,"boundsMeters":{"min":[-1.9753,-2.52,-1.02],"max":[2,2.9579,1.2349],"size":[3.9753,5.4779,2.2549]},"repairedEulerRotations":2,"nodeCount":53,"materialCount":8,"animationClips":["Portal_Closed","Portal_Available","Portal_Attention","Portal_Active","Portal_Opening","Portal_Traversal","Portal_Closing"]},
+  "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
+  "measured": {
+    "triangleCount": 7576,
+    "boundsMeters": {
+      "min": [
+        -1.9753,
+        -2.52,
+        -1.02
+      ],
+      "max": [
+        2,
+        2.9579,
+        1.2349
+      ],
+      "size": [
+        3.9753,
+        5.4779,
+        2.2549
+      ]
+    },
+    "repairedEulerRotations": 2,
+    "nodeCount": 53,
+    "materialCount": 8,
+    "animationClips": [
+      "Portal_Closed",
+      "Portal_Available",
+      "Portal_Attention",
+      "Portal_Active",
+      "Portal_Opening",
+      "Portal_Traversal",
+      "Portal_Closing"
+    ]
+  },
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-portal-ring",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-06T03:30:00Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Portal Ring shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1",
+  "generatedAt": "2026-08-09T00:24:37.168Z",
   "releaseState": "candidate-not-production-ready"
 }

@@ -5,13 +5,13 @@
   "assetId": "portal-ring-master-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
   "bytes": 242072,
-  "sha256": "18a7d77e778bf8561a278f3e0a4e380c192a227c07a17b91265c70dab461d2c9",
+  "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-portal-ring",
   "license": "URAI Labs internal proprietary production asset",
   "producer": "URAI deterministic authored sanctuary v3 pipeline",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-08-07T18:05:00-05:00",
+  "reviewedAt": "2026-08-09T00:24:37.168Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -20,5 +20,5 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": true,
-  "notes": "Fail-closed exact-binary replacement rehearsal. This record binds the candidate identity but does not promote it or substitute for independent human visual approval."
+  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Portal Ring shard pole-normal repair. Only the two invalid terminal NORMAL vectors on portal-shard-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance."
 }
