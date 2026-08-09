@@ -5,13 +5,13 @@
   "assetId": "urai-orb-avatar-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
   "bytes": 403220,
-  "sha256": "ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026",
+  "sha256": "06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "fallback": "procedural-orb",
   "license": "URAI Labs internal proprietary production asset",
   "producer": "URAI deterministic authored sanctuary v3 pipeline",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-08-07T18:05:00-05:00",
+  "reviewedAt": "2026-08-09T00:32:49.973Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -20,5 +20,5 @@
   "optimizationVerified": true,
   "visualProofVerified": false,
   "exactHeadChecksPassed": true,
-  "notes": "Fail-closed exact-binary replacement rehearsal. This record binds the candidate identity but does not promote it or substitute for independent human visual approval."
+  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the bounded Orb petal zero-normal repair. Only NORMAL vector 0 on orb-petal-geometry is replaced with the exact precomputed unit vector derived from the known one-ring neighborhood; GLB byte length, accessor metadata, and all unrelated JSON/BIN bytes remain unchanged. The mutation is pinned from the exact known-bad SHA to the exact repaired SHA. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance."
 }
