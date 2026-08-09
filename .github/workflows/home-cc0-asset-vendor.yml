@@ -1,0 +1,169 @@
+name: Home CC0 Asset Vendor Forge
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-cc0-vendor-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  PR_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+  FERN_GLTF_BLOB: ec7509ee8e280964d78eaeab28348d855c88d98d
+  FERN_BIN_BLOB: b6ae3752172b2f6d074f05d433accdc96b357f2a
+  FERN_MIRROR_REPO: Joshkaki00/godotmark
+  FERN_MIRROR_COMMIT: cb9d9f5a944cfe24741c528014317b960efc62a5
+
+jobs:
+  vendor-home-cc0:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Fetch pinned CC0 fern source blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/urai-home-cc0
+          gh api "repos/${FERN_MIRROR_REPO}/git/blobs/${FERN_GLTF_BLOB}" --jq .content | tr -d '\n' | base64 --decode > /tmp/urai-home-cc0/fern.gltf
+          gh api "repos/${FERN_MIRROR_REPO}/git/blobs/${FERN_BIN_BLOB}" --jq .content | tr -d '\n' | base64 --decode > /tmp/urai-home-cc0/fern.bin
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path('/tmp/urai-home-cc0')
+          gltf = root / 'fern.gltf'
+          blob = root / 'fern.bin'
+          doc = json.loads(gltf.read_text())
+          assert doc.get('asset', {}).get('version') == '2.0'
+          assert len(doc.get('meshes', [])) >= 4
+          assert blob.stat().st_size > 1000
+          print('fern.gltf sha256', hashlib.sha256(gltf.read_bytes()).hexdigest())
+          print('fern.bin sha256', hashlib.sha256(blob.read_bytes()).hexdigest())
+          PY
+
+      - name: Materialize self-contained geometry-only GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, struct
+
+          src = pathlib.Path('/tmp/urai-home-cc0')
+          out_dir = pathlib.Path('urai-tier1/public/assets/urai/home-production/cc0')
+          receipt_dir = pathlib.Path('operations/assets/third-party')
+          out_dir.mkdir(parents=True, exist_ok=True)
+          receipt_dir.mkdir(parents=True, exist_ok=True)
+
+          doc = json.loads((src / 'fern.gltf').read_text())
+          binary = (src / 'fern.bin').read_bytes()
+          for key in ('images', 'textures', 'samplers', 'materials'):
+              doc.pop(key, None)
+          for mesh in doc.get('meshes', []):
+              for primitive in mesh.get('primitives', []):
+                  primitive.pop('material', None)
+          buffers = doc.get('buffers', [])
+          assert len(buffers) == 1
+          buffers[0].pop('uri', None)
+          buffers[0]['byteLength'] = len(binary)
+          doc['asset']['generator'] = 'URAI governed CC0 geometry vendor from pinned Poly Haven fern_02 mirror'
+          doc.setdefault('extras', {})['urai'] = {
+              'sourceAsset': 'Poly Haven fern_02',
+              'license': 'CC0-1.0',
+              'runtimeExternalRequests': False,
+              'materialsAppliedByURAI': True,
+          }
+
+          json_bytes = json.dumps(doc, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+          json_bytes += b' ' * ((4 - len(json_bytes) % 4) % 4)
+          bin_bytes = binary + b'\x00' * ((4 - len(binary) % 4) % 4)
+          total = 12 + 8 + len(json_bytes) + 8 + len(bin_bytes)
+          payload = (
+              struct.pack('<III', 0x46546C67, 2, total)
+              + struct.pack('<II', len(json_bytes), 0x4E4F534A) + json_bytes
+              + struct.pack('<II', len(bin_bytes), 0x004E4942) + bin_bytes
+          )
+          target = out_dir / 'polyhaven-fern-02-geometry-v1.glb'
+          target.write_bytes(payload)
+          digest = hashlib.sha256(payload).hexdigest()
+
+          receipt = {
+              'assetId': 'home-polyhaven-fern-02-geometry-v1',
+              'license': 'CC0-1.0',
+              'originalSource': 'https://polyhaven.com/a/fern_02',
+              'mirrorRepository': 'Joshkaki00/godotmark',
+              'mirrorCommit': 'cb9d9f5a944cfe24741c528014317b960efc62a5',
+              'sourceGltfBlob': 'ec7509ee8e280964d78eaeab28348d855c88d98d',
+              'sourceBinaryBlob': 'b6ae3752172b2f6d074f05d433accdc96b357f2a',
+              'output': str(target),
+              'outputSha256': digest,
+              'outputBytes': len(payload),
+              'runtimeExternalRequests': False,
+              'materialPolicy': 'URAI-owned runtime physical materials; source textures intentionally omitted',
+              'promotionState': 'vendored-component-not-standalone-world',
+          }
+          (receipt_dir / 'home-polyhaven-fern-02-geometry-v1.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Validate generated GLB envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, struct
+          path = pathlib.Path('urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb')
+          data = path.read_bytes()
+          magic, version, length = struct.unpack_from('<III', data, 0)
+          assert magic == 0x46546C67
+          assert version == 2
+          assert length == len(data)
+          assert len(data) < 2_000_000
+          print('validated', path, len(data))
+          PY
+
+      - name: Commit only if source head is still current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- urai-tier1/public/assets/urai/home-production/cc0 operations/assets/third-party; then
+            echo 'Pinned CC0 asset already materialized; no successor needed.'
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
+            if [ "$current_head" != "$URAI_SOURCE_SHA" ]; then
+              echo "Stale forge input: current PR head is $current_head; refusing to push from $URAI_SOURCE_SHA"
+              exit 0
+            fi
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json
+          git commit -m 'Vendor pinned CC0 fern geometry for Home'
+          gh auth setup-git
+          git push origin "HEAD:${PR_BRANCH}"
