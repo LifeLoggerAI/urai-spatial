@@ -55,6 +55,23 @@ const configs = [
     generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Passport identity-core pole-normal repair; reconciled to urai-final-glb-production-pack-v1',
     note: 'Fail-closed exact-binary replacement rehearsal rebound to the bounded Passport identity-core pole-normal repair. Only the two invalid terminal NORMAL vectors on passport-identity-core-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance.',
   },
+  {
+    label: 'Portal Ring',
+    assetId: 'portal-ring-master-v1',
+    glbPath: 'urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb',
+    receiptPath: 'operations/assets/generated-receipts/portal-ring-master-v1.json',
+    rehearsalPath: 'operations/assets/promotion-rehearsal/portal-ring-master-v1.json',
+    targetMesh: 'portal-shard-geometry',
+    bottomIndex: 40,
+    topIndex: 41,
+    badMinY: '-0.5430145859718323',
+    badMaxY: '0.49977248907089233',
+    badVectorTolerance: 1e-4,
+    fixedMaxY: '1.00000000000000000',
+    packFileName: 'portal-ring-master-v1.glb',
+    generatedBy: 'URAI Labs Final GLB Forge 1.0; bounded Portal Ring shard pole-normal repair; reconciled to urai-final-glb-production-pack-v1',
+    note: 'Fail-closed exact-binary replacement rehearsal rebound to the bounded Portal Ring shard pole-normal repair. Only the two invalid terminal NORMAL vectors on portal-shard-geometry and the corresponding NORMAL accessor Y bounds numeric lexemes are corrected in place; GLB byte length and all unrelated JSON/BIN bytes remain unchanged. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain unchanged pending exact-head visual proof and steward acceptance.',
+  },
 ]
 
 function fail(message) {
@@ -191,8 +208,10 @@ function repairAsset(config, pack) {
       fail(`Unexpected ${config.label} NORMAL Y bounds: min=${accessor.min[1]} max=${accessor.max[1]}`)
     }
     if (!parsed.jsonText.includes(targetAccessorJson)) fail(`${config.label} target NORMAL accessor JSON cannot be uniquely located`)
-    let repairedAccessorJson = replaceOnceSameLength(targetAccessorJson, config.badMinY, '-1.0000000000000000', `${config.label} NORMAL min Y`)
-    repairedAccessorJson = replaceOnceSameLength(repairedAccessorJson, config.badMaxY, '1.0000000000000000', `${config.label} NORMAL max Y`)
+    const fixedMinY = config.fixedMinY ?? '-1.0000000000000000'
+    const fixedMaxY = config.fixedMaxY ?? '1.0000000000000000'
+    let repairedAccessorJson = replaceOnceSameLength(targetAccessorJson, config.badMinY, fixedMinY, `${config.label} NORMAL min Y`)
+    repairedAccessorJson = replaceOnceSameLength(repairedAccessorJson, config.badMaxY, fixedMaxY, `${config.label} NORMAL max Y`)
     if (repairedAccessorJson.length !== targetAccessorJson.length) fail(`${config.label} accessor JSON repair changed byte length`)
     const relative = parsed.jsonText.indexOf(targetAccessorJson)
     if (relative < 0 || parsed.jsonText.indexOf(targetAccessorJson, relative + targetAccessorJson.length) >= 0) {
