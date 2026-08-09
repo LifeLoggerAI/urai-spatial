@@ -160,6 +160,7 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
   world.userData.suppressedPortalProps = true;
   world.userData.suppressedForgeScenery = true;
   world.userData.retainedForGovernedCompatibilityOnly = true;
+  world.userData.centeredForHomeCamera = true;
   return world;
 }
 
