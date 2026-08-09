@@ -1,1 +1,31 @@
-{"schemaVersion":"3.0.0","generatedAt":null,"version":"v3","ready":0,"missing":14,"assets":[]}
+{
+  "schemaVersion": "3.1.0",
+  "generatedAt": "2026-08-08T00:00:00Z",
+  "version": "v3",
+  "producer": "LifeLoggerAI/asset-factory",
+  "consumer": "LifeLoggerAI/urai-spatial",
+  "providerRequired": true,
+  "programAuthority": "LifeLoggerAI/asset-factory#206",
+  "sourceRunId": 30543824770,
+  "sourceArtifactId": 8760845553,
+  "sourceArtifactDigest": "sha256:3d4cf33a613460ece92e52bb1cccb5c1193aca2398a6cdbd480b00b46339ed57",
+  "ready": 14,
+  "missing": 0,
+  "assets": [
+    {"name":"v3_relationship_galaxy_main","canonicalPath":"assets/urai/v3/relationship-galaxy-main.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/relationship-galaxy-main.webp","promptVersion":"v2","sha256":"8aaee8439ed6989bf7b1de47243e8b2ee4b76dd63a14952518e3640eb1c40bb8","bytes":662992,"width":1600,"height":1000,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_relationship_galaxy_mobile","canonicalPath":"assets/urai/v3/relationship-galaxy-mobile.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/relationship-galaxy-mobile.webp","promptVersion":"v2","sha256":"f32a15facb05ab793853a1d1499292f781a49050977e555db62e1411dd2b2675","bytes":614350,"width":1024,"height":1536,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_family_roots_main","canonicalPath":"assets/urai/v3/family-roots-main.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/family-roots-main.webp","promptVersion":"v1","sha256":"8e2cd52aa55cad99b48ca604cf1166cc21d4161c422a5264072d2d8893880d2e","bytes":450474,"width":1400,"height":788,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_family_roots_mobile","canonicalPath":"assets/urai/v3/family-roots-mobile.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/family-roots-mobile.webp","promptVersion":"v1","sha256":"f2cf659df49b5471aefa78ff197deaff85913c9b5ba69b36fa9602b3f2cb89ff","bytes":557474,"width":1024,"height":1536,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_present_friends","canonicalPath":"assets/urai/v3/present-friends.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/present-friends.webp","promptVersion":"v1","sha256":"071b913d0e80d68bc3aac16d990bbfd0062e22843f20337125882f161cad7f6b","bytes":407642,"width":1200,"height":900,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_past_friends_trails","canonicalPath":"assets/urai/v3/past-friends-trails.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/past-friends-trails.webp","promptVersion":"v1","sha256":"0deec8803b9219667d9135f2236d039d8cd8ac0aecc0ca0e99572f9e557097fd","bytes":156988,"width":1200,"height":900,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_mentor_guidelights","canonicalPath":"assets/urai/v3/mentor-guidelights.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/mentor-guidelights.webp","promptVersion":"v1","sha256":"f67cb388dfecc4c8676ec45b448f4d23bec6f5033385d0e6d32c51886730188d","bytes":290572,"width":1200,"height":900,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_legacy_sanctuary","canonicalPath":"assets/urai/v3/legacy-sanctuary.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/legacy-sanctuary.webp","promptVersion":"v2","sha256":"6354ea6df26e022f3895dd0cef4d9b48bc33529d903b8c9ec04671cdec4ea09f","bytes":343600,"width":1400,"height":788,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_community_world_main","canonicalPath":"assets/urai/v3/community-world-main.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/community-world-main.webp","promptVersion":"v2","sha256":"aca975c880a7d97e80932ddb0981012e6bf6cc79420bc9941069577cbf30b3a0","bytes":596074,"width":1600,"height":1000,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_community_world_mobile","canonicalPath":"assets/urai/v3/community-world-mobile.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/community-world-mobile.webp","promptVersion":"v1","sha256":"08cb5977ca94303c7d9dc7fb032908d12793266c6dc6bd0a4b8aee5b040acf9b","bytes":573874,"width":1024,"height":1536,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_storytime_theater_main","canonicalPath":"assets/urai/v3/storytime-theater-main.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/storytime-theater-main.webp","promptVersion":"v2","sha256":"21c6eb7342723077614247889965857d5b6192344e5a7348eb82628a31ba6170","bytes":480404,"width":1600,"height":1000,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_storytime_theater_mobile","canonicalPath":"assets/urai/v3/storytime-theater-mobile.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/storytime-theater-mobile.webp","promptVersion":"v1","sha256":"f9e411299778a40b7e888dfd0148df255cbdd0c4167496fcbd9077c8c3929305","bytes":390174,"width":1024,"height":1536,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_lineage_seal","canonicalPath":"assets/urai/v3/lineage-seal.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/lineage-seal.webp","promptVersion":"v1","sha256":"f77f092c3d38760f016327b7c40d803f8305027ca52dfee2c0c7bdbd41c0c164","bytes":622470,"width":768,"height":768,"technicalStatus":"passed","sourceKind":"exact-paid-provider"},
+    {"name":"v3_launch_key_art","canonicalPath":"assets/urai/v3/launch-key-art.webp","status":"ready","renderer":"provider","sourcePath":"runtime/assets/urai/v3/launch-key-art.webp","promptVersion":"v2","sha256":"1bf218231b42d1e8f9aaa2dae989c46239cf55f53a4463d10a4640cde042cfa1","bytes":482730,"width":1600,"height":900,"technicalStatus":"passed","sourceKind":"exact-paid-provider"}
+  ],
+  "manifestSha256": "cbcc8b97fa62a8e1d98d45abebd8fe3dff7ceec5f473162ade00633576cda999"
+}

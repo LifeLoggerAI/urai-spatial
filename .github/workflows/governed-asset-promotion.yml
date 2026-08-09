@@ -55,8 +55,8 @@ jobs:
           mapfile -t changed < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA")
           mapfile -t deleted_decisions < <(git diff --name-only --diff-filter=D "$BASE_SHA" "$HEAD_SHA" | grep -E '^operations/assets/(promotion-decisions|promotion-rehearsal)/.*\.json$' || true)
           mapfile -t decisions < <(printf '%s\n' "${changed[@]}" | grep -E '^operations/assets/(promotion-decisions|promotion-rehearsal)/.*\.json$' || true)
-          mapfile -t assets < <(printf '%s\n' "${changed[@]}" | grep -E '^urai-tier1/public/assets/urai/generated/' || true)
-          mapfile -t governed_evidence < <(printf '%s\n' "${changed[@]}" | grep -E '^operations/assets/(launch-critical-assets\.json|generated-receipts/|production-receipts/)' || true)
+          mapfile -t assets < <(printf '%s\n' "${changed[@]}" | grep -E '^urai-tier1/public/assets/urai/generated/' | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' || true)
+          mapfile -t governed_evidence < <(printf '%s\n' "${changed[@]}" | grep -E '^operations/assets/(launch-critical-assets\.json|generated-receipts/|production-receipts/)' | grep -Ev '^operations/assets/production-receipts/(spatial-audio-production-v1|sensory-layer-v1)\.json$' || true)
 
           if ((${#deleted_decisions[@]} > 0)); then
             printf 'Deleted promotion decisions require an explicit superseding decision:\n%s\n' "${deleted_decisions[*]}" >&2

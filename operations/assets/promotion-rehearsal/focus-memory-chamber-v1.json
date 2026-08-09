@@ -4,14 +4,14 @@
   "repository": "LifeLoggerAI/urai-spatial",
   "assetId": "focus-memory-chamber-v1",
   "canonicalPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
-  "bytes": 622812,
-  "sha256": "3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0",
+  "bytes": 622516,
+  "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "fallback": "procedural-focus-chamber",
   "license": "URAI Labs internal production asset",
   "producer": "URAI deterministic authored asset pack",
   "reviewer": "governed-replacement-rehearsal",
-  "reviewedAt": "2026-08-08T04:10:38Z",
+  "reviewedAt": "2026-08-08T22:45:00Z",
   "promote": false,
   "humanReviewApproved": false,
   "fallbackVerified": true,
@@ -19,6 +19,6 @@
   "licenseApproved": true,
   "optimizationVerified": true,
   "visualProofVerified": false,
-  "exactHeadChecksPassed": false,
-  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the authored Focus asset after correcting only the malformed cap normals. This record binds candidate identity, does not promote it, and remains pending exact-head and visual verification."
+  "exactHeadChecksPassed": true,
+  "notes": "Fail-closed exact-binary replacement rehearsal rebound to the repaired Focus asset. Exact-head replacement evidence independently confirms 622516 bytes, SHA-256 d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d, GLB v2 structure, accessor 49 VEC3 float normal bounds corrected to min Y -1 and max Y 1, and unchanged Focus animation identities. This record binds candidate identity only; promote=false, humanReviewApproved=false, and visualProofVerified=false remain fail-closed pending release proof and founder acceptance."
 }

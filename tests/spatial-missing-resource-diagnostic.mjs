@@ -22,6 +22,10 @@ const routes = [
   '/status',
   '/spatial/ar-vr',
 ];
+const canonicalRedirectTargets = new Map([
+  ['/ascent', '/home?from=ascent'],
+  ['/unwind', '/life-map?from=unwind&overview=1'],
+]);
 const promotedGeneratedAssetPaths = new Set([
   '/assets/urai/generated/models/home-entry-chamber-v1.glb',
   '/assets/urai/generated/models/portal-ring-master-v1.glb',
@@ -188,6 +192,18 @@ try {
       if (!response || response.status() !== 200) {
         throw new Error(`Spatial diagnostic route failed: ${route} (${response?.status() ?? 'no response'})`);
       }
+
+      const canonicalTarget = canonicalRedirectTargets.get(route);
+      if (canonicalTarget) {
+        await page.waitForURL(`${baseUrl}${canonicalTarget}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60_000,
+        });
+        if (page.url() !== `${baseUrl}${canonicalTarget}`) {
+          throw new Error(`Spatial diagnostic canonical redirect failed: ${route} -> ${page.url()}`);
+        }
+      }
+
       await page.waitForTimeout(1_000);
     } finally {
       await page.close().catch(() => undefined);
@@ -208,10 +224,11 @@ try {
   ].map((entry) => [key(entry), entry])).values()];
 
   const report = {
-    schemaVersion: 'urai-spatial-missing-resource-diagnostics-5',
+    schemaVersion: 'urai-spatial-missing-resource-diagnostics-6',
     generatedAt: new Date().toISOString(),
     baseUrl,
     routes,
+    canonicalRedirectTargets: Object.fromEntries(canonicalRedirectTargets),
     policy: {
       providerMode: 'disabled-for-fallback-diagnostic',
       neutralizedProviderVariables,

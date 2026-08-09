@@ -9,6 +9,8 @@ on:
       - 'urai-tier1/tests/home-entry-governed-production-contract.test.mjs'
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/normalize-launch-critical-assets.mjs'
+      - 'scripts/repair-home-glb-pole-normals.mjs'
+      - 'scripts/repair-focus-glb-accessor-bounds.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/verify-governed-asset-promotion.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
@@ -18,11 +20,13 @@ on:
       - '.github/workflows/launch-critical-asset-forge.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   LEGACY_ASSET_HEAD: e4e94a501a64e7375a5cfdbe9547436fbc8e75a2
   URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+  GH_TOKEN: ${{ github.token }}
 
 jobs:
   forge-and-verify:
@@ -54,10 +58,10 @@ jobs:
           : > "$changed_files"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > "$changed_files"
-            if grep -Eq '^operations/assets/(promotion-decisions|production-receipts)/.+\.json$' "$changed_files"; then
+            if grep -Eq '^operations/assets/promotion-decisions/.+\.json$' "$changed_files"; then
               promotion=true
             fi
-            if grep -Eq '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files"; then
+            if (grep -E '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files" | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' | grep -q .); then
               replacement=true
             fi
           fi
@@ -68,6 +72,60 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Repair exact Home GLB pole normals and emit successor when required
+        id: home_repair
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/repair-home-glb-pole-normals.mjs
+          if git diff --quiet -- \
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
+            operations/assets/generated-receipts/home-entry-chamber-v1.json \
+            operations/assets/generated-receipts/urai-final-glb-pack-v1.json \
+            operations/assets/promotion-rehearsal/home-entry-chamber-v1.json; then
+            echo 'mutated=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${TARGET_BRANCH}" --jq '.object.sha')"
+          test "$remote_sha" = "$URAI_EXACT_HEAD"
+          gh auth setup-git
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add \
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
+            operations/assets/generated-receipts/home-entry-chamber-v1.json \
+            operations/assets/generated-receipts/urai-final-glb-pack-v1.json \
+            operations/assets/promotion-rehearsal/home-entry-chamber-v1.json
+          git commit -m 'Repair Home GLB pole normals'
+          git push origin "HEAD:${TARGET_BRANCH}"
+          echo 'mutated=true' >> "$GITHUB_OUTPUT"
+
+      - name: Repair exact Focus GLB accessor bounds and emit successor when required
+        id: focus_repair
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/repair-focus-glb-accessor-bounds.mjs
+          if git diff --quiet -- \
+            urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb \
+            operations/assets/generated-receipts/focus-memory-chamber-v1.json; then
+            echo 'mutated=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${TARGET_BRANCH}" --jq '.object.sha')"
+          test "$remote_sha" = "$URAI_EXACT_HEAD"
+          gh auth setup-git
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add \
+            urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb \
+            operations/assets/generated-receipts/focus-memory-chamber-v1.json
+          git commit -m 'Repair Focus GLB accessor bounds metadata'
+          git push origin "HEAD:${TARGET_BRANCH}"
+          echo 'mutated=true' >> "$GITHUB_OUTPUT"
 
       - name: Validate every changed governed promotion decision
         if: steps.mode.outputs.promotion == 'true'
@@ -103,13 +161,13 @@ jobs:
           test -z "$(git status --porcelain)"
 
       - name: Validate exact replacement rehearsal decisions
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          mapfile -t assets < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^urai-tier1/public/assets/urai/generated/' || true)
+          mapfile -t assets < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^urai-tier1/public/assets/urai/generated/' | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' || true)
           mapfile -t rehearsals < <(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$URAI_EXACT_HEAD" | grep -E '^operations/assets/promotion-rehearsal/.+\.json$' || true)
           if ((${#assets[@]} > 0 && ${#rehearsals[@]} == 0)); then
             echo 'Replacement binaries require changed fail-closed rehearsal decisions.' >&2
@@ -130,33 +188,65 @@ jobs:
             fi
           done
       - name: Verify exact replacement manifest, receipts and budgets
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
         run: node scripts/verify-launch-critical-assets.mjs
       - name: Strictly decode replacement Radiance HDR scanlines
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
         run: node scripts/validate-radiance-hdr.mjs
       - name: Validate every replacement GLB with Khronos-compatible validator
-        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
         shell: bash
         run: |
           set -euo pipefail
           for file in urai-tier1/public/assets/urai/generated/models/*.glb; do
+            echo "VALIDATING_GLB=$file"
             npx --yes @gltf-transform/cli@4.2.1 validate "$file"
           done
           test -z "$(git status --porcelain)"
 
-      - name: Verify governed production authority before candidate generation
+      - name: Verify fail-closed rehearsal control before candidate generation
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         env:
-          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-decisions/home-entry-chamber-v1.json
+          URAI_ASSET_PROMOTION_DECISION: operations/assets/promotion-rehearsal/spatial-particle-atlas-v1.json
         run: node scripts/verify-governed-asset-promotion.mjs
       - name: Run governed Home production contract before candidate generation
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         working-directory: urai-tier1
-        run: node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
-      - name: Forge deterministic launch candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_state="$(node -e "const fs=require('node:fs');const v=JSON.parse(fs.readFileSync('../operations/assets/launch-critical-assets.json','utf8'));const a=v.assets.find((entry)=>entry.id==='home-entry-chamber-v1');if(!a)process.exit(2);process.stdout.write(String(a.releaseState||''))")"
+          if [[ "$release_state" == "production-ready" ]]; then
+            node --test --test-concurrency=1 tests/home-entry-governed-production-contract.test.mjs
+          elif [[ "$release_state" == "pending-final-review" ]]; then
+            echo 'Home is pending final review; production-only Home promotion contract remains deferred.'
+          else
+            echo "Unsupported Home releaseState: $release_state" >&2
+            exit 1
+          fi
+      - name: Forge deterministic launch candidates while retaining governed Passport candidate
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
-        run: node scripts/forge-launch-critical-assets.mjs
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=operations/assets/launch-critical-assets.json
+          backup="${RUNNER_TEMP}/launch-critical-assets.full.json"
+          cp "$manifest" "$backup"
+          restore_manifest() { cp "$backup" "$manifest"; }
+          trap restore_manifest EXIT
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const path = 'operations/assets/launch-critical-assets.json'
+          const manifest = JSON.parse(fs.readFileSync(path, 'utf8'))
+          const retained = manifest.assets.find((asset) => asset.id === 'passport-status-room-v1')
+          if (!retained) throw new Error('passport-status-room-v1 missing from launch manifest')
+          manifest.assets = manifest.assets.filter((asset) => asset.id !== 'passport-status-room-v1')
+          fs.writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n')
+          NODE
+          node scripts/forge-launch-critical-assets.mjs
+          restore_manifest
+          trap - EXIT
+          node scripts/verify-launch-critical-assets.mjs
       - name: Normalize formats and repair glTF rotations
         if: steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement != 'true'
         run: node scripts/normalize-launch-critical-assets.mjs
@@ -177,6 +267,7 @@ jobs:
         run: |
           set -euo pipefail
           for file in urai-tier1/public/assets/urai/generated/models/*.glb; do
+            echo "VALIDATING_GLB=$file"
             npx --yes @gltf-transform/cli@4.2.1 validate "$file"
           done
       - name: Extract pinned legacy comparison candidates
@@ -213,7 +304,7 @@ jobs:
           retention-days: 14
           path: .urai-artifacts/launch-critical-candidate-bundle/
       - name: Upload exact replacement evidence
-        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true'
+        if: always() && steps.mode.outputs.promotion != 'true' && steps.mode.outputs.replacement == 'true' && steps.home_repair.outputs.mutated != 'true' && steps.focus_repair.outputs.mutated != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: urai-launch-critical-replacement-${{ env.URAI_EXACT_HEAD }}

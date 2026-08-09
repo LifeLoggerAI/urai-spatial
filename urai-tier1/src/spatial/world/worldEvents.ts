@@ -44,6 +44,17 @@ function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
   return Boolean(document.querySelector('.urai-asset-home-world canvas'))
 }
 
+function markHomeAscentClosing(request: UraiWorldTravelRequest) {
+  if (request.destination !== 'life-map') return
+  if (request.entryPortal !== 'home-sky' || request.cameraCheckpoint !== 'home-sky-ascent-complete') return
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (pathname !== '/' && pathname !== '/home') return
+  const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+  if (!owner) return
+  if (owner.getAttribute('data-home-portal-sequence') !== 'life-map:traversal') return
+  owner.setAttribute('data-home-portal-sequence', 'life-map:closing')
+}
+
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
 
@@ -53,6 +64,11 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_HOME_ASCENT_EVENT, { detail: request }))
     return
   }
+
+  // The completed Home sky ascent owns a real closing phase before route handoff.
+  // This is intentionally bound at the canonical travel boundary so the phase is
+  // committed before either the client router or hard fallback can tear Home down.
+  markHomeAscentClosing(request)
 
   const now = Date.now()
   const fingerprint = JSON.stringify(request)

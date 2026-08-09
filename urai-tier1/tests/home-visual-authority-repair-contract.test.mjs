@@ -2,19 +2,24 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const runtime = fs.readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
-const production = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProduction.tsx', import.meta.url), 'utf8')
+const productionEntry = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProduction.tsx', import.meta.url), 'utf8')
+const production = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionFinal.tsx', import.meta.url), 'utf8')
 const manifest = fs.readFileSync(new URL('../src/spatial/assets/assetManifest.ts', import.meta.url), 'utf8')
 const forge = fs.readFileSync(new URL('../../scripts/author-final-glb-pack.mjs', import.meta.url), 'utf8')
 const verifier = fs.readFileSync(new URL('../../scripts/verify-final-glb-pack.mjs', import.meta.url), 'utf8')
 const legacyVerifier = fs.readFileSync(new URL('../../scripts/verify-home-finalization-authored-assets.mjs', import.meta.url), 'utf8')
 
 assert.match(runtime, /HomeWorldProduction/)
+assert.match(productionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
 assert.match(production, /data-home-primary-owner="asset-driven"/)
+assert.match(production, /data-home-real-world-first="true"/)
+assert.match(production, /data-home-visible-portals="false"/)
 assert.match(production, /home-authored-terrain/)
 assert.match(production, /home-authored-embodied-self/)
 assert.match(production, /home-orb-sanctuary/)
-assert.match(production, /home-ground-portal-world-owned/)
-assert.match(production, /home-life-map-portal-world-owned/)
+assert.match(production, /home-ground-environmental-threshold/)
+assert.match(production, /home-life-map-sky-lookout/)
+assert.doesNotMatch(production, /home-ground-portal-world-owned|home-life-map-portal-world-owned|<WorldPortal/)
 
 for (const id of [
   'home-entry-chamber-model-v1',

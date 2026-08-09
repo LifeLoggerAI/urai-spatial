@@ -3,6 +3,9 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import './v123-asset-wiring.css'
+import './v3-relationship-asset-wiring.css'
+import './v4-xr-asset-wiring.css'
+import './v5-asset-wiring.css'
 
 type FinalAssetRoute = {
   id: string
@@ -13,9 +16,18 @@ type FinalAssetRoute = {
 }
 
 type AssetHandoffManifest = {
+  version?: string
   ready?: number
   missing?: number
   assets?: Array<{ status?: string; renderer?: string }>
+}
+
+type ManifestCheck = {
+  version: 'v2' | 'v3' | 'v4' | 'v5'
+  datasetKey: string
+  readyClass: string
+  exactCount: number
+  href: string
 }
 
 const finalAssetRoutes: FinalAssetRoute[] = [
@@ -43,30 +55,23 @@ const fallbackRoute: FinalAssetRoute = {
   asset: '/assets/urai/final/shared/orb/orb-idle.svg',
 }
 
-const promotedManifestChecks = [
-  {
-    datasetKey: 'uraiV2Assets' as const,
-    readyClass: 'urai-v2-assets-ready',
-    minimum: 80,
-    href: '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
-  },
-  {
-    datasetKey: 'uraiV3Assets' as const,
-    readyClass: 'urai-v3-assets-ready',
-    minimum: 39,
-    href: '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
-  },
+const promotedManifestChecks: readonly ManifestCheck[] = [
+  { version: 'v2', datasetKey: 'uraiV2Assets', readyClass: 'urai-v2-assets-ready', exactCount: 80, href: '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json' },
+  { version: 'v3', datasetKey: 'uraiV3Assets', readyClass: 'urai-v3-relationship-assets-ready', exactCount: 14, href: '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json' },
+  { version: 'v4', datasetKey: 'uraiV4Assets', readyClass: 'urai-v4-assets-ready', exactCount: 39, href: '/assets/urai/final/manifests/v4-asset-factory-spatial-handoff.json' },
+  { version: 'v5', datasetKey: 'uraiV5Assets', readyClass: 'urai-v5-assets-ready', exactCount: 27, href: '/assets/urai/final/manifests/v5-asset-factory-spatial-handoff.json' },
 ]
 
 function resolveFinalAssetRoute(pathname: string) {
   return finalAssetRoutes.find((route) => route.match(pathname)) ?? fallbackRoute
 }
 
-function isCompleteManifest(manifest: AssetHandoffManifest, minimum: number) {
+function isCompleteManifest(manifest: AssetHandoffManifest, check: ManifestCheck) {
   const assets = Array.isArray(manifest.assets) ? manifest.assets : []
-  return Number(manifest.ready ?? 0) >= minimum
+  return manifest.version === check.version
+    && Number(manifest.ready ?? 0) === check.exactCount
     && Number(manifest.missing ?? 0) === 0
-    && assets.length >= minimum
+    && assets.length === check.exactCount
     && assets.every((asset) => asset.status === 'ready' && asset.renderer === 'provider')
 }
 
@@ -87,7 +92,7 @@ export default function UraiFinalAssetSpineBridge() {
           return response.json() as Promise<AssetHandoffManifest>
         })
         .then((manifest) => {
-          const ready = isCompleteManifest(manifest, check.minimum)
+          const ready = isCompleteManifest(manifest, check)
           root.dataset[check.datasetKey] = ready ? 'ready' : 'fallback'
           root.classList.toggle(check.readyClass, ready)
         })

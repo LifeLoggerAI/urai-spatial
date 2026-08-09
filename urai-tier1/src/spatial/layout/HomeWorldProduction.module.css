@@ -6,9 +6,33 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: #111722;
+  background: linear-gradient(180deg, #aebbb2 0%, #94a59b 38%, #748271 70%, #596251 100%);
   cursor: grab;
   touch-action: none;
+}
+
+.world::before {
+  content: "";
+  position: absolute;
+  inset: -2%;
+  z-index: 3;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, rgba(49, 54, 48, .08), rgba(49, 55, 48, .10) 48%, rgba(38, 45, 38, .15) 100%),
+    url('/assets/urai/replay/replay-memory-film-main.webp');
+  background-size: cover;
+  background-position: center 50%;
+  background-repeat: no-repeat;
+  filter: saturate(.7) contrast(.92) brightness(.92) blur(2.4px);
+  transform: scale(1.045);
+  opacity: .028;
+  mix-blend-mode: soft-light;
+  transition: opacity 900ms ease, filter 900ms ease;
+}
+
+.world[data-home-scene-phase='ASCENT']::before {
+  opacity: 0;
+  filter: saturate(.62) contrast(1.05) brightness(.24) blur(3px);
 }
 
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
@@ -16,9 +40,12 @@
 .canvas {
   position: absolute !important;
   inset: 0;
+  z-index: 2;
   width: 100% !important;
   height: 100% !important;
-  filter: brightness(1.01) saturate(1.08) contrast(1.08);
+  background:
+    radial-gradient(circle at 73% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(199, 207, 187, .88) 20%, rgba(154, 172, 155, .82) 45%, rgba(111, 130, 110, .78) 70%, rgba(73, 88, 73, .78) 100%);
+  filter: saturate(.96) contrast(1.025);
 }
 
 .world::after {
@@ -28,95 +55,114 @@
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(2, 6, 14, .16), transparent 34%, transparent 74%, rgba(2, 5, 10, .24)),
-    radial-gradient(circle at 50% 46%, transparent 0 48%, rgba(1, 4, 10, .08) 78%, rgba(1, 3, 8, .22) 100%);
+    linear-gradient(180deg, rgba(255, 250, 229, .018), transparent 38%, rgba(202, 216, 194, .022) 62%, rgba(18, 24, 20, .04) 100%),
+    radial-gradient(circle at 50% 42%, transparent 0 77%, rgba(8, 10, 8, .022) 92%, rgba(5, 7, 5, .05) 100%);
 }
 
 .brand,
-.worldHint,
-.destinationNames {
+.worldHint {
   position: absolute;
   z-index: 10;
   pointer-events: none;
-  text-shadow: 0 14px 42px rgba(0, 0, 0, .8);
+  text-shadow: 0 8px 28px rgba(0, 0, 0, .24);
 }
 
 .brand {
   left: clamp(18px, 3vw, 44px);
   top: clamp(18px, 3vw, 40px);
-  display: grid;
-  gap: .34rem;
+  opacity: .2;
 }
 
 .brand strong {
-  font-size: .94rem;
-  letter-spacing: .58em;
-  font-weight: 850;
-}
-
-.brand span {
-  color: rgba(236, 246, 244, .72);
-  font-size: .6rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
+  font-size: .68rem;
+  letter-spacing: .5em;
+  font-weight: 760;
 }
 
 .worldHint {
   left: 50%;
-  bottom: max(26px, env(safe-area-inset-bottom));
+  bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  padding: .68rem 1rem;
-  border: 1px solid rgba(232, 245, 241, .16);
+  padding: .42rem .68rem;
+  border: 1px solid rgba(232, 240, 234, .07);
   border-radius: 999px;
-  background: rgba(4, 10, 14, .34);
-  color: rgba(245, 249, 248, .84);
-  backdrop-filter: blur(14px);
-  font-size: .68rem;
-  font-weight: 760;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-
-.destinationNames {
-  left: 0;
-  right: 0;
-  bottom: clamp(110px, 16vh, 176px);
-  display: flex;
-  justify-content: space-between;
-  padding: 0 clamp(28px, 8vw, 130px);
-  color: rgba(244, 239, 220, .78);
-  font-size: .62rem;
-  font-weight: 900;
-  letter-spacing: .34em;
+  background: rgba(15, 18, 14, .1);
+  color: rgba(246, 249, 247, .64);
+  backdrop-filter: blur(8px);
+  font-size: .56rem;
+  font-weight: 650;
+  letter-spacing: .07em;
+  opacity: .66;
 }
 
 .world :global(.urai-mobile-movement) {
+  display: none;
   z-index: 14;
-  opacity: .82;
+  opacity: .18;
+  transition: opacity .2s ease;
+}
+
+.world :global(.urai-mobile-movement button) {
+  border-color: rgba(231, 246, 240, .12) !important;
+  background: rgba(18, 27, 23, .18) !important;
+  color: rgba(255, 255, 255, .62) !important;
+  box-shadow: 0 7px 22px rgba(0, 0, 0, .11) !important;
+  backdrop-filter: blur(9px) !important;
+}
+
+.world :global(.urai-mobile-movement:focus-within),
+.world :global(.urai-mobile-movement:hover) {
+  opacity: .9;
+}
+
+.world :global(.urai-mobile-movement button:focus-visible),
+.world :global(.urai-mobile-movement button[data-active='true']) {
+  background: rgba(31, 78, 68, .72) !important;
+  color: #fff !important;
 }
 
 @media (min-width: 901px) and (pointer: fine) {
   .world :global(.urai-mobile-movement) { display: none; }
 }
 
+@media (max-width: 700px), (pointer: coarse) {
+  .world :global(.urai-mobile-movement) { display: grid; }
+}
+
 @media (max-width: 700px) {
-  .brand { top: max(14px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left)); }
-  .destinationNames {
-    bottom: 152px;
-    padding: 0 22px;
-    font-size: .52rem;
-    letter-spacing: .2em;
+  .world::before {
+    inset: -3%;
+    background-image:
+      linear-gradient(180deg, rgba(50, 56, 50, .08), rgba(52, 59, 51, .10) 48%, rgba(39, 46, 39, .15) 100%),
+      url('/assets/urai/replay/replay-memory-film-main.webp');
+    background-position: center 50%;
+    transform: scale(1.055);
+    opacity: .02;
+  }
+  .canvas {
+    background:
+      radial-gradient(circle at 72% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(200, 208, 188, .88) 19%, rgba(153, 171, 155, .82) 44%, rgba(109, 128, 109, .79) 69%, rgba(72, 87, 72, .79) 100%);
+    filter: saturate(.95) contrast(1.02);
+  }
+  .brand {
+    top: max(14px, env(safe-area-inset-top));
+    left: max(16px, env(safe-area-inset-left));
   }
   .worldHint {
-    bottom: max(18px, env(safe-area-inset-bottom));
-    max-width: calc(100vw - 190px);
+    bottom: max(16px, env(safe-area-inset-bottom));
+    max-width: calc(100vw - 184px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: .56rem;
+    font-size: .52rem;
+  }
+  .world :global(.urai-mobile-movement) {
+    opacity: .22;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .world::before { transition: none; }
   .worldHint { backdrop-filter: none; }
+  .world :global(.urai-mobile-movement) { transition: none; }
 }

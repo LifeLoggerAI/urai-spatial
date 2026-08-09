@@ -68,8 +68,17 @@ test('only bounded local navigation, HMR, promoted asset and canonical manifest 
   assert.match(diagnosticSource, /actionableFailedRequests/)
 })
 
+test('canonical compatibility redirects settle before route teardown', () => {
+  assert.match(diagnosticSource, /const canonicalRedirectTargets = new Map/)
+  assert.match(diagnosticSource, /\['\/ascent', '\/home\?from=ascent'\]/)
+  assert.match(diagnosticSource, /\['\/unwind', '\/life-map\?from=unwind&overview=1'\]/)
+  assert.match(diagnosticSource, /await page\.waitForURL\(`\$\{baseUrl\}\$\{canonicalTarget\}`/)
+  assert.match(diagnosticSource, /Spatial diagnostic canonical redirect failed/)
+  assert.match(diagnosticSource, /canonicalRedirectTargets: Object\.fromEntries\(canonicalRedirectTargets\)/)
+})
+
 test('actionable findings fail and remain in a schema-bound artifact', () => {
-  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-5/)
+  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-6/)
   assert.match(diagnosticSource, /missing-resources\.json/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)

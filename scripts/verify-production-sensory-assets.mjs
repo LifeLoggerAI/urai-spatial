@@ -15,7 +15,21 @@ const contractFiles = {
   component: 'urai-tier1/src/spatial/scene/SpatialSensoryLayer.tsx',
   manifest: 'urai-tier1/src/spatial/assets/sensoryAssetManifest.ts',
   receipt: 'operations/assets/production-receipts/sensory-layer-v1.json',
+  audioReceipt: 'operations/assets/production-receipts/spatial-audio-production-v1.json',
+  audioRuntime: 'urai-tier1/src/spatial/audio/SpatialAmbientRuntime.tsx',
+  audioController: 'urai-tier1/src/spatial/audio/useAudioController.ts',
+  homeWorld: 'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx',
 }
+const productionAudioFiles = [
+  'home-ambient-v1.opus',
+  'ground-ambient-v1.opus',
+  'life-map-ambient-v1.opus',
+  'focus-ambient-v1.opus',
+  'replay-ambient-v1.opus',
+  'portal-transition-v1.opus',
+  'orb-confirm-v1.opus',
+  'ui-error-v1.opus',
+]
 
 const readPath = (relative) => fs.readFileSync(path.join(root, relative))
 const textPath = (relative) => readPath(relative).toString('utf8')
@@ -45,6 +59,10 @@ const consumer = textPath(contractFiles.consumer)
 const component = textPath(contractFiles.component)
 const manifest = textPath(contractFiles.manifest)
 const receipt = JSON.parse(textPath(contractFiles.receipt))
+const audioReceipt = JSON.parse(textPath(contractFiles.audioReceipt))
+const audioRuntime = textPath(contractFiles.audioRuntime)
+const audioController = textPath(contractFiles.audioController)
+const homeWorld = textPath(contractFiles.homeWorld)
 
 assert.match(consumer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
 assert.match(consumer, /<SpatialSensoryLayer \/>/)
@@ -66,13 +84,14 @@ assert.doesNotMatch(component, /Promise\.all/)
 assert.doesNotMatch(component, /throw new Error\('URAI sensory assets are not promoted'\)/)
 assert.doesNotMatch(component, /urai-ambient-bed-v1/)
 
-for (const key of ['materials', 'particles', 'loading']) {
+for (const key of ['materials', 'particles', 'loading', 'ambientAudio']) {
   assert.match(manifest, new RegExp(`${key}:[\\s\\S]*status: 'ready'`))
 }
 assert.match(manifest, /skybox:[\s\S]*status: 'candidate'/)
-assert.match(manifest, /ambientAudio:[\s\S]*status: 'candidate'/)
+for (const fileName of productionAudioFiles) assert.match(manifest, new RegExp(fileName.replaceAll('.', '\\.')))
+assert.doesNotMatch(manifest, /urai-ambient-bed-v1\.opus/)
 
-assert.equal(receipt.releaseState, 'candidate')
+assert.equal(receipt.releaseState, 'production-integrated-candidate')
 assert.equal(receipt.verificationResult, 'pending-exact-head-ci')
 assert.deepEqual(receipt.assets.map((asset) => asset.id).sort(), [
   'global-cinematic-material-pack-v1',
@@ -80,8 +99,36 @@ assert.deepEqual(receipt.assets.map((asset) => asset.id).sort(), [
   'urai-loading-sequence-v1',
 ])
 assert.ok(receipt.assets.every((asset) => asset.status === 'ready'))
-assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'urai-ambient-bed-v1'))
+assert.equal(receipt.integratedProductionAudio?.id, 'production-spatial-audio-v1')
+assert.equal(receipt.integratedProductionAudio?.status, 'ready')
+assert.equal(receipt.integratedProductionAudio?.assetCount, 8)
+assert.equal(receipt.integratedProductionAudio?.mutedByDefaultUntilConsent, true)
+assert.ok(!receipt.excludedCandidates.some((asset) => asset.id === 'urai-ambient-bed-v1'))
 assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'life-map-galaxy-skybox-v1'))
+
+assert.equal(audioReceipt.schemaVersion, 'urai-spatial-production-audio-1')
+assert.equal(audioReceipt.verification?.passed, true)
+assert.equal(audioReceipt.historicalEightSecondProofBedPromoted, false)
+assert.equal(audioReceipt.assets?.length, 8)
+assert.equal(audioReceipt.assets.filter((asset) => asset.role === 'ambient').length, 5)
+assert.ok(audioReceipt.assets.filter((asset) => asset.role === 'ambient').every((asset) => asset.durationSeconds >= 59))
+assert.ok(audioReceipt.assets.every((asset) => asset.codec === 'opus' && asset.channels === 2))
+assert.ok(audioReceipt.assets.every((asset) => asset.integratedLufs <= -16 && asset.truePeakDbtp <= -1))
+for (const asset of audioReceipt.assets) {
+  const relative = `urai-tier1/public${asset.path}`
+  const payload = readPath(relative)
+  assert.equal(payload.length, asset.bytes, `Audio byte count mismatch: ${asset.id}`)
+  assert.equal(sha256(payload), asset.sha256, `Audio SHA-256 mismatch: ${asset.id}`)
+  assert.ok(asset.caption?.length > 0, `Audio caption metadata missing: ${asset.id}`)
+}
+
+for (const fileName of productionAudioFiles) assert.match(audioController, new RegExp(fileName.replaceAll('.', '\\.')))
+assert.doesNotMatch(audioController, /\/audio\/ambient\//)
+assert.match(audioRuntime, /urai:spatial-audio-consent-v1/)
+assert.match(audioRuntime, /urai:spatial-audio-muted-v1/)
+assert.match(audioRuntime, /data-audio-consent/)
+assert.match(audioRuntime, /data-audio-muted/)
+assert.match(homeWorld, /data-home-audio="production-opus-consent-controlled"/)
 
 for (const asset of receipt.assets) {
   const payload = readPath(asset.path)
@@ -93,8 +140,13 @@ console.log(JSON.stringify({
   ok: true,
   releaseState: receipt.releaseState,
   verificationResult: receipt.verificationResult,
-  readyAssets: receipt.assets.map((asset) => asset.id),
+  readyAssets: [...receipt.assets.map((asset) => asset.id), receipt.integratedProductionAudio.id],
   excludedCandidates: receipt.excludedCandidates.map((asset) => asset.id),
+  productionAudio: {
+    assets: audioReceipt.assets.length,
+    ambient: audioReceipt.assets.filter((asset) => asset.role === 'ambient').length,
+    verified: audioReceipt.verification.passed,
+  },
   files: Object.fromEntries(Object.entries(readyFiles).map(([key, relative]) => {
     const payload = readPath(relative)
     return [key, { path: relative, bytes: payload.length, sha256: sha256(payload) }]

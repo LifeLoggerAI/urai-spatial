@@ -24,6 +24,11 @@ function speakLocally(text: string) {
   window.speechSynthesis.speak(utterance)
 }
 
+function emitAudioCue(cue: 'orb-confirm' | 'error') {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } }))
+}
+
 export default function OrbConversationPanel() {
   const [message, setMessage] = useState('')
   const [history, setHistory] = useState<OrbConversationMessage[]>([])
@@ -96,6 +101,7 @@ export default function OrbConversationPanel() {
       }
       setMessage('')
       setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
+      emitAudioCue('orb-confirm')
       if (!voiceMuted) speakLocally(resolved.message)
     } catch (error) {
       if (controller.signal.aborted) return
@@ -111,6 +117,7 @@ export default function OrbConversationPanel() {
         : error instanceof OrbProviderAttemptUncertainError
           ? 'External processing state could not be confirmed; cautious local fallback ready.'
           : 'Live provider unavailable before external processing; local fallback response ready.')
+      emitAudioCue('error')
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
@@ -188,3 +195,4 @@ export default function OrbConversationPanel() {
     </details>
   )
 }
+

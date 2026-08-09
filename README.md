@@ -6,61 +6,51 @@ URAI Spatial is the canonical public URAI application repository.
 - Canonical repository: `LifeLoggerAI/urai-spatial`
 - Runtime root: `urai-tier1`
 - Canonical branch: `main`
-- Current release mode: `fallback-demo`
-- Production certification: incomplete
+- Current release lane: PR #1069 production close-out
+- Production certification: incomplete until exact-head acceptance, protected deploy, and live verification
 
-The public product path is Home → Ground → Life Map → Focus → Replay → Mirror → Passport → Status.
+The canonical experience chain is Home → Ground → Life Map → Focus → Replay, with the broader product surface including Mirror, Passport, Privacy Controls, Location Map, and Status.
 
 ## Current status
 
-The repository contains a substantial spatial web experience, runtime architecture, provider seams, asset handoffs, WebXR and Quest preparation, privacy gates, and release automation. Source presence alone does not certify provider activity, physical-device support, persistence, or a production deployment.
+The retained V1-V5 runtime image estate is complete: **213 ready / 0 missing**. Seven launch-critical models are promoted. The paid V2-V5 asset program records **151 generated / 151 passed / 0 failed** with promotion authorized. These asset facts do not by themselves certify runtime behavior, provider activity, XR/device support, or a production deployment.
+
+PR #1069 remains controlled by GitHub issue #863. No old CI result, screenshot, visual acceptance, or steward attestation transfers to a successor SHA.
 
 Current allowed framing:
 
-> URAI Spatial is reachable as a privacy-safe fallback/demo spatial shell with a substantial V1 web experience and future provider seams.
+> URAI Spatial has a complete retained V1-V5 image estate and promoted launch-critical spatial models, while the current coherent-3D Home release remains exact-head CI, visual acceptance, governance, protected production deployment, and live-verification gated.
 
 ## Evidence authority
 
-Read these files before making release or marketing claims:
+Read these before making release or marketing claims:
 
-- [`STATUS.md`](./STATUS.md) — canonical status, route drift, version posture, and blockers
-- [`EVIDENCE.md`](./EVIDENCE.md) — command, workflow, deployment, browser, provider, and device evidence
-- [`release/tier-xr-release-matrix.json`](./release/tier-xr-release-matrix.json) — tier and XR release requirements
+- [`STATUS.md`](./STATUS.md) — current release boundary, asset truth, and production close-out rules
+- [`EVIDENCE.md`](./EVIDENCE.md) — historical and current command/workflow/deployment evidence ledger
+- [`docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json`](./docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json) — retained V1-V5 image/model completion
+- [`docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json`](./docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json) — paid V2-V5 generation/promotion receipt
+- [`release/tier-xr-release-matrix.json`](./release/tier-xr-release-matrix.json) — tier/XR release requirements
 - [`docs/decisions/`](./docs/decisions/) — runtime and release authority decisions
 
-When README language conflicts with `STATUS.md` or `EVIDENCE.md`, use the stricter evidence-backed statement.
-
-## Runtime system
-
-The repository includes the canonical routed application under `urai-tier1` and a runtime layer built around:
-
-```text
-EventBus → SimulationEngine → Memory → Replay → Prediction → XR
-```
-
-Runtime components include:
-
-- SystemLoop orchestration
-- MemoryGraph and ReplayEngine
-- PredictionEngine
-- XRRuntime and gated WebXR/Quest paths
-- CommunicationsBridge
-- AnalyticsBridge
-- advisory FeedbackBridge
-
-Run the runtime smoke test with:
-
-```bash
-node scripts/smoke-system-loop-runtime.mjs
-```
+Historical evidence remains valid for what it proved at its recorded SHA, but it is not current exact-head release authority.
 
 ## Version posture
 
-- **V1 — Spatial Foundation:** core route chain and source owners exist; current deployment, rollback, route parity, and browser proof remain required.
-- **V2 — Living World:** fallback wiring and verification exist; provider-backed asset receipt and promotion remain required.
-- **V3 — Relationships and Patterns:** consent-safe source and fallback concepts exist; canonical manifest, privacy review, activation, and live proof remain required.
-- **V4 — Spatial Computing:** WebXR and Quest source hardening exists; browser and physical-device certification remain required.
-- **V5 — Mirror of Becoming:** identity, legacy, provenance, and protected-presence concepts remain implementation- and privacy-gated.
+- **V1 — Spatial Foundation:** 53 runtime images ready; route/runtime owners and launch-critical models exist. Final production certification still requires the current release path to complete.
+- **V2 — Living World:** 80 runtime images ready / 0 missing; 71 paid generated replacements plus 9 preserved certified sources. Asset promotion is complete; runtime/live proof remains separate.
+- **V3 — Relationships and Patterns:** 14 runtime images ready / 0 missing; paid generation passed. Consent/privacy/runtime/live proof remains separate.
+- **V4 — Spatial Computing:** 39 runtime images ready / 0 missing; paid generation passed. WebXR/browser and physical-device certification remain separate gates.
+- **V5 — Mirror of Becoming:** 27 runtime images ready / 0 missing; paid generation passed. Identity/legacy/provenance/privacy behavior and production deployment remain separately gated.
+
+## Production release contract
+
+The canonical protected production workflow is `.github/workflows/spatial-live-deploy.yml`. A normal production deploy is manual on `main` and requires the live workflow inputs:
+
+- `release_sha`: exact current main SHA;
+- `rollback_sha`: distinct proven ancestor/recovery SHA;
+- `confirm`: `DEPLOY_URAI_APP`.
+
+A preview, PR verification run, green subset of CI, or intermediate receipt is not production completion.
 
 ## Repository authority
 

@@ -2,6 +2,7 @@ export type VoiceEngine = "elevenlabs" | "google" | "none";
 
 export type SpatialAudioPhase =
   | "HOME"
+  | "GROUND"
   | "ASCENT"
   | "LIFEMAP"
   | "FOCUS"
@@ -9,10 +10,12 @@ export type SpatialAudioPhase =
 
 export type AmbientTrack =
   | "home"
-  | "ascent"
+  | "ground"
   | "lifemap"
   | "focus"
   | "replay";
+
+export type SpatialAudioCue = "transition" | "orb-confirm" | "error";
 
 export interface NarratorAudioLine {
   id: string;

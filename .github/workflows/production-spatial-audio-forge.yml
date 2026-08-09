@@ -1,0 +1,139 @@
+name: Production Spatial Audio Forge
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'scripts/generate-production-spatial-audio.py'
+      - '.github/workflows/production-spatial-audio-forge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: urai-production-spatial-audio-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  forge-and-promote:
+    if: >-
+      github.actor != 'github-actions[bot]' &&
+      (github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 1069)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact PR source head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Prove exact source identity and live branch binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${TARGET_BRANCH}" --jq '.object.sha')"
+          test -n "$remote_sha"
+          test "$remote_sha" = "$SOURCE_SHA"
+
+      - name: Decide whether audio forge inputs changed
+        id: forge
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=false
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event.action }}" == "opened" ]]; then
+            required=true
+          elif [[ "${{ github.event.action }}" == "synchronize" ]]; then
+            if git diff --name-only "${SOURCE_SHA}^" "${SOURCE_SHA}" | grep -Eq '^(scripts/generate-production-spatial-audio\.py|\.github/workflows/production-spatial-audio-forge\.yml)$'; then
+              required=true
+            fi
+          fi
+          echo "required=$required" >> "$GITHUB_OUTPUT"
+          echo "AUDIO_FORGE_REQUIRED=$required"
+
+      - name: Install deterministic forge dependencies
+        if: steps.forge.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          python3 -m pip install --disable-pip-version-check --no-input 'numpy==2.3.5'
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+
+      - name: Forge and verify production Opus pack
+        if: steps.forge.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/generate-production-spatial-audio.py
+
+      - name: Prove bounded output set and exact receipt provenance
+        if: steps.forge.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='home-ambient-v1.opus ground-ambient-v1.opus life-map-ambient-v1.opus focus-ambient-v1.opus replay-ambient-v1.opus portal-transition-v1.opus orb-confirm-v1.opus ui-error-v1.opus'
+          for file in $expected; do
+            test -s "urai-tier1/public/assets/urai/generated/audio/$file"
+          done
+          test -s operations/assets/production-receipts/spatial-audio-production-v1.json
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          receipt=json.loads(Path('operations/assets/production-receipts/spatial-audio-production-v1.json').read_text())
+          assert receipt['sourceHead'] == os.environ['SOURCE_SHA']
+          assert receipt['sourceHeadSemantics'] == 'exact-forge-input-head'
+          assert receipt['verification']['passed'] is True
+          assert receipt['historicalEightSecondProofBedPromoted'] is False
+          assert len(receipt['assets']) == 8
+          assert all(a['codec'] == 'opus' and a['channels'] == 2 for a in receipt['assets'])
+          assert all(a['integratedLufs'] <= -16 and a['truePeakDbtp'] <= -1 for a in receipt['assets'])
+          assert all(a['durationSeconds'] >= 59 for a in receipt['assets'] if a['role'] == 'ambient')
+          PY
+
+      - name: Re-prove live branch has not moved
+        if: steps.forge.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${TARGET_BRANCH}" --jq '.object.sha')"
+          test "$remote_sha" = "$SOURCE_SHA"
+
+      - name: Commit canonical binary pack to controlling PR branch
+        if: steps.forge.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            urai-tier1/public/assets/urai/generated/audio/home-ambient-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/ground-ambient-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/life-map-ambient-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/focus-ambient-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/replay-ambient-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/portal-transition-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/orb-confirm-v1.opus \
+            urai-tier1/public/assets/urai/generated/audio/ui-error-v1.opus \
+            operations/assets/production-receipts/spatial-audio-production-v1.json
+          if git diff --cached --quiet; then
+            echo 'Production audio pack already matches deterministic forge.'
+            exit 0
+          fi
+          gh auth setup-git
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git commit -m 'Promote verified production spatial audio pack'
+          git push origin "HEAD:${TARGET_BRANCH}"

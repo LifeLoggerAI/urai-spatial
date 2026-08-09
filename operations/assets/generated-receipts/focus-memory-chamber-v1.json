@@ -2,15 +2,24 @@
   "schemaVersion": 1,
   "id": "focus-memory-chamber-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
-  "bytes": 622812,
-  "sha256": "3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0",
-  "measured": {"triangleCount":17334,"nodeCount":35,"materialCount":8,"animationClips":["Focus_Arrival","Focus_Breathing","Focus_Exit"]},
+  "bytes": 622516,
+  "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
+  "measured": {
+    "triangleCount": 17334,
+    "nodeCount": 35,
+    "materialCount": 8,
+    "animationClips": [
+      "Focus_Arrival",
+      "Focus_Breathing",
+      "Focus_Exit"
+    ]
+  },
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-focus-chamber",
   "source": "URAI deterministic candidate forge; replaceable by reviewed provider asset",
   "license": "URAI Labs internal production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1; cap normals repaired without geometry or animation changes",
-  "generatedAt": "2026-08-08T04:10:38Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1; exact accessor bounds metadata repaired without geometry or animation changes",
+  "generatedAt": "2026-08-08T22:17:46.473Z",
   "releaseState": "candidate-not-production-ready"
 }

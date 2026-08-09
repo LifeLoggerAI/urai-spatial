@@ -8,6 +8,7 @@ const checks = [
   ['v2', 80, `/assets/urai/final/manifests/v2-${handoffName}`, 'urai-v2-assets-ready', 'uraiCanonicalV2Assets'],
   ['v3', 14, `/assets/urai/final/manifests/v3-${handoffName}`, 'urai-v3-relationship-assets-ready', 'uraiCanonicalV3Assets'],
   ['v4', 39, `/assets/urai/final/manifests/v4-${handoffName}`, 'urai-v4-assets-ready', 'uraiCanonicalV4Assets'],
+  ['v5', 27, `/assets/urai/final/manifests/v5-${handoffName}`, 'urai-v5-assets-ready', 'uraiCanonicalV5Assets'],
 ] as const
 
 export default function CanonicalAssetGates() {

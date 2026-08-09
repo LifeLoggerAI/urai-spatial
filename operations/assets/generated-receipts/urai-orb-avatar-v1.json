@@ -3,14 +3,50 @@
   "id": "urai-orb-avatar-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb",
   "bytes": 403220,
-  "sha256": "ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026",
-  "measured": {"triangleCount":8776,"boundsMeters":{"min":[-0.765,-0.73,-0.4873],"max":[0.756,0.73,0.4873],"size":[1.521,1.46,0.9746]},"repairedEulerRotations":2,"nodeCount":34,"materialCount":8,"animationClips":["Orb_Resting","Orb_Idle","Orb_Attention","Orb_Listening","Orb_Thinking","Orb_Speaking","Orb_Guiding","Orb_Reflecting","Orb_Calming","Orb_Privacy","Orb_Degraded","Orb_Transition"]},
+  "sha256": "06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708",
+  "measured": {
+    "triangleCount": 8776,
+    "boundsMeters": {
+      "min": [
+        -0.765,
+        -0.73,
+        -0.4873
+      ],
+      "max": [
+        0.756,
+        0.73,
+        0.4873
+      ],
+      "size": [
+        1.521,
+        1.46,
+        0.9746
+      ]
+    },
+    "repairedEulerRotations": 2,
+    "nodeCount": 34,
+    "materialCount": 8,
+    "animationClips": [
+      "Orb_Resting",
+      "Orb_Idle",
+      "Orb_Attention",
+      "Orb_Listening",
+      "Orb_Thinking",
+      "Orb_Speaking",
+      "Orb_Guiding",
+      "Orb_Reflecting",
+      "Orb_Calming",
+      "Orb_Privacy",
+      "Orb_Degraded",
+      "Orb_Transition"
+    ]
+  },
   "compressionStatus": "meshopt",
   "requiredCompression": "draco-or-meshopt",
   "fallback": "procedural-orb",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
   "license": "URAI Labs internal proprietary production asset",
-  "generatedBy": "URAI Labs Final GLB Forge 1.0; reconciled to urai-final-glb-production-pack-v1",
-  "generatedAt": "2026-08-06T03:30:00Z",
+  "generatedBy": "URAI Labs Final GLB Forge 1.0; bounded Orb petal zero-normal repair; reconciled to urai-final-glb-production-pack-v1",
+  "generatedAt": "2026-08-09T00:32:49.973Z",
   "releaseState": "candidate-not-production-ready"
 }

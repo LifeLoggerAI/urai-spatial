@@ -6,88 +6,61 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
-Latest connector-observed `main` SHA before this status refresh: `c1f06bda62fffae3b2eb1c9a681f9a7a1ae37287`.
+Current release lane: PR #1069 (`agent/real-world-home-production-completion-20260808`) is a production candidate under exact-head verification. Resolve the live PR head before using any SHA-bound evidence.
 
-Current mode: `fallback-demo` with a partially current live deployment.
+Production-live status: **not yet verified**. GitHub issue #863 remains the controlling visual acceptance gate until the exact accepted result is merged, deployed through the protected production workflow, and independently verified live.
 
-Production-live status: not yet verified.
+## Current verified source and asset posture
 
-Latest source audit: July 7, 2026. V1 has a substantial public route spine, route owners, launch truth, asset/readiness wiring, and workflow release authority in source. The exact deployed SHA, rollback reference, route parity, post-deployment browser proof, and complete device/accessibility evidence are not established. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
+- Home source is owned by authored three-dimensional sanctuary geometry; the retained replay/provider image is atmospheric support only. This source posture is not itself founder visual acceptance.
+- The retained V1-V5 runtime image estate is complete: **213 ready / 0 missing** (`53 + 80 + 14 + 39 + 27`).
+- Seven launch-critical model assets are recorded as promoted with zero pending in `docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json`.
+- The paid V2-V5 provider program is complete at the asset-promotion layer: **151 generated / 151 passed / 0 failed**, with `promotionAuthorized: true`, in `docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json`.
+- Duplicate paid regeneration is not authorized merely to satisfy stale status text; accepted retained hashes should remain stable unless a real product defect requires replacement.
+- Production spatial audio is an eight-asset Opus candidate lane. It is not final until the canonical forge produces the exact-forge-input-head receipt and the resulting binaries/receipt are committed and verified on the controlling PR branch.
+- AR/WebXR, physical Quest/device certification, wearable/body-signal providers, and other provider/device claims remain separately evidence-gated. Asset presence does not certify those claims.
 
-## Current verified blockers
+## Current release boundary
 
-- The live `/privacy-controls/` route has previously served Home threshold content instead of the dedicated Privacy Controls source owner; current production parity must be reverified after the latest deploy.
-- The live `/status/` route has previously drifted from source truth; current production parity must be reverified after the latest deploy.
-- No exact-current-main deployment receipt, Firebase target receipt, rollback target, complete mobile/desktop screenshot set, monitoring receipt, or physical Quest proof is recorded.
-- V2 and V3 provider assets are not promoted: V2 reports 0 ready / 80 missing; V3 reports 0 ready / 14 missing.
+PR #1069 must remain unmerged until the genuinely final head satisfies all applicable repository-required exact-head checks and issue #863's rendered-product standard.
 
-## Source-fixed and externally reverified items
+Required release progression remains:
 
-- `urai-tier1/src/app/privacy-controls/page.tsx` is the dedicated Privacy Controls source owner with an explicit `URAI Privacy Controls` title and route fingerprint; live parity remains pending until a fresh deploy/smoke receipt proves it.
-- `urai-tier1/src/app/status/page.tsx` renders a production-truth control room and imports `launchTruth` from `urai-tier1/src/data/launchTruth.ts`; live parity remains pending until a fresh deploy/smoke receipt proves it.
-- `.github/workflows/spatial-live-deploy.yml` is the sole current workflow authority for release-gated live deploy and now separates deploy, live smoke, and credential cleanup into valid steps.
-- `firebase.static.json` publishes `urai-tier1/out`, enables clean URLs and trailing slashes, and contains zero rewrites; current source does not intentionally mask missing routes as Home.
-- `scripts/check-production-route-exposure.mjs` locks the Privacy Controls and Focus source owners plus the zero-rewrite static-hosting posture.
+1. complete source and production audio;
+2. reconcile release-critical authority;
+3. freeze one exact candidate SHA;
+4. obtain all applicable exact-head non-human CI/proof gates;
+5. directly inspect desktop, portrait-mobile, movement/proximity, Orb, Ground, Life Map, and reduced-motion proof;
+6. obtain human exact-SHA visual/steward acceptance without transferring approval from an older SHA;
+7. satisfy Release Governance Guard on that same SHA;
+8. merge without head drift;
+9. deploy only through `.github/workflows/spatial-live-deploy.yml` on `main` using its live manual contract;
+10. independently verify production and record rollback provenance before closing #863.
 
-These source facts are **VERIFIED IN REPOSITORY**. Focus and Replay route content have been externally reachable in previous checks, but the complete deployed SHA and release evidence remain unknown.
+The canonical production workflow's normal deploy contract is a manual `workflow_dispatch` on `main` with:
 
-## Authority
+- `release_sha`: exact current `main` release SHA;
+- `rollback_sha`: a distinct proven ancestor/recovery SHA;
+- `confirm`: `DEPLOY_URAI_APP`.
 
-`urai-spatial` owns the canonical public immersive application at `https://urai.app`: spatial Home, Ground, Life Map, Focus, Replay, Mirror, Passport, Privacy Controls, Location Map, Status, orb navigation, privacy-safe fallback UI, and gated AR/VR/WebXR expansion work.
-
-Legacy repositories may support rollback or migration only and must not overwrite canonical production automatically.
-
-Runtime work belongs under `urai-tier1` unless a future decision record explicitly changes the runtime root.
-
-## Current shipped claim
-
-Allowed claim:
-
-> URAI Spatial is reachable as a privacy-safe fallback/demo spatial shell with a substantial V1 web experience and future provider seams.
-
-Not allowed claim:
-
-> URAI Spatial V1 through V5 is fully production-certified with active provider-backed V2/V3 assets, AR/WebXR hardware proof, autonomous real-world actions, wearable/body-signal providers, memory-grounded persistence, or complete live deployment evidence.
+Preview deployments, PR verification runs, queued checks, or intermediate receipts are not production completion.
 
 ## Version posture
 
-| Version | Source posture | Asset/runtime posture | Certification posture |
-| --- | --- | --- | --- |
-| V1 | Main route chain and production owners are present. Privacy Controls, Status, Focus ownership, and zero-rewrite static hosting are source-locked. | Provider handoff/source asset seams exist. Focus and Replay have been externally reachable in prior checks; Privacy Controls and Status require fresh parity proof. | Not certified until exact deploy and smoke receipts exist. |
-| V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical handoff reports 0 ready, 80 missing. | Not certified. |
-| V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical handoff reports 0 ready, 14 missing. | Not certified. |
-| V4 | WebXR/Quest runtime and lifecycle hardening exist in source. | Browser/provider/device proof remains gated. | Not certified; no physical Quest claim. |
-| V5 | Mirror of Becoming, legacy, consent, provenance, and protected-presence concepts exist across source and fallback assets. | Canon explicitly keeps V5 production-gated pending implementation, privacy, tests, deploy, and live smoke. | Not certified. |
-
-## Provider status
-
-| Capability | Status | Rule before live claim |
+| Version | Asset/runtime posture | Certification posture |
 | --- | --- | --- |
-| V1 provider asset handoff | Source-ready / receipt-gated | Requires current-main build, deploy receipt, live route/resource/browser proof, and rollback evidence. |
-| V2 living-state assets | Not active | Requires provider forge receipt for 80 assets, zero-missing promoted handoff, runtime activation proof, deploy, and live browser proof. |
-| V3 relationship/pattern assets | Not active | Requires provider forge receipt for 14 assets, privacy review, runtime activation proof, deploy, and live browser proof. |
-| AR/WebXR | Preview/source only | Requires browser/provider validation, permission-safe session proof, device matrix, consent review, E2E evidence, and live smoke. |
-| Quest VR | Not device-certified | Requires physical headset run, controller/hand input, comfort/performance, session lifecycle, and recorded evidence. |
-| Wearables/body signal | Not active | Requires provider contract, explicit consent, non-diagnostic copy review, privacy tests, fallback behavior, and live smoke. |
-| Memory-grounded orb | Not active | Requires memory contract, consent gates, fallback behavior, deletion/export proof, and live smoke. |
-| Asset Factory live jobs | V1 evidence present; V2/V3 not promoted | Requires provider receipts, approved promotion manifests, runtime activation, and cross-repository release evidence. |
-| Firebase/Firestore persistence | Not proven live | Requires exact project, deployed rules/indexes, Auth configuration, owner/tenant tests, deployment receipt, and live smoke. |
+| V1 | 53 retained runtime images ready; canonical route/runtime owners and launch-critical models exist. | Not production-certified until final exact-head release, deploy, and live verification complete. |
+| V2 | 80 runtime images ready / 0 missing; 71 paid generated replacements plus 9 preserved certified sources. | Asset promotion complete; production behavior still requires the applicable runtime, privacy, release, and live proof. |
+| V3 | 14 runtime images ready / 0 missing; paid generation passed. | Asset promotion complete; relationship/pattern behavior remains consent/privacy/live-proof gated. |
+| V4 | 39 runtime images ready / 0 missing; paid generation passed. | WebXR/browser/device certification remains separate; no physical Quest claim without device evidence. |
+| V5 | 27 runtime images ready / 0 missing; paid generation passed. | Asset availability does not by itself certify Mirror/legacy/provenance/privacy behavior or production deployment. |
+
+## Authority
+
+`urai-spatial` owns the canonical public immersive application at `https://urai.app`: spatial Home, Ground, Life Map, Focus, Replay, Mirror, Passport, Privacy Controls, Location Map, Status, Orb navigation, privacy-safe fallback behavior, and gated AR/VR/WebXR expansion work.
+
+Historical receipts remain historical. New exact-head evidence supersedes older candidate evidence for release acceptance but must not rewrite what earlier receipts proved at the time.
 
 ## Done definition
 
-`urai-spatial` is not production-certified until all applicable evidence is recorded:
-
-- frozen dependency install;
-- source integrity and canonical runtime locks;
-- typecheck, unit, integration, privacy, accessibility, reduced-motion, and browser tests;
-- normal and static builds;
-- route exposure, slash/query parity, missing-resource, and console-error checks;
-- exact canonical `main` commit and previous rollback target;
-- Firebase deployment output from the canonical workflow;
-- custom-domain route and interaction smoke;
-- desktop and mobile screenshots;
-- provider-specific and device-specific evidence before those claims are enabled.
-
-## Copy boundary
-
-All public copy must distinguish implemented fallback-safe behavior from provider-active, device-certified, or autonomously executed behavior. Route reachability or the presence of version-labelled assets is not sufficient certification.
+Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, human exact-SHA acceptance, governance authorization, protected production deployment, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, canonical Drive receipt update, and issue #863 closure.

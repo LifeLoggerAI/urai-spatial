@@ -1,0 +1,185 @@
+name: Home CC0 Asset Vendor Forge
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-cc0-vendor-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  PR_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+  FERN_GLTF_BLOB: ec7509ee8e280964d78eaeab28348d855c88d98d
+  FERN_BIN_BLOB: b6ae3752172b2f6d074f05d433accdc96b357f2a
+  FERN_MIRROR_REPO: Joshkaki00/godotmark
+  FERN_MIRROR_COMMIT: cb9d9f5a944cfe24741c528014317b960efc62a5
+
+jobs:
+  vendor-home-cc0:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Fetch pinned CC0 fern source blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/urai-home-cc0
+          gh api "repos/${FERN_MIRROR_REPO}/git/blobs/${FERN_GLTF_BLOB}" --jq .content | tr -d '\n' | base64 --decode > /tmp/urai-home-cc0/fern.gltf
+          gh api "repos/${FERN_MIRROR_REPO}/git/blobs/${FERN_BIN_BLOB}" --jq .content | tr -d '\n' | base64 --decode > /tmp/urai-home-cc0/fern.bin
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path('/tmp/urai-home-cc0')
+          gltf = root / 'fern.gltf'
+          blob = root / 'fern.bin'
+          doc = json.loads(gltf.read_text())
+          assert doc.get('asset', {}).get('version') == '2.0'
+          assert len(doc.get('meshes', [])) >= 4
+          assert blob.stat().st_size > 1000
+          print('fern.gltf sha256', hashlib.sha256(gltf.read_bytes()).hexdigest())
+          print('fern.bin sha256', hashlib.sha256(blob.read_bytes()).hexdigest())
+          PY
+
+      - name: Materialize self-contained geometry-only GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, struct
+          src = pathlib.Path('/tmp/urai-home-cc0')
+          out_dir = pathlib.Path('urai-tier1/public/assets/urai/home-production/cc0')
+          receipt_dir = pathlib.Path('operations/assets/third-party')
+          out_dir.mkdir(parents=True, exist_ok=True)
+          receipt_dir.mkdir(parents=True, exist_ok=True)
+          doc = json.loads((src / 'fern.gltf').read_text())
+          binary = (src / 'fern.bin').read_bytes()
+          for key in ('images', 'textures', 'samplers', 'materials'):
+              doc.pop(key, None)
+          for mesh in doc.get('meshes', []):
+              for primitive in mesh.get('primitives', []):
+                  primitive.pop('material', None)
+          buffers = doc.get('buffers', [])
+          assert len(buffers) == 1
+          buffers[0].pop('uri', None)
+          buffers[0]['byteLength'] = len(binary)
+          doc['asset']['generator'] = 'URAI governed CC0 geometry vendor from pinned Poly Haven fern_02 mirror'
+          doc.setdefault('extras', {})['urai'] = {'sourceAsset': 'Poly Haven fern_02', 'license': 'CC0-1.0', 'runtimeExternalRequests': False, 'materialsAppliedByURAI': True}
+          json_bytes = json.dumps(doc, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+          json_bytes += b' ' * ((4 - len(json_bytes) % 4) % 4)
+          bin_bytes = binary + b'\x00' * ((4 - len(binary) % 4) % 4)
+          total = 12 + 8 + len(json_bytes) + 8 + len(bin_bytes)
+          payload = struct.pack('<III', 0x46546C67, 2, total) + struct.pack('<II', len(json_bytes), 0x4E4F534A) + json_bytes + struct.pack('<II', len(bin_bytes), 0x004E4942) + bin_bytes
+          target = out_dir / 'polyhaven-fern-02-geometry-v1.glb'
+          target.write_bytes(payload)
+          digest = hashlib.sha256(payload).hexdigest()
+          receipt = {'assetId': 'home-polyhaven-fern-02-geometry-v1', 'license': 'CC0-1.0', 'originalSource': 'https://polyhaven.com/a/fern_02', 'mirrorRepository': 'Joshkaki00/godotmark', 'mirrorCommit': 'cb9d9f5a944cfe24741c528014317b960efc62a5', 'sourceGltfBlob': 'ec7509ee8e280964d78eaeab28348d855c88d98d', 'sourceBinaryBlob': 'b6ae3752172b2f6d074f05d433accdc96b357f2a', 'output': str(target), 'outputSha256': digest, 'outputBytes': len(payload), 'runtimeExternalRequests': False, 'materialPolicy': 'URAI-owned runtime physical materials; source textures intentionally omitted', 'promotionState': 'vendored-component-not-standalone-world'}
+          (receipt_dir / 'home-polyhaven-fern-02-geometry-v1.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Validate generated GLB envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, struct, hashlib, json
+          receipt = json.loads(pathlib.Path('operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json').read_text())
+          path = pathlib.Path(receipt['output'])
+          data = path.read_bytes()
+          magic, version, length = struct.unpack_from('<III', data, 0)
+          assert magic == 0x46546C67 and version == 2 and length == len(data)
+          assert hashlib.sha256(data).hexdigest() == '9e3d29b1f917ec9f6e72f713fc7131f1d413ffecfbd3c96e7d72f92529f31a87'
+          assert len(data) < 2_000_000
+          PY
+
+      - name: Compose Home from owned sanctuary and scanned nature
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
+          source = path.read_text()
+          if 'HOME_SCANNED_COMPOSITION_V1' in source:
+              print('Scanned Home composition already present.')
+              raise SystemExit(0)
+          def one(old, new):
+              global source
+              assert source.count(old) == 1, old[:80]
+              source = source.replace(old, new, 1)
+          one('import { ContactShadows, Stars } from "@react-three/drei";', 'import { ContactShadows, Stars, useGLTF } from "@react-three/drei";')
+          one('const CINEMATIC_HOME_ART = "/assets/urai/v5/launch-key-art.webp";\nconst CINEMATIC_HOME_ART_MOBILE = "/assets/urai/v5/life-layer-mobile.webp";', 'const HOME_SANCTUARY_MODEL = "/assets/urai/generated/models/home-entry-chamber-v1.glb";\nconst HOME_FERN_MODEL = "/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb";\nconst HOME_SCANNED_COMPOSITION_V1 = "owned-sanctuary-plus-cc0-fern";')
+          one('  const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/i;\n', '  const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/i;\n  const rejectedForgeForms = /vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|mountain|vegetation|tree|sculpture/i;\n')
+          one('    object.visible = !rejected.test(object.name);\n    object.castShadow = false;\n    object.receiveShadow = true;\n    if (object.visible) visibleMeshCount += 1;', '    object.visible = !rejected.test(object.name) && !rejectedForgeForms.test(object.name);\n    if (!object.visible) return;\n    const name = object.name.toLowerCase();\n    const stone = /basin|pedestal|path|ground|terrain|stone/.test(name);\n    object.material = new THREE.MeshStandardMaterial({ color: stone ? "#526158" : "#3f5148", roughness: stone ? 0.92 : 0.98, metalness: 0.01 });\n    object.castShadow = true;\n    object.receiveShadow = true;\n    visibleMeshCount += 1;')
+          a = source.index('function CinematicBackdrop()'); b = source.index('function Terrain(', a)
+          source = source[:a] + 'function CinematicBackdrop() {\n  return <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden", background: "radial-gradient(circle at 50% 42%, #244a4a 0%, #123239 28%, #0b2029 58%, #061015 100%)" }} />;\n}\n\n' + source[b:]
+          one('  const authored = useMemo(() => prepareAuthoredSanctuary(new THREE.Group()), []);', '  const sanctuary = useGLTF(HOME_SANCTUARY_MODEL);\n  const authored = useMemo(() => prepareAuthoredSanctuary(sanctuary.scene), [sanctuary.scene]);')
+          one('        <meshStandardMaterial color="#17372d" roughness={0.96} metalness={0} transparent opacity={0.58} />', '        <meshStandardMaterial color="#29483a" roughness={0.98} metalness={0} />')
+          a = source.index('function Ridge('); b = source.index('function NaturalVegetation', a)
+          source = source[:a] + 'function NaturalHorizon() {\n  return <group name="home-mountain-horizon" userData={{ role: "terrain-fog-continuity-without-procedural-ridge" }} />;\n}\n\nconst FERN_PLACEMENTS = [\n  [-7.4,-4.9,0.82,-0.3],[-6.3,-7.4,1.08,0.7],[-5.1,-10.2,0.9,1.8],[-3.8,-3.7,0.72,-1.4],[-3.1,-8.8,1.16,2.3],[-2.2,-11.6,0.86,0.2],\n  [2.3,-4.1,0.8,0.9],[3.2,-9.4,1.12,-0.6],[4.1,-11.1,0.88,1.4],[5.6,-4.8,0.76,2.6],[6.5,-8.2,1.04,-1.8],[7.2,-10.7,0.9,0.4],\n  [-8.0,0.8,0.8,1.1],[-5.8,2.6,0.72,-2.2],[5.9,2.1,0.78,2.0],[7.8,0.2,0.86,-0.8],\n] as const;\n\n' + source[b:]
+          a = source.index('function NaturalVegetation'); b = source.index('function SanctuaryPath', a)
+          source = source[:a] + 'function NaturalVegetation({ reducedMotion }: { reducedMotion: boolean }) {\n  const fern = useGLTF(HOME_FERN_MODEL);\n  const material = useMemo(() => new THREE.MeshStandardMaterial({ color: "#6f9a70", roughness: 0.92, metalness: 0, side: THREE.DoubleSide }), []);\n  useEffect(() => () => material.dispose(), [material]);\n  const instances = useMemo(() => FERN_PLACEMENTS.map(([x,z,scale,rotation], index) => {\n    const object = fern.scene.clone(true); object.name = `home-scanned-fern-${index+1}`; object.position.set(x, terrainHeight(x,z)+0.02, z); object.rotation.y = rotation; object.scale.setScalar(scale);\n    object.traverse((child) => { if (child instanceof THREE.Mesh) { child.material = material; child.castShadow = true; child.receiveShadow = true; } });\n    return object;\n  }), [fern.scene, material]);\n  return <group name="home-living-vegetation" userData={{ role: "scanned-cc0-natural-ground", reducedMotion }}>{instances.map((object) => <primitive key={object.name} object={object} />)}</group>;\n}\n\n' + source[b:]
+          a = source.index('function SanctuaryPath'); b = source.index('function SanctuaryPavilion', a)
+          source = source[:a] + 'function SanctuaryPath() { return <group name="home-sanctuary-path" userData={{ geometryOwner: "retained-owned-sanctuary-model", primitiveScenery: false }} />; }\n\n' + source[b:]
+          a = source.index('function SanctuaryPavilion'); b = source.index('function ReflectingWater', a)
+          source = source[:a] + 'function SanctuaryPavilion() { return <group name="home-sanctuary-pavilion" userData={{ geometryOwner: "retained-owned-sanctuary-model", primitiveScenery: false }} />; }\n\n' + source[b:]
+          a = source.index('function ReflectingWater'); b = source.index('function orbitGeometry', a)
+          source = source[:a] + 'function ReflectingWater() { return <group name="home-reflecting-water" position={[4.9, terrainHeight(4.9,-7.2)+0.015,-7.2]}><mesh rotation={[-Math.PI/2,0,0]}><planeGeometry args={[5.6,4.2,1,1]} /><meshPhysicalMaterial color="#123f48" roughness={0.08} clearcoat={1} clearcoatRoughness={0.1} transparent opacity={0.62} /></mesh></group>; }\n\n' + source[b:]
+          a = source.index('function OrbSanctuary('); b = source.index('function GroundThresholdLandmark', a)
+          source = source[:a] + 'function OrbSanctuary({ onOpen }: { onOpen: () => void }) {\n  const reducedMotion = useContext(ReducedMotionContext); const core = useRef<THREE.Mesh>(null); const light = useRef<THREE.PointLight>(null);\n  useFrame(({clock}) => { if (reducedMotion) return; const breathe = 1 + Math.sin(clock.elapsedTime*0.9)*0.018; core.current?.scale.setScalar(0.48*breathe); if (light.current) light.current.intensity = 1.35 + Math.sin(clock.elapsedTime*0.9)*0.12; });\n  return <group name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen(); }}><mesh ref={core} scale={0.48}><sphereGeometry args={[1,64,64]} /><meshPhysicalMaterial color="#b9dfe2" emissive="#4d8f9d" emissiveIntensity={0.72} roughness={0.18} metalness={0.08} clearcoat={0.9} clearcoatRoughness={0.16} /></mesh><OrbDust reducedMotion={reducedMotion} /><pointLight ref={light} color="#8bc9cf" intensity={1.35} distance={7} decay={2} /></group>;\n}\n\n' + source[b:]
+          one('<ambientLight intensity={cosmic ? 0.12 : 0.3} color="#b7d4cd" />\n      <hemisphereLight args={["#9ec5c8", "#06110d", cosmic ? 0.2 : 0.54]} />\n      <directionalLight position={[11, 18, -14]} intensity={cosmic ? 0.32 : 1.25} color="#d5e8e4" castShadow />', '<ambientLight intensity={cosmic ? 0.12 : 0.42} color="#c6dbd4" />\n      <hemisphereLight args={["#a7cdd0", "#101b13", cosmic ? 0.2 : 0.72]} />\n      <directionalLight position={[9, 17, 4]} intensity={cosmic ? 0.32 : 1.7} color="#e8eee5" castShadow />')
+          one('data-home-runtime-assets="launch-key-art.webp local-three-dimensional-terrain living-orb reflecting-water"', 'data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water"')
+          one('data-home-animation-owner="provider-natural-world-plus-authored-physical-interactions"', 'data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1}')
+          one('gl.toneMappingExposure = 0.92;', 'gl.toneMappingExposure = 1.06;')
+          assert 'CINEMATIC_HOME_ART_MOBILE' not in source and 'prepareAuthoredSanctuary(new THREE.Group())' not in source and 'function Ridge(' not in source and '<cylinderGeometry' not in source
+          assert 'useGLTF(HOME_SANCTUARY_MODEL)' in source and 'useGLTF(HOME_FERN_MODEL)' in source
+          path.write_text(source)
+          PY
+
+      - name: Commit only if source head is still current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/home-production/cc0 operations/assets/third-party urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx)" ]; then
+            echo 'Home scanned composition already materialized; no successor needed.'
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
+            if [ "$current_head" != "$URAI_SOURCE_SHA" ]; then
+              echo "Stale forge input: current PR head is $current_head; refusing to push from $URAI_SOURCE_SHA"
+              exit 0
+            fi
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git commit -m 'Compose Home from owned sanctuary and scanned nature'
+          gh auth setup-git
+          git push origin "HEAD:${PR_BRANCH}"

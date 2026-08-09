@@ -5,7 +5,9 @@ import test from 'node:test'
 const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
+const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
@@ -13,16 +15,27 @@ const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${fallbackHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one authored inhabitable sanctuary with embodied cinematic interaction and a coherent degraded fallback', () => {
+test('Home is one believable authored 3D real-world environment with atmospheric imagery only', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-visual-owner="asset-driven-personalized-sanctuary"',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
+    'data-home-real-world-first="true"',
+    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
+    'data-home-world-character="believable-natural-inhabitable-environment"',
+    'data-home-visible-portals="false"',
+    'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
+    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
+    'data-home-provider-role="atmospheric-support-only"',
+    'data-home-generated-scenery="suppressed"',
+    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-desktop-mobile-world="same-scene"',
+    'data-home-embodied-self="privacy-preserving-shadow"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'home-visible-navigable-sanctuary-world',
@@ -30,21 +43,45 @@ test('Home is one authored inhabitable sanctuary with embodied cinematic interac
     'data-testid="urai-home-webgl-orb"',
     'home-authored-terrain',
     'home-mountain-horizon',
-    'home-lantern-village',
+    'home-living-vegetation',
+    'home-reflecting-water',
     'home-orb-sanctuary',
+    'home-ground-environmental-threshold',
+    'home-life-map-sky-lookout',
     'stepEmbodiedMotion',
     'MobileMovementPad',
-  ]) assert.ok(homeGraph.includes(marker), `missing Home convergence marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing Home coherent 3D convergence marker: ${marker}`)
 
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(homeProduction, /name={`home-\${type}-portal-world-owned`}/)
-  assert.match(homeProduction, /<WorldPortal type="ground"/)
-  assert.match(homeProduction, /<WorldPortal type="life-map"/)
+  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
+  assert.match(homeCss, /replay-memory-film-main\.webp/)
+  assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
+  assert.match(homeCss, /\.world::before\s*\{[\s\S]*z-index:\s*3[\s\S]*opacity:\s*\.028[\s\S]*mix-blend-mode:\s*soft-light/)
+  assert.match(homeCss, /@media \(max-width: 700px\)[\s\S]*replay-memory-film-main\.webp[\s\S]*opacity:\s*\.02/)
+  assert.match(homeCss, /\.world :global\(\.urai-mobile-movement\)\s*\{[\s\S]*opacity:\s*\.18/)
+  assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*true/s)
+  assert.match(homeProduction, /gl\.setClearColor\(0x000000, 0\)/)
+  assert.match(homeProduction, /function prepareAuthoredSanctuary/)
+  assert.match(homeProduction, /const rejected = \/portal\|ring\|threshold\|village\|mannequin\|avatar\|debug\|marker\|label\|embodied\|presence\|memory-place-anchor\|living-growth\//)
+  assert.match(homeProduction, /object\.visible = !rejected/)
+  assert.match(homeProduction, /suppressedForgeScenery = true/)
+  assert.match(homeProduction, /visibleMeshCount < 3/)
+  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
+  assert.match(homeProduction, /data-home-generated-scenery="suppressed"/)
+  assert.match(homeProduction, /function NaturalVegetation/)
+  assert.match(homeProduction, /function NaturalHorizon/)
+  assert.match(homeProduction, /function SanctuaryPavilion/)
+  assert.match(homeProduction, /function SanctuaryPath/)
+  assert.match(homeProduction, /ContactShadows/)
+  assert.match(homeProduction, /function GroundThresholdLandmark/)
+  assert.match(homeProduction, /function LifeMapSkyLookout/)
+  assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
+  assert.match(homeProduction, /cameraCheckpoint: "home-sky-ascent-complete"/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
-  assert.match(homeProduction, /EffectComposer/)
-  assert.match(homeProduction, /<Bloom\b/)
-  assert.match(homeProduction, /<Vignette\b/)
+  assert.match(homeProduction, /representation: "privacy-preserving-first-person-presence"/)
+  assert.doesNotMatch(homeProduction, /@react-three\/postprocessing|EffectComposer|<Bloom\b|<Vignette\b/)
+  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|destinationNames|home-life-map-portal-world-owned|home-ground-portal-world-owned|dodecahedronGeometry/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
   assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls/)
 })

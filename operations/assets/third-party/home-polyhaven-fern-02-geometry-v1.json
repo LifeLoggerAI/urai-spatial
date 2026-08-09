@@ -1,0 +1,15 @@
+{
+  "assetId": "home-polyhaven-fern-02-geometry-v1",
+  "license": "CC0-1.0",
+  "originalSource": "https://polyhaven.com/a/fern_02",
+  "mirrorRepository": "Joshkaki00/godotmark",
+  "mirrorCommit": "cb9d9f5a944cfe24741c528014317b960efc62a5",
+  "sourceGltfBlob": "ec7509ee8e280964d78eaeab28348d855c88d98d",
+  "sourceBinaryBlob": "b6ae3752172b2f6d074f05d433accdc96b357f2a",
+  "output": "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb",
+  "outputSha256": "9e3d29b1f917ec9f6e72f713fc7131f1d413ffecfbd3c96e7d72f92529f31a87",
+  "outputBytes": 179664,
+  "runtimeExternalRequests": false,
+  "materialPolicy": "URAI-owned runtime physical materials; source textures intentionally omitted",
+  "promotionState": "vendored-component-not-standalone-world"
+}

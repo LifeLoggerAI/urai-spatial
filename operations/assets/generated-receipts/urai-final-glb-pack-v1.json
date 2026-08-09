@@ -8,10 +8,15 @@
     {
       "fileName": "home-entry-chamber-v1.glb",
       "bytes": 1786808,
-      "sha256": "dbd74bfc61ff997a95d2cbb45cf246ceadac4036a5e95817abcf1ad998b621b9",
+      "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
       "triangleCount": 57352,
       "nodes": 322,
-      "animations": ["Home_Breathing", "Presence_Idle", "Presence_Privacy", "Presence_Forming"],
+      "animations": [
+        "Home_Breathing",
+        "Presence_Idle",
+        "Presence_Privacy",
+        "Presence_Forming"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -19,10 +24,18 @@
     {
       "fileName": "portal-ring-master-v1.glb",
       "bytes": 242072,
-      "sha256": "18a7d77e778bf8561a278f3e0a4e380c192a227c07a17b91265c70dab461d2c9",
+      "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
       "triangleCount": 3816,
       "nodes": 40,
-      "animations": ["Portal_Closed", "Portal_Available", "Portal_Attention", "Portal_Active", "Portal_Opening", "Portal_Traversal", "Portal_Closing"],
+      "animations": [
+        "Portal_Closed",
+        "Portal_Available",
+        "Portal_Attention",
+        "Portal_Active",
+        "Portal_Opening",
+        "Portal_Traversal",
+        "Portal_Closing"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -33,7 +46,11 @@
       "sha256": "b5309b854729566efcc444db029458bd4193ed18e6c83199e164ca8cb3fb2b76",
       "triangleCount": 20974,
       "nodes": 114,
-      "animations": ["Ground_Pulse", "Nexus_Idle", "Chamber_Attention"],
+      "animations": [
+        "Ground_Pulse",
+        "Nexus_Idle",
+        "Chamber_Attention"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -41,21 +58,29 @@
     {
       "fileName": "life-map-memory-star-v1.glb",
       "bytes": 373236,
-      "sha256": "b2aaccd9155277071531c5197f3edbc42eb22f23fbdb20faa94a633137c174d0",
+      "sha256": "ae4a70d2964a69025e246e7c09394b674a3c9f7b4b44a014cde6e1bffe7e9efa",
       "triangleCount": 8770,
       "nodes": 30,
-      "animations": ["MemoryStar_Idle", "MemoryStar_Selected", "MemoryStar_Focus"],
+      "animations": [
+        "MemoryStar_Idle",
+        "MemoryStar_Selected",
+        "MemoryStar_Focus"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
     },
     {
       "fileName": "focus-memory-chamber-v1.glb",
-      "bytes": 622812,
-      "sha256": "3d22a02430748f9255c12baa45ec0864c2dcbbab00f16787baa4ec076911bdb0",
+      "bytes": 622516,
+      "sha256": "d0e8a2105927f5fc610f68edc907cbd100b8570253fab3ba942171136d54b79d",
       "triangleCount": 17334,
       "nodes": 35,
-      "animations": ["Focus_Arrival", "Focus_Breathing", "Focus_Exit"],
+      "animations": [
+        "Focus_Arrival",
+        "Focus_Breathing",
+        "Focus_Exit"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -66,7 +91,12 @@
       "sha256": "fbc58c40c3b7ee18025e605aee72dfd97988747d169b923f690b363a409362b3",
       "triangleCount": 10410,
       "nodes": 131,
-      "animations": ["Replay_Idle", "Replay_Enter", "Replay_Play", "Replay_Exit"],
+      "animations": [
+        "Replay_Idle",
+        "Replay_Enter",
+        "Replay_Play",
+        "Replay_Exit"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -74,10 +104,23 @@
     {
       "fileName": "urai-orb-avatar-v1.glb",
       "bytes": 403220,
-      "sha256": "ee69c9e30679635b5799c681528c2021d8ce94d440895d4eb9e0c3094ac0f026",
+      "sha256": "06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708",
       "triangleCount": 9380,
       "nodes": 29,
-      "animations": ["Orb_Resting", "Orb_Idle", "Orb_Attention", "Orb_Listening", "Orb_Thinking", "Orb_Speaking", "Orb_Guiding", "Orb_Reflecting", "Orb_Calming", "Orb_Privacy", "Orb_Degraded", "Orb_Transition"],
+      "animations": [
+        "Orb_Resting",
+        "Orb_Idle",
+        "Orb_Attention",
+        "Orb_Listening",
+        "Orb_Thinking",
+        "Orb_Speaking",
+        "Orb_Guiding",
+        "Orb_Reflecting",
+        "Orb_Calming",
+        "Orb_Privacy",
+        "Orb_Degraded",
+        "Orb_Transition"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true
@@ -85,10 +128,15 @@
     {
       "fileName": "passport-status-room-v1.glb",
       "bytes": 347512,
-      "sha256": "19dc8b098dff6e9ba78f7c577d07cb84d2cada9a25c3a0ab289d4c7724bcac56",
+      "sha256": "15f1f7634389994715e4f263eecf67731b52a8e9ef62a22eae889b6054213257",
       "triangleCount": 7878,
       "nodes": 48,
-      "animations": ["Passport_Idle", "Passport_Grant", "Status_Pulse", "Privacy_Lock"],
+      "animations": [
+        "Passport_Idle",
+        "Passport_Grant",
+        "Status_Pulse",
+        "Privacy_Lock"
+      ],
       "materials": 8,
       "embeddedTextures": 4,
       "uvMapped": true

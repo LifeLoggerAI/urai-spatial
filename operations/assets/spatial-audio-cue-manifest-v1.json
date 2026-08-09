@@ -1,8 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "manifestId": "urai-spatial-audio-cues-v1",
   "owner": "URAI Labs",
-  "status": "production-specification",
+  "status": "production-integrated-candidate",
+  "receipt": "operations/assets/production-receipts/spatial-audio-production-v1.json",
+  "runtimeOwner": "urai-tier1/src/spatial/audio/SpatialAmbientRuntime.tsx",
+  "controller": "urai-tier1/src/spatial/audio/useAudioController.ts",
   "policy": {
     "autoplay": false,
     "mutedByDefaultUntilConsent": true,
@@ -15,13 +18,13 @@
     "desktopPreferredFormat": "opus"
   },
   "cues": [
-    {"id":"home-ambient","route":"/home","role":"ambient","candidatePath":"/assets/urai/generated/audio/home-ambient-v1.opus","fallback":"silence","caption":"Soft wind, distant leaves, and a low sanctuary tone.","maxBytes":2097152},
-    {"id":"ground-ambient","route":"/ground","role":"ambient","candidatePath":"/assets/urai/generated/audio/ground-ambient-v1.opus","fallback":"silence","caption":"Quiet civic space, footsteps at a distance, and restrained environmental movement.","maxBytes":2097152},
-    {"id":"life-map-ambient","route":"/life-map","role":"ambient","candidatePath":"/assets/urai/generated/audio/life-map-ambient-v1.opus","fallback":"silence","caption":"A spacious tonal field with subtle memory-star shimmer.","maxBytes":2097152},
-    {"id":"focus-ambient","route":"/focus","role":"ambient","candidatePath":"/assets/urai/generated/audio/focus-ambient-v1.opus","fallback":"silence","caption":"A close, stable tone supporting sustained attention.","maxBytes":1572864},
-    {"id":"replay-ambient","route":"/replay","role":"ambient","candidatePath":"/assets/urai/generated/audio/replay-ambient-v1.opus","fallback":"silence","caption":"A restrained cinematic bed that follows the memory sequence.","maxBytes":2097152},
-    {"id":"portal-transition","route":"global","role":"transition","candidatePath":"/assets/urai/generated/audio/portal-transition-v1.opus","fallback":"none","caption":"A brief rising spatial tone marking realm travel.","maxBytes":262144},
-    {"id":"orb-confirm","route":"global","role":"ui","candidatePath":"/assets/urai/generated/audio/orb-confirm-v1.opus","fallback":"none","caption":"A soft two-note confirmation.","maxBytes":131072},
-    {"id":"ui-error","route":"global","role":"ui","candidatePath":"/assets/urai/generated/audio/ui-error-v1.opus","fallback":"none","caption":"A low, brief error tone accompanied by visible text.","maxBytes":131072}
+    {"id":"home-ambient","route":"/home","role":"ambient","path":"/assets/urai/generated/audio/home-ambient-v1.opus","status":"ready","fallback":"silence","caption":"Soft wind, distant leaves, and a low sanctuary tone.","maxBytes":2097152},
+    {"id":"ground-ambient","route":"/ground","role":"ambient","path":"/assets/urai/generated/audio/ground-ambient-v1.opus","status":"ready","fallback":"silence","caption":"Quiet civic space, footsteps at a distance, and restrained environmental movement.","maxBytes":2097152},
+    {"id":"life-map-ambient","route":"/life-map","role":"ambient","path":"/assets/urai/generated/audio/life-map-ambient-v1.opus","status":"ready","fallback":"silence","caption":"A spacious filtered-noise field with layered harmonic tones.","maxBytes":2097152},
+    {"id":"focus-ambient","route":"/focus","role":"ambient","path":"/assets/urai/generated/audio/focus-ambient-v1.opus","status":"ready","fallback":"silence","caption":"A close, steady filtered-noise bed with stable low tones.","maxBytes":1572864},
+    {"id":"replay-ambient","route":"/replay","role":"ambient","path":"/assets/urai/generated/audio/replay-ambient-v1.opus","status":"ready","fallback":"silence","caption":"A restrained filtered-noise cinematic bed with slow harmonic tones.","maxBytes":2097152},
+    {"id":"portal-transition","route":"global","role":"transition","path":"/assets/urai/generated/audio/portal-transition-v1.opus","status":"ready","fallback":"none","caption":"A brief rising spatial tone marking realm travel.","maxBytes":262144},
+    {"id":"orb-confirm","route":"global","role":"ui","path":"/assets/urai/generated/audio/orb-confirm-v1.opus","status":"ready","fallback":"none","caption":"A soft two-note confirmation.","maxBytes":131072},
+    {"id":"ui-error","route":"global","role":"ui","path":"/assets/urai/generated/audio/ui-error-v1.opus","status":"ready","fallback":"visible-status-text","caption":"A low, brief error tone accompanied by visible text.","maxBytes":131072}
   ]
 }
