@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { ContactShadows, Float, Sky, Stars, useAnimations, useGLTF } from "@react-three/drei";
+import { ContactShadows, Environment, Float, Stars, useAnimations, useGLTF, useTexture } from "@react-three/drei";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from "@/spatial/navigation/EmbodiedNavigation";
@@ -12,14 +12,31 @@ import styles from "./HomeWorldProduction.module.css";
 const HOME_MODEL = "/assets/urai/generated/models/home-entry-chamber-v1.glb";
 const HOME_PROVIDER_ENVIRONMENT = "/assets/urai/replay/replay-memory-film-main.webp";
 const ORB_MODEL = "/assets/urai/generated/models/urai-orb-avatar-v1.glb";
+
+// Preview-only CC0 references. These replace visible proof geometry with real scanned/PBR assets.
+// Before production lock these remote files must be vendored, hash-pinned, and retained with provenance.
+const PH = "https://dl.polyhaven.org/file/ph-assets";
+const NIGHT_HDRI = `${PH}/HDRIs/hdr/1k/qwantani_dusk_1_1k.hdr`;
+const JACARANDA_MODEL = `${PH}/Models/gltf/1k/jacaranda_tree/jacaranda_tree_1k.gltf`;
+const FERN_MODEL = `${PH}/Models/gltf/1k/fern_02/fern_02_1k.gltf`;
+const SHRUB_MODEL = `${PH}/Models/gltf/1k/shrub_04/shrub_04_1k.gltf`;
+const SORREL_MODEL = `${PH}/Models/gltf/1k/shrub_sorrel_01/shrub_sorrel_01_1k.gltf`;
+const ROCK_MODEL = `${PH}/Models/gltf/1k/rock_moss_set_01/rock_moss_set_01_1k.gltf`;
+const STUMP_MODEL = `${PH}/Models/gltf/1k/tree_stump_01/tree_stump_01_1k.gltf`;
+const FOREST_FLOOR_DIFF = `${PH}/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_diff_1k.jpg`;
+const FOREST_FLOOR_NOR = `${PH}/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_nor_gl_1k.jpg`;
+const FOREST_FLOOR_ROUGH = `${PH}/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_rough_1k.jpg`;
+
 const HOME_BOUNDS = { minX: -12.5, maxX: 12.5, minZ: -15.5, maxZ: 10.5 };
 const SPAWN = new THREE.Vector3(0, 0, 7.8);
-const ORB = new THREE.Vector3(0, 1.62, -2.55);
+const ORB = new THREE.Vector3(0, 1.72, -2.8);
 const GROUND_THRESHOLD = new THREE.Vector3(-4.9, 0, -7.2);
 const LIFE_MAP_LOOKOUT = new THREE.Vector3(4.9, 0, -7.2);
 const ASCENT_DURATION_SECONDS = 3.6;
 const GROUND_DESCENT_DURATION_SECONDS = 2.8;
 const DISABLED_RAYCAST = () => undefined;
+const GROUND_NORMAL_SCALE = new THREE.Vector2(0.55, 0.55);
+
 const ORB_CLIPS = {
   dormant: "Orb_Resting",
   idle: "Orb_Idle",
@@ -40,30 +57,54 @@ type Nearby = "orb" | "ground" | "life-map" | null;
 type TransitionSequence = "idle" | "ground:opening" | "ground:traversal" | "ground:closing" | "life-map:opening" | "life-map:traversal" | "life-map:closing";
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean };
 type Vec3 = readonly [number, number, number];
+type AssetPlacement = { position: Vec3; rotation?: Vec3; scale: number | Vec3 };
 
 const OrbStateContext = createContext<OrbState>("idle");
 const ReducedMotionContext = createContext(false);
 
-const TREE_SPECS: readonly { position: Vec3; scale: number; yaw: number; tone: 0 | 1 | 2 }[] = [
-  { position: [-10.9, 0, 7.1], scale: 1.42, yaw: 0.38, tone: 0 },
-  { position: [-10.3, 0, 1.8], scale: 1.12, yaw: -0.24, tone: 1 },
-  { position: [-11.5, 0, -5.8], scale: 1.55, yaw: 0.14, tone: 2 },
-  { position: [-8.9, 0, -11.6], scale: 0.96, yaw: -0.35, tone: 1 },
-  { position: [10.8, 0, 6.7], scale: 1.36, yaw: -0.32, tone: 1 },
-  { position: [10.2, 0, 1.0], scale: 1.08, yaw: 0.28, tone: 2 },
-  { position: [11.6, 0, -5.2], scale: 1.48, yaw: -0.15, tone: 0 },
-  { position: [8.9, 0, -11.4], scale: 0.92, yaw: 0.36, tone: 2 },
+const TREE_PLACEMENTS: readonly AssetPlacement[] = [
+  { position: [-9.8, -0.25, 3.7], rotation: [0, 0.25, 0], scale: 0.29 },
+  { position: [9.6, -0.25, 3.1], rotation: [0, -0.52, 0], scale: 0.31 },
+  { position: [-10.8, -0.4, -9.2], rotation: [0, 1.1, 0], scale: 0.34 },
+  { position: [10.2, -0.38, -9.8], rotation: [0, -1.05, 0], scale: 0.33 },
 ];
 
-const BOULDER_SPECS: readonly { position: Vec3; scale: Vec3; rotation: Vec3 }[] = [
-  { position: [-8.2, 0.05, 5.3], scale: [1.25, 0.56, 0.88], rotation: [0.08, 0.7, -0.08] },
-  { position: [-6.9, 0.01, 0.8], scale: [0.72, 0.38, 0.62], rotation: [-0.04, -0.3, 0.08] },
-  { position: [-7.8, 0.02, -4.9], scale: [0.9, 0.46, 0.72], rotation: [0.06, 1.1, 0.02] },
-  { position: [8.2, 0.04, 4.9], scale: [1.16, 0.52, 0.82], rotation: [-0.03, 0.35, -0.04] },
-  { position: [7.2, 0.0, 0.4], scale: [0.7, 0.36, 0.58], rotation: [0.05, -0.8, 0.06] },
-  { position: [7.8, 0.02, -5.2], scale: [0.96, 0.46, 0.74], rotation: [-0.05, 0.95, -0.02] },
-  { position: [-3.4, -0.02, -10.6], scale: [0.65, 0.3, 0.52], rotation: [0.03, 0.5, 0.05] },
-  { position: [3.2, -0.02, -10.8], scale: [0.68, 0.32, 0.54], rotation: [-0.02, -0.55, 0.04] },
+const FERN_PLACEMENTS: readonly AssetPlacement[] = [
+  { position: [-6.6, 0, 4.8], rotation: [0, 0.3, 0], scale: 0.7 },
+  { position: [-7.4, 0, 1.2], rotation: [0, -0.7, 0], scale: 0.55 },
+  { position: [-6.3, 0, -3.7], rotation: [0, 1.5, 0], scale: 0.8 },
+  { position: [-7.1, 0, -8.4], rotation: [0, 0.9, 0], scale: 0.62 },
+  { position: [6.8, 0, 4.4], rotation: [0, -0.5, 0], scale: 0.72 },
+  { position: [7.4, 0, 0.6], rotation: [0, 1.0, 0], scale: 0.58 },
+  { position: [6.6, 0, -3.9], rotation: [0, -1.2, 0], scale: 0.78 },
+  { position: [7.0, 0, -8.5], rotation: [0, 0.25, 0], scale: 0.64 },
+];
+
+const SHRUB_PLACEMENTS: readonly AssetPlacement[] = [
+  { position: [-4.9, 0, 4.9], rotation: [0, 0.8, 0], scale: 1.1 },
+  { position: [-5.8, 0, -0.7], rotation: [0, -0.2, 0], scale: 0.92 },
+  { position: [-4.9, 0, -6.1], rotation: [0, 1.7, 0], scale: 1.0 },
+  { position: [5.2, 0, 4.6], rotation: [0, -0.9, 0], scale: 1.08 },
+  { position: [5.9, 0, -0.9], rotation: [0, 0.45, 0], scale: 0.96 },
+  { position: [4.8, 0, -6.0], rotation: [0, -1.4, 0], scale: 1.04 },
+];
+
+const SORREL_PLACEMENTS: readonly AssetPlacement[] = [
+  { position: [-3.7, 0, 2.9], rotation: [0, 0.2, 0], scale: 1.2 },
+  { position: [-3.9, 0, -1.0], rotation: [0, -0.5, 0], scale: 1.0 },
+  { position: [-3.4, 0, -5.0], rotation: [0, 1.1, 0], scale: 1.15 },
+  { position: [3.5, 0, 3.0], rotation: [0, -0.4, 0], scale: 1.16 },
+  { position: [3.8, 0, -1.2], rotation: [0, 0.7, 0], scale: 1.04 },
+  { position: [3.3, 0, -5.2], rotation: [0, -1.2, 0], scale: 1.12 },
+];
+
+const ROCK_PLACEMENTS: readonly AssetPlacement[] = [
+  { position: [-6.8, -0.05, 5.0], rotation: [0, 0.6, 0], scale: 0.2 },
+  { position: [-7.2, -0.06, -2.6], rotation: [0, -0.5, 0], scale: 0.17 },
+  { position: [-5.7, -0.04, -8.7], rotation: [0, 1.2, 0], scale: 0.19 },
+  { position: [6.8, -0.05, 5.1], rotation: [0, -0.4, 0], scale: 0.19 },
+  { position: [7.3, -0.05, -2.4], rotation: [0, 0.75, 0], scale: 0.18 },
+  { position: [5.7, -0.05, -8.8], rotation: [0, -1.1, 0], scale: 0.2 },
 ];
 
 function seeded(index: number, salt = 0) {
@@ -72,15 +113,15 @@ function seeded(index: number, salt = 0) {
 }
 
 function terrainHeight(x: number, z: number) {
-  const broad = Math.sin(x * 0.095) * 0.22 + Math.cos(z * 0.105) * 0.17 + Math.sin((x + z) * 0.052) * 0.11;
-  const detail = Math.sin(x * 0.38 + z * 0.21) * 0.026 + Math.cos(z * 0.32 - x * 0.18) * 0.024;
-  const meadow = -Math.exp(-((x / 8.6) ** 2 + ((z + 1.2) / 10.0) ** 2)) * 0.26;
-  const waterBasin = -Math.exp(-(((x - 5.0) / 3.3) ** 2 + ((z + 6.7) / 4.6) ** 2)) * 0.32;
-  return broad + detail + meadow + waterBasin - 0.12;
+  const broad = Math.sin(x * 0.09) * 0.18 + Math.cos(z * 0.095) * 0.15 + Math.sin((x + z) * 0.05) * 0.09;
+  const detail = Math.sin(x * 0.33 + z * 0.19) * 0.018 + Math.cos(z * 0.29 - x * 0.15) * 0.018;
+  const clearing = -Math.exp(-((x / 8.8) ** 2 + ((z + 1.8) / 10.5) ** 2)) * 0.24;
+  const pond = -Math.exp(-(((x - 5.0) / 3.3) ** 2 + ((z + 6.8) / 4.8) ** 2)) * 0.3;
+  return broad + detail + clearing + pond - 0.12;
 }
 
 function makeTerrainGeometry() {
-  const geometry = new THREE.PlaneGeometry(80, 80, 200, 200);
+  const geometry = new THREE.PlaneGeometry(80, 80, 220, 220);
   geometry.rotateX(-Math.PI / 2);
   const position = geometry.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < position.count; i += 1) {
@@ -92,35 +133,7 @@ function makeTerrainGeometry() {
   return geometry;
 }
 
-function makeTerrainTexture() {
-  const size = 512;
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const index = (y * size + x) * 4;
-      const broad = Math.sin(x * 0.025) * 0.5 + Math.cos(y * 0.031) * 0.5;
-      const grain = Math.sin(x * 0.15 + y * 0.08) * 0.42 + Math.cos(y * 0.19 - x * 0.055) * 0.33;
-      const n = THREE.MathUtils.clamp(broad * 0.56 + grain * 0.44, -1, 1);
-      data[index] = Math.round(24 + n * 6);
-      data[index + 1] = Math.round(68 + n * 13);
-      data[index + 2] = Math.round(49 + n * 9);
-      data[index + 3] = 255;
-    }
-  }
-  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(12, 12);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.needsUpdate = true;
-  return texture;
-}
-
 const TERRAIN_GEOMETRY = makeTerrainGeometry();
-const TERRAIN_TEXTURE = makeTerrainTexture();
 
 function tuneMaterial(name: string, source: THREE.Material | THREE.Material[]) {
   const inherited = Array.isArray(source) ? source[0] : source;
@@ -148,8 +161,8 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     const id = object.name.toLowerCase();
-    const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/.test(id);
-    object.visible = !rejected;
+    const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/;
+    object.visible = !rejected.test(id);
     if (!object.visible) return;
     visibleMeshCount += 1;
     object.material = tuneMaterial(object.name, object.material);
@@ -186,86 +199,75 @@ function prepareOrb(source: THREE.Object3D) {
   return orb;
 }
 
-function Rock({ position, scale, rotation, tone = 0 }: { position: Vec3; scale: Vec3; rotation: Vec3; tone?: number }) {
-  const colors = ["#45534e", "#56645d", "#374943"];
-  return (
-    <mesh position={position as [number, number, number]} scale={scale as [number, number, number]} rotation={rotation as [number, number, number]} castShadow receiveShadow>
-      <icosahedronGeometry args={[1, 3]} />
-      <meshStandardMaterial color={colors[tone % colors.length]} roughness={0.98} metalness={0} />
-    </mesh>
-  );
-}
-
-function MeadowTufts() {
-  const count = 900;
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  useLayoutEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    const color = new THREE.Color();
-    for (let i = 0; i < count; i += 1) {
-      const x = (seeded(i, 1) - 0.5) * 31;
-      const z = (seeded(i, 2) - 0.5) * 33 - 2.5;
-      const centerClear = Math.hypot(x * 0.72, z + 2.4) < 2.8;
-      const pathClear = Math.abs(x) < 0.9 && z > -2.2 && z < 7.8;
-      const poolClear = Math.hypot(x - 5.1, z + 6.2) < 3.7;
-      if (centerClear || pathClear || poolClear) {
-        dummy.scale.set(0, 0, 0);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
-        continue;
+function prepareNaturalAsset(source: THREE.Object3D) {
+  const clone = source.clone(true);
+  clone.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    object.castShadow = true;
+    object.receiveShadow = true;
+    object.frustumCulled = true;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) {
+      if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
+        material.roughness = Math.max(material.roughness, 0.58);
+        material.needsUpdate = true;
       }
-      const height = 0.18 + seeded(i, 3) * 0.34;
-      dummy.position.set(x, terrainHeight(x, z) + height * 0.48, z);
-      dummy.rotation.set(0, seeded(i, 4) * Math.PI * 2, (seeded(i, 5) - 0.5) * 0.08);
-      dummy.scale.set(0.55 + seeded(i, 6) * 0.8, height, 0.55 + seeded(i, 7) * 0.55);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-      color.set(i % 5 === 0 ? "#457861" : i % 5 === 1 ? "#356952" : i % 5 === 2 ? "#285943" : "#214c3a");
-      mesh.setColorAt(i, color);
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [dummy]);
+  });
+  return clone;
+}
+
+function NaturalAsset({ url, position, rotation = [0, 0, 0], scale }: { url: string; position: Vec3; rotation?: Vec3; scale: number | Vec3 }) {
+  const { scene } = useGLTF(url);
+  const asset = useMemo(() => prepareNaturalAsset(scene), [scene]);
+  const resolvedScale = typeof scale === "number" ? scale : (scale as [number, number, number]);
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, count]} frustumCulled={false}>
-      <coneGeometry args={[0.055, 1, 4, 1]} />
-      <meshStandardMaterial vertexColors roughness={1} metalness={0} />
-    </instancedMesh>
+    <primitive
+      object={asset}
+      position={position as [number, number, number]}
+      rotation={rotation as [number, number, number]}
+      scale={resolvedScale}
+      dispose={null}
+    />
   );
 }
 
-function FlowerPoints({ tone, offset, count = 130 }: { tone: string; offset: number; count?: number }) {
-  const geometry = useMemo(() => {
-    const positions: number[] = [];
-    for (let i = 0; i < count * 3; i += 1) {
-      if (i % 3 !== offset) continue;
-      const x = (seeded(i, 31) - 0.5) * 26;
-      const z = (seeded(i, 32) - 0.5) * 25 - 1.5;
-      if (Math.hypot(x * 0.72, z + 2.4) < 2.7 || Math.abs(x) < 0.75 && z > -2 && z < 7.5) continue;
-      positions.push(x, terrainHeight(x, z) + 0.12 + seeded(i, 33) * 0.24, z);
+function GroundSurface({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
+  const [diffuse, normal, roughness] = useTexture([FOREST_FLOOR_DIFF, FOREST_FLOOR_NOR, FOREST_FLOOR_ROUGH]);
+  useMemo(() => {
+    diffuse.colorSpace = THREE.SRGBColorSpace;
+    for (const texture of [diffuse, normal, roughness]) {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(9, 9);
+      texture.anisotropy = 4;
+      texture.needsUpdate = true;
     }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    return g;
-  }, [count, offset]);
+  }, [diffuse, normal, roughness]);
   return (
-    <points geometry={geometry}>
-      <pointsMaterial color={tone} size={0.085} transparent opacity={0.8} depthWrite={false} sizeAttenuation toneMapped={false} />
-    </points>
+    <mesh name="home-natural-terrain" geometry={TERRAIN_GEOMETRY} receiveShadow onClick={onWalk}>
+      <meshStandardMaterial
+        map={diffuse}
+        normalMap={normal}
+        normalScale={GROUND_NORMAL_SCALE}
+        roughnessMap={roughness}
+        roughness={0.96}
+        metalness={0}
+        color="#d8e3d6"
+      />
+    </mesh>
   );
 }
 
 function FireflyField({ reducedMotion }: { reducedMotion: boolean }) {
   const points = useRef<THREE.Points>(null);
   const geometry = useMemo(() => {
-    const positions = new Float32Array(220 * 3);
-    for (let i = 0; i < 220; i += 1) {
+    const positions = new Float32Array(180 * 3);
+    for (let i = 0; i < 180; i += 1) {
       const x = (seeded(i, 17) - 0.5) * 28;
       const z = (seeded(i, 18) - 0.5) * 24 - 2;
       positions[i * 3] = x;
-      positions[i * 3 + 1] = terrainHeight(x, z) + 0.4 + seeded(i, 19) * 2.6;
+      positions[i * 3 + 1] = terrainHeight(x, z) + 0.35 + seeded(i, 19) * 2.4;
       positions[i * 3 + 2] = z;
     }
     const g = new THREE.BufferGeometry();
@@ -274,195 +276,93 @@ function FireflyField({ reducedMotion }: { reducedMotion: boolean }) {
   }, []);
   useFrame(({ clock }) => {
     if (reducedMotion || !points.current) return;
-    points.current.position.y = Math.sin(clock.elapsedTime * 0.32) * 0.05;
-    points.current.rotation.y = Math.sin(clock.elapsedTime * 0.04) * 0.012;
+    points.current.position.y = Math.sin(clock.elapsedTime * 0.32) * 0.04;
+    points.current.rotation.y = Math.sin(clock.elapsedTime * 0.04) * 0.01;
   });
   return (
     <points ref={points} geometry={geometry}>
-      <pointsMaterial color="#d9f7bd" size={0.06} transparent opacity={0.68} depthWrite={false} sizeAttenuation toneMapped={false} />
+      <pointsMaterial color="#dcf3c0" size={0.055} transparent opacity={0.55} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
-  );
-}
-
-function NaturalTree({ position, scale, yaw, tone }: { position: Vec3; scale: number; yaw: number; tone: 0 | 1 | 2 }) {
-  const dark = tone === 0 ? "#123a2b" : tone === 1 ? "#174432" : "#103629";
-  const light = tone === 0 ? "#245844" : tone === 1 ? "#2a6049" : "#205440";
-  const crown = [
-    [-0.42, 3.2, 0.04, 1.05, 0.72, 0.82], [0.38, 3.28, -0.15, 0.98, 0.7, 0.78],
-    [-0.9, 3.02, -0.1, 0.72, 0.58, 0.66], [0.93, 3.0, 0.08, 0.7, 0.56, 0.66],
-    [0.04, 3.9, -0.04, 0.78, 0.66, 0.72], [-0.18, 2.68, 0.42, 0.73, 0.54, 0.68],
-    [0.18, 2.7, -0.5, 0.68, 0.52, 0.64],
-  ] as const;
-  return (
-    <group position={position as [number, number, number]} scale={scale} rotation={[0, yaw, 0]}>
-      <mesh position={[0, 1.45, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.16, 0.3, 3.0, 10]} />
-        <meshStandardMaterial color="#332820" roughness={1} />
-      </mesh>
-      <mesh position={[-0.34, 2.38, 0.02]} rotation={[0, 0.15, -0.72]} castShadow>
-        <cylinderGeometry args={[0.07, 0.13, 1.35, 8]} />
-        <meshStandardMaterial color="#352920" roughness={1} />
-      </mesh>
-      <mesh position={[0.38, 2.35, -0.05]} rotation={[0.05, -0.2, 0.74]} castShadow>
-        <cylinderGeometry args={[0.065, 0.125, 1.3, 8]} />
-        <meshStandardMaterial color="#352920" roughness={1} />
-      </mesh>
-      {crown.map(([x, y, z, sx, sy, sz], index) => (
-        <mesh key={index} position={[x, y, z]} scale={[sx, sy, sz]} rotation={[seeded(index, tone) * 0.16, seeded(index, 7) * Math.PI, seeded(index, 3) * 0.12]} castShadow receiveShadow>
-          <sphereGeometry args={[1, 18, 12]} />
-          <meshStandardMaterial color={index % 3 === 0 ? light : dark} roughness={0.96} metalness={0} />
-        </mesh>
-      ))}
-    </group>
   );
 }
 
 function NaturalVegetation({ reducedMotion }: { reducedMotion: boolean }) {
   return (
-    <group name="home-living-vegetation" userData={{ role: "authored-runtime-natural-meadow", repeatedForgeVegetation: false }}>
-      <MeadowTufts />
-      <FlowerPoints tone="#f3f3dd" offset={0} />
-      <FlowerPoints tone="#b9a9f0" offset={1} />
-      <FlowerPoints tone="#ffe0a0" offset={2} />
+    <group name="home-living-vegetation" userData={{ role: "cc0-photoreal-natural-grove", repeatedForgeVegetation: false }}>
+      {TREE_PLACEMENTS.map((placement, index) => <NaturalAsset key={`tree-${index}`} url={JACARANDA_MODEL} {...placement} />)}
+      {FERN_PLACEMENTS.map((placement, index) => <NaturalAsset key={`fern-${index}`} url={FERN_MODEL} {...placement} />)}
+      {SHRUB_PLACEMENTS.map((placement, index) => <NaturalAsset key={`shrub-${index}`} url={SHRUB_MODEL} {...placement} />)}
+      {SORREL_PLACEMENTS.map((placement, index) => <NaturalAsset key={`sorrel-${index}`} url={SORREL_MODEL} {...placement} />)}
+      {ROCK_PLACEMENTS.map((placement, index) => <NaturalAsset key={`rock-${index}`} url={ROCK_MODEL} {...placement} />)}
+      <NaturalAsset url={STUMP_MODEL} position={[-6.3, -0.08, -5.5]} rotation={[0, 0.45, 0]} scale={0.72} />
       <FireflyField reducedMotion={reducedMotion} />
-      {TREE_SPECS.map((tree, index) => <NaturalTree key={`tree-${index}`} {...tree} />)}
-      {BOULDER_SPECS.map((rock, index) => <Rock key={`boulder-${index}`} {...rock} tone={index} />)}
     </group>
-  );
-}
-
-function Ridge({ z, y, width, height, color, seed }: { z: number; y: number; width: number; height: number; color: string; seed: number }) {
-  const geometry = useMemo(() => {
-    const segments = 150;
-    const vertices: number[] = [];
-    const indices: number[] = [];
-    for (let i = 0; i <= segments; i += 1) {
-      const t = i / segments;
-      const x = (t - 0.5) * width;
-      const shoulder = Math.pow(Math.max(0, Math.sin(t * Math.PI)), 0.68);
-      const longWave = Math.sin(t * Math.PI * (2.1 + seed * 0.11)) * 0.27;
-      const midWave = Math.sin(t * Math.PI * 5.7 + seed) * 0.1;
-      const detail = Math.sin(t * Math.PI * 11.3 + seed * 1.7) * 0.03;
-      const top = y + (0.42 + longWave + midWave + detail) * height * shoulder;
-      vertices.push(x, -8, 0, x, top, 0);
-      if (i < segments) {
-        const a = i * 2;
-        indices.push(a, a + 1, a + 3, a, a + 3, a + 2);
-      }
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-    g.setIndex(indices);
-    g.computeVertexNormals();
-    return g;
-  }, [height, seed, width, y]);
-  return (
-    <mesh geometry={geometry} position={[0, 0, z]} receiveShadow={false}>
-      <meshStandardMaterial color={color} roughness={1} metalness={0} side={THREE.DoubleSide} />
-    </mesh>
   );
 }
 
 function NaturalHorizon() {
   return (
-    <group name="home-mountain-horizon" userData={{ role: "atmospheric-depth-boundary", form: "layered-mountain-horizon" }}>
-      <Ridge z={-31} y={-0.9} width={82} height={10.2} color="#1f4945" seed={1} />
-      <Ridge z={-43} y={0.1} width={106} height={14.5} color="#17383b" seed={3} />
-      <Ridge z={-58} y={1.0} width={132} height={19.5} color="#102a32" seed={6} />
-      <Ridge z={-74} y={2.0} width={158} height={24} color="#0b1d27" seed={9} />
+    <group name="home-mountain-horizon" userData={{ role: "atmospheric-depth-boundary", form: "photo-hdri-horizon" }}>
+      <NaturalAsset url={JACARANDA_MODEL} position={[-17, -1.0, -25]} rotation={[0, 0.7, 0]} scale={0.44} />
+      <NaturalAsset url={JACARANDA_MODEL} position={[17, -1.0, -26]} rotation={[0, -0.55, 0]} scale={0.46} />
     </group>
   );
 }
 
 function SanctuaryPavilion() {
+  const ring = useMemo(() => Array.from({ length: 7 }, (_, index) => {
+    const angle = (index / 7) * Math.PI * 2;
+    return {
+      position: [Math.cos(angle) * 2.15, -0.09, -2.8 + Math.sin(angle) * 1.8] as Vec3,
+      rotation: [0, angle + 0.35, 0] as Vec3,
+      scale: 0.075 + (index % 3) * 0.008,
+    };
+  }), []);
   return (
-    <group name="home-sanctuary-geometry" userData={{ role: "inhabited-natural-resting-place" }}>
-      <mesh position={[0, terrainHeight(0, -2.55) + 0.05, -2.55]} receiveShadow>
-        <cylinderGeometry args={[2.15, 2.35, 0.18, 96]} />
-        <meshStandardMaterial color="#53605a" roughness={0.92} metalness={0.02} />
-      </mesh>
-      <mesh position={[0, terrainHeight(0, -2.55) + 0.16, -2.55]} receiveShadow>
-        <cylinderGeometry args={[1.72, 1.9, 0.12, 96]} />
-        <meshStandardMaterial color="#6b766e" roughness={0.88} metalness={0.02} />
-      </mesh>
-      <mesh position={[0, terrainHeight(0, -2.55) + 0.235, -2.55]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.34, 0.025, 12, 128]} />
-        <meshStandardMaterial color="#d9c48c" emissive="#b79052" emissiveIntensity={0.7} roughness={0.4} metalness={0.08} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, terrainHeight(0, -2.55) + 0.25, -2.55]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.84, 0.89, 96]} />
-        <meshBasicMaterial color="#bde7d8" transparent opacity={0.28} toneMapped={false} />
-      </mesh>
-      <Rock position={[-2.55, -0.03, -2.25]} scale={[0.82, 0.3, 0.6]} rotation={[0.04, 0.7, -0.05]} tone={1} />
-      <Rock position={[2.6, -0.04, -2.5]} scale={[0.72, 0.28, 0.55]} rotation={[-0.04, -0.45, 0.02]} tone={2} />
-      <pointLight color="#dcb780" intensity={0.42} distance={7} decay={2} position={[-2.6, 0.45, -2.4]} />
-      <pointLight color="#8bd0c1" intensity={0.34} distance={7} decay={2} position={[2.6, 0.55, -2.6]} />
+    <group name="home-sanctuary-geometry" userData={{ role: "natural-stone-orb-clearing" }}>
+      {ring.map((placement, index) => <NaturalAsset key={index} url={ROCK_MODEL} {...placement} />)}
+      <pointLight color="#dcb780" intensity={0.34} distance={7} decay={2} position={[-2.4, 0.42, -2.6]} />
+      <pointLight color="#8bd0c1" intensity={0.38} distance={7} decay={2} position={[2.4, 0.52, -2.8]} />
     </group>
   );
 }
 
 function SanctuaryPath() {
-  const stones = useMemo(() => Array.from({ length: 20 }, (_, index) => {
-    const t = index / 19;
-    const x = Math.sin(t * Math.PI * 2.0) * 0.16;
-    const z = 6.7 - t * 7.8;
-    return { x, z, sx: 0.22 + seeded(index, 8) * 0.08, sz: 0.28 + seeded(index, 9) * 0.08, yaw: (seeded(index, 10) - 0.5) * 0.6 };
-  }), []);
   return (
-    <group name="home-natural-path-network" userData={{ role: "walkable-stone-path" }}>
-      {stones.map((stone, index) => (
-        <mesh key={index} position={[stone.x, terrainHeight(stone.x, stone.z) + 0.015, stone.z]} scale={[stone.sx * 1.7, 0.13, stone.sz]} rotation={[0, stone.yaw, 0]} receiveShadow>
-          <cylinderGeometry args={[1, 1.1, 0.38, 12]} />
-          <meshStandardMaterial color={index % 2 ? "#53625a" : "#657269"} roughness={1} metalness={0} />
-        </mesh>
-      ))}
+    <group name="home-natural-path-network" userData={{ role: "unmarked-walkable-clearing-path" }}>
+      <NaturalAsset url={ROCK_MODEL} position={[-1.45, -0.08, 1.9]} rotation={[0, 0.6, 0]} scale={0.05} />
+      <NaturalAsset url={ROCK_MODEL} position={[1.55, -0.08, 0.3]} rotation={[0, -0.75, 0]} scale={0.045} />
+      <NaturalAsset url={ROCK_MODEL} position={[-1.2, -0.08, -1.0]} rotation={[0, 1.3, 0]} scale={0.04} />
     </group>
   );
 }
 
 function WaterGarden() {
-  const pads = [
-    [-1.6, -0.8, 0.34, 0.2], [-0.6, 0.9, 0.28, -0.4], [0.8, -0.3, 0.32, 0.6], [1.45, 0.75, 0.23, -0.8], [0.1, -1.35, 0.2, 0.3],
-  ] as const;
+  const pondY = terrainHeight(5.0, -6.8) + 0.05;
   return (
-    <group position={[5.0, -0.25, -6.8]} name="home-reflecting-water" userData={{ role: "moonlit-water-garden" }}>
+    <group position={[5.0, pondY, -6.8]} name="home-reflecting-water" userData={{ role: "moonlit-natural-water-garden" }}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1.35, 1, 1]} receiveShadow>
-        <circleGeometry args={[3.0, 128]} />
-        <meshPhysicalMaterial color="#174d60" emissive="#082934" emissiveIntensity={0.22} roughness={0.06} metalness={0.02} clearcoat={1} clearcoatRoughness={0.08} transparent opacity={0.82} />
+        <circleGeometry args={[2.7, 128]} />
+        <meshPhysicalMaterial color="#153c48" roughness={0.08} metalness={0.02} clearcoat={1} clearcoatRoughness={0.08} transparent opacity={0.78} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} scale={[1.22, 1, 1]}>
-        <ringGeometry args={[2.55, 2.72, 96]} />
-        <meshBasicMaterial color="#78b7b0" transparent opacity={0.09} toneMapped={false} />
-      </mesh>
-      {pads.map(([x, z, size, yaw], index) => (
-        <group key={index} position={[x, 0.035, z]} rotation={[0, yaw, 0]}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1.25, 1, 1]}>
-            <circleGeometry args={[size, 32, 0.22, Math.PI * 1.75]} />
-            <meshStandardMaterial color="#2c6c54" roughness={0.9} />
-          </mesh>
-          {index === 1 || index === 3 ? (
-            <mesh position={[0.02, 0.11, -0.02]}>
-              <sphereGeometry args={[0.075, 16, 12]} />
-              <meshStandardMaterial color="#ece7ff" emissive="#9b8fd0" emissiveIntensity={0.25} roughness={0.7} />
-            </mesh>
-          ) : null}
-        </group>
-      ))}
-      <pointLight position={[-1.8, 0.35, 1.3]} color="#79c6bc" intensity={0.28} distance={5} decay={2} />
+      <NaturalAsset url={ROCK_MODEL} position={[-2.5, -0.08, 0.3]} rotation={[0, 0.4, 0]} scale={0.07} />
+      <NaturalAsset url={ROCK_MODEL} position={[2.4, -0.08, -0.5]} rotation={[0, -0.7, 0]} scale={0.065} />
+      <NaturalAsset url={FERN_MODEL} position={[-2.1, 0, -1.2]} rotation={[0, 0.8, 0]} scale={0.48} />
+      <NaturalAsset url={FERN_MODEL} position={[1.9, 0, 1.25]} rotation={[0, -1.1, 0]} scale={0.44} />
+      <pointLight position={[-1.2, 0.6, 0.9]} color="#79c6bc" intensity={0.28} distance={5} decay={2} />
     </group>
   );
 }
 
 function LanternNook() {
   return (
-    <group position={[-6.5, 0, -5.4]} name="home-warm-sanctuary-nook" userData={{ role: "warm-home-anchor" }}>
-      <Rock position={[0, 0.0, 0]} scale={[1.7, 0.82, 1.25]} rotation={[0.02, 0.38, -0.03]} tone={1} />
-      <Rock position={[-1.0, -0.05, 0.25]} scale={[0.9, 0.42, 0.72]} rotation={[0.03, -0.4, 0.02]} tone={2} />
-      <mesh position={[0.2, 0.48, 0.52]}>
-        <sphereGeometry args={[0.11, 20, 16]} />
-        <meshStandardMaterial color="#ffd79b" emissive="#f1a74f" emissiveIntensity={3.4} toneMapped={false} />
+    <group position={[-6.2, terrainHeight(-6.2, -5.5), -5.5]} name="home-warm-sanctuary-nook" userData={{ role: "warm-home-anchor" }}>
+      <NaturalAsset url={STUMP_MODEL} position={[0, 0, 0]} rotation={[0, 0.4, 0]} scale={0.8} />
+      <mesh position={[0.15, 0.72, 0.18]}>
+        <sphereGeometry args={[0.07, 20, 16]} />
+        <meshStandardMaterial color="#ffd79b" emissive="#f1a74f" emissiveIntensity={3.2} toneMapped={false} />
       </mesh>
-      <pointLight position={[0.2, 0.65, 0.52]} color="#ffc77b" intensity={1.25} distance={7} decay={2} />
+      <pointLight position={[0.15, 0.82, 0.18]} color="#ffc77b" intensity={1.05} distance={6.5} decay={2} />
     </group>
   );
 }
@@ -470,11 +370,11 @@ function LanternNook() {
 function AtmosphereParticles({ reducedMotion }: { reducedMotion: boolean }) {
   const points = useRef<THREE.Points>(null);
   const geometry = useMemo(() => {
-    const positions = new Float32Array(620 * 3);
-    for (let i = 0; i < 620; i += 1) {
-      positions[i * 3] = (seeded(i, 12) - 0.5) * 64;
-      positions[i * 3 + 1] = 1.0 + seeded(i, 13) * 16;
-      positions[i * 3 + 2] = -45 + seeded(i, 14) * 62;
+    const positions = new Float32Array(420 * 3);
+    for (let i = 0; i < 420; i += 1) {
+      positions[i * 3] = (seeded(i, 12) - 0.5) * 62;
+      positions[i * 3 + 1] = 1.0 + seeded(i, 13) * 14;
+      positions[i * 3 + 2] = -40 + seeded(i, 14) * 55;
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -482,55 +382,28 @@ function AtmosphereParticles({ reducedMotion }: { reducedMotion: boolean }) {
   }, []);
   useFrame(({ clock }, delta) => {
     if (reducedMotion || !points.current) return;
-    points.current.rotation.y += delta * 0.0015;
-    points.current.position.y = Math.sin(clock.elapsedTime * 0.11) * 0.05;
+    points.current.rotation.y += delta * 0.0012;
+    points.current.position.y = Math.sin(clock.elapsedTime * 0.11) * 0.04;
   });
   return (
     <points ref={points} geometry={geometry}>
-      <pointsMaterial color="#b1dfd3" size={0.032} transparent opacity={0.3} depthWrite={false} sizeAttenuation />
-    </points>
-  );
-}
-
-function MilkyWay({ reducedMotion }: { reducedMotion: boolean }) {
-  const points = useRef<THREE.Points>(null);
-  const geometry = useMemo(() => {
-    const positions: number[] = [];
-    for (let i = 0; i < 900; i += 1) {
-      const t = seeded(i, 51);
-      const spread = (seeded(i, 52) - 0.5) * (2.0 + t * 4.5);
-      const x = -8 + t * 18 + spread;
-      const y = 10 + t * 34 + (seeded(i, 53) - 0.5) * 4;
-      const z = -52 - t * 35 + (seeded(i, 54) - 0.5) * 8;
-      positions.push(x, y, z);
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    return g;
-  }, []);
-  useFrame((_, delta) => {
-    if (reducedMotion || !points.current) return;
-    points.current.rotation.z += delta * 0.00035;
-  });
-  return (
-    <points ref={points} geometry={geometry}>
-      <pointsMaterial color="#c5d8ff" size={0.085} transparent opacity={0.52} depthWrite={false} sizeAttenuation toneMapped={false} />
+      <pointsMaterial color="#c8dfda" size={0.025} transparent opacity={0.2} depthWrite={false} sizeAttenuation />
     </points>
   );
 }
 
 function Moon() {
   return (
-    <group position={[12, 15.5, -52]} name="home-moon-rim-light">
+    <group position={[11, 15.5, -48]} name="home-moon-rim-light">
       <mesh>
-        <sphereGeometry args={[2.2, 56, 56]} />
-        <meshBasicMaterial color="#e5f0ed" toneMapped={false} />
+        <sphereGeometry args={[1.8, 56, 56]} />
+        <meshBasicMaterial color="#edf4ef" toneMapped={false} />
       </mesh>
-      <mesh scale={1.23}>
-        <sphereGeometry args={[2.2, 48, 48]} />
-        <meshBasicMaterial color="#93cfc5" transparent opacity={0.06} depthWrite={false} toneMapped={false} />
+      <mesh scale={1.2}>
+        <sphereGeometry args={[1.8, 48, 48]} />
+        <meshBasicMaterial color="#a4d2cb" transparent opacity={0.045} depthWrite={false} toneMapped={false} />
       </mesh>
-      <pointLight color="#b8d9d4" intensity={1.2} distance={75} decay={2} />
+      <pointLight color="#c6ded9" intensity={0.95} distance={65} decay={2} />
     </group>
   );
 }
@@ -551,9 +424,7 @@ function SanctuaryWorld({ walkTarget, reducedMotion }: { walkTarget: MutableRefO
   return (
     <group name="home-authored-terrain" userData={{ runtimeAsset: HOME_MODEL, visualEnvironment: HOME_PROVIDER_ENVIRONMENT, physicalBase: "authored-coherent-world", providerImageRole: "atmospheric-support-only", regions: ["home-mountain-horizon", "home-living-vegetation"] }}>
       <primitive object={authoredWorld} />
-      <mesh name="home-natural-terrain" geometry={TERRAIN_GEOMETRY} receiveShadow onClick={onWalk}>
-        <meshStandardMaterial map={TERRAIN_TEXTURE} color="#35664f" roughness={0.98} metalness={0} />
-      </mesh>
+      <GroundSurface onWalk={onWalk} />
       <NaturalHorizon />
       <NaturalVegetation reducedMotion={reducedMotion} />
       <SanctuaryPath />
@@ -597,27 +468,27 @@ function LivingOrbShell({ reducedMotion }: { reducedMotion: boolean }) {
     core.current?.scale.setScalar(breathe);
     inner.current?.scale.setScalar(1 + Math.sin(clock.elapsedTime * 0.82 + 0.8) * 0.018);
     if (group.current) group.current.rotation.y += delta * 0.085;
-    if (light.current) light.current.intensity = 3.5 + Math.sin(clock.elapsedTime * 1.08) * 0.38;
+    if (light.current) light.current.intensity = 3.2 + Math.sin(clock.elapsedTime * 1.08) * 0.34;
   });
   return (
     <group ref={group}>
-      <mesh scale={1.5}>
+      <mesh scale={1.48}>
         <sphereGeometry args={[1, 64, 64]} />
         <meshPhysicalMaterial color="#c9fff2" emissive="#4d9e8b" emissiveIntensity={0.24} roughness={0.035} metalness={0} transmission={0.58} thickness={0.26} transparent opacity={0.18} depthWrite={false} />
       </mesh>
-      <mesh ref={inner} scale={1.08}>
+      <mesh ref={inner} scale={1.06}>
         <sphereGeometry args={[1, 64, 64]} />
         <meshPhysicalMaterial color="#e1fff7" emissive="#7fd9c4" emissiveIntensity={0.48} roughness={0.08} metalness={0} transmission={0.3} clearcoat={1} clearcoatRoughness={0.05} transparent opacity={0.48} />
       </mesh>
-      <mesh ref={core} scale={0.56}>
+      <mesh ref={core} scale={0.55}>
         <sphereGeometry args={[1, 56, 56]} />
-        <meshStandardMaterial color="#ffe6b7" emissive="#f3bb67" emissiveIntensity={3.4} roughness={0.14} metalness={0} toneMapped={false} />
+        <meshStandardMaterial color="#ffe6b7" emissive="#f3bb67" emissiveIntensity={3.2} roughness={0.14} metalness={0} toneMapped={false} />
       </mesh>
-      <OrbOrbit rx={1.66} ry={0.72} rotation={[0.45, 0.2, 0.18]} opacity={0.38} />
-      <OrbOrbit rx={1.58} ry={0.78} rotation={[-0.32, 0.8, -0.24]} opacity={0.28} color="#ffe1a2" />
-      <OrbOrbit rx={1.42} ry={0.9} rotation={[0.1, -0.55, 0.7]} opacity={0.2} />
-      <pointLight ref={light} color="#8ce8d2" intensity={3.5} distance={11} decay={2} />
-      <pointLight color="#f4c37e" intensity={1.35} distance={6.5} decay={2} position={[0, -0.1, 0.55]} />
+      <OrbOrbit rx={1.62} ry={0.71} rotation={[0.45, 0.2, 0.18]} opacity={0.34} />
+      <OrbOrbit rx={1.54} ry={0.77} rotation={[-0.32, 0.8, -0.24]} opacity={0.24} color="#ffe1a2" />
+      <OrbOrbit rx={1.4} ry={0.88} rotation={[0.1, -0.55, 0.7]} opacity={0.18} />
+      <pointLight ref={light} color="#8ce8d2" intensity={3.2} distance={10.5} decay={2} />
+      <pointLight color="#f4c37e" intensity={1.15} distance={6.2} decay={2} position={[0, -0.1, 0.55]} />
     </group>
   );
 }
@@ -638,7 +509,7 @@ function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
     return () => { action?.fadeOut(0.18); };
   }, [actions, clip, reducedMotion]);
   return (
-    <group ref={root} name="home-orb-sanctuary" position={ORB} scale={0.46} userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onOpen(); }}>
+    <group ref={root} name="home-orb-sanctuary" position={ORB} scale={0.5} userData={{ runtimeAsset: ORB_MODEL, semanticOwner: "urai-home-webgl-orb", clip }} raycast={interactive ? undefined : DISABLED_RAYCAST} onClick={(event) => { event.stopPropagation(); onOpen(); }}>
       <Float speed={reducedMotion ? 0 : 0.42} rotationIntensity={reducedMotion ? 0 : 0.024} floatIntensity={reducedMotion ? 0 : 0.1}>
         <primitive object={orb} />
         <LivingOrbShell reducedMotion={reducedMotion} />
@@ -652,7 +523,7 @@ function EmbodiedPresence({ root }: { root: MutableRefObject<THREE.Group | null>
     <group ref={root} name="home-authored-embodied-self" position={SPAWN} userData={{ semanticOwner: "urai-home-embodied-avatar", representation: "privacy-preserving-first-person-presence" }} raycast={DISABLED_RAYCAST}>
       <mesh position={[0, 0.012, 0.3]} rotation={[-Math.PI / 2, 0, 0]} scale={[0.45, 1.15, 1]}>
         <circleGeometry args={[0.4, 32]} />
-        <meshBasicMaterial color="#020706" transparent opacity={0.14} depthWrite={false} />
+        <meshBasicMaterial color="#020706" transparent opacity={0.1} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -665,7 +536,7 @@ function GroundThresholdLandmark({ onEnter }: { onEnter: () => void }) {
         <boxGeometry args={[3.6, 2.2, 3.6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      <pointLight color="#d6aa70" intensity={0.44} distance={5.8} decay={2} position={[0, 0.05, -0.7]} />
+      <pointLight color="#d6aa70" intensity={0.34} distance={5.4} decay={2} position={[0, 0.05, -0.7]} />
     </group>
   );
 }
@@ -677,7 +548,7 @@ function LifeMapSkyLookout({ onEnter }: { onEnter: () => void }) {
         <boxGeometry args={[3.6, 2.4, 3.6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      <pointLight color="#8ed3c4" intensity={0.34} distance={5.4} decay={2} position={[0, 1.3, -0.35]} />
+      <pointLight color="#8ed3c4" intensity={0.3} distance={5.0} decay={2} position={[0, 1.3, -0.35]} />
     </group>
   );
 }
@@ -846,16 +717,15 @@ function HomeScene(props: {
   const cosmic = phase === "ASCENT";
   return (
     <>
-      <color attach="background" args={[cosmic ? "#01050b" : "#06141b"]} />
-      <Sky distance={450000} sunPosition={[0, cosmic ? -2.2 : -0.8, -1]} inclination={0.57} azimuth={0.21} mieCoefficient={0.0014} mieDirectionalG={0.72} rayleigh={cosmic ? 0.12 : 0.3} turbidity={1.7} />
-      <Stars radius={190} depth={90} count={cosmic ? 2400 : 1900} factor={cosmic ? 2.6 : 1.85} saturation={0.16} fade speed={props.reducedMotion ? 0 : 0.045} />
-      <fogExp2 attach="fog" args={[cosmic ? "#050b14" : "#0b2225", cosmic ? 0.0017 : 0.0062]} />
-      <ambientLight intensity={cosmic ? 0.14 : 0.58} color="#b8d5cd" />
-      <hemisphereLight args={["#a6ced0", "#07120e", cosmic ? 0.24 : 0.9]} />
-      <directionalLight position={[12, 18, -18]} intensity={cosmic ? 0.36 : 2.25} color="#d1e9e5" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-near={0.5} shadow-camera-far={72} shadow-camera-left={-24} shadow-camera-right={24} shadow-camera-top={24} shadow-camera-bottom={-24} />
-      <directionalLight position={[-8, 9, 7]} intensity={cosmic ? 0.12 : 0.62} color="#e7bb7e" />
+      <color attach="background" args={[cosmic ? "#01050b" : "#0b171a"]} />
+      {!cosmic ? <Environment files={NIGHT_HDRI} background /> : null}
+      <Stars radius={190} depth={90} count={cosmic ? 2400 : 1050} factor={cosmic ? 2.6 : 1.25} saturation={0.16} fade speed={props.reducedMotion ? 0 : 0.04} />
+      <fogExp2 attach="fog" args={[cosmic ? "#050b14" : "#102528", cosmic ? 0.0017 : 0.011]} />
+      <ambientLight intensity={cosmic ? 0.14 : 0.28} color="#c2d7d2" />
+      <hemisphereLight args={["#9fc1c4", "#07100d", cosmic ? 0.24 : 0.52]} />
+      <directionalLight position={[12, 18, -18]} intensity={cosmic ? 0.36 : 1.45} color="#d7e4df" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-near={0.5} shadow-camera-far={72} shadow-camera-left={-24} shadow-camera-right={24} shadow-camera-top={24} shadow-camera-bottom={-24} />
+      <directionalLight position={[-8, 9, 7]} intensity={cosmic ? 0.12 : 0.34} color="#e0b77f" />
       <Moon />
-      <MilkyWay reducedMotion={props.reducedMotion} />
       <AtmosphereParticles reducedMotion={props.reducedMotion} />
       <SceneReadiness onReady={props.onSceneReady} />
       <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.onNearby} groundDescent={props.groundDescent} onGroundComplete={props.onGroundComplete} reducedMotion={props.reducedMotion} />
@@ -868,7 +738,7 @@ function HomeScene(props: {
       </ReducedMotionContext.Provider>
       <GroundThresholdLandmark onEnter={props.onGround} />
       <LifeMapSkyLookout onEnter={props.onLifeMap} />
-      {!cosmic ? <ContactShadows position={[0, -0.06, -2.2]} opacity={0.36} scale={32} blur={3.8} far={17} resolution={512} frames={props.reducedMotion ? 1 : 1} /> : null}
+      {!cosmic ? <ContactShadows position={[0, -0.08, -2.2]} opacity={0.22} scale={30} blur={4.2} far={15} resolution={512} frames={1} /> : null}
     </>
   );
 }
@@ -883,6 +753,7 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
   const [transitionSequence, setTransitionSequence] = useState<TransitionSequence>("idle");
   const [groundDescent, setGroundDescent] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [mobileControls, setMobileControls] = useState(false);
   const phase = useSceneStore((state) => state.phase);
   const progress = useSceneStore((state) => state.progress);
   const inputLocked = useSceneStore((state) => state.inputLocked);
@@ -934,11 +805,19 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
     setReviewFixture(query.get("homePrivateFixture") === "1" ? "safe-private" : "none");
     const requestedState = query.get("homeOrbState");
     if (requestedState && requestedState in ORB_CLIPS) setOrbState(requestedState as OrbState);
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReducedMotion(media.matches);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobile = window.matchMedia("(pointer: coarse), (max-width: 700px)");
+    const apply = () => {
+      setReducedMotion(reduced.matches);
+      setMobileControls(mobile.matches);
+    };
     apply();
-    media.addEventListener?.("change", apply);
-    return () => media.removeEventListener?.("change", apply);
+    reduced.addEventListener?.("change", apply);
+    mobile.addEventListener?.("change", apply);
+    return () => {
+      reduced.removeEventListener?.("change", apply);
+      mobile.removeEventListener?.("change", apply);
+    };
   }, []);
   useEffect(() => {
     if (phase === "ASCENT") setTransitionSequence("life-map:traversal");
@@ -975,11 +854,11 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
   const context = phase === "ASCENT" ? "Ascending through the sky" : groundDescent ? "Descending into Ground" : nearby === "orb" ? "The Orb is here" : nearby === "ground" ? "The path descends" : nearby === "life-map" ? "Look to the sky" : null;
 
   return (
-    <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? "true" : "false"} data-home-runtime-assets="home-entry-chamber-v1.glb urai-orb-avatar-v1.glb replay-memory-film-main.webp" data-home-authored-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? "none"} data-home-camera-mode={groundDescent ? "descent" : phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied-first-person"} data-home-scene-phase={groundDescent ? "GROUND_DESCENT" : phase} data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"} data-home-input-locked={transitioning || inputLocked ? "true" : "false"} data-home-portal-sequence={transitionSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-animation-owner="provider-natural-world-plus-authored-physical-interactions" data-testid="home-visible-navigable-sanctuary-world" {...look}>
-      <Canvas className={styles.canvas} dpr={[1, 1.45]} shadows camera={{ position: [0, 1.7, 8], fov: 52, near: 0.05, far: 300 }} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} onCreated={({ gl }) => {
+    <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? "true" : "false"} data-home-runtime-assets="home-entry-chamber-v1.glb urai-orb-avatar-v1.glb polyhaven-qwantani-dusk-1 polyhaven-jacaranda-tree polyhaven-fern-02 polyhaven-shrub-04 polyhaven-rock-moss-set-01" data-home-authored-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? "none"} data-home-camera-mode={groundDescent ? "descent" : phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied-first-person"} data-home-scene-phase={groundDescent ? "GROUND_DESCENT" : phase} data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"} data-home-input-locked={transitioning || inputLocked ? "true" : "false"} data-home-portal-sequence={transitionSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-animation-owner="provider-natural-world-plus-authored-physical-interactions" data-home-asset-provenance="polyhaven-cc0-preview" data-testid="home-visible-navigable-sanctuary-world" {...look}>
+      <Canvas className={styles.canvas} dpr={[1, 1.35]} shadows camera={{ position: [0, 1.7, 8], fov: 52, near: 0.05, far: 300 }} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.38;
+        gl.toneMappingExposure = 1.14;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
         gl.setClearColor(0x000000, 0);
         setCanvasReady(true);
@@ -988,7 +867,7 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
       </Canvas>
       <header className={styles.brand} aria-label="URAI"><strong>URAI</strong></header>
       {context ? <div className={`${styles.worldHint} home-world-context`} data-home-world-context data-home-world-context-for={nearby ?? phase} role="status" aria-live="polite">{context}</div> : null}
-      {!transitioning ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
+      {!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
       <span className="sr-only" data-testid="urai-home-webgl-orb">The authored Orb companion is physically present in the Home environment.</span>
       <span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied presence is represented without fabricating personal identity.</span>
       <span className="sr-only">Ground is reached by the descending natural path. Life Map is reached through the sky ascent. The Orb remains directly accessible.</span>
@@ -998,3 +877,9 @@ export function HomeWorldProductionFinal({ onOrbOpen = requestUraiWorldOrbOpen, 
 
 useGLTF.preload(HOME_MODEL);
 useGLTF.preload(ORB_MODEL);
+useGLTF.preload(JACARANDA_MODEL);
+useGLTF.preload(FERN_MODEL);
+useGLTF.preload(SHRUB_MODEL);
+useGLTF.preload(SORREL_MODEL);
+useGLTF.preload(ROCK_MODEL);
+useGLTF.preload(STUMP_MODEL);
