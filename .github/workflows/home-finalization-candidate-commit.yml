@@ -5,201 +5,251 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
+      - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/spatial-runtime-restoration.css'
+      - 'urai-tier1/src/app/home/**'
+      - 'operations/assets/launch-critical-assets.json'
+      - 'operations/assets/home-finalization-candidate-decisions.json'
+      - 'operations/assets/sources/**'
+      - 'scripts/author-home-finalization-assets.mjs'
+      - 'scripts/record-home-finalization-authored-candidates.mjs'
+      - 'scripts/verify-home-finalization-authored-assets.mjs'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: home-v2-repair-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: home-finalization-candidate-commit-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
-
-env:
-  URAI_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-  PR_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
 
 jobs:
   forge-verify-and-commit:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'feat/home-final-personalized-sanctuary-20260723') ||
+       (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/home-final-personalized-sanctuary-20260723'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HOME_BRANCH: feat/home-final-personalized-sanctuary-20260723
+      HOME_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Checkout exact candidate
+      - name: Check out exact Home candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ env.URAI_SOURCE_SHA }}
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
+          ref: ${{ env.HOME_EXACT_HEAD }}
+          fetch-depth: 0
 
-      - name: Prove clean exact input and governed assets
+      - name: Refuse stale or unexpected authority
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$URAI_SOURCE_SHA"
+          [[ "$HOME_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$HOME_EXACT_HEAD"
+          test "$(git remote get-url origin)" != ""
           test -z "$(git status --porcelain --untracked-files=all)"
-          python3 - <<'PY'
-          import hashlib, json, pathlib
-          checks = [
-            ('operations/assets/generated-receipts/home-entry-chamber-v1.json', '73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2'),
-            ('operations/assets/generated-receipts/ground-world-terrain-v1.json', 'b5309b854729566efcc444db029458bd4193ed18e6c83199e164ca8cb3fb2b76'),
-            ('operations/assets/generated-receipts/urai-orb-avatar-v1.json', '06b21ff93a2221a6367fb8b8e305a0453cb151d3a92194445d72e4d48d6c7708'),
-          ]
-          for receipt_path, expected in checks:
-            r = json.loads(pathlib.Path(receipt_path).read_text())
-            p = pathlib.Path(r['fixedPath'])
-            assert p.is_file()
-            assert hashlib.sha256(p.read_bytes()).hexdigest() == r['sha256'] == expected
-          fern = json.loads(pathlib.Path('operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json').read_text())
-          fp = pathlib.Path(fern['output'])
-          assert fp.is_file()
-          assert hashlib.sha256(fp.read_bytes()).hexdigest() == fern['outputSha256'] == '9e3d29b1f917ec9f6e72f713fc7131f1d413ffecfbd3c96e7d72f92529f31a87'
-          PY
 
-      - name: Recompose Home from governed authored assets
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+
+      - name: Validate committed authored source tools
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
-          s = path.read_text()
-          if 'HOME_COMPOSITION_V2' in s:
-            print('Home V2 already composed')
-            raise SystemExit(0)
-          def one(old, new):
-            global s
-            c = s.count(old)
-            assert c == 1, f'expected one match, got {c}: {old[:100]!r}'
-            s = s.replace(old, new, 1)
-          one('const HOME_FERN_MODEL = "/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb";\nconst HOME_SCANNED_COMPOSITION_V1 = "owned-sanctuary-plus-cc0-fern";', 'const HOME_FERN_MODEL = "/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb";\nconst HOME_GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";\nconst HOME_ORB_MODEL = "/assets/urai/generated/models/urai-orb-avatar-v1.glb";\nconst HOME_COMPOSITION_V2 = "owned-sanctuary-ground-landscape-cc0-nature-authored-orb";')
-          one('const ORB = new THREE.Vector3(0, 1.45, -2.85);', 'const ORB = new THREE.Vector3(0, 1.02, -2.85);')
-          insert_at = s.index('function CinematicBackdrop()')
-          helper = '''function prepareGroundLandscape(source: THREE.Object3D) {
-  const world = source.clone(true);
-  const keep = /terrain|ground|path|floor|rock|stone|moss|land|slope|hill|basin/i;
-  const reject = /portal|ring|nexus|chamber|threshold|marker|label|debug|beam|column|monolith|orb|avatar|mannequin/i;
-  let kept = 0;
-  const bounds = new THREE.Box3();
-  world.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    object.visible = keep.test(object.name) && !reject.test(object.name);
-    if (!object.visible) return;
-    const rocky = /rock|stone|basin/.test(object.name.toLowerCase());
-    object.material = new THREE.MeshStandardMaterial({ color: rocky ? "#56615a" : "#314d3a", roughness: 0.97, metalness: 0 });
-    object.castShadow = true;
-    object.receiveShadow = true;
-    object.updateWorldMatrix(true, false);
-    const meshBounds = new THREE.Box3().setFromObject(object);
-    if (!meshBounds.isEmpty()) bounds.union(meshBounds);
-    kept += 1;
-  });
-  if (kept > 0 && !bounds.isEmpty()) {
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
-    const span = Math.max(size.x, size.z, 1);
-    const scale = Math.min(1.35, 24 / span);
-    world.scale.setScalar(scale);
-    world.position.set(-center.x * scale, -bounds.min.y * scale - 0.34, -4.2 - center.z * scale);
-  }
-  world.userData.homeLandscapeSupport = true;
-  world.userData.visibleLandscapeMeshes = kept;
-  return world;
-}
+          node --check scripts/author-home-finalization-assets.mjs
+          node --check scripts/record-home-finalization-authored-candidates.mjs
+          node --check scripts/verify-home-finalization-authored-assets.mjs
+          grep -q "urai-home-authored-sanctuary-source-v3" scripts/author-home-finalization-assets.mjs
 
-function prepareAuthoredOrb(source: THREE.Object3D) {
-  const orb = source.clone(true);
-  orb.traverse((object) => {
-    if (!(object instanceof THREE.Mesh)) return;
-    object.castShadow = true;
-    object.receiveShadow = true;
-  });
-  orb.scale.setScalar(0.46);
-  orb.userData.authoredOrb = true;
-  return orb;
-}
-
-'''
-          s = s[:insert_at] + helper + s[insert_at:]
-          one('  const sanctuary = useGLTF(HOME_SANCTUARY_MODEL);\n  const authored = useMemo(() => prepareAuthoredSanctuary(sanctuary.scene), [sanctuary.scene]);', '  const sanctuary = useGLTF(HOME_SANCTUARY_MODEL);\n  const ground = useGLTF(HOME_GROUND_MODEL);\n  const authored = useMemo(() => prepareAuthoredSanctuary(sanctuary.scene), [sanctuary.scene]);\n  const landscape = useMemo(() => prepareGroundLandscape(ground.scene), [ground.scene]);')
-          one('      <primitive object={authored} />\n      <mesh name="home-natural-terrain"', '      <primitive object={authored} />\n      <primitive object={landscape} />\n      <mesh name="home-natural-terrain"')
-          one('<meshStandardMaterial color="#29483a" roughness={0.98} metalness={0} />', '<meshStandardMaterial color="#355640" roughness={0.99} metalness={0} />')
-          a = s.index('function orbitGeometry(')
-          b = s.index('function GroundThresholdLandmark', a)
-          replacement = '''function OrbSanctuary({ onOpen }: { onOpen: () => void }) {
-  const reducedMotion = useContext(ReducedMotionContext);
-  const source = useGLTF(HOME_ORB_MODEL);
-  const orb = useMemo(() => prepareAuthoredOrb(source.scene), [source.scene]);
-  const root = useRef<THREE.Group>(null);
-  const light = useRef<THREE.PointLight>(null);
-  useFrame(({ clock }) => {
-    if (reducedMotion) return;
-    const breathe = 1 + Math.sin(clock.elapsedTime * 0.82) * 0.012;
-    root.current?.scale.setScalar(breathe);
-    if (light.current) light.current.intensity = 0.72 + Math.sin(clock.elapsedTime * 0.82) * 0.08;
-  });
-  return (
-    <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen(); }} userData={{ geometryOwner: "urai-orb-avatar-v1.glb", primitiveSphere: false }}>
-      <primitive object={orb} />
-      <pointLight ref={light} color="#8fc9c4" intensity={0.72} distance={5.5} decay={2} />
-    </group>
-  );
-}
-
-'''
-          s = s[:a] + replacement + s[b:]
-          s = s.replace('camera.lookAt(look.current.x, 1.28 + pitch.current, look.current.z);', 'camera.lookAt(look.current.x, 0.96 + pitch.current, look.current.z);')
-          assert s.count('camera.lookAt(look.current.x, 0.96 + pitch.current, look.current.z);') == 2
-          one('const candidates: readonly [Nearby, THREE.Vector3, number][] = [["orb", ORB, 2.2], ["ground", GROUND_THRESHOLD, 2.55], ["life-map", LIFE_MAP_LOOKOUT, 2.55]];', 'const candidates: readonly [Nearby, THREE.Vector3, number][] = [["orb", ORB, 3.15], ["ground", GROUND_THRESHOLD, 2.55], ["life-map", LIFE_MAP_LOOKOUT, 2.55]];')
-          one('{cosmic ? <color attach="background" args={["#01050b"]} /> : null}', '<color attach="background" args={[cosmic ? "#01050b" : "#183033"]} />')
-          one('<Stars radius={190} depth={90} count={cosmic ? 2500 : 1100} factor={cosmic ? 2.8 : 1.25} saturation={0.16} fade speed={props.reducedMotion ? 0 : 0.035} />', '<Stars radius={190} depth={90} count={cosmic ? 2500 : 180} factor={cosmic ? 2.8 : 0.48} saturation={0.12} fade speed={props.reducedMotion ? 0 : 0.018} />')
-          one('<fogExp2 attach="fog" args={[cosmic ? "#050b14" : "#0b1b1c", cosmic ? 0.0017 : 0.014]} />', '<fogExp2 attach="fog" args={[cosmic ? "#050b14" : "#183033", cosmic ? 0.0017 : 0.011]} />')
-          one('<ambientLight intensity={cosmic ? 0.12 : 0.42} color="#c6dbd4" />', '<ambientLight intensity={cosmic ? 0.12 : 0.58} color="#d2ded6" />')
-          one('<hemisphereLight args={["#a7cdd0", "#101b13", cosmic ? 0.2 : 0.72]} />', '<hemisphereLight args={["#bfd7d2", "#17251a", cosmic ? 0.2 : 0.88]} />')
-          one('<directionalLight position={[9, 17, 4]} intensity={cosmic ? 0.32 : 1.7} color="#e8eee5" castShadow />', '<directionalLight position={[8, 16, 7]} intensity={cosmic ? 0.32 : 2.0} color="#eef3e8" castShadow />')
-          one('data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water"', 'data-home-runtime-assets="home-entry-chamber-v1.glb ground-world-terrain-v1.glb polyhaven-fern-02-geometry-v1.glb urai-orb-avatar-v1.glb reflecting-water"')
-          one('data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1}', 'data-home-animation-owner={HOME_COMPOSITION_V2}')
-          one('gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}', 'gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}')
-          one('gl.setClearColor(0x000000, 0);', 'gl.setClearColor(0x183033, 1);')
-          assert '<sphereGeometry args={[1,64,64]}' not in s
-          assert 'OrbDust' not in s
-          path.write_text(s)
-          css = Path('urai-tier1/src/spatial/layout/HomeWorldProduction.module.css')
-          c = css.read_text()
-          assert c.count('opacity: .028;') == 1 and c.count('opacity: .02;') == 1
-          css.write_text(c.replace('opacity: .028;', 'opacity: .006;', 1).replace('opacity: .02;', 'opacity: .004;', 1))
-          proof = Path('scripts/run-continuous-spatial-proof-v22-natural.mjs')
-          p = proof.read_text()
-          old = 'const newOwner = "result.animationOwner === \'provider-natural-world-plus-authored-physical-interactions\'"'
-          new = 'const newOwner = "result.animationOwner === \'owned-sanctuary-ground-landscape-cc0-nature-authored-orb\'"'
-          assert p.count(old) == 1
-          proof.write_text(p.replace(old, new, 1))
-          PY
-
-      - name: Validate repair source
+      - name: Repair materialized v3 typecheck manifest provenance fallback visibility and review hydration
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'HOME_COMPOSITION_V2' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'ground-world-terrain-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'urai-orb-avatar-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F '<sphereGeometry args={[1,64,64]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
 
-      - name: Commit only from still-current exact PR head
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          const runtimePath = 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+          let runtime = fs.readFileSync(runtimePath, 'utf8')
+          const invalidCleanup = '  useEffect(() => () => mixer.stopAllAction(), [mixer])'
+          const validCleanup = '  useEffect(() => () => { mixer.stopAllAction() }, [mixer])'
+          if (!runtime.includes(validCleanup)) {
+            if (!runtime.includes(invalidCleanup)) throw new Error('Home v3 animation mixer cleanup contract was not found')
+            runtime = runtime.replace(invalidCleanup, validCleanup)
+          }
+
+          const serverLockedReview = "  const reviewMode = useMemo(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetReview') === '1', [])"
+          const hydratedReview = `  const [reviewMode, setReviewMode] = useState(false)
+          useEffect(() => {
+            setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
+          }, [])`
+          if (runtime.includes(serverLockedReview)) runtime = runtime.replace(serverLockedReview, hydratedReview)
+          if (!runtime.includes('const [reviewMode, setReviewMode] = useState(false)')) throw new Error('Hydrated disclosed review-mode contract was not materialized')
+          fs.writeFileSync(runtimePath, runtime)
+
+          const cssPath = 'urai-tier1/src/app/spatial-runtime-restoration.css'
+          const css = fs.readFileSync(cssPath, 'utf8')
+          const broadOwner = 'body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final'
+          const assetOwner = 'body:has(.urai-asset-home-world) .urai-home-spatial-world-final'
+          if (css.includes(broadOwner)) fs.writeFileSync(cssPath, css.split(broadOwner).join(assetOwner))
+          const repairedCss = fs.readFileSync(cssPath, 'utf8')
+          if (repairedCss.includes(broadOwner)) throw new Error('Fallback veil rule still targets the runtime wrapper')
+          if (!repairedCss.includes(assetOwner)) throw new Error('Asset-driven overlay veil rule was not retained')
+
+          const manifestPath = 'operations/assets/launch-critical-assets.json'
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+          const authoredIds = new Set(['home-entry-chamber-v1', 'portal-ring-master-v1', 'urai-orb-avatar-v1'])
+          for (const asset of manifest.assets) {
+            if (!authoredIds.has(asset.id)) continue
+            asset.source = 'URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset'
+            asset.license = 'URAI Labs internal proprietary production asset'
+          }
+          fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+          NODE
+
+      - name: Forge baseline launch candidates
+        run: node scripts/forge-launch-critical-assets.mjs
+
+      - name: Normalize baseline candidates
+        run: node scripts/normalize-launch-critical-assets.mjs
+
+      - name: Author Home Portal and Orb source candidates
+        run: >-
+          node scripts/author-home-finalization-assets.mjs
+          urai-tier1/public/assets/urai/generated/models
+          operations/assets/sources/home-finalization-authored-source-v2.json
+
+      - name: Apply Meshopt production compression without pruning authored scene structure
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
-            test "$current_head" = "$URAI_SOURCE_SHA" || { echo "stale repair input; refusing push"; exit 0; }
+          files=(
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
+          )
+          for file in "${files[@]}"; do
+            output="${file%.glb}.meshopt.glb"
+            npx --yes @gltf-transform/cli@4.2.1 meshopt "$file" "$output" --level medium
+            mv "$output" "$file"
+          done
+
+      - name: Record exact authored candidate identities
+        run: node scripts/record-home-finalization-authored-candidates.mjs
+
+      - name: Verify authored structure animation and truth boundary
+        run: node scripts/verify-home-finalization-authored-assets.mjs
+
+      - name: Verify full manifest receipts and budgets
+        run: node scripts/verify-launch-critical-assets.mjs
+
+      - name: Independently audit generated formats
+        run: node scripts/audit-launch-critical-artifact.mjs
+
+      - name: Validate selected GLBs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb; do
+            npx --yes @gltf-transform/cli@4.2.1 validate "$file"
+          done
+
+      - name: Classify generated candidate drift without mutating frozen branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/home-finalization-candidate
+          tracked=(
+            urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+            urai-tier1/src/app/spatial-runtime-restoration.css
+            operations/assets/launch-critical-assets.json
+            scripts/author-home-finalization-assets.mjs
+            scripts/record-home-finalization-authored-candidates.mjs
+            scripts/verify-home-finalization-authored-assets.mjs
+            operations/assets/sources/home-finalization-authored-source-v2.json
+            operations/assets/home-finalization-candidate-decisions.json
+            operations/assets/generated-receipts/forge-summary.json
+            operations/assets/generated-receipts/home-entry-chamber-v1.json
+            operations/assets/generated-receipts/portal-ring-master-v1.json
+            operations/assets/generated-receipts/urai-orb-avatar-v1.json
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
+          )
+          git add -- "${tracked[@]}"
+          if git diff --cached --quiet; then
+            echo 'Authored compressed candidates already match the frozen exact head.'
+            exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/src/spatial/layout/HomeWorldProduction.module.css scripts/run-continuous-spatial-proof-v22-natural.mjs
-          git commit -m 'Recompose Home with authored Orb and governed landscape'
-          gh auth setup-git
-          git push origin "HEAD:${PR_BRANCH}"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          import { execFileSync } from 'node:child_process'
+
+          const files = [
+            'operations/assets/generated-receipts/forge-summary.json',
+            'operations/assets/generated-receipts/home-entry-chamber-v1.json',
+            'operations/assets/generated-receipts/portal-ring-master-v1.json',
+            'operations/assets/generated-receipts/urai-orb-avatar-v1.json',
+          ]
+          const stripVolatile = (value) => {
+            if (Array.isArray(value)) return value.map(stripVolatile)
+            if (!value || typeof value !== 'object') return value
+            return Object.fromEntries(Object.entries(value)
+              .filter(([key]) => key !== 'generatedAt')
+              .map(([key, child]) => [key, stripVolatile(child)]))
+          }
+          for (const path of files) {
+            if (!fs.existsSync(path)) continue
+            let priorText
+            try {
+              priorText = execFileSync('git', ['show', `${process.env.HOME_EXACT_HEAD}:${path}`], { encoding: 'utf8' })
+            } catch {
+              continue
+            }
+            const current = JSON.parse(fs.readFileSync(path, 'utf8'))
+            const prior = JSON.parse(priorText)
+            if (JSON.stringify(stripVolatile(current)) === JSON.stringify(stripVolatile(prior))) {
+              fs.writeFileSync(path, priorText)
+            }
+          }
+          NODE
+
+          git add -- "${tracked[@]}"
+          if git diff --cached --quiet; then
+            echo 'Only volatile generatedAt receipt fields changed; the branch remains frozen.'
+            exit 0
+          fi
+
+          git diff --cached --name-status | tee artifacts/home-finalization-candidate/substantive-drift-files.txt
+          git diff --cached --binary > artifacts/home-finalization-candidate/substantive-candidate-drift.patch
+          echo 'Substantive authored candidate drift requires an explicit reviewed commit. This verification workflow is not permitted to mutate the branch.' >&2
+          exit 1
+
+      - name: Upload authored candidate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-finalization-authored-candidates-${{ env.HOME_EXACT_HEAD }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            artifacts/home-finalization-candidate/**
+            urai-tier1/src/app/spatial-runtime-restoration.css
+            operations/assets/launch-critical-assets.json
+            operations/assets/sources/home-finalization-authored-source-v2.json
+            operations/assets/home-finalization-candidate-decisions.json
+            operations/assets/generated-receipts/home-entry-chamber-v1.json
+            operations/assets/generated-receipts/portal-ring-master-v1.json
+            operations/assets/generated-receipts/urai-orb-avatar-v1.json
+            operations/assets/generated-receipts/forge-summary.json
+            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
