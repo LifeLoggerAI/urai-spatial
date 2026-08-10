@@ -6,43 +6,41 @@ import * as THREE from 'three'
 
 const MEMORY_STAR_MODEL = '/assets/urai/generated/models/life-map-memory-star-v1.glb'
 
-function numericSuffix(name: string, marker: string) {
-  const match = name.toLowerCase().match(new RegExp(`${marker}-(\\d+)`))
-  return match ? Number(match[1]) : null
-}
-
 function governMemoryStar(scene: THREE.Object3D) {
+  let visibleCoreMeshes = 0
   scene.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
     const name = object.name.toLowerCase()
-    const orbit = numericSuffix(name, 'memory-star-orbit')
-    const shard = numericSuffix(name, 'memory-star-shard')
+    const keep = /core|heart|center/.test(name)
 
-    // The original production GLB carries seven full orbital tubes and eighteen
-    // shards. Repeating that complete silhouette for every chapter, landmark,
-    // and memory creates the unreadable wire mass seen in the production audit.
-    // Keep one defining orbit and four sparse shards; semantic runtime geometry
-    // supplies the richer relationship/path language around selected memories.
-    if (orbit !== null && orbit > 1) object.visible = false
-    if (shard !== null && ![1, 6, 11, 16].includes(shard)) object.visible = false
-
-    if (object instanceof THREE.Mesh) {
-      object.castShadow = false
-      object.receiveShadow = false
-      object.frustumCulled = true
-      const materials = Array.isArray(object.material) ? object.material : [object.material]
-      for (const material of materials) {
-        if (material instanceof THREE.MeshStandardMaterial) {
-          material.transparent = material.transparent || material.opacity < 1
-          if (orbit !== null) material.opacity = Math.min(material.opacity, 0.58)
-          if (shard !== null) material.opacity = Math.min(material.opacity, 0.72)
-          material.needsUpdate = true
-        }
-      }
-    }
+    // The authored GLB is intentionally rich when inspected alone, but the
+    // Life Map repeats it across chapters, landmarks, and memories. Rendering
+    // every orbit, shard, petal, and shell at every node produced hundreds of
+    // draw calls and the wire-mass seen in the audit. The repeated overview
+    // identity is therefore the authored luminous core; relationship currents,
+    // artifact-family geometry, particles, and the selected chamber carry the
+    // surrounding semantic structure.
+    object.visible = keep
+    object.castShadow = false
+    object.receiveShadow = false
+    object.frustumCulled = true
+    if (keep) visibleCoreMeshes += 1
   })
-  scene.userData.lifeMapVisualDensity = 'semantic-calm'
-  scene.userData.lifeMapDecorativeOrbitCount = 1
-  scene.userData.lifeMapDecorativeShardCount = 4
+
+  // Fail visibly rather than accidentally blanking an unexpected replacement
+  // asset. A future reviewed GLB with different node naming remains intact.
+  if (visibleCoreMeshes === 0) {
+    scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) object.visible = true
+    })
+    scene.userData.lifeMapVisualDensity = 'unrecognized-asset-preserved'
+    return scene
+  }
+
+  scene.userData.lifeMapVisualDensity = 'semantic-core'
+  scene.userData.lifeMapDecorativeOrbitCount = 0
+  scene.userData.lifeMapDecorativeShardCount = 0
+  scene.userData.lifeMapVisibleCoreMeshes = visibleCoreMeshes
   return scene
 }
 
