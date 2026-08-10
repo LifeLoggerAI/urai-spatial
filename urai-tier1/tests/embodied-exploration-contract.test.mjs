@@ -83,6 +83,10 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'useDragLook',
     'MobileMovementPad',
     'requestUraiWorldTravel',
+    'URAI_ORB_STATE_EVENT',
+    'resolveOrbSensoryOutput',
+    'data-home-orb-state={orbState}',
+    'data-home-orb-reduced-motion={reducedMotion',
     '<Canvas',
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = ['"]\/assets\/urai\/replay\/replay-memory-film-main\.webp['"]/)
@@ -114,11 +118,14 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
   assert.match(homeRuntime, /<HomeSpatialWorldFinal \/>/)
 })
 
-test('Home keeps one physical Orb owner and semantic access parity', () => {
+test('Home keeps one physical stateful Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} \/>/)
+  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} state=\{props\.orbState\} \/>/)
+  assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
+  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, onOrbState\)/)
+  assert.match(homeProduction, /if \(phase === 'ASCENT' \|\| groundDescent\) return/)
   assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
