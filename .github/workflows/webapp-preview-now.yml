@@ -1,0 +1,127 @@
+name: URAI Web App Preview Now
+
+on:
+  push:
+    branches:
+      - agent/webapp-preview-87ae-20260809
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  TARGET_SHA: 87ae19c0a6cbdc3abcad291c9d5b54758d4109b8
+  FIREBASE_PROJECT_ID: urai-4dc1d
+  PREVIEW_CHANNEL_ID: urai-home-now
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install and build exact preview
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.TARGET_SHA }}
+          NEXT_PUBLIC_URAI_PREVIEW_MODE: 'true'
+          NEXT_PUBLIC_URAI_PREVIEW_CHANNEL: ${{ env.PREVIEW_CHANNEL_ID }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+          URAI_FIREBASE_STATIC_EXPORT: 'true'
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm install --frozen-lockfile
+          test "$(pnpm exec firebase --version)" = "15.22.3"
+          pnpm preflight
+          pnpm build:static
+          test -f urai-tier1/out/index.html
+          grep -R --fixed-strings --include='*.html' -q "$TARGET_SHA" urai-tier1/out
+          grep -R --fixed-strings --include='*.html' -q 'PREVIEW — NOT PRODUCTION CERTIFIED' urai-tier1/out
+
+      - name: Stage Firebase preview payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/urai-tier1
+          mkdir -p .github/urai-tier1/out
+          cp -R urai-tier1/out/. .github/urai-tier1/out/
+          test -f .github/urai-tier1/out/index.html
+
+      - name: Deploy isolated web.app channel
+        id: deploy
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT"
+          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-webapp-preview.json"
+          cleanup() { rm -f "$CREDENTIALS_FILE"; }
+          trap cleanup EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
+          chmod 600 "$CREDENTIALS_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+          pnpm exec firebase hosting:channel:deploy "$PREVIEW_CHANNEL_ID" \
+            --config .github/firebase.preview.json \
+            --project "$FIREBASE_PROJECT_ID" \
+            --expires 7d \
+            --non-interactive \
+            --json > preview-deploy.json
+          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls.find(x=>x.includes('.firebaseapp.com'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
+          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;; esac
+          printf 'preview_url=%s\n' "$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verify public Home
+        shell: bash
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 --retry-delay 3 --max-time 45 "$PREVIEW_URL/" -o /tmp/root.html
+          grep -Fq "$TARGET_SHA" /tmp/root.html
+          grep -Fq 'PREVIEW — NOT PRODUCTION CERTIFIED' /tmp/root.html
+
+      - name: Record public preview URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          body=$(printf '## Firebase web.app preview deployed\n\n- URL: %s\n- Exact candidate SHA: `%s`\n- Channel: `%s`\n- Status: Preview — not production certified\n' "$PREVIEW_URL" "$TARGET_SHA" "$PREVIEW_CHANNEL_ID")
+          jq -n --arg body "$body" '{body:$body}' > /tmp/comment.json
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$REPOSITORY/issues/863/comments" \
+            --data-binary @/tmp/comment.json >/dev/null
