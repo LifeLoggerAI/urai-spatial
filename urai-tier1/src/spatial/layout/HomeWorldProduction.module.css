@@ -1,4 +1,5 @@
 .world {
+  --home-provider-environment-provenance: url('/assets/urai/replay/replay-memory-film-main.webp');
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -11,28 +12,11 @@
   touch-action: none;
 }
 
+/* Provider artwork remains recorded for provenance only. Home pixels are owned by
+   the physical WebGL world, so no image plate or pseudo-element may paint above it. */
 .world::before {
-  content: "";
-  position: absolute;
-  inset: -2%;
-  z-index: 3;
-  pointer-events: none;
-  background-image:
-    linear-gradient(180deg, rgba(49, 54, 48, 1), rgba(49, 55, 48, 1) 48%, rgba(38, 45, 38, 1) 100%),
-    url('/assets/urai/replay/replay-memory-film-main.webp');
-  background-size: cover, 1px 1px;
-  background-position: center 50%, -9999px -9999px;
-  background-repeat: no-repeat;
-  filter: saturate(.7) contrast(.92) brightness(.92) blur(2.4px);
-  transform: scale(1.045);
-  opacity: .028;
-  mix-blend-mode: soft-light;
-  transition: opacity 900ms ease, filter 900ms ease;
-}
-
-.world[data-home-scene-phase='ASCENT']::before {
-  opacity: 0;
-  filter: saturate(.62) contrast(1.05) brightness(.24) blur(3px);
+  content: none;
+  display: none;
 }
 
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
@@ -130,16 +114,6 @@
 }
 
 @media (max-width: 700px) {
-  .world::before {
-    inset: -3%;
-    background-image:
-      linear-gradient(180deg, rgba(50, 56, 50, 1), rgba(52, 59, 51, 1) 48%, rgba(39, 46, 39, 1) 100%),
-      url('/assets/urai/replay/replay-memory-film-main.webp');
-    background-size: cover, 1px 1px;
-    background-position: center 50%, -9999px -9999px;
-    transform: scale(1.055);
-    opacity: .02;
-  }
   .canvas {
     background:
       radial-gradient(circle at 72% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(200, 208, 188, .88) 19%, rgba(153, 171, 155, .82) 44%, rgba(109, 128, 109, .79) 69%, rgba(72, 87, 72, .79) 100%);
@@ -163,7 +137,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .world::before { transition: none; }
   .worldHint { backdrop-filter: none; }
   .world :global(.urai-mobile-movement) { transition: none; }
 }
