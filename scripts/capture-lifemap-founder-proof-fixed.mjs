@@ -13,7 +13,7 @@ const pr = rawPr ? Number.parseInt(rawPr, 10) : null
 if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-11',
+  schemaVersion: 'urai-lifemap-founder-proof-12',
   repository: 'LifeLoggerAI/urai-spatial',
   pr,
   exactHead,
@@ -251,9 +251,12 @@ function selectedAction(page, label) {
 }
 
 async function selectQuietReset(page, options = {}) {
-  const navigator = page.locator('[data-life-map-navigator]').first()
-  await navigator.waitFor({ state: 'attached', timeout: 20_000 })
-  await navigator.evaluate((details) => { details.open = true })
+  const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' }).first()
+  await trigger.waitFor({ state: 'visible', timeout: 20_000 })
+  if (options.touch) await trigger.tap()
+  else await trigger.click()
+  const navigator = page.getByRole('region', { name: 'Search and filter Life Map' }).first()
+  await navigator.waitFor({ state: 'visible', timeout: 20_000 })
   const result = navigator.locator('[role="listitem"]').filter({ hasText: 'The Quiet Reset' }).first()
   await result.waitFor({ state: 'visible', timeout: 20_000 })
   if (options.keyboard) {
@@ -264,7 +267,7 @@ async function selectQuietReset(page, options = {}) {
   } else {
     await result.click()
   }
-  await navigator.evaluate((details) => { details.open = false })
+  await navigator.waitFor({ state: 'detached', timeout: 20_000 }).catch(() => {})
   await waitForState(page, 'data-life-map-mode', 'selected')
 }
 
