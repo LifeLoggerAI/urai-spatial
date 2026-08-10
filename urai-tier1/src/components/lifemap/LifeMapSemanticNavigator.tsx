@@ -76,7 +76,9 @@ export default function LifeMapSemanticNavigator() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isEditableTarget(event.target)) return
+      if (event.defaultPrevented) return
+      if (event.key === 'Escape' && open) { event.preventDefault(); setOpen(false); return }
+      if (isEditableTarget(event.target)) return
       if (event.key === 'ArrowRight') { event.preventDefault(); step(1) }
       if (event.key === 'ArrowLeft') { event.preventDefault(); step(-1) }
       if (event.key === 'Home' || event.key.toLowerCase() === 'o') { event.preventDefault(); overview() }
@@ -85,7 +87,6 @@ export default function LifeMapSemanticNavigator() {
         setOpen(true)
         window.setTimeout(() => searchRef.current?.focus(), 0)
       }
-      if (event.key === 'Escape' && open) { event.preventDefault(); setOpen(false) }
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
