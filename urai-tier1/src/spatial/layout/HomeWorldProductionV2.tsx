@@ -59,23 +59,19 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
   const world = source.clone(true);
   const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/i;
   const rejectedForgeForms = /vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|mountain|vegetation|tree|sculpture/i;
+  const rejectedStageForms = /sanctuary-terrain|sanctuary-inner-earth|sanctuary-foreground-landing/i;
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
-    object.visible = !rejected.test(object.name) && !rejectedForgeForms.test(object.name);
+    object.visible = !rejected.test(object.name) && !rejectedForgeForms.test(object.name) && !rejectedStageForms.test(object.name);
     if (!object.visible) return;
-    const name = object.name.toLowerCase();
-    const stone = /basin|pedestal|path|ground|terrain|stone/.test(name);
-    object.material = new THREE.MeshStandardMaterial({
-      color: stone ? "#64736a" : "#455b50",
-      roughness: stone ? .9 : .96,
-      metalness: 0,
-    });
     object.castShadow = true;
     object.receiveShadow = true;
   });
   world.name = "home-retained-authored-sanctuary";
   world.userData.geometryOwner = "home-entry-chamber-v1.glb";
   world.userData.suppressedForgeScenery = true;
+  world.userData.suppressedStageGeometry = true;
+  world.userData.preservedAuthoredMaterials = true;
   world.userData.suppressedPortalProps = true;
   return world;
 }
