@@ -42,6 +42,7 @@ test('Home is one believable authored 3D real-world environment with atmospheric
     'data-testid="urai-home-embodied-avatar"',
     'data-testid="urai-home-webgl-orb"',
     'home-authored-terrain',
+    'home-canonical-sanctuary-structure',
     'home-mountain-horizon',
     'home-living-vegetation',
     'home-reflecting-water',
@@ -56,6 +57,7 @@ test('Home is one believable authored 3D real-world environment with atmospheric
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = '\/assets\/urai\/replay\/replay-memory-film-main\.webp'/)
+  assert.match(homeProduction, /HOME_SANCTUARY_MODEL = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
   assert.match(homeProduction, /HOME_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb'/)
   assert.match(homeCss, /replay-memory-film-main\.webp/)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
@@ -65,8 +67,10 @@ test('Home is one believable authored 3D real-world environment with atmospheric
   assert.match(homeCss, /\.urai-mobile-movement button:focus-visible/)
   assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*false/s)
   assert.match(homeProduction, /new THREE\.PlaneGeometry\(90, 90, 180, 180\)/)
+  assert.match(homeProduction, /function prepareNaturalSanctuary\(/)
   assert.match(homeProduction, /function Terrain\(/)
   assert.match(homeProduction, /function Vegetation\(/)
+  assert.match(homeProduction, /useGLTF\(HOME_SANCTUARY_MODEL\)/)
   assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
   assert.match(homeProduction, /home-scanned-fern-/)
   assert.match(homeProduction, /function Horizon\(/)
@@ -85,7 +89,7 @@ test('Home is one believable authored 3D real-world environment with atmospheric
   assert.match(homeProduction, /cameraCheckpoint: 'home-sky-ascent-complete'/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(homeProduction, /representation: 'privacy-preserving-first-person-presence'/)
-  assert.match(homeProduction, /data-home-runtime-assets="polyhaven-fern-02-geometry-v1\.glb local-three-dimensional-terrain living-orb reflecting-water"/)
+  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb polyhaven-fern-02-geometry-v1\.glb local-three-dimensional-terrain living-orb reflecting-water"/)
   assert.doesNotMatch(homeProduction, /@react-three\/postprocessing|EffectComposer|<Bloom\b|<Vignette\b/)
   assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|destinationNames|home-life-map-portal-world-owned|home-ground-portal-world-owned|dodecahedronGeometry/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
