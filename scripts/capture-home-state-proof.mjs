@@ -116,7 +116,7 @@ async function waitForVisualEvidence(page, frameBudget = 240) {
       && evidence.luminanceRange >= receipt.visualGate.minimumLuminanceRange
       && evidence.visibleSamples >= receipt.visualGate.minimumVisibleSamples) return evidence
   }
-  return evidence
+  return evidence ? { ...evidence, available: false, reason: 'visual-gate-not-met' } : evidence
 }
 
 async function waitForHomeReady(page) {
