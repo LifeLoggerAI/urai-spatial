@@ -197,7 +197,7 @@ function Rig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, onGro
     camera.position.copy(pos.current).add(new THREE.Vector3(0, portrait ? 1.62 : 1.7, .12));
     const forward = new THREE.Vector3(Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     const look = pos.current.clone().addScaledVector(forward, portrait ? 6.5 : 8.8);
-    camera.lookAt(look.x, .68 + pitch.current, look.current?.z ?? look.z);
+    camera.lookAt(look.x, .68 + pitch.current, look.z);
   }, [camera, pitch, size.height, size.width, yaw]);
   useLayoutEffect(() => place(), [place]);
   useFrame(({ clock }, delta) => {
