@@ -75,6 +75,7 @@ function bindContextLifecycle(canvas: HTMLCanvasElement, owner: HTMLElement) {
 function recordDraw(context: WebGLRenderingContext | WebGL2RenderingContext) {
   if (typeof document === 'undefined') return
   const canvas = context.canvas
+  if (!(canvas instanceof HTMLCanvasElement)) return
   const owner = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
   if (!owner) return
   bindContextLifecycle(canvas, owner)
