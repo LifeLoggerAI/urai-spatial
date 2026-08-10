@@ -21,8 +21,9 @@ test('canonical Life Map has one spatial selected-memory action owner plus seman
   assert.match(scene, /aria-label="Selected memory actions"/)
   assert.match(scene, /router\.push\(destinationHref\("focus"\)\)/)
   assert.match(scene, /router\.push\(destinationHref\("replay"\)\)/)
-  assert.match(navigator, /data-life-map-navigator/)
-  assert.match(navigator, /aria-label="Search and filter Life Map"/)
+  assert.match(navigator, /className="life-map-search-trigger"/)
+  assert.match(navigator, /aria-label="Search and navigate Life Map"/)
+  assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
   assert.doesNotMatch(navigator, /aria-label="Selected memory actions"/)
 })
 
