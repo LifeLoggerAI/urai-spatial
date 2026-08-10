@@ -15,7 +15,7 @@ const HOME_ORB_MODEL = "/assets/urai/generated/models/urai-orb-avatar-v1.glb";
 const HOME_FERN_MODEL = "/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb";
 const HOME_BOUNDS = { minX: -12.5, maxX: 12.5, minZ: -15.5, maxZ: 10.5 };
 const SPAWN = new THREE.Vector3(0, 0, 7.8);
-const ORB = new THREE.Vector3(0, 1.35, -2.85);
+const ORB = new THREE.Vector3(0, 1.18, -3.35);
 const GROUND_THRESHOLD = new THREE.Vector3(-4.9, 0, -7.2);
 const LIFE_MAP_LOOKOUT = new THREE.Vector3(4.9, 0, -7.2);
 const ORB_CLIPS = { dormant: "Orb_Resting", idle: "Orb_Idle", attention: "Orb_Attention", listening: "Orb_Listening", thinking: "Orb_Thinking", speaking: "Orb_Speaking", guiding: "Orb_Guiding", reflecting: "Orb_Reflecting", calming: "Orb_Calming", privacy: "Orb_Privacy", warning: "Orb_Degraded", transition: "Orb_Transition" } as const;
@@ -25,26 +25,28 @@ type Nearby = "orb" | "ground" | "life-map" | null;
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean };
 
 function terrainHeight(x: number, z: number) {
-  const rolling = Math.sin(x * .072) * .28 + Math.cos(z * .061) * .22 + Math.sin((x + z) * .038) * .14;
-  const detail = Math.sin(x * .31 + z * .17) * .035 + Math.cos(z * .27 - x * .13) * .028;
-  const clearing = -Math.exp(-((x / 8.8) ** 2 + ((z + 1.8) / 10.7) ** 2)) * .23;
-  const distance = Math.max(0, (-z - 17) / 48);
-  const ridge = distance * distance * (5.4 + Math.sin(x * .055) * 1.2 + Math.cos(x * .11) * .55);
-  return rolling + detail + clearing + ridge - .12;
+  const rolling = Math.sin(x * .072) * .34 + Math.cos(z * .061) * .29 + Math.sin((x + z) * .038) * .18;
+  const detail = Math.sin(x * .31 + z * .17) * .045 + Math.cos(z * .27 - x * .13) * .034;
+  const clearing = -Math.exp(-((x / 8.8) ** 2 + ((z + 1.2) / 10.7) ** 2)) * .16;
+  const distance = THREE.MathUtils.clamp((-z - 8) / 54, 0, 1.55);
+  const ridgeProfile = 7.4 + Math.sin(x * .052) * 2.1 + Math.cos(x * .103) * 1.05 + Math.sin(x * .021 + 1.4) * 1.25;
+  const ridge = Math.pow(distance, 1.45) * ridgeProfile;
+  const sideLift = Math.pow(Math.min(1, Math.abs(x) / 42), 1.8) * 1.7;
+  return rolling + detail + clearing + ridge + sideLift - .16;
 }
 
 function makeTerrain() {
-  const geometry = new THREE.PlaneGeometry(180, 180, 240, 240);
+  const geometry = new THREE.PlaneGeometry(190, 190, 260, 260);
   geometry.rotateX(-Math.PI / 2);
   const position = geometry.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(position.count * 3);
-  const low = new THREE.Color("#263f32");
-  const high = new THREE.Color("#52705a");
+  const low = new THREE.Color("#203a2e");
+  const high = new THREE.Color("#6a8467");
   const color = new THREE.Color();
   for (let i = 0; i < position.count; i += 1) {
     const x = position.getX(i), z = position.getZ(i), y = terrainHeight(x, z);
     position.setY(i, y);
-    const variation = THREE.MathUtils.clamp(.46 + Math.sin(x * .17) * .08 + Math.cos(z * .14) * .08 + y * .055, 0, 1);
+    const variation = THREE.MathUtils.clamp(.43 + Math.sin(x * .17) * .09 + Math.cos(z * .14) * .09 + y * .038, 0, 1);
     color.copy(low).lerp(high, variation);
     colors[i * 3] = color.r;
     colors[i * 3 + 1] = color.g;
@@ -61,7 +63,7 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
   const world = source.clone(true);
   const rejected = /portal|ring|threshold|village|mannequin|avatar|debug|marker|label|embodied|presence|memory-place-anchor|living-growth/i;
   const rejectedForgeForms = /vault|monolith|bridge|grove|firefly|alcove|veil|waterfall|mountain|vegetation|tree|sculpture/i;
-  const rejectedStageForms = /sanctuary-terrain|sanctuary-inner-earth|sanctuary-foreground-landing/i;
+  const rejectedStageForms = /sanctuary-terrain|sanctuary-inner-earth|sanctuary-foreground-landing|mirror-basin|orb-pedestal|sanctuary-heart-light/i;
   world.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     object.visible = !rejected.test(object.name) && !rejectedForgeForms.test(object.name) && !rejectedStageForms.test(object.name);
@@ -73,6 +75,7 @@ function prepareAuthoredSanctuary(source: THREE.Object3D) {
   world.userData.geometryOwner = "home-entry-chamber-v1.glb";
   world.userData.suppressedForgeScenery = true;
   world.userData.suppressedStageGeometry = true;
+  world.userData.suppressedBasinStage = true;
   world.userData.preservedAuthoredMaterials = true;
   world.userData.suppressedPortalProps = true;
   return world;
@@ -105,9 +108,11 @@ function WorldGeometry({ target }: { target: MutableRefObject<THREE.Vector3 | nu
 }
 
 const FERN_PATCHES = [
-  [-7.4,-4.9,.82,-.3],[-6.3,-7.4,1.08,.7],[-5.1,-10.2,.9,1.8],[-3.8,-3.7,.72,-1.4],[-3.1,-8.8,1.16,2.3],[-2.2,-11.6,.86,.2],
-  [2.3,-4.1,.8,.9],[3.2,-9.4,1.12,-.6],[4.1,-11.1,.88,1.4],[5.6,-4.8,.76,2.6],[6.5,-8.2,1.04,-1.8],[7.2,-10.7,.9,.4],
-  [-8,.8,.8,1.1],[-5.8,2.6,.72,-2.2],[5.9,2.1,.78,2],[7.8,.2,.86,-.8],
+  [-9.4,5.2,.68,-.8],[-8.1,3.3,.92,.6],[-6.7,4.1,.74,1.9],[-5.4,2.5,.82,-2.3],[5.6,3.5,.76,.8],[7.2,4.8,.88,-1.5],[8.6,2.7,.72,2.5],[9.5,5.4,.66,-.2],
+  [-9.2,.5,.78,1.3],[-7.8,-1.8,.96,-.5],[-6.6,-4.8,.82,2.2],[-5.8,-7.5,1.08,.3],[-4.8,-10.6,.86,-1.7],[-3.6,-12.4,.72,2.8],
+  [9.1,.2,.8,-1.1],[7.7,-2.2,.94,1.7],[6.5,-5.1,.84,-2.4],[5.7,-7.8,1.06,.5],[4.7,-10.8,.88,2.1],[3.5,-12.7,.74,-.9],
+  [-4.5,-2.5,.66,.2],[-3.7,-5.7,.82,1.5],[-2.8,-9.5,.72,-2.7],[2.9,-2.9,.68,2.8],[3.8,-6.2,.84,-1.2],[2.6,-10.4,.76,.7],
+  [-10.6,-4.2,.72,-2.1],[-10.2,-8.8,.9,.9],[-8.9,-12.8,.78,2.6],[10.7,-4.7,.74,1.2],[10.1,-9.1,.92,-2.4],[8.8,-13.1,.8,.4],
 ] as const;
 
 function Nature() {
@@ -133,14 +138,14 @@ function Nature() {
 }
 
 function ReflectingWater() {
-  return <group name="home-reflecting-water" position={[4.9, terrainHeight(4.9, -7.2) + .018, -7.2]}><mesh rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[2.35, 64]} /><meshPhysicalMaterial color="#173f42" roughness={.1} metalness={0} clearcoat={1} clearcoatRoughness={.12} transparent opacity={.72} /></mesh></group>;
+  return <group name="home-reflecting-water" position={[4.9, terrainHeight(4.9, -7.2) + .018, -7.2]}><mesh rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[2.35, 64]} /><meshPhysicalMaterial color="#173f42" roughness={.1} metalness={0} clearcoat={1} clearcoatRoughness={.12} transparent opacity={.62} /></mesh></group>;
 }
 
 function AuthoredOrb({ onOpen, reducedMotion, state }: { onOpen: () => void; reducedMotion: boolean; state: OrbState }) {
   const source = useGLTF(HOME_ORB_MODEL);
   const object = useMemo(() => {
     const clone = source.scene.clone(true);
-    clone.scale.setScalar(.115);
+    clone.scale.setScalar(.105);
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
@@ -176,9 +181,9 @@ function AuthoredOrb({ onOpen, reducedMotion, state }: { onOpen: () => void; red
     if (reducedMotion) return;
     const breathe = 1 + Math.sin(clock.elapsedTime * .82) * .012;
     root.current?.scale.setScalar(breathe);
-    if (light.current) light.current.intensity = .72 + Math.sin(clock.elapsedTime * .82) * .07;
+    if (light.current) light.current.intensity = .82 + Math.sin(clock.elapsedTime * .82) * .08;
   });
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen(); }} userData={{ geometryOwner: "urai-orb-avatar-v1.glb", primitiveSphere: false }}><primitive object={object} /><pointLight ref={light} color="#9ad1cb" intensity={.72} distance={4.6} decay={2} /></group>;
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen(); }} userData={{ geometryOwner: "urai-orb-avatar-v1.glb", primitiveSphere: false }}><primitive object={object} /><pointLight ref={light} color="#a8ded5" intensity={.82} distance={5.2} decay={2} /></group>;
 }
 
 function Presence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
@@ -197,7 +202,7 @@ function Rig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, onGro
     camera.position.copy(pos.current).add(new THREE.Vector3(0, portrait ? 1.62 : 1.7, .12));
     const forward = new THREE.Vector3(Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     const look = pos.current.clone().addScaledVector(forward, portrait ? 6.5 : 8.8);
-    camera.lookAt(look.x, .68 + pitch.current, look.z);
+    camera.lookAt(look.x, 1.02 + pitch.current, look.z);
   }, [camera, pitch, size.height, size.width, yaw]);
   useLayoutEffect(() => place(), [place]);
   useFrame(({ clock }, delta) => {
@@ -254,7 +259,7 @@ function Scene({ input, yaw, pitch, target, avatar, onNearby, onOrb, onGround, o
   const cosmic = phase === "ASCENT";
   const frames = useRef(0);
   useFrame(() => { frames.current += 1; if (frames.current === 5) onReady(); });
-  return <><color attach="background" args={[cosmic ? "#01050b" : "#243c3a"]} />{cosmic ? <Stars radius={190} depth={90} count={2500} factor={2.8} saturation={.12} fade speed={reducedMotion ? 0 : .018} /> : null}<fogExp2 attach="fog" args={[cosmic ? "#050b14" : "#243c3a", cosmic ? .0017 : .022]} /><ambientLight intensity={cosmic ? .12 : .68} color="#dce7dd" /><hemisphereLight args={["#dce7df", "#1e2d21", cosmic ? .2 : 1.12]} /><directionalLight position={[8, 16, 7]} intensity={cosmic ? .32 : 2.55} color="#f5f2df" castShadow /><WorldGeometry target={target} /><Nature /><ReflectingWater /><AuthoredOrb onOpen={onOrb} reducedMotion={reducedMotion} state={orbState} /><Presence root={avatar} /><Landmarks onGround={onGround} onLifeMap={onLifeMap} /><Rig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} groundDescent={groundDescent} onGroundComplete={onGroundComplete} reducedMotion={reducedMotion} />{!cosmic ? <ContactShadows position={[0, -.08, -2.5]} opacity={.14} scale={30} blur={6} far={16} resolution={512} frames={1} /> : null}</>;
+  return <><color attach="background" args={[cosmic ? "#01050b" : "#2b4641"]} />{cosmic ? <Stars radius={190} depth={90} count={2500} factor={2.8} saturation={.12} fade speed={reducedMotion ? 0 : .018} /> : null}<fogExp2 attach="fog" args={[cosmic ? "#050b14" : "#2b4641", cosmic ? .0017 : .014]} /><ambientLight intensity={cosmic ? .12 : .78} color="#e4ece2" /><hemisphereLight args={["#e4ece2", "#213326", cosmic ? .2 : 1.2]} /><directionalLight position={[8, 16, 7]} intensity={cosmic ? .32 : 2.7} color="#fbf4dc" castShadow /><WorldGeometry target={target} /><Nature /><ReflectingWater /><AuthoredOrb onOpen={onOrb} reducedMotion={reducedMotion} state={orbState} /><Presence root={avatar} /><Landmarks onGround={onGround} onLifeMap={onLifeMap} /><Rig input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={onNearby} groundDescent={groundDescent} onGroundComplete={onGroundComplete} reducedMotion={reducedMotion} />{!cosmic ? <ContactShadows position={[0, -.08, -2.5]} opacity={.12} scale={30} blur={7} far={16} resolution={512} frames={1} /> : null}</>;
 }
 
 export function HomeWorldProductionV2({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
@@ -293,5 +298,5 @@ export function HomeWorldProductionV2({ onOrbOpen = requestUraiWorldOrbOpen, web
   if (!webglAvailable) return null;
   const ready = canvasReady && sceneReady, transitioning = phase === "ASCENT" || groundDescent;
   const context = phase === "ASCENT" ? "Ascending through the sky" : groundDescent ? "Descending into Ground" : nearby === "orb" ? "The Orb is here" : nearby === "ground" ? "The path descends" : nearby === "life-map" ? "Look to the sky" : null;
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? "true" : "false"} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb urai-orb-avatar-v1.glb continuous-natural-terrain-field" data-home-authored-regions="home-retained-authored-sanctuary home-natural-terrain home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? "none"} data-home-camera-mode={groundDescent ? "descent" : phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied-first-person"} data-home-scene-phase={groundDescent ? "GROUND_DESCENT" : phase} data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"} data-home-input-locked={transitioning || inputLocked ? "true" : "false"} data-home-portal-sequence={groundDescent ? "ground:traversal" : phase === "ASCENT" ? "life-map:traversal" : "idle"} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-animation-owner="retained-sanctuary-cc0-nature-authored-orb" data-testid="home-visible-navigable-sanctuary-world" style={{ position: "relative", overflow: "hidden", background: "#243c3a" }} {...look}><div style={{ position: "absolute", inset: 0, zIndex: 1 }}><Canvas className={styles.canvas} dpr={[1, 1.3]} shadows camera={{ position: [0, 1.7, 8], fov: 50, near: .05, far: 320 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.12; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x243c3a, 1); setCanvasReady(true); }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrb={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLife} onReady={() => setSceneReady(true)} groundDescent={groundDescent} reducedMotion={reducedMotion} orbState={orbState} /></Canvas></div><header className={styles.brand} aria-label="URAI" style={{ zIndex: 3 }}><strong>URAI</strong></header>{context ? <div className={`${styles.worldHint} home-world-context`} data-home-world-context data-home-world-context-for={nearby ?? phase} role="status" aria-live="polite" style={{ zIndex: 3 }}>{context}</div> : null}{!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}<span className="sr-only" data-testid="urai-home-webgl-orb">The authored Orb companion is physically present in the Home environment.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied presence is represented without fabricating personal identity.</span></main>;
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? "true" : "false"} data-home-runtime-assets="home-entry-chamber-v1.glb polyhaven-fern-02-geometry-v1.glb urai-orb-avatar-v1.glb continuous-natural-terrain-field" data-home-authored-regions="home-retained-authored-sanctuary home-natural-terrain home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? "none"} data-home-camera-mode={groundDescent ? "descent" : phase === "ASCENT" ? "ascent" : dragging ? "look" : "embodied-first-person"} data-home-scene-phase={groundDescent ? "GROUND_DESCENT" : phase} data-home-ascent-progress={phase === "ASCENT" ? progress.toFixed(3) : "0.000"} data-home-input-locked={transitioning || inputLocked ? "true" : "false"} data-home-portal-sequence={groundDescent ? "ground:traversal" : phase === "ASCENT" ? "life-map:traversal" : "idle"} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-animation-owner="retained-sanctuary-cc0-nature-authored-orb" data-testid="home-visible-navigable-sanctuary-world" style={{ position: "relative", overflow: "hidden", background: "#2b4641" }} {...look}><div style={{ position: "absolute", inset: 0, zIndex: 1 }}><Canvas className={styles.canvas} dpr={[1, 1.3]} shadows camera={{ position: [0, 1.7, 8], fov: 50, near: .05, far: 320 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.16; gl.shadowMap.type = THREE.PCFSoftShadowMap; gl.setClearColor(0x2b4641, 1); setCanvasReady(true); }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrb={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLife} onReady={() => setSceneReady(true)} groundDescent={groundDescent} reducedMotion={reducedMotion} orbState={orbState} /></Canvas></div><header className={styles.brand} aria-label="URAI" style={{ zIndex: 3 }}><strong>URAI</strong></header>{context ? <div className={`${styles.worldHint} home-world-context`} data-home-world-context data-home-world-context-for={nearby ?? phase} role="status" aria-live="polite" style={{ zIndex: 3 }}>{context}</div> : null}{!transitioning && mobileControls ? <MobileMovementPad input={input} label="Home movement controls" /> : null}<span className="sr-only" data-testid="urai-home-webgl-orb">The authored Orb companion is physically present in the Home environment.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied presence is represented without fabricating personal identity.</span></main>;
 }
