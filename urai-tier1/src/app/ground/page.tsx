@@ -2,6 +2,7 @@ import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
 import GroundCheckpointRestoreSignal from './GroundCheckpointRestoreSignal'
 import GroundFocusContainment from './GroundFocusContainment'
 import './ground-focus-containment.css'
+import './ground-production-polish.css'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 export const metadata = {
