@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
 import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
 
 type Props = {
@@ -12,6 +13,10 @@ const HOME_SPAWN = { x: 0, z: 8.4 } as const
 const HOME_ORB = { x: 0, z: -4.25 } as const
 const HOME_GROUND = { x: -5.4, z: -10.8 } as const
 const HOME_LIFE_MAP = { x: 5.4, z: -10.8 } as const
+const REVIEW_ORB_STATES = new Set<OrbState>([
+  'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
+  'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
+])
 
 function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   const playerX = Number.parseFloat(world.dataset.homePlayerX ?? '')
@@ -31,6 +36,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
   useEffect(() => {
     const owner = ownerRef.current
     if (!owner) return
+    let appliedReviewOrbState: OrbState | null = null
 
     const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
@@ -42,9 +48,22 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
       if (!world) return
       const query = new URLSearchParams(window.location.search)
-      world.setAttribute('data-home-asset-mode', query.get('homeAssetReview') === '1' ? 'disclosed-review-candidate' : 'ready')
-      world.setAttribute('data-home-personalization-mode', query.get('homePrivateFixture') === '1' ? 'private-personalized' : 'standard')
+      const reviewMode = query.get('homeAssetReview') === '1'
+      const privateFixture = query.get('homePrivateFixture') === '1'
+      const requestedOrbState = query.get('homeOrbState')
+      const reviewOrbState = reviewMode && privateFixture && requestedOrbState && REVIEW_ORB_STATES.has(requestedOrbState as OrbState)
+        ? requestedOrbState as OrbState
+        : null
+
+      world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
+      world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
+      world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
       synchronizeCanonicalHomeTelemetry(world)
+
+      if (reviewOrbState !== appliedReviewOrbState) {
+        appliedReviewOrbState = reviewOrbState
+        publishOrbState(reviewOrbState ?? 'idle', 'system')
+      }
     }
 
     hardenHomeOwnership()
