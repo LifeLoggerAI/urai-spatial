@@ -160,6 +160,76 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null;
 }
 
+function LifeMapRenderProofBridge() {
+  const { gl, scene } = useThree();
+  const root = useRef<HTMLElement | null>(null);
+  const frames = useRef(0);
+  const invalidated = useRef(true);
+  const invalidationFrame = useRef<number | null>(null);
+  const lastSignature = useRef("");
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    root.current = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    const writeInvalid = () => {
+      const element = root.current;
+      if (element) {
+        element.dataset.lifeMapRenderReady = "false";
+        element.dataset.lifeMapVisibleObjects = "0";
+        element.dataset.lifeMapVisibleAnchors = "0";
+        element.dataset.lifeMapRenderCalls = "0";
+        element.dataset.lifeMapRenderTriangles = "0";
+      }
+      if (invalidated.current) invalidationFrame.current = window.requestAnimationFrame(writeInvalid);
+    };
+    const invalidate = () => {
+      invalidated.current = true;
+      frames.current = 0;
+      lastSignature.current = "";
+      if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      writeInvalid();
+    };
+    canvas.addEventListener("webglcontextlost", invalidate, false);
+    canvas.addEventListener("webglcontextrestored", invalidate, false);
+    invalidate();
+    return () => {
+      invalidated.current = false;
+      if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      canvas.removeEventListener("webglcontextlost", invalidate, false);
+      canvas.removeEventListener("webglcontextrestored", invalidate, false);
+    };
+  }, [gl]);
+
+  useFrame(() => {
+    frames.current += 1;
+    if (frames.current < 4) return;
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    if (!invalidated.current && lastSignature.current === signature) return;
+    invalidated.current = false;
+    if (invalidationFrame.current !== null) {
+      window.cancelAnimationFrame(invalidationFrame.current);
+      invalidationFrame.current = null;
+    }
+    lastSignature.current = signature;
+    const element = root.current ?? gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    if (!element) return;
+    element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
+    element.dataset.lifeMapVisibleObjects = String(objects);
+    element.dataset.lifeMapVisibleAnchors = String(anchors);
+    element.dataset.lifeMapRenderCalls = String(calls);
+    element.dataset.lifeMapRenderTriangles = String(triangles);
+  });
+  return null;
+}
+
 function truthLabel(sourceMode: LifeMapSourceMode) {
   if (sourceMode === "explicit-demo") return "Disclosed sample universe · not your memories";
   if (sourceMode === "signed-out") return "Signed out · no personal data displayed";
@@ -322,6 +392,7 @@ export default function ComposedLifeMapScene() {
       }}
     >
       <WebGLRecoveryBridge onStateChange={setWebglState} />
+      <LifeMapRenderProofBridge />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
