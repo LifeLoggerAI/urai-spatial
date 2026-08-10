@@ -7,7 +7,7 @@ const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -50,7 +50,7 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
 
   has(assetHome, 'HomeWorldProduction')
   assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
 
   for (const marker of [
     'data-home-primary-owner="asset-driven"',
@@ -85,13 +85,21 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'requestUraiWorldTravel',
     '<Canvas',
   ]) has(homeProduction, marker)
-  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
-  assert.match(homeProduction, /function prepareAuthoredSanctuary/)
-  assert.match(homeProduction, /object\.visible = !rejected/)
-  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
-  assert.match(homeProduction, /ContactShadows/)
-  assert.match(homeProduction, /function GroundThresholdLandmark/)
-  assert.match(homeProduction, /function LifeMapSkyLookout/)
+  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = ['"]\/assets\/urai\/replay\/replay-memory-film-main\.webp['"]/)
+  assert.match(homeProduction, /HOME_FERN_MODEL = ['"]\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb['"]/)
+  assert.match(homeProduction, /function makeTerrainGeometry\(/)
+  assert.match(homeProduction, /function Terrain\(/)
+  assert.match(homeProduction, /function Vegetation\(/)
+  assert.match(homeProduction, /function Horizon\(/)
+  assert.match(homeProduction, /function Water\(/)
+  assert.match(homeProduction, /function Thresholds\(/)
+  assert.match(homeProduction, /function PlayerRig\(/)
+  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
+  assert.match(homeProduction, /providerRole:\s*['"]atmospheric-support-only['"]/)
+  assert.match(homeProduction, /const GROUND_THRESHOLD = new THREE\.Vector3\(-5\.4, 0, -10\.8\)/)
+  assert.match(homeProduction, /const LIFE_MAP_LOOKOUT = new THREE\.Vector3\(5\.4, 0, -10\.8\)/)
+  assert.match(homeProduction, /\['ground', GROUND_THRESHOLD, 2\.8\]/)
+  assert.match(homeProduction, /\['life-map', LIFE_MAP_LOOKOUT, 2\.8\]/)
   assert.doesNotMatch(homeProduction, /WorldPortal|PORTAL_MODEL|home-ground-portal-world-owned|home-life-map-portal-world-owned|dodecahedronGeometry|requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
 
   for (const marker of [
@@ -110,9 +118,8 @@ test('Home keeps one physical Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<ReducedMotionContext\.Provider value=\{props\.reducedMotion\}>/)
-  assert.match(homeProduction, /<OrbSanctuary onOpen=\{props\.onOrbOpen\} \/>/)
-  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\); \}\}/)
+  assert.match(homeProduction, /<Orb onOpen=\{openOrb\} reducedMotion=\{reducedMotion\} \/>/)
+  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
