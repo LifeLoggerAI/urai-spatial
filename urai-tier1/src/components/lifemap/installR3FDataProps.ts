@@ -115,6 +115,7 @@ if (typeof window !== 'undefined') {
   const observe = () => {
     if (!document.documentElement) return
     const observer = new MutationObserver((records) => {
+      const touchedOwners = new Set<HTMLElement>()
       for (const mutation of records) {
         if (!(mutation.target instanceof HTMLElement) || restoringOwners.has(mutation.target)) continue
         const owner = mutation.target.matches('[data-testid="urai-true-3d-life-map"]')
@@ -130,8 +131,9 @@ if (typeof window !== 'undefined') {
           const value = Number(owner.dataset.lifeMapVisibleAnchors || 0)
           if (Number.isFinite(value) && value > state.anchors) state.anchors = value
         }
-        syncProof(owner, state)
+        touchedOwners.add(owner)
       }
+      for (const owner of touchedOwners) syncProof(owner, proofState(owner))
     })
     observer.observe(document.documentElement, {
       attributes: true,
