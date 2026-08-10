@@ -81,8 +81,11 @@ function recordDraw(context: WebGLRenderingContext | WebGL2RenderingContext) {
   bindContextLifecycle(canvas, owner)
   const state = proofState(owner)
   if (state.contextLost) return
+  // Draw interception proves that WebGL work occurred, but the mounted R3F scene is
+  // the authoritative owner of object/anchor telemetry. Do not rewrite scene-owned
+  // attributes from the draw hook or a draw between the paired scene writes can
+  // collapse a valid anchor count back to zero.
   state.drawCalls += 1
-  syncProof(owner, state)
 }
 
 function wrapDrawMethod(prototypeObject: object | undefined, method: string) {
