@@ -11,6 +11,22 @@
   touch-action: none;
 }
 
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: background 900ms ease;
+}
+
+.canvasLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
 .world::before {
   content: "";
   position: absolute;
@@ -35,6 +51,18 @@
   filter: saturate(.62) contrast(1.05) brightness(.24) blur(3px);
 }
 
+.world[data-home-weather-tone='heavy']::after {
+  background:
+    linear-gradient(180deg, rgba(16, 35, 34, .08), transparent 38%, rgba(18, 31, 27, .06) 72%, rgba(5, 8, 7, .12) 100%),
+    radial-gradient(circle at 50% 42%, transparent 0 70%, rgba(6, 10, 8, .08) 92%, rgba(3, 5, 4, .14) 100%);
+}
+
+.world[data-home-weather-tone='recovering']::after {
+  background:
+    radial-gradient(circle at 70% 22%, rgba(238, 231, 181, .06), transparent 24%),
+    linear-gradient(180deg, rgba(255, 250, 229, .02), transparent 48%, rgba(198, 223, 185, .035) 100%);
+}
+
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
 
 .canvas {
@@ -43,9 +71,8 @@
   z-index: 2;
   width: 100% !important;
   height: 100% !important;
-  background:
-    radial-gradient(circle at 73% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(199, 207, 187, .88) 20%, rgba(154, 172, 155, .82) 45%, rgba(111, 130, 110, .78) 70%, rgba(73, 88, 73, .78) 100%);
-  filter: saturate(.96) contrast(1.025);
+  background: transparent !important;
+  filter: saturate(1.01) contrast(1.025);
 }
 
 .world::after {
@@ -57,6 +84,7 @@
   background:
     linear-gradient(180deg, rgba(255, 250, 229, .018), transparent 38%, rgba(202, 216, 194, .022) 62%, rgba(18, 24, 20, .04) 100%),
     radial-gradient(circle at 50% 42%, transparent 0 77%, rgba(8, 10, 8, .022) 92%, rgba(5, 7, 5, .05) 100%);
+  transition: background 900ms ease;
 }
 
 .brand,
@@ -140,9 +168,8 @@
     opacity: .02;
   }
   .canvas {
-    background:
-      radial-gradient(circle at 72% 12%, rgba(238, 227, 199, .93) 0 6%, rgba(200, 208, 188, .88) 19%, rgba(153, 171, 155, .82) 44%, rgba(109, 128, 109, .79) 69%, rgba(72, 87, 72, .79) 100%);
-    filter: saturate(.95) contrast(1.02);
+    background: transparent !important;
+    filter: saturate(1) contrast(1.02);
   }
   .brand {
     top: max(14px, env(safe-area-inset-top));
@@ -157,12 +184,14 @@
     font-size: .52rem;
   }
   .world :global(.urai-mobile-movement) {
-    opacity: .22;
+    opacity: .34;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .world::before { transition: none; }
+  .backdrop,
+  .world::before,
+  .world::after { transition: none; }
   .worldHint { backdrop-filter: none; }
   .world :global(.urai-mobile-movement) { transition: none; }
 }
