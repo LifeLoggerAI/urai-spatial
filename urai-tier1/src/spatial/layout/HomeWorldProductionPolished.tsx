@@ -152,6 +152,48 @@ function makeRidgeGeometry(width: number, amplitude: number, salt: number, segme
   return new THREE.ShapeGeometry(shape, 2)
 }
 
+function makeAuthoredBoulderGeometry(salt: number, rings = 5, segments = 11) {
+  const positions: number[] = []
+  const indices: number[] = []
+  for (let ring = 0; ring <= rings; ring += 1) {
+    const v = ring / rings
+    const phi = v * Math.PI
+    for (let segment = 0; segment < segments; segment += 1) {
+      const u = segment / segments
+      const theta = u * Math.PI * 2
+      const radialNoise = .82
+        + seeded(ring * segments + segment, salt) * .23
+        + Math.sin(theta * 3 + salt) * .045
+        + Math.cos(phi * 2.6 + salt * .7) * .04
+      const squash = .86 + seeded(segment, salt + 19) * .16
+      positions.push(
+        Math.sin(phi) * Math.cos(theta) * radialNoise * squash,
+        Math.cos(phi) * radialNoise,
+        Math.sin(phi) * Math.sin(theta) * radialNoise * (1.04 - (squash - .86) * .45),
+      )
+    }
+  }
+  for (let ring = 0; ring < rings; ring += 1) {
+    for (let segment = 0; segment < segments; segment += 1) {
+      const next = (segment + 1) % segments
+      const a = ring * segments + segment
+      const b = ring * segments + next
+      const c = (ring + 1) * segments + segment
+      const d = (ring + 1) * segments + next
+      indices.push(a, c, b, b, c, d)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+const SANCTUARY_BOULDER_LEFT = makeAuthoredBoulderGeometry(131)
+const SANCTUARY_BOULDER_RIGHT = makeAuthoredBoulderGeometry(173)
+const SANCTUARY_BOULDER_CENTER = makeAuthoredBoulderGeometry(211, 4, 10)
+
 const TERRAIN_GEOMETRY = makeTerrainGeometry()
 const MAIN_PATH_GEOMETRY = makeRibbonGeometry(makePathPoints(SPAWN, new THREE.Vector3(0, 0, -5.4), -.72, 30), 1.35)
 const GROUND_PATH_GEOMETRY = makeRibbonGeometry(makePathPoints(new THREE.Vector3(-.2, 0, -5.15), GROUND_THRESHOLD, -.48, 18), .92)
@@ -226,14 +268,14 @@ function Horizon() {
 function SanctuaryPavilion() {
   return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-weathered-stone-resting-place' }}>
     <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow><meshStandardMaterial color="#566356" roughness={1} metalness={0} /></mesh>
-    <mesh position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
-      <dodecahedronGeometry args={[1,1]} /><meshStandardMaterial color="#687469" roughness={1} metalness={0} flatShading />
+    <mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
+      <meshStandardMaterial color="#687469" roughness={1} metalness={0} flatShading />
     </mesh>
-    <mesh position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
-      <dodecahedronGeometry args={[1,1]} /><meshStandardMaterial color="#5f6d62" roughness={1} metalness={0} flatShading />
+    <mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
+      <meshStandardMaterial color="#5f6d62" roughness={1} metalness={0} flatShading />
     </mesh>
-    <mesh position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>
-      <icosahedronGeometry args={[1,1]} /><meshStandardMaterial color="#53635a" roughness={1} metalness={0} flatShading />
+    <mesh geometry={SANCTUARY_BOULDER_CENTER} position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>
+      <meshStandardMaterial color="#53635a" roughness={1} metalness={0} flatShading />
     </mesh>
   </group>
 }
@@ -428,6 +470,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const [reducedMotion, setReducedMotion] = useState(false)
   const [mobileControls, setMobileControls] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
+  const [reviewFixture, setReviewFixture] = useState<'none' | 'safe-private'>('none')
   const [portalSequence, setPortalSequence] = useState<TransitionSequence>('idle')
   const phase = useSceneStore((state) => state.phase)
   const progress = useSceneStore((state) => state.progress)
@@ -445,6 +488,12 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
 
   useEffect(() => { const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'); const mobile = window.matchMedia('(pointer: coarse), (max-width: 700px)'); const apply = () => { setReducedMotion(reduced.matches); setMobileControls(mobile.matches) }; apply(); reduced.addEventListener?.('change', apply); mobile.addEventListener?.('change', apply); return () => { reduced.removeEventListener?.('change', apply); mobile.removeEventListener?.('change', apply) } }, [])
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setReviewFixture(params.get('homePrivateFixture') === '1' ? 'safe-private' : 'none')
+    const requestedOrbState = params.get('homeOrbState')
+    if (requestedOrbState && requestedOrbState in ORB_CLIPS) setOrbState(requestedOrbState as OrbState)
+  }, [])
+  useEffect(() => {
     const onOrbState = (event: CustomEvent<OrbStateEventDetail>) => {
       if (phase === 'ASCENT' || groundDescent) return
       setOrbState(event.detail.state)
@@ -461,7 +510,7 @@ export function HomeWorldProductionPolished({ onOrbOpen = requestUraiWorldOrbOpe
   const orbSensory = resolveOrbSensoryOutput(orbState, reducedMotion, true)
   const context = phase === 'ASCENT' ? 'Ascending through the sky' : groundDescent ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'Look to the sky' : null
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture="none" data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-real-world-first="true" data-home-visible-world="authored-coherent-three-dimensional-sanctuary" data-home-world-character="believable-natural-inhabitable-environment" data-home-visible-portals="false" data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout" data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT} data-home-provider-role="atmospheric-support-only" data-home-provider-regions="home-atmospheric-horizon" data-home-generated-scenery="suppressed" data-home-physical-base="authored-coherent-world" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-shadow" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="polyhaven-fern-02-geometry-v1.glb local-three-dimensional-terrain living-orb reflecting-water" data-home-authored-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={groundDescent ? 'descent' : phase === 'ASCENT' ? 'ascent' : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={groundDescent ? 'GROUND_DESCENT' : phase} data-home-ascent-progress={phase === 'ASCENT' ? progress.toFixed(3) : '0.000'} data-home-input-locked={transitioning || inputLocked ? 'true' : 'false'} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-review-fixture={reviewFixture} data-home-orb-state={orbState} data-home-orb-clip={ORB_CLIPS[orbState]} data-home-orb-animation={orbSensory.animation} data-home-orb-material={orbSensory.material} data-home-orb-movement={orbSensory.movement} data-home-orb-caption={orbSensory.caption} data-home-orb-reduced-motion={reducedMotion ? 'true' : 'false'} data-home-animation-owner={HOME_SCANNED_COMPOSITION_V1} data-testid="home-visible-navigable-sanctuary-world" style={{ position:'relative', overflow:'hidden', background:'#172c27' }} {...look}>
     <div style={{ position:'absolute', inset:0, zIndex:1 }}><Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{ position:[SPAWN.x,1.68,SPAWN.z], fov:50, near:.05, far:300 }} gl={{ antialias:true, alpha:false, powerPreference:'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} onNearby={setNearby} onOrbOpen={openOrb} onGround={startGround} onGroundComplete={finishGround} onLifeMap={startLifeMap} onReady={() => setSceneReady(true)} onTransitionSequence={setPortalSequence} groundDescent={groundDescent} reducedMotion={reducedMotion} orbState={orbState} /></Canvas></div>
     <header className={styles.brand} aria-label="URAI" style={{ zIndex:3 }}><strong>URAI</strong></header>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite" style={{ zIndex:3 }}>{context}</div> : null}

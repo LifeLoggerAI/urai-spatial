@@ -242,6 +242,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
         && record.reducedMotionState === 'true'
         && record.stateAnimation === 'orb-state-static'
         && record.visual?.available === true
+        && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
+        && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
+        && record.visual.visibleSamples >= receipt.visualGate.minimumVisibleSamples
         && record.screenshotBytes > 12_000
         && pageErrors.length === 0
       return
