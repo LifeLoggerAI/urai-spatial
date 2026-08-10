@@ -14,16 +14,20 @@ if (staleEnvironmentalCount !== 2) {
   throw new Error(`Continuous proof environmental-threshold proximity contract changed: expected 2, found ${staleEnvironmentalCount}`)
 }
 
+const staleOrbTarget = 'orb: { x: 0, z: -0.65'
+const runtimeOrbTarget = 'orb: { x: 0, z: -4.25'
 const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
 const runtimeGroundTarget = "ground: { x: -5.4, z: -10.8"
 const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"
 const runtimeLifeMapTarget = "'life-map': { x: 5.4, z: -10.8"
+if (original.split(staleOrbTarget).length - 1 !== 1) throw new Error('Continuous proof Orb target contract changed')
 if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continuous proof Ground target contract changed')
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
 const patched = original
   .replace(oldOwner, newOwner)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
+  .replace(staleOrbTarget, runtimeOrbTarget)
   .replace(staleGroundTarget, runtimeGroundTarget)
   .replace(staleLifeMapTarget, runtimeLifeMapTarget)
 
