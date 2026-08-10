@@ -83,9 +83,9 @@ const discreetPassTarget = `    && result.semanticButtons === 3 && result.semant
 const semanticPassReplacement = `    && result.semanticButtons === 3 && result.semanticVisible === 3\n    && result.semanticNavigationOwner === 'runtime-boundary' && result.semanticNavigationNonDominant === 'true'\n    && Number.isFinite(result.semanticNavigationOpacity) && result.semanticNavigationOpacity <= 0.02`
 if (original.split(discreetPassTarget).length - 1 !== 1) throw new Error('Home semantic navigation pass contract changed')
 
-const retiredModePassTarget = `    && result.assetMode === requiredMode && result.personalizationMode === expected.mode`
-const retiredModePassReplacement = `    && result.assetMode === null && result.personalizationMode === null`
-if (original.split(retiredModePassTarget).length - 1 !== 1) throw new Error('Home retired ownership marker pass contract changed')
+const reviewModePassTarget = `    && result.assetMode === requiredMode && result.personalizationMode === expected.mode`
+const reviewModePassReplacement = `    && result.assetMode === requiredMode && result.personalizationMode === expected.mode`
+if (original.split(reviewModePassTarget).length - 1 !== 1) throw new Error('Home review ownership marker pass contract changed')
 
 const editableFocusTarget = `      const editableControl = page.locator('.home-discreet-controls button').first()`
 const editableFocusReplacement = `      const editableControl = page.getByRole('navigation', { name: 'Accessible Home destinations' }).getByRole('button').first()`
@@ -134,7 +134,7 @@ const patchedPrefix = original
   .replace(loadingVisibilityTarget, loadingVisibilityReplacement)
   .replace(discreetControlsTarget, semanticOwnershipReplacement)
   .replace(discreetPassTarget, semanticPassReplacement)
-  .replace(retiredModePassTarget, retiredModePassReplacement)
+  .replace(reviewModePassTarget, reviewModePassReplacement)
   .replace(editableFocusTarget, editableFocusReplacement)
 const patchedExecutionIndex = patchedPrefix.indexOf(executionStart)
 if (patchedExecutionIndex < 0 || patchedPrefix.indexOf(executionStart, patchedExecutionIndex + 1) >= 0) throw new Error('Patched execution contract changed')
@@ -150,8 +150,8 @@ const requiredSemanticGuards = [
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
   ['semantic navigation non-dominance', "semanticNavigationNonDominant === 'true'"],
   ['semantic navigation opacity', 'semanticNavigationOpacity <= 0.02'],
-  ['retired asset mode absent', 'result.assetMode === null'],
-  ['retired personalization mode absent', 'result.personalizationMode === null'],
+  ['disclosed review asset mode', 'result.assetMode === requiredMode'],
+  ['truthful personalization mode', 'result.personalizationMode === expected.mode'],
   ['editable focus regression owner', "Accessible Home destinations"],
 ]
 for (const [label, marker] of requiredSemanticGuards) {
