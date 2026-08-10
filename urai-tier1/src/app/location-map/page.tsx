@@ -4,6 +4,7 @@ import { LocationMapAcceptanceBoundary } from '@/spatial/places/LocationMapAccep
 import { LocationMapNativeWheelBridge } from '@/spatial/places/LocationMapNativeWheelBridge'
 import '@/spatial/places/location-map-release-depth.css'
 import '@/spatial/places/location-map-mobile-release-fixes.css'
+import '@/spatial/places/location-map-r3f-final.css'
 import './geographic-route-bridge.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
