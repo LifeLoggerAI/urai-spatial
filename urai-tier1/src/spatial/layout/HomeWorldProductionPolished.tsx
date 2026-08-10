@@ -224,16 +224,16 @@ function Horizon() {
 }
 
 function SanctuaryPavilion() {
-  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-natural-stone-resting-place' }}>
+  return <group name="home-sanctuary-pavilion" userData={{ role: 'open-air-weathered-stone-resting-place' }}>
     <mesh geometry={ORB_CLEARING_GEOMETRY} receiveShadow><meshStandardMaterial color="#566356" roughness={1} metalness={0} /></mesh>
-    <mesh position={[-2.85, terrainHeight(-2.85,-6.15) + .34, -6.15]} rotation={[0,.28,-.04]} scale={[1.5,.34,.72]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 36, 22]} /><meshStandardMaterial color="#667166" roughness={.98} metalness={0} />
+    <mesh position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>
+      <dodecahedronGeometry args={[1,1]} /><meshStandardMaterial color="#687469" roughness={1} metalness={0} flatShading />
     </mesh>
-    <mesh position={[2.75, terrainHeight(2.75,-6.35) + .29, -6.35]} rotation={[.02,-.24,.03]} scale={[1.35,.3,.66]} castShadow receiveShadow>
-      <sphereGeometry args={[1, 36, 22]} /><meshStandardMaterial color="#5e6b60" roughness={.99} metalness={0} />
+    <mesh position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>
+      <dodecahedronGeometry args={[1,1]} /><meshStandardMaterial color="#5f6d62" roughness={1} metalness={0} flatShading />
     </mesh>
-    <mesh position={[-.25, terrainHeight(-.25,-7.1) + .22, -7.1]} rotation={[0,.05,0]} scale={[1.1,.22,.52]} receiveShadow>
-      <sphereGeometry args={[1, 32, 18]} /><meshStandardMaterial color="#526158" roughness={1} metalness={0} />
+    <mesh position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>
+      <icosahedronGeometry args={[1,1]} /><meshStandardMaterial color="#53635a" roughness={1} metalness={0} flatShading />
     </mesh>
   </group>
 }
