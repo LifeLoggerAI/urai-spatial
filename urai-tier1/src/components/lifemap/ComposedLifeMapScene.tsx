@@ -163,8 +163,8 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
 function startLifeMapRenderProof(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
   const canvas = gl.domElement;
   let active = true;
-  let frames = 0;
-  let frameId = 0;
+  let samples = 0;
+  let intervalId = 0;
   let lastSignature = "";
 
   const resolveRoot = () => canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
@@ -178,38 +178,36 @@ function startLifeMapRenderProof(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
     element.dataset.lifeMapRenderTriangles = String(triangles);
   };
   const invalidate = () => {
-    frames = 0;
+    samples = 0;
     lastSignature = "";
     write(false, 0, 0, 0, 0);
   };
   const sample = () => {
     if (!active) return;
-    frames += 1;
-    if (frames >= 4) {
-      let objects = 0;
-      let anchors = 0;
-      scene.traverse((object) => {
-        if (object.visible) objects += 1;
-        if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-      });
-      const calls = gl.info.render.calls;
-      const triangles = gl.info.render.triangles;
-      const signature = `${objects}:${anchors}:${calls}:${triangles}`;
-      if (signature !== lastSignature) {
-        lastSignature = signature;
-        write(calls > 0 && objects > 20 && anchors >= 8, objects, anchors, calls, triangles);
-      }
-    }
-    frameId = window.requestAnimationFrame(sample);
+    samples += 1;
+    if (samples < 4) return;
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    if (signature === lastSignature) return;
+    lastSignature = signature;
+    write(calls > 0 && objects > 20 && anchors >= 8, objects, anchors, calls, triangles);
   };
 
   canvas.addEventListener("webglcontextlost", invalidate, false);
   canvas.addEventListener("webglcontextrestored", invalidate, false);
   invalidate();
-  frameId = window.requestAnimationFrame(sample);
+  sample();
+  intervalId = window.setInterval(sample, 100);
   return () => {
     active = false;
-    window.cancelAnimationFrame(frameId);
+    window.clearInterval(intervalId);
     canvas.removeEventListener("webglcontextlost", invalidate, false);
     canvas.removeEventListener("webglcontextrestored", invalidate, false);
   };
