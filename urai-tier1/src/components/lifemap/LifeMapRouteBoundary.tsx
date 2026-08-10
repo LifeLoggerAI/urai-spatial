@@ -5,6 +5,7 @@ import './lifeMapMobileTravelDensity.css'
 import './lifeMapSemanticNavigatorOwnership.css'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import LifeMapAssetGovernor from './LifeMapAssetGovernor'
 import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 
@@ -51,6 +52,7 @@ export default function LifeMapRouteBoundary() {
   }, [router])
 
   return <>
+    <LifeMapAssetGovernor />
     <ComposedLifeMapScene />
     <LifeMapSemanticNavigator />
   </>
