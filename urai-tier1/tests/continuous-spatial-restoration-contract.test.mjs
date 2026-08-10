@@ -11,7 +11,7 @@ const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -36,7 +36,7 @@ test('app template mounts current WebGL owners without certified-route redirects
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProduction/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
   assert.match(homeProduction, /data-home-real-world-first="true"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
@@ -46,10 +46,12 @@ test('app template mounts current WebGL owners without certified-route redirects
 
 test('Home remains one embodied authored 3D environment with accessible natural thresholds and recovery', () => {
   for (const marker of [
-    'HomeWorldProductionFinal',
+    'HomeWorldProductionPolished',
     'Stars',
     'HOME_PROVIDER_ENVIRONMENT',
+    'HOME_FERN_MODEL',
     'replay-memory-film-main.webp',
+    'polyhaven-fern-02-geometry-v1.glb',
     'data-home-primary-owner="asset-driven"',
     'data-home-real-world-first="true"',
     'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
@@ -80,14 +82,13 @@ test('Home remains one embodied authored 3D environment with accessible natural 
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
   assert.match(homeCss, /opacity:\s*\.2/)
-  assert.match(homeProduction, /function prepareAuthoredSanctuary/)
-  assert.match(homeProduction, /object\.visible = !rejected/)
-  assert.match(homeProduction, /world\.userData\.suppressedPortalProps = true/)
-  assert.match(homeProduction, /world\.userData\.centeredForHomeCamera = true/)
-  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
-  assert.match(homeProduction, /ContactShadows/)
-  assert.match(homeProduction, /function GroundThresholdLandmark/)
-  assert.match(homeProduction, /function LifeMapSkyLookout/)
+  assert.match(homeProduction, /function makeTerrainGeometry\(/)
+  assert.match(homeProduction, /function Terrain\(/)
+  assert.match(homeProduction, /function Vegetation\(/)
+  assert.match(homeProduction, /function Horizon\(/)
+  assert.match(homeProduction, /function Water\(/)
+  assert.match(homeProduction, /function Thresholds\(/)
+  assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(groundGateway, /Open the ground and descend into Hidden Infrastructure/)
   assert.match(homeRuntime, /requestUraiWorldOrbOpen/)
@@ -109,13 +110,13 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
   assert.match(worldEvents, /return\s*\n\s*}/)
-  assert.match(homeProduction, /if \(store\.phase === "ASCENT"\)/)
-  assert.match(homeProduction, /store\.setProgress\(linear\)/)
-  assert.match(homeProduction, /cameraCheckpoint: "home-sky-ascent-complete"/)
-  assert.match(homeProduction, /data-home-camera-mode=\{groundDescent \? "descent" : phase === "ASCENT" \? "ascent"/)
+  assert.match(homeProduction, /store\.phase === 'ASCENT'/)
+  assert.match(homeProduction, /store\.setProgress\(t\)/)
+  assert.match(homeProduction, /cameraCheckpoint: 'home-sky-ascent-complete'/)
+  assert.match(homeProduction, /data-home-camera-mode=\{groundDescent \? 'descent' : phase === 'ASCENT' \? 'ascent'/)
   assert.match(homeProduction, /data-home-ascent-progress=/)
   assert.match(homeProduction, /data-home-input-locked=/)
-  assert.match(homeProduction, /store\.setPhase\("HOME"\)/)
+  assert.match(homeProduction, /store\.setPhase\('HOME'\)/)
   assert.match(homeProduction, /store\.unlock\(\)/)
   assert.doesNotMatch(homeProduction, /<CinematicCameraRig|<SpatialSceneClient/)
 })
@@ -123,9 +124,9 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
 test('Home Ground entry is a physical environmental descent rather than a floating menu portal', () => {
   assert.match(homeProduction, /GROUND_DESCENT_DURATION_SECONDS/)
   assert.match(homeProduction, /home-ground-environmental-threshold/)
-  assert.match(homeProduction, /transition: "physical-descent"/)
-  assert.match(homeProduction, /cameraCheckpoint: "home-ground-descent"/)
-  assert.match(homeProduction, /GROUND_DESCENT/)
+  assert.match(homeProduction, /destination: 'infrastructure-hub'/)
+  assert.match(homeProduction, /cameraCheckpoint: 'home-ground-descent'/)
+  assert.match(homeProduction, /groundDescent \? 'GROUND_DESCENT'/)
   assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
 })
 
@@ -178,8 +179,8 @@ test('Life Map owner and legacy veil suppression remain full viewport', () => {
 test('Home environmental thresholds and generated manifest filter remain observable on a saturated host', () => {
   assert.match(homeProduction, /home-ground-environmental-threshold/)
   assert.match(homeProduction, /home-life-map-sky-lookout/)
-  assert.match(homeProduction, /destination: "infrastructure-hub"/)
-  assert.match(homeProduction, /destination: "life-map"/)
+  assert.match(homeProduction, /destination: 'infrastructure-hub'/)
+  assert.match(homeProduction, /destination: 'life-map'/)
   assert.match(homeProduction, /Look to the sky/)
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
