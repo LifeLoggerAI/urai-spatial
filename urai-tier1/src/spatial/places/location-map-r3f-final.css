@@ -1,0 +1,134 @@
+/* Final visual-owner convergence for Location Map.
+   Interaction, privacy and URL state stay in LocationMapScene; the visible world
+   is owned by the route's React Three Fiber terrain canvas. */
+.locationAtlas.locationAtlas--r3f {
+  background: #06110f;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasWorldCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasWorldCanvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasArt {
+  z-index: 1;
+  opacity: .055;
+  filter: blur(1px);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasArt img {
+  filter: saturate(.72) contrast(1.04) brightness(.62);
+}
+
+.locationAtlas.locationAtlas--r3f::before {
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(2,7,8,.3), transparent 28%, transparent 68%, rgba(1,5,6,.52)),
+    radial-gradient(ellipse at 50% 48%, transparent 0 44%, rgba(0,0,0,.28) 100%);
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasWeather {
+  z-index: 3;
+  opacity: .48;
+  mix-blend-mode: screen;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasStage::before,
+.locationAtlas.locationAtlas--r3f .locationAtlasStage::after,
+.locationAtlas.locationAtlas--r3f .locationAtlasCamera,
+.locationAtlas.locationAtlas--r3f .locationAtlasForeground {
+  display: none !important;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacons {
+  z-index: 8;
+  inset: -12%;
+  transform: translate3d(var(--atlas-x), var(--atlas-y), 0) scale(var(--atlas-zoom));
+  transform-origin: 50% 50%;
+  transition: transform 700ms cubic-bezier(.2,.82,.2,1);
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon {
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%,-50%);
+  filter: none;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon::before,
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon::after {
+  display: none !important;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeaconCore {
+  inset: 23px;
+  border: 0;
+  border-radius: 999px;
+  clip-path: none;
+  background: color-mix(in srgb, var(--beacon-color) 80%, white);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--beacon-color) 12%, transparent),
+    0 0 22px color-mix(in srgb, var(--beacon-color) 48%, transparent);
+  opacity: .42;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeaconCore i {
+  display: none;
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon:hover,
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon:focus-visible,
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon[data-selected="true"] {
+  transform: translate(-50%,-55%) scale(1.04);
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon:hover .locationAtlasBeaconCore,
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon:focus-visible .locationAtlasBeaconCore,
+.locationAtlas.locationAtlas--r3f .locationAtlasBeacon[data-selected="true"] .locationAtlasBeaconCore {
+  opacity: .92;
+  box-shadow:
+    0 0 0 7px color-mix(in srgb, var(--beacon-color) 15%, transparent),
+    0 0 36px color-mix(in srgb, var(--beacon-color) 64%, transparent);
+}
+
+.locationAtlas.locationAtlas--r3f .locationAtlasHeader,
+.locationAtlas.locationAtlas--r3f .locationAtlasOrientation,
+.locationAtlas.locationAtlas--r3f .locationAtlasTruth,
+.locationAtlas.locationAtlas--r3f .locationAtlasSelection,
+.locationAtlas.locationAtlas--r3f .locationAtlasControls {
+  background: rgba(3,10,12,.68);
+  border-color: rgba(211,241,235,.13);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 620px) {
+  .locationAtlas.locationAtlas--r3f .locationAtlasBeacons {
+    inset: 0 -22% -18%;
+  }
+
+  .locationAtlas.locationAtlas--r3f .locationAtlasArt {
+    opacity: .04;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .locationAtlas.locationAtlas--r3f .locationAtlasBeacons,
+  .locationAtlas.locationAtlas--r3f .locationAtlasWeather,
+  .locationAtlas.locationAtlas--r3f .locationAtlasBeacon {
+    transition: none !important;
+    animation: none !important;
+  }
+}
