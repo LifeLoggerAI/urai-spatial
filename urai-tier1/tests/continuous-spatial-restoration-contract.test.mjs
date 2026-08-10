@@ -78,6 +78,9 @@ test('Home remains one embodied authored 3D environment with accessible natural 
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
+    'URAI_ORB_STATE_EVENT',
+    'resolveOrbSensoryOutput',
+    'data-home-orb-state={orbState}',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
@@ -95,6 +98,8 @@ test('Home remains one embodied authored 3D environment with accessible natural 
   assert.match(homeRuntime, /webglcontextlost/)
   assert.match(homeRuntime, /webglcontextrestored/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
+  assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
+  assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
   assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
@@ -161,7 +166,7 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-3'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  for (const marker of ["schemaVersion: 'urai-home-state-proof-4'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
