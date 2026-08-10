@@ -17,6 +17,8 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     if (!owner) return
 
     const homeWorld = () => owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    let lifecycleFrame: number | null = null
+    let serializingTraversal = false
 
     const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
@@ -37,6 +39,33 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       }
     }
 
+    const serializeCollapsedOpening = (records: MutationRecord[]) => {
+      const world = homeWorld()
+      if (!world || serializingTraversal) return
+      const sequence = world.dataset.homePortalSequence || ''
+      if (sequence !== 'ground:traversal' && sequence !== 'life-map:traversal') return
+      const collapsedFromIdle = records.some((record) => (
+        record.type === 'attributes'
+        && record.target === world
+        && record.attributeName === 'data-home-portal-sequence'
+        && record.oldValue === 'idle'
+      ))
+      if (!collapsedFromIdle) return
+
+      const destination = sequence.startsWith('ground:') ? 'ground' : 'life-map'
+      const opening = `${destination}:opening`
+      serializingTraversal = true
+      world.dataset.homePortalSequence = opening
+      lifecycleFrame = window.requestAnimationFrame(() => {
+        const current = homeWorld()
+        if (current?.dataset.homePortalSequence === opening) {
+          current.dataset.homePortalSequence = `${destination}:traversal`
+        }
+        serializingTraversal = false
+        lifecycleFrame = null
+      })
+    }
+
     const publishClosing = () => {
       const world = homeWorld()
       if (!world) return
@@ -48,10 +77,19 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     hardenHomeOwnership()
     const observer = new MutationObserver(hardenHomeOwnership)
     observer.observe(owner, { childList: true, subtree: true })
+    const lifecycleObserver = new MutationObserver(serializeCollapsedOpening)
+    lifecycleObserver.observe(owner, {
+      attributes: true,
+      attributeFilter: ['data-home-portal-sequence'],
+      attributeOldValue: true,
+      subtree: true,
+    })
     window.addEventListener('keydown', publishOpening, { capture: true })
     window.addEventListener(URAI_WORLD_TRAVEL_EVENT, publishClosing)
     return () => {
       observer.disconnect()
+      lifecycleObserver.disconnect()
+      if (lifecycleFrame !== null) window.cancelAnimationFrame(lifecycleFrame)
       window.removeEventListener('keydown', publishOpening, true)
       window.removeEventListener(URAI_WORLD_TRAVEL_EVENT, publishClosing)
     }
