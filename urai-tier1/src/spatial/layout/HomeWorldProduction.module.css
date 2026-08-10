@@ -101,27 +101,48 @@
 .world :global(.urai-mobile-movement) {
   display: none;
   z-index: 14;
-  opacity: .42;
+  opacity: .34;
   transition: opacity .2s ease;
 }
 
 .world :global(.urai-mobile-movement button) {
-  border-color: rgba(231, 246, 240, .2) !important;
-  background: rgba(10, 26, 20, .32) !important;
-  color: rgba(255, 255, 255, .76) !important;
-  box-shadow: 0 7px 22px rgba(0, 0, 0, .2) !important;
-  backdrop-filter: blur(10px) !important;
+  position: relative;
+  border-color: transparent !important;
+  border-radius: 50% !important;
+  background: rgba(10, 26, 20, .18) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(8px) !important;
 }
+
+.world :global(.urai-mobile-movement button::before) {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-top: 1.5px solid rgba(232, 248, 241, .72);
+  border-right: 1.5px solid rgba(232, 248, 241, .72);
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.world :global(.urai-mobile-movement button:nth-child(2)::before) { transform: translate(-50%, -50%) rotate(-135deg); }
+.world :global(.urai-mobile-movement button:nth-child(3)::before) { transform: translate(-50%, -50%) rotate(135deg); }
+.world :global(.urai-mobile-movement button:nth-child(4)::before) { transform: translate(-50%, -50%) rotate(45deg); }
 
 .world :global(.urai-mobile-movement:focus-within),
 .world :global(.urai-mobile-movement:hover) {
-  opacity: .92;
+  opacity: .86;
 }
 
 .world :global(.urai-mobile-movement button:focus-visible),
 .world :global(.urai-mobile-movement button[data-active='true']) {
-  background: rgba(31, 78, 68, .82) !important;
-  color: #fff !important;
+  background: rgba(31, 78, 68, .7) !important;
+  color: transparent !important;
+  outline: 2px solid rgba(245,255,251,.94) !important;
+  outline-offset: 2px !important;
 }
 
 @media (min-width: 901px) and (pointer: fine) {
@@ -158,7 +179,7 @@
     font-size: .54rem;
   }
   .world :global(.urai-mobile-movement) {
-    opacity: .5;
+    opacity: .38;
   }
 }
 
@@ -166,4 +187,13 @@
   .world::before { transition: none; }
   .worldHint { backdrop-filter: none; }
   .world :global(.urai-mobile-movement) { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .world :global(.urai-mobile-movement) { opacity: 1; }
+  .world :global(.urai-mobile-movement button) {
+    border: 1px solid ButtonText !important;
+    background: Canvas !important;
+  }
+  .world :global(.urai-mobile-movement button::before) { border-color: ButtonText; }
 }
