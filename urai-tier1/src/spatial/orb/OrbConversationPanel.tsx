@@ -43,7 +43,7 @@ export default function OrbConversationPanel() {
   const aborter = useRef<AbortController | null>(null)
   const stateResetTimer = useRef<number | null>(null)
 
-  const publishConversationState = (state: 'idle' | 'listening' | 'thinking' | 'speaking' | 'privacy' | 'warning', resetAfterMs?: number) => {
+  const publishConversationState = (state: 'idle' | 'attention' | 'listening' | 'thinking' | 'speaking' | 'privacy' | 'warning', resetAfterMs?: number) => {
     if (stateResetTimer.current !== null) {
       window.clearTimeout(stateResetTimer.current)
       stateResetTimer.current = null
@@ -178,7 +178,7 @@ export default function OrbConversationPanel() {
               disabled={busy}
               onChange={(event) => {
                 setAiConsent(event.target.checked)
-                publishConversationState(event.target.checked ? 'attention' as never : 'privacy')
+                publishConversationState(event.target.checked ? 'attention' : 'privacy')
               }}
             />
             Allow this message and bounded recent context to be processed by OpenAI.
