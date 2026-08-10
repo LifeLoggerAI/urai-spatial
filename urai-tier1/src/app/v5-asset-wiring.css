@@ -109,7 +109,7 @@ html.urai-v5-assets-ready .uraiAutoMirror {
 }
 
 html.urai-v5-assets-ready .urai-world-companion__menu {
-  background-image: linear-gradient(180deg, rgba(4,10,20,.94), rgba(4,10,20,.98)), url('/assets/urai/v5/final-orb.webp');
+  background-image: linear-gradient(180deg, rgba(4,10,20,.94), rgba(4,10,20,.98)), url('/assets/urai/ui/orb-active.webp');
   background-size: cover;
   background-position: center;
 }
@@ -118,7 +118,7 @@ html.urai-v5-assets-ready .urai-world-companion__orb span {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: url('/assets/urai/v5/final-orb.webp') center/cover no-repeat;
+  background: url('/assets/urai/ui/orb-active.webp') center/cover no-repeat;
   opacity: .74;
 }
 
