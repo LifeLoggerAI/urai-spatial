@@ -25,7 +25,7 @@
   background-repeat: no-repeat;
   filter: saturate(.7) contrast(.92) brightness(.92) blur(2.4px);
   transform: scale(1.045);
-  opacity: .028;
+  opacity: .006;
   mix-blend-mode: soft-light;
   transition: opacity 900ms ease, filter 900ms ease;
 }
@@ -137,7 +137,7 @@
       url('/assets/urai/replay/replay-memory-film-main.webp');
     background-position: center 50%;
     transform: scale(1.055);
-    opacity: .02;
+    opacity: .004;
   }
   .canvas {
     background:
