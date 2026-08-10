@@ -25,14 +25,16 @@ type Nearby = "orb" | "ground" | "life-map" | null;
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean };
 
 function terrainHeight(x: number, z: number) {
-  const broad = Math.sin(x * .09) * .18 + Math.cos(z * .075) * .14 + Math.sin((x + z) * .045) * .09;
-  const detail = Math.sin(x * .4 + z * .18) * .025 + Math.cos(z * .31 - x * .16) * .022;
-  const clearing = -Math.exp(-((x / 8.7) ** 2 + ((z + 1.8) / 10.4) ** 2)) * .24;
-  return broad + detail + clearing - .13;
+  const rolling = Math.sin(x * .072) * .28 + Math.cos(z * .061) * .22 + Math.sin((x + z) * .038) * .14;
+  const detail = Math.sin(x * .31 + z * .17) * .035 + Math.cos(z * .27 - x * .13) * .028;
+  const clearing = -Math.exp(-((x / 8.8) ** 2 + ((z + 1.8) / 10.7) ** 2)) * .23;
+  const distance = Math.max(0, (-z - 17) / 48);
+  const ridge = distance * distance * (5.4 + Math.sin(x * .055) * 1.2 + Math.cos(x * .11) * .55);
+  return rolling + detail + clearing + ridge - .12;
 }
 
 function makeTerrain() {
-  const geometry = new THREE.PlaneGeometry(82, 82, 220, 220);
+  const geometry = new THREE.PlaneGeometry(180, 180, 240, 240);
   geometry.rotateX(-Math.PI / 2);
   const position = geometry.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(position.count * 3);
@@ -42,7 +44,7 @@ function makeTerrain() {
   for (let i = 0; i < position.count; i += 1) {
     const x = position.getX(i), z = position.getZ(i), y = terrainHeight(x, z);
     position.setY(i, y);
-    const variation = THREE.MathUtils.clamp(.46 + Math.sin(x * .17) * .08 + Math.cos(z * .14) * .08 + y * .08, 0, 1);
+    const variation = THREE.MathUtils.clamp(.46 + Math.sin(x * .17) * .08 + Math.cos(z * .14) * .08 + y * .055, 0, 1);
     color.copy(low).lerp(high, variation);
     colors[i * 3] = color.r;
     colors[i * 3 + 1] = color.g;
@@ -195,7 +197,7 @@ function Rig({ input, yaw, pitch, target, avatar, onNearby, groundDescent, onGro
     camera.position.copy(pos.current).add(new THREE.Vector3(0, portrait ? 1.62 : 1.7, .12));
     const forward = new THREE.Vector3(Math.sin(yaw.current), 0, -Math.cos(yaw.current));
     const look = pos.current.clone().addScaledVector(forward, portrait ? 6.5 : 8.8);
-    camera.lookAt(look.x, .68 + pitch.current, look.z);
+    camera.lookAt(look.x, .68 + pitch.current, look.current?.z ?? look.z);
   }, [camera, pitch, size.height, size.width, yaw]);
   useLayoutEffect(() => place(), [place]);
   useFrame(({ clock }, delta) => {
