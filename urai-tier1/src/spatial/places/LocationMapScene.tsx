@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type WheelEvent } from 'react'
 import { locationMapAssets } from '@/spatial/assets/uraiAssets'
+import { LocationMapSpatialWorld } from './LocationMapSpatialWorld'
 import type { MemoryPlace } from './memoryPlaceSchema'
 import './location-map-scene.css'
 
@@ -214,10 +215,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const activePointers = [...pointers.current.values()]
     if (activePointers.length === 1) drag.current = { x: event.clientX, y: event.clientY, camera: cameraRef.current }
-    if (activePointers.length === 2) {
-      pinch.current = { distance: distance(activePointers), zoom: cameraRef.current.zoom }
-      drag.current = null
-    }
+    if (activePointers.length === 2) { pinch.current = { distance: distance(activePointers), zoom: cameraRef.current.zoom }; drag.current = null }
   }, [])
   const onPointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'touch' || !pointers.current.has(event.pointerId)) return
@@ -235,11 +233,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
       return
     }
     if (!drag.current) return
-    const nextCamera = {
-      ...drag.current.camera,
-      x: clamp(drag.current.camera.x + event.clientX - drag.current.x, -360, 360),
-      y: clamp(drag.current.camera.y + event.clientY - drag.current.y, -320, 320),
-    }
+    const nextCamera = { ...drag.current.camera, x: clamp(drag.current.camera.x + event.clientX - drag.current.x, -360, 360), y: clamp(drag.current.camera.y + event.clientY - drag.current.y, -320, 320) }
     cameraRef.current = nextCamera
     setCamera(nextCamera)
   }, [])
@@ -250,9 +244,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     if (pointers.current.size === 1) {
       const remainingPoint = [...pointers.current.values()][0]
       drag.current = { x: remainingPoint.x, y: remainingPoint.y, camera: cameraRef.current }
-    } else if (pointers.current.size === 0) {
-      drag.current = null
-    }
+    } else if (pointers.current.size === 0) drag.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
   }, [])
 
@@ -265,13 +257,8 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
       if (blocked(event.target)) return
       event.preventDefault()
       const activeTouches = pointsFrom(event.touches)
-      if (activeTouches.length >= 2) {
-        touchPinch.current = { distance: distance(activeTouches), zoom: cameraRef.current.zoom }
-        touchDrag.current = null
-      } else if (activeTouches.length === 1) {
-        touchDrag.current = { x: activeTouches[0].x, y: activeTouches[0].y, camera: cameraRef.current }
-        touchPinch.current = null
-      }
+      if (activeTouches.length >= 2) { touchPinch.current = { distance: distance(activeTouches), zoom: cameraRef.current.zoom }; touchDrag.current = null }
+      else if (activeTouches.length === 1) { touchDrag.current = { x: activeTouches[0].x, y: activeTouches[0].y, camera: cameraRef.current }; touchPinch.current = null }
     }
     const onMove = (event: globalThis.TouchEvent) => {
       if (blocked(event.target)) return
@@ -281,24 +268,14 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
         const nextDistance = distance(activeTouches)
         if (nextDistance > 0 && touchPinch.current.distance > 0) {
           const nextCamera = { ...cameraRef.current, zoom: clamp(touchPinch.current.zoom * (nextDistance / touchPinch.current.distance), .7, 1.9) }
-          cameraRef.current = nextCamera
-          setCamera(nextCamera)
+          cameraRef.current = nextCamera; setCamera(nextCamera)
         }
         return
       }
       if (activeTouches.length !== 1) return
-      if (touchPinch.current || !touchDrag.current) {
-        touchPinch.current = null
-        touchDrag.current = { x: activeTouches[0].x, y: activeTouches[0].y, camera: cameraRef.current }
-        return
-      }
-      const nextCamera = {
-        ...touchDrag.current.camera,
-        x: clamp(touchDrag.current.camera.x + activeTouches[0].x - touchDrag.current.x, -360, 360),
-        y: clamp(touchDrag.current.camera.y + activeTouches[0].y - touchDrag.current.y, -320, 320),
-      }
-      cameraRef.current = nextCamera
-      setCamera(nextCamera)
+      if (touchPinch.current || !touchDrag.current) { touchPinch.current = null; touchDrag.current = { x: activeTouches[0].x, y: activeTouches[0].y, camera: cameraRef.current }; return }
+      const nextCamera = { ...touchDrag.current.camera, x: clamp(touchDrag.current.camera.x + activeTouches[0].x - touchDrag.current.x, -360, 360), y: clamp(touchDrag.current.camera.y + activeTouches[0].y - touchDrag.current.y, -320, 320) }
+      cameraRef.current = nextCamera; setCamera(nextCamera)
     }
     const onEnd = (event: globalThis.TouchEvent) => {
       const remaining = pointsFrom(event.touches)
@@ -309,12 +286,7 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
     stage.addEventListener('touchmove', onMove, { passive: false })
     stage.addEventListener('touchend', onEnd, { passive: false })
     stage.addEventListener('touchcancel', onEnd, { passive: false })
-    return () => {
-      stage.removeEventListener('touchstart', onStart)
-      stage.removeEventListener('touchmove', onMove)
-      stage.removeEventListener('touchend', onEnd)
-      stage.removeEventListener('touchcancel', onEnd)
-    }
+    return () => { stage.removeEventListener('touchstart', onStart); stage.removeEventListener('touchmove', onMove); stage.removeEventListener('touchend', onEnd); stage.removeEventListener('touchcancel', onEnd) }
   }, [access, visiblePlaces.length])
 
   const openDemo = () => {
@@ -330,14 +302,16 @@ export function LocationMapScene({ places, acceptanceFixturesEnabled = false }: 
 
   const isDemo = demoData || access === 'demo'
   const style = { '--atlas-x': `${camera.x}px`, '--atlas-y': `${camera.y}px`, '--atlas-zoom': camera.zoom, '--weather-color': selected ? tone(selected.place) : '#8eeaff', '--weather-strength': selected?.place.emotionalOverlay.intensity ?? .34 } as CSSProperties
+  const worldPoints = points.map(point => ({ id: point.place.id, x: point.x, y: point.y, depth: point.depth, color: tone(point.place), intensity: point.place.emotionalOverlay.intensity, selected: selectedId === point.place.id }))
 
-  return <main className="locationAtlas" style={style} data-launch-surface="premium-emotional-weather-atlas" data-location-map-owner="canonical-route" data-location-map-renderer="layered-spatial-atlas" data-location-map-source={isDemo ? 'disclosed-demo' : 'private-repository'} data-privacy-mode={privacyMode} data-entry-portal={entryPortal} data-camera-checkpoint={checkpoint} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-online={offline ? 'false' : 'true'}>
+  return <main className="locationAtlas locationAtlas--r3f" style={style} data-launch-surface="premium-emotional-weather-atlas" data-location-map-owner="canonical-route" data-location-map-renderer="react-three-fiber-spatial-atlas" data-location-map-source={isDemo ? 'disclosed-demo' : 'private-repository'} data-privacy-mode={privacyMode} data-entry-portal={entryPortal} data-camera-checkpoint={checkpoint} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-online={offline ? 'false' : 'true'}>
     <picture className="locationAtlasArt" aria-hidden="true"><source media="(max-width:760px)" srcSet={locationMapAssets.mobile.src}/><img src={locationMapAssets.primary.src} alt="" draggable={false}/></picture>
     <div className="locationAtlasWeather" aria-hidden="true"/>
     <header className="locationAtlasHeader" data-atlas-panel><div><span>URAI · Emotional geography</span><strong>{isDemo ? 'Sample atlas' : 'Private atlas'}</strong></div><div className="locationAtlasStatus"><span>{isDemo ? 'Sample view' : 'Private view'}</span><span>{isDemo ? 'Disclosed sample places' : 'Permissioned places'}</span>{offline ? <span>Offline · local view retained</span> : null}</div><nav><Link href="/life-map">Life Map</Link><Link href="/home">Home</Link></nav></header>
     <section className="locationAtlasViewport" aria-label="Interactive symbolic emotional geography atlas"><div ref={stageRef} className="locationAtlasStage" role="application" tabIndex={0} aria-describedby="location-atlas-help" onKeyDown={onKey} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
       <p id="location-atlas-help" className="srOnly">Use Left and Right Arrow to move between places. Enter focuses a place. Plus and Minus zoom. Escape or Home returns to overview. Drag to pan. Pinch to zoom on touch screens.</p>
-      <div className="locationAtlasCamera" aria-hidden="true"><i/><i/><i/></div>
+      <LocationMapSpatialWorld camera={camera} points={worldPoints} selectedColor={selected ? tone(selected.place) : '#8eeaff'} reducedMotion={reducedMotion} />
+      <div className="locationAtlasCamera" aria-hidden="true" data-spatial-fallback="retired"><i/><i/><i/></div>
       <div className="locationAtlasBeacons" aria-label={`${points.length} discoverable symbolic places`}>{points.map((point,index) => <button key={point.place.id} ref={node => { markers.current[index] = node }} type="button" className="locationAtlasBeacon" style={{ '--beacon-x': `${point.x}%`, '--beacon-y': `${point.y}%`, '--beacon-depth': point.depth, '--beacon-color': tone(point.place), '--beacon-intensity': point.place.emotionalOverlay.intensity } as CSSProperties} data-selected={selectedId === point.place.id ? 'true' : 'false'} aria-pressed={selectedId === point.place.id} aria-label={`${point.place.title}. ${words(point.place.emotionalOverlay.mood)} weather. ${privacy(point.place)}. ${point.place.memoryIds.length} linked memories.`} onClick={() => focus(point,index)} onFocus={() => setActiveIndex(index)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') onBeaconKey(event,-1); else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') onBeaconKey(event,1) }}><span className="locationAtlasBeaconCore"><i/></span><span className="locationAtlasBeaconLabel"><strong>{point.place.title}</strong><small>{words(point.place.emotionalOverlay.mood)} · {privacy(point.place)}</small></span></button>)}</div>
       <div className="locationAtlasForeground" aria-hidden="true"/>
     </div></section>
