@@ -1,0 +1,128 @@
+name: PR1072 one-shot exact-head repair
+
+on:
+  push:
+    branches: [ agent/home-life-map-final-production-20260809 ]
+    paths:
+      - '.github/workflows/pr1072-one-shot-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr1072-one-shot-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repair trigger head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          show-progress: false
+
+      - name: Apply bounded source and proof repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def patch(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text()
+              found = text.count(old)
+              if found != count:
+                  raise SystemExit(f'{path}: expected {count} occurrence(s), found {found}')
+              p.write_text(text.replace(old, new))
+
+          home = 'urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx'
+          marker = "const TERRAIN_GEOMETRY = makeTerrainGeometry()"
+          authored = r'''function makeAuthoredBoulderGeometry(salt: number, rings = 5, segments = 11) {
+            const positions: number[] = []
+            const indices: number[] = []
+            for (let ring = 0; ring <= rings; ring += 1) {
+              const v = ring / rings
+              const phi = v * Math.PI
+              for (let segment = 0; segment < segments; segment += 1) {
+                const u = segment / segments
+                const theta = u * Math.PI * 2
+                const radialNoise = .82
+                  + seeded(ring * segments + segment, salt) * .23
+                  + Math.sin(theta * 3 + salt) * .045
+                  + Math.cos(phi * 2.6 + salt * .7) * .04
+                const squash = .86 + seeded(segment, salt + 19) * .16
+                positions.push(
+                  Math.sin(phi) * Math.cos(theta) * radialNoise * squash,
+                  Math.cos(phi) * radialNoise,
+                  Math.sin(phi) * Math.sin(theta) * radialNoise * (1.04 - (squash - .86) * .45),
+                )
+              }
+            }
+            for (let ring = 0; ring < rings; ring += 1) {
+              for (let segment = 0; segment < segments; segment += 1) {
+                const next = (segment + 1) % segments
+                const a = ring * segments + segment
+                const b = ring * segments + next
+                const c = (ring + 1) * segments + segment
+                const d = (ring + 1) * segments + next
+                indices.push(a, c, b, b, c, d)
+              }
+            }
+            const geometry = new THREE.BufferGeometry()
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+            geometry.setIndex(indices)
+            geometry.computeVertexNormals()
+            return geometry
+          }
+
+          const SANCTUARY_BOULDER_LEFT = makeAuthoredBoulderGeometry(131)
+          const SANCTUARY_BOULDER_RIGHT = makeAuthoredBoulderGeometry(173)
+          const SANCTUARY_BOULDER_CENTER = makeAuthoredBoulderGeometry(211, 4, 10)
+
+          const TERRAIN_GEOMETRY = makeTerrainGeometry()'''
+          patch(home, marker, authored)
+          patch(home, '<mesh position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>\n      <dodecahedronGeometry args={[1,1]} /><meshStandardMaterial color="#687469" roughness={1} metalness={0} flatShading />\n    </mesh>', '<mesh geometry={SANCTUARY_BOULDER_LEFT} position={[-2.85, terrainHeight(-2.85,-6.15) + .42, -6.15]} rotation={[.18,.38,-.14]} scale={[1.2,.58,.82]} castShadow receiveShadow>\n      <meshStandardMaterial color="#687469" roughness={1} metalness={0} flatShading />\n    </mesh>')
+          patch(home, '<mesh position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>\n      <dodecahedronGeometry args={[1,1]} /><meshStandardMaterial color="#5f6d62" roughness={1} metalness={0} flatShading />\n    </mesh>', '<mesh geometry={SANCTUARY_BOULDER_RIGHT} position={[2.75, terrainHeight(2.75,-6.35) + .4, -6.35]} rotation={[-.12,-.42,.17]} scale={[1.08,.52,.76]} castShadow receiveShadow>\n      <meshStandardMaterial color="#5f6d62" roughness={1} metalness={0} flatShading />\n    </mesh>')
+          patch(home, '<mesh position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>\n      <icosahedronGeometry args={[1,1]} /><meshStandardMaterial color="#53635a" roughness={1} metalness={0} flatShading />\n    </mesh>', '<mesh geometry={SANCTUARY_BOULDER_CENTER} position={[-.25, terrainHeight(-.25,-7.1) + .31, -7.1]} rotation={[.15,.12,-.09]} scale={[.76,.4,.58]} castShadow receiveShadow>\n      <meshStandardMaterial color="#53635a" roughness={1} metalness={0} flatShading />\n    </mesh>')
+          patch(home, "  const [orbState, setOrbState] = useState<OrbState>('idle')", "  const [orbState, setOrbState] = useState<OrbState>('idle')\n  const [reviewFixture, setReviewFixture] = useState<'none' | 'safe-private'>('none')")
+          mobile_effect = "  useEffect(() => { const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'); const mobile = window.matchMedia('(pointer: coarse), (max-width: 700px)'); const apply = () => { setReducedMotion(reduced.matches); setMobileControls(mobile.matches) }; apply(); reduced.addEventListener?.('change', apply); mobile.addEventListener?.('change', apply); return () => { reduced.removeEventListener?.('change', apply); mobile.removeEventListener?.('change', apply) } }, [])"
+          query_effect = mobile_effect + "\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search)\n    setReviewFixture(params.get('homePrivateFixture') === '1' ? 'safe-private' : 'none')\n    const requestedOrbState = params.get('homeOrbState')\n    if (requestedOrbState && requestedOrbState in ORB_CLIPS) setOrbState(requestedOrbState as OrbState)\n  }, [])"
+          patch(home, mobile_effect, query_effect)
+          patch(home, 'data-home-review-fixture="none"', 'data-home-review-fixture={reviewFixture}')
+
+          founder = 'scripts/capture-lifemap-founder-proof-fixed.mjs'
+          patch(founder, '    const box = await scene.boundingBox()\n    const viewport = page.viewportSize()', "    const box = await scene.evaluate((element) => {\n      const rect = element.getBoundingClientRect()\n      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }\n    })\n    const viewport = page.viewportSize()")
+
+          homeproof = 'scripts/capture-home-state-proof.mjs'
+          patch(homeproof, "        && record.visual?.available === true\n        && record.screenshotBytes > 12_000", "        && record.visual?.available === true\n        && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage\n        && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange\n        && record.visual.visibleSamples >= receipt.visualGate.minimumVisibleSamples\n        && record.screenshotBytes > 12_000")
+          PY
+
+      - name: Validate bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -q 'dodecahedronGeometry' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          ! grep -q 'icosahedronGeometry' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          grep -q 'getBoundingClientRect' scripts/capture-lifemap-founder-proof-fixed.mjs
+          grep -q 'data-home-review-fixture={reviewFixture}' urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx
+          grep -q 'minimumLuminanceRange' scripts/capture-home-state-proof.mjs
+          git diff --check
+
+      - name: Commit repaired successor and self-remove executor
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/pr1072-one-shot-repair.yml
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionPolished.tsx scripts/capture-lifemap-founder-proof-fixed.mjs scripts/capture-home-state-proof.mjs
+          git commit -m 'Repair PR1072 authored Home and exact-head visual proofs'
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:agent/home-life-map-final-production-20260809
