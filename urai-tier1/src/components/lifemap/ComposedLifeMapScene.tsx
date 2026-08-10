@@ -160,59 +160,6 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null;
 }
 
-function startLifeMapRenderProof(gl: THREE.WebGLRenderer, scene: THREE.Scene) {
-  const canvas = gl.domElement;
-  let active = true;
-  let samples = 0;
-  let intervalId = 0;
-  let lastSignature = "";
-
-  const resolveRoot = () => canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
-  const write = (ready: boolean, objects: number, anchors: number, calls: number, triangles: number) => {
-    const element = resolveRoot();
-    if (!element) return;
-    element.dataset.lifeMapRenderReady = ready ? "true" : "false";
-    element.dataset.lifeMapVisibleObjects = String(objects);
-    element.dataset.lifeMapVisibleAnchors = String(anchors);
-    element.dataset.lifeMapRenderCalls = String(calls);
-    element.dataset.lifeMapRenderTriangles = String(triangles);
-  };
-  const invalidate = () => {
-    samples = 0;
-    lastSignature = "";
-    write(false, 0, 0, 0, 0);
-  };
-  const sample = () => {
-    if (!active) return;
-    samples += 1;
-    if (samples < 4) return;
-    let objects = 0;
-    let anchors = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-    });
-    const calls = gl.info.render.calls;
-    const triangles = gl.info.render.triangles;
-    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
-    if (signature === lastSignature) return;
-    lastSignature = signature;
-    write(calls > 0 && objects > 20 && anchors >= 8, objects, anchors, calls, triangles);
-  };
-
-  canvas.addEventListener("webglcontextlost", invalidate, false);
-  canvas.addEventListener("webglcontextrestored", invalidate, false);
-  invalidate();
-  sample();
-  intervalId = window.setInterval(sample, 100);
-  return () => {
-    active = false;
-    window.clearInterval(intervalId);
-    canvas.removeEventListener("webglcontextlost", invalidate, false);
-    canvas.removeEventListener("webglcontextrestored", invalidate, false);
-  };
-}
-
 function truthLabel(sourceMode: LifeMapSourceMode) {
   if (sourceMode === "explicit-demo") return "Disclosed sample universe · not your memories";
   if (sourceMode === "signed-out") return "Signed out · no personal data displayed";
@@ -252,7 +199,6 @@ export default function ComposedLifeMapScene() {
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
-  const renderProofCleanup = useRef<(() => void) | null>(null);
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
@@ -341,11 +287,7 @@ export default function ComposedLifeMapScene() {
     return () => window.removeEventListener("keydown", handler, true);
   }, [overview, router, selectedId]);
 
-  useEffect(() => () => {
-    document.body.style.cursor = "";
-    renderProofCleanup.current?.();
-    renderProofCleanup.current = null;
-  }, []);
+  useEffect(() => () => { document.body.style.cursor = ""; }, []);
 
   const recovery = webglState !== "ready";
   const thresholdsVisible = Boolean(selected && (phase === "approach" || phase === "arrival"));
@@ -359,11 +301,6 @@ export default function ComposedLifeMapScene() {
     data-life-map-mode={selected ? "selected" : "overview"}
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
-    data-life-map-render-ready="false"
-    data-life-map-visible-objects="0"
-    data-life-map-visible-anchors="0"
-    data-life-map-render-calls="0"
-    data-life-map-render-triangles="0"
     data-webgl-state={webglState}
     data-home-companion-owned="false"
   >
@@ -377,13 +314,11 @@ export default function ComposedLifeMapScene() {
       shadows={profile.shadows}
       frameloop={profile.documentVisible ? "always" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
-      onCreated={({ gl, scene }) => {
+      onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.15;
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.setClearColor("#02050b", 1);
-        renderProofCleanup.current?.();
-        renderProofCleanup.current = startLifeMapRenderProof(gl, scene);
       }}
     >
       <WebGLRecoveryBridge onStateChange={setWebglState} />
