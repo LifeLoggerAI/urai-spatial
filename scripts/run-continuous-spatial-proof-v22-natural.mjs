@@ -8,7 +8,7 @@ const newOwner = "result.animationOwner === 'natural-terrain-plus-cc0-fern-plus-
 if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
-const runtimeEnvironmentalRadius = 'radius: 2.45'
+const runtimeEnvironmentalRadius = 'radius: 2.8'
 const staleEnvironmentalCount = original.split(staleEnvironmentalRadius).length - 1
 if (staleEnvironmentalCount !== 2) {
   throw new Error(`Continuous proof environmental-threshold proximity contract changed: expected 2, found ${staleEnvironmentalCount}`)
