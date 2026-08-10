@@ -201,7 +201,7 @@ async function captureScreenshot(page, file) {
     animations: 'disabled',
     caret: 'hide',
     scale: 'device',
-    timeout: 60_000,
+    timeout: 120_000,
   })
   return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
 }
