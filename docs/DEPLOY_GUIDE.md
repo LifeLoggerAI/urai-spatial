@@ -31,7 +31,7 @@ Required production keys include:
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
-- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- server-side Google identity: either a Google-managed runtime metadata identity or `GOOGLE_APPLICATION_CREDENTIALS` pointing to a non-symlinked external-account Workload Identity Federation configuration
 - `NEXT_PUBLIC_APP_URL`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -68,6 +68,8 @@ Recommended:
 
 Make sure the hosting project builds `urai-tier1` or uses the root scripts that delegate to it.
 
+Production release is currently **NO-GO**. Vercel or another non-Google runtime must not be enabled until its protected external-account WIF configuration, token source, trust conditions, and least-privilege IAM bindings are installed and independently verified. The checked-in release workflow is verification-only and must not be bypassed.
+
 ## 6. Stripe production setup
 
 - Switch to live mode.
@@ -82,7 +84,9 @@ Make sure the hosting project builds `urai-tier1` or uses the root scripts that 
 - Enable Email/Password if using the built-in auth flow.
 - Confirm Firestore is enabled.
 - Confirm Firestore rules match the launch posture.
-- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
+- Attach a least-privilege Google-managed runtime identity, or install a protected external-account WIF configuration for a non-Google runtime.
+- Do not set `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PRIVATE_KEY`, or `FIREBASE_CLIENT_EMAIL`.
+- Keep production disabled until historical keys are revoked, negative authentication is proven, Cloud Audit Logs are reviewed, and protected runtime read-back succeeds.
 
 ## 8. Post-deploy verification
 
@@ -116,5 +120,6 @@ Make sure the hosting project builds `urai-tier1` or uses the root scripts that 
 ## 12. Security reminders
 
 - Never expose Stripe secret key.
-- Never expose Firebase service account JSON.
+- Never create, upload, or expose Firebase service-account JSON for this runtime.
+- Accept only Google-managed metadata identity or a protected external-account WIF configuration; reject authorized-user ADC and long-lived private-key credentials.
 - Only backend routes write Firestore entitlements.
