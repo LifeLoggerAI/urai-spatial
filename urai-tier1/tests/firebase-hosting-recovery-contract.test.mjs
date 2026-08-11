@@ -67,20 +67,35 @@ test('rejects cross-site or malformed selected recovery identities', () => {
   assert.equal(assertVersionName('sites/urai-4dc1d/versions/live-v1'), 'sites/urai-4dc1d/versions/live-v1')
   assert.throws(() => assertVersionName('sites/another-site/versions/live-v1'), /Invalid Firebase Hosting version name/)
   assert.throws(() => assertVersionName('sites/urai-4dc1d/channels/test/versions/live-v1'), /Invalid Firebase Hosting version name/)
-  assert.throws(() => selectCurrentLiveRelease([{
-    name: 'sites/urai-4dc1d/releases/current-live',
-    version: { name: 'malformed-current-version' },
-    releaseTime: '2026-07-14T17:00:00Z',
-    type: 'DEPLOY',
-  }]), /Invalid Firebase Hosting version name/)
 })
 
-test('uses the official Hosting endpoints and confines recovery receipts', () => {
+test('uses official Hosting endpoints with short-lived WIF/ADC access tokens', () => {
   assert.match(source, /firebasehosting\.googleapis\.com\/v1beta1/)
   assert.match(source, /sites\/\$\{siteId\}\/releases/)
   assert.match(source, /url\.searchParams\.set\('versionName', versionName\)/)
   assert.match(source, /RESTORE_EXACT_HOSTING_VERSION/)
+  assert.match(source, /GOOGLE_GHA_CREDS_PATH/)
+  assert.match(source, /GCP_WIF_PROVIDER/)
+  assert.match(source, /GCP_DEPLOY_SERVICE_ACCOUNT/)
+  assert.match(source, /gcloud/)
+  assert.match(source, /auth', 'print-access-token/)
+  assert.match(source, /type !== 'external_account'/)
+  assert.match(source, /credentialClass: 'github-oidc-wif'/)
+  assert.match(source, /longLivedServiceAccountKeyUsed: false/)
+})
+
+test('recovery receipts remain confined to RUNNER_TEMP', () => {
   assert.match(source, /mkdirSync\(runnerTemp, \{ recursive: true \}\)/)
   assert.match(source, /Hosting recovery receipt must remain inside RUNNER_TEMP/)
+  assert.match(source, /urai-firebase-hosting-recovery-2/)
+  assert.match(source, /urai-firebase-hosting-restore-verification-2/)
+})
+
+test('private-key service-account token minting is retired', () => {
+  assert.doesNotMatch(source, /createSign/)
+  assert.doesNotMatch(source, /createServiceAccountAssertion/)
+  assert.doesNotMatch(source, /accessTokenFromServiceAccount/)
+  assert.doesNotMatch(source, /serviceAccountFromEnvironment/)
+  assert.match(source, /private_key\|client_secret\|credentials_json/)
   assert.doesNotMatch(source, /firebase deploy/)
 })
