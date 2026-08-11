@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "3.0.0",
+  "packId": "urai-human-rig-v3",
+  "generated": "2026-08-11",
+  "cameraAspect": "5:4",
+  "units": "meters",
+  "selectedProduction": false,
+  "promotionRequires": [
+    "rendered-motion-proof",
+    "facial-expression-upgrade",
+    "mobile-lod",
+    "final-topology/provenance-review"
+  ],
+  "modelCount": 7,
+  "totalVertices": 176980,
+  "totalFaces": 353396,
+  "assets": [
+    {
+      "role": "home",
+      "fileName": "home-human-rigged-v3.glb",
+      "bytes": 2133052,
+      "sha256": "58a72a0d060731a7609ec0fdc5fcfed53f732afbed41b933ee057ab7fdb4a062",
+      "heightMeters": 1.82,
+      "vertices": 25006,
+      "faces": 49928,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    },
+    {
+      "role": "guide",
+      "fileName": "council-guide-human-rigged-v3.glb",
+      "bytes": 2172896,
+      "sha256": "8c981d63ede4269df8f2aebff77879c8654952b0be85750a84649aab6f0b3e0d",
+      "heightMeters": 1.84,
+      "vertices": 25512,
+      "faces": 50944,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    },
+    {
+      "role": "mirror",
+      "fileName": "council-mirror-human-rigged-v3.glb",
+      "bytes": 2116432,
+      "sha256": "60b9b85afa6ce78113a53d6ce3987aee4b02c0e8146ab8b2ad1e8a8a948a7aae",
+      "heightMeters": 1.76,
+      "vertices": 24804,
+      "faces": 49524,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    },
+    {
+      "role": "guardian",
+      "fileName": "council-guardian-human-rigged-v3.glb",
+      "bytes": 2240664,
+      "sha256": "bb017cb5ff9ba3bfd12a7d4752b3c4d94d4f5c731171321a6d1d4481e74b8cf5",
+      "heightMeters": 1.92,
+      "vertices": 26358,
+      "faces": 52640,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    },
+    {
+      "role": "archivist",
+      "fileName": "council-archivist-human-rigged-v3.glb",
+      "bytes": 2097628,
+      "sha256": "7fd30fffbbec4cf760286196d89deda8ee7e5e22e9915d8c7fcb265e9ce02b9e",
+      "heightMeters": 1.73,
+      "vertices": 24564,
+      "faces": 49044,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    },
+    {
+      "role": "builder",
+      "fileName": "council-builder-human-rigged-v3.glb",
+      "bytes": 2231980,
+      "sha256": "a202b042e75fcaa69443c6e224121b0e5e7f7978f008e8fa4e60cda0a8b66567",
+      "heightMeters": 1.88,
+      "vertices": 26236,
+      "faces": 52396,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    },
+    {
+      "role": "trickster",
+      "fileName": "council-trickster-human-rigged-v3.glb",
+      "bytes": 2092352,
+      "sha256": "4c2b93060e7a85d836180d0e2c26e5c8dfa31791ec36176b7a1f87e7a04adf47",
+      "heightMeters": 1.8,
+      "vertices": 24500,
+      "faces": 48920,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ],
+      "embeddedTextures": 8
+    }
+  ]
+}
