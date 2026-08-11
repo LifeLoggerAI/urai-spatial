@@ -24,14 +24,15 @@ env:
   FUNCTION_ID: elevenLabsVoiceProvider
   FUNCTIONS_CODEBASE: urai-spatial-functions
   WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER || secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-  WIF_ADMIN_SERVICE_ACCOUNT: ${{ vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT || vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT || secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
-  GCP_ADMIN_CREDENTIALS_JSON: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
+  WIF_SERVICE_ACCOUNT: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT || vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT || secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+  CREDENTIAL_ROTATION_GO: ${{ vars.URAI_CREDENTIAL_ROTATION_GO }}
 
 jobs:
   deploy:
-    name: Build, deploy, and smoke ElevenLabs provider
+    name: WIF preflight, deploy, and smoke ElevenLabs provider
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment: production
     steps:
       - name: Guard one-time trusted branch
         shell: bash
@@ -94,59 +95,21 @@ jobs:
           grep -Fq 'secrets: [ELEVENLABS_API_KEY]' apps/functions/src/providerFunctions.ts
           grep -Fq "export { elevenLabsVoiceProvider, openAiOrbProvider }" apps/functions/src/index.ts
 
-      - name: Materialize ephemeral Firebase deploy credential
-        id: deploycred
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
-          credentials="$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials"
-          chmod 600 "$credentials"
-          client_email="$(node - "$credentials" <<'NODE'
-          const fs = require('fs')
-          const path = process.argv[2]
-          const serviceAccount = JSON.parse(fs.readFileSync(path, 'utf8'))
-          if (serviceAccount.project_id !== 'urai-4dc1d') throw new Error('Firebase deploy credential project mismatch')
-          if (!serviceAccount.client_email) throw new Error('Firebase deploy credential has no client_email')
-          process.stdout.write(serviceAccount.client_email)
-          NODE
-          )"
-          printf 'path=%s\n' "$credentials" >> "$GITHUB_OUTPUT"
-          printf 'email=%s\n' "$client_email" >> "$GITHUB_OUTPUT"
-          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$credentials" >> "$GITHUB_ENV"
-
-      - name: Select secret-IAM repair identity
-        id: iam_auth
+      - name: Require short-lived Google identity
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "$WIF_PROVIDER" ] && [ -n "$WIF_ADMIN_SERVICE_ACCOUNT" ]; then
-            echo 'mode=wif' >> "$GITHUB_OUTPUT"
-          elif [ -n "$GCP_ADMIN_CREDENTIALS_JSON" ]; then
-            echo 'mode=json' >> "$GITHUB_OUTPUT"
-          else
-            echo 'mode=self' >> "$GITHUB_OUTPUT"
+          if [ -z "$WIF_PROVIDER" ] || [ -z "$WIF_SERVICE_ACCOUNT" ]; then
+            echo '::error::Production WIF is not configured. Refusing to use the legacy Firebase service-account JSON credential.'
+            exit 65
           fi
 
-      - name: Authenticate secret IAM repair through Workload Identity Federation
-        if: steps.iam_auth.outputs.mode == 'wif'
+      - name: Authenticate through Workload Identity Federation
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           project_id: ${{ env.EXPECTED_PROJECT }}
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
-          service_account: ${{ env.WIF_ADMIN_SERVICE_ACCOUNT }}
-          create_credentials_file: true
-          export_environment_variables: true
-
-      - name: Authenticate secret IAM repair with protected admin JSON
-        if: steps.iam_auth.outputs.mode == 'json'
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
-        with:
-          credentials_json: ${{ env.GCP_ADMIN_CREDENTIALS_JSON }}
-          project_id: ${{ env.EXPECTED_PROJECT }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
           create_credentials_file: true
           export_environment_variables: true
 
@@ -156,30 +119,26 @@ jobs:
           project_id: ${{ env.EXPECTED_PROJECT }}
           version: '>= 500.0.0'
 
-      - name: Grant deploy identity secret metadata visibility only
+      - name: Verify WIF project and secret metadata access
         shell: bash
-        env:
-          DEPLOY_SERVICE_ACCOUNT: ${{ steps.deploycred.outputs.email }}
         run: |
           set -euo pipefail
-          test -n "$DEPLOY_SERVICE_ACCOUNT"
-          for secret in OPENAI_API_KEY ELEVENLABS_API_KEY; do
-            gcloud secrets add-iam-policy-binding "$secret" \
-              --project "$EXPECTED_PROJECT" \
-              --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
-              --role roles/secretmanager.viewer \
-              --quiet >/dev/null
-          done
-          echo 'Granted metadata-only Secret Manager viewer access required by Firebase CLI analysis.'
+          test "$(gcloud config get-value project 2>/dev/null)" = "$EXPECTED_PROJECT"
+          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1)"
+          test -n "$active_account"
+          test "$active_account" = "$WIF_SERVICE_ACCOUNT"
+          gcloud secrets describe OPENAI_API_KEY --project "$EXPECTED_PROJECT" --format='value(name)' >/dev/null
+          gcloud secrets describe ELEVENLABS_API_KEY --project "$EXPECTED_PROJECT" --format='value(name)' >/dev/null
+          echo 'WIF can read required Secret Manager metadata without exposing secret values.'
 
-      - name: Restore Firebase deploy credential
+      - name: Enforce credential-rotation production gate
         shell: bash
-        env:
-          DEPLOY_CREDENTIAL_PATH: ${{ steps.deploycred.outputs.path }}
         run: |
           set -euo pipefail
-          test -f "$DEPLOY_CREDENTIAL_PATH"
-          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$DEPLOY_CREDENTIAL_PATH" >> "$GITHUB_ENV"
+          if [ "$CREDENTIAL_ROTATION_GO" != 'GO' ]; then
+            echo '::error::URAI_CREDENTIAL_ROTATION_GO is not GO. Production deploy remains blocked until the potentially exposed Firebase key is revoked/rotated and the protected identity path is validated.'
+            exit 78
+          fi
 
       - name: Deploy only ElevenLabs voice provider
         shell: bash
@@ -221,7 +180,7 @@ jobs:
           node - <<'NODE'
           const fs = require('fs')
           const receipt = {
-            schemaVersion: 'urai-provider-deployment-receipt-1',
+            schemaVersion: 'urai-provider-deployment-receipt-2',
             recordedAt: new Date().toISOString(),
             repository: process.env.GITHUB_REPOSITORY,
             canonicalSha: process.env.CANONICAL_SHA,
@@ -229,6 +188,7 @@ jobs:
             projectId: process.env.EXPECTED_PROJECT,
             functionId: process.env.FUNCTION_ID,
             functionUrl: process.env.FUNCTION_URL,
+            deploymentCredentialClass: 'workload-identity-federation',
             secretBinding: 'ELEVENLABS_API_KEY',
             secretValueRecorded: false,
             unauthenticatedSmokeExpected: 401,
@@ -264,18 +224,17 @@ jobs:
               `- Canonical SHA: \`${process.env.CANONICAL_SHA}\``,
               `- Firebase project: \`${process.env.EXPECTED_PROJECT}\``,
               `- Function: \`${process.env.FUNCTION_ID}\``,
+              `- Credential path: Workload Identity Federation only`,
               `- Function URL: ${process.env.FUNCTION_URL || 'not reached'}`,
               `- Unauthenticated smoke HTTP: \`${process.env.SMOKE_STATUS || 'not reached'}\` (expected \`401\`)`,
               `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               `- Job status at report step: \`${status}\``,
               '',
-              'The ElevenLabs API key value is not recorded in this receipt.'
+              'No provider secret value is recorded in this receipt, and the legacy Firebase service-account JSON credential is not used by this workflow.'
             ].join('\n')
             await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body })
 
-      - name: Remove temporary credentials
+      - name: Remove temporary diagnostics
         if: always()
         shell: bash
-        run: |
-          rm -f "$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
-          rm -f "$RUNNER_TEMP/gcp-admin-service-account.json"
+        run: rm -f "$RUNNER_TEMP/elevenlabs-smoke-body.json"
