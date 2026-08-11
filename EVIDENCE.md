@@ -80,19 +80,13 @@ Release Governance Guard must then pass on the same SHA using the repository-pre
 
 ## Canonical production deployment contract
 
-The sole current production workflow authority is `.github/workflows/spatial-live-deploy.yml` (`URAI Canonical Production Release`). For a normal production release, it is manually dispatched on protected `main` with the live inputs:
+There is currently no repository production deployment authority. `.github/workflows/spatial-live-deploy.yml` is verification-only and records **NO-GO**; it accepts no release/rollback/confirmation input, receives no production credential, and cannot execute Firebase mutation. The full and Location Map preview workflows are likewise local-only verification.
 
-| Input | Required normal deploy value |
-| --- | --- |
-| `release_sha` | exact current `main` SHA to ship |
-| `rollback_sha` | distinct proven ancestor/recovery SHA |
-| `confirm` | `DEPLOY_URAI_APP` |
-
-The workflow validates exact identity, current-main binding, rollback ancestry, frozen install, asset validation, typecheck, AAA/XR contracts, live release checks, rollback viability, build identity, and the protected production deployment path. Do not substitute an ad-hoc Firebase deploy for this authority.
+A future production authority must be introduced only by a separately reviewed exact-head change after provider-side external-account WIF trust, least-privilege IAM, historical-key revocation, negative-auth, audit-log review, protected settings/read-back, and eligible non-author approval are recorded. Do not substitute an ad-hoc Firebase deploy.
 
 ## Production verification evidence
 
-After the protected workflow succeeds, production is still not complete until independent live verification records the shipped SHA and verifies at minimum:
+After a future separately authorized keyless deployment succeeds, production is still not complete until independent live verification records the shipped SHA and verifies at minimum:
 
 - `https://urai.app` responds successfully;
 - `/home`, Ground transition, Life Map transition, and Orb interaction work;
@@ -107,4 +101,4 @@ After the protected workflow succeeds, production is still not complete until in
 
 ## Current release decision
 
-**NO production completion claim yet.** PR #1069 remains release-gated until the successor/final candidate completes production audio, current exact-head CI, direct rendered inspection, exact-SHA human acceptance, governance authorization, merge, protected production deployment, independent live verification, final Drive receipt update, and issue #863 closure.
+**NO production completion claim.** Source verification, provider closure, independent approval, and a separately reviewed keyless release authority remain required before merge/deployment/live verification, final Drive receipt update, or issue #863 closure.
