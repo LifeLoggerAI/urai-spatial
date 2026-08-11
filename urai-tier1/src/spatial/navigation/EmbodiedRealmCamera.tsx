@@ -13,7 +13,7 @@ type EmbodiedRealmCameraProps = {
   yaw: MutableRefObject<number>
   pitch: MutableRefObject<number>
   reducedMotion: boolean
-  ownerRef: MutableRefObject<HTMLElement | null>
+  ownerRef: { current: HTMLElement | null }
   datasetPrefix: string
   spawn: [number, number]
   cameraHeight?: number
