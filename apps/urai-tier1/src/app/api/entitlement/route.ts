@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
+import { assertExternalAccountAdc } from '@/lib/server/google-adc';
 
 function bearerTokenFrom(request: Request): string | null {
   const authHeader = request.headers.get('authorization');
@@ -15,6 +16,7 @@ async function verifyUser(request: Request) {
   const admin = await import('firebase-admin/auth');
   const app = await import('firebase-admin/app');
 
+  assertExternalAccountAdc();
   if (!app.getApps().length) {
     app.initializeApp({ credential: app.applicationDefault() });
   }
