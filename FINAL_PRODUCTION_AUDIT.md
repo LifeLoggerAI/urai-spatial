@@ -19,7 +19,7 @@ Do not call the entire URAI system-of-systems fully production-locked until the 
 - Root package manager: `pnpm@10.0.0`
 - Root Node engine: `>=22`
 - Canonical public URL: `https://urai.app`
-- Sole production and rollback authority: `.github/workflows/spatial-live-deploy.yml`
+- Current release boundary: `.github/workflows/spatial-live-deploy.yml` is verification-only and records NO-GO
 
 ## Historical route observations
 
@@ -40,29 +40,11 @@ None of these historical observations is evidence for the current release candid
 
 ## Superseded deployment instructions
 
-The former local commands—including `firebase deploy`, `pnpm live:deploy:static`, and `pnpm publish:live:static`—are retired and must not be used. `scripts/live-release.mjs` now refuses deployment outside the protected canonical manual workflow.
+All former local and workflow dispatch commands—including `firebase deploy`, `pnpm live:deploy`, `pnpm publish:live`, and release/rollback/confirmation inputs to `spatial-live-deploy.yml`—are retired and must not be used.
 
-Approved production dispatch after exact-head checks pass and the candidate is merged:
+The canonical workflow is verification-only, records **NO-GO**, exposes no production environment or provider credential, and cannot deploy or roll back. Legacy recovery and preview-channel workflows are also checks-only.
 
-```bash
-gh workflow run spatial-live-deploy.yml \
-  --ref main \
-  -f release_sha=<EXACT_CURRENT_MAIN_SHA> \
-  -f rollback_sha=<DISTINCT_PROVEN_PRODUCTION_SHA> \
-  -f confirm=DEPLOY_URAI_APP
-```
-
-Approved rollback form, using the command written into the deployment receipt:
-
-```bash
-gh workflow run spatial-live-deploy.yml \
-  --ref main \
-  -f release_sha=<PROVEN_ROLLBACK_SHA> \
-  -f rollback_sha=<PROVEN_ROLLBACK_SHA> \
-  -f confirm=ROLLBACK_URAI_APP
-```
-
-Both operations run through the protected `production` environment, verify the exact target, publish hosting-only output to project `urai-4dc1d`, and run live smoke. Never substitute a local Firebase command.
+Restoring production authority requires a separately reviewed change after provider-side external-account WIF, least-privilege IAM, historical-key revocation, negative-auth, Cloud Audit Logs, protected settings/read-back, exact-head nonproduction validation, and eligible independent approval are proven.
 
 ## Original execution limitation
 
@@ -84,7 +66,7 @@ The June 23 ChatGPT container did not have a mounted repository workspace, Fireb
 
 ## Current blockers carried forward
 
-- Exact deployed and rollback SHA receipts are still required.
+- Historical-key revocation, negative-auth, Cloud Audit Log, WIF/IAM, protected-settings, and runtime read-back receipts are required before any release authority may be restored.
 - `/privacy-controls` and `/status` must be externally verified after the current candidate is deployed.
 - Provider-backed and physical-device claims remain separately gated.
 - Final desktop/mobile screenshots and human review are required.
@@ -92,4 +74,4 @@ The June 23 ChatGPT container did not have a mounted repository workspace, Fireb
 
 ## Current readiness call
 
-This document does not declare production green. Spatial can move to a stronger public-beta posture only after the current exact head passes required checks, merges, deploys through the protected workflow, and produces current live route, query, Status, Privacy Controls, rollback, and visual receipts.
+This document does not declare production green. Spatial remains NO-GO. Exact-head source checks and independent approval must complete, provider closure must be proven, and production authority must be restored only through a separately reviewed keyless change before any deploy, rollback, public-beta, or live-parity claim.
