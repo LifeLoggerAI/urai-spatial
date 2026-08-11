@@ -1,0 +1,60 @@
+name: Audit WIF Config Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/audit-wif-config-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check repository WIF configuration presence only
+        id: presence
+        shell: bash
+        env:
+          WIF_PROVIDER_VAR: ${{ vars.GCP_WIF_PROVIDER }}
+          MAPS_ADMIN_VAR: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          ASSET_ADMIN_VAR: ${{ vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT }}
+          WIF_PROVIDER_SECRET: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          DEPLOY_SA_SECRET: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          echo "provider_var=$([[ -n \"$WIF_PROVIDER_VAR\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "maps_admin_var=$([[ -n \"$MAPS_ADMIN_VAR\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "asset_admin_var=$([[ -n \"$ASSET_ADMIN_VAR\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "provider_secret=$([[ -n \"$WIF_PROVIDER_SECRET\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "deploy_sa_secret=$([[ -n \"$DEPLOY_SA_SECRET\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized presence result
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          PROVIDER_VAR: ${{ steps.presence.outputs.provider_var }}
+          MAPS_ADMIN_VAR: ${{ steps.presence.outputs.maps_admin_var }}
+          ASSET_ADMIN_VAR: ${{ steps.presence.outputs.asset_admin_var }}
+          PROVIDER_SECRET: ${{ steps.presence.outputs.provider_secret }}
+          DEPLOY_SA_SECRET: ${{ steps.presence.outputs.deploy_sa_secret }}
+        with:
+          script: |
+            const body = [
+              '## URAI Spatial WIF config presence audit',
+              '',
+              `- GCP_WIF_PROVIDER repository variable present: **${process.env.PROVIDER_VAR}**`,
+              `- GCP_MAPS_ADMIN_SERVICE_ACCOUNT repository variable present: **${process.env.MAPS_ADMIN_VAR}**`,
+              `- GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT repository variable present: **${process.env.ASSET_ADMIN_VAR}**`,
+              `- GCP_WORKLOAD_IDENTITY_PROVIDER repository secret present: **${process.env.PROVIDER_SECRET}**`,
+              `- GCP_DEPLOY_SERVICE_ACCOUNT repository secret present: **${process.env.DEPLOY_SA_SECRET}**`,
+              '',
+              '- No secret values were printed.',
+              '- No Google Cloud mutation was attempted.',
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'URAI Spatial WIF config presence audit', body })
