@@ -9,80 +9,53 @@ const repositoryRoot = path.resolve(testDirectory, '../..')
 const read = (relativePath) => readFileSync(path.join(repositoryRoot, relativePath), 'utf8').replace(/\r\n?/g, '\n')
 
 const operator = read('scripts/live-release.mjs')
-const smoke = read('scripts/urai-release-control-smoke.mjs')
 const recovery = read('scripts/firebase-hosting-recovery.mjs')
+const workflow = read('.github/workflows/spatial-live-deploy.yml')
 const focusedRunner = read('urai-tier1/scripts/run-unit-contract-tests.mjs')
 const compactRunner = read('urai-tier1/scripts/run-unit-contract-tests-compact.mjs')
 
 const contractPath = 'tests/automatic-hosting-recovery-contract.test.mjs'
 
-test('canonical operator captures the exact live Hosting version before mutation', () => {
-  const capture = operator.indexOf('const hostingCapture = await discoverCurrentLiveRelease()')
-  const deploy = operator.lastIndexOf('deployHostingWithTemporaryCredentials()')
-  assert.ok(capture >= 0, 'operator must capture the live Hosting version')
-  assert.ok(deploy > capture, 'capture must occur before Firebase Hosting mutation')
-  assert.match(operator, /URAI_HOSTING_RECOVERY_RECEIPT/)
-  assert.match(operator, /discoverCurrentLiveRelease/)
+test('canonical operator rejects long-lived credentials and every deploy request', () => {
+  for (const marker of [
+    "process.argv.includes('--deploy')",
+    "process.argv.includes('--deploy-prebuilt')",
+    "'FIREBASE_SERVICE_ACCOUNT_JSON'",
+    "'FIREBASE_PRIVATE_KEY'",
+    "'FIREBASE_CLIENT_EMAIL'",
+    "'FIREBASE_TOKEN'",
+    'Refusing long-lived Firebase credential environment variable:',
+    'URAI Spatial production release is NO-GO',
+    'No provider credentials were loaded and no production mutation was attempted.',
+  ]) assert.ok(operator.includes(marker), `missing fail-closed operator marker: ${marker}`)
+
+  assert.doesNotMatch(operator, /node:(?:child_process|fs)|firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|credential\.cert\s*\(|createSign\s*\(|writeTemporaryServiceAccount|deployHostingWithTemporaryCredentials/)
 })
 
-test('canonical operator restores and verifies the exact version on deploy or post-deploy failure', () => {
-  assert.match(operator, /catch \(error\) \{[\s\S]*await recoverExactHostingVersion\(\{/)
-  assert.match(operator, /restoreDiscoveredVersion/)
-  assert.match(operator, /verifyRestoredVersion/)
-  assert.match(operator, /URAI_HOSTING_RESTORE_CONFIRM/)
-  assert.match(operator, /RESTORE_EXACT_HOSTING_VERSION/)
-  assert.match(operator, /operator-recovery\.json/)
-  assert.match(operator, /recovery-final-state\.json/)
-  assert.match(operator, /restored-previous-hosting-version/)
+test('Hosting recovery exports only fail-closed operations', () => {
+  for (const marker of [
+    'URAI Spatial Firebase Hosting recovery is NO-GO',
+    'function refuseRecovery()',
+    'throw new Error(quarantineMessage)',
+    'export async function discoverCurrentLiveRelease()',
+    'export async function restoreDiscoveredVersion()',
+    'export async function verifyRestoredVersion()',
+    'process.exitCode = 1',
+  ]) assert.ok(recovery.includes(marker), `missing fail-closed recovery marker: ${marker}`)
+
+  assert.doesNotMatch(recovery, /FIREBASE_|GOOGLE_APPLICATION_CREDENTIALS|credential\.cert\s*\(|createSign\s*\(|accessToken|fetch\s*\(|https?:\/\//)
 })
 
-test('strict release-control smoke independently recovers before reporting failure', () => {
-  assert.match(smoke, /protectedDeployRecoveryContext/)
-  assert.match(smoke, /process\.env\.GITHUB_JOB === 'deploy'/)
-  assert.match(smoke, /await restoreDiscoveredVersion\(\)/)
-  assert.match(smoke, /await verifyRestoredVersion\(\)/)
-  assert.match(smoke, /strict-smoke-recovery\.json/)
-  assert.match(smoke, /strict-smoke-final-state\.json/)
-  assert.match(smoke, /if \(!protectedDeployRecoveryContext\(\)\) throw originalError/)
-  assert.match(smoke, /throw new AggregateError/)
+test('canonical workflow cannot invoke deploy, recovery, or strict live smoke', () => {
+  assert.match(workflow, /Verify canonical source with production release quarantined/)
+  assert.match(workflow, /Classification: NO-GO/)
+  assert.doesNotMatch(workflow, /node\s+scripts\/live-release\.mjs\s+--deploy(?:-prebuilt)?/)
+  assert.doesNotMatch(workflow, /node\s+scripts\/firebase-hosting-recovery\.mjs/)
+  assert.doesNotMatch(workflow, /node\s+scripts\/urai-release-control-smoke\.mjs/)
+  assert.doesNotMatch(workflow, /environment:\s*production|id-token:\s*write/)
 })
 
-test('recovery accepts only the managed runner credential or the one scoped raw secret', () => {
-  assert.match(recovery, /managedCredentialFilename = 'urai-firebase-service-account\.json'/)
-  assert.match(recovery, /Managed Firebase credential path/)
-  assert.match(recovery, /must be a regular non-symlinked file/)
-  assert.match(recovery, /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.match(recovery, /verify-restored/)
-})
-
-test('service-account parsing rejects null and non-object JSON values', () => {
-  assert.match(recovery, /if \(!parsed \|\| typeof parsed !== 'object' \|\| parsed\.project_id !== expectedSiteId\)/)
-  assert.match(recovery, /parsed\?\.project_id \|\| 'missing'/)
-})
-
-test('restore verification reuses one OAuth token across bounded polling', () => {
-  const start = recovery.indexOf('export async function verifyRestoredVersion')
-  const end = recovery.indexOf('export function selfTest', start)
-  assert.ok(start >= 0 && end > start, 'restore verification implementation must be discoverable')
-  const block = recovery.slice(start, end)
-  assert.equal((block.match(/accessTokenFromServiceAccount/g) || []).length, 1)
-  assert.match(block, /listAllReleases\(accessToken, siteId\)/)
-})
-
-test('strict smoke retries transient request failures before recovery', () => {
-  assert.match(smoke, /for \(let attempt = 1; attempt <= 3; attempt \+= 1\)/)
-  assert.match(smoke, /AbortSignal\.timeout\(20_000\)/)
-  assert.match(smoke, /setTimeout\(resolve, 1000 \* 2 \*\* \(attempt - 1\)\)/)
-  assert.match(smoke, /throw lastError/)
-})
-
-test('recovery remains inside the single canonical production authority', () => {
-  assert.doesNotMatch(recovery, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy/)
-  assert.doesNotMatch(smoke, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy/)
-  assert.doesNotMatch(operator, /gh workflow run/)
-})
-
-test('both focused runners execute this recovery contract', () => {
+test('both focused runners execute this quarantine contract', () => {
   assert.ok(focusedRunner.includes(`'${contractPath}'`))
   assert.ok(compactRunner.includes(`'${contractPath}'`))
 })
