@@ -16,6 +16,13 @@ const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-re
 const tierConfig = fs.readFileSync(new URL("../scripts/tier-lock/tier-config.mjs", import.meta.url), "utf8");
 const envExample = fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8");
 const lifeMapQa = fs.readFileSync(new URL("../docs/LIFEMAP_QA_CHECKLIST.md", import.meta.url), "utf8");
+const canonicalEntitlementRoute = fs.readFileSync(new URL("../src/app/api/entitlement/route.ts", import.meta.url), "utf8");
+const adcGuardPaths = [
+  new URL("../../src/lib/server/google-adc.ts", import.meta.url),
+  new URL("../../apps/urai-tier1/src/lib/server/google-adc.ts", import.meta.url),
+  new URL("../src/lib/server/google-adc.ts", import.meta.url),
+  new URL("../scripts/lib/assert-external-account-adc.mjs", import.meta.url),
+];
 const firebaseAdminRuntimePaths = [
   new URL("../../src/lib/entitlementStore.ts", import.meta.url),
   new URL("../src/lib/entitlementStore.ts", import.meta.url),
@@ -56,6 +63,7 @@ test("active narrator client and controller fail closed until session consent", 
 test("Firebase bearer verification checks revoked tokens and uses ADC", () => {
   assert.match(firebaseUser, /verifyIdToken\(token, true\)/);
   assert.match(firebaseUser, /applicationDefault\(\)/);
+  assert.match(firebaseUser, /assertExternalAccountAdc\(\)/);
   assert.doesNotMatch(firebaseUser, /FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.doesNotMatch(firebaseUser, /\.cert\s*\(/);
 });
@@ -64,10 +72,30 @@ test("active Firebase Admin runtime and seed paths reject inline service-account
   for (const path of firebaseAdminRuntimePaths) {
     const source = fs.readFileSync(path, "utf8");
     assert.match(source, /applicationDefault\(\)/, `${path.pathname} must use ADC`);
+    assert.match(source, /assertExternalAccountAdc\(\)/, `${path.pathname} must validate ADC before Firebase Admin`);
     assert.doesNotMatch(source, /FIREBASE_SERVICE_ACCOUNT_JSON/, `${path.pathname} must not accept inline service-account JSON`);
     assert.doesNotMatch(source, /\.cert\s*\(/, `${path.pathname} must not construct certificate credentials`);
     assert.doesNotMatch(source, /JSON\.parse\([^)]*SERVICE_ACCOUNT/, `${path.pathname} must not parse service-account JSON`);
   }
+});
+
+test("ADC guards accept only regular external-account WIF configuration", () => {
+  for (const path of adcGuardPaths) {
+    const source = fs.readFileSync(path, "utf8");
+    assert.match(source, /type[^\n]+external_account/);
+    assert.match(source, /lstatSync/);
+    assert.match(source, /isSymbolicLink\(\)/);
+    assert.match(source, /credential_source/);
+    assert.match(source, /private_key/);
+    assert.match(source, /client_email/);
+    assert.doesNotMatch(source, /authorized_user/);
+  }
+});
+
+test("static export never grants a public entitlement", () => {
+  assert.match(canonicalEntitlementRoute, /status: 503/);
+  assert.match(canonicalEntitlementRoute, /Entitlement verification is unavailable/);
+  assert.doesNotMatch(canonicalEntitlementRoute, /enabled: true/);
 });
 
 test("tier readiness and Life Map operator guidance require ADC", () => {
@@ -75,7 +103,7 @@ test("tier readiness and Life Map operator guidance require ADC", () => {
   assert.doesNotMatch(tierConfig, /FIREBASE_SERVICE_ACCOUNT_JSON/);
   assert.match(envExample, /GOOGLE_APPLICATION_CREDENTIALS=/);
   assert.doesNotMatch(envExample, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-  assert.match(lifeMapQa, /GOOGLE_APPLICATION_CREDENTIALS=\/secure\/path\/adc-credentials\.json/);
+  assert.match(lifeMapQa, /GOOGLE_APPLICATION_CREDENTIALS=\/secure\/path\/wif-external-account\.json/);
   assert.doesNotMatch(lifeMapQa, /FIREBASE_SERVICE_ACCOUNT_JSON/);
 });
 
