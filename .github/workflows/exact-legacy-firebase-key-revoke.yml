@@ -1,0 +1,187 @@
+name: URAI Exact Legacy Firebase Key Revocation
+
+on:
+  push:
+    branches:
+      - ops/exact-legacy-key-revoke-20260811
+    paths:
+      - '.github/workflows/exact-legacy-firebase-key-revoke.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+env:
+  TARGET_PROJECT: urai-4dc1d
+
+jobs:
+  revoke:
+    name: Revoke exact legacy Firebase key with existing admin authority
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact containment branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate exact legacy credential metadata privately
+        id: legacy
+        shell: bash
+        env:
+          LEGACY_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$LEGACY_JSON"
+          d="$RUNNER_TEMP/urai-exact-key-revoke"
+          mkdir -p "$d"
+          printf '%s' "$LEGACY_JSON" > "$d/legacy.json"
+          chmod 600 "$d/legacy.json"
+          jq -e --arg p "$TARGET_PROJECT" '.project_id == $p and (.client_email|type=="string" and length>0) and (.private_key_id|type=="string" and length>0)' "$d/legacy.json" >/dev/null
+          jq -r '.client_email' "$d/legacy.json" > "$d/legacy-email.txt"
+          jq -r '.private_key_id' "$d/legacy.json" > "$d/legacy-key-id.txt"
+          echo "dir=$d" >> "$GITHUB_OUTPUT"
+
+      - name: Select only an already-configured cloud-admin auth path
+        id: authmode
+        shell: bash
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          ADMIN_JSON: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$WIF_PROVIDER" && -n "$WIF_SERVICE_ACCOUNT" ]]; then
+            echo 'mode=wif' >> "$GITHUB_OUTPUT"
+          elif [[ -n "$ADMIN_JSON" ]]; then
+            printf '%s' "$ADMIN_JSON" | jq -e --arg p "$TARGET_PROJECT" '.project_id == $p and (.client_email|type=="string" and length>0)' >/dev/null
+            echo 'mode=json' >> "$GITHUB_OUTPUT"
+          else
+            echo '::error::No pre-existing Maps cloud-admin WIF or JSON credential path is configured.'
+            exit 65
+          fi
+
+      - name: Authenticate existing WIF admin identity
+        if: steps.authmode.outputs.mode == 'wif'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Authenticate existing JSON admin identity
+        if: steps.authmode.outputs.mode == 'json'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          credentials_json: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Install pinned Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Prove active existing identity has exact key-delete authority
+        id: authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          d='${{ steps.legacy.outputs.dir }}'
+          active="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n1)"
+          test -n "$active"
+          gcloud projects get-iam-policy "$TARGET_PROJECT" --format=json > "$d/project-iam.json"
+          jq -r --arg m "serviceAccount:$active" --arg u "user:$active" '.bindings[]? | select((.members // []) | index($m) or ((.members // []) | index($u))) | .role' "$d/project-iam.json" | sort -u > "$d/admin-roles.txt"
+          : > "$d/delete-roles.txt"
+          while IFS= read -r role; do
+            [ -n "$role" ] || continue
+            out="$d/role.json"
+            if [[ "$role" == roles/* ]]; then
+              gcloud iam roles describe "$role" --format=json > "$out"
+            elif [[ "$role" == projects/*/roles/* ]]; then
+              rid="${role##*/}"; project="$(printf '%s' "$role" | cut -d/ -f2)"
+              gcloud iam roles describe "$rid" --project "$project" --format=json > "$out"
+            elif [[ "$role" == organizations/*/roles/* ]]; then
+              rid="${role##*/}"; org="$(printf '%s' "$role" | cut -d/ -f2)"
+              gcloud iam roles describe "$rid" --organization "$org" --format=json > "$out"
+            else
+              continue
+            fi
+            if jq -e '.includedPermissions // [] | index("iam.serviceAccountKeys.delete") != null' "$out" >/dev/null; then
+              printf '%s\n' "$role" >> "$d/delete-roles.txt"
+            fi
+          done < "$d/admin-roles.txt"
+          if [[ ! -s "$d/delete-roles.txt" ]]; then
+            echo '::error::Existing cloud-admin identity is authenticated but no direct project role proves iam.serviceAccountKeys.delete.'
+            exit 66
+          fi
+          echo 'proven=true' >> "$GITHUB_OUTPUT"
+
+      - name: Delete only the exact key embedded in the legacy credential
+        id: delete
+        if: steps.authority.outputs.proven == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          d='${{ steps.legacy.outputs.dir }}'
+          email="$(cat "$d/legacy-email.txt")"
+          key_id="$(cat "$d/legacy-key-id.txt")"
+          test -n "$email" && test -n "$key_id"
+          gcloud iam service-accounts keys delete "$key_id" --iam-account "$email" --project "$TARGET_PROJECT" --quiet
+          echo 'revoked=true' >> "$GITHUB_OUTPUT"
+
+      - name: Prove fresh authentication with the revoked legacy credential fails
+        id: rejection
+        if: steps.delete.outputs.revoked == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          d='${{ steps.legacy.outputs.dir }}'
+          cfg="$d/fresh-gcloud"
+          mkdir -p "$cfg"
+          set +e
+          CLOUDSDK_CONFIG="$cfg" gcloud auth activate-service-account --key-file="$d/legacy.json" --project="$TARGET_PROJECT" --quiet >"$d/fresh.out" 2>"$d/fresh.err"
+          rc=$?
+          set -e
+          if [[ $rc -eq 0 ]]; then
+            echo '::error::Legacy credential still authenticated after key deletion.'
+            exit 67
+          fi
+          echo 'rejected=true' >> "$GITHUB_OUTPUT"
+
+      - name: Publish sanitized containment receipt
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          AUTH_PROVEN: ${{ steps.authority.outputs.proven }}
+          REVOKED: ${{ steps.delete.outputs.revoked }}
+          REJECTED: ${{ steps.rejection.outputs.rejected }}
+          AUTH_MODE: ${{ steps.authmode.outputs.mode }}
+        with:
+          script: |
+            const passed = process.env.AUTH_PROVEN === 'true' && process.env.REVOKED === 'true' && process.env.REJECTED === 'true'
+            const body = [
+              '## URAI exact legacy Firebase key containment receipt',
+              '',
+              `- Existing admin auth path selected: **${process.env.AUTH_MODE || 'none'}**`,
+              `- Existing admin identity independently proved iam.serviceAccountKeys.delete: **${process.env.AUTH_PROVEN === 'true'}**`,
+              `- Exact embedded legacy key deleted: **${process.env.REVOKED === 'true'}**`,
+              `- Fresh authentication using the old credential rejected: **${process.env.REJECTED === 'true'}**`,
+              `- Overall containment: **${passed ? 'PASS' : 'NOT VERIFIED'}**`,
+              '',
+              '- No IAM policy change, replacement key creation, WIF bootstrap, deployment, DNS change, billing change, or unrelated provider mutation was performed.',
+              '- No private key, credential JSON, access token, exact key ID, or service-account email is recorded in this receipt.',
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: `URAI exact legacy Firebase key containment — ${passed ? 'PASS' : 'NOT VERIFIED'}`, body })
+
+      - name: Remove temporary credential material
+        if: always()
+        shell: bash
+        run: rm -rf '${{ steps.legacy.outputs.dir }}'
