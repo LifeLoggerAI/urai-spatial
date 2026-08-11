@@ -1,0 +1,125 @@
+name: URAI Hero Realm GLB V2 Forge
+
+on:
+  pull_request:
+    branches: [main, agent/real-world-human-pass]
+    paths:
+      - scripts/generate-urai-hero-realms-v2.py
+      - scripts/author-urai-aaa-assets.py
+      - .github/workflows/hero-realm-glb-v2-forge.yml
+      - urai-tier1/src/spatial/council/CouncilRealm.tsx
+      - urai-tier1/src/components/spatial/shadow-realm-portal.tsx
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hero-realm-glb-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  URAI_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  PR_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+
+jobs:
+  forge:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic authored-GLB dependencies
+        run: python -m pip install --disable-pip-version-check numpy==2.2.6 Pillow==11.2.1 scikit-image==0.25.2 scipy==1.15.3
+
+      - name: Generate textured hero realm GLBs
+        run: python scripts/generate-urai-hero-realms-v2.py
+
+      - name: Verify hero density, textures and receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib, struct
+
+          root = pathlib.Path('urai-tier1/public/assets/urai/generated/hero-realms-v2')
+          receipt_path = pathlib.Path('operations/assets/generated-receipts/urai-hero-realms-v2.json')
+          receipt = json.loads(receipt_path.read_text())
+          assert receipt['packId'] == 'urai-hero-realms-v2'
+          assert receipt['cameraAspect'] == '5:4'
+          assert receipt['units'] == 'meters'
+          assert receipt['selectedProduction'] is False
+          assert receipt['qualityTier'] == 'textured-hero-density-review'
+          assert len(receipt['assets']) == 4
+          expected = {'Council','Shadow','Mirror','Legacy'}
+          assert {a['realm'] for a in receipt['assets']} == expected
+          assert receipt['totalTriangles'] >= 250_000, receipt
+
+          for asset in receipt['assets']:
+              path = root / asset['fileName']
+              data = path.read_bytes()
+              magic, version, total = struct.unpack_from('<III', data, 0)
+              assert magic == 0x46546C67 and version == 2 and total == len(data), asset
+              assert hashlib.sha256(data).hexdigest() == asset['sha256'], asset
+              assert asset['bytes'] == len(data) and asset['bytes'] >= 600_000, asset
+              assert asset['triangleCount'] >= 60_000, asset
+              assert asset['nodes'] >= 40, asset
+              assert asset['materials'] >= 8, asset
+              assert asset['embeddedTextures'] >= 4, asset
+              assert asset['uvMapped'] is True, asset
+
+              json_len, json_type = struct.unpack_from('<II', data, 12)
+              assert json_type == 0x4E4F534A
+              doc = json.loads(data[20:20+json_len].decode('utf-8').rstrip(' \x00'))
+              assert len(doc.get('images', [])) >= 4
+              assert len(doc.get('textures', [])) >= 4
+              assert len(doc.get('materials', [])) >= 8
+              assert any('TEXCOORD_0' in primitive.get('attributes', {}) for mesh in doc.get('meshes', []) for primitive in mesh.get('primitives', []))
+              assert 'KHR_materials_transmission' in doc.get('extensionsUsed', [])
+              assert 'KHR_materials_clearcoat' in doc.get('extensionsUsed', [])
+
+          print(json.dumps({'ok': True, 'realms': 4, 'totalTriangles': receipt['totalTriangles'], 'qualityTier': receipt['qualityTier']}, indent=2))
+          PY
+
+      - name: Commit exact generated hero binaries
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/generated/hero-realms-v2 operations/assets/generated-receipts/urai-hero-realms-v2.json)" ]; then
+            echo 'Hero realm binaries already match the deterministic forge.'
+            exit 0
+          fi
+          current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
+          if [ "$current_head" != "$URAI_SOURCE_SHA" ]; then
+            echo "Stale hero-realm forge input: current PR head is $current_head; refusing to push from $URAI_SOURCE_SHA"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/generated/hero-realms-v2 operations/assets/generated-receipts/urai-hero-realms-v2.json
+          git commit -m 'Forge textured hero realm GLBs v2'
+          gh auth setup-git
+          git push origin "HEAD:${PR_BRANCH}"
