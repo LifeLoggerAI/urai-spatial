@@ -1,52 +1,41 @@
-# URAI Spatial Production Secrets
+# URAI Spatial Production Identity Boundary
 
-Configure these in GitHub repository or environment secrets before production deploy.
+Production release is **NO-GO**. The repository currently exposes no approved production deployment or Hosting-recovery credential path.
 
-## Required
+## Prohibited Google/Firebase credentials
 
-### FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL
+Do not create, upload, synchronize, or configure:
 
-Full JSON service account with deploy access to the URAI Spatial Firebase project.
+- service-account JSON;
+- `FIREBASE_SERVICE_ACCOUNT_JSON`;
+- `FIREBASE_PRIVATE_KEY`;
+- `FIREBASE_CLIENT_EMAIL`;
+- authorized-user Application Default Credentials;
+- raw Firebase access or refresh tokens.
 
-Recommended roles:
+## Allowed future identity shape
 
-- Firebase Admin
-- Cloud Functions Developer
-- Firebase Hosting Admin
-- Cloud Datastore Index Admin
-- Service Account User, if required by the project
+A future non-Google runtime may use `GOOGLE_APPLICATION_CREDENTIALS` only when it points to a protected, regular, non-symlinked `external_account` Workload Identity Federation configuration. That configuration contains no private key and is not committed to this repository.
 
-### URAI_SPATIAL_FIREBASE_PROJECT_ID
+Before any production authority is restored, independently prove:
 
-Firebase project ID used for deploy commands.
+- historical key revocation and old-credential negative authentication;
+- Cloud Audit Log review;
+- narrow WIF trust conditions and least-privilege IAM;
+- protected runtime configuration installation and read-back;
+- repository/environment secret-settings inspection;
+- exact-head staging validation and eligible non-author approval.
 
-Example:
+`FIREBASE_PROJECT_ID` or `NEXT_PUBLIC_FIREBASE_PROJECT_ID` identifies a project; it does not prove identity or authorization.
 
-```text
-urai-spatial-prod
-```
+## Other provider secrets
 
-## Optional variables
-
-### URAI_SPATIAL_PRODUCTION_URL
-
-GitHub Actions repository/environment variable used by the production smoke test.
-
-Example:
-
-```text
-https://spatial.urai.app
-```
-
-If not set, the production workflow falls back to:
-
-```text
-https://urai-spatial.web.app
-```
+Stripe or other non-Google provider secrets remain separate protected settings. Their presence never authorizes Firebase deployment or changes the NO-GO classification.
 
 ## Do not commit
 
-- Service account JSON
-- production `.env.local`
-- private API keys
-- admin/founder token material
+- WIF external-account configuration files;
+- service-account JSON;
+- production `.env.local`;
+- private API keys;
+- admin/founder token material.
