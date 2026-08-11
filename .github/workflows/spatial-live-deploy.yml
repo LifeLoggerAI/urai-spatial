@@ -6,11 +6,14 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/live-release-wif.mjs'
+      - 'scripts/firebase-hosting-recovery.mjs'
       - 'scripts/create-static-release-bundle.mjs'
       - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/verify-production-action-pins.mjs'
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/verify-live-rollback-provenance.mjs'
@@ -24,11 +27,14 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/live-release-wif.mjs'
+      - 'scripts/firebase-hosting-recovery.mjs'
       - 'scripts/create-static-release-bundle.mjs'
       - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/verify-production-action-pins.mjs'
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/verify-live-rollback-provenance.mjs'
@@ -286,7 +292,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
           URAI_EXPECTED_FIREBASE_PROJECT: ${{ env.EXPECTED_FIREBASE_PROJECT }}
           URAI_LIVE_BASE_URL: ${{ env.LIVE_URL }}
-        run: node ../authority/scripts/live-release.mjs
+        run: node ../authority/scripts/live-release.mjs --check
 
       - name: Build rollback static output
         working-directory: target
@@ -363,6 +369,7 @@ jobs:
       - name: Install exact target dependencies without production credentials
         working-directory: target
         run: pnpm install --frozen-lockfile
+
       - name: Build exact target without production credentials
         working-directory: target
         env:
@@ -463,11 +470,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
+    permissions:
+      contents: read
+      id-token: write
     env:
       RELEASE_SHA: ${{ inputs.release_sha }}
       ROLLBACK_SHA: ${{ inputs.rollback_sha }}
       CURRENT_MAIN_SHA: ${{ github.sha }}
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_PROJECT_ID: urai-4dc1d
       URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
       NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
       URAI_TARGET_SHA: ${{ inputs.release_sha }}
@@ -535,25 +545,98 @@ jobs:
       - name: Revalidate current credential boundary
         run: node scripts/verify-release-credential-boundary.mjs
 
-      - name: Verify downloaded bundle before production credentials exist
+      - name: Verify downloaded bundle before production authentication exists
         env:
           URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
-        run: node scripts/live-release.mjs --verify-prebuilt
-
-      - name: Deploy verified bundle with current authority and ephemeral credentials
-        env:
-          URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        shell: bash
         run: |
           set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
-          node scripts/live-release.mjs --deploy-prebuilt
+          test -z "${GOOGLE_APPLICATION_CREDENTIALS:-}"
+          test -z "${GOOGLE_GHA_CREDS_PATH:-}"
+          node scripts/live-release.mjs --verify-prebuilt
+
+      - name: Validate production WIF configuration
+        shell: bash
+        env:
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$GCP_WIF_PROVIDER"
+          test -n "$GCP_DEPLOY_SERVICE_ACCOUNT"
+
+      - name: Authenticate dedicated production deploy identity through GitHub OIDC/WIF
+        id: google-auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.URAI_EXPECTED_FIREBASE_PROJECT }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Install pinned Google Cloud CLI action
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.URAI_EXPECTED_FIREBASE_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Prove federated production identity without exposing credentials
+        shell: bash
+        env:
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_APPLICATION_CREDENTIALS"
+          test -n "$GOOGLE_GHA_CREDS_PATH"
+          test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
+          test -f "$GOOGLE_APPLICATION_CREDENTIALS"
+          test "$(gcloud config get-value project 2>/dev/null)" = "$URAI_EXPECTED_FIREBASE_PROJECT"
+          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1)"
+          test -n "$active_account"
+          test "$active_account" = "$GCP_DEPLOY_SERVICE_ACCOUNT"
+          GCP_WIF_PROVIDER="$GCP_WIF_PROVIDER" GCP_DEPLOY_SERVICE_ACCOUNT="$GCP_DEPLOY_SERVICE_ACCOUNT" node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+          const ghaPath = process.env.GOOGLE_GHA_CREDS_PATH
+          if (path.resolve(credentialPath) !== path.resolve(ghaPath)) throw new Error('WIF credential path mismatch')
+          const config = JSON.parse(fs.readFileSync(credentialPath, 'utf8'))
+          if (config.type !== 'external_account') throw new Error('Expected external_account WIF credentials')
+          const serialized = JSON.stringify(config)
+          if (/private_key|client_secret|credentials_json/i.test(serialized)) throw new Error('Forbidden long-lived credential material in WIF configuration')
+          fs.mkdirSync('release-control-evidence', { recursive: true })
+          fs.writeFileSync('release-control-evidence/production-wif-auth.json', `${JSON.stringify({
+            schemaVersion: 'urai-production-wif-auth-1',
+            verifiedAt: new Date().toISOString(),
+            repository: process.env.GITHUB_REPOSITORY,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            authoritySha: process.env.CURRENT_MAIN_SHA,
+            projectId: process.env.URAI_EXPECTED_FIREBASE_PROJECT,
+            authMode: 'wif',
+            credentialClass: 'github-oidc-wif',
+            providerConfigured: Boolean(process.env.GCP_WIF_PROVIDER),
+            dedicatedServiceAccountConfigured: Boolean(process.env.GCP_DEPLOY_SERVICE_ACCOUNT),
+            activePrincipalMatched: true,
+            externalAccountConfigVerified: true,
+            longLivedServiceAccountKeyUsed: false,
+          }, null, 2)}\n`)
+          NODE
+
+      - name: Deploy verified bundle with current authority and federated credentials
+        env:
+          URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: node scripts/live-release.mjs --deploy-prebuilt
 
       - name: Run canonical live smoke with current authority
         env:
           URAI_EXPECTED_DEPLOYED_SHA: ${{ env.RELEASE_SHA }}
           URAI_EXPECTED_ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
         run: node scripts/urai-release-control-smoke.mjs
 
       - name: Record protected recovery command
@@ -580,6 +663,9 @@ jobs:
           rollback_sha=$ROLLBACK_SHA
           recovery_target=$RECOVERY_TARGET
           recovery_confirmation=$RECOVERY_CONFIRM
+          auth_mode=wif
+          credential_class=github-oidc-wif
+          long_lived_service_account_key_used=false
           EOF_OPERATION
 
       - name: Upload deployment receipt
@@ -593,8 +679,10 @@ jobs:
           if-no-files-found: error
           retention-days: 365
 
-      - name: Remove temporary credentials
+      - name: Verify long-lived credential fallback remained absent
         if: always()
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
-        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${GOOGLE_APPLICATION_CREDENTIALS_JSON:-}"
+          test -z "${GOOGLE_CREDENTIALS_JSON:-}"
