@@ -11,7 +11,7 @@ const workflow = readFileSync(
   'utf8',
 ).replace(/\r\n?/g, '\n')
 
-test('capture workflow is manual, exact-main, protected, and read-only', () => {
+test('capture workflow is manual, exact-main, protected, and non-mutating', () => {
   assert.match(workflow, /^name: Capture legacy Firebase Hosting recovery$/m)
   assert.match(workflow, /^  workflow_dispatch:$/m)
   assert.doesNotMatch(workflow, /^  (?:push|pull_request|schedule):$/m)
@@ -26,18 +26,17 @@ test('capture workflow is manual, exact-main, protected, and read-only', () => {
   assert.doesNotMatch(workflow, /live-release\.mjs --deploy/)
 })
 
-test('capture workflow scopes the production credential to one discovery step', () => {
-  const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
-  assert.equal(workflow.split(secretMarker).length - 1, 1)
-  const discoveryStart = workflow.indexOf('- name: Discover exact current live Hosting version')
-  assert.notEqual(discoveryStart, -1, 'Discovery step not found')
-  const nextStepIndex = workflow.indexOf('\n      - name:', discoveryStart + 1)
-  const nextStep = nextStepIndex === -1 ? workflow.length : nextStepIndex
-  const discoveryStep = workflow.slice(discoveryStart, nextStep)
-  assert.match(discoveryStep, /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.match(discoveryStep, /firebase-hosting-recovery\.mjs discover/)
-  assert.doesNotMatch(workflow.slice(0, discoveryStart), /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.doesNotMatch(workflow.slice(nextStep), /FIREBASE_SERVICE_ACCOUNT_JSON/)
+test('capture workflow authenticates only through protected GitHub OIDC/WIF', () => {
+  assert.match(workflow, /permissions:\n\s+contents: read\n\s+id-token: write/)
+  assert.match(workflow, /google-github-actions\/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093/)
+  assert.match(workflow, /google-github-actions\/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db/)
+  assert.match(workflow, /workload_identity_provider: \$\{\{ vars\.GCP_WIF_PROVIDER \}\}/)
+  assert.match(workflow, /service_account: \$\{\{ secrets\.GCP_DEPLOY_SERVICE_ACCOUNT \}\}/)
+  assert.match(workflow, /create_credentials_file: true/)
+  assert.match(workflow, /export_environment_variables: true/)
+  assert.match(workflow, /gcloud auth list/)
+  assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_JSON/)
+  assert.doesNotMatch(workflow, /credentials_json:/)
 })
 
 test('capture receipt remains outside source and is retained', () => {
@@ -45,6 +44,4 @@ test('capture receipt remains outside source and is retained', () => {
   assert.match(workflow, /path: \$\{\{ runner\.temp \}\}\/hosting-recovery\//)
   assert.match(workflow, /retention-days: 365/)
   assert.match(workflow, /test -z "\$\(git status --porcelain --untracked-files=all\)"/)
-  assert.match(workflow, /^permissions:\n  contents: read$/m)
-  assert.doesNotMatch(workflow, /contents: write|actions: write|id-token: write/)
 })
