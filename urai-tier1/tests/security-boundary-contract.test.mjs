@@ -13,6 +13,9 @@ const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narrat
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
+const tierConfig = fs.readFileSync(new URL("../scripts/tier-lock/tier-config.mjs", import.meta.url), "utf8");
+const envExample = fs.readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+const lifeMapQa = fs.readFileSync(new URL("../docs/LIFEMAP_QA_CHECKLIST.md", import.meta.url), "utf8");
 const firebaseAdminRuntimePaths = [
   new URL("../../src/lib/entitlementStore.ts", import.meta.url),
   new URL("../src/lib/entitlementStore.ts", import.meta.url),
@@ -54,7 +57,7 @@ test("Firebase bearer verification checks revoked tokens and uses ADC", () => {
   assert.match(firebaseUser, /verifyIdToken\(token, true\)/);
   assert.match(firebaseUser, /applicationDefault\(\)/);
   assert.doesNotMatch(firebaseUser, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-  assert.doesNotMatch(firebaseUser, /\.cert\(/);
+  assert.doesNotMatch(firebaseUser, /\.cert\s*\(/);
 });
 
 test("active Firebase Admin runtime and seed paths reject inline service-account JSON", () => {
@@ -62,9 +65,18 @@ test("active Firebase Admin runtime and seed paths reject inline service-account
     const source = fs.readFileSync(path, "utf8");
     assert.match(source, /applicationDefault\(\)/, `${path.pathname} must use ADC`);
     assert.doesNotMatch(source, /FIREBASE_SERVICE_ACCOUNT_JSON/, `${path.pathname} must not accept inline service-account JSON`);
-    assert.doesNotMatch(source, /\.cert\(/, `${path.pathname} must not construct certificate credentials`);
+    assert.doesNotMatch(source, /\.cert\s*\(/, `${path.pathname} must not construct certificate credentials`);
     assert.doesNotMatch(source, /JSON\.parse\([^)]*SERVICE_ACCOUNT/, `${path.pathname} must not parse service-account JSON`);
   }
+});
+
+test("tier readiness and Life Map operator guidance require ADC", () => {
+  assert.match(tierConfig, /GOOGLE_APPLICATION_CREDENTIALS/);
+  assert.doesNotMatch(tierConfig, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(envExample, /GOOGLE_APPLICATION_CREDENTIALS=/);
+  assert.doesNotMatch(envExample, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(lifeMapQa, /GOOGLE_APPLICATION_CREDENTIALS=\/secure\/path\/adc-credentials\.json/);
+  assert.doesNotMatch(lifeMapQa, /FIREBASE_SERVICE_ACCOUNT_JSON/);
 });
 
 test("Stripe checkout permits only the configured application origin", () => {
