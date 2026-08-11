@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: urai-elevenlabs-provider-deploy-20260810
@@ -171,6 +172,32 @@ jobs:
           path: provider-deployment-receipt/
           if-no-files-found: warn
           retention-days: 365
+
+      - name: Report deployment outcome
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          JOB_STATUS: ${{ job.status }}
+          FUNCTION_URL: ${{ steps.smoke.outputs.url }}
+          SMOKE_STATUS: ${{ steps.smoke.outputs.status }}
+        with:
+          script: |
+            const status = process.env.JOB_STATUS || 'unknown'
+            const title = `ElevenLabs provider deploy ${process.env.CANONICAL_SHA.slice(0, 12)} — ${status}`
+            const body = [
+              '## ElevenLabs provider deployment receipt',
+              '',
+              `- Canonical SHA: \`${process.env.CANONICAL_SHA}\``,
+              `- Firebase project: \`${process.env.EXPECTED_PROJECT}\``,
+              `- Function: \`${process.env.FUNCTION_ID}\``,
+              `- Function URL: ${process.env.FUNCTION_URL || 'not reached'}`,
+              `- Unauthenticated smoke HTTP: \`${process.env.SMOKE_STATUS || 'not reached'}\` (expected \`401\`)`,
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `- Job status at report step: \`${status}\``,
+              '',
+              'The ElevenLabs API key value is not recorded in this receipt.'
+            ].join('\n')
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body })
 
       - name: Remove temporary credential
         if: always()
