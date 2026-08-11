@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { InsightPlanId } from '@/components/spatial/insightMonetizationEngine';
+import { assertExternalAccountAdc } from '@/lib/server/google-adc';
 
 const PRICE_ENV_BY_PLAN: Record<Exclude<InsightPlanId, 'free'>, string> = {
   pro: 'NEXT_PUBLIC_STRIPE_PRICE_PRO',
@@ -25,6 +26,7 @@ async function verifyUser(request: Request): Promise<string | null> {
   const adminAuth = await import('firebase-admin/auth');
   const adminApp = await import('firebase-admin/app');
 
+  assertExternalAccountAdc();
   if (!adminApp.getApps().length) {
     adminApp.initializeApp({ credential: adminApp.applicationDefault() });
   }
