@@ -16,7 +16,9 @@ const directory = path.dirname(fileURLToPath(import.meta.url))
 const staticVerifierPath = path.join(directory, 'verify-release-credential-boundary-static.mjs')
 const liveProvenanceVerifierPath = path.join(directory, 'verify-live-rollback-provenance.mjs')
 const legacyBootstrapVerifierPath = path.join(directory, 'verify-legacy-live-bootstrap.mjs')
-const releaseOperatorPath = path.join(directory, 'live-release.mjs')
+const releaseEntrypointPath = path.join(directory, 'live-release.mjs')
+const releaseOperatorPath = path.join(directory, 'live-release-wif.mjs')
+const recoveryPath = path.join(directory, 'firebase-hosting-recovery.mjs')
 const failures = []
 
 function sha256(file) {
@@ -38,7 +40,7 @@ function requireRegularFile(label, file) {
 
 const requiredStaticMarkers = [
   'normalizeNewlines',
-  'secretOccurrences !== 1',
+  'rawServiceAccountSecretOccurrences',
   'lineEndingsNormalized: true',
   'thirdPartyActionsPinned: true',
   'rollbackAuthorityVerifierUsesCurrentAuthority: true',
@@ -46,9 +48,9 @@ const requiredStaticMarkers = [
   'authorityAttestationIsolated: true',
   'targetCodeExecutesInProductionJob: false',
   'releaseOperatorVerifiesFullBundleManifest: true',
-  'credentialsMaterializedByAuthorityOnly: true',
-  'unmanagedLocalCredentialPathsIgnoredDuringVerification: true',
-  'managedCredentialPathRequiredForProductionWrite: true',
+  'wifOnlyProductionAuth: true',
+  'longLivedServiceAccountKeyForbidden: true',
+  'federatedCredentialFileRequiredForProductionWrite: true',
   'firebaseCliResolvedFromCurrentAuthority: true',
 ]
 
@@ -76,44 +78,66 @@ const requiredLiveProvenanceMarkers = [
   'verifiedAt',
 ]
 if (requireRegularFile('Live rollback-provenance verifier', liveProvenanceVerifierPath)) {
-  const liveVerifierSource = readFileSync(liveProvenanceVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
+  const source = readFileSync(liveProvenanceVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
   for (const marker of requiredLiveProvenanceMarkers) {
-    if (!liveVerifierSource.includes(marker)) failures.push(`Live rollback-provenance verifier missing marker: ${marker}`)
+    if (!source.includes(marker)) failures.push(`Live rollback-provenance verifier missing marker: ${marker}`)
   }
 }
-
 
 const requiredLegacyBootstrapMarkers = [
   "schemaVersion: 'urai-legacy-live-bootstrap-provenance-1'",
-  "BOOTSTRAP_LEGACY_URAI_APP",
-  "valid release fingerprint already exists",
-  "recognized-legacy-html",
-  "live-rollback-provenance.json",
-  "normalFingerprintDeployRequiredAfterBootstrap: true",
+  'BOOTSTRAP_LEGACY_URAI_APP',
+  'valid release fingerprint already exists',
+  'recognized-legacy-html',
+  'live-rollback-provenance.json',
+  'normalFingerprintDeployRequiredAfterBootstrap: true',
 ]
 if (requireRegularFile('Legacy live-bootstrap verifier', legacyBootstrapVerifierPath)) {
-  const legacyVerifierSource = readFileSync(legacyBootstrapVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
+  const source = readFileSync(legacyBootstrapVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
   for (const marker of requiredLegacyBootstrapMarkers) {
-    if (!legacyVerifierSource.includes(marker)) failures.push(`Legacy live-bootstrap verifier missing marker: ${marker}`)
+    if (!source.includes(marker)) failures.push(`Legacy live-bootstrap verifier missing marker: ${marker}`)
   }
 }
 
+if (requireRegularFile('Release entrypoint', releaseEntrypointPath)) {
+  const source = readFileSync(releaseEntrypointPath, 'utf8').replace(/\r\n?/g, '\n')
+  if (!source.includes("import './live-release-wif.mjs'")) failures.push('Release entrypoint must route only through live-release-wif.mjs')
+  if (/FIREBASE_SERVICE_ACCOUNT_JSON/.test(source)) failures.push('Release entrypoint contains forbidden long-lived credential logic')
+}
+
 let releaseOperatorFullBundleVerificationPresent = false
-if (requireRegularFile('Release operator', releaseOperatorPath)) {
-  const releaseOperatorSource = readFileSync(releaseOperatorPath, 'utf8').replace(/\r\n?/g, '\n')
-  const requiredOperatorMarkers = [
+if (requireRegularFile('WIF release operator', releaseOperatorPath)) {
+  const source = readFileSync(releaseOperatorPath, 'utf8').replace(/\r\n?/g, '\n')
+  const required = [
     'function validateAndMaterializePrebuiltBundle',
     'Release bundle file set, sizes, or hashes do not match the manifest',
     'Release bundle manifest totals do not match the verified files',
     'Materialized hosting output does not match the verified release bundle',
     'validateAndMaterializePrebuiltBundle(targetSha, authoritySha, false)',
     'validateAndMaterializePrebuiltBundle(targetSha, authoritySha)',
+    'function assertFederatedCredentialContext()',
+    "config?.type !== 'external_account'",
+    'deployHostingWithFederatedCredentials',
+    'longLivedServiceAccountKeyUsed: false',
   ]
-  const missing = requiredOperatorMarkers.filter((marker) => !releaseOperatorSource.includes(marker))
-  if (missing.length) {
-    for (const marker of missing) failures.push(`Release operator missing full-bundle verifier marker: ${marker}`)
-  } else {
-    releaseOperatorFullBundleVerificationPresent = true
+  const missing = required.filter((marker) => !source.includes(marker))
+  for (const marker of missing) failures.push(`WIF release operator missing marker: ${marker}`)
+  if (!missing.length) releaseOperatorFullBundleVerificationPresent = true
+  if (/writeTemporaryServiceAccount|createServiceAccountAssertion/.test(source)) {
+    failures.push('WIF release operator contains forbidden long-lived service-account key logic')
+  }
+}
+
+if (requireRegularFile('WIF Hosting recovery', recoveryPath)) {
+  const source = readFileSync(recoveryPath, 'utf8').replace(/\r\n?/g, '\n')
+  for (const marker of [
+    'function accessTokenFromFederatedAdc(options = {})',
+    "gcloud(['auth', 'print-access-token'])",
+    "schemaVersion: 'urai-firebase-hosting-recovery-2'",
+    "authMode: 'wif'",
+  ]) if (!source.includes(marker)) failures.push(`WIF Hosting recovery missing marker: ${marker}`)
+  if (/createSign|createServiceAccountAssertion|accessTokenFromServiceAccount/.test(source)) {
+    failures.push('WIF Hosting recovery contains forbidden private-key token minting')
   }
 }
 
@@ -130,23 +154,13 @@ const protectedDispatch =
   process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' &&
   githubJob === 'deploy' &&
   process.env.GITHUB_REF === 'refs/heads/main'
-if (
-  legacyBootstrapRequested &&
-  (
-    releaseOperation !== 'deploy' ||
-    process.env.URAI_LEGACY_BOOTSTRAP_CONFIRM !== 'BOOTSTRAP_LEGACY_URAI_APP'
-  )
-) {
+
+if (legacyBootstrapRequested && (releaseOperation !== 'deploy' || process.env.URAI_LEGACY_BOOTSTRAP_CONFIRM !== 'BOOTSTRAP_LEGACY_URAI_APP')) {
   failures.push('Legacy bootstrap requires deploy operation and exact BOOTSTRAP_LEGACY_URAI_APP confirmation')
 }
-const liveRollbackProvenanceRequired =
-  protectedDispatch &&
-  !legacyBootstrapRequested &&
-  ['deploy', 'rollback'].includes(releaseOperation)
-const legacyBootstrapProofRequired =
-  protectedDispatch &&
-  legacyBootstrapRequested &&
-  releaseOperation === 'deploy'
+
+const liveRollbackProvenanceRequired = protectedDispatch && !legacyBootstrapRequested && ['deploy', 'rollback'].includes(releaseOperation)
+const legacyBootstrapProofRequired = protectedDispatch && legacyBootstrapRequested && releaseOperation === 'deploy'
 const liveRollbackEvidenceDirectory =
   (liveRollbackProvenanceRequired || legacyBootstrapProofRequired) && runnerTemp
     ? path.join(runnerTemp, 'release-control-evidence')
@@ -166,15 +180,12 @@ let downloadedBundlePresent = false
 let downloadedBundleRunBound = false
 let downloadedBundleFingerprintBound = false
 const downloadedBundleRequired = githubJob === 'deploy' || (process.env.URAI_REQUIRE_RELEASE_BUNDLE || '').trim() === '1'
-const canonicalDeployBundleDirectory =
-  process.env.GITHUB_ACTIONS === 'true' && githubJob === 'deploy' && runnerTemp
-    ? path.join(runnerTemp, 'urai-release-bundle')
-    : ''
+const canonicalDeployBundleDirectory = process.env.GITHUB_ACTIONS === 'true' && githubJob === 'deploy' && runnerTemp
+  ? path.join(runnerTemp, 'urai-release-bundle')
+  : ''
 const bundleDirectoryValue = (process.env.URAI_RELEASE_BUNDLE_DIR || canonicalDeployBundleDirectory).trim()
 
-if (downloadedBundleRequired && !bundleDirectoryValue) {
-  failures.push('URAI_RELEASE_BUNDLE_DIR must be set when a downloaded release bundle is required')
-}
+if (downloadedBundleRequired && !bundleDirectoryValue) failures.push('URAI_RELEASE_BUNDLE_DIR must be set when a downloaded release bundle is required')
 
 if (bundleDirectoryValue) {
   const bundleDirectory = path.resolve(bundleDirectoryValue)
@@ -190,7 +201,6 @@ if (bundleDirectoryValue) {
       } catch {
         failures.push('Downloaded release bundle manifest must be valid JSON')
       }
-
       if (manifest) {
         const currentWorkflowRunId = (process.env.GITHUB_RUN_ID || '').trim()
         if (!/^\d+$/.test(currentWorkflowRunId)) {
@@ -217,24 +227,23 @@ if (bundleDirectoryValue) {
   }
 }
 
+const federatedAuthActive = Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_GHA_CREDS_PATH)
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-4',
-  ok:
-    failures.length === 0 &&
-    process.exitCode !== 1 &&
-    (!liveRollbackProvenanceRequired || liveRollbackProvenanceVerified) &&
-    (!legacyBootstrapProofRequired || legacyBootstrapProofVerified),
+  schemaVersion: 'urai-release-credential-boundary-5',
+  ok: failures.length === 0 && process.exitCode !== 1 && (!liveRollbackProvenanceRequired || liveRollbackProvenanceVerified) && (!legacyBootstrapProofRequired || legacyBootstrapProofVerified),
   lineEndingsNormalized: true,
   thirdPartyActionsPinned: true,
   rollbackAuthorityVerifierUsesCurrentAuthority: true,
   targetBuildIsolated: true,
   authorityAttestationIsolated: true,
   targetCodeExecutesInProductionJob: false,
-  credentialsMaterializedByAuthorityOnly: true,
-  unmanagedLocalCredentialPathsIgnoredDuringVerification: true,
-  managedCredentialPathRequiredForProductionWrite: true,
+  wifOnlyProductionAuth: true,
+  longLivedServiceAccountKeyForbidden: true,
+  federatedCredentialFileRequiredForProductionWrite: true,
   firebaseCliResolvedFromCurrentAuthority: true,
   releaseOperatorFullBundleVerificationPresent,
+  protectedDispatch,
+  federatedAuthActive,
   liveRollbackProvenanceRequired,
   liveRollbackProvenanceVerified,
   legacyBootstrapRequested,
@@ -244,15 +253,9 @@ const report = {
   downloadedBundlePresent,
   downloadedBundleRunBound,
   downloadedBundleFingerprintBound,
-  fullBundleVerificationStatus: downloadedBundleRequired
-    ? 'pending-live-release-verify-prebuilt-step'
-    : 'not-applicable-in-this-job',
+  fullBundleVerificationStatus: downloadedBundleRequired ? 'pending-live-release-verify-prebuilt-step' : 'not-applicable-in-this-job',
   failures,
 }
 
 console.log(JSON.stringify(report, null, 2))
-if (
-  failures.length ||
-  (liveRollbackProvenanceRequired && !liveRollbackProvenanceVerified) ||
-  (legacyBootstrapProofRequired && !legacyBootstrapProofVerified)
-) process.exitCode = 1
+if (failures.length || (liveRollbackProvenanceRequired && !liveRollbackProvenanceVerified) || (legacyBootstrapProofRequired && !legacyBootstrapProofVerified)) process.exitCode = 1
