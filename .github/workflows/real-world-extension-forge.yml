@@ -6,11 +6,12 @@ on:
     paths:
       - scripts/generate-urai-real-world-extension-v1.py
       - .github/workflows/real-world-extension-forge.yml
-      - .github/workflows/human-world-asset-forge.yml
-      - scripts/author-urai-human-world-pack.mjs
-      - scripts/verify-urai-human-world-pack.mjs
       - urai-tier1/src/spatial/council/**
       - src/spatial/scene/HomeAvatar.tsx
+      - urai-tier1/src/components/spatial/shadow-realm-portal.tsx
+      - urai-tier1/src/app/mirror/MirrorSpatialClient.tsx
+      - urai-tier1/src/app/legacy/page.tsx
+      - urai-tier1/src/app/spatial/legacy/page.tsx
   workflow_dispatch:
 
 permissions:
