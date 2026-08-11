@@ -1,0 +1,177 @@
+name: Revoke Legacy Firebase Key Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/revoke-legacy-firebase-key-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: revoke-legacy-firebase-key-once-20260811
+  cancel-in-progress: false
+
+jobs:
+  revoke:
+    name: Revoke exact legacy Firebase deploy key
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Materialize legacy credential metadata privately
+        id: meta
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          keyfile="$RUNNER_TEMP/legacy-firebase-key.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$keyfile"
+          chmod 600 "$keyfile"
+          node - "$keyfile" "$RUNNER_TEMP/legacy-email.txt" "$RUNNER_TEMP/legacy-key-id.txt" <<'NODE'
+          const fs = require('fs')
+          const [keyfile, emailPath, keyIdPath] = process.argv.slice(2)
+          const sa = JSON.parse(fs.readFileSync(keyfile, 'utf8'))
+          if (sa.project_id !== 'urai-4dc1d') throw new Error('Firebase credential project mismatch')
+          if (!sa.client_email || !sa.private_key_id) throw new Error('Firebase credential identity metadata missing')
+          fs.writeFileSync(emailPath, sa.client_email)
+          fs.writeFileSync(keyIdPath, sa.private_key_id)
+          NODE
+          echo "keyfile=$keyfile" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate with the exact legacy credential for self-revocation only
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          project_id: urai-4dc1d
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: urai-4dc1d
+          version: '>= 500.0.0'
+
+      - name: Verify exact key exists before revocation
+        id: before
+        shell: bash
+        run: |
+          set -euo pipefail
+          email="$(cat "$RUNNER_TEMP/legacy-email.txt")"
+          key_id="$(cat "$RUNNER_TEMP/legacy-key-id.txt")"
+          gcloud iam service-accounts keys list \
+            --iam-account "$email" \
+            --project urai-4dc1d \
+            --format='value(name,keyType)' > "$RUNNER_TEMP/keys-before.txt"
+          if ! awk -v id="$key_id" '$1 ~ ("/keys/" id "$" ) && $2 == "USER_MANAGED" {found=1} END{exit found?0:1}' "$RUNNER_TEMP/keys-before.txt"; then
+            echo '::error::Exact legacy user-managed key was not found; refusing to delete any other key.'
+            exit 66
+          fi
+          echo 'exact_key_found=true' >> "$GITHUB_OUTPUT"
+
+      - name: Delete only the exact legacy user-managed key
+        id: revoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          email="$(cat "$RUNNER_TEMP/legacy-email.txt")"
+          key_id="$(cat "$RUNNER_TEMP/legacy-key-id.txt")"
+          gcloud iam service-accounts keys delete "$key_id" \
+            --iam-account "$email" \
+            --project urai-4dc1d \
+            --quiet
+          echo 'revoked=true' >> "$GITHUB_OUTPUT"
+
+      - name: Verify exact key is absent from service-account key list
+        id: absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          email="$(cat "$RUNNER_TEMP/legacy-email.txt")"
+          key_id="$(cat "$RUNNER_TEMP/legacy-key-id.txt")"
+          gcloud iam service-accounts keys list \
+            --iam-account "$email" \
+            --project urai-4dc1d \
+            --format='value(name,keyType)' > "$RUNNER_TEMP/keys-after.txt"
+          if awk -v id="$key_id" '$1 ~ ("/keys/" id "$" ) && $2 == "USER_MANAGED" {found=1} END{exit found?0:1}' "$RUNNER_TEMP/keys-after.txt"; then
+            echo '::error::Exact legacy key is still listed after revocation attempt.'
+            exit 67
+          fi
+          echo 'absent=true' >> "$GITHUB_OUTPUT"
+
+      - name: Prove a fresh authentication with the revoked key is rejected
+        id: fresh_auth
+        shell: bash
+        env:
+          LEGACY_KEYFILE: ${{ steps.meta.outputs.keyfile }}
+        run: |
+          set -euo pipefail
+          email="$(cat "$RUNNER_TEMP/legacy-email.txt")"
+          fresh_config="$RUNNER_TEMP/fresh-gcloud-config"
+          mkdir -p "$fresh_config"
+          set +e
+          CLOUDSDK_CONFIG="$fresh_config" gcloud auth activate-service-account "$email" \
+            --key-file "$LEGACY_KEYFILE" \
+            --project urai-4dc1d \
+            --quiet >"$RUNNER_TEMP/fresh-auth.out" 2>"$RUNNER_TEMP/fresh-auth.err"
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo '::error::Fresh authentication unexpectedly succeeded with the revoked key.'
+            exit 68
+          fi
+          echo 'rejected=true' >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized revocation receipt
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          EXACT_FOUND: ${{ steps.before.outputs.exact_key_found }}
+          REVOKED: ${{ steps.revoke.outputs.revoked }}
+          ABSENT: ${{ steps.absent.outputs.absent }}
+          FRESH_REJECTED: ${{ steps.fresh_auth.outputs.rejected }}
+        with:
+          script: |
+            const exact = process.env.EXACT_FOUND === 'true'
+            const revoked = process.env.REVOKED === 'true'
+            const absent = process.env.ABSENT === 'true'
+            const rejected = process.env.FRESH_REJECTED === 'true'
+            const passed = exact && revoked && absent && rejected
+            const body = [
+              '## Legacy Firebase deploy-key revocation receipt',
+              '',
+              `- Exact legacy user-managed key identified: **${exact}**`,
+              `- Exact key deletion command completed: **${revoked}**`,
+              `- Exact key absent from post-delete key listing: **${absent}**`,
+              `- Fresh authentication using revoked key rejected: **${rejected}**`,
+              `- Overall containment result: **${passed ? 'PASS' : 'NOT VERIFIED'}**`,
+              '',
+              '- Firebase project: `urai-4dc1d`',
+              '- No private key, key ID, service-account email, or provider secret value is recorded.',
+              '- No application deployment, DNS change, provider-key change, or replacement Google key creation was performed.',
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Legacy Firebase deploy-key revocation — ${passed ? 'PASS' : 'NOT VERIFIED'}`,
+              body,
+            })
+
+      - name: Remove temporary credential material
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/legacy-firebase-key.json" \
+                 "$RUNNER_TEMP/legacy-email.txt" \
+                 "$RUNNER_TEMP/legacy-key-id.txt" \
+                 "$RUNNER_TEMP/keys-before.txt" \
+                 "$RUNNER_TEMP/keys-after.txt" \
+                 "$RUNNER_TEMP/fresh-auth.out" \
+                 "$RUNNER_TEMP/fresh-auth.err" \
+                 "$RUNNER_TEMP/fresh-gcloud-config"
