@@ -21,6 +21,7 @@ const receipt = {
   runner: 'checked-in-stable-module',
   capturedAt: new Date().toISOString(),
   captures: [],
+  transitions: [],
   browserEvents: [],
 }
 
@@ -108,6 +109,60 @@ async function goto(page, route, selector = ROOT) {
 async function waitForState(page, attribute, expected, timeout = 30_000) {
   const root = page.locator(ROOT).first()
   await poll(`${attribute}=${expected}`, () => root.getAttribute(attribute), (value) => value === expected, timeout, 50)
+}
+
+async function observeRenderedPhase(page, expectedPhase, timeout = 45_000) {
+  const root = page.locator(ROOT).first()
+  return root.evaluate((element, input) => new Promise((resolve, reject) => {
+    const startedAt = performance.now()
+    const timeline = []
+    let lastPhase = null
+    let settled = false
+    let framePending = false
+    let timer = 0
+
+    const cleanup = () => {
+      observer.disconnect()
+      window.clearTimeout(timer)
+    }
+    const record = (source) => {
+      const phase = element.getAttribute('data-life-map-phase')
+      if (phase !== lastPhase) {
+        lastPhase = phase
+        timeline.push({ phase, atMs: performance.now() - startedAt, source })
+      }
+      if (phase !== input.expectedPhase || framePending || settled) return
+      framePending = true
+      window.requestAnimationFrame((frameTime) => {
+        framePending = false
+        if (settled) return
+        const framePhase = element.getAttribute('data-life-map-phase')
+        if (framePhase !== input.expectedPhase) {
+          record('phase-advanced-before-frame')
+          return
+        }
+        settled = true
+        cleanup()
+        resolve({
+          expectedPhase: input.expectedPhase,
+          observedAtMs: timeline.find((entry) => entry.phase === input.expectedPhase)?.atMs ?? null,
+          renderedFrameAtMs: frameTime - startedAt,
+          renderedFramePhase: framePhase,
+          timeline,
+        })
+      })
+    }
+
+    const observer = new MutationObserver(() => record('mutation'))
+    observer.observe(element, { attributes: true, attributeFilter: ['data-life-map-phase'] })
+    timer = window.setTimeout(() => {
+      if (settled) return
+      settled = true
+      cleanup()
+      reject(new Error(`data-life-map-phase=${input.expectedPhase} did not survive a rendered frame within ${input.timeout}ms; last=${lastPhase}`))
+    }, input.timeout)
+    record('armed')
+  }), { expectedPhase, timeout })
 }
 
 async function waitForRenderedWorld(page, timeout = 30_000) {
@@ -291,13 +346,20 @@ async function selectQuietReset(page, options = {}) {
 }
 
 async function selectAndCapturePhase(page, expectedPhase, id, options = {}) {
-  const capturePromise = waitForState(page, 'data-life-map-phase', expectedPhase, 45_000)
-    .then(() => shot(page, id, expectedPhase, options.evidence || {}))
+  const capturePromise = observeRenderedPhase(page, expectedPhase, 45_000)
+    .then(async (transition) => {
+      receipt.transitions.push({ id, route: page.url(), ...transition })
+      await shot(page, id, expectedPhase, { transitionWitness: id, ...(options.evidence || {}) })
+    })
   const selectionPromise = selectQuietReset(page, options.selection || {})
   await Promise.all([capturePromise, selectionPromise])
   const capture = receipt.captures.find((item) => item.id === id)
+  const transition = receipt.transitions.find((item) => item.id === id)
   if (!capture || capture.state?.phase !== expectedPhase) {
     throw new Error(`${id} did not retain the observed ${expectedPhase} phase`)
+  }
+  if (!transition || transition.renderedFramePhase !== expectedPhase) {
+    throw new Error(`${id} did not prove ${expectedPhase} survived a rendered frame`)
   }
 }
 
@@ -396,26 +458,20 @@ async function desktopJourney() {
   try {
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await shot(page, 'depth-travel-frame-1', 'parallax-1')
-    await page.mouse.move(1120, 250)
-    await stable(page, 6)
-    await shot(page, 'depth-travel-frame-2', 'parallax-2')
-    await page.mouse.move(300, 620)
-    await stable(page, 6)
-    await shot(page, 'depth-travel-frame-3', 'parallax-3')
-    await selectAndCapturePhase(page, 'departure', 'selection-start')
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectAndCapturePhase(page, 'travel', 'mid-travel')
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectAndCapturePhase(page, 'approach', 'approach')
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectAndCapturePhase(page, 'arrival', 'stable-arrival')
-    await clickRouteAction(page, 'Open Focus', '/focus', '[data-testid="urai-focus-page"]')
+
+    // Capture the short-lived real transition before any expensive software-WebGL readback.
+    for (const [phase, id] of [
+      ['departure', 'selection-start'],
+      ['travel', 'mid-travel'],
+      ['approach', 'approach'],
+      ['arrival', 'stable-arrival'],
+    ]) {
+      await goto(page, overviewRoute)
+      await waitForRenderedWorld(page)
+      await selectAndCapturePhase(page, phase, id)
+    }
+
+    await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-focus-page"]')
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
@@ -425,6 +481,16 @@ async function desktopJourney() {
     await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
     await clickRouteAction(page, 'Overview', '/life-map', ROOT)
     await waitForOverviewState(page)
+
+    // Parallax evidence is retained after time-critical phase observation.
+    await waitForRenderedWorld(page)
+    await shot(page, 'depth-travel-frame-1', 'parallax-1')
+    await page.mouse.move(1120, 250)
+    await stable(page, 6)
+    await shot(page, 'depth-travel-frame-2', 'parallax-2')
+    await page.mouse.move(300, 620)
+    await stable(page, 6)
+    await shot(page, 'depth-travel-frame-3', 'parallax-3')
   } finally {
     await context.close()
   }
@@ -524,8 +590,8 @@ async function contextRecoveryJourney() {
 }
 
 try {
-  await highResolutionOverview()
   await desktopJourney()
+  await highResolutionOverview()
   await keyboardJourney()
   await mobileJourney({ width: 390, height: 844 }, 'portrait-mobile', {
     overview: 'portrait-mobile-overview',
