@@ -1,5 +1,6 @@
-export type InsightPlanId = 'free' | 'pro' | 'therapist' | 'founder';
 import { assertExternalAccountAdc } from '@/lib/server/google-adc';
+
+export type InsightPlanId = 'free' | 'pro' | 'therapist' | 'founder';
 
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
 
