@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createSign } from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import {
   existsSync,
   lstatSync,
@@ -13,10 +13,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const apiRoot = 'https://firebasehosting.googleapis.com/v1beta1'
-const hostingScope = 'https://www.googleapis.com/auth/firebase.hosting'
 const expectedSiteId = 'urai-4dc1d'
 const restoreConfirmation = 'RESTORE_EXACT_HOSTING_VERSION'
-const managedCredentialFilename = 'urai-firebase-service-account.json'
+const canonicalRepository = 'LifeLoggerAI/urai-spatial'
+const canonicalWorkflow = 'URAI Canonical Production Release'
+const captureWorkflow = 'Capture legacy Firebase Hosting recovery'
 
 function requireString(label, value) {
   const normalized = String(value || '').trim()
@@ -48,6 +49,79 @@ function assertPathInsideRunnerTemp(label, requestedPath) {
     throw new Error(`${label} must remain inside RUNNER_TEMP`)
   }
   return resolved
+}
+
+function assertFederatedEnvironment({ allowCapture = false } = {}) {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is forbidden in the production Hosting recovery path')
+  }
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || process.env.GOOGLE_CREDENTIALS_JSON) {
+    throw new Error('Raw Google credential JSON is forbidden in the production Hosting recovery path')
+  }
+  if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Hosting recovery requires GitHub Actions')
+  if (process.env.GITHUB_REPOSITORY !== canonicalRepository) throw new Error(`Hosting recovery requires repository ${canonicalRepository}`)
+  if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('Hosting recovery requires refs/heads/main')
+  const canonicalDeploy = process.env.GITHUB_WORKFLOW === canonicalWorkflow && process.env.GITHUB_JOB === 'deploy'
+  const protectedCapture = allowCapture && process.env.GITHUB_WORKFLOW === captureWorkflow && process.env.GITHUB_JOB === 'capture'
+  if (!canonicalDeploy && !protectedCapture) {
+    throw new Error(`Hosting recovery requires the protected ${canonicalWorkflow} deploy job${allowCapture ? ' or protected recovery-capture job' : ''}`)
+  }
+
+  const provider = requireString('GCP_WIF_PROVIDER', process.env.GCP_WIF_PROVIDER)
+  const expectedAccount = requireString('GCP_DEPLOY_SERVICE_ACCOUNT', process.env.GCP_DEPLOY_SERVICE_ACCOUNT)
+  const credentialsPath = requireString('GOOGLE_APPLICATION_CREDENTIALS', process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  const ghaCredentialsPath = requireString('GOOGLE_GHA_CREDS_PATH', process.env.GOOGLE_GHA_CREDS_PATH)
+  if (path.resolve(credentialsPath) !== path.resolve(ghaCredentialsPath)) {
+    throw new Error('GOOGLE_APPLICATION_CREDENTIALS must equal the google-github-actions/auth credential path')
+  }
+  if (!existsSync(credentialsPath)) throw new Error('Federated Application Default Credentials file is missing')
+  const stats = lstatSync(credentialsPath)
+  if (!stats.isFile() || stats.isSymbolicLink()) throw new Error('Federated Application Default Credentials must be a regular non-symlinked file')
+  const configSource = readFileSync(credentialsPath, 'utf8')
+  let config
+  try {
+    config = JSON.parse(configSource)
+  } catch {
+    throw new Error('Federated Application Default Credentials file must contain valid JSON')
+  }
+  if (config?.type !== 'external_account') throw new Error('Production credentials must use external_account Workload Identity Federation')
+  if (String(config?.audience || '') !== `//iam.googleapis.com/${provider}` && String(config?.audience || '') !== provider) {
+    throw new Error('Federated credential audience does not match GCP_WIF_PROVIDER')
+  }
+  const serialized = JSON.stringify(config)
+  if (/private_key|client_secret|credentials_json/i.test(serialized)) {
+    throw new Error('Federated credential configuration contains forbidden long-lived credential material')
+  }
+  if (!String(config?.service_account_impersonation_url || '').includes(encodeURIComponent(expectedAccount)) &&
+      !String(config?.service_account_impersonation_url || '').includes(expectedAccount)) {
+    throw new Error('Federated credential configuration does not target the dedicated production service account')
+  }
+  return { provider, expectedAccount, credentialsPath }
+}
+
+function gcloud(args) {
+  const result = spawnSync('gcloud', args, {
+    encoding: 'utf8',
+    shell: false,
+    env: { ...process.env, FIREBASE_SERVICE_ACCOUNT_JSON: undefined },
+  })
+  if (result.status !== 0) {
+    const detail = String(result.stderr || '').trim()
+    throw new Error(`gcloud ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`)
+  }
+  return String(result.stdout || '').trim()
+}
+
+function accessTokenFromFederatedAdc(options = {}) {
+  const { expectedAccount } = assertFederatedEnvironment(options)
+  const project = gcloud(['config', 'get-value', 'project'])
+  if (project !== expectedSiteId) throw new Error(`Active gcloud project mismatch: ${project || 'missing'}`)
+  const activeAccount = gcloud(['auth', 'list', '--filter=status:ACTIVE', '--format=value(account)'])
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean)[0]
+  if (activeAccount !== expectedAccount) throw new Error('Active gcloud account does not match the dedicated production service account')
+  return requireString('Federated OAuth access token', gcloud(['auth', 'print-access-token']))
 }
 
 export function assertSiteId(value) {
@@ -101,32 +175,6 @@ export function selectCurrentLiveRelease(releases, siteId = expectedSiteId) {
   }
 }
 
-function base64UrlJson(value) {
-  return Buffer.from(JSON.stringify(value)).toString('base64url')
-}
-
-export function createServiceAccountAssertion(serviceAccount, nowSeconds = Math.floor(Date.now() / 1000)) {
-  const clientEmail = requireString('service account client_email', serviceAccount?.client_email)
-  const privateKey = requireString('service account private_key', serviceAccount?.private_key)
-  const tokenUri = requireString('service account token_uri', serviceAccount?.token_uri)
-  const header = base64UrlJson({ alg: 'RS256', typ: 'JWT' })
-  const claims = base64UrlJson({
-    iss: clientEmail,
-    scope: hostingScope,
-    aud: tokenUri,
-    iat: nowSeconds,
-    exp: nowSeconds + 3600,
-  })
-  const unsigned = `${header}.${claims}`
-  const signer = createSign('RSA-SHA256')
-  signer.update(unsigned)
-  signer.end()
-  return {
-    assertion: `${unsigned}.${signer.sign(privateKey).toString('base64url')}`,
-    tokenUri,
-  }
-}
-
 async function requestJson(url, options = {}) {
   const response = await fetch(url, options)
   const text = await response.text()
@@ -145,59 +193,6 @@ async function requestJson(url, options = {}) {
   return body
 }
 
-async function accessTokenFromServiceAccount(serviceAccount) {
-  const { assertion, tokenUri } = createServiceAccountAssertion(serviceAccount)
-  const body = new URLSearchParams({
-    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    assertion,
-  })
-  const token = await requestJson(tokenUri, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body,
-  })
-  return requireString('OAuth access_token', token.access_token)
-}
-
-function parseServiceAccount(raw) {
-  let parsed
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    throw new Error('Firebase service-account material must contain valid JSON')
-  }
-  if (!parsed || typeof parsed !== 'object' || parsed.project_id !== expectedSiteId) {
-    throw new Error(`Service-account project mismatch: ${parsed?.project_id || 'missing'}`)
-  }
-  return parsed
-}
-
-function managedCredentialPath() {
-  const runnerTemp = resolveRunnerTemp()
-  const requested = String(process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
-    || path.join(runnerTemp, managedCredentialFilename)
-  const resolved = assertPathInsideRunnerTemp('Managed Firebase credential path', requested)
-  if (path.basename(resolved) !== managedCredentialFilename) {
-    throw new Error(`Managed Firebase credential path must use ${managedCredentialFilename}`)
-  }
-  return resolved
-}
-
-function serviceAccountFromEnvironment() {
-  const raw = String(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim()
-  if (raw) return parseServiceAccount(raw)
-
-  const credentialPath = managedCredentialPath()
-  if (!existsSync(credentialPath)) {
-    throw new Error(`Managed Firebase credential file is missing: ${credentialPath}`)
-  }
-  const stats = lstatSync(credentialPath)
-  if (!stats.isFile() || stats.isSymbolicLink()) {
-    throw new Error('Managed Firebase credential must be a regular non-symlinked file')
-  }
-  return parseServiceAccount(readFileSync(credentialPath, 'utf8'))
-}
-
 function resolveReceiptPath() {
   const runnerTemp = resolveRunnerTemp()
   const requested = process.env.URAI_HOSTING_RECOVERY_RECEIPT?.trim()
@@ -207,7 +202,10 @@ function resolveReceiptPath() {
 
 export function validateRecoveryReceipt(receipt) {
   if (!receipt || typeof receipt !== 'object') throw new Error('Hosting recovery receipt must contain an object')
-  if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-1') throw new Error('Unsupported Hosting recovery receipt schema')
+  if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-2') throw new Error('Unsupported Hosting recovery receipt schema')
+  if (receipt.authMode !== 'wif' || receipt.credentialClass !== 'github-oidc-wif') {
+    throw new Error('Hosting recovery receipt must prove WIF authentication')
+  }
   const siteId = assertSiteId(receipt.siteId)
   const versionName = assertVersionName(receipt.versionName, siteId)
   if (receipt.versionStatus !== undefined && receipt.versionStatus !== 'FINALIZED') {
@@ -255,24 +253,23 @@ async function fetchVersion(accessToken, versionName) {
   })
 }
 
-async function currentLiveRelease(serviceAccount, siteId) {
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+async function currentLiveRelease(siteId) {
+  const accessToken = accessTokenFromFederatedAdc({ allowCapture: true })
   const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
   return { accessToken, release }
 }
 
 export async function discoverCurrentLiveRelease() {
   const siteId = assertSiteId(process.env.FIREBASE_SITE_ID || expectedSiteId)
-  const serviceAccount = serviceAccountFromEnvironment()
-  const { accessToken, release } = await currentLiveRelease(serviceAccount, siteId)
+  const { accessToken, release } = await currentLiveRelease(siteId)
   const version = await fetchVersion(accessToken, release.versionName)
   const restorable = assertRestorableVersion(version, release.versionName)
   const receiptPath = resolveReceiptPath()
   mkdirSync(path.dirname(receiptPath), { recursive: true })
   const receipt = {
-    schemaVersion: 'urai-firebase-hosting-recovery-1',
+    schemaVersion: 'urai-firebase-hosting-recovery-2',
     discoveredAt: new Date().toISOString(),
-    repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
+    repository: process.env.GITHUB_REPOSITORY || canonicalRepository,
     workflowRunId: process.env.GITHUB_RUN_ID || null,
     authoritySha: process.env.GITHUB_SHA || null,
     siteId,
@@ -282,6 +279,10 @@ export async function discoverCurrentLiveRelease() {
     releaseTime: release.releaseTime,
     releaseType: release.type || 'TYPE_UNSPECIFIED',
     sourceApi: 'firebasehosting.googleapis.com/v1beta1/sites.releases.list+sites.versions.get',
+    authMode: 'wif',
+    credentialClass: 'github-oidc-wif',
+    principalClass: 'dedicated-production-service-account',
+    longLivedServiceAccountKeyUsed: false,
     deployment: false,
   }
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 })
@@ -294,8 +295,7 @@ export async function restoreDiscoveredVersion() {
     throw new Error(`Restore requires URAI_HOSTING_RESTORE_CONFIRM=${restoreConfirmation}`)
   }
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromFederatedAdc()
   assertRestorableVersion(await fetchVersion(accessToken, versionName), versionName)
   const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
   url.searchParams.set('versionName', versionName)
@@ -321,8 +321,7 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
   if (!Number.isInteger(delayMs) || delayMs < 0 || delayMs > 10_000) throw new Error('Restore verification delay must be between 0 and 10000 ms')
 
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
-  const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const accessToken = accessTokenFromFederatedAdc()
   let observed = null
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
@@ -330,9 +329,9 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
     if (release.versionName === versionName) {
       const resultPath = path.join(path.dirname(receiptPath), 'restore-verification.json')
       const result = {
-        schemaVersion: 'urai-firebase-hosting-restore-verification-1',
+        schemaVersion: 'urai-firebase-hosting-restore-verification-2',
         verifiedAt: new Date().toISOString(),
-        repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
+        repository: process.env.GITHUB_REPOSITORY || canonicalRepository,
         workflowRunId: process.env.GITHUB_RUN_ID || null,
         authoritySha: process.env.GITHUB_SHA || null,
         siteId,
@@ -341,6 +340,8 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
         observedVersionName: release.versionName,
         attemptsUsed: attempt,
         restored: true,
+        authMode: 'wif',
+        longLivedServiceAccountKeyUsed: false,
         sourceReceipt: receipt,
       }
       writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 })
@@ -379,25 +380,17 @@ export function selfTest() {
   const restorable = assertRestorableVersion({ name: selected.versionName, status: 'FINALIZED' }, selected.versionName)
   if (restorable.status !== 'FINALIZED') throw new Error('Self-test failed to accept a finalized recovery version')
 
-  const legacyReceipt = {
-    schemaVersion: 'urai-firebase-hosting-recovery-1',
+  const receipt = {
+    schemaVersion: 'urai-firebase-hosting-recovery-2',
+    authMode: 'wif',
+    credentialClass: 'github-oidc-wif',
     siteId: expectedSiteId,
     releaseName: 'sites/urai-4dc1d/releases/live-current',
     versionName: selected.versionName,
+    versionStatus: 'FINALIZED',
   }
-  const validatedLegacy = validateRecoveryReceipt(legacyReceipt)
-  if (validatedLegacy.versionName !== selected.versionName) throw new Error('Self-test failed to accept a legacy receipt for live revalidation')
-
-  const finalizedReceipt = { ...legacyReceipt, versionStatus: 'FINALIZED' }
-  validateRecoveryReceipt(finalizedReceipt)
-
-  let explicitExpiredReceiptRejected = false
-  try {
-    validateRecoveryReceipt({ ...legacyReceipt, versionStatus: 'EXPIRED' })
-  } catch {
-    explicitExpiredReceiptRejected = true
-  }
-  if (!explicitExpiredReceiptRejected) throw new Error('Self-test failed to reject an explicitly expired recovery receipt')
+  const validated = validateRecoveryReceipt(receipt)
+  if (validated.versionName !== selected.versionName) throw new Error('Self-test failed to validate WIF recovery receipt')
 
   let expiredRejected = false
   try {
@@ -412,8 +405,8 @@ export function selfTest() {
     selected: selected.name,
     versionName: selected.versionName,
     versionStatus: restorable.status,
-    legacyReceiptAcceptedForLiveRevalidation: true,
-    explicitExpiredReceiptRejected: true,
+    wifReceiptAccepted: true,
+    expiredRejected: true,
   }, null, 2))
 }
 
