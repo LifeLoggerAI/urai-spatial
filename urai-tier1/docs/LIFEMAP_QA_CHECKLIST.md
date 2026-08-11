@@ -10,19 +10,21 @@ pnpm --filter urai-tier1 build
 pnpm --filter urai-tier1 test:lifemap
 ```
 
-Optional Firestore demo seed:
+Optional Firestore demo seed with the runtime's managed Application Default Credentials:
 
 ```bash
 cd urai-tier1
 FIREBASE_PROJECT_ID=<project-id> pnpm seed:lifemap -- --user=demo-user
 ```
 
-If using a service account JSON:
+For an approved local or other non-managed validation environment, configure ADC with an access-controlled credential file outside the repository:
 
 ```bash
 cd urai-tier1
-FIREBASE_PROJECT_ID=<project-id> FIREBASE_SERVICE_ACCOUNT_JSON='<json>' pnpm seed:lifemap -- --user=demo-user
+FIREBASE_PROJECT_ID=<project-id> GOOGLE_APPLICATION_CREDENTIALS=/secure/path/adc-credentials.json pnpm seed:lifemap -- --user=demo-user
 ```
+
+Do not paste service-account JSON into environment variables, commit credential files, or use this seeding command against production without a separately approved protected workflow and identity.
 
 ## Route Smoke Test
 
