@@ -1,10 +1,10 @@
-name: URAI Articulated Human GLB Forge
+name: URAI Smooth-Skinned Human GLB Forge
 
 on:
   pull_request:
     branches: [main, agent/real-world-human-pass]
     paths:
-      - scripts/generate-urai-articulated-humans-v1.py
+      - scripts/generate-urai-smooth-skinned-humans-v1.py
       - .github/workflows/articulated-human-glb-forge.yml
       - urai-tier1/src/spatial/council/CouncilRealm.tsx
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
   forge:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -46,29 +46,34 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install deterministic GLB dependencies
-        run: python -m pip install --disable-pip-version-check numpy==2.2.6 trimesh==4.11.1
+      - name: Install deterministic smooth-mesh dependencies
+        run: python -m pip install --disable-pip-version-check numpy==2.3.5 scipy==1.17.0 scikit-image==0.26.0
 
-      - name: Generate articulated human GLBs
-        run: python scripts/generate-urai-articulated-humans-v1.py
+      - name: Generate smooth-skinned human GLBs
+        run: python scripts/generate-urai-smooth-skinned-humans-v1.py
 
-      - name: Validate animation and receipt contract
+      - name: Validate skin weights, skeleton and animation contract
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import hashlib, json, pathlib, struct
+          import numpy as np
 
-          root = pathlib.Path('urai-tier1/public/assets/urai/generated/articulated-humans-v1')
-          receipt_path = pathlib.Path('operations/assets/generated-receipts/urai-articulated-humans-v1.json')
+          root = pathlib.Path('urai-tier1/public/assets/urai/generated/smooth-skinned-humans-v1')
+          receipt_path = pathlib.Path('operations/assets/generated-receipts/urai-smooth-skinned-humans-v1.json')
           receipt = json.loads(receipt_path.read_text())
-          assert receipt['packId'] == 'urai-articulated-humans-v1'
+          assert receipt['packId'] == 'urai-smooth-skinned-humans-v1'
           assert receipt['cameraAspect'] == '5:4'
           assert receipt['units'] == 'meters'
-          assert receipt['authority']['selectedProduction'] is False
-          assert receipt['authority']['smoothSkinningGate'] == 'pending'
+          assert receipt['riggingType'] == 'glTF-skin-joints-weights'
+          assert receipt['smoothSkinning'] is True
+          assert receipt['selectedProduction'] is False
           assert len(receipt['models']) == 6
           expected = ['Idle', 'Listen', 'Speak', 'GuideGesture']
+
+          component_dtype = {5126:'<f4',5123:'<u2',5125:'<u4'}
+          components = {'SCALAR':1,'VEC2':2,'VEC3':3,'VEC4':4,'MAT4':16}
 
           for model in receipt['models']:
               path = root / model['file']
@@ -76,26 +81,61 @@ jobs:
               magic, version, total = struct.unpack_from('<III', data, 0)
               assert magic == 0x46546C67 and version == 2 and total == len(data), model
               assert hashlib.sha256(data).hexdigest() == model['sha256'], model
-              assert model['bytes'] == len(data) and model['bytes'] >= 250000, model
-              assert model['nodes'] >= 40 and model['meshes'] >= 25, model
+              assert model['bytes'] == len(data) and model['bytes'] >= 1_300_000, model
+              assert model['skins'] == 1 and model['joints'] == 19, model
               assert model['animations'] == expected, model
 
               json_len, json_type = struct.unpack_from('<II', data, 12)
               assert json_type == 0x4E4F534A
               doc = json.loads(data[20:20+json_len].decode('utf-8').rstrip(' \x00'))
+              bin_offset = 20 + json_len
+              bin_len, bin_type = struct.unpack_from('<II', data, bin_offset)
+              assert bin_type == 0x004E4942
+              binary = data[bin_offset+8:bin_offset+8+bin_len]
+
+              def read_accessor(index):
+                  accessor = doc['accessors'][index]
+                  view = doc['bufferViews'][accessor['bufferView']]
+                  offset = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+                  count = accessor['count']
+                  width = components[accessor['type']]
+                  dtype = component_dtype[accessor['componentType']]
+                  return np.frombuffer(binary, dtype=dtype, count=count*width, offset=offset).reshape(count, width)
+
+              skin = doc['skins'][0]
+              assert len(skin['joints']) == 19
+              inverse_bind = read_accessor(skin['inverseBindMatrices'])
+              assert inverse_bind.shape == (19,16)
+
+              skinned_primitives = 0
+              body_height = None
+              for mesh in doc['meshes']:
+                  for primitive in mesh['primitives']:
+                      attrs = primitive['attributes']
+                      if 'JOINTS_0' not in attrs:
+                          continue
+                      skinned_primitives += 1
+                      joints = read_accessor(attrs['JOINTS_0'])
+                      weights = read_accessor(attrs['WEIGHTS_0'])
+                      assert int(joints.max()) < 19
+                      assert np.max(np.abs(weights.sum(axis=1)-1.0)) < 1e-4
+                      if mesh['name'].endswith('-body'):
+                          positions = read_accessor(attrs['POSITION'])
+                          body_height = float(positions[:,1].max()-positions[:,1].min())
+              assert skinned_primitives >= 4
+              assert body_height is not None and 1.65 <= body_height <= 2.05, (model['file'], body_height)
+
               assert [clip['name'] for clip in doc.get('animations', [])] == expected
               for clip in doc['animations']:
                   for channel in clip['channels']:
-                      target = channel['target']
-                      assert target['path'] in {'rotation', 'scale', 'translation'}
-                      node = doc['nodes'][target['node']]
+                      node = doc['nodes'][channel['target']['node']]
                       assert 'matrix' not in node, (model['file'], clip['name'], node.get('name'))
-                      assert 'translation' in node or target['path'] != 'rotation' or node.get('name')
+                      assert channel['target']['path'] in {'rotation','scale','translation'}
 
-          print(json.dumps({'ok': True, 'models': 6, 'animationsPerModel': expected, 'smoothSkinningGate': 'pending'}, indent=2))
+          print(json.dumps({'ok':True,'models':6,'skinJoints':19,'animations':expected,'smoothSkinning':True}, indent=2))
           PY
 
-      - name: Commit exact generated binaries
+      - name: Commit exact generated smooth-skinned binaries
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -103,18 +143,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/generated/articulated-humans-v1 operations/assets/generated-receipts/urai-articulated-humans-v1.json)" ]; then
-            echo 'Articulated human binaries already match the deterministic forge.'
+          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/generated/smooth-skinned-humans-v1 operations/assets/generated-receipts/urai-smooth-skinned-humans-v1.json)" ]; then
+            echo 'Smooth-skinned human binaries already match the deterministic forge.'
             exit 0
           fi
           current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
           if [ "$current_head" != "$URAI_SOURCE_SHA" ]; then
-            echo "Stale articulated forge input: current PR head is $current_head; refusing to push from $URAI_SOURCE_SHA"
+            echo "Stale smooth-human forge input: current PR head is $current_head; refusing to push from $URAI_SOURCE_SHA"
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add urai-tier1/public/assets/urai/generated/articulated-humans-v1 operations/assets/generated-receipts/urai-articulated-humans-v1.json
-          git commit -m 'Forge articulated Council human GLBs'
+          git add urai-tier1/public/assets/urai/generated/smooth-skinned-humans-v1 operations/assets/generated-receipts/urai-smooth-skinned-humans-v1.json
+          git commit -m 'Forge smooth-skinned Council human GLBs'
           gh auth setup-git
           git push origin "HEAD:${PR_BRANCH}"
