@@ -1,0 +1,122 @@
+name: Audit Legacy Firebase Key Status Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/audit-legacy-firebase-key-status-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require protected identities without exposing values
+        id: legacy
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          test -n "$WIF_PROVIDER"
+          test -n "$WIF_SERVICE_ACCOUNT"
+          node - <<'NODE'
+          const fs = require('fs')
+          const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+          if (sa.project_id !== 'urai-4dc1d') throw new Error('legacy Firebase credential project mismatch')
+          if (!sa.client_email || !sa.private_key_id) throw new Error('legacy Firebase credential missing identity metadata')
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/legacy-email.txt', sa.client_email)
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/legacy-key-id.txt', sa.private_key_id)
+          NODE
+          echo 'legacy_metadata_parsed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate WIF auditor
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: urai-4dc1d
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: urai-4dc1d
+          version: '>= 500.0.0'
+
+      - name: Audit whether the exact legacy key is still active
+        id: status
+        shell: bash
+        run: |
+          set -euo pipefail
+          email="$(cat "$RUNNER_TEMP/legacy-email.txt")"
+          key_id="$(cat "$RUNNER_TEMP/legacy-key-id.txt")"
+          service_account_exists=false
+          key_list_allowed=false
+          exact_legacy_key_active=false
+          user_managed_key_count=-1
+
+          if gcloud iam service-accounts describe "$email" --project urai-4dc1d --format='value(email)' >/dev/null 2>&1; then
+            service_account_exists=true
+          fi
+
+          if keys_json="$(gcloud iam service-accounts keys list --iam-account "$email" --project urai-4dc1d --format=json 2>/dev/null)"; then
+            key_list_allowed=true
+            printf '%s' "$keys_json" > "$RUNNER_TEMP/keys.json"
+            EMAIL="$email" KEY_ID="$key_id" node - <<'NODE'
+            const fs = require('fs')
+            const keys = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/keys.json', 'utf8'))
+            const exact = keys.some(k => String(k.name || '').endsWith('/keys/' + process.env.KEY_ID) && k.keyType === 'USER_MANAGED')
+            const count = keys.filter(k => k.keyType === 'USER_MANAGED').length
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/exact.txt', exact ? 'true' : 'false')
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/count.txt', String(count))
+            NODE
+            exact_legacy_key_active="$(cat "$RUNNER_TEMP/exact.txt")"
+            user_managed_key_count="$(cat "$RUNNER_TEMP/count.txt")"
+          fi
+
+          echo "service_account_exists=$service_account_exists" >> "$GITHUB_OUTPUT"
+          echo "key_list_allowed=$key_list_allowed" >> "$GITHUB_OUTPUT"
+          echo "exact_legacy_key_active=$exact_legacy_key_active" >> "$GITHUB_OUTPUT"
+          echo "user_managed_key_count=$user_managed_key_count" >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized key status
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          LEGACY_PARSED: ${{ steps.legacy.outputs.legacy_metadata_parsed }}
+          SA_EXISTS: ${{ steps.status.outputs.service_account_exists }}
+          KEY_LIST_ALLOWED: ${{ steps.status.outputs.key_list_allowed }}
+          EXACT_ACTIVE: ${{ steps.status.outputs.exact_legacy_key_active }}
+          USER_KEY_COUNT: ${{ steps.status.outputs.user_managed_key_count }}
+        with:
+          script: |
+            const body = [
+              '## Legacy Firebase credential status audit',
+              '',
+              `- Legacy credential metadata parsed: **${process.env.LEGACY_PARSED || 'false'}**`,
+              `- Referenced service account still exists: **${process.env.SA_EXISTS || 'unknown'}**`,
+              `- WIF auditor could list that account's keys: **${process.env.KEY_LIST_ALLOWED || 'unknown'}**`,
+              `- Exact legacy user-managed key still active: **${process.env.EXACT_ACTIVE || 'unknown'}**`,
+              `- User-managed key count on referenced account: **${process.env.USER_KEY_COUNT || 'unknown'}**`,
+              '',
+              '- No private key, key ID, service-account email, or provider secret value was printed.',
+              '- No Google Cloud mutation was performed.',
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'Legacy Firebase credential status audit', body })
+
+      - name: Remove temporary metadata
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/legacy-email.txt" "$RUNNER_TEMP/legacy-key-id.txt" "$RUNNER_TEMP/keys.json" "$RUNNER_TEMP/exact.txt" "$RUNNER_TEMP/count.txt"
