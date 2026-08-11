@@ -1,0 +1,80 @@
+name: URAI Human Rig V3 Forge
+
+on:
+  pull_request:
+    paths:
+      - scripts/generate-urai-human-rig-v3.py
+      - scripts/verify-urai-human-rig-v3.mjs
+      - .github/workflows/human-rig-v3-forge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: human-rig-v3-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  SOURCE_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+
+jobs:
+  forge:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic human forge dependencies
+        run: python -m pip install --disable-pip-version-check numpy==2.3.5 scipy==1.17.0 scikit-image==0.26.0 Pillow==12.3.0 trimesh==4.11.1
+
+      - name: Generate seven skinned human GLBs
+        run: python scripts/generate-urai-human-rig-v3.py
+
+      - name: Verify GLB skin animation and height contracts
+        run: node scripts/verify-urai-human-rig-v3.mjs
+
+      - name: Commit generated binaries only if PR head is still exact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/generated/human-rig-v3 operations/assets/generated-receipts/urai-human-rig-v3.json)" ]; then
+            echo 'Human Rig V3 already matches deterministic forge output.'
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
+            if [ "$current_head" != "$SOURCE_SHA" ]; then
+              echo "Stale forge input: current PR head is $current_head; refusing to push from $SOURCE_SHA"
+              exit 0
+            fi
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/generated/human-rig-v3 operations/assets/generated-receipts/urai-human-rig-v3.json
+          git commit -m 'Forge URAI Human Rig V3 binaries'
+          gh auth setup-git
+          git push origin "HEAD:${SOURCE_BRANCH}"
