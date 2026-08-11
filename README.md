@@ -44,13 +44,9 @@ Historical evidence remains valid for what it proved at its recorded SHA, but it
 
 ## Production release contract
 
-The canonical protected production workflow is `.github/workflows/spatial-live-deploy.yml`. A normal production deploy is manual on `main` and requires the live workflow inputs:
+Production release is **NO-GO**. `.github/workflows/spatial-live-deploy.yml` is verification-only: it accepts no release, rollback, or deploy confirmation input; receives no provider credential; and cannot mutate Firebase. Preview workflows are also local checks-only paths.
 
-- `release_sha`: exact current main SHA;
-- `rollback_sha`: distinct proven ancestor/recovery SHA;
-- `confirm`: `DEPLOY_URAI_APP`.
-
-A preview, PR verification run, green subset of CI, or intermediate receipt is not production completion.
+A preview, PR verification run, green subset of CI, or intermediate receipt is not production completion. Restoring production authority requires a separately reviewed change after external-account WIF, least-privilege IAM, historical-key revocation, negative-auth, audit-log review, protected settings/read-back, and eligible exact-head approval are proven.
 
 ## Repository authority
 
