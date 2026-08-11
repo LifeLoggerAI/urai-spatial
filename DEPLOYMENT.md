@@ -6,9 +6,11 @@ URAI-Spatial V1 deploys as the `urai-tier1` Next.js app through Firebase Hosting
 
 - Node 22+
 - Corepack with `pnpm@10.0.0`
-- Firebase CLI authenticated to the target project
 - Firebase project from `.firebaserc` or `FIREBASE_PROJECT_ID`
+- Server-side Firebase Admin access through either a Google-managed runtime metadata identity or a non-symlinked `GOOGLE_APPLICATION_CREDENTIALS` external-account Workload Identity Federation configuration
 - Production env vars configured in Firebase/App Hosting or CI
+
+Production release remains **NO-GO**. The checked-in release and Hosting-recovery paths are verification-only and fail closed until provider-side WIF trust, least-privilege IAM, historical-key revocation, and protected-runtime validation are independently proven.
 
 ## Required Checks
 
@@ -55,17 +57,18 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
 NEXT_PUBLIC_URAI_DEMO_USER_ID=demo-user
 ```
 
-Server-only secrets:
+Server-only configuration:
 
 ```bash
-FIREBASE_SERVICE_ACCOUNT_JSON=
+# Use only on a non-Google runtime, and only for a non-symlinked external-account WIF config.
+GOOGLE_APPLICATION_CREDENTIALS=/protected/path/google-wif-external-account.json
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 ```
 
-Do not commit `.env.local` or service account JSON.
+Do not set `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PRIVATE_KEY`, or `FIREBASE_CLIENT_EMAIL`. Do not commit `.env.local`, ADC files, service-account JSON, or other credential material. A Google-managed runtime should use its attached metadata identity without a credential file.
 
 ## Deploy Commands
 
@@ -77,15 +80,7 @@ corepack pnpm deploy:staging
 
 Production:
 
-```bash
-corepack pnpm deploy:prod
-```
-
-Explicit Firebase project:
-
-```bash
-FIREBASE_PROJECT_ID=<project-id> corepack pnpm live:deploy
-```
+Production deployment is intentionally quarantined. `corepack pnpm deploy:prod` and `FIREBASE_PROJECT_ID=<project-id> corepack pnpm live:deploy` must remain fail-closed until the provider and governance gates above are proven. Do not bypass the verification-only workflow or restore a JSON-key release path.
 
 ## Post-Deploy Smoke
 
@@ -112,4 +107,4 @@ Expected V1 behavior:
 
 ## Deployment Status Rule
 
-Only call the release live when a deploy command returns a live URL and the smoke routes pass. Otherwise report the build as deploy-ready and list the missing credentials or verification step.
+Do not call the release live from repository evidence alone. Source checks may establish deploy readiness, but production stays NO-GO until an independently approved exact head is paired with verified provider identity, revoked historical keys, negative-auth proof, protected settings, and live read-back evidence.
