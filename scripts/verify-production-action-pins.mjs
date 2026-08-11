@@ -6,6 +6,7 @@ const root = process.cwd()
 const workflowPaths = [
   '.github/workflows/spatial-live-deploy.yml',
   '.github/workflows/release-security-path-guard.yml',
+  '.github/workflows/capture-legacy-hosting-recovery.yml',
 ]
 const auditPath = 'scripts/audit-production-workflow-authority.mjs'
 const failures = []
@@ -15,6 +16,8 @@ const allowedActions = new Set([
   'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
   'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
   'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  'google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db',
 ])
 
 const workflowActions = {}
@@ -31,33 +34,24 @@ for (const workflowPath of workflowPaths) {
   }
 }
 
-const canonicalActions = workflowActions[workflowPaths[0]] || []
+const allUsed = new Set(Object.values(workflowActions).flat())
 for (const required of allowedActions) {
-  if (!canonicalActions.includes(required) && !workflowActions[workflowPaths[1]]?.includes(required)) {
-    failures.push(`Approved action pin is unused across protected workflows: ${required}`)
-  }
+  if (!allUsed.has(required)) failures.push(`Approved action pin is unused across protected workflows: ${required}`)
 }
 
 const auditSource = readFileSync(path.join(root, auditPath), 'utf8').replace(/\r\n?/g, '\n')
-for (const mutableMarker of [
-  "'actions/checkout@v4'",
-  "'actions/setup-node@v4'",
-  "'actions/upload-artifact@v4'",
-  "'actions/download-artifact@v4'",
-]) {
-  if (auditSource.includes(mutableMarker)) failures.push(`${auditPath} still accepts mutable action marker: ${mutableMarker}`)
-}
-
 for (const exactPin of allowedActions) {
   if (!auditSource.includes(exactPin)) failures.push(`${auditPath} does not enforce exact approved pin: ${exactPin}`)
 }
+if (/uses:\s+[^\s]+@v\d/.test(auditSource)) failures.push(`${auditPath} must not accept mutable action tags`)
 
 const report = {
-  schemaVersion: 'urai-production-action-pins-1',
+  schemaVersion: 'urai-production-action-pins-2',
   ok: failures.length === 0,
   workflows: workflowActions,
   allowedActions: [...allowedActions],
   audit: auditPath,
+  wifActionsPinned: true,
   failures,
 }
 
