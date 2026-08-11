@@ -1,4 +1,4 @@
-# trigger: 2026-08-11T06:10-05:00
+# trigger: 2026-08-11T06:13-05:00
 name: Check Connected Google User Key Delete Authority Once 2026-08-11
 
 on:
@@ -91,8 +91,9 @@ jobs:
             --arg projectId "$TARGET_PROJECT" \
             --arg recordedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --slurpfile results "$d/results.json" '
+              ([$results[0][] | select(.hasKeyDelete == true)] | length) as $deleteCount |
               {
-                schemaVersion:"urai-connected-google-user-key-delete-authority-1",
+                schemaVersion:"urai-connected-google-user-key-delete-authority-2",
                 recordedAt:$recordedAt,
                 projectId:$projectId,
                 mutationPerformed:false,
@@ -100,8 +101,8 @@ jobs:
                 targetIdentityRecordedInReceipt:false,
                 directProjectRoleCount:($results[0] | length),
                 unresolvedRoleCount:([$results[0][] | select(.described == false)] | length),
-                keyDeleteRoleCount:([$results[0][] | select(.hasKeyDelete == true)] | length),
-                targetUserHasKeyDeleteAuthority:([$results[0][] | select(.hasKeyDelete == true)] | length) > 0,
+                keyDeleteRoleCount:$deleteCount,
+                targetUserHasKeyDeleteAuthority:($deleteCount > 0),
                 keyDeleteRoles:[$results[0][] | select(.hasKeyDelete == true) | .role]
               }
             ' > "$d/receipt.json"
