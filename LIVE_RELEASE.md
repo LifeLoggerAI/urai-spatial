@@ -1,118 +1,56 @@
 # URAI Spatial Live Release
 
-This document is the live-release path for publishing a polished URAI Spatial build.
+## Current decision
 
-## Goal
+Production release is **NO-GO**. This repository currently provides verification-only release and preview workflows. They cannot receive provider credentials or execute Firebase deployment, rollback, Hosting recovery, or preview-channel mutation.
 
-Publish only after the integrated spatial surface passes the done-done lock, source integrity, canon checks, typecheck, production build, browser/E2E lock checks, function tests, replay contract tests, XR release gates, and Firebase deploy preconditions.
+## Source verification commands
 
-## Canonical release commands
-
-Run the explicit done-done guard:
+Run the explicit fail-closed release guard:
 
 ```bash
 pnpm done-done:guard
 ```
 
-Run a full non-deploying release gate:
+Run the non-deploying release checks:
 
 ```bash
 pnpm live:check
 ```
 
-Deploy to the selected Firebase project after the same full gate passes:
+`scripts/live-release.mjs` rejects `--deploy` and `--deploy-prebuilt`. The legacy Hosting-recovery module rejects discovery, restore, and verification operations outside its successful fail-closed self-test.
 
-```bash
-FIREBASE_PROJECT_ID=<project-id> pnpm live:deploy
-```
+Do not run `firebase deploy`, `pnpm live:deploy`, `pnpm publish:live`, or an ad-hoc preview-channel deploy. Those commands are not authorized release paths.
 
-Alias:
+## GitHub Actions boundary
 
-```bash
-FIREBASE_PROJECT_ID=<project-id> pnpm publish:live
-```
+- `.github/workflows/spatial-live-deploy.yml` verifies the exact candidate and records `Classification: NO-GO`.
+- `.github/workflows/capture-legacy-hosting-recovery.yml` verifies that recovery stays quarantined.
+- `.github/workflows/urai-full-preview-channel.yml` performs local static/browser verification only.
+- `.github/workflows/location-map-trusted-preview.yml` performs local Location Map verification only.
+- `.github/workflows/urai-spatial-preview.yml` performs local browser acceptance only.
 
-## What `pnpm done-done:guard` does
+None of these workflows has a production environment, Google/Firebase secret, deploy input, or provider mutation step.
 
-`pnpm done-done:guard` runs `scripts/live-release.mjs --check`. It validates:
+## Restoring release authority
 
-- `docs/URAI_SPATIAL_DONE_DONE_LOCK.md` exists;
-- the release manifest points to the done-done lock;
-- V1 through V5 completion gates remain documented;
-- unvalidated AR, VR, XR, Quest, VisionOS, handheld AR, biometric, and provider claims remain blocked;
-- the Tier/XR release matrix is present and aligned with the manifest;
-- the full release verification suite can run.
+A future release path requires a separately reviewed exact-head change after all of the following are recorded:
 
-## What `pnpm live:check` does
+- historical Google/Firebase credentials revoked;
+- old credentials fail negative authentication;
+- Cloud Audit Logs reviewed;
+- protected external-account WIF trust and least-privilege IAM confirmed;
+- protected runtime configuration installed and read back;
+- repository/environment secret settings inspected;
+- exact-head nonproduction validation completed;
+- genuine eligible non-author security/runtime approval obtained;
+- rollback provenance and independent live-verification plan approved.
 
-`pnpm live:check` runs `scripts/live-release.mjs --check`, which verifies the expected release files exist and then runs:
+Source CI, local browser proof, artifacts, or a green preview check do not satisfy these provider and governance gates.
 
-```bash
-pnpm verify:release:full
-```
+## Honest proof boundaries
 
-That expands to:
-
-```bash
-pnpm lock:all && pnpm test && pnpm xr:verify
-```
-
-The lock suite includes static source checks, boundary checks, migration checks, home invariant checks, Firestore Tier-1 boundary checks, typecheck, production build, and E2E lock checks.
-
-## What `pnpm live:deploy` does
-
-`pnpm live:deploy` runs the same full release verification first. It refuses to deploy unless one of these is set:
-
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_PROJECT`
-- `GCLOUD_PROJECT`
-
-After the full gate passes, it deploys:
-
-```bash
-firebase deploy --project <project-id> --only hosting,firestore:rules,firestore:indexes,functions
-```
-
-## GitHub Actions path
-
-Use `URAI Spatial Live Deploy` for release verification and deployment:
-
-- `deploy=CHECK_ONLY` runs the full release gate without deploying.
-- `deploy=DEPLOY` deploys after the release gate passes.
-- `live_url` should be supplied so the deploy workflow smokes the deployed URL.
-
-Use `URAI Spatial Live Smoke` when a deployment already exists and you only need live verification:
-
-- `live_url`: the deployed URL to verify.
-- `expect_ready`: `true` for full readiness, `false` for partial readiness.
-
-## Post-deploy smoke
-
-After deploy, run smoke against the live URL:
-
-```bash
-HOST=https://<your-live-host> pnpm smoke
-```
-
-or run the `URAI Spatial Live Smoke` workflow with:
-
-```text
-live_url=https://<your-live-host>
-expect_ready=true
-```
-
-Do not mark the release live-ready until the live smoke check passes.
-
-## Release posture
-
-Do not claim live AR, WebXR, wearable, biometric, or memory-grounded providers are active unless those providers are connected, consented, deployed, and validated.
-
-If browser E2E is blocked locally by missing OS dependencies, run the gate in CI or a workstation with Playwright dependencies installed:
-
-```bash
-pnpm playwright:ensure
-pnpm live:check
-```
+Current verification does not prove production provider identity, deployment, rollback, destructive recovery, public-domain parity, physical-device certification, or final human visual acceptance. Keep public and internal status **NO-GO** until those independent receipts exist.
 
 ## Ownership boundary
 
