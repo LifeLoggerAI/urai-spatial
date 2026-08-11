@@ -1,0 +1,234 @@
+{
+  "schemaVersion": "1.0.0",
+  "packId": "urai-real-world-extension-v1",
+  "generator": "URAI real-world extension forge v1",
+  "generatedBy": "scripts/generate-urai-real-world-extension-v1.py",
+  "cameraAspect": "5:4",
+  "units": "meters",
+  "authority": {
+    "namespace": "urai-tier1/public/assets/urai/generated/real-world-v1",
+    "selectedProduction": false,
+    "promotionRequires": [
+      "runtime-render-proof",
+      "multi-device-performance",
+      "accessibility",
+      "human-rigging-and-animation",
+      "provenance-review"
+    ]
+  },
+  "modelCount": 10,
+  "totalVertices": 61268,
+  "totalFaces": 120060,
+  "assets": [
+    {
+      "fileName": "council-guide-human-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-guide-human-v1.glb",
+      "bytes": 181056,
+      "sha256": "8b3ed25d87c809941c1fb7e2a810a7c4a5bd88755c70dca930229205004fc8c6",
+      "vertices": 8000,
+      "faces": 15892,
+      "geometries": 27,
+      "bounds": [
+        [
+          -0.3719,
+          0.0227,
+          -0.1515
+        ],
+        [
+          0.3719,
+          1.8483,
+          0.1843
+        ]
+      ]
+    },
+    {
+      "fileName": "council-mirror-human-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-mirror-human-v1.glb",
+      "bytes": 184776,
+      "sha256": "4de521cf2829fb42a46b75057ac7702b8ca25397de09fefa97fa23c962c72e13",
+      "vertices": 8452,
+      "faces": 16788,
+      "geometries": 29,
+      "bounds": [
+        [
+          -0.3451,
+          0.0218,
+          -0.1455
+        ],
+        [
+          0.3451,
+          1.7848,
+          0.177
+        ]
+      ]
+    },
+    {
+      "fileName": "council-guardian-human-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-guardian-human-v1.glb",
+      "bytes": 181392,
+      "sha256": "09a0e2348dcf554f928522ad20b08e5bbb42d3ee7ae6d0360befbf4f1bb0a5d5",
+      "vertices": 8000,
+      "faces": 15892,
+      "geometries": 27,
+      "bounds": [
+        [
+          -0.4061,
+          0.0236,
+          -0.1575
+        ],
+        [
+          0.4061,
+          1.9058,
+          0.1916
+        ]
+      ]
+    },
+    {
+      "fileName": "council-archivist-human-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-archivist-human-v1.glb",
+      "bytes": 183768,
+      "sha256": "d49e5c694b35edeaef862fcfb7d33ebb25b9395a4c3c6e3e38ed0b1fc56f1a71",
+      "vertices": 8162,
+      "faces": 16212,
+      "geometries": 28,
+      "bounds": [
+        [
+          -0.3356,
+          0.0216,
+          -0.144
+        ],
+        [
+          0.3356,
+          1.8,
+          0.1752
+        ]
+      ]
+    },
+    {
+      "fileName": "council-builder-human-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-builder-human-v1.glb",
+      "bytes": 181252,
+      "sha256": "121cd474b6a2079f0043772800e63e450fe0e448c587c76e6d8079c73763a0c2",
+      "vertices": 8000,
+      "faces": 15892,
+      "geometries": 27,
+      "bounds": [
+        [
+          -0.392,
+          0.0232,
+          -0.1545
+        ],
+        [
+          0.392,
+          1.8849,
+          0.188
+        ]
+      ]
+    },
+    {
+      "fileName": "council-trickster-human-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-trickster-human-v1.glb",
+      "bytes": 181328,
+      "sha256": "03e90e735f36eda9eac4f64ff3b07d2f1078f64c83bb7868dc35f19d57c7e955",
+      "vertices": 8000,
+      "faces": 15892,
+      "geometries": 27,
+      "bounds": [
+        [
+          -0.3461,
+          0.0223,
+          -0.1485
+        ],
+        [
+          0.3461,
+          1.7969,
+          0.1807
+        ]
+      ]
+    },
+    {
+      "fileName": "council-chamber-real-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/council-chamber-real-v1.glb",
+      "bytes": 102904,
+      "sha256": "e4d597c546701a0592108198b9dd72ab84eb18091ae661c468e74f5192208ba5",
+      "vertices": 3100,
+      "faces": 5802,
+      "geometries": 41,
+      "bounds": [
+        [
+          -6.6,
+          -0.0542,
+          -6.6
+        ],
+        [
+          6.6,
+          5.2,
+          6.6
+        ]
+      ]
+    },
+    {
+      "fileName": "shadow-hall-real-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/shadow-hall-real-v1.glb",
+      "bytes": 70000,
+      "sha256": "18402f44844b108e7b7f1a92ce71311de159fdbbaa8b094883f62b264d4064df",
+      "vertices": 3918,
+      "faces": 7266,
+      "geometries": 34,
+      "bounds": [
+        [
+          -5.36,
+          -0.0545,
+          -8.51
+        ],
+        [
+          5.36,
+          5.2,
+          7.0
+        ]
+      ]
+    },
+    {
+      "fileName": "mirror-chamber-real-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/mirror-chamber-real-v1.glb",
+      "bytes": 85444,
+      "sha256": "a00e08caec1621a05708551c7919b835624df5b882a85b07d07a7d78e3283361",
+      "vertices": 2442,
+      "faces": 4570,
+      "geometries": 18,
+      "bounds": [
+        [
+          -5.5,
+          -0.0545,
+          -5.5
+        ],
+        [
+          5.5,
+          4.5122,
+          5.5
+        ]
+      ]
+    },
+    {
+      "fileName": "legacy-archive-real-v1.glb",
+      "path": "/assets/urai/generated/real-world-v1/legacy-archive-real-v1.glb",
+      "bytes": 87120,
+      "sha256": "80a667bbf03f7cc68fae0e661ba86e6a191a35726ae95816c6d183808b8470fe",
+      "vertices": 3194,
+      "faces": 5854,
+      "geometries": 101,
+      "bounds": [
+        [
+          -6.01,
+          -0.0546,
+          -8.0
+        ],
+        [
+          6.01,
+          5.0,
+          8.0
+        ]
+      ]
+    }
+  ]
+}
