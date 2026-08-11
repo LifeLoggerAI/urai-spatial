@@ -48,8 +48,11 @@ for (const forbidden of [
   assert.equal(workflow.includes(forbidden), false, `Quarantine workflow must not include ${forbidden}.`);
 }
 
-assert.match(workflow, /ref: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/);
-assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$expected"/);
+assert.match(workflow, /EXACT_HEAD_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/);
+assert.match(workflow, /ref: \$\{\{ env\.EXACT_HEAD_SHA \}\}/);
+assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$EXACT_HEAD_SHA"/);
+assert.match(workflow, /echo "Commit: \$EXACT_HEAD_SHA"/);
+assert.match(workflow, /name: urai-spatial-production-quarantine-\$\{\{ env\.EXACT_HEAD_SHA \}\}/);
 assert.match(workflow, /test -z "\$\(git status --porcelain --untracked-files=all\)"/);
 
 console.log("URAI deploy workflow quarantine canon passed.");
