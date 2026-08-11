@@ -1,4 +1,5 @@
 # Authoritative exact-head binary forge for URAI human/world runtime candidates.
+# Clean-head retrigger after connector cleanup.
 name: URAI Real World Extension Forge
 
 on:
