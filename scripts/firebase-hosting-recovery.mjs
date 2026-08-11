@@ -20,6 +20,23 @@ export async function verifyRestoredVersion() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.error(quarantineMessage)
-  process.exitCode = 1
+  if (process.argv.includes('--self-test')) {
+    const operations = [
+      discoverCurrentLiveRelease,
+      restoreDiscoveredVersion,
+      verifyRestoredVersion,
+    ]
+    for (const operation of operations) {
+      try {
+        await operation()
+        throw new Error('Quarantined recovery operation unexpectedly succeeded.')
+      } catch (error) {
+        if (!(error instanceof Error) || error.message !== quarantineMessage) throw error
+      }
+    }
+    console.log('Firebase Hosting recovery self-test passed: all operations fail closed.')
+  } else {
+    console.error(quarantineMessage)
+    process.exitCode = 1
+  }
 }
