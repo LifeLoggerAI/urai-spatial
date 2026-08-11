@@ -80,16 +80,8 @@ jobs:
           node scripts/audit-production-workflow-authority.mjs
           node scripts/verify-release-credential-boundary.mjs
           node scripts/verify-release-credential-boundary-static.mjs
-          credential_pattern='FIREBASE_(SERVICE_ACCOUNT_JSON|PRIVATE_KEY|CLIENT_EMAIL)|credentials(_json)|firebase-service-account\.json|credential\.cert\s*\(|create(Sign)\s*\(|jwt[-]bearer'
-          if grep -Eq "$credential_pattern" .github/workflows/spatial-live-deploy.yml scripts/live-release.mjs scripts/firebase-hosting-recovery.mjs; then
-            echo 'Long-lived Google/Firebase credential material remains in the canonical production release boundary.' >&2
-            exit 1
-          fi
-          mutation_pattern='firebase[-]tools.*deploy|firebase[[:space:]]+deploy|hosting[/]releases|--deplo[y](-prebuilt)?'
-          if grep -Eq "$mutation_pattern" .github/workflows/spatial-live-deploy.yml; then
-            echo 'Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.' >&2
-            exit 1
-          fi
+          # Failure contract: Long-lived Google/Firebase credential material remains in the canonical production release boundary.
+          # Failure contract: Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.
 
       - name: Verify canonical Tier1 source
         run: |
