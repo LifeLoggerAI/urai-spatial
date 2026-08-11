@@ -1,0 +1,178 @@
+name: Deploy ElevenLabs Provider Once 2026-08-10
+
+on:
+  push:
+    branches:
+      - ops/elevenlabs-provider-deploy-20260810
+    paths:
+      - '.github/workflows/deploy-elevenlabs-provider-once-20260810.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-elevenlabs-provider-deploy-20260810
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.0.0'
+  EXPECTED_PROJECT: urai-4dc1d
+  CANONICAL_SHA: 72d97865ed28aa3140668c2e57e5675717a25ecd
+  FUNCTION_ID: elevenLabsVoiceProvider
+
+jobs:
+  deploy:
+    name: Build, deploy, and smoke ElevenLabs provider
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Guard one-time trusted branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'LifeLoggerAI/urai-spatial'
+          test "$GITHUB_REF" = 'refs/heads/ops/elevenlabs-provider-deploy-20260810'
+
+      - name: Checkout exact canonical main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANONICAL_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove canonical identity is still current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANONICAL_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          remote_main="$(git ls-remote --exit-code origin refs/heads/main | awk '{print $1}')"
+          test "$remote_main" = "$CANONICAL_SHA"
+          node - <<'NODE'
+          const fs = require('fs')
+          const rc = JSON.parse(fs.readFileSync('.firebaserc', 'utf8'))
+          if (rc.projects?.spatial !== 'urai-4dc1d' || rc.projects?.['urai-spatial'] !== 'urai-4dc1d') {
+            throw new Error('Canonical Firebase project mapping drifted')
+          }
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'))
+          if (config.functions?.source !== 'apps/functions') throw new Error('Unexpected functions source')
+          if (config.functions?.codebase !== 'urai-spatial-functions') throw new Error('Unexpected functions codebase')
+          NODE
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable exact pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          test "$(pnpm --version)" = "$PNPM_VERSION"
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build and test provider boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter urai-functions build
+          pnpm --filter urai-functions test
+          node urai-tier1/tests/provider-boundary-contract.test.mjs
+          node urai-tier1/tests/provider-hosting-runtime-contract.test.mjs
+          grep -Fq "const ELEVENLABS_API_KEY = defineSecret('ELEVENLABS_API_KEY')" apps/functions/src/providerFunctions.ts
+          grep -Fq 'secrets: [ELEVENLABS_API_KEY]' apps/functions/src/providerFunctions.ts
+          grep -Fq "export { elevenLabsVoiceProvider, openAiOrbProvider }" apps/functions/src/index.ts
+
+      - name: Materialize ephemeral Firebase deploy credential
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          credentials="$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials"
+          chmod 600 "$credentials"
+          node - "$credentials" <<'NODE'
+          const fs = require('fs')
+          const path = process.argv[2]
+          const serviceAccount = JSON.parse(fs.readFileSync(path, 'utf8'))
+          if (serviceAccount.project_id !== 'urai-4dc1d') throw new Error('Firebase deploy credential project mismatch')
+          NODE
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$credentials" >> "$GITHUB_ENV"
+
+      - name: Deploy only ElevenLabs voice provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec firebase deploy \
+            --project "$EXPECTED_PROJECT" \
+            --only "functions:$FUNCTION_ID" \
+            --non-interactive
+
+      - name: Smoke deployed auth boundary
+        id: smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://us-central1-${EXPECTED_PROJECT}.cloudfunctions.net/${FUNCTION_ID}"
+          status="$(curl --silent --show-error --output "$RUNNER_TEMP/elevenlabs-smoke-body.json" --write-out '%{http_code}' \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data '{}' \
+            --max-time 30 \
+            "$url")"
+          test "$status" = '401'
+          node - "$RUNNER_TEMP/elevenlabs-smoke-body.json" <<'NODE'
+          const fs = require('fs')
+          const body = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
+          if (body?.error !== 'UNAUTHORIZED') throw new Error('Unexpected unauthenticated provider response')
+          NODE
+          printf 'url=%s\nstatus=%s\n' "$url" "$status" >> "$GITHUB_OUTPUT"
+
+      - name: Write deployment receipt
+        shell: bash
+        env:
+          FUNCTION_URL: ${{ steps.smoke.outputs.url }}
+          SMOKE_STATUS: ${{ steps.smoke.outputs.status }}
+        run: |
+          set -euo pipefail
+          mkdir -p provider-deployment-receipt
+          node - <<'NODE'
+          const fs = require('fs')
+          const receipt = {
+            schemaVersion: 'urai-provider-deployment-receipt-1',
+            recordedAt: new Date().toISOString(),
+            repository: process.env.GITHUB_REPOSITORY,
+            canonicalSha: process.env.CANONICAL_SHA,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            projectId: process.env.EXPECTED_PROJECT,
+            functionId: process.env.FUNCTION_ID,
+            functionUrl: process.env.FUNCTION_URL,
+            secretBinding: 'ELEVENLABS_API_KEY',
+            secretValueRecorded: false,
+            unauthenticatedSmokeExpected: 401,
+            unauthenticatedSmokeObserved: Number(process.env.SMOKE_STATUS),
+            result: 'deployed-and-auth-boundary-verified'
+          }
+          fs.writeFileSync('provider-deployment-receipt/elevenlabs-20260810.json', JSON.stringify(receipt, null, 2) + '\n')
+          NODE
+
+      - name: Upload deployment receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: urai-elevenlabs-provider-deploy-20260810
+          path: provider-deployment-receipt/
+          if-no-files-found: warn
+          retention-days: 365
+
+      - name: Remove temporary credential
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
