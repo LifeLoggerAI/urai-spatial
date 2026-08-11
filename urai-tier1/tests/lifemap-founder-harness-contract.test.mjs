@@ -48,17 +48,22 @@ test('Founder runner retains every required real interaction and phase owner', (
   assert.match(runner, /await waitForPath\(page, destinationPath\)/)
   assert.match(runner, /page\.locator\(destinationSelector\)\.first\(\)\.waitFor/)
   for (const routeAction of [
-    "clickRouteAction(page, 'Open Focus', '/focus', '[data-testid=\"urai-focus-page\"]')",
+    "clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid=\"urai-focus-page\"]')",
     "clickRouteAction(page, 'Replay', '/replay', '[data-testid=\"urai-replay-page\"]')",
     "clickRouteAction(page, 'Overview', '/life-map', ROOT)",
   ]) assert.ok(runner.includes(routeAction), `missing route action: ${routeAction}`)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
   assert.match(runner, /result\.tap\(\{ timeout: 120_000 \}\)/)
   assert.match(runner, /result\.click\(\{ timeout: 120_000 \}\)/)
-  const armedObserver = runner.indexOf("const capturePromise = waitForState(page, 'data-life-map-phase', expectedPhase")
+  const armedObserver = runner.indexOf("const capturePromise = observeRenderedPhase(page, expectedPhase, 45_000)")
   const semanticSelection = runner.indexOf('const selectionPromise = selectQuietReset(page, options.selection || {})')
   assert.ok(armedObserver >= 0 && semanticSelection > armedObserver, 'phase observation must be armed before semantic selection')
   assert.match(runner, /await Promise\.all\(\[capturePromise, selectionPromise\]\)/)
+  assert.match(runner, /new MutationObserver\(\(\) => record\('mutation'\)\)/)
+  assert.match(runner, /window\.requestAnimationFrame\(\(frameTime\) =>/)
+  assert.match(runner, /renderedFramePhase: framePhase/)
+  assert.match(runner, /transition\.renderedFramePhase !== expectedPhase/)
+  assert.ok(runner.indexOf('await desktopJourney()') < runner.indexOf('await highResolutionOverview()'), 'time-critical phase proof must precede expensive 3x readback')
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) {
     assert.match(runner, new RegExp(`selectAndCapturePhase\\(page, '${phase}'`))
   }
