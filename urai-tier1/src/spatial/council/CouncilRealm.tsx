@@ -6,6 +6,7 @@ import { ContactShadows, Environment, PerspectiveCamera, useGLTF } from "@react-
 import { Suspense, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { DEMO_COUNCIL_AGENTS } from "./councilAgentSchema"
+import { useSpatialQualityTier } from "@/spatial/performance/useSpatialQualityTier"
 
 const WORLD_MODEL_ROOT = "/assets/urai/generated/hero-realms-v2"
 const HUMAN_MODEL_ROOT = "/assets/urai/generated/real-world-v1"
@@ -111,13 +112,18 @@ function CouncilHumanModel({
 function CouncilWorld() {
   const [selected, setSelected] = useState(0)
   const selectedAgent = DEMO_COUNCIL_AGENTS[selected] ?? DEMO_COUNCIL_AGENTS[0]
+  const quality = useSpatialQualityTier()
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#879398] text-white">
+    <div
+      className="relative min-h-screen overflow-hidden bg-[#879398] text-white"
+      data-spatial-quality-tier={quality.tier}
+      data-spatial-shadow-map={quality.shadowMapSize}
+    >
       <div className="absolute inset-0">
         <Canvas
-          shadows
-          dpr={[1, 1.75]}
+          shadows={quality.realtimeShadows}
+          dpr={quality.dpr}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
           data-council-world-authority="urai-hero-realms-v2"
           data-council-human-authority="urai-real-world-extension-v1"
@@ -132,9 +138,9 @@ function CouncilWorld() {
               position={[-4.5, 8, 4]}
               intensity={2.6}
               color="#f4f5ef"
-              castShadow
-              shadow-mapSize-width={2048}
-              shadow-mapSize-height={2048}
+              castShadow={quality.realtimeShadows}
+              shadow-mapSize-width={quality.shadowMapSize}
+              shadow-mapSize-height={quality.shadowMapSize}
             />
             <directionalLight position={[4, 4.5, -3]} intensity={0.75} color="#ffd9b0" />
 
@@ -152,8 +158,8 @@ function CouncilWorld() {
               />
             ))}
 
-            <ContactShadows position={[0, 0.012, -0.6]} opacity={0.42} scale={12} blur={2.8} far={7} />
-            <Environment preset="apartment" environmentIntensity={0.3} />
+            {quality.contactShadows ? <ContactShadows position={[0, 0.012, -0.6]} opacity={0.42} scale={12} blur={2.8} far={7} /> : null}
+            <Environment preset="apartment" environmentIntensity={quality.environmentIntensity} />
           </Suspense>
         </Canvas>
       </div>
