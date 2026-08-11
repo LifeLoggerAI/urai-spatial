@@ -49,7 +49,7 @@ test('pointer keyboard and touch semantic paths converge on one single-fire sele
   assert.match(navigator, /event\.detail === 0 \? 'keyboard' : 'pointer'|event\.detail === 0 \? "keyboard" : "pointer"/)
   assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], 'keyboard'\)|selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
   assert.doesNotMatch(navigator, /onTouchEnd=/)
-  assert.match(founder, /await result\.tap\(\)/)
+  assert.match(founder, /await result\.tap\(\{ timeout: 120_000 \}\)/)
   assert.match(selection, /const detail = \{ nodeId, source \}/)
 })
 
@@ -69,8 +69,8 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
 
 test('Founder proof waits for the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'travel'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'approach'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
+  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'travel', 45_000\)/)
+  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'approach', 45_000\)/)
+  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival', 45_000\)/)
   assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
 })
