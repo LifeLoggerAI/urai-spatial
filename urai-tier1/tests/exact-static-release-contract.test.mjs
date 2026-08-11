@@ -101,8 +101,9 @@ test('credential verifiers and authority audit classify quarantine as NO-GO', ()
   hasAll(authorityAudit, [
     "mode: quarantineMode ? 'quarantine-no-go' : 'active-release'",
     'productionMutationAvailable: productionWorkflows.length > 0',
-    'productionCredentialsAvailable: secretOccurrences > 0',
+    'productionCredentialsAvailable: rawCredentialSecretOccurrences > 0',
     'Quarantine must expose zero production mutation workflows',
-    'Quarantine must expose zero raw service-account secrets',
+    'Quarantine must expose zero raw Google/Firebase credential secrets across all workflows',
+    'secrets\\.(?:FIREBASE_SERVICE_ACCOUNT_JSON|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL)',
   ], 'authority audit')
 })
