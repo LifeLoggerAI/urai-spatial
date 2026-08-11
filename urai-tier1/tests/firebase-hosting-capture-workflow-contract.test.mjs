@@ -11,40 +11,37 @@ const workflow = readFileSync(
   'utf8',
 ).replace(/\r\n?/g, '\n')
 
-test('capture workflow is manual, exact-main, protected, and read-only', () => {
-  assert.match(workflow, /^name: Capture legacy Firebase Hosting recovery$/m)
+test('legacy recovery workflow is manual, exact-head, and verification-only', () => {
+  assert.match(workflow, /^name: Legacy Firebase Hosting Recovery Verification$/m)
   assert.match(workflow, /^  workflow_dispatch:$/m)
+  assert.match(workflow, /expected_sha:/)
   assert.doesNotMatch(workflow, /^  (?:push|pull_request|schedule):$/m)
-  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/)
-  assert.match(workflow, /inputs\.confirm == 'CAPTURE_LEGACY_HOSTING_VERSION'/)
-  assert.match(workflow, /^    environment: production$/m)
-  assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/)
-  assert.match(workflow, /git ls-remote --exit-code origin refs\/heads\/main/)
-  assert.match(workflow, /node scripts\/firebase-hosting-recovery\.mjs discover/)
-  assert.doesNotMatch(workflow, /node scripts\/firebase-hosting-recovery\.mjs restore/)
+  assert.match(workflow, /ref: \$\{\{ inputs\.expected_sha \}\}/)
+  assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$EXPECTED_SHA"/)
+  assert.match(workflow, /node scripts\/firebase-hosting-recovery\.mjs --self-test/)
+  assert.match(workflow, /node scripts\/audit-production-workflow-authority\.mjs/)
+  assert.doesNotMatch(workflow, /firebase-hosting-recovery\.mjs (?:discover|restore)/)
   assert.doesNotMatch(workflow, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy/)
   assert.doesNotMatch(workflow, /live-release\.mjs --deploy/)
 })
 
-test('capture workflow scopes the production credential to one discovery step', () => {
-  const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
-  assert.equal(workflow.split(secretMarker).length - 1, 1)
-  const discoveryStart = workflow.indexOf('- name: Discover exact current live Hosting version')
-  assert.notEqual(discoveryStart, -1, 'Discovery step not found')
-  const nextStepIndex = workflow.indexOf('\n      - name:', discoveryStart + 1)
-  const nextStep = nextStepIndex === -1 ? workflow.length : nextStepIndex
-  const discoveryStep = workflow.slice(discoveryStart, nextStep)
-  assert.match(discoveryStep, /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.match(discoveryStep, /firebase-hosting-recovery\.mjs discover/)
-  assert.doesNotMatch(workflow.slice(0, discoveryStart), /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.doesNotMatch(workflow.slice(nextStep), /FIREBASE_SERVICE_ACCOUNT_JSON/)
+test('legacy recovery workflow exposes no credential or production authority', () => {
+  assert.doesNotMatch(workflow, /environment: production/)
+  assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_JSON/)
+  assert.doesNotMatch(workflow, /FIREBASE_PRIVATE_KEY/)
+  assert.doesNotMatch(workflow, /FIREBASE_CLIENT_EMAIL/)
+  assert.doesNotMatch(workflow, /credentials_json\s*:/)
+  assert.doesNotMatch(workflow, /id-token: write|contents: write|actions: write/)
+  assert.match(workflow, /^permissions:\n  contents: read$/m)
 })
 
-test('capture receipt remains outside source and is retained', () => {
-  assert.match(workflow, /URAI_HOSTING_RECOVERY_RECEIPT: \$\{\{ runner\.temp \}\}\/hosting-recovery\/legacy-live-release\.json/)
-  assert.match(workflow, /path: \$\{\{ runner\.temp \}\}\/hosting-recovery\//)
+test('legacy recovery receipt remains NO-GO and checks-only', () => {
+  assert.match(workflow, /Classification|classification: 'NO-GO'/)
+  assert.match(workflow, /checksOnly: true/)
+  assert.match(workflow, /productionCredentialsAvailable: false/)
+  assert.match(workflow, /recoveryMutationAttempted: false/)
+  assert.match(workflow, /providerRecoveryVerified: false/)
+  assert.match(workflow, /path: artifacts\/legacy-hosting-recovery\/quarantine\.json/)
   assert.match(workflow, /retention-days: 365/)
   assert.match(workflow, /test -z "\$\(git status --porcelain --untracked-files=all\)"/)
-  assert.match(workflow, /^permissions:\n  contents: read$/m)
-  assert.doesNotMatch(workflow, /contents: write|actions: write|id-token: write/)
 })
