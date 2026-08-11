@@ -14,9 +14,11 @@ html.urai-route-life-map .life-map-semantic-inspector,
 html.urai-route-life-map .life-map-movement-help { display: none !important; }
 html.urai-route-life-map .life-map-search-trigger { pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; }
 html.urai-route-life-map .life-map-navigator { z-index: 2147483500 !important; pointer-events: auto !important; }
-/* When the semantic navigator is open it owns pointer input. The canvas remains
-   visible and rendered, but cannot intercept real pointer/touch activation of
-   the navigator's visible controls. Closing the navigator restores canvas input. */
+/* While the semantic navigator is mounted, it owns pointer input. The rendered
+   world remains visible and animated but its complete main subtree cannot win
+   hit testing against the sibling navigator. Closing the navigator unmounts it
+   and immediately restores normal world pointer ownership. */
+html.urai-route-life-map:has(.life-map-navigator) [data-testid='urai-true-3d-life-map'] { pointer-events: none !important; }
 html.urai-route-life-map:has(.life-map-navigator) [data-testid='urai-true-3d-life-map'] canvas { pointer-events: none !important; }
 html.urai-route-life-map .life-map-title { padding: 12px 14px !important; border-left: 1px solid rgba(205,240,255,.28) !important; background: linear-gradient(90deg,rgba(2,7,18,.76),rgba(2,7,18,0)) !important; backdrop-filter: blur(8px) !important; }
 html.urai-route-life-map .life-map-title strong { font-size: clamp(24px,3.1vw,42px) !important; max-width: 11ch !important; }

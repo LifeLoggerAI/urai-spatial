@@ -122,6 +122,7 @@ test('collapsed semantic navigator preserves a visible pointer and touch opener'
   assert.match(navigator, /width:48px;height:48px/)
   assert.match(navigator, /cursor:pointer/)
   assert.match(isolation, /\.life-map-search-trigger \{ pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; \}/)
+  assert.match(isolation, /html\.urai-route-life-map:has\(\.life-map-navigator\) \[data-testid='urai-true-3d-life-map'\] \{ pointer-events: none !important; \}/)
   assert.match(isolation, /html\.urai-route-life-map:has\(\.life-map-navigator\) \[data-testid='urai-true-3d-life-map'\] canvas \{ pointer-events: none !important; \}/)
   assert.doesNotMatch(isolation, /life-map-navigator:not\(\[open\]\)|> summary/)
 })
