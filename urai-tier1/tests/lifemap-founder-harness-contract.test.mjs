@@ -50,11 +50,19 @@ test('Founder runner retains every required real interaction and phase owner', (
   assert.match(runner, /Search and navigate Life Map/)
   assert.match(runner, /Search and filter Life Map/)
   assert.match(runner, /role="listitem"/)
-  assert.match(runner, /selectedAction\(page, 'Overview'\)/)
+  assert.match(runner, /const action = selectedAction\(page, name\)/)
+  assert.match(runner, /await action\.waitFor\(\{ state: 'visible', timeout: 20_000 \}\)/)
+  assert.match(runner, /await action\.click\(\{ timeout: 120_000 \}\)/)
+  assert.match(runner, /await waitForPath\(page, destinationPath\)/)
+  assert.match(runner, /page\.locator\(destinationSelector\)\.first\(\)\.waitFor/)
+  for (const routeAction of [
+    "clickRouteAction(page, 'Open Focus', '/focus', '[data-testid=\"urai-focus-page\"]')",
+    "clickRouteAction(page, 'Replay', '/replay', '[data-testid=\"urai-replay-page\"]')",
+    "clickRouteAction(page, 'Overview', '/life-map', ROOT)",
+  ]) assert.ok(runner.includes(routeAction), `missing route action: ${routeAction}`)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
   assert.match(runner, /result\.tap\(\{ timeout: 120_000 \}\)/)
   assert.match(runner, /result\.click\(\{ timeout: 120_000 \}\)/)
-  assert.match(runner, /action\.click\(\{ timeout: 120_000 \}\)/)
   assert.doesNotMatch(runner, /waitForState\(page, 'data-life-map-phase', 'travel', 45_000\)\.catch/)
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
