@@ -69,8 +69,11 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
 
 test('Founder proof waits for the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'travel', 45_000\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'approach', 45_000\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival', 45_000\)/)
+  assert.match(founder, /const capturePromise = waitForState\(page, 'data-life-map-phase', expectedPhase, 45_000\)/)
+  assert.match(founder, /const selectionPromise = selectQuietReset\(page, options\.selection \|\| \{\}\)/)
+  assert.match(founder, /await Promise\.all\(\[capturePromise, selectionPromise\]\)/)
+  for (const phase of ['departure', 'travel', 'approach', 'arrival']) {
+    assert.match(founder, new RegExp(`selectAndCapturePhase\\(page, '${phase}'`))
+  }
   assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
 })
