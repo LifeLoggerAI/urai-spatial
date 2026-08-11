@@ -8,12 +8,12 @@ import * as THREE from "three"
 import { DEMO_COUNCIL_AGENTS } from "./councilAgentSchema"
 
 const WORLD_MODEL_ROOT = "/assets/urai/generated/real-world-v1"
-const HUMAN_MODEL_ROOT = "/assets/urai/generated/articulated-humans-v1"
+const HUMAN_MODEL_ROOT = "/assets/urai/generated/smooth-skinned-humans-v1"
 const COUNCIL_CHAMBER_MODEL = `${WORLD_MODEL_ROOT}/council-chamber-real-v1.glb`
 const HUMAN_MODELS = [
-  `${HUMAN_MODEL_ROOT}/council-guide-human-articulated-v1.glb`,
-  `${HUMAN_MODEL_ROOT}/council-archivist-human-articulated-v1.glb`,
-  `${HUMAN_MODEL_ROOT}/council-guardian-human-articulated-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-guide-human-smooth-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-archivist-human-smooth-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-guardian-human-smooth-v1.glb`,
 ] as const
 
 const POSITIONS: [number, number, number][] = [
@@ -89,12 +89,13 @@ function CouncilHumanModel({
         onSelect()
       }}
       userData={{
-        representation: "articulated-human-glb",
+        representation: "smooth-skinned-human-glb",
         modelUrl,
         humanFirst: true,
-        animationAuthority: "urai-articulated-humans-v1",
-        smoothSkinningGate: "pending",
+        animationAuthority: "urai-smooth-skinned-humans-v1",
+        skinning: "glTF JOINTS_0 + WEIGHTS_0",
         activeBehavior: selected ? "Listen" : "Idle",
+        finalFaceMaterialGate: "pending",
       }}
     >
       <primitive object={scene} />
@@ -123,7 +124,7 @@ function CouncilWorld() {
           shadows
           dpr={[1, 1.75]}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          data-council-model-authority="urai-articulated-humans-v1"
+          data-council-model-authority="urai-smooth-skinned-humans-v1"
         >
           <Suspense fallback={null}>
             <color attach="background" args={["#8c989c"]} />
