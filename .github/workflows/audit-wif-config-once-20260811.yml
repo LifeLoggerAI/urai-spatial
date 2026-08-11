@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check repository WIF configuration presence only
+      - name: Check repository identity configuration presence only
         id: presence
         shell: bash
         env:
@@ -26,13 +26,18 @@ jobs:
           ASSET_ADMIN_VAR: ${{ vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT }}
           WIF_PROVIDER_SECRET: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           DEPLOY_SA_SECRET: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          ROTATION_GO: ${{ vars.URAI_CREDENTIAL_ROTATION_GO }}
         run: |
           set -euo pipefail
-          echo "provider_var=$([[ -n \"$WIF_PROVIDER_VAR\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "maps_admin_var=$([[ -n \"$MAPS_ADMIN_VAR\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "asset_admin_var=$([[ -n \"$ASSET_ADMIN_VAR\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "provider_secret=$([[ -n \"$WIF_PROVIDER_SECRET\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "deploy_sa_secret=$([[ -n \"$DEPLOY_SA_SECRET\" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          bool() { if [ -n "$1" ]; then printf true; else printf false; fi; }
+          echo "provider_var=$(bool "$WIF_PROVIDER_VAR")" >> "$GITHUB_OUTPUT"
+          echo "maps_admin_var=$(bool "$MAPS_ADMIN_VAR")" >> "$GITHUB_OUTPUT"
+          echo "asset_admin_var=$(bool "$ASSET_ADMIN_VAR")" >> "$GITHUB_OUTPUT"
+          echo "provider_secret=$(bool "$WIF_PROVIDER_SECRET")" >> "$GITHUB_OUTPUT"
+          echo "deploy_sa_secret=$(bool "$DEPLOY_SA_SECRET")" >> "$GITHUB_OUTPUT"
+          echo "firebase_json=$(bool "$FIREBASE_JSON")" >> "$GITHUB_OUTPUT"
+          if [ "$ROTATION_GO" = 'GO' ]; then echo 'rotation_go=true' >> "$GITHUB_OUTPUT"; else echo 'rotation_go=false' >> "$GITHUB_OUTPUT"; fi
 
       - name: Report sanitized presence result
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
@@ -42,19 +47,24 @@ jobs:
           ASSET_ADMIN_VAR: ${{ steps.presence.outputs.asset_admin_var }}
           PROVIDER_SECRET: ${{ steps.presence.outputs.provider_secret }}
           DEPLOY_SA_SECRET: ${{ steps.presence.outputs.deploy_sa_secret }}
+          FIREBASE_JSON: ${{ steps.presence.outputs.firebase_json }}
+          ROTATION_GO: ${{ steps.presence.outputs.rotation_go }}
         with:
           script: |
             const body = [
-              '## URAI Spatial WIF config presence audit',
+              '## Corrected URAI Spatial repository identity presence audit',
               '',
               `- GCP_WIF_PROVIDER repository variable present: **${process.env.PROVIDER_VAR}**`,
               `- GCP_MAPS_ADMIN_SERVICE_ACCOUNT repository variable present: **${process.env.MAPS_ADMIN_VAR}**`,
               `- GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT repository variable present: **${process.env.ASSET_ADMIN_VAR}**`,
               `- GCP_WORKLOAD_IDENTITY_PROVIDER repository secret present: **${process.env.PROVIDER_SECRET}**`,
               `- GCP_DEPLOY_SERVICE_ACCOUNT repository secret present: **${process.env.DEPLOY_SA_SECRET}**`,
+              `- FIREBASE_SERVICE_ACCOUNT_JSON repository secret present: **${process.env.FIREBASE_JSON}**`,
+              `- URAI_CREDENTIAL_ROTATION_GO equals GO: **${process.env.ROTATION_GO}**`,
               '',
-              '- No secret values were printed.',
+              '- This supersedes issue #1078, whose shell quoting caused false-positive presence results.',
+              '- No values were printed.',
               '- No Google Cloud mutation was attempted.',
               `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             ].join('\n')
-            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'URAI Spatial WIF config presence audit', body })
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'Corrected URAI Spatial repository identity presence audit', body })
