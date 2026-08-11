@@ -14,23 +14,13 @@ const readRepo = (file) => normalize(readFileSync(path.join(repoRoot, file), 'ut
 const hosting = JSON.parse(readRepo('firebase.static.json')).hosting
 const layout = readTier1('src/app/layout.tsx')
 const operator = readRepo('scripts/live-release.mjs')
+const recovery = readRepo('scripts/firebase-hosting-recovery.mjs')
 const workflow = readRepo('.github/workflows/spatial-live-deploy.yml')
-const bundleBuilder = readRepo('scripts/create-static-release-bundle.mjs')
-const credentialBoundary = readRepo('scripts/verify-release-credential-boundary.mjs')
-const verifier = readRepo('scripts/urai-post-deploy-smoke.mjs')
-const legacyBootstrapVerifier = readRepo('scripts/verify-legacy-live-bootstrap.mjs')
+const staticBoundary = readRepo('scripts/verify-release-credential-boundary-static.mjs')
+const authorityAudit = readRepo('scripts/audit-production-workflow-authority.mjs')
 
 function hasAll(source, markers, label) {
   for (const marker of markers) assert.ok(source.includes(marker), `missing ${label} marker: ${marker}`)
-}
-
-function job(source, name) {
-  const marker = `\n  ${name}:\n`
-  const start = source.indexOf(marker)
-  assert.ok(start >= 0, `missing workflow job: ${name}`)
-  const rest = source.slice(start + marker.length)
-  const next = rest.search(/\n  [A-Za-z0-9_-]+:\n/)
-  return next < 0 ? rest : rest.slice(0, next)
 }
 
 test('Firebase publishes only the canonical static export', () => {
@@ -51,179 +41,68 @@ test('public output carries exact deployment identity or an unverified state', (
   ], 'layout')
 })
 
-test('release operator is exact-SHA, rollback-aware, hosting-only, and credential bounded', () => {
-  hasAll(operator, [
-    "requireFullSha('Release SHA', candidate)",
-    'CURRENT_MAIN_SHA',
-    'ROLLBACK_SHA must be distinct from the release SHA',
-    "process.argv.includes('--verify-prebuilt')",
-    "process.argv.includes('--deploy-prebuilt')",
-    'validateAndMaterializePrebuiltBundle',
-    'Release bundle file set, sizes, or hashes do not match the manifest',
-    "relative.split('/').some((segment) => segment.startsWith('.'))",
-    'Release surface contains a Firebase-ignored dot path',
-    'live-rollback-provenance.json',
-    'fingerprint.repository !== canonicalRepository',
-    'fingerprint.authoritySha !== authoritySha',
-    'manifest.fingerprintSha256 !== sha256(fingerprintPath)',
-    'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
-    'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
-    'resolveManagedCredentialPath({ required: true })',
-    'Credential path must stay inside RUNNER_TEMP',
-    'resolveAuthorityFirebaseCli',
-    'writeTemporaryServiceAccount',
-    "flag: 'wx'",
-    'removeTemporaryServiceAccount',
-  ], 'operator')
-  assert.match(operator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
-  assert.doesNotMatch(operator, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
-  assert.match(operator, /'--only', 'hosting'/)
-  assert.doesNotMatch(operator, /hosting,firestore|firestore:indexes|functions|pnpm\s+exec\s+firebase/)
-})
-
-test('bundle producer and verifier use one global manifest path order', () => {
-  const marker = 'return files.sort((left, right) => left.relative.localeCompare(right.relative))'
-  assert.ok(bundleBuilder.includes(marker), 'bundle attester must globally sort paths')
-  assert.ok(operator.includes(marker), 'bundle verifier must globally sort paths')
-})
-
-test('build, authority attestation, and protected deploy are separate jobs', () => {
-  const build = job(workflow, 'build-release-output')
-  const attest = job(workflow, 'attest-release-bundle')
-  const deploy = job(workflow, 'deploy')
-
-  hasAll(build, [
-    'Build exact static target without production authority or credentials',
-    'Checkout exact release target only',
-    'pnpm install --frozen-lockfile',
-    'pnpm build:static',
-    'Upload unattested raw static output',
-  ], 'build job')
-  assert.doesNotMatch(build, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
-
-  hasAll(attest, [
-    'Attest raw static output with clean current authority',
-    'Checkout clean current release authority only',
-    'Download unattested raw static output',
-    'node scripts/verify-release-credential-boundary.mjs',
-    'node scripts/create-static-release-bundle.mjs',
-    'Upload authority-attested static release bundle',
-  ], 'attestation job')
-  assert.doesNotMatch(attest, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS|pnpm\s+build:static/)
-
-  hasAll(deploy, [
-    'Deploy or roll back verified static bundle on urai.app',
-    'environment: production',
-    'Checkout current release authority only',
-    'pnpm install --frozen-lockfile --ignore-scripts',
-    'node scripts/live-release.mjs --verify-prebuilt',
-    'node scripts/live-release.mjs --deploy-prebuilt',
-    'node scripts/urai-release-control-smoke.mjs',
-    'Remove temporary credentials',
-  ], 'deploy job')
-  assert.match(deploy, /GOOGLE_APPLICATION_CREDENTIALS: \$\{\{ runner\.temp \}\}\/urai-firebase-service-account\.json/)
-  assert.match(deploy, /URAI_FIREBASE_CLI: \$\{\{ github\.workspace \}\}\/node_modules\/\.bin\/firebase/)
-  assert.doesNotMatch(deploy, /working-directory:\s*target|pnpm\s+build:static/)
-})
-
-test('authority bundle and credential verifier bind the complete immutable hosted release', () => {
-  hasAll(bundleBuilder, [
-    "schemaVersion: 'urai-static-release-bundle-1'",
-    'assertCleanAuthorityCheckout()',
-    'authoritySha',
-    'targetSha',
-    'rollbackSha',
-    'Release bundle source must not contain symlinks',
-    'isFirebaseIgnoredPath',
-    "relative.split('/').some((segment) => segment.startsWith('.'))",
-    'Static output contains a Firebase-ignored dot path',
-    'Copied release bundle bytes do not match the source output',
-    'fingerprintSha256',
-    'fileCount',
-    'totalBytes',
-    'sha256',
-  ], 'bundle attester')
-  assert.doesNotMatch(bundleBuilder, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
-  hasAll(credentialBoundary, [
-    'urai-release-credential-boundary-4',
-    'targetBuildIsolated: true',
-    'authorityAttestationIsolated: true',
-    'targetCodeExecutesInProductionJob: false',
-    'credentialsMaterializedByAuthorityOnly: true',
-    'managedCredentialPathRequiredForProductionWrite: true',
-    'firebaseCliResolvedFromCurrentAuthority: true',
-    'downloadedBundleRunBound',
-    'downloadedBundleFingerprintBound',
-    'liveRollbackEvidenceDirectory',
-    'evidenceDirectory: liveRollbackEvidenceDirectory',
-  ], 'credential boundary')
-})
-
-test('live verification binds canonical routes, origin, SHA, authority, and fingerprint', () => {
-  hasAll(verifier, [
-    'URAI_EXPECTED_DEPLOYED_SHA',
-    'URAI_EXPECTED_ROLLBACK_SHA',
-    'release-fingerprint.json',
-    'urai-release-fingerprint-1',
-    "redirect: 'manual'",
-    'finalUrl.origin === canonicalOrigin',
-    'payload?.authoritySha === expectedAuthoritySha',
-    'sha === expectedSha',
-    'live-content-parity-3',
-    'hydratedIdentityProof',
-  ], 'live verifier')
-})
-
-test('Focus live verification requires the real static chamber and rejects the obsolete loading shell', () => {
-  const expected = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']]"
-  const obsolete = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['Focus loading'], []]"
-  assert.ok(verifier.includes(expected), 'Focus live contract must bind the real static chamber and forbid the old shell')
-  assert.ok(!verifier.includes(obsolete), 'Focus live contract must not contain the obsolete loading shell')
-})
-
-test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
+test('canonical workflow is verification-only and exact-head bound', () => {
   hasAll(workflow, [
-    'BOOTSTRAP_LEGACY_URAI_APP',
-    "URAI_LEGACY_BOOTSTRAP: ${{ inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP' && '1' || '0' }}",
-    'URAI_LEGACY_BOOTSTRAP_CONFIRM: ${{ inputs.confirm }}',
-    'git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"',
-  ], 'legacy bootstrap workflow')
-  hasAll(credentialBoundary, [
-    'legacyBootstrapRequested',
-    'legacyBootstrapProofRequired',
-    'verifyLegacyLiveBootstrap',
-    'legacyBootstrapProofVerified',
-  ], 'legacy bootstrap credential boundary')
-  hasAll(legacyBootstrapVerifier, [
-    "schemaVersion: 'urai-legacy-live-bootstrap-provenance-1'",
-    'valid release fingerprint already exists',
-    'recognized-legacy-html',
-    'Legacy bootstrap recovery SHA must be distinct from current main',
-    "runGit(['merge-base', '--is-ancestor', recoverySha, currentMainSha])",
-    "path.join(evidenceDirectory, 'live-rollback-provenance.json')",
-    'normalFingerprintDeployRequiredAfterBootstrap: true',
-  ], 'legacy bootstrap verifier')
-})
-
-test('static SHA proofs avoid pipefail SIGPIPE false negatives', () => {
-  hasAll(workflow, [
-    'grep -R --fixed-strings --include=\'*.html\' -q "$PROOF_SHA" urai-tier1/out',
-    'grep -R --fixed-strings --include=\'*.html\' -q "$RELEASE_SHA" target/urai-tier1/out',
-  ], 'direct static SHA proof')
-  assert.doesNotMatch(workflow, /--include='\*\.html' -l \| grep -q \./)
-})
-
-test('manual deploy and rollback preserve distinct target and recovery identities', () => {
-  hasAll(workflow, [
+    'name: URAI Canonical Production Release Verification',
     'workflow_dispatch:',
-    'rollback-verify:',
-    'build-release-output:',
-    'attest-release-bundle:',
-    'ROLLBACK_SHA: ${{ inputs.rollback_sha }}',
-    'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
-    'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
-    'test "$RELEASE_SHA" != "$CURRENT_MAIN_SHA"',
-    'git merge-base --is-ancestor',
-    'gh workflow run spatial-live-deploy.yml --ref main',
-  ], 'protected release workflow')
+    'permissions:\n  contents: read',
+    'Verify canonical source with production release quarantined',
+    'ref: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'persist-credentials: false',
+    'node scripts/audit-production-workflow-authority.mjs',
+    'node scripts/verify-release-credential-boundary.mjs',
+    'node scripts/verify-release-credential-boundary-static.mjs',
+    'Classification: NO-GO',
+    'Production release and Hosting recovery are intentionally quarantined.',
+  ], 'quarantine workflow')
+
+  assert.doesNotMatch(workflow, /environment:\s*production|id-token:\s*write|credentials_json\s*:|FIREBASE_(?:SERVICE_ACCOUNT_JSON|PRIVATE_KEY|CLIENT_EMAIL|TOKEN)|firebase-service-account\.json/)
+  assert.doesNotMatch(workflow, /node\s+scripts\/live-release\.mjs\s+--deploy(?:-prebuilt)?|firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|pnpm\s+live:deploy/)
+})
+
+test('release operator cannot load credentials or mutate production', () => {
+  hasAll(operator, [
+    "process.argv.includes('--deploy')",
+    "process.argv.includes('--deploy-prebuilt')",
+    "'FIREBASE_SERVICE_ACCOUNT_JSON'",
+    "'FIREBASE_PRIVATE_KEY'",
+    "'FIREBASE_CLIENT_EMAIL'",
+    "'FIREBASE_TOKEN'",
+    'Refusing long-lived Firebase credential environment variable:',
+    'URAI Spatial production release is NO-GO',
+    'No provider credentials were loaded and no production mutation was attempted.',
+  ], 'quarantine operator')
+
+  assert.doesNotMatch(operator, /node:(?:child_process|fs)|firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|credential\.cert\s*\(|createSign\s*\(|writeTemporaryServiceAccount|deployHostingWithTemporaryCredentials/)
+})
+
+test('Hosting recovery cannot authenticate, call provider APIs, or restore a version', () => {
+  hasAll(recovery, [
+    'URAI Spatial Firebase Hosting recovery is NO-GO',
+    'function refuseRecovery()',
+    'throw new Error(quarantineMessage)',
+    'export async function discoverCurrentLiveRelease()',
+    'export async function restoreDiscoveredVersion()',
+    'export async function verifyRestoredVersion()',
+    'process.exitCode = 1',
+  ], 'quarantine recovery')
+
+  assert.doesNotMatch(recovery, /FIREBASE_|GOOGLE_APPLICATION_CREDENTIALS|credential\.cert\s*\(|createSign\s*\(|accessToken|fetch\s*\(|https?:\/\//)
+})
+
+test('credential verifiers and authority audit classify quarantine as NO-GO', () => {
+  hasAll(staticBoundary, [
+    "mode: quarantineMode ? 'quarantine-no-go' : 'active-release'",
+    'productionMutationAvailable: !quarantineMode',
+    'productionCredentialsAvailable: !quarantineMode',
+    'targetCodeExecutesInProductionJob: false',
+  ], 'static boundary')
+
+  hasAll(authorityAudit, [
+    "mode: quarantineMode ? 'quarantine-no-go' : 'active-release'",
+    'productionMutationAvailable: productionWorkflows.length > 0',
+    'productionCredentialsAvailable: secretOccurrences > 0',
+    'Quarantine must expose zero production mutation workflows',
+    'Quarantine must expose zero raw service-account secrets',
+  ], 'authority audit')
 })
