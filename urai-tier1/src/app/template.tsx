@@ -1,3 +1,4 @@
+import GroundMovementAccessibilityStatus from './GroundMovementAccessibilityStatus'
 import HomeAccessibleMovementControls from './HomeAccessibleMovementControls'
 import HomeParallaxTelemetryBridge from './HomeParallaxTelemetryBridge'
 import HomeSpatialRuntimeLayer from './HomeSpatialRuntimeLayer'
@@ -12,6 +13,7 @@ export default function AppTemplate({ children }: { children: React.ReactNode })
       <HomeParallaxTelemetryBridge />
       <HomeSpatialRuntimeLayer />
       <HomeAccessibleMovementControls />
+      <GroundMovementAccessibilityStatus />
       {children}
     </>
   )

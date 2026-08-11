@@ -25,6 +25,13 @@ export type OrbSensoryOutput = {
   readonly affordance: 'none' | 'open' | 'listen' | 'continue' | 'review' | 'recover'
 }
 
+export const URAI_ORB_STATE_EVENT = 'urai:orb-state'
+
+export type OrbStateEventDetail = {
+  readonly state: OrbState
+  readonly source: 'home' | 'companion' | 'conversation' | 'narrator' | 'recovery' | 'system'
+}
+
 const outputs: Record<OrbState, OrbSensoryOutput> = {
   dormant: { animation: 'orb-rest', material: 'silver-blue-dim', light: { intensity: .22, temperature: 'cool' }, particles: 'none', movement: 'settled', audioCue: null, caption: 'Orb resting', haptic: null, announcement: null, affordance: 'open' },
   idle: { animation: 'orb-breathe', material: 'silver-blue-glass', light: { intensity: .72, temperature: 'cool' }, particles: 'soft-drift', movement: 'slow-hover', audioCue: 'orb-idle-hum', caption: 'Orb ready', haptic: null, announcement: null, affordance: 'open' },
@@ -50,10 +57,21 @@ export function resolveOrbSensoryOutput(state: OrbState, reducedMotion: boolean,
   }
 }
 
+export function publishOrbState(state: OrbState, source: OrbStateEventDetail['source'] = 'system') {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent<OrbStateEventDetail>(URAI_ORB_STATE_EVENT, { detail: { state, source } }))
+}
+
 export function assertOrbStateBindings() {
   for (const [state, output] of Object.entries(outputs)) {
     if (!output.animation || !output.material || !output.caption || !output.affordance) {
       throw new Error(`Orb state ${state} is missing a meaningful output binding`)
     }
+  }
+}
+
+declare global {
+  interface WindowEventMap {
+    [URAI_ORB_STATE_EVENT]: CustomEvent<OrbStateEventDetail>
   }
 }

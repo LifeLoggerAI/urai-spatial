@@ -13,8 +13,28 @@
   transform: translate(-50%, -50%) !important;
 }
 
+/* The neutral Focus threshold is intentionally calm rather than a system-state
+   message. The source control remains semantically tied to memory selection,
+   while its visible copy stays in URAI's world language. */
+.focus-spatial-aperture-button:disabled {
+  font-size: 0;
+  opacity: .72;
+}
+
+.focus-spatial-aperture-button:disabled::after {
+  content: 'Choose a memory';
+  font-size: 14px;
+  letter-spacing: .02em;
+}
+
 @media (max-width: 700px) {
   .focus-spatial-aperture-button {
     top: calc(50vh + 128px) !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .focus-spatial-aperture-button:disabled {
+    opacity: 1;
   }
 }

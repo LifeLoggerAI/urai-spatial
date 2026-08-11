@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { publishOrbState } from '@/app/home/orbStateController'
 import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
 import styles from './OrbConversationPanel.module.css'
 import {
@@ -40,6 +41,21 @@ export default function OrbConversationPanel() {
   const [externalVoiceConsent, setExternalVoiceConsent] = useState(false)
   const [voiceMuted, setVoiceMuted] = useState(true)
   const aborter = useRef<AbortController | null>(null)
+  const stateResetTimer = useRef<number | null>(null)
+
+  const publishConversationState = (state: 'idle' | 'attention' | 'listening' | 'thinking' | 'speaking' | 'privacy' | 'warning', resetAfterMs?: number) => {
+    if (stateResetTimer.current !== null) {
+      window.clearTimeout(stateResetTimer.current)
+      stateResetTimer.current = null
+    }
+    publishOrbState(state, 'conversation')
+    if (resetAfterMs) {
+      stateResetTimer.current = window.setTimeout(() => {
+        stateResetTimer.current = null
+        publishOrbState('idle', 'conversation')
+      }, resetAfterMs)
+    }
+  }
 
   useEffect(() => {
     narratorPlayback.setExternalVoiceConsent(externalVoiceConsent)
@@ -48,7 +64,9 @@ export default function OrbConversationPanel() {
 
   useEffect(() => () => {
     aborter.current?.abort()
+    if (stateResetTimer.current !== null) window.clearTimeout(stateResetTimer.current)
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    publishOrbState('idle', 'conversation')
   }, [])
 
   const stop = () => {
@@ -57,6 +75,7 @@ export default function OrbConversationPanel() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     setBusy(false)
     setStatus('Orb response stopped.')
+    publishConversationState('idle')
   }
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -65,6 +84,7 @@ export default function OrbConversationPanel() {
     if (!trimmed || busy) return
     if (!aiConsent) {
       setStatus('Turn on OpenAI processing consent before sending.')
+      publishConversationState('privacy', 1800)
       return
     }
 
@@ -75,6 +95,7 @@ export default function OrbConversationPanel() {
     setResult(null)
     setStreamedText('')
     setStatus('Orb is responding through the live provider.')
+    publishConversationState('thinking')
 
     try {
       const liveResult = await requestOpenAIOrb({
@@ -83,8 +104,13 @@ export default function OrbConversationPanel() {
         aiProcessingConsent: true,
         signal: controller.signal,
         onEvent: (providerEvent) => {
-          if (providerEvent.type === 'delta') setStreamedText((current) => current + providerEvent.text)
-          else if (providerEvent.type === 'status') setStatus('Orb is preparing a response.')
+          if (providerEvent.type === 'delta') {
+            publishConversationState('speaking')
+            setStreamedText((current) => current + providerEvent.text)
+          } else if (providerEvent.type === 'status') {
+            publishConversationState('thinking')
+            setStatus('Orb is preparing a response.')
+          }
         },
       })
       if (controller.signal.aborted) return
@@ -101,6 +127,7 @@ export default function OrbConversationPanel() {
       }
       setMessage('')
       setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
+      publishConversationState('speaking', 2200)
       emitAudioCue('orb-confirm')
       if (!voiceMuted) speakLocally(resolved.message)
     } catch (error) {
@@ -117,6 +144,7 @@ export default function OrbConversationPanel() {
         : error instanceof OrbProviderAttemptUncertainError
           ? 'External processing state could not be confirmed; cautious local fallback ready.'
           : 'Live provider unavailable before external processing; local fallback response ready.')
+      publishConversationState('warning', 2400)
       emitAudioCue('error')
     } finally {
       if (aborter.current === controller) aborter.current = null
@@ -139,6 +167,8 @@ export default function OrbConversationPanel() {
             maxLength={2000}
             rows={3}
             disabled={busy}
+            onFocus={() => publishConversationState('listening')}
+            onBlur={() => { if (!busy) publishConversationState('idle') }}
             onChange={(event) => setMessage(event.target.value)}
           />
           <label className={styles.consent}>
@@ -146,7 +176,10 @@ export default function OrbConversationPanel() {
               type="checkbox"
               checked={aiConsent}
               disabled={busy}
-              onChange={(event) => setAiConsent(event.target.checked)}
+              onChange={(event) => {
+                setAiConsent(event.target.checked)
+                publishConversationState(event.target.checked ? 'attention' : 'privacy')
+              }}
             />
             Allow this message and bounded recent context to be processed by OpenAI.
           </label>
@@ -174,7 +207,11 @@ export default function OrbConversationPanel() {
             >
               {voiceMuted ? 'Voice muted' : 'Voice on'}
             </button>
-            <button type="button" disabled={!result || voiceMuted} onClick={() => result && speakLocally(result.message)}>
+            <button type="button" disabled={!result || voiceMuted} onClick={() => {
+              if (!result) return
+              publishConversationState('speaking', 2200)
+              speakLocally(result.message)
+            }}>
               Replay
             </button>
           </div>
@@ -195,4 +232,3 @@ export default function OrbConversationPanel() {
     </details>
   )
 }
-

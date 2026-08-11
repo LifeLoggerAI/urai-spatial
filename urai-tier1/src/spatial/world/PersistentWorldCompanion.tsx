@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
@@ -58,6 +59,7 @@ export function PersistentWorldCompanion() {
   const closeCompanion = useCallback((restoreFocus = true) => {
     restoreFocusRef.current = restoreFocus
     setOpen(false)
+    publishOrbState('idle', 'companion')
   }, [])
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export function PersistentWorldCompanion() {
     if (open) closeCompanion(true)
     else {
       setOpen(true)
+      publishOrbState('attention', 'companion')
       window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
     }
   }, [closeCompanion, open])
@@ -85,7 +88,10 @@ export function PersistentWorldCompanion() {
   }, [audioEnabled])
 
   useEffect(() => {
-    const openCompanion = () => setOpen(true)
+    const openCompanion = () => {
+      setOpen(true)
+      publishOrbState('attention', 'companion')
+    }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
     return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
   }, [])
@@ -139,9 +145,10 @@ export function PersistentWorldCompanion() {
       },
     }
     const href = buildCompanionTravelHref(request)
+    closeCompanion(false)
+    publishOrbState('transition', 'companion')
     router.push(href)
     requestUraiWorldTravel({ ...request, href })
-    closeCompanion(false)
   }, [closeCompanion, phase, router, world])
 
   const returnThroughWorld = useCallback(() => {
@@ -149,8 +156,9 @@ export function PersistentWorldCompanion() {
       closeCompanion(true)
       return
     }
-    requestUraiWorldReturn()
     closeCompanion(false)
+    publishOrbState('transition', 'companion')
+    requestUraiWorldReturn()
   }, [closeCompanion, phase, world.destination])
 
   const destinationButtons = (destinations: typeof primaryDestinations) => destinations.map((destination) => (

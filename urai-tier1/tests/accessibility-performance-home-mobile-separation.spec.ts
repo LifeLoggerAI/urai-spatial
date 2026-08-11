@@ -23,7 +23,7 @@ function rectanglesOverlap(
 test.describe('Home mobile control separation evidence', () => {
   test.describe.configure({ timeout: 240_000 })
 
-  test('movement, ambience, provenance, and safe areas remain independently operable in portrait and landscape touch contexts', async ({ browser }) => {
+  test('movement and semantic destinations remain independently operable inside portrait and landscape safe areas', async ({ browser }) => {
     const viewports = [
       { width: 390, height: 844, label: 'portrait' },
       { width: 844, height: 390, label: 'landscape' },
@@ -45,55 +45,53 @@ test.describe('Home mobile control separation evidence', () => {
         await waitForHomeWorld(home)
 
         const movement = page.getByRole('group', { name: 'Home movement controls' })
-        const discreet = page.locator('.home-discreet-controls')
+        const semantic = page.getByRole('navigation', { name: 'Accessible Home destinations' })
         await expect(movement).toBeVisible()
-        await expect(discreet).toBeVisible()
+        await expect(semantic).toBeVisible()
+        await expect(semantic).toHaveAttribute('data-home-navigation-owner', 'runtime-boundary')
+        await expect(semantic).toHaveAttribute('data-home-navigation-non-dominant', 'true')
 
-        const closedLayout = await page.evaluate(() => {
+        const layout = await page.evaluate(() => {
           const movementRect = document.querySelector<HTMLElement>('.urai-mobile-movement')?.getBoundingClientRect()
-          const discreetRect = document.querySelector<HTMLElement>('.home-discreet-controls')?.getBoundingClientRect()
+          const semanticNode = document.querySelector<HTMLElement>('.urai-home-spatial-runtime-layer > .home-semantic-navigation')
+          const semanticRect = semanticNode?.getBoundingClientRect()
           const viewport = window.visualViewport
-          if (!movementRect || !discreetRect) return null
+          if (!movementRect || !semanticRect || !semanticNode) return null
           return {
             movement: { left: movementRect.left, top: movementRect.top, right: movementRect.right, bottom: movementRect.bottom },
-            discreet: { left: discreetRect.left, top: discreetRect.top, right: discreetRect.right, bottom: discreetRect.bottom },
+            semantic: { left: semanticRect.left, top: semanticRect.top, right: semanticRect.right, bottom: semanticRect.bottom },
+            semanticOpacity: Number.parseFloat(getComputedStyle(semanticNode).opacity || '1'),
             viewport: { width: viewport?.width ?? innerWidth, height: viewport?.height ?? innerHeight },
             documentWidth: document.documentElement.scrollWidth,
           }
         })
 
-        expect(closedLayout, `${viewport.label} closed layout`).not.toBeNull()
-        expect(rectanglesOverlap(closedLayout!.movement, closedLayout!.discreet), `${viewport.label} closed controls overlap`).toBe(false)
-        for (const rect of [closedLayout!.movement, closedLayout!.discreet]) {
+        expect(layout, `${viewport.label} layout`).not.toBeNull()
+        expect(rectanglesOverlap(layout!.movement, layout!.semantic), `${viewport.label} controls overlap`).toBe(false)
+        for (const rect of [layout!.movement, layout!.semantic]) {
           expect(rect.left, `${viewport.label} left containment`).toBeGreaterThanOrEqual(0)
           expect(rect.top, `${viewport.label} top containment`).toBeGreaterThanOrEqual(0)
-          expect(rect.right, `${viewport.label} right containment`).toBeLessThanOrEqual(closedLayout!.viewport.width + 1)
-          expect(rect.bottom, `${viewport.label} bottom containment`).toBeLessThanOrEqual(closedLayout!.viewport.height + 1)
+          expect(rect.right, `${viewport.label} right containment`).toBeLessThanOrEqual(layout!.viewport.width + 1)
+          expect(rect.bottom, `${viewport.label} bottom containment`).toBeLessThanOrEqual(layout!.viewport.height + 1)
         }
-        expect(closedLayout!.documentWidth, `${viewport.label} document width`).toBeLessThanOrEqual(closedLayout!.viewport.width + 1)
+        expect(layout!.semanticOpacity, `${viewport.label} non-dominant opacity`).toBeLessThanOrEqual(0.02)
+        expect(layout!.documentWidth, `${viewport.label} document width`).toBeLessThanOrEqual(layout!.viewport.width + 1)
 
-        await discreet.getByRole('button', { name: 'Why am I seeing this?' }).click()
-        const provenance = page.getByRole('complementary', { name: 'Home source explanation' })
-        await expect(provenance).toBeVisible()
-
-        const openLayout = await page.evaluate(() => {
-          const movementRect = document.querySelector<HTMLElement>('.urai-mobile-movement')?.getBoundingClientRect()
-          const provenanceRect = document.querySelector<HTMLElement>('.home-provenance')?.getBoundingClientRect()
-          const viewport = window.visualViewport
-          if (!movementRect || !provenanceRect) return null
-          return {
-            movement: { left: movementRect.left, top: movementRect.top, right: movementRect.right, bottom: movementRect.bottom },
-            provenance: { left: provenanceRect.left, top: provenanceRect.top, right: provenanceRect.right, bottom: provenanceRect.bottom },
-            viewport: { width: viewport?.width ?? innerWidth, height: viewport?.height ?? innerHeight },
-          }
-        })
-
-        expect(openLayout, `${viewport.label} open layout`).not.toBeNull()
-        expect(rectanglesOverlap(openLayout!.movement, openLayout!.provenance), `${viewport.label} provenance overlap`).toBe(false)
-        expect(openLayout!.provenance.left, `${viewport.label} provenance left`).toBeGreaterThanOrEqual(0)
-        expect(openLayout!.provenance.top, `${viewport.label} provenance top`).toBeGreaterThanOrEqual(0)
-        expect(openLayout!.provenance.right, `${viewport.label} provenance right`).toBeLessThanOrEqual(openLayout!.viewport.width + 1)
-        expect(openLayout!.provenance.bottom, `${viewport.label} provenance bottom`).toBeLessThanOrEqual(openLayout!.viewport.height + 1)
+        const firstDestination = semantic.getByRole('button').first()
+        await firstDestination.focus()
+        await expect(firstDestination).toBeFocused()
+        const focused = await semantic.evaluate((element) => ({
+          opacity: Number.parseFloat(getComputedStyle(element).opacity || '1'),
+          buttons: [...element.querySelectorAll<HTMLButtonElement>('button')].map((button) => {
+            const rect = button.getBoundingClientRect()
+            return { width: rect.width, height: rect.height }
+          }),
+        }))
+        expect(focused.opacity, `${viewport.label} focus reveal`).toBeGreaterThan(0.9)
+        for (const button of focused.buttons) {
+          expect(button.width, `${viewport.label} destination width`).toBeGreaterThanOrEqual(48)
+          expect(button.height, `${viewport.label} destination height`).toBeGreaterThanOrEqual(48)
+        }
       } finally {
         await context.close()
       }

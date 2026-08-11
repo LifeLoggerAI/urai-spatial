@@ -67,7 +67,7 @@ function RenderProofRepublisher() {
 
   useEffect(() => {
     const canvas = gl.domElement;
-    root.current = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    root.current = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
     const writeInvalid = () => {
       const element = root.current;
       if (element) {
@@ -116,7 +116,7 @@ function RenderProofRepublisher() {
       invalidationFrame.current = null;
     }
     lastSignature.current = signature;
-    const element = root.current ?? gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    const element = root.current ?? document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
     if (!element) return;
     element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
     element.dataset.lifeMapVisibleObjects = String(objects);

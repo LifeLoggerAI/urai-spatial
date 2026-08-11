@@ -7,7 +7,7 @@ const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -50,7 +50,7 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
 
   has(assetHome, 'HomeWorldProduction')
   assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
 
   for (const marker of [
     'data-home-primary-owner="asset-driven"',
@@ -83,15 +83,27 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'useDragLook',
     'MobileMovementPad',
     'requestUraiWorldTravel',
+    'URAI_ORB_STATE_EVENT',
+    'resolveOrbSensoryOutput',
+    'data-home-orb-state={orbState}',
+    'data-home-orb-reduced-motion={reducedMotion',
     '<Canvas',
   ]) has(homeProduction, marker)
-  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = "\/assets\/urai\/replay\/replay-memory-film-main\.webp"/)
-  assert.match(homeProduction, /function prepareAuthoredSanctuary/)
-  assert.match(homeProduction, /object\.visible = !rejected/)
-  assert.match(homeProduction, /providerImageRole: "atmospheric-support-only"/)
-  assert.match(homeProduction, /ContactShadows/)
-  assert.match(homeProduction, /function GroundThresholdLandmark/)
-  assert.match(homeProduction, /function LifeMapSkyLookout/)
+  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = ['"]\/assets\/urai\/replay\/replay-memory-film-main\.webp['"]/)
+  assert.match(homeProduction, /HOME_FERN_MODEL = ['"]\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb['"]/)
+  assert.match(homeProduction, /function makeTerrainGeometry\(/)
+  assert.match(homeProduction, /function Terrain\(/)
+  assert.match(homeProduction, /function Vegetation\(/)
+  assert.match(homeProduction, /function Horizon\(/)
+  assert.match(homeProduction, /function Water\(/)
+  assert.match(homeProduction, /function Thresholds\(/)
+  assert.match(homeProduction, /function PlayerRig\(/)
+  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
+  assert.match(homeProduction, /data-home-provider-role=["']atmospheric-support-only["']/)
+  assert.match(homeProduction, /const GROUND_THRESHOLD = new THREE\.Vector3\(-5\.4, 0, -10\.8\)/)
+  assert.match(homeProduction, /const LIFE_MAP_LOOKOUT = new THREE\.Vector3\(5\.4, 0, -10\.8\)/)
+  assert.match(homeProduction, /\['ground', GROUND_THRESHOLD, 2\.8\]/)
+  assert.match(homeProduction, /\['life-map', LIFE_MAP_LOOKOUT, 2\.8\]/)
   assert.doesNotMatch(homeProduction, /WorldPortal|PORTAL_MODEL|home-ground-portal-world-owned|home-life-map-portal-world-owned|dodecahedronGeometry|requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
 
   for (const marker of [
@@ -106,13 +118,15 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
   assert.match(homeRuntime, /<HomeSpatialWorldFinal \/>/)
 })
 
-test('Home keeps one physical Orb owner and semantic access parity', () => {
+test('Home keeps one physical stateful Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<ReducedMotionContext\.Provider value=\{props\.reducedMotion\}>/)
-  assert.match(homeProduction, /<OrbSanctuary onOpen=\{props\.onOrbOpen\} \/>/)
-  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\); \}\}/)
+  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} state=\{props\.orbState\} \/>/)
+  assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
+  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, onOrbState\)/)
+  assert.match(homeProduction, /if \(phase === 'ASCENT' \|\| groundDescent\) return/)
+  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
@@ -149,7 +163,7 @@ test('Ground remains walkable infrastructure with paths, boundaries and semantic
 })
 
 test('Life Map keeps independent non-Orb travel, semantic depth and overview recovery', () => {
-  for (const marker of ['KeyA', 'ArrowLeft', 'KeyQ', 'KeyD', 'ArrowRight', 'KeyE', 'cycle(-1)', 'cycle(1)', 'urai:life-map-overview', 'life-map-movement-help']) has(lifeMapBoundary, marker)
+  for (const marker of ['KeyA', 'ArrowLeft', 'KeyQ', 'ArrowRight', 'KeyD', 'KeyE', 'cycle(-1)', 'cycle(1)', 'urai:life-map-overview', 'life-map-movement-help']) has(lifeMapBoundary, marker)
   for (const marker of ['type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival"', 'goalForNode', 'CameraRig', 'life-map-depth-near', 'life-map-depth-middle', 'life-map-depth-far', 'setPhase("departure")', 'setPhase("travel")', 'setPhase("approach")', 'setPhase("arrival")', 'data-life-map-phase={phase}', 'data-home-companion-owned="false"']) has(lifeMapScene, marker)
   for (const marker of ['life-map-light-bridges', 'life-map-privacy-vault', 'life-map-emotional-weather', 'life-map-far-future-horizon', 'QuadraticBezierCurve3']) has(lifeMapProduction, marker)
   assert.match(embodiedLayout, /data-world-destination='life-map'[\s\S]*\.life-map-movement-help/)

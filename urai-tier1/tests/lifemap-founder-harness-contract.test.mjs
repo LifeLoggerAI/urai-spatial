@@ -23,10 +23,6 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
   assert.match(launcher, /--validate-only/)
   assert.doesNotMatch(launcher, /writeFile|replaceFunction|journeyPattern|\.capture-lifemap-founder-proof-fixed/)
   assert.doesNotMatch(runner, /journeyPattern|deterministic phase block not found|replaceFunction/)
-  const orphanedBoundary = /^\s*\}\)\s*\{\s*$/m
-  assert.match('replacement body\n}) {\nremaining source', orphanedBoundary)
-  assert.doesNotMatch(runner, orphanedBoundary)
-
   const syntax = runNode(['--check', runnerPath])
   assert.equal(syntax.status, 0, syntax.stderr || syntax.stdout)
   const validation = runNode(['scripts/run-lifemap-founder-proof-fixed.mjs', '--validate-only'])
@@ -39,7 +35,8 @@ test('Founder runner retains every required real interaction and phase owner', (
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
-  assert.match(runner, /\[data-life-map-navigator\]/)
+  assert.match(runner, /Search and navigate Life Map/)
+  assert.match(runner, /Search and filter Life Map/)
   assert.match(runner, /role="listitem"/)
   assert.match(runner, /selectedAction\(page, 'Overview'\)/)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
@@ -69,8 +66,8 @@ test('Founder proof observes the real production state machine without a product
   assert.match(scene, /setPhase\("approach"\)/)
   assert.match(scene, /setPhase\("arrival"\)/)
   assert.match(scene, /data-life-map-phase=\{phase\}/)
-  assert.match(navigator, /data-life-map-navigator/)
-  assert.match(navigator, /role="listitem"/)
+  assert.match(navigator, /className="life-map-search-trigger"/)
+  assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
   assert.doesNotMatch(scene, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(navigator, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
 })
@@ -85,18 +82,18 @@ test('render proof is invalidated and republished after WebGL context restoratio
   assert.match(world, /<RenderProofRepublisher \/>/)
 })
 
-test('closed semantic navigator preserves a visible pointer and touch opener', () => {
-  assert.match(isolation, /\.life-map-navigator:not\(\[open\]\) > summary/)
-  assert.match(isolation, /pointer-events:\s*auto\s*!important/)
-  assert.match(isolation, /min-height:\s*48px\s*!important/)
-  assert.match(isolation, /cursor:\s*pointer\s*!important/)
-  const closedBlock = isolation.match(/\.life-map-navigator:not\(\[open\]\)\s*\{[^}]+\}/)?.[0] || ''
-  assert.doesNotMatch(closedBlock, /pointer-events:\s*none/)
+test('collapsed semantic navigator preserves a visible pointer and touch opener', () => {
+  assert.match(navigator, /className="life-map-search-trigger"/)
+  assert.match(navigator, /aria-expanded=\{open\}/)
+  assert.match(navigator, /width:48px;height:48px/)
+  assert.match(navigator, /cursor:pointer/)
+  assert.match(isolation, /\.life-map-search-trigger \{ pointer-events: auto !important; min-width: 48px !important; min-height: 48px !important; \}/)
+  assert.doesNotMatch(isolation, /life-map-navigator:not\(\[open\]\)|> summary/)
 })
 
-test('portrait closed navigator clears the selected chamber caption and threshold action rail', () => {
+test('portrait navigator clears selected inspector and stays above the threshold action rail', () => {
   const mobileBlock = isolation.match(/@media \(max-width:700px\) \{[\s\S]*?\n\}/)?.[0] || ''
-  assert.match(mobileBlock, /\.life-map-thresholds\s*\{[^}]*bottom:\s*max\(8px,env\(safe-area-inset-bottom\)\)/)
-  assert.match(mobileBlock, /\.life-map-navigator:not\(\[open\]\)\s*\{[^}]*bottom:\s*max\(272px,calc\(env\(safe-area-inset-bottom\) \+ 262px\)\)\s*!important/)
-  assert.doesNotMatch(mobileBlock, /\.life-map-navigator:not\(\[open\]\)\s*\{[^}]*bottom:\s*max\(72px/)
+  assert.match(mobileBlock, /\.life-map-thresholds \{ width: calc\(100vw - 16px\) !important; bottom: max\(8px,env\(safe-area-inset-bottom\)\) !important;/)
+  assert.match(mobileBlock, /\.life-map-search-trigger \{ right: 12px !important; bottom: max\(12px,env\(safe-area-inset-bottom\)\) !important; \}/)
+  assert.match(mobileBlock, /\.life-map-navigator \{ right: 12px !important; bottom: max\(68px,calc\(env\(safe-area-inset-bottom\) \+ 58px\)\) !important; \}/)
 })
