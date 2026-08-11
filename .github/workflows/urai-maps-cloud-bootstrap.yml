@@ -4,169 +4,31 @@ on:
   pull_request:
     paths:
       - '.github/workflows/urai-maps-cloud-bootstrap.yml'
-      - 'operations/maps/**'
-      - 'urai-tier1/src/app/location-map/geographic/**'
-      - 'urai-tier1/tests/geographic-location-client-contract.test.mjs'
-      - 'urai-tier1/tests/maps-cloud-bootstrap-contract.test.mjs'
-      - 'urai-tier1/scripts/run-unit-contract-tests-compact.mjs'
-  workflow_dispatch:
-    inputs:
-      operation:
-        description: Audit current API state or enable the two governed Maps APIs
-        required: true
-        type: choice
-        options:
-          - audit
-          - enable
-      confirmation:
-        description: Type AUDIT_URAI_MAPS or ENABLE_URAI_MAPS_APIS exactly
-        required: true
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: urai-maps-cloud-bootstrap-${{ github.ref }}
+  group: urai-exact-key-containment-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 env:
   EXPECTED_REPOSITORY: LifeLoggerAI/urai-spatial
-  EXPECTED_PROJECT_ID: urai-4dc1d
-  TARGET_SERVICES: maps-backend.googleapis.com geocoding-backend.googleapis.com
-  CANDIDATE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  TARGET_PROJECT: urai-4dc1d
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
 
 jobs:
-  contract:
-    if: github.event_name == 'pull_request'
-    name: Verify Maps credential and mutation boundaries
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.CANDIDATE_SHA }}
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
-
-      - name: Prove exact repository and clean candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.0.0
-          run_install: false
-
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Verify static workflow contract
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-          pnpm --filter urai-tier1 exec node --import tsx --test tests/maps-cloud-bootstrap-contract.test.mjs
-
-  audit-existing-readonly:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.GCP_WIF_PROVIDER != '' && vars.GCP_MAPS_AUDIT_SERVICE_ACCOUNT != ''
-    name: Audit governed Maps services with dedicated read-only identity
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.CANDIDATE_SHA }}
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
-
-      - name: Prove exact repository and clean candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Authenticate dedicated read-only Maps auditor
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
-        with:
-          project_id: ${{ env.EXPECTED_PROJECT_ID }}
-          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
-          service_account: ${{ vars.GCP_MAPS_AUDIT_SERVICE_ACCOUNT }}
-          create_credentials_file: true
-          export_environment_variables: true
-
-      - name: Install pinned Google Cloud CLI action
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
-        with:
-          project_id: ${{ env.EXPECTED_PROJECT_ID }}
-          version: '>= 500.0.0'
-
-      - name: Audit project and governed service state
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(gcloud config get-value project 2>/dev/null)" = "$EXPECTED_PROJECT_ID"
-          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1)"
-          test -n "$active_account"
-          test "$active_account" = '${{ vars.GCP_MAPS_AUDIT_SERVICE_ACCOUNT }}'
-          gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-all.txt
-          grep -E '^(maps-backend|geocoding-backend)\.googleapis\.com$' enabled-all.txt > enabled-governed.txt || true
-          ACTIVE_ACCOUNT="$active_account" node <<'NODE'
-          const fs = require('node:fs')
-          const enabled = fs.readFileSync('enabled-governed.txt', 'utf8').split(/\r?\n/).filter(Boolean)
-          const receipt = {
-            schema: 'urai-maps-cloud-audit-2',
-            mutationPerformed: false,
-            credentialClass: 'dedicated-read-only-wif',
-            projectId: process.env.EXPECTED_PROJECT_ID,
-            repository: process.env.GITHUB_REPOSITORY,
-            candidateSha: process.env.CANDIDATE_SHA,
-            activeAccount: process.env.ACTIVE_ACCOUNT,
-            governedServices: process.env.TARGET_SERVICES.split(' '),
-            enabledGovernedServices: enabled,
-            auditedAt: new Date().toISOString(),
-            runId: process.env.GITHUB_RUN_ID,
-          }
-          fs.writeFileSync('maps-cloud-audit.json', `${JSON.stringify(receipt, null, 2)}\n`)
-          NODE
-
-      - name: Retain non-mutating cloud audit receipt
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: urai-maps-cloud-audit-${{ env.CANDIDATE_SHA }}
-          path: |
-            maps-cloud-audit.json
-            enabled-governed.txt
-          if-no-files-found: error
-          retention-days: 90
-
-  manual-bootstrap:
-    if: github.event_name == 'workflow_dispatch'
-    name: Governed manual Maps API audit or enablement
+  exact-legacy-key-containment:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    name: Exact legacy Firebase key containment
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: read
       id-token: write
+      issues: write
     steps:
-      - name: Checkout exact main candidate
+      - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.CANDIDATE_SHA }}
@@ -174,119 +36,174 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Enforce main-only exact confirmation boundary
-        id: boundary
+      - name: Enforce isolated containment boundary
         shell: bash
-        env:
-          OPERATION: ${{ inputs.operation }}
-          CONFIRMATION: ${{ inputs.confirmation }}
-          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
-          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
-          DEDICATED_JSON: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
-          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$GITHUB_HEAD_REF" = 'ops/exact-legacy-key-revoke-20260811'
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
-          case "$OPERATION:$CONFIRMATION" in
-            audit:AUDIT_URAI_MAPS|enable:ENABLE_URAI_MAPS_APIS) ;;
-            *) echo '::error::Confirmation did not match the selected operation.'; exit 64 ;;
-          esac
+
+      - name: Validate legacy credential metadata privately
+        id: legacy
+        shell: bash
+        env:
+          LEGACY_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$LEGACY_JSON"
+          d="$RUNNER_TEMP/urai-exact-key-containment"
+          mkdir -p "$d"
+          printf '%s' "$LEGACY_JSON" > "$d/legacy.json"
+          chmod 600 "$d/legacy.json"
+          jq -e --arg p "$TARGET_PROJECT" '.project_id == $p and (.client_email|type=="string" and length>0) and (.private_key_id|type=="string" and length>0)' "$d/legacy.json" >/dev/null
+          jq -r '.client_email' "$d/legacy.json" > "$d/legacy-email.txt"
+          jq -r '.private_key_id' "$d/legacy.json" > "$d/legacy-key-id.txt"
+          echo "dir=$d" >> "$GITHUB_OUTPUT"
+
+      - name: Select only an already-configured cloud-admin path
+        id: authmode
+        shell: bash
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          ADMIN_JSON: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
+        run: |
+          set -euo pipefail
           if [[ -n "$WIF_PROVIDER" && -n "$WIF_SERVICE_ACCOUNT" ]]; then
-            echo 'auth_mode=wif' >> "$GITHUB_OUTPUT"
-          elif [[ -n "$DEDICATED_JSON" ]]; then
-            echo 'auth_mode=json' >> "$GITHUB_OUTPUT"
+            echo 'mode=wif' >> "$GITHUB_OUTPUT"
+          elif [[ -n "$ADMIN_JSON" ]]; then
+            printf '%s' "$ADMIN_JSON" | jq -e --arg p "$TARGET_PROJECT" '.project_id == $p and (.client_email|type=="string" and length>0)' >/dev/null
+            echo 'mode=json' >> "$GITHUB_OUTPUT"
           else
-            echo '::error::Configure GCP_WIF_PROVIDER and GCP_MAPS_ADMIN_SERVICE_ACCOUNT, or the dedicated GCP_MAPS_ADMIN_CREDENTIALS_JSON secret.'
+            echo '::error::No already-configured Maps cloud-admin WIF or JSON credential exists.'
             exit 65
           fi
 
-      - name: Authenticate through Workload Identity Federation
-        if: steps.boundary.outputs.auth_mode == 'wif'
+      - name: Authenticate existing WIF cloud-admin identity
+        if: steps.authmode.outputs.mode == 'wif'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
-          project_id: ${{ env.EXPECTED_PROJECT_ID }}
+          project_id: ${{ env.TARGET_PROJECT }}
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
           create_credentials_file: true
           export_environment_variables: true
 
-      - name: Authenticate with dedicated cloud-admin credential
-        if: steps.boundary.outputs.auth_mode == 'json'
+      - name: Authenticate existing JSON cloud-admin identity
+        if: steps.authmode.outputs.mode == 'json'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
+          project_id: ${{ env.TARGET_PROJECT }}
           credentials_json: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
-          project_id: ${{ env.EXPECTED_PROJECT_ID }}
           create_credentials_file: true
           export_environment_variables: true
 
-      - name: Install pinned Google Cloud CLI action
+      - name: Install pinned Google Cloud CLI
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
         with:
-          project_id: ${{ env.EXPECTED_PROJECT_ID }}
+          project_id: ${{ env.TARGET_PROJECT }}
           version: '>= 500.0.0'
 
-      - name: Capture before state
+      - name: Prove active existing identity has key-delete authority
+        id: authority
         shell: bash
         run: |
           set -euo pipefail
-          test "$(gcloud config get-value project 2>/dev/null)" = "$EXPECTED_PROJECT_ID"
-          gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-before-all.txt
-          grep -E '^(maps-backend|geocoding-backend)\.googleapis\.com$' enabled-before-all.txt > enabled-before-governed.txt || true
+          d='${{ steps.legacy.outputs.dir }}'
+          active="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n1)"
+          test -n "$active"
+          gcloud projects get-iam-policy "$TARGET_PROJECT" --format=json > "$d/project-iam.json"
+          jq -r --arg sa "serviceAccount:$active" --arg user "user:$active" '.bindings[]? | select(((.members // []) | index($sa)) != null or ((.members // []) | index($user)) != null) | .role' "$d/project-iam.json" | sort -u > "$d/admin-roles.txt"
+          : > "$d/delete-roles.txt"
+          idx=0
+          while IFS= read -r role; do
+            [ -n "$role" ] || continue
+            idx=$((idx + 1))
+            out="$d/role-$idx.json"
+            if [[ "$role" == roles/* ]]; then
+              gcloud iam roles describe "$role" --format=json > "$out"
+            elif [[ "$role" == projects/*/roles/* ]]; then
+              rid="${role##*/}"; project="$(printf '%s' "$role" | cut -d/ -f2)"
+              gcloud iam roles describe "$rid" --project "$project" --format=json > "$out"
+            elif [[ "$role" == organizations/*/roles/* ]]; then
+              rid="${role##*/}"; org="$(printf '%s' "$role" | cut -d/ -f2)"
+              gcloud iam roles describe "$rid" --organization "$org" --format=json > "$out"
+            else
+              continue
+            fi
+            if jq -e '.includedPermissions // [] | index("iam.serviceAccountKeys.delete") != null' "$out" >/dev/null; then
+              printf '%s\n' "$role" >> "$d/delete-roles.txt"
+            fi
+          done < "$d/admin-roles.txt"
+          test -s "$d/delete-roles.txt" || { echo '::error::Existing admin identity lacks proven direct key-delete authority.'; exit 66; }
+          echo 'proven=true' >> "$GITHUB_OUTPUT"
 
-      - name: Enable only the governed Maps APIs
-        if: inputs.operation == 'enable'
+      - name: Delete only the exact embedded legacy key
+        id: delete
+        if: steps.authority.outputs.proven == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          gcloud services enable maps-backend.googleapis.com geocoding-backend.googleapis.com --project "$EXPECTED_PROJECT_ID" --quiet
+          d='${{ steps.legacy.outputs.dir }}'
+          email="$(cat "$d/legacy-email.txt")"
+          key_id="$(cat "$d/legacy-key-id.txt")"
+          test -n "$email" && test -n "$key_id"
+          gcloud iam service-accounts keys delete "$key_id" --iam-account "$email" --project "$TARGET_PROJECT" --quiet
+          echo 'revoked=true' >> "$GITHUB_OUTPUT"
 
-      - name: Verify after state and write exact receipt
+      - name: Require a fresh token mint with the old key to fail
+        id: rejection
+        if: steps.delete.outputs.revoked == 'true'
         shell: bash
-        env:
-          OPERATION: ${{ inputs.operation }}
-          AUTH_MODE: ${{ steps.boundary.outputs.auth_mode }}
         run: |
           set -euo pipefail
-          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1)"
-          test -n "$active_account"
-          gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-after-all.txt
-          grep -E '^(maps-backend|geocoding-backend)\.googleapis\.com$' enabled-after-all.txt > enabled-after-governed.txt || true
-          if [[ "$OPERATION" = enable ]]; then
-            grep -Fx 'maps-backend.googleapis.com' enabled-after-governed.txt
-            grep -Fx 'geocoding-backend.googleapis.com' enabled-after-governed.txt
+          d='${{ steps.legacy.outputs.dir }}'
+          cfg="$d/fresh-gcloud"
+          mkdir -p "$cfg"
+          CLOUDSDK_CONFIG="$cfg" gcloud auth activate-service-account --key-file="$d/legacy.json" --project="$TARGET_PROJECT" --quiet >/dev/null 2>"$d/activate.err" || true
+          set +e
+          CLOUDSDK_CONFIG="$cfg" gcloud auth print-access-token >"$d/token.out" 2>"$d/token.err"
+          rc=$?
+          set -e
+          if [[ $rc -eq 0 ]]; then
+            echo '::error::Fresh token mint unexpectedly succeeded with the revoked legacy key.'
+            rm -f "$d/token.out"
+            exit 67
           fi
-          ACTIVE_ACCOUNT="$active_account" node <<'NODE'
-          const fs = require('node:fs')
-          const lines = (file) => fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean)
-          const receipt = {
-            schema: 'urai-maps-cloud-bootstrap-1',
-            operation: process.env.OPERATION,
-            mutationPerformed: process.env.OPERATION === 'enable',
-            authMode: process.env.AUTH_MODE,
-            projectId: process.env.EXPECTED_PROJECT_ID,
-            repository: process.env.GITHUB_REPOSITORY,
-            candidateSha: process.env.CANDIDATE_SHA,
-            activeAccount: process.env.ACTIVE_ACCOUNT,
-            governedServices: process.env.TARGET_SERVICES.split(' '),
-            enabledBefore: lines('enabled-before-governed.txt'),
-            enabledAfter: lines('enabled-after-governed.txt'),
-            productionDeploymentPerformed: false,
-            apiKeyCreated: false,
-            completedAt: new Date().toISOString(),
-            runId: process.env.GITHUB_RUN_ID,
-          }
-          fs.writeFileSync('maps-cloud-bootstrap-receipt.json', `${JSON.stringify(receipt, null, 2)}\n`)
-          NODE
+          rm -f "$d/token.out"
+          echo 'rejected=true' >> "$GITHUB_OUTPUT"
 
-      - name: Retain exact cloud bootstrap receipt
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Publish sanitized containment receipt
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          AUTH_MODE: ${{ steps.authmode.outputs.mode }}
+          AUTH_PROVEN: ${{ steps.authority.outputs.proven }}
+          REVOKED: ${{ steps.delete.outputs.revoked }}
+          REJECTED: ${{ steps.rejection.outputs.rejected }}
         with:
-          name: urai-maps-cloud-bootstrap-${{ env.CANDIDATE_SHA }}-${{ inputs.operation }}
-          path: |
-            maps-cloud-bootstrap-receipt.json
-            enabled-before-governed.txt
-            enabled-after-governed.txt
-          if-no-files-found: error
-          retention-days: 90
+          script: |
+            const passed = process.env.AUTH_PROVEN === 'true' && process.env.REVOKED === 'true' && process.env.REJECTED === 'true'
+            const body = [
+              '## URAI exact legacy Firebase key containment receipt',
+              '',
+              `- Existing admin auth path selected: **${process.env.AUTH_MODE || 'none'}**`,
+              `- Existing admin identity proved iam.serviceAccountKeys.delete: **${process.env.AUTH_PROVEN === 'true'}**`,
+              `- Exact embedded legacy key deleted: **${process.env.REVOKED === 'true'}**`,
+              `- Fresh access-token mint using the old key rejected: **${process.env.REJECTED === 'true'}**`,
+              `- Overall containment: **${passed ? 'PASS' : 'NOT VERIFIED'}**`,
+              '',
+              '- IAM policy changed: **false**',
+              '- Replacement key created: **false**',
+              '- Deployment/DNS/billing mutation: **false**',
+              '- No private key, credential JSON, access token, exact key ID, or service-account email is recorded.',
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: `URAI exact legacy Firebase key containment — ${passed ? 'PASS' : 'NOT VERIFIED'}`, body })
+
+      - name: Remove temporary material
+        if: always()
+        shell: bash
+        run: rm -rf '${{ steps.legacy.outputs.dir }}'
