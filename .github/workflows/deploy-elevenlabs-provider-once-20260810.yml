@@ -21,6 +21,7 @@ env:
   EXPECTED_PROJECT: urai-4dc1d
   CANONICAL_SHA: 72d97865ed28aa3140668c2e57e5675717a25ecd
   FUNCTION_ID: elevenLabsVoiceProvider
+  FUNCTIONS_CODEBASE: urai-spatial-functions
 
 jobs:
   deploy:
@@ -114,7 +115,7 @@ jobs:
           set -euo pipefail
           pnpm exec firebase deploy \
             --project "$EXPECTED_PROJECT" \
-            --only "functions:$FUNCTION_ID" \
+            --only "functions:${FUNCTIONS_CODEBASE}:${FUNCTION_ID}" \
             --non-interactive
 
       - name: Smoke deployed auth boundary
