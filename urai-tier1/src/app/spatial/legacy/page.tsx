@@ -1,5 +1,5 @@
-import LifeMapSemanticRoute from '@/spatial/realms/LifeMapSemanticRoute'
+import LegacyRealWorldRealm from '@/spatial/realms/LegacyRealWorldRealm'
 
 export default function SpatialLegacyPage() {
-  return <LifeMapSemanticRoute kind="legacy" />
+  return <LegacyRealWorldRealm />
 }
