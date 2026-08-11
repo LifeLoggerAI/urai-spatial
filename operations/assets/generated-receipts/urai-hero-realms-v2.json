@@ -1,0 +1,75 @@
+{
+  "packId": "urai-hero-realms-v2",
+  "cameraAspect": "5:4",
+  "units": "meters",
+  "selectedProduction": false,
+  "qualityTier": "textured-hero-density-review",
+  "sourceAuthority": "URAI Labs Final GLB Forge primitives/material system",
+  "assets": [
+    {
+      "fileName": "council-chamber-hero-v2.glb",
+      "bytes": 3322936,
+      "sha256": "af5b6cb681ca074e69a804d8e59cf7a6d09156e8f0457faa33a1f842ba347f68",
+      "triangleCount": 108738,
+      "nodes": 116,
+      "animations": [],
+      "materials": 10,
+      "embeddedTextures": 4,
+      "uvMapped": true,
+      "realm": "Council",
+      "cameraAspect": "5:4",
+      "units": "meters"
+    },
+    {
+      "fileName": "shadow-hall-hero-v2.glb",
+      "bytes": 4124484,
+      "sha256": "655e82e184054a9e584f90b17ce5230a16a9402617f0662b5af840f5b31161cb",
+      "triangleCount": 133824,
+      "nodes": 193,
+      "animations": [],
+      "materials": 9,
+      "embeddedTextures": 4,
+      "uvMapped": true,
+      "realm": "Shadow",
+      "cameraAspect": "5:4",
+      "units": "meters"
+    },
+    {
+      "fileName": "mirror-chamber-hero-v2.glb",
+      "bytes": 3038772,
+      "sha256": "bb28d3e10b66ec83b340a610eb112e4566ae806e23f150e668c8993c8b631732",
+      "triangleCount": 99686,
+      "nodes": 86,
+      "animations": [],
+      "materials": 8,
+      "embeddedTextures": 4,
+      "uvMapped": true,
+      "realm": "Mirror",
+      "cameraAspect": "5:4",
+      "units": "meters"
+    },
+    {
+      "fileName": "legacy-archive-hero-v2.glb",
+      "bytes": 7194192,
+      "sha256": "2bca5594da9f2fa228ac8d0862ab460b638b24a2ed91e4f7f9cb88cb754d8c13",
+      "triangleCount": 209938,
+      "nodes": 954,
+      "animations": [],
+      "materials": 11,
+      "embeddedTextures": 4,
+      "uvMapped": true,
+      "realm": "Legacy",
+      "cameraAspect": "5:4",
+      "units": "meters"
+    }
+  ],
+  "totalBytes": 17680384,
+  "totalTriangles": 552186,
+  "promotionRequires": [
+    "github-binary-receipt",
+    "browser-render-proof",
+    "mobile-performance-proof",
+    "material-calibration",
+    "navigation-collision-validation"
+  ]
+}
