@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/live-release.mjs'
+      - 'scripts/live-release-wif.mjs'
+      - 'scripts/firebase-hosting-recovery.mjs'
       - 'scripts/create-static-release-bundle.mjs'
       - 'scripts/attest-static-release-bundle.mjs'
       - 'scripts/write-release-fingerprint.mjs'
@@ -15,9 +17,14 @@ on:
       - 'scripts/verify-release-security-path-guard.mjs'
       - 'scripts/verify-production-action-pins.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/check-workflow-phase-boundaries.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
       - 'urai-tier1/tests/exact-static-release-contract.test.mjs'
+      - 'urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs'
+      - 'urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs'
+      - 'urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs'
+      - 'urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs'
       - '.github/workflows/**.yml'
       - '.github/workflows/**.yaml'
       - 'package.json'
@@ -26,6 +33,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/live-release.mjs'
+      - 'scripts/live-release-wif.mjs'
+      - 'scripts/firebase-hosting-recovery.mjs'
       - 'scripts/create-static-release-bundle.mjs'
       - 'scripts/attest-static-release-bundle.mjs'
       - 'scripts/write-release-fingerprint.mjs'
@@ -36,9 +45,14 @@ on:
       - 'scripts/verify-release-security-path-guard.mjs'
       - 'scripts/verify-production-action-pins.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/check-workflow-phase-boundaries.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
       - 'urai-tier1/tests/exact-static-release-contract.test.mjs'
+      - 'urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs'
+      - 'urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs'
+      - 'urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs'
+      - 'urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs'
       - '.github/workflows/**.yml'
       - '.github/workflows/**.yaml'
       - 'package.json'
@@ -65,6 +79,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
+
       - name: Prove exact clean source identity
         shell: bash
         run: |
@@ -72,15 +87,19 @@ jobs:
           EXPECTED_SHA='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
+
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
+
       - name: Syntax-check release security executables
         shell: bash
         run: |
           set -euo pipefail
           node --check scripts/live-release.mjs
+          node --check scripts/live-release-wif.mjs
+          node --check scripts/firebase-hosting-recovery.mjs
           node --check scripts/create-static-release-bundle.mjs
           node --check scripts/attest-static-release-bundle.mjs
           node --check scripts/write-release-fingerprint.mjs
@@ -91,21 +110,47 @@ jobs:
           node --check scripts/verify-release-security-path-guard.mjs
           node --check scripts/verify-production-action-pins.mjs
           node --check scripts/audit-production-workflow-authority.mjs
+          node --check scripts/check-workflow-phase-boundaries.mjs
           node --check scripts/urai-release-control-smoke.mjs
           node --check scripts/urai-post-deploy-smoke.mjs
           node --check urai-tier1/tests/exact-static-release-contract.test.mjs
+          node --check urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs
+          node --check urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs
+          node --check urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs
+          node --check urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs
+
       - name: Verify this guard is immutable and least-privileged
         run: node scripts/verify-release-security-path-guard.mjs
+
       - name: Verify protected workflow action pins
         run: node scripts/verify-production-action-pins.mjs
+
       - name: Audit production workflow authority
         run: node scripts/audit-production-workflow-authority.mjs
+
       - name: Verify release credential boundary
         run: node scripts/verify-release-credential-boundary.mjs
+
       - name: Verify rollback-provenance policy
         run: node scripts/verify-live-rollback-provenance.mjs --self-test
+
       - name: Verify legacy bootstrap policy
         run: node scripts/verify-legacy-live-bootstrap.mjs --self-test
+
+      - name: Verify Hosting recovery WIF policy
+        run: node scripts/firebase-hosting-recovery.mjs --self-test
+
       - name: Verify exact static release contract
         run: node urai-tier1/tests/exact-static-release-contract.test.mjs
 
+      - name: Verify automatic Hosting recovery contract
+        run: node urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs
+
+      - name: Verify Hosting recovery contract
+        run: node urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs
+
+      - name: Verify protected recovery capture contract
+        run: node urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs
+
+      - name: Verify deploy workflow WIF canon
+        run: node urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs
