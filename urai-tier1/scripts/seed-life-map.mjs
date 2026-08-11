@@ -3,6 +3,7 @@
 import process from 'node:process';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { assertExternalAccountAdc } from './lib/assert-external-account-adc.mjs';
 
 const userId = process.argv.find((arg) => arg.startsWith('--user='))?.slice('--user='.length)
   || process.env.URAI_SEED_USER_ID
@@ -12,6 +13,7 @@ const projectId = process.env.FIREBASE_PROJECT_ID
   || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   || 'urai';
 
+assertExternalAccountAdc();
 if (!getApps().length) {
   initializeApp({
     projectId,
