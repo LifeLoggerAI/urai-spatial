@@ -10,7 +10,7 @@ $HOME/urai-final-receipts/aaa-launch-proof-<loop>-<short-sha>-<timestamp>/
 
 Set `URAI_RECEIPT_ROOT` to use a different receipt root. Set `URAI_PROOF_SOURCE_SHA` when an external caller needs the checked-out commit to match an explicit SHA. Pull-request runs do not infer the expected head from GitHub's merge-ref `GITHUB_SHA`; the checked-out clean commit remains recorded in every receipt.
 
-Production deployment is intentionally unavailable from this script. Deploy `urai.app` only through `.github/workflows/spatial-live-deploy.yml` using the protected `production` environment, exact release and rollback SHAs, and `DEPLOY_URAI_APP`.
+Production deployment is intentionally unavailable. `.github/workflows/spatial-live-deploy.yml` is verification-only and records **NO-GO**; it has no protected production environment, deploy inputs, provider credentials, or mutation step.
 
 ## Standard proof pass
 
@@ -86,19 +86,9 @@ LOOP_NAME=live-surface-check node scripts/aaa-launch-proof.mjs \
 
 ## Production release
 
-Use the canonical workflow:
+There is no active repository production release path. The canonical workflow and all preview workflows are checks-only. The proof runner rejects `--deploy` with a nonzero exit code.
 
-```text
-.github/workflows/spatial-live-deploy.yml
-```
-
-Required manual inputs:
-
-- exact 40-character `release_sha`;
-- exact 40-character proven `rollback_sha`;
-- confirmation `DEPLOY_URAI_APP`.
-
-The proof runner rejects `--deploy` with a nonzero exit code.
+Restoring authority requires a separately reviewed change after provider-side WIF/IAM, historical-key revocation, negative-auth, audit-log, protected settings/read-back, and eligible exact-head approval are proven.
 
 ## Honest proof boundaries
 
