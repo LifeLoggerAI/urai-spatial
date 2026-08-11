@@ -1,0 +1,267 @@
+name: Discover Google WIF Admin Path Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/discover-google-wif-admin-path-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: discover-google-wif-admin-path-once-20260811
+  cancel-in-progress: false
+
+env:
+  TARGET_PROJECT: urai-4dc1d
+  TARGET_REPOSITORY: LifeLoggerAI/urai-spatial
+
+jobs:
+  discover:
+    name: Read-only Google identity topology discovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate legacy credential metadata privately
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          node - <<'NODE'
+          const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+          if (sa.project_id !== 'urai-4dc1d') throw new Error('Credential project mismatch')
+          if (!sa.client_email) throw new Error('Credential client_email missing')
+          NODE
+
+      - name: Authenticate legacy credential for read-only discovery
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          project_id: ${{ env.TARGET_PROJECT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Discover project IAM, WIF pools, providers, and service-account bindings read-only
+        id: discover
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/urai-wif-discovery"
+          d="$RUNNER_TEMP/urai-wif-discovery"
+
+          project_iam=false
+          service_accounts=false
+          pools=false
+          providers=false
+          service_account_policies=false
+
+          if gcloud projects get-iam-policy "$TARGET_PROJECT" --format=json > "$d/project-iam.json" 2>"$d/project-iam.err"; then
+            project_iam=true
+          else
+            printf '{"bindings":[]}' > "$d/project-iam.json"
+          fi
+
+          if gcloud iam service-accounts list --project "$TARGET_PROJECT" --format=json > "$d/service-accounts.json" 2>"$d/service-accounts.err"; then
+            service_accounts=true
+          else
+            printf '[]' > "$d/service-accounts.json"
+          fi
+
+          if gcloud iam workload-identity-pools list --project "$TARGET_PROJECT" --location global --format=json > "$d/pools.json" 2>"$d/pools.err"; then
+            pools=true
+          else
+            printf '[]' > "$d/pools.json"
+          fi
+
+          printf '[]' > "$d/providers-all.json"
+          if [ "$pools" = true ]; then
+            provider_tmp="$d/providers.ndjson"
+            : > "$provider_tmp"
+            while IFS= read -r pool_name; do
+              [ -n "$pool_name" ] || continue
+              pool_id="${pool_name##*/}"
+              if gcloud iam workload-identity-pools providers list \
+                  --project "$TARGET_PROJECT" \
+                  --location global \
+                  --workload-identity-pool "$pool_id" \
+                  --format=json > "$d/providers-${pool_id}.json" 2>"$d/providers-${pool_id}.err"; then
+                providers=true
+                jq -c '.[]' "$d/providers-${pool_id}.json" >> "$provider_tmp" || true
+              fi
+            done < <(jq -r '.[].name // empty' "$d/pools.json")
+            if [ -s "$provider_tmp" ]; then jq -s '.' "$provider_tmp" > "$d/providers-all.json"; fi
+          fi
+
+          printf '[]' > "$d/service-account-policies.json"
+          if [ "$service_accounts" = true ]; then
+            policy_tmp="$d/sa-policies.ndjson"
+            : > "$policy_tmp"
+            while IFS= read -r email; do
+              [ -n "$email" ] || continue
+              safe="$(printf '%s' "$email" | tr '@.' '__')"
+              if gcloud iam service-accounts get-iam-policy "$email" --project "$TARGET_PROJECT" --format=json > "$d/sa-${safe}.json" 2>"$d/sa-${safe}.err"; then
+                service_account_policies=true
+                jq -c --arg email "$email" '{email:$email,bindings:(.bindings // [])}' "$d/sa-${safe}.json" >> "$policy_tmp"
+              fi
+            done < <(jq -r '.[].email // empty' "$d/service-accounts.json")
+            if [ -s "$policy_tmp" ]; then jq -s '.' "$policy_tmp" > "$d/service-account-policies.json"; fi
+          fi
+
+          PROJECT_IAM="$project_iam" \
+          SERVICE_ACCOUNTS="$service_accounts" \
+          POOLS="$pools" \
+          PROVIDERS="$providers" \
+          SA_POLICIES="$service_account_policies" \
+          DISCOVERY_DIR="$d" \
+          node - <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const d = process.env.DISCOVERY_DIR
+          const read = (name, fallback) => {
+            try { return JSON.parse(fs.readFileSync(path.join(d, name), 'utf8')) } catch { return fallback }
+          }
+          const projectIam = read('project-iam.json', {bindings:[]})
+          const serviceAccounts = read('service-accounts.json', [])
+          const pools = read('pools.json', [])
+          const providers = read('providers-all.json', [])
+          const saPolicies = read('service-account-policies.json', [])
+          const repo = process.env.TARGET_REPOSITORY
+          const owner = repo.split('/')[0]
+          const adminRoles = new Set([
+            'roles/owner',
+            'roles/resourcemanager.projectIamAdmin',
+            'roles/iam.serviceAccountAdmin',
+            'roles/iam.serviceAccountKeyAdmin',
+            'roles/secretmanager.admin',
+            'roles/firebase.admin',
+          ])
+          const rolesByMember = new Map()
+          for (const b of projectIam.bindings || []) {
+            for (const member of b.members || []) {
+              if (!rolesByMember.has(member)) rolesByMember.set(member, [])
+              rolesByMember.get(member).push(b.role)
+            }
+          }
+          const candidateAccounts = []
+          for (const p of saPolicies) {
+            const wifMembers = []
+            for (const b of p.bindings || []) {
+              if (b.role !== 'roles/iam.workloadIdentityUser') continue
+              for (const m of b.members || []) {
+                if (m.includes(repo) || m.includes(`attribute.repository_owner/${owner}`) || m.includes(`attribute.repository/${repo}`)) {
+                  wifMembers.push(m)
+                }
+              }
+            }
+            if (!wifMembers.length) continue
+            const member = `serviceAccount:${p.email}`
+            const roles = rolesByMember.get(member) || []
+            candidateAccounts.push({
+              email: p.email,
+              repositoryAuthorized: true,
+              projectAdminRoles: roles.filter((r) => adminRoles.has(r)),
+              projectRoles: roles,
+            })
+          }
+          const githubProviders = providers.map((p) => ({
+            name: p.name || '',
+            state: p.state || '',
+            issuerUri: p.oidc?.issuerUri || '',
+            attributeMappingKeys: Object.keys(p.attributeMapping || {}).sort(),
+            attributeConditionMentionsGitHub: /github|repository|repo/i.test(String(p.attributeCondition || '')),
+          })).filter((p) => p.issuerUri.includes('token.actions.githubusercontent.com') || p.attributeConditionMentionsGitHub)
+          const receipt = {
+            schemaVersion: 'urai-google-identity-topology-readonly-1',
+            recordedAt: new Date().toISOString(),
+            projectId: process.env.TARGET_PROJECT,
+            repository: repo,
+            mutationPerformed: false,
+            secretValueReadIntoReceipt: false,
+            permissions: {
+              projectIamReadable: process.env.PROJECT_IAM === 'true',
+              serviceAccountsListable: process.env.SERVICE_ACCOUNTS === 'true',
+              workloadIdentityPoolsListable: process.env.POOLS === 'true',
+              workloadIdentityProvidersListable: process.env.PROVIDERS === 'true',
+              serviceAccountIamPoliciesReadable: process.env.SA_POLICIES === 'true',
+            },
+            counts: {
+              serviceAccounts: serviceAccounts.length,
+              workloadIdentityPools: pools.length,
+              workloadIdentityProviders: providers.length,
+              githubLikeProviders: githubProviders.length,
+              repositoryAuthorizedServiceAccounts: candidateAccounts.length,
+            },
+            githubLikeProviders: githubProviders,
+            repositoryAuthorizedServiceAccounts: candidateAccounts,
+          }
+          fs.writeFileSync(path.join(d, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
+          NODE
+
+          echo "receipt=$d/receipt.json" >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized discovery result
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          RECEIPT_PATH: ${{ steps.discover.outputs.receipt }}
+        with:
+          script: |
+            const fs = require('fs')
+            let body
+            if (!process.env.RECEIPT_PATH || !fs.existsSync(process.env.RECEIPT_PATH)) {
+              body = [
+                '## URAI Google identity topology discovery',
+                '',
+                '- Result: **NO RECEIPT**',
+                '- Mutation performed: **false**',
+                '- Secret values printed: **false**',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            } else {
+              const r = JSON.parse(fs.readFileSync(process.env.RECEIPT_PATH, 'utf8'))
+              const p = r.permissions
+              const c = r.counts
+              const providers = (r.githubLikeProviders || []).map((x) => `  - \`${x.name || 'unnamed'}\` state=${x.state || 'unknown'}`).join('\n') || '  - none discovered'
+              const accounts = (r.repositoryAuthorizedServiceAccounts || []).map((x) => `  - \`${x.email}\` adminRoles=${x.projectAdminRoles.length ? x.projectAdminRoles.join(',') : 'none'}`).join('\n') || '  - none discovered'
+              body = [
+                '## URAI Google identity topology discovery',
+                '',
+                `- Project IAM readable: **${p.projectIamReadable}**`,
+                `- Service accounts listable: **${p.serviceAccountsListable}**`,
+                `- WIF pools listable: **${p.workloadIdentityPoolsListable}**`,
+                `- WIF providers listable: **${p.workloadIdentityProvidersListable}**`,
+                `- Service-account IAM policies readable: **${p.serviceAccountIamPoliciesReadable}**`,
+                `- Service accounts discovered: **${c.serviceAccounts}**`,
+                `- WIF pools discovered: **${c.workloadIdentityPools}**`,
+                `- WIF providers discovered: **${c.workloadIdentityProviders}**`,
+                `- GitHub-like WIF providers: **${c.githubLikeProviders}**`,
+                `- Service accounts explicitly authorizing ${r.repository}: **${c.repositoryAuthorizedServiceAccounts}**`,
+                '',
+                '### GitHub-like providers',
+                providers,
+                '',
+                '### Repository-authorized service accounts',
+                accounts,
+                '',
+                '- Mutation performed: **false**',
+                '- No private key, provider secret, access token, key ID, or credential JSON is recorded.',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'URAI Google identity topology read-only discovery',
+              body,
+            })
