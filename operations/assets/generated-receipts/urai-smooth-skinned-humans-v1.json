@@ -1,0 +1,106 @@
+{
+  "packId": "urai-smooth-skinned-humans-v1",
+  "cameraAspect": "5:4",
+  "units": "meters",
+  "riggingType": "glTF-skin-joints-weights",
+  "smoothSkinning": true,
+  "selectedProduction": false,
+  "promotionRequires": [
+    "github-binary-receipt",
+    "runtime-useAnimations-proof",
+    "multi-device-render-proof",
+    "final-face-material-review"
+  ],
+  "models": [
+    {
+      "file": "council-guide-human-smooth-v1.glb",
+      "bytes": 1386668,
+      "sha256": "43ca1e8b7defa6cbaf87eb01f998648f9820c16d4229c5fd37504a4cfc5f9f8f",
+      "nodes": 32,
+      "meshes": 13,
+      "skins": 1,
+      "joints": 19,
+      "animations": [
+        "Idle",
+        "Listen",
+        "Speak",
+        "GuideGesture"
+      ]
+    },
+    {
+      "file": "council-mirror-human-smooth-v1.glb",
+      "bytes": 1386752,
+      "sha256": "cdfa64b4d7e138eb7c097d721f364b1a602abd9d458dc4c6017e45a108341dcc",
+      "nodes": 32,
+      "meshes": 13,
+      "skins": 1,
+      "joints": 19,
+      "animations": [
+        "Idle",
+        "Listen",
+        "Speak",
+        "GuideGesture"
+      ]
+    },
+    {
+      "file": "council-guardian-human-smooth-v1.glb",
+      "bytes": 1386920,
+      "sha256": "f02000b154cb189a718ccf0670fdad014adcaf71ad74658886a7f6aace5c9fd0",
+      "nodes": 32,
+      "meshes": 13,
+      "skins": 1,
+      "joints": 19,
+      "animations": [
+        "Idle",
+        "Listen",
+        "Speak",
+        "GuideGesture"
+      ]
+    },
+    {
+      "file": "council-archivist-human-smooth-v1.glb",
+      "bytes": 1386872,
+      "sha256": "10131cc05c8b40be2ee177ae85a4c98ff7e59f579bea02c3f9f6db57afce19b1",
+      "nodes": 32,
+      "meshes": 13,
+      "skins": 1,
+      "joints": 19,
+      "animations": [
+        "Idle",
+        "Listen",
+        "Speak",
+        "GuideGesture"
+      ]
+    },
+    {
+      "file": "council-builder-human-smooth-v1.glb",
+      "bytes": 1386852,
+      "sha256": "0747301d32c87b7f0f8ecc92216844182ee87f1f11971615023183ece6609278",
+      "nodes": 32,
+      "meshes": 13,
+      "skins": 1,
+      "joints": 19,
+      "animations": [
+        "Idle",
+        "Listen",
+        "Speak",
+        "GuideGesture"
+      ]
+    },
+    {
+      "file": "council-trickster-human-smooth-v1.glb",
+      "bytes": 1386860,
+      "sha256": "bd3320d255ae1cc42c67f9652d6d399495cfe353d83fa70143689dd4f8a040bd",
+      "nodes": 32,
+      "meshes": 13,
+      "skins": 1,
+      "joints": 19,
+      "animations": [
+        "Idle",
+        "Listen",
+        "Speak",
+        "GuideGesture"
+      ]
+    }
+  ]
+}
