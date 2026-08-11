@@ -16,16 +16,19 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: production
     steps:
-      - name: Check repository identity configuration presence only
+      - name: Check protected production identity configuration presence only
         id: presence
         shell: bash
         env:
           WIF_PROVIDER_VAR: ${{ vars.GCP_WIF_PROVIDER }}
           MAPS_ADMIN_VAR: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          MAPS_AUDIT_VAR: ${{ vars.GCP_MAPS_AUDIT_SERVICE_ACCOUNT }}
           ASSET_ADMIN_VAR: ${{ vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT }}
           WIF_PROVIDER_SECRET: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           DEPLOY_SA_SECRET: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          MAPS_ADMIN_JSON: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
           FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           ROTATION_GO: ${{ vars.URAI_CREDENTIAL_ROTATION_GO }}
         run: |
@@ -33,38 +36,45 @@ jobs:
           bool() { if [ -n "$1" ]; then printf true; else printf false; fi; }
           echo "provider_var=$(bool "$WIF_PROVIDER_VAR")" >> "$GITHUB_OUTPUT"
           echo "maps_admin_var=$(bool "$MAPS_ADMIN_VAR")" >> "$GITHUB_OUTPUT"
+          echo "maps_audit_var=$(bool "$MAPS_AUDIT_VAR")" >> "$GITHUB_OUTPUT"
           echo "asset_admin_var=$(bool "$ASSET_ADMIN_VAR")" >> "$GITHUB_OUTPUT"
           echo "provider_secret=$(bool "$WIF_PROVIDER_SECRET")" >> "$GITHUB_OUTPUT"
           echo "deploy_sa_secret=$(bool "$DEPLOY_SA_SECRET")" >> "$GITHUB_OUTPUT"
+          echo "maps_admin_json=$(bool "$MAPS_ADMIN_JSON")" >> "$GITHUB_OUTPUT"
           echo "firebase_json=$(bool "$FIREBASE_JSON")" >> "$GITHUB_OUTPUT"
           if [ "$ROTATION_GO" = 'GO' ]; then echo 'rotation_go=true' >> "$GITHUB_OUTPUT"; else echo 'rotation_go=false' >> "$GITHUB_OUTPUT"; fi
 
-      - name: Report sanitized presence result
+      - name: Report sanitized protected presence result
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         env:
           PROVIDER_VAR: ${{ steps.presence.outputs.provider_var }}
           MAPS_ADMIN_VAR: ${{ steps.presence.outputs.maps_admin_var }}
+          MAPS_AUDIT_VAR: ${{ steps.presence.outputs.maps_audit_var }}
           ASSET_ADMIN_VAR: ${{ steps.presence.outputs.asset_admin_var }}
           PROVIDER_SECRET: ${{ steps.presence.outputs.provider_secret }}
           DEPLOY_SA_SECRET: ${{ steps.presence.outputs.deploy_sa_secret }}
+          MAPS_ADMIN_JSON: ${{ steps.presence.outputs.maps_admin_json }}
           FIREBASE_JSON: ${{ steps.presence.outputs.firebase_json }}
           ROTATION_GO: ${{ steps.presence.outputs.rotation_go }}
         with:
           script: |
             const body = [
-              '## Corrected URAI Spatial repository identity presence audit',
+              '## URAI Spatial protected production identity presence audit',
               '',
-              `- GCP_WIF_PROVIDER repository variable present: **${process.env.PROVIDER_VAR}**`,
-              `- GCP_MAPS_ADMIN_SERVICE_ACCOUNT repository variable present: **${process.env.MAPS_ADMIN_VAR}**`,
-              `- GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT repository variable present: **${process.env.ASSET_ADMIN_VAR}**`,
-              `- GCP_WORKLOAD_IDENTITY_PROVIDER repository secret present: **${process.env.PROVIDER_SECRET}**`,
-              `- GCP_DEPLOY_SERVICE_ACCOUNT repository secret present: **${process.env.DEPLOY_SA_SECRET}**`,
-              `- FIREBASE_SERVICE_ACCOUNT_JSON repository secret present: **${process.env.FIREBASE_JSON}**`,
+              `- GCP_WIF_PROVIDER present: **${process.env.PROVIDER_VAR}**`,
+              `- GCP_MAPS_ADMIN_SERVICE_ACCOUNT present: **${process.env.MAPS_ADMIN_VAR}**`,
+              `- GCP_MAPS_AUDIT_SERVICE_ACCOUNT present: **${process.env.MAPS_AUDIT_VAR}**`,
+              `- GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT present: **${process.env.ASSET_ADMIN_VAR}**`,
+              `- GCP_WORKLOAD_IDENTITY_PROVIDER secret present: **${process.env.PROVIDER_SECRET}**`,
+              `- GCP_DEPLOY_SERVICE_ACCOUNT secret present: **${process.env.DEPLOY_SA_SECRET}**`,
+              `- GCP_MAPS_ADMIN_CREDENTIALS_JSON secret present: **${process.env.MAPS_ADMIN_JSON}**`,
+              `- FIREBASE_SERVICE_ACCOUNT_JSON secret present: **${process.env.FIREBASE_JSON}**`,
               `- URAI_CREDENTIAL_ROTATION_GO equals GO: **${process.env.ROTATION_GO}**`,
               '',
-              '- This supersedes issue #1078, whose shell quoting caused false-positive presence results.',
+              '- Scope: protected GitHub environment `production`.',
               '- No values were printed.',
               '- No Google Cloud mutation was attempted.',
+              '- This is presence evidence only; a configured identity must still authenticate successfully before use.',
               `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             ].join('\n')
-            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'Corrected URAI Spatial repository identity presence audit', body })
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'URAI Spatial protected production identity presence audit', body })
