@@ -31,9 +31,12 @@ test('pull-request cloud audit uses a dedicated read-only WIF identity', () => {
   assert.doesNotMatch(workflow, /Audit existing Firebase credential bridge/)
 })
 
-test('manual mutation remains separately confirmed and creates no API key', () => {
+test('manual mutation is WIF-only, separately confirmed, and creates no API key', () => {
   assert.match(workflow, /GCP_MAPS_ADMIN_SERVICE_ACCOUNT/)
-  assert.match(workflow, /GCP_MAPS_ADMIN_CREDENTIALS_JSON/)
+  assert.match(workflow, /GCP_WIF_PROVIDER/)
+  assert.match(workflow, /credentialClass: 'dedicated-admin-wif'/)
+  assert.doesNotMatch(workflow, /GCP_MAPS_ADMIN_CREDENTIALS_JSON/)
+  assert.doesNotMatch(workflow, /credentials_json/)
   assert.doesNotMatch(workflow, /gcloud alpha services api-keys create/)
   assert.doesNotMatch(workflow, /gcloud services api-keys create/)
   assert.match(workflow, /apiKeyCreated: false/)
