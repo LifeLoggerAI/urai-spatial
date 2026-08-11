@@ -59,7 +59,7 @@ else {
     const source = normalize(readFileSync(path.join(workflowsDir, name), 'utf8'))
     const relativePath = `.github/workflows/${name}`
     if (workflowExecutesProductionMutation(source)) productionWorkflows.push(relativePath)
-    const credentialMatches = source.match(/(?:FIREBASE_SERVICE_ACCOUNT_JSON|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL):\s*\$\{\{\s*secrets\./g) ?? []
+    const credentialMatches = source.match(/\$\{\{\s*secrets\.(?:FIREBASE_SERVICE_ACCOUNT_JSON|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL)\s*\}\}/g) ?? []
     if (credentialMatches.length) {
       rawCredentialWorkflows.push(relativePath)
       rawCredentialSecretOccurrences += credentialMatches.length
