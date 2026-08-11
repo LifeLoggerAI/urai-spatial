@@ -5,6 +5,7 @@ import { ContactShadows, Environment, PerspectiveCamera, useGLTF } from "@react-
 import { Suspense, useMemo } from "react"
 import * as THREE from "three"
 import { demoShadowRealmEvent } from "@/lib/spatial/publicSafeSpatialData"
+import { useSpatialQualityTier } from "@/spatial/performance/useSpatialQualityTier"
 
 const SHADOW_MODEL = "/assets/urai/generated/hero-realms-v2/shadow-hall-hero-v2.glb"
 
@@ -16,6 +17,7 @@ function ShadowHallModel() {
       if (!(object instanceof THREE.Mesh)) return
       object.castShadow = true
       object.receiveShadow = true
+      object.frustumCulled = true
     })
     return clone
   }, [model.scene])
@@ -23,9 +25,13 @@ function ShadowHallModel() {
 }
 
 export function ShadowRealmPortal() {
+  const quality = useSpatialQualityTier()
+
   return (
     <main
       data-shadow-model-authority="urai-hero-realms-v2"
+      data-spatial-quality-tier={quality.tier}
+      data-spatial-shadow-map={quality.shadowMapSize}
       style={{
         position: "relative",
         minHeight: "100svh",
@@ -36,18 +42,25 @@ export function ShadowRealmPortal() {
       }}
     >
       <div style={{ position: "absolute", inset: 0 }}>
-        <Canvas shadows dpr={[1, 1.7]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
+        <Canvas shadows={quality.realtimeShadows} dpr={quality.dpr} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
           <Suspense fallback={null}>
             <color attach="background" args={["#17181a"]} />
             <fog attach="fog" args={["#1b1c1e", 8, 23]} />
             <PerspectiveCamera makeDefault position={[0, 1.68, 7.3]} fov={43} />
             <ambientLight intensity={0.28} color="#bfc5c7" />
             <hemisphereLight intensity={0.48} color="#c6d0d4" groundColor="#272626" />
-            <directionalLight position={[-4, 7, 4]} intensity={1.15} color="#d9d7cf" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+            <directionalLight
+              position={[-4, 7, 4]}
+              intensity={1.15}
+              color="#d9d7cf"
+              castShadow={quality.realtimeShadows}
+              shadow-mapSize-width={quality.shadowMapSize}
+              shadow-mapSize-height={quality.shadowMapSize}
+            />
             <directionalLight position={[4, 3, -5]} intensity={0.32} color="#8e819e" />
             <ShadowHallModel />
-            <ContactShadows position={[0, 0.015, -1.3]} opacity={0.5} scale={12} blur={3} far={8} />
-            <Environment preset="warehouse" environmentIntensity={0.18} />
+            {quality.contactShadows ? <ContactShadows position={[0, 0.015, -1.3]} opacity={0.5} scale={12} blur={3} far={8} /> : null}
+            <Environment preset="warehouse" environmentIntensity={Math.min(quality.environmentIntensity, 0.24)} />
           </Suspense>
         </Canvas>
       </div>
