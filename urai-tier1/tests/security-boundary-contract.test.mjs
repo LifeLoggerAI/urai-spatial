@@ -13,6 +13,15 @@ const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narrat
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
+const firebaseAdminRuntimePaths = [
+  new URL("../../src/lib/entitlementStore.ts", import.meta.url),
+  new URL("../src/lib/entitlementStore.ts", import.meta.url),
+  new URL("../src/lib/server/firebase-user.ts", import.meta.url),
+  new URL("../src/app/api/entitlement/route.ts", import.meta.url),
+  new URL("../../apps/urai-tier1/src/app/api/entitlement/route.ts", import.meta.url),
+  new URL("../../apps/urai-tier1/src/app/api/stripe/create-checkout-session/route.ts", import.meta.url),
+  new URL("../scripts/seed-life-map.mjs", import.meta.url),
+];
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -41,9 +50,21 @@ test("active narrator client and controller fail closed until session consent", 
   assert.doesNotMatch(narratorClient, /cache\.put/);
 });
 
-test("Firebase bearer verification checks revoked tokens", () => {
+test("Firebase bearer verification checks revoked tokens and uses ADC", () => {
   assert.match(firebaseUser, /verifyIdToken\(token, true\)/);
-  assert.match(firebaseUser, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(firebaseUser, /applicationDefault\(\)/);
+  assert.doesNotMatch(firebaseUser, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.doesNotMatch(firebaseUser, /\.cert\(/);
+});
+
+test("active Firebase Admin runtime and seed paths reject inline service-account JSON", () => {
+  for (const path of firebaseAdminRuntimePaths) {
+    const source = fs.readFileSync(path, "utf8");
+    assert.match(source, /applicationDefault\(\)/, `${path.pathname} must use ADC`);
+    assert.doesNotMatch(source, /FIREBASE_SERVICE_ACCOUNT_JSON/, `${path.pathname} must not accept inline service-account JSON`);
+    assert.doesNotMatch(source, /\.cert\(/, `${path.pathname} must not construct certificate credentials`);
+    assert.doesNotMatch(source, /JSON\.parse\([^)]*SERVICE_ACCOUNT/, `${path.pathname} must not parse service-account JSON`);
+  }
 });
 
 test("Stripe checkout permits only the configured application origin", () => {
