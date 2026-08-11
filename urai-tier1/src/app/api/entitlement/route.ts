@@ -18,9 +18,7 @@ async function verifyUser(request: Request) {
   const app = await import('firebase-admin/app');
 
   if (!app.getApps().length) {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!raw) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON');
-    app.initializeApp({ credential: app.cert(JSON.parse(raw)) });
+    app.initializeApp({ credential: app.applicationDefault() });
   }
 
   try {
