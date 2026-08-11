@@ -1,0 +1,185 @@
+name: Probe Google Admin Impersonation Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/probe-google-admin-impersonation-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: probe-google-admin-impersonation-once-20260811
+  cancel-in-progress: false
+
+env:
+  TARGET_PROJECT: urai-4dc1d
+
+jobs:
+  probe:
+    name: Probe existing short-lived admin impersonation path
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Materialize legacy identity metadata privately
+        id: meta
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          node - <<'NODE'
+          const fs = require('fs')
+          const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+          if (sa.project_id !== 'urai-4dc1d') throw new Error('Credential project mismatch')
+          if (!sa.client_email) throw new Error('Credential client_email missing')
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/legacy-email.txt', sa.client_email)
+          NODE
+
+      - name: Authenticate legacy identity for read-only IAM discovery
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          project_id: ${{ env.TARGET_PROJECT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Identify project-local admin candidates and probe impersonation
+        id: probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/urai-admin-probe"
+          mkdir -p "$d"
+          legacy_email="$(cat "$RUNNER_TEMP/legacy-email.txt")"
+
+          gcloud projects get-iam-policy "$TARGET_PROJECT" --format=json > "$d/project-iam.json"
+          gcloud iam service-accounts list --project "$TARGET_PROJECT" --format=json > "$d/service-accounts.json"
+
+          LEGACY_EMAIL="$legacy_email" DISCOVERY_DIR="$d" node - <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const d = process.env.DISCOVERY_DIR
+          const iam = JSON.parse(fs.readFileSync(path.join(d, 'project-iam.json'), 'utf8'))
+          const sas = JSON.parse(fs.readFileSync(path.join(d, 'service-accounts.json'), 'utf8'))
+          const saSet = new Set(sas.map(x => x.email).filter(Boolean))
+          const keyDeleteRoles = new Set([
+            'roles/owner',
+            'roles/iam.serviceAccountAdmin',
+            'roles/iam.serviceAccountKeyAdmin',
+          ])
+          const roles = new Map()
+          for (const b of iam.bindings || []) {
+            for (const member of b.members || []) {
+              if (!member.startsWith('serviceAccount:')) continue
+              const email = member.slice('serviceAccount:'.length)
+              if (!saSet.has(email)) continue
+              if (!roles.has(email)) roles.set(email, [])
+              roles.get(email).push(b.role)
+            }
+          }
+          const candidates = [...roles.entries()]
+            .filter(([, rs]) => rs.some(r => keyDeleteRoles.has(r)))
+            .map(([email, rs]) => ({email, projectRoles:[...new Set(rs)].sort()}))
+          fs.writeFileSync(path.join(d, 'candidates.json'), JSON.stringify(candidates, null, 2))
+          NODE
+
+          printf '[]' > "$d/results.json"
+          tmp="$d/results.ndjson"
+          : > "$tmp"
+          while IFS= read -r email; do
+            [ -n "$email" ] || continue
+            set +e
+            token="$(gcloud auth print-access-token --impersonate-service-account="$email" --project "$TARGET_PROJECT" 2>"$d/impersonate.err")"
+            rc=$?
+            set -e
+            ok=false
+            if [ "$rc" -eq 0 ] && [ -n "$token" ]; then ok=true; fi
+            unset token
+            EMAIL="$email" OK="$ok" DISCOVERY_DIR="$d" node - <<'NODE' >> "$tmp"
+            const fs = require('fs')
+            const path = require('path')
+            const candidates = JSON.parse(fs.readFileSync(path.join(process.env.DISCOVERY_DIR, 'candidates.json'), 'utf8'))
+            const c = candidates.find(x => x.email === process.env.EMAIL) || {email:process.env.EMAIL, projectRoles:[]}
+            process.stdout.write(JSON.stringify({email:c.email, projectRoles:c.projectRoles, impersonationSucceeded:process.env.OK === 'true'}) + '\n')
+            NODE
+          done < <(jq -r '.[].email' "$d/candidates.json")
+          if [ -s "$tmp" ]; then jq -s '.' "$tmp" > "$d/results.json"; fi
+
+          DISCOVERY_DIR="$d" node - <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const d = process.env.DISCOVERY_DIR
+          const results = JSON.parse(fs.readFileSync(path.join(d, 'results.json'), 'utf8'))
+          const receipt = {
+            schemaVersion: 'urai-google-admin-impersonation-probe-1',
+            recordedAt: new Date().toISOString(),
+            projectId: process.env.TARGET_PROJECT,
+            mutationPerformed: false,
+            longLivedCredentialCreated: false,
+            accessTokenRecorded: false,
+            candidateCount: results.length,
+            successfulImpersonationCount: results.filter(x => x.impersonationSucceeded).length,
+            candidates: results,
+          }
+          fs.writeFileSync(path.join(d, 'receipt.json'), JSON.stringify(receipt, null, 2) + '\n')
+          NODE
+          echo "receipt=$d/receipt.json" >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized probe result
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          RECEIPT_PATH: ${{ steps.probe.outputs.receipt }}
+        with:
+          script: |
+            const fs = require('fs')
+            let body
+            if (!process.env.RECEIPT_PATH || !fs.existsSync(process.env.RECEIPT_PATH)) {
+              body = [
+                '## URAI existing admin impersonation probe',
+                '',
+                '- Result: **NO RECEIPT**',
+                '- Mutation performed: **false**',
+                '- Token values recorded: **false**',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            } else {
+              const r = JSON.parse(fs.readFileSync(process.env.RECEIPT_PATH, 'utf8'))
+              const candidates = (r.candidates || []).map(x => `- \`${x.email}\` — impersonation: **${x.impersonationSucceeded}** — project roles: ${x.projectRoles.join(', ') || 'none'}`).join('\n') || '- none'
+              body = [
+                '## URAI existing admin impersonation probe',
+                '',
+                `- Project-local key-admin/owner candidates: **${r.candidateCount}**`,
+                `- Existing short-lived impersonation paths that succeeded: **${r.successfulImpersonationCount}**`,
+                '',
+                candidates,
+                '',
+                '- Mutation performed: **false**',
+                '- No IAM changes, key deletion, long-lived key creation, or deployment occurred.',
+                '- No access token, private key, key ID, or provider secret was recorded.',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'URAI existing Google admin impersonation probe',
+              body,
+            })
+
+      - name: Remove temporary discovery material
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/urai-admin-probe" "$RUNNER_TEMP/legacy-email.txt"
