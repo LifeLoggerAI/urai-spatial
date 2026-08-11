@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
+import { assertExternalAccountAdc } from '@/lib/server/google-adc';
 
 export const dynamic = 'force-static';
 
@@ -17,6 +18,7 @@ async function verifyUser(request: Request) {
   const admin = await import('firebase-admin/auth');
   const app = await import('firebase-admin/app');
 
+  assertExternalAccountAdc();
   if (!app.getApps().length) {
     app.initializeApp({ credential: app.applicationDefault() });
   }
@@ -31,13 +33,10 @@ async function verifyUser(request: Request) {
 
 export async function GET(request: Request) {
   if (process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') {
-    return NextResponse.json({
-      entitlement: {
-        tier: 'static-export',
-        source: 'public-build',
-        enabled: true,
-      },
-    });
+    return NextResponse.json(
+      { error: 'Entitlement verification is unavailable in a static export.' },
+      { status: 503 },
+    );
   }
 
   const uid = await verifyUser(request);
