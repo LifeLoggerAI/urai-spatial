@@ -13,6 +13,8 @@ const expectedExternalActions = new Set([checkoutRef, setupNodeRef])
 
 const expectedPaths = [
   'scripts/live-release.mjs',
+  'scripts/live-release-wif.mjs',
+  'scripts/firebase-hosting-recovery.mjs',
   'scripts/create-static-release-bundle.mjs',
   'scripts/attest-static-release-bundle.mjs',
   'scripts/write-release-fingerprint.mjs',
@@ -23,13 +25,42 @@ const expectedPaths = [
   'scripts/verify-release-security-path-guard.mjs',
   'scripts/verify-production-action-pins.mjs',
   'scripts/audit-production-workflow-authority.mjs',
+  'scripts/check-workflow-phase-boundaries.mjs',
   'scripts/urai-release-control-smoke.mjs',
   'scripts/urai-post-deploy-smoke.mjs',
   'urai-tier1/tests/exact-static-release-contract.test.mjs',
+  'urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs',
+  'urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs',
+  'urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs',
+  'urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs',
   '.github/workflows/**.yml',
   '.github/workflows/**.yaml',
   'package.json',
   'pnpm-lock.yaml',
+]
+
+const syntaxCheckedPaths = [
+  'scripts/live-release.mjs',
+  'scripts/live-release-wif.mjs',
+  'scripts/firebase-hosting-recovery.mjs',
+  'scripts/create-static-release-bundle.mjs',
+  'scripts/attest-static-release-bundle.mjs',
+  'scripts/write-release-fingerprint.mjs',
+  'scripts/verify-live-rollback-provenance.mjs',
+  'scripts/verify-legacy-live-bootstrap.mjs',
+  'scripts/verify-release-credential-boundary.mjs',
+  'scripts/verify-release-credential-boundary-static.mjs',
+  'scripts/verify-release-security-path-guard.mjs',
+  'scripts/verify-production-action-pins.mjs',
+  'scripts/audit-production-workflow-authority.mjs',
+  'scripts/check-workflow-phase-boundaries.mjs',
+  'scripts/urai-release-control-smoke.mjs',
+  'scripts/urai-post-deploy-smoke.mjs',
+  'urai-tier1/tests/exact-static-release-contract.test.mjs',
+  'urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs',
+  'urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs',
+  'urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs',
+  'urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs',
 ]
 
 const requiredTokens = [
@@ -45,28 +76,20 @@ const requiredTokens = [
   'persist-credentials: false',
   'show-progress: false',
   'git status --porcelain --untracked-files=all',
-  'node --check scripts/live-release.mjs',
-  'node --check scripts/create-static-release-bundle.mjs',
-  'node --check scripts/attest-static-release-bundle.mjs',
-  'node --check scripts/write-release-fingerprint.mjs',
-  'node --check scripts/verify-live-rollback-provenance.mjs',
-  'node --check scripts/verify-legacy-live-bootstrap.mjs',
-  'node --check scripts/verify-release-credential-boundary.mjs',
-  'node --check scripts/verify-release-credential-boundary-static.mjs',
-  'node --check scripts/verify-release-security-path-guard.mjs',
-  'node --check scripts/verify-production-action-pins.mjs',
-  'node --check scripts/audit-production-workflow-authority.mjs',
-  'node --check scripts/urai-release-control-smoke.mjs',
-  'node --check scripts/urai-post-deploy-smoke.mjs',
-  'node --check urai-tier1/tests/exact-static-release-contract.test.mjs',
   'node scripts/verify-release-security-path-guard.mjs',
   'node scripts/verify-production-action-pins.mjs',
   'node scripts/audit-production-workflow-authority.mjs',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/verify-live-rollback-provenance.mjs --self-test',
   'node scripts/verify-legacy-live-bootstrap.mjs --self-test',
+  'node scripts/firebase-hosting-recovery.mjs --self-test',
   'node urai-tier1/tests/exact-static-release-contract.test.mjs',
+  'node urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs',
+  'node urai-tier1/tests/firebase-hosting-recovery-contract.test.mjs',
+  'node urai-tier1/tests/firebase-hosting-capture-workflow-contract.test.mjs',
+  'node urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs',
 ]
+for (const file of syntaxCheckedPaths) requiredTokens.push(`node --check ${file}`)
 
 for (const token of requiredTokens) {
   if (!source.includes(token)) failures.push(`Release security guard missing marker: ${token}`)
@@ -83,6 +106,7 @@ const forbiddenTokens = [
   'environment: production',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
+  'credentials_json:',
   'firebase deploy',
   'pnpm live:deploy',
   'contents: write',
@@ -114,7 +138,7 @@ if (pathSections.length !== 2) failures.push(`Release security guard must define
 if (pathSections.length === 2 && pathSections[0] !== pathSections[1]) failures.push('Pull-request and push path filters differ')
 
 const report = {
-  schemaVersion: 'urai-release-security-path-guard-4',
+  schemaVersion: 'urai-release-security-path-guard-5',
   ok: failures.length === 0,
   workflow: workflowRelativePath,
   protectedPaths: expectedPaths,
@@ -125,6 +149,7 @@ const report = {
   checkoutHistoryDepth: 1,
   productionCredentialsAvailable: false,
   productionMutationAvailable: false,
+  wifMutationAuthorityUnavailableInGuard: true,
   failures,
 }
 
