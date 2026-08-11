@@ -19,7 +19,7 @@ env:
   NODE_VERSION: '22'
   PNPM_VERSION: '10.0.0'
   EXPECTED_PROJECT: urai-4dc1d
-  CANONICAL_SHA: 72d97865ed28aa3140668c2e57e5675717a25ecd
+  CANONICAL_SHA: a58628601b3cb257ed81d93b6089a1f482484630
   FUNCTION_ID: elevenLabsVoiceProvider
   FUNCTIONS_CODEBASE: urai-spatial-functions
 
@@ -28,7 +28,6 @@ jobs:
     name: Build, deploy, and smoke ElevenLabs provider
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
     steps:
       - name: Guard one-time trusted branch
         shell: bash
