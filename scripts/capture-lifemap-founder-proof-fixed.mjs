@@ -290,6 +290,17 @@ async function selectQuietReset(page, options = {}) {
   await waitForState(page, 'data-life-map-mode', 'selected')
 }
 
+async function selectAndCapturePhase(page, expectedPhase, id, options = {}) {
+  const capturePromise = waitForState(page, 'data-life-map-phase', expectedPhase, 45_000)
+    .then(() => shot(page, id, expectedPhase, options.evidence || {}))
+  const selectionPromise = selectQuietReset(page, options.selection || {})
+  await Promise.all([capturePromise, selectionPromise])
+  const capture = receipt.captures.find((item) => item.id === id)
+  if (!capture || capture.state?.phase !== expectedPhase) {
+    throw new Error(`${id} did not retain the observed ${expectedPhase} phase`)
+  }
+}
+
 async function waitForPath(page, destinationPath, timeout = 30_000) {
   await poll(`path=${destinationPath}`, () => Promise.resolve(page.url()), (url) => new URL(url).pathname.replace(/\/$/, '') === destinationPath, timeout, 50)
 }
@@ -394,15 +405,16 @@ async function desktopJourney() {
     await page.mouse.move(300, 620)
     await stable(page, 6)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'departure')
-    await shot(page, 'selection-start', 'departure')
-    await waitForState(page, 'data-life-map-phase', 'travel', 45_000)
-    await shot(page, 'mid-travel', 'travel')
-    await waitForState(page, 'data-life-map-phase', 'approach', 45_000)
-    await shot(page, 'approach', 'approach')
-    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
-    await shot(page, 'stable-arrival', 'arrival')
+    await selectAndCapturePhase(page, 'departure', 'selection-start')
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    await selectAndCapturePhase(page, 'travel', 'mid-travel')
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    await selectAndCapturePhase(page, 'approach', 'approach')
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    await selectAndCapturePhase(page, 'arrival', 'stable-arrival')
     await clickRouteAction(page, 'Open Focus', '/focus', '[data-testid="urai-focus-page"]')
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -437,9 +449,7 @@ async function mobileJourney(viewport, label, ids) {
     await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
     await waitForRenderedWorld(page)
     await shot(page, ids.overview, 'overview')
-    await selectQuietReset(page, { touch: true })
-    await waitForState(page, 'data-life-map-phase', 'travel', 45_000)
-    await shot(page, ids.travel, 'travel')
+    await selectAndCapturePhase(page, 'travel', ids.travel, { selection: { touch: true } })
     await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
     await shot(page, ids.selected, 'arrival')
   } finally {
