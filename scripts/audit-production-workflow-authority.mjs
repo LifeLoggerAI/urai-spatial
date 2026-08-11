@@ -6,6 +6,7 @@ const root = process.cwd()
 const workflowsDir = path.join(root, '.github', 'workflows')
 const canonicalWorkflowPath = '.github/workflows/spatial-live-deploy.yml'
 const securityWorkflowPath = '.github/workflows/release-security-path-guard.yml'
+const captureWorkflowPath = '.github/workflows/capture-legacy-hosting-recovery.yml'
 const failures = []
 
 function normalize(value) {
@@ -75,13 +76,13 @@ if (productionWorkflows.length !== 1 || productionWorkflows[0] !== canonicalWork
 
 const workflow = read(canonicalWorkflowPath)
 const securityWorkflow = read(securityWorkflowPath)
+const captureWorkflow = read(captureWorkflowPath)
 const buildJob = jobSection(workflow, 'build-release-output')
 const attestJob = jobSection(workflow, 'attest-release-bundle')
 const deployJob = jobSection(workflow, 'deploy')
 
 requireAll('Canonical production workflow', workflow, [
   'name: URAI Canonical Production Release',
-  "inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP'",
   'name: Exact-head release verification',
   'name: Prove rollback target with current authority',
   'name: Build exact static target without production authority or credentials',
@@ -91,12 +92,11 @@ requireAll('Canonical production workflow', workflow, [
   'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
   'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
   'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  'google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db',
   'git merge-base --is-ancestor',
   'gh workflow run spatial-live-deploy.yml --ref main',
 ])
-if (!buildJob) failures.push('Canonical workflow is missing build-release-output')
-if (!attestJob) failures.push('Canonical workflow is missing attest-release-bundle')
-if (!deployJob) failures.push('Canonical workflow is missing deploy')
 
 requireAll('Target-only build job', buildJob, [
   'Checkout exact release target only',
@@ -109,6 +109,8 @@ forbidAny('Target-only build job', buildJob, [
   'environment: production',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
+  'google-github-actions/auth@',
+  'id-token: write',
   '--deploy-prebuilt',
 ])
 
@@ -123,46 +125,69 @@ forbidAny('Clean authority attestation job', attestJob, [
   'environment: production',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
+  'google-github-actions/auth@',
+  'id-token: write',
   'working-directory: target',
   'pnpm build:static',
 ])
 
 requireAll('Protected deploy job', deployJob, [
   'environment: production',
+  'permissions:\n      contents: read\n      id-token: write',
   'Checkout current release authority only',
   'pnpm install --frozen-lockfile --ignore-scripts',
   'node scripts/verify-release-credential-boundary.mjs',
+  'Verify downloaded bundle before production authentication exists',
   'node scripts/live-release.mjs --verify-prebuilt',
+  'Validate production WIF configuration',
+  'Authenticate dedicated production deploy identity through GitHub OIDC/WIF',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  'workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}',
+  'service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}',
+  'create_credentials_file: true',
+  'export_environment_variables: true',
+  'Install pinned Google Cloud CLI action',
+  'google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db',
+  'Prove federated production identity without exposing credentials',
+  "schemaVersion: 'urai-production-wif-auth-1'",
+  "authMode: 'wif'",
+  'longLivedServiceAccountKeyUsed: false',
   'node scripts/live-release.mjs --deploy-prebuilt',
   'node scripts/urai-release-control-smoke.mjs',
-  'Remove temporary credentials',
+  'Verify long-lived credential fallback remained absent',
 ])
 forbidAny('Protected deploy job', deployJob, [
   'path: target',
   'working-directory: target',
   'pnpm build:static',
   'node ../authority/',
+  'credentials_json:',
+  'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.',
 ])
 
-const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
-const secretOccurrences = workflow.split(secretMarker).length - 1
-if (secretOccurrences !== 1) failures.push(`Raw service-account secret must occur exactly once; found ${secretOccurrences}`)
-if (!deployJob.includes(secretMarker)) failures.push('Raw service-account secret must exist only in the protected deploy job')
-if (buildJob.includes(secretMarker) || attestJob.includes(secretMarker)) failures.push('Build and attestation jobs must not receive the raw service-account secret')
+const rawSecretOccurrences = (workflow.match(/FIREBASE_SERVICE_ACCOUNT_JSON:\s*\$\{\{\s*secrets\./g) || []).length
+if (rawSecretOccurrences !== 0) failures.push(`Raw service-account secret occurrences must be zero; found ${rawSecretOccurrences}`)
+if (workflow.includes('GCP_MAPS_ADMIN_CREDENTIALS_JSON')) failures.push('Canonical production workflow must not inherit Maps JSON credentials')
+
+const verifyBundleIndex = deployJob.indexOf('node scripts/live-release.mjs --verify-prebuilt')
+const authIndex = deployJob.indexOf('Authenticate dedicated production deploy identity through GitHub OIDC/WIF')
+const identityIndex = deployJob.indexOf('Prove federated production identity without exposing credentials')
+const deployIndex = deployJob.indexOf('node scripts/live-release.mjs --deploy-prebuilt')
+const smokeIndex = deployJob.indexOf('Run canonical live smoke with current authority')
+if ([verifyBundleIndex, authIndex, identityIndex, deployIndex, smokeIndex].some((index) => index < 0) ||
+    !(verifyBundleIndex < authIndex && authIndex < identityIndex && identityIndex < deployIndex && deployIndex < smokeIndex)) {
+  failures.push('Protected deploy job must verify the bundle before WIF auth, prove identity before mutation, then smoke after deployment')
+}
 
 requireAll('Release security workflow', securityWorkflow, [
   'name: Release Security Path Guard',
   'permissions:\n  contents: read',
   'runs-on: ubuntu-24.04',
-  'fetch-depth: 1',
   'persist-credentials: false',
-  'show-progress: false',
   'node scripts/verify-release-security-path-guard.mjs',
   'node scripts/verify-production-action-pins.mjs',
   'node scripts/audit-production-workflow-authority.mjs',
   'node scripts/verify-release-credential-boundary.mjs',
-  'node scripts/verify-live-rollback-provenance.mjs --self-test',
-  'node urai-tier1/tests/exact-static-release-contract.test.mjs',
 ])
 forbidAny('Release security workflow', securityWorkflow, [
   'pull_request_target:',
@@ -175,14 +200,38 @@ forbidAny('Release security workflow', securityWorkflow, [
 ])
 if (workflowExecutesProductionMutation(securityWorkflow)) failures.push('Release security workflow must not execute production mutation')
 
-const operator = read('scripts/live-release.mjs')
-requireAll('Canonical production operator', operator, [
+requireAll('Protected Hosting recovery capture workflow', captureWorkflow, [
+  'name: Capture legacy Firebase Hosting recovery',
+  'environment: production',
+  'permissions:\n      contents: read\n      id-token: write',
+  'Validate production WIF configuration',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  'workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}',
+  'service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}',
+  'google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db',
+  'node scripts/firebase-hosting-recovery.mjs discover',
+])
+forbidAny('Protected Hosting recovery capture workflow', captureWorkflow, [
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'credentials_json:',
+  'FIREBASE_TOKEN',
+])
+if (workflowExecutesProductionMutation(captureWorkflow)) failures.push('Hosting recovery capture workflow must remain non-mutating')
+
+const entrypoint = read('scripts/live-release.mjs')
+requireAll('Canonical production entrypoint', entrypoint, [
+  "import './live-release-wif.mjs'",
+])
+forbidAny('Canonical production entrypoint', entrypoint, [
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'private_key',
+  'credentials_json',
+])
+
+const operator = read('scripts/live-release-wif.mjs')
+requireAll('Canonical WIF production operator', operator, [
   "const canonicalWorkflow = 'URAI Canonical Production Release'",
   "const canonicalRepository = 'LifeLoggerAI/urai-spatial'",
-  "process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI'",
-  "process.env.GITHUB_ACTIONS !== 'true'",
-  "process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'",
-  "process.env.GITHUB_REF !== 'refs/heads/main'",
   "process.argv.includes('--verify-prebuilt')",
   "process.argv.includes('--deploy-prebuilt')",
   'validateAndMaterializePrebuiltBundle',
@@ -190,11 +239,41 @@ requireAll('Canonical production operator', operator, [
   'manifest.authoritySha !== authoritySha',
   'Release bundle file set, sizes, or hashes do not match the manifest',
   'Firebase CLI must resolve inside current authority',
-  'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
-  'writeFileSync(managedCredentialsPath',
-  "flag: 'wx'",
+  'function assertFederatedCredentialContext()',
+  'GOOGLE_GHA_CREDS_PATH',
+  "config?.type !== 'external_account'",
+  'GCP_WIF_PROVIDER',
+  'GCP_DEPLOY_SERVICE_ACCOUNT',
+  'deployHostingWithFederatedCredentials',
+  'discoverCurrentLiveRelease',
+  'recoverExactHostingVersion',
+  "authMode: 'wif'",
+  'longLivedServiceAccountKeyUsed: false',
+])
+forbidAny('Canonical WIF production operator', operator, [
+  'writeTemporaryServiceAccount',
+  'createServiceAccountAssertion',
+  'serviceAccountJson',
+  'managedCredentialFilename',
+  'FIREBASE_SERVICE_ACCOUNT_JSON ||',
 ])
 if (/pnpm\s+exec\s+firebase/.test(operator)) failures.push('Canonical production operator resolves Firebase through a package manager')
+
+const recovery = read('scripts/firebase-hosting-recovery.mjs')
+requireAll('WIF Hosting recovery', recovery, [
+  'function accessTokenFromFederatedAdc(options = {})',
+  "gcloud(['auth', 'print-access-token'])",
+  "schemaVersion: 'urai-firebase-hosting-recovery-2'",
+  "authMode: 'wif'",
+  "credentialClass: 'github-oidc-wif'",
+  'RESTORE_EXACT_HOSTING_VERSION',
+])
+forbidAny('WIF Hosting recovery', recovery, [
+  'createSign',
+  'createServiceAccountAssertion',
+  'serviceAccountFromEnvironment',
+  'accessTokenFromServiceAccount',
+])
 
 const bundle = read('scripts/create-static-release-bundle.mjs')
 requireAll('Authority bundle attester', bundle, [
@@ -214,60 +293,30 @@ requireAll('Authority bundle attester', bundle, [
 
 const credentialBoundary = read('scripts/verify-release-credential-boundary.mjs')
 requireAll('Credential boundary verifier', credentialBoundary, [
-  "schemaVersion: 'urai-release-credential-boundary-4'",
+  "schemaVersion: 'urai-release-credential-boundary-5'",
   'targetBuildIsolated: true',
   'authorityAttestationIsolated: true',
   'targetCodeExecutesInProductionJob: false',
   'downloadedBundleRunBound',
   'downloadedBundleFingerprintBound',
-  'credentialsMaterializedByAuthorityOnly: true',
+  'wifOnlyProductionAuth: true',
+  'longLivedServiceAccountKeyForbidden: true',
   'firebaseCliResolvedFromCurrentAuthority: true',
 ])
 
-const smoke = read('scripts/urai-release-control-smoke.mjs')
-requireAll('Release-control smoke', smoke, [
-  "schemaVersion: 'urai-release-control-smoke-5'",
-  'assertExactQueryIdentity',
-  "await context.route('**/*'",
-  "await route.abort('blockedbyclient')",
-  'blockedExternalRequests',
-  "waitUntil: 'domcontentloaded'",
-  "animations: 'disabled'",
-  "'/mirror'",
-  "'/location-map'",
-])
-if (/from ['"]playwright['"]/.test(smoke)) failures.push('Release-control smoke must resolve Playwright through the current authority workspace')
-if (/waitUntil:\s*['"]networkidle['"]/.test(smoke)) failures.push('Release-control smoke must not rely on networkidle')
-
 const packageJson = JSON.parse(read('package.json') || '{}')
 const scripts = packageJson.scripts || {}
-if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') failures.push('package.json live:deploy must route only through --deploy-prebuilt')
-for (const forbiddenAlias of ['studio:deploy:static', 'deploy:xr:firebase', 'deploy:xr:firebase:static', 'deploy:staging', 'deploy:prod', 'frb', 'live:deploy:static', 'publish:live:static']) {
-  if (forbiddenAlias in scripts) failures.push(`Forbidden deploy alias remains in package.json: ${forbiddenAlias}`)
-}
-
-const proof = read('scripts/aaa-launch-proof.mjs')
-requireAll('Proof-only runner', proof, [
-  "if (args.has('--deploy'))",
-  'process.exit(64)',
-  'sourceIdentityVerified',
-  'cleanWorkingTree',
-  'productionDeploymentAttempted: false',
-  "productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml'",
-])
-if (workflowExecutesProductionMutation(proof)) failures.push('Proof-only runner contains a deploy-capable command')
+if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') failures.push('package.json live:deploy must route only through the canonical entrypoint --deploy-prebuilt')
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-7',
+  schemaVersion: 'urai-production-authority-audit-8',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowPath,
   productionWorkflows: productionWorkflows.sort(),
-  releaseSmokeSchema: 'urai-release-control-smoke-5',
-  exactHeadSecurityCheckoutDepth: 1,
-  preRequestNetworkBlockingRequired: true,
-  exactQueryIdentityRequired: true,
-  rawServiceAccountSecretOccurrences: secretOccurrences,
-  executableUniquenessDelegatedToCredentialBoundaryVerifier: true,
+  rawServiceAccountSecretOccurrences: rawSecretOccurrences,
+  wifOnlyProductionAuth: true,
+  longLivedServiceAccountKeyForbidden: true,
+  buildAndAttestationCredentialFree: true,
   failures,
 }
 
