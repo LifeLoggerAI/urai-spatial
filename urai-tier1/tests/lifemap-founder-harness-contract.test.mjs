@@ -32,17 +32,9 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 
 test('Founder runner retains every required real interaction and phase owner', () => {
   for (const owner of [
-    'openPage',
-    'selectQuietReset',
-    'clickRouteAction',
-    'canvasSignal',
-    'desktopJourney',
-    'keyboardJourney',
-    'mobileJourney',
-    'reducedMotionJourney',
-    'privacyAndRecoveryJourneys',
-    'contextRecoveryJourney',
-    'assertVisualSanity',
+    'openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney',
+    'keyboardJourney', 'mobileJourney', 'reducedMotionJourney', 'privacyAndRecoveryJourneys',
+    'contextRecoveryJourney', 'assertVisualSanity',
   ]) {
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
@@ -125,6 +117,16 @@ test('collapsed semantic navigator preserves a visible pointer and touch opener'
   assert.match(isolation, /html\.urai-route-life-map:has\(\.life-map-navigator\) \[data-testid='urai-true-3d-life-map'\] \{ pointer-events: none !important; \}/)
   assert.match(isolation, /html\.urai-route-life-map:has\(\.life-map-navigator\) \[data-testid='urai-true-3d-life-map'\] canvas \{ pointer-events: none !important; \}/)
   assert.doesNotMatch(isolation, /life-map-navigator:not\(\[open\]\)|> summary/)
+})
+
+test('open semantic navigator directly owns world hit suppression independent of route CSS class', () => {
+  assert.match(navigator, /const WORLD_OWNER = '\[data-testid="urai-true-3d-life-map"\]'/)
+  assert.match(navigator, /document\.querySelector<HTMLElement>\(WORLD_OWNER\)/)
+  assert.match(navigator, /owner\.style\.setProperty\('pointer-events', 'none', 'important'\)/)
+  assert.match(navigator, /owner\.dataset\.semanticNavigationOpen = 'true'/)
+  assert.match(navigator, /owner\.style\.removeProperty\('pointer-events'\)/)
+  assert.match(navigator, /delete owner\.dataset\.semanticNavigationOpen/)
+  assert.doesNotMatch(navigator, /force:\s*true|dispatchEvent\(new MouseEvent|\.click\(\)/)
 })
 
 test('portrait navigator clears selected inspector and stays above the threshold action rail', () => {
