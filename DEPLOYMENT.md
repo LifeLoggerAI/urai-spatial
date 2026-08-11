@@ -7,7 +7,7 @@ URAI-Spatial V1 deploys as the `urai-tier1` Next.js app through Firebase Hosting
 - Node 22+
 - Corepack with `pnpm@10.0.0`
 - Firebase project from `.firebaserc` or `FIREBASE_PROJECT_ID`
-- Server-side Firebase Admin access through either a Google-managed runtime metadata identity or a non-symlinked `GOOGLE_APPLICATION_CREDENTIALS` external-account Workload Identity Federation configuration
+- Server-side Firebase Admin access through a non-symlinked `GOOGLE_APPLICATION_CREDENTIALS` external-account Workload Identity Federation configuration
 - Production env vars configured in Firebase/App Hosting or CI
 
 Production release remains **NO-GO**. The checked-in release and Hosting-recovery paths are verification-only and fail closed until provider-side WIF trust, least-privilege IAM, historical-key revocation, and protected-runtime validation are independently proven.
@@ -68,7 +68,7 @@ ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 ```
 
-Do not set `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PRIVATE_KEY`, or `FIREBASE_CLIENT_EMAIL`. Do not commit `.env.local`, ADC files, service-account JSON, or other credential material. A Google-managed runtime should use its attached metadata identity without a credential file.
+Do not set `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PRIVATE_KEY`, or `FIREBASE_CLIENT_EMAIL`. Do not commit `.env.local`, ADC files, service-account JSON, or other credential material. The current runtime intentionally rejects missing, service-account, and authorized-user ADC sources.
 
 ## Deploy Commands
 
