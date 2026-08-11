@@ -1,0 +1,70 @@
+name: Audit Production Identity Presence Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/audit-production-identity-presence-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Check protected production identity presence only
+        id: presence
+        shell: bash
+        env:
+          WIF_PROVIDER_VAR: ${{ vars.GCP_WIF_PROVIDER }}
+          MAPS_ADMIN_VAR: ${{ vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT }}
+          ASSET_ADMIN_VAR: ${{ vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT }}
+          WIF_PROVIDER_SECRET: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          DEPLOY_SA_SECRET: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          FIREBASE_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          ROTATION_GO: ${{ vars.URAI_CREDENTIAL_ROTATION_GO }}
+        run: |
+          set -euo pipefail
+          bool() { if [ -n "$1" ]; then printf true; else printf false; fi; }
+          echo "provider_var=$(bool "$WIF_PROVIDER_VAR")" >> "$GITHUB_OUTPUT"
+          echo "maps_admin_var=$(bool "$MAPS_ADMIN_VAR")" >> "$GITHUB_OUTPUT"
+          echo "asset_admin_var=$(bool "$ASSET_ADMIN_VAR")" >> "$GITHUB_OUTPUT"
+          echo "provider_secret=$(bool "$WIF_PROVIDER_SECRET")" >> "$GITHUB_OUTPUT"
+          echo "deploy_sa_secret=$(bool "$DEPLOY_SA_SECRET")" >> "$GITHUB_OUTPUT"
+          echo "firebase_json=$(bool "$FIREBASE_JSON")" >> "$GITHUB_OUTPUT"
+          if [ "$ROTATION_GO" = 'GO' ]; then echo 'rotation_go=true' >> "$GITHUB_OUTPUT"; else echo 'rotation_go=false' >> "$GITHUB_OUTPUT"; fi
+
+      - name: Report sanitized protected-environment result
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          PROVIDER_VAR: ${{ steps.presence.outputs.provider_var }}
+          MAPS_ADMIN_VAR: ${{ steps.presence.outputs.maps_admin_var }}
+          ASSET_ADMIN_VAR: ${{ steps.presence.outputs.asset_admin_var }}
+          PROVIDER_SECRET: ${{ steps.presence.outputs.provider_secret }}
+          DEPLOY_SA_SECRET: ${{ steps.presence.outputs.deploy_sa_secret }}
+          FIREBASE_JSON: ${{ steps.presence.outputs.firebase_json }}
+          ROTATION_GO: ${{ steps.presence.outputs.rotation_go }}
+        with:
+          script: |
+            const body = [
+              '## Protected production identity presence audit',
+              '',
+              `- GCP_WIF_PROVIDER present: **${process.env.PROVIDER_VAR}**`,
+              `- GCP_MAPS_ADMIN_SERVICE_ACCOUNT present: **${process.env.MAPS_ADMIN_VAR}**`,
+              `- GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT present: **${process.env.ASSET_ADMIN_VAR}**`,
+              `- GCP_WORKLOAD_IDENTITY_PROVIDER present: **${process.env.PROVIDER_SECRET}**`,
+              `- GCP_DEPLOY_SERVICE_ACCOUNT present: **${process.env.DEPLOY_SA_SECRET}**`,
+              `- FIREBASE_SERVICE_ACCOUNT_JSON present: **${process.env.FIREBASE_JSON}**`,
+              `- URAI_CREDENTIAL_ROTATION_GO equals GO: **${process.env.ROTATION_GO}**`,
+              '',
+              '- No values were printed.',
+              '- No Google Cloud mutation was attempted.',
+              `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join('\n')
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'Protected production identity presence audit', body })
