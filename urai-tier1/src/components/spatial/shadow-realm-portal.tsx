@@ -2,10 +2,13 @@
 
 import { Canvas } from "@react-three/fiber"
 import { ContactShadows, Environment, PerspectiveCamera, useGLTF } from "@react-three/drei"
-import { Suspense, useMemo } from "react"
+import { Suspense, useMemo, useRef } from "react"
 import * as THREE from "three"
 import { demoShadowRealmEvent } from "@/lib/spatial/publicSafeSpatialData"
 import { useSpatialQualityTier } from "@/spatial/performance/useSpatialQualityTier"
+import { EmbodiedRealmCamera } from "@/spatial/navigation/EmbodiedRealmCamera"
+import { MobileMovementPad, MovementHelp, useDragLook, useMovementInput } from "@/spatial/navigation/EmbodiedNavigation"
+import { useReducedMotion } from "@/spatial/hooks/useReducedMotion"
 
 const SHADOW_MODEL = "/assets/urai/generated/hero-realms-v2/shadow-hall-hero-v2.glb"
 
@@ -26,12 +29,20 @@ function ShadowHallModel() {
 
 export function ShadowRealmPortal() {
   const quality = useSpatialQualityTier()
+  const reducedMotion = useReducedMotion()
+  const shellRef = useRef<HTMLElement | null>(null)
+  const yaw = useRef(0)
+  const pitch = useRef(-0.035)
+  const input = useMovementInput()
+  const dragLook = useDragLook({ yaw, pitch, enabled: true, sensitivity: reducedMotion ? 0.0024 : 0.0038 })
 
   return (
     <main
+      ref={shellRef}
       data-shadow-model-authority="urai-hero-realms-v2"
       data-spatial-quality-tier={quality.tier}
       data-spatial-shadow-map={quality.shadowMapSize}
+      data-shadow-embodied="true"
       style={{
         position: "relative",
         minHeight: "100svh",
@@ -40,13 +51,27 @@ export function ShadowRealmPortal() {
         color: "#eef2f4",
         fontFamily: "Inter,ui-sans-serif,system-ui",
       }}
+      {...dragLook}
     >
       <div style={{ position: "absolute", inset: 0 }}>
         <Canvas shadows={quality.realtimeShadows} dpr={quality.dpr} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
           <Suspense fallback={null}>
             <color attach="background" args={["#17181a"]} />
             <fog attach="fog" args={["#1b1c1e", 8, 23]} />
-            <PerspectiveCamera makeDefault position={[0, 1.68, 7.3]} fov={43} />
+            <PerspectiveCamera makeDefault position={[0, 1.68, 6.2]} fov={44} />
+            <EmbodiedRealmCamera
+              input={input}
+              yaw={yaw}
+              pitch={pitch}
+              reducedMotion={reducedMotion}
+              ownerRef={shellRef}
+              datasetPrefix="shadow"
+              spawn={[0, 6.2]}
+              cameraHeight={1.68}
+              speed={1.85}
+              bounds={{ minX: -4.55, maxX: 4.55, minZ: -7.1, maxZ: 6.7 }}
+              obstacles={[{ x: 0, z: -6.2, radius: 2.05 }]}
+            />
             <ambientLight intensity={0.28} color="#bfc5c7" />
             <hemisphereLight intensity={0.48} color="#c6d0d4" groundColor="#272626" />
             <directionalLight
@@ -66,6 +91,7 @@ export function ShadowRealmPortal() {
       </div>
 
       <section
+        data-movement-ui="true"
         style={{
           position: "absolute",
           zIndex: 10,
@@ -86,6 +112,9 @@ export function ShadowRealmPortal() {
         <p style={{ margin: ".55rem 0 0", color: "rgba(238,242,244,.48)", fontSize: ".78rem" }}>Severity index: {Math.round(demoShadowRealmEvent.severity * 100)}% · Privacy: private-only</p>
         <a style={{ display: "inline-block", marginTop: ".8rem", color: "#e8f1f4", fontWeight: 750, textUnderlineOffset: 4 }} href="/spatial/life-map">Return to Life Map</a>
       </section>
+
+      <MovementHelp realm="Shadow Realm" summary="Walk the physical hall while Shadow data remains private and governed." controls="WASD / arrow keys to move. Drag the hall to look. Mobile controls appear on touch devices." />
+      <MobileMovementPad input={input} label="Move through Shadow Realm" />
     </main>
   )
 }
