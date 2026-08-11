@@ -51,11 +51,19 @@ const workflow = read(canonicalWorkflowPath)
 const securityWorkflow = read(securityWorkflowPath)
 const operator = read('scripts/live-release.mjs')
 const productionWorkflows = []
+const rawCredentialWorkflows = []
+let rawCredentialSecretOccurrences = 0
 if (!existsSync(workflowsDir)) failures.push('Missing .github/workflows directory')
 else {
   for (const name of readdirSync(workflowsDir).filter((entry) => /\.ya?ml$/.test(entry))) {
     const source = normalize(readFileSync(path.join(workflowsDir, name), 'utf8'))
-    if (workflowExecutesProductionMutation(source)) productionWorkflows.push(`.github/workflows/${name}`)
+    const relativePath = `.github/workflows/${name}`
+    if (workflowExecutesProductionMutation(source)) productionWorkflows.push(relativePath)
+    const credentialMatches = source.match(/(?:FIREBASE_SERVICE_ACCOUNT_JSON|FIREBASE_PRIVATE_KEY|FIREBASE_CLIENT_EMAIL):\s*\$\{\{\s*secrets\./g) ?? []
+    if (credentialMatches.length) {
+      rawCredentialWorkflows.push(relativePath)
+      rawCredentialSecretOccurrences += credentialMatches.length
+    }
   }
 }
 
@@ -70,7 +78,9 @@ const quarantineMode =
 
 if (quarantineMode) {
   if (productionWorkflows.length !== 0) failures.push(`Quarantine must expose zero production mutation workflows; found ${productionWorkflows.sort().join(', ')}`)
-  if (secretOccurrences !== 0) failures.push(`Quarantine must expose zero raw service-account secrets; found ${secretOccurrences}`)
+  if (rawCredentialSecretOccurrences !== 0) {
+    failures.push(`Quarantine must expose zero raw Google/Firebase credential secrets across all workflows; found ${rawCredentialSecretOccurrences} in ${rawCredentialWorkflows.sort().join(', ')}`)
+  }
   requireAll('Quarantined canonical workflow', workflow, [
     'name: URAI Canonical Production Release Verification',
     'permissions:\n  contents: read',
@@ -195,9 +205,11 @@ const report = {
   canonicalWorkflow: canonicalWorkflowPath,
   productionWorkflows: productionWorkflows.sort(),
   exactHeadSecurityCheckoutDepth: 1,
-  rawServiceAccountSecretOccurrences: secretOccurrences,
+  canonicalRawServiceAccountSecretOccurrences: secretOccurrences,
+  rawCredentialSecretOccurrences,
+  rawCredentialWorkflows: rawCredentialWorkflows.sort(),
   productionMutationAvailable: productionWorkflows.length > 0,
-  productionCredentialsAvailable: secretOccurrences > 0,
+  productionCredentialsAvailable: rawCredentialSecretOccurrences > 0,
   failures,
 }
 console.log(JSON.stringify(report, null, 2))
