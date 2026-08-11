@@ -6,7 +6,7 @@ import { Suspense, useMemo } from "react"
 import * as THREE from "three"
 import { demoShadowRealmEvent } from "@/lib/spatial/publicSafeSpatialData"
 
-const SHADOW_MODEL = "/assets/urai/generated/real-world-v1/shadow-hall-real-v1.glb"
+const SHADOW_MODEL = "/assets/urai/generated/hero-realms-v2/shadow-hall-hero-v2.glb"
 
 function ShadowHallModel() {
   const model = useGLTF(SHADOW_MODEL)
@@ -19,13 +19,13 @@ function ShadowHallModel() {
     })
     return clone
   }, [model.scene])
-  return <primitive object={scene} name="shadow-hall-real-world-model" />
+  return <primitive object={scene} name="shadow-hall-hero-v2-model" />
 }
 
 export function ShadowRealmPortal() {
   return (
     <main
-      data-shadow-model-authority="urai-real-world-extension-v1"
+      data-shadow-model-authority="urai-hero-realms-v2"
       style={{
         position: "relative",
         minHeight: "100svh",
