@@ -7,6 +7,7 @@ import { requestLifeMapSelection } from './lifeMapSelection'
 import { useLifeMapEvents } from './useLifeMapEvents'
 
 const TYPE_FILTERS: readonly (LifeMapNodeType | 'all')[] = ['all', 'memory', 'relationship', 'season', 'recovery', 'threshold', 'ritual', 'forecast', 'legacy']
+const WORLD_OWNER = '[data-testid="urai-true-3d-life-map"]'
 
 function isEditableTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'))
@@ -73,6 +74,22 @@ export default function LifeMapSemanticNavigator() {
     const current = selected ? candidates.findIndex((node) => node.id === selected.id) : -1
     selectNode(candidates[(current + direction + candidates.length) % candidates.length], 'keyboard')
   }, [nodes, selectNode, selected, visibleNodes])
+
+  useEffect(() => {
+    const owner = document.querySelector<HTMLElement>(WORLD_OWNER)
+    if (!owner) return
+    if (open) {
+      owner.style.setProperty('pointer-events', 'none', 'important')
+      owner.dataset.semanticNavigationOpen = 'true'
+    } else {
+      owner.style.removeProperty('pointer-events')
+      delete owner.dataset.semanticNavigationOpen
+    }
+    return () => {
+      owner.style.removeProperty('pointer-events')
+      delete owner.dataset.semanticNavigationOpen
+    }
+  }, [open])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
