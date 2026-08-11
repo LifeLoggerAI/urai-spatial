@@ -13,11 +13,11 @@ This runbook turns the V1-V100 verification ledger into an executable closure pa
 
 ## Current release authority
 
-- `.github/workflows/spatial-live-deploy.yml` is the sole production deploy and rollback authority.
-- `scripts/live-release.mjs` refuses deployment outside that protected manual workflow.
-- Production and rollback both use the protected `production` environment.
-- Local `firebase deploy`, `pnpm live:deploy`, and retired proof-loop deploy commands are not approved release paths.
-- An exact tested SHA, a distinct proven rollback SHA, current live smoke, and immutable workflow artifacts are required before a production claim.
+- `.github/workflows/spatial-live-deploy.yml` is verification-only and records a **NO-GO** classification.
+- `scripts/live-release.mjs` and Firebase Hosting recovery functions fail closed without loading provider credentials or attempting mutation.
+- `.github/workflows/capture-legacy-hosting-recovery.yml` is checks-only and exposes no production environment or Firebase secret.
+- Local Firebase deployment, workflow-based deployment, rollback, and legacy recovery capture are not approved while provider identity and historical-key closure remain unproven.
+- Restoring production authority requires a separately reviewed change after external-account WIF trust, least-privilege IAM, historical-key revocation, negative-auth proof, audit-log review, and protected runtime read-back are documented.
 
 ## Non-negotiable claim boundary
 
@@ -101,54 +101,28 @@ Required result:
 - Focus and Replay preserve memory and manifest identity;
 - live reachability is tied to the exact deployed SHA.
 
-### 4. Deploy through the protected workflow
+### 4. Preserve the production NO-GO boundary
 
-Before dispatch:
+Do not dispatch a production deploy or rollback. The canonical workflow accepts only an exact reviewed SHA for source verification and cannot load production credentials or execute Firebase mutation.
 
-- all required checks on the exact candidate are successful;
-- the candidate is merged to `main`;
-- `release_sha` is the exact current `main` SHA;
-- `rollback_sha` is a distinct proven ancestor;
-- Firebase project is `urai-4dc1d`;
-- the protected environment has the required service account and approvals.
+Before any future release-authority restoration is proposed, record all of the following outside repository CI:
 
-Approved production dispatch:
+- historical Google/Firebase credentials revoked;
+- old-credential negative authentication proof;
+- Cloud Audit Logs reviewed for unexpected use;
+- external-account WIF trust conditions and least-privilege IAM bindings confirmed;
+- protected runtime identity configuration installed and read back;
+- repository/environment secret settings inspected;
+- protected staging validation tied to an exact reviewed source SHA;
+- genuine eligible non-author security/runtime approval.
 
-```bash
-gh workflow run spatial-live-deploy.yml \
-  --ref main \
-  -f release_sha=<EXACT_CURRENT_MAIN_SHA> \
-  -f rollback_sha=<DISTINCT_PROVEN_PRODUCTION_SHA> \
-  -f confirm=DEPLOY_URAI_APP
-```
+A source-green PR is not provider closure and must not change the estate from NO-GO.
 
-Do not run the command until the exact values are known. The workflow verifies, checks out, builds, deploys, smokes, and records only the requested target SHA.
+### 5. Preserve recovery without credential exposure
 
-Required deployment evidence:
+The legacy Hosting-recovery workflow is verification-only. It must not discover, restore, or deploy a Hosting version; access the protected production environment; or receive service-account JSON, private-key, client-email, access-token, or Firebase CLI credentials.
 
-- exact tested and deployed SHA;
-- distinct rollback SHA;
-- workflow run ID and protected environment;
-- Firebase project and hosting-only scope;
-- build/output hashes;
-- custom-domain route, query, Status, and Privacy Controls smoke;
-- desktop and mobile screenshots;
-- immutable deployment and provider-verification artifacts;
-- protected rollback command.
-
-### 5. Roll back through the same protected workflow
-
-The deployment receipt writes the exact recovery command. Its form is:
-
-```bash
-gh workflow run spatial-live-deploy.yml \
-  --ref main \
-  -f release_sha=<PROVEN_ROLLBACK_SHA> \
-  -f rollback_sha=<EXACT_CURRENT_MAIN_SHA> \
-  -f confirm=ROLLBACK_URAI_APP
-```
-
-The workflow requires the rollback target to be a non-current ancestor of `main`, requires `rollback_sha` to remain the exact current-main recovery authority, re-runs verification against the rollback target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
+Provider recovery metadata must be captured only after a keyless provider identity and independent authorization exist. Until then, preserve existing source receipts and record recovery as unavailable rather than reintroducing a long-lived key.
 
 ### 6. Capture visual evidence
 
@@ -190,8 +164,8 @@ Issue #461 can close only when:
 
 1. exact deployed SHA and distinct rollback SHA are recorded;
 2. exact-head source and CI verification output exists;
-3. the protected workflow completed deployment and live smoke;
-4. live route/content/query parity passes;
+3. provider-side key revocation, negative-auth, audit-log, WIF/IAM, protected-settings, and runtime read-back evidence exists;
+4. a separately reviewed keyless release authority completed deployment and live route/content/query parity;
 5. `/privacy-controls` and `/status` match the current source boundary;
 6. desktop and mobile evidence is captured and reviewed;
 7. ledgers and trackers are updated from evidence;
