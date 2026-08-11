@@ -1,0 +1,129 @@
+name: URAI Real World Extension Forge
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/generate-urai-real-world-extension-v1.py
+      - .github/workflows/real-world-extension-forge.yml
+      - urai-tier1/src/spatial/council/**
+      - src/spatial/scene/HomeAvatar.tsx
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: real-world-extension-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  PR_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+
+jobs:
+  forge:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Set up Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic GLB dependencies
+        run: python -m pip install --disable-pip-version-check numpy==2.2.6 trimesh==4.11.1
+
+      - name: Generate human and realm GLBs
+        run: python scripts/generate-urai-real-world-extension-v1.py
+
+      - name: Verify GLB geometry, human scale and receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, pathlib, struct
+          import trimesh
+
+          root = pathlib.Path('urai-tier1/public/assets/urai/generated/real-world-v1')
+          receipt_path = pathlib.Path('operations/assets/generated-receipts/urai-real-world-extension-v1.json')
+          receipt = json.loads(receipt_path.read_text())
+          assert receipt['packId'] == 'urai-real-world-extension-v1'
+          assert receipt['modelCount'] == 10, receipt
+          assert receipt['totalVertices'] >= 60000, receipt
+          assert receipt['totalFaces'] >= 115000, receipt
+          assert receipt['cameraAspect'] == '5:4'
+          assert receipt['authority']['selectedProduction'] is False
+
+          humans = [a for a in receipt['assets'] if '-human-' in a['fileName']]
+          realms = [a for a in receipt['assets'] if '-human-' not in a['fileName']]
+          assert len(humans) == 6 and len(realms) == 4
+
+          for asset in receipt['assets']:
+              path = root / asset['fileName']
+              data = path.read_bytes()
+              magic, version, length = struct.unpack_from('<III', data, 0)
+              assert magic == 0x46546C67 and version == 2 and length == len(data), asset
+              assert hashlib.sha256(data).hexdigest() == asset['sha256'], asset
+              loaded = trimesh.load(path, force='scene')
+              verts = sum(len(g.vertices) for g in loaded.geometry.values() if hasattr(g, 'vertices'))
+              faces = sum(len(g.faces) for g in loaded.geometry.values() if hasattr(g, 'faces'))
+              assert verts == asset['vertices'] and faces == asset['faces'], asset
+              assert verts > 0 and faces > 0
+
+          for human in humans:
+              low, high = human['bounds']
+              height = high[1] - low[1]
+              assert 1.65 <= height <= 2.05, (human['fileName'], height)
+              assert human['vertices'] >= 7500 and human['faces'] >= 15000, human
+              assert human['bytes'] >= 150000, human
+
+          for realm in realms:
+              low, high = realm['bounds']
+              width, height, depth = high[0]-low[0], high[1]-low[1], high[2]-low[2]
+              assert width >= 10 and height >= 4.4 and depth >= 10, (realm['fileName'], width, height, depth)
+              assert realm['faces'] >= 4500, realm
+
+          print(json.dumps({'ok': True, 'models': receipt['modelCount'], 'vertices': receipt['totalVertices'], 'faces': receipt['totalFaces']}, indent=2))
+          PY
+
+      - name: Commit generated binaries only if source head is current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/generated/real-world-v1 operations/assets/generated-receipts/urai-real-world-extension-v1.json)" ]; then
+            echo 'Real-world GLBs already match deterministic forge output.'
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
+            if [ "$current_head" != "$URAI_SOURCE_SHA" ]; then
+              echo "Stale forge input: current PR head is $current_head; refusing to push from $URAI_SOURCE_SHA"
+              exit 0
+            fi
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/generated/real-world-v1 operations/assets/generated-receipts/urai-real-world-extension-v1.json
+          git commit -m 'Forge real human and realm GLB extension'
+          gh auth setup-git
+          git push origin "HEAD:${PR_BRANCH}"
