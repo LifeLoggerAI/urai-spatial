@@ -32,7 +32,7 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 
 test('Founder runner retains every required real interaction and phase owner', () => {
   for (const owner of [
-    'openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney',
+    'openPage', 'selectQuietReset', 'selectAndCapturePhase', 'clickRouteAction', 'canvasSignal', 'desktopJourney',
     'keyboardJourney', 'mobileJourney', 'reducedMotionJourney', 'privacyAndRecoveryJourneys',
     'contextRecoveryJourney', 'assertVisualSanity',
   ]) {
@@ -55,8 +55,15 @@ test('Founder runner retains every required real interaction and phase owner', (
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
   assert.match(runner, /result\.tap\(\{ timeout: 120_000 \}\)/)
   assert.match(runner, /result\.click\(\{ timeout: 120_000 \}\)/)
-  assert.doesNotMatch(runner, /waitForState\(page, 'data-life-map-phase', 'travel', 45_000\)\.catch/)
-  for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
+  const armedObserver = runner.indexOf("const capturePromise = waitForState(page, 'data-life-map-phase', expectedPhase")
+  const semanticSelection = runner.indexOf('const selectionPromise = selectQuietReset(page, options.selection || {})')
+  assert.ok(armedObserver >= 0 && semanticSelection > armedObserver, 'phase observation must be armed before semantic selection')
+  assert.match(runner, /await Promise\.all\(\[capturePromise, selectionPromise\]\)/)
+  for (const phase of ['departure', 'travel', 'approach', 'arrival']) {
+    assert.match(runner, new RegExp(`selectAndCapturePhase\\(page, '${phase}'`))
+  }
+  assert.doesNotMatch(runner, /force:\s*true|dispatchEvent\(new MouseEvent/)
+
 })
 
 test('Founder runner validates the retained high-resolution PNG with the distributed acceptance method', () => {
