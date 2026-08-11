@@ -1,18 +1,19 @@
 "use client"
 
 import Link from "next/link"
-import { Canvas, useFrame } from "@react-three/fiber"
-import { ContactShadows, Environment, PerspectiveCamera, useGLTF } from "@react-three/drei"
-import { Suspense, useMemo, useRef, useState } from "react"
+import { Canvas } from "@react-three/fiber"
+import { ContactShadows, Environment, PerspectiveCamera, useAnimations, useGLTF } from "@react-three/drei"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { DEMO_COUNCIL_AGENTS } from "./councilAgentSchema"
 
-const MODEL_ROOT = "/assets/urai/generated/real-world-v1"
-const COUNCIL_CHAMBER_MODEL = `${MODEL_ROOT}/council-chamber-real-v1.glb`
+const WORLD_MODEL_ROOT = "/assets/urai/generated/real-world-v1"
+const HUMAN_MODEL_ROOT = "/assets/urai/generated/articulated-humans-v1"
+const COUNCIL_CHAMBER_MODEL = `${WORLD_MODEL_ROOT}/council-chamber-real-v1.glb`
 const HUMAN_MODELS = [
-  `${MODEL_ROOT}/council-guide-human-v1.glb`,
-  `${MODEL_ROOT}/council-archivist-human-v1.glb`,
-  `${MODEL_ROOT}/council-guardian-human-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-guide-human-articulated-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-archivist-human-articulated-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-guardian-human-articulated-v1.glb`,
 ] as const
 
 const POSITIONS: [number, number, number][] = [
@@ -46,14 +47,12 @@ function ChamberModel() {
 
 function CouncilHumanModel({
   modelUrl,
-  index,
   position,
   rotation,
   selected,
   onSelect,
 }: {
   modelUrl: string
-  index: number
   position: [number, number, number]
   rotation: [number, number, number]
   selected: boolean
@@ -61,24 +60,28 @@ function CouncilHumanModel({
 }) {
   const model = useGLTF(modelUrl)
   const scene = useMemo(() => prepareModel(model.scene), [model.scene])
-  const root = useRef<THREE.Group>(null)
+  const { actions } = useAnimations(model.animations, scene)
   const ring = useRef<THREE.Mesh>(null)
 
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime + index * 0.73
-    if (root.current) {
-      root.current.position.y = position[1] + Math.sin(t * 1.2) * 0.003
-      root.current.rotation.y = rotation[1] + Math.sin(t * 0.22) * 0.004
+  useEffect(() => {
+    const clipName = selected ? "Listen" : "Idle"
+    const action = actions[clipName]
+    if (!action) return
+
+    action.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(0.22).play()
+    return () => {
+      action.fadeOut(0.18)
     }
-    if (ring.current) {
-      const material = ring.current.material as THREE.MeshBasicMaterial
-      material.opacity = selected ? 0.22 : 0.04
-    }
-  })
+  }, [actions, selected])
+
+  useEffect(() => {
+    if (!ring.current) return
+    const material = ring.current.material as THREE.MeshBasicMaterial
+    material.opacity = selected ? 0.2 : 0.035
+  }, [selected])
 
   return (
     <group
-      ref={root}
       position={position}
       rotation={rotation}
       onClick={(event) => {
@@ -86,10 +89,12 @@ function CouncilHumanModel({
         onSelect()
       }}
       userData={{
-        representation: "forged-human-glb",
+        representation: "articulated-human-glb",
         modelUrl,
         humanFirst: true,
-        staticMeshRiggingGate: "pending",
+        animationAuthority: "urai-articulated-humans-v1",
+        smoothSkinningGate: "pending",
+        activeBehavior: selected ? "Listen" : "Idle",
       }}
     >
       <primitive object={scene} />
@@ -98,7 +103,7 @@ function CouncilHumanModel({
         <meshBasicMaterial
           color="#b8c7cf"
           transparent
-          opacity={0.04}
+          opacity={0.035}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
         />
@@ -118,7 +123,7 @@ function CouncilWorld() {
           shadows
           dpr={[1, 1.75]}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          data-council-model-authority="urai-real-world-extension-v1"
+          data-council-model-authority="urai-articulated-humans-v1"
         >
           <Suspense fallback={null}>
             <color attach="background" args={["#8c989c"]} />
@@ -142,7 +147,6 @@ function CouncilWorld() {
               <CouncilHumanModel
                 key={agent.id}
                 modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
-                index={index}
                 position={POSITIONS[index] ?? [0, 0, -2]}
                 rotation={ROTATIONS[index] ?? [0, 0, 0]}
                 selected={selected === index}
