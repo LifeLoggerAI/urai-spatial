@@ -1,0 +1,148 @@
+name: Check Connected Google User Key Delete Authority Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/check-connected-google-user-key-delete-authority-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: check-connected-google-user-key-delete-authority-once-20260811
+  cancel-in-progress: false
+
+env:
+  TARGET_PROJECT: urai-4dc1d
+  TARGET_USER_EMAIL: adam@urailabs.com
+
+jobs:
+  check:
+    name: Check connected Google user key-delete authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate legacy credential metadata privately
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" | jq -e '.project_id == "urai-4dc1d"' >/dev/null
+
+      - name: Authenticate legacy identity for read-only IAM discovery
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          project_id: ${{ env.TARGET_PROJECT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Check exact connected Google user authority
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/urai-connected-user-authority"
+          mkdir -p "$d/roles"
+          gcloud projects get-iam-policy "$TARGET_PROJECT" --format=json > "$d/project-iam.json"
+
+          jq -r --arg member "user:$TARGET_USER_EMAIL" '.bindings[]? | select((.members // []) | index($member)) | .role' "$d/project-iam.json" | sort -u > "$d/user-roles.txt"
+
+          : > "$d/results.ndjson"
+          idx=0
+          while IFS= read -r role; do
+            [ -n "$role" ] || continue
+            idx=$((idx + 1))
+            out="$d/roles/role-$idx.json"
+            described=false
+            if [[ "$role" == roles/* ]]; then
+              if gcloud iam roles describe "$role" --format=json > "$out" 2>/dev/null; then described=true; fi
+            elif [[ "$role" == projects/*/roles/* ]]; then
+              rid="${role##*/}"
+              project="$(printf '%s' "$role" | cut -d/ -f2)"
+              if gcloud iam roles describe "$rid" --project "$project" --format=json > "$out" 2>/dev/null; then described=true; fi
+            elif [[ "$role" == organizations/*/roles/* ]]; then
+              rid="${role##*/}"
+              org="$(printf '%s' "$role" | cut -d/ -f2)"
+              if gcloud iam roles describe "$rid" --organization "$org" --format=json > "$out" 2>/dev/null; then described=true; fi
+            fi
+            has_delete=false
+            if [ "$described" = true ] && jq -e '.includedPermissions // [] | index("iam.serviceAccountKeys.delete") != null' "$out" >/dev/null 2>&1; then
+              has_delete=true
+            fi
+            jq -nc --arg role "$role" --argjson described "$described" --argjson hasDelete "$has_delete" '{role:$role,described:$described,hasKeyDelete:$hasDelete}' >> "$d/results.ndjson"
+          done < "$d/user-roles.txt"
+
+          if [ -s "$d/results.ndjson" ]; then jq -s '.' "$d/results.ndjson" > "$d/results.json"; else printf '[]\n' > "$d/results.json"; fi
+
+          jq -n \
+            --arg projectId "$TARGET_PROJECT" \
+            --arg recordedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --slurpfile results "$d/results.json" '
+              {
+                schemaVersion:"urai-connected-google-user-key-delete-authority-1",
+                recordedAt:$recordedAt,
+                projectId:$projectId,
+                mutationPerformed:false,
+                credentialValueRecorded:false,
+                targetIdentityRecordedInReceipt:false,
+                directProjectRoleCount:($results[0] | length),
+                unresolvedRoleCount:([$results[0][] | select(.described == false)] | length),
+                keyDeleteRoleCount:([$results[0][] | select(.hasKeyDelete == true)] | length),
+                targetUserHasKeyDeleteAuthority:([$results[0][] | select(.hasKeyDelete == true)] | length) > 0,
+                keyDeleteRoles:[$results[0][] | select(.hasKeyDelete == true) | .role]
+              }
+            ' > "$d/receipt.json"
+          echo "receipt=$d/receipt.json" >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized result
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          RECEIPT_PATH: ${{ steps.check.outputs.receipt }}
+        with:
+          script: |
+            const fs = require('fs')
+            let body
+            if (!process.env.RECEIPT_PATH || !fs.existsSync(process.env.RECEIPT_PATH)) {
+              body = [
+                '## URAI connected Google user key-delete authority check',
+                '',
+                '- Result: **NO RECEIPT**',
+                '- Mutation performed: **false**',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            } else {
+              const r = JSON.parse(fs.readFileSync(process.env.RECEIPT_PATH, 'utf8'))
+              body = [
+                '## URAI connected Google user key-delete authority check',
+                '',
+                `- Direct project roles on connected Google user: **${r.directProjectRoleCount}**`,
+                `- Unresolved roles: **${r.unresolvedRoleCount}**`,
+                `- Direct roles containing iam.serviceAccountKeys.delete: **${r.keyDeleteRoleCount}**`,
+                `- Connected Google user has exact key-delete authority: **${r.targetUserHasKeyDeleteAuthority}**`,
+                `- Matching delete-capable roles: ${r.keyDeleteRoles.length ? r.keyDeleteRoles.map(x => `\`${x}\``).join(', ') : 'none'}`,
+                '',
+                '- Mutation performed: **false**',
+                '- No token, key ID, private key, credential JSON, or IAM mutation was recorded.',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            }
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'URAI connected Google user key-delete authority read-only check', body })
+
+      - name: Remove temporary material
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/urai-connected-user-authority"
