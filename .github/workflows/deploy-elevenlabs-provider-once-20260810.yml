@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   issues: write
+  id-token: write
 
 concurrency:
   group: urai-elevenlabs-provider-deploy-20260810
@@ -22,6 +23,9 @@ env:
   CANONICAL_SHA: a58628601b3cb257ed81d93b6089a1f482484630
   FUNCTION_ID: elevenLabsVoiceProvider
   FUNCTIONS_CODEBASE: urai-spatial-functions
+  WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER || secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+  WIF_ADMIN_SERVICE_ACCOUNT: ${{ vars.GCP_ASSET_FACTORY_ADMIN_SERVICE_ACCOUNT || vars.GCP_MAPS_ADMIN_SERVICE_ACCOUNT || secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+  GCP_ADMIN_CREDENTIALS_JSON: ${{ secrets.GCP_MAPS_ADMIN_CREDENTIALS_JSON }}
 
 jobs:
   deploy:
@@ -91,6 +95,7 @@ jobs:
           grep -Fq "export { elevenLabsVoiceProvider, openAiOrbProvider }" apps/functions/src/index.ts
 
       - name: Materialize ephemeral Firebase deploy credential
+        id: deploycred
         shell: bash
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
@@ -100,13 +105,81 @@ jobs:
           credentials="$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$credentials"
           chmod 600 "$credentials"
-          node - "$credentials" <<'NODE'
+          client_email="$(node - "$credentials" <<'NODE'
           const fs = require('fs')
           const path = process.argv[2]
           const serviceAccount = JSON.parse(fs.readFileSync(path, 'utf8'))
           if (serviceAccount.project_id !== 'urai-4dc1d') throw new Error('Firebase deploy credential project mismatch')
+          if (!serviceAccount.client_email) throw new Error('Firebase deploy credential has no client_email')
+          process.stdout.write(serviceAccount.client_email)
           NODE
+          )"
+          printf 'path=%s\n' "$credentials" >> "$GITHUB_OUTPUT"
+          printf 'email=%s\n' "$client_email" >> "$GITHUB_OUTPUT"
           printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$credentials" >> "$GITHUB_ENV"
+
+      - name: Select secret-IAM repair identity
+        id: iam_auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$WIF_PROVIDER" ] && [ -n "$WIF_ADMIN_SERVICE_ACCOUNT" ]; then
+            echo 'mode=wif' >> "$GITHUB_OUTPUT"
+          elif [ -n "$GCP_ADMIN_CREDENTIALS_JSON" ]; then
+            echo 'mode=json' >> "$GITHUB_OUTPUT"
+          else
+            echo 'mode=self' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Authenticate secret IAM repair through Workload Identity Federation
+        if: steps.iam_auth.outputs.mode == 'wif'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.EXPECTED_PROJECT }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_ADMIN_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Authenticate secret IAM repair with protected admin JSON
+        if: steps.iam_auth.outputs.mode == 'json'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ env.GCP_ADMIN_CREDENTIALS_JSON }}
+          project_id: ${{ env.EXPECTED_PROJECT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.EXPECTED_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Grant deploy identity secret metadata visibility only
+        shell: bash
+        env:
+          DEPLOY_SERVICE_ACCOUNT: ${{ steps.deploycred.outputs.email }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SERVICE_ACCOUNT"
+          for secret in OPENAI_API_KEY ELEVENLABS_API_KEY; do
+            gcloud secrets add-iam-policy-binding "$secret" \
+              --project "$EXPECTED_PROJECT" \
+              --member "serviceAccount:${DEPLOY_SERVICE_ACCOUNT}" \
+              --role roles/secretmanager.viewer \
+              --quiet >/dev/null
+          done
+          echo 'Granted metadata-only Secret Manager viewer access required by Firebase CLI analysis.'
+
+      - name: Restore Firebase deploy credential
+        shell: bash
+        env:
+          DEPLOY_CREDENTIAL_PATH: ${{ steps.deploycred.outputs.path }}
+        run: |
+          set -euo pipefail
+          test -f "$DEPLOY_CREDENTIAL_PATH"
+          printf 'GOOGLE_APPLICATION_CREDENTIALS=%s\n' "$DEPLOY_CREDENTIAL_PATH" >> "$GITHUB_ENV"
 
       - name: Deploy only ElevenLabs voice provider
         shell: bash
@@ -200,7 +273,9 @@ jobs:
             ].join('\n')
             await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body })
 
-      - name: Remove temporary credential
+      - name: Remove temporary credentials
         if: always()
         shell: bash
-        run: rm -f "$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
+        run: |
+          rm -f "$RUNNER_TEMP/urai-elevenlabs-provider-deploy.json"
+          rm -f "$RUNNER_TEMP/gcp-admin-service-account.json"
