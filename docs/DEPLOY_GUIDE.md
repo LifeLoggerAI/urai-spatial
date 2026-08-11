@@ -31,7 +31,7 @@ Required production keys include:
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
-- server-side Google identity: either a Google-managed runtime metadata identity or `GOOGLE_APPLICATION_CREDENTIALS` pointing to a non-symlinked external-account Workload Identity Federation configuration
+- server-side Google identity: `GOOGLE_APPLICATION_CREDENTIALS` pointing to a protected, regular, non-symlinked external-account Workload Identity Federation configuration
 - `NEXT_PUBLIC_APP_URL`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -84,7 +84,7 @@ Production release is currently **NO-GO**. Vercel or another non-Google runtime 
 - Enable Email/Password if using the built-in auth flow.
 - Confirm Firestore is enabled.
 - Confirm Firestore rules match the launch posture.
-- Attach a least-privilege Google-managed runtime identity, or install a protected external-account WIF configuration for a non-Google runtime.
+- Install a protected external-account WIF configuration and bind its short-lived identity to least-privilege IAM.
 - Do not set `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_PRIVATE_KEY`, or `FIREBASE_CLIENT_EMAIL`.
 - Keep production disabled until historical keys are revoked, negative authentication is proven, Cloud Audit Logs are reviewed, and protected runtime read-back succeeds.
 
@@ -121,5 +121,5 @@ Production release is currently **NO-GO**. Vercel or another non-Google runtime 
 
 - Never expose Stripe secret key.
 - Never create, upload, or expose Firebase service-account JSON for this runtime.
-- Accept only Google-managed metadata identity or a protected external-account WIF configuration; reject authorized-user ADC and long-lived private-key credentials.
+- Accept only a protected external-account WIF configuration; reject missing, authorized-user, service-account, and other long-lived private-key ADC sources.
 - Only backend routes write Firestore entitlements.
