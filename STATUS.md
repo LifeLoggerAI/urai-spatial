@@ -33,17 +33,13 @@ Required release progression remains:
 5. directly inspect desktop, portrait-mobile, movement/proximity, Orb, Ground, Life Map, and reduced-motion proof;
 6. obtain human exact-SHA visual/steward acceptance without transferring approval from an older SHA;
 7. satisfy Release Governance Guard on that same SHA;
-8. merge without head drift;
-9. deploy only through `.github/workflows/spatial-live-deploy.yml` on `main` using its live manual contract;
-10. independently verify production and record rollback provenance before closing #863.
+8. keep source unmerged until the exact head and governance gates are complete;
+9. obtain provider-side WIF/IAM, historical-key revocation, negative-auth, audit-log, protected-settings, and runtime read-back evidence;
+10. restore deployment authority only in a separately reviewed change, then independently verify production and rollback provenance before closing #863.
 
-The canonical production workflow's normal deploy contract is a manual `workflow_dispatch` on `main` with:
+The canonical workflow is currently verification-only and records **NO-GO**. It has no live deploy or rollback inputs, no production environment, no provider credential, and no Firebase mutation command. Preview workflows are local checks-only paths.
 
-- `release_sha`: exact current `main` release SHA;
-- `rollback_sha`: a distinct proven ancestor/recovery SHA;
-- `confirm`: `DEPLOY_URAI_APP`.
-
-Preview deployments, PR verification runs, queued checks, or intermediate receipts are not production completion.
+Preview verification, queued checks, green source CI, or intermediate receipts are not production completion.
 
 ## Version posture
 
