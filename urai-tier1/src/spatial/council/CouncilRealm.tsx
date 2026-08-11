@@ -7,6 +7,9 @@ import { Suspense, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { DEMO_COUNCIL_AGENTS } from "./councilAgentSchema"
 import { useSpatialQualityTier } from "@/spatial/performance/useSpatialQualityTier"
+import { EmbodiedRealmCamera } from "@/spatial/navigation/EmbodiedRealmCamera"
+import { MobileMovementPad, MovementHelp, useDragLook, useMovementInput } from "@/spatial/navigation/EmbodiedNavigation"
+import { useReducedMotion } from "@/spatial/hooks/useReducedMotion"
 
 const WORLD_MODEL_ROOT = "/assets/urai/generated/hero-realms-v2"
 const HUMAN_MODEL_ROOT = "/assets/urai/generated/real-world-v1"
@@ -27,6 +30,13 @@ const ROTATIONS: [number, number, number][] = [
   [0, 0.72, 0],
   [0, 0, 0],
   [0, -0.72, 0],
+]
+
+const COUNCIL_OBSTACLES = [
+  { x: 0, z: -0.55, radius: 1.95 },
+  { x: -2.8, z: -1.0, radius: 0.55 },
+  { x: 0, z: -3.25, radius: 0.55 },
+  { x: 2.8, z: -1.0, radius: 0.55 },
 ]
 
 function prepareModel(source: THREE.Object3D) {
@@ -97,13 +107,7 @@ function CouncilHumanModel({
       <primitive object={scene} />
       <mesh ref={ring} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.27, 0.33, 56]} />
-        <meshBasicMaterial
-          color="#b8c7cf"
-          transparent
-          opacity={0.04}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
+        <meshBasicMaterial color="#b8c7cf" transparent opacity={0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -113,12 +117,21 @@ function CouncilWorld() {
   const [selected, setSelected] = useState(0)
   const selectedAgent = DEMO_COUNCIL_AGENTS[selected] ?? DEMO_COUNCIL_AGENTS[0]
   const quality = useSpatialQualityTier()
+  const reducedMotion = useReducedMotion()
+  const shellRef = useRef<HTMLDivElement | null>(null)
+  const yaw = useRef(0)
+  const pitch = useRef(-0.025)
+  const input = useMovementInput()
+  const dragLook = useDragLook({ yaw, pitch, enabled: true, sensitivity: reducedMotion ? 0.0025 : 0.004 })
 
   return (
     <div
+      ref={shellRef}
       className="relative min-h-screen overflow-hidden bg-[#879398] text-white"
       data-spatial-quality-tier={quality.tier}
       data-spatial-shadow-map={quality.shadowMapSize}
+      data-council-embodied="true"
+      {...dragLook}
     >
       <div className="absolute inset-0">
         <Canvas
@@ -131,7 +144,20 @@ function CouncilWorld() {
           <Suspense fallback={null}>
             <color attach="background" args={["#8c989c"]} />
             <fog attach="fog" args={["#919a99", 13, 31]} />
-            <PerspectiveCamera makeDefault position={[0, 1.66, 7.25]} fov={42} />
+            <PerspectiveCamera makeDefault position={[0, 1.66, 4.8]} fov={44} />
+            <EmbodiedRealmCamera
+              input={input}
+              yaw={yaw}
+              pitch={pitch}
+              reducedMotion={reducedMotion}
+              ownerRef={shellRef}
+              datasetPrefix="council"
+              spawn={[0, 4.8]}
+              cameraHeight={1.66}
+              speed={2.0}
+              bounds={{ minX: -4.75, maxX: 4.75, minZ: -4.2, maxZ: 5.7 }}
+              obstacles={COUNCIL_OBSTACLES}
+            />
             <ambientLight intensity={0.48} color="#e6ece9" />
             <hemisphereLight intensity={0.72} color="#dcecf0" groundColor="#6c675e" />
             <directionalLight
@@ -164,24 +190,19 @@ function CouncilWorld() {
         </Canvas>
       </div>
 
-      <section className="pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
+      <section data-movement-ui="true" className="pointer-events-none absolute bottom-5 left-5 z-10 w-[min(430px,calc(100vw-40px))] rounded-3xl border border-white/15 bg-black/45 p-5 shadow-2xl backdrop-blur-xl md:bottom-8 md:left-8">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">URAI Council · Human World</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight md:text-4xl">{selectedAgent.name}</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#e8d8b9]/80">{selectedAgent.role}</p>
         <p className="mt-3 max-w-[38ch] text-sm leading-6 text-white/72">{selectedAgent.focus}</p>
         <div className="pointer-events-auto mt-4 flex flex-wrap gap-2">
-          <Link className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" href="/">
-            Return Home
-          </Link>
-          <Link className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" href="/passport">
-            Passport
-          </Link>
+          <Link className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950" href="/">Return Home</Link>
+          <Link className="rounded-full border border-white/20 px-4 py-2 text-xs text-white" href="/passport">Passport</Link>
         </div>
       </section>
 
-      <div className="pointer-events-none absolute bottom-6 right-6 z-10 hidden rounded-full bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/55 backdrop-blur md:block">
-        Select a person
-      </div>
+      <MovementHelp realm="Council" summary="Walk around the table and select a Council person in the world." controls="WASD / arrow keys to move. Drag the room to look. Tap a person to select them. Mobile controls appear on touch devices." />
+      <MobileMovementPad input={input} label="Move through Council" />
     </div>
   )
 }
