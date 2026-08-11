@@ -1,13 +1,15 @@
 /* The Life Map canvas owns the world, while the semantic navigator owns its own
    closed and open hit area. Keep the navigator above the production canvas but
    below the selected-memory journey rail. */
-.life-map-navigator {
+.life-map-navigator,
+.urai-world-runtime[data-world-destination='life-map'] .life-map-navigator {
   z-index: 2147483500 !important;
   pointer-events: auto !important;
   isolation: isolate;
 }
 
-.life-map-navigator[open] {
+.life-map-navigator[open],
+.urai-world-runtime[data-world-destination='life-map'] .life-map-navigator[open] {
   z-index: 2147483590 !important;
 }
 
