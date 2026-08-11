@@ -27,6 +27,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout exact protected main authority
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -62,14 +65,53 @@ jobs:
           node scripts/audit-production-workflow-authority.mjs
           test -z "$(git status --porcelain --untracked-files=all)"
 
+      - name: Validate production WIF configuration
+        shell: bash
+        env:
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$GCP_WIF_PROVIDER"
+          test -n "$GCP_DEPLOY_SERVICE_ACCOUNT"
+
+      - name: Authenticate dedicated production identity through GitHub OIDC/WIF
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.EXPECTED_FIREBASE_SITE }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Install pinned Google Cloud CLI action
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.EXPECTED_FIREBASE_SITE }}
+          version: '>= 500.0.0'
+
+      - name: Prove federated read-only recovery identity
+        shell: bash
+        env:
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_APPLICATION_CREDENTIALS"
+          test -n "$GOOGLE_GHA_CREDS_PATH"
+          test "$GOOGLE_APPLICATION_CREDENTIALS" = "$GOOGLE_GHA_CREDS_PATH"
+          test "$(gcloud config get-value project 2>/dev/null)" = "$EXPECTED_FIREBASE_SITE"
+          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1)"
+          test -n "$active_account"
+          test "$active_account" = "$GCP_DEPLOY_SERVICE_ACCOUNT"
+
       - name: Discover exact current live Hosting version
         env:
           FIREBASE_SITE_ID: ${{ env.EXPECTED_FIREBASE_SITE }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
           URAI_HOSTING_RECOVERY_RECEIPT: ${{ runner.temp }}/hosting-recovery/legacy-live-release.json
         run: |
           set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
           node scripts/firebase-hosting-recovery.mjs discover
           test -s "$URAI_HOSTING_RECOVERY_RECEIPT"
 
