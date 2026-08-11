@@ -6,36 +6,33 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
-Current release lane: PR #1069 (`agent/real-world-home-production-completion-20260808`) is a production candidate under exact-head verification. Resolve the live PR head before using any SHA-bound evidence.
+Current release lane: PR #1072 (`agent/home-life-map-final-production-20260809`) was squash-merged on 2026-08-11. Final PR head: `a417d33a70687b75f22be7e97a8c6baf25f4e190`. Merge commit: `a58628601b3cb257ed81d93b6089a1f482484630`. A post-merge certification correction lane is required until all release-critical proof is green and production is independently verified.
 
-Production-live status: **not yet verified**. GitHub issue #863 remains the controlling visual acceptance gate until the exact accepted result is merged, deployed through the protected production workflow, and independently verified live.
+Production-live status: **not yet verified**. The canonical custom domain is not presently proven healthy, and production certification remains blocked until the exact shipped `main` SHA is deployed through the protected production workflow and independently verified live.
 
 ## Current verified source and asset posture
 
-- Home source is owned by authored three-dimensional sanctuary geometry; the retained replay/provider image is atmospheric support only. This source posture is not itself founder visual acceptance.
+- Home source is owned by authored three-dimensional sanctuary geometry; the retained replay/provider image is atmospheric support only. This source posture is not itself final visual acceptance.
 - The retained V1-V5 runtime image estate is complete: **213 ready / 0 missing** (`53 + 80 + 14 + 39 + 27`).
 - Seven launch-critical model assets are recorded as promoted with zero pending in `docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json`.
 - The paid V2-V5 provider program is complete at the asset-promotion layer: **151 generated / 151 passed / 0 failed**, with `promotionAuthorized: true`, in `docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json`.
 - Duplicate paid regeneration is not authorized merely to satisfy stale status text; accepted retained hashes should remain stable unless a real product defect requires replacement.
-- Production spatial audio is an eight-asset Opus candidate lane. It is not final until the canonical forge produces the exact-forge-input-head receipt and the resulting binaries/receipt are committed and verified on the controlling PR branch.
 - AR/WebXR, physical Quest/device certification, wearable/body-signal providers, and other provider/device claims remain separately evidence-gated. Asset presence does not certify those claims.
 
 ## Current release boundary
 
-PR #1069 must remain unmerged until the genuinely final head satisfies all applicable repository-required exact-head checks and issue #863's rendered-product standard.
+The merged #1072 source must not be declared production-certified from PR verification alone. The post-merge correction/certification lane must resolve every remaining release-critical failure, freeze one successor exact head if source changes are required, and preserve exact-head evidence.
 
 Required release progression remains:
 
-1. complete source and production audio;
-2. reconcile release-critical authority;
-3. freeze one exact candidate SHA;
-4. obtain all applicable exact-head non-human CI/proof gates;
-5. directly inspect desktop, portrait-mobile, movement/proximity, Orb, Ground, Life Map, and reduced-motion proof;
-6. obtain human exact-SHA visual/steward acceptance without transferring approval from an older SHA;
-7. satisfy Release Governance Guard on that same SHA;
-8. merge without head drift;
-9. deploy only through `.github/workflows/spatial-live-deploy.yml` on `main` using its live manual contract;
-10. independently verify production and record rollback provenance before closing #863.
+1. repair any remaining release-critical source/proof defects without weakening gates;
+2. freeze one exact candidate SHA;
+3. obtain all applicable exact-head non-human CI/proof gates;
+4. directly inspect desktop, portrait-mobile, movement/proximity, Orb, Ground, Life Map, Focus, Replay, Passport, Location Map, and reduced-motion proof;
+5. satisfy the applicable exact-SHA visual/steward/governance acceptance;
+6. merge any corrective PR without head drift;
+7. deploy only through `.github/workflows/spatial-live-deploy.yml` on `main` using its live manual contract;
+8. independently verify production, deployed SHA, core routes/interactions, and rollback provenance before declaring DONE-DONE.
 
 The canonical production workflow's normal deploy contract is a manual `workflow_dispatch` on `main` with:
 
@@ -63,4 +60,4 @@ Historical receipts remain historical. New exact-head evidence supersedes older 
 
 ## Done definition
 
-Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, human exact-SHA acceptance, governance authorization, protected production deployment, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, canonical Drive receipt update, and issue #863 closure.
+Do not mark this repository production-live until all applicable evidence is recorded for the shipped SHA, including frozen dependencies, source integrity, exact-head CI/proof, direct rendered-product inspection, applicable exact-SHA acceptance/governance authorization, protected production deployment, live route/interaction verification, asset/audio loading, privacy controls, rollback viability, canonical Drive receipt update, and closure of controlling release blockers.

@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 export type LocationAtlasCamera = { x: number; y: number; zoom: number }
@@ -155,8 +155,39 @@ function AtlasWorld({ camera, points, selectedColor, reducedMotion }: Props) {
   </>
 }
 
+function supportsWebGL() {
+  try {
+    const canvas = document.createElement('canvas')
+    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+  } catch {
+    return false
+  }
+}
+
+function AuthoredLocationFallback({ selectedColor }: { selectedColor: string }) {
+  return <div
+    className="locationAtlasWorldCanvas locationAtlasWorldCanvas--fallback"
+    aria-hidden="true"
+    data-testid="location-map-no-webgl-fallback"
+    data-location-world-owner="authored-two-dimensional-emotional-geography"
+    data-webgl-state="unavailable"
+    style={{
+      background: `radial-gradient(circle at 52% 48%, ${selectedColor}33 0 3%, transparent 18%), radial-gradient(ellipse at 58% 68%, #28585a99 0 12%, transparent 30%), linear-gradient(165deg, #102924 0%, #1f4038 38%, #071511 72%, #020907 100%)`,
+      boxShadow: 'inset 0 -10vh 16vh rgba(0,0,0,.44)',
+    }}
+  >
+    <div style={{ position: 'absolute', inset: '10% 8% 8%', borderRadius: '50%', border: '1px solid rgba(181,235,227,.12)', transform: 'perspective(800px) rotateX(58deg)', boxShadow: '0 0 80px rgba(142,234,255,.08) inset' }} />
+    <div style={{ position: 'absolute', left: '14%', right: '10%', top: '46%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(181,235,227,.22), transparent)', transform: 'rotate(-7deg)' }} />
+  </div>
+}
+
 export function LocationMapSpatialWorld(props: Props) {
-  return <div className="locationAtlasWorldCanvas" aria-hidden="true" data-testid="location-map-r3f-world" data-location-world-owner="react-three-fiber-terrain">
+  const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null)
+  useEffect(() => { setWebglAvailable(supportsWebGL()) }, [])
+
+  if (webglAvailable !== true) return <AuthoredLocationFallback selectedColor={props.selectedColor} />
+
+  return <div className="locationAtlasWorldCanvas" aria-hidden="true" data-testid="location-map-r3f-world" data-location-world-owner="react-three-fiber-terrain" data-webgl-state="ready">
     <Canvas shadows dpr={[1, 1.35]} camera={{ position: [0, 9.1, 16.2], fov: 48, near: .1, far: 120 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => {
       gl.outputColorSpace = THREE.SRGBColorSpace
       gl.toneMapping = THREE.ACESFilmicToneMapping

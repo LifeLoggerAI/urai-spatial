@@ -31,7 +31,19 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 })
 
 test('Founder runner retains every required real interaction and phase owner', () => {
-  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'mobileAndReduced', 'assertVisualSanity']) {
+  for (const owner of [
+    'openPage',
+    'selectQuietReset',
+    'clickRouteAction',
+    'canvasSignal',
+    'desktopJourney',
+    'keyboardJourney',
+    'mobileJourney',
+    'reducedMotionJourney',
+    'privacyAndRecoveryJourneys',
+    'contextRecoveryJourney',
+    'assertVisualSanity',
+  ]) {
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
@@ -40,7 +52,10 @@ test('Founder runner retains every required real interaction and phase owner', (
   assert.match(runner, /role="listitem"/)
   assert.match(runner, /selectedAction\(page, 'Overview'\)/)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
-  assert.match(runner, /result\.tap\(\)/)
+  assert.match(runner, /result\.tap\(\{ timeout: 120_000 \}\)/)
+  assert.match(runner, /result\.click\(\{ timeout: 120_000 \}\)/)
+  assert.match(runner, /action\.click\(\{ timeout: 120_000 \}\)/)
+  assert.doesNotMatch(runner, /waitForState\(page, 'data-life-map-phase', 'travel', 45_000\)\.catch/)
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
 
@@ -58,6 +73,7 @@ test('Founder runner validates the retained high-resolution PNG with the distrib
   assert.match(runner, /nonDarkRatio <= 0/)
   assert.match(runner, /screenshot\.bytes < 120_000/)
   assert.match(runner, /distributed-grid-24x16-3x3/)
+  assert.match(runner, /desktop-overview did not retain the required 3x high-resolution PNG evidence/)
 })
 
 test('Founder proof observes the real production state machine without a production backdoor', () => {
@@ -70,9 +86,11 @@ test('Founder proof observes the real production state machine without a product
   assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
   assert.doesNotMatch(scene, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(navigator, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
+  assert.match(runner, /expectedPhases/)
+  assert.match(runner, /phase drifted/)
 })
 
-test('render proof is invalidated and republished after WebGL context restoration', () => {
+test('render proof is invalidated and republished after a real production WebGL context restoration journey', () => {
   assert.match(world, /function RenderProofRepublisher\(/)
   assert.match(world, /webglcontextlost/)
   assert.match(world, /webglcontextrestored/)
@@ -80,6 +98,14 @@ test('render proof is invalidated and republished after WebGL context restoratio
   assert.match(world, /frames\.current < 4/)
   assert.match(world, /lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 \? "true" : "false"/)
   assert.match(world, /<RenderProofRepublisher \/>/)
+  assert.match(runner, /WEBGL_lose_context/)
+  assert.match(runner, /extension\.loseContext\(\)/)
+  assert.match(runner, /restoreContext\(\)/)
+  assert.match(runner, /webgl-context-loss/)
+  assert.match(runner, /webgl-recovered/)
+  assert.match(runner, /context-recovery-state-preserved/)
+  assert.match(runner, /did not prove WebGL restoration/)
+  assert.match(runner, /did not preserve selected memory identity after recovery/)
 })
 
 test('collapsed semantic navigator preserves a visible pointer and touch opener', () => {

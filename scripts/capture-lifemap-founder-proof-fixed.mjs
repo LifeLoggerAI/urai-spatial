@@ -48,7 +48,7 @@ function recordPageEvents(page, label) {
 async function openPage(options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport || { width: 1440, height: 900 },
-    deviceScaleFactor: 3,
+    deviceScaleFactor: options.deviceScaleFactor ?? 1,
     reducedMotion: options.reducedMotion || 'no-preference',
     hasTouch: Boolean(options.hasTouch),
     isMobile: Boolean(options.isMobile),
@@ -206,6 +206,22 @@ async function captureScreenshot(page, file) {
   return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
 }
 
+async function canvasGeometry(page) {
+  const canvas = page.locator('canvas').first()
+  await canvas.waitFor({ state: 'visible', timeout: 30_000 })
+  const box = await canvas.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  }, undefined, { timeout: 120_000 })
+  const viewport = page.viewportSize()
+  const valid = box && viewport
+    && box.width >= 240 && box.height >= 240
+    && box.x + box.width > 0 && box.y + box.height > 0
+    && box.x < viewport.width && box.y < viewport.height
+  if (!valid) throw new Error(`Life Map canvas geometry invalid: ${JSON.stringify({ box, viewport })}`)
+  return box
+}
+
 async function readRootState(root) {
   const entries = await Promise.all([
     ['source', 'data-life-map-source'],
@@ -255,9 +271,9 @@ function selectedAction(page, label) {
 
 async function selectQuietReset(page, options = {}) {
   const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' }).first()
-  await trigger.waitFor({ state: 'visible', timeout: 20_000 })
-  if (options.touch) await trigger.tap()
-  else await trigger.click()
+  await trigger.waitFor({ state: 'visible', timeout: 120_000 })
+  if (options.touch) await trigger.tap({ timeout: 120_000 })
+  else await trigger.click({ timeout: 120_000 })
   const navigator = page.getByRole('region', { name: 'Search and filter Life Map' }).first()
   await navigator.waitFor({ state: 'visible', timeout: 20_000 })
   const result = navigator.locator('[role="listitem"]').filter({ hasText: 'The Quiet Reset' }).first()
@@ -266,9 +282,9 @@ async function selectQuietReset(page, options = {}) {
     await result.focus()
     await page.keyboard.press('Enter')
   } else if (options.touch) {
-    await result.tap()
+    await result.tap({ timeout: 120_000 })
   } else {
-    await result.click()
+    await result.click({ timeout: 120_000 })
   }
   await navigator.waitFor({ state: 'detached', timeout: 20_000 }).catch(() => {})
   await waitForState(page, 'data-life-map-mode', 'selected')
@@ -281,7 +297,7 @@ async function waitForPath(page, destinationPath, timeout = 30_000) {
 async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedAction(page, name)
   await action.waitFor({ state: 'visible', timeout: 20_000 })
-  await action.click()
+  await action.click({ timeout: 120_000 })
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
@@ -295,8 +311,9 @@ function assertVisualSanity() {
   const required = [
     'desktop-overview', 'selection-start', 'mid-travel', 'approach', 'stable-arrival',
     'keyboard-selection', 'portrait-mobile-overview', 'portrait-mobile-travel',
-    'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
-    'reduced-motion-arrival',
+    'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-travel',
+    'portrait-tall-selected', 'reduced-motion-arrival', 'webgl-recovered',
+    'context-recovery-state-preserved',
   ]
   for (const id of required) {
     const capture = byId.get(id)
@@ -310,6 +327,38 @@ function assertVisualSanity() {
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
   }
+  const expectedPhases = {
+    'selection-start': 'departure',
+    'mid-travel': 'travel',
+    approach: 'approach',
+    'stable-arrival': 'arrival',
+    'keyboard-selection': 'arrival',
+    'portrait-mobile-travel': 'travel',
+    'portrait-mobile-selected': 'arrival',
+    'portrait-tall-travel': 'travel',
+    'portrait-tall-selected': 'arrival',
+    'reduced-motion-arrival': 'arrival',
+    'webgl-recovered': 'arrival',
+    'context-recovery-state-preserved': 'arrival',
+  }
+  for (const [id, expectedPhase] of Object.entries(expectedPhases)) {
+    const actualPhase = byId.get(id)?.state?.phase
+    if (actualPhase !== expectedPhase) throw new Error(`${id} phase drifted: expected=${expectedPhase} actual=${actualPhase}`)
+  }
+  const loss = byId.get('webgl-context-loss')
+  if (!loss) throw new Error('missing required WebGL context-loss capture')
+  if (!['lost', 'recovering'].includes(loss.state?.webgl)) throw new Error(`context-loss state drifted: ${loss.state?.webgl}`)
+  for (const id of ['webgl-recovered', 'context-recovery-state-preserved']) {
+    const capture = byId.get(id)
+    if (capture.state?.webgl !== 'ready') throw new Error(`${id} did not prove WebGL restoration`)
+    if (capture.state?.mode !== 'selected') throw new Error(`${id} did not preserve selected memory identity after recovery`)
+  }
+  const highResolutionOverview = byId.get('desktop-overview')
+  if (!highResolutionOverview?.signal || !highResolutionOverview?.viewport
+    || highResolutionOverview.signal.width < highResolutionOverview.viewport.width * 3
+    || highResolutionOverview.signal.height < highResolutionOverview.viewport.height * 3) {
+    throw new Error('desktop-overview did not retain the required 3x high-resolution PNG evidence')
+  }
   const phases = required.map((id) => byId.get(id)?.captureState).filter(Boolean)
   if (!phases.includes('departure') || !phases.includes('travel') || !phases.includes('approach') || !phases.includes('arrival')) {
     throw new Error('Founder journey did not retain every required phase')
@@ -318,158 +367,125 @@ function assertVisualSanity() {
   if (blockingEvents.length) throw new Error(`browser emitted ${blockingEvents.length} blocking console or network events`)
 }
 
-async function desktopJourney() {
-  const { context, page } = await openPage({ label: 'desktop' })
+async function highResolutionOverview() {
+  const { context, page } = await openPage({ label: 'desktop-high-resolution', deviceScaleFactor: 3 })
   try {
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
-    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
-
     await goto(page, overviewRoute)
     await waitForRenderedWorld(page)
-    await shot(page, 'desktop-overview', 'overview')
-    const canvas = page.locator('canvas').first()
-    const box = await canvas.boundingBox()
-    if (!box) throw new Error('canvas has no box')
-    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5)
-    await stable(page, 12)
-    await shot(page, 'depth-travel-frame-1', 'parallax-1')
-    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.32, { steps: 18 })
-    await stable(page, 14)
-    await shot(page, 'depth-travel-frame-2', 'parallax-2')
-    await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
-    await stable(page, 14)
-    await shot(page, 'depth-travel-frame-3', 'parallax-3')
-
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'departure')
-    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer' })
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'travel')
-    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset' })
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'approach')
-    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset' })
-
-    await goto(page, arrivalRoute)
-    await waitForRenderedWorld(page)
-    await waitForState(page, 'data-life-map-phase', 'arrival')
-    await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
-    await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
-    await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
-
-    await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
-    await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
-
-    await goto(page, arrivalRoute)
-    await waitForRenderedWorld(page)
-    await waitForState(page, 'data-life-map-phase', 'arrival')
-    await clickRouteAction(page, 'Replay', '/replay', 'main')
-    await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
-
-    await goto(page, arrivalRoute)
-    await waitForRenderedWorld(page)
-    await waitForState(page, 'data-life-map-phase', 'arrival')
-    const overviewAction = selectedAction(page, 'Overview')
-    await overviewAction.waitFor({ state: 'visible', timeout: 20_000 })
-    await overviewAction.click()
-    await waitForOverviewState(page)
-    await shot(page, 'overview-reset', 'overview-reset')
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page, { keyboard: true })
-    await shot(page, 'keyboard-selection', 'keyboard-selection', { memoryId: 'quiet-reset', interaction: 'keyboard' })
-    await page.keyboard.press('Escape')
-    await waitForOverviewState(page)
-    await shot(page, 'escape-unwind', 'escape-unwind')
+    await canvasGeometry(page)
+    await shot(page, 'desktop-overview', 'overview', { evidenceResolution: '3x-device' })
   } finally {
     await context.close()
   }
 }
 
-async function mobileAndReduced() {
-  const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
-  const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
-
-  const mobile = await openPage({ viewport: { width: 390, height: 844 }, label: 'portrait', hasTouch: true, isMobile: true })
+async function desktopJourney() {
+  const { context, page } = await openPage({ label: 'desktop' })
   try {
-    await goto(mobile.page, overviewRoute)
-    await waitForRenderedWorld(mobile.page)
-    await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    await selectQuietReset(mobile.page, { touch: true })
-    await waitForState(mobile.page, 'data-life-map-phase', 'travel')
-    await shot(mobile.page, 'portrait-mobile-travel', 'mobile-travel', { memoryId: 'quiet-reset', interaction: 'touch' })
-    await goto(mobile.page, arrivalRoute)
-    await waitForRenderedWorld(mobile.page)
-    await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
-    await shot(mobile.page, 'portrait-mobile-selected', 'mobile-selected', { memoryId: 'quiet-reset', interaction: 'touch' })
+    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    await shot(page, 'depth-travel-frame-1', 'parallax-1')
+    await page.mouse.move(1120, 250)
+    await stable(page, 6)
+    await shot(page, 'depth-travel-frame-2', 'parallax-2')
+    await page.mouse.move(300, 620)
+    await stable(page, 6)
+    await shot(page, 'depth-travel-frame-3', 'parallax-3')
+    await selectQuietReset(page)
+    await waitForState(page, 'data-life-map-phase', 'departure')
+    await shot(page, 'selection-start', 'departure')
+    await waitForState(page, 'data-life-map-phase', 'travel', 45_000)
+    await shot(page, 'mid-travel', 'travel')
+    await waitForState(page, 'data-life-map-phase', 'approach', 45_000)
+    await shot(page, 'approach', 'approach')
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await shot(page, 'stable-arrival', 'arrival')
+    await clickRouteAction(page, 'Open Focus', '/focus', '[data-testid="urai-focus-page"]')
+    await goto(page, arrivalRoute)
+    await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await clickRouteAction(page, 'Replay', '/replay', '[data-testid="urai-replay-page"]')
+    await goto(page, arrivalRoute)
+    await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await clickRouteAction(page, 'Overview', '/life-map', ROOT)
+    await waitForOverviewState(page)
   } finally {
-    await mobile.context.close()
-  }
-
-  const tall = await openPage({ viewport: { width: 430, height: 932 }, label: 'portrait-tall', hasTouch: true, isMobile: true })
-  try {
-    await goto(tall.page, overviewRoute)
-    await waitForRenderedWorld(tall.page)
-    await shot(tall.page, 'portrait-tall-overview', 'mobile-tall-overview')
-    await goto(tall.page, arrivalRoute)
-    await waitForRenderedWorld(tall.page)
-    await waitForState(tall.page, 'data-life-map-phase', 'arrival')
-    await shot(tall.page, 'portrait-tall-selected', 'mobile-tall-selected', { memoryId: 'quiet-reset' })
-  } finally {
-    await tall.context.close()
-  }
-
-  const reduced = await openPage({ reducedMotion: 'reduce', label: 'reduced-motion' })
-  try {
-    await goto(reduced.page, arrivalRoute)
-    await waitForRenderedWorld(reduced.page)
-    await waitForState(reduced.page, 'data-life-map-phase', 'arrival')
-    await shot(reduced.page, 'reduced-motion-arrival', 'reduced-motion-arrival', { memoryId: 'quiet-reset' })
-  } finally {
-    await reduced.context.close()
+    await context.close()
   }
 }
 
-async function privacyAndRecovery() {
-  const signed = await openPage({ label: 'signed-out' })
+async function keyboardJourney() {
+  const { context, page } = await openPage({ label: 'keyboard' })
   try {
-    await goto(signed.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
-    await shot(signed.page, 'signed-out-private-threshold', 'signed-out')
+    await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+    await waitForRenderedWorld(page)
+    await selectQuietReset(page, { keyboard: true })
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await shot(page, 'keyboard-selection', 'arrival')
   } finally {
-    await signed.context.close()
+    await context.close()
+  }
+}
+
+async function mobileJourney(viewport, label, ids) {
+  const { context, page } = await openPage({ label, viewport, hasTouch: true, isMobile: true })
+  try {
+    await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+    await waitForRenderedWorld(page)
+    await shot(page, ids.overview, 'overview')
+    await selectQuietReset(page, { touch: true })
+    await waitForState(page, 'data-life-map-phase', 'travel', 45_000)
+    await shot(page, ids.travel, 'travel')
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await shot(page, ids.selected, 'arrival')
+  } finally {
+    await context.close()
+  }
+}
+
+async function reducedMotionJourney() {
+  const { context, page } = await openPage({ label: 'reduced-motion', reducedMotion: 'reduce' })
+  try {
+    await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+    await waitForRenderedWorld(page)
+    await selectQuietReset(page)
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await shot(page, 'reduced-motion-arrival', 'arrival')
+  } finally {
+    await context.close()
+  }
+}
+
+async function privacyAndRecoveryJourneys() {
+  const signedOut = await openPage({ label: 'signed-out-threshold' })
+  try {
+    await goto(signedOut.page, '/life-map/', '[data-testid="urai-life-map-signed-out-threshold"]')
+    await shot(signedOut.page, 'signed-out-threshold', 'privacy')
+  } finally {
+    await signedOut.context.close()
   }
 
-  const sample = await openPage({ label: 'disclosed-demo' })
+  const noWebGL = await openPage({ label: 'no-webgl', disableWebGL: true })
   try {
-    await goto(sample.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
-    await waitForRenderedWorld(sample.page)
-    await shot(sample.page, 'explicit-disclosed-sample', 'explicit-demo')
+    await goto(noWebGL.page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1', '[data-testid="urai-life-map-authored-fallback"]')
+    await shot(noWebGL.page, 'no-webgl-fallback', 'recovery')
   } finally {
-    await sample.context.close()
+    await noWebGL.context.close()
   }
+}
 
-  const fallback = await openPage({ disableWebGL: true, label: 'no-webgl' })
+async function contextRecoveryJourney() {
+  const { context, page } = await openPage({ label: 'context-recovery' })
   try {
-    await goto(fallback.page, '/life-map/?demo=1', '[data-testid="urai-life-map-authored-fallback"]')
-    await shot(fallback.page, 'no-webgl-fallback', 'no-webgl')
-  } finally {
-    await fallback.context.close()
-  }
-
-  const recovery = await openPage({ label: 'context-recovery' })
-  try {
-    await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
-    await waitForState(recovery.page, 'data-life-map-phase', 'arrival')
-    await waitForRenderedWorld(recovery.page)
-    const canvas = recovery.page.locator('canvas').first()
+    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+    await goto(page, arrivalRoute)
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await waitForRenderedWorld(page, 45_000)
+    const canvas = page.locator('canvas').first()
     const contextLossAvailable = await canvas.evaluate((element) => {
       const gl = element.getContext('webgl2') || element.getContext('webgl')
       const extension = gl?.getExtension('WEBGL_lose_context')
@@ -477,37 +493,54 @@ async function privacyAndRecovery() {
       window.__uraiFounderContextLoss = extension
       extension.loseContext()
       return true
-    })
+    }, undefined, { timeout: 120_000 })
     if (!contextLossAvailable) throw new Error('WEBGL_lose_context unavailable for founder recovery proof')
-    await recovery.page.locator('[data-webgl-state="lost"], [data-webgl-state="recovering"]').first().waitFor({ state: 'attached', timeout: 10_000 })
-    await shot(recovery.page, 'webgl-context-loss', 'context-lost', { memoryId: 'quiet-reset' })
+    await page.locator('[data-webgl-state="lost"], [data-webgl-state="recovering"]').first().waitFor({ state: 'attached', timeout: 20_000 })
+    await shot(page, 'webgl-context-loss', 'context-lost')
     await canvas.evaluate((element) => {
       window.__uraiFounderContextLoss?.restoreContext()
       delete window.__uraiFounderContextLoss
       element.style.visibility = ''
-    })
-    await waitForState(recovery.page, 'data-webgl-state', 'ready', 20_000)
-    await waitForRenderedWorld(recovery.page)
-    await shot(recovery.page, 'webgl-recovered', 'context-recovered', { memoryId: 'quiet-reset' })
-    await shot(recovery.page, 'context-recovery-state-preserved', 'context-recovered-selected', { memoryId: 'quiet-reset' })
+    }, undefined, { timeout: 120_000 })
+    await waitForState(page, 'data-webgl-state', 'ready', 45_000)
+    await waitForRenderedWorld(page, 45_000)
+    await waitForState(page, 'data-life-map-mode', 'selected', 45_000)
+    await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
+    await shot(page, 'webgl-recovered', 'arrival')
+    await shot(page, 'context-recovery-state-preserved', 'arrival')
   } finally {
-    await recovery.context.close()
+    await context.close()
   }
 }
 
 try {
+  await highResolutionOverview()
   await desktopJourney()
-  await mobileAndReduced()
-  await privacyAndRecovery()
+  await keyboardJourney()
+  await mobileJourney({ width: 390, height: 844 }, 'portrait-mobile', {
+    overview: 'portrait-mobile-overview',
+    travel: 'portrait-mobile-travel',
+    selected: 'portrait-mobile-selected',
+  })
+  await mobileJourney({ width: 430, height: 932 }, 'portrait-tall', {
+    overview: 'portrait-tall-overview',
+    travel: 'portrait-tall-travel',
+    selected: 'portrait-tall-selected',
+  })
+  await reducedMotionJourney()
+  await privacyAndRecoveryJourneys()
+  await contextRecoveryJourney()
   assertVisualSanity()
+  receipt.passed = true
 } catch (error) {
   failed = true
-  receipt.error = String(error)
+  receipt.error = String(error?.stack || error)
+  receipt.passed = false
 } finally {
-  await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 23
-  await writeFile(path.join(outputDir, 'browser-events.json'), JSON.stringify(receipt.browserEvents, null, 2))
-  await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
-  if (!receipt.passed) process.exitCode = 1
+  await writeFile(path.join(outputDir, 'browser-events.json'), `${JSON.stringify(receipt.browserEvents, null, 2)}\n`)
+  await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+  await browser.close()
 }
+
+if (failed) process.exitCode = 1

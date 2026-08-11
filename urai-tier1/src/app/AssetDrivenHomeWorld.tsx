@@ -9,7 +9,7 @@ type Props = {
   webglAvailable: true
 }
 
-const HOME_SPAWN = { x: 0, z: 8.4 } as const
+const HOME_SPAWN = { x: -0.85, z: 8.4 } as const
 const HOME_ORB = { x: 0, z: -4.25 } as const
 const HOME_GROUND = { x: -5.4, z: -10.8 } as const
 const HOME_LIFE_MAP = { x: 5.4, z: -10.8 } as const

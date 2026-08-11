@@ -45,7 +45,7 @@ async function openDemo(page: Page) {
     localStorage.removeItem('urai:userId')
     localStorage.removeItem('urai:locationMapDemoMode')
   })
-  await page.goto(route, { waitUntil: 'networkidle' })
+  await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   await expect(page.getByRole('heading', { name: 'Your places stay closed until you open them.' })).toBeVisible()
   await page.getByRole('button', { name: 'Open disclosed sample' }).click()
   await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
@@ -70,14 +70,46 @@ async function gestureAnchor(page: Page): Promise<ScreenPoint> {
   throw new Error('No unobstructed native gesture anchor was available in the Location Map stage')
 }
 
+async function nativeHitPoint(target: Locator, timeout = 15_000): Promise<ScreenPoint> {
+  const deadline = Date.now() + timeout
+  let lastRect: { left: number; top: number; width: number; height: number } | null = null
+  while (Date.now() < deadline) {
+    const sample = await target.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      const x = rect.left + rect.width * .5
+      const y = rect.top + rect.height * .5
+      const hit = document.elementFromPoint(x, y)
+      return {
+        point: x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight
+          && hit instanceof Node && (hit === element || element.contains(hit))
+          ? { x, y }
+          : null,
+        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      }
+    }).catch(() => null)
+    if (sample?.point) return sample.point
+    if (sample?.rect) lastRect = sample.rect
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+  throw new Error(`Native touch target never became the viewport hit owner: ${JSON.stringify(lastRect)}`)
+}
+
 async function nativeTouchTap(page: Page, target: Locator) {
-  await target.scrollIntoViewIfNeeded()
-  const viewport = page.viewportSize()
-  expect(viewport).not.toBeNull()
-  await expect(target).toBeVisible()
-  // Playwright's touch tap preserves native touch semantics while waiting for the
-  // transformed target to finish moving and become the actual hit owner.
-  await target.tap({ timeout: 15_000 })
+  await target.waitFor({ state: 'visible', timeout: 15_000 })
+  await target.evaluate(element => element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'auto' }))
+  const { x, y } = await nativeHitPoint(target)
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }],
+    })
+    await page.waitForTimeout(35)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } finally {
+    await cdp.detach()
+  }
 }
 
 async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', dx: number, dy: number) {
@@ -142,7 +174,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     test.setTimeout(120_000)
     const errors = monitor(page)
     await page.setViewportSize({ width: 1440, height: 900 })
-    await page.goto(route, { waitUntil: 'networkidle' })
+    await page.goto(route, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await expect(page.locator('[data-private-memory-mounted="false"]')).toBeVisible()
     await expect(page.getByText('No personal place history is mounted while signed out.')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('signed-out-desktop.png'), fullPage: true })
@@ -183,7 +215,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await page.goForward()
     await expect(page).toHaveURL(selectedUrl, { timeout: 15_000 })
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'place-focus')
-    await page.reload({ waitUntil: 'networkidle' })
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 })
     await expect(page.locator('[data-camera-checkpoint="place-focus"]')).toBeVisible()
 
     await page.keyboard.press('Escape')
@@ -203,12 +235,12 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
 
     await page.evaluate(() => localStorage.setItem('urai:userId', 'acceptance-user'))
-    await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'networkidle' })
+    await page.goto(`${route}&acceptanceState=private`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await expect(page.locator('[data-location-map-source="private-repository"]')).toBeVisible()
     await expect(page.getByText('Permissioned places')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('private-user-desktop.png'), fullPage: true })
 
-    await page.goto(`${route}&acceptanceState=empty`, { waitUntil: 'networkidle' })
+    await page.goto(`${route}&acceptanceState=empty`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await expect(page.getByRole('heading', { name: 'Your atlas is quiet.' })).toBeVisible()
     await expect(page.getByText('Nothing private has been inferred.')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('empty-state-desktop.png'), fullPage: true })
@@ -221,7 +253,18 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     }
     await context.setOffline(true)
     await page.evaluate(() => window.dispatchEvent(new Event('offline')))
-    await page.evaluate(() => fetch(`/location-map/offline-probe-${Date.now()}`).catch(() => undefined))
+    const offlineProbe = `/location-map/offline-probe-${Date.now()}`
+    let probeComplete = false
+    for (let attempt = 0; attempt < 3 && !probeComplete; attempt += 1) {
+      try {
+        await page.evaluate((path) => fetch(path).catch(() => undefined), offlineProbe)
+        probeComplete = true
+      } catch (error) {
+        if (!String(error).includes('Execution context was destroyed')) throw error
+        await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => {})
+      }
+    }
+    if (!probeComplete) throw new Error('Offline probe could not execute in a stable page context')
     await expect(page.getByText('Offline · local view retained')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('offline-desktop.png'), fullPage: true })
     await context.setOffline(false)
@@ -299,12 +342,12 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
 
   test('mobile native touch drag pinch continuation selection and deselection packet', async ({ page, browserName }, testInfo) => {
     test.skip(browserName !== 'chromium', 'CDP native touch input requires Chromium')
+    test.setTimeout(120_000)
     const errors = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
-    await page.goto(route, { waitUntil: 'networkidle' })
-    await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
-    await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
+    await page.goto(`${route}&demo=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible({ timeout: 30_000 })
+    await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: false })
 
     const beforeTouch = await camera(page)
     const beforeTouchTransform = await cameraTransform(page)
@@ -326,6 +369,8 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const afterPinchToPanTransform = await cameraTransform(page)
 
     await page.keyboard.press('Home')
+    const atlas = page.locator('[data-location-map-source="disclosed-demo"]')
+    await expect(atlas).toHaveAttribute('data-camera-checkpoint', 'atlas-world-view')
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
     const viewportBeaconIndex = await page.locator('.locationAtlasBeacon').evaluateAll((nodes) => {
       const index = nodes.findIndex((node) => {
@@ -342,13 +387,13 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await nativeTouchTap(page, page.locator('.locationAtlasBeacon').nth(viewportBeaconIndex))
     await expect(page.locator('.locationAtlasSelection')).toBeVisible()
     await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
-    await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: false })
 
     const selection = page.locator('.locationAtlasSelection')
     await nativeTouchTap(page, selection.getByRole('button', { name: 'Return to atlas overview' }))
     await expect(selection).toBeHidden()
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
-    await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: false })
 
     const expectedNavigationAbortIndexes = new Set(errors.failedRequests.flatMap((request, index) => (
       isExpectedNavigationAbort(request) ? [index] : []

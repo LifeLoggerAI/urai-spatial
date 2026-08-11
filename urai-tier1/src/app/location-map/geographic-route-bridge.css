@@ -1,17 +1,20 @@
 .locationMapGeographicBridge {
   position: fixed;
   top: clamp(5.75rem, 10vh, 7rem);
-  right: clamp(0.75rem, 2vw, 1.75rem);
+  left: 50%;
+  right: auto;
   z-index: 120;
   display: grid;
   gap: 0.35rem;
   min-width: min(16rem, calc(100vw - 1.5rem));
+  max-width: min(24rem, calc(100vw - 2rem));
   padding: 0.65rem 0.75rem;
   border: 1px solid rgba(175, 238, 255, 0.22);
   border-radius: 1rem;
   background: rgba(3, 13, 25, 0.82);
   box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.36);
   backdrop-filter: blur(18px);
+  transform: translateX(-50%);
 }
 
 .locationMapGeographicBridge span {
@@ -39,12 +42,14 @@
 @media (max-width: 760px) {
   .locationMapGeographicBridge {
     top: calc(env(safe-area-inset-top, 0px) + 6.25rem);
+    left: auto;
     right: 0.75rem;
     bottom: auto;
     min-width: 0;
     width: min(17rem, calc(100vw - 1.5rem));
     max-width: calc(100vw - 1.5rem);
     padding: 0.5rem 0.65rem;
+    transform: none;
   }
 
   .locationMapGeographicBridge span {
