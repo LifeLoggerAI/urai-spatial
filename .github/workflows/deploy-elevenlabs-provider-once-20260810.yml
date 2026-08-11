@@ -27,6 +27,7 @@ jobs:
     name: Build, deploy, and smoke ElevenLabs provider
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment: production
     steps:
       - name: Guard one-time trusted branch
         shell: bash
