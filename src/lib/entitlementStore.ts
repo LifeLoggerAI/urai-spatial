@@ -1,4 +1,5 @@
 import type { InsightPlanId } from '@/components/spatial/insightMonetizationEngine';
+import { assertExternalAccountAdc } from '@/lib/server/google-adc';
 
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'none';
 
@@ -28,6 +29,7 @@ async function getAdminFirestore() {
   const app = await import('firebase-admin/app');
   const firestore = await import('firebase-admin/firestore');
 
+  assertExternalAccountAdc();
   if (!app.getApps().length) {
     app.initializeApp({ credential: app.applicationDefault() });
   }
