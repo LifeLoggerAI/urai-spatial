@@ -7,12 +7,13 @@ import { Suspense, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { DEMO_COUNCIL_AGENTS } from "./councilAgentSchema"
 
-const MODEL_ROOT = "/assets/urai/generated/real-world-v1"
-const COUNCIL_CHAMBER_MODEL = `${MODEL_ROOT}/council-chamber-real-v1.glb`
+const WORLD_MODEL_ROOT = "/assets/urai/generated/hero-realms-v2"
+const HUMAN_MODEL_ROOT = "/assets/urai/generated/real-world-v1"
+const COUNCIL_CHAMBER_MODEL = `${WORLD_MODEL_ROOT}/council-chamber-hero-v2.glb`
 const HUMAN_MODELS = [
-  `${MODEL_ROOT}/council-guide-human-v1.glb`,
-  `${MODEL_ROOT}/council-archivist-human-v1.glb`,
-  `${MODEL_ROOT}/council-guardian-human-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-guide-human-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-archivist-human-v1.glb`,
+  `${HUMAN_MODEL_ROOT}/council-guardian-human-v1.glb`,
 ] as const
 
 const POSITIONS: [number, number, number][] = [
@@ -41,7 +42,7 @@ function prepareModel(source: THREE.Object3D) {
 function ChamberModel() {
   const model = useGLTF(COUNCIL_CHAMBER_MODEL)
   const scene = useMemo(() => prepareModel(model.scene), [model.scene])
-  return <primitive object={scene} name="council-forged-human-scale-chamber" />
+  return <primitive object={scene} name="council-hero-v2-chamber" />
 }
 
 function CouncilHumanModel({
@@ -118,7 +119,8 @@ function CouncilWorld() {
           shadows
           dpr={[1, 1.75]}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-          data-council-model-authority="urai-real-world-extension-v1"
+          data-council-world-authority="urai-hero-realms-v2"
+          data-council-human-authority="urai-real-world-extension-v1"
         >
           <Suspense fallback={null}>
             <color attach="background" args={["#8c989c"]} />
