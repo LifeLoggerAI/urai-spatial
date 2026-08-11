@@ -1,0 +1,201 @@
+name: Discover Key Delete Authority Once 2026-08-11
+
+on:
+  push:
+    branches:
+      - ops/urai-spatial-wif-var-audit-20260811
+    paths:
+      - '.github/workflows/discover-key-delete-authority-once-20260811.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: discover-key-delete-authority-once-20260811
+  cancel-in-progress: false
+
+env:
+  TARGET_PROJECT: urai-4dc1d
+
+jobs:
+  discover:
+    name: Discover existing key-delete authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate legacy credential metadata privately
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" | jq -e '.project_id == "urai-4dc1d" and (.client_email | type == "string" and length > 0)' >/dev/null
+
+      - name: Authenticate legacy identity for read-only authority discovery
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          project_id: ${{ env.TARGET_PROJECT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.TARGET_PROJECT }}
+          version: '>= 500.0.0'
+
+      - name: Resolve roles that actually contain iam.serviceAccountKeys.delete
+        id: discover
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/urai-key-delete-authority"
+          mkdir -p "$d/roles"
+
+          gcloud projects get-iam-policy "$TARGET_PROJECT" --format=json > "$d/project-iam.json"
+          gcloud iam service-accounts list --project "$TARGET_PROJECT" --format=json > "$d/service-accounts.json"
+          jq -r '.bindings[]?.role // empty' "$d/project-iam.json" | sort -u > "$d/roles.txt"
+
+          : > "$d/role-results.ndjson"
+          idx=0
+          while IFS= read -r role; do
+            [ -n "$role" ] || continue
+            idx=$((idx + 1))
+            out="$d/roles/role-$idx.json"
+            err="$d/roles/role-$idx.err"
+            described=false
+            if [[ "$role" == roles/* ]]; then
+              if gcloud iam roles describe "$role" --format=json > "$out" 2>"$err"; then described=true; fi
+            elif [[ "$role" == projects/*/roles/* ]]; then
+              rid="${role##*/}"
+              project="$(printf '%s' "$role" | cut -d/ -f2)"
+              if gcloud iam roles describe "$rid" --project "$project" --format=json > "$out" 2>"$err"; then described=true; fi
+            elif [[ "$role" == organizations/*/roles/* ]]; then
+              rid="${role##*/}"
+              org="$(printf '%s' "$role" | cut -d/ -f2)"
+              if gcloud iam roles describe "$rid" --organization "$org" --format=json > "$out" 2>"$err"; then described=true; fi
+            fi
+            has_delete=false
+            if [ "$described" = true ] && jq -e '.includedPermissions // [] | index("iam.serviceAccountKeys.delete") != null' "$out" >/dev/null 2>&1; then
+              has_delete=true
+            fi
+            jq -nc --arg role "$role" --argjson described "$described" --argjson hasDelete "$has_delete" \
+              '{role:$role, described:$described, hasKeyDelete:$hasDelete}' >> "$d/role-results.ndjson"
+          done < "$d/roles.txt"
+          jq -s '.' "$d/role-results.ndjson" > "$d/role-results.json"
+          jq -r '.[] | select(.hasKeyDelete == true) | .role' "$d/role-results.json" > "$d/delete-roles.txt"
+
+          jq -n \
+            --slurpfile iam "$d/project-iam.json" \
+            --slurpfile sas "$d/service-accounts.json" \
+            --rawfile deleteRoles "$d/delete-roles.txt" '
+              ($deleteRoles | split("\n") | map(select(length > 0))) as $roles |
+              ($sas[0] | map(.email) | map(select(. != null))) as $localSas |
+              [
+                $iam[0].bindings[]? as $b |
+                select($roles | index($b.role)) |
+                $b.members[]? |
+                {
+                  role:$b.role,
+                  member:.,
+                  type:(if startswith("serviceAccount:") then "serviceAccount" elif startswith("user:") then "user" elif startswith("group:") then "group" elif startswith("domain:") then "domain" elif startswith("principalSet:") then "principalSet" elif startswith("principal:") then "principal" else "other" end),
+                  localServiceAccount:(startswith("serviceAccount:") and ($localSas | index(sub("^serviceAccount:"; "")) != null))
+                }
+              ]
+            ' > "$d/delete-bindings.json"
+
+          : > "$d/impersonation.ndjson"
+          idx=0
+          while IFS= read -r email; do
+            [ -n "$email" ] || continue
+            idx=$((idx + 1))
+            ok=false
+            if gcloud auth print-access-token --impersonate-service-account="$email" --project "$TARGET_PROJECT" >/dev/null 2>"$d/impersonate-$idx.err"; then
+              ok=true
+            fi
+            jq -nc --arg email "$email" --argjson ok "$ok" '{email:$email, impersonationSucceeded:$ok}' >> "$d/impersonation.ndjson"
+          done < <(jq -r '.[] | select(.localServiceAccount == true) | .member | sub("^serviceAccount:"; "")' "$d/delete-bindings.json" | sort -u)
+          if [ -s "$d/impersonation.ndjson" ]; then jq -s '.' "$d/impersonation.ndjson" > "$d/impersonation.json"; else printf '[]\n' > "$d/impersonation.json"; fi
+
+          jq -n \
+            --arg recordedAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg projectId "$TARGET_PROJECT" \
+            --slurpfile roleResults "$d/role-results.json" \
+            --slurpfile bindings "$d/delete-bindings.json" \
+            --slurpfile impersonation "$d/impersonation.json" '
+              {
+                schemaVersion:"urai-key-delete-authority-readonly-1",
+                recordedAt:$recordedAt,
+                projectId:$projectId,
+                mutationPerformed:false,
+                tokenValueRecorded:false,
+                credentialValueRecorded:false,
+                roleCount:($roleResults[0] | length),
+                unresolvedRoleCount:([$roleResults[0][] | select(.described == false)] | length),
+                keyDeleteRoleCount:([$roleResults[0][] | select(.hasKeyDelete == true)] | length),
+                keyDeleteBindingCount:($bindings[0] | length),
+                principalTypeCounts:($bindings[0] | group_by(.type) | map({key:.[0].type,value:length}) | from_entries),
+                localServiceAccountBindingCount:([$bindings[0][] | select(.localServiceAccount == true)] | length),
+                impersonationCandidateCount:($impersonation[0] | length),
+                successfulImpersonationCount:([$impersonation[0][] | select(.impersonationSucceeded == true)] | length),
+                impersonation:$impersonation[0]
+              }
+            ' > "$d/receipt.json"
+
+          echo "receipt=$d/receipt.json" >> "$GITHUB_OUTPUT"
+
+      - name: Report sanitized authority result
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        env:
+          RECEIPT_PATH: ${{ steps.discover.outputs.receipt }}
+        with:
+          script: |
+            const fs = require('fs')
+            let body
+            if (!process.env.RECEIPT_PATH || !fs.existsSync(process.env.RECEIPT_PATH)) {
+              body = [
+                '## URAI service-account key-delete authority discovery',
+                '',
+                '- Result: **NO RECEIPT**',
+                '- Mutation performed: **false**',
+                '- Credential/token values recorded: **false**',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            } else {
+              const r = JSON.parse(fs.readFileSync(process.env.RECEIPT_PATH, 'utf8'))
+              const types = Object.entries(r.principalTypeCounts || {}).map(([k,v]) => `  - ${k}: **${v}**`).join('\n') || '  - none'
+              const sa = (r.impersonation || []).map(x => `  - \`${x.email}\` — impersonation: **${x.impersonationSucceeded}**`).join('\n') || '  - none'
+              body = [
+                '## URAI service-account key-delete authority discovery',
+                '',
+                `- Project roles inspected: **${r.roleCount}**`,
+                `- Roles not describable by current identity: **${r.unresolvedRoleCount}**`,
+                `- Roles proven to include iam.serviceAccountKeys.delete: **${r.keyDeleteRoleCount}**`,
+                `- Project IAM bindings carrying proven key-delete authority: **${r.keyDeleteBindingCount}**`,
+                `- Local service-account key-delete bindings: **${r.localServiceAccountBindingCount}**`,
+                `- Short-lived impersonation candidates: **${r.impersonationCandidateCount}**`,
+                `- Successful impersonation paths: **${r.successfulImpersonationCount}**`,
+                '',
+                '### Key-delete principal types',
+                types,
+                '',
+                '### Local service-account impersonation probes',
+                sa,
+                '',
+                '- User/group/domain identities are counted only; their names/emails are not published.',
+                '- Mutation performed: **false**',
+                '- No IAM changes, key deletion, deployment, access-token value, private key, key ID, or credential JSON was recorded.',
+                `- Workflow run: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join('\n')
+            }
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'URAI service-account key-delete authority read-only discovery', body })
+
+      - name: Remove temporary discovery material
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/urai-key-delete-authority"
