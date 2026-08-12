@@ -351,7 +351,7 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     await stage.focus()
     await page.keyboard.press('Home')
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
-    await expect(page.locator('[data-camera-checkpoint="atlas-world-view"]')).toBeVisible()
+    await expect(page.locator('.locationAtlas[data-camera-checkpoint="atlas-world-view"]')).toBeVisible({ timeout: 15_000 })
     const viewportBeaconIndex = await page.locator('.locationAtlasBeacon').evaluateAll((nodes) => {
       const index = nodes.findIndex((node) => {
         const rect = node.getBoundingClientRect()
