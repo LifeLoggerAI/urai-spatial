@@ -48,8 +48,8 @@ test('Founder runner retains every required real interaction and phase owner', (
   assert.match(runner, /await waitForPath\(page, destinationPath\)/)
   assert.match(runner, /page\.locator\(destinationSelector\)\.first\(\)\.waitFor/)
   for (const routeAction of [
-    "clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid=\"urai-focus-page\"]')",
-    "clickRouteAction(page, 'Replay', '/replay', '[data-testid=\"urai-replay-page\"]')",
+    "clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid=\"urai-final-focus-chamber\"]')",
+    "clickRouteAction(page, 'Replay', '/replay', '[data-testid=\"urai-replay-surface\"]')",
     "clickRouteAction(page, 'Overview', '/life-map', ROOT)",
   ]) assert.ok(runner.includes(routeAction), `missing route action: ${routeAction}`)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
