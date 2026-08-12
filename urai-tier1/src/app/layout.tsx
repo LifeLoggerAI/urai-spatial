@@ -54,6 +54,7 @@ import './urai-design-system.css'
 import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
+import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
@@ -64,7 +65,7 @@ const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 
 export const metadata: Metadata = {
   title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
-  description: 'Cinematic, spatial, interactive URAI runtime',
+  description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
   icons: {
     icon: embeddedIcon,
   },
@@ -78,6 +79,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  colorScheme: 'dark',
+  themeColor: '#07101a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -95,7 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-deployed-sha={deployedSha}
         data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}
         data-production-certification={previewMode ? 'not-certified-preview' : 'fingerprint-gated'}
-        style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
+        style={{ margin: 0, background: '#07101a', overflowX: 'hidden' }}
       >
         {previewMode ? (
           <div
