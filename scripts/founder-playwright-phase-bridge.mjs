@@ -63,7 +63,7 @@ function wrapLocator(locator, page, bridgeState) {
           if (roots.length !== 1) {
             throw new Error(`Founder phase bridge expected exactly one canonical root; found ${roots.length}`)
           }
-          const element = roots[0]
+          let element = roots[0]
           const startedAt = performance.now()
           const timeline = []
           let lastPhase = null
@@ -78,22 +78,33 @@ function wrapLocator(locator, page, bridgeState) {
           const publish = (payload) => {
             Promise.resolve(window[input.bridgeName]?.(payload)).catch(() => {})
           }
+          const currentRoot = () => {
+            const current = document.querySelectorAll(selector)
+            if (current.length !== 1) return null
+            return current[0]
+          }
           const record = (source) => {
+            const current = currentRoot()
+            if (!current) return
+            const rootChanged = current !== element
+            element = current
             const phase = element.getAttribute('data-life-map-phase')
-            if (phase !== lastPhase) {
+            if (phase !== lastPhase || rootChanged) {
               lastPhase = phase
-              timeline.push({ phase, atMs: performance.now() - startedAt, source })
+              timeline.push({ phase, atMs: performance.now() - startedAt, source: rootChanged ? `root-remount:${source}` : source })
             }
             if (phase !== input.expectedPhase || framePending || settled) return
             framePending = true
             window.requestAnimationFrame((frameTime) => {
               framePending = false
               if (settled) return
-              const framePhase = element.getAttribute('data-life-map-phase')
+              const frameRoot = currentRoot()
+              const framePhase = frameRoot?.getAttribute('data-life-map-phase') ?? null
               if (framePhase !== input.expectedPhase) {
-                record('phase-advanced-before-frame')
+                record(frameRoot ? 'phase-advanced-before-frame' : 'root-missing-before-frame')
                 return
               }
+              element = frameRoot
               settled = true
               cleanup()
               publish({
@@ -108,7 +119,12 @@ function wrapLocator(locator, page, bridgeState) {
           }
 
           const observer = new MutationObserver(() => record('mutation'))
-          observer.observe(element, { attributes: true, attributeFilter: ['data-life-map-phase'] })
+          observer.observe(document.documentElement, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['data-life-map-phase'],
+          })
           timer = window.setTimeout(() => {
             if (settled) return
             settled = true
