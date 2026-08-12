@@ -1,10 +1,9 @@
-import { createRequire } from 'node:module'
+import Module from 'node:module'
+import path from 'node:path'
 
-const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
-const playwright = requireFromTierOne('playwright')
-const { chromium } = playwright
-const originalLaunch = chromium.launch.bind(chromium)
+const originalLoad = Module._load
 const BRIDGE_NAME = '__uraiFounderHarnessPhaseBridge'
+const RUNNER_SUFFIX = path.join('scripts', 'capture-lifemap-founder-proof-fixed.mjs')
 let sequence = 0
 
 function bindMember(target, key) {
@@ -117,9 +116,7 @@ function wrapPage(page) {
   const bridgeState = { waiters: new Map(), exposed: false }
   return new Proxy(page, {
     get(target, key) {
-      if (key === 'locator') {
-        return (...args) => wrapLocator(target.locator(...args), target, bridgeState)
-      }
+      if (key === 'locator') return (...args) => wrapLocator(target.locator(...args), target, bridgeState)
       if (key === '__uraiFounderInstallBridge') {
         return async () => {
           if (bridgeState.exposed) return
@@ -153,14 +150,33 @@ function wrapContext(context) {
 function wrapBrowser(browser) {
   return new Proxy(browser, {
     get(target, key) {
-      if (key === 'newContext') {
-        return async (...args) => wrapContext(await target.newContext(...args))
-      }
+      if (key === 'newContext') return async (...args) => wrapContext(await target.newContext(...args))
       return bindMember(target, key)
     },
   })
 }
 
-const bridgedLaunch = async (...args) => wrapBrowser(await originalLaunch(...args))
-chromium.launch = bridgedLaunch
-if (chromium.launch !== bridgedLaunch) throw new Error('Founder Playwright phase bridge could not install')
+function wrapBrowserType(browserType) {
+  return new Proxy(browserType, {
+    get(target, key) {
+      if (key === 'launch') return async (...args) => wrapBrowser(await target.launch(...args))
+      return bindMember(target, key)
+    },
+  })
+}
+
+function wrapPlaywright(playwright) {
+  return new Proxy(playwright, {
+    get(target, key) {
+      if (key === 'chromium') return wrapBrowserType(target.chromium)
+      return bindMember(target, key)
+    },
+  })
+}
+
+Module._load = function founderScopedPlaywrightLoad(request, parent, isMain) {
+  const loaded = originalLoad.apply(this, arguments)
+  const parentFile = parent?.filename ? path.normalize(parent.filename) : ''
+  if (request === 'playwright' && parentFile.endsWith(RUNNER_SUFFIX)) return wrapPlaywright(loaded)
+  return loaded
+}
