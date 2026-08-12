@@ -465,11 +465,11 @@ async function desktopJourney() {
       await selectAndCapturePhase(page, phase, id)
     }
 
-    await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-focus-page"]')
+    await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
-    await clickRouteAction(page, 'Replay', '/replay', '[data-testid="urai-replay-page"]')
+    await clickRouteAction(page, 'Replay', '/replay', '[data-testid="urai-replay-surface"]')
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival', 45_000)
