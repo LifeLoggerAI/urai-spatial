@@ -64,11 +64,16 @@ test('Founder runner retains every required real interaction and phase owner', (
   assert.match(runner, /renderedFramePhase: framePhase/)
   assert.match(runner, /transition\.renderedFramePhase !== expectedPhase/)
   assert.ok(runner.indexOf('await desktopJourney()') < runner.indexOf('await highResolutionOverview()'), 'time-critical phase proof must precede expensive 3x readback')
-  for (const phase of ['departure', 'travel', 'approach', 'arrival']) {
-    assert.match(runner, new RegExp(`selectAndCapturePhase\\(page, '${phase}'`))
+  for (const [phase, id] of [
+    ['departure', 'selection-start'],
+    ['travel', 'mid-travel'],
+    ['approach', 'approach'],
+    ['arrival', 'stable-arrival'],
+  ]) {
+    assert.ok(runner.includes(`['${phase}', '${id}']`), `missing Founder phase table entry ${phase}/${id}`)
   }
+  assert.match(runner, /await selectAndCapturePhase\(page, phase, id\)/)
   assert.doesNotMatch(runner, /force:\s*true|dispatchEvent\(new MouseEvent/)
-
 })
 
 test('Founder runner validates the retained high-resolution PNG with the distributed acceptance method', () => {
