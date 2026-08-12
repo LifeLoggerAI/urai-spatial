@@ -3,6 +3,7 @@ import path from 'node:path'
 
 const originalLoad = Module._load
 const BRIDGE_NAME = '__uraiFounderHarnessPhaseBridge'
+const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
 const TIER_ONE_REQUIRE_PARENT_SUFFIX = path.join('urai-tier1', 'package.json')
 let sequence = 0
 let bridgedPlaywrightDelivered = false
@@ -51,12 +52,13 @@ function wrapLocator(locator, page, bridgeState) {
           })
         })
 
-        let elementHandle
         try {
-          elementHandle = await target.elementHandle({ timeout: Math.min(arg.timeout, 30_000) })
-          if (!elementHandle) throw new Error(`Unable to bind Founder phase bridge for data-life-map-phase=${arg.expectedPhase}`)
-
-          await page.evaluate(({ element, input }) => {
+          await page.evaluate(({ selector, input }) => {
+            const roots = document.querySelectorAll(selector)
+            if (roots.length !== 1) {
+              throw new Error(`Founder phase bridge expected exactly one canonical root; found ${roots.length}`)
+            }
+            const element = roots[0]
             const startedAt = performance.now()
             const timeline = []
             let lastPhase = null
@@ -112,14 +114,12 @@ function wrapLocator(locator, page, bridgeState) {
               })
             }, input.timeout)
             record('armed')
-          }, { element: elementHandle, input: { ...arg, token, bridgeName: BRIDGE_NAME } })
+          }, { selector: FOUNDER_ROOT_SELECTOR, input: { ...arg, token, bridgeName: BRIDGE_NAME } })
         } catch (error) {
           clearTimeout(timeoutHandle)
           bridgeState.waiters.delete(token)
           rejectWitness(error)
           return witness
-        } finally {
-          if (elementHandle) await elementHandle.dispose().catch(() => {})
         }
 
         return witness
