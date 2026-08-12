@@ -101,7 +101,9 @@ export function MotionOrchestrator() {
       activate('body_thin_fade', 'world-transition')
       return
     }
-    if (phase === 'travelling') activate('timeline_warp', 'world-transition')
+    if (phase === 'ascending' || phase === 'travelling') {
+      activate('timeline_warp', 'world-transition')
+    }
   }, [activate, pendingTravel, phase, world.destination])
 
   const definition = activeCue ? URAI_MOTION_MANIFEST[activeCue] : null
