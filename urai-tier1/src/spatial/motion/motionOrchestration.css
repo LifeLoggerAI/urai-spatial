@@ -1,0 +1,148 @@
+.urai-motion-orchestrator {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+  opacity: 1;
+}
+
+.urai-motion-orchestrator > span {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform, filter;
+}
+
+.urai-motion-orchestrator__pressure {
+  background:
+    radial-gradient(ellipse at 18% 38%, rgba(114, 155, 173, .13), transparent 36%),
+    linear-gradient(105deg, transparent 8%, rgba(138, 178, 194, .10) 46%, transparent 82%);
+  transform: translate3d(-18%, 0, 0) scale(1.08);
+}
+
+.urai-motion-orchestrator__field {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(214, 248, 247, .08), transparent 24%),
+    radial-gradient(circle at 50% 52%, transparent 0 28%, rgba(128, 193, 199, .09) 29% 31%, transparent 32%);
+}
+
+.urai-motion-orchestrator__fracture {
+  inset: 13% 16%;
+  background:
+    linear-gradient(128deg, transparent 0 42%, rgba(220, 249, 247, .14) 42.4% 42.9%, transparent 43.3%),
+    linear-gradient(52deg, transparent 0 55%, rgba(168, 221, 219, .11) 55.3% 55.7%, transparent 56.1%),
+    radial-gradient(circle at 50% 50%, rgba(126, 184, 183, .08), transparent 52%);
+  filter: blur(.15px);
+}
+
+.urai-motion-orchestrator__curtain {
+  background:
+    linear-gradient(90deg, rgba(3, 8, 15, .72), transparent 24% 76%, rgba(3, 8, 15, .72)),
+    radial-gradient(ellipse at center, transparent 12%, rgba(4, 10, 18, .35) 72%);
+  transform: scaleX(1.08);
+}
+
+.urai-motion-orchestrator__mark {
+  inset: 50% auto auto 50%;
+  width: min(24vw, 220px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(215, 249, 244, .25);
+  border-radius: 50%;
+  box-shadow: 0 0 42px rgba(117, 207, 197, .12), inset 0 0 32px rgba(161, 227, 220, .08);
+  transform: translate(-50%, -50%) scale(.74);
+}
+
+.urai-motion-orchestrator[data-motion-cue='sky_pressure_roll'] .urai-motion-orchestrator__pressure {
+  animation: urai-pressure-roll 1600ms cubic-bezier(.22,.7,.22,1) both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='timeline_warp'] .urai-motion-orchestrator__field,
+.urai-motion-orchestrator[data-motion-cue='map_enter_zoom'] .urai-motion-orchestrator__field {
+  animation: urai-field-warp 1100ms cubic-bezier(.2,.72,.22,1) both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='orb_refusal_dim'] .urai-motion-orchestrator__field,
+.urai-motion-orchestrator[data-motion-cue='withdrawal_thin_pass'] .urai-motion-orchestrator__field,
+.urai-motion-orchestrator[data-motion-cue='silence_hold_frame'] .urai-motion-orchestrator__field,
+.urai-motion-orchestrator[data-motion-cue='body_thin_fade'] .urai-motion-orchestrator__field {
+  animation: urai-thin-hold 900ms ease-out both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='orb_threshold_fracture'] .urai-motion-orchestrator__fracture {
+  animation: urai-threshold-fracture 980ms cubic-bezier(.2,.72,.22,1) both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='app_boot_intro'] .urai-motion-orchestrator__field {
+  animation: urai-genesis-arrival 880ms cubic-bezier(.22,.75,.24,1) both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='replay_enter_curtain'] .urai-motion-orchestrator__curtain {
+  animation: urai-replay-curtain 1900ms cubic-bezier(.18,.72,.2,1) both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='ritual_seal_mark'] .urai-motion-orchestrator__mark,
+.urai-motion-orchestrator[data-motion-cue='trust_reveal_still'] .urai-motion-orchestrator__mark {
+  animation: urai-seal-mark 680ms cubic-bezier(.22,.72,.2,1) both;
+}
+
+.urai-motion-orchestrator[data-motion-cue='bloom_archive_fold'] .urai-motion-orchestrator__field {
+  animation: urai-archive-fold 760ms cubic-bezier(.24,.72,.24,1) both;
+}
+
+@keyframes urai-pressure-roll {
+  0% { opacity: 0; transform: translate3d(-18%, 0, 0) scale(1.08); }
+  32% { opacity: .78; }
+  100% { opacity: 0; transform: translate3d(18%, 0, 0) scale(1.02); }
+}
+
+@keyframes urai-field-warp {
+  0% { opacity: 0; transform: scale(.94); filter: blur(0); }
+  42% { opacity: .72; }
+  100% { opacity: 0; transform: scale(1.15); filter: blur(2px); }
+}
+
+@keyframes urai-thin-hold {
+  0% { opacity: 0; transform: scale(1); }
+  28%, 68% { opacity: .46; transform: scale(.985); }
+  100% { opacity: 0; transform: scale(.975); }
+}
+
+@keyframes urai-threshold-fracture {
+  0% { opacity: 0; transform: scale(.97); }
+  38%, 66% { opacity: .72; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.025); }
+}
+
+@keyframes urai-genesis-arrival {
+  0% { opacity: .78; transform: scale(1.16); filter: blur(8px); }
+  100% { opacity: 0; transform: scale(1); filter: blur(0); }
+}
+
+@keyframes urai-replay-curtain {
+  0% { opacity: 0; transform: scaleX(1.08); }
+  34%, 66% { opacity: .78; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(.94); }
+}
+
+@keyframes urai-seal-mark {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.74); }
+  44%, 74% { opacity: .76; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+@keyframes urai-archive-fold {
+  0% { opacity: .58; transform: scale(1.06); filter: blur(0); }
+  100% { opacity: 0; transform: scale(.82); filter: blur(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-motion-orchestrator > span {
+    animation-duration: 140ms !important;
+    animation-timing-function: linear !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
