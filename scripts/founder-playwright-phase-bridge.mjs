@@ -36,7 +36,9 @@ function wrapLocator(locator, page, bridgeState) {
 
         const token = `founder-phase-${++sequence}-${arg.expectedPhase}`
         let timeoutHandle
+        let rejectWitness
         const witness = new Promise((resolve, reject) => {
+          rejectWitness = reject
           timeoutHandle = setTimeout(() => {
             bridgeState.waiters.delete(token)
             reject(new Error(`data-life-map-phase=${arg.expectedPhase} did not reach the non-blocking bridge within ${arg.timeout}ms`))
@@ -49,63 +51,76 @@ function wrapLocator(locator, page, bridgeState) {
           })
         })
 
-        await target.evaluate((element, input) => {
-          const startedAt = performance.now()
-          const timeline = []
-          let lastPhase = null
-          let settled = false
-          let framePending = false
-          let timer = 0
+        let elementHandle
+        try {
+          elementHandle = await target.elementHandle({ timeout: Math.min(arg.timeout, 30_000) })
+          if (!elementHandle) throw new Error(`Unable to bind Founder phase bridge for data-life-map-phase=${arg.expectedPhase}`)
 
-          const cleanup = () => {
-            observer.disconnect()
-            window.clearTimeout(timer)
-          }
-          const publish = (payload) => {
-            Promise.resolve(window[input.bridgeName]?.(payload)).catch(() => {})
-          }
-          const record = (source) => {
-            const phase = element.getAttribute('data-life-map-phase')
-            if (phase !== lastPhase) {
-              lastPhase = phase
-              timeline.push({ phase, atMs: performance.now() - startedAt, source })
+          await page.evaluate(({ element, input }) => {
+            const startedAt = performance.now()
+            const timeline = []
+            let lastPhase = null
+            let settled = false
+            let framePending = false
+            let timer = 0
+
+            const cleanup = () => {
+              observer.disconnect()
+              window.clearTimeout(timer)
             }
-            if (phase !== input.expectedPhase || framePending || settled) return
-            framePending = true
-            window.requestAnimationFrame((frameTime) => {
-              framePending = false
-              if (settled) return
-              const framePhase = element.getAttribute('data-life-map-phase')
-              if (framePhase !== input.expectedPhase) {
-                record('phase-advanced-before-frame')
-                return
+            const publish = (payload) => {
+              Promise.resolve(window[input.bridgeName]?.(payload)).catch(() => {})
+            }
+            const record = (source) => {
+              const phase = element.getAttribute('data-life-map-phase')
+              if (phase !== lastPhase) {
+                lastPhase = phase
+                timeline.push({ phase, atMs: performance.now() - startedAt, source })
               }
+              if (phase !== input.expectedPhase || framePending || settled) return
+              framePending = true
+              window.requestAnimationFrame((frameTime) => {
+                framePending = false
+                if (settled) return
+                const framePhase = element.getAttribute('data-life-map-phase')
+                if (framePhase !== input.expectedPhase) {
+                  record('phase-advanced-before-frame')
+                  return
+                }
+                settled = true
+                cleanup()
+                publish({
+                  token: input.token,
+                  expectedPhase: input.expectedPhase,
+                  observedAtMs: timeline.find((entry) => entry.phase === input.expectedPhase)?.atMs ?? null,
+                  renderedFrameAtMs: frameTime - startedAt,
+                  renderedFramePhase: framePhase,
+                  timeline,
+                })
+              })
+            }
+
+            const observer = new MutationObserver(() => record('mutation'))
+            observer.observe(element, { attributes: true, attributeFilter: ['data-life-map-phase'] })
+            timer = window.setTimeout(() => {
+              if (settled) return
               settled = true
               cleanup()
               publish({
                 token: input.token,
-                expectedPhase: input.expectedPhase,
-                observedAtMs: timeline.find((entry) => entry.phase === input.expectedPhase)?.atMs ?? null,
-                renderedFrameAtMs: frameTime - startedAt,
-                renderedFramePhase: framePhase,
-                timeline,
+                error: `data-life-map-phase=${input.expectedPhase} did not survive a rendered frame within ${input.timeout}ms; last=${lastPhase}`,
               })
-            })
-          }
-
-          const observer = new MutationObserver(() => record('mutation'))
-          observer.observe(element, { attributes: true, attributeFilter: ['data-life-map-phase'] })
-          timer = window.setTimeout(() => {
-            if (settled) return
-            settled = true
-            cleanup()
-            publish({
-              token: input.token,
-              error: `data-life-map-phase=${input.expectedPhase} did not survive a rendered frame within ${input.timeout}ms; last=${lastPhase}`,
-            })
-          }, input.timeout)
-          record('armed')
-        }, { ...arg, token, bridgeName: BRIDGE_NAME })
+            }, input.timeout)
+            record('armed')
+          }, { element: elementHandle, input: { ...arg, token, bridgeName: BRIDGE_NAME } })
+        } catch (error) {
+          clearTimeout(timeoutHandle)
+          bridgeState.waiters.delete(token)
+          rejectWitness(error)
+          return witness
+        } finally {
+          if (elementHandle) await elementHandle.dispose().catch(() => {})
+        }
 
         return witness
       }
