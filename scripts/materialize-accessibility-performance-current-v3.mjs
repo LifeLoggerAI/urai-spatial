@@ -478,7 +478,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
     `    const currentOverview = page.getByRole('button', { name: 'Return to Life Map overview', exact: true })
     await expect(currentOverview).toBeVisible()
     await currentOverview.click()`,
-    1,
+    2,
     'fresh selected action Overview owner',
   )
   return source
