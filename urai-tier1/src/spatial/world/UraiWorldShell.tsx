@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import SpatialAmbientRuntime from '@/spatial/audio/SpatialAmbientRuntime'
+import MotionOrchestrator from '@/spatial/motion/MotionOrchestrator'
 import { GroundGateway } from './GroundGateway'
 import { LifeMapIndependentInputBoundary } from './LifeMapIndependentInputBoundary'
 import { LifeMapRouteTransactionBridge } from './LifeMapRouteTransactionBridge'
@@ -42,6 +43,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
       data-companion-owned={showWorldCompanion ? 'true' : 'false'}
     >
       <SpatialAmbientRuntime />
+      <MotionOrchestrator />
       <LifeMapSelectedActionRuntimeInvariant />
       <PersistentRealmAtmosphere />
       {children}
