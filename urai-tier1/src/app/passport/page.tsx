@@ -4,8 +4,8 @@ export const dynamic = 'force-static'
 export const revalidate = false
 
 export const metadata = {
-  title: 'UrAi Passport — Ownership Vault',
-  description: 'Inspect ownership, provenance, consent, exports, deletion, devices, providers and audit receipts inside the private UrAi world.',
+  title: 'URAI Passport — Ownership & Permissions',
+  description: 'Review ownership, provenance, permissions, exports, deletion, devices, connected providers, and audit history in URAI Passport.',
 }
 
 export default function PassportRoutePage() {
