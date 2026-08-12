@@ -21,6 +21,12 @@ function wrapLocator(locator, page, bridgeState) {
       if (key === 'nth') return (index) => wrapLocator(target.nth(index), page, bridgeState)
       if (key === 'locator') return (...args) => wrapLocator(target.locator(...args), page, bridgeState)
       if (key === 'filter') return (options) => wrapLocator(target.filter(options), page, bridgeState)
+      if (key === 'click' || key === 'tap') {
+        return async (...args) => {
+          if (bridgeState.armPromise) await bridgeState.armPromise
+          return target[key](...args)
+        }
+      }
       if (key !== 'evaluate') return bindMember(target, key)
 
       return async (fn, arg, ...rest) => {
@@ -52,74 +58,79 @@ function wrapLocator(locator, page, bridgeState) {
           })
         })
 
-        try {
-          await page.evaluate(({ selector, input }) => {
-            const roots = document.querySelectorAll(selector)
-            if (roots.length !== 1) {
-              throw new Error(`Founder phase bridge expected exactly one canonical root; found ${roots.length}`)
-            }
-            const element = roots[0]
-            const startedAt = performance.now()
-            const timeline = []
-            let lastPhase = null
-            let settled = false
-            let framePending = false
-            let timer = 0
+        const armPromise = page.evaluate(({ selector, input }) => {
+          const roots = document.querySelectorAll(selector)
+          if (roots.length !== 1) {
+            throw new Error(`Founder phase bridge expected exactly one canonical root; found ${roots.length}`)
+          }
+          const element = roots[0]
+          const startedAt = performance.now()
+          const timeline = []
+          let lastPhase = null
+          let settled = false
+          let framePending = false
+          let timer = 0
 
-            const cleanup = () => {
-              observer.disconnect()
-              window.clearTimeout(timer)
+          const cleanup = () => {
+            observer.disconnect()
+            window.clearTimeout(timer)
+          }
+          const publish = (payload) => {
+            Promise.resolve(window[input.bridgeName]?.(payload)).catch(() => {})
+          }
+          const record = (source) => {
+            const phase = element.getAttribute('data-life-map-phase')
+            if (phase !== lastPhase) {
+              lastPhase = phase
+              timeline.push({ phase, atMs: performance.now() - startedAt, source })
             }
-            const publish = (payload) => {
-              Promise.resolve(window[input.bridgeName]?.(payload)).catch(() => {})
-            }
-            const record = (source) => {
-              const phase = element.getAttribute('data-life-map-phase')
-              if (phase !== lastPhase) {
-                lastPhase = phase
-                timeline.push({ phase, atMs: performance.now() - startedAt, source })
-              }
-              if (phase !== input.expectedPhase || framePending || settled) return
-              framePending = true
-              window.requestAnimationFrame((frameTime) => {
-                framePending = false
-                if (settled) return
-                const framePhase = element.getAttribute('data-life-map-phase')
-                if (framePhase !== input.expectedPhase) {
-                  record('phase-advanced-before-frame')
-                  return
-                }
-                settled = true
-                cleanup()
-                publish({
-                  token: input.token,
-                  expectedPhase: input.expectedPhase,
-                  observedAtMs: timeline.find((entry) => entry.phase === input.expectedPhase)?.atMs ?? null,
-                  renderedFrameAtMs: frameTime - startedAt,
-                  renderedFramePhase: framePhase,
-                  timeline,
-                })
-              })
-            }
-
-            const observer = new MutationObserver(() => record('mutation'))
-            observer.observe(element, { attributes: true, attributeFilter: ['data-life-map-phase'] })
-            timer = window.setTimeout(() => {
+            if (phase !== input.expectedPhase || framePending || settled) return
+            framePending = true
+            window.requestAnimationFrame((frameTime) => {
+              framePending = false
               if (settled) return
+              const framePhase = element.getAttribute('data-life-map-phase')
+              if (framePhase !== input.expectedPhase) {
+                record('phase-advanced-before-frame')
+                return
+              }
               settled = true
               cleanup()
               publish({
                 token: input.token,
-                error: `data-life-map-phase=${input.expectedPhase} did not survive a rendered frame within ${input.timeout}ms; last=${lastPhase}`,
+                expectedPhase: input.expectedPhase,
+                observedAtMs: timeline.find((entry) => entry.phase === input.expectedPhase)?.atMs ?? null,
+                renderedFrameAtMs: frameTime - startedAt,
+                renderedFramePhase: framePhase,
+                timeline,
               })
-            }, input.timeout)
-            record('armed')
-          }, { selector: FOUNDER_ROOT_SELECTOR, input: { ...arg, token, bridgeName: BRIDGE_NAME } })
+            })
+          }
+
+          const observer = new MutationObserver(() => record('mutation'))
+          observer.observe(element, { attributes: true, attributeFilter: ['data-life-map-phase'] })
+          timer = window.setTimeout(() => {
+            if (settled) return
+            settled = true
+            cleanup()
+            publish({
+              token: input.token,
+              error: `data-life-map-phase=${input.expectedPhase} did not survive a rendered frame within ${input.timeout}ms; last=${lastPhase}`,
+            })
+          }, input.timeout)
+          record('armed')
+        }, { selector: FOUNDER_ROOT_SELECTOR, input: { ...arg, token, bridgeName: BRIDGE_NAME } })
+
+        bridgeState.armPromise = armPromise
+        try {
+          await armPromise
         } catch (error) {
           clearTimeout(timeoutHandle)
           bridgeState.waiters.delete(token)
           rejectWitness(error)
           return witness
+        } finally {
+          if (bridgeState.armPromise === armPromise) bridgeState.armPromise = null
         }
 
         return witness
@@ -129,10 +140,11 @@ function wrapLocator(locator, page, bridgeState) {
 }
 
 function wrapPage(page) {
-  const bridgeState = { waiters: new Map(), exposed: false }
+  const bridgeState = { waiters: new Map(), exposed: false, armPromise: null }
   return new Proxy(page, {
     get(target, key) {
       if (key === 'locator') return (...args) => wrapLocator(target.locator(...args), target, bridgeState)
+      if (key === 'getByRole') return (...args) => wrapLocator(target.getByRole(...args), target, bridgeState)
       if (key === '__uraiFounderInstallBridge') {
         return async () => {
           if (bridgeState.exposed) return
