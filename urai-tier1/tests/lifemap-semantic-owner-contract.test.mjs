@@ -60,7 +60,7 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
   assert.match(navigator, /aria-expanded=\{open\}/)
   assert.match(navigator, /onClick=\{\(\) => \{ setOpen\(\(value\) => !value\)/)
   assert.match(navigator, /\{open \? <section className="life-map-navigator" aria-label="Search and filter Life Map">/)
-  assert.match(navigator, /if \(event\.key === '\/'\)|if \(event\.key === "\/"\)/)
+  assert.match(navigator, /if \(event\.key === '\/'\)|if \(event\.key === "\/"/)
   assert.match(navigator, /setOpen\(true\)/)
   assert.match(navigator, /event\.key === 'Escape' && open|event\.key === "Escape" && open/)
   assert.match(navigator, /setOpen\(false\)/)
@@ -75,8 +75,14 @@ test('Founder proof waits for the real selected world state and real journey pha
   assert.match(founder, /renderedFramePhase: framePhase/)
   assert.match(founder, /const selectionPromise = selectQuietReset\(page, options\.selection \|\| \{\}\)/)
   assert.match(founder, /await Promise\.all\(\[capturePromise, selectionPromise\]\)/)
-  for (const phase of ['departure', 'travel', 'approach', 'arrival']) {
-    assert.match(founder, new RegExp(`selectAndCapturePhase\\(page, '${phase}'`))
+  for (const [phase, id] of [
+    ['departure', 'selection-start'],
+    ['travel', 'mid-travel'],
+    ['approach', 'approach'],
+    ['arrival', 'stable-arrival'],
+  ]) {
+    assert.ok(founder.includes(`['${phase}', '${id}']`), `missing Founder phase table entry ${phase}/${id}`)
   }
+  assert.match(founder, /await selectAndCapturePhase\(page, phase, id\)/)
   assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
 })
