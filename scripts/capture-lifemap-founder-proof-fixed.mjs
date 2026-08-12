@@ -90,10 +90,7 @@ async function goto(page, route, selector = ROOT) {
     await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
     const scene = page.locator(selector).first()
     await scene.waitFor({ state: 'visible', timeout: 45_000 })
-    const box = await scene.evaluate((element) => {
-      const rect = element.getBoundingClientRect()
-      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-    })
+    const box = await scene.boundingBox()
     const viewport = page.viewportSize()
     const geometryValid = box && viewport
       && box.width >= 240 && box.height >= 240
@@ -264,10 +261,7 @@ async function captureScreenshot(page, file) {
 async function canvasGeometry(page) {
   const canvas = page.locator('canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 30_000 })
-  const box = await canvas.evaluate((element) => {
-    const rect = element.getBoundingClientRect()
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-  }, undefined, { timeout: 120_000 })
+  const box = await canvas.boundingBox()
   const viewport = page.viewportSize()
   const valid = box && viewport
     && box.width >= 240 && box.height >= 240
