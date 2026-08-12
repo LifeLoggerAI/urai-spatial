@@ -3,8 +3,9 @@ import path from 'node:path'
 
 const originalLoad = Module._load
 const BRIDGE_NAME = '__uraiFounderHarnessPhaseBridge'
-const RUNNER_SUFFIX = path.join('scripts', 'capture-lifemap-founder-proof-fixed.mjs')
+const TIER_ONE_REQUIRE_PARENT_SUFFIX = path.join('urai-tier1', 'package.json')
 let sequence = 0
+let bridgedPlaywrightDelivered = false
 
 function bindMember(target, key) {
   const value = Reflect.get(target, key, target)
@@ -175,8 +176,14 @@ function wrapPlaywright(playwright) {
 }
 
 Module._load = function founderScopedPlaywrightLoad(request, parent, isMain) {
-  const loaded = originalLoad.apply(this, arguments)
   const parentFile = parent?.filename ? path.normalize(parent.filename) : ''
-  if (request === 'playwright' && parentFile.endsWith(RUNNER_SUFFIX)) return wrapPlaywright(loaded)
-  return loaded
+  const shouldBridge = !bridgedPlaywrightDelivered
+    && request === 'playwright'
+    && parentFile.endsWith(TIER_ONE_REQUIRE_PARENT_SUFFIX)
+  const loaded = originalLoad.apply(this, arguments)
+  if (!shouldBridge) return loaded
+
+  bridgedPlaywrightDelivered = true
+  Module._load = originalLoad
+  return wrapPlaywright(loaded)
 }
