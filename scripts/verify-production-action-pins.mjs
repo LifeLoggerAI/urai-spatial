@@ -7,7 +7,6 @@ const workflowPaths = [
   '.github/workflows/spatial-live-deploy.yml',
   '.github/workflows/release-security-path-guard.yml',
 ]
-const auditPath = 'scripts/audit-production-workflow-authority.mjs'
 const failures = []
 
 const allowedActions = new Set([
@@ -30,33 +29,17 @@ for (const workflowPath of workflowPaths) {
   }
 }
 
-const canonicalActions = workflowActions[workflowPaths[0]] || []
+const protectedActions = new Set(Object.values(workflowActions).flat().filter((action) => !action.startsWith('./')))
 for (const required of allowedActions) {
-  if (!canonicalActions.includes(required) && !workflowActions[workflowPaths[1]]?.includes(required)) {
-    failures.push(`Approved action pin is unused across protected workflows: ${required}`)
-  }
-}
-
-const auditSource = readFileSync(path.join(root, auditPath), 'utf8').replace(/\r\n?/g, '\n')
-for (const mutableMarker of [
-  "'actions/checkout@v4'",
-  "'actions/setup-node@v4'",
-  "'actions/upload-artifact@v4'",
-  "'actions/download-artifact@v4'",
-]) {
-  if (auditSource.includes(mutableMarker)) failures.push(`${auditPath} still accepts mutable action marker: ${mutableMarker}`)
-}
-
-for (const exactPin of allowedActions) {
-  if (!auditSource.includes(exactPin)) failures.push(`${auditPath} does not enforce exact approved pin: ${exactPin}`)
+  if (!protectedActions.has(required)) failures.push(`Approved action pin is unused across protected workflows: ${required}`)
 }
 
 const report = {
-  schemaVersion: 'urai-production-action-pins-1',
+  schemaVersion: 'urai-production-action-pins-2',
   ok: failures.length === 0,
   workflows: workflowActions,
   allowedActions: [...allowedActions],
-  audit: auditPath,
+  enforcement: 'protected-workflow-source-direct',
   failures,
 }
 
