@@ -15,7 +15,7 @@ const failures = []
 
 const readRequired = (file) => {
   try {
-    return readFileSync(file, 'utf8')
+    return readFileSync(file, 'utf8').replace(/\r\n?/g, '\n')
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     failures.push(`Could not read ${file}: ${detail}`)
@@ -23,8 +23,8 @@ const readRequired = (file) => {
   }
 }
 
-const triggerBlockFor = (source) => source.split(/\r?\n\s*jobs\s*:/)[0]
-const mergedMainTrigger = /\n\s*push\s*:[\s\S]*?branches\s*:\s*(?:\r?\n\s*-\s*['"]?main['"]?|\[\s*['"]?main['"]?\s*\])/
+const triggerBlockFor = (source) => source.split(/\n\s*jobs\s*:/)[0]
+const mergedMainTrigger = /\n\s*push\s*:[\s\S]*?branches\s*:\s*(?:\n\s*-\s*['"]?main['"]?|\[\s*['"]?main['"]?\s*\])/
 
 for (const file of releaseWorkflows) {
   const source = readRequired(file)
@@ -52,15 +52,11 @@ const aaaPrepareIndex = aaa.indexOf('- name: Prepare exact clean proof source')
 const aaaProofIndex = aaa.indexOf('- name: Final launch proof receipt')
 const exactTargetExpression = '${{ inputs.target_sha || github.sha }}'
 
-if (!/\n\s*workflow_call\s*:/.test(aaaTrigger)) {
-  failures.push(`${aaaPath} must expose a reusable exact-head proof path`)
-}
+if (!/\n\s*workflow_call\s*:/.test(aaaTrigger)) failures.push(`${aaaPath} must expose a reusable exact-head proof path`)
 if (!aaaTrigger.includes('target_sha:') || !aaaTrigger.includes('required: true') || !aaaTrigger.includes('type: string')) {
   failures.push(`${aaaPath} workflow_call must require a string target_sha input`)
 }
-if (/\n\s*pull_request\s*:/.test(aaaTrigger)) {
-  failures.push(`${aaaPath} must not register a duplicate pull_request proof; PR proof belongs to workflow-phase-boundaries.yml`)
-}
+if (/\n\s*pull_request\s*:/.test(aaaTrigger)) failures.push(`${aaaPath} must not register a duplicate pull_request proof; PR proof belongs to workflow-phase-boundaries.yml`)
 
 for (const marker of [
   `group: urai-aaa-final-proof-${exactTargetExpression}`,
@@ -81,15 +77,9 @@ for (const marker of [
 ]) {
   if (!aaa.includes(marker)) failures.push(`${aaaPath} must retain exact-proof marker: ${marker}`)
 }
-if (aaa.includes('URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}')) {
-  failures.push(`${aaaPath} must not construct job env from the env context; bind proof SHA directly from inputs/github`)
-}
-if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) {
-  failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
-}
-if (aaa.includes('git reset --hard') || aaa.includes('git clean -fdx')) {
-  failures.push(`${aaaPath} must not destructively reset the build workspace or delete ignored build output`)
-}
+if (aaa.includes('URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}')) failures.push(`${aaaPath} must not construct job env from the env context; bind proof SHA directly from inputs/github`)
+if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
+if (aaa.includes('git reset --hard') || aaa.includes('git clean -fdx')) failures.push(`${aaaPath} must not destructively reset the build workspace or delete ignored build output`)
 
 const phasePath = '.github/workflows/workflow-phase-boundaries.yml'
 const phase = readRequired(phasePath)
@@ -97,9 +87,7 @@ const phaseTrigger = triggerBlockFor(phase)
 const phaseVerifyIndex = phase.indexOf('\n  verify:')
 const phaseProofIndex = phase.indexOf('\n  aaa-proof:')
 
-if (!/\n\s*pull_request\s*:/.test(phaseTrigger)) {
-  failures.push(`${phasePath} must remain the sole pull-request proof authority`)
-}
+if (!/\n\s*pull_request\s*:/.test(phaseTrigger)) failures.push(`${phasePath} must remain the sole pull-request proof authority`)
 for (const path of [
   '.github/workflows/aaa-final-proof.yml',
   '.github/workflows/workflow-phase-boundaries.yml',
@@ -118,35 +106,47 @@ for (const marker of [
 ]) {
   if (!phase.includes(marker)) failures.push(`${phasePath} must retain reusable AAA proof marker: ${marker}`)
 }
-if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) {
-  failures.push(`${phasePath} must run static boundary verification before exact PR-head AAA proof`)
-}
+if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) failures.push(`${phasePath} must run static boundary verification before exact PR-head AAA proof`)
 
 const deployPath = '.github/workflows/spatial-live-deploy.yml'
 const deploy = readRequired(deployPath)
-const productionEnvironment = /environment\s*:\s*(?:['"]?production['"]?|\r?\n\s*name\s*:\s*['"]?production['"]?)/
-const deployJobStart = deploy.indexOf('\n  deploy:')
-const deployJob = deployJobStart >= 0 ? deploy.slice(deployJobStart) : ''
+const deployTrigger = triggerBlockFor(deploy)
 
-if (deployJobStart < 0) failures.push('spatial-live-deploy.yml must retain the protected deploy job')
-if (!deployJob.includes("github.event_name == 'workflow_dispatch'")) failures.push('spatial-live-deploy.yml deploy job must require manual workflow dispatch')
-if (!deployJob.includes("github.ref == 'refs/heads/main'")) failures.push('spatial-live-deploy.yml deploy job must require refs/heads/main')
-if (!deployJob.includes("inputs.confirm == 'DEPLOY_URAI_APP'") || !deployJob.includes("inputs.confirm == 'ROLLBACK_URAI_APP'")) failures.push('spatial-live-deploy.yml must retain explicit deploy and rollback confirmations')
-if (!productionEnvironment.test(deployJob)) failures.push('spatial-live-deploy.yml must use the protected production environment')
-if (!deployJob.includes('FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}')) failures.push('spatial-live-deploy.yml must use the protected service-account secret')
-if (!deployJob.includes('GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json')) failures.push('spatial-live-deploy.yml must isolate credentials in a temporary file')
-if (deploy.includes('FIREBASE_TOKEN')) failures.push('spatial-live-deploy.yml must not restore legacy Firebase CLI tokens')
-if (!deploy.includes('Remove temporary credentials')) failures.push('spatial-live-deploy.yml must clean up the temporary service-account file')
-if (!deploy.includes('persist-credentials: false')) failures.push('spatial-live-deploy.yml must not retain repository checkout credentials')
+for (const marker of [
+  'name: URAI Canonical Production Release Verification',
+  'permissions:\n  contents: read',
+  'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
+  'name: Verify canonical source with production release quarantined',
+  'ref: ${{ env.EXACT_HEAD_SHA }}',
+  'persist-credentials: false',
+  'node scripts/audit-production-workflow-authority.mjs',
+  'node scripts/verify-release-credential-boundary.mjs',
+  'node scripts/verify-release-credential-boundary-static.mjs',
+  'Classification: NO-GO',
+  'Production release and Hosting recovery are intentionally quarantined.',
+]) {
+  if (!deploy.includes(marker)) failures.push(`${deployPath} must retain quarantine verification marker: ${marker}`)
+}
+if (!/\n\s*pull_request\s*:/.test(deployTrigger)) failures.push(`${deployPath} must verify pull-request exact heads`)
+if (!mergedMainTrigger.test(deployTrigger)) failures.push(`${deployPath} must verify merged main`)
+if (!/\n\s*workflow_dispatch\s*:/.test(deployTrigger)) failures.push(`${deployPath} must retain manual verification dispatch`)
 
-const verifyBundleIndex = deploy.indexOf('node scripts/live-release.mjs --verify-prebuilt')
-const credentialIndex = deploy.indexOf('FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}')
-const deployIndex = deploy.indexOf('node scripts/live-release.mjs --deploy-prebuilt')
-const cleanupIndex = deploy.indexOf('Remove temporary credentials')
-
-if (verifyBundleIndex < 0 || credentialIndex <= verifyBundleIndex) failures.push('spatial-live-deploy.yml must verify the release bundle before production credentials exist')
-if (deployIndex <= credentialIndex) failures.push('spatial-live-deploy.yml must deploy only after ephemeral credentials are scoped')
-if (cleanupIndex <= deployIndex) failures.push('spatial-live-deploy.yml must remove temporary credentials after the deployment attempt')
+for (const forbidden of [
+  'environment: production',
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'FIREBASE_TOKEN',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+  'id-token: write',
+  'contents: write',
+  'actions: write',
+  'node scripts/live-release.mjs --deploy-prebuilt',
+]) {
+  if (deploy.includes(forbidden)) failures.push(`${deployPath} quarantine workflow contains forbidden production authority marker: ${forbidden}`)
+}
+if (/\bfirebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(deploy) || /\bgcloud\s+deploy\b/i.test(deploy)) {
+  failures.push(`${deployPath} quarantine workflow must not execute production deployment`)
+}
+if (/\n  deploy\s*:/.test(deploy)) failures.push(`${deployPath} must not restore a production mutation job before WIF/IAM is independently proven`)
 
 if (failures.length) {
   console.error('Workflow phase-boundary check failed:')
@@ -171,4 +171,5 @@ for (const file of retainedSourceFiles) {
 }
 
 console.log(`Workflow phase-boundary check passed for ${releaseWorkflows.length} release workflows.`)
+console.log('Production authority remains verification-only and NO-GO until provider WIF/IAM is independently proven.')
 console.log(`Retained ${retainedSourceFiles.length} bounded Life Map source files for exact-head repair.`)
