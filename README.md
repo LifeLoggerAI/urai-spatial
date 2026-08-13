@@ -6,7 +6,7 @@ URAI Spatial is the canonical public URAI application repository.
 - Canonical repository: `LifeLoggerAI/urai-spatial`
 - Runtime root: `urai-tier1`
 - Canonical branch: `main`
-- Current release lane: PR #1069 production close-out
+- Current release lane: exact current `main` through the protected production workflow
 - Production certification: incomplete until exact-head acceptance, protected deploy, and live verification
 
 The canonical experience chain is Home → Ground → Life Map → Focus → Replay, with the broader product surface including Mirror, Passport, Privacy Controls, Location Map, and Status.
@@ -15,7 +15,7 @@ The canonical experience chain is Home → Ground → Life Map → Focus → Rep
 
 The retained V1-V5 runtime image estate is complete: **213 ready / 0 missing**. Seven launch-critical models are promoted. The paid V2-V5 asset program records **151 generated / 151 passed / 0 failed** with promotion authorized. These asset facts do not by themselves certify runtime behavior, provider activity, XR/device support, or a production deployment.
 
-PR #1069 remains controlled by GitHub issue #863. No old CI result, screenshot, visual acceptance, or steward attestation transfers to a successor SHA.
+No historical PR, CI result, screenshot, visual acceptance, or steward attestation transfers release authority to a successor SHA. The current exact `main` commit must earn its own release evidence.
 
 Current allowed framing:
 
@@ -27,6 +27,8 @@ Read these before making release or marketing claims:
 
 - [`STATUS.md`](./STATUS.md) — current release boundary, asset truth, and production close-out rules
 - [`EVIDENCE.md`](./EVIDENCE.md) — historical and current command/workflow/deployment evidence ledger
+- [`release/route-manifest.json`](./release/route-manifest.json) — machine-readable route authority and critical-route contract
+- [`release/ROUTE_AUTHORITY.md`](./release/ROUTE_AUTHORITY.md) — route-classification and release-boundary doctrine
 - [`docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json`](./docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json) — retained V1-V5 image/model completion
 - [`docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json`](./docs/release-evidence/URAI-SPATIAL-20260730-V2-V5-EXACT-PAID-PROMOTION.json) — paid V2-V5 generation/promotion receipt
 - [`release/tier-xr-release-matrix.json`](./release/tier-xr-release-matrix.json) — tier/XR release requirements
