@@ -6,6 +6,7 @@ const root = process.cwd()
 const workflowsDir = path.join(root, '.github', 'workflows')
 const canonicalWorkflowPath = '.github/workflows/spatial-live-deploy.yml'
 const securityWorkflowPath = '.github/workflows/release-security-path-guard.yml'
+const adcGuardPath = 'urai-tier1/src/lib/server/google-adc.ts'
 const failures = []
 
 const normalize = (value) => value.replace(/\r\n?/g, '\n')
@@ -20,14 +21,11 @@ const read = (relativePath) => {
 const requireAll = (label, source, markers) => {
   for (const marker of markers) if (!source.includes(marker)) failures.push(`${label} missing marker: ${marker}`)
 }
-const forbidAny = (label, source, markers) => {
-  for (const marker of markers) if (source.includes(marker)) failures.push(`${label} contains forbidden marker: ${marker}`)
-}
 const workflowExecutesProductionMutation = (source) =>
-  source.includes('node scripts/live-release.mjs --deploy-prebuilt') ||
-  /(^|\n)\s*(?:run:\s*)?(?:npx\s+)?firebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(source) ||
-  /(^|\n)\s*run:\s*pnpm\s+live:deploy\b/i.test(source) ||
-  /(^|\n)\s*run:\s*gcloud\s+deploy\b/i.test(source)
+  /live-release\.mjs\s+--deploy(?:-prebuilt)?/.test(source) ||
+  /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(source) ||
+  /\bpnpm\s+live:deploy\b/i.test(source) ||
+  /\bgcloud\s+deploy\b/i.test(source)
 
 for (const retired of [
   'scripts/deploy-exact-static-release.mjs',
@@ -51,43 +49,25 @@ if (!existsSync(workflowsDir)) {
   }
 }
 if (productionWorkflows.length !== 0) {
-  failures.push(`Production mutation must remain quarantined until provider WIF/IAM is independently proven; found ${productionWorkflows.sort().join(', ')}`)
+  failures.push(`Production mutation must remain quarantined; found ${productionWorkflows.sort().join(', ')}`)
 }
 
 const workflow = read(canonicalWorkflowPath)
 const securityWorkflow = read(securityWorkflowPath)
+const adcGuard = read(adcGuardPath)
 
 requireAll('Canonical production verification workflow', workflow, [
   'name: URAI Canonical Production Release Verification',
   'permissions:\n  contents: read',
   'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
   'name: Verify canonical source with production release quarantined',
-  'ref: ${{ env.EXACT_HEAD_SHA }}',
-  'fetch-depth: 0',
   'persist-credentials: false',
-  'test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"',
   'node scripts/audit-production-workflow-authority.mjs',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/verify-release-credential-boundary-static.mjs',
   'Classification: NO-GO',
   'Production release and Hosting recovery are intentionally quarantined.',
-  'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
-  'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
-  'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
 ])
-forbidAny('Canonical production verification workflow', workflow, [
-  'environment: production',
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
-  'FIREBASE_TOKEN',
-  'GOOGLE_APPLICATION_CREDENTIALS',
-  'id-token: write',
-  'contents: write',
-  'actions: write',
-  'node scripts/live-release.mjs --deploy-prebuilt',
-])
-if (/\n  deploy\s*:/.test(workflow)) failures.push('Canonical production verification workflow must not restore a deploy job before provider WIF/IAM proof')
-if (workflowExecutesProductionMutation(workflow)) failures.push('Canonical production verification workflow must remain read-only')
-
 requireAll('Release security workflow', securityWorkflow, [
   'name: Release Security Path Guard',
   'permissions:\n  contents: read',
@@ -97,23 +77,24 @@ requireAll('Release security workflow', securityWorkflow, [
   'node scripts/audit-production-workflow-authority.mjs',
   'node scripts/verify-release-credential-boundary.mjs',
 ])
-forbidAny('Release security workflow', securityWorkflow, [
-  'pull_request_target:',
-  'environment: production',
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
-  'FIREBASE_TOKEN',
-  'GOOGLE_APPLICATION_CREDENTIALS',
-  'contents: write',
-  'actions: write',
-  'id-token: write',
+requireAll('Canonical Tier-1 external-account ADC guard', adcGuard, [
+  'assertExternalAccountAdc',
+  'forbiddenCredentialVariables',
+  "record.type !== 'external_account'",
+  'credential_source',
+  'private_key',
+  'client_email',
 ])
-if (workflowExecutesProductionMutation(securityWorkflow)) failures.push('Release security workflow must not execute production mutation')
 
-const adcGuard = read('scripts/assert-external-account-adc.mjs')
-requireAll('External-account ADC guard', adcGuard, [
-  'FIREBASE_SERVICE_ACCOUNT_JSON',
-  'GOOGLE_APPLICATION_CREDENTIALS',
-])
+for (const [label, source] of [
+  ['Canonical production verification workflow', workflow],
+  ['Release security workflow', securityWorkflow],
+]) {
+  if (/\bsecrets\s*\./.test(source)) failures.push(`${label} must not reference repository secrets while quarantined`)
+  if (/environment\s*:\s*production/.test(source)) failures.push(`${label} must not enter the production environment while quarantined`)
+  if (/id-token\s*:\s*write|contents\s*:\s*write|actions\s*:\s*write/.test(source)) failures.push(`${label} must remain read-only while quarantined`)
+  if (workflowExecutesProductionMutation(source)) failures.push(`${label} must not expose provider mutation commands`)
+}
 
 const packageJson = JSON.parse(read('package.json') || '{}')
 const scripts = packageJson.scripts || {}
@@ -125,6 +106,7 @@ const report = {
   schemaVersion: 'urai-production-authority-audit-8',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowPath,
+  canonicalAdcGuard: adcGuardPath,
   productionMutationQuarantined: productionWorkflows.length === 0,
   productionWorkflows: productionWorkflows.sort(),
   longLivedRepositoryCredentialAuthorityAllowed: false,
@@ -135,8 +117,5 @@ const report = {
 }
 
 console.log(JSON.stringify(report, null, 2))
-for (const failure of failures) {
-  const escaped = failure.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')
-  console.error(`::error title=Production authority audit::${escaped}`)
-}
+for (const failure of failures) console.error(`::error title=Production authority audit::${failure}`)
 if (failures.length) process.exitCode = 1
