@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - agent/replace-failed-home-lifemap-visuals
+      - release/post-1072-production-certification
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
       - 'scripts/capture-lifemap-founder-proof.mjs'
