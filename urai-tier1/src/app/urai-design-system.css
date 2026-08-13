@@ -1,13 +1,10 @@
 /*
  * URAI Design System
- * Canonical visual stabilization layer for urai-spatial/urai-tier1.
+ * Canonical Web Constitution implementation for urai-spatial/urai-tier1.
  *
- * Purpose:
- * - provide one shared visual language across URAI.app and product wings;
- * - stabilize color, glow, glass, typography, portals, badges, route rails, and loading states;
- * - avoid destructive rewrites of existing cinematic route CSS.
- *
- * This file should be imported after local visual-pass CSS in app/layout.tsx.
+ * The WORLD engine is the reference implementation. PRODUCT, CREATIVE, and
+ * INSTITUTION are shared token contracts only; internal infrastructure does not
+ * receive a public engine identity here.
  */
 
 :root {
@@ -42,30 +39,42 @@
   --urai-glow-gold: 0 0 28px rgba(250, 204, 21, 0.22), 0 0 70px rgba(251, 191, 36, 0.12);
   --urai-shadow-panel: 0 24px 90px rgba(0, 0, 0, 0.38);
 
-  --urai-radius-xs: 10px;
-  --urai-radius-sm: 14px;
-  --urai-radius-md: 22px;
-  --urai-radius-lg: 30px;
-  --urai-radius-xl: 42px;
+  --urai-radius-xs: 8px;
+  --urai-radius-sm: 12px;
+  --urai-radius-md: 18px;
+  --urai-radius-lg: 28px;
   --urai-radius-orb: 999px;
 
   --urai-space-1: 4px;
   --urai-space-2: 8px;
   --urai-space-3: 12px;
   --urai-space-4: 16px;
-  --urai-space-5: 22px;
-  --urai-space-6: 30px;
-  --urai-space-7: 44px;
+  --urai-space-5: 24px;
+  --urai-space-6: 32px;
+  --urai-space-7: 48px;
   --urai-space-8: 64px;
+  --urai-space-9: 96px;
 
   --urai-font-sans: var(--font-sans, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  --urai-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --urai-letter-caps: 0.18em;
   --urai-letter-wide: 0.08em;
   --urai-blur-glass: blur(18px) saturate(130%);
-  --urai-duration-fast: 180ms;
-  --urai-duration-med: 420ms;
-  --urai-duration-slow: 1100ms;
+
+  --urai-duration-instant: 80ms;
+  --urai-duration-fast: 160ms;
+  --urai-duration-med: 320ms;
+  --urai-duration-scene: 760ms;
+  --urai-duration-slow: 900ms;
   --urai-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --urai-ease-scene: cubic-bezier(.65, 0, .2, 1);
+
+  --urai-content-readable: 72ch;
+  --urai-container-max: 1200px;
+  --urai-safe-inline: max(16px, env(safe-area-inset-left));
+  --urai-safe-inline-end: max(16px, env(safe-area-inset-right));
+  --urai-safe-block-start: max(16px, env(safe-area-inset-top));
+  --urai-safe-block-end: max(16px, env(safe-area-inset-bottom));
 }
 
 html {
@@ -85,6 +94,20 @@ body::selection,
 ::selection {
   color: var(--urai-bg-void);
   background: rgba(103, 232, 249, 0.88);
+}
+
+.urai-readable {
+  max-width: var(--urai-content-readable);
+}
+
+.urai-container {
+  width: min(calc(100% - 32px), var(--urai-container-max));
+  margin-inline: auto;
+}
+
+.urai-evidence-id,
+.urai-build-sha {
+  font-family: var(--urai-font-mono);
 }
 
 /* Shared materials */
@@ -132,7 +155,7 @@ body::selection,
 .usd-route-rail span,
 .usd-room-stack span {
   color: var(--urai-cyan);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: var(--urai-letter-caps);
   text-transform: uppercase;
@@ -143,6 +166,7 @@ body::selection,
   color: var(--urai-ink-strong);
   font-weight: 800;
   letter-spacing: -0.04em;
+  line-height: 1.1;
   text-wrap: balance;
 }
 
@@ -153,6 +177,7 @@ body::selection,
 .usd-focus-hint em,
 .usd-room-stack span {
   color: var(--urai-ink-muted);
+  line-height: 1.55;
 }
 
 /* Shared buttons and links */
@@ -177,6 +202,7 @@ body::selection,
   align-items: center;
   justify-content: center;
   gap: var(--urai-space-2);
+  min-width: 44px;
   min-height: 44px;
   padding: 0 var(--urai-space-5);
   border: 1px solid var(--urai-line-strong);
@@ -193,7 +219,8 @@ body::selection,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0 var(--urai-space-5);
   border: 1px solid var(--urai-line);
   border-radius: var(--urai-radius-orb);
@@ -218,8 +245,9 @@ body::selection,
 .urai-primary-action:focus-visible,
 .urai-secondary-action:focus-visible,
 a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--urai-cyan);
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--urai-cyan);
   outline-offset: 4px;
 }
 
@@ -247,35 +275,40 @@ button:focus-visible {
   filter: blur(8px);
 }
 
-/* Domain/product variants */
+/* Four public Web Constitution engines. */
+[data-urai-engine='world'] {
+  --urai-accent-primary: var(--urai-cyan);
+  --urai-accent-secondary: var(--urai-violet);
+  --urai-engine-motion: var(--urai-duration-scene);
+  --urai-engine-radius: var(--urai-radius-lg);
+}
+
+[data-urai-engine='product'] {
+  --urai-accent-primary: var(--urai-blue);
+  --urai-accent-secondary: var(--urai-green);
+  --urai-engine-motion: var(--urai-duration-med);
+  --urai-engine-radius: var(--urai-radius-md);
+}
+
+[data-urai-engine='creative'] {
+  --urai-accent-primary: var(--urai-violet);
+  --urai-accent-secondary: var(--urai-cyan);
+  --urai-engine-motion: var(--urai-duration-scene);
+  --urai-engine-radius: var(--urai-radius-lg);
+}
+
+[data-urai-engine='institution'] {
+  --urai-accent-primary: var(--urai-gold);
+  --urai-accent-secondary: var(--urai-blue);
+  --urai-engine-motion: var(--urai-duration-fast);
+  --urai-engine-radius: var(--urai-radius-sm);
+}
+
+/* Current canonical URAI app is WORLD. */
 [data-urai-domain='app'],
 [data-urai-surface='spatial'] {
   --urai-accent-primary: var(--urai-cyan);
   --urai-accent-secondary: var(--urai-violet);
-}
-
-[data-urai-domain='studio'],
-[data-urai-surface='studio'] {
-  --urai-accent-primary: var(--urai-violet);
-  --urai-accent-secondary: var(--urai-cyan);
-}
-
-[data-urai-domain='analytics'],
-[data-urai-surface='analytics'] {
-  --urai-accent-primary: var(--urai-green);
-  --urai-accent-secondary: var(--urai-blue);
-}
-
-[data-urai-domain='marketing'],
-[data-urai-surface='marketing'] {
-  --urai-accent-primary: var(--urai-gold);
-  --urai-accent-secondary: var(--urai-rose);
-}
-
-[data-urai-domain='admin'],
-[data-urai-surface='admin'] {
-  --urai-accent-primary: var(--urai-blue);
-  --urai-accent-secondary: var(--urai-indigo);
 }
 
 /* Stabilize current canonical home elements without rewriting route logic. */
@@ -342,12 +375,7 @@ button:focus-visible {
   }
 }
 
-@media (max-width: 720px) {
-  :root {
-    --urai-radius-lg: 24px;
-    --urai-radius-xl: 32px;
-  }
-
+@media (max-width: 768px) {
   .urai-panel,
   .urai-card,
   .urai-domain-card {
@@ -363,6 +391,20 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --urai-duration-instant: 0ms;
+    --urai-duration-fast: 0ms;
+    --urai-duration-med: 0ms;
+    --urai-duration-scene: 0ms;
+    --urai-duration-slow: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
   .urai-button,
   .urai-primary-action,
   .urai-secondary-action,
@@ -384,5 +426,20 @@ button:focus-visible {
   .usd-room-stack a:hover,
   .usd-sky-entry:hover {
     transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .urai-material-glass,
+  .urai-panel,
+  .urai-card,
+  .urai-control,
+  .urai-route-card,
+  .urai-domain-card {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 }
