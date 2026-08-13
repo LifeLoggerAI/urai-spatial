@@ -16,9 +16,10 @@ test('Legacy routes own an embodied archive instead of redirect-only Life Map co
   }
 })
 
-test('Legacy archive is model-backed, walkable, mobile-accessible and preserves Life Map continuity', () => {
+test('Legacy archive is sub-budget model-backed, walkable and mobile-accessible', () => {
   const source = read('src/spatial/legacy/LegacyArchiveWorld.tsx')
-  assert.match(source, /hero-realms-v2\/legacy-archive-hero-v2\.glb/)
+  assert.match(source, /legacy-archive-foundation-v1\.glb/)
+  assert.match(source, /ArchiveFurniture/)
   assert.match(source, /stepEmbodiedMotion/)
   assert.match(source, /useMovementInput/)
   assert.match(source, /useDragLook/)
@@ -26,14 +27,12 @@ test('Legacy archive is model-backed, walkable, mobile-accessible and preserves 
   assert.match(source, /MovementHelp/)
   assert.match(source, /minX: -4\.7, maxX: 4\.7, minZ: -7\.1, maxZ: 7\.0/)
   assert.match(source, /\/life-map\?from=legacy&overview=1/)
-  assert.match(source, /data-legacy-model-authority/)
-  assert.match(source, /method: 'HEAD'/)
+  assert.match(source, /data-legacy-model-authority="legacy-archive-foundation-v1"/)
 })
 
-test('Legacy archive keeps an honest physical fallback until the hero binary receipt is present', () => {
+test('Legacy archive does not depend on placeholder or network availability probing', () => {
   const source = read('src/spatial/legacy/LegacyArchiveWorld.tsx')
-  assert.match(source, /physical-fallback-until-binary-receipt/)
-  assert.match(source, /SafePhysicalFallback/)
-  assert.doesNotMatch(source, /PLACEHOLDER/)
-  assert.doesNotMatch(source, /mockup/i)
+  assert.doesNotMatch(source, /method: 'HEAD'/)
+  assert.doesNotMatch(source, /placeholder/i)
+  assert.doesNotMatch(source, /physical-fallback-until-binary-receipt/)
 })
