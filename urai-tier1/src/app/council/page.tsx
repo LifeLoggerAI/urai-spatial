@@ -1,5 +1,8 @@
-import SpatialRealmRuntime from '@/spatial/realms/SpatialRealmRuntime'
+import { CouncilRealm } from '@/spatial/council/CouncilRealm'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
+
+// Migration note: SpatialRealmRuntime previously owned this route as realm="council".
+// CouncilRealm now owns the canonical embodied scene so the committed V3 humans are actually visible.
 
 export const metadata = {
   title: 'URAI Council Chamber',
@@ -10,8 +13,8 @@ export default function CouncilRoutePage() {
   const scene = getSceneDefinition('council')
 
   return (
-    <section data-testid="urai-council-route" data-scene-id={scene.id}>
-      <SpatialRealmRuntime realm="council" />
+    <section data-testid="urai-council-route" data-scene-id={scene.id} data-route-owner="rigged-embodied-council">
+      <CouncilRealm />
     </section>
   )
 }
