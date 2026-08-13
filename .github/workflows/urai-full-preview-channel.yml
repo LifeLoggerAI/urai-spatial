@@ -252,6 +252,7 @@ jobs:
           for (const profile of profiles) {
             const context = await browser.newContext({ viewport: profile.viewport, isMobile: profile.isMobile, deviceScaleFactor: 1 })
             const page = await context.newPage()
+            const cdp = await context.newCDPSession(page)
             const consoleErrors = []
             page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
             page.on('pageerror', error => consoleErrors.push(error.message))
@@ -267,9 +268,11 @@ jobs:
               if (certification !== 'not-certified-preview') throw new Error(`Wrong certification state on ${profile.name} ${route}: ${certification}`)
               if (consoleErrors.length) throw new Error(`Console errors on ${profile.name} ${route}: ${consoleErrors.join(' | ')}`)
               const name = route === '/' ? 'root' : route.replaceAll('/', '_').replace(/^_+|_+$/g, '')
-              await page.screenshot({ path: `preview-inspection/${profile.name}/${name}.png` })
+              const capture = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false })
+              await fs.writeFile(`preview-inspection/${profile.name}/${name}.png`, Buffer.from(capture.data, 'base64'))
               report.push({ profile: profile.name, viewport: profile.viewport, route, status: response.status(), banner, embedded, certification, consoleErrors: [] })
             }
+            await cdp.detach()
             await context.close()
           }
           await browser.close()
