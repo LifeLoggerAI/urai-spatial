@@ -11,7 +11,6 @@ export const URAI_VOICE_CONFIG: Record<NarratorTone, VoiceConfig> = {
   neutral: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_DEFAULT_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.7, similarity_boost: 0.8, style: 0.14, speaking_rate: 0.88 },
 };
 
-
 export const PUBLIC_NARRATOR_DEFAULTS = {
   headline: "A recurring memory pattern appeared.",
   body: "URAI noticed this memory may connect to a repeating emotional pattern.",
@@ -72,6 +71,7 @@ export function buildNarratorLine(moment: NarratorMoment, emotionalState?: Parti
   const withTitle = memoryTitle && ["memory_selected", "focus_arrival", "replay_enter"].includes(moment) ? `${base} ${memoryTitle}.` : base;
 
   return {
+    id: `${moment}:${tone}:${withTitle}`,
     moment,
     text: withTitle,
     tone,
