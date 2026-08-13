@@ -14,6 +14,7 @@ for (const [label, marker] of [
   ['canonical audit schema', `schemaVersion: 'urai-canonical-live-visual-audit-6'`],
   ['Focus public identity route', `path: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
   ['Replay public identity route', `path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map'`],
+  ['Replay legacy title marker', `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },`],
   ['Focus public identity expectation', `const expectedPublicMemoryId = 'quiet-reset'`],
   ['Focus fixture identity expectation', `const expectedFixtureMemoryId = 'demo:quiet-reset'`],
   ['retired Mirror audit marker', `markers: ['Mirror does not judge.']`],
@@ -36,6 +37,13 @@ patched = replaceOnce(
   `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure, embodied.'] },`,
   `{ id: 'ground', path: '/ground/', selector: '.ground-spatial-root', markers: ['URAI Ground', 'Private infrastructure beneath the living world'] },`,
   'current Ground product copy',
+)
+
+patched = replaceOnce(
+  patched,
+  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: 'main', markers: ['The Quiet Reset'] },`,
+  `{ id: 'replay', path: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&returnNode=quiet-reset&demo=1&from=life-map', selector: '[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]', markers: [] },`,
+  'current Replay spatial owner',
 )
 
 patched = replaceOnce(
@@ -113,6 +121,37 @@ const currentGroundSettlement = `  if (route.id === 'ground') {
   }`
 patched = replaceOnce(patched, oldGroundSettlement, currentGroundSettlement, 'current Ground readiness')
 
+const oldLifeMapSettlement = `  if (route.id === 'life-map') {
+    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 30_000, polling: 50 })
+  }`
+const currentLifeMapAndReplaySettlement = `  if (route.id === 'life-map') {
+    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 30_000, polling: 50 })
+  }
+  if (route.id === 'replay') {
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="cinematic-replay-client"][data-replay-spatial-owner="r3f-memory-theater"]')
+      return root?.getAttribute('data-memory-status') === 'demo'
+        && root?.getAttribute('data-memory-id') === 'demo:quiet-reset'
+        && root?.getAttribute('data-manifest-id') === 'replay-recovery-thread'
+        && root?.querySelector('canvas') !== null
+    }, null, { timeout: 45_000, polling: 50 })
+  }`
+patched = replaceOnce(patched, oldLifeMapSettlement, currentLifeMapAndReplaySettlement, 'current Replay semantic readiness')
+
+const oldScreenshot = `    await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })`
+const currentScreenshot = `    if (route.id === 'life-map' && viewport.width === 1440) {
+      const cdp = await context.newCDPSession(page)
+      try {
+        const capture = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false })
+        await writeFile(path.join(outputDir, screenshot), Buffer.from(capture.data, 'base64'))
+      } finally {
+        await cdp.detach()
+      }
+    } else {
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: 'disabled', caret: 'hide' })
+    }`
+patched = replaceOnce(patched, oldScreenshot, currentScreenshot, 'Life Map viewport capture')
+
 const oldFocusTouchTarget = `    const box = await focus.boundingBox()
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')`
 const currentFocusTouchTarget = `    const box = await focus.evaluate((element) => {
@@ -133,6 +172,10 @@ for (const [label, marker] of [
   ['Ground current owner readiness', `root?.getAttribute('data-ground-ready') === 'true'`],
   ['Ground canvas geometry', `rect.width >= 240 && rect.height >= 240`],
   ['Ground current product copy', `Private infrastructure beneath the living world`],
+  ['Replay current spatial owner', `data-replay-spatial-owner="r3f-memory-theater"`],
+  ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
+  ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
+  ['Life Map CDP viewport evidence', `Page.captureScreenshot`],
   ['Focus DOM geometry', `element.getBoundingClientRect()`],
   ['Focus direct DOM click', `focus.evaluate((element) => element.click())`],
 ]) {
