@@ -4,6 +4,7 @@ import path from 'node:path'
 const originalLoad = Module._load
 const BRIDGE_NAME = '__uraiFounderHarnessPhaseBridge'
 const BRIDGE_START_NAME = '__uraiFounderHarnessPhaseStart'
+const BRIDGE_ACTIVATION_NAME = '__uraiFounderHarnessActivationBridge'
 const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
 const TIER_ONE_REQUIRE_PARENT_SUFFIX = path.join('urai-tier1', 'package.json')
 const PREPARATION_TIMEOUT_MS = 130_000
@@ -19,9 +20,9 @@ function isSemanticResultDescriptor(descriptor) {
   return descriptor.includes('[role="listitem"]') || descriptor.includes('data-life-map-semantic-result')
 }
 
-async function startPendingWitness(page, bridgeState) {
+function markPendingStarted(bridgeState, token) {
   const pending = bridgeState.pendingWitness
-  if (!pending || pending.started) return
+  if (!pending || pending.token !== token || pending.started) return
   pending.started = true
   clearTimeout(pending.preparationTimeoutHandle)
   pending.phaseTimeoutHandle = setTimeout(() => {
@@ -29,19 +30,37 @@ async function startPendingWitness(page, bridgeState) {
     if (bridgeState.pendingWitness === pending) bridgeState.pendingWitness = null
     pending.reject(new Error(`data-life-map-phase=${pending.expectedPhase} did not reach the non-blocking bridge within ${pending.timeout}ms after semantic activation`))
   }, pending.timeout + 5_000)
-  try {
-    await page.evaluate(({ token, startName }) => {
-      const starter = window[startName]
+}
+
+async function preparePendingActivation(locator, page, bridgeState) {
+  const pending = bridgeState.pendingWitness
+  if (!pending || pending.started || pending.activationArmed) return
+  if (bridgeState.armPromise) await bridgeState.armPromise
+  await locator.evaluate((element, input) => {
+    let fired = false
+    const cleanup = () => {
+      element.removeEventListener('pointerdown', onPointerDown, true)
+      element.removeEventListener('click', onClick, true)
+      element.removeEventListener('keydown', onKeyDown, true)
+    }
+    const start = () => {
+      if (fired) return
+      fired = true
+      cleanup()
+      const starter = window[input.startName]
       if (typeof starter !== 'function') throw new Error('Founder phase activation bridge is not installed')
-      starter(token)
-    }, { token: pending.token, startName: BRIDGE_START_NAME })
-  } catch (error) {
-    clearTimeout(pending.phaseTimeoutHandle)
-    bridgeState.waiters.delete(pending.token)
-    if (bridgeState.pendingWitness === pending) bridgeState.pendingWitness = null
-    pending.reject(error)
-    throw error
-  }
+      starter(input.token)
+    }
+    const onPointerDown = () => start()
+    const onClick = () => start()
+    const onKeyDown = (event) => {
+      if (event.key === 'Enter' || event.key === ' ') start()
+    }
+    element.addEventListener('pointerdown', onPointerDown, true)
+    element.addEventListener('click', onClick, true)
+    element.addEventListener('keydown', onKeyDown, true)
+  }, { token: pending.token, startName: BRIDGE_START_NAME })
+  pending.activationArmed = true
 }
 
 function wrapLocator(locator, page, bridgeState, descriptor = '') {
@@ -54,6 +73,7 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
       if (key === 'filter') return (options) => wrapLocator(target.filter(options), page, bridgeState, `${descriptor} filter:${String(options?.hasText ?? '')}`)
       if (key === 'focus') {
         return async (...args) => {
+          if (isSemanticResultDescriptor(descriptor)) await preparePendingActivation(target, page, bridgeState)
           const result = await target.focus(...args)
           if (isSemanticResultDescriptor(descriptor)) bridgeState.semanticResultFocused = true
           return result
@@ -62,7 +82,7 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
       if (key === 'click' || key === 'tap') {
         return async (...args) => {
           if (bridgeState.armPromise) await bridgeState.armPromise
-          if (isSemanticResultDescriptor(descriptor)) await startPendingWitness(page, bridgeState)
+          if (isSemanticResultDescriptor(descriptor)) await preparePendingActivation(target, page, bridgeState)
           return target[key](...args)
         }
       }
@@ -92,6 +112,7 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
           expectedPhase: arg.expectedPhase,
           timeout: arg.timeout,
           started: false,
+          activationArmed: false,
           phaseTimeoutHandle: null,
           preparationTimeoutHandle: null,
           reject: rejectWitness,
@@ -217,6 +238,7 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
           const start = () => {
             if (startedAt !== null || settled) return
             startedAt = performance.now()
+            Promise.resolve(window[input.activationName]?.(input.token)).catch(() => {})
             timer = window.setTimeout(() => {
               if (settled) return
               settled = true
@@ -238,7 +260,7 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
           })
           registry.set(input.token, start)
           record('armed')
-        }, { selector: FOUNDER_ROOT_SELECTOR, input: { ...arg, token, bridgeName: BRIDGE_NAME, startName: BRIDGE_START_NAME } })
+        }, { selector: FOUNDER_ROOT_SELECTOR, input: { ...arg, token, bridgeName: BRIDGE_NAME, startName: BRIDGE_START_NAME, activationName: BRIDGE_ACTIVATION_NAME } })
 
         bridgeState.armPromise = armPromise
         try {
@@ -265,11 +287,9 @@ function wrapKeyboard(keyboard, page, bridgeState) {
     get(target, key) {
       if (key === 'press') {
         return async (pressed, ...args) => {
-          if (String(pressed).toLowerCase() === 'enter' && bridgeState.semanticResultFocused) {
-            await startPendingWitness(page, bridgeState)
-            bridgeState.semanticResultFocused = false
-          }
-          return target.press(pressed, ...args)
+          const result = await target.press(pressed, ...args)
+          if (String(pressed).toLowerCase() === 'enter') bridgeState.semanticResultFocused = false
+          return result
         }
       }
       return bindMember(target, key)
@@ -290,6 +310,9 @@ function wrapPage(page) {
           await target.exposeFunction(BRIDGE_NAME, async (payload) => {
             const waiter = bridgeState.waiters.get(payload?.token)
             if (waiter) waiter(payload)
+          })
+          await target.exposeFunction(BRIDGE_ACTIVATION_NAME, async (token) => {
+            markPendingStarted(bridgeState, token)
           })
           bridgeState.exposed = true
         }
