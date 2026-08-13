@@ -51,40 +51,27 @@ test('public output carries exact deployment identity or an unverified state', (
   ], 'layout')
 })
 
-test('release operator is exact-SHA, rollback-aware, hosting-only, and credential bounded', () => {
+test('release operator is fail-closed and rejects deploy or long-lived credential authority', () => {
   hasAll(operator, [
-    "requireFullSha('Release SHA', candidate)",
-    'CURRENT_MAIN_SHA',
-    'ROLLBACK_SHA must be distinct from the release SHA',
-    "process.argv.includes('--verify-prebuilt')",
+    "process.argv.includes('--deploy')",
     "process.argv.includes('--deploy-prebuilt')",
-    'validateAndMaterializePrebuiltBundle',
-    'Release bundle file set, sizes, or hashes do not match the manifest',
-    "relative.split('/').some((segment) => segment.startsWith('.'))",
-    'Release surface contains a Firebase-ignored dot path',
-    'live-rollback-provenance.json',
-    'fingerprint.repository !== canonicalRepository',
-    'fingerprint.authoritySha !== authoritySha',
-    'manifest.fingerprintSha256 !== sha256(fingerprintPath)',
-    'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
-    'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
-    'resolveManagedCredentialPath({ required: true })',
-    'Credential path must stay inside RUNNER_TEMP',
-    'resolveAuthorityFirebaseCli',
-    'writeTemporaryServiceAccount',
-    "flag: 'wx'",
-    'removeTemporaryServiceAccount',
+    'forbiddenCredentialEnv',
+    'FIREBASE_SERVICE_ACCOUNT_JSON',
+    'FIREBASE_PRIVATE_KEY',
+    'FIREBASE_CLIENT_EMAIL',
+    'FIREBASE_TOKEN',
+    'URAI Spatial production release is NO-GO',
+    'No provider credentials were loaded and no production mutation was attempted.',
   ], 'operator')
-  assert.match(operator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
-  assert.doesNotMatch(operator, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
-  assert.match(operator, /'--only', 'hosting'/)
-  assert.doesNotMatch(operator, /hosting,firestore|firestore:indexes|functions|pnpm\s+exec\s+firebase/)
+  assert.doesNotMatch(operator, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|gcloud\s+deploy|pnpm\s+live:deploy/)
+  assert.doesNotMatch(operator, /writeTemporaryServiceAccount|resolveManagedCredentialPath|--only['"],?\s*['"]hosting/)
 })
 
-test('bundle producer and verifier use one global manifest path order', () => {
+test('bundle producer remains deterministic while quarantined operator cannot deploy it', () => {
   const marker = 'return files.sort((left, right) => left.relative.localeCompare(right.relative))'
   assert.ok(bundleBuilder.includes(marker), 'bundle attester must globally sort paths')
-  assert.ok(operator.includes(marker), 'bundle verifier must globally sort paths')
+  assert.ok(!operator.includes('validateAndMaterializePrebuiltBundle'), 'quarantined operator must not materialize release bundles')
+  assert.ok(!operator.includes(marker), 'quarantined operator must not contain a deploy-time bundle verifier')
 })
 
 test('canonical production workflow is exact-head verification-only and credential-free', () => {
@@ -117,7 +104,7 @@ test('canonical production workflow is exact-head verification-only and credenti
   assert.doesNotMatch(workflow, /firebase\s+deploy|firebase\s+hosting:clone/)
 })
 
-test('authority bundle and credential verifier bind the complete immutable hosted release', () => {
+test('authority bundle remains deterministic and credential verifier binds quarantine state', () => {
   hasAll(bundleBuilder, [
     "schemaVersion: 'urai-static-release-bundle-1'",
     'assertCleanAuthorityCheckout()',
@@ -136,18 +123,17 @@ test('authority bundle and credential verifier bind the complete immutable hoste
   ], 'bundle attester')
   assert.doesNotMatch(bundleBuilder, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
   hasAll(credentialBoundary, [
-    'urai-release-credential-boundary-4',
-    'targetBuildIsolated: true',
-    'authorityAttestationIsolated: true',
-    'targetCodeExecutesInProductionJob: false',
-    'credentialsMaterializedByAuthorityOnly: true',
-    'managedCredentialPathRequiredForProductionWrite: true',
-    'firebaseCliResolvedFromCurrentAuthority: true',
-    'downloadedBundleRunBound',
-    'downloadedBundleFingerprintBound',
-    'liveRollbackEvidenceDirectory',
-    'evidenceDirectory: liveRollbackEvidenceDirectory',
+    "schemaVersion: 'urai-release-credential-boundary-5'",
+    "mode: 'quarantine-no-go'",
+    'exactHeadVerificationOnly: true',
+    'productionMutationAvailable: false',
+    'productionCredentialsAvailable: false',
+    'runtimeMutationIntentDetected',
+    'providerWifIamProofRequiredBeforeMutation: true',
+    'independentReviewRequiredBeforeMutation: true',
+    "releaseClassification: 'NO-GO'",
   ], 'credential boundary')
+  assert.doesNotMatch(credentialBoundary, /writeTemporaryServiceAccount|managedCredentialPathRequiredForProductionWrite|firebaseCliResolvedFromCurrentAuthority/)
 })
 
 test('live verification binds canonical routes, origin, SHA, authority, and fingerprint', () => {
@@ -172,15 +158,11 @@ test('Focus live verification requires the real static chamber and rejects the o
   assert.ok(!verifier.includes(obsolete), 'Focus live contract must not contain the obsolete loading shell')
 })
 
-test('legacy bootstrap machinery remains recovery-bounded but is not executable from the quarantined workflow', () => {
+test('legacy bootstrap verifier remains dormant and bounded while quarantined workflow cannot invoke it', () => {
   assert.ok(!workflow.includes('BOOTSTRAP_LEGACY_URAI_APP'), 'quarantined workflow must not expose legacy bootstrap mutation input')
   assert.ok(!workflow.includes('URAI_LEGACY_BOOTSTRAP_CONFIRM'), 'quarantined workflow must not expose legacy bootstrap confirmation')
-  hasAll(credentialBoundary, [
-    'legacyBootstrapRequested',
-    'legacyBootstrapProofRequired',
-    'verifyLegacyLiveBootstrap',
-    'legacyBootstrapProofVerified',
-  ], 'legacy bootstrap credential boundary')
+  assert.ok(!credentialBoundary.includes('legacyBootstrapRequested'), 'quarantined credential boundary must not wire legacy bootstrap execution')
+  assert.ok(!credentialBoundary.includes('verifyLegacyLiveBootstrap'), 'quarantined credential boundary must not invoke legacy bootstrap verification')
   hasAll(legacyBootstrapVerifier, [
     "schemaVersion: 'urai-legacy-live-bootstrap-provenance-1'",
     'valid release fingerprint already exists',
