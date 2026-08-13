@@ -1,6 +1,9 @@
 name: Accessibility Performance Evidence
 
 on:
+  push:
+    branches:
+      - release/post-1072-production-certification
   workflow_dispatch:
     inputs:
       verification_sha:
