@@ -145,6 +145,32 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
             if (current.length !== 1) return null
             return current[0]
           }
+          const readPhaseState = (root) => {
+            const attributes = {
+              source: 'data-life-map-source',
+              phase: 'data-life-map-phase',
+              mode: 'data-life-map-mode',
+              scale: 'data-life-map-scale',
+              renderReady: 'data-life-map-render-ready',
+              objects: 'data-life-map-visible-objects',
+              anchors: 'data-life-map-visible-anchors',
+              calls: 'data-life-map-render-calls',
+              triangles: 'data-life-map-render-triangles',
+              webgl: 'data-webgl-state',
+              privateMounted: 'data-private-memory-mounted',
+              fallback: 'data-life-map-fallback',
+            }
+            return Object.fromEntries(Object.entries(attributes).map(([key, attribute]) => [key, root?.getAttribute(attribute) ?? null]))
+          }
+          const capturePhaseFrame = () => {
+            const canvas = document.querySelector('canvas')
+            if (!(canvas instanceof HTMLCanvasElement)) return null
+            try {
+              return canvas.toDataURL('image/png')
+            } catch {
+              return null
+            }
+          }
           const elapsed = () => startedAt === null ? null : performance.now() - startedAt
           const record = (source) => {
             const current = currentRoot()
@@ -168,6 +194,10 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
                 return
               }
               element = frameRoot
+              const phaseFrameDataUrl = capturePhaseFrame()
+              const phaseState = readPhaseState(frameRoot)
+              const phaseRoute = window.location.href
+              const phaseViewport = { width: window.innerWidth, height: window.innerHeight }
               settled = true
               cleanup()
               publish({
@@ -177,6 +207,10 @@ function wrapLocator(locator, page, bridgeState, descriptor = '') {
                 renderedFrameAtMs: frameTime - startedAt,
                 renderedFramePhase: framePhase,
                 timeline,
+                phaseFrameDataUrl,
+                phaseState,
+                phaseRoute,
+                phaseViewport,
               })
             })
           }
