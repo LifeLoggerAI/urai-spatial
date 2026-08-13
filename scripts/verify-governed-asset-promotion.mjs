@@ -40,7 +40,7 @@ requireCondition(decision.fallbackVerified === true, 'fallback verification is r
 requireCondition(decision.routeConsumptionVerified === true, 'route consumption verification is required')
 requireCondition(decision.licenseApproved === true, 'license approval is required')
 requireCondition(decision.optimizationVerified === true, 'optimization verification is required')
-requireCondition(decision.exactHeadChecksPassed === true, 'exact-head checks must pass')
+requireCondition(typeof decision.exactHeadChecksPassed === 'boolean', 'exact-head check state must be explicit')
 requireCondition(typeof decision.reviewedAt === 'string' && !Number.isNaN(Date.parse(decision.reviewedAt)), 'reviewedAt must be an ISO timestamp')
 
 if (aliasMode) {
@@ -96,6 +96,7 @@ if (decision.mode === 'rehearsal') {
   requireCondition(decision.visualProofVerified === false, 'rehearsal must not claim final visual proof')
   requireCondition(!decision.receiptPath, 'rehearsal must not attach a production receipt')
 } else {
+  requireCondition(decision.exactHeadChecksPassed === true, 'promotion requires exact-head checks to pass')
   requireCondition(decision.promote === true, 'promotion must set promote=true')
   requireCondition(asset?.releaseState === 'production-ready', 'promotion requires manifest releaseState=production-ready')
   requireCondition(decision.humanReviewApproved === true, 'promotion requires human review approval')
@@ -117,4 +118,5 @@ console.log(`MODE=${decision.mode}`)
 console.log(`ASSET_ID=${decision.assetId}`)
 if (aliasMode) console.log(`ALIAS_OF_ASSET_ID=${aliasOfAssetId}`)
 console.log(`CANONICAL_PATH=${decision.canonicalPath}`)
+console.log(`EXACT_HEAD_CHECKS_PASSED=${decision.exactHeadChecksPassed}`)
 console.log(`PROMOTE=${decision.promote}`)
