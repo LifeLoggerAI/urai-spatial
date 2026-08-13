@@ -1,4 +1,4 @@
-name: URAI Canonical Production Release
+name: URAI Canonical Production Release Verification
 
 on:
   pull_request:
@@ -6,128 +6,56 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
-      - 'scripts/create-static-release-bundle.mjs'
-      - 'scripts/write-release-fingerprint.mjs'
-      - 'scripts/urai-release-control-smoke.mjs'
-      - 'scripts/urai-post-deploy-smoke.mjs'
-      - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/firebase-hosting-recovery.mjs'
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
-      - 'scripts/verify-live-rollback-provenance.mjs'
-      - 'scripts/verify-legacy-live-bootstrap.mjs'
-      - 'firebase.static.json'
+      - 'scripts/audit-production-workflow-authority.mjs'
       - 'package.json'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/spatial-live-deploy.yml'
   push:
     branches: [main]
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
-      - 'scripts/create-static-release-bundle.mjs'
-      - 'scripts/write-release-fingerprint.mjs'
-      - 'scripts/urai-release-control-smoke.mjs'
-      - 'scripts/urai-post-deploy-smoke.mjs'
-      - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/firebase-hosting-recovery.mjs'
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
-      - 'scripts/verify-live-rollback-provenance.mjs'
-      - 'scripts/verify-legacy-live-bootstrap.mjs'
-      - 'firebase.static.json'
+      - 'scripts/audit-production-workflow-authority.mjs'
       - 'package.json'
-      - 'pnpm-lock.yaml'
       - '.github/workflows/spatial-live-deploy.yml'
   workflow_dispatch:
-    inputs:
-      release_sha:
-        description: Exact target SHA; current main for deploy or proven prior production for rollback
-        required: true
-        type: string
-      rollback_sha:
-        description: Distinct recovery SHA; live SHA for normal deploy, proven ancestor for legacy bootstrap, or current main for rollback
-        required: true
-        type: string
-      confirm:
-        description: Type DEPLOY_URAI_APP, ROLLBACK_URAI_APP, or BOOTSTRAP_LEGACY_URAI_APP
-        required: true
-        default: CHECK_ONLY
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && 'urai-app-production' || format('urai-app-verify-{0}-{1}', github.event.pull_request.number || github.ref, github.event.pull_request.head.sha || github.sha) }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  group: urai-app-production-verification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '22'
   PNPM_VERSION: '10.0.0'
-  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
-  LIVE_URL: https://urai.app
+  EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   verify:
-    name: Exact-head release verification
+    name: Verify canonical source with production release quarantined
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.release_sha || github.sha }}
-      CURRENT_MAIN_SHA: ${{ github.sha }}
-      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.release_sha || github.sha }}
     steps:
-      - name: Checkout exact target
+      - name: Checkout exact source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ env.TARGET_SHA }}
+          ref: ${{ env.EXACT_HEAD_SHA }}
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Prove exact clean target
+      - name: Prove exact clean source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Validate manual release inputs
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        env:
-          RELEASE_SHA: ${{ inputs.release_sha }}
-          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
-          CONFIRM: ${{ inputs.confirm }}
-        run: |
-          set -euo pipefail
-          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
-          test "${{ github.ref }}" = 'refs/heads/main'
-          git cat-file -e "$RELEASE_SHA^{commit}"
-          git cat-file -e "$ROLLBACK_SHA^{commit}"
-          git merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
-          case "$CONFIRM" in
-            DEPLOY_URAI_APP)
-              test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"
-              test "$ROLLBACK_SHA" != "$RELEASE_SHA"
-              git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
-              ;;
-            BOOTSTRAP_LEGACY_URAI_APP)
-              test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"
-              test "$ROLLBACK_SHA" != "$RELEASE_SHA"
-              git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
-              ;;
-            ROLLBACK_URAI_APP)
-              test "$RELEASE_SHA" != "$CURRENT_MAIN_SHA"
-              test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"
-              git merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
-              ;;
-            CHECK_ONLY)
-              ;;
-            *)
-              echo "Unsupported confirmation: $CONFIRM" >&2
-              exit 64
-              ;;
-          esac
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -145,456 +73,42 @@ jobs:
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Audit production workflow authority
-        if: github.event_name != 'workflow_dispatch' || inputs.confirm != 'ROLLBACK_URAI_APP'
-        run: node scripts/audit-production-workflow-authority.mjs
+      - name: Verify production authority is fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/audit-production-workflow-authority.mjs
+          node scripts/verify-release-credential-boundary.mjs
+          node scripts/verify-release-credential-boundary-static.mjs
+          # Failure contract: Long-lived Google/Firebase credential material remains in the canonical production release boundary.
+          # Failure contract: Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.
 
-      - name: Verify target credential boundary
-        if: github.event_name != 'workflow_dispatch' || inputs.confirm != 'ROLLBACK_URAI_APP'
-        run: node scripts/verify-release-credential-boundary.mjs
+      - name: Verify canonical Tier1 source
+        run: |
+          pnpm --dir urai-tier1 assets:validate
+          pnpm --dir urai-tier1 typecheck
+          pnpm --dir urai-tier1 verify:aaa-world
+          pnpm --dir urai-tier1 xr:verify
 
-      - name: Validate canonical assets
-        run: pnpm --dir urai-tier1 assets:validate
+      - name: Record NO-GO release classification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-control-evidence
+          {
+            echo '# URAI Spatial production release status'
+            echo
+            echo 'Classification: NO-GO'
+            echo 'Production release and Hosting recovery are intentionally quarantined.'
+            echo 'Re-enable only after short-lived provider identity, WIF/IAM trust, least privilege, runtime read-back, rollback evidence, and historical credential revocation are independently verified.'
+            echo "Commit: $EXACT_HEAD_SHA"
+          } > release-control-evidence/spatial-production-quarantine.md
 
-      - name: Materialize asset receipt
-        run: pnpm --dir urai-tier1 receipt:assets
-
-      - name: Typecheck Tier1
-        run: pnpm --dir urai-tier1 typecheck
-
-      - name: Verify AAA world
-        run: pnpm --dir urai-tier1 verify:aaa-world
-
-      - name: Verify XR contracts
-        run: pnpm --dir urai-tier1 xr:verify
-
-      - name: Verify live release contract
-        if: github.event_name != 'workflow_dispatch' || inputs.confirm != 'ROLLBACK_URAI_APP'
-        env:
-          GITHUB_SHA: ${{ env.TARGET_SHA }}
-          URAI_TARGET_SHA: ${{ env.TARGET_SHA }}
-          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-          URAI_EXPECTED_FIREBASE_PROJECT: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-          URAI_LIVE_BASE_URL: ${{ env.LIVE_URL }}
-        run: pnpm live:check
-
-      - name: Upload exact-head evidence
+      - name: Upload verification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: urai-exact-head-${{ env.TARGET_SHA }}
-          path: |
-            docs/ASSET_VERIFICATION_REPORT.md
-            docs/final-asset-receipt.md
-            deployment-receipt/${{ env.TARGET_SHA }}/
-            release/
-            release-control-evidence/
-            STATUS.md
-            EVIDENCE.md
-            playwright-report/
-            test-results/
+          name: urai-spatial-production-quarantine-${{ env.EXACT_HEAD_SHA }}
+          path: release-control-evidence/
           if-no-files-found: warn
           retention-days: 90
-
-  rollback-verify:
-    name: Prove rollback target with current authority
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      PROOF_SHA: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && inputs.release_sha || inputs.rollback_sha }}
-      CURRENT_MAIN_SHA: ${{ github.sha }}
-    steps:
-      - name: Checkout current release authority
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ env.CURRENT_MAIN_SHA }}
-          path: authority
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Checkout rollback target
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ env.PROOF_SHA }}
-          path: target
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Prove authority and rollback identities
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git -C authority rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
-          test "$(git -C target rev-parse HEAD)" = "$PROOF_SHA"
-          test -z "$(git -C authority status --porcelain --untracked-files=all)"
-          test -z "$(git -C target status --porcelain --untracked-files=all)"
-          git -C authority merge-base --is-ancestor "$PROOF_SHA" "$CURRENT_MAIN_SHA"
-
-      - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Enable exact pnpm
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare "pnpm@${PNPM_VERSION}" --activate
-          test "$(pnpm --version)" = "$PNPM_VERSION"
-
-      - name: Install rollback target dependencies
-        working-directory: target
-        run: pnpm install --frozen-lockfile
-
-      - name: Audit current production authority
-        working-directory: authority
-        run: node scripts/audit-production-workflow-authority.mjs
-
-      - name: Verify current credential boundary
-        working-directory: authority
-        run: node scripts/verify-release-credential-boundary.mjs
-
-      - name: Validate rollback target assets
-        working-directory: target
-        run: pnpm --dir urai-tier1 assets:validate
-
-      - name: Materialize rollback asset receipt
-        working-directory: target
-        run: pnpm --dir urai-tier1 receipt:assets
-
-      - name: Typecheck rollback target
-        working-directory: target
-        run: pnpm --dir urai-tier1 typecheck
-
-      - name: Verify rollback AAA world
-        working-directory: target
-        run: pnpm --dir urai-tier1 verify:aaa-world
-
-      - name: Verify rollback XR contracts
-        working-directory: target
-        run: pnpm --dir urai-tier1 xr:verify
-
-      - name: Verify rollback target with current release executable
-        working-directory: target
-        env:
-          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.PROOF_SHA }}
-          URAI_TARGET_SHA: ${{ env.PROOF_SHA }}
-          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-          URAI_EXPECTED_FIREBASE_PROJECT: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-          URAI_LIVE_BASE_URL: ${{ env.LIVE_URL }}
-        run: node ../authority/scripts/live-release.mjs
-
-      - name: Build rollback static output
-        working-directory: target
-        env:
-          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.PROOF_SHA }}
-        run: pnpm build:static
-
-      - name: Verify rollback output embeds exact SHA
-        working-directory: target
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f urai-tier1/out/index.html
-          grep -R --fixed-strings --include='*.html' -q "$PROOF_SHA" urai-tier1/out
-
-      - name: Upload rollback proof
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: urai-rollback-proof-${{ env.PROOF_SHA }}
-          path: |
-            target/docs/ASSET_VERIFICATION_REPORT.md
-            target/docs/final-asset-receipt.md
-            target/deployment-receipt/${{ env.PROOF_SHA }}/
-            target/release-control-evidence/
-          if-no-files-found: error
-          retention-days: 365
-
-  build-release-output:
-    name: Build exact static target without production authority or credentials
-    needs: [verify, rollback-verify]
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      RELEASE_SHA: ${{ inputs.release_sha }}
-      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
-      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
-      URAI_TARGET_SHA: ${{ inputs.release_sha }}
-    steps:
-      - name: Checkout exact release target only
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ env.RELEASE_SHA }}
-          path: target
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Prove exact clean target identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git -C target rev-parse HEAD)" = "$RELEASE_SHA"
-          test -z "$(git -C target status --porcelain --untracked-files=all)"
-          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
-          test "$ROLLBACK_SHA" != "$RELEASE_SHA"
-
-      - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Enable exact pnpm
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare "pnpm@${PNPM_VERSION}" --activate
-          test "$(pnpm --version)" = "$PNPM_VERSION"
-
-      - name: Install exact target dependencies without production credentials
-        working-directory: target
-        run: pnpm install --frozen-lockfile
-      - name: Build exact target without production credentials
-        working-directory: target
-        env:
-          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.RELEASE_SHA }}
-          ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
-        run: pnpm build:static
-
-      - name: Verify raw output identity and stage regular files
-        shell: bash
-        env:
-          RAW_OUTPUT_DIR: ${{ runner.temp }}/urai-raw-static-output
-        run: |
-          set -euo pipefail
-          test -f target/urai-tier1/out/index.html
-          grep -R --fixed-strings --include='*.html' -q "$RELEASE_SHA" target/urai-tier1/out
-          if find target/urai-tier1/out -type l -print -quit | grep -q .; then
-            echo 'Raw static output contains a symlink' >&2
-            exit 65
-          fi
-          rm -rf "$RAW_OUTPUT_DIR"
-          mkdir -p "$RAW_OUTPUT_DIR/urai-tier1"
-          cp -a target/urai-tier1/out "$RAW_OUTPUT_DIR/urai-tier1/out"
-
-      - name: Upload unattested raw static output
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: urai-raw-static-output-${{ env.RELEASE_SHA }}
-          path: ${{ runner.temp }}/urai-raw-static-output
-          if-no-files-found: error
-          retention-days: 2
-
-  attest-release-bundle:
-    name: Attest raw static output with clean current authority
-    needs: [verify, rollback-verify, build-release-output]
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      RELEASE_SHA: ${{ inputs.release_sha }}
-      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
-      CURRENT_MAIN_SHA: ${{ github.sha }}
-      FIREBASE_PROJECT_ID: urai-4dc1d
-      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
-      URAI_LIVE_BASE_URL: https://urai.app
-      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
-      URAI_TARGET_SHA: ${{ inputs.release_sha }}
-    steps:
-      - name: Checkout clean current release authority only
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ env.CURRENT_MAIN_SHA }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Prove clean current authority identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
-          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
-          test "$ROLLBACK_SHA" != "$RELEASE_SHA"
-
-      - name: Download unattested raw static output
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: urai-raw-static-output-${{ env.RELEASE_SHA }}
-          path: ${{ runner.temp }}/urai-raw-static-output
-
-      - name: Revalidate authority boundary before attestation
-        run: node scripts/verify-release-credential-boundary.mjs
-
-      - name: Create hash-bound release bundle with clean authority
-        env:
-          URAI_STATIC_OUTPUT_DIR: ${{ runner.temp }}/urai-raw-static-output/urai-tier1/out
-          URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
-        run: node scripts/create-static-release-bundle.mjs
-
-      - name: Upload authority-attested static release bundle
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: urai-static-release-bundle-${{ env.RELEASE_SHA }}
-          path: ${{ runner.temp }}/urai-release-bundle
-          if-no-files-found: error
-          retention-days: 2
-
-  deploy:
-    name: Deploy or roll back verified static bundle on urai.app
-    needs: [verify, rollback-verify, attest-release-bundle]
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    environment: production
-    env:
-      RELEASE_SHA: ${{ inputs.release_sha }}
-      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
-      CURRENT_MAIN_SHA: ${{ github.sha }}
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
-      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
-      URAI_TARGET_SHA: ${{ inputs.release_sha }}
-      URAI_LIVE_BASE_URL: https://urai.app
-      URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI
-      URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'rollback' || 'deploy' }}
-      URAI_LEGACY_BOOTSTRAP: ${{ inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP' && '1' || '0' }}
-      URAI_LEGACY_BOOTSTRAP_CONFIRM: ${{ inputs.confirm }}
-      URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase
-    steps:
-      - name: Checkout current release authority only
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ env.CURRENT_MAIN_SHA }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Validate clean current authority
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
-          test "$FIREBASE_PROJECT_ID" = "$URAI_EXPECTED_FIREBASE_PROJECT"
-          test "$GITHUB_WORKFLOW" = 'URAI Canonical Production Release'
-          test "$GITHUB_REPOSITORY" = 'LifeLoggerAI/urai-spatial'
-          test "$GITHUB_REF" = 'refs/heads/main'
-          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
-          if test "$URAI_RELEASE_OPERATION" = 'deploy'; then
-            test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"
-            test "$ROLLBACK_SHA" != "$RELEASE_SHA"
-            git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
-          else
-            test "$RELEASE_SHA" != "$CURRENT_MAIN_SHA"
-            test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"
-            git merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
-          fi
-
-      - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Enable exact pnpm
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack prepare "pnpm@${PNPM_VERSION}" --activate
-          test "$(pnpm --version)" = "$PNPM_VERSION"
-
-      - name: Install current authority dependencies with lifecycle scripts disabled
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Install Chromium from current authority without production credentials
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Download exact static release bundle
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: urai-static-release-bundle-${{ env.RELEASE_SHA }}
-          path: ${{ runner.temp }}/urai-release-bundle
-
-      - name: Revalidate current credential boundary
-        run: node scripts/verify-release-credential-boundary.mjs
-
-      - name: Verify downloaded bundle before production credentials exist
-        env:
-          URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
-        run: node scripts/live-release.mjs --verify-prebuilt
-
-      - name: Deploy verified bundle with current authority and ephemeral credentials
-        env:
-          URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
-          node scripts/live-release.mjs --deploy-prebuilt
-
-      - name: Run canonical live smoke with current authority
-        env:
-          URAI_EXPECTED_DEPLOYED_SHA: ${{ env.RELEASE_SHA }}
-          URAI_EXPECTED_ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
-        run: node scripts/urai-release-control-smoke.mjs
-
-      - name: Record protected recovery command
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "deployment-receipt/$RELEASE_SHA"
-          if test "$URAI_RELEASE_OPERATION" = 'deploy'; then
-            RECOVERY_TARGET="$ROLLBACK_SHA"
-            RECOVERY_ROLLBACK="$CURRENT_MAIN_SHA"
-            RECOVERY_CONFIRM='ROLLBACK_URAI_APP'
-          else
-            RECOVERY_TARGET="$CURRENT_MAIN_SHA"
-            RECOVERY_ROLLBACK="$RELEASE_SHA"
-            RECOVERY_CONFIRM='DEPLOY_URAI_APP'
-          fi
-          cat > "deployment-receipt/$RELEASE_SHA/rollback.txt" <<EOF_RECOVERY
-          gh workflow run spatial-live-deploy.yml --ref main -f release_sha=$RECOVERY_TARGET -f rollback_sha=$RECOVERY_ROLLBACK -f confirm=$RECOVERY_CONFIRM
-          EOF_RECOVERY
-          cat > "deployment-receipt/$RELEASE_SHA/operation.txt" <<EOF_OPERATION
-          operation=$URAI_RELEASE_OPERATION
-          deployed_sha=$RELEASE_SHA
-          current_main_sha=$CURRENT_MAIN_SHA
-          rollback_sha=$ROLLBACK_SHA
-          recovery_target=$RECOVERY_TARGET
-          recovery_confirmation=$RECOVERY_CONFIRM
-          EOF_OPERATION
-
-      - name: Upload deployment receipt
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: urai-production-${{ env.RELEASE_SHA }}-${{ env.URAI_RELEASE_OPERATION }}
-          path: |
-            deployment-receipt/${{ env.RELEASE_SHA }}/
-            release-control-evidence/
-          if-no-files-found: error
-          retention-days: 365
-
-      - name: Remove temporary credentials
-        if: always()
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
-        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"

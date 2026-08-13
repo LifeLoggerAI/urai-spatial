@@ -1,58 +1,52 @@
-name: Capture legacy Firebase Hosting recovery
+name: Legacy Firebase Hosting Recovery Verification
 
 on:
   workflow_dispatch:
     inputs:
-      confirm:
-        description: Type CAPTURE_LEGACY_HOSTING_VERSION
+      expected_sha:
+        description: Exact reviewed Spatial commit SHA
         required: true
-        default: CHECK_ONLY
         type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: urai-legacy-hosting-recovery-capture
-  cancel-in-progress: false
+  group: urai-legacy-hosting-recovery-verification-${{ inputs.expected_sha }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '22'
-  EXPECTED_FIREBASE_SITE: urai-4dc1d
+  EXPECTED_SHA: ${{ inputs.expected_sha }}
 
 jobs:
-  capture:
-    name: Capture exact current live Hosting version
-    if: github.ref == 'refs/heads/main' && inputs.confirm == 'CAPTURE_LEGACY_HOSTING_VERSION'
+  verify:
+    name: Verify legacy recovery remains quarantined
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: production
     steps:
-      - name: Checkout exact protected main authority
+      - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.expected_sha }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
 
-      - name: Prove exact clean protected main identity
+      - name: Prove exact clean candidate
         shell: bash
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = 'refs/heads/main'
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
-          remote_main="$(git ls-remote --exit-code origin refs/heads/main | awk '{print $1}')"
-          test "$remote_main" = "$GITHUB_SHA"
-          test '${{ inputs.confirm }}' = 'CAPTURE_LEGACY_HOSTING_VERSION'
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Verify source-only recovery tool
+      - name: Verify source-only recovery quarantine
         shell: bash
         run: |
           set -euo pipefail
@@ -62,30 +56,38 @@ jobs:
           node scripts/audit-production-workflow-authority.mjs
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - name: Discover exact current live Hosting version
-        env:
-          FIREBASE_SITE_ID: ${{ env.EXPECTED_FIREBASE_SITE }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          URAI_HOSTING_RECOVERY_RECEIPT: ${{ runner.temp }}/hosting-recovery/legacy-live-release.json
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
-          node scripts/firebase-hosting-recovery.mjs discover
-          test -s "$URAI_HOSTING_RECOVERY_RECEIPT"
-
-      - name: Prove no source mutation
+      - name: Write NO-GO recovery receipt
         if: always()
         shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
+          mkdir -p artifacts/legacy-hosting-recovery
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const receipt = {
+            schemaVersion: 'urai-legacy-hosting-recovery-quarantine-1',
+            repository: process.env.GITHUB_REPOSITORY,
+            workflowRunId: process.env.GITHUB_RUN_ID,
+            exactHeadSha: process.env.EXPECTED_SHA,
+            status: process.env.JOB_STATUS,
+            classification: 'NO-GO',
+            checksOnly: true,
+            productionCredentialsAvailable: false,
+            recoveryMutationAttempted: false,
+            providerRecoveryVerified: false,
+          };
+          fs.writeFileSync(
+            'artifacts/legacy-hosting-recovery/quarantine.json',
+            `${JSON.stringify(receipt, null, 2)}\n`,
+          );
+          NODE
 
-      - name: Upload exact Hosting recovery receipt
+      - name: Upload quarantine receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: urai-legacy-hosting-recovery-${{ github.sha }}-${{ github.run_id }}
-          path: ${{ runner.temp }}/hosting-recovery/
+          name: urai-legacy-hosting-recovery-verification-${{ inputs.expected_sha }}
+          path: artifacts/legacy-hosting-recovery/quarantine.json
           if-no-files-found: error
           retention-days: 365
