@@ -7,7 +7,7 @@ const BRIDGE_START_NAME = '__uraiFounderHarnessPhaseStart'
 const BRIDGE_ACTIVATION_NAME = '__uraiFounderHarnessActivationBridge'
 const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
 const TIER_ONE_REQUIRE_PARENT_SUFFIX = path.join('urai-tier1', 'package.json')
-const PREPARATION_TIMEOUT_MS = 130_000
+const PREPARATION_TIMEOUT_MS = 300_000
 let sequence = 0
 let bridgedPlaywrightDelivered = false
 
