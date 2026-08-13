@@ -2,10 +2,12 @@ import { getAuth } from "firebase/auth";
 import { app, firebasePublicEnvReady } from "@/lib/firebase/client";
 import type { NarratorLine } from "./narratorTypes";
 
+export type ExternalVoiceRequest = Pick<NarratorLine, "text" | "voiceId" | "tone">;
+
 const MAX_MEMORY_CACHE_ENTRIES = 12;
 const memoryCache = new Map<string, Blob>();
 
-function hashLine(line: NarratorLine): string {
+function hashLine(line: ExternalVoiceRequest): string {
   const raw = JSON.stringify({ text: line.text ?? "", voiceId: line.voiceId ?? "", tone: line.tone ?? "" });
   let hash = 0;
   for (let i = 0; i < raw.length; i += 1) {
@@ -25,8 +27,8 @@ function remember(key: string, blob: Blob) {
   }
 }
 
-export async function requestNarratorAudio(
-  line: NarratorLine,
+export async function requestExternalVoiceAudio(
+  line: ExternalVoiceRequest,
   signal?: AbortSignal,
   externalProcessingConsent = false,
 ): Promise<Blob | null> {
@@ -69,4 +71,12 @@ export async function requestNarratorAudio(
   } catch {
     return null;
   }
+}
+
+export async function requestNarratorAudio(
+  line: NarratorLine,
+  signal?: AbortSignal,
+  externalProcessingConsent = false,
+): Promise<Blob | null> {
+  return requestExternalVoiceAudio(line, signal, externalProcessingConsent);
 }
