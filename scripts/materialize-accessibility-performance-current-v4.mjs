@@ -32,14 +32,14 @@ await transformFile('urai-tier1/tests/accessibility-performance-embodied-explora
   source = replaceExact(
     source,
     `    await memory.focus()\n    await expect(memory).toBeFocused()\n    await memory.press('Enter')`,
-    `    await memory.evaluate((element: HTMLElement) => element.focus())\n    await expect(memory).toBeFocused()\n    await page.keyboard.press('Enter')`,
+    `    await memory.press('Enter')`,
     1,
-    'stable keyboard activation of current Life Map semantic result',
+    'native keyboard activation of current Life Map semantic result',
   )
   source = replaceRegex(
     source,
     /  test\('closed mobile Life Map movement help stays compact and cannot obstruct the world',[\s\S]*?\n  test\('mobile movement controls remain contained, touch-sized, and move through Home',/g,
-    `  test('closed mobile Life Map semantic opener stays compact and keyboard-operable', async ({ page }) => {\n    await enableLifeMapDemo(page)\n    await page.setViewportSize({ width: 393, height: 873 })\n    await page.goto('/life-map/?demo=1', { waitUntil: 'domcontentloaded' })\n    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })\n\n    const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' })\n    await expect(trigger).toBeVisible()\n    await expect(trigger).toHaveAttribute('aria-expanded', 'false')\n    const rect = await trigger.boundingBox()\n    expect(rect).not.toBeNull()\n    expect(rect!.width).toBeGreaterThanOrEqual(48)\n    expect(rect!.height).toBeGreaterThanOrEqual(48)\n    expect(rect!.x).toBeGreaterThanOrEqual(0)\n    expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)\n    expect(rect!.y).toBeGreaterThanOrEqual(0)\n    expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)\n\n    await trigger.evaluate((element: HTMLElement) => element.focus())\n    await expect(trigger).toBeFocused()\n    await page.keyboard.press('Enter')\n    await expect(trigger).toHaveAttribute('aria-expanded', 'true')\n    await expect(page.getByRole('region', { name: 'Search and filter Life Map' })).toBeVisible()\n  })\n\n  test('mobile movement controls remain contained, touch-sized, and move through Home',`,
+    `  test('closed mobile Life Map semantic opener stays compact and keyboard-operable', async ({ page }) => {\n    await enableLifeMapDemo(page)\n    await page.setViewportSize({ width: 393, height: 873 })\n    await page.goto('/life-map/?demo=1', { waitUntil: 'domcontentloaded' })\n    await expect(page.getByTestId('urai-true-3d-life-map')).toBeVisible({ timeout: 15_000 })\n\n    const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' })\n    await expect(trigger).toBeVisible()\n    await expect(trigger).toHaveAttribute('aria-expanded', 'false')\n    const rect = await trigger.boundingBox()\n    expect(rect).not.toBeNull()\n    expect(rect!.width).toBeGreaterThanOrEqual(48)\n    expect(rect!.height).toBeGreaterThanOrEqual(48)\n    expect(rect!.x).toBeGreaterThanOrEqual(0)\n    expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)\n    expect(rect!.y).toBeGreaterThanOrEqual(0)\n    expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)\n\n    await trigger.press('Enter')\n    await expect(trigger).toHaveAttribute('aria-expanded', 'true')\n    const region = page.getByRole('region', { name: 'Search and filter Life Map' })\n    await expect(region).toBeVisible()\n    await expect(region.locator('#life-map-search')).toBeFocused()\n  })\n\n  test('mobile movement controls remain contained, touch-sized, and move through Home',`,
     1,
     'current compact Life Map semantic opener evidence',
   )
@@ -50,16 +50,16 @@ await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independ
   let source = replaceExact(
     input,
     `  await firstMemory.focus()\n  await expect(firstMemory).toBeFocused()\n  await firstMemory.press('Enter')`,
-    `  await firstMemory.evaluate((element: HTMLElement) => element.focus())\n  await expect(firstMemory).toBeFocused()\n  await page.keyboard.press('Enter')`,
+    `  await firstMemory.press('Enter')`,
     1,
-    'stable helper keyboard activation of current semantic result',
+    'native helper keyboard activation of current semantic result',
   )
   source = replaceExact(
     source,
     `    await firstMemory.focus()\n    await expect(firstMemory).toBeFocused()\n    await firstMemory.press('Enter')`,
-    `    await firstMemory.evaluate((element: HTMLElement) => element.focus())\n    await expect(firstMemory).toBeFocused()\n    await page.keyboard.press('Enter')`,
+    `    await firstMemory.press('Enter')`,
     1,
-    'stable direct keyboard activation of current semantic result',
+    'native direct keyboard activation of current semantic result',
   )
   source = replaceExact(
     source,
@@ -82,28 +82,28 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   source = replaceRegex(
     source,
     /  test\('Life Map movement help is keyboard-operable',[\s\S]*?\n  test\('selected Life Map journey controls preserve identity and remain operable on portrait mobile',/g,
-    `  test('Life Map semantic opener is keyboard-operable', async ({ page }) => {\n    await page.goto('/life-map?demo=1&overview=1&manifestId=replay-recovery-thread', { waitUntil: 'domcontentloaded' })\n    const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' })\n    await expect(trigger).toBeVisible({ timeout: 15_000 })\n    await expect(trigger).toHaveAttribute('aria-expanded', 'false')\n    await trigger.evaluate((element: HTMLElement) => element.focus())\n    await expect(trigger).toBeFocused()\n    await page.keyboard.press('Enter')\n    await expect(trigger).toHaveAttribute('aria-expanded', 'true')\n    const region = page.getByRole('region', { name: 'Search and filter Life Map' })\n    await expect(region).toBeVisible()\n    await expect(region.getByRole('list', { name: 'Visible Life Map objects' })).toBeVisible()\n  })\n\n  test('selected Life Map journey controls preserve identity and remain operable on portrait mobile',`,
+    `  test('Life Map semantic opener is keyboard-operable', async ({ page }) => {\n    await page.goto('/life-map?demo=1&overview=1&manifestId=replay-recovery-thread', { waitUntil: 'domcontentloaded' })\n    const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' })\n    await expect(trigger).toBeVisible({ timeout: 15_000 })\n    await expect(trigger).toHaveAttribute('aria-expanded', 'false')\n    await trigger.press('Enter')\n    await expect(trigger).toHaveAttribute('aria-expanded', 'true')\n    const region = page.getByRole('region', { name: 'Search and filter Life Map' })\n    await expect(region).toBeVisible()\n    await expect(region.locator('#life-map-search')).toBeFocused()\n    await expect(region.getByRole('list', { name: 'Visible Life Map objects' })).toBeVisible()\n  })\n\n  test('selected Life Map journey controls preserve identity and remain operable on portrait mobile',`,
     1,
     'current keyboard-operable semantic opener',
   )
   source = replaceExact(
     source,
     `    await searchTrigger.click()\n    const navigator = page.getByRole('region', { name: 'Search and filter Life Map' })`,
-    `    await searchTrigger.evaluate((element: HTMLElement) => element.focus())\n    await expect(searchTrigger).toBeFocused()\n    await page.keyboard.press('Enter')\n    const navigator = page.getByRole('region', { name: 'Search and filter Life Map' })`,
+    `    await searchTrigger.press('Enter')\n    const navigator = page.getByRole('region', { name: 'Search and filter Life Map' })`,
     1,
     'journey search opener keyboard activation',
   )
   source = replaceExact(
     source,
     `    await alternate.click()`,
-    `    await alternate.evaluate((element: HTMLElement) => element.focus())\n    await expect(alternate).toBeFocused()\n    await page.keyboard.press('Enter')`,
+    `    await alternate.press('Enter')`,
     1,
     'journey alternate semantic result keyboard activation',
   )
   source = replaceExact(
     source,
     `    await searchTrigger.click()\n    await expect(navigator).toBeVisible()\n    await navigator.locator('[role="listitem"][data-life-map-node-id="quiet-reset"]').click()`,
-    `    await searchTrigger.evaluate((element: HTMLElement) => element.focus())\n    await expect(searchTrigger).toBeFocused()\n    await page.keyboard.press('Enter')\n    await expect(navigator).toBeVisible()\n    const quietReset = navigator.locator('[role="listitem"][data-life-map-node-id="quiet-reset"]')\n    await quietReset.evaluate((element: HTMLElement) => element.focus())\n    await expect(quietReset).toBeFocused()\n    await page.keyboard.press('Enter')`,
+    `    await searchTrigger.press('Enter')\n    await expect(navigator).toBeVisible()\n    const quietReset = navigator.locator('[role="listitem"][data-life-map-node-id="quiet-reset"]')\n    await quietReset.press('Enter')`,
     1,
     'journey return semantic result keyboard activation',
   )
