@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { lifeMapTypeLabels, type LifeMapNode, type LifeMapNodeType } from './lifeMapData'
 import { requestLifeMapSelection } from './lifeMapSelection'
 import { useLifeMapEvents } from './useLifeMapEvents'
@@ -34,6 +34,10 @@ export default function LifeMapSemanticNavigator() {
   const selectedId = overviewRequested ? null : params.get('node') || params.get('memoryId')
   const selected = nodes.find((node) => node.id === selectedId) || null
   const searchRef = useRef<HTMLInputElement>(null)
+
+  useLayoutEffect(() => {
+    if (open) searchRef.current?.focus()
+  }, [open])
 
   const visibleNodes = useMemo(
     () => nodes.filter((node) => matchesSearch(node, search) && (typeFilter === 'all' || node.type === typeFilter) && (eraFilter === 'all' || node.eraId === eraFilter)),
@@ -102,7 +106,6 @@ export default function LifeMapSemanticNavigator() {
       if (event.key === '/') {
         event.preventDefault()
         setOpen(true)
-        window.setTimeout(() => searchRef.current?.focus(), 0)
       }
     }
     window.addEventListener('keydown', onKeyDown, true)
@@ -117,7 +120,7 @@ export default function LifeMapSemanticNavigator() {
       className="life-map-search-trigger"
       aria-label="Search and navigate Life Map"
       aria-expanded={open}
-      onClick={() => { setOpen((value) => !value); window.setTimeout(() => searchRef.current?.focus(), 0) }}
+      onClick={() => setOpen((value) => !value)}
     >
       <span aria-hidden="true">⌕</span><span className="sr-only">Search life</span>
     </button>
