@@ -87,43 +87,34 @@ test('bundle producer and verifier use one global manifest path order', () => {
   assert.ok(operator.includes(marker), 'bundle verifier must globally sort paths')
 })
 
-test('build, authority attestation, and protected deploy are separate jobs', () => {
-  const build = job(workflow, 'build-release-output')
-  const attest = job(workflow, 'attest-release-bundle')
-  const deploy = job(workflow, 'deploy')
+test('canonical production workflow is exact-head verification-only and credential-free', () => {
+  const verify = job(workflow, 'verify')
 
-  hasAll(build, [
-    'Build exact static target without production authority or credentials',
-    'Checkout exact release target only',
+  hasAll(workflow, [
+    'name: URAI Canonical Production Release Verification',
+    'permissions:',
+    'contents: read',
+    'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'workflow_dispatch:',
+  ], 'verification workflow')
+  hasAll(verify, [
+    'Verify canonical source with production release quarantined',
+    'Checkout exact source',
+    'ref: ${{ env.EXACT_HEAD_SHA }}',
+    'persist-credentials: false',
+    'Prove exact clean source',
     'pnpm install --frozen-lockfile',
-    'pnpm build:static',
-    'Upload unattested raw static output',
-  ], 'build job')
-  assert.doesNotMatch(build, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
-
-  hasAll(attest, [
-    'Attest raw static output with clean current authority',
-    'Checkout clean current release authority only',
-    'Download unattested raw static output',
+    'node scripts/audit-production-workflow-authority.mjs',
     'node scripts/verify-release-credential-boundary.mjs',
-    'node scripts/create-static-release-bundle.mjs',
-    'Upload authority-attested static release bundle',
-  ], 'attestation job')
-  assert.doesNotMatch(attest, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS|pnpm\s+build:static/)
-
-  hasAll(deploy, [
-    'Deploy or roll back verified static bundle on urai.app',
-    'environment: production',
-    'Checkout current release authority only',
-    'pnpm install --frozen-lockfile --ignore-scripts',
-    'node scripts/live-release.mjs --verify-prebuilt',
-    'node scripts/live-release.mjs --deploy-prebuilt',
-    'node scripts/urai-release-control-smoke.mjs',
-    'Remove temporary credentials',
-  ], 'deploy job')
-  assert.match(deploy, /GOOGLE_APPLICATION_CREDENTIALS: \$\{\{ runner\.temp \}\}\/urai-firebase-service-account\.json/)
-  assert.match(deploy, /URAI_FIREBASE_CLI: \$\{\{ github\.workspace \}\}\/node_modules\/\.bin\/firebase/)
-  assert.doesNotMatch(deploy, /working-directory:\s*target|pnpm\s+build:static/)
+    'node scripts/verify-release-credential-boundary-static.mjs',
+    'Record NO-GO release classification',
+    'Production release and Hosting recovery are intentionally quarantined.',
+    'Upload verification evidence',
+  ], 'verification job')
+  assert.doesNotMatch(workflow, /environment:\s*production/)
+  assert.doesNotMatch(workflow, /FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
+  assert.doesNotMatch(workflow, /node scripts\/live-release\.mjs --deploy-prebuilt/)
+  assert.doesNotMatch(workflow, /firebase\s+deploy|firebase\s+hosting:clone/)
 })
 
 test('authority bundle and credential verifier bind the complete immutable hosted release', () => {
@@ -181,13 +172,9 @@ test('Focus live verification requires the real static chamber and rejects the o
   assert.ok(!verifier.includes(obsolete), 'Focus live contract must not contain the obsolete loading shell')
 })
 
-test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
-  hasAll(workflow, [
-    'BOOTSTRAP_LEGACY_URAI_APP',
-    "URAI_LEGACY_BOOTSTRAP: ${{ inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP' && '1' || '0' }}",
-    'URAI_LEGACY_BOOTSTRAP_CONFIRM: ${{ inputs.confirm }}',
-    'git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"',
-  ], 'legacy bootstrap workflow')
+test('legacy bootstrap machinery remains recovery-bounded but is not executable from the quarantined workflow', () => {
+  assert.ok(!workflow.includes('BOOTSTRAP_LEGACY_URAI_APP'), 'quarantined workflow must not expose legacy bootstrap mutation input')
+  assert.ok(!workflow.includes('URAI_LEGACY_BOOTSTRAP_CONFIRM'), 'quarantined workflow must not expose legacy bootstrap confirmation')
   hasAll(credentialBoundary, [
     'legacyBootstrapRequested',
     'legacyBootstrapProofRequired',
@@ -205,25 +192,26 @@ test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
   ], 'legacy bootstrap verifier')
 })
 
-test('static SHA proofs avoid pipefail SIGPIPE false negatives', () => {
+test('quarantined production verification binds exact source identity without claiming live SHA proof', () => {
   hasAll(workflow, [
-    'grep -R --fixed-strings --include=\'*.html\' -q "$PROOF_SHA" urai-tier1/out',
-    'grep -R --fixed-strings --include=\'*.html\' -q "$RELEASE_SHA" target/urai-tier1/out',
-  ], 'direct static SHA proof')
-  assert.doesNotMatch(workflow, /--include='\*\.html' -l \| grep -q \./)
+    'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
+    'test "$(git rev-parse HEAD)" = "$EXACT_HEAD_SHA"',
+    'test -z "$(git status --porcelain --untracked-files=all)"',
+    'Classification: NO-GO',
+    'Commit: $EXACT_HEAD_SHA',
+  ], 'exact source verification')
+  assert.doesNotMatch(workflow, /grep -R --fixed-strings --include='\*\.html'/)
+  assert.doesNotMatch(workflow, /URAI_EXPECTED_DEPLOYED_SHA|URAI_EXPECTED_ROLLBACK_SHA/)
 })
 
-test('manual deploy and rollback preserve distinct target and recovery identities', () => {
+test('manual trigger remains verification-only and exposes no deploy or rollback path', () => {
   hasAll(workflow, [
     'workflow_dispatch:',
-    'rollback-verify:',
-    'build-release-output:',
-    'attest-release-bundle:',
-    'ROLLBACK_SHA: ${{ inputs.rollback_sha }}',
-    'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
-    'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
-    'test "$RELEASE_SHA" != "$CURRENT_MAIN_SHA"',
-    'git merge-base --is-ancestor',
-    'gh workflow run spatial-live-deploy.yml --ref main',
-  ], 'protected release workflow')
+    'Verify production authority is fail-closed',
+    'Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.',
+    'Re-enable only after short-lived provider identity, WIF/IAM trust, least privilege, runtime read-back, rollback evidence, and historical credential revocation are independently verified.',
+  ], 'quarantined manual verification')
+  assert.doesNotMatch(workflow, /rollback_sha:|release_sha:|confirm:/)
+  assert.doesNotMatch(workflow, /build-release-output:|attest-release-bundle:|rollback-verify:|\n  deploy:\n/)
+  assert.doesNotMatch(workflow, /gh workflow run spatial-live-deploy\.yml/)
 })
