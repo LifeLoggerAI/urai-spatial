@@ -6,6 +6,9 @@ const CI_WEBGL_ARGS = [
   '--enable-unsafe-swiftshader',
   '--disable-gpu-sandbox',
   '--disable-dev-shm-usage',
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-renderer-backgrounding',
 ]
 
 function patchChromium(requireFrom, label) {
