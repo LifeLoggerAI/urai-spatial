@@ -57,8 +57,8 @@ jobs:
           expected=os.environ['MAKEHUMAN_BLOB']
           if git_blob != expected:
               raise SystemExit(f'MakeHuman blob mismatch: {git_blob} != {expected}')
-          if len(data) < 3_000_000:
-              raise SystemExit(f'MakeHuman base mesh unexpectedly small: {len(data)}')
+          if not data.startswith(b'#') and b'\nv ' not in data[:65536]:
+              raise SystemExit('MakeHuman base mesh does not look like an OBJ')
           print({'bytes':len(data),'gitBlob':git_blob})
           PY
 
