@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { publishOrbState } from '@/app/home/orbStateController'
+import { requestExternalVoiceAudio } from '@/spatial/narrator/elevenlabsClient'
+import { URAI_VOICE_CONFIG } from '@/spatial/narrator/narratorCopy'
 import { narratorPlayback } from '@/spatial/narrator/narratorPlayback'
 import styles from './OrbConversationPanel.module.css'
 import {
@@ -15,13 +17,18 @@ import {
   type OrbProviderResult,
 } from './openaiClient'
 
-function speakLocally(text: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+function speakWithDeviceVoice(text: string, onDone?: () => void) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    onDone?.()
+    return
+  }
   window.speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.rate = 0.9
   utterance.pitch = 0.96
   utterance.lang = 'en-US'
+  utterance.onend = () => onDone?.()
+  utterance.onerror = () => onDone?.()
   window.speechSynthesis.speak(utterance)
 }
 
@@ -39,8 +46,12 @@ export default function OrbConversationPanel() {
   const [busy, setBusy] = useState(false)
   const [aiConsent, setAiConsent] = useState(false)
   const [externalVoiceConsent, setExternalVoiceConsent] = useState(false)
-  const [voiceMuted, setVoiceMuted] = useState(true)
+  const [voiceMuted, setVoiceMuted] = useState(false)
+  const [voicePlaying, setVoicePlaying] = useState(false)
   const aborter = useRef<AbortController | null>(null)
+  const voiceAborter = useRef<AbortController | null>(null)
+  const voiceAudio = useRef<HTMLAudioElement | null>(null)
+  const voiceObjectUrl = useRef<string | null>(null)
   const stateResetTimer = useRef<number | null>(null)
 
   const publishConversationState = (state: 'idle' | 'attention' | 'listening' | 'thinking' | 'speaking' | 'privacy' | 'warning', resetAfterMs?: number) => {
@@ -57,6 +68,92 @@ export default function OrbConversationPanel() {
     }
   }
 
+  const stopVoice = () => {
+    voiceAborter.current?.abort()
+    voiceAborter.current = null
+
+    const activeAudio = voiceAudio.current
+    if (activeAudio) {
+      activeAudio.onended = null
+      activeAudio.onerror = null
+      activeAudio.pause()
+      activeAudio.currentTime = 0
+      activeAudio.src = ''
+      voiceAudio.current = null
+    }
+
+    if (voiceObjectUrl.current) {
+      URL.revokeObjectURL(voiceObjectUrl.current)
+      voiceObjectUrl.current = null
+    }
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    setVoicePlaying(false)
+  }
+
+  const playDeviceVoice = (text: string) => {
+    if (voiceMuted) return
+    setVoicePlaying(true)
+    speakWithDeviceVoice(text, () => setVoicePlaying(false))
+  }
+
+  const speakOrbResponse = async (text: string) => {
+    if (voiceMuted || typeof window === 'undefined') return
+    stopVoice()
+
+    if (externalVoiceConsent) {
+      const controller = new AbortController()
+      voiceAborter.current = controller
+      setVoicePlaying(true)
+      setStatus('Orb is preparing the natural voice.')
+
+      const blob = await requestExternalVoiceAudio(
+        { text, voiceId: URAI_VOICE_CONFIG.neutral.voiceId, tone: 'neutral' },
+        controller.signal,
+        true,
+      )
+      if (voiceAborter.current === controller) voiceAborter.current = null
+      if (controller.signal.aborted) return
+
+      if (blob) {
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        voiceObjectUrl.current = url
+        voiceAudio.current = audio
+
+        const cleanup = () => {
+          if (voiceAudio.current === audio) voiceAudio.current = null
+          if (voiceObjectUrl.current === url) {
+            URL.revokeObjectURL(url)
+            voiceObjectUrl.current = null
+          }
+          setVoicePlaying(false)
+        }
+
+        audio.onended = cleanup
+        audio.onerror = () => {
+          cleanup()
+          if (!controller.signal.aborted) playDeviceVoice(text)
+        }
+
+        try {
+          await audio.play()
+          setStatus('Live Orb response ready. Natural voice is playing.')
+          return
+        } catch {
+          cleanup()
+          if (controller.signal.aborted) return
+        }
+      } else {
+        setVoicePlaying(false)
+      }
+
+      setStatus('Live Orb response ready. Natural voice is unavailable, so the device voice is being used.')
+    }
+
+    playDeviceVoice(text)
+  }
+
   useEffect(() => {
     narratorPlayback.setExternalVoiceConsent(externalVoiceConsent)
     return () => narratorPlayback.setExternalVoiceConsent(false)
@@ -64,6 +161,15 @@ export default function OrbConversationPanel() {
 
   useEffect(() => () => {
     aborter.current?.abort()
+    voiceAborter.current?.abort()
+    const activeAudio = voiceAudio.current
+    if (activeAudio) {
+      activeAudio.onended = null
+      activeAudio.onerror = null
+      activeAudio.pause()
+      activeAudio.src = ''
+    }
+    if (voiceObjectUrl.current) URL.revokeObjectURL(voiceObjectUrl.current)
     if (stateResetTimer.current !== null) window.clearTimeout(stateResetTimer.current)
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     publishOrbState('idle', 'conversation')
@@ -72,7 +178,7 @@ export default function OrbConversationPanel() {
   const stop = () => {
     aborter.current?.abort()
     aborter.current = null
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    stopVoice()
     setBusy(false)
     setStatus('Orb response stopped.')
     publishConversationState('idle')
@@ -89,6 +195,7 @@ export default function OrbConversationPanel() {
     }
 
     aborter.current?.abort()
+    stopVoice()
     const controller = new AbortController()
     aborter.current = controller
     setBusy(true)
@@ -129,7 +236,10 @@ export default function OrbConversationPanel() {
       setStatus(resolved.provider === 'openai' ? 'Live Orb response ready.' : 'Local fallback response ready.')
       publishConversationState('speaking', 2200)
       emitAudioCue('orb-confirm')
-      if (!voiceMuted) speakLocally(resolved.message)
+      if (!voiceMuted) {
+        if (resolved.provider === 'openai') void speakOrbResponse(resolved.message)
+        else playDeviceVoice(resolved.message)
+      }
     } catch (error) {
       if (controller.signal.aborted) return
       const fallback = error instanceof OrbProviderAttemptError
@@ -146,6 +256,7 @@ export default function OrbConversationPanel() {
           : 'Live provider unavailable before external processing; local fallback response ready.')
       publishConversationState('warning', 2400)
       emitAudioCue('error')
+      if (!voiceMuted) playDeviceVoice(fallback.message)
     } finally {
       if (aborter.current === controller) aborter.current = null
       if (!controller.signal.aborted) setBusy(false)
@@ -157,7 +268,7 @@ export default function OrbConversationPanel() {
       <summary>Talk with Orb</summary>
       <div className={styles.body}>
         <p className={styles.disclosure}>
-          OpenAI processing and external narrator voice processing are separate, optional permissions. Both start off.
+          OpenAI processing and natural external voice processing are separate, optional permissions. The device voice remains local.
         </p>
         <form onSubmit={submit} aria-busy={busy}>
           <label htmlFor="urai-orb-message">Message for Orb</label>
@@ -189,20 +300,18 @@ export default function OrbConversationPanel() {
               checked={externalVoiceConsent}
               onChange={(event) => setExternalVoiceConsent(event.target.checked)}
             />
-            Allow future narrator lines to use the configured external voice provider this session.
+            Allow Orb replies and narrator lines to use the configured natural external voice provider this session.
           </label>
           <div className={styles.actions}>
             <button type="submit" disabled={busy || !message.trim() || !aiConsent}>Send</button>
-            <button type="button" disabled={!busy} onClick={stop}>Stop</button>
+            <button type="button" disabled={!busy && !voicePlaying} onClick={stop}>Stop</button>
             <button
               type="button"
               aria-pressed={!voiceMuted}
               onClick={() => {
-                setVoiceMuted((current) => {
-                  const next = !current
-                  if (next && typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
-                  return next
-                })
+                const next = !voiceMuted
+                if (next) stopVoice()
+                setVoiceMuted(next)
               }}
             >
               {voiceMuted ? 'Voice muted' : 'Voice on'}
@@ -210,7 +319,8 @@ export default function OrbConversationPanel() {
             <button type="button" disabled={!result || voiceMuted} onClick={() => {
               if (!result) return
               publishConversationState('speaking', 2200)
-              speakLocally(result.message)
+              if (result.provider === 'openai') void speakOrbResponse(result.message)
+              else playDeviceVoice(result.message)
             }}>
               Replay
             </button>
