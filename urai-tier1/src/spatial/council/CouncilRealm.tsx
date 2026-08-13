@@ -6,7 +6,7 @@ import { Suspense, useEffect, useRef, useState, type MutableRefObject } from 're
 import * as THREE from 'three'
 import { DEMO_COUNCIL_AGENTS } from './councilAgentSchema'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
-import { useSpatialQualityTier } from '@/spatial/performance/useSpatialQualityTier'
+import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import {
   MobileMovementPad,
   MovementHelp,
@@ -171,7 +171,9 @@ function CouncilStage() {
   const [dragging, setDragging] = useState(false)
   const selectedAgent = DEMO_COUNCIL_AGENTS[selected] ?? DEMO_COUNCIL_AGENTS[0]
   const reducedMotion = useReducedMotion()
-  const quality = useSpatialQualityTier()
+  const quality = useAdaptiveSpatialQuality()
+  const shadowMapSize = quality.tier === 'high' ? 2048 : 1024
+  const environmentIntensity = quality.tier === 'high' ? 0.55 : quality.tier === 'medium' ? 0.42 : 0.28
   const shellRef = useRef<HTMLDivElement | null>(null)
   const yaw = useRef(0)
   const pitch = useRef(-0.025)
@@ -205,9 +207,10 @@ function CouncilStage() {
     >
       <div className="absolute inset-0">
         <Canvas
-          shadows={quality.realtimeShadows}
-          dpr={quality.dpr}
-          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          shadows={quality.shadows}
+          dpr={[1, quality.pixelRatioMax]}
+          frameloop={quality.documentVisible ? 'always' : 'never'}
+          gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
         >
           <Suspense fallback={null}>
             <color attach="background" args={['#151b20']} />
@@ -221,9 +224,9 @@ function CouncilStage() {
               position={[-4.5, 7.5, 4.5]}
               intensity={2.8}
               color="#fff5e6"
-              castShadow={quality.realtimeShadows}
-              shadow-mapSize-width={quality.shadowMapSize}
-              shadow-mapSize-height={quality.shadowMapSize}
+              castShadow={quality.shadows}
+              shadow-mapSize-width={shadowMapSize}
+              shadow-mapSize-height={shadowMapSize}
               shadow-bias={-0.0002}
             />
             <directionalLight position={[4.2, 4.8, -3.8]} intensity={0.9} color="#b8d9f2" />
@@ -249,8 +252,8 @@ function CouncilStage() {
               />
             ))}
 
-            {quality.contactShadows ? <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} /> : null}
-            <Environment preset="apartment" environmentIntensity={quality.environmentIntensity} />
+            {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
+            <Environment preset="apartment" environmentIntensity={environmentIntensity} />
           </Suspense>
         </Canvas>
       </div>
