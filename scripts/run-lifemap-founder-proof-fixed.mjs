@@ -69,6 +69,7 @@ await writeFile(path.join(proofDir, 'founder-geometry-observer.json'), `${JSON.s
   replacements: ['canonical-root-dom-rect', 'canvas-dom-rect'],
   observer: 'Element.getBoundingClientRect',
   mutation: 'none',
+  proofSemantics: 'read-only DOM geometry observation; production interaction semantics unchanged',
 }, null, 2)}\n`)
 
 console.log(`FOUNDER_CAPTURE_SYNTAX_OK ${runnerPath}`)
