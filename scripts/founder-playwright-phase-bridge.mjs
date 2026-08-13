@@ -2,8 +2,10 @@ import Module from 'node:module'
 import path from 'node:path'
 
 const originalLoad = Module._load
+const BRIDGE_NAME = '__uraiFounderHarnessPhaseBridge'
 const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
 const TIER_ONE_REQUIRE_PARENT_SUFFIX = path.join('urai-tier1', 'package.json')
+let sequence = 0
 let bridgedPlaywrightDelivered = false
 
 function bindMember(target, key) {
@@ -39,73 +41,113 @@ function wrapLocator(locator, page, bridgeState) {
         )
         if (!isFounderPhaseWitness) return target.evaluate(fn, arg, ...rest)
 
-        const startedAt = Date.now()
-        const deadline = startedAt + arg.timeout
-        const timeline = []
-        let lastPhase = Symbol('unseen')
-        let lastSample = null
-        let observedAtMs = null
+        const token = `founder-phase-${++sequence}-${arg.expectedPhase}`
+        let timeoutHandle
+        let rejectWitness
+        const witness = new Promise((resolve, reject) => {
+          rejectWitness = reject
+          timeoutHandle = setTimeout(() => {
+            bridgeState.waiters.delete(token)
+            reject(new Error(`data-life-map-phase=${arg.expectedPhase} did not reach the non-blocking bridge within ${arg.timeout}ms`))
+          }, arg.timeout + 5_000)
+          bridgeState.waiters.set(token, (payload) => {
+            clearTimeout(timeoutHandle)
+            bridgeState.waiters.delete(token)
+            if (payload?.error) reject(new Error(payload.error))
+            else resolve(payload)
+          })
+        })
 
-        const sample = async (sampleSource) => {
-          try {
-            const roots = page.locator(FOUNDER_ROOT_SELECTOR)
-            const count = await roots.count()
-            if (count !== 1) {
-              lastSample = { count, phase: null, source: sampleSource }
-              return lastSample
-            }
-            const phase = await roots.first().getAttribute('data-life-map-phase')
-            lastSample = { count, phase, source: sampleSource }
-            if (phase !== lastPhase) {
+        const armPromise = page.evaluate(({ selector, input }) => {
+          const roots = document.querySelectorAll(selector)
+          if (roots.length !== 1) {
+            throw new Error(`Founder phase bridge expected exactly one canonical root; found ${roots.length}`)
+          }
+          let element = roots[0]
+          const startedAt = performance.now()
+          const timeline = []
+          let lastPhase = null
+          let settled = false
+          let framePending = false
+          let timer = 0
+
+          const cleanup = () => {
+            observer.disconnect()
+            window.clearTimeout(timer)
+          }
+          const publish = (payload) => {
+            Promise.resolve(window[input.bridgeName]?.(payload)).catch(() => {})
+          }
+          const currentRoot = () => {
+            const current = document.querySelectorAll(selector)
+            if (current.length !== 1) return null
+            return current[0]
+          }
+          const record = (source) => {
+            const current = currentRoot()
+            if (!current) return
+            const rootChanged = current !== element
+            element = current
+            const phase = element.getAttribute('data-life-map-phase')
+            if (phase !== lastPhase || rootChanged) {
               lastPhase = phase
-              timeline.push({ phase, atMs: Date.now() - startedAt, source: sampleSource })
+              timeline.push({ phase, atMs: performance.now() - startedAt, source: rootChanged ? `root-remount:${source}` : source })
             }
-            return lastSample
-          } catch (error) {
-            lastSample = { count: null, phase: null, source: sampleSource, transient: String(error) }
-            return lastSample
-          }
-        }
-
-        const armPromise = sample('armed')
-        bridgeState.armPromise = armPromise
-
-        const witness = (async () => {
-          try {
-            await armPromise
-            while (Date.now() < deadline) {
-              const state = await sample('playwright-poll')
-              if (state.count === 1 && state.phase === arg.expectedPhase) {
-                if (observedAtMs === null) observedAtMs = Date.now() - startedAt
-                try {
-                  const frame = await page.evaluate(({ selector }) => new Promise((resolve) => {
-                    window.requestAnimationFrame((frameTime) => {
-                      const roots = document.querySelectorAll(selector)
-                      const phase = roots.length === 1 ? roots[0].getAttribute('data-life-map-phase') : null
-                      resolve({ count: roots.length, phase, frameTime })
-                    })
-                  }), { selector: FOUNDER_ROOT_SELECTOR })
-                  if (frame.count === 1 && frame.phase === arg.expectedPhase) {
-                    return {
-                      expectedPhase: arg.expectedPhase,
-                      observedAtMs,
-                      renderedFrameAtMs: Date.now() - startedAt,
-                      renderedFramePhase: frame.phase,
-                      timeline,
-                    }
-                  }
-                  await sample('phase-advanced-before-frame')
-                } catch (error) {
-                  lastSample = { count: null, phase: null, source: 'frame-context-replaced', transient: String(error) }
-                }
+            if (phase !== input.expectedPhase || framePending || settled) return
+            framePending = true
+            window.requestAnimationFrame((frameTime) => {
+              framePending = false
+              if (settled) return
+              const frameRoot = currentRoot()
+              const framePhase = frameRoot?.getAttribute('data-life-map-phase') ?? null
+              if (framePhase !== input.expectedPhase) {
+                record(frameRoot ? 'phase-advanced-before-frame' : 'root-missing-before-frame')
+                return
               }
-              await new Promise((resolve) => setTimeout(resolve, 5))
-            }
-            throw new Error(`data-life-map-phase=${arg.expectedPhase} did not survive a rendered frame within ${arg.timeout}ms; last=${JSON.stringify(lastSample)}; timeline=${JSON.stringify(timeline)}`)
-          } finally {
-            if (bridgeState.armPromise === armPromise) bridgeState.armPromise = null
+              element = frameRoot
+              settled = true
+              cleanup()
+              publish({
+                token: input.token,
+                expectedPhase: input.expectedPhase,
+                observedAtMs: timeline.find((entry) => entry.phase === input.expectedPhase)?.atMs ?? null,
+                renderedFrameAtMs: frameTime - startedAt,
+                renderedFramePhase: framePhase,
+                timeline,
+              })
+            })
           }
-        })()
+
+          const observer = new MutationObserver(() => record('mutation'))
+          observer.observe(document.documentElement, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['data-life-map-phase'],
+          })
+          timer = window.setTimeout(() => {
+            if (settled) return
+            settled = true
+            cleanup()
+            publish({
+              token: input.token,
+              error: `data-life-map-phase=${input.expectedPhase} did not survive a rendered frame within ${input.timeout}ms; last=${lastPhase}`,
+            })
+          }, input.timeout)
+          record('armed')
+        }, { selector: FOUNDER_ROOT_SELECTOR, input: { ...arg, token, bridgeName: BRIDGE_NAME } })
+
+        bridgeState.armPromise = armPromise
+        try {
+          await armPromise
+        } catch (error) {
+          clearTimeout(timeoutHandle)
+          bridgeState.waiters.delete(token)
+          rejectWitness(error)
+          return witness
+        } finally {
+          if (bridgeState.armPromise === armPromise) bridgeState.armPromise = null
+        }
 
         return witness
       }
@@ -114,11 +156,21 @@ function wrapLocator(locator, page, bridgeState) {
 }
 
 function wrapPage(page) {
-  const bridgeState = { armPromise: null }
+  const bridgeState = { waiters: new Map(), exposed: false, armPromise: null }
   return new Proxy(page, {
     get(target, key) {
       if (key === 'locator') return (...args) => wrapLocator(target.locator(...args), target, bridgeState)
       if (key === 'getByRole') return (...args) => wrapLocator(target.getByRole(...args), target, bridgeState)
+      if (key === '__uraiFounderInstallBridge') {
+        return async () => {
+          if (bridgeState.exposed) return
+          await target.exposeFunction(BRIDGE_NAME, async (payload) => {
+            const waiter = bridgeState.waiters.get(payload?.token)
+            if (waiter) waiter(payload)
+          })
+          bridgeState.exposed = true
+        }
+      }
       return bindMember(target, key)
     },
   })
@@ -127,7 +179,13 @@ function wrapPage(page) {
 function wrapContext(context) {
   return new Proxy(context, {
     get(target, key) {
-      if (key === 'newPage') return async (...args) => wrapPage(await target.newPage(...args))
+      if (key === 'newPage') {
+        return async (...args) => {
+          const page = wrapPage(await target.newPage(...args))
+          await page.__uraiFounderInstallBridge()
+          return page
+        }
+      }
       return bindMember(target, key)
     },
   })
