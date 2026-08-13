@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { URAI_MOTION_MANIFEST } from "@/spatial/motion/motionManifest";
 
 type NarratorVoiceDetail = {
   event?: string;
@@ -120,6 +121,16 @@ function shouldSpeak(detail: NarratorVoiceDetail) {
   );
 }
 
+function minimumMotionLead(detail: NarratorVoiceDetail) {
+  if (detail.event === "narrator.replay.begin") {
+    return URAI_MOTION_MANIFEST.replay_enter_curtain.narrationLeadMs;
+  }
+  if (detail.event === "narrator.focus.arrive") {
+    return URAI_MOTION_MANIFEST.timeline_warp.narrationLeadMs;
+  }
+  return 0;
+}
+
 function wordIndexFromCharIndex(text: string, charIndex: number) {
   const before = text.slice(0, Math.max(0, charIndex));
   const trimmed = before.trim();
@@ -144,7 +155,9 @@ export default function NarratorVoiceBridge() {
 
       window.speechSynthesis.cancel();
 
-      const delayMs = Math.max(0, detail.timing?.delayMs ?? 0);
+      // Authored timing can ask for more silence, but cannot make Focus/Replay
+      // narration outrun the canonical motion lead.
+      const delayMs = Math.max(0, detail.timing?.delayMs ?? 0, minimumMotionLead(detail));
 
       timeoutRef.current = window.setTimeout(() => {
         const originalScript = detail.script ?? "";

@@ -99,9 +99,10 @@ export default function SpatialAudioNarratorBridge() {
       }
     };
 
-    const handleSilence = (event: Event) => {
-      playSpatialBreath((event as CustomEvent<SpatialCue>).detail);
-    };
+    // A narrator-silence event is a governed hold, not an audio cue.
+    // MotionOrchestrator renders the visual silence state; this bridge intentionally
+    // performs no AudioContext work so refusal/withdrawal/silence stay truly silent.
+    const handleSilence = () => undefined;
 
     window.addEventListener("urai:narrator", handleNarrator);
     window.addEventListener("urai:narrator-silence", handleSilence);

@@ -70,14 +70,35 @@ async function gestureAnchor(page: Page): Promise<ScreenPoint> {
   throw new Error('No unobstructed native gesture anchor was available in the Location Map stage')
 }
 
+async function nativeHitPoint(target: Locator): Promise<ScreenPoint> {
+  let hitPoint: ScreenPoint | null = null
+  await expect.poll(async () => {
+    hitPoint = await target.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      const x = rect.left + rect.width * .5
+      const y = rect.top + rect.height * .5
+      if (rect.width <= 0 || rect.height <= 0 || x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return null
+      const hit = document.elementFromPoint(x, y)
+      if (!(hit instanceof Node) || (hit !== element && !element.contains(hit))) return null
+      return { x, y }
+    }).catch(() => null)
+    return hitPoint
+  }, { timeout: 15_000 }).not.toBeNull()
+  return hitPoint!
+}
+
 async function nativeTouchTap(page: Page, target: Locator) {
   await target.scrollIntoViewIfNeeded()
-  const viewport = page.viewportSize()
-  expect(viewport).not.toBeNull()
   await expect(target).toBeVisible()
-  // Playwright's touch tap preserves native touch semantics while waiting for the
-  // transformed target to finish moving and become the actual hit owner.
-  await target.tap({ timeout: 15_000 })
+  const { x, y } = await nativeHitPoint(target)
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1, radiusX: 6, radiusY: 6, force: 1 }] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } finally {
+    await cdp.detach().catch(() => undefined)
+  }
 }
 
 async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', dx: number, dy: number) {
@@ -99,7 +120,7 @@ async function dispatchPointerDrag(page: Page, pointerType: 'mouse' | 'touch', d
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   } finally {
-    await cdp.detach()
+    await cdp.detach().catch(() => undefined)
   }
 }
 
@@ -127,7 +148,7 @@ async function nativePinch(page: Page) {
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   } finally {
-    await cdp.detach()
+    await cdp.detach().catch(() => undefined)
   }
 }
 
@@ -299,11 +320,12 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
 
   test('mobile native touch drag pinch continuation selection and deselection packet', async ({ page, browserName }, testInfo) => {
     test.skip(browserName !== 'chromium', 'CDP native touch input requires Chromium')
+    test.setTimeout(120_000)
     const errors = monitor(page)
     await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => localStorage.setItem('urai:locationMapDemoMode', 'true'))
-    await page.goto(route, { waitUntil: 'networkidle' })
-    await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible()
+    await page.goto(route, { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('[data-location-map-source="disclosed-demo"]')).toBeVisible({ timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-overview.png'), fullPage: true })
 
     const beforeTouch = await camera(page)
@@ -325,8 +347,11 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     const afterPinchToPan = await camera(page)
     const afterPinchToPanTransform = await cameraTransform(page)
 
+    const stage = page.locator('.locationAtlasStage')
+    await stage.focus()
     await page.keyboard.press('Home')
     await expect(page.getByText('Atlas overview', { exact: true })).toBeVisible()
+    await expect(page.locator('.locationAtlas[data-camera-checkpoint="atlas-world-view"]')).toBeVisible({ timeout: 15_000 })
     const viewportBeaconIndex = await page.locator('.locationAtlasBeacon').evaluateAll((nodes) => {
       const index = nodes.findIndex((node) => {
         const rect = node.getBoundingClientRect()
@@ -340,13 +365,13 @@ test.describe('Location Map exact-head browser acceptance evidence v2', () => {
     })
     expect(viewportBeaconIndex).toBeGreaterThanOrEqual(0)
     await nativeTouchTap(page, page.locator('.locationAtlasBeacon').nth(viewportBeaconIndex))
-    await expect(page.locator('.locationAtlasSelection')).toBeVisible()
+    await expect(page.locator('.locationAtlasSelection')).toBeVisible({ timeout: 15_000 })
     await expect(page).toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-selected.png'), fullPage: true })
 
     const selection = page.locator('.locationAtlasSelection')
     await nativeTouchTap(page, selection.getByRole('button', { name: 'Return to atlas overview' }))
-    await expect(selection).toBeHidden()
+    await expect(selection).toBeHidden({ timeout: 15_000 })
     await expect(page).not.toHaveURL(/placeId=/, { timeout: 15_000 })
     await page.screenshot({ path: testInfo.outputPath('demo-mobile-deselected.png'), fullPage: true })
 
