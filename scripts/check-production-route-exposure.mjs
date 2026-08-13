@@ -34,17 +34,25 @@ const routeFor = (file) => {
   return segments.length ? `/${segments.join('/')}` : '/'
 }
 
-const classified = (route) => publicExact.has(route) || prefixGroups.some((prefixes) =>
+const manifestClassified = (route) => publicExact.has(route) || prefixGroups.some((prefixes) =>
   prefixes.some((prefix) => route === prefix.replace(/\/$/, '') || route.startsWith(prefix)),
 )
-const routes = [...new Set(
-  walk(appRoot)
-    .filter((file) => /(?:^|\/)page\.(?:ts|tsx|js|jsx)$/.test(file.replaceAll(path.sep, '/')))
-    .map(routeFor),
-)].sort()
-const failures = routes
-  .filter((route) => !classified(route))
-  .map((route) => `unclassified route: ${route}`)
+
+const sourceClassified = ({ route, source }) => {
+  const finiteStaticRoute = route.includes('[')
+    && /export\s+const\s+dynamicParams\s*=\s*false/.test(source)
+    && /export\s+function\s+generateStaticParams\s*\(/.test(source)
+  const operatorOwnedRoute = /LiveControlPanel(?:Stream)?/.test(source)
+  return finiteStaticRoute || operatorOwnedRoute
+}
+
+const routeRecords = walk(appRoot)
+  .filter((file) => /(?:^|\/)page\.(?:ts|tsx|js|jsx)$/.test(file.replaceAll(path.sep, '/')))
+  .map((file) => ({ file, route: routeFor(file), source: fs.readFileSync(file, 'utf8') }))
+const routes = [...new Set(routeRecords.map(({ route }) => route))].sort()
+const failures = routeRecords
+  .filter((record) => !manifestClassified(record.route) && !sourceClassified(record))
+  .map(({ route }) => `unclassified route: ${route}`)
 
 for (const route of manifest.criticalRoutes ?? []) {
   if (!routes.includes(route)) failures.push(`critical route missing from source tree: ${route}`)
