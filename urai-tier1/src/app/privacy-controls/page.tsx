@@ -1,8 +1,8 @@
 import ConsentSanctuaryClient from './ConsentSanctuaryClient'
 
 export const metadata = {
-  title: 'UrAi Consent Sanctuary',
-  description: 'Inspect, preview, narrow, pause, revoke, and audit consent inside the private UrAi world.',
+  title: 'URAI Privacy — Permissions & Consent',
+  description: 'Review, narrow, pause, revoke, and understand the permissions URAI uses, with clear consent history and user-controlled changes.',
 }
 
 export default function PrivacyControlsRoutePage() {

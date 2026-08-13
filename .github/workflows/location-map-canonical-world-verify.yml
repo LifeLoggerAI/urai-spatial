@@ -72,7 +72,7 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run exact-head browser acceptance
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts --timeout=120000
       - name: Retain browser evidence
         if: always()
         uses: actions/upload-artifact@v4

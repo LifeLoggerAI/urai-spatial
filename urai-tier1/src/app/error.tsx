@@ -1,14 +1,24 @@
 "use client"
 
-export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <main className="tier-one-boundary" role="alert">
-      <section className="tier-one-boundary__card">
-        <p className="tier-one-boundary__eyebrow">URAI Spatial</p>
-        <h1>The spatial field could not open.</h1>
-        <p>{error?.message || "A recoverable runtime error interrupted the scene."}</p>
-        <button type="button" onClick={reset}>Try again</button>
-      </section>
+    <main className="urai-system-state" role="alert">
+      <div className="urai-system-state__content">
+        <div className="urai-system-state__orb" aria-hidden="true" />
+        <p className="urai-system-state__eyebrow">URAI</p>
+        <h1>Your world was interrupted</h1>
+        <p className="urai-system-state__message">
+          Nothing was changed. Try reopening this view, or return home if the interruption continues.
+        </p>
+        <div className="urai-system-state__actions">
+          <button className="urai-system-state__action" type="button" onClick={reset}>
+            Try again
+          </button>
+          <a className="urai-system-state__action urai-system-state__action--secondary" href="/">
+            Return home
+          </a>
+        </div>
+      </div>
     </main>
   )
 }

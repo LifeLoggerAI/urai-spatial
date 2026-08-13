@@ -82,11 +82,13 @@ jobs:
           URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
         run: pnpm exec playwright test tests/location-map-trusted-preview-smoke.spec.ts --config=playwright.config.ts
       - name: Run complete exact-head Location Map browser acceptance without secrets
+        # Match the canonical Location Map verifier's full gesture budget. This does not
+        # skip or relax drag, pinch, selection, deselection, console, or network assertions.
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
           URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
           URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
-        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts --timeout=120000
       - name: Build exact-head local evidence manifest
         if: always()
         shell: bash

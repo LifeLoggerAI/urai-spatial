@@ -2,13 +2,20 @@ import Link from 'next/link'
 
 export default function NotFound() {
   return (
-    <main className="tier-one-boundary">
-      <section className="tier-one-boundary__card">
-        <p className="tier-one-boundary__eyebrow">URAI Spatial</p>
-        <h1>This spatial route does not exist.</h1>
-        <p>Return to the Home field and begin the ascent again.</p>
-        <Link href="/" className="tier-one-boundary__link">Return home</Link>
-      </section>
+    <main className="urai-system-state">
+      <div className="urai-system-state__content">
+        <div className="urai-system-state__orb" aria-hidden="true" />
+        <p className="urai-system-state__eyebrow">URAI</p>
+        <h1>This place isn’t part of your world</h1>
+        <p className="urai-system-state__message">
+          The address may have changed, or this view may no longer be available.
+        </p>
+        <div className="urai-system-state__actions">
+          <Link href="/" className="urai-system-state__action">
+            Return home
+          </Link>
+        </div>
+      </div>
     </main>
   )
 }
