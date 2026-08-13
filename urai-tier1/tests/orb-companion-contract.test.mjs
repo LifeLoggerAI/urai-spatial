@@ -3,6 +3,8 @@ import { test } from 'node:test'
 import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/lib/orb-companion-contract.ts', import.meta.url), 'utf8')
+const conversationSource = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const voiceClientSource = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
 
 const requiredHomeCommands = [
@@ -55,4 +57,22 @@ test('orb companion treats client user ids as public demo labels only', () => {
   assert.ok(source.includes('PUBLIC_DEMO_USER_ID_PATTERN'), 'orb response must validate public demo user ids')
   assert.ok(source.includes('message.slice(0, 500)'), 'orb response must bound public demo message length')
   assert.ok(source.includes('isDemoFallback: identity.userIdSource === "default-demo"'), 'fallback identity must be derived from normalized identity source')
+})
+
+test('live Orb replies use the external natural voice path before device fallback', () => {
+  assert.match(voiceClientSource, /export async function requestExternalVoiceAudio/)
+  assert.match(conversationSource, /requestExternalVoiceAudio/)
+  assert.match(conversationSource, /URAI_VOICE_CONFIG\.neutral\.voiceId/)
+  assert.match(conversationSource, /resolved\.provider === 'openai'/)
+  assert.match(conversationSource, /void speakOrbResponse\(resolved\.message\)/)
+  assert.match(conversationSource, /playDeviceVoice\(resolved\.message\)/)
+  assert.match(conversationSource, /Allow Orb replies and narrator lines to use the configured natural external voice provider/)
+})
+
+test('Orb voice can be stopped after the AI response finishes', () => {
+  assert.match(conversationSource, /const \[voicePlaying, setVoicePlaying\] = useState\(false\)/)
+  assert.match(conversationSource, /disabled=\{!busy && !voicePlaying\}/)
+  assert.match(conversationSource, /voiceAborter\.current\?\.abort\(\)/)
+  assert.match(conversationSource, /activeAudio\.pause\(\)/)
+  assert.match(conversationSource, /window\.speechSynthesis\.cancel\(\)/)
 })
