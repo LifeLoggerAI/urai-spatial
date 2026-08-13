@@ -310,6 +310,37 @@ async function shot(page, id, captureState, extra = {}) {
   })
 }
 
+async function witnessShot(page, id, captureState, transition, extra = {}) {
+  const dataUrl = transition.phaseFrameDataUrl
+  const prefix = 'data:image/png;base64,'
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith(prefix)) {
+    throw new Error(`${id} did not retain a PNG from the rendered ${captureState} witness frame`)
+  }
+  const buffer = Buffer.from(dataUrl.slice(prefix.length), 'base64')
+  if (!buffer.length) throw new Error(`${id} retained an empty ${captureState} witness PNG`)
+  const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
+  await writeFile(path.join(outputDir, file), buffer)
+  const screenshot = {
+    hash: createHash('sha256').update(buffer).digest('hex'),
+    bytes: buffer.length,
+  }
+  const signal = await canvasSignal(page, buffer)
+  receipt.captures.push({
+    order: receipt.captures.length + 1,
+    id,
+    file,
+    route: transition.phaseRoute || page.url(),
+    viewport: transition.phaseViewport || page.viewportSize(),
+    captureState,
+    state: transition.phaseState || {},
+    screenshot,
+    signal,
+    timestamp: new Date().toISOString(),
+    captureSource: 'phase-canvas-rAF',
+    ...extra,
+  })
+}
+
 function selectedActions(page) {
   return page.locator('nav[aria-label="Selected memory actions"]').first()
 }
@@ -342,8 +373,28 @@ async function selectQuietReset(page, options = {}) {
 async function selectAndCapturePhase(page, expectedPhase, id, options = {}) {
   const capturePromise = observeRenderedPhase(page, expectedPhase, 45_000)
     .then(async (transition) => {
-      receipt.transitions.push({ id, route: page.url(), ...transition })
-      await shot(page, id, expectedPhase, { transitionWitness: id, ...(options.evidence || {}) })
+      if (!Number.isFinite(transition.observedAtMs) || transition.observedAtMs > 45_000) {
+        throw new Error(`${id} observed ${expectedPhase} outside the unchanged 45000ms post-activation limit: ${transition.observedAtMs}`)
+      }
+      const {
+        phaseFrameDataUrl,
+        phaseState,
+        phaseRoute,
+        phaseViewport,
+        ...transitionReceipt
+      } = transition
+      receipt.transitions.push({
+        id,
+        route: phaseRoute || page.url(),
+        ...transitionReceipt,
+        phaseState,
+      })
+      await witnessShot(page, id, expectedPhase, {
+        phaseFrameDataUrl,
+        phaseState,
+        phaseRoute,
+        phaseViewport,
+      }, { transitionWitness: id, ...(options.evidence || {}) })
     })
   const selectionPromise = selectQuietReset(page, options.selection || {})
   await Promise.all([capturePromise, selectionPromise])
