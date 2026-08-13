@@ -12,18 +12,27 @@ const HUMAN_MODELS = [
   `${HUMAN_ROOT}/council-guide-human-rigged-v3.glb`,
   `${HUMAN_ROOT}/council-archivist-human-rigged-v3.glb`,
   `${HUMAN_ROOT}/council-guardian-human-rigged-v3.glb`,
+  `${HUMAN_ROOT}/council-builder-human-rigged-v3.glb`,
+  `${HUMAN_ROOT}/council-mirror-human-rigged-v3.glb`,
+  `${HUMAN_ROOT}/council-trickster-human-rigged-v3.glb`,
 ] as const
 
 const POSITIONS: [number, number, number][] = [
-  [-2.45, 0, -1.3],
-  [0, 0, -2.65],
-  [2.45, 0, -1.3],
+  [-2.55, 0, -0.65],
+  [-1.45, 0, -2.5],
+  [1.45, 0, -2.5],
+  [2.55, 0, -0.65],
+  [1.35, 0, 0.15],
+  [-1.35, 0, 0.15],
 ]
 
 const ROTATIONS: [number, number, number][] = [
-  [0, 0.52, 0],
-  [0, 0, 0],
-  [0, -0.52, 0],
+  [0, 0.72, 0],
+  [0, 0.34, 0],
+  [0, -0.34, 0],
+  [0, -0.72, 0],
+  [0, -2.65, 0],
+  [0, 2.65, 0],
 ]
 
 function RiggedCouncilHuman({ modelUrl, index, selected, onSelect }: { modelUrl: string; index: number; selected: boolean; onSelect: () => void }) {

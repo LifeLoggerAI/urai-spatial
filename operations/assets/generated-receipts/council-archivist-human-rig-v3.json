@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "council-archivist-human-rig-v3",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-archivist-human-rigged-v3.glb",
+  "targetRoutes": ["/council"],
+  "bytes": 2097628,
+  "sha256": "7fd30fffbbec4cf760286196d89deda8ee7e5e22e9915d8c7fcb265e9ce02b9e",
+  "measured": {"triangleCount":50964,"boundsMeters":[0.645,1.813,0.331],"nodeCount":25,"meshCount":7,"materialCount":8,"skinCount":1,"animationClips":["idle_breath","listen_acknowledge","speak_calm","gesture_open","gaze_shift"]},
+  "compressionStatus": "candidate-uncompressed-v3",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "council-semantic-presence-without-rigged-human",
+  "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+  "license": "URAI Labs internally generated production candidate asset",
+  "generatedBy": "URAI Human Rig Forge V3",
+  "generatedAt": "2026-08-11T00:00:00.000Z",
+  "releaseState": "candidate-not-production-ready"
+}

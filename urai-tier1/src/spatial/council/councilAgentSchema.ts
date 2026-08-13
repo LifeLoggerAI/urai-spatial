@@ -1,4 +1,4 @@
-export type CouncilAgentRole = 'guardian' | 'mirror' | 'cartographer' | 'archivist' | 'guide'
+export type CouncilAgentRole = 'guardian' | 'mirror' | 'cartographer' | 'archivist' | 'guide' | 'builder' | 'trickster'
 
 export type CouncilAgent = {
   id: string
@@ -40,6 +40,36 @@ export const DEMO_COUNCIL_AGENTS: CouncilAgent[] = [
     tone: 'protective',
     canExplainPlaces: true,
     canExplainExports: true,
+    canSuggestNextSteps: true,
+  },
+  {
+    id: 'council-builder',
+    name: 'The Builder',
+    role: 'builder',
+    focus: 'Turns insight into structures, systems, and practical next actions.',
+    tone: 'clear',
+    canExplainPlaces: true,
+    canExplainExports: false,
+    canSuggestNextSteps: true,
+  },
+  {
+    id: 'council-mirror',
+    name: 'The Mirror',
+    role: 'mirror',
+    focus: 'Reflects emotional patterns and contradictions without forcing an answer.',
+    tone: 'warm',
+    canExplainPlaces: true,
+    canExplainExports: false,
+    canSuggestNextSteps: true,
+  },
+  {
+    id: 'council-trickster',
+    name: 'The Trickster',
+    role: 'trickster',
+    focus: 'Breaks rigid patterns with reframing, humor, and useful surprise.',
+    tone: 'warm',
+    canExplainPlaces: false,
+    canExplainExports: false,
     canSuggestNextSteps: true,
   },
 ]

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "council-guide-human-rig-v3",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/council-guide-human-rigged-v3.glb",
+  "targetRoutes": ["/council"],
+  "bytes": 2172896,
+  "sha256": "8c981d63ede4269df8f2aebff77879c8654952b0be85750a84649aab6f0b3e0d",
+  "measured": {"triangleCount":52864,"boundsMeters":[0.709,1.928,0.339],"nodeCount":25,"meshCount":7,"materialCount":8,"skinCount":1,"animationClips":["idle_breath","listen_acknowledge","speak_calm","gesture_open","gaze_shift"]},
+  "compressionStatus": "candidate-uncompressed-v3",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "council-semantic-presence-without-rigged-human",
+  "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+  "license": "URAI Labs internally generated production candidate asset",
+  "generatedBy": "URAI Human Rig Forge V3",
+  "generatedAt": "2026-08-11T00:00:00.000Z",
+  "releaseState": "candidate-not-production-ready"
+}

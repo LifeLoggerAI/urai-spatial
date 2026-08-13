@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "home-human-rig-v3",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb",
+  "targetRoutes": ["/", "/home"],
+  "bytes": 2133052,
+  "sha256": "58a72a0d060731a7609ec0fdc5fcfed53f732afbed41b933ee057ab7fdb4a062",
+  "measured": {"triangleCount":51848,"boundsMeters":[0.673,1.907,0.338],"nodeCount":25,"meshCount":7,"materialCount":8,"skinCount":1,"animationClips":["idle_breath","listen_acknowledge","speak_calm","gesture_open","gaze_shift"]},
+  "compressionStatus": "candidate-uncompressed-v3",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "home-world-without-rigged-human",
+  "source": "URAI Human Rig Forge V3 deterministic procedural skinned-human generator",
+  "license": "URAI Labs internally generated production candidate asset",
+  "generatedBy": "URAI Human Rig Forge V3",
+  "generatedAt": "2026-08-11T00:00:00.000Z",
+  "releaseState": "candidate-not-production-ready"
+}
