@@ -267,8 +267,8 @@ jobs:
               if (certification !== 'not-certified-preview') throw new Error(`Wrong certification state on ${profile.name} ${route}: ${certification}`)
               if (consoleErrors.length) throw new Error(`Console errors on ${profile.name} ${route}: ${consoleErrors.join(' | ')}`)
               const name = route === '/' ? 'root' : route.replaceAll('/', '_').replace(/^_+|_+$/g, '')
-              await page.screenshot({ path: `preview-inspection/${profile.name}/${name}.png`, fullPage: true })
-              report.push({ profile: profile.name, route, status: response.status(), banner, embedded, certification, consoleErrors: [] })
+              await page.screenshot({ path: `preview-inspection/${profile.name}/${name}.png` })
+              report.push({ profile: profile.name, viewport: profile.viewport, route, status: response.status(), banner, embedded, certification, consoleErrors: [] })
             }
             await context.close()
           }
