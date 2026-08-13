@@ -1,0 +1,102 @@
+name: URAI Human MakeHuman V4 Forge
+
+on:
+  pull_request:
+    paths:
+      - scripts/generate-urai-human-makehuman-v4.py
+      - scripts/verify-urai-human-makehuman-v4.mjs
+      - .github/workflows/human-makehuman-v4-forge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: human-makehuman-v4-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  SOURCE_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
+  MAKEHUMAN_COMMIT: a8bc2d54ff0ac92e78ff71431b1023eda42bf482
+  MAKEHUMAN_BLOB: d26635e9326e3cca30778fd7b9c00062b03cce09
+
+jobs:
+  forge:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact URAI candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Fetch pinned MakeHuman CC0 base mesh
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 4 --retry-delay 2 \
+            --output /tmp/makehuman-base.obj \
+            "https://raw.githubusercontent.com/makehumancommunity/makehuman/${MAKEHUMAN_COMMIT}/makehuman/data/3dobjs/base.obj"
+          python - <<'PY'
+          import hashlib, os
+          p='/tmp/makehuman-base.obj'
+          data=open(p,'rb').read()
+          git_blob=hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()
+          expected=os.environ['MAKEHUMAN_BLOB']
+          if git_blob != expected:
+              raise SystemExit(f'MakeHuman blob mismatch: {git_blob} != {expected}')
+          if not data.startswith(b'#') and b'\nv ' not in data[:65536]:
+              raise SystemExit('MakeHuman base mesh does not look like an OBJ')
+          print({'bytes':len(data),'gitBlob':git_blob})
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic V4 dependencies
+        run: python -m pip install --disable-pip-version-check numpy==2.3.5 scipy==1.17.0 Pillow==12.3.0 trimesh==4.11.1
+
+      - name: Forge seven MakeHuman-topology URAI rigs
+        run: python scripts/generate-urai-human-makehuman-v4.py --source /tmp/makehuman-base.obj
+
+      - name: Verify provenance skin animation and height contracts
+        run: node scripts/verify-urai-human-makehuman-v4.mjs
+
+      - name: Commit generated V4 binaries only if PR head is still exact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/generated/human-makehuman-v4 operations/assets/generated-receipts/urai-human-makehuman-v4.json)" ]; then
+            echo 'MakeHuman V4 already matches deterministic forge output.'
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            current_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq .head.sha)"
+            if [ "$current_head" != "$SOURCE_SHA" ]; then
+              echo "Stale forge input: current PR head is $current_head; refusing to push from $SOURCE_SHA"
+              exit 0
+            fi
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/generated/human-makehuman-v4 operations/assets/generated-receipts/urai-human-makehuman-v4.json
+          git commit -m 'Forge URAI MakeHuman V4 binaries'
+          gh auth setup-git
+          git push origin "HEAD:${SOURCE_BRANCH}"

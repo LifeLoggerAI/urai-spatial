@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "4.0.0",
+  "packId": "urai-human-makehuman-v4",
+  "cameraAspect": "5:4",
+  "units": "meters",
+  "selectedProduction": false,
+  "source": {
+    "repository": "makehumancommunity/makehuman",
+    "commit": "a8bc2d54ff0ac92e78ff71431b1023eda42bf482",
+    "blobSha": "d26635e9326e3cca30778fd7b9c00062b03cce09",
+    "path": "makehuman/data/3dobjs/base.obj",
+    "license": "CC0-1.0"
+  },
+  "promotionRequires": [
+    "rendered-motion-proof",
+    "garment-geometry-pass",
+    "hair-and-eye-asset-pass",
+    "facial-blendshape-pass",
+    "mobile-lod",
+    "final-visual-approval"
+  ],
+  "modelCount": 7,
+  "assets": [
+    {
+      "role": "home",
+      "fileName": "home-human-makehuman-v4.glb",
+      "bytes": 1708856,
+      "sha256": "2c81a69e22043834f9d4d1975b7636f1bf2b5995bc1bd6c914042ffe625db76e",
+      "heightMeters": 1.82,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    },
+    {
+      "role": "guide",
+      "fileName": "council-guide-human-makehuman-v4.glb",
+      "bytes": 1708924,
+      "sha256": "fd71bed01e3216b2b60c88a34bb37465ecd49d331f089ccba830e23df1446756",
+      "heightMeters": 1.84,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    },
+    {
+      "role": "mirror",
+      "fileName": "council-mirror-human-makehuman-v4.glb",
+      "bytes": 1708872,
+      "sha256": "41447d012af9fd8abd181135a43cc2877c1318bde1fad6879916cc66c79fda9e",
+      "heightMeters": 1.76,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    },
+    {
+      "role": "guardian",
+      "fileName": "council-guardian-human-makehuman-v4.glb",
+      "bytes": 1708672,
+      "sha256": "05a5c7c4e2e47c4fb2c831b7c4aeee21d9443ab08ce681e667e730d397046564",
+      "heightMeters": 1.92,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    },
+    {
+      "role": "archivist",
+      "fileName": "council-archivist-human-makehuman-v4.glb",
+      "bytes": 1708944,
+      "sha256": "d5017492a51d7c96b4156eeb9339812a9e2edfabd73d929898ebb5ce7c9bfaaf",
+      "heightMeters": 1.73,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    },
+    {
+      "role": "builder",
+      "fileName": "council-builder-human-makehuman-v4.glb",
+      "bytes": 1709412,
+      "sha256": "16bd75109012c99ff10879dd6c80f59ab60248e4ea90eb27d163899acdb914be",
+      "heightMeters": 1.88,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    },
+    {
+      "role": "trickster",
+      "fileName": "council-trickster-human-makehuman-v4.glb",
+      "bytes": 1708876,
+      "sha256": "06d12032e5c0076055c0b6d7fbe260e862bfbc77222fcc8f82b90d77be07a356",
+      "heightMeters": 1.8,
+      "vertices": 21833,
+      "faces": 36972,
+      "joints": 17,
+      "animations": [
+        "idle_breath",
+        "listen_acknowledge",
+        "speak_calm",
+        "gesture_open",
+        "gaze_shift"
+      ]
+    }
+  ]
+}
