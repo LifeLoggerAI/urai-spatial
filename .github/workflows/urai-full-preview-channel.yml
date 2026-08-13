@@ -8,8 +8,6 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
-      - '.firebaserc'
-      - '.github/firebase.preview.json'
       - '.github/workflows/urai-full-preview-channel.yml'
   push:
     branches: [main]
@@ -18,329 +16,109 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
-      - '.firebaserc'
-      - '.github/firebase.preview.json'
       - '.github/workflows/urai-full-preview-channel.yml'
   workflow_dispatch:
     inputs:
       candidate_sha:
-        description: Exact 40-character commit SHA to preview; defaults to the triggering SHA
+        description: Exact 40-character commit SHA to verify; defaults to the triggering SHA
         required: false
         type: string
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
-  group: urai-full-public-preview-${{ github.event.pull_request.number || github.ref }}
+  group: urai-full-preview-verification-${{ inputs.candidate_sha || github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 env:
-  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
-  PREVIEW_CHANNEL_ID: urai-full-preview
+  URAI_EXACT_HEAD: ${{ inputs.candidate_sha || github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  deploy-and-inspect:
-    name: Build, stage, deploy, and inspect exact preview
+  local-preview-verification:
+    name: Verify full preview locally without provider credentials
     runs-on: ubuntu-latest
-    timeout-minutes: 75
-    outputs:
-      preview_url: ${{ steps.deploy.outputs.preview_url }}
-      candidate_sha: ${{ steps.identity.outputs.candidate_sha }}
+    timeout-minutes: 60
     steps:
-      - name: Resolve exact candidate identity
-        id: identity
-        shell: bash
-        env:
-          REQUESTED_SHA: ${{ inputs.candidate_sha }}
-          PR_SHA: ${{ github.event.pull_request.head.sha }}
-          TRIGGER_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          CANDIDATE_SHA="${REQUESTED_SHA:-${PR_SHA:-$TRIGGER_SHA}}"
-          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          printf 'candidate_sha=%s\n' "$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
-
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ steps.identity.outputs.candidate_sha }}
+          ref: ${{ env.URAI_EXACT_HEAD }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-
       - name: Prove exact clean candidate
         shell: bash
-        env:
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
           run_install: false
-
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install exact lockfile and deployment tooling
+      - name: Install exact lockfile
         run: |
-          set -euo pipefail
           corepack enable
           pnpm install --frozen-lockfile
-          test "$(pnpm exec firebase --version)" = "15.22.3"
-
-      - name: Prove Playwright module resolution from inspection location
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf urai-tier1/.preview-inspection-runtime
-          mkdir -p urai-tier1/.preview-inspection-runtime
-          cat > urai-tier1/.preview-inspection-runtime/module-resolution.mjs <<'NODE'
-          import { chromium } from 'playwright'
-          if (!chromium || typeof chromium.launch !== 'function') {
-            throw new Error('Playwright Chromium API did not resolve from the Tier-1 inspection location')
-          }
-          NODE
-          node urai-tier1/.preview-inspection-runtime/module-resolution.mjs
-          rm -rf urai-tier1/.preview-inspection-runtime
-          test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Build exact full static preview
+      - name: Preflight
+        run: pnpm preflight
+      - name: Build exact static candidate with acceptance fixtures
         env:
-          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ steps.identity.outputs.candidate_sha }}
-          NEXT_PUBLIC_URAI_PREVIEW_MODE: 'true'
-          NEXT_PUBLIC_URAI_PREVIEW_CHANNEL: ${{ env.PREVIEW_CHANNEL_ID }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
           URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
           URAI_FIREBASE_STATIC_EXPORT: 'true'
-        run: |
-          set -euo pipefail
-          pnpm preflight
-          pnpm build:static
-          test -f urai-tier1/out/index.html
-          grep -R --fixed-strings --include='*.html' -q "${{ steps.identity.outputs.candidate_sha }}" urai-tier1/out
-          grep -R --fixed-strings --include='*.html' -q 'PREVIEW — NOT PRODUCTION CERTIFIED' urai-tier1/out
-          test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Stage Firebase payload at config-relative public path
+        run: pnpm build:static
+      - name: Prove exact source remained clean
         shell: bash
-        env:
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
-        run: |
-          set -euo pipefail
-          rm -rf .github/urai-tier1
-          mkdir -p .github/urai-tier1/out
-          cp -R urai-tier1/out/. .github/urai-tier1/out/
-          test -f .github/urai-tier1/out/index.html
-          grep -R --fixed-strings --include='*.html' -q "$CANDIDATE_SHA" .github/urai-tier1/out
-          grep -R --fixed-strings --include='*.html' -q 'PREVIEW — NOT PRODUCTION CERTIFIED' .github/urai-tier1/out
-          node <<'NODE'
-          const fs = require('node:fs')
-          const path = require('node:path')
-          const configPath = '.github/firebase.preview.json'
-          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-          const resolved = path.resolve(path.dirname(configPath), config.hosting.public)
-          const expected = path.resolve('.github/urai-tier1/out')
-          if (resolved !== expected) {
-            throw new Error(`Firebase preview public path mismatch: ${resolved} !== ${expected}`)
-          }
-          if (!fs.existsSync(path.join(resolved, 'index.html'))) {
-            throw new Error(`Firebase preview payload missing at ${resolved}`)
-          }
-          NODE
-          unexpected="$(git status --porcelain --untracked-files=all | grep -v '^?? .github/urai-tier1/' || true)"
-          test -z "$unexpected"
-          printf 'candidate_sha=%s\nconfig=.github/firebase.preview.json\nconfig_relative_public=.github/urai-tier1/out\nsource_output=urai-tier1/out\nproduction_targeted=false\n' \
-            "$CANDIDATE_SHA" > preview-staging-receipt.txt
-
-      - name: Prove pull-request preview remains credential free
-        if: github.event_name == 'pull_request'
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Serve exact static candidate locally
         shell: bash
         run: |
           set -euo pipefail
-          test "$PREVIEW_CHANNEL_ID" != live
-          grep -q '^production_targeted=false$' preview-staging-receipt.txt
-          printf 'pull_request_dry_run=true\nplaywright_module_resolution=true\n' >> preview-staging-receipt.txt
-
-      - name: Deploy isolated Firebase preview channel
-        if: github.event_name != 'pull_request'
-        id: deploy
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          test -n "$FIREBASE_PROJECT_ID"
-          test "$PREVIEW_CHANNEL_ID" != live
-          test -f .github/urai-tier1/out/index.html
-          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-urai-full-preview.json"
-          cleanup() { rm -f "$CREDENTIALS_FILE"; }
-          trap cleanup EXIT
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
-          chmod 600 "$CREDENTIALS_FILE"
-          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
-          pnpm exec firebase hosting:channel:deploy "$PREVIEW_CHANNEL_ID" \
-            --config .github/firebase.preview.json \
-            --project "$FIREBASE_PROJECT_ID" \
-            --expires 7d \
-            --non-interactive \
-            --json > preview-deploy.json 2> preview-deploy.stderr
-          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls.find(x=>x.includes('.firebaseapp.com'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
-          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;; esac
-          test "$PREVIEW_URL" != "https://urai.app"
-          printf 'preview_url=%s\n' "$PREVIEW_URL" >> "$GITHUB_OUTPUT"
-          printf 'candidate_sha=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\nproduction_certified=false\ndeployed_at=%s\n' \
-            "$CANDIDATE_SHA" "$PREVIEW_CHANNEL_ID" "$PREVIEW_URL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > preview-receipt.txt
-
-      - name: Verify preview identity and core routes
-        if: github.event_name != 'pull_request'
-        shell: bash
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
-        run: |
-          set -euo pipefail
-          routes=(/ /home/ /ground/ /life-map/ /focus/ /replay/ /status/ /privacy-controls/ /spatial/ar-vr/)
-          mkdir -p preview-http
-          for route in "${routes[@]}"; do
-            safe=$(printf '%s' "$route" | tr '/ ' '__')
-            curl --fail --location --retry 5 --retry-delay 3 --max-time 45 "$PREVIEW_URL$route" -o "preview-http/${safe:-root}.html"
+          python3 -m http.server 4173 --directory urai-tier1/out > local-preview-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > local-index.html; then
+              break
+            fi
+            sleep 1
           done
-          grep -R --fixed-strings -q "$CANDIDATE_SHA" preview-http
-          grep -R --fixed-strings -q 'PREVIEW — NOT PRODUCTION CERTIFIED' preview-http
-
+          curl --fail --silent --show-error http://127.0.0.1:4173/location-map/ > local-location-map.html
+          grep -q "$URAI_EXACT_HEAD" local-location-map.html
       - name: Install Chromium
-        if: github.event_name != 'pull_request'
         run: pnpm exec playwright install --with-deps chromium
-
-      - name: Capture desktop and mobile inspection evidence
-        if: github.event_name != 'pull_request'
+      - name: Run exact-head Location Map smoke locally
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+          URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
+        run: pnpm exec playwright test tests/location-map-trusted-preview-smoke.spec.ts --config=playwright.config.ts
+      - name: Write checks-only NO-GO receipt
+        if: always()
         shell: bash
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
         run: |
-          set -euo pipefail
-          mkdir -p preview-inspection/desktop preview-inspection/mobile urai-tier1/.preview-inspection-runtime
-          cleanup() { rm -rf urai-tier1/.preview-inspection-runtime; }
-          trap cleanup EXIT
-          cat > urai-tier1/.preview-inspection-runtime/inspect-preview.mjs <<'NODE'
-          import { chromium } from 'playwright'
-          import fs from 'node:fs/promises'
-
-          const base = process.env.PREVIEW_URL
-          const sha = process.env.CANDIDATE_SHA
-          const routes = ['/', '/home/', '/ground/', '/life-map/', '/focus/', '/replay/', '/status/', '/privacy-controls/', '/spatial/ar-vr/']
-          const profiles = [
-            { name: 'desktop', viewport: { width: 1440, height: 1000 }, isMobile: false },
-            { name: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true },
-          ]
-          const browser = await chromium.launch({ headless: true })
-          const report = []
-          for (const profile of profiles) {
-            const context = await browser.newContext({ viewport: profile.viewport, isMobile: profile.isMobile, deviceScaleFactor: 1 })
-            const page = await context.newPage()
-            const cdp = await context.newCDPSession(page)
-            const consoleErrors = []
-            page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
-            page.on('pageerror', error => consoleErrors.push(error.message))
-            for (const route of routes) {
-              const response = await page.goto(new URL(route, base).toString(), { waitUntil: 'networkidle', timeout: 60000 })
-              await page.waitForTimeout(1200)
-              if (!response || response.status() >= 400) throw new Error(`Bad response on ${profile.name} ${route}: ${response?.status()}`)
-              const banner = await page.getByTestId('urai-global-preview-banner').textContent()
-              if (!banner?.includes('PREVIEW') || !banner.includes('NOT PRODUCTION CERTIFIED')) throw new Error(`Missing preview banner on ${profile.name} ${route}`)
-              const embedded = await page.locator('body').getAttribute('data-deployed-sha')
-              if (embedded !== sha) throw new Error(`Wrong SHA on ${profile.name} ${route}: ${embedded}`)
-              const certification = await page.locator('body').getAttribute('data-production-certification')
-              if (certification !== 'not-certified-preview') throw new Error(`Wrong certification state on ${profile.name} ${route}: ${certification}`)
-              if (consoleErrors.length) throw new Error(`Console errors on ${profile.name} ${route}: ${consoleErrors.join(' | ')}`)
-              const name = route === '/' ? 'root' : route.replaceAll('/', '_').replace(/^_+|_+$/g, '')
-              const capture = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false })
-              await fs.writeFile(`preview-inspection/${profile.name}/${name}.png`, Buffer.from(capture.data, 'base64'))
-              report.push({ profile: profile.name, viewport: profile.viewport, route, status: response.status(), banner, embedded, certification, consoleErrors: [] })
-            }
-            await cdp.detach()
-            await context.close()
-          }
-          await browser.close()
-          await fs.writeFile('preview-inspection/report.json', JSON.stringify({ base, sha, inspectedAt: new Date().toISOString(), report }, null, 2))
-          NODE
-          node urai-tier1/.preview-inspection-runtime/inspect-preview.mjs
-          test -f preview-inspection/report.json
-          test "$(node -e 'const r=require("./preview-inspection/report.json");process.stdout.write(String(r.report.length))')" = '18'
-
-      - name: Publish preview summary
-        if: github.event_name != 'pull_request'
-        shell: bash
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
-        run: |
-          {
-            echo '## URAI public preview ready'
-            echo
-            echo "- URL: $PREVIEW_URL"
-            echo "- Exact SHA: \`$CANDIDATE_SHA\`"
-            echo "- Channel: \`$PREVIEW_CHANNEL_ID\`"
-            echo '- Certification: **Preview — not production certified**'
-            echo '- Inspection: nine routes at desktop 1440×1000 and mobile 390×844'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Record preview URL on production authority issue
-        if: github.event_name != 'pull_request'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          CANDIDATE_SHA: ${{ steps.identity.outputs.candidate_sha }}
-          PREVIEW_CHANNEL_ID: ${{ env.PREVIEW_CHANNEL_ID }}
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: 999,
-              body: [
-                '## Isolated public preview available',
-                '',
-                `- Preview URL: ${process.env.PREVIEW_URL}`,
-                `- Exact candidate SHA: \`${process.env.CANDIDATE_SHA}\``,
-                `- Channel: \`${process.env.PREVIEW_CHANNEL_ID}\``,
-                '- Routes inspected: 9',
-                '- Desktop inspection: 1440×1000',
-                '- Mobile inspection: 390×844',
-                '- Production targeted: **false**',
-                '- Production certified: **false**',
-                '',
-                'This URL is intentionally labeled **PREVIEW — NOT PRODUCTION CERTIFIED** and does not satisfy or close issue #999.',
-                '',
-                `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              ].join('\n'),
-            })
-
-      - name: Retain preview deployment and inspection evidence
+          mkdir -p preview-evidence
+          cp -f local-preview-server.log local-index.html local-location-map.html preview-evidence/ 2>/dev/null || true
+          printf 'exact_sha=%s\nrun_id=%s\nworkflow=%s\nmode=local-no-provider-credentials\nclassification=NO-GO\nproduction_targeted=false\ndeployment_attempted=false\ncaptured_at=%s\n' \
+            "$URAI_EXACT_HEAD" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > preview-evidence/manifest.txt
+          echo 'Classification: NO-GO'
+      - name: Retain local preview evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: urai-full-public-preview-${{ steps.identity.outputs.candidate_sha }}
+          name: urai-full-local-preview-${{ env.URAI_EXACT_HEAD }}
           path: |
-            preview-staging-receipt.txt
-            preview-deploy.json
-            preview-deploy.stderr
-            preview-receipt.txt
-            preview-http
-            preview-inspection
+            preview-evidence
+            test-results
+            playwright-report
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 90

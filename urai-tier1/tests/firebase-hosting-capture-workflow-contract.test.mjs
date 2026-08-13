@@ -11,40 +11,51 @@ const workflow = readFileSync(
   'utf8',
 ).replace(/\r\n?/g, '\n')
 
-test('capture workflow is manual, exact-main, protected, and read-only', () => {
-  assert.match(workflow, /^name: Capture legacy Firebase Hosting recovery$/m)
+test('legacy Hosting recovery workflow is manual, exact-head, read-only, and quarantined', () => {
+  assert.match(workflow, /^name: Legacy Firebase Hosting Recovery Verification$/m)
   assert.match(workflow, /^  workflow_dispatch:$/m)
   assert.doesNotMatch(workflow, /^  (?:push|pull_request|schedule):$/m)
-  assert.match(workflow, /github\.ref == 'refs\/heads\/main'/)
-  assert.match(workflow, /inputs\.confirm == 'CAPTURE_LEGACY_HOSTING_VERSION'/)
-  assert.match(workflow, /^    environment: production$/m)
-  assert.match(workflow, /ref: \$\{\{ github\.sha \}\}/)
-  assert.match(workflow, /git ls-remote --exit-code origin refs\/heads\/main/)
-  assert.match(workflow, /node scripts\/firebase-hosting-recovery\.mjs discover/)
-  assert.doesNotMatch(workflow, /node scripts\/firebase-hosting-recovery\.mjs restore/)
-  assert.doesNotMatch(workflow, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy/)
+  assert.match(workflow, /expected_sha:/)
+  assert.match(workflow, /required: true/)
+  assert.match(workflow, /EXPECTED_SHA: \$\{\{ inputs\.expected_sha \}\}/)
+  assert.match(workflow, /ref: \$\{\{ inputs\.expected_sha \}\}/)
+  assert.match(workflow, /persist-credentials: false/)
+  assert.match(workflow, /\[\[ "\$EXPECTED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\]/)
+  assert.match(workflow, /test "\$\(git rev-parse HEAD\)" = "\$EXPECTED_SHA"/)
+  assert.match(workflow, /node scripts\/firebase-hosting-recovery\.mjs --self-test/)
+  assert.match(workflow, /node scripts\/audit-production-workflow-authority\.mjs/)
+  assert.doesNotMatch(workflow, /node scripts\/firebase-hosting-recovery\.mjs (?:discover|restore)/)
+  assert.doesNotMatch(workflow, /firebase(?:-tools)?(?:@[^\s]+)?\s+(?:deploy|hosting:clone)/)
   assert.doesNotMatch(workflow, /live-release\.mjs --deploy/)
 })
 
-test('capture workflow scopes the production credential to one discovery step', () => {
-  const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
-  assert.equal(workflow.split(secretMarker).length - 1, 1)
-  const discoveryStart = workflow.indexOf('- name: Discover exact current live Hosting version')
-  assert.notEqual(discoveryStart, -1, 'Discovery step not found')
-  const nextStepIndex = workflow.indexOf('\n      - name:', discoveryStart + 1)
-  const nextStep = nextStepIndex === -1 ? workflow.length : nextStepIndex
-  const discoveryStep = workflow.slice(discoveryStart, nextStep)
-  assert.match(discoveryStep, /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.match(discoveryStep, /firebase-hosting-recovery\.mjs discover/)
-  assert.doesNotMatch(workflow.slice(0, discoveryStart), /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.doesNotMatch(workflow.slice(nextStep), /FIREBASE_SERVICE_ACCOUNT_JSON/)
+test('legacy Hosting recovery verification exposes no production credential or mutation authority', () => {
+  for (const forbidden of [
+    'FIREBASE_SERVICE_ACCOUNT_JSON',
+    'GOOGLE_APPLICATION_CREDENTIALS',
+    'FIREBASE_TOKEN',
+    'environment: production',
+    'id-token: write',
+    'contents: write',
+    'actions: write',
+    'CAPTURE_LEGACY_HOSTING_VERSION',
+  ]) {
+    assert.equal(workflow.includes(forbidden), false, `Quarantined recovery workflow must not include ${forbidden}`)
+  }
+  assert.match(workflow, /^permissions:\n  contents: read$/m)
+  assert.match(workflow, /Verify legacy recovery remains quarantined/)
+  assert.match(workflow, /productionCredentialsAvailable: false/)
+  assert.match(workflow, /recoveryMutationAttempted: false/)
+  assert.match(workflow, /providerRecoveryVerified: false/)
 })
 
-test('capture receipt remains outside source and is retained', () => {
-  assert.match(workflow, /URAI_HOSTING_RECOVERY_RECEIPT: \$\{\{ runner\.temp \}\}\/hosting-recovery\/legacy-live-release\.json/)
-  assert.match(workflow, /path: \$\{\{ runner\.temp \}\}\/hosting-recovery\//)
+test('quarantine receipt remains outside source and is retained without claiming recovery proof', () => {
+  assert.match(workflow, /schemaVersion: 'urai-legacy-hosting-recovery-quarantine-1'/)
+  assert.match(workflow, /classification: 'NO-GO'/)
+  assert.match(workflow, /checksOnly: true/)
+  assert.match(workflow, /exactHeadSha: process\.env\.EXPECTED_SHA/)
+  assert.match(workflow, /path: artifacts\/legacy-hosting-recovery\/quarantine\.json/)
   assert.match(workflow, /retention-days: 365/)
   assert.match(workflow, /test -z "\$\(git status --porcelain --untracked-files=all\)"/)
-  assert.match(workflow, /^permissions:\n  contents: read$/m)
-  assert.doesNotMatch(workflow, /contents: write|actions: write|id-token: write/)
+  assert.doesNotMatch(workflow, /legacy-live-release\.json|URAI_HOSTING_RECOVERY_RECEIPT/)
 })

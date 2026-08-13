@@ -1,3 +1,5 @@
+import { assertExternalAccountAdc } from './google-adc';
+
 function bearerTokenFrom(request: Request): string | null {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -12,10 +14,9 @@ export async function verifyFirebaseUser(request: Request): Promise<string | nul
   const adminAuth = await import('firebase-admin/auth');
   const adminApp = await import('firebase-admin/app');
 
+  assertExternalAccountAdc();
   if (!adminApp.getApps().length) {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!raw) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON');
-    adminApp.initializeApp({ credential: adminApp.cert(JSON.parse(raw)) });
+    adminApp.initializeApp({ credential: adminApp.applicationDefault() });
   }
 
   try {

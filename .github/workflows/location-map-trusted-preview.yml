@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       candidate_sha:
-        description: Exact 40-character candidate SHA to build and verify
+        description: Exact 40-character candidate SHA to build and verify locally
         required: true
         type: string
       pr_number:
-        description: Canonical pull request number used for the isolated channel
+        description: Canonical pull request number for evidence correlation
         required: true
         type: string
 
@@ -16,30 +16,29 @@ permissions:
   contents: read
 
 env:
-  CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+  URAI_EXACT_HEAD: ${{ inputs.candidate_sha }}
   PR_NUMBER: ${{ inputs.pr_number }}
-  EXPECTED_FIREBASE_PROJECT: urai-4dc1d
 
 concurrency:
-  group: location-map-trusted-preview-${{ inputs.pr_number }}
-  cancel-in-progress: false
+  group: location-map-trusted-preview-verification-${{ inputs.pr_number }}-${{ inputs.candidate_sha }}
+  cancel-in-progress: true
 
 jobs:
-  build-candidate:
-    name: Build candidate without deployment credentials
+  local-browser-proof:
+    name: Verify exact Location Map candidate locally without provider credentials
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Validate requested identity
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
           [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ env.CANDIDATE_SHA }}
+          ref: ${{ env.URAI_EXACT_HEAD }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
@@ -47,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
@@ -66,192 +65,53 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Build exact static candidate with acceptance fixtures
         env:
-          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.CANDIDATE_SHA }}
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.URAI_EXACT_HEAD }}
           URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
           URAI_FIREBASE_STATIC_EXPORT: 'true'
         run: pnpm build:static
-      - name: Prove candidate output identity
+      - name: Prove exact source remained clean
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Serve exact static candidate locally
         shell: bash
         run: |
           set -euo pipefail
-          test -f urai-tier1/out/location-map/index.html
-          grep -R --fixed-strings --include='*.html' -q "$CANDIDATE_SHA" urai-tier1/out
-          test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Upload inert static candidate
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: location-map-static-${{ env.CANDIDATE_SHA }}
-          path: urai-tier1/out
-          if-no-files-found: error
-          retention-days: 7
-
-  deploy-preview:
-    name: Deploy inert output through trusted main authority
-    needs: build-candidate
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    outputs:
-      preview_url: ${{ steps.deploy.outputs.preview_url }}
-      channel_id: ${{ steps.deploy.outputs.channel_id }}
-    steps:
-      - name: Checkout trusted main authority only
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: main
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
-      - name: Prove trusted workflow authority
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git branch --show-current)" = main
-          test -z "$(git status --porcelain --untracked-files=all)"
-          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.0.0
-          run_install: false
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Install trusted deployment tooling
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-          test "$(pnpm exec firebase --version)" = "15.22.3"
-      - name: Download inert candidate output
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: location-map-static-${{ env.CANDIDATE_SHA }}
-          path: candidate-output
-      - name: Stage trusted Firebase payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f candidate-output/location-map/index.html
-          grep -R --fixed-strings --include='*.html' -q "$CANDIDATE_SHA" candidate-output
-          rm -rf .github/urai-tier1
-          mkdir -p .github/urai-tier1/out
-          cp -R candidate-output/. .github/urai-tier1/out/
-          test -f .github/urai-tier1/out/location-map/index.html
-      - name: Deploy isolated non-live channel
-        id: deploy
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          test -n "$FIREBASE_PROJECT_ID"
-          CREDENTIALS_FILE="$RUNNER_TEMP/firebase-location-map-preview.json"
-          cleanup() { rm -f "$CREDENTIALS_FILE"; }
-          trap cleanup EXIT
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CREDENTIALS_FILE"
-          chmod 600 "$CREDENTIALS_FILE"
-          export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
-          CHANNEL_ID="location-map-pr-${PR_NUMBER}"
-          test "$CHANNEL_ID" != live
-          pnpm exec firebase hosting:channel:deploy "$CHANNEL_ID" \
-            --config .github/firebase.preview.json \
-            --project "$FIREBASE_PROJECT_ID" \
-            --expires 1d \
-            --non-interactive \
-            --json > preview-deploy.json 2> preview-deploy.stderr
-          PREVIEW_URL=$(node -e "const fs=require('fs');const value=JSON.parse(fs.readFileSync('preview-deploy.json','utf8'));const urls=[];const walk=x=>{if(typeof x==='string'&&/^https:\/\//.test(x))urls.push(x);else if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object')Object.values(x).forEach(walk)};walk(value);const url=urls.find(x=>x.includes('.web.app'))||urls[0];if(!url)process.exit(1);process.stdout.write(url)")
-          case "$PREVIEW_URL" in https://*.web.app|https://*.firebaseapp.com) ;; *) exit 65 ;; esac
-          test "$PREVIEW_URL" != "https://urai.app"
-          printf 'preview_url=%s\nchannel_id=%s\n' "$PREVIEW_URL" "$CHANNEL_ID" >> "$GITHUB_OUTPUT"
-          printf 'candidate_sha=%s\ntrusted_main_sha=%s\nchannel_id=%s\npreview_url=%s\nproduction_targeted=false\ndeployed_at=%s\n' \
-            "$CANDIDATE_SHA" "$(git rev-parse HEAD)" "$CHANNEL_ID" "$PREVIEW_URL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            > preview-receipt.txt
-      - name: Retain trusted deployment receipt
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: location-map-trusted-deploy-${{ env.CANDIDATE_SHA }}
-          path: |
-            preview-deploy.json
-            preview-deploy.stderr
-            preview-receipt.txt
-          if-no-files-found: error
-          retention-days: 90
-
-  deployed-acceptance:
-    name: Verify deployed preview without credentials
-    needs: deploy-preview
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - name: Checkout exact candidate without credentials
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.CANDIDATE_SHA }}
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
-      - name: Prove exact candidate identity
-        shell: bash
-        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.0.0
-          run_install: false
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Install exact lockfile
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-      - name: Verify reachable exact-SHA preview
-        env:
-          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --location --retry 5 --retry-delay 3 --max-time 30 "$PREVIEW_URL/location-map/" -o preview-location-map.html
-          grep -q "$CANDIDATE_SHA" preview-location-map.html
+          python3 -m http.server 4173 --directory urai-tier1/out > local-preview-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/location-map/ > local-location-map.html; then
+              break
+            fi
+            sleep 1
+          done
+          grep -q "$URAI_EXACT_HEAD" local-location-map.html
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run deployed Location Map smoke
+      - name: Run exact-head Location Map smoke locally
         env:
-          PLAYWRIGHT_BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-          URAI_EXACT_HEAD: ${{ env.CANDIDATE_SHA }}
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+          URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
         run: pnpm exec playwright test tests/location-map-trusted-preview-smoke.spec.ts --config=playwright.config.ts
-      - name: Build exact-head deployed evidence manifest
-        if: always()
+      - name: Run complete exact-head Location Map acceptance locally
         env:
-          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview_url }}
-          CHANNEL_ID: ${{ needs.deploy-preview.outputs.channel_id }}
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+          URAI_EXACT_HEAD: ${{ env.URAI_EXACT_HEAD }}
+          URAI_LOCATION_MAP_ACCEPTANCE_FIXTURES: '1'
+        run: pnpm exec playwright test tests/location-map-browser-acceptance-v2.spec.ts --config=playwright.config.ts
+      - name: Write checks-only NO-GO receipt
+        if: always()
         shell: bash
         run: |
-          set -euo pipefail
           mkdir -p preview-evidence
-          cp -f preview-location-map.html preview-evidence/ 2>/dev/null || true
-          printf 'candidate_sha=%s\nrun_id=%s\nworkflow=%s\npreview_url=%s\nchannel_id=%s\nproduction_targeted=false\ncaptured_at=%s\n' \
-            "$CANDIDATE_SHA" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$PREVIEW_URL" "$CHANNEL_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          cp -f local-preview-server.log local-location-map.html preview-evidence/ 2>/dev/null || true
+          printf 'exact_sha=%s\npr_number=%s\nrun_id=%s\nworkflow=%s\nmode=local-no-provider-credentials\nclassification=NO-GO\nproduction_targeted=false\ndeployment_attempted=false\ncaptured_at=%s\n' \
+            "$URAI_EXACT_HEAD" "$PR_NUMBER" "$GITHUB_RUN_ID" "$GITHUB_WORKFLOW" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             > preview-evidence/manifest.txt
-          evidence_paths=(preview-evidence)
-          test -d test-results && evidence_paths+=(test-results)
-          test -d playwright-report && evidence_paths+=(playwright-report)
-          find "${evidence_paths[@]}" -type f ! -name SHA256SUMS -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum > preview-evidence/SHA256SUMS
-      - name: Retain deployed acceptance evidence
+          echo 'Classification: NO-GO'
+      - name: Retain local preview evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: location-map-trusted-preview-acceptance-${{ env.CANDIDATE_SHA }}
+          name: location-map-local-verification-${{ env.URAI_EXACT_HEAD }}
           path: |
             preview-evidence
             test-results

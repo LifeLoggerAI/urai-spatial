@@ -14,6 +14,7 @@ const files = [
   "src/app/mirror/MirrorSpatialClient.tsx",
   "src/app/shadow/page.tsx",
   "src/app/legacy/page.tsx",
+  "src/spatial/legacy/LegacyArchiveWorld.tsx",
   "src/app/passport/page.tsx",
   "src/app/council/page.tsx",
   "src/app/dream/page.tsx",
@@ -25,25 +26,30 @@ assert.equal(existsSync(join(app, "src/spatial/realms/RealmShell.tsx")), false, 
 assert.equal(existsSync(join(app, "src/components/spatial/legacy-scroll-portal.tsx")), false, "Demo-only Legacy portal must stay removed.");
 
 const registry = readFileSync(join(app, "src/spatial/realms/sceneRegistry.ts"), "utf8");
-for (const id of ["mirror", "shadow", "legacy", "passport", "council", "dream", "ground"]) {
-  assert.match(registry, new RegExp(id), `sceneRegistry must include ${id}.`);
-}
+for (const id of ["mirror", "shadow", "legacy", "passport", "council", "dream", "ground"]) assert.match(registry, new RegExp(id), `sceneRegistry must include ${id}.`);
 assert.match(registry, /exitRoute/, "Scene registry entries must include exitRoute.");
 assert.match(registry, /fallbackRoute/, "Scene registry entries must include fallbackRoute.");
 assert.match(registry, /privacyLevel/, "Scene registry entries must include privacyLevel.");
 
 const semanticRoute = readFileSync(join(app, "src/spatial/realms/LifeMapSemanticRoute.tsx"), "utf8");
-assert.match(semanticRoute, /\/life-map\?from=\$\{kind\}&overview=1/, "Semantic Legacy and Dream aliases must converge into canonical Life Map.");
+assert.match(semanticRoute, /\/life-map\?from=\$\{kind\}&overview=1/, "Semantic aliases must retain canonical Life Map convergence.");
 assert.match(semanticRoute, /router\.replace\(destination/, "Semantic aliases must replace stale shell history with Life Map.");
 assert.match(semanticRoute, /Open Life Map/, "Semantic aliases must retain a no-surprise direct navigation fallback.");
 assert.doesNotMatch(semanticRoute, /Camera:|Lighting:|Fallback:/, "Semantic aliases must not expose diagnostic implementation metadata.");
 
-for (const route of ["legacy", "dream"]) {
-  const content = readFileSync(join(app, `src/app/${route}/page.tsx`), "utf8");
-  assert.match(content, /LifeMapSemanticRoute/, `${route} route must converge into Life Map.`);
-  assert.match(content, new RegExp(`kind="${route}"`), `${route} route must preserve its semantic origin.`);
-  assert.doesNotMatch(content, /RealmShell|demoLegacyScroll/, `${route} route must not restore a diagnostic or demo-only owner.`);
-}
+const dream = readFileSync(join(app, "src/app/dream/page.tsx"), "utf8");
+assert.match(dream, /LifeMapSemanticRoute/, "dream route must converge into Life Map.");
+assert.match(dream, /kind="dream"/, "dream route must preserve its semantic origin.");
+assert.doesNotMatch(dream, /RealmShell|demoLegacyScroll/, "dream route must not restore a diagnostic or demo-only owner.");
+
+const legacy = readFileSync(join(app, "src/app/legacy/page.tsx"), "utf8");
+const legacyWorld = readFileSync(join(app, "src/spatial/legacy/LegacyArchiveWorld.tsx"), "utf8");
+assert.match(legacy, /LegacyArchiveWorld/, "legacy route must own its embodied archive.");
+assert.doesNotMatch(legacy, /LifeMapSemanticRoute/, "legacy route must not collapse into a semantic alias.");
+assert.match(legacyWorld, /Canvas/, "Legacy must remain a real R3F place.");
+assert.match(legacyWorld, /stepEmbodiedMotion/, "Legacy must retain embodied camera movement.");
+assert.match(legacyWorld, /MobileMovementPad/, "Legacy must retain touch movement controls.");
+assert.match(legacyWorld, /\/life-map\?from=legacy&overview=1/, "Legacy must preserve Life Map as an explicit continuity doorway.");
 
 const spatialRuntime = readFileSync(join(app, "src/spatial/realms/SpatialRealmRuntime.tsx"), "utf8");
 assert.match(spatialRuntime, /SpatialRealmExperience/, "SpatialRealmRuntime must preserve the canonical R3F owner when WebGL is available.");
@@ -87,4 +93,4 @@ const ground = readFileSync(join(app, "src/app/ground/page.tsx"), "utf8");
 assert.match(ground, /walkable-first-person-ground-layer/, "Ground route must render the final ground world.");
 assert.match(ground, /getSceneDefinition/, "Ground route must preserve scene registry contract.");
 
-console.log("URAI realm routes canon passed: canonical spatial owners and Life Map semantic convergence are preserved.");
+console.log("URAI realm routes canon passed: canonical spatial owners, embodied Legacy, and semantic alias boundaries are preserved.");
