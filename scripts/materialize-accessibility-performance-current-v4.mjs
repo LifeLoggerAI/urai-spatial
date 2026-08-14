@@ -168,8 +168,8 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   let source = input
   source = replaceExact(
     source,
-    "test.describe('Spatial visual accessibility evidence', () => {",
-    "test.describe('Spatial visual accessibility evidence', () => {\n  test.describe.configure({ timeout: 90_000 })",
+    "test.describe('URAI visual ownership and containment evidence', () => {",
+    "test.describe('URAI visual ownership and containment evidence', () => {\n  test.describe.configure({ timeout: 90_000 })",
     1,
     'spatial visual software-renderer timeout envelope',
   )
