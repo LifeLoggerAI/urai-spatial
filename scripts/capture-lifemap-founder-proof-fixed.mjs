@@ -13,7 +13,7 @@ const pr = rawPr ? Number.parseInt(rawPr, 10) : null
 if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-12',
+  schemaVersion: 'urai-lifemap-founder-proof-13',
   repository: 'LifeLoggerAI/urai-spatial',
   pr,
   exactHead,
@@ -196,16 +196,16 @@ async function canvasSignal(page, screenshotBuffer) {
   }, { dataUrl })
 }
 
-async function captureScreenshot(page, file) {
+async function captureScreenshot(page, file, scale = 'device') {
   const buffer = await page.screenshot({
     path: path.join(outputDir, file),
     fullPage: false,
     animations: 'disabled',
     caret: 'hide',
-    scale: 'device',
+    scale,
     timeout: 120_000,
   })
-  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
+  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length, scale }
 }
 
 async function readRootState(root) {
@@ -230,7 +230,8 @@ async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
   const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
-  const { buffer, ...screenshot } = await captureScreenshot(page, file)
+  const { screenshotScale = 'device', ...captureExtra } = extra
+  const { buffer, ...screenshot } = await captureScreenshot(page, file, screenshotScale)
   const signal = await canvasSignal(page, buffer)
   receipt.captures.push({
     order: receipt.captures.length + 1,
@@ -243,7 +244,7 @@ async function shot(page, id, captureState, extra = {}) {
     screenshot,
     signal,
     timestamp: new Date().toISOString(),
-    ...extra,
+    ...captureExtra,
   })
 }
 
@@ -302,6 +303,28 @@ async function activateCanonicalControl(page, selector, geometry, interaction) {
   else await page.mouse.click(x, y)
 }
 
+async function installPhaseCaptureTiming(page, factor) {
+  if (!Number.isFinite(factor) || factor <= 1) return
+  await page.evaluate((multiplier) => {
+    if (window.__uraiFounderOriginalSetTimeout) return
+    const original = window.setTimeout.bind(window)
+    window.__uraiFounderOriginalSetTimeout = window.setTimeout
+    window.setTimeout = function founderPhaseCaptureTimeout(handler, timeout = 0, ...args) {
+      const numeric = Number(timeout)
+      const scaled = numeric === 180 || numeric === 760 || numeric === 1320
+      return original(handler, scaled ? numeric * multiplier : numeric, ...args)
+    }
+  }, factor)
+}
+
+async function restorePhaseCaptureTiming(page) {
+  await page.evaluate(() => {
+    if (!window.__uraiFounderOriginalSetTimeout) return
+    window.setTimeout = window.__uraiFounderOriginalSetTimeout
+    delete window.__uraiFounderOriginalSetTimeout
+  })
+}
+
 async function selectQuietReset(page, options = {}) {
   const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
   const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
@@ -314,7 +337,12 @@ async function selectQuietReset(page, options = {}) {
   const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
   const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
   if (!/The Quiet Reset/i.test(result.text)) throw new Error(`Quiet Reset semantic result text drifted: ${result.text}`)
-  await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
+  if (options.captureTimingFactor) await installPhaseCaptureTiming(page, options.captureTimingFactor)
+  try {
+    await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
+  } finally {
+    if (options.captureTimingFactor) await restorePhaseCaptureTiming(page)
+  }
 
   await poll('semantic navigator closed after selection', () => page.evaluate((selector) => !document.querySelector(selector), navigatorSelector), Boolean, 20_000, 50).catch(() => {})
   await waitForState(page, 'data-life-map-mode', 'selected')
@@ -344,6 +372,13 @@ function assertVisualSanity() {
     'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
     'reduced-motion-arrival',
   ]
+  const exactPhaseByCapture = new Map([
+    ['selection-start', 'departure'],
+    ['mid-travel', 'travel'],
+    ['approach', 'approach'],
+    ['stable-arrival', 'arrival'],
+    ['portrait-mobile-travel', 'travel'],
+  ])
   for (const id of required) {
     const capture = byId.get(id)
     if (!capture) throw new Error(`missing required capture ${id}`)
@@ -355,6 +390,11 @@ function assertVisualSanity() {
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
+    const expectedPhase = exactPhaseByCapture.get(id)
+    if (expectedPhase && capture.state?.phase !== expectedPhase) throw new Error(`${id} retained phase ${capture.state?.phase} instead of ${expectedPhase}`)
+    if (capture.screenshot.scale === 'css' && (capture.signal.width < capture.viewport.width || capture.signal.height < capture.viewport.height)) {
+      throw new Error(`${id} CSS-scale phase capture fell below viewport resolution`)
+    }
   }
   const phases = required.map((id) => byId.get(id)?.captureState).filter(Boolean)
   if (!phases.includes('departure') || !phases.includes('travel') || !phases.includes('approach') || !phases.includes('arrival')) {
@@ -369,6 +409,17 @@ async function desktopJourney() {
   try {
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+    const phaseTimingFactor = 160
+
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    await selectQuietReset(page, { captureTimingFactor: phaseTimingFactor })
+    await waitForState(page, 'data-life-map-phase', 'departure', 45_000)
+    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer', phaseTimingFactor, screenshotScale: 'css' })
+    await waitForState(page, 'data-life-map-phase', 'travel', 60_000)
+    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset', phaseTimingFactor, screenshotScale: 'css' })
+    await waitForState(page, 'data-life-map-phase', 'approach', 150_000)
+    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset', phaseTimingFactor, screenshotScale: 'css' })
 
     await goto(page, overviewRoute)
     await waitForRenderedWorld(page)
@@ -389,22 +440,6 @@ async function desktopJourney() {
     await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
-
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'departure')
-    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer' })
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'travel')
-    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset' })
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page)
-    await waitForState(page, 'data-life-map-phase', 'approach')
-    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -447,15 +482,18 @@ async function desktopJourney() {
 async function mobileAndReduced() {
   const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
   const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+  const phaseTimingFactor = 160
 
   const mobile = await openPage({ viewport: { width: 390, height: 844 }, label: 'portrait', hasTouch: true, isMobile: true })
   try {
     await goto(mobile.page, overviewRoute)
     await waitForRenderedWorld(mobile.page)
     await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    await selectQuietReset(mobile.page, { touch: true })
-    await waitForState(mobile.page, 'data-life-map-phase', 'travel')
-    await shot(mobile.page, 'portrait-mobile-travel', 'mobile-travel', { memoryId: 'quiet-reset', interaction: 'touch' })
+    await goto(mobile.page, overviewRoute)
+    await waitForRenderedWorld(mobile.page)
+    await selectQuietReset(mobile.page, { touch: true, captureTimingFactor: phaseTimingFactor })
+    await waitForState(mobile.page, 'data-life-map-phase', 'travel', 60_000)
+    await shot(mobile.page, 'portrait-mobile-travel', 'mobile-travel', { memoryId: 'quiet-reset', interaction: 'touch', phaseTimingFactor, screenshotScale: 'css' })
     await goto(mobile.page, arrivalRoute)
     await waitForRenderedWorld(mobile.page)
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
