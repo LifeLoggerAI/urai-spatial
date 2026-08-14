@@ -46,8 +46,28 @@ test('Founder runner retains every required real interaction and phase owner', (
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
 
-test('Founder runner validates the retained high-resolution PNG with the distributed acceptance method', () => {
+test('Founder runner observes transient production phases without mutating production timing', () => {
+  assert.match(runner, /function armJourneyPhaseWatch\(/)
+  assert.match(runner, /function readJourneyPhaseWatch\(/)
+  assert.match(runner, /new MutationObserver\(inspect\)/)
+  assert.match(runner, /attributeFilter:\s*\['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'\]/)
+  assert.match(runner, /if \(options\.targetPhase\) await armJourneyPhaseWatch\(page, options\.targetPhase\)/)
+  assert.match(runner, /const observedPhase = options\.targetPhase \? await readJourneyPhaseWatch\(page, options\.targetPhase\) : null/)
+  assert.doesNotMatch(runner, /window\.setTimeout\s*=/)
+  assert.doesNotMatch(runner, /__uraiFounderOriginalSetTimeout|captureTimingFactor|installPhaseCaptureTiming|restorePhaseCaptureTiming/)
+})
+
+test('Founder runner retains one explicit 3x high-resolution proof while the interaction matrix stays runner-feasible', () => {
+  assert.match(runner, /deviceScaleFactor:\s*options\.deviceScaleFactor \|\| 1/)
+  assert.match(runner, /function highResolutionOverview\(/)
   assert.match(runner, /deviceScaleFactor:\s*3/)
+  assert.match(runner, /desktop-overview-high-resolution/)
+  assert.match(runner, /highResolution\.signal\.width < 4320/)
+  assert.match(runner, /highResolution\.signal\.height < 2700/)
+  assert.match(runner, /highResolution\.screenshot\.bytes < 1_000_000/)
+})
+
+test('Founder runner validates retained PNG evidence with the distributed acceptance method', () => {
   assert.match(runner, /scale:\s*'device'/)
   assert.match(runner, /source:\s*'retained-png'/)
   assert.match(runner, /context\.getImageData\(x, y, block, block\)/)
@@ -72,6 +92,7 @@ test('Founder proof observes the real production state machine without a product
   assert.match(navigator, /className="life-map-navigator" aria-label="Search and filter Life Map"/)
   assert.doesNotMatch(scene, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
   assert.doesNotMatch(navigator, /URAI_FOUNDER|founderProof|proofPhase|__uraiFounderPhase/)
+  assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
 })
 
 test('render proof is invalidated and republished after WebGL context restoration', () => {
