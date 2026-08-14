@@ -49,7 +49,10 @@ test('pointer keyboard and touch semantic paths converge on one single-fire sele
   assert.match(navigator, /event\.detail === 0 \? 'keyboard' : 'pointer'|event\.detail === 0 \? "keyboard" : "pointer"/)
   assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], 'keyboard'\)|selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
   assert.doesNotMatch(navigator, /onTouchEnd=/)
-  assert.match(founder, /await result\.tap\(\)/)
+  assert.match(founder, /await page\.touchscreen\.tap\(x, y\)/)
+  assert.match(founder, /await page\.mouse\.click\(x, y\)/)
+  assert.match(founder, /await page\.keyboard\.press\('Enter'\)/)
+  assert.match(founder, /await activateCanonicalControl\(page, resultSelector, result, options\.keyboard \? 'keyboard' : options\.touch \? 'touch' : 'pointer'\)/)
   assert.match(selection, /const detail = \{ nodeId, source \}/)
 })
 
