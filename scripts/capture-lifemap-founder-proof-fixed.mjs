@@ -328,8 +328,11 @@ async function desktopJourney() {
     await waitForRenderedWorld(page)
     await shot(page, 'desktop-overview', 'overview')
     const canvas = page.locator('canvas').first()
-    const box = await canvas.boundingBox()
-    if (!box) throw new Error('canvas has no box')
+    const box = await canvas.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+    })
+    if (!box || box.width <= 0 || box.height <= 0) throw new Error(`canvas geometry invalid: ${JSON.stringify(box)}`)
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5)
     await stable(page, 12)
     await shot(page, 'depth-travel-frame-1', 'parallax-1')
