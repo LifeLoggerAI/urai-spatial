@@ -37,12 +37,30 @@ async function stable(page, frames = 4) {
 function recordPageEvents(page, label) {
   page.on('console', (message) => {
     if (message.type() === 'error' || message.type() === 'warning') {
-      receipt.browserEvents.push({ label, kind: `console:${message.type()}`, text: message.text() })
+      const location = message.location()
+      receipt.browserEvents.push({
+        label,
+        kind: `console:${message.type()}`,
+        text: message.text(),
+        url: location?.url || null,
+        lineNumber: Number.isInteger(location?.lineNumber) ? location.lineNumber : null,
+        columnNumber: Number.isInteger(location?.columnNumber) ? location.columnNumber : null,
+      })
     }
   })
   page.on('pageerror', (error) => receipt.browserEvents.push({ label, kind: 'pageerror', text: String(error) }))
+  page.on('response', (response) => {
+    if (response.status() >= 400) {
+      receipt.browserEvents.push({
+        label,
+        kind: 'http-error',
+        text: `${response.status()} ${response.request().method()} ${response.url()} resource=${response.request().resourceType()}`,
+        url: response.url(),
+      })
+    }
+  })
   page.on('requestfailed', (request) => {
-    receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}` })
+    receipt.browserEvents.push({ label, kind: 'requestfailed', text: `${request.method()} ${request.url()} ${request.failure()?.errorText || ''}`, url: request.url() })
   })
 }
 
@@ -302,8 +320,13 @@ async function canonicalControlGeometry(page, selector, label, timeout = 20_000)
   return poll(label, () => page.evaluate((controlSelector) => {
     const element = document.querySelector(controlSelector)
     if (!(element instanceof HTMLElement)) return null
+    element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' })
     const rect = element.getBoundingClientRect()
     const style = getComputedStyle(element)
+    const x = rect.x + rect.width / 2
+    const y = rect.y + rect.height / 2
+    const hit = document.elementFromPoint(x, y)
+    const hitOwned = Boolean(hit && (hit === element || element.contains(hit)))
     return {
       x: rect.x,
       y: rect.y,
@@ -312,17 +335,23 @@ async function canonicalControlGeometry(page, selector, label, timeout = 20_000)
       disabled: element instanceof HTMLButtonElement ? element.disabled : false,
       display: style.display,
       visibility: style.visibility,
+      pointerEvents: style.pointerEvents,
       ariaLabel: element.getAttribute('aria-label'),
       text: element.textContent || '',
+      hitOwned,
+      hitTag: hit?.tagName || null,
+      hitNodeId: hit instanceof Element ? hit.closest('[data-life-map-node-id]')?.getAttribute('data-life-map-node-id') || null : null,
     }
   }, selector), (geometry) => Boolean(
     geometry && viewport
     && !geometry.disabled
     && geometry.display !== 'none'
     && geometry.visibility !== 'hidden'
+    && geometry.pointerEvents !== 'none'
     && geometry.width > 0 && geometry.height > 0
     && geometry.x + geometry.width > 0 && geometry.y + geometry.height > 0
     && geometry.x < viewport.width && geometry.y < viewport.height
+    && geometry.hitOwned
   ), timeout, 50)
 }
 
@@ -338,8 +367,10 @@ async function activateCanonicalControl(page, selector, geometry, interaction) {
     await page.keyboard.press('Enter')
     return
   }
-  const x = geometry.x + geometry.width / 2
-  const y = geometry.y + geometry.height / 2
+  const live = await canonicalControlGeometry(page, selector, `canonical hit target for ${selector}`, 10_000)
+  if (!live.hitOwned) throw new Error(`canonical hit target drifted for ${selector}: ${JSON.stringify(live)}`)
+  const x = live.x + live.width / 2
+  const y = live.y + live.height / 2
   if (interaction === 'touch') await page.touchscreen.tap(x, y)
   else await page.mouse.click(x, y)
 }
@@ -360,6 +391,15 @@ async function selectQuietReset(page, options = {}) {
   await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
 
   const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase) : null
+  await poll('selected Quiet Reset identity', async () => {
+    const root = page.locator(ROOT).first()
+    const destination = new URL(page.url())
+    return {
+      mode: await root.getAttribute('data-life-map-mode'),
+      memoryId: destination.searchParams.get('memoryId'),
+      node: destination.searchParams.get('node'),
+    }
+  }, (state) => state.mode === 'selected' && state.memoryId === 'quiet-reset' && state.node === 'quiet-reset', 20_000, 50)
   await waitForState(page, 'data-life-map-mode', 'selected')
   return observedPhase
 }
@@ -426,8 +466,15 @@ function assertVisualSanity() {
   if (!phases.includes('departure') || !phases.includes('travel') || !phases.includes('approach') || !phases.includes('arrival')) {
     throw new Error('Founder journey did not retain every required phase')
   }
-  const blockingEvents = receipt.browserEvents.filter((event) => event.kind === 'pageerror' || event.kind === 'requestfailed' || (event.kind === 'console:error' && !/favicon/i.test(event.text)))
-  if (blockingEvents.length) throw new Error(`browser emitted ${blockingEvents.length} blocking console or network events`)
+  const isExpectedNavigationFontAbort = (event) => event.kind === 'requestfailed'
+    && /GET https:\/\/fonts\.gstatic\.com\/.*\.woff2 net::ERR_ABORTED$/.test(event.text)
+  const blockingEvents = receipt.browserEvents.filter((event) => !isExpectedNavigationFontAbort(event) && (
+    event.kind === 'pageerror'
+    || event.kind === 'requestfailed'
+    || event.kind === 'http-error'
+    || (event.kind === 'console:error' && !/favicon/i.test(event.text))
+  ))
+  if (blockingEvents.length) throw new Error(`browser emitted ${blockingEvents.length} blocking console or network events: ${JSON.stringify(blockingEvents.slice(0, 8))}`)
 }
 
 async function highResolutionOverview() {
