@@ -175,8 +175,8 @@ await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.s
   )
   source = replaceExact(
     source,
-    "page.locator('details.life-map-navigator')",
-    "page.locator('details.life-map-movement-help')",
+    "const controls = page.locator('details.life-map-navigator')",
+    "const controls = page.locator('details.life-map-movement-help')",
     1,
     'current visual Life Map movement help owner',
   )
