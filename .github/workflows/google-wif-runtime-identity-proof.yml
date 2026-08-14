@@ -1,0 +1,97 @@
+name: Google WIF Runtime Identity Proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/google-wif-runtime-identity-proof.yml'
+      - '.github/workflows/spatial-live-deploy.yml'
+      - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/verify-production-action-pins.mjs'
+      - 'scripts/verify-release-credential-boundary.mjs'
+      - 'scripts/verify-release-credential-boundary-static.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-wif-runtime-identity-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  proof:
+    name: Prove short-lived Google WIF identity
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout exact main source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact main source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REPOSITORY" = 'LifeLoggerAI/urai-spatial'
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - id: google-auth
+        name: Exchange GitHub OIDC for short-lived Google identity
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: 'urai-4dc1d'
+          workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'
+          service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'
+          token_format: 'access_token'
+          access_token_lifetime: '300s'
+          access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform.read-only'
+          create_credentials_file: false
+          export_environment_variables: false
+          request_reason: 'URAI keyless WIF runtime identity proof'
+
+      - name: Record keyless runtime identity receipt
+        shell: bash
+        env:
+          GOOGLE_WIF_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          test -n "${GOOGLE_WIF_ACCESS_TOKEN:-}"
+          mkdir -p release-control-evidence
+          {
+            echo '# URAI Google WIF runtime identity proof'
+            echo
+            echo 'Result: PASS'
+            echo 'Token exchange: completed'
+            echo 'Service-account impersonation: completed'
+            echo "Commit: $GITHUB_SHA"
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Ref: $GITHUB_REF"
+            echo 'Workflow: .github/workflows/google-wif-runtime-identity-proof.yml'
+            echo 'Provider: projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'
+            echo 'Service account: urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'
+            echo 'Credential class: short-lived GitHub OIDC via Google Workload Identity Federation'
+            echo 'OAuth scope: https://www.googleapis.com/auth/cloud-platform.read-only'
+            echo 'Requested access-token lifetime: 300s'
+            echo 'Production mutation command: none'
+            echo 'Token value: not persisted'
+          } > release-control-evidence/google-wif-runtime-identity.md
+
+      - name: Upload WIF identity proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-google-wif-proof-${{ github.sha }}
+          path: release-control-evidence/
+          if-no-files-found: error
+          retention-days: 90
