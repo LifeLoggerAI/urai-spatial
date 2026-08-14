@@ -323,10 +323,22 @@ async function canonicalControlGeometry(page, selector, label, timeout = 20_000)
     element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' })
     const rect = element.getBoundingClientRect()
     const style = getComputedStyle(element)
-    const x = rect.x + rect.width / 2
-    const y = rect.y + rect.height / 2
-    const hit = document.elementFromPoint(x, y)
-    const hitOwned = Boolean(hit && (hit === element || element.contains(hit)))
+    const fractions = [0.5, 0.25, 0.75, 0.125, 0.875]
+    let ownedPoint = null
+    let lastHit = null
+    for (const yFraction of fractions) {
+      for (const xFraction of fractions) {
+        const candidateX = rect.x + rect.width * xFraction
+        const candidateY = rect.y + rect.height * yFraction
+        const hit = document.elementFromPoint(candidateX, candidateY)
+        lastHit = hit
+        if (hit && (hit === element || element.contains(hit))) {
+          ownedPoint = { x: candidateX, y: candidateY, xFraction, yFraction }
+          break
+        }
+      }
+      if (ownedPoint) break
+    }
     return {
       x: rect.x,
       y: rect.y,
@@ -338,9 +350,10 @@ async function canonicalControlGeometry(page, selector, label, timeout = 20_000)
       pointerEvents: style.pointerEvents,
       ariaLabel: element.getAttribute('aria-label'),
       text: element.textContent || '',
-      hitOwned,
-      hitTag: hit?.tagName || null,
-      hitNodeId: hit instanceof Element ? hit.closest('[data-life-map-node-id]')?.getAttribute('data-life-map-node-id') || null : null,
+      hitOwned: Boolean(ownedPoint),
+      hitPoint: ownedPoint,
+      hitTag: lastHit?.tagName || null,
+      hitNodeId: lastHit instanceof Element ? lastHit.closest('[data-life-map-node-id]')?.getAttribute('data-life-map-node-id') || null : null,
     }
   }, selector), (geometry) => Boolean(
     geometry && viewport
@@ -352,6 +365,7 @@ async function canonicalControlGeometry(page, selector, label, timeout = 20_000)
     && geometry.x + geometry.width > 0 && geometry.y + geometry.height > 0
     && geometry.x < viewport.width && geometry.y < viewport.height
     && geometry.hitOwned
+    && geometry.hitPoint
   ), timeout, 50)
 }
 
@@ -368,9 +382,8 @@ async function activateCanonicalControl(page, selector, geometry, interaction) {
     return
   }
   const live = await canonicalControlGeometry(page, selector, `canonical hit target for ${selector}`, 10_000)
-  if (!live.hitOwned) throw new Error(`canonical hit target drifted for ${selector}: ${JSON.stringify(live)}`)
-  const x = live.x + live.width / 2
-  const y = live.y + live.height / 2
+  if (!live.hitOwned || !live.hitPoint) throw new Error(`canonical hit target drifted for ${selector}: ${JSON.stringify(live)}`)
+  const { x, y } = live.hitPoint
   if (interaction === 'touch') await page.touchscreen.tap(x, y)
   else await page.mouse.click(x, y)
 }
