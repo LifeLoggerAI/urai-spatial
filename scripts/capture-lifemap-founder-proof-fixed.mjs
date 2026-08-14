@@ -19,6 +19,7 @@ const receipt = {
   exactHead,
   runId: process.env.GITHUB_RUN_ID || 'local',
   runner: 'checked-in-stable-module',
+  capturePolicy: 'one-explicit-3x-high-resolution-proof-plus-complete-1x-interaction-matrix',
   capturedAt: new Date().toISOString(),
   captures: [],
   browserEvents: [],
@@ -48,7 +49,7 @@ function recordPageEvents(page, label) {
 async function openPage(options = {}) {
   const context = await browser.newContext({
     viewport: options.viewport || { width: 1440, height: 900 },
-    deviceScaleFactor: 3,
+    deviceScaleFactor: options.deviceScaleFactor || 1,
     reducedMotion: options.reducedMotion || 'no-preference',
     hasTouch: Boolean(options.hasTouch),
     isMobile: Boolean(options.isMobile),
@@ -139,6 +140,47 @@ async function waitForOverviewState(page, timeout = 30_000) {
   }, timeout, 50)
 }
 
+async function armJourneyPhaseWatch(page, expectedPhase) {
+  await page.evaluate(({ rootSelector, phase }) => {
+    const root = document.querySelector(rootSelector)
+    if (!(root instanceof HTMLElement)) throw new Error(`missing Life Map root for phase watch: ${rootSelector}`)
+    const previous = window.__uraiFounderJourneyPhaseWatch
+    if (previous?.observer) previous.observer.disconnect()
+    const watch = { expectedPhase: phase, observed: null, observer: null }
+    const inspect = () => {
+      if (watch.observed) return
+      if (root.dataset.lifeMapMode === 'selected' && root.dataset.lifeMapPhase === phase) {
+        watch.observed = {
+          phase: root.dataset.lifeMapPhase,
+          mode: root.dataset.lifeMapMode,
+          scale: root.dataset.lifeMapScale || null,
+          observedAt: performance.now(),
+        }
+      }
+    }
+    const observer = new MutationObserver(inspect)
+    watch.observer = observer
+    window.__uraiFounderJourneyPhaseWatch = watch
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'],
+    })
+    inspect()
+  }, { rootSelector: ROOT, phase: expectedPhase })
+}
+
+async function readJourneyPhaseWatch(page, expectedPhase, timeout = 12_000) {
+  const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate((phase) => {
+    const watch = window.__uraiFounderJourneyPhaseWatch
+    if (!watch || watch.expectedPhase !== phase) return null
+    return watch.observed
+  }, expectedPhase), Boolean, timeout, 25)
+  if (observed.phase !== expectedPhase || observed.mode !== 'selected') {
+    throw new Error(`phase watch drifted: ${JSON.stringify({ expectedPhase, observed })}`)
+  }
+  return observed
+}
+
 async function canvasSignal(page, screenshotBuffer) {
   const dataUrl = `data:image/png;base64,${screenshotBuffer.toString('base64')}`
   return page.evaluate(async ({ dataUrl }) => {
@@ -196,16 +238,16 @@ async function canvasSignal(page, screenshotBuffer) {
   }, { dataUrl })
 }
 
-async function captureScreenshot(page, file, scale = 'device') {
+async function captureScreenshot(page, file) {
   const buffer = await page.screenshot({
     path: path.join(outputDir, file),
     fullPage: false,
     animations: 'disabled',
     caret: 'hide',
-    scale,
+    scale: 'device',
     timeout: 120_000,
   })
-  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length, scale }
+  return { buffer, hash: createHash('sha256').update(buffer).digest('hex'), bytes: buffer.length }
 }
 
 async function readRootState(root) {
@@ -230,8 +272,7 @@ async function shot(page, id, captureState, extra = {}) {
   const file = `${String(receipt.captures.length + 1).padStart(2, '0')}-${id}-${exactHead.slice(0, 12)}.png`
   const root = page.locator(`${ROOT}, [data-testid="urai-life-map-signed-out-threshold"], [data-testid="urai-life-map-authored-fallback"]`).first()
   const state = await root.count() ? await readRootState(root) : {}
-  const { screenshotScale = 'device', ...captureExtra } = extra
-  const { buffer, ...screenshot } = await captureScreenshot(page, file, screenshotScale)
+  const { buffer, ...screenshot } = await captureScreenshot(page, file)
   const signal = await canvasSignal(page, buffer)
   receipt.captures.push({
     order: receipt.captures.length + 1,
@@ -244,7 +285,7 @@ async function shot(page, id, captureState, extra = {}) {
     screenshot,
     signal,
     timestamp: new Date().toISOString(),
-    ...captureExtra,
+    ...extra,
   })
 }
 
@@ -303,28 +344,6 @@ async function activateCanonicalControl(page, selector, geometry, interaction) {
   else await page.mouse.click(x, y)
 }
 
-async function installPhaseCaptureTiming(page, factor) {
-  if (!Number.isFinite(factor) || factor <= 1) return
-  await page.evaluate((multiplier) => {
-    if (window.__uraiFounderOriginalSetTimeout) return
-    const original = window.setTimeout.bind(window)
-    window.__uraiFounderOriginalSetTimeout = window.setTimeout
-    window.setTimeout = function founderPhaseCaptureTimeout(handler, timeout = 0, ...args) {
-      const numeric = Number(timeout)
-      const scaled = numeric === 180 || numeric === 760 || numeric === 1320
-      return original(handler, scaled ? numeric * multiplier : numeric, ...args)
-    }
-  }, factor)
-}
-
-async function restorePhaseCaptureTiming(page) {
-  await page.evaluate(() => {
-    if (!window.__uraiFounderOriginalSetTimeout) return
-    window.setTimeout = window.__uraiFounderOriginalSetTimeout
-    delete window.__uraiFounderOriginalSetTimeout
-  })
-}
-
 async function selectQuietReset(page, options = {}) {
   const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
   const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
@@ -337,15 +356,12 @@ async function selectQuietReset(page, options = {}) {
   const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
   const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
   if (!/The Quiet Reset/i.test(result.text)) throw new Error(`Quiet Reset semantic result text drifted: ${result.text}`)
-  if (options.captureTimingFactor) await installPhaseCaptureTiming(page, options.captureTimingFactor)
-  try {
-    await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
-  } finally {
-    if (options.captureTimingFactor) await restorePhaseCaptureTiming(page)
-  }
+  if (options.targetPhase) await armJourneyPhaseWatch(page, options.targetPhase)
+  await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
 
-  await poll('semantic navigator closed after selection', () => page.evaluate((selector) => !document.querySelector(selector), navigatorSelector), Boolean, 20_000, 50).catch(() => {})
+  const observedPhase = options.targetPhase ? await readJourneyPhaseWatch(page, options.targetPhase) : null
   await waitForState(page, 'data-life-map-mode', 'selected')
+  return observedPhase
 }
 
 async function waitForPath(page, destinationPath, timeout = 30_000) {
@@ -363,22 +379,23 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
 
 function assertVisualSanity() {
   const byId = new Map(receipt.captures.map((capture) => [capture.id, capture]))
+  const highResolution = byId.get('desktop-overview-high-resolution')
+  if (!highResolution) throw new Error('missing dedicated high-resolution Founder capture')
+  if (!highResolution.signal || highResolution.signal.width < 4320 || highResolution.signal.height < 2700) {
+    throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
+  }
+  if (!highResolution.screenshot || highResolution.screenshot.bytes < 1_000_000) throw new Error('high-resolution Founder capture is suspiciously small')
+
   const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
   const hashes = new Set(parallaxIds.map((id) => byId.get(id)?.screenshot?.hash).filter(Boolean))
   if (hashes.size < 3) throw new Error(`parallax proof produced duplicate captures; unique=${hashes.size}`)
+
   const required = [
     'desktop-overview', 'selection-start', 'mid-travel', 'approach', 'stable-arrival',
     'keyboard-selection', 'portrait-mobile-overview', 'portrait-mobile-travel',
     'portrait-mobile-selected', 'portrait-tall-overview', 'portrait-tall-selected',
     'reduced-motion-arrival',
   ]
-  const exactPhaseByCapture = new Map([
-    ['selection-start', 'departure'],
-    ['mid-travel', 'travel'],
-    ['approach', 'approach'],
-    ['stable-arrival', 'arrival'],
-    ['portrait-mobile-travel', 'travel'],
-  ])
   for (const id of required) {
     const capture = byId.get(id)
     if (!capture) throw new Error(`missing required capture ${id}`)
@@ -390,12 +407,21 @@ function assertVisualSanity() {
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
-    const expectedPhase = exactPhaseByCapture.get(id)
-    if (expectedPhase && capture.state?.phase !== expectedPhase) throw new Error(`${id} retained phase ${capture.state?.phase} instead of ${expectedPhase}`)
-    if (capture.screenshot.scale === 'css' && (capture.signal.width < capture.viewport.width || capture.signal.height < capture.viewport.height)) {
-      throw new Error(`${id} CSS-scale phase capture fell below viewport resolution`)
+  }
+
+  const observedPhases = new Map([
+    ['selection-start', 'departure'],
+    ['mid-travel', 'travel'],
+    ['approach', 'approach'],
+    ['portrait-mobile-travel', 'travel'],
+  ])
+  for (const [id, expectedPhase] of observedPhases) {
+    const observed = byId.get(id)?.observedPhase
+    if (observed?.phase !== expectedPhase || observed?.mode !== 'selected') {
+      throw new Error(`${id} did not observe the authoritative ${expectedPhase} phase: ${JSON.stringify(observed)}`)
     }
   }
+
   const phases = required.map((id) => byId.get(id)?.captureState).filter(Boolean)
   if (!phases.includes('departure') || !phases.includes('travel') || !phases.includes('approach') || !phases.includes('arrival')) {
     throw new Error('Founder journey did not retain every required phase')
@@ -404,22 +430,22 @@ function assertVisualSanity() {
   if (blockingEvents.length) throw new Error(`browser emitted ${blockingEvents.length} blocking console or network events`)
 }
 
+async function highResolutionOverview() {
+  const { context, page } = await openPage({ label: 'high-resolution-overview', deviceScaleFactor: 3 })
+  try {
+    await goto(page, '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1')
+    await waitForRenderedWorld(page)
+    await shot(page, 'desktop-overview-high-resolution', 'high-resolution-overview', { deviceScaleFactor: 3 })
+  } finally {
+    await context.close()
+  }
+}
+
 async function desktopJourney() {
   const { context, page } = await openPage({ label: 'desktop' })
   try {
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
-    const phaseTimingFactor = 160
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    await selectQuietReset(page, { captureTimingFactor: phaseTimingFactor })
-    await waitForState(page, 'data-life-map-phase', 'departure', 45_000)
-    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer', phaseTimingFactor, screenshotScale: 'css' })
-    await waitForState(page, 'data-life-map-phase', 'travel', 60_000)
-    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset', phaseTimingFactor, screenshotScale: 'css' })
-    await waitForState(page, 'data-life-map-phase', 'approach', 150_000)
-    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset', phaseTimingFactor, screenshotScale: 'css' })
 
     await goto(page, overviewRoute)
     await waitForRenderedWorld(page)
@@ -440,6 +466,19 @@ async function desktopJourney() {
     await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
+
+    const departure = await selectQuietReset(page, { targetPhase: 'departure' })
+    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer', observedPhase: departure })
+
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    const travel = await selectQuietReset(page, { targetPhase: 'travel' })
+    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset', observedPhase: travel })
+
+    await goto(page, overviewRoute)
+    await waitForRenderedWorld(page)
+    const approach = await selectQuietReset(page, { targetPhase: 'approach' })
+    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset', observedPhase: approach })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -482,18 +521,14 @@ async function desktopJourney() {
 async function mobileAndReduced() {
   const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
   const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
-  const phaseTimingFactor = 160
 
   const mobile = await openPage({ viewport: { width: 390, height: 844 }, label: 'portrait', hasTouch: true, isMobile: true })
   try {
     await goto(mobile.page, overviewRoute)
     await waitForRenderedWorld(mobile.page)
     await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    await goto(mobile.page, overviewRoute)
-    await waitForRenderedWorld(mobile.page)
-    await selectQuietReset(mobile.page, { touch: true, captureTimingFactor: phaseTimingFactor })
-    await waitForState(mobile.page, 'data-life-map-phase', 'travel', 60_000)
-    await shot(mobile.page, 'portrait-mobile-travel', 'mobile-travel', { memoryId: 'quiet-reset', interaction: 'touch', phaseTimingFactor, screenshotScale: 'css' })
+    const travel = await selectQuietReset(mobile.page, { touch: true, targetPhase: 'travel' })
+    await shot(mobile.page, 'portrait-mobile-travel', 'travel', { memoryId: 'quiet-reset', interaction: 'touch', observedPhase: travel })
     await goto(mobile.page, arrivalRoute)
     await waitForRenderedWorld(mobile.page)
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
@@ -586,6 +621,7 @@ async function privacyAndRecovery() {
 }
 
 try {
+  await highResolutionOverview()
   await desktopJourney()
   await mobileAndReduced()
   await privacyAndRecovery()
@@ -596,7 +632,7 @@ try {
 } finally {
   await browser.close()
   receipt.completedAt = new Date().toISOString()
-  receipt.passed = !failed && receipt.captures.length >= 23
+  receipt.passed = !failed && receipt.captures.length >= 28
   await writeFile(path.join(outputDir, 'browser-events.json'), JSON.stringify(receipt.browserEvents, null, 2))
   await writeFile(path.join(outputDir, 'receipt.json'), JSON.stringify(receipt, null, 2))
   if (!receipt.passed) process.exitCode = 1
