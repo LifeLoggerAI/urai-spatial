@@ -41,9 +41,11 @@ test("active narrator client and controller fail closed until session consent", 
   assert.doesNotMatch(narratorClient, /cache\.put/);
 });
 
-test("Firebase bearer verification checks revoked tokens", () => {
+test("Firebase bearer verification checks revoked tokens through external-account ADC", () => {
   assert.match(firebaseUser, /verifyIdToken\(token, true\)/);
-  assert.match(firebaseUser, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(firebaseUser, /assertExternalAccountAdc\(\)/);
+  assert.match(firebaseUser, /applicationDefault\(\)/);
+  assert.doesNotMatch(firebaseUser, /SERVICE_ACCOUNT_JSON/);
 });
 
 test("Stripe checkout permits only the configured application origin", () => {
