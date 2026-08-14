@@ -160,6 +160,18 @@
   animation: urai-world-orb-travel 900ms ease-in-out infinite alternate;
 }
 
+/* PRODUCT routes keep the companion available as a constellation return path,
+ * but move it out of the fixed viewport layer so it cannot cover consent,
+ * export, deletion, or identity controls while the user scrolls. */
+.urai-world-runtime[data-world-destination='passport'] .urai-world-companion,
+.urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion {
+  position: absolute;
+  left: auto;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: none;
+}
+
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-card,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-status,
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-pins,
@@ -231,6 +243,12 @@
     box-sizing: border-box !important;
     overflow-x: auto !important;
     overscroll-behavior-inline: contain;
+  }
+
+  .urai-world-runtime[data-world-destination='passport'] .urai-world-companion,
+  .urai-world-runtime[data-world-destination='privacy-controls'] .urai-world-companion {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
   }
 }
 

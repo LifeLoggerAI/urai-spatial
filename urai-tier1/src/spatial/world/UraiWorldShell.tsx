@@ -37,6 +37,7 @@ export function UraiWorldShell({ children }: { children: ReactNode }) {
     <div
       className="urai-world-runtime"
       data-testid="urai-persistent-world-shell"
+      data-urai-engine="world"
       data-world-destination={world.destination}
       data-world-layer={world.layer}
       data-world-transition={phase}
