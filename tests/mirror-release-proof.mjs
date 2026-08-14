@@ -39,6 +39,12 @@ function pushCase(name, device, status, details = {}) {
   console.log(`MIRROR_PROOF ${status.toUpperCase()} ${device} ${name}${details.error ? ` error=${details.error}` : ''}`)
 }
 
+function isUnattributedChromiumResource404(entry) {
+  return entry?.source === 'console'
+    && entry?.text === 'Failed to load resource: the server responded with a status of 404 ()'
+    && !entry?.url
+}
+
 async function createPage(browser, deviceName, options = {}) {
   const device = devices[deviceName]
   const context = await browser.newContext({
@@ -60,17 +66,38 @@ async function createPage(browser, deviceName, options = {}) {
 
   const consoleErrors = []
   const failedRequests = []
+  const httpErrors = []
   page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text())
+    if (message.type() !== 'error') return
+    const location = message.location()
+    consoleErrors.push({
+      source: 'console',
+      text: message.text(),
+      url: location?.url || null,
+      lineNumber: Number.isInteger(location?.lineNumber) ? location.lineNumber : null,
+      columnNumber: Number.isInteger(location?.columnNumber) ? location.columnNumber : null,
+    })
   })
-  page.on('pageerror', (error) => consoleErrors.push(String(error?.message || error)))
+  page.on('pageerror', (error) => {
+    consoleErrors.push({ source: 'pageerror', text: String(error?.message || error), url: null, lineNumber: null, columnNumber: null })
+  })
+  page.on('response', (response) => {
+    if (response.status() < 400) return
+    const request = response.request()
+    httpErrors.push({
+      status: response.status(),
+      url: response.url(),
+      method: request.method(),
+      resourceType: request.resourceType(),
+    })
+  })
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText || 'request failed'
     if (failure.includes('ERR_ABORTED')) return
-    failedRequests.push(`${request.method()} ${request.url()} ${failure}`)
+    failedRequests.push({ method: request.method(), url: request.url(), resourceType: request.resourceType(), failure })
   })
 
-  return { context, page, consoleErrors, failedRequests }
+  return { context, page, consoleErrors, failedRequests, httpErrors }
 }
 
 async function screenshot(page, name) {
@@ -89,14 +116,21 @@ async function waitForWorld(page, route) {
   return world
 }
 
-async function assertCleanEvidence(consoleErrors, failedRequests) {
-  if (consoleErrors.length) throw new Error(`console errors: ${consoleErrors.join(' | ')}`)
-  if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.join(' | ')}`)
+function assertCleanEvidence(consoleErrors, failedRequests, httpErrors) {
+  if (httpErrors.length) throw new Error(`HTTP resource errors: ${httpErrors.map((entry) => `${entry.status} ${entry.method} ${entry.url} ${entry.resourceType}`).join(' | ')}`)
+  if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.map((entry) => `${entry.method} ${entry.url} ${entry.failure}`).join(' | ')}`)
+  const blockingConsoleErrors = consoleErrors.filter((entry) => !isUnattributedChromiumResource404(entry))
+  if (blockingConsoleErrors.length) throw new Error(`console errors: ${blockingConsoleErrors.map((entry) => `${entry.text}${entry.url ? ` @ ${entry.url}` : ''}`).join(' | ')}`)
+  return consoleErrors.filter(isUnattributedChromiumResource404)
+}
+
+function diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors = []) {
+  return { consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors }
 }
 
 async function proveOverview(browser, deviceName) {
   const name = 'overview-and-inspection'
-  const { context, page, consoleErrors, failedRequests } = await createPage(browser, deviceName)
+  const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, deviceName)
   try {
     const world = await waitForWorld(page, `/mirror?${demoQuery}`)
     if (await world.getAttribute('data-demo') !== 'true') throw new Error('demo disclosure missing')
@@ -150,18 +184,15 @@ async function proveOverview(browser, deviceName) {
     }
 
     const orb = page.getByRole('button', { name: /Ask the Orb to explain Body rhythm/ })
-    if (deviceName === 'desktop') {
-      await orb.click()
-    } else {
-      await orb.waitFor({ state: 'hidden' })
-    }
+    if (deviceName === 'desktop') await orb.click()
+    else await orb.waitFor({ state: 'hidden' })
 
     const shot = await screenshot(page, `${deviceName}-mirror-selected-body-rhythm`)
-    await assertCleanEvidence(consoleErrors, failedRequests)
-    pushCase(name, deviceName, 'passed', { screenshot: shot, startCameraZ: startZ, finalCameraZ: movedZ, mobileOrbHiddenDuringInspection: deviceName === 'mobile', finalUrl: page.url(), consoleErrors, failedRequests })
+    const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
+    pushCase(name, deviceName, 'passed', { screenshot: shot, startCameraZ: startZ, finalCameraZ: movedZ, mobileOrbHiddenDuringInspection: deviceName === 'mobile', finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
     const shot = await screenshot(page, `${deviceName}-mirror-overview-failure`).catch(() => '')
-    pushCase(name, deviceName, 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
+    pushCase(name, deviceName, 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
   } finally {
     await context.close()
   }
@@ -169,7 +200,7 @@ async function proveOverview(browser, deviceName) {
 
 async function proveState(browser, config) {
   const { name, route, device = 'desktop', reducedMotion = false, disableWebGL = false, afterLoad } = config
-  const { context, page, consoleErrors, failedRequests } = await createPage(browser, device, { reducedMotion, disableWebGL })
+  const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, device, { reducedMotion, disableWebGL })
   try {
     const response = await page.goto(absolute(route), { waitUntil: 'domcontentloaded', timeout: 60000 })
     if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for ${route}`)
@@ -179,11 +210,11 @@ async function proveState(browser, config) {
     await marker.first().waitFor({ state: 'visible', timeout: 30000 })
     if (config.text) await page.getByText(config.text, { exact: false }).first().waitFor({ state: 'visible', timeout: 30000 })
     const shot = await screenshot(page, `${device}-${name}`)
-    await assertCleanEvidence(consoleErrors, failedRequests)
-    pushCase(name, device, 'passed', { screenshot: shot, finalUrl: page.url(), consoleErrors, failedRequests })
+    const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
+    pushCase(name, device, 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
     const shot = await screenshot(page, `${device}-${name}-failure`).catch(() => '')
-    pushCase(name, device, 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
+    pushCase(name, device, 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
   } finally {
     await context.close()
   }
@@ -191,17 +222,17 @@ async function proveState(browser, config) {
 
 async function proveTransition(browser, destination, buttonName) {
   const name = `transition-to-${destination}`
-  const { context, page, consoleErrors, failedRequests } = await createPage(browser, 'desktop')
+  const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, 'desktop')
   try {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
     const shot = await screenshot(page, `desktop-${name}`)
-    await assertCleanEvidence(consoleErrors, failedRequests)
-    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), consoleErrors, failedRequests })
+    const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
+    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
     const shot = await screenshot(page, `desktop-${name}-failure`).catch(() => '')
-    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
+    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
   } finally {
     await context.close()
   }
@@ -209,7 +240,7 @@ async function proveTransition(browser, destination, buttonName) {
 
 async function proveSemanticFallback(browser) {
   const name = 'no-webgl-semantic-fallback'
-  const { context, page, consoleErrors, failedRequests } = await createPage(browser, 'desktop', { disableWebGL: true })
+  const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, 'desktop', { disableWebGL: true })
   try {
     const response = await page.goto(absolute(`/mirror?${demoQuery}`), { waitUntil: 'domcontentloaded', timeout: 60000 })
     if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for semantic fallback`)
@@ -221,11 +252,11 @@ async function proveSemanticFallback(browser) {
     await inspector.getByText('Uncertainty', { exact: true }).waitFor({ state: 'visible' })
     await inspector.getByText(/owner-authorized|demonstration data/).waitFor({ state: 'visible' })
     const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback')
-    await assertCleanEvidence(consoleErrors, failedRequests)
-    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), consoleErrors, failedRequests })
+    const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
+    pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
     const shot = await screenshot(page, 'desktop-no-webgl-semantic-fallback-failure').catch(() => '')
-    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), consoleErrors, failedRequests })
+    pushCase(name, 'desktop', 'failed', { screenshot: shot, error: String(error?.message || error), finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors) })
   } finally {
     await context.close()
   }
@@ -264,13 +295,14 @@ try {
 }
 
 const receipt = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   exactSha,
   baseUrl,
   createdAt: new Date().toISOString(),
   status: errors.length ? 'failed' : 'passed',
   caseCount: cases.length,
   screenshotCount: cases.filter((item) => item.screenshot).length,
+  unattributedConsoleErrorCount: cases.reduce((sum, item) => sum + (item.unattributedConsoleErrors?.length || 0), 0),
   cases,
   errors,
 }
@@ -285,6 +317,7 @@ await fs.writeFile(path.join(outDir, 'mirror-release-summary.md'), [
   `Status: ${receipt.status.toUpperCase()}`,
   `Cases: ${receipt.caseCount}`,
   `Screenshots: ${receipt.screenshotCount}`,
+  `Unattributed Chromium resource 404 diagnostics: ${receipt.unattributedConsoleErrorCount}`,
   '',
   ...cases.map((item) => `- ${item.status === 'passed' ? 'PASS' : 'FAIL'} ${item.device} ${item.name}${item.error ? `: ${item.error}` : ''}`),
   '',
