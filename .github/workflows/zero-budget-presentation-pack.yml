@@ -5,6 +5,7 @@ on:
     paths:
       - 'operations/presentation/**'
       - 'scripts/generate-zero-budget-presentation-pack.mjs'
+      - 'scripts/generate-zero-budget-sensory-pack.mjs'
       - 'scripts/check-zero-budget-presentation-pack.mjs'
       - '.github/workflows/zero-budget-presentation-pack.yml'
   workflow_dispatch:
@@ -22,12 +23,19 @@ jobs:
           node-version: '22'
       - name: Verify pack contract
         run: node scripts/check-zero-budget-presentation-pack.mjs
-      - name: Generate deterministic surfaces
+      - name: Generate deterministic visual surfaces
         run: node scripts/generate-zero-budget-presentation-pack.mjs
-      - name: Verify generated inventory
+      - name: Generate deterministic sensory proofs
+        run: node scripts/generate-zero-budget-sensory-pack.mjs
+      - name: Verify generated visual inventory
         shell: bash
         run: |
           test -f operations/presentation/generated-zero-budget-pack/manifest.json
-          node -e "const m=require('./operations/presentation/generated-zero-budget-pack/manifest.json'); if(m.providerCalls!==0||m.spendUsd!=='0.00'||m.files.length<290) process.exit(1); console.log('PASS generated templates:',m.files.length)"
-      - name: Assert no repository mutation
-        run: git diff --exit-code -- . ':!operations/presentation/generated-zero-budget-pack/**'
+          node -e "const m=require('./operations/presentation/generated-zero-budget-pack/manifest.json'); if(m.providerCalls!==0||m.spendUsd!=='0.00'||m.files.length<290) process.exit(1); console.log('PASS generated visual templates:',m.files.length)"
+      - name: Verify generated sensory inventory
+        shell: bash
+        run: |
+          test -f operations/presentation/generated-zero-budget-sensory-pack/manifest.json
+          node -e "const m=require('./operations/presentation/generated-zero-budget-sensory-pack/manifest.json'); if(m.providerCalls!==0||m.spendUsd!=='0.00'||m.files.length<15) process.exit(1); console.log('PASS generated sensory cues:',m.files.length)"
+      - name: Assert no repository mutation outside generated proof directories
+        run: git diff --exit-code -- . ':!operations/presentation/generated-zero-budget-pack/**' ':!operations/presentation/generated-zero-budget-sensory-pack/**'
