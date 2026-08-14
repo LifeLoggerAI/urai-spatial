@@ -131,8 +131,8 @@ await transformFile('urai-tier1/tests/accessibility-performance-lifemap-independ
   source = replaceExact(
     source,
     "    await expect(page.locator('aside[aria-label=\"Selected life object details\"] h2')).toHaveText('The Quiet Reset')",
-    `    const selectedUrl = new URL(page.url())
-    expect(selectedUrl.searchParams.get('memoryId')).toBe(selectedUrl.searchParams.get('node'))
+    `    const selectedActionUrl = new URL(page.url())
+    expect(selectedActionUrl.searchParams.get('memoryId')).toBe(selectedActionUrl.searchParams.get('node'))
     await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toBeVisible()`,
     1,
     'current selected Life Map identity and action owner',
