@@ -5,7 +5,6 @@ import path from 'node:path'
 const root = process.cwd()
 const workflowPaths = [
   '.github/workflows/spatial-live-deploy.yml',
-  '.github/workflows/google-wif-runtime-identity-proof.yml',
   '.github/workflows/release-security-path-guard.yml',
 ]
 const failures = []
@@ -37,7 +36,7 @@ for (const required of allowedActions) {
 }
 
 const report = {
-  schemaVersion: 'urai-production-action-pins-4',
+  schemaVersion: 'urai-production-action-pins-5',
   ok: failures.length === 0,
   workflows: workflowActions,
   allowedActions: [...allowedActions],
