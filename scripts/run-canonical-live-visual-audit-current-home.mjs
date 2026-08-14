@@ -154,17 +154,30 @@ patched = replaceOnce(patched, oldScreenshot, currentScreenshot, 'Life Map viewp
 
 const oldFocusTouchTarget = `    const box = await focus.boundingBox()
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')`
-const currentFocusTouchTarget = `    const box = await focus.evaluate((element) => {
+const currentFocusTouchTarget = `    const focusSelector = '.life-map-thresholds[aria-label="Selected memory actions"] button.focus-threshold'
+    await page.waitForFunction((selector) => {
+      const element = document.querySelector(selector)
+      if (!(element instanceof HTMLButtonElement)) return false
+      const rect = element.getBoundingClientRect()
+      return element.textContent?.includes('Enter Focus') && rect.width >= 48 && rect.height >= 48
+    }, focusSelector, { timeout: 30_000, polling: 50 })
+    const box = await page.evaluate((selector) => {
+      const element = document.querySelector(selector)
+      if (!(element instanceof HTMLButtonElement)) return null
       const rect = element.getBoundingClientRect()
       return { width: rect.width, height: rect.height }
-    })
+    }, focusSelector)
     if (!box || box.width < 48 || box.height < 48) throw new Error('Focus action does not meet the 48px touch-target contract')`
 patched = replaceOnce(patched, oldFocusTouchTarget, currentFocusTouchTarget, 'Focus touch target geometry')
 
 patched = replaceOnce(
   patched,
   `    await focus.click()`,
-  `    await focus.evaluate((element) => element.click())`,
+  `    await page.evaluate((selector) => {
+      const element = document.querySelector(selector)
+      if (!(element instanceof HTMLButtonElement)) throw new Error('Life Map Focus action disappeared before navigation')
+      element.click()
+    }, focusSelector)`,
   'Life Map Focus DOM navigation',
 )
 
@@ -176,8 +189,8 @@ for (const [label, marker] of [
   ['Replay fixture memory identity', `data-memory-id') === 'demo:quiet-reset'`],
   ['Replay manifest identity', `data-manifest-id') === 'replay-recovery-thread'`],
   ['Life Map CDP viewport evidence', `Page.captureScreenshot`],
-  ['Focus DOM geometry', `element.getBoundingClientRect()`],
-  ['Focus direct DOM click', `focus.evaluate((element) => element.click())`],
+  ['Focus DOM geometry', `document.querySelector(selector)`],
+  ['Focus direct DOM click', `element.click()`],
 ]) {
   if (!patched.includes(marker)) throw new Error(`${label} was not materialized in current visual audit`)
 }
