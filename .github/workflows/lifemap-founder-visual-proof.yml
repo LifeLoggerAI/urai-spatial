@@ -3,6 +3,7 @@ name: Life Map Founder Visual Proof
 on:
   push:
     branches:
+      - main
       - agent/replace-failed-home-lifemap-visuals
     paths:
       - '.github/workflows/lifemap-founder-visual-proof.yml'
