@@ -34,11 +34,12 @@ const operator = readNormalized('Release operator', releaseOperatorPath)
 const workflow = readNormalized('Canonical release workflow', workflowPath)
 
 requireMarkers('Static credential-boundary verifier', staticSource, [
-  "schemaVersion: 'urai-release-credential-boundary-static-6'",
-  "mode: 'quarantine-no-go'",
+  "schemaVersion: 'urai-release-credential-boundary-static-7'",
+  "mode: 'quarantine-no-go-with-read-only-wif-proof'",
   'exactHeadVerificationOnly: true',
   'productionMutationAvailable: false',
-  'productionCredentialsAvailable: false',
+  'longLivedProductionCredentialsAvailable: false',
+  'mainOnlyReadOnlyWifProofConfigured: true',
   "releaseClassification: 'NO-GO'",
 ])
 requireMarkers('Release operator', operator, [
@@ -51,6 +52,9 @@ requireMarkers('Release operator', operator, [
 requireMarkers('Canonical release workflow', workflow, [
   'name: URAI Canonical Production Release Verification',
   'Verify canonical source with production release quarantined',
+  'wif-proof:',
+  'Prove short-lived Google WIF identity',
+  'Production mutation command: none',
   'Classification: NO-GO',
 ])
 
@@ -63,16 +67,18 @@ if (mutationRequested) failures.push('Production mutation is forbidden while the
 
 if (/\bsecrets\s*\./.test(workflow)) failures.push('Quarantined release workflow must not reference repository secrets')
 if (/environment\s*:\s*production/.test(workflow)) failures.push('Quarantined release workflow must not enter the production environment')
-if (/id-token\s*:\s*write|contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Quarantined release workflow must remain read-only')
+if (/contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Quarantined release workflow must not have repository write authority')
+if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('Quarantined release workflow must expose OIDC write authority exactly once for the main-only WIF proof job')
 if (/live-release\.mjs\s+--deploy(?:-prebuilt)?|firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|pnpm\s+live:deploy|gcloud\s+deploy/.test(workflow)) failures.push('Quarantined release workflow must not expose a provider mutation command')
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-5',
+  schemaVersion: 'urai-release-credential-boundary-6',
   ok: failures.length === 0 && process.exitCode !== 1,
-  mode: 'quarantine-no-go',
+  mode: 'quarantine-no-go-with-read-only-wif-proof',
   exactHeadVerificationOnly: true,
   productionMutationAvailable: false,
-  productionCredentialsAvailable: false,
+  longLivedProductionCredentialsAvailable: false,
+  mainOnlyReadOnlyWifProofConfigured: true,
   runtimeMutationIntentDetected: mutationRequested,
   providerWifIamProofRequiredBeforeMutation: true,
   independentReviewRequiredBeforeMutation: true,
