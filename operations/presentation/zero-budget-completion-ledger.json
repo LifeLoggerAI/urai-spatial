@@ -1,0 +1,17 @@
+{
+  "schemaVersion":"1.0.0",
+  "program":"URAI zero-budget parallel convergence",
+  "lanes":[
+    {"id":"identity","status":"implemented","items":["29-system registry","glyph sprite","brand tokens","copy pack"]},
+    {"id":"surfaces","status":"implemented","items":["10 deterministic presets","290-template generator","surface matrix","capture receipt schema"]},
+    {"id":"sensory","status":"specified","items":["Orb cues","portal cues","memory cues","Council/Mirror/Shadow/Legacy/Passport cues","haptic equivalents"]},
+    {"id":"accessibility","status":"implemented-in-contract","items":["reduced motion","forced colors","large text","caption safe","mute equivalents","no-WebGL/offline/error/permission states"]},
+    {"id":"ci","status":"implemented","items":["zero-budget contract check","deterministic generation","forbidden provider/deploy markers","generated inventory minimum"]},
+    {"id":"ecosystem-routing","status":"implemented","items":["canonical runtime authority","supporting repo mapping","final-capture origin rule"]},
+    {"id":"exact-sha-product-capture","status":"blocked-external","items":["final desktop","final mobile","final tablet","reduced motion","forced colors","no-WebGL","offline","error","permission-denied"],"blocker":"Requires accepted exact release SHA and deployed/candidate runtime evidence."},
+    {"id":"human-brand-approval","status":"blocked-human","items":["glyph master approval","surface visual master approval","Council human-art approval","store/social derivative QA"],"blocker":"Requires human visual acceptance."},
+    {"id":"physical-xr","status":"blocked-physical","items":["Quest","controller","hand tracking","stereo comfort","thermal/performance"],"blocker":"Requires real hardware."},
+    {"id":"provider-backed-orb-voice","status":"blocked-security-provider","items":["OpenAI live Orb","external natural voice"],"blocker":"Requires approved provider security/WIF/consent/deployment gates and is outside zero-budget pack lane."}
+  ],
+  "doneRule":"Everything repository-local and zero-cost is generated or contractually specified; remaining blockers must be genuinely human, external, provider-security, exact-release, or physical-device gates."
+}
