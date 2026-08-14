@@ -329,8 +329,9 @@ async function desktopJourney() {
     await goto(page, overviewRoute)
     await waitForRenderedWorld(page)
     await shot(page, 'desktop-overview', 'overview')
-    const canvas = page.locator('canvas').first()
-    const box = await canvas.evaluate((element) => {
+    const box = await page.evaluate(() => {
+      const element = document.querySelector('canvas')
+      if (!(element instanceof HTMLCanvasElement)) return null
       const rect = element.getBoundingClientRect()
       return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
     })
