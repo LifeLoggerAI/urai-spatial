@@ -89,10 +89,12 @@ async function goto(page, route, selector = ROOT) {
     await page.locator('[data-testid="urai-r3f-canonical-lifemap"]').first().waitFor({ state: 'visible', timeout: 45_000 })
     const scene = page.locator(selector).first()
     await scene.waitFor({ state: 'visible', timeout: 45_000 })
-    const box = await scene.evaluate((element) => {
+    const box = await page.evaluate((rootSelector) => {
+      const element = document.querySelector(rootSelector)
+      if (!(element instanceof Element)) return null
       const rect = element.getBoundingClientRect()
       return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
-    })
+    }, selector)
     const viewport = page.viewportSize()
     const geometryValid = box && viewport
       && box.width >= 240 && box.height >= 240
