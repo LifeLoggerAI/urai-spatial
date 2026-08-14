@@ -37,10 +37,12 @@ test('Founder runner retains every required real interaction and phase owner', (
   }
   assert.match(runner, /Search and navigate Life Map/)
   assert.match(runner, /Search and filter Life Map/)
-  assert.match(runner, /role="listitem"/)
+  assert.match(runner, /data-life-map-semantic-result/)
+  assert.match(runner, /data-life-map-node-id="quiet-reset"/)
   assert.match(runner, /selectedAction\(page, 'Overview'\)/)
   assert.match(runner, /page\.keyboard\.press\('Enter'\)/)
-  assert.match(runner, /result\.tap\(\)/)
+  assert.match(runner, /page\.mouse\.click\(x, y\)/)
+  assert.match(runner, /page\.touchscreen\.tap\(x, y\)/)
   for (const phase of ['departure', 'travel', 'approach', 'arrival']) assert.match(runner, new RegExp(`'${phase}'`))
 })
 
