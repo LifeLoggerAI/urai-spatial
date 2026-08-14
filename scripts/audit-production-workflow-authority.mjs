@@ -5,7 +5,6 @@ import path from 'node:path'
 const root = process.cwd()
 const workflowsDir = path.join(root, '.github', 'workflows')
 const canonicalWorkflowPath = '.github/workflows/spatial-live-deploy.yml'
-const wifProofWorkflowPath = '.github/workflows/google-wif-runtime-identity-proof.yml'
 const securityWorkflowPath = '.github/workflows/release-security-path-guard.yml'
 const adcGuardPath = 'urai-tier1/src/lib/server/google-adc.ts'
 const failures = []
@@ -49,12 +48,9 @@ if (!existsSync(workflowsDir)) {
     if (workflowExecutesProductionMutation(source)) productionWorkflows.push(`.github/workflows/${name}`)
   }
 }
-if (productionWorkflows.length !== 0) {
-  failures.push(`Production mutation must remain quarantined; found ${productionWorkflows.sort().join(', ')}`)
-}
+if (productionWorkflows.length !== 0) failures.push(`Production mutation must remain quarantined; found ${productionWorkflows.sort().join(', ')}`)
 
 const workflow = read(canonicalWorkflowPath)
-const wifWorkflow = read(wifProofWorkflowPath)
 const securityWorkflow = read(securityWorkflowPath)
 const adcGuard = read(adcGuardPath)
 
@@ -63,17 +59,8 @@ requireAll('Canonical production verification workflow', workflow, [
   'permissions:\n  contents: read',
   'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
   'name: Verify canonical source with production release quarantined',
-  'persist-credentials: false',
-  'node scripts/audit-production-workflow-authority.mjs',
-  'node scripts/verify-release-credential-boundary.mjs',
-  'node scripts/verify-release-credential-boundary-static.mjs',
-  'Classification: NO-GO',
-  'Production release and Hosting recovery are intentionally quarantined.',
-])
-requireAll('Main-only WIF identity proof workflow', wifWorkflow, [
-  'name: Google WIF Runtime Identity Proof',
-  'branches: [main]',
-  "if: github.ref == 'refs/heads/main'",
+  'name: Prove short-lived Google WIF identity',
+  "if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'",
   'id-token: write',
   'persist-credentials: false',
   'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
@@ -83,6 +70,11 @@ requireAll('Main-only WIF identity proof workflow', wifWorkflow, [
   'create_credentials_file: false',
   'export_environment_variables: false',
   'Production mutation command: none',
+  'node scripts/audit-production-workflow-authority.mjs',
+  'node scripts/verify-release-credential-boundary.mjs',
+  'node scripts/verify-release-credential-boundary-static.mjs',
+  'Classification: NO-GO',
+  'Production release and Hosting recovery are intentionally quarantined.',
 ])
 requireAll('Release security workflow', securityWorkflow, [
   'name: Release Security Path Guard',
@@ -94,24 +86,14 @@ requireAll('Release security workflow', securityWorkflow, [
   'node scripts/verify-release-credential-boundary.mjs',
 ])
 requireAll('Canonical Tier-1 external-account ADC guard', adcGuard, [
-  'assertExternalAccountAdc',
-  'forbiddenCredentialVariables',
-  "record.type !== 'external_account'",
-  'credential_source',
-  'private_key',
-  'client_email',
+  'assertExternalAccountAdc', 'forbiddenCredentialVariables', "record.type !== 'external_account'", 'credential_source', 'private_key', 'client_email',
 ])
 
 if (/\bsecrets\s*\./.test(workflow)) failures.push('Canonical production verification workflow must not reference repository secrets')
 if (/environment\s*:\s*production/.test(workflow)) failures.push('Canonical production verification workflow must not enter the production environment')
-if (/id-token\s*:\s*write|contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Canonical production verification workflow must remain repository-read-only with no OIDC authority')
+if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('Canonical production verification workflow must expose OIDC write authority exactly once, in the main-only proof job')
+if (/contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Canonical production verification workflow must not have repository write authority')
 if (workflowExecutesProductionMutation(workflow)) failures.push('Canonical production verification workflow must not expose provider mutation commands')
-
-if (/\bsecrets\s*\./.test(wifWorkflow)) failures.push('WIF identity proof workflow must not reference repository secrets')
-if (/environment\s*:\s*production/.test(wifWorkflow)) failures.push('WIF identity proof workflow must not enter the production environment')
-if ((wifWorkflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('WIF identity proof workflow must expose OIDC write authority exactly once')
-if (/contents\s*:\s*write|actions\s*:\s*write/.test(wifWorkflow)) failures.push('WIF identity proof workflow must not have repository write authority')
-if (workflowExecutesProductionMutation(wifWorkflow)) failures.push('WIF identity proof workflow must not expose provider mutation commands')
 
 if (/\bsecrets\s*\./.test(securityWorkflow)) failures.push('Release security workflow must not reference repository secrets while quarantined')
 if (/environment\s*:\s*production/.test(securityWorkflow)) failures.push('Release security workflow must not enter the production environment while quarantined')
@@ -125,10 +107,9 @@ for (const forbiddenAlias of ['studio:deploy:static', 'deploy:xr:firebase', 'dep
 }
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-10',
+  schemaVersion: 'urai-production-authority-audit-11',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowPath,
-  wifProofWorkflow: wifProofWorkflowPath,
   canonicalAdcGuard: adcGuardPath,
   productionMutationQuarantined: productionWorkflows.length === 0,
   productionWorkflows: productionWorkflows.sort(),
