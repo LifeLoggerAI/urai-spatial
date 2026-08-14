@@ -80,8 +80,9 @@ jobs:
           node scripts/audit-production-workflow-authority.mjs
           node scripts/verify-release-credential-boundary.mjs
           node scripts/verify-release-credential-boundary-static.mjs
-          # Failure contract: Long-lived Google/Firebase credential material is forbidden in the canonical release boundary.
-          # Failure contract: Production mutation remains forbidden while revocation, live-provider and remaining release gates are unproven.
+          # Failure contract: Long-lived Google/Firebase credential material is forbidden in the canonical production release boundary.
+          # Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.
+          # A successful main-only WIF proof satisfies only that identity sub-gate; revocation, live-provider and remaining release gates still block mutation.
 
       - name: Verify canonical Tier1 source
         run: |
@@ -101,7 +102,8 @@ jobs:
             echo 'Classification: NO-GO'
             echo 'Production release and Hosting recovery are intentionally quarantined.'
             echo 'A short-lived read-only WIF identity proof may run on canonical main; it grants no production mutation path.'
-            echo 'Re-enable mutation only after WIF/IAM proof, least privilege, runtime read-back, rollback evidence, historical credential revocation, and remaining release gates are independently verified.'
+            echo 'Re-enable only after short-lived provider identity, WIF/IAM trust, least privilege, runtime read-back, rollback evidence, and historical credential revocation are independently verified.'
+            echo 'Even after the WIF identity sub-gate passes, remaining provider, revocation, governance, live and device gates must still close before mutation.'
             echo "Commit: $EXACT_HEAD_SHA"
           } > release-control-evidence/spatial-production-quarantine.md
 
