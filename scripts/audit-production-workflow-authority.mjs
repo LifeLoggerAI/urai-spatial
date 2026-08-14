@@ -67,6 +67,16 @@ requireAll('Canonical production verification workflow', workflow, [
   'node scripts/verify-release-credential-boundary-static.mjs',
   'Classification: NO-GO',
   'Production release and Hosting recovery are intentionally quarantined.',
+  'wif-proof:',
+  "if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'",
+  'id-token: write',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  "workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'",
+  "service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'",
+  "access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform.read-only'",
+  'create_credentials_file: false',
+  'export_environment_variables: false',
+  'Production mutation command: none',
 ])
 requireAll('Release security workflow', securityWorkflow, [
   'name: Release Security Path Guard',
@@ -86,15 +96,16 @@ requireAll('Canonical Tier-1 external-account ADC guard', adcGuard, [
   'client_email',
 ])
 
-for (const [label, source] of [
-  ['Canonical production verification workflow', workflow],
-  ['Release security workflow', securityWorkflow],
-]) {
-  if (/\bsecrets\s*\./.test(source)) failures.push(`${label} must not reference repository secrets while quarantined`)
-  if (/environment\s*:\s*production/.test(source)) failures.push(`${label} must not enter the production environment while quarantined`)
-  if (/id-token\s*:\s*write|contents\s*:\s*write|actions\s*:\s*write/.test(source)) failures.push(`${label} must remain read-only while quarantined`)
-  if (workflowExecutesProductionMutation(source)) failures.push(`${label} must not expose provider mutation commands`)
-}
+if (/\bsecrets\s*\./.test(workflow)) failures.push('Canonical production verification workflow must not reference repository secrets')
+if (/environment\s*:\s*production/.test(workflow)) failures.push('Canonical production verification workflow must not enter the production environment')
+if (/contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Canonical production verification workflow must not have repository write authority')
+if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('Canonical production verification workflow must expose OIDC write authority exactly once, inside the main-only WIF proof job')
+if (workflowExecutesProductionMutation(workflow)) failures.push('Canonical production verification workflow must not expose provider mutation commands')
+
+if (/\bsecrets\s*\./.test(securityWorkflow)) failures.push('Release security workflow must not reference repository secrets while quarantined')
+if (/environment\s*:\s*production/.test(securityWorkflow)) failures.push('Release security workflow must not enter the production environment while quarantined')
+if (/id-token\s*:\s*write|contents\s*:\s*write|actions\s*:\s*write/.test(securityWorkflow)) failures.push('Release security workflow must remain read-only while quarantined')
+if (workflowExecutesProductionMutation(securityWorkflow)) failures.push('Release security workflow must not expose provider mutation commands')
 
 const packageJson = JSON.parse(read('package.json') || '{}')
 const scripts = packageJson.scripts || {}
@@ -103,13 +114,14 @@ for (const forbiddenAlias of ['studio:deploy:static', 'deploy:xr:firebase', 'dep
 }
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-8',
+  schemaVersion: 'urai-production-authority-audit-9',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowPath,
   canonicalAdcGuard: adcGuardPath,
   productionMutationQuarantined: productionWorkflows.length === 0,
   productionWorkflows: productionWorkflows.sort(),
   longLivedRepositoryCredentialAuthorityAllowed: false,
+  mainOnlyReadOnlyWifProofConfigured: true,
   providerWifIamProofRequiredBeforeMutation: true,
   independentReviewRequiredBeforeMutation: true,
   releaseClassification: 'NO-GO',
