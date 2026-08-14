@@ -70,10 +70,13 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
   assert.doesNotMatch(navigator, /<details|<summary|life-map-journey-rail/)
 })
 
-test('Founder proof waits for the real selected world state and real journey phases', () => {
+test('Founder proof observes the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'travel'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'approach'\)/)
+  assert.match(founder, /armJourneyPhaseWatch\(page, options\.targetPhase\)/)
+  assert.match(founder, /readJourneyPhaseWatch\(page, options\.targetPhase\)/)
+  assert.match(founder, /\['selection-start', 'departure'\]/)
+  assert.match(founder, /\['mid-travel', 'travel'\]/)
+  assert.match(founder, /\['approach', 'approach'\]/)
   assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
-  assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
+  assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected|window\.setTimeout\s*=|captureTimingFactor/)
 })
