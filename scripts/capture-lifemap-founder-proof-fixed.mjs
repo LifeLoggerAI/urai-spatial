@@ -256,11 +256,11 @@ function selectedAction(page, label) {
 }
 
 async function selectQuietReset(page, options = {}) {
-  const trigger = page.getByRole('button', { name: 'Search and navigate Life Map' }).first()
+  const trigger = page.locator('button.life-map-search-trigger[aria-label="Search and navigate Life Map"]').first()
   await trigger.waitFor({ state: 'visible', timeout: 20_000 })
   if (options.touch) await trigger.tap()
   else await trigger.click()
-  const navigator = page.getByRole('region', { name: 'Search and filter Life Map' }).first()
+  const navigator = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
   await navigator.waitFor({ state: 'visible', timeout: 20_000 })
   const result = navigator.locator('[role="listitem"]').filter({ hasText: 'The Quiet Reset' }).first()
   await result.waitFor({ state: 'visible', timeout: 20_000 })
@@ -475,8 +475,9 @@ async function privacyAndRecovery() {
     await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
     await waitForState(recovery.page, 'data-life-map-phase', 'arrival')
     await waitForRenderedWorld(recovery.page)
-    const canvas = recovery.page.locator('canvas').first()
-    const contextLossAvailable = await canvas.evaluate((element) => {
+    const contextLossAvailable = await recovery.page.evaluate(() => {
+      const element = document.querySelector('canvas')
+      if (!(element instanceof HTMLCanvasElement)) return false
       const gl = element.getContext('webgl2') || element.getContext('webgl')
       const extension = gl?.getExtension('WEBGL_lose_context')
       if (!extension) return false
@@ -487,10 +488,11 @@ async function privacyAndRecovery() {
     if (!contextLossAvailable) throw new Error('WEBGL_lose_context unavailable for founder recovery proof')
     await recovery.page.locator('[data-webgl-state="lost"], [data-webgl-state="recovering"]').first().waitFor({ state: 'attached', timeout: 10_000 })
     await shot(recovery.page, 'webgl-context-loss', 'context-lost', { memoryId: 'quiet-reset' })
-    await canvas.evaluate((element) => {
+    await recovery.page.evaluate(() => {
+      const element = document.querySelector('canvas')
       window.__uraiFounderContextLoss?.restoreContext()
       delete window.__uraiFounderContextLoss
-      element.style.visibility = ''
+      if (element instanceof HTMLCanvasElement) element.style.visibility = ''
     })
     await waitForState(recovery.page, 'data-webgl-state', 'ready', 20_000)
     await waitForRenderedWorld(recovery.page)
