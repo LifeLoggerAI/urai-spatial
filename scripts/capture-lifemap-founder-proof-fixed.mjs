@@ -255,24 +255,68 @@ function selectedAction(page, label) {
   return selectedActions(page).locator('button').filter({ has: page.getByText(label, { exact: true }) }).first()
 }
 
-async function selectQuietReset(page, options = {}) {
-  const trigger = page.locator('button.life-map-search-trigger[aria-label="Search and navigate Life Map"]').first()
-  await trigger.waitFor({ state: 'visible', timeout: 20_000 })
-  if (options.touch) await trigger.tap()
-  else await trigger.click()
-  const navigator = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
-  await navigator.waitFor({ state: 'visible', timeout: 20_000 })
-  const result = navigator.locator('[role="listitem"]').filter({ hasText: 'The Quiet Reset' }).first()
-  await result.waitFor({ state: 'visible', timeout: 20_000 })
-  if (options.keyboard) {
-    await result.focus()
+async function canonicalControlGeometry(page, selector, label, timeout = 20_000) {
+  const viewport = page.viewportSize()
+  return poll(label, () => page.evaluate((controlSelector) => {
+    const element = document.querySelector(controlSelector)
+    if (!(element instanceof HTMLElement)) return null
+    const rect = element.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      disabled: element instanceof HTMLButtonElement ? element.disabled : false,
+      display: style.display,
+      visibility: style.visibility,
+      ariaLabel: element.getAttribute('aria-label'),
+      text: element.textContent || '',
+    }
+  }, selector), (geometry) => Boolean(
+    geometry && viewport
+    && !geometry.disabled
+    && geometry.display !== 'none'
+    && geometry.visibility !== 'hidden'
+    && geometry.width > 0 && geometry.height > 0
+    && geometry.x + geometry.width > 0 && geometry.y + geometry.height > 0
+    && geometry.x < viewport.width && geometry.y < viewport.height
+  ), timeout, 50)
+}
+
+async function activateCanonicalControl(page, selector, geometry, interaction) {
+  if (interaction === 'keyboard') {
+    const focused = await page.evaluate((controlSelector) => {
+      const element = document.querySelector(controlSelector)
+      if (!(element instanceof HTMLElement)) return false
+      element.focus()
+      return document.activeElement === element
+    }, selector)
+    if (!focused) throw new Error(`keyboard focus failed for ${selector}`)
     await page.keyboard.press('Enter')
-  } else if (options.touch) {
-    await result.tap()
-  } else {
-    await result.click()
+    return
   }
-  await navigator.waitFor({ state: 'detached', timeout: 20_000 }).catch(() => {})
+  const x = geometry.x + geometry.width / 2
+  const y = geometry.y + geometry.height / 2
+  if (interaction === 'touch') await page.touchscreen.tap(x, y)
+  else await page.mouse.click(x, y)
+}
+
+async function selectQuietReset(page, options = {}) {
+  const triggerSelector = 'button.life-map-search-trigger[aria-label="Search and navigate Life Map"]'
+  const trigger = await canonicalControlGeometry(page, triggerSelector, 'canonical Life Map search trigger')
+  if (trigger.ariaLabel !== 'Search and navigate Life Map') throw new Error(`Life Map search trigger semantic label drifted: ${trigger.ariaLabel}`)
+  await activateCanonicalControl(page, triggerSelector, trigger, options.touch ? 'touch' : options.keyboard ? 'keyboard' : 'pointer')
+
+  const navigatorSelector = 'section.life-map-navigator[aria-label="Search and filter Life Map"]'
+  await poll('canonical Life Map semantic navigator', () => page.evaluate((selector) => Boolean(document.querySelector(selector)), navigatorSelector), Boolean, 20_000, 50)
+
+  const resultSelector = `${navigatorSelector} button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]`
+  const result = await canonicalControlGeometry(page, resultSelector, 'canonical Quiet Reset semantic result')
+  if (!/The Quiet Reset/i.test(result.text)) throw new Error(`Quiet Reset semantic result text drifted: ${result.text}`)
+  await activateCanonicalControl(page, resultSelector, result, options.keyboard ? 'keyboard' : options.touch ? 'touch' : 'pointer')
+
+  await poll('semantic navigator closed after selection', () => page.evaluate((selector) => !document.querySelector(selector), navigatorSelector), Boolean, 20_000, 50).catch(() => {})
   await waitForState(page, 'data-life-map-mode', 'selected')
 }
 
