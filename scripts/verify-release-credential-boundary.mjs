@@ -72,11 +72,12 @@ if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push(
 if (/live-release\.mjs\s+--deploy(?:-prebuilt)?|firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|pnpm\s+live:deploy|gcloud\s+deploy/.test(workflow)) failures.push('Quarantined release workflow must not expose a provider mutation command')
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-6',
+  schemaVersion: 'urai-release-credential-boundary-5',
   ok: failures.length === 0 && process.exitCode !== 1,
-  mode: 'quarantine-no-go-with-read-only-wif-proof',
+  mode: 'quarantine-no-go',
   exactHeadVerificationOnly: true,
   productionMutationAvailable: false,
+  productionCredentialsAvailable: false,
   longLivedProductionCredentialsAvailable: false,
   mainOnlyReadOnlyWifProofConfigured: true,
   runtimeMutationIntentDetected: mutationRequested,
