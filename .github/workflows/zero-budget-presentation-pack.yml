@@ -1,0 +1,33 @@
+name: Zero-budget presentation pack
+
+on:
+  pull_request:
+    paths:
+      - 'operations/presentation/**'
+      - 'scripts/generate-zero-budget-presentation-pack.mjs'
+      - 'scripts/check-zero-budget-presentation-pack.mjs'
+      - '.github/workflows/zero-budget-presentation-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-zero-budget-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify pack contract
+        run: node scripts/check-zero-budget-presentation-pack.mjs
+      - name: Generate deterministic surfaces
+        run: node scripts/generate-zero-budget-presentation-pack.mjs
+      - name: Verify generated inventory
+        shell: bash
+        run: |
+          test -f operations/presentation/generated-zero-budget-pack/manifest.json
+          node -e "const m=require('./operations/presentation/generated-zero-budget-pack/manifest.json'); if(m.providerCalls!==0||m.spendUsd!=='0.00'||m.files.length<290) process.exit(1); console.log('PASS generated templates:',m.files.length)"
+      - name: Assert no repository mutation
+        run: git diff --exit-code -- . ':!operations/presentation/generated-zero-budget-pack/**'
