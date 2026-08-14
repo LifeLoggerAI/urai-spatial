@@ -123,7 +123,7 @@ test('authority bundle remains deterministic and credential verifier binds quara
   ], 'bundle attester')
   assert.doesNotMatch(bundleBuilder, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
   hasAll(credentialBoundary, [
-    "schemaVersion: 'urai-release-credential-boundary-5'",
+    "schemaVersion: 'urai-release-credential-boundary-6'",
     "mode: 'quarantine-no-go'",
     'exactHeadVerificationOnly: true',
     'productionMutationAvailable: false',
