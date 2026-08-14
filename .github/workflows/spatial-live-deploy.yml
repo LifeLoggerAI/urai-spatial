@@ -80,8 +80,8 @@ jobs:
           node scripts/audit-production-workflow-authority.mjs
           node scripts/verify-release-credential-boundary.mjs
           node scripts/verify-release-credential-boundary-static.mjs
-          # Failure contract: Long-lived Google/Firebase credential material is forbidden in the canonical production release boundary.
-          # Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.
+          # Failure contract: Long-lived Google/Firebase credential material remains in the canonical production release boundary.
+          # Failure contract: Production mutation is forbidden while provider WIF/IAM and runtime identity remain unproven.
           # A successful main-only WIF proof satisfies only that identity sub-gate; revocation, live-provider and remaining release gates still block mutation.
 
       - name: Verify canonical Tier1 source
