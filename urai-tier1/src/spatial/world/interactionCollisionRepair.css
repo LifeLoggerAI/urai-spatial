@@ -29,7 +29,7 @@
   .life-map-navigator {
   left: auto !important;
   right: max(20px, env(safe-area-inset-right)) !important;
-  z-index: 47 !important;
+  z-index: 2147483590 !important;
 }
 
 .urai-world-runtime[data-world-destination='life-map']
