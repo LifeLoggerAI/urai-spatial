@@ -1,6 +1,30 @@
 name: Accessibility Performance Evidence
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/accessibility-performance-evidence.yml'
+      - 'playwright.accessibility.config.ts'
+      - 'scripts/materialize-accessibility-performance-current.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v2.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v3.mjs'
+      - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
+      - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
+      - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+      - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+      - 'urai-tier1/src/spatial/world/worldEvents.ts'
+      - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
+      - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
+      - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/app/status/**'
+      - 'urai-tier1/src/data/launchTruth.ts'
+      - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
+      - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
+      - 'urai-tier1/src/spatial/world/persistentWorldCompanion.css'
   workflow_dispatch:
     inputs:
       verification_sha:
