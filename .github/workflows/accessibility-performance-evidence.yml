@@ -125,9 +125,44 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/accessibility-performance
-          pnpm exec playwright test --config playwright.accessibility.config.ts \
-            2>&1 | tee artifacts/accessibility-performance/playwright.log
+          mkdir -p artifacts/accessibility-performance/spec-logs \
+            artifacts/accessibility-performance/spec-reports \
+            artifacts/accessibility-performance/spec-results
+          : > artifacts/accessibility-performance/playwright.log
+
+          mapfile -t specs < <(find urai-tier1/tests -maxdepth 1 -type f -name 'accessibility-performance-*.spec.ts' -print | sort)
+          test "${#specs[@]}" -gt 0
+          status=0
+
+          for spec in "${specs[@]}"; do
+            slug="$(basename "$spec" .spec.ts)"
+            rm -rf artifacts/accessibility-performance/playwright-report \
+              artifacts/accessibility-performance/test-results
+            echo "=== ACCESSIBILITY SPEC START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log
+
+            set +e
+            pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" \
+              2>&1 | tee -a artifacts/accessibility-performance/playwright.log \
+                "artifacts/accessibility-performance/spec-logs/${slug}.log"
+            spec_status=${PIPESTATUS[0]}
+            set -e
+
+            if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
+              mv artifacts/accessibility-performance/playwright-report \
+                "artifacts/accessibility-performance/spec-reports/${slug}"
+            fi
+            if [[ -d artifacts/accessibility-performance/test-results ]]; then
+              mv artifacts/accessibility-performance/test-results \
+                "artifacts/accessibility-performance/spec-results/${slug}"
+            fi
+
+            echo "=== ACCESSIBILITY SPEC END: $spec status=$spec_status ===" | tee -a artifacts/accessibility-performance/playwright.log
+            if [[ "$spec_status" -ne 0 ]]; then
+              status="$spec_status"
+            fi
+          done
+
+          exit "$status"
 
       - name: Retain exact-head evidence
         if: always()
