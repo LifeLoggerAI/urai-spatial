@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
+const ciWebglArgs = [
+  '--enable-unsafe-swiftshader',
+  '--disable-gpu-sandbox',
+  '--disable-dev-shm-usage',
+]
+
 export default defineConfig({
   testDir: './urai-tier1/tests',
   testMatch: /accessibility-performance-.*\.spec\.ts/,
@@ -17,6 +23,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    launchOptions: { args: ciWebglArgs },
   },
   webServer: {
     command: 'python3 -m http.server 3000 --bind 127.0.0.1 --directory urai-tier1/out',
