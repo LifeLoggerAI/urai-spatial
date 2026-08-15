@@ -126,6 +126,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/accessibility-performance/spec-logs \
+            artifacts/accessibility-performance/test-logs \
             artifacts/accessibility-performance/spec-reports \
             artifacts/accessibility-performance/spec-results
           : > artifacts/accessibility-performance/playwright.log
@@ -136,30 +137,73 @@ jobs:
 
           for spec in "${specs[@]}"; do
             slug="$(basename "$spec" .spec.ts)"
-            rm -rf artifacts/accessibility-performance/playwright-report \
-              artifacts/accessibility-performance/test-results
-            echo "=== ACCESSIBILITY SPEC START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log
+            spec_log="artifacts/accessibility-performance/spec-logs/${slug}.log"
+            : > "$spec_log"
+            echo "=== ACCESSIBILITY SPEC START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
 
-            set +e
-            pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" \
-              2>&1 | tee -a artifacts/accessibility-performance/playwright.log \
-                "artifacts/accessibility-performance/spec-logs/${slug}.log"
-            spec_status=${PIPESTATUS[0]}
-            set -e
+            mapfile -t test_cases < <(
+              node - "$spec" <<'NODE'
+          const { createHash } = require('node:crypto')
+          const { readFileSync } = require('node:fs')
+          const spec = process.argv[2]
+          const source = readFileSync(spec, 'utf8')
+          const callCount = [...source.matchAll(/^\s*test\(/gm)].length
+          const matches = [...source.matchAll(/^\s*test\(\s*(['"`])(.+?)\1\s*,/gm)]
+          if (!callCount || matches.length !== callCount) {
+            console.error(`Unable to enumerate every literal test in ${spec}: calls=${callCount} literalTitles=${matches.length}`)
+            process.exit(2)
+          }
+          const titles = matches.map((match) => match[2])
+          if (new Set(titles).size !== titles.length) {
+            console.error(`Duplicate test titles are not safe for isolated grep execution in ${spec}`)
+            process.exit(3)
+          }
+          for (const title of titles) {
+            if (/[\r\n\t]/.test(title)) {
+              console.error(`Multiline test title is not safe for isolated execution in ${spec}`)
+              process.exit(4)
+            }
+            const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'
+            const hash = createHash('sha256').update(title).digest('hex').slice(0, 12)
+            process.stdout.write(`${hash}\t${Buffer.from(escaped, 'utf8').toString('base64')}\n`)
+          }
+          NODE
+            )
+            test "${#test_cases[@]}" -gt 0
+            spec_status=0
 
-            if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
-              mv artifacts/accessibility-performance/playwright-report \
-                "artifacts/accessibility-performance/spec-reports/${slug}"
-            fi
-            if [[ -d artifacts/accessibility-performance/test-results ]]; then
-              mv artifacts/accessibility-performance/test-results \
-                "artifacts/accessibility-performance/spec-results/${slug}"
-            fi
+            for test_case in "${test_cases[@]}"; do
+              test_hash="${test_case%%$'\t'*}"
+              encoded_regex="${test_case#*$'\t'}"
+              test_regex="$(printf '%s' "$encoded_regex" | base64 --decode)"
+              test_log="artifacts/accessibility-performance/test-logs/${slug}-${test_hash}.log"
+              rm -rf artifacts/accessibility-performance/playwright-report \
+                artifacts/accessibility-performance/test-results
+              echo "=== ACCESSIBILITY TEST START: $spec hash=$test_hash ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
 
-            echo "=== ACCESSIBILITY SPEC END: $spec status=$spec_status ===" | tee -a artifacts/accessibility-performance/playwright.log
-            if [[ "$spec_status" -ne 0 ]]; then
-              status="$spec_status"
-            fi
+              set +e
+              pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" --grep "$test_regex" \
+                2>&1 | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
+              test_status=${PIPESTATUS[0]}
+              set -e
+
+              if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
+                mv artifacts/accessibility-performance/playwright-report \
+                  "artifacts/accessibility-performance/spec-reports/${slug}-${test_hash}"
+              fi
+              if [[ -d artifacts/accessibility-performance/test-results ]]; then
+                mv artifacts/accessibility-performance/test-results \
+                  "artifacts/accessibility-performance/spec-results/${slug}-${test_hash}"
+              fi
+
+              echo "=== ACCESSIBILITY TEST END: $spec hash=$test_hash status=$test_status ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
+              if [[ "$test_status" -ne 0 ]]; then
+                spec_status="$test_status"
+                status="$test_status"
+              fi
+            done
+
+            echo "=== ACCESSIBILITY SPEC END: $spec status=$spec_status ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
           done
 
           exit "$status"
