@@ -3,7 +3,7 @@ name: URAI Custom Domain Route Smoke
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["URAI Spatial Live Deploy"]
+    workflows: ["URAI Canonical Production Release Verification"]
     types: [completed]
   schedule:
     - cron: "17 9 * * *"
