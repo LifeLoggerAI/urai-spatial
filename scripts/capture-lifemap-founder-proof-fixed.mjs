@@ -65,8 +65,8 @@ function recordPageEvents(page, label) {
   })
 }
 
-async function openPage(options = {}) {
-  const context = await browser.newContext({
+async function openPage(options = {}, browserInstance = browser) {
+  const context = await browserInstance.newContext({
     viewport: options.viewport || { width: 1440, height: 900 },
     deviceScaleFactor: options.deviceScaleFactor || 1,
     reducedMotion: options.reducedMotion || 'no-preference',
@@ -563,6 +563,34 @@ async function highResolutionOverview() {
   }
 }
 
+async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
+  const isolatedBrowser = await chromium.launch({ headless: true })
+  const isolated = await openPage({
+    label: `isolated-${id}`,
+    viewport,
+    hasTouch,
+    isMobile,
+  }, isolatedBrowser)
+  try {
+    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+    await goto(isolated.page, overviewRoute)
+    await waitForRenderedWorld(isolated.page)
+    const observedPhase = await selectQuietReset(isolated.page, {
+      targetPhase,
+      keyboard: interaction === 'keyboard',
+      touch: interaction === 'touch',
+    })
+    await shot(isolated.page, id, captureState, {
+      memoryId: 'quiet-reset',
+      interaction,
+      observedPhase,
+    })
+  } finally {
+    await isolated.context.close()
+    await isolatedBrowser.close()
+  }
+}
+
 async function desktopJourney() {
   const { context, page } = await openPage({ label: 'desktop' })
   try {
@@ -589,18 +617,9 @@ async function desktopJourney() {
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
 
-    const departure = await selectQuietReset(page, { targetPhase: 'departure' })
-    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer', observedPhase: departure })
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    const travel = await selectQuietReset(page, { targetPhase: 'travel' })
-    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset', observedPhase: travel })
-
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    const approach = await selectQuietReset(page, { targetPhase: 'approach' })
-    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset', observedPhase: approach })
+    await captureIsolatedJourneyPhase({ id: 'selection-start', targetPhase: 'departure', captureState: 'departure' })
+    await captureIsolatedJourneyPhase({ id: 'mid-travel', targetPhase: 'travel', captureState: 'travel' })
+    await captureIsolatedJourneyPhase({ id: 'approach', targetPhase: 'approach', captureState: 'approach' })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -649,8 +668,15 @@ async function mobileAndReduced() {
     await goto(mobile.page, overviewRoute)
     await waitForRenderedWorld(mobile.page)
     await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    const travel = await selectQuietReset(mobile.page, { touch: true, targetPhase: 'travel' })
-    await shot(mobile.page, 'portrait-mobile-travel', 'travel', { memoryId: 'quiet-reset', interaction: 'touch', observedPhase: travel })
+    await captureIsolatedJourneyPhase({
+      id: 'portrait-mobile-travel',
+      targetPhase: 'travel',
+      captureState: 'travel',
+      interaction: 'touch',
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    })
     await goto(mobile.page, arrivalRoute)
     await waitForRenderedWorld(mobile.page)
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
