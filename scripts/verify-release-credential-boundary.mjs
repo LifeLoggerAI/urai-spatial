@@ -11,46 +11,37 @@ const workflowPath = path.join(root, '.github', 'workflows', 'spatial-live-deplo
 const failures = []
 
 const requireRegularFile = (label, file) => {
-  if (!existsSync(file)) {
-    failures.push(`${label} is missing: ${file}`)
-    return false
-  }
+  if (!existsSync(file)) { failures.push(`${label} is missing: ${file}`); return false }
   const stats = lstatSync(file)
-  if (!stats.isFile() || stats.isSymbolicLink()) {
-    failures.push(`${label} must be a regular file: ${file}`)
-    return false
-  }
+  if (!stats.isFile() || stats.isSymbolicLink()) { failures.push(`${label} must be a regular file: ${file}`); return false }
   return true
 }
-const readNormalized = (label, file) => requireRegularFile(label, file)
-  ? readFileSync(file, 'utf8').replace(/\r\n?/g, '\n')
-  : ''
-const requireMarkers = (label, source, markers) => {
-  for (const marker of markers) if (!source.includes(marker)) failures.push(`${label} missing marker: ${marker}`)
-}
+const readNormalized = (label, file) => requireRegularFile(label, file) ? readFileSync(file, 'utf8').replace(/\r\n?/g, '\n') : ''
+const requireMarkers = (label, source, markers) => { for (const marker of markers) if (!source.includes(marker)) failures.push(`${label} missing marker: ${marker}`) }
 
 const staticSource = readNormalized('Static credential-boundary verifier', staticVerifierPath)
 const operator = readNormalized('Release operator', releaseOperatorPath)
 const workflow = readNormalized('Canonical release workflow', workflowPath)
 
 requireMarkers('Static credential-boundary verifier', staticSource, [
-  "schemaVersion: 'urai-release-credential-boundary-static-6'",
-  "mode: 'quarantine-no-go'",
+  "schemaVersion: 'urai-release-credential-boundary-static-9'",
+  "mode: 'quarantine-no-go-with-main-only-read-only-wif-proof'",
   'exactHeadVerificationOnly: true',
   'productionMutationAvailable: false',
-  'productionCredentialsAvailable: false',
+  'longLivedProductionCredentialsAvailable: false',
+  'mainOnlyReadOnlyWifProofConfigured: true',
   "releaseClassification: 'NO-GO'",
 ])
 requireMarkers('Release operator', operator, [
-  "process.argv.includes('--deploy')",
-  "process.argv.includes('--deploy-prebuilt')",
-  'forbiddenCredentialEnv',
-  'URAI Spatial production release is NO-GO',
-  'No provider credentials were loaded and no production mutation was attempted.',
+  "process.argv.includes('--deploy')", "process.argv.includes('--deploy-prebuilt')", 'forbiddenCredentialEnv',
+  'URAI Spatial production release is NO-GO', 'No provider credentials were loaded and no production mutation was attempted.',
 ])
 requireMarkers('Canonical release workflow', workflow, [
   'name: URAI Canonical Production Release Verification',
   'Verify canonical source with production release quarantined',
+  'Prove short-lived Google WIF identity',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  'Production mutation command: none',
   'Classification: NO-GO',
 ])
 
@@ -63,22 +54,24 @@ if (mutationRequested) failures.push('Production mutation is forbidden while the
 
 if (/\bsecrets\s*\./.test(workflow)) failures.push('Quarantined release workflow must not reference repository secrets')
 if (/environment\s*:\s*production/.test(workflow)) failures.push('Quarantined release workflow must not enter the production environment')
-if (/id-token\s*:\s*write|contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Quarantined release workflow must remain read-only')
+if (/contents\s*:\s*write|actions\s*:\s*write/.test(workflow)) failures.push('Quarantined release workflow must not gain repository write authority')
+if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('Quarantined release workflow must expose OIDC write authority exactly once for the main-only proof job')
 if (/live-release\.mjs\s+--deploy(?:-prebuilt)?|firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|pnpm\s+live:deploy|gcloud\s+deploy/.test(workflow)) failures.push('Quarantined release workflow must not expose a provider mutation command')
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-5',
+  schemaVersion: 'urai-release-credential-boundary-7',
   ok: failures.length === 0 && process.exitCode !== 1,
   mode: 'quarantine-no-go',
   exactHeadVerificationOnly: true,
   productionMutationAvailable: false,
   productionCredentialsAvailable: false,
+  longLivedProductionCredentialsAvailable: false,
+  mainOnlyReadOnlyWifProofConfigured: true,
   runtimeMutationIntentDetected: mutationRequested,
   providerWifIamProofRequiredBeforeMutation: true,
   independentReviewRequiredBeforeMutation: true,
   releaseClassification: 'NO-GO',
   failures,
 }
-
 console.log(JSON.stringify(report, null, 2))
 if (failures.length) process.exitCode = 1
