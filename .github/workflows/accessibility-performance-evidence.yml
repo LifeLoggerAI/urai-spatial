@@ -171,7 +171,7 @@ jobs:
             const parts = line.split(' › ')
             if (parts.length < 3 || !/^\[[^\]]+\]$/.test(parts[0])) continue
             if (!/\.spec\.ts:\d+:\d+$/.test(parts[1])) continue
-            const title = parts.slice(2).join(' › ').trim()
+            const title = parts[parts.length - 1].trim()
             if (title) titles.push(title)
           }
 
@@ -180,14 +180,14 @@ jobs:
             process.exit(2)
           }
           if (new Set(titles).size !== titles.length) {
-            console.error(`Duplicate discovered test titles are not safe for isolated grep execution in ${spec}`)
+            console.error(`Duplicate discovered leaf test titles are not safe for isolated grep execution in ${spec}`)
             process.exit(3)
           }
           for (let left = 0; left < titles.length; left += 1) {
             for (let right = 0; right < titles.length; right += 1) {
               if (left === right) continue
-              if (titles[right].endsWith(` › ${titles[left]}`)) {
-                console.error(`Ambiguous discovered title suffix in ${spec}: ${JSON.stringify({ shorter: titles[left], longer: titles[right] })}`)
+              if (titles[right].endsWith(titles[left])) {
+                console.error(`Ambiguous discovered leaf-title suffix in ${spec}: ${JSON.stringify({ shorter: titles[left], longer: titles[right] })}`)
                 process.exit(4)
               }
             }
