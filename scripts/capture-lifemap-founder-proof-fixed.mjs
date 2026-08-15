@@ -377,6 +377,16 @@ function selectedAction(page, label) {
   return selectedActions(page).locator('button').filter({ has: page.getByText(label, { exact: true }) }).first()
 }
 
+function selectedActionSelector(name) {
+  const actionClass = {
+    'Enter Focus': 'focus-threshold',
+    Replay: 'replay-threshold',
+    Overview: 'overview-return',
+  }[name]
+  if (!actionClass) throw new Error(`unknown selected-memory action: ${name}`)
+  return `nav[aria-label="Selected memory actions"] button.${actionClass}`
+}
+
 async function canonicalControlGeometry(page, selector, label, timeout = 20_000) {
   const viewport = page.viewportSize()
   return poll(label, () => page.evaluate((controlSelector) => {
@@ -486,7 +496,10 @@ async function waitForPath(page, destinationPath, timeout = 30_000) {
 async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedAction(page, name)
   await action.waitFor({ state: 'visible', timeout: 20_000 })
-  await action.click()
+  const selector = selectedActionSelector(name)
+  const geometry = await canonicalControlGeometry(page, selector, `canonical ${name} action`)
+  if (!geometry.text.includes(name)) throw new Error(`${name} action text drifted: ${geometry.text}`)
+  await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
@@ -681,9 +694,12 @@ async function desktopActionsAndKeyboard() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
+    const overviewSelector = selectedActionSelector('Overview')
     const overviewAction = selectedAction(page, 'Overview')
     await overviewAction.waitFor({ state: 'visible', timeout: 20_000 })
-    await overviewAction.click()
+    const overviewGeometry = await canonicalControlGeometry(page, overviewSelector, 'canonical Overview action')
+    if (!overviewGeometry.text.includes('Overview')) throw new Error(`Overview action text drifted: ${overviewGeometry.text}`)
+    await activateCanonicalControl(page, overviewSelector, overviewGeometry, 'pointer')
     await waitForOverviewState(page)
     await shot(page, 'overview-reset', 'overview-reset')
 
