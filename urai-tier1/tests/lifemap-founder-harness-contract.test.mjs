@@ -31,7 +31,7 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 })
 
 test('Founder runner retains every required real interaction and phase owner', () => {
-  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'mobileAndReduced', 'assertVisualSanity']) {
+  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
@@ -55,6 +55,15 @@ test('Founder runner observes transient production phases without mutating produ
   assert.match(runner, /const observedPhase = options\.targetPhase \? await readJourneyPhaseWatch\(page, options\.targetPhase\) : null/)
   assert.doesNotMatch(runner, /window\.setTimeout\s*=/)
   assert.doesNotMatch(runner, /__uraiFounderOriginalSetTimeout|captureTimingFactor|installPhaseCaptureTiming|restorePhaseCaptureTiming/)
+})
+
+test('Founder transient probes do not compete with a retained production WebGL context', () => {
+  const desktopJourney = runner.match(/async function desktopJourney\(\) \{[\s\S]*?\n\}\n\nasync function mobileAndReduced/)?.[0] || ''
+  const mobileAndReduced = runner.match(/async function mobileAndReduced\(\) \{[\s\S]*?\n\}\n\nasync function privacyAndRecovery/)?.[0] || ''
+  assert.doesNotMatch(desktopJourney, /captureIsolatedJourneyPhase\(/)
+  assert.doesNotMatch(mobileAndReduced, /captureIsolatedJourneyPhase\(/)
+  assert.match(runner, /await desktopJourney\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
+  assert.match(runner, /await isolated\?\.context\.close\(\)\s+await isolatedBrowser\.close\(\)/)
 })
 
 test('Founder runner retains one explicit 3x high-resolution proof while the interaction matrix stays runner-feasible', () => {

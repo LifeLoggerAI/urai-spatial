@@ -565,13 +565,14 @@ async function highResolutionOverview() {
 
 async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
   const isolatedBrowser = await chromium.launch({ headless: true })
-  const isolated = await openPage({
-    label: `isolated-${id}`,
-    viewport,
-    hasTouch,
-    isMobile,
-  }, isolatedBrowser)
+  let isolated = null
   try {
+    isolated = await openPage({
+      label: `isolated-${id}`,
+      viewport,
+      hasTouch,
+      isMobile,
+    }, isolatedBrowser)
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
     await goto(isolated.page, overviewRoute)
     await waitForRenderedWorld(isolated.page)
@@ -586,9 +587,24 @@ async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, inte
       observedPhase,
     })
   } finally {
-    await isolated.context.close()
+    await isolated?.context.close()
     await isolatedBrowser.close()
   }
+}
+
+async function isolatedJourneyPhases() {
+  await captureIsolatedJourneyPhase({ id: 'selection-start', targetPhase: 'departure', captureState: 'departure' })
+  await captureIsolatedJourneyPhase({ id: 'mid-travel', targetPhase: 'travel', captureState: 'travel' })
+  await captureIsolatedJourneyPhase({ id: 'approach', targetPhase: 'approach', captureState: 'approach' })
+  await captureIsolatedJourneyPhase({
+    id: 'portrait-mobile-travel',
+    targetPhase: 'travel',
+    captureState: 'travel',
+    interaction: 'touch',
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
 }
 
 async function desktopJourney() {
@@ -616,10 +632,6 @@ async function desktopJourney() {
     await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
-
-    await captureIsolatedJourneyPhase({ id: 'selection-start', targetPhase: 'departure', captureState: 'departure' })
-    await captureIsolatedJourneyPhase({ id: 'mid-travel', targetPhase: 'travel', captureState: 'travel' })
-    await captureIsolatedJourneyPhase({ id: 'approach', targetPhase: 'approach', captureState: 'approach' })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
@@ -668,15 +680,6 @@ async function mobileAndReduced() {
     await goto(mobile.page, overviewRoute)
     await waitForRenderedWorld(mobile.page)
     await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    await captureIsolatedJourneyPhase({
-      id: 'portrait-mobile-travel',
-      targetPhase: 'travel',
-      captureState: 'travel',
-      interaction: 'touch',
-      viewport: { width: 390, height: 844 },
-      hasTouch: true,
-      isMobile: true,
-    })
     await goto(mobile.page, arrivalRoute)
     await waitForRenderedWorld(mobile.page)
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
@@ -771,6 +774,7 @@ async function privacyAndRecovery() {
 try {
   await highResolutionOverview()
   await desktopJourney()
+  await isolatedJourneyPhases()
   await mobileAndReduced()
   await privacyAndRecovery()
   assertVisualSanity()
