@@ -29,7 +29,7 @@
   .life-map-navigator {
   left: auto !important;
   right: max(20px, env(safe-area-inset-right)) !important;
-  z-index: 47 !important;
+  z-index: 2147483590 !important;
 }
 
 .urai-world-runtime[data-world-destination='life-map']
@@ -253,16 +253,6 @@
     right: auto !important;
     width: max-content !important;
     max-width: min(152px, calc(50vw - 18px)) !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .urai-world-runtime[data-world-destination='life-map']:has(.life-map-root[data-life-map-mode='overview'])
-    .life-map-navigator:not([open]) {
-    left: auto !important;
-    right: max(12px, env(safe-area-inset-right)) !important;
-    width: max-content !important;
-    max-width: min(190px, calc(50vw - 18px)) !important;
     min-width: 0 !important;
     overflow: hidden !important;
   }

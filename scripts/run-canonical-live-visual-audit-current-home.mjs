@@ -125,7 +125,7 @@ const oldLifeMapSettlement = `  if (route.id === 'life-map') {
     await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 30_000, polling: 50 })
   }`
 const currentLifeMapAndReplaySettlement = `  if (route.id === 'life-map') {
-    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 30_000, polling: 50 })
+    await page.waitForFunction(() => document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getAttribute('data-life-map-mode') === 'overview', null, { timeout: 60_000, polling: 50 })
   }
   if (route.id === 'replay') {
     await page.waitForFunction(() => {

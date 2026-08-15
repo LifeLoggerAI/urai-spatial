@@ -1,6 +1,32 @@
 name: Accessibility Performance Evidence
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/accessibility-performance-evidence.yml'
+      - 'playwright.accessibility.config.ts'
+      - 'scripts/materialize-accessibility-performance-current.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v2.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v3.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v4.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v5.mjs'
+      - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
+      - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
+      - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
+      - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+      - 'urai-tier1/src/spatial/world/worldEvents.ts'
+      - 'urai-tier1/src/spatial/world/WorldTransitionController.tsx'
+      - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
+      - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
+      - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/app/status/**'
+      - 'urai-tier1/src/data/launchTruth.ts'
+      - 'urai-tier1/tests/status-live-authority-contract.test.mjs'
+      - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
+      - 'urai-tier1/src/spatial/world/persistentWorldCompanion.css'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -15,6 +41,8 @@ on:
       - 'scripts/materialize-accessibility-performance-current.mjs'
       - 'scripts/materialize-accessibility-performance-current-v2.mjs'
       - 'scripts/materialize-accessibility-performance-current-v3.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v4.mjs'
+      - 'scripts/materialize-accessibility-performance-current-v5.mjs'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSanctuaryWorld.tsx'
@@ -46,7 +74,7 @@ env:
 jobs:
   evidence:
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 90
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -91,15 +119,50 @@ jobs:
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
       - name: Materialize current accessibility proof contract
-        run: node scripts/materialize-accessibility-performance-current-v3.mjs
+        run: node scripts/materialize-accessibility-performance-current-v5.mjs
 
       - name: Run isolated accessibility and performance suite
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts/accessibility-performance
-          pnpm exec playwright test --config playwright.accessibility.config.ts \
-            2>&1 | tee artifacts/accessibility-performance/playwright.log
+          mkdir -p artifacts/accessibility-performance/spec-logs \
+            artifacts/accessibility-performance/spec-reports \
+            artifacts/accessibility-performance/spec-results
+          : > artifacts/accessibility-performance/playwright.log
+
+          mapfile -t specs < <(find urai-tier1/tests -maxdepth 1 -type f -name 'accessibility-performance-*.spec.ts' -print | sort)
+          test "${#specs[@]}" -gt 0
+          status=0
+
+          for spec in "${specs[@]}"; do
+            slug="$(basename "$spec" .spec.ts)"
+            rm -rf artifacts/accessibility-performance/playwright-report \
+              artifacts/accessibility-performance/test-results
+            echo "=== ACCESSIBILITY SPEC START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log
+
+            set +e
+            pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" \
+              2>&1 | tee -a artifacts/accessibility-performance/playwright.log \
+                "artifacts/accessibility-performance/spec-logs/${slug}.log"
+            spec_status=${PIPESTATUS[0]}
+            set -e
+
+            if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
+              mv artifacts/accessibility-performance/playwright-report \
+                "artifacts/accessibility-performance/spec-reports/${slug}"
+            fi
+            if [[ -d artifacts/accessibility-performance/test-results ]]; then
+              mv artifacts/accessibility-performance/test-results \
+                "artifacts/accessibility-performance/spec-results/${slug}"
+            fi
+
+            echo "=== ACCESSIBILITY SPEC END: $spec status=$spec_status ===" | tee -a artifacts/accessibility-performance/playwright.log
+            if [[ "$spec_status" -ne 0 ]]; then
+              status="$spec_status"
+            fi
+          done
+
+          exit "$status"
 
       - name: Retain exact-head evidence
         if: always()

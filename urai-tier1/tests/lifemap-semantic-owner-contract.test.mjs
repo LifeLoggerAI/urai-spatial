@@ -49,7 +49,10 @@ test('pointer keyboard and touch semantic paths converge on one single-fire sele
   assert.match(navigator, /event\.detail === 0 \? 'keyboard' : 'pointer'|event\.detail === 0 \? "keyboard" : "pointer"/)
   assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], 'keyboard'\)|selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
   assert.doesNotMatch(navigator, /onTouchEnd=/)
-  assert.match(founder, /await result\.tap\(\)/)
+  assert.match(founder, /await page\.touchscreen\.tap\(x, y\)/)
+  assert.match(founder, /await page\.mouse\.click\(x, y\)/)
+  assert.match(founder, /await page\.keyboard\.press\('Enter'\)/)
+  assert.match(founder, /await activateCanonicalControl\(page, resultSelector, result, options\.keyboard \? 'keyboard' : options\.touch \? 'touch' : 'pointer'\)/)
   assert.match(selection, /const detail = \{ nodeId, source \}/)
 })
 
@@ -67,10 +70,13 @@ test('semantic navigator is opt-in, semantically controlled, and keyboard access
   assert.doesNotMatch(navigator, /<details|<summary|life-map-journey-rail/)
 })
 
-test('Founder proof waits for the real selected world state and real journey phases', () => {
+test('Founder proof observes the real selected world state and real journey phases', () => {
   assert.match(founder, /waitForState\(page, 'data-life-map-mode', 'selected'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'travel'\)/)
-  assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'approach'\)/)
+  assert.match(founder, /armJourneyPhaseWatch\(page, options\.targetPhase\)/)
+  assert.match(founder, /readJourneyPhaseWatch\(page, options\.targetPhase\)/)
+  assert.match(founder, /\['selection-start', 'departure'\]/)
+  assert.match(founder, /\['mid-travel', 'travel'\]/)
+  assert.match(founder, /\['approach', 'approach'\]/)
   assert.match(founder, /waitForState\(page, 'data-life-map-phase', 'arrival'\)/)
-  assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected/)
+  assert.doesNotMatch(founder, /synthetic-selected|test-only-selected|forceSelected|window\.setTimeout\s*=|captureTimingFactor/)
 })
