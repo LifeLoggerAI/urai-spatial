@@ -29,6 +29,7 @@ let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const ROOT = '[data-testid="urai-true-3d-life-map"]'
+const JOURNEY_WATCH_STORAGE_KEY = '__uraiFounderJourneyPhaseWatchRecord'
 
 async function stable(page, frames = 4) {
   await page.waitForTimeout(Math.max(80, frames * 20))
@@ -81,6 +82,46 @@ async function openPage(options = {}) {
       }
     })
   }
+  await context.addInitScript(({ rootSelector, storageKey }) => {
+    let record = null
+    try {
+      record = JSON.parse(sessionStorage.getItem(storageKey) || 'null')
+    } catch {
+      record = null
+    }
+    if (!record?.expectedPhase) return
+    const phase = record.expectedPhase
+    const watch = { expectedPhase: phase, observed: record.observed || null, observer: null }
+    const inspect = () => {
+      if (watch.observed) return
+      const root = document.querySelector(rootSelector)
+      if (!(root instanceof HTMLElement)) return
+      if (root.dataset.lifeMapMode === 'selected' && root.dataset.lifeMapPhase === phase) {
+        const observed = {
+          phase: root.dataset.lifeMapPhase,
+          mode: root.dataset.lifeMapMode,
+          scale: root.dataset.lifeMapScale || null,
+          observedAt: performance.now(),
+        }
+        watch.observed = observed
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify({ expectedPhase: phase, observed }))
+        } catch {
+          // Browser proof metadata remains available on window when storage is unavailable.
+        }
+      }
+    }
+    const observer = new MutationObserver(inspect)
+    watch.observer = observer
+    window.__uraiFounderJourneyPhaseWatch = watch
+    observer.observe(document, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'],
+    })
+    inspect()
+  }, { rootSelector: ROOT, storageKey: JOURNEY_WATCH_STORAGE_KEY })
   const page = await context.newPage()
   recordPageEvents(page, options.label || 'page')
   return { context, page }
@@ -159,9 +200,14 @@ async function waitForOverviewState(page, timeout = 30_000) {
 }
 
 async function armJourneyPhaseWatch(page, expectedPhase) {
-  await page.evaluate(({ rootSelector, phase }) => {
+  await page.evaluate(({ rootSelector, phase, storageKey }) => {
     const initialRoot = document.querySelector(rootSelector)
     if (!(initialRoot instanceof HTMLElement)) throw new Error(`missing Life Map root for phase watch: ${rootSelector}`)
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({ expectedPhase: phase, observed: null }))
+    } catch {
+      // The live window watcher remains authoritative if storage is unavailable.
+    }
     const previous = window.__uraiFounderJourneyPhaseWatch
     if (previous?.observer) previous.observer.disconnect()
     const watch = { expectedPhase: phase, observed: null, observer: null }
@@ -170,33 +216,45 @@ async function armJourneyPhaseWatch(page, expectedPhase) {
       const root = document.querySelector(rootSelector)
       if (!(root instanceof HTMLElement)) return
       if (root.dataset.lifeMapMode === 'selected' && root.dataset.lifeMapPhase === phase) {
-        watch.observed = {
+        const observed = {
           phase: root.dataset.lifeMapPhase,
           mode: root.dataset.lifeMapMode,
           scale: root.dataset.lifeMapScale || null,
           observedAt: performance.now(),
+        }
+        watch.observed = observed
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify({ expectedPhase: phase, observed }))
+        } catch {
+          // Browser proof metadata remains available on window when storage is unavailable.
         }
       }
     }
     const observer = new MutationObserver(inspect)
     watch.observer = observer
     window.__uraiFounderJourneyPhaseWatch = watch
-    observer.observe(document.documentElement, {
+    observer.observe(document, {
       subtree: true,
       childList: true,
       attributes: true,
       attributeFilter: ['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'],
     })
     inspect()
-  }, { rootSelector: ROOT, phase: expectedPhase })
+  }, { rootSelector: ROOT, phase: expectedPhase, storageKey: JOURNEY_WATCH_STORAGE_KEY })
 }
 
 async function readJourneyPhaseWatch(page, expectedPhase, timeout = 12_000) {
-  const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate((phase) => {
+  const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate(({ phase, storageKey }) => {
     const watch = window.__uraiFounderJourneyPhaseWatch
-    if (!watch || watch.expectedPhase !== phase) return null
-    return watch.observed
-  }, expectedPhase), Boolean, timeout, 25)
+    if (watch?.expectedPhase === phase && watch.observed) return watch.observed
+    try {
+      const record = JSON.parse(sessionStorage.getItem(storageKey) || 'null')
+      if (record?.expectedPhase === phase) return record.observed || null
+    } catch {
+      return null
+    }
+    return null
+  }, { phase: expectedPhase, storageKey: JOURNEY_WATCH_STORAGE_KEY }), Boolean, timeout, 25)
   if (observed.phase !== expectedPhase || observed.mode !== 'selected') {
     throw new Error(`phase watch drifted: ${JSON.stringify({ expectedPhase, observed })}`)
   }
