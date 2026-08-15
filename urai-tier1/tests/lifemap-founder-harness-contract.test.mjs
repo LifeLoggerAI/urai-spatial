@@ -31,7 +31,7 @@ test('Founder proof is a checked-in stable module with a mandatory syntax gate',
 })
 
 test('Founder runner retains every required real interaction and phase owner', () => {
-  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
+  for (const owner of ['openPage', 'selectQuietReset', 'clickRouteAction', 'canvasSignal', 'desktopJourney', 'desktopActionsAndKeyboard', 'isolatedJourneyPhases', 'mobileAndReduced', 'assertVisualSanity']) {
     const matches = runner.match(new RegExp(`(?:async\\s+)?function\\s+${owner}\\s*\\(`, 'g')) || []
     assert.equal(matches.length, 1, `${owner} declaration count drifted`)
   }
@@ -58,11 +58,17 @@ test('Founder runner observes transient production phases without mutating produ
 })
 
 test('Founder transient probes do not compete with a retained production WebGL context', () => {
-  const desktopJourney = runner.match(/async function desktopJourney\(\) \{[\s\S]*?\n\}\n\nasync function mobileAndReduced/)?.[0] || ''
+  const desktopJourney = runner.match(/async function desktopJourney\(\) \{[\s\S]*?\n\}\n\nasync function desktopActionsAndKeyboard/)?.[0] || ''
+  const desktopActions = runner.match(/async function desktopActionsAndKeyboard\(\) \{[\s\S]*?\n\}\n\nasync function mobileAndReduced/)?.[0] || ''
   const mobileAndReduced = runner.match(/async function mobileAndReduced\(\) \{[\s\S]*?\n\}\n\nasync function privacyAndRecovery/)?.[0] || ''
   assert.doesNotMatch(desktopJourney, /captureIsolatedJourneyPhase\(/)
   assert.doesNotMatch(mobileAndReduced, /captureIsolatedJourneyPhase\(/)
-  assert.match(runner, /await desktopJourney\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
+  assert.doesNotMatch(desktopJourney, /clickRouteAction\(/)
+  assert.match(desktopJourney, /await selectedActions\(page\)\.waitFor[\s\S]*await shot\(page, 'stable-arrival'/)
+  assert.match(desktopActions, /const actionBrowser = await chromium\.launch\(\{ headless: true \}\)/)
+  assert.match(desktopActions, /await clickRouteAction\(page, 'Enter Focus'/)
+  assert.match(desktopActions, /await actionPage\?\.context\.close\(\)\s+await actionBrowser\.close\(\)/)
+  assert.match(runner, /await desktopJourney\(\)\s+await desktopActionsAndKeyboard\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
   assert.match(runner, /await isolated\?\.context\.close\(\)\s+await isolatedBrowser\.close\(\)/)
 })
 

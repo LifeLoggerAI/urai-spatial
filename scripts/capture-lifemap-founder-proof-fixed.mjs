@@ -636,10 +636,27 @@ async function desktopJourney() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
+  } finally {
+    await context.close()
+  }
+}
+
+async function desktopActionsAndKeyboard() {
+  const actionBrowser = await chromium.launch({ headless: true })
+  let actionPage = null
+  try {
+    actionPage = await openPage({ label: 'desktop-actions' }, actionBrowser)
+    const { page } = actionPage
+    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+
+    await goto(page, arrivalRoute)
+    await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
@@ -667,7 +684,8 @@ async function desktopJourney() {
     await waitForOverviewState(page)
     await shot(page, 'escape-unwind', 'escape-unwind')
   } finally {
-    await context.close()
+    await actionPage?.context.close()
+    await actionBrowser.close()
   }
 }
 
@@ -774,6 +792,7 @@ async function privacyAndRecovery() {
 try {
   await highResolutionOverview()
   await desktopJourney()
+  await desktopActionsAndKeyboard()
   await isolatedJourneyPhases()
   await mobileAndReduced()
   await privacyAndRecovery()
