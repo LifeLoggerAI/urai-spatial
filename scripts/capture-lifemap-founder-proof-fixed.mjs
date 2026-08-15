@@ -611,7 +611,6 @@ async function desktopJourney() {
   const { context, page } = await openPage({ label: 'desktop' })
   try {
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
-    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
 
     await goto(page, overviewRoute)
     await waitForRenderedWorld(page)
@@ -632,7 +631,18 @@ async function desktopJourney() {
     await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
+  } finally {
+    await context.close()
+  }
+}
 
+async function desktopArrivalEvidence() {
+  const arrivalBrowser = await chromium.launch({ headless: true })
+  let arrivalPage = null
+  try {
+    arrivalPage = await openPage({ label: 'desktop-arrival' }, arrivalBrowser)
+    const { page } = arrivalPage
+    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
@@ -641,7 +651,8 @@ async function desktopJourney() {
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
   } finally {
-    await context.close()
+    await arrivalPage?.context.close()
+    await arrivalBrowser.close()
   }
 }
 
@@ -792,6 +803,7 @@ async function privacyAndRecovery() {
 try {
   await highResolutionOverview()
   await desktopJourney()
+  await desktopArrivalEvidence()
   await desktopActionsAndKeyboard()
   await isolatedJourneyPhases()
   await mobileAndReduced()
