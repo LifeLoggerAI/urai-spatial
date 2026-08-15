@@ -160,13 +160,15 @@ async function waitForOverviewState(page, timeout = 30_000) {
 
 async function armJourneyPhaseWatch(page, expectedPhase) {
   await page.evaluate(({ rootSelector, phase }) => {
-    const root = document.querySelector(rootSelector)
-    if (!(root instanceof HTMLElement)) throw new Error(`missing Life Map root for phase watch: ${rootSelector}`)
+    const initialRoot = document.querySelector(rootSelector)
+    if (!(initialRoot instanceof HTMLElement)) throw new Error(`missing Life Map root for phase watch: ${rootSelector}`)
     const previous = window.__uraiFounderJourneyPhaseWatch
     if (previous?.observer) previous.observer.disconnect()
     const watch = { expectedPhase: phase, observed: null, observer: null }
     const inspect = () => {
       if (watch.observed) return
+      const root = document.querySelector(rootSelector)
+      if (!(root instanceof HTMLElement)) return
       if (root.dataset.lifeMapMode === 'selected' && root.dataset.lifeMapPhase === phase) {
         watch.observed = {
           phase: root.dataset.lifeMapPhase,
@@ -179,7 +181,9 @@ async function armJourneyPhaseWatch(page, expectedPhase) {
     const observer = new MutationObserver(inspect)
     watch.observer = observer
     window.__uraiFounderJourneyPhaseWatch = watch
-    observer.observe(root, {
+    observer.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
       attributes: true,
       attributeFilter: ['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'],
     })
