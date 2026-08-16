@@ -54,8 +54,6 @@ export default function LifeMapRouteBoundary() {
   useEffect(() => {
     let cancelled = false
     let frame = 0
-    let attempts = 0
-    const maxAttempts = 120
 
     const restoreSelectedRoute = () => {
       if (cancelled) return
@@ -70,13 +68,14 @@ export default function LifeMapRouteBoundary() {
         && Boolean(document.querySelector('nav[aria-label="Selected memory actions"]'))
       if (selectedIdentityResolved) return
 
-      // Once the real world has accepted the selected identity, let its production
-      // departure -> travel -> approach -> arrival state machine finish naturally.
-      // Re-firing selection while already selected restarts departure every frame and
-      // starves the canonical selected-memory action surface from ever mounting.
+      // Direct-route identity can arrive before the suspended production world has
+      // installed its selection listener. Keep route-scoped replay alive until the
+      // real world accepts selection instead of dropping the request after an
+      // arbitrary animation-frame budget. Once selected mode exists, stop dispatching
+      // and let the production departure -> travel -> approach -> arrival state
+      // machine finish naturally while this bridge only waits for its action surface.
       if (!selectedModeResolved) requestLifeMapSelection(nodeId, 'semantic')
-      attempts += 1
-      if (attempts < maxAttempts) frame = window.requestAnimationFrame(restoreSelectedRoute)
+      frame = window.requestAnimationFrame(restoreSelectedRoute)
     }
 
     frame = window.requestAnimationFrame(restoreSelectedRoute)

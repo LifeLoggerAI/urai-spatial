@@ -129,7 +129,7 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary replays direct identity without starving the authoritative selected action surface', () => {
+test('route boundary replays direct identity until the world accepts it without starving the selected action surface', () => {
   assert.match(routeBoundary, /requestLifeMapSelection/)
   assert.match(routeBoundary, /current\.get\('overview'\) === '1'/)
   assert.match(routeBoundary, /current\.get\('node'\) \|\| current\.get\('memoryId'\)/)
@@ -138,8 +138,8 @@ test('route boundary replays direct identity without starving the authoritative 
   assert.match(routeBoundary, /if \(selectedIdentityResolved\) return/)
   assert.match(routeBoundary, /if \(!selectedModeResolved\) requestLifeMapSelection\(nodeId, 'semantic'\)/)
   assert.doesNotMatch(routeBoundary, /root\.dataset\.lifeMapPhase !== 'overview'/)
-  assert.match(routeBoundary, /attempts < maxAttempts/)
-  assert.match(routeBoundary, /window\.requestAnimationFrame\(restoreSelectedRoute\)/)
+  assert.doesNotMatch(routeBoundary, /maxAttempts|attempts\s*[+<=>]/)
+  assert.match(routeBoundary, /frame = window\.requestAnimationFrame\(restoreSelectedRoute\)/)
 })
 
 test('Founder render proof samples one atomic live-root snapshot', () => {
