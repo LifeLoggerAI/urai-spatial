@@ -66,6 +66,7 @@ export default function LifeMapRouteBoundary() {
 
       const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
       const selectedIdentityResolved = root?.dataset.lifeMapMode === 'selected'
+        && Boolean(document.querySelector('nav[aria-label="Selected memory actions"]'))
       if (selectedIdentityResolved) return
 
       requestLifeMapSelection(nodeId, 'semantic')
