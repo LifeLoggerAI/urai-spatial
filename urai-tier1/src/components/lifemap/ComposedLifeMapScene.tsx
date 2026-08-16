@@ -160,6 +160,66 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null;
 }
 
+function LifeMapRenderProofBridge() {
+  const { gl, scene } = useThree();
+  const lastSignature = useRef("");
+
+  const publish = useCallback(() => {
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    if (signature === lastSignature.current) return;
+    lastSignature.current = signature;
+    const owner = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    if (!owner) return;
+    owner.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
+    owner.dataset.lifeMapVisibleObjects = String(objects);
+    owner.dataset.lifeMapVisibleAnchors = String(anchors);
+    owner.dataset.lifeMapRenderCalls = String(calls);
+    owner.dataset.lifeMapRenderTriangles = String(triangles);
+  }, [gl, scene]);
+
+  useEffect(() => {
+    const owner = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    if (owner) {
+      owner.dataset.lifeMapRenderReady = "false";
+      owner.dataset.lifeMapVisibleObjects = "0";
+      owner.dataset.lifeMapVisibleAnchors = "0";
+      owner.dataset.lifeMapRenderCalls = "0";
+      owner.dataset.lifeMapRenderTriangles = "0";
+    }
+    const interval = window.setInterval(publish, 100);
+    const canvas = gl.domElement;
+    const invalidate = () => {
+      lastSignature.current = "";
+      if (owner) {
+        owner.dataset.lifeMapRenderReady = "false";
+        owner.dataset.lifeMapVisibleObjects = "0";
+        owner.dataset.lifeMapVisibleAnchors = "0";
+        owner.dataset.lifeMapRenderCalls = "0";
+        owner.dataset.lifeMapRenderTriangles = "0";
+      }
+    };
+    canvas.addEventListener("webglcontextlost", invalidate, false);
+    canvas.addEventListener("webglcontextrestored", invalidate, false);
+    publish();
+    return () => {
+      window.clearInterval(interval);
+      canvas.removeEventListener("webglcontextlost", invalidate, false);
+      canvas.removeEventListener("webglcontextrestored", invalidate, false);
+    };
+  }, [gl, publish]);
+
+  useFrame(publish);
+  return null;
+}
+
 function truthLabel(sourceMode: LifeMapSourceMode) {
   if (sourceMode === "explicit-demo") return "Disclosed sample universe · not your memories";
   if (sourceMode === "signed-out") return "Signed out · no personal data displayed";
@@ -322,6 +382,7 @@ export default function ComposedLifeMapScene() {
       }}
     >
       <WebGLRecoveryBridge onStateChange={setWebglState} />
+      <LifeMapRenderProofBridge />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}
