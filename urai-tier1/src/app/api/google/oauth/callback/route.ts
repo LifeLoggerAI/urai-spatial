@@ -3,35 +3,39 @@ import { exchangeGoogleAuthorizationCode } from '@/lib/google-workspace/oauth'
 import { GOOGLE_OAUTH_COOKIE, openOAuthState } from '@/lib/google-workspace/oauth-state'
 import { saveGoogleTokens } from '@/lib/google-workspace/token-store'
 
-export const dynamic = 'force-dynamic'
-
-function settingsUrl(request: NextRequest, status: string) {
-  const url = new URL('/settings', request.url)
-  url.searchParams.set('google', status)
-  return url
+type CallbackBody = {
+  code?: unknown
+  state?: unknown
+  error?: unknown
 }
 
-export async function GET(request: NextRequest) {
-  const code = request.nextUrl.searchParams.get('code')
-  const returnedState = request.nextUrl.searchParams.get('state')
-  const oauthError = request.nextUrl.searchParams.get('error')
+function callbackResponse(status: string, httpStatus = 200) {
+  const response = NextResponse.json(
+    { redirectTo: `/settings?google=${encodeURIComponent(status)}` },
+    { status: httpStatus },
+  )
+  response.cookies.delete(GOOGLE_OAUTH_COOKIE)
+  return response
+}
+
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => null) as CallbackBody | null
+  const code = typeof body?.code === 'string' ? body.code : null
+  const returnedState = typeof body?.state === 'string' ? body.state : null
+  const oauthError = typeof body?.error === 'string' ? body.error : null
   const sealed = request.cookies.get(GOOGLE_OAUTH_COOKIE)?.value
   const payload = openOAuthState(sealed)
 
-  if (oauthError) return NextResponse.redirect(settingsUrl(request, 'denied'))
+  if (oauthError) return callbackResponse('denied')
   if (!code || !returnedState || !payload || payload.state !== returnedState) {
-    return NextResponse.redirect(settingsUrl(request, 'invalid-state'))
+    return callbackResponse('invalid-state', 400)
   }
 
   try {
     const tokens = await exchangeGoogleAuthorizationCode(code, payload.verifier)
     await saveGoogleTokens(payload.uid, tokens)
-    const response = NextResponse.redirect(settingsUrl(request, 'connected'))
-    response.cookies.delete(GOOGLE_OAUTH_COOKIE)
-    return response
+    return callbackResponse('connected')
   } catch {
-    const response = NextResponse.redirect(settingsUrl(request, 'error'))
-    response.cookies.delete(GOOGLE_OAUTH_COOKIE)
-    return response
+    return callbackResponse('error', 500)
   }
 }
