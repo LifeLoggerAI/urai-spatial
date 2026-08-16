@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "a0750b85931378119a09d8886d69a226f216e1cb"
+          test "$(git rev-parse HEAD^)" = "fb3d8db87f734f736394baa4d1305a4cc9833212"
           python3 - <<'PY'
           from pathlib import Path
           path = Path('urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx')
@@ -41,10 +41,10 @@ jobs:
           path.write_text(source.replace(old, new, 1))
           PY
           git diff --check
-          git diff --exit-code -- . ':!.github/workflows/pr1151-one-shot-syntax-repair.yml' >/dev/null && {
+          if git diff --quiet -- . ':!.github/workflows/pr1151-one-shot-syntax-repair.yml'; then
             echo 'expected bounded source repair was not produced' >&2
             exit 1
-          }
+          fi
 
       - name: Commit bounded source repair
         shell: bash
