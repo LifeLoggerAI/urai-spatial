@@ -143,6 +143,7 @@ test('render proof is invalidated and republished after WebGL context restoratio
   assert.match(world, /webglcontextlost/)
   assert.match(world, /webglcontextrestored/)
   assert.match(world, /lifeMapRenderReady = "false"/)
+  assert.match(world, /const writeInvalid = \(\) => \{\s+if \(!invalidated\.current\) return;/)
   assert.match(world, /frames\.current < 4/)
   assert.match(world, /lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 \? "true" : "false"/)
   assert.match(world, /<RenderProofRepublisher \/>/)
