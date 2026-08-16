@@ -62,7 +62,7 @@ URAI intelligence proposes `ActionRequest`; it does not call providers directly.
 
 ## Communications mapping
 
-`urai-communications` remains the communications engine. Its EWI adapter may expose provider-neutral operations such as `send_message`, `start_call`, `transfer_call`, `read_voicemail`, `summarize_call`, and `notify`, but every outbound operation must pass a policy decision. Existing delivery consent, opt-out, quiet-hours, allowlist, callback, and provider gates remain stronger local controls and are not weakened by this contract.
+`urai-communications` remains the communications engine. Its EWI adapter uses the canonical capability strings `communications.read`, `communications.send`, `communications.call`, `communications.transfer`, `communications.voicemail.read`, `communications.call.summarize`, and `communications.notify`. These capabilities are provider-neutral contract vocabulary; provider-specific Twilio, Dialpad, SIP, email/SMS, webhook, callback, or delivery semantics remain behind communications-domain adapters. Every outbound operation must pass a policy decision. Existing delivery consent, opt-out, quiet-hours, allowlist, callback, and provider gates remain stronger local controls and are not weakened by this contract.
 
 ## Device and sensory mapping
 
