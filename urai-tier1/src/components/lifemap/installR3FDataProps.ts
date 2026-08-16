@@ -127,12 +127,16 @@ if (typeof window !== 'undefined') {
         if (!owner) continue
         const state = proofState(owner)
         if (mutation.attributeName === 'data-life-map-visible-objects') {
-          const value = Number(owner.dataset.lifeMapVisibleObjects || 0)
-          if (Number.isFinite(value) && value > state.objects) state.objects = value
+          const current = Number(owner.dataset.lifeMapVisibleObjects || 0)
+          const previous = Number(mutation.oldValue || 0)
+          const value = Math.max(Number.isFinite(current) ? current : 0, Number.isFinite(previous) ? previous : 0)
+          if (value > state.objects) state.objects = value
         }
         if (mutation.attributeName === 'data-life-map-visible-anchors') {
-          const value = Number(owner.dataset.lifeMapVisibleAnchors || 0)
-          if (Number.isFinite(value) && value > state.anchors) state.anchors = value
+          const current = Number(owner.dataset.lifeMapVisibleAnchors || 0)
+          const previous = Number(mutation.oldValue || 0)
+          const value = Math.max(Number.isFinite(current) ? current : 0, Number.isFinite(previous) ? previous : 0)
+          if (value > state.anchors) state.anchors = value
         }
         touchedOwners.add(owner)
       }
@@ -140,6 +144,7 @@ if (typeof window !== 'undefined') {
     })
     observer.observe(document.documentElement, {
       attributes: true,
+      attributeOldValue: true,
       subtree: true,
       attributeFilter: ['data-life-map-visible-objects', 'data-life-map-visible-anchors'],
     })
