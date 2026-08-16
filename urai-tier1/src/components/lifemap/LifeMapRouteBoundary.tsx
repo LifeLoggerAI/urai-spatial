@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
+import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMapSelection'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
@@ -49,6 +50,37 @@ export default function LifeMapRouteBoundary() {
       document.removeEventListener('click', primeOverview, true)
     }
   }, [router])
+
+  useEffect(() => {
+    let cancelled = false
+    let frame = 0
+    let repaired = false
+
+    const verifyArrivalInvariant = () => {
+      if (cancelled || repaired) return
+      const current = new URLSearchParams(window.location.search)
+      if (current.get('overview') === '1') return
+      const nodeId = current.get('node') || current.get('memoryId')
+      if (!nodeId) return
+
+      const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+      if (!root || root.dataset.lifeMapPhase !== 'arrival') {
+        frame = window.requestAnimationFrame(verifyArrivalInvariant)
+        return
+      }
+      if (root.querySelector('.life-map-thresholds')) return
+
+      repaired = true
+      const detail: LifeMapSelectionDetail = { nodeId, source: 'semantic' }
+      window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
+    }
+
+    frame = window.requestAnimationFrame(verifyArrivalInvariant)
+    return () => {
+      cancelled = true
+      if (frame) window.cancelAnimationFrame(frame)
+    }
+  }, [])
 
   return <>
     <ComposedLifeMapScene />
