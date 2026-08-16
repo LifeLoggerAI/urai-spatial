@@ -8,6 +8,10 @@ const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/prov
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
 const narratorClient = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const staticProviderRoutes = [
+  new URL('../src/app/api/google/oauth/start/route.ts', import.meta.url),
+  new URL('../src/app/api/google/oauth/callback/route.ts', import.meta.url),
+  new URL('../src/app/api/google/oauth/status/route.ts', import.meta.url),
+  new URL('../src/app/api/google/oauth/disconnect/route.ts', import.meta.url),
   new URL('../src/app/api/urai/orb/openai/route.ts', import.meta.url),
   new URL('../src/app/api/urai/narrator/elevenlabs/route.ts', import.meta.url),
   new URL('../src/app/api/voice/elevenlabs/route.ts', import.meta.url),
@@ -15,11 +19,18 @@ const staticProviderRoutes = [
 
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
   assert.deepEqual(firebaseConfig.hosting.rewrites, [
+    { source: '/api/google/oauth/start', function: { functionId: 'googleOAuthStart', region: 'us-central1' } },
+    { source: '/api/google/oauth/callback', function: { functionId: 'googleOAuthCallback', region: 'us-central1' } },
+    { source: '/api/google/oauth/status', function: { functionId: 'googleOAuthStatus', region: 'us-central1' } },
+    { source: '/api/google/oauth/disconnect', function: { functionId: 'googleOAuthDisconnect', region: 'us-central1' } },
     { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
     { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
     { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
   ])
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
+  for (const handler of ['googleOAuthCallback', 'googleOAuthDisconnect', 'googleOAuthStart', 'googleOAuthStatus']) {
+    assert.match(functionsIndex, new RegExp(`\\b${handler}\\b`))
+  }
 })
 
 test('provider functions bind secrets, auth, consent, throttling, privacy and cancellation', () => {
