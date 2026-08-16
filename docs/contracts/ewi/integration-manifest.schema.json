@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urai://ewi/integration-manifest/1.0.0",
+  "title": "URAI EWI IntegrationManifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "integrationId", "family", "authority", "capabilities", "permissions", "dataClasses", "jurisdictions", "retentionRestrictions", "availability"],
+  "properties": {
+    "version": {"const": "1.0.0"},
+    "integrationId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"},
+    "family": {"type": "string", "minLength": 1, "maxLength": 100},
+    "authority": {"type": "string", "minLength": 1, "maxLength": 200},
+    "provider": {"type": "string", "maxLength": 120},
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read", "write", "stream", "notify", "record", "vibrate", "locate", "call", "message"],
+      "properties": {
+        "read": {"type": "boolean"}, "write": {"type": "boolean"}, "stream": {"type": "boolean"}, "notify": {"type": "boolean"}, "record": {"type": "boolean"}, "vibrate": {"type": "boolean"}, "locate": {"type": "boolean"}, "call": {"type": "boolean"}, "message": {"type": "boolean"}
+      }
+    },
+    "permissions": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 200}, "uniqueItems": true},
+    "dataClasses": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 160}, "uniqueItems": true},
+    "jurisdictions": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 80}, "uniqueItems": true},
+    "retentionRestrictions": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 240}, "uniqueItems": true},
+    "latencyClass": {"enum": ["realtime", "interactive", "background", "batch", "unknown"]},
+    "costClass": {"enum": ["none", "low", "metered", "high", "unknown"]},
+    "availability": {"enum": ["live", "gated", "planned", "disabled", "unknown"]}
+  }
+}
