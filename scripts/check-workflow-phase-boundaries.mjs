@@ -56,7 +56,7 @@ if (!/\n\s*workflow_call\s*:/.test(aaaTrigger)) failures.push(`${aaaPath} must e
 if (!aaaTrigger.includes('target_sha:') || !aaaTrigger.includes('required: true') || !aaaTrigger.includes('type: string')) {
   failures.push(`${aaaPath} workflow_call must require a string target_sha input`)
 }
-if (/\n\s*pull_request\s*:/.test(aaaTrigger)) failures.push(`${aaaPath} must not register a duplicate pull_request proof; PR proof belongs to workflow-phase-boundaries.yml`)
+if (/\n\s*pull_request\s*:/.test(aaaTrigger)) failures.push(`${aaaPath} must not register a duplicate pull_request proof`)
 
 for (const marker of [
   `group: urai-aaa-final-proof-${exactTargetExpression}`,
@@ -81,32 +81,38 @@ if (aaa.includes('URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}')) failures.push(
 if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
 if (aaa.includes('git reset --hard') || aaa.includes('git clean -fdx')) failures.push(`${aaaPath} must not destructively reset the build workspace or delete ignored build output`)
 
+const ciPath = '.github/workflows/urai-spatial-ci.yml'
+const ci = readRequired(ciPath)
+const ciTrigger = triggerBlockFor(ci)
+if (!/\n\s*pull_request\s*:/.test(ciTrigger)) failures.push(`${ciPath} must remain the canonical pull-request verification authority`)
+for (const marker of [
+  'name: URAI Spatial CI',
+  'URAI_EXACT_HEAD: ${{ github.event_name == \'pull_request\' && github.event.pull_request.head.sha || github.event_name == \'workflow_dispatch\' && inputs.verification_sha || github.sha }}',
+  'node scripts/check-workflow-phase-boundaries.mjs',
+]) {
+  if (!ci.includes(marker)) failures.push(`${ciPath} must retain canonical PR marker: ${marker}`)
+}
+
 const phasePath = '.github/workflows/workflow-phase-boundaries.yml'
 const phase = readRequired(phasePath)
 const phaseTrigger = triggerBlockFor(phase)
 const phaseVerifyIndex = phase.indexOf('\n  verify:')
 const phaseProofIndex = phase.indexOf('\n  aaa-proof:')
 
-if (!/\n\s*pull_request\s*:/.test(phaseTrigger)) failures.push(`${phasePath} must remain the sole pull-request proof authority`)
-for (const path of [
-  '.github/workflows/aaa-final-proof.yml',
-  '.github/workflows/workflow-phase-boundaries.yml',
-  'scripts/aaa-launch-proof.mjs',
-  'scripts/check-workflow-phase-boundaries.mjs',
-]) {
-  if (!phaseTrigger.includes(`- "${path}"`)) failures.push(`${phasePath} pull-request trigger must include ${path}`)
-}
+if (/\n\s*pull_request\s*:/.test(phaseTrigger)) failures.push(`${phasePath} must not register a duplicate pull_request proof; PR verification belongs to ${ciPath}`)
+if (!mergedMainTrigger.test(phaseTrigger)) failures.push(`${phasePath} must retain merged-main verification`)
+if (!/\n\s*workflow_dispatch\s*:/.test(phaseTrigger)) failures.push(`${phasePath} must retain manual verification`)
 for (const marker of [
-  'group: workflow-phase-boundaries-${{ github.event.pull_request.head.sha || github.sha }}',
+  'group: workflow-phase-boundaries-${{ github.sha }}',
   'uses: ./.github/workflows/aaa-final-proof.yml',
-  'target_sha: ${{ github.event.pull_request.head.sha }}',
+  'target_sha: ${{ github.sha }}',
   'base_url: http://127.0.0.1:4173',
   'screenshots: "true"',
   'needs: verify',
 ]) {
-  if (!phase.includes(marker)) failures.push(`${phasePath} must retain reusable AAA proof marker: ${marker}`)
+  if (!phase.includes(marker)) failures.push(`${phasePath} must retain post-merge/manual AAA proof marker: ${marker}`)
 }
-if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) failures.push(`${phasePath} must run static boundary verification before exact PR-head AAA proof`)
+if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) failures.push(`${phasePath} must run static boundary verification before post-merge/manual exact-head AAA proof`)
 
 const deployPath = '.github/workflows/spatial-live-deploy.yml'
 const deploy = readRequired(deployPath)
@@ -171,5 +177,6 @@ for (const file of retainedSourceFiles) {
 }
 
 console.log(`Workflow phase-boundary check passed for ${releaseWorkflows.length} release workflows.`)
+console.log('Pull-request verification is consolidated into URAI Spatial CI; heavy AAA proof is merged-main/manual only.')
 console.log('Production authority remains verification-only and NO-GO until provider WIF/IAM is independently proven.')
 console.log(`Retained ${retainedSourceFiles.length} bounded Life Map source files for exact-head repair.`)
