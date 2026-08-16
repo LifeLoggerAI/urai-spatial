@@ -11,13 +11,14 @@ import { requestLifeMapSelection } from './lifeMapSelection'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const SELECTED_ROUTE_REPLAY_TIMEOUT_MS = 30_000
+const SELECTED_ROUTE_RETRY_MS = 120
 
 export default function LifeMapRouteBoundary() {
   const router = useRouter()
 
   useEffect(() => {
     let secondFrame = 0
-    let selectedRouteFrame = 0
+    let selectedRouteTimer = 0
     const selectedRouteReplayStartedAt = performance.now()
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
@@ -31,19 +32,22 @@ export default function LifeMapRouteBoundary() {
           const selectedRouteId = current.get('node') || current.get('memoryId')
           if (!selectedRouteId) return
 
-          // URL-derived mode/phase can exist before the Suspense-mounted production
-          // world has acknowledged the selected node. The actual selected action rail
-          // is the observable product acknowledgement for a restored deep link.
+          // A restored URL can expose its arrival identity before the Suspense-mounted
+          // production selection owner is ready. The selected action rail is the real
+          // acknowledgement. A departure/travel/approach phase also proves that the
+          // production owner received the selection and now owns the journey.
           if (document.querySelector('nav[aria-label="Selected memory actions"]')) return
 
           const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-          if (root?.dataset.lifeMapRenderReady === 'true') {
-            requestLifeMapSelection(selectedRouteId, 'semantic')
-            return
-          }
+          const phase = root?.dataset.lifeMapPhase
+          if (phase === 'departure' || phase === 'travel' || phase === 'approach') return
 
           if (performance.now() - selectedRouteReplayStartedAt >= SELECTED_ROUTE_REPLAY_TIMEOUT_MS) return
-          selectedRouteFrame = window.requestAnimationFrame(replaySelectedRoute)
+
+          if (root?.dataset.lifeMapRenderReady === 'true') {
+            requestLifeMapSelection(selectedRouteId, 'semantic')
+          }
+          selectedRouteTimer = window.setTimeout(replaySelectedRoute, SELECTED_ROUTE_RETRY_MS)
         }
 
         replaySelectedRoute()
@@ -73,7 +77,7 @@ export default function LifeMapRouteBoundary() {
     return () => {
       window.cancelAnimationFrame(firstFrame)
       if (secondFrame) window.cancelAnimationFrame(secondFrame)
-      if (selectedRouteFrame) window.cancelAnimationFrame(selectedRouteFrame)
+      if (selectedRouteTimer) window.clearTimeout(selectedRouteTimer)
       document.removeEventListener('click', primeOverview, true)
     }
   }, [router])
