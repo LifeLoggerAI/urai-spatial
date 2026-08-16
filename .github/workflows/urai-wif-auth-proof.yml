@@ -1,0 +1,110 @@
+name: URAI WIF Authentication Proof
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: urai-wif-auth-proof
+  cancel-in-progress: false
+
+env:
+  EXPECTED_REPOSITORY: LifeLoggerAI/urai-spatial
+  EXPECTED_PROJECT_ID: urai-4dc1d
+  EXPECTED_REF: refs/heads/main
+
+jobs:
+  prove-keyless-auth:
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Enforce governed WIF inputs
+        shell: bash
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ vars.GCP_URAI_SPATIAL_RELEASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_REF" = "$EXPECTED_REF"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test -n "$WIF_PROVIDER"
+          test -n "$WIF_SERVICE_ACCOUNT"
+          case "$WIF_PROVIDER" in
+            projects/*/locations/global/workloadIdentityPools/*/providers/*) ;;
+            *) echo '::error::GCP_WIF_PROVIDER has an invalid provider resource format.'; exit 64 ;;
+          esac
+          case "$WIF_SERVICE_ACCOUNT" in
+            urai-spatial-release@urai-4dc1d.iam.gserviceaccount.com) ;;
+            *) echo '::error::Unexpected WIF release service account.'; exit 65 ;;
+          esac
+
+      - name: Authenticate with Google Workload Identity Federation
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ env.EXPECTED_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_URAI_SPATIAL_RELEASE_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Install Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+        with:
+          project_id: ${{ env.EXPECTED_PROJECT_ID }}
+          version: '>= 500.0.0'
+
+      - name: Prove keyless identity and read-only project access
+        id: proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gcloud config get-value project 2>/dev/null)" = "$EXPECTED_PROJECT_ID"
+          active_account="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1)"
+          test "$active_account" = '${{ vars.GCP_URAI_SPATIAL_RELEASE_SERVICE_ACCOUNT }}'
+
+          # Read-only provider checks. No deploy, IAM mutation, or key mutation here.
+          gcloud projects describe "$EXPECTED_PROJECT_ID" --format='value(projectId,projectNumber)' > project.txt
+          gcloud services list --enabled --project "$EXPECTED_PROJECT_ID" --format='value(config.name)' | sort > enabled-services.txt
+          gcloud iam service-accounts describe '${{ vars.GCP_URAI_SPATIAL_RELEASE_SERVICE_ACCOUNT }}' --project "$EXPECTED_PROJECT_ID" --format='value(email,disabled)' > release-service-account.txt
+
+          mkdir -p wif-proof
+          mv project.txt enabled-services.txt release-service-account.txt wif-proof/
+          ACTIVE_ACCOUNT="$active_account" node <<'NODE' > wif-proof/receipt.json
+          const receipt = {
+            schema: 'urai-wif-auth-proof-1',
+            repository: process.env.GITHUB_REPOSITORY,
+            ref: process.env.GITHUB_REF,
+            sha: process.env.GITHUB_SHA,
+            projectId: process.env.EXPECTED_PROJECT_ID,
+            activeAccount: process.env.ACTIVE_ACCOUNT,
+            authClass: 'github-oidc-wif',
+            longLivedServiceAccountKeyLoaded: false,
+            providerMutationPerformed: false,
+            productionDeployPerformed: false,
+            provedAt: new Date().toISOString(),
+            runId: process.env.GITHUB_RUN_ID,
+          }
+          process.stdout.write(`${JSON.stringify(receipt, null, 2)}\n`)
+          NODE
+
+      - name: Upload WIF proof receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-wif-auth-proof-${{ github.sha }}
+          path: wif-proof/
+          if-no-files-found: error
+          retention-days: 365
