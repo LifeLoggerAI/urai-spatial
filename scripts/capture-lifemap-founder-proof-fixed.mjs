@@ -173,13 +173,22 @@ async function waitForState(page, attribute, expected, timeout = 30_000) {
 }
 
 async function waitForRenderedWorld(page, timeout = 30_000) {
-  const root = page.locator(ROOT).first()
-  return poll('rendered Life Map world', async () => ({
-    ready: await root.getAttribute('data-life-map-render-ready'),
-    anchors: Number(await root.getAttribute('data-life-map-visible-anchors') || 0),
-    objects: Number(await root.getAttribute('data-life-map-visible-objects') || 0),
-    calls: Number(await root.getAttribute('data-life-map-render-calls') || 0),
-  }), (state) => state.ready === 'true' && state.anchors >= 8 && state.objects > 20 && state.calls > 0, timeout, 75)
+  return poll('rendered Life Map world', () => page.evaluate((rootSelector) => {
+    const element = document.querySelector(rootSelector)
+    if (!(element instanceof HTMLElement)) return null
+    return {
+      ready: element.dataset.lifeMapRenderReady || null,
+      anchors: Number(element.dataset.lifeMapVisibleAnchors || 0),
+      objects: Number(element.dataset.lifeMapVisibleObjects || 0),
+      calls: Number(element.dataset.lifeMapRenderCalls || 0),
+    }
+  }, ROOT), (state) => Boolean(
+    state
+    && state.ready === 'true'
+    && state.anchors >= 8
+    && state.objects > 20
+    && state.calls > 0
+  ), timeout, 75)
 }
 
 async function waitForOverviewState(page, timeout = 30_000) {

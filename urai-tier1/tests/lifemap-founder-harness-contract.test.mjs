@@ -119,6 +119,25 @@ test('Founder proof observes the real production state machine without a product
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
 })
 
+test('Founder render proof samples one atomic live-root snapshot', () => {
+  const renderedWorld = runner.match(
+    /async function waitForRenderedWorld\(page, timeout = 30_000\) \{[\s\S]*?\n\}\n\nasync function waitForOverviewState/,
+  )?.[0] || ''
+
+  assert.match(renderedWorld, /page\.evaluate\(\(rootSelector\) => \{/)
+  assert.match(renderedWorld, /const element = document\.querySelector\(rootSelector\)/)
+  assert.match(renderedWorld, /element\.dataset\.lifeMapRenderReady/)
+  assert.match(renderedWorld, /element\.dataset\.lifeMapVisibleAnchors/)
+  assert.match(renderedWorld, /element\.dataset\.lifeMapVisibleObjects/)
+  assert.match(renderedWorld, /element\.dataset\.lifeMapRenderCalls/)
+  assert.doesNotMatch(renderedWorld, /root\.getAttribute/)
+  assert.match(
+    renderedWorld,
+    /state\.ready === 'true'[\s\S]*state\.anchors >= 8[\s\S]*state\.objects > 20[\s\S]*state\.calls > 0/,
+  )
+  assert.match(renderedWorld, /timeout, 75\)/)
+})
+
 test('render proof is invalidated and republished after WebGL context restoration', () => {
   assert.match(world, /function RenderProofRepublisher\(/)
   assert.match(world, /webglcontextlost/)
