@@ -119,6 +119,15 @@ test('Founder proof observes the real production state machine without a product
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
 })
 
+test('restored Life Map route commits arrival only after the route id resolves to a real node', () => {
+  assert.match(scene, /const \[selectedId, setSelectedId\] = useState<string \| null>\(null\)/)
+  assert.match(scene, /const \[phase, setPhase\] = useState<JourneyPhase>\("overview"\)/)
+  assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
+  assert.match(scene, /setSelectedId\(node\.id\);\s*setPhase\("arrival"\)/)
+  assert.doesNotMatch(scene, /useState<string \| null>\(overviewRequested \? null : queryNode \|\| null\)/)
+  assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
+})
+
 test('Founder render proof samples one atomic live-root snapshot', () => {
   const renderedWorld = runner.match(
     /async function waitForRenderedWorld\(page, timeout = 30_000\) \{[\s\S]*?\n\}\n\nasync function waitForOverviewState/,
