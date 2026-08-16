@@ -65,11 +65,16 @@ export default function LifeMapRouteBoundary() {
       if (!nodeId) return
 
       const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      const selectedIdentityResolved = root?.dataset.lifeMapMode === 'selected'
+      const selectedModeResolved = root?.dataset.lifeMapMode === 'selected'
+      const selectedIdentityResolved = selectedModeResolved
         && Boolean(document.querySelector('nav[aria-label="Selected memory actions"]'))
       if (selectedIdentityResolved) return
 
-      requestLifeMapSelection(nodeId, 'semantic')
+      // Once the real world has accepted the selected identity, let its production
+      // departure -> travel -> approach -> arrival state machine finish naturally.
+      // Re-firing selection while already selected restarts departure every frame and
+      // starves the canonical selected-memory action surface from ever mounting.
+      if (!selectedModeResolved) requestLifeMapSelection(nodeId, 'semantic')
       attempts += 1
       if (attempts < maxAttempts) frame = window.requestAnimationFrame(restoreSelectedRoute)
     }
