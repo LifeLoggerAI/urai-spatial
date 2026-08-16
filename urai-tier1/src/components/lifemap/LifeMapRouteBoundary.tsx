@@ -65,9 +65,8 @@ export default function LifeMapRouteBoundary() {
       if (!nodeId) return
 
       const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-      const selectedJourneyStarted = root?.dataset.lifeMapMode === 'selected'
-        && root.dataset.lifeMapPhase !== 'overview'
-      if (selectedJourneyStarted) return
+      const selectedIdentityResolved = root?.dataset.lifeMapMode === 'selected'
+      if (selectedIdentityResolved) return
 
       requestLifeMapSelection(nodeId, 'semantic')
       attempts += 1
