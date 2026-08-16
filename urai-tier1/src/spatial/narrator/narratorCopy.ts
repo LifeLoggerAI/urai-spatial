@@ -2,13 +2,15 @@ import type { EmotionalState, NarratorLine, NarratorMoment, NarratorTone } from 
 
 type VoiceConfig = { voiceId: string; stability: number; similarity_boost: number; style: number; speaking_rate: number };
 
+const URAI_ELEVENLABS_ADAM_VOICE_ID = "pNInz6obpgDQGcFmaJgB";
+
 export const URAI_VOICE_CONFIG: Record<NarratorTone, VoiceConfig> = {
-  calm: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_CALM_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.72, similarity_boost: 0.82, style: 0.16, speaking_rate: 0.88 },
-  awe: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_AWE_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.66, similarity_boost: 0.8, style: 0.32, speaking_rate: 0.84 },
-  tension: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_TENSION_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.48, similarity_boost: 0.76, style: 0.24, speaking_rate: 0.94 },
-  grief: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_GRIEF_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.76, similarity_boost: 0.84, style: 0.12, speaking_rate: 0.78 },
-  recovery: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_RECOVERY_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.68, similarity_boost: 0.8, style: 0.22, speaking_rate: 0.9 },
-  neutral: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_DEFAULT_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.7, similarity_boost: 0.8, style: 0.14, speaking_rate: 0.88 },
+  calm: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_CALM_VOICE_ID || URAI_ELEVENLABS_ADAM_VOICE_ID, stability: 0.72, similarity_boost: 0.82, style: 0.16, speaking_rate: 0.88 },
+  awe: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_AWE_VOICE_ID || URAI_ELEVENLABS_ADAM_VOICE_ID, stability: 0.66, similarity_boost: 0.8, style: 0.32, speaking_rate: 0.84 },
+  tension: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_TENSION_VOICE_ID || URAI_ELEVENLABS_ADAM_VOICE_ID, stability: 0.48, similarity_boost: 0.76, style: 0.24, speaking_rate: 0.94 },
+  grief: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_GRIEF_VOICE_ID || URAI_ELEVENLABS_ADAM_VOICE_ID, stability: 0.76, similarity_boost: 0.84, style: 0.12, speaking_rate: 0.78 },
+  recovery: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_RECOVERY_VOICE_ID || URAI_ELEVENLABS_ADAM_VOICE_ID, stability: 0.68, similarity_boost: 0.8, style: 0.22, speaking_rate: 0.9 },
+  neutral: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_DEFAULT_VOICE_ID || URAI_ELEVENLABS_ADAM_VOICE_ID, stability: 0.7, similarity_boost: 0.8, style: 0.14, speaking_rate: 0.88 },
 };
 
 export const PUBLIC_NARRATOR_DEFAULTS = {
