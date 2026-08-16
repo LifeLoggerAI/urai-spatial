@@ -33,17 +33,14 @@ export default function LifeMapRouteBoundary() {
 
           const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
           if (root?.dataset.lifeMapMode === 'selected') return
-
-          // The production-world selection listener lives inside the mounted R3F world.
-          // A direct deep link can reach the route boundary before that listener exists.
-          // Wait for truthful render readiness, then replay the route identity exactly once.
-          // This preserves the single-fire selection contract without racing Suspense/GLB mount.
-          if (root?.dataset.lifeMapRenderReady === 'true') {
-            requestLifeMapSelection(selectedRouteId, 'semantic')
-            return
-          }
-
           if (performance.now() - selectedRouteReplayStartedAt >= SELECTED_ROUTE_REPLAY_TIMEOUT_MS) return
+
+          // A direct deep link can hydrate before the Suspense-mounted production-world
+          // listener and its canonical node set are both ready. Re-send the same
+          // idempotent selection request until the real product state acknowledges it
+          // by committing selected mode. Starting this before render-ready prevents a
+          // stale URL-derived arrival frame from winning the race under SwiftShader.
+          requestLifeMapSelection(selectedRouteId, 'semantic')
           selectedRouteFrame = window.requestAnimationFrame(replaySelectedRoute)
         }
 
