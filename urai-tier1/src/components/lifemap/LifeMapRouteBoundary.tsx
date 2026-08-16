@@ -31,16 +31,18 @@ export default function LifeMapRouteBoundary() {
           const selectedRouteId = current.get('node') || current.get('memoryId')
           if (!selectedRouteId) return
 
-          const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-          if (root?.dataset.lifeMapMode === 'selected') return
-          if (performance.now() - selectedRouteReplayStartedAt >= SELECTED_ROUTE_REPLAY_TIMEOUT_MS) return
+          // URL-derived mode/phase can exist before the Suspense-mounted production
+          // world has acknowledged the selected node. The actual selected action rail
+          // is the observable product acknowledgement for a restored deep link.
+          if (document.querySelector('nav[aria-label="Selected memory actions"]')) return
 
-          // A direct deep link can hydrate before the Suspense-mounted production-world
-          // listener and its canonical node set are both ready. Re-send the same
-          // idempotent selection request until the real product state acknowledges it
-          // by committing selected mode. Starting this before render-ready prevents a
-          // stale URL-derived arrival frame from winning the race under SwiftShader.
-          requestLifeMapSelection(selectedRouteId, 'semantic')
+          const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+          if (root?.dataset.lifeMapRenderReady === 'true') {
+            requestLifeMapSelection(selectedRouteId, 'semantic')
+            return
+          }
+
+          if (performance.now() - selectedRouteReplayStartedAt >= SELECTED_ROUTE_REPLAY_TIMEOUT_MS) return
           selectedRouteFrame = window.requestAnimationFrame(replaySelectedRoute)
         }
 
