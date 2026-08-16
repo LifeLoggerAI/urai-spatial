@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
+import { requestLifeMapSelection } from './lifeMapSelection'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
@@ -15,11 +16,23 @@ export default function LifeMapRouteBoundary() {
 
   useEffect(() => {
     let secondFrame = 0
+    let selectedRouteFrame = 0
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
         if (!performance.getEntriesByName('urai:first-spatial-frame').length) {
           performance.mark('urai:first-spatial-frame')
         }
+
+        const current = new URLSearchParams(window.location.search)
+        if (current.get('overview') === '1') return
+        const selectedRouteId = current.get('node') || current.get('memoryId')
+        if (!selectedRouteId) return
+
+        selectedRouteFrame = window.requestAnimationFrame(() => {
+          const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+          if (root?.dataset.lifeMapMode === 'selected') return
+          requestLifeMapSelection(selectedRouteId, 'semantic')
+        })
       })
     })
 
@@ -46,6 +59,7 @@ export default function LifeMapRouteBoundary() {
     return () => {
       window.cancelAnimationFrame(firstFrame)
       if (secondFrame) window.cancelAnimationFrame(secondFrame)
+      if (selectedRouteFrame) window.cancelAnimationFrame(selectedRouteFrame)
       document.removeEventListener('click', primeOverview, true)
     }
   }, [router])
