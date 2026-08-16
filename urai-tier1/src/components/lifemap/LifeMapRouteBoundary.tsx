@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ComposedLifeMapScene from './ComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
+import { requestLifeMapSelection } from './lifeMapSelection'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 
@@ -49,6 +50,36 @@ export default function LifeMapRouteBoundary() {
       document.removeEventListener('click', primeOverview, true)
     }
   }, [router])
+
+  useEffect(() => {
+    let cancelled = false
+    let frame = 0
+    let attempts = 0
+    const maxAttempts = 120
+
+    const restoreSelectedRoute = () => {
+      if (cancelled) return
+      const current = new URLSearchParams(window.location.search)
+      if (current.get('overview') === '1') return
+      const nodeId = current.get('node') || current.get('memoryId')
+      if (!nodeId) return
+
+      const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+      const selectedJourneyStarted = root?.dataset.lifeMapMode === 'selected'
+        && root.dataset.lifeMapPhase !== 'overview'
+      if (selectedJourneyStarted) return
+
+      requestLifeMapSelection(nodeId, 'semantic')
+      attempts += 1
+      if (attempts < maxAttempts) frame = window.requestAnimationFrame(restoreSelectedRoute)
+    }
+
+    frame = window.requestAnimationFrame(restoreSelectedRoute)
+    return () => {
+      cancelled = true
+      if (frame) window.cancelAnimationFrame(frame)
+    }
+  }, [])
 
   return <>
     <ComposedLifeMapScene />
