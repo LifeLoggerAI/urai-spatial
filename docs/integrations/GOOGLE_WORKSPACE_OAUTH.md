@@ -29,51 +29,59 @@ Configure Google Auth Platform > Data Access with the narrow production scope se
 
 ## OAuth web client
 
-Create a dedicated Web application client named `URAI Production OAuth` rather than reusing an automatically generated Firebase/Google client.
+Create a dedicated Web application client named `URAI Production OAuth`.
 
-Authorized JavaScript origins:
-
-- `https://urai.app`
-- `http://localhost:3000` for local development
-
-Authorized redirect URIs:
+Authorized redirect URI:
 
 - `https://urai.app/api/google/oauth/callback`
-- `http://localhost:3000/api/google/oauth/callback` for local development
 
-Redirect URIs must match exactly.
+The Workspace authorization-code flow is server-side, so an Authorized JavaScript Origin is not required for this OAuth client unless a future browser-side Google API flow is introduced. Redirect URIs must match exactly.
+
+## Firebase Functions architecture
+
+URAI's Next runtime is also built as a static export for preview and exact-head acceptance. Server OAuth routes therefore live in `apps/functions/src/googleWorkspaceOAuth.ts` and are exposed through Firebase Hosting rewrites:
+
+- `/api/google/oauth/start` → `googleOAuthStart`
+- `/api/google/oauth/callback` → `googleOAuthCallback`
+- `/api/google/oauth/status` → `googleOAuthStatus`
+- `/api/google/oauth/disconnect` → `googleOAuthDisconnect`
+
+The browser sends the signed-in Firebase user's ID token to the start/status/disconnect endpoints. The callback is invoked directly by Google's OAuth server.
 
 ## Server secrets
 
-Configure these only in the protected server runtime / secret store. Never expose them through `NEXT_PUBLIC_*` variables or commit values to Git.
+Store these only in Google Secret Manager / Firebase Functions secrets. Never expose them through `NEXT_PUBLIC_*` variables or commit values to Git.
 
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
-- `GOOGLE_OAUTH_REDIRECT_URI`
-- `GOOGLE_OAUTH_STATE_SECRET`
 - `GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY`
 
-Production redirect value:
+Generate `GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY` as 32 cryptographically random bytes encoded as base64.
 
-`GOOGLE_OAUTH_REDIRECT_URI=https://urai.app/api/google/oauth/callback`
+Non-secret runtime values default to:
 
-Generate `GOOGLE_OAUTH_STATE_SECRET` with at least 32 random characters.
+- callback: `https://urai.app/api/google/oauth/callback`
+- app origin: `https://urai.app`
 
-Generate `GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY` as 32 random bytes encoded as base64.
+They can be overridden with `GOOGLE_OAUTH_REDIRECT_URI` and `URAI_APP_ORIGIN` in a controlled non-secret Functions environment if required.
 
 ## Runtime flow
 
 1. User signs into URAI with Firebase Auth.
-2. Client POSTs the Firebase ID token as `Authorization: Bearer <token>` to `/api/google/oauth/start`.
-3. Server verifies the Firebase identity, creates CSRF state and PKCE values, stores them in a signed HttpOnly cookie, and returns the Google authorization URL.
-4. Browser redirects to Google for consent.
+2. Settings POSTs the Firebase ID token to `/api/google/oauth/start`.
+3. `googleOAuthStart` verifies Firebase identity, creates PKCE values and a random OAuth state, and stores the one-time state server-side with a ten-minute expiry.
+4. Browser redirects to Google's permission screen.
 5. Google redirects to `/api/google/oauth/callback`.
-6. Server validates state, exchanges the authorization code, encrypts OAuth tokens with AES-256-GCM, and stores them in the server-only `providerOAuthTokens` Firestore collection.
+6. `googleOAuthCallback` atomically consumes the one-time state, exchanges the authorization code, encrypts OAuth tokens with AES-256-GCM, and stores them in the server-only `providerOAuthTokens` Firestore collection.
 7. Non-secret connection metadata is written under `/users/{uid}/providerConnections/google-workspace`.
 8. `/api/google/oauth/status` reports connection state to the signed-in user.
-9. `/api/google/oauth/disconnect` deletes stored provider tokens and marks the provider disconnected.
+9. `/api/google/oauth/disconnect` attempts Google token revocation, deletes local encrypted provider tokens, and marks the connection disconnected.
 
-The existing Firestore catch-all denies client access to top-level collections that are not explicitly allowed; Firebase Admin server writes bypass client rules. Provider OAuth tokens therefore remain server-only at the Firestore Rules layer, in addition to application-layer encryption.
+Existing Firestore rules deny client access to unspecified top-level collections; Firebase Admin writes from Functions bypass client rules. OAuth token documents are therefore server-only at the Firestore Rules layer in addition to application-layer encryption.
+
+## Google console boundary
+
+Google's current OAuth best-practices documentation states that normal OAuth clients cannot be created or modified programmatically. The Cloud Console must be used to create/configure the client and acknowledge OAuth terms. Do not attempt to automate that step through an unrelated IAP or IAM OAuth-client API.
 
 ## Verification notes
 
