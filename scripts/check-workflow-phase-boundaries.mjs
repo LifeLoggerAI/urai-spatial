@@ -88,10 +88,15 @@ if (!/\n\s*pull_request\s*:/.test(ciTrigger)) failures.push(`${ciPath} must rema
 for (const marker of [
   'name: URAI Spatial CI',
   'URAI_EXACT_HEAD: ${{ github.event_name == \'pull_request\' && github.event.pull_request.head.sha || github.event_name == \'workflow_dispatch\' && inputs.verification_sha || github.sha }}',
-  'node scripts/check-workflow-phase-boundaries.mjs',
 ]) {
   if (!ci.includes(marker)) failures.push(`${ciPath} must retain canonical PR marker: ${marker}`)
 }
+
+const patchPath = '.github/workflows/patch-check.yml'
+const patch = readRequired(patchPath)
+const patchTrigger = triggerBlockFor(patch)
+if (!/\n\s*pull_request\s*:/.test(patchTrigger)) failures.push(`${patchPath} must retain the lightweight PR meta-guard`)
+if (!patch.includes('node scripts/check-workflow-phase-boundaries.mjs')) failures.push(`${patchPath} must enforce workflow phase boundaries on PR heads`)
 
 const phasePath = '.github/workflows/workflow-phase-boundaries.yml'
 const phase = readRequired(phasePath)
@@ -177,6 +182,6 @@ for (const file of retainedSourceFiles) {
 }
 
 console.log(`Workflow phase-boundary check passed for ${releaseWorkflows.length} release workflows.`)
-console.log('Pull-request verification is consolidated into URAI Spatial CI; heavy AAA proof is merged-main/manual only.')
+console.log('Pull-request verification remains centered on URAI Spatial CI; heavy AAA proof is merged-main/manual only.')
 console.log('Production authority remains verification-only and NO-GO until provider WIF/IAM is independently proven.')
 console.log(`Retained ${retainedSourceFiles.length} bounded Life Map source files for exact-head repair.`)
