@@ -10,6 +10,7 @@ import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 import { requestLifeMapSelection } from './lifeMapSelection'
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
+const SELECTED_ROUTE_REPLAY_TIMEOUT_MS = 30_000
 
 export default function LifeMapRouteBoundary() {
   const router = useRouter()
@@ -17,22 +18,36 @@ export default function LifeMapRouteBoundary() {
   useEffect(() => {
     let secondFrame = 0
     let selectedRouteFrame = 0
+    const selectedRouteReplayStartedAt = performance.now()
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
         if (!performance.getEntriesByName('urai:first-spatial-frame').length) {
           performance.mark('urai:first-spatial-frame')
         }
 
-        const current = new URLSearchParams(window.location.search)
-        if (current.get('overview') === '1') return
-        const selectedRouteId = current.get('node') || current.get('memoryId')
-        if (!selectedRouteId) return
+        const replaySelectedRoute = () => {
+          const current = new URLSearchParams(window.location.search)
+          if (current.get('overview') === '1') return
+          const selectedRouteId = current.get('node') || current.get('memoryId')
+          if (!selectedRouteId) return
 
-        selectedRouteFrame = window.requestAnimationFrame(() => {
           const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
           if (root?.dataset.lifeMapMode === 'selected') return
-          requestLifeMapSelection(selectedRouteId, 'semantic')
-        })
+
+          // The production-world selection listener lives inside the mounted R3F world.
+          // A direct deep link can reach the route boundary before that listener exists.
+          // Wait for truthful render readiness, then replay the route identity exactly once.
+          // This preserves the single-fire selection contract without racing Suspense/GLB mount.
+          if (root?.dataset.lifeMapRenderReady === 'true') {
+            requestLifeMapSelection(selectedRouteId, 'semantic')
+            return
+          }
+
+          if (performance.now() - selectedRouteReplayStartedAt >= SELECTED_ROUTE_REPLAY_TIMEOUT_MS) return
+          selectedRouteFrame = window.requestAnimationFrame(replaySelectedRoute)
+        }
+
+        replaySelectedRoute()
       })
     })
 
