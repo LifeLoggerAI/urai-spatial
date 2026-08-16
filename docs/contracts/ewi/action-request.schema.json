@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urai://ewi/action-request/1.0.0",
+  "title": "URAI EWI ActionRequest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "requestId", "subjectId", "actor", "integrationId", "capability", "purpose", "actionClass", "confirmation", "permissionRefs", "createdAt", "payload"],
+  "properties": {
+    "version": {"const": "1.0.0"},
+    "requestId": {"type": "string", "minLength": 8, "maxLength": 160},
+    "subjectId": {"type": "string", "minLength": 1, "maxLength": 160},
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"enum": ["user", "companion", "council", "system", "admin"]},
+        "id": {"type": "string", "minLength": 1, "maxLength": 160}
+      }
+    },
+    "integrationId": {"type": "string", "minLength": 1, "maxLength": 160},
+    "capability": {"type": "string", "minLength": 1, "maxLength": 160},
+    "purpose": {"type": "string", "minLength": 1, "maxLength": 240},
+    "actionClass": {"enum": ["silent_auto", "reversible_auto", "ask_first", "strong_confirmation", "never_autonomous"]},
+    "confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {
+        "state": {"enum": ["not_required", "pending", "confirmed", "denied"]},
+        "confirmedBy": {"type": "string", "maxLength": 160},
+        "confirmedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "permissionRefs": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 200}, "uniqueItems": true},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "idempotencyKey": {"type": "string", "minLength": 8, "maxLength": 200},
+    "payload": {"type": "object"}
+  }
+}
