@@ -138,7 +138,7 @@ test('Founder render proof samples one atomic live-root snapshot', () => {
   assert.match(renderedWorld, /timeout, 75\)/)
 })
 
-test('render proof is invalidated and republished after WebGL context restoration', () => {
+test('render proof refuses stale invalidation writes and republishes after WebGL context restoration', () => {
   assert.match(world, /function RenderProofRepublisher\(/)
   assert.match(world, /webglcontextlost/)
   assert.match(world, /webglcontextrestored/)
