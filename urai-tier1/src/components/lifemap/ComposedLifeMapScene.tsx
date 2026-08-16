@@ -254,8 +254,8 @@ export default function ComposedLifeMapScene() {
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-  const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
-  const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
@@ -334,8 +334,12 @@ export default function ComposedLifeMapScene() {
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
-    if (node && node.id !== selectedId) selectNode(node);
-  }, [nodes, overviewRequested, queryNode, selectNode, selectedId]);
+    if (!node || (selected?.id === node.id && selectedId === node.id)) return;
+    overviewPending.current = false;
+    journeyToken.current += 1;
+    setSelectedId(node.id);
+    setPhase("arrival");
+  }, [nodes, overviewRequested, queryNode, selected, selectedId]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
