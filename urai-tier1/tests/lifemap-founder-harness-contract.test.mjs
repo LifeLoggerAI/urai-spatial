@@ -129,11 +129,14 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary leaves direct-route restoration to the canonical scene owner', () => {
-  assert.doesNotMatch(routeBoundary, /requestLifeMapSelection/)
-  assert.doesNotMatch(routeBoundary, /restoreSelectedRoute/)
-  assert.doesNotMatch(routeBoundary, /Selected memory actions/)
-  assert.doesNotMatch(routeBoundary, /current\.get\('node'\) \|\| current\.get\('memoryId'\)/)
+test('route boundary repairs only the impossible direct-arrival state and never replays selection', () => {
+  assert.match(routeBoundary, /let repaired = false/)
+  assert.match(routeBoundary, /root\.dataset\.lifeMapPhase !== 'arrival'/)
+  assert.match(routeBoundary, /root\.querySelector\('\.life-map-thresholds'\)/)
+  assert.match(routeBoundary, /repaired = true/)
+  assert.match(routeBoundary, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>\(LIFE_MAP_SELECTION_EVENT/)
+  assert.equal((routeBoundary.match(/dispatchEvent\(new CustomEvent/g) || []).length, 1)
+  assert.doesNotMatch(routeBoundary, /requestLifeMapSelection|restoreSelectedRoute|maxAttempts|attempts\s*[+<=>]/)
   assert.match(routeBoundary, /<ComposedLifeMapScene \/>/)
   assert.match(routeBoundary, /<LifeMapSemanticNavigator \/>/)
 })
