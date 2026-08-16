@@ -75,6 +75,7 @@ function RenderProofRepublisher() {
   useEffect(() => {
     const canvas = gl.domElement;
     const writeInvalid = () => {
+      if (!invalidated.current) return;
       const element = resolveOwner();
       if (element) {
         element.dataset.lifeMapRenderReady = "false";
@@ -385,7 +386,7 @@ function EmotionArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={0.72} color={node.aura} /></group>;
 }
 function PatternArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{[-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.92 : 0.48} width={0.031} />)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{[-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.92 : 0.48} width={0.031} />}</group>;
 }
 function AchievementArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={GOLD} active={active} scale={active ? 1.24 : 0.9} rotation={[0.12, 0.72, 0.2]} /><Current points={[[-0.9, -0.65, 0.2], [-0.35, 0.05, -0.2], [0.05, 0.75, -0.5], [0.55, 1.42, -0.18], [0.95, 2.05, 0.2]]} color={GOLD} opacity={active ? 0.82 : 0.38} width={0.03} /></group>;
