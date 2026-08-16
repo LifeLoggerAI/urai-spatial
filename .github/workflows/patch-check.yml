@@ -57,5 +57,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify workflow phase boundaries
+        run: node scripts/check-workflow-phase-boundaries.mjs
+
       - name: Run patch checks
         run: pnpm patch:check
