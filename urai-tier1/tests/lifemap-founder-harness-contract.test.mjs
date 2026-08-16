@@ -129,11 +129,11 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary replays direct identity only until the authoritative scene resolves the selected node', () => {
+test('route boundary replays direct identity until the authoritative selected action surface is mounted', () => {
   assert.match(routeBoundary, /requestLifeMapSelection/)
   assert.match(routeBoundary, /current\.get\('overview'\) === '1'/)
   assert.match(routeBoundary, /current\.get\('node'\) \|\| current\.get\('memoryId'\)/)
-  assert.match(routeBoundary, /const selectedIdentityResolved = root\?\.dataset\.lifeMapMode === 'selected'/)
+  assert.match(routeBoundary, /root\?\.dataset\.lifeMapMode === 'selected'[\s\S]*Selected memory actions/)
   assert.match(routeBoundary, /if \(selectedIdentityResolved\) return/)
   assert.doesNotMatch(routeBoundary, /root\.dataset\.lifeMapPhase !== 'overview'/)
   assert.match(routeBoundary, /requestLifeMapSelection\(nodeId, 'semantic'\)/)
