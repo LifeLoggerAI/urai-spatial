@@ -23,130 +23,107 @@ if (!Object.getOwnPropertyDescriptor(prototype, 'data')) {
 type ProofState = {
   objects: number
   anchors: number
-  drawCalls: number
+  calls: number
   contextLost: boolean
 }
 
 const proofStates = new WeakMap<HTMLElement, ProofState>()
 const instrumentedCanvases = new WeakSet<HTMLCanvasElement>()
-const restoringOwners = new WeakSet<HTMLElement>()
 
 function proofState(owner: HTMLElement) {
   let state = proofStates.get(owner)
   if (!state) {
-    state = { objects: 0, anchors: 0, drawCalls: 0, contextLost: false }
+    state = { objects: 0, anchors: 0, calls: 0, contextLost: false }
     proofStates.set(owner, state)
   }
   return state
 }
 
-function syncProof(owner: HTMLElement, state: ProofState) {
-  if (restoringOwners.has(owner)) return
-  restoringOwners.add(owner)
-  owner.dataset.lifeMapRenderProofOwner = 'r3f-scene-plus-webgl-draws'
-  owner.dataset.lifeMapVisibleObjects = String(state.objects)
-  owner.dataset.lifeMapVisibleAnchors = String(state.anchors)
-  owner.dataset.lifeMapRenderCalls = String(state.drawCalls)
-  owner.dataset.lifeMapRenderReady = !state.contextLost && state.drawCalls > 0 && state.objects > 20 && state.anchors >= 8 ? 'true' : 'false'
-  queueMicrotask(() => restoringOwners.delete(owner))
+function numeric(value: string | null | undefined) {
+  const parsed = Number(value || 0)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
 }
 
-function bindContextLifecycle(canvas: HTMLCanvasElement, owner: HTMLElement) {
-  if (instrumentedCanvases.has(canvas)) return
+function currentOwner(canvas: HTMLCanvasElement) {
+  return canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+}
+
+function resetProof(owner: HTMLElement, contextLost: boolean) {
+  const state = proofState(owner)
+  state.objects = 0
+  state.anchors = 0
+  state.calls = 0
+  state.contextLost = contextLost
+}
+
+function bindContextLifecycle(owner: HTMLElement) {
+  const canvas = owner.querySelector('canvas')
+  if (!(canvas instanceof HTMLCanvasElement) || instrumentedCanvases.has(canvas)) return
   instrumentedCanvases.add(canvas)
   canvas.addEventListener('webglcontextlost', () => {
-    const state = proofState(owner)
-    state.contextLost = true
-    state.drawCalls = 0
-    state.objects = 0
-    state.anchors = 0
-    syncProof(owner, state)
+    const liveOwner = currentOwner(canvas)
+    if (liveOwner) resetProof(liveOwner, true)
   })
   canvas.addEventListener('webglcontextrestored', () => {
-    const state = proofState(owner)
-    state.contextLost = false
-    state.drawCalls = 0
-    state.objects = 0
-    state.anchors = 0
-    syncProof(owner, state)
+    const liveOwner = currentOwner(canvas)
+    if (liveOwner) resetProof(liveOwner, false)
   })
 }
 
-function recordDraw(context: WebGLRenderingContext | WebGL2RenderingContext) {
-  if (typeof document === 'undefined') return
-  const canvas = context.canvas
-  if (!(canvas instanceof HTMLCanvasElement)) return
-  const owner = canvas.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
-  if (!owner) return
-  bindContextLifecycle(canvas, owner)
+function rememberMutation(owner: HTMLElement, mutation: MutationRecord) {
   const state = proofState(owner)
-  if (state.contextLost) return
-  // Draw interception proves that WebGL work occurred, but the mounted R3F scene is
-  // the authoritative owner of object/anchor telemetry. Do not rewrite scene-owned
-  // attributes from the draw hook or a draw between the paired scene writes can
-  // collapse a valid anchor count back to zero.
-  state.drawCalls += 1
+  const current = mutation.attributeName ? numeric(owner.getAttribute(mutation.attributeName)) : 0
+  const previous = numeric(mutation.oldValue)
+  const observed = Math.max(current, previous)
+  if (mutation.attributeName === 'data-life-map-visible-objects') state.objects = Math.max(state.objects, observed)
+  if (mutation.attributeName === 'data-life-map-visible-anchors') state.anchors = Math.max(state.anchors, observed)
+  if (mutation.attributeName === 'data-life-map-render-calls') state.calls = Math.max(state.calls, observed)
 }
 
-function wrapDrawMethod(prototypeObject: object | undefined, method: string) {
-  if (!prototypeObject) return
-  const record = prototypeObject as Record<string, unknown>
-  const marker = `__urai_${method}`
-  if (record[marker]) return
-  const original = record[method]
-  if (typeof original !== 'function') return
-  Object.defineProperty(prototypeObject, marker, { value: true })
-  Object.defineProperty(prototypeObject, method, {
-    configurable: true,
-    writable: true,
-    value: function wrappedWebGLDraw(this: WebGLRenderingContext | WebGL2RenderingContext, ...args: unknown[]) {
-      const result = (original as (...values: unknown[]) => unknown).apply(this, args)
-      recordDraw(this)
-      return result
-    },
-  })
+function restoreOnlyStaleRegression(owner: HTMLElement) {
+  const state = proofState(owner)
+  bindContextLifecycle(owner)
+  if (state.contextLost) return
+
+  const currentObjects = numeric(owner.dataset.lifeMapVisibleObjects)
+  const currentAnchors = numeric(owner.dataset.lifeMapVisibleAnchors)
+  const currentCalls = numeric(owner.dataset.lifeMapRenderCalls)
+
+  if (state.objects > currentObjects) owner.dataset.lifeMapVisibleObjects = String(state.objects)
+  if (state.anchors > currentAnchors) owner.dataset.lifeMapVisibleAnchors = String(state.anchors)
+  if (state.calls > currentCalls) owner.dataset.lifeMapRenderCalls = String(state.calls)
+
+  if (state.calls > 0 && state.objects > 20 && state.anchors >= 8 && owner.dataset.lifeMapRenderReady !== 'true') {
+    owner.dataset.lifeMapRenderReady = 'true'
+  }
 }
 
 if (typeof window !== 'undefined') {
-  const webgl = window.WebGLRenderingContext?.prototype
-  const webgl2 = window.WebGL2RenderingContext?.prototype
-  for (const method of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced']) {
-    wrapDrawMethod(webgl, method)
-    wrapDrawMethod(webgl2, method)
-  }
-
   const observe = () => {
     if (!document.documentElement) return
     const observer = new MutationObserver((records) => {
       const touchedOwners = new Set<HTMLElement>()
       for (const mutation of records) {
-        if (!(mutation.target instanceof HTMLElement) || restoringOwners.has(mutation.target)) continue
+        if (!(mutation.target instanceof HTMLElement)) continue
         const owner = mutation.target.matches('[data-testid="urai-true-3d-life-map"]')
           ? mutation.target
           : mutation.target.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
         if (!owner) continue
-        const state = proofState(owner)
-        if (mutation.attributeName === 'data-life-map-visible-objects') {
-          const current = Number(owner.dataset.lifeMapVisibleObjects || 0)
-          const previous = Number(mutation.oldValue || 0)
-          const value = Math.max(Number.isFinite(current) ? current : 0, Number.isFinite(previous) ? previous : 0)
-          if (value > state.objects) state.objects = value
-        }
-        if (mutation.attributeName === 'data-life-map-visible-anchors') {
-          const current = Number(owner.dataset.lifeMapVisibleAnchors || 0)
-          const previous = Number(mutation.oldValue || 0)
-          const value = Math.max(Number.isFinite(current) ? current : 0, Number.isFinite(previous) ? previous : 0)
-          if (value > state.anchors) state.anchors = value
-        }
+        rememberMutation(owner, mutation)
         touchedOwners.add(owner)
       }
-      for (const owner of touchedOwners) syncProof(owner, proofState(owner))
+      for (const owner of touchedOwners) restoreOnlyStaleRegression(owner)
     })
     observer.observe(document.documentElement, {
       attributes: true,
       attributeOldValue: true,
       subtree: true,
-      attributeFilter: ['data-life-map-visible-objects', 'data-life-map-visible-anchors'],
+      attributeFilter: [
+        'data-life-map-visible-objects',
+        'data-life-map-visible-anchors',
+        'data-life-map-render-calls',
+        'data-life-map-render-ready',
+      ],
     })
   }
 
