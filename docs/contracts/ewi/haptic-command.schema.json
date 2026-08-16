@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urai://ewi/haptic-command/1.0.0",
+  "title": "URAI EWI HapticCommand v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "commandId", "subjectId", "symbol", "intensity", "createdAt"],
+  "properties": {
+    "version": {"const": "1.0.0"},
+    "commandId": {"type": "string", "minLength": 8, "maxLength": 160},
+    "subjectId": {"type": "string", "minLength": 1, "maxLength": 160},
+    "deviceId": {"type": "string", "maxLength": 160},
+    "symbol": {"enum": ["CALM", "WARNING", "PERSON_APPROACHING", "KNOWN_VOICE", "MEMORY_TRIGGER", "COUNCIL_ALERT", "NAV_LEFT", "NAV_RIGHT", "BREATH_WITH_ME"]},
+    "intensity": {"type": "number", "minimum": 0, "maximum": 1},
+    "repeat": {"type": "integer", "minimum": 1, "maximum": 20, "default": 1},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "permissionRefs": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 200}, "uniqueItems": true}
+  }
+}
