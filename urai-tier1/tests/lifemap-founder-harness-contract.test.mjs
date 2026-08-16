@@ -12,6 +12,7 @@ const runner = await readFile(runnerPath, 'utf8')
 const scene = await readFile(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const world = await readFile(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
 const navigator = await readFile(new URL('../src/components/lifemap/LifeMapSemanticNavigator.tsx', import.meta.url), 'utf8')
+const routeBoundary = await readFile(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const isolation = await readFile(new URL('../src/spatial/world/lifeMapProductionIsolation.css', import.meta.url), 'utf8')
 
 function runNode(args) {
@@ -126,6 +127,17 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
   assert.match(scene, /setSelectedId\(node\.id\);\s*setPhase\("arrival"\)/)
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
+})
+
+test('route boundary replays direct selected identity until the authoritative scene leaves overview', () => {
+  assert.match(routeBoundary, /requestLifeMapSelection/)
+  assert.match(routeBoundary, /current\.get\('overview'\) === '1'/)
+  assert.match(routeBoundary, /current\.get\('node'\) \|\| current\.get\('memoryId'\)/)
+  assert.match(routeBoundary, /root\?\.dataset\.lifeMapMode === 'selected'/)
+  assert.match(routeBoundary, /root\.dataset\.lifeMapPhase !== 'overview'/)
+  assert.match(routeBoundary, /requestLifeMapSelection\(nodeId, 'semantic'\)/)
+  assert.match(routeBoundary, /attempts < maxAttempts/)
+  assert.match(routeBoundary, /window\.requestAnimationFrame\(restoreSelectedRoute\)/)
 })
 
 test('Founder render proof samples one atomic live-root snapshot', () => {
