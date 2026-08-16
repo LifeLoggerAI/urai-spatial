@@ -336,7 +336,8 @@ export default function ComposedLifeMapScene() {
   }, [overviewRequested]);
 
   useEffect(() => {
-    if (overviewRequested || overviewPending.current || !queryNode || !nodes.length || !restoredRoutePending.current) return;
+    if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
+    if (!restoredRoutePending.current) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (!node) return;
     restoredRoutePending.current = false;
