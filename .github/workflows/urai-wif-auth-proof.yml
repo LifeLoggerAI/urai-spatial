@@ -2,6 +2,15 @@ name: URAI WIF Authentication Proof
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/urai-wif-auth-proof.yml'
+      - '.github/workflows/spatial-live-deploy.yml'
+      - 'scripts/bootstrap-github-wif.sh'
+      - 'scripts/verify-release-credential-boundary.mjs'
+      - 'scripts/verify-release-credential-boundary-static.mjs'
 
 permissions:
   contents: read
