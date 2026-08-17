@@ -60,13 +60,33 @@ export default function LifeMapRouteBoundary() {
 
     let cancelled = false
     let frame = 0
+    let repairFrame = 0
+    let commitFrame = 0
     let repaired = false
 
     const requestCanonicalSelection = () => {
-      if (repaired) return
-      repaired = true
-      const detail: LifeMapSelectionDetail = { nodeId, source: 'semantic' }
-      window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
+      if (repaired || repairFrame || commitFrame) return
+
+      // Direct-entry recovery is only allowed to spend one canonical selection event.
+      // Give the Suspense-mounted R3F world a complete paint/effect turn before dispatching
+      // so its LIFE_MAP_SELECTION_EVENT owner cannot miss the repair transaction.
+      repairFrame = window.requestAnimationFrame(() => {
+        repairFrame = 0
+        if (cancelled || repaired) return
+        const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+        if (!root || root.querySelector('.life-map-thresholds')) return
+
+        commitFrame = window.requestAnimationFrame(() => {
+          commitFrame = 0
+          if (cancelled || repaired) return
+          const liveRoot = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+          if (!liveRoot || liveRoot.querySelector('.life-map-thresholds')) return
+
+          repaired = true
+          const detail: LifeMapSelectionDetail = { nodeId, source: 'semantic' }
+          window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
+        })
+      })
     }
 
     const verifyDirectRouteInvariant = () => {
@@ -104,6 +124,8 @@ export default function LifeMapRouteBoundary() {
     return () => {
       cancelled = true
       if (frame) window.cancelAnimationFrame(frame)
+      if (repairFrame) window.cancelAnimationFrame(repairFrame)
+      if (commitFrame) window.cancelAnimationFrame(commitFrame)
     }
   }, [])
 
