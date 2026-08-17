@@ -19,6 +19,7 @@ env:
 jobs:
   prove-keyless-auth:
     if: github.repository == 'LifeLoggerAI/urai-spatial' && github.ref == 'refs/heads/main'
+    environment: production
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
