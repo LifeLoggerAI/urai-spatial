@@ -11,7 +11,7 @@ const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -36,42 +36,34 @@ test('app template mounts current WebGL owners without certified-route redirects
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProduction/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-real-world-first="true"/)
+  assert.match(homeProduction, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('Home remains one embodied authored 3D environment with accessible natural thresholds and recovery', () => {
+test('Home remains one embodied authored sacred-tech 3D environment with accessible thresholds and recovery', () => {
   for (const marker of [
-    'HomeWorldProductionPolished',
+    'HomeWorldProductionSacred',
     'Stars',
-    'HOME_PROVIDER_ENVIRONMENT',
-    'HOME_FERN_MODEL',
-    'replay-memory-film-main.webp',
-    'polyhaven-fern-02-geometry-v1.glb',
+    'home-entry-chamber-v1.glb',
+    'home-human-makehuman-v4.glb',
     'data-home-primary-owner="asset-driven"',
-    'data-home-real-world-first="true"',
-    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
-    'data-home-visible-portals="false"',
-    'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
-    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
-    'data-home-provider-role="atmospheric-support-only"',
-    'data-home-generated-scenery="suppressed"',
-    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
+    'data-home-world-character="premium-cinematic-sacred-tech"',
+    'data-home-physical-base="authored-obsidian-ritual-platform"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="privacy-preserving-shadow"',
+    'data-home-embodied-self="makehuman-v4"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-pointer-lock="false"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
-    'home-reflecting-water',
+    'home-sanctuary-pavilion',
     'home-orb-sanctuary',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
@@ -84,12 +76,11 @@ test('Home remains one embodied authored 3D environment with accessible natural 
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
-  assert.match(homeCss, /opacity:\s*\.2/)
-  assert.match(homeProduction, /function makeTerrainGeometry\(/)
-  assert.match(homeProduction, /function Terrain\(/)
-  assert.match(homeProduction, /function Vegetation\(/)
-  assert.match(homeProduction, /function Horizon\(/)
-  assert.match(homeProduction, /function Water\(/)
+  assert.match(homeProduction, /function RitualFloor\(/)
+  assert.match(homeProduction, /function MoonAndMist\(/)
+  assert.match(homeProduction, /function SacredOrb\(/)
+  assert.match(homeProduction, /function OrbPlatform\(/)
+  assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
@@ -115,23 +106,21 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
   assert.match(worldEvents, /return\s*\n\s*}/)
-  assert.match(homeProduction, /store\.phase === 'ASCENT'/)
-  assert.match(homeProduction, /store\.setProgress\(t\)/)
-  assert.match(homeProduction, /cameraCheckpoint: 'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /data-home-camera-mode=\{groundDescent \? 'descent' : phase === 'ASCENT' \? 'ascent'/)
-  assert.match(homeProduction, /data-home-ascent-progress=/)
-  assert.match(homeProduction, /data-home-input-locked=/)
+  assert.match(homeProduction, /transition==='life-map'/)
+  assert.match(homeProduction, /setProgress\(t\)/)
+  assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
+  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-third-person'\}/)
+  assert.match(homeProduction, /data-home-input-locked=\{transition!=='none'\?'true':'false'\}/)
   assert.match(homeProduction, /store\.setPhase\('HOME'\)/)
   assert.match(homeProduction, /store\.unlock\(\)/)
   assert.doesNotMatch(homeProduction, /<CinematicCameraRig|<SpatialSceneClient/)
 })
 
 test('Home Ground entry is a physical environmental descent rather than a floating menu portal', () => {
-  assert.match(homeProduction, /GROUND_DESCENT_DURATION_SECONDS/)
+  assert.match(homeProduction, /transition==='ground'/)
   assert.match(homeProduction, /home-ground-environmental-threshold/)
-  assert.match(homeProduction, /destination: 'infrastructure-hub'/)
-  assert.match(homeProduction, /cameraCheckpoint: 'home-ground-descent'/)
-  assert.match(homeProduction, /groundDescent \? 'GROUND_DESCENT'/)
+  assert.match(homeProduction, /destination:'infrastructure-hub'/)
+  assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
   assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
 })
 
@@ -184,8 +173,8 @@ test('Life Map owner and legacy veil suppression remain full viewport', () => {
 test('Home environmental thresholds and generated manifest filter remain observable on a saturated host', () => {
   assert.match(homeProduction, /home-ground-environmental-threshold/)
   assert.match(homeProduction, /home-life-map-sky-lookout/)
-  assert.match(homeProduction, /destination: 'infrastructure-hub'/)
-  assert.match(homeProduction, /destination: 'life-map'/)
+  assert.match(homeProduction, /destination:'infrastructure-hub'/)
+  assert.match(homeProduction, /destination:'life-map'/)
   assert.match(homeProduction, /Look to the sky/)
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
