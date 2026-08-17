@@ -2,7 +2,7 @@
 
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
@@ -65,11 +65,18 @@ function RenderProofRepublisher() {
   const invalidationFrame = useRef<number | null>(null);
   const lastSignature = useRef("");
 
+  const resolveOwner = useCallback(() => {
+    const element = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
+      ?? document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    root.current = element;
+    return element;
+  }, [gl]);
+
   useEffect(() => {
     const canvas = gl.domElement;
-    root.current = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
     const writeInvalid = () => {
-      const element = root.current;
+      if (!invalidated.current) return;
+      const element = resolveOwner();
       if (element) {
         element.dataset.lifeMapRenderReady = "false";
         element.dataset.lifeMapVisibleObjects = "0";
@@ -95,7 +102,7 @@ function RenderProofRepublisher() {
       canvas.removeEventListener("webglcontextlost", invalidate, false);
       canvas.removeEventListener("webglcontextrestored", invalidate, false);
     };
-  }, [gl]);
+  }, [gl, resolveOwner]);
 
   useFrame(() => {
     frames.current += 1;
@@ -116,7 +123,7 @@ function RenderProofRepublisher() {
       invalidationFrame.current = null;
     }
     lastSignature.current = signature;
-    const element = root.current ?? document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
+    const element = resolveOwner();
     if (!element) return;
     element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
     element.dataset.lifeMapVisibleObjects = String(objects);

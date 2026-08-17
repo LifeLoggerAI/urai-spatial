@@ -46,15 +46,30 @@ export default function LifeMapSemanticNavigator() {
     return next
   }, [explicitDemo, params])
 
+  const commitBrowserIdentity = useCallback((next: URLSearchParams) => {
+    const destination = `/life-map?${next.toString()}`
+    window.history.replaceState(window.history.state, '', destination)
+    return destination
+  }, [])
+
   const selectNode = useCallback((node: LifeMapNode, source: 'semantic' | 'keyboard' | 'pointer' = 'semantic') => {
     setOpen(false)
-    requestLifeMapSelection(node.id, source)
     const next = withIdentity(new URLSearchParams())
     next.set('memoryId', node.id)
     next.set('node', node.id)
     if (node.eraId) next.set('era', node.eraId)
-    router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [router, withIdentity])
+
+    // Same-route selection identity must become observable before the spatial world begins
+    // its potentially expensive camera/render transition. The world selection event remains
+    // the single authoritative state transaction and owns the normal Next router replacement.
+    commitBrowserIdentity(next)
+    requestLifeMapSelection(node.id, source)
+
+    // Defensive fallback for any future reuse outside the canonical /life-map owner.
+    if (window.location.pathname.replace(/\/+$/, '') !== '/life-map') {
+      router.replace(`/life-map?${next.toString()}`, { scroll: false })
+    }
+  }, [commitBrowserIdentity, router, withIdentity])
 
   const overview = useCallback(() => {
     setOpen(false)
@@ -64,8 +79,9 @@ export default function LifeMapSemanticNavigator() {
     if (memoryId) next.set('memoryId', memoryId)
     if (node) next.set('node', node)
     next.set('overview', '1')
+    commitBrowserIdentity(next)
     router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [params, router, withIdentity])
+  }, [commitBrowserIdentity, params, router, withIdentity])
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes

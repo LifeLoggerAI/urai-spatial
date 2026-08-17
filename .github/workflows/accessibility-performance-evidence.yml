@@ -126,6 +126,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/accessibility-performance/spec-logs \
+            artifacts/accessibility-performance/test-logs \
             artifacts/accessibility-performance/spec-reports \
             artifacts/accessibility-performance/spec-results
           : > artifacts/accessibility-performance/playwright.log
@@ -136,30 +137,108 @@ jobs:
 
           for spec in "${specs[@]}"; do
             slug="$(basename "$spec" .spec.ts)"
-            rm -rf artifacts/accessibility-performance/playwright-report \
-              artifacts/accessibility-performance/test-results
-            echo "=== ACCESSIBILITY SPEC START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log
+            spec_log="artifacts/accessibility-performance/spec-logs/${slug}.log"
+            list_log="artifacts/accessibility-performance/spec-logs/${slug}-list.log"
+            : > "$spec_log"
+            : > "$list_log"
+            echo "=== ACCESSIBILITY SPEC START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
+            echo "=== ACCESSIBILITY DISCOVERY START: $spec ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
 
             set +e
-            pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" \
-              2>&1 | tee -a artifacts/accessibility-performance/playwright.log \
-                "artifacts/accessibility-performance/spec-logs/${slug}.log"
-            spec_status=${PIPESTATUS[0]}
+            FORCE_COLOR=0 pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" --list > "$list_log" 2>&1
+            list_status=$?
             set -e
-
-            if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
-              mv artifacts/accessibility-performance/playwright-report \
-                "artifacts/accessibility-performance/spec-reports/${slug}"
-            fi
-            if [[ -d artifacts/accessibility-performance/test-results ]]; then
-              mv artifacts/accessibility-performance/test-results \
-                "artifacts/accessibility-performance/spec-results/${slug}"
+            cat "$list_log" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
+            echo "=== ACCESSIBILITY DISCOVERY END: $spec status=$list_status ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
+            if [[ "$list_status" -ne 0 ]]; then
+              echo "Playwright discovery failed for $spec" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
+              status="$list_status"
+              continue
             fi
 
-            echo "=== ACCESSIBILITY SPEC END: $spec status=$spec_status ===" | tee -a artifacts/accessibility-performance/playwright.log
-            if [[ "$spec_status" -ne 0 ]]; then
-              status="$spec_status"
-            fi
+            mapfile -t test_cases < <(
+              node - "$spec" "$list_log" <<'NODE'
+          const { createHash } = require('node:crypto')
+          const { readFileSync } = require('node:fs')
+          const spec = process.argv[2]
+          const listLog = process.argv[3]
+          const stripAnsi = (value) => value.replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '')
+          const output = stripAnsi(readFileSync(listLog, 'utf8'))
+          const titles = []
+
+          for (const rawLine of output.split(/\r?\n/)) {
+            const line = rawLine.trim()
+            const parts = line.split(' › ')
+            if (parts.length < 3 || !/^\[[^\]]+\]$/.test(parts[0])) continue
+            if (!/\.spec\.ts:\d+:\d+$/.test(parts[1])) continue
+            const title = parts[parts.length - 1].trim()
+            if (title) titles.push(title)
+          }
+
+          if (!titles.length) {
+            console.error(`Playwright discovery returned no runnable tests for ${spec}`)
+            process.exit(2)
+          }
+          if (new Set(titles).size !== titles.length) {
+            console.error(`Duplicate discovered leaf test titles are not safe for isolated grep execution in ${spec}`)
+            process.exit(3)
+          }
+          for (let left = 0; left < titles.length; left += 1) {
+            for (let right = 0; right < titles.length; right += 1) {
+              if (left === right) continue
+              if (titles[right].endsWith(titles[left])) {
+                console.error(`Ambiguous discovered leaf-title suffix in ${spec}: ${JSON.stringify({ shorter: titles[left], longer: titles[right] })}`)
+                process.exit(4)
+              }
+            }
+          }
+
+          for (const title of titles) {
+            if (/[\r\n\t]/.test(title)) {
+              console.error(`Multiline discovered test title is not safe for isolated execution in ${spec}`)
+              process.exit(5)
+            }
+            const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'
+            const hash = createHash('sha256').update(title).digest('hex').slice(0, 12)
+            process.stdout.write(`${hash}\t${Buffer.from(escaped, 'utf8').toString('base64')}\n`)
+          }
+          NODE
+            )
+            test "${#test_cases[@]}" -gt 0
+            spec_status=0
+
+            for test_case in "${test_cases[@]}"; do
+              test_hash="${test_case%%$'\t'*}"
+              encoded_regex="${test_case#*$'\t'}"
+              test_regex="$(printf '%s' "$encoded_regex" | base64 --decode)"
+              test_log="artifacts/accessibility-performance/test-logs/${slug}-${test_hash}.log"
+              rm -rf artifacts/accessibility-performance/playwright-report \
+                artifacts/accessibility-performance/test-results
+              echo "=== ACCESSIBILITY TEST START: $spec hash=$test_hash ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
+
+              set +e
+              FORCE_COLOR=0 pnpm exec playwright test --config playwright.accessibility.config.ts "$spec" --grep "$test_regex" \
+                2>&1 | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
+              test_status=${PIPESTATUS[0]}
+              set -e
+
+              if [[ -d artifacts/accessibility-performance/playwright-report ]]; then
+                mv artifacts/accessibility-performance/playwright-report \
+                  "artifacts/accessibility-performance/spec-reports/${slug}-${test_hash}"
+              fi
+              if [[ -d artifacts/accessibility-performance/test-results ]]; then
+                mv artifacts/accessibility-performance/test-results \
+                  "artifacts/accessibility-performance/spec-results/${slug}-${test_hash}"
+              fi
+
+              echo "=== ACCESSIBILITY TEST END: $spec hash=$test_hash status=$test_status ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log" "$test_log"
+              if [[ "$test_status" -ne 0 ]]; then
+                spec_status="$test_status"
+                status="$test_status"
+              fi
+            done
+
+            echo "=== ACCESSIBILITY SPEC END: $spec status=$spec_status ===" | tee -a artifacts/accessibility-performance/playwright.log "$spec_log"
           done
 
           exit "$status"

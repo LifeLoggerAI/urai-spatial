@@ -8,6 +8,69 @@ const CI_WEBGL_ARGS = [
   '--disable-dev-shm-usage',
 ]
 
+const FOUNDER_PHASE_STORAGE_KEY = '__uraiFounderJourneyPhaseWatchRecord'
+const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
+
+async function installFounderPhaseLedger(context) {
+  await context.addInitScript(({ rootSelector, storageKey }) => {
+    const inspect = () => {
+      const root = document.querySelector(rootSelector)
+      if (!(root instanceof HTMLElement)) return
+      if (root.dataset.lifeMapMode !== 'selected') return
+
+      let record = null
+      try {
+        record = JSON.parse(sessionStorage.getItem(storageKey) || 'null')
+      } catch {
+        return
+      }
+      if (!record?.expectedPhase || record.observed) return
+      if (root.dataset.lifeMapPhase !== record.expectedPhase) return
+
+      const observed = {
+        phase: root.dataset.lifeMapPhase,
+        mode: root.dataset.lifeMapMode,
+        scale: root.dataset.lifeMapScale || null,
+        observedAt: performance.now(),
+      }
+      try {
+        sessionStorage.setItem(storageKey, JSON.stringify({ ...record, observed }))
+      } catch {
+        // The checked-in Founder watcher remains authoritative if storage is unavailable.
+      }
+    }
+
+    const observer = new MutationObserver(inspect)
+    window.__uraiFounderJourneyPhaseLedgerObserver = observer
+    observer.observe(document, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'],
+    })
+    inspect()
+  }, { rootSelector: FOUNDER_ROOT_SELECTOR, storageKey: FOUNDER_PHASE_STORAGE_KEY })
+}
+
+function patchBrowserContexts(browser, label) {
+  if (!browser || browser.__uraiFounderPhaseLedgerPatched === true) return browser
+  const originalNewContext = browser.newContext.bind(browser)
+  Object.defineProperty(browser, 'newContext', {
+    configurable: true,
+    value: async (options = {}) => {
+      const context = await originalNewContext(options)
+      await installFounderPhaseLedger(context)
+      return context
+    },
+  })
+  Object.defineProperty(browser, '__uraiFounderPhaseLedgerPatched', {
+    configurable: true,
+    value: true,
+  })
+  console.log(`URAI_FOUNDER_PHASE_LEDGER_PATCHED ${label}`)
+  return browser
+}
+
 function patchChromium(requireFrom, label) {
   try {
     const playwright = requireFrom('playwright')
@@ -16,12 +79,13 @@ function patchChromium(requireFrom, label) {
     const originalLaunch = chromium.launch.bind(chromium)
     Object.defineProperty(chromium, 'launch', {
       configurable: true,
-      value(options = {}) {
+      value: async (options = {}) => {
         const requestedArgs = Array.isArray(options.args) ? options.args : []
-        return originalLaunch({
+        const browser = await originalLaunch({
           ...options,
           args: [...new Set([...requestedArgs, ...CI_WEBGL_ARGS])],
         })
+        return patchBrowserContexts(browser, label)
       },
     })
     Object.defineProperty(chromium, '__uraiCiWebglPatched', {

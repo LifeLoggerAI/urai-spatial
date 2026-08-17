@@ -65,8 +65,8 @@ function recordPageEvents(page, label) {
   })
 }
 
-async function openPage(options = {}) {
-  const context = await browser.newContext({
+async function openPage(options = {}, browserInstance = browser) {
+  const context = await browserInstance.newContext({
     viewport: options.viewport || { width: 1440, height: 900 },
     deviceScaleFactor: options.deviceScaleFactor || 1,
     reducedMotion: options.reducedMotion || 'no-preference',
@@ -173,13 +173,22 @@ async function waitForState(page, attribute, expected, timeout = 30_000) {
 }
 
 async function waitForRenderedWorld(page, timeout = 30_000) {
-  const root = page.locator(ROOT).first()
-  return poll('rendered Life Map world', async () => ({
-    ready: await root.getAttribute('data-life-map-render-ready'),
-    anchors: Number(await root.getAttribute('data-life-map-visible-anchors') || 0),
-    objects: Number(await root.getAttribute('data-life-map-visible-objects') || 0),
-    calls: Number(await root.getAttribute('data-life-map-render-calls') || 0),
-  }), (state) => state.ready === 'true' && state.anchors >= 8 && state.objects > 20 && state.calls > 0, timeout, 75)
+  return poll('rendered Life Map world', () => page.evaluate((rootSelector) => {
+    const element = document.querySelector(rootSelector)
+    if (!(element instanceof HTMLElement)) return null
+    return {
+      ready: element.dataset.lifeMapRenderReady || null,
+      anchors: Number(element.dataset.lifeMapVisibleAnchors || 0),
+      objects: Number(element.dataset.lifeMapVisibleObjects || 0),
+      calls: Number(element.dataset.lifeMapRenderCalls || 0),
+    }
+  }, ROOT), (state) => Boolean(
+    state
+    && state.ready === 'true'
+    && state.anchors >= 8
+    && state.objects > 20
+    && state.calls > 0
+  ), timeout, 75)
 }
 
 async function waitForOverviewState(page, timeout = 30_000) {
@@ -377,6 +386,16 @@ function selectedAction(page, label) {
   return selectedActions(page).locator('button').filter({ has: page.getByText(label, { exact: true }) }).first()
 }
 
+function selectedActionSelector(name) {
+  const actionClass = {
+    'Enter Focus': 'focus-threshold',
+    Replay: 'replay-threshold',
+    Overview: 'overview-return',
+  }[name]
+  if (!actionClass) throw new Error(`unknown selected-memory action: ${name}`)
+  return `nav[aria-label="Selected memory actions"] button.${actionClass}`
+}
+
 async function canonicalControlGeometry(page, selector, label, timeout = 20_000) {
   const viewport = page.viewportSize()
   return poll(label, () => page.evaluate((controlSelector) => {
@@ -486,7 +505,10 @@ async function waitForPath(page, destinationPath, timeout = 30_000) {
 async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedAction(page, name)
   await action.waitFor({ state: 'visible', timeout: 20_000 })
-  await action.click()
+  const selector = selectedActionSelector(name)
+  const geometry = await canonicalControlGeometry(page, selector, `canonical ${name} action`)
+  if (!geometry.text.includes(name)) throw new Error(`${name} action text drifted: ${geometry.text}`)
+  await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
@@ -563,11 +585,54 @@ async function highResolutionOverview() {
   }
 }
 
+async function captureIsolatedJourneyPhase({ id, targetPhase, captureState, interaction = 'pointer', viewport, hasTouch = false, isMobile = false }) {
+  const isolatedBrowser = await chromium.launch({ headless: true })
+  let isolated = null
+  try {
+    isolated = await openPage({
+      label: `isolated-${id}`,
+      viewport,
+      hasTouch,
+      isMobile,
+    }, isolatedBrowser)
+    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+    await goto(isolated.page, overviewRoute)
+    await waitForRenderedWorld(isolated.page)
+    const observedPhase = await selectQuietReset(isolated.page, {
+      targetPhase,
+      keyboard: interaction === 'keyboard',
+      touch: interaction === 'touch',
+    })
+    await shot(isolated.page, id, captureState, {
+      memoryId: 'quiet-reset',
+      interaction,
+      observedPhase,
+    })
+  } finally {
+    await isolated?.context.close()
+    await isolatedBrowser.close()
+  }
+}
+
+async function isolatedJourneyPhases() {
+  await captureIsolatedJourneyPhase({ id: 'selection-start', targetPhase: 'departure', captureState: 'departure' })
+  await captureIsolatedJourneyPhase({ id: 'mid-travel', targetPhase: 'travel', captureState: 'travel' })
+  await captureIsolatedJourneyPhase({ id: 'approach', targetPhase: 'approach', captureState: 'approach' })
+  await captureIsolatedJourneyPhase({
+    id: 'portrait-mobile-travel',
+    targetPhase: 'travel',
+    captureState: 'travel',
+    interaction: 'touch',
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+}
+
 async function desktopJourney() {
   const { context, page } = await openPage({ label: 'desktop' })
   try {
     const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
-    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
 
     await goto(page, overviewRoute)
     await waitForRenderedWorld(page)
@@ -588,27 +653,43 @@ async function desktopJourney() {
     await page.mouse.move(box.x + box.width * 0.82, box.y + box.height * 0.68, { steps: 18 })
     await stable(page, 14)
     await shot(page, 'depth-travel-frame-3', 'parallax-3')
+  } finally {
+    await context.close()
+  }
+}
 
-    const departure = await selectQuietReset(page, { targetPhase: 'departure' })
-    await shot(page, 'selection-start', 'departure', { memoryId: 'quiet-reset', interaction: 'pointer', observedPhase: departure })
-
-    await goto(page, overviewRoute)
+async function desktopArrivalEvidence() {
+  const arrivalBrowser = await chromium.launch({ headless: true })
+  let arrivalPage = null
+  try {
+    arrivalPage = await openPage({ label: 'desktop-arrival' }, arrivalBrowser)
+    const { page } = arrivalPage
+    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
+    await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
-    const travel = await selectQuietReset(page, { targetPhase: 'travel' })
-    await shot(page, 'mid-travel', 'travel', { memoryId: 'quiet-reset', observedPhase: travel })
+    await waitForState(page, 'data-life-map-phase', 'arrival')
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
+    await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
+    await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
+  } finally {
+    await arrivalPage?.context.close()
+    await arrivalBrowser.close()
+  }
+}
 
-    await goto(page, overviewRoute)
-    await waitForRenderedWorld(page)
-    const approach = await selectQuietReset(page, { targetPhase: 'approach' })
-    await shot(page, 'approach', 'approach', { memoryId: 'quiet-reset', observedPhase: approach })
+async function desktopActionsAndKeyboard() {
+  const actionBrowser = await chromium.launch({ headless: true })
+  let actionPage = null
+  try {
+    actionPage = await openPage({ label: 'desktop-actions' }, actionBrowser)
+    const { page } = actionPage
+    const overviewRoute = '/life-map/?demo=1&manifestId=replay-recovery-thread&overview=1'
+    const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
-    await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
-    await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
@@ -622,9 +703,12 @@ async function desktopJourney() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
+    const overviewSelector = selectedActionSelector('Overview')
     const overviewAction = selectedAction(page, 'Overview')
     await overviewAction.waitFor({ state: 'visible', timeout: 20_000 })
-    await overviewAction.click()
+    const overviewGeometry = await canonicalControlGeometry(page, overviewSelector, 'canonical Overview action')
+    if (!overviewGeometry.text.includes('Overview')) throw new Error(`Overview action text drifted: ${overviewGeometry.text}`)
+    await activateCanonicalControl(page, overviewSelector, overviewGeometry, 'pointer')
     await waitForOverviewState(page)
     await shot(page, 'overview-reset', 'overview-reset')
 
@@ -636,7 +720,8 @@ async function desktopJourney() {
     await waitForOverviewState(page)
     await shot(page, 'escape-unwind', 'escape-unwind')
   } finally {
-    await context.close()
+    await actionPage?.context.close()
+    await actionBrowser.close()
   }
 }
 
@@ -649,8 +734,6 @@ async function mobileAndReduced() {
     await goto(mobile.page, overviewRoute)
     await waitForRenderedWorld(mobile.page)
     await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
-    const travel = await selectQuietReset(mobile.page, { touch: true, targetPhase: 'travel' })
-    await shot(mobile.page, 'portrait-mobile-travel', 'travel', { memoryId: 'quiet-reset', interaction: 'touch', observedPhase: travel })
     await goto(mobile.page, arrivalRoute)
     await waitForRenderedWorld(mobile.page)
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
@@ -745,6 +828,9 @@ async function privacyAndRecovery() {
 try {
   await highResolutionOverview()
   await desktopJourney()
+  await desktopArrivalEvidence()
+  await desktopActionsAndKeyboard()
+  await isolatedJourneyPhases()
   await mobileAndReduced()
   await privacyAndRecovery()
   assertVisualSanity()

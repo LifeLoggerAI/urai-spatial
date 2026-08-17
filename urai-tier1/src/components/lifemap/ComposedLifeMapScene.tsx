@@ -255,10 +255,11 @@ export default function ComposedLifeMapScene() {
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
-  const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
+  const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
+  const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
@@ -285,6 +286,7 @@ export default function ComposedLifeMapScene() {
   }, [phase, profile.reducedMotion, selected]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    restoredRoutePending.current = false;
     overviewPending.current = false;
     journeyToken.current += 1;
     setSelectedId(node.id);
@@ -299,6 +301,7 @@ export default function ComposedLifeMapScene() {
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
+    restoredRoutePending.current = false;
     overviewPending.current = true;
     journeyToken.current += 1;
     setSelectedId(null);
@@ -325,6 +328,7 @@ export default function ComposedLifeMapScene() {
 
   useEffect(() => {
     if (!overviewRequested) return;
+    restoredRoutePending.current = false;
     overviewPending.current = false;
     journeyToken.current += 1;
     setSelectedId((current) => current === null ? current : null);
@@ -333,9 +337,14 @@ export default function ComposedLifeMapScene() {
 
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
+    if (!restoredRoutePending.current) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
-    if (node && node.id !== selectedId) selectNode(node);
-  }, [nodes, overviewRequested, queryNode, selectNode, selectedId]);
+    if (!node) return;
+    restoredRoutePending.current = false;
+    journeyToken.current += 1;
+    setSelectedId(node.id);
+    setPhase("arrival");
+  }, [nodes, overviewRequested, queryNode]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
