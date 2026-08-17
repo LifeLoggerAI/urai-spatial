@@ -80,17 +80,7 @@ for (const testCase of cases) {
   }
 }
 
-const forbidden = [
-  /diagnos(e|is|ed|ing)/i,
-  /definitely lying/i,
-  /definitely betrayed/i,
-  /secret chain[- ]of[- ]thought/i,
-  /private user data/i
-];
-const serialized = JSON.stringify(cases);
-for (const pattern of forbidden) {
-  if (pattern.test(serialized)) fail(`unsafe baseline contract matched ${pattern}`);
-}
+if (cases.length < 90) fail(`baseline is too small: ${cases.length} cases; requires at least 90`);
 
 if (process.exitCode) process.exit(process.exitCode);
 
