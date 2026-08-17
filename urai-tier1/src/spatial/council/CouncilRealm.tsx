@@ -17,14 +17,14 @@ import {
 } from '@/spatial/navigation/EmbodiedNavigation'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-const HUMAN_ROOT = '/assets/urai/generated/human-rig-v3'
+const HUMAN_ROOT = '/assets/urai/generated/human-makehuman-v4'
 const HUMAN_MODELS = [
-  `${HUMAN_ROOT}/council-guide-human-rigged-v3.glb`,
-  `${HUMAN_ROOT}/council-archivist-human-rigged-v3.glb`,
-  `${HUMAN_ROOT}/council-guardian-human-rigged-v3.glb`,
-  `${HUMAN_ROOT}/council-builder-human-rigged-v3.glb`,
-  `${HUMAN_ROOT}/council-mirror-human-rigged-v3.glb`,
-  `${HUMAN_ROOT}/council-trickster-human-rigged-v3.glb`,
+  `${HUMAN_ROOT}/council-guide-human-makehuman-v4.glb`,
+  `${HUMAN_ROOT}/council-archivist-human-makehuman-v4.glb`,
+  `${HUMAN_ROOT}/council-guardian-human-makehuman-v4.glb`,
+  `${HUMAN_ROOT}/council-builder-human-makehuman-v4.glb`,
+  `${HUMAN_ROOT}/council-mirror-human-makehuman-v4.glb`,
+  `${HUMAN_ROOT}/council-trickster-human-makehuman-v4.glb`,
 ] as const
 
 const POSITIONS: [number, number, number][] = [
@@ -155,7 +155,7 @@ function RiggedCouncilHuman({
         event.stopPropagation()
         onSelect()
       }}
-      userData={{ representation: 'skinned-animated-human-v3', modelUrl, lighting: 'physical-scene' }}
+      userData={{ representation: 'skinned-animated-human-v4-preview', modelUrl, lighting: 'physical-scene' }}
     >
       <primitive object={model.scene} />
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -198,7 +198,7 @@ function CouncilStage() {
     <div
       ref={shellRef}
       className="relative min-h-screen overflow-hidden bg-[#10151a] text-white"
-      data-council-human-authority="human-rig-v3"
+      data-council-human-authority="human-makehuman-v4-preview"
       data-council-lighting-authority="physical-pbr-v1"
       data-council-embodied="true"
       data-spatial-quality-tier={quality.tier}
