@@ -129,10 +129,14 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary repairs only the impossible direct-arrival state and never replays selection', () => {
+test('route boundary repairs only impossible direct-route states and never loops selection', () => {
   assert.match(routeBoundary, /let repaired = false/)
-  assert.match(routeBoundary, /root\.dataset\.lifeMapPhase !== 'arrival'/)
+  assert.match(routeBoundary, /const phase = root\.dataset\.lifeMapPhase/)
+  assert.match(routeBoundary, /if \(phase === 'arrival'\)/)
   assert.match(routeBoundary, /root\.querySelector\('\.life-map-thresholds'\)/)
+  assert.match(routeBoundary, /if \(phase === 'overview'\)/)
+  assert.match(routeBoundary, /root\.dataset\.lifeMapRenderReady === 'true'/)
+  assert.match(routeBoundary, /visibleAnchors >= MIN_DIRECT_ROUTE_RENDER_ANCHORS/)
   assert.match(routeBoundary, /repaired = true/)
   assert.match(routeBoundary, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>\(LIFE_MAP_SELECTION_EVENT/)
   assert.equal((routeBoundary.match(/dispatchEvent\(new CustomEvent/g) || []).length, 1)
