@@ -20,6 +20,16 @@ for (const marker of [
   'permissions:\n  contents: read',
   'EXACT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
   'name: Verify canonical source with production release quarantined',
+  'name: Prove short-lived Google WIF identity',
+  "if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'",
+  'id-token: write',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  "workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'",
+  "service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'",
+  "access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform.read-only'",
+  'create_credentials_file: false',
+  'export_environment_variables: false',
+  'Production mutation command: none',
   'persist-credentials: false',
   'Classification: NO-GO',
   'Production release and Hosting recovery are intentionally quarantined.',
@@ -36,8 +46,8 @@ for (const marker of [
 
 forbidPattern('Release verification workflow', workflow, /\bsecrets\s*\./, 'repository secret reference')
 forbidPattern('Release verification workflow', workflow, /environment\s*:\s*production/, 'production environment')
-forbidPattern('Release verification workflow', workflow, /id-token\s*:\s*write/, 'OIDC write authority')
 forbidPattern('Release verification workflow', workflow, /contents\s*:\s*write|actions\s*:\s*write/, 'repository write authority')
+if ((workflow.match(/id-token\s*:\s*write/g) || []).length !== 1) failures.push('Release verification workflow must expose exactly one OIDC write permission for the main-only WIF proof job')
 forbidPattern('Release verification workflow', workflow, /live-release\.mjs\s+--deploy(?:-prebuilt)?/, 'release mutation command')
 forbidPattern('Release verification workflow', workflow, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy|pnpm\s+live:deploy|gcloud\s+deploy/, 'provider mutation command')
 forbidPattern('Fail-closed release operator', operator, /deployHostingWithTemporaryCredentials|writeTemporaryServiceAccount|createSign\s*\(/, 'credential materialization or provider mutation implementation')
@@ -48,12 +58,13 @@ for (const action of pinnedActions) {
 }
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-static-6',
+  schemaVersion: 'urai-release-credential-boundary-static-9',
   ok: failures.length === 0,
-  mode: 'quarantine-no-go',
+  mode: 'quarantine-no-go-with-main-only-read-only-wif-proof',
   exactHeadVerificationOnly: true,
   productionMutationAvailable: false,
-  productionCredentialsAvailable: false,
+  longLivedProductionCredentialsAvailable: false,
+  mainOnlyReadOnlyWifProofConfigured: true,
   repositorySecretsReferenced: false,
   providerWifIamProofRequiredBeforeMutation: true,
   independentReviewRequiredBeforeMutation: true,

@@ -13,6 +13,7 @@ const allowedActions = new Set([
   'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
   'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
   'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
 ])
 
 const workflowActions = {}
@@ -35,7 +36,7 @@ for (const required of allowedActions) {
 }
 
 const report = {
-  schemaVersion: 'urai-production-action-pins-2',
+  schemaVersion: 'urai-production-action-pins-5',
   ok: failures.length === 0,
   workflows: workflowActions,
   allowedActions: [...allowedActions],
