@@ -10,6 +10,7 @@ const requiredFocusedTests = [
   'tests/orb-companion-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
+  'tests/provider-preview-routing-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
