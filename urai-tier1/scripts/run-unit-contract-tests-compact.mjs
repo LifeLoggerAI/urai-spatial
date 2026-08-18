@@ -32,6 +32,7 @@ const tests = [
   'tests/orb-companion-contract.test.mjs',
   'tests/provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
+  'tests/provider-preview-routing-contract.test.mjs',
   'tests/post-deploy-ground-smoke-contract.test.mjs',
   'tests/persistent-world-doorway-regression.test.mjs',
   'tests/quest-entry-lifecycle.test.mjs',
