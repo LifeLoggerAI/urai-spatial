@@ -39,6 +39,7 @@ const tests = [
   'tests/quest-pointer-cancel.test.mjs',
   'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
+  'tests/replay-transition-evidence-contract.test.mjs',
   'tests/replay-operations-contract.test.mjs',
   'tests/replay-product-controls-contract.test.mjs',
   'tests/replay-mobile-control-clearance-contract.test.mjs',
