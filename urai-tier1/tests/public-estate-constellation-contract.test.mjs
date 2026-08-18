@@ -46,7 +46,9 @@ test('public estate exposes only the four approved public properties', () => {
 test('unverified public properties fail closed as status-only entries', () => {
   assert.equal((estateBlock.match(/status: 'verification-pending'/g) ?? []).length, approvedPublicProperties.length)
   assert.ok(!/href\s*:/.test(estateBlock), 'verification-pending registry entries must not contain outbound URLs')
-  assert.match(companion, /entry\.status === 'live' && entry\.href/)
+  assert.match(companion, /\{ status: 'verification-pending'; href\?: never \}/)
+  assert.match(companion, /\{ status: 'live'; href: string \}/)
+  assert.match(companion, /entry\.status === 'live'/)
   assert.match(companion, /Verification pending/)
   assert.match(companion, /data-estate-status=\{entry\.status\}/)
 })
