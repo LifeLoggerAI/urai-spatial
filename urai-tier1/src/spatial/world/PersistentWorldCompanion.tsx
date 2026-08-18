@@ -19,6 +19,20 @@ const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'mani
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
+type PublicEstateEntry = {
+  id: 'studio' | 'privacy' | 'labs' | 'foundation'
+  label: string
+  status: 'verification-pending' | 'live'
+  href?: string
+}
+
+const PUBLIC_ESTATE: readonly PublicEstateEntry[] = [
+  { id: 'studio', label: 'URAI Studio', status: 'verification-pending' },
+  { id: 'privacy', label: 'URAI Privacy', status: 'verification-pending' },
+  { id: 'labs', label: 'URAI Labs', status: 'verification-pending' },
+  { id: 'foundation', label: 'URAI Foundation', status: 'verification-pending' },
+]
+
 function buildCompanionTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
   const target = new URL(request.href ?? definition.href, window.location.origin)
@@ -181,6 +195,26 @@ export function PersistentWorldCompanion() {
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
+        <section className="urai-world-companion__estate" aria-labelledby="urai-public-estate-title">
+          <h2 id="urai-public-estate-title">Public constellation</h2>
+          <ul>
+            {PUBLIC_ESTATE.map((entry) => (
+              <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>
+                {entry.status === 'live' && entry.href ? (
+                  <a href={entry.href} target="_blank" rel="noreferrer">
+                    <span>{entry.label}</span>
+                    <small>Verified live · opens a new site</small>
+                  </a>
+                ) : (
+                  <span className="urai-world-companion__estate-card">
+                    <span>{entry.label}</span>
+                    <small>Verification pending</small>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
         {world.destination !== 'home' ? (
           <button type="button" className="urai-world-companion__return" aria-label="Return through the world" disabled={!hydrated || phase !== 'idle'} data-return="true" onClick={returnThroughWorld}>
             Return
