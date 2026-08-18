@@ -17,6 +17,7 @@ const focusedContractTests = [
   'tests/provider-boundary-contract.test.mjs',
   'tests/provider-hosting-runtime-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
+  'tests/replay-transition-evidence-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
