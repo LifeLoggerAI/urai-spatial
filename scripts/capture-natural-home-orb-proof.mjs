@@ -9,7 +9,6 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
-const providerDesktop = '/assets/urai/replay/replay-memory-film-main.webp'
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -19,16 +18,17 @@ const orbSha256 = createHash('sha256').update(orbBytes).digest('hex')
 if (orbBytes.length !== orbReceipt.bytes || orbSha256 !== orbReceipt.sha256) throw new Error('Orb binary identity mismatch')
 
 const cases = [
-  { id: 'desktop', viewport: { width: 1440, height: 900 }, expectedProvider: providerDesktop },
-  { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, expectedProvider: providerDesktop },
-  { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', expectedProvider: providerDesktop },
+  { id: 'desktop', viewport: { width: 1440, height: 900 } },
+  { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+  { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
 ]
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-1',
+  schemaVersion: 'urai-sacred-home-orb-proof-2',
   exactHead,
   capturedAt: new Date().toISOString(),
+  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
   cases: [],
   errors: [],
@@ -84,15 +84,18 @@ for (const spec of cases) {
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
     await frames(page)
     record.status = response?.status()
-    record.realWorldFirst = await owner.getAttribute('data-home-real-world-first')
-    record.visiblePortals = await owner.getAttribute('data-home-visible-portals')
-    record.transitionAffordances = await owner.getAttribute('data-home-transition-affordances')
-    record.providerEnvironment = await owner.getAttribute('data-home-provider-environment')
-    record.generatedScenery = await owner.getAttribute('data-home-generated-scenery')
+    record.visibleWorld = await owner.getAttribute('data-home-visible-world')
+    record.worldCharacter = await owner.getAttribute('data-home-world-character')
     record.physicalBase = await owner.getAttribute('data-home-physical-base')
     record.visualOwnership = await owner.getAttribute('data-home-visual-ownership')
     record.desktopMobileWorld = await owner.getAttribute('data-home-desktop-mobile-world')
     record.embodiedSelf = await owner.getAttribute('data-home-embodied-self')
+    record.movement = await owner.getAttribute('data-home-movement')
+    record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
+    record.authoredRegions = await owner.getAttribute('data-home-authored-regions')
+    record.cameraMode = await owner.getAttribute('data-home-camera-mode')
+    record.orbState = await owner.getAttribute('data-home-orb-state')
+    record.orbClip = await owner.getAttribute('data-home-orb-clip')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
@@ -100,7 +103,6 @@ for (const spec of cases) {
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
     record.semanticOpacity = await semanticNav.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity || '1'))
-    record.providerBackdrop = await owner.evaluate((element) => getComputedStyle(element, '::before').backgroundImage)
     const visual = await imageEvidence(page)
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
@@ -109,22 +111,26 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.realWorldFirst === 'true'
-      && record.visiblePortals === 'false'
-      && record.transitionAffordances === 'ground-environmental-descent life-map-sky-lookout'
-      && record.providerEnvironment === providerDesktop
-      && record.generatedScenery === 'suppressed'
-      && record.physicalBase === 'authored-coherent-world'
+      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+      && record.worldCharacter === 'premium-cinematic-sacred-tech'
+      && record.physicalBase === 'authored-obsidian-ritual-platform'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.embodiedSelf === 'privacy-preserving-shadow'
+      && record.embodiedSelf === 'makehuman-v4'
+      && record.movement === 'walk-keyboard-click-touch'
+      && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
+      && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
+      && record.runtimeAssets?.includes('sacred-tech-orb')
+      && record.authoredRegions?.includes('home-sanctuary-pavilion')
+      && record.cameraMode !== null
+      && record.orbState !== null
+      && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
       && record.semanticButtons === 3
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
-      && record.providerBackdrop.includes(spec.expectedProvider)
       && record.portalRequests.length === 0
       && record.screenshotBytes > 12000
       && record.luminanceRange >= 16
