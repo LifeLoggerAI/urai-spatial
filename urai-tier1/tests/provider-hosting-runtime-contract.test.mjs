@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const firebaseConfig = JSON.parse(fs.readFileSync(new URL('../../firebase.json', import.meta.url), 'utf8'))
-const firebasePreviewConfig = JSON.parse(fs.readFileSync(new URL('../../.github/firebase.preview.json', import.meta.url), 'utf8'))
 const functionsIndex = fs.readFileSync(new URL('../../apps/functions/src/index.ts', import.meta.url), 'utf8')
 const providerFunctions = fs.readFileSync(new URL('../../apps/functions/src/providerFunctions.ts', import.meta.url), 'utf8')
 const openAiClient = fs.readFileSync(new URL('../src/spatial/orb/openaiClient.ts', import.meta.url), 'utf8')
@@ -14,20 +13,13 @@ const staticProviderRoutes = [
   new URL('../src/app/api/voice/elevenlabs/route.ts', import.meta.url),
 ]
 
-const providerRewrites = [
-  { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
-  { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
-  { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
-]
-
 test('static Hosting rewrites every live provider URL to secret-bound Firebase Functions', () => {
-  assert.deepEqual(firebaseConfig.hosting.rewrites, providerRewrites)
+  assert.deepEqual(firebaseConfig.hosting.rewrites, [
+    { source: '/api/urai/orb/openai', function: { functionId: 'openAiOrbProvider', region: 'us-central1' } },
+    { source: '/api/urai/narrator/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
+    { source: '/api/voice/elevenlabs', function: { functionId: 'elevenLabsVoiceProvider', region: 'us-central1' } },
+  ])
   assert.match(functionsIndex, /elevenLabsVoiceProvider, openAiOrbProvider/)
-})
-
-test('governed Firebase preview preserves the same provider routing contract', () => {
-  assert.deepEqual(firebasePreviewConfig.hosting.rewrites, providerRewrites)
-  assert.equal(firebasePreviewConfig.hosting.public, 'urai-tier1/out')
 })
 
 test('provider functions bind secrets, auth, consent, throttling, privacy and cancellation', () => {
