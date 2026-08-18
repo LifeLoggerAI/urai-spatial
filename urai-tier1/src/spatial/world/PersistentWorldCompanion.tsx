@@ -19,12 +19,15 @@ const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'mani
 const AUDIO_CONSENT_KEY = 'urai:spatial-audio-consent-v1'
 const AUDIO_MUTE_KEY = 'urai:spatial-audio-muted-v1'
 
-type PublicEstateEntry = {
+type PublicEstateIdentity = {
   id: 'studio' | 'privacy' | 'labs' | 'foundation'
   label: string
-  status: 'verification-pending' | 'live'
-  href?: string
 }
+
+type PublicEstateEntry = PublicEstateIdentity & (
+  | { status: 'verification-pending'; href?: never }
+  | { status: 'live'; href: string }
+)
 
 const PUBLIC_ESTATE: readonly PublicEstateEntry[] = [
   { id: 'studio', label: 'URAI Studio', status: 'verification-pending' },
@@ -200,7 +203,7 @@ export function PersistentWorldCompanion() {
           <ul>
             {PUBLIC_ESTATE.map((entry) => (
               <li key={entry.id} data-estate-id={entry.id} data-estate-status={entry.status}>
-                {entry.status === 'live' && entry.href ? (
+                {entry.status === 'live' ? (
                   <a href={entry.href} target="_blank" rel="noreferrer">
                     <span>{entry.label}</span>
                     <small>Verified live · opens a new site</small>
