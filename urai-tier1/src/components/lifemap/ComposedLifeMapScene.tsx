@@ -169,6 +169,37 @@ function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
   return /swiftshader|llvmpipe|lavapipe|software/i.test(String(renderer || ""));
 }
 
+function SoftwareRendererCadence({ active, documentVisible }: { active: boolean; documentVisible: boolean }) {
+  const { invalidate, setFrameloop } = useThree();
+  useEffect(() => {
+    if (!active) {
+      setFrameloop(documentVisible ? "always" : "never");
+      return;
+    }
+    if (!documentVisible) {
+      setFrameloop("never");
+      return;
+    }
+
+    // SwiftShader/software WebGL must remain truly 3D without monopolizing the main thread.
+    // Bootstrap enough real frames for render proof, then sustain a bounded ten-FPS cadence.
+    setFrameloop("demand");
+    let disposed = false;
+    const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
+      if (!disposed) invalidate();
+    }, delay));
+    const interval = window.setInterval(() => {
+      if (!disposed) invalidate();
+    }, 100);
+    return () => {
+      disposed = true;
+      bootstrap.forEach((timer) => window.clearTimeout(timer));
+      window.clearInterval(interval);
+    };
+  }, [active, documentVisible, invalidate, setFrameloop]);
+  return null;
+}
+
 function truthLabel(sourceMode: LifeMapSourceMode) {
   if (sourceMode === "explicit-demo") return "Disclosed sample universe · not your memories";
   if (sourceMode === "signed-out") return "Signed out · no personal data displayed";
@@ -322,6 +353,7 @@ export default function ComposedLifeMapScene() {
     data-life-map-production-world="true"
     data-webgl-state={webglState}
     data-software-renderer={softwareRenderer ? "true" : "false"}
+    data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
@@ -342,6 +374,7 @@ export default function ComposedLifeMapScene() {
         gl.setClearColor("#02050b", 1);
       }}
     >
+      <SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />
       <WebGLRecoveryBridge onStateChange={setWebglState} />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
