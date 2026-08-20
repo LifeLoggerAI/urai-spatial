@@ -76,7 +76,7 @@ test('Life Map adapts expensive rendering for software GPUs without weakening pr
     'function isSoftwareWebGLRenderer',
     'swiftshader|llvmpipe|lavapipe|software',
     'softwareRenderer ? "low" as const',
-    'profile.reducedMotion || softwareRenderer ? "demand" : "always"',
+    'frameloop={profile.documentVisible ? "always" : "never"}',
     'data-software-renderer={softwareRenderer ? "true" : "false"}',
   ])
   assert.equal((scene.match(/LifeMapRenderProofBridge/g) || []).length, 0)
