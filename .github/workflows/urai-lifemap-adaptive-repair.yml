@@ -1,0 +1,118 @@
+name: URAI Life Map adaptive renderer repair
+
+on:
+  push:
+    branches:
+      - reconcile/lifemap-current-main-20260817
+    paths:
+      - .github/workflows/urai-lifemap-adaptive-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: reconcile/lifemap-current-main-20260817
+          fetch-depth: 0
+
+      - name: Apply bounded adaptive-renderer repair
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          composed_path = Path('urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx')
+          world_path = Path('urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx')
+
+          composed = composed_path.read_text()
+          world = world_path.read_text()
+
+          # The production world already owns render-proof publication. Remove the
+          # duplicate full-scene traversal from the outer scene component.
+          start = composed.index('function LifeMapRenderProofBridge() {')
+          end = composed.index('function truthLabel', start)
+          composed = composed[:start] + composed[end:]
+
+          helper = '''function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {\n  const context = gl.getContext();\n  const debugInfo = context.getExtension("WEBGL_debug_renderer_info") as { UNMASKED_RENDERER_WEBGL?: number } | null;\n  const renderer = debugInfo?.UNMASKED_RENDERER_WEBGL\n    ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)\n    : context.getParameter(context.RENDERER);\n  return /swiftshader|llvmpipe|lavapipe|software/i.test(String(renderer || ""));\n}\n\n'''
+          composed = composed.replace('function truthLabel', helper + 'function truthLabel', 1)
+
+          old_profile = '''  const adaptiveProfile = useAdaptiveSpatialQuality();\n  const profile = useMemo(() => ({\n    ...adaptiveProfile,\n    tier: adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,\n    pixelRatioMax: Math.min(adaptiveProfile.pixelRatioMax, 1.25),\n    shadows: false,\n    postprocessing: false,\n    antialias: false,\n  }), [adaptiveProfile]);'''
+          new_profile = '''  const adaptiveProfile = useAdaptiveSpatialQuality();\n  const [softwareRenderer, setSoftwareRenderer] = useState(false);\n  const profile = useMemo(() => ({\n    ...adaptiveProfile,\n    tier: softwareRenderer ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,\n    pixelRatioMax: softwareRenderer ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),\n    shadows: false,\n    postprocessing: false,\n    antialias: false,\n  }), [adaptiveProfile, softwareRenderer]);'''
+          if old_profile not in composed:
+              raise SystemExit('Expected ComposedLifeMapScene profile block not found')
+          composed = composed.replace(old_profile, new_profile, 1)
+
+          old_loop = '      frameloop={profile.documentVisible ? "always" : "never"}'
+          new_loop = '      frameloop={profile.documentVisible ? (profile.reducedMotion || softwareRenderer ? "demand" : "always") : "never"}'
+          if old_loop not in composed:
+              raise SystemExit('Expected Life Map frameloop line not found')
+          composed = composed.replace(old_loop, new_loop, 1)
+
+          old_created = '''      onCreated={({ gl }) => {\n        gl.toneMapping = THREE.ACESFilmicToneMapping;'''
+          new_created = '''      onCreated={({ gl }) => {\n        setSoftwareRenderer(isSoftwareWebGLRenderer(gl));\n        gl.toneMapping = THREE.ACESFilmicToneMapping;'''
+          if old_created not in composed:
+              raise SystemExit('Expected Canvas onCreated block not found')
+          composed = composed.replace(old_created, new_created, 1)
+
+          proof_mount = '      <LifeMapRenderProofBridge />\n'
+          if proof_mount not in composed:
+              raise SystemExit('Expected duplicate LifeMapRenderProofBridge mount not found')
+          composed = composed.replace(proof_mount, '', 1)
+
+          webgl_attr = '    data-webgl-state={webglState}\n'
+          if webgl_attr not in composed:
+              raise SystemExit('Expected WebGL state data attribute not found')
+          composed = composed.replace(webgl_attr, webgl_attr + '    data-software-renderer={softwareRenderer ? "true" : "false"}\n', 1)
+
+          # The surviving proof bridge must work with frameloop="demand" and must
+          # not traverse the entire scene every animation frame after it is stable.
+          old_three = '  const { gl, scene } = useThree();\n  const root = useRef<HTMLElement | null>(null);'
+          new_three = '  const { gl, scene, invalidate: requestRender } = useThree();\n  const root = useRef<HTMLElement | null>(null);'
+          if old_three not in world:
+              raise SystemExit('Expected RenderProofRepublisher useThree block not found')
+          world = world.replace(old_three, new_three, 1)
+
+          old_refs = '  const invalidationFrame = useRef<number | null>(null);\n  const lastSignature = useRef("");'
+          new_refs = '  const invalidationFrame = useRef<number | null>(null);\n  const lastSignature = useRef("");\n  const lastSampleFrame = useRef(0);'
+          if old_refs not in world:
+              raise SystemExit('Expected RenderProofRepublisher refs not found')
+          world = world.replace(old_refs, new_refs, 1)
+
+          world = world.replace('    const invalidate = () => {\n      invalidated.current = true;\n      frames.current = 0;', '    const markInvalid = () => {\n      invalidated.current = true;\n      frames.current = 0;\n      lastSampleFrame.current = 0;', 1)
+          world = world.replace('      writeInvalid();\n    };\n    canvas.addEventListener("webglcontextlost", invalidate, false);\n    canvas.addEventListener("webglcontextrestored", invalidate, false);\n    invalidate();', '      requestRender();\n      writeInvalid();\n    };\n    canvas.addEventListener("webglcontextlost", markInvalid, false);\n    canvas.addEventListener("webglcontextrestored", markInvalid, false);\n    markInvalid();', 1)
+          world = world.replace('      canvas.removeEventListener("webglcontextlost", invalidate, false);\n      canvas.removeEventListener("webglcontextrestored", invalidate, false);\n    };\n  }, [gl, resolveOwner]);', '      canvas.removeEventListener("webglcontextlost", markInvalid, false);\n      canvas.removeEventListener("webglcontextrestored", markInvalid, false);\n    };\n  }, [gl, requestRender, resolveOwner]);', 1)
+
+          old_frame = '''  useFrame(() => {\n    frames.current += 1;\n    if (frames.current < 4) return;\n    let objects = 0;'''
+          new_frame = '''  useFrame(() => {\n    frames.current += 1;\n    if (frames.current < 4) {\n      requestRender();\n      return;\n    }\n    if (!invalidated.current && frames.current - lastSampleFrame.current < 30) return;\n    lastSampleFrame.current = frames.current;\n    let objects = 0;'''
+          if old_frame not in world:
+              raise SystemExit('Expected RenderProofRepublisher frame loop not found')
+          world = world.replace(old_frame, new_frame, 1)
+
+          if 'LifeMapRenderProofBridge' in composed:
+              raise SystemExit('Duplicate outer proof bridge still present')
+          if 'data-software-renderer' not in composed or 'softwareRenderer ? "low"' not in composed:
+              raise SystemExit('Adaptive software renderer markers missing')
+          if 'frames.current - lastSampleFrame.current < 30' not in world:
+              raise SystemExit('Proof traversal throttle missing')
+
+          composed_path.write_text(composed)
+          world_path.write_text(world)
+          PY
+
+          git diff --check
+
+      - name: Commit bounded repair and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "URAI release repair"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/urai-lifemap-adaptive-repair.yml
+          git add urai-tier1/src/components/lifemap/ComposedLifeMapScene.tsx urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx
+          git diff --cached --check
+          git commit -m "fix: adapt Life Map rendering to software GPUs"
+          git push origin HEAD:reconcile/lifemap-current-main-20260817
