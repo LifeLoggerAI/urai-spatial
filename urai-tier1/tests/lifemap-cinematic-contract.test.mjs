@@ -78,6 +78,18 @@ test('Life Map adapts expensive rendering for software GPUs without weakening pr
     'softwareRenderer ? "low" as const',
     'frameloop={profile.documentVisible ? "always" : "never"}',
     'data-software-renderer={softwareRenderer ? "true" : "false"}',
+    'function SoftwareRendererCadence',
+    'setFrameloop("demand")',
+    'window.setInterval(() =>',
+    '}, 100)',
+    'data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}',
+    '<SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />',
+  ])
+  includesAll(canonical, [
+    'context?.getExtension("WEBGL_lose_context")?.loseContext()',
+    'canvas.width = 1',
+    'canvas.height = 1',
+    'setAvailable(supported)',
   ])
   assert.equal((scene.match(/LifeMapRenderProofBridge/g) || []).length, 0)
   includesAll(world, [
