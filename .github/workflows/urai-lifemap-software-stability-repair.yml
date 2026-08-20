@@ -1,17 +1,22 @@
 name: URAI Life Map software stability repair
 
 on:
-  push:
+  pull_request:
     branches:
-      - reconcile/lifemap-current-main-20260817
+      - main
     paths:
       - .github/workflows/urai-lifemap-software-stability-repair.yml
 
 permissions:
   contents: write
 
+concurrency:
+  group: urai-lifemap-software-stability-repair-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   repair:
+    if: github.head_ref == 'reconcile/lifemap-current-main-20260817' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Check out exact repair branch
