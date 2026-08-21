@@ -85,7 +85,6 @@ function RenderProofRepublisher() {
         element.dataset.lifeMapRenderCalls = "0";
         element.dataset.lifeMapRenderTriangles = "0";
       }
-      if (invalidated.current) invalidationFrame.current = window.requestAnimationFrame(writeInvalid);
     };
     const markInvalid = () => {
       invalidated.current = true;
