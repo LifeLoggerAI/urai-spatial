@@ -1,10 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
+import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
 
 const USER_ID_KEY = "urai:userId";
 const DEMO_MANIFEST_ID = "replay-recovery-thread";
@@ -71,8 +71,6 @@ function useWebGLCapability() {
   }, []);
   return available;
 }
-
-const LifeMapRouteBoundary = dynamic(() => import("@/components/lifemap/LifeMapRouteBoundary"), { ssr:false, loading:() => <LifeMapLoading /> });
 
 function LifeMapAccessGate() {
   const router = useRouter();
