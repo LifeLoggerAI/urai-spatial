@@ -48,7 +48,7 @@ requireMatch('Secondary particle geometry disposal', canvas, /geometry\.dispose\
 requireMatch('Secondary constellation geometry disposal', canvas, /lines\.dispose\(\)/)
 requireMatch('Secondary shadow map tiering', canvas, /profile\.tier === 'high' \? 1024 : 512/)
 
-requireMatch('Active route imports Life Map boundary', wrapper, /import\(["']@\/components\/lifemap\/LifeMapRouteBoundary["']\)/)
+requireMatch('Active route imports Life Map boundary', wrapper, /import(?:\s+LifeMapRouteBoundary\s+from\s+|\()["']@\/components\/lifemap\/LifeMapRouteBoundary["']\)?/)
 requireMatch('Active route renders Life Map boundary', wrapper, /<LifeMapRouteBoundary\s*\/>/)
 requireMatch('Active route wraps query reader in Suspense', wrapper, /<Suspense[\s\S]*<LifeMapAccessGate/)
 requireMatch('Signed-out route does not mount private memories', wrapper, /data-private-memory-mounted="false"/)
