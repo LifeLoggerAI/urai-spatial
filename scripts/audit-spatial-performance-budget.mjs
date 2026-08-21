@@ -83,7 +83,7 @@ requireMatch('Active Life Map controlled exposure', lifeMap, /toneMappingExposur
 requireMatch('Production Life Map owns render proof publication', productionWorld, /function RenderProofRepublisher\(/)
 requireMatch('Production Life Map render proof invalidates on context loss', productionWorld, /webglcontextlost/)
 requireMatch('Production Life Map render proof republishes on context restoration', productionWorld, /webglcontextrestored/)
-requireMatch('Production Life Map render proof enforces visible-object and anchor thresholds', productionWorld, /lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 \? "true" : "false"/)
+requireMatch('Production Life Map render proof enforces visible-object and anchor thresholds', productionWorld, /(?:lifeMapRenderReady =|const ready =) calls > 0 && objects > 20 && anchors >= 8(?: \? "true" : "false")?/)
 requireMatch('Production Life Map mounts its proof publisher', productionWorld, /<RenderProofRepublisher \/>/)
 forbidMatch('Active Life Map duplicates production proof attributes', lifeMap, /data-life-map-render-(?:ready|calls|triangles|visible)/)
 requireMatch('Active Life Map sequential phase timing', lifeMap, /PHASE_DURATION_MS\[phase\]/)
