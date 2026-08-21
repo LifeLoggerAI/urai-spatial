@@ -73,6 +73,31 @@ function RenderProofRepublisher() {
     return element;
   }, [gl]);
 
+  const publishSnapshot = useCallback(() => {
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const ready = calls > 0 && objects > 20 && anchors >= 8;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    const element = resolveOwner();
+    if (!element) return false;
+    if (lastSignature.current !== signature || invalidated.current) {
+      lastSignature.current = signature;
+      element.dataset.lifeMapRenderReady = ready ? "true" : "false";
+      element.dataset.lifeMapVisibleObjects = String(objects);
+      element.dataset.lifeMapVisibleAnchors = String(anchors);
+      element.dataset.lifeMapRenderCalls = String(calls);
+      element.dataset.lifeMapRenderTriangles = String(triangles);
+    }
+    if (ready) invalidated.current = false;
+    return ready;
+  }, [gl, resolveOwner, scene]);
+
   useEffect(() => {
     const canvas = gl.domElement;
     const writeInvalid = () => {
@@ -95,16 +120,22 @@ function RenderProofRepublisher() {
       requestRender();
       writeInvalid();
     };
+    const watchdog = window.setInterval(() => {
+      if (!invalidated.current) return;
+      requestRender();
+      publishSnapshot();
+    }, 100);
     canvas.addEventListener("webglcontextlost", markInvalid, false);
     canvas.addEventListener("webglcontextrestored", markInvalid, false);
     markInvalid();
     return () => {
       invalidated.current = false;
+      window.clearInterval(watchdog);
       if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
       canvas.removeEventListener("webglcontextlost", markInvalid, false);
       canvas.removeEventListener("webglcontextrestored", markInvalid, false);
     };
-  }, [gl, requestRender, resolveOwner]);
+  }, [gl, publishSnapshot, requestRender, resolveOwner]);
 
   useFrame(() => {
     frames.current += 1;
@@ -114,29 +145,7 @@ function RenderProofRepublisher() {
     }
     if (!invalidated.current && frames.current - lastSampleFrame.current < 30) return;
     lastSampleFrame.current = frames.current;
-    let objects = 0;
-    let anchors = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-    });
-    const calls = gl.info.render.calls;
-    const triangles = gl.info.render.triangles;
-    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
-    if (!invalidated.current && lastSignature.current === signature) return;
-    invalidated.current = false;
-    if (invalidationFrame.current !== null) {
-      window.cancelAnimationFrame(invalidationFrame.current);
-      invalidationFrame.current = null;
-    }
-    lastSignature.current = signature;
-    const element = resolveOwner();
-    if (!element) return;
-    element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
-    element.dataset.lifeMapVisibleObjects = String(objects);
-    element.dataset.lifeMapVisibleAnchors = String(anchors);
-    element.dataset.lifeMapRenderCalls = String(calls);
-    element.dataset.lifeMapRenderTriangles = String(triangles);
+    publishSnapshot();
   });
   return null;
 }
