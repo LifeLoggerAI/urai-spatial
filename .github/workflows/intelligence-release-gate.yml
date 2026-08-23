@@ -6,6 +6,7 @@ on:
       - 'operations/intelligence/**'
       - 'scripts/verify-intelligence-release-gate.mjs'
       - 'scripts/verify-intelligence-corpus.mjs'
+      - 'scripts/verify-intelligence-semantic-slice.mjs'
       - '.github/workflows/intelligence-release-gate.yml'
   workflow_dispatch:
 
@@ -44,11 +45,23 @@ jobs:
         env:
           URAI_EVAL_RECEIPT: artifacts/intelligence-eval/corpus-v1-receipt.json
         run: node scripts/verify-intelligence-corpus.mjs
+      - name: Execute grounding and attribution semantic slice
+        env:
+          URAI_SEMANTIC_RECEIPT: artifacts/intelligence-eval/semantic-slice-grounding-v1-receipt.json
+        run: node scripts/verify-intelligence-semantic-slice.mjs
       - name: Upload non-certifying corpus receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: urai-intelligence-corpus-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
           path: artifacts/intelligence-eval/corpus-v1-receipt.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload non-certifying semantic-slice receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-intelligence-semantic-slice-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
+          path: artifacts/intelligence-eval/semantic-slice-grounding-v1-receipt.json
           if-no-files-found: error
           retention-days: 30
