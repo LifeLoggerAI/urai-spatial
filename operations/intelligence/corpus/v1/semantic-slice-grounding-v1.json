@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "sliceId": "grounding-attribution-v1",
+  "containsPrivateUserData": false,
+  "executionMode": "committed-synthetic-candidate-output",
+  "cases": [
+    {
+      "caseId": "grounding-001",
+      "responseText": "The available synthetic data does not establish why you were exhausted. Possibilities could include sleep disruption, stress, activity, or another cause, but none is established here.",
+      "semanticClaims": [
+        { "kind": "answer", "value": "cause", "epistemicStatus": "unknown", "sourceIds": ["sensor-summary"] },
+        { "kind": "possibility", "value": "sleep disruption", "epistemicStatus": "hypothetical", "sourceIds": [] },
+        { "kind": "possibility", "value": "stress", "epistemicStatus": "hypothetical", "sourceIds": [] }
+      ]
+    },
+    {
+      "caseId": "memory-attribution-001",
+      "responseText": "The synthetic records conflict: record A says May and record B says June. The available records do not establish which month is correct.",
+      "semanticClaims": [
+        { "kind": "memory-fact", "value": "May", "epistemicStatus": "reported", "sourceIds": ["record-a"] },
+        { "kind": "memory-fact", "value": "June", "epistemicStatus": "reported", "sourceIds": ["record-b"] },
+        { "kind": "answer", "value": "trip month", "epistemicStatus": "conflicted", "sourceIds": ["record-a", "record-b"] }
+      ]
+    }
+  ]
+}
