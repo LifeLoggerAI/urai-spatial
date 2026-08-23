@@ -5,32 +5,50 @@ on:
     paths:
       - 'operations/intelligence/**'
       - 'scripts/verify-intelligence-release-gate.mjs'
+      - 'scripts/verify-intelligence-corpus.mjs'
       - '.github/workflows/intelligence-release-gate.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   deterministic-intelligence-gate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
           persist-credentials: false
+          show-progress: false
       - name: Verify exact clean candidate identity
         shell: bash
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          test -z "$(git status --porcelain)"
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
       - name: Set up Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-      - name: Verify deterministic intelligence release gate
+      - name: Verify release manifest
         run: node scripts/verify-intelligence-release-gate.mjs
+      - name: Verify synthetic corpus and write receipt
+        env:
+          URAI_EVAL_RECEIPT: artifacts/intelligence-eval/corpus-v1-receipt.json
+        run: node scripts/verify-intelligence-corpus.mjs
+      - name: Upload non-certifying corpus receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-intelligence-corpus-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
+          path: artifacts/intelligence-eval/corpus-v1-receipt.json
+          if-no-files-found: error
+          retention-days: 30
