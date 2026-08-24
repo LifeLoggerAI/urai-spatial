@@ -132,7 +132,8 @@
   color: #020617;
 }
 
-.urai-world-companion__menu button:focus-visible {
+.urai-world-companion__menu button:focus-visible,
+.urai-world-companion__estate a:focus-visible {
   outline: 2px solid white;
   outline-offset: 2px;
 }
@@ -145,6 +146,71 @@
 .urai-world-companion__secondary button {
   border-color: rgba(167,139,250,.2);
   background: rgba(167,139,250,.07);
+}
+
+.urai-world-companion__estate {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(207,250,254,.12);
+}
+
+.urai-world-companion__estate h2 {
+  margin: 0 0 7px;
+  color: rgba(225,239,255,.72);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.urai-world-companion__estate ul {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.urai-world-companion__estate li {
+  min-width: 0;
+}
+
+.urai-world-companion__estate-card,
+.urai-world-companion__estate a {
+  display: grid;
+  min-height: 54px;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid rgba(207,250,254,.12);
+  border-radius: 14px;
+  padding: 7px 8px;
+  background: rgba(255,255,255,.035);
+  color: rgba(240,253,255,.82);
+  text-align: center;
+  text-decoration: none;
+}
+
+.urai-world-companion__estate [data-estate-status='verification-pending'] .urai-world-companion__estate-card {
+  border-style: dashed;
+  opacity: .72;
+}
+
+.urai-world-companion__estate a:hover {
+  background: rgba(207,250,254,.08);
+}
+
+.urai-world-companion__estate-card > span,
+.urai-world-companion__estate a > span {
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.urai-world-companion__estate small {
+  color: rgba(207,250,254,.58);
+  font-size: 9px;
+  line-height: 1.2;
 }
 
 .urai-world-companion__return {
@@ -256,6 +322,16 @@
   .urai-world-companion__orb { width: 56px; height: 56px; }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
+  .urai-world-companion__estate ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (forced-colors: active) {
+  .urai-world-companion__estate-card,
+  .urai-world-companion__estate a {
+    border: 1px solid ButtonText;
+    background: Canvas;
+    color: CanvasText;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
