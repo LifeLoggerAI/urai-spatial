@@ -58,12 +58,13 @@ function prepareAuthoredModel(source: THREE.Object3D, aura: string) {
 }
 
 function RenderProofRepublisher() {
-  const { gl, scene } = useThree();
+  const { gl, scene, invalidate: requestRender } = useThree();
   const root = useRef<HTMLElement | null>(null);
   const frames = useRef(0);
   const invalidated = useRef(true);
   const invalidationFrame = useRef<number | null>(null);
   const lastSignature = useRef("");
+  const lastSampleFrame = useRef(0);
 
   const resolveOwner = useCallback(() => {
     const element = gl.domElement.closest<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
@@ -71,6 +72,31 @@ function RenderProofRepublisher() {
     root.current = element;
     return element;
   }, [gl]);
+
+  const publishSnapshot = useCallback(() => {
+    let objects = 0;
+    let anchors = 0;
+    scene.traverse((object) => {
+      if (object.visible) objects += 1;
+      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
+    });
+    const calls = gl.info.render.calls;
+    const triangles = gl.info.render.triangles;
+    const ready = calls > 0 && objects > 20 && anchors >= 8;
+    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
+    const element = resolveOwner();
+    if (!element) return false;
+    if (lastSignature.current !== signature || invalidated.current) {
+      lastSignature.current = signature;
+      element.dataset.lifeMapRenderReady = ready ? "true" : "false";
+      element.dataset.lifeMapVisibleObjects = String(objects);
+      element.dataset.lifeMapVisibleAnchors = String(anchors);
+      element.dataset.lifeMapRenderCalls = String(calls);
+      element.dataset.lifeMapRenderTriangles = String(triangles);
+    }
+    if (ready) invalidated.current = false;
+    return ready;
+  }, [gl, resolveOwner, scene]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -84,52 +110,42 @@ function RenderProofRepublisher() {
         element.dataset.lifeMapRenderCalls = "0";
         element.dataset.lifeMapRenderTriangles = "0";
       }
-      if (invalidated.current) invalidationFrame.current = window.requestAnimationFrame(writeInvalid);
     };
-    const invalidate = () => {
+    const markInvalid = () => {
       invalidated.current = true;
       frames.current = 0;
+      lastSampleFrame.current = 0;
       lastSignature.current = "";
       if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
+      requestRender();
       writeInvalid();
     };
-    canvas.addEventListener("webglcontextlost", invalidate, false);
-    canvas.addEventListener("webglcontextrestored", invalidate, false);
-    invalidate();
+    const watchdog = window.setInterval(() => {
+      if (!invalidated.current) return;
+      requestRender();
+      publishSnapshot();
+    }, 100);
+    canvas.addEventListener("webglcontextlost", markInvalid, false);
+    canvas.addEventListener("webglcontextrestored", markInvalid, false);
+    markInvalid();
     return () => {
       invalidated.current = false;
+      window.clearInterval(watchdog);
       if (invalidationFrame.current !== null) window.cancelAnimationFrame(invalidationFrame.current);
-      canvas.removeEventListener("webglcontextlost", invalidate, false);
-      canvas.removeEventListener("webglcontextrestored", invalidate, false);
+      canvas.removeEventListener("webglcontextlost", markInvalid, false);
+      canvas.removeEventListener("webglcontextrestored", markInvalid, false);
     };
-  }, [gl, resolveOwner]);
+  }, [gl, publishSnapshot, requestRender, resolveOwner]);
 
   useFrame(() => {
     frames.current += 1;
-    if (frames.current < 4) return;
-    let objects = 0;
-    let anchors = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-    });
-    const calls = gl.info.render.calls;
-    const triangles = gl.info.render.triangles;
-    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
-    if (!invalidated.current && lastSignature.current === signature) return;
-    invalidated.current = false;
-    if (invalidationFrame.current !== null) {
-      window.cancelAnimationFrame(invalidationFrame.current);
-      invalidationFrame.current = null;
+    if (frames.current < 4) {
+      requestRender();
+      return;
     }
-    lastSignature.current = signature;
-    const element = resolveOwner();
-    if (!element) return;
-    element.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
-    element.dataset.lifeMapVisibleObjects = String(objects);
-    element.dataset.lifeMapVisibleAnchors = String(anchors);
-    element.dataset.lifeMapRenderCalls = String(calls);
-    element.dataset.lifeMapRenderTriangles = String(triangles);
+    if (!invalidated.current && frames.current - lastSampleFrame.current < 30) return;
+    lastSampleFrame.current = frames.current;
+    publishSnapshot();
   });
   return null;
 }

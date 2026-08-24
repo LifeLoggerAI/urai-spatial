@@ -9,6 +9,7 @@ const route = read('src/app/life-map/page.tsx')
 const canonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const boundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
 const scene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
+const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
@@ -68,6 +69,36 @@ test('Life Map keeps deterministic camera travel, Escape recovery, reduced motio
   assert.match(scene, /setPhase\("approach"\)/)
   assert.match(scene, /setPhase\("arrival"\)/)
   assert.doesNotMatch(scene, /window\.localStorage\.setItem|requestPointerLock/)
+})
+
+test('Life Map adapts expensive rendering for software GPUs without weakening proof ownership', () => {
+  includesAll(scene, [
+    'function isSoftwareWebGLRenderer',
+    'swiftshader|llvmpipe|lavapipe|software',
+    'softwareRenderer ? "low" as const',
+    'frameloop={profile.documentVisible ? "always" : "never"}',
+    'data-software-renderer={softwareRenderer ? "true" : "false"}',
+    'function SoftwareRendererCadence',
+    'setFrameloop("demand")',
+    'window.setInterval(() =>',
+    '}, 100)',
+    'data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}',
+    '<SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />',
+  ])
+  includesAll(canonical, [
+    'context?.getExtension("WEBGL_lose_context")?.loseContext()',
+    'canvas.width = 1',
+    'canvas.height = 1',
+    'setAvailable(supported)',
+  ])
+  assert.equal((scene.match(/LifeMapRenderProofBridge/g) || []).length, 0)
+  includesAll(world, [
+    'invalidate: requestRender',
+    'lastSampleFrame',
+    'frames.current - lastSampleFrame.current < 30',
+    'requestRender()',
+  ])
+  assert.equal((world.match(/function RenderProofRepublisher/g) || []).length, 1)
 })
 
 test('Focus and Replay use final static-export-safe cinematic owners', () => {

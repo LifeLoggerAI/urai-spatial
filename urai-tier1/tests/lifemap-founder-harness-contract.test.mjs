@@ -129,9 +129,11 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary repairs only impossible direct-route states and never loops selection', () => {
+test('route boundary repairs a direct-entry state exactly once and requires a healthy authored world before overview recovery', () => {
+  assert.match(routeBoundary, /const initial = new URLSearchParams\(window\.location\.search\)/)
+  assert.match(routeBoundary, /if \(initial\.get\('overview'\) === '1'\) return/)
+  assert.match(routeBoundary, /const nodeId = initial\.get\('node'\) \|\| initial\.get\('memoryId'\)/)
   assert.match(routeBoundary, /let repaired = false/)
-  assert.match(routeBoundary, /const phase = root\.dataset\.lifeMapPhase/)
   assert.match(routeBoundary, /if \(phase === 'arrival'\)/)
   assert.match(routeBoundary, /root\.querySelector\('\.life-map-thresholds'\)/)
   assert.match(routeBoundary, /if \(phase === 'overview'\)/)
@@ -171,7 +173,7 @@ test('render proof refuses stale invalidation writes and republishes after WebGL
   assert.match(world, /lifeMapRenderReady = "false"/)
   assert.match(world, /const writeInvalid = \(\) => \{\s+if \(!invalidated\.current\) return;/)
   assert.match(world, /frames\.current < 4/)
-  assert.match(world, /lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 \? "true" : "false"/)
+  assert.match(world, /(?:lifeMapRenderReady =|const ready =) calls > 0 && objects > 20 && anchors >= 8(?: \? "true" : "false")?/)
   assert.match(world, /<RenderProofRepublisher \/>/)
 })
 

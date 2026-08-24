@@ -74,20 +74,34 @@ export default function LifeMapSemanticNavigator() {
   const overview = useCallback(() => {
     setOpen(false)
     const next = withIdentity(new URLSearchParams())
-    const memoryId = params.get('memoryId')
-    const node = params.get('node')
+    const current = new URLSearchParams(window.location.search)
+    const memoryId = current.get('memoryId')
+    const node = current.get('node')
     if (memoryId) next.set('memoryId', memoryId)
     if (node) next.set('node', node)
     next.set('overview', '1')
     commitBrowserIdentity(next)
     router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [commitBrowserIdentity, params, router, withIdentity])
+  }, [commitBrowserIdentity, router, withIdentity])
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes
     if (!candidates.length) return
-    const current = selected ? candidates.findIndex((node) => node.id === selected.id) : -1
-    selectNode(candidates[(current + direction + candidates.length) % candidates.length], 'keyboard')
+
+    // Browser identity is committed synchronously before the spatial selection transition.
+    // Read that live identity at activation time so rapid ArrowRight/ArrowLeft input cannot
+    // compute from a stale useSearchParams render and jump to the wrong neighboring memory.
+    const currentParams = new URLSearchParams(window.location.search)
+    const liveSelectedId = currentParams.get('overview') === '1'
+      ? null
+      : currentParams.get('node') || currentParams.get('memoryId')
+    const fallbackSelectedId = selected?.id || null
+    const currentId = liveSelectedId || fallbackSelectedId
+    const current = currentId ? candidates.findIndex((node) => node.id === currentId) : -1
+    const nextIndex = current >= 0
+      ? (current + direction + candidates.length) % candidates.length
+      : direction >= 0 ? 0 : candidates.length - 1
+    selectNode(candidates[nextIndex], 'keyboard')
   }, [nodes, selectNode, selected, visibleNodes])
 
   useEffect(() => {
