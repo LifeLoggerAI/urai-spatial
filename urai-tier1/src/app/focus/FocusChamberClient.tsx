@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { Canvas } from '@react-three/fiber'
 import { Html, OrbitControls, Stars } from '@react-three/drei'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
@@ -181,9 +181,9 @@ function ChamberArchitecture({ accent, light, reducedMotion }: { accent: string;
       <mesh rotation={[0.35, 0.2, 0.5]}><torusGeometry args={[4.45, 0.018, 10, 160]} /><meshBasicMaterial color={accent} transparent opacity={0.24} depthWrite={false} /></mesh>
     </group>
     <group ref={inner} rotation={[Math.PI / 2.8, 0.35, 0.1]}><mesh><torusGeometry args={[3.2, 0.014, 10, 140]} /><meshBasicMaterial color={accent} transparent opacity={0.3} depthWrite={false} /></mesh></group>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.51, -1.2]} receiveShadow><cylinderGeometry args={[11.4, 11.8, 0.5, 96]} /><meshStandardMaterial color="#050a12" metalness={0.72} roughness={0.28} /></mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.245, -1.2]}><ringGeometry args={[2.2, 11.4, 128]} /><meshBasicMaterial color={accent} transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} /></mesh>
-    {[-5.4, 5.4].map((x) => <group key={x} position={[x, 0.6, -4.2]}><mesh castShadow><cylinderGeometry args={[0.38, 0.58, 4.8, 20]} /><meshStandardMaterial color="#101925" metalness={0.68} roughness={0.3} /></mesh><pointLight position={[0, 1.8, 0]} color={accent} intensity={1.6} distance={7} /></group>)}
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.55, -1.2]} receiveShadow><circleGeometry args={[13, 96]} /><meshPhysicalMaterial color="#030813" roughness={0.3} metalness={0.68} transparent opacity={0.92} clearcoat={0.7} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.51, -1.2]}><ringGeometry args={[2.2, 11.4, 128]} /><meshBasicMaterial color={accent} transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} /></mesh>
+    {[-5.4, 5.4].map((x) => <group key={x} position={[x, 0, -3.8]}><mesh><cylinderGeometry args={[0.11, 0.22, 5.8, 18]} /><meshStandardMaterial color="#07111d" emissive={accent} emissiveIntensity={0.35} metalness={0.78} roughness={0.24} /></mesh><pointLight position={[0, 1.8, 0]} color={accent} intensity={1.6} distance={7} /></group>)}
   </group>
 }
 
@@ -299,7 +299,7 @@ export default function FocusChamberClient() {
   const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="living-memory-observatory" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="living-memory-chamber" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-spatial-quality={profile.tier} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
