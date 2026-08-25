@@ -9,6 +9,7 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
+const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
 const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
@@ -25,11 +26,12 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-sacred-home-orb-proof-2',
+  schemaVersion: 'urai-sacred-home-orb-proof-3',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-semantic-and-visual-proof',
+  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
+  portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
   cases: [],
   errors: [],
 }
@@ -75,7 +77,7 @@ for (const spec of cases) {
   const portalRequests = []
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
-  page.on('request', (request) => { if (request.url().includes('portal-ring-master-v1.glb')) portalRequests.push(request.url()) })
+  page.on('request', (request) => { if (request.url().includes(path.basename(portalPath))) portalRequests.push(request.url()) })
   const record = { id: spec.id, viewport: spec.viewport, pageErrors, failedRequests, portalRequests, passed: false }
   try {
     const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -102,7 +104,10 @@ for (const spec of cases) {
     record.semanticButtons = await semanticNav.getByRole('button').count()
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
-    record.semanticOpacity = await semanticNav.evaluate((element) => Number.parseFloat(getComputedStyle(element).opacity || '1'))
+    record.semanticOpacity = await page.evaluate(() => {
+      const element = document.querySelector('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]')
+      return element ? Number.parseFloat(getComputedStyle(element).opacity || '1') : null
+    })
     const visual = await imageEvidence(page)
     record.screenshot = `${spec.id}-${exactHead.slice(0, 12)}.png`
     await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
@@ -120,8 +125,10 @@ for (const spec of cases) {
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
-      && record.runtimeAssets?.includes('sacred-tech-orb')
+      && record.runtimeAssets?.includes(path.basename(orbPath))
+      && record.runtimeAssets?.includes(path.basename(portalPath))
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
+      && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null
       && record.orbState !== null
       && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
@@ -131,7 +138,7 @@ for (const spec of cases) {
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
-      && record.portalRequests.length === 0
+      && record.portalRequests.length >= 1
       && record.screenshotBytes > 12000
       && record.luminanceRange >= 16
       && record.visibleSamples >= 5
