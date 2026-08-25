@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Stars, useGLTF } from '@react-three/drei'
+import { Stars, useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
@@ -19,6 +19,20 @@ const ORB = new THREE.Vector3(0, 1.62, -2.65)
 const GROUND = new THREE.Vector3(-5.2, 0, -8.4)
 const LIFE_MAP = new THREE.Vector3(5.2, 0, -8.4)
 const BOUNDS = { minX: -10.5, maxX: 10.5, minZ: -12.5, maxZ: 8.5 }
+const ORB_CLIPS: Record<OrbState, string> = {
+  dormant: 'Orb_Resting',
+  idle: 'Orb_Idle',
+  attention: 'Orb_Attention',
+  listening: 'Orb_Listening',
+  thinking: 'Orb_Thinking',
+  speaking: 'Orb_Speaking',
+  guiding: 'Orb_Guiding',
+  reflecting: 'Orb_Reflecting',
+  calming: 'Orb_Calming',
+  privacy: 'Orb_Privacy',
+  warning: 'Orb_Degraded',
+  transition: 'Orb_Transition',
+}
 
 type Nearby = 'orb' | 'ground' | 'life-map' | null
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
@@ -99,12 +113,31 @@ function MoonAndMist({ reducedMotion }: { reducedMotion: boolean }) {
 function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
   const root = useRef<THREE.Group>(null)
   const authoredCore = useRef<THREE.Group>(null)
+  const activeAction = useRef<THREE.AnimationAction | null>(null)
   const orb = useGLTF(ORB_MODEL)
   const authoredOrb = useMemo(() => cloneAuthoredModel(orb.scene), [orb.scene])
+  const { actions } = useAnimations(orb.animations, authoredOrb)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
   const shards = useMemo(() => Array.from({ length: 13 }, (_, i) => ({
     a: (i / 13) * Math.PI * 2, r: 0.52 + (i % 3) * 0.08, y: ((i % 5) - 2) * 0.13, s: 0.08 + (i % 4) * 0.014,
   })), [])
+  useEffect(() => {
+    const allActions = Object.values(actions).filter((action): action is THREE.AnimationAction => Boolean(action))
+    if (reducedMotion) {
+      allActions.forEach((action) => action.stop())
+      activeAction.current = null
+      return
+    }
+    const next = actions[ORB_CLIPS[state]]
+    if (!next) return
+    const previous = activeAction.current
+    if (previous && previous !== next) previous.fadeOut(0.18)
+    next.reset().setLoop(THREE.LoopRepeat, Infinity).fadeIn(0.18).play()
+    activeAction.current = next
+  }, [actions, reducedMotion, state])
+  useEffect(() => () => {
+    Object.values(actions).forEach((action) => action?.stop())
+  }, [actions])
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return
     root.current.rotation.y = clock.elapsedTime * 0.055
@@ -114,7 +147,7 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
       authoredCore.current.scale.setScalar(pulse)
     }
   })
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(e) => { e.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, runtimeAsset: ORB_MODEL }}>
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(e) => { e.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL }}>
     <mesh><sphereGeometry args={[0.82, 72, 72]} /><meshPhysicalMaterial color="#b9dff0" transparent opacity={0.2} transmission={0.86} thickness={0.18} roughness={0.08} metalness={0.02} clearcoat={1} ior={1.28} /></mesh>
     <mesh scale={0.69}><sphereGeometry args={[0.82, 48, 48]} /><meshPhysicalMaterial color="#334a73" transparent opacity={0.12} transmission={0.65} roughness={0.16} /></mesh>
     <group ref={authoredCore} scale={1.48}><primitive object={authoredOrb} /></group>
@@ -211,7 +244,7 @@ export function HomeWorldProductionSacred({onOrbOpen=requestUraiWorldOrbOpen,web
   if(!webglAvailable)return null
   const ready=canvasReady&&sceneReady,context=transition==='life-map'?'Ascending into your Life Map':transition==='ground'?'Descending into Ground':nearby==='orb'?'The Orb is here':nearby==='ground'?'The path descends':nearby==='life-map'?'Look to the sky':null
   const complete=()=>{if(transition==='ground')requestUraiWorldTravel({destination:'infrastructure-hub',href:'/ground/',entryPortal:'home-ground',cameraCheckpoint:'home-ground-descent'});else if(transition==='life-map')requestUraiWorldTravel({destination:'life-map',href:'/life-map/?from=home-sky',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'})}
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-obsidian-ritual-platform" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-movement="walk-keyboard-click-touch" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-sacred-tech-composite" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#060914'}} {...look}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-obsidian-ritual-platform" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-movement="walk-keyboard-click-touch" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-sacred-tech-composite" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#060914'}} {...look}>
     <Canvas className={styles.canvas} dpr={[1,1.45]} shadows camera={{position:[0,1.8,10.3],fov:47,near:0.05,far:300}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=0.92;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}><SacredScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} nearby={setNearby} orbState={orbState} reducedMotion={reducedMotion} transition={transition} onOrb={openOrb} onGround={ground} onLifeMap={lifeMap} onTransitionComplete={complete} onReady={()=>setSceneReady(true)} /></Canvas>
     {context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}{transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls" />:null}<span className="sr-only" data-testid="urai-home-webgl-orb">The sacred-tech Orb companion is physically present in the Home sanctuary and consumes the final authored Orb GLB.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your embodied Home presence uses the real skinned V4 human candidate.</span>
   </main>
