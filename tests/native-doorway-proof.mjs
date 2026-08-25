@@ -19,9 +19,9 @@ const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
 async function activate(page, target, method) {
   if (method === 'keyboard') {
-    await target.evaluate((node) => node.focus({ preventScroll: true }))
+    await target.focus()
     if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('semantic target did not receive focus')
-    await page.keyboard.press('Enter')
+    await target.press('Enter')
     return { targetOwnsHitPoint: true, hitPoint: null }
   }
 
