@@ -46,6 +46,28 @@ const SANCTUARY_REQUIRED_OBJECTS = [
   'home-sanctuary-pavilion',
 ] as const
 
+const SUPPRESSED_SANCTUARY_ROLES = new Set([
+  'authored-vault',
+  'vault-masonry',
+  'environmental-landmark',
+  'environmental-canopy',
+  'restrained-growth',
+  'ambient-particle-anchor',
+  'horizon-monolith',
+  'horizon-bridge',
+  'distant-memory-veil',
+  'ground-portal-masonry',
+  'ground-portal-pillar',
+  'ground-portal-energy',
+  'ground-threshold',
+  'ground-portal-veil',
+  'life-map-portal-masonry',
+  'life-map-portal-pillar',
+  'life-map-portal-energy',
+  'life-map-threshold',
+  'life-map-portal-veil',
+])
+
 type Nearby = 'orb' | 'ground' | 'life-map' | null
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 
@@ -109,6 +131,33 @@ function cloneAuthoredModel(source: THREE.Object3D) {
   return root
 }
 
+function tuneSanctuarySurface(object: THREE.Object3D, role: string) {
+  if (!(object instanceof THREE.Mesh)) return
+  const materials = Array.isArray(object.material) ? object.material : [object.material]
+  const isFloor = role === 'grounded-terrain' || role === 'central-sanctuary-floor' || role === 'spawn-landing'
+  const isPath = role === 'natural-travel-path'
+  const isWater = role === 'reflective-water'
+
+  for (const material of materials) {
+    if (!(material instanceof THREE.MeshStandardMaterial)) continue
+    if (isFloor) {
+      material.color.lerp(new THREE.Color('#27313a'), 0.34)
+      material.roughness = Math.max(material.roughness, 0.68)
+      material.metalness = Math.min(material.metalness, 0.12)
+      material.envMapIntensity = Math.min(material.envMapIntensity, 0.82)
+    } else if (isPath) {
+      material.color.lerp(new THREE.Color('#55636b'), 0.18)
+      material.roughness = Math.max(material.roughness, 0.62)
+      material.metalness = Math.min(material.metalness, 0.18)
+    } else if (isWater) {
+      material.roughness = Math.max(material.roughness, 0.16)
+      material.metalness = 0
+      material.envMapIntensity = Math.min(material.envMapIntensity, 1)
+    }
+    material.needsUpdate = true
+  }
+}
+
 function cloneSanctuary(source: THREE.Object3D) {
   const root = cloneAuthoredModel(source)
   root.position.set(0, 0, -0.6)
@@ -119,8 +168,10 @@ function cloneSanctuary(source: THREE.Object3D) {
 
   root.traverse((object) => {
     const name = object.name
+    const role = typeof object.userData?.role === 'string' ? object.userData.role : ''
     const stylizedForeground =
-      name.startsWith('living-grove-')
+      SUPPRESSED_SANCTUARY_ROLES.has(role)
+      || name.startsWith('living-grove-')
       || name.startsWith('sanctuary-growth-')
       || name.startsWith('sanctuary-firefly-')
       || name.startsWith('sanctuary-vault-')
@@ -128,7 +179,17 @@ function cloneSanctuary(source: THREE.Object3D) {
       || name === 'horizon-bridge'
       || name === 'horizon-memory-veil'
       || name.includes('portal-alcove')
-    if (stylizedForeground) object.visible = false
+      || role.endsWith('-portal-masonry')
+      || role.endsWith('-portal-pillar')
+      || role.endsWith('-portal-energy')
+      || role.endsWith('-portal-veil')
+
+    if (stylizedForeground) {
+      object.visible = false
+      return
+    }
+
+    tuneSanctuarySurface(object, role)
   })
 
   for (const name of ['mirror-basin-rim', 'mirror-basin-water', 'orb-pedestal-lower', 'orb-pedestal-upper', 'sanctuary-heart-light']) {
@@ -156,7 +217,7 @@ function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null
     <primitive object={model} />
     <mesh position={[0, -0.12, -1.65]} receiveShadow>
       <cylinderGeometry args={[10.6, 10.9, 0.16, 128]} />
-      <meshPhysicalMaterial color="#13191f" roughness={0.72} metalness={0.08} clearcoat={0.18} clearcoatRoughness={0.62} envMapIntensity={0.72} />
+      <meshPhysicalMaterial color="#171e25" roughness={0.78} metalness={0.06} clearcoat={0.12} clearcoatRoughness={0.68} envMapIntensity={0.68} />
     </mesh>
     <mesh name="home-walkable-navigation-surface" position={[0, 0.035, -1.55]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
       <planeGeometry args={[20.4, 20.2]} />
@@ -166,11 +227,11 @@ function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null
 }
 
 function PhysicalEnvironment() {
-  return <Environment resolution={96} frames={1} background={false} environmentIntensity={0.88}>
-    <Lightformer form="rect" intensity={3.8} color="#f1f4f5" position={[0, 8, 7]} scale={[10, 4, 1]} target={[0, 0.8, -2.5]} />
-    <Lightformer form="rect" intensity={1.9} color="#a9cbd1" position={[-8, 3.5, -4]} scale={[6, 3, 1]} target={[0, 1, -3]} />
-    <Lightformer form="rect" intensity={1.55} color="#a89dbf" position={[8, 4, -5]} scale={[6, 3, 1]} target={[0, 1, -3]} />
-    <Lightformer form="ring" intensity={1.35} color="#e4cf9f" position={[0, 4.8, -10]} scale={5.5} target={[0, 1, -2]} />
+  return <Environment resolution={96} frames={1} background={false} environmentIntensity={0.92}>
+    <Lightformer form="rect" intensity={4.1} color="#f3f5f5" position={[0, 8, 7]} scale={[10, 4, 1]} target={[0, 0.8, -2.5]} />
+    <Lightformer form="rect" intensity={2.05} color="#afcfd5" position={[-8, 3.5, -4]} scale={[6, 3, 1]} target={[0, 1, -3]} />
+    <Lightformer form="rect" intensity={1.7} color="#afa5c3" position={[8, 4, -5]} scale={[6, 3, 1]} target={[0, 1, -3]} />
+    <Lightformer form="ring" intensity={1.4} color="#e6d19f" position={[0, 4.8, -10]} scale={5.5} target={[0, 1, -2]} />
   </Environment>
 }
 
@@ -204,9 +265,9 @@ function MoonAndMist({ reducedMotion }: { reducedMotion: boolean }) {
   })
 
   return <>
-    <group name="home-mountain-horizon" position={[-10, 10.5, -42]}>
-      <mesh><sphereGeometry args={[1.72, 48, 48]} /><meshBasicMaterial color="#e7edf1" toneMapped={false} /></mesh>
-      <mesh position={[0.6, 0.12, 0.5]}><sphereGeometry args={[1.68, 48, 48]} /><meshBasicMaterial color="#0a151d" /></mesh>
+    <group name="home-mountain-horizon" position={[-11.5, 11.2, -48]}>
+      <mesh><sphereGeometry args={[1.48, 48, 48]} /><meshBasicMaterial color="#edf1f2" toneMapped={false} /></mesh>
+      <mesh position={[0.54, 0.1, 0.5]}><sphereGeometry args={[1.45, 48, 48]} /><meshBasicMaterial color="#0c1820" /></mesh>
     </group>
     <group ref={mist} name="home-living-vegetation" />
   </>
@@ -282,7 +343,7 @@ function HumanPresence({ root }: { root: MutableRefObject<THREE.Group | null> })
   const human = useGLTF(HUMAN)
   const model = useMemo(() => cloneAuthoredModel(human.scene), [human.scene])
   return <group ref={root} name="home-authored-embodied-self" position={SPAWN} rotation={[0,Math.PI,0]}>
-    <primitive object={model} scale={0.84} />
+    <primitive object={model} scale={0.72} />
   </group>
 }
 
@@ -320,11 +381,11 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
   const last = useRef<Nearby>(null)
 
   useLayoutEffect(()=>{
-    camera.near = 0.38
+    camera.near = 0.48
     camera.far = 300
     camera.updateProjectionMatrix()
-    camera.position.set(2.5,2.45,9.5)
-    camera.lookAt(0,1.2,-1.2)
+    camera.position.set(4.2,3.05,10.8)
+    camera.lookAt(0,1.1,-1.8)
   },[camera])
 
   useFrame(({clock},delta)=>{
@@ -350,14 +411,14 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
     if(avatar.current){avatar.current.position.copy(pos.current);avatar.current.rotation.y=yaw.current+Math.PI}
 
     const portrait=size.height>size.width
-    const distance=portrait?2.3:2.55
-    const lateral=portrait?1.65:2.15
-    const height=portrait?2.05:2.28
+    const distance=portrait?3.05:3.55
+    const lateral=portrait?2.2:2.9
+    const height=portrait?2.45:2.75
     const behind=new THREE.Vector3(Math.sin(yaw.current)*-distance,height,Math.cos(yaw.current)*distance)
     const shoulder=new THREE.Vector3(Math.cos(yaw.current)*lateral,0,-Math.sin(yaw.current)*lateral)
     const desired=pos.current.clone().add(behind).add(shoulder)
     camera.position.lerp(desired,1-Math.pow(0.0008,delta))
-    const look=pos.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current)*7.2,1.18+pitch.current,-Math.cos(yaw.current)*7.2))
+    const look=pos.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current)*8.2,1.08+pitch.current,-Math.cos(yaw.current)*8.2))
     camera.lookAt(look)
 
     const candidates:readonly [Nearby,THREE.Vector3,number][]=[['orb',ORB,2.5],['ground',GROUND,2.8],['life-map',LIFE_MAP,2.8]]
@@ -393,16 +454,16 @@ function SceneReady({ onReady }: { onReady: () => void }) {
 function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pitch:MutableRefObject<number>;target:MutableRefObject<THREE.Vector3|null>;avatar:MutableRefObject<THREE.Group|null>;nearby:(v:Nearby)=>void;orbState:OrbState;reducedMotion:boolean;transition:'none'|'ground'|'life-map';onOrb:()=>void;onGround:()=>void;onLifeMap:()=>void;onTransitionComplete:()=>void;onReady:()=>void}){
   const cosmic=props.transition==='life-map'
   return <>
-    <color attach="background" args={[cosmic?'#01030a':'#0b161d']} />
-    <fogExp2 attach="fog" args={[cosmic?'#060918':'#111b21',cosmic?0.0022:0.0048]} />
-    <Stars radius={180} depth={90} count={cosmic?2800:180} factor={cosmic?3:0.72} saturation={0.08} fade speed={props.reducedMotion?0:0.018} />
+    <color attach="background" args={[cosmic?'#01030a':'#0d1c26']} />
+    <fogExp2 attach="fog" args={[cosmic?'#060918':'#14232b',cosmic?0.0022:0.0038]} />
+    <Stars radius={180} depth={90} count={cosmic?2800:150} factor={cosmic?3:0.68} saturation={0.06} fade speed={props.reducedMotion?0:0.016} />
     <PhysicalEnvironment />
-    <ambientLight intensity={0.5} color="#bec8cd" />
-    <hemisphereLight args={['#d8e0e4','#252421',0.92]} />
-    <directionalLight position={[-8,14,7]} intensity={2.35} color="#f1f0eb" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-0.00012} />
-    <directionalLight position={[8,6,-9]} intensity={0.52} color="#9d96b1" />
-    <directionalLight position={[-2,4,9]} intensity={0.4} color="#d8b991" />
-    <spotLight position={[0,9,8]} intensity={1.55} color="#f3f3ed" distance={32} angle={0.5} penumbra={0.95} decay={2} />
+    <ambientLight intensity={0.62} color="#c6d0d4" />
+    <hemisphereLight args={['#dce5e7','#2b2925',1.02]} />
+    <directionalLight position={[-8,14,7]} intensity={2.5} color="#f5f2ea" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-bias={-0.00012} />
+    <directionalLight position={[8,6,-9]} intensity={0.58} color="#a49cb5" />
+    <directionalLight position={[-2,4,9]} intensity={0.46} color="#ddbe95" />
+    <spotLight position={[0,9,8]} intensity={1.72} color="#f5f4ed" distance={34} angle={0.5} penumbra={0.95} decay={2} />
     <ArchitecturalPracticals />
     <RitualFloor target={props.target} />
     <MoonAndMist reducedMotion={props.reducedMotion} />
@@ -410,7 +471,7 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
     <SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />
     <HumanPresence root={props.avatar} />
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
-    <ContactShadows position={[0,0.02,-1.4]} opacity={0.24} scale={18} blur={3.4} far={6} resolution={192} frames={1} color="#020405" />
+    <ContactShadows position={[0,0.02,-1.4]} opacity={0.26} scale={18} blur={3.4} far={6} resolution={192} frames={1} color="#020405" />
     <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.nearby} transition={props.transition} reducedMotion={props.reducedMotion} onTransitionComplete={props.onTransitionComplete} />
     <SceneReady onReady={props.onReady} />
   </>
@@ -500,8 +561,8 @@ export function HomeWorldProductionSacred({onOrbOpen=requestUraiWorldOrbOpen,web
     else if(transition==='life-map')requestUraiWorldTravel({destination:'life-map',href:'/life-map/?from=home-sky',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'})
   }
 
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-obsidian-ritual-platform" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v6-clean-architecture" data-home-pbr-environment="local-lightformer-ibl" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-sacred-tech-composite" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#0b161d'}} {...look}>
-    <Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{position:[2.5,2.45,9.5],fov:47,near:0.38,far:300}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.12;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-obsidian-ritual-platform" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v7-role-filtered" data-home-pbr-environment="local-lightformer-ibl" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb authored-sacred-tech-composite" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#0d1c26'}} {...look}>
+    <Canvas className={styles.canvas} dpr={[1,1.35]} shadows camera={{position:[4.2,3.05,10.8],fov:45,near:0.48,far:300}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.22;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}>
       <SacredScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} nearby={setNearby} orbState={orbState} reducedMotion={reducedMotion} transition={transition} onOrb={openOrb} onGround={ground} onLifeMap={lifeMap} onTransitionComplete={complete} onReady={markSceneReady} />
     </Canvas>
     {context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}
