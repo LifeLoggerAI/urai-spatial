@@ -6,7 +6,7 @@ const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
@@ -18,82 +18,74 @@ const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}`
 
-test('Home is one believable authored 3D real-world environment with atmospheric imagery only', () => {
+test('Home is one coherent authored Sacred-Tech 3D environment with final physical assets', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
-    'data-home-visual-owner="asset-driven-personalized-sanctuary"',
     'data-home-primary-owner="asset-driven"',
-    'data-home-real-world-first="true"',
-    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
-    'data-home-world-character="believable-natural-inhabitable-environment"',
-    'data-home-visible-portals="false"',
-    'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
-    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
-    'data-home-provider-role="atmospheric-support-only"',
-    'data-home-generated-scenery="suppressed"',
-    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
+    'data-home-world-character="premium-cinematic-sacred-tech"',
+    'data-home-physical-base="authored-obsidian-ritual-platform"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="privacy-preserving-shadow"',
+    'data-home-embodied-self="makehuman-v4"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-pointer-lock="false"',
     'home-visible-navigable-sanctuary-world',
     'data-testid="urai-home-embodied-avatar"',
     'data-testid="urai-home-webgl-orb"',
     'home-authored-terrain',
-    'home-canonical-sanctuary-structure',
     'home-mountain-horizon',
     'home-living-vegetation',
-    'home-reflecting-water',
+    'home-sanctuary-pavilion',
     'home-orb-sanctuary',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
+    'home-life-map-physical-portal',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
-  ]) assert.ok(homeGraph.includes(marker), `missing Home coherent 3D convergence marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing Sacred Home convergence marker: ${marker}`)
 
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = '\/assets\/urai\/replay\/replay-memory-film-main\.webp'/)
-  assert.match(homeProduction, /HOME_SANCTUARY_MODEL = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
-  assert.match(homeProduction, /HOME_FERN_MODEL = '\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb'/)
-  assert.match(homeCss, /replay-memory-film-main\.webp/)
-  assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
-  assert.match(homeCss, /\.world::before\s*\{[\s\S]*z-index:\s*3[\s\S]*opacity:\s*\.018[\s\S]*mix-blend-mode:\s*soft-light/)
-  assert.match(homeCss, /@media \(max-width: 700px\)[\s\S]*\.world::before\s*\{[\s\S]*opacity:\s*\.014/)
-  assert.match(homeCss, /@media \(max-width: 700px\), \(pointer: coarse\)[\s\S]*\.urai-mobile-movement\) \{ display: grid; \}/)
-  assert.match(homeCss, /\.urai-mobile-movement button:focus-visible/)
-  assert.match(homeProduction, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(homeProduction, /new THREE\.PlaneGeometry\(90, 90, 180, 180\)/)
-  assert.match(homeProduction, /function prepareNaturalSanctuary\(/)
-  assert.match(homeProduction, /function Terrain\(/)
-  assert.match(homeProduction, /function Vegetation\(/)
-  assert.match(homeProduction, /useGLTF\(HOME_SANCTUARY_MODEL\)/)
-  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
-  assert.match(homeProduction, /home-scanned-fern-/)
-  assert.match(homeProduction, /function Horizon\(/)
-  assert.match(homeProduction, /function Water\(/)
-  assert.match(homeProduction, /function Orb\(/)
-  assert.match(homeProduction, /function EmbodiedPresence\(/)
+  assert.match(homeProduction, /SANCTUARY = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
+  assert.match(homeProduction, /ORB_MODEL = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
+  assert.match(homeProduction, /PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
+  assert.match(homeProduction, /HUMAN = '\/assets\/urai\/generated\/human-makehuman-v4\/home-human-makehuman-v4\.glb'/)
+  assert.match(homeProduction, /function cloneAuthoredModel\(/)
+  assert.match(homeProduction, /cloneAuthoredMaterial/)
+  assert.match(homeProduction, /object\.castShadow = true/)
+  assert.match(homeProduction, /object\.receiveShadow = true/)
+  assert.match(homeProduction, /function RitualFloor\(/)
+  assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
+  assert.match(homeProduction, /function MoonAndMist\(/)
+  assert.match(homeProduction, /function SacredOrb\(/)
+  assert.match(homeProduction, /useGLTF\(ORB_MODEL\)/)
+  assert.match(homeProduction, /useAnimations\(orb\.animations, authoredOrb\)/)
+  for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
+    assert.ok(homeProduction.includes(clip), `missing authored Orb state clip: ${clip}`)
+  }
+  assert.match(homeProduction, /if \(reducedMotion\) \{[\s\S]*allActions\.forEach\(\(action\) => action\.stop\(\)\)/)
+  assert.match(homeProduction, /function HumanPresence\(/)
+  assert.match(homeProduction, /useGLTF\(HUMAN\)/)
+  assert.match(homeProduction, /function LifeMapPortal\(/)
+  assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /function SceneReady\(/)
-  assert.match(homeProduction, /const candidates: readonly \[Nearby, THREE\.Vector3, number\]\[\]/)
-  assert.match(homeProduction, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/)
-  assert.match(homeProduction, /matchMedia\('\(pointer: coarse\), \(max-width: 700px\)'\)/)
-  assert.match(homeProduction, /duration = reducedMotion \? \.42/)
-  assert.match(homeProduction, /event\.key !== 'Escape'/)
-  assert.match(homeProduction, /cameraCheckpoint: 'home-ground-descent'/)
-  assert.match(homeProduction, /cameraCheckpoint: 'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /requestUraiWorldTravel/)
-  assert.match(homeProduction, /representation: 'privacy-preserving-first-person-presence'/)
-  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb polyhaven-fern-02-geometry-v1\.glb local-three-dimensional-terrain living-orb reflecting-water"/)
-  assert.doesNotMatch(homeProduction, /@react-three\/postprocessing|EffectComposer|<Bloom\b|<Vignette\b/)
-  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|destinationNames|home-life-map-portal-world-owned|home-ground-portal-world-owned|dodecahedronGeometry/)
+  assert.match(homeProduction, /\['orb',ORB,2\.5\],\['ground',GROUND,2\.8\],\['life-map',LIFE_MAP,2\.8\]/)
+  assert.match(homeProduction, /prefers-reduced-motion: reduce/)
+  assert.match(homeProduction, /pointer: coarse/)
+  assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
+  assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
+  assert.match(homeProduction, /href:'\/life-map\/\?from=home-sky'/)
+  assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
+  assert.match(homeRuntime, /href: '\/life-map\/'/)
+  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-sacred-tech-composite"/)
+  assert.match(homeProduction, /data-home-orb-model-clip=/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
-  assert.doesNotMatch(homeGraph, /assetCssStack\(homeAssets\.|home-authored-art|requestPointerLock|OrbitControls/)
+  assert.doesNotMatch(homeGraph, /genesis-orb-placeholder\.svg|fallback-sky-bloom-12\.webp|fallback-ground-bloom-12\.png|TRANSPARENT_PIXEL/)
+  assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
 test('Ground is one embodied cinematic infrastructure world', () => {
