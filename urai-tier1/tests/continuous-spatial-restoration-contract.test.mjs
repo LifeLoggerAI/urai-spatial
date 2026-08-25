@@ -50,6 +50,8 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'Stars',
     'home-entry-chamber-v1.glb',
     'home-human-makehuman-v4.glb',
+    'urai-orb-avatar-v1.glb',
+    'portal-ring-master-v1.glb',
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
@@ -67,6 +69,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'home-orb-sanctuary',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
+    'home-life-map-physical-portal',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -81,6 +84,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(homeProduction, /function SacredOrb\(/)
   assert.match(homeProduction, /function OrbPlatform\(/)
   assert.match(homeProduction, /function HumanPresence\(/)
+  assert.match(homeProduction, /function LifeMapPortal\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
@@ -91,7 +95,9 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.doesNotMatch(homeProduction, /PORTAL_MODEL|WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
+  assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
+  assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
+  assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
@@ -155,7 +161,7 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-4'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
