@@ -60,7 +60,7 @@ const loadingVisibilityTarget = `      const loadingVisible = [...document.query
           return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
             && rect.width > 4 && rect.height > 4
         })`
-const loadingVisibilityReplacement = `      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
+const loadingVisibilityReplacement = `      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading')]
         .some((node) => {
           const rect = node.getBoundingClientRect()
           if (rect.width <= 4 || rect.height <= 4) return false
@@ -147,6 +147,7 @@ const requiredSemanticGuards = [
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['direct canvas geometry measurement', 'element.getBoundingClientRect()'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],
+  ['canonical runtime loading owner', "document.querySelectorAll('.home-runtime-loading')"],
   ['semantic navigation owner', "semanticNavigationOwner === 'runtime-boundary'"],
   ['semantic navigation non-dominance', "semanticNavigationNonDominant === 'true'"],
   ['semantic navigation opacity', 'semanticNavigationOpacity <= 0.02'],
@@ -161,6 +162,7 @@ if (!grouped.includes('const browser = await chromium.launch({ headless: true })
 if (grouped.includes('|| const browser = await chromium.launch')) throw new Error('Grouped execution splice corrupted the preceding assertion')
 if (grouped.includes('\n  group,\n')) throw new Error('Grouped receipt retained an undefined shorthand group binding')
 if (grouped.includes('.home-discreet-controls')) throw new Error('Grouped Home proof retained the retired discreet-controls contract')
+if (grouped.includes('.home-world-loading')) throw new Error('Grouped Home proof retained retired Home loading authority')
 
 await writeFile(sourceUrl, grouped, 'utf8')
 try {
