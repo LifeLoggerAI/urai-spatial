@@ -16,7 +16,7 @@ env:
   URAI_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
   PR_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
   FERN_GLTF_BLOB: ec7509ee8e280964d78eaeab28348d855c88d98d
-  FERN_BIN_BLOB: b6ae3752172b6f074f05d433accdc96b357f2a
+  FERN_BIN_BLOB: b6ae3752172b2f6d074f05d433accdc96b357f2a
   FERN_MIRROR_REPO: Joshkaki00/godotmark
   FERN_MIRROR_COMMIT: cb9d9f5a944cfe24741c528014317b960efc62a5
 
@@ -95,7 +95,7 @@ jobs:
           target = out_dir / 'polyhaven-fern-02-geometry-v1.glb'
           target.write_bytes(payload)
           digest = hashlib.sha256(payload).hexdigest()
-          receipt = {'assetId': 'home-polyhaven-fern-02-geometry-v1', 'license': 'CC0-1.0', 'originalSource': 'https://polyhaven.com/a/fern_02', 'mirrorRepository': 'Joshkaki00/godotmark', 'mirrorCommit': 'cb9d9f5a944cfe24741c528014317b960efc62a5', 'sourceGltfBlob': 'ec7509ee8e280964d78eaeab28348d855c88d98d', 'sourceBinaryBlob': 'b6ae3752172b6f074f05d433accdc96b357f2a', 'output': str(target), 'outputSha256': digest, 'outputBytes': len(payload), 'runtimeExternalRequests': False, 'materialPolicy': 'URAI-owned runtime physical materials; source textures intentionally omitted', 'promotionState': 'vendored-component-not-standalone-world'}
+          receipt = {'assetId': 'home-polyhaven-fern-02-geometry-v1', 'license': 'CC0-1.0', 'originalSource': 'https://polyhaven.com/a/fern_02', 'mirrorRepository': 'Joshkaki00/godotmark', 'mirrorCommit': 'cb9d9f5a944cfe24741c528014317b960efc62a5', 'sourceGltfBlob': 'ec7509ee8e280964d78eaeab28348d855c88d98d', 'sourceBinaryBlob': 'b6ae3752172b2f6d074f05d433accdc96b357f2a', 'output': str(target), 'outputSha256': digest, 'outputBytes': len(payload), 'runtimeExternalRequests': False, 'materialPolicy': 'URAI-owned runtime physical materials; source textures intentionally omitted', 'promotionState': 'vendored-component-not-standalone-world'}
           (receipt_dir / 'home-polyhaven-fern-02-geometry-v1.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
           PY
