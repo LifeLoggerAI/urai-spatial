@@ -1,3 +1,4 @@
+// V25 certification authority: built physical sanctuary + authored living Orb; retained proof remains fail-closed.
 import { readFile, writeFile } from 'node:fs/promises'
 
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
