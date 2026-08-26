@@ -6,7 +6,7 @@ const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
@@ -25,7 +25,7 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-physical-base="built-obsidian-glass-stone-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
@@ -46,29 +46,29 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
     'MobileMovementPad',
   ]) assert.ok(homeGraph.includes(marker), `missing Sacred Home convergence marker: ${marker}`)
 
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /SANCTUARY = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
   assert.match(homeProduction, /ORB_MODEL = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
   assert.match(homeProduction, /PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeProduction, /HUMAN = '\/assets\/urai\/generated\/human-makehuman-v4\/home-human-makehuman-v4\.glb'/)
-  assert.match(homeProduction, /function cloneAuthoredModel\(/)
-  assert.match(homeProduction, /cloneAuthoredMaterial/)
+  assert.match(homeProduction, /function cloneModel\(/)
+  assert.match(homeProduction, /cloneMaterial/)
   assert.match(homeProduction, /object\.castShadow = true/)
   assert.match(homeProduction, /object\.receiveShadow = true/)
-  assert.match(homeProduction, /function RitualFloor\(/)
+  assert.match(homeProduction, /function SanctuaryCourt\(/)
   assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
-  assert.match(homeProduction, /function MoonAndMist\(/)
+  assert.match(homeProduction, /function SkyDome\(/)
   assert.match(homeProduction, /function SacredOrb\(/)
   assert.match(homeProduction, /useGLTF\(ORB_MODEL\)/)
-  assert.match(homeProduction, /useAnimations\(orb\.animations, authoredOrb\)/)
+  assert.match(homeProduction, /useAnimations\(orb\.animations,authoredOrb\)/)
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
     assert.ok(homeProduction.includes(clip), `missing authored Orb state clip: ${clip}`)
   }
-  assert.match(homeProduction, /if \(reducedMotion\) \{[\s\S]*allActions\.forEach\(\(action\) => action\.stop\(\)\)/)
+  assert.match(homeProduction, /if\(reducedMotion\)\{allActions\.forEach\(\(action\)=>action\.stop\(\)\)/)
   assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /useGLTF\(HUMAN\)/)
-  assert.match(homeProduction, /function LifeMapPortal\(/)
+  assert.match(homeProduction, /function ThresholdAlcove\(/)
   assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
@@ -81,7 +81,7 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
   assert.match(homeProduction, /href:'\/life-map\/\?from=home-sky'/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
   assert.match(homeRuntime, /href: '\/life-map\/'/)
-  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-sacred-tech-composite"/)
+  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb built-sacred-tech-sanctuary-v19"/)
   assert.match(homeProduction, /data-home-orb-model-clip=/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
   assert.doesNotMatch(homeGraph, /genesis-orb-placeholder\.svg|fallback-sky-bloom-12\.webp|fallback-ground-bloom-12\.png|TRANSPARENT_PIXEL/)
