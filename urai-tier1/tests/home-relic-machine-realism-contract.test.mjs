@@ -9,7 +9,7 @@ assert.ok(lifeMapPortalStart >= 0 && lifeMapPortalEnd > lifeMapPortalStart, 'Lif
 const lifeMapPortalSource = source.slice(lifeMapPortalStart, lifeMapPortalEnd)
 
 test('Sacred Home Orb is a restrained physical relic-machine rather than a simple glowing sphere', () => {
-  assert.match(source, /premium-moonlit-relic-machine-v15/)
+  assert.match(source, /premium-moonlit-relic-machine-v16/)
   assert.match(source, /home-orb-stabilizer-ring-1/)
   assert.match(source, /home-orb-stabilizer-ring-2/)
   assert.match(source, /home-orb-stabilizer-ring-3/)
@@ -21,19 +21,33 @@ test('Sacred Home Orb is a restrained physical relic-machine rather than a simpl
 
 test('Life Map threshold visibly consumes the governed authored portal as physical architecture', () => {
   assert.match(lifeMapPortalSource, /home-life-map-portal-authored-visible/)
-  assert.match(lifeMapPortalSource, /authored-portal-physical-threshold-v15/)
+  assert.match(lifeMapPortalSource, /authored-portal-physical-threshold-v16/)
   assert.match(lifeMapPortalSource, /<primitive object=\{model\} \/>/)
   assert.doesNotMatch(lifeMapPortalSource, /<primitive object=\{model\} visible=\{false\}/)
 })
 
+test('Home hero materials use governed photographic PBR and local HDR rather than generated texture stand-ins', () => {
+  assert.match(source, /HOME_PHOTOGRAPHIC_PBR_V16/)
+  assert.match(source, /rock-tile-floor-diff-1k\.png/)
+  assert.match(source, /rock-tile-floor-normal-gl-1k\.png/)
+  assert.match(source, /rock-tile-floor-arm-1k\.png/)
+  assert.match(source, /rock-tile-floor-displacement-1k\.png/)
+  assert.match(source, /studio-small-08-1k\.hdr/)
+  assert.match(source, /photographic-rock-pbr-v16/)
+  assert.match(source, /photographic-obsidian-ritual-platform-v16/)
+  assert.match(source, /hand-laid-photographic-stone-v16/)
+  assert.match(source, /local-cc0-hdri-studio-small-08/)
+  assert.doesNotMatch(source, /new THREE\.DataTexture/)
+  assert.doesNotMatch(source, /makeWeatheredStonePack/)
+  assert.doesNotMatch(source, /configureSurfaceTexture/)
+  assert.doesNotMatch(source, /<Lightformer/)
+})
+
 test('Home environment follows the final photographic sanctuary direction from the Final Asset Lock', () => {
-  assert.match(source, /weathered-obsidian-microdetail-v15/)
-  assert.match(source, /photographic-obsidian-ritual-platform-v15/)
   assert.match(source, /fog-carried-horizon-without-procedural-ridges-v15/)
   assert.match(source, /photographic-blue-hour-haze-v15/)
-  assert.match(source, /recessed-obsidian-descent-v15/)
+  assert.match(source, /recessed-obsidian-descent-v16/)
   assert.match(source, /low-density-depth-mist-v15/)
-  assert.match(source, /hand-laid-weathered-stone-v15/)
   assert.match(source, /perimeter-only-scanned-growth-v15/)
   assert.match(source, /\{cosmic\?<Stars/)
   assert.doesNotMatch(source, /home-natural-walkable-terrain/)
@@ -48,7 +62,7 @@ test('normal Home no longer exposes the rejected demo-landscape grammar', () => 
   assert.doesNotMatch(source, /weathered-obsidian-ground-v14/)
   assert.doesNotMatch(source, /grounded-basalt-descent-v14/)
   assert.doesNotMatch(source, /home-distant-natural-horizon[\s\S]*mesh geometry=/)
-  assert.match(source, /data-home-visual-grade="cinematic-pbr-v15-photographic-sanctuary"/)
+  assert.match(source, /data-home-visual-grade="cinematic-pbr-v16-photographic-cc0-sanctuary"/)
 })
 
 test('moon presentation is physical and no longer built from an overlapping dark-sphere cutout', () => {
