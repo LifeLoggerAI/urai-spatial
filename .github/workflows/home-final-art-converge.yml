@@ -6,6 +6,7 @@ on:
       - home-final-relic-machine-realism-20260826
     paths:
       - '.github/workflows/home-final-art-converge.yml'
+      - 'scripts/apply-home-v20-final-art.py'
 
 permissions:
   contents: write
@@ -15,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  HOME_FINAL_ART_CONVERGENCE_REVISION: '2'
+  HOME_FINAL_ART_CONVERGENCE_REVISION: '3'
 
 jobs:
   converge:
@@ -30,14 +31,12 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Apply deterministic final-art patch
-        run: |
-          python3 scripts/apply-home-final-art-convergence.py
-          python3 scripts/apply-home-final-art-contract-fix.py
+      - name: Apply deterministic V20 physical final-art patch
+        run: python3 scripts/apply-home-v20-final-art.py
 
-      - name: Run focused contracts
+      - name: Run focused live-owner contracts
         working-directory: urai-tier1
-        run: node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/embodied-exploration-contract.test.mjs
+        run: node --test --test-concurrency=1 tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
 
       - name: Commit exact successor
         env:
@@ -50,7 +49,7 @@ jobs:
           test -n "$(git status --porcelain)"
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx urai-tier1/tests/home-relic-machine-realism-contract.test.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs
-          git commit -m 'Finish Home photographic sanctuary final-art composition'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx
+          git commit -m 'Apply Home V20 physical final-art runtime'
           gh auth setup-git
           git push origin HEAD:home-final-relic-machine-realism-20260826
