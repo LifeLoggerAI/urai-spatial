@@ -147,17 +147,20 @@ async function proveOverview(browser, deviceName) {
     }
 
     const startZ = Number(await world.getAttribute('data-mirror-camera-z'))
+    const movementObserved = () => page.waitForFunction(({ startZ, threshold }) => {
+      const value = Number(document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-mirror-camera-z'))
+      return Number.isFinite(value) && Math.abs(value - startZ) >= threshold
+    }, { startZ, threshold: 0.05 }, { timeout: 5000, polling: 50 })
     if (deviceName === 'desktop') {
       await page.keyboard.down('ArrowUp')
-      await page.waitForTimeout(700)
-      await page.keyboard.up('ArrowUp')
+      try { await movementObserved() } finally { await page.keyboard.up('ArrowUp') }
     } else {
       const forward = page.getByRole('button', { name: 'Move forward' })
       await forward.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'touch', button: 0, isPrimary: true })
-      await page.waitForTimeout(700)
-      await forward.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', button: 0, isPrimary: true })
+      try { await movementObserved() } finally {
+        await forward.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'touch', button: 0, isPrimary: true })
+      }
     }
-    await page.waitForTimeout(250)
     const movedZ = Number(await world.getAttribute('data-mirror-camera-z'))
     if (!Number.isFinite(startZ) || !Number.isFinite(movedZ) || Math.abs(movedZ - startZ) < 0.05) throw new Error(`embodied movement not observed: ${startZ} -> ${movedZ}`)
 
