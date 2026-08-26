@@ -1,0 +1,51 @@
+name: Home Photographic Material Promoter V2
+
+on:
+  push:
+    branches:
+      - home-final-relic-machine-realism-20260826
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact push
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Verify source assets and promote V16
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -s urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.png
+          test -s urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.png
+          test -s urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.png
+          test -s urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-displacement-1k.png
+          test -s urai-tier1/public/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr
+          python3 scripts/promote-home-photographic-v16.py
+
+      - name: Commit V16 only when changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx; then
+            echo 'No V16 source change required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx
+          git commit -m 'Promote Sacred Home to photographic PBR V16'
+          gh auth setup-git
+          git push origin "HEAD:${GITHUB_REF_NAME}"
