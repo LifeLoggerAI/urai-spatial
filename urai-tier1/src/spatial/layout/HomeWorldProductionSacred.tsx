@@ -124,9 +124,9 @@ function makeFlagstoneTexturePack(repeat = 4.2, seed = 31): FlagstonePack {
       const jointG = 22 + surface * 2
       const jointB = 21 + surface * 2
       const index = (y * size + x) * 4
-      colorBytes[index] = THREE.MathUtils.clamp(Math.round(stoneR * face + jointR * (1 - face)), 8, 105)
-      colorBytes[index + 1] = THREE.MathUtils.clamp(Math.round(stoneG * face + jointG * (1 - face)), 8, 112)
-      colorBytes[index + 2] = THREE.MathUtils.clamp(Math.round(stoneB * face + jointB * (1 - face)), 8, 118)
+      colorBytes[index] = THREE.MathUtils.clamp(Math.round((stoneR + 54) * face + (jointR + 30) * (1 - face)), 24, 178)
+      colorBytes[index + 1] = THREE.MathUtils.clamp(Math.round((stoneG + 56) * face + (jointG + 31) * (1 - face)), 25, 184)
+      colorBytes[index + 2] = THREE.MathUtils.clamp(Math.round((stoneB + 50) * face + (jointB + 29) * (1 - face)), 24, 180)
       colorBytes[index + 3] = 255
       const h = Math.round(height * 255)
       const r = Math.round(roughness * 255)
@@ -165,9 +165,9 @@ function makeTerrainTexturePack(repeat = 7.4, seed = 109): TerrainPack {
       const moss = smoothstep01(0.45 + broad * 0.28 + cross * 0.2 + grain * 0.34)
       const stone = smoothstep01(0.62 - broad * 0.24 + cross * 0.18 - grain * 0.18)
       const index = (y * size + x) * 4
-      colorBytes[index] = Math.round(43 + moss * 20 + stone * 12)
-      colorBytes[index + 1] = Math.round(55 + moss * 34 + stone * 10)
-      colorBytes[index + 2] = Math.round(43 + moss * 18 + stone * 14)
+      colorBytes[index] = Math.round(86 + moss * 32 + stone * 24)
+      colorBytes[index + 1] = Math.round(104 + moss * 48 + stone * 18)
+      colorBytes[index + 2] = Math.round(76 + moss * 28 + stone * 22)
       colorBytes[index + 3] = 255
       const h = Math.round(THREE.MathUtils.clamp(0.48 + broad * 0.1 + cross * 0.08 + grain * 0.12, 0, 1) * 255)
       const rough = Math.round(THREE.MathUtils.clamp(0.86 + moss * 0.08 - stone * 0.04 + grain * 0.035, 0.76, 0.98) * 255)
@@ -196,9 +196,9 @@ function makeGroundGeometry() {
   const geometry = new THREE.PlaneGeometry(52, 64, 56, 72)
   const position = geometry.getAttribute('position')
   const colors = new Float32Array(position.count * 3)
-  const low = new THREE.Color('#33483a')
-  const high = new THREE.Color('#536553')
-  const stone = new THREE.Color('#5e6257')
+  const low = new THREE.Color('#63775a')
+  const high = new THREE.Color('#9aa27a')
+  const stone = new THREE.Color('#a39778')
   for (let index = 0; index < position.count; index += 1) {
     const x = position.getX(index)
     const z = -position.getY(index) - 4
@@ -263,7 +263,7 @@ function makeApproachShape() {
     const t = index / 18
     const z = 7.2 - t * 8.5
     const center = Math.sin(t * Math.PI * 1.15) * 0.34 - t * 0.18
-    const half = 0.78 + Math.sin(t * Math.PI) * 0.16 + (seededNoise(index, 3, 19) - 0.5) * 0.08
+    const half = 0.6 + Math.sin(t * Math.PI) * 0.13 + (seededNoise(index, 3, 19) - 0.5) * 0.07
     left.push(new THREE.Vector2(center - half, z))
     right.push(new THREE.Vector2(center + half, z))
   }
@@ -360,11 +360,11 @@ function FlagstoneMaterial({ pack, tint = '#657073', bumpScale = 0.09 }: { pack:
 function GroundClearing({ pack }: { pack: FlagstonePack }) {
   const terrainPack = useTerrainTexturePack(8.6, 109)
   const terrain = useMemo(() => makeGroundGeometry(), [])
-  const clearing = useMemo(() => makeIrregularShape(4.15, 13, 112), [])
+  const clearing = useMemo(() => makeIrregularShape(2.72, 13, 112), [])
   useEffect(() => () => terrain.dispose(), [terrain])
   return <group name="home-grounded-flagstone-clearing">
     <mesh name="home-natural-walkable-terrain" geometry={terrain} position={[0, -0.05, -4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <meshStandardMaterial vertexColors map={terrainPack.color} bumpMap={terrainPack.height} bumpScale={0.13} roughnessMap={terrainPack.roughness} roughness={0.96} metalness={0} envMapIntensity={0.62} />
+      <meshStandardMaterial color="#d5d7b4" vertexColors map={terrainPack.color} bumpMap={terrainPack.height} bumpScale={0.13} roughnessMap={terrainPack.roughness} roughness={0.94} metalness={0} envMapIntensity={0.78} />
     </mesh>
     <mesh position={[0, -0.04, -2.65]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
       <extrudeGeometry args={[clearing, { depth: 0.08, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.04, bevelSegments: 3, curveSegments: 3 }]} />
@@ -434,7 +434,7 @@ function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null
     <primitive object={retainedModel} />
     <GroundClearing pack={flagstone} />
     <ApproachPath pack={flagstone} />
-    <AuthoredMasonryGarden source={sanctuary.scene} />
+    <group visible={false}><AuthoredMasonryGarden source={sanctuary.scene} /></group>
     <mesh name="home-walkable-navigation-surface" position={[0, 0.22, -1.8]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
       <planeGeometry args={[21, 21]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -474,16 +474,18 @@ function MountainRange() {
   const far = useMemo(() => makeRidgeGeometry(104, 48, 29, 14.5), [])
   useEffect(() => () => { near.dispose(); far.dispose() }, [far, near])
   return <group name="home-distant-natural-horizon" userData={{ geometry: 'layered-eroded-mountain-terrain' }}>
-    <mesh geometry={far} position={[-8,-2.8,-68]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={1} metalness={0} envMapIntensity={0.28} />
+    <mesh geometry={far} position={[-8,-2.8,-60]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <meshStandardMaterial color="#9aa99b" vertexColors roughness={1} metalness={0} envMapIntensity={0.38} side={THREE.DoubleSide} />
     </mesh>
-    <mesh geometry={near} position={[8,-2.2,-46]} rotation={[-Math.PI/2,0,0]} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.99} metalness={0} envMapIntensity={0.38} />
+    <mesh geometry={near} position={[8,-2.2,-40]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+      <meshStandardMaterial color="#aab09b" vertexColors roughness={0.99} metalness={0} envMapIntensity={0.46} side={THREE.DoubleSide} />
     </mesh>
   </group>
 }
 
 const FERN_PLACEMENTS: readonly [number, number, number, number][] = [
+  [-4.8,6.3,1.3,0.2],[-3.7,5.4,0.92,1.25],[-4.5,3.4,1.12,-0.65],[-3.4,1.7,0.82,2.15],
+  [4.6,6.0,1.18,-0.25],[3.55,4.8,0.9,-1.35],[4.35,2.7,1.06,0.72],[3.35,1.05,0.78,-2.05],
   [-8.8,5.4,1.08,0.3],[-7.4,4.7,0.74,1.5],[-9.5,3.3,0.9,-0.8],[-6.9,2.2,0.58,2.3],
   [-10.2,-0.7,1.02,-1.1],[-8.7,-1.9,0.68,0.5],[-9.3,-4.6,0.88,1.8],[-7.5,-6.8,0.72,-1.4],
   [-5.8,-8.9,0.66,0.8],[-3.9,-10.1,0.52,2.5],[-5.1,-5.9,0.48,-0.4],
@@ -537,9 +539,9 @@ const SKY_FRAGMENT = `
     vec3 color = mix(horizon, middle, smoothstep(0.06, 0.42, height));
     color = mix(color, zenith, smoothstep(0.42, 0.95, height));
     vec3 lightDirection = normalize(vec3(-0.55, 0.24, -0.8));
-    float glow = pow(max(dot(direction, lightDirection), 0.0), 18.0);
-    float core = pow(max(dot(direction, lightDirection), 0.0), 220.0);
-    color += vec3(0.42, 0.27, 0.12) * glow + vec3(0.95, 0.75, 0.42) * core;
+    float glow = pow(max(dot(direction, lightDirection), 0.0), 84.0);
+    float core = pow(max(dot(direction, lightDirection), 0.0), 520.0);
+    color += vec3(0.3, 0.18, 0.08) * glow + vec3(0.82, 0.58, 0.28) * core;
     gl_FragColor = vec4(color, 1.0);
   }
 `
@@ -590,34 +592,33 @@ function SacredOrb({ state, reducedMotion, onOpen }: { state: OrbState; reducedM
     root.current.rotation.y = clock.elapsedTime * 0.018
     root.current.position.y = ORB.y + Math.sin(clock.elapsedTime * 0.62) * 0.025
     if (authoredCore.current) {
-      const pulse = state === 'speaking' ? 0.245 : state === 'listening' ? 0.235 : 0.225 + Math.sin(clock.elapsedTime * 0.95) * 0.004
+      const pulse = state === 'speaking' ? 0.13 : state === 'listening' ? 0.125 : 0.12 + Math.sin(clock.elapsedTime * 0.95) * 0.003
       authoredCore.current.scale.setScalar(pulse)
     }
   })
 
   return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, modelClip: ORB_CLIPS[state], runtimeAsset: ORB_MODEL }}>
     <mesh castShadow>
-      <sphereGeometry args={[0.58,64,64]} />
-      <meshPhysicalMaterial color="#8de7ed" transparent opacity={0.32} transmission={0.68} thickness={0.28} roughness={0.13} metalness={0} clearcoat={0.72} clearcoatRoughness={0.16} ior={1.24} envMapIntensity={1.2} />
+      <sphereGeometry args={[0.49,64,64]} />
+      <meshPhysicalMaterial color="#a8f4f8" transparent opacity={0.16} transmission={0.74} thickness={0.2} roughness={0.1} metalness={0} clearcoat={0.82} clearcoatRoughness={0.12} ior={1.2} envMapIntensity={1.3} />
     </mesh>
-    <mesh scale={0.78}><sphereGeometry args={[0.5,48,48]} /><meshStandardMaterial color="#70d8de" emissive="#2eaab5" emissiveIntensity={state === 'speaking' ? 1.35 : 0.88} transparent opacity={0.22} roughness={0.36} metalness={0} /></mesh>
-    <group ref={authoredCore} scale={0.225}><primitive object={authoredOrb} /></group>
-    <mesh><sphereGeometry args={[0.075,28,28]} /><meshStandardMaterial color="#f4ead2" emissive="#d7b36b" emissiveIntensity={1.15} roughness={0.42} metalness={0} /></mesh>
-    <mesh rotation={[0.32,0.5,0.18]}><torusGeometry args={[0.47,0.0035,8,96]} /><meshStandardMaterial color="#c3eef0" emissive="#70c9ce" emissiveIntensity={0.16} metalness={0.12} roughness={0.58} transparent opacity={0.62} /></mesh>
-    <pointLight color="#9fe9e9" intensity={state === 'speaking' ? 2.2 : 1.45} distance={7} decay={2} />
-    <pointLight color="#e2bc75" intensity={0.34} distance={5} decay={2} />
+    <mesh><sphereGeometry args={[0.34,56,56]} /><meshStandardMaterial color="#a9f8fb" emissive="#54dfe8" emissiveIntensity={state === 'speaking' ? 2.1 : 1.5} roughness={0.24} metalness={0.02} /></mesh>
+    <group ref={authoredCore} scale={0.12}><primitive object={authoredOrb} /></group>
+    <mesh><sphereGeometry args={[0.06,28,28]} /><meshStandardMaterial color="#fff8e8" emissive="#f4d590" emissiveIntensity={1.6} roughness={0.38} metalness={0} /></mesh>
+    <mesh rotation={[0.32,0.5,0.18]}><torusGeometry args={[0.45,0.004,8,96]} /><meshStandardMaterial color="#d6fbfd" emissive="#7cebf0" emissiveIntensity={0.34} metalness={0.08} roughness={0.52} transparent opacity={0.72} /></mesh>
+    <pointLight color="#9ff7f8" intensity={state === 'speaking' ? 3.1 : 2.15} distance={8} decay={2} />
   </group>
 }
 
 function OrbPlatform() {
   const pack = useFlagstoneTexturePack(1.7, 49)
-  const platform = useMemo(() => makeIrregularShape(1.58, 29, 72), [])
+  const platform = useMemo(() => makeIrregularShape(1.08, 29, 72), [])
   return <group name="home-sanctuary-pavilion" position={[0,0,-2.65]} userData={{ visualOwner: 'grounded-natural-sanctuary-v12' }}>
     <mesh position={[0,0.2,0]} rotation={[Math.PI/2,0,0]} castShadow receiveShadow>
       <extrudeGeometry args={[platform,{depth:0.14,bevelEnabled:true,bevelSize:0.05,bevelThickness:0.04,bevelSegments:3,curveSegments:3}]} />
       <FlagstoneMaterial pack={pack} tint="#777b73" bumpScale={0.09} />
     </mesh>
-    <mesh position={[0,0.225,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[1.05,0.008,8,96]} /><meshStandardMaterial color="#aa9368" emissive="#4d3d27" emissiveIntensity={0.035} metalness={0.22} roughness={0.72} /></mesh>
+    <mesh position={[0,0.225,0]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[0.74,0.008,8,96]} /><meshStandardMaterial color="#b8a57b" emissive="#665334" emissiveIntensity={0.05} metalness={0.14} roughness={0.76} /></mesh>
   </group>
 }
 
@@ -635,11 +636,10 @@ function PortalMembrane({ color }: { color: string }) {
 }
 
 function DestinationArch({ tone }: { tone: 'ground' | 'life-map' }) {
-  const pack = useFlagstoneTexturePack(1.1, tone === 'ground' ? 91 : 97)
   const color = tone === 'ground' ? '#5ba8b1' : '#7770b5'
   return <group userData={{ treatment: 'environmental-threshold-not-hero-arch' }}>
-    <mesh position={[-0.92,0.58,0.08]} rotation={[0.04,0,0.08]} castShadow receiveShadow><boxGeometry args={[0.34,1.18,0.42]} /><FlagstoneMaterial pack={pack} tint="#596364" bumpScale={0.07} /></mesh>
-    <mesh position={[0.88,0.5,-0.04]} rotation={[-0.03,0,-0.1]} castShadow receiveShadow><boxGeometry args={[0.3,1.02,0.38]} /><FlagstoneMaterial pack={pack} tint="#505a5b" bumpScale={0.07} /></mesh>
+    <mesh position={[-0.84,0.28,0.08]} rotation={[0.18,0.42,0.12]} scale={[0.74,0.42,0.58]} castShadow receiveShadow><icosahedronGeometry args={[1,2]} /><meshStandardMaterial color="#72796f" roughness={1} metalness={0} /></mesh>
+    <mesh position={[0.79,0.22,-0.04]} rotation={[-0.08,-0.3,-0.16]} scale={[0.62,0.34,0.5]} castShadow receiveShadow><icosahedronGeometry args={[1,2]} /><meshStandardMaterial color="#667068" roughness={1} metalness={0} /></mesh>
     <PortalMembrane color={color} />
   </group>
 }
@@ -734,7 +734,7 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
   const cosmic=props.transition==='life-map'
   return <>
     <color attach="background" args={[cosmic?'#01030a':'#18313a']} />
-    <fogExp2 attach="fog" args={[cosmic?'#060918':'#718086',cosmic?0.0022:0.0074]} />
+    <fogExp2 attach="fog" args={[cosmic?'#060918':'#536d73',cosmic?0.0022:0.0046]} />
     {!cosmic?<SkyDome />:null}
     <Stars radius={190} depth={100} count={cosmic?2800:180} factor={cosmic?3:0.65} saturation={0.05} fade speed={props.reducedMotion?0:0.008} />
     <PhysicalEnvironment />
