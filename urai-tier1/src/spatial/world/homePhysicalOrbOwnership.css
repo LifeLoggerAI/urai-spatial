@@ -1,0 +1,11 @@
+/* Home owns a physical, in-world Orb. The persistent world companion remains
+   available as a menu target, but its duplicate fixed CSS Orb must not compete
+   with the authored 3D object or read as HUD chrome in the sanctuary. */
+
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb {
+  display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion {
+  bottom: max(18px, env(safe-area-inset-bottom));
+}
