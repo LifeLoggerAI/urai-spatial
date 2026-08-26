@@ -1,0 +1,45 @@
+{
+  "assetId": "home-photographic-pbr-v1",
+  "license": "CC0-1.0",
+  "stoneSource": "https://polyhaven.com/a/rock_tile_floor",
+  "stoneDownloadRoot": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rock_tile_floor",
+  "hdriSource": "https://polyhaven.com/a/studio_small_08",
+  "hdriDownload": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr",
+  "runtimeExternalRequests": false,
+  "files": {
+    "diffuse": {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.png",
+      "sha256": "41f3547362c05bad7eda0d57737ca11ed40b281b0f2031a6b318b57a70c3bb5d",
+      "bytes": 5960988,
+      "width": 1024,
+      "height": 1024
+    },
+    "normalGL": {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.png",
+      "sha256": "c71205f922e9037b8357b688129b87309fb625db42839c21d2d80d38c9e865dd",
+      "bytes": 5716333,
+      "width": 1024,
+      "height": 1024
+    },
+    "arm": {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.png",
+      "sha256": "f1e5e0da5f466ff94a6ff58498ccd0e7309127b31ec524be990c8f8bd90fe208",
+      "bytes": 4379895,
+      "width": 1024,
+      "height": 1024
+    },
+    "displacement": {
+      "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-displacement-1k.png",
+      "sha256": "f7905e8868c68c2ca8ddd622b33d889eb69b656751d76e01f93f6011f79957e7",
+      "bytes": 1735460,
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  "hdri": {
+    "path": "urai-tier1/public/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr",
+    "sha256": "f6a989f89432eb4eee3191364a9c1ceed195c4ec3544173a3c04fd96cb91d0ba",
+    "bytes": 1508872
+  },
+  "promotionState": "vendored-final-art-input-pending-exact-head-visual-approval"
+}
