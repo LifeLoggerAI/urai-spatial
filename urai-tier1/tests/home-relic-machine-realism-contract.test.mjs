@@ -33,9 +33,9 @@ test('Home hero materials use governed photographic PBR and local HDR rather tha
   assert.match(source, /rock-tile-floor-arm-1k\.webp/)
   assert.match(source, /rock-tile-floor-displacement-1k\.png/)
   assert.match(source, /studio-small-08-1k\.hdr/)
-  assert.match(source, /photographic-rock-pbr-v16/)
-  assert.match(source, /photographic-obsidian-ritual-platform-v16/)
-  assert.match(source, /hand-laid-photographic-stone-v16/)
+  assert.match(source, /photographic-rock-pbr-v18-low-frequency/)
+  assert.match(source, /photographic-obsidian-ritual-platform-v18-integrated-floor/)
+  assert.match(source, /recessed-sacred-inlay-v18/)
   assert.match(source, /local-cc0-hdri-studio-small-08/)
   assert.doesNotMatch(source, /new THREE\.DataTexture/)
   assert.doesNotMatch(source, /makeWeatheredStonePack/)
@@ -45,7 +45,7 @@ test('Home hero materials use governed photographic PBR and local HDR rather tha
 })
 
 test('Home environment follows the final photographic sanctuary direction from the Final Asset Lock', () => {
-  assert.match(source, /fog-carried-horizon-without-procedural-ridges-v15/)
+  assert.match(source, /fog-carried-seamless-horizon-v18/)
   assert.match(source, /photographic-blue-hour-haze-v15/)
   assert.match(source, /recessed-obsidian-descent-v16/)
   assert.match(source, /low-density-depth-mist-v15/)
@@ -56,6 +56,8 @@ test('Home environment follows the final photographic sanctuary direction from t
   assert.doesNotMatch(source, /icosahedronGeometry/)
   assert.doesNotMatch(source, /makeRidgeGeometry/)
   assert.doesNotMatch(source, /function Lantern/)
+  assert.doesNotMatch(source, /APPROACH_SLABS/)
+  assert.doesNotMatch(source, /planeGeometry args=\{\[90,90,1,1\]\}/)
 })
 
 test('normal Home no longer exposes the rejected demo-landscape grammar', () => {
@@ -63,7 +65,7 @@ test('normal Home no longer exposes the rejected demo-landscape grammar', () => 
   assert.doesNotMatch(source, /weathered-obsidian-ground-v14/)
   assert.doesNotMatch(source, /grounded-basalt-descent-v14/)
   assert.doesNotMatch(source, /home-distant-natural-horizon[\s\S]*mesh geometry=/)
-  assert.match(source, /data-home-visual-grade="cinematic-pbr-v17-photographic-runtime-sanctuary"/)
+  assert.match(source, /data-home-visual-grade="cinematic-pbr-v18-final-physical-sanctuary"/)
 })
 
 test('moon presentation is physical and no longer built from an overlapping dark-sphere cutout', () => {
