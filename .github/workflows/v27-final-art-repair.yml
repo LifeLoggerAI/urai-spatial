@@ -1,0 +1,53 @@
+name: V27 Final Art Repair
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/v27-final-art-repair.yml'
+      - 'scripts/apply-v27-final-art-repair.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v27-final-art-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Apply V27 final sacred-tech repair
+        run: python3 scripts/apply-v27-final-art-repair.py
+
+      - name: Verify focused Home contracts
+        working-directory: urai-tier1
+        run: node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs
+
+      - name: Commit clean successor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-v24-certify-20260826" --jq .object.sha)"
+          test "$current" = "${GITHUB_SHA}"
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git rm .github/workflows/v27-final-art-repair.yml scripts/apply-v27-final-art-repair.py
+          test -n "$(git status --porcelain)"
+          git commit -m 'Apply V27 final sacred-tech art repair'
+          gh auth setup-git
+          git push origin HEAD:home-final-v24-certify-20260826
