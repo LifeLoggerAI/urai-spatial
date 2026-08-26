@@ -7,7 +7,7 @@ const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -50,7 +50,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
 
   has(assetHome, 'HomeWorldProduction')
   assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
 
   for (const marker of [
     "const SANCTUARY = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
@@ -58,7 +58,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-physical-base="built-obsidian-glass-stone-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
@@ -87,8 +87,8 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
   assert.match(homeProduction, /useGLTF\(HUMAN\)/)
-  assert.match(homeProduction, /function RitualFloor\(/)
-  assert.match(homeProduction, /function MoonAndMist\(/)
+  assert.match(homeProduction, /function SanctuaryCourt\(/)
+  assert.match(homeProduction, /function SkyDome\(/)
   assert.match(homeProduction, /function SacredOrb\(/)
   assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /function Thresholds\(/)
@@ -116,8 +116,8 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
   assert.match(homeProduction, /<SacredOrb state=\{props\.orbState\} reducedMotion=\{props\.reducedMotion\} onOpen=\{props\.onOrb\} \/>/)
-  assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
-  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*listener\)/)
+  assert.match(homeProduction, /resolveOrbSensoryOutput\(state,reducedMotion,true\)/)
+  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,listener\)/)
   assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
