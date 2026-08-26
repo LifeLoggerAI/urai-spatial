@@ -118,7 +118,7 @@ for (const spec of cases) {
     record.passed = record.status === 200
       && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
       && record.worldCharacter === 'premium-cinematic-sacred-tech'
-      && record.physicalBase === 'authored-obsidian-ritual-platform'
+      && record.physicalBase === 'built-obsidian-glass-stone-sanctuary'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'makehuman-v4'
