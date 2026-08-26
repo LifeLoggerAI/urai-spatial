@@ -41,5 +41,33 @@
     "sha256": "f6a989f89432eb4eee3191364a9c1ceed195c4ec3544173a3c04fd96cb91d0ba",
     "bytes": 1508872
   },
-  "promotionState": "vendored-final-art-input-pending-exact-head-visual-approval"
+  "promotionState": "vendored-production-optimized-pending-exact-head-visual-approval",
+  "runtimeOptimization": {
+    "format": "WebP",
+    "singleTextureBudgetBytes": 2097152,
+    "quality": {
+      "diffuse": 92,
+      "normalGL": 94,
+      "arm": 96
+    },
+    "runtimeFiles": {
+      "diffuse": {
+        "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp",
+        "sha256": "1d7a640e6caacc7f089642ec83a84905c47819bcc0332ab8c878349310e056f1",
+        "bytes": 528248
+      },
+      "normalGL": {
+        "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp",
+        "sha256": "82816afc1957b1d1881ac5e3ec7335afcd33d67b1a676170b9af60beebaa33c3",
+        "bytes": 534440
+      },
+      "arm": {
+        "path": "urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp",
+        "sha256": "e599141326de68502318a5e6a2f52347cb96abfcc1ac0ee0639c8aeabd66a4dd",
+        "bytes": 373720
+      }
+    },
+    "sourcePngsRetained": false,
+    "reason": "Preserve photographic PBR fidelity while satisfying the governed single-texture production budget."
+  }
 }

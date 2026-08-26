@@ -28,9 +28,9 @@ test('Life Map threshold visibly consumes the governed authored portal as physic
 
 test('Home hero materials use governed photographic PBR and local HDR rather than generated texture stand-ins', () => {
   assert.match(source, /HOME_PHOTOGRAPHIC_PBR_V16/)
-  assert.match(source, /rock-tile-floor-diff-1k\.png/)
-  assert.match(source, /rock-tile-floor-normal-gl-1k\.png/)
-  assert.match(source, /rock-tile-floor-arm-1k\.png/)
+  assert.match(source, /rock-tile-floor-diff-1k\.webp/)
+  assert.match(source, /rock-tile-floor-normal-gl-1k\.webp/)
+  assert.match(source, /rock-tile-floor-arm-1k\.webp/)
   assert.match(source, /rock-tile-floor-displacement-1k\.png/)
   assert.match(source, /studio-small-08-1k\.hdr/)
   assert.match(source, /photographic-rock-pbr-v16/)
@@ -41,6 +41,7 @@ test('Home hero materials use governed photographic PBR and local HDR rather tha
   assert.doesNotMatch(source, /makeWeatheredStonePack/)
   assert.doesNotMatch(source, /configureSurfaceTexture/)
   assert.doesNotMatch(source, /<Lightformer/)
+  assert.doesNotMatch(source, /rock-tile-floor-(?:diff|normal-gl|arm)-1k\.png/, 'source PNG runtime variants stay retired')
 })
 
 test('Home environment follows the final photographic sanctuary direction from the Final Asset Lock', () => {
@@ -62,7 +63,7 @@ test('normal Home no longer exposes the rejected demo-landscape grammar', () => 
   assert.doesNotMatch(source, /weathered-obsidian-ground-v14/)
   assert.doesNotMatch(source, /grounded-basalt-descent-v14/)
   assert.doesNotMatch(source, /home-distant-natural-horizon[\s\S]*mesh geometry=/)
-  assert.match(source, /data-home-visual-grade="cinematic-pbr-v16-photographic-cc0-sanctuary"/)
+  assert.match(source, /data-home-visual-grade="cinematic-pbr-v17-photographic-runtime-sanctuary"/)
 })
 
 test('moon presentation is physical and no longer built from an overlapping dark-sphere cutout', () => {
