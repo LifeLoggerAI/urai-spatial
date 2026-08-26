@@ -14,6 +14,9 @@ concurrency:
   group: home-final-art-converge
   cancel-in-progress: true
 
+env:
+  HOME_FINAL_ART_CONVERGENCE_REVISION: '2'
+
 jobs:
   converge:
     runs-on: ubuntu-latest
