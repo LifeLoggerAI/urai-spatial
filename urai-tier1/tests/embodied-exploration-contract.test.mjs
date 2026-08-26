@@ -93,7 +93,7 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
   assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
-  assert.match(homeProduction, /const duration=reducedMotion\?0\.45:/)
+  assert.match(homeProduction, /const duration=reducedMotion\?0\.9:/)
   assert.match(homeProduction, /transition==='life-map'\?3\.4:2\.6/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /destination:'life-map'/)
