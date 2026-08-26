@@ -6,7 +6,7 @@ on:
       - home-final-relic-machine-realism-20260826
     paths:
       - '.github/workflows/home-final-art-converge.yml'
-      - 'scripts/apply-home-v20-final-art.py'
+      - 'scripts/apply-home-v21-visual-certification-fix.py'
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  HOME_FINAL_ART_CONVERGENCE_REVISION: '3'
+  HOME_FINAL_ART_CONVERGENCE_REVISION: '4'
 
 jobs:
   converge:
@@ -31,8 +31,8 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Apply deterministic V20 physical final-art patch
-        run: python3 scripts/apply-home-v20-final-art.py
+      - name: Apply deterministic V21 visual certification cleanup
+        run: python3 scripts/apply-home-v21-visual-certification-fix.py
 
       - name: Run focused live-owner contracts
         working-directory: urai-tier1
@@ -49,7 +49,7 @@ jobs:
           test -n "$(git status --porcelain)"
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx
-          git commit -m 'Apply Home V20 physical final-art runtime'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git commit -m 'Apply Home V21 visual certification cleanup'
           gh auth setup-git
           git push origin HEAD:home-final-relic-machine-realism-20260826
