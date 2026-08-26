@@ -7,12 +7,6 @@ const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-intera
 const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
 if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
-const retiredLoadingSelector = "document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')"
-const canonicalLoadingSelector = "document.querySelectorAll('.home-runtime-loading')"
-if (original.split(retiredLoadingSelector).length - 1 !== 1) {
-  throw new Error('Continuous proof Home loading-owner contract changed')
-}
-
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
 const staleEnvironmentalCount = original.split(staleEnvironmentalRadius).length - 1
@@ -32,7 +26,6 @@ if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Contin
 
 const patched = original
   .replace(oldOwner, newOwner)
-  .replace(retiredLoadingSelector, canonicalLoadingSelector)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)
