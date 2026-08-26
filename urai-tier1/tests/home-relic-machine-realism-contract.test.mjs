@@ -5,7 +5,7 @@ import test from 'node:test'
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionSacred.tsx', import.meta.url), 'utf8')
 
 test('Sacred Home Orb is a restrained physical relic-machine rather than a simple glowing sphere', () => {
-  assert.match(source, /premium-moonlit-relic-machine-v13/)
+  assert.match(source, /premium-moonlit-relic-machine-v14/)
   assert.match(source, /home-orb-stabilizer-ring-1/)
   assert.match(source, /home-orb-stabilizer-ring-2/)
   assert.match(source, /home-orb-stabilizer-ring-3/)
@@ -17,8 +17,20 @@ test('Sacred Home Orb is a restrained physical relic-machine rather than a simpl
 
 test('Life Map threshold visibly consumes the governed authored portal as physical architecture', () => {
   assert.match(source, /home-life-map-portal-authored-visible/)
-  assert.match(source, /treatment: 'authored-portal-physical-threshold-v13'/)
+  assert.match(source, /authored-portal-physical-threshold-v14/)
   assert.doesNotMatch(source, /<primitive object=\{model\} visible=\{false\}/)
+})
+
+test('Home environment follows the rejected-green replacement direction from the Final Asset Lock', () => {
+  assert.match(source, /weathered-obsidian-ground-v14/)
+  assert.match(source, /obsidian-ritual-platform-v14/)
+  assert.match(source, /dense-atmospheric-ridges-v14/)
+  assert.match(source, /premium-blue-hour-obsidian-v14/)
+  assert.match(source, /grounded-basalt-descent-v14/)
+  assert.match(source, /\{cosmic\?<Stars/)
+  assert.doesNotMatch(source, /home-natural-walkable-terrain/)
+  assert.doesNotMatch(source, /vec3 lightDirection/)
+  assert.doesNotMatch(source, /icosahedronGeometry/)
 })
 
 test('moon presentation is physical and no longer built from an overlapping dark-sphere cutout', () => {
