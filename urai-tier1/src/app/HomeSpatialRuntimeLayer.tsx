@@ -14,12 +14,17 @@ function directHomeSemanticTravel(href: string) {
   window.location.assign(href)
 }
 
+const HOME_SEMANTIC_DESTINATIONS = {
+  ground: { href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent', travelHref: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' },
+  lifeMap: { href: '/life-map/', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete', travelHref: '/life-map/' },
+} as const
+
 function HomeSemanticNavigation() {
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
       <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={requestUraiWorldOrbOpen}>Open URAI Orb companion</button>
-      <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => directHomeSemanticTravel('/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent')}>Ground</button>
-      <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => directHomeSemanticTravel('/life-map/')}>Life Map</button>
+      <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => directHomeSemanticTravel(HOME_SEMANTIC_DESTINATIONS.ground.travelHref)}>Ground</button>
+      <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => directHomeSemanticTravel(HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref)}>Life Map</button>
     </nav>
   )
 }
