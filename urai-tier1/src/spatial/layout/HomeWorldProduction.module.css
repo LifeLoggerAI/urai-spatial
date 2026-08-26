@@ -6,29 +6,22 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background:
-    radial-gradient(circle at 28% 18%, rgba(218, 201, 169, .12), transparent 32%),
-    linear-gradient(180deg, #31464d 0%, #2b403f 40%, #22372f 72%, #16251f 100%);
+  background: #16251f;
   cursor: grab;
   touch-action: none;
 }
 
-.world::before {
+.world::before,
+.world::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 3;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(232, 225, 207, .012), transparent 38%, rgba(24, 42, 34, .02) 72%, rgba(7, 13, 11, .045) 100%);
-  opacity: 1;
-  transition: opacity 900ms ease;
+  background: transparent;
 }
 
-.world[data-home-scene-phase='ASCENT']::before {
-  opacity: 0;
-}
-
+.world::before { z-index: 3; }
+.world::after { z-index: 5; }
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
 
 .canvas {
@@ -37,21 +30,8 @@
   z-index: 2;
   width: 100% !important;
   height: 100% !important;
-  background:
-    radial-gradient(circle at 28% 15%, rgba(225, 207, 173, .14) 0 5%, rgba(104, 132, 128, .08) 28%, transparent 54%),
-    linear-gradient(180deg, #3a5158 0%, #314946 36%, #273d35 68%, #182821 100%);
+  background: #16251f;
   filter: none;
-}
-
-.world::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 48% 50%, transparent 0 66%, rgba(8, 15, 13, .035) 86%, rgba(3, 7, 6, .09) 100%),
-    linear-gradient(180deg, rgba(244, 232, 208, .012), transparent 42%, rgba(8, 17, 14, .018) 76%, rgba(3, 8, 7, .045) 100%);
 }
 
 .brand,
@@ -146,16 +126,6 @@
 }
 
 @media (max-width: 700px) {
-  .world::before {
-    inset: 0;
-    opacity: 1;
-  }
-  .canvas {
-    background:
-      radial-gradient(circle at 28% 14%, rgba(225, 207, 173, .12) 0 5%, rgba(104, 132, 128, .07) 28%, transparent 54%),
-      linear-gradient(180deg, #3a5158 0%, #314946 36%, #273d35 68%, #182821 100%);
-    filter: none;
-  }
   .brand {
     top: max(14px, env(safe-area-inset-top));
     left: max(16px, env(safe-area-inset-left));
@@ -174,7 +144,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .world::before { transition: none; }
   .worldHint { backdrop-filter: none; }
   .world :global(.urai-mobile-movement) { transition: none; }
 }
