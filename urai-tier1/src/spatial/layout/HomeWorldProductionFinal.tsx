@@ -48,6 +48,15 @@ type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 type Vec3 = readonly [number, number, number]
 type SurfacePack = { color: THREE.Texture; normal: THREE.Texture; arm: THREE.Texture; displacement: THREE.Texture }
 
+const ORB_FRAGMENT_LAYOUT: readonly [Vec3, Vec3, number][] = [
+  [[0.29, 0.08, 0.11], [0.22, 0.54, 0.18], 0.055],
+  [[-0.24, 0.17, -0.14], [-0.31, 0.18, 0.62], 0.047],
+  [[0.1, -0.25, 0.23], [0.72, -0.15, 0.24], 0.042],
+  [[-0.12, -0.22, -0.25], [-0.64, 0.41, -0.12], 0.05],
+  [[0.18, 0.29, -0.08], [0.18, -0.38, 0.81], 0.038],
+  [[-0.29, -0.05, 0.09], [0.48, 0.32, -0.56], 0.044],
+]
+
 function seededNoise(x: number, y: number, seed: number) {
   const raw = Math.sin((x + seed * 17.17) * 12.9898 + (y + seed * 31.31) * 78.233) * 43758.5453123
   return raw - Math.floor(raw)
