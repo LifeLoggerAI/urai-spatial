@@ -318,14 +318,21 @@ export default function ComposedLifeMapScene() {
 
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
-    if (!restoredRoutePending.current) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
     if (!node) return;
+    if (selectedId === node.id) {
+      if (phase === "overview") {
+        journeyToken.current += 1;
+        setPhase("arrival");
+      }
+      restoredRoutePending.current = false;
+      return;
+    }
     restoredRoutePending.current = false;
     journeyToken.current += 1;
     setSelectedId(node.id);
     setPhase("arrival");
-  }, [nodes, overviewRequested, queryNode]);
+  }, [nodes, overviewRequested, phase, queryNode, selectedId]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
