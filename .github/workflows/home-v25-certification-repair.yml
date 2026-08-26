@@ -52,7 +52,7 @@ jobs:
           node --check scripts/compare-legacy-asset-candidates.mjs
           node --check tests/mirror-release-proof.mjs
 
-      - name: Create one exact-head repair commit atomically
+      - name: Create clean exact-head repair commit atomically
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -76,7 +76,10 @@ jobs:
               {path:"urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx",mode:"100644",type:"blob",sha:$b1},
               {path:"scripts/capture-natural-home-orb-proof.mjs",mode:"100644",type:"blob",sha:$b2},
               {path:"scripts/compare-legacy-asset-candidates.mjs",mode:"100644",type:"blob",sha:$b3},
-              {path:"tests/mirror-release-proof.mjs",mode:"100644",type:"blob",sha:$b4}
+              {path:"tests/mirror-release-proof.mjs",mode:"100644",type:"blob",sha:$b4},
+              {path:".github/workflows/home-v25-certification-repair.yml",mode:"100644",type:"blob",sha:null},
+              {path:"scripts/apply-home-v25-certification-repair.py",mode:"100644",type:"blob",sha:null},
+              {path:"scripts/apply-v25-proof-authority-repairs.py",mode:"100644",type:"blob",sha:null}
             ]}' | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/trees" --input - --jq .sha)"
           commit="$(jq -n --arg message 'Apply Home V25 physical and proof certification repairs' --arg tree "$tree" --arg parent "$GITHUB_SHA" '{message:$message,tree:$tree,parents:[$parent]}' | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/commits" --input - --jq .sha)"
           current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" --jq .object.sha)"
