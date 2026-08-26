@@ -11,7 +11,7 @@ const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionFinal.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -36,7 +36,7 @@ test('app template mounts current WebGL owners without certified-route redirects
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProduction/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
   assert.match(homeProduction, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
@@ -46,7 +46,7 @@ test('app template mounts current WebGL owners without certified-route redirects
 
 test('Home remains one embodied authored sacred-tech 3D environment with accessible thresholds and recovery', () => {
   for (const marker of [
-    'HomeWorldProductionSacred',
+    'HomeWorldProductionFinal',
     'Stars',
     'home-entry-chamber-v1.glb',
     'home-human-makehuman-v4.glb',
@@ -55,7 +55,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
+    'data-home-physical-base="built-obsidian-glass-stone-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
@@ -79,12 +79,12 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
-  assert.match(homeProduction, /function RitualFloor\(/)
-  assert.match(homeProduction, /function MoonAndMist\(/)
+  assert.match(homeProduction, /function SanctuaryCourt\(/)
+  assert.match(homeProduction, /function SkyDome\(/)
   assert.match(homeProduction, /function SacredOrb\(/)
   assert.match(homeProduction, /function OrbPlatform\(/)
   assert.match(homeProduction, /function HumanPresence\(/)
-  assert.match(homeProduction, /function LifeMapPortal\(/)
+  assert.match(homeProduction, /function ThresholdAlcove\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
@@ -181,7 +181,6 @@ test('Home environmental thresholds and generated manifest filter remain observa
   assert.match(homeProduction, /home-life-map-sky-lookout/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /destination:'life-map'/)
-  assert.match(homeProduction, /Look to the sky/)
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
   assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))
