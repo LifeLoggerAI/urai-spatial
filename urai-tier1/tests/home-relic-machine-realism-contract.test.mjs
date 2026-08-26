@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionSacred.tsx', import.meta.url), 'utf8')
+const lifeMapPortalStart = source.indexOf('function LifeMapPortal(')
+const lifeMapPortalEnd = source.indexOf('function Thresholds(', lifeMapPortalStart)
+assert.ok(lifeMapPortalStart >= 0 && lifeMapPortalEnd > lifeMapPortalStart, 'LifeMapPortal function boundary must remain discoverable')
+const lifeMapPortalSource = source.slice(lifeMapPortalStart, lifeMapPortalEnd)
 
 test('Sacred Home Orb is a restrained physical relic-machine rather than a simple glowing sphere', () => {
   assert.match(source, /premium-moonlit-relic-machine-v15/)
@@ -16,9 +20,10 @@ test('Sacred Home Orb is a restrained physical relic-machine rather than a simpl
 })
 
 test('Life Map threshold visibly consumes the governed authored portal as physical architecture', () => {
-  assert.match(source, /home-life-map-portal-authored-visible/)
-  assert.match(source, /authored-portal-physical-threshold-v15/)
-  assert.doesNotMatch(source, /<primitive object=\{model\} visible=\{false\}/)
+  assert.match(lifeMapPortalSource, /home-life-map-portal-authored-visible/)
+  assert.match(lifeMapPortalSource, /authored-portal-physical-threshold-v15/)
+  assert.match(lifeMapPortalSource, /<primitive object=\{model\} \/>/)
+  assert.doesNotMatch(lifeMapPortalSource, /<primitive object=\{model\} visible=\{false\}/)
 })
 
 test('Home environment follows the final photographic sanctuary direction from the Final Asset Lock', () => {
