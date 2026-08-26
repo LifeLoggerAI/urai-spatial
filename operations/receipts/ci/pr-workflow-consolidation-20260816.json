@@ -1,0 +1,52 @@
+{
+  "receiptId": "CI-SPATIAL-PR-CONSOLIDATION-20260816-001",
+  "recordedAt": "2026-08-16",
+  "classification": "SOURCE CANDIDATE / NOT MERGED",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "baseBranch": "main",
+  "baseSha": "cb95cddc2ce52c08464529cacf067f58f408a3e7",
+  "branch": "agent/consolidate-pr-workflows-20260816",
+  "issue": 439,
+  "observedCurrentEvidence": {
+    "referencePullRequest": 1156,
+    "referenceHeadSha": "7f3e362816b1125e9763bdbcce4555999971ca06",
+    "workflowRunsObserved": 28,
+    "workflowPhaseBoundariesRun": 31940622608,
+    "workflowPhaseBoundaryStaticJob": "success",
+    "workflowPhaseBoundaryAaaProofJob": "failure",
+    "canonicalMainBranchProtectionEnabled": false
+  },
+  "targetModel": {
+    "canonicalPullRequestVerification": ".github/workflows/urai-spatial-ci.yml",
+    "lightweightIndependentMetaGuard": ".github/workflows/patch-check.yml",
+    "heavyAaaProof": ".github/workflows/workflow-phase-boundaries.yml",
+    "heavyAaaProofPhase": "merged-main-or-manual",
+    "productionMutationOnPullRequest": false,
+    "qualityGateWeakeningAuthorized": false
+  },
+  "changedFiles": [
+    ".github/workflows/workflow-phase-boundaries.yml",
+    ".github/workflows/patch-check.yml",
+    "scripts/check-workflow-phase-boundaries.mjs",
+    "operations/receipts/ci/pr-workflow-consolidation-20260816.json"
+  ],
+  "preservedControls": [
+    "exact candidate identity checks",
+    "frozen dependency installation",
+    "reusable exact-SHA AAA proof",
+    "merged-main AAA proof",
+    "manual AAA proof",
+    "production release quarantine",
+    "credential-boundary checks",
+    "canonical broad URAI Spatial CI",
+    "lightweight pull-request workflow phase guard"
+  ],
+  "remainingBeforeIssueClosure": [
+    "Prove this branch exact head with terminal CI.",
+    "Continue inventorying and mapping the remaining pull_request-triggered workflows; this pass intentionally does not mass-disable unique security/product checks without replacement evidence.",
+    "Reduce remaining unjustified pull_request fan-out while preserving every unique gate.",
+    "Configure required branch protection for the final canonical check set; current main is not protected and the available connector does not expose branch-protection mutation.",
+    "Run a fresh pull request after consolidation and prove the bounded workflow set and immutable exact-head artifacts."
+  ],
+  "releaseVerdict": "NO-GO"
+}
