@@ -7,8 +7,8 @@
   isolation: isolate;
   color: #f7f4ee;
   background:
-    radial-gradient(circle at 68% 14%, rgba(184, 211, 192, .28), transparent 28%),
-    linear-gradient(180deg, #536d68 0%, #38564d 35%, #26463a 68%, #152b25 100%);
+    radial-gradient(circle at 28% 18%, rgba(218, 201, 169, .12), transparent 32%),
+    linear-gradient(180deg, #31464d 0%, #2b403f 40%, #22372f 72%, #16251f 100%);
   cursor: grab;
   touch-action: none;
 }
@@ -16,25 +16,17 @@
 .world::before {
   content: "";
   position: absolute;
-  inset: -2%;
+  inset: 0;
   z-index: 3;
   pointer-events: none;
-  background-image:
-    linear-gradient(180deg, rgba(231, 241, 225, .035), transparent 34%, rgba(33, 58, 46, .08) 70%, rgba(9, 18, 15, .15) 100%),
-    url('/assets/urai/replay/replay-memory-film-main.webp');
-  background-size: cover;
-  background-position: center 50%;
-  background-repeat: no-repeat;
-  filter: saturate(.82) contrast(1.02) brightness(.86) blur(2px);
-  transform: scale(1.035);
-  opacity: .018;
-  mix-blend-mode: soft-light;
-  transition: opacity 900ms ease, filter 900ms ease;
+  background:
+    linear-gradient(180deg, rgba(232, 225, 207, .012), transparent 38%, rgba(24, 42, 34, .02) 72%, rgba(7, 13, 11, .045) 100%);
+  opacity: 1;
+  transition: opacity 900ms ease;
 }
 
 .world[data-home-scene-phase='ASCENT']::before {
   opacity: 0;
-  filter: saturate(.62) contrast(1.05) brightness(.24) blur(3px);
 }
 
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
@@ -46,9 +38,9 @@
   width: 100% !important;
   height: 100% !important;
   background:
-    radial-gradient(circle at 70% 12%, rgba(213, 230, 205, .38) 0 5%, rgba(107, 147, 131, .2) 24%, transparent 49%),
-    linear-gradient(180deg, #45645f 0%, #2f5147 34%, #203f34 66%, #132821 100%);
-  filter: saturate(1.04) contrast(1.055) brightness(1.04);
+    radial-gradient(circle at 28% 15%, rgba(225, 207, 173, .14) 0 5%, rgba(104, 132, 128, .08) 28%, transparent 54%),
+    linear-gradient(180deg, #3a5158 0%, #314946 36%, #273d35 68%, #182821 100%);
+  filter: none;
 }
 
 .world::after {
@@ -58,8 +50,8 @@
   z-index: 5;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 52%, transparent 0 58%, rgba(5, 13, 11, .08) 82%, rgba(3, 8, 7, .19) 100%),
-    linear-gradient(180deg, rgba(223, 239, 226, .03), transparent 37%, rgba(9, 20, 16, .035) 72%, rgba(4, 10, 8, .1) 100%);
+    radial-gradient(ellipse at 48% 50%, transparent 0 66%, rgba(8, 15, 13, .035) 86%, rgba(3, 7, 6, .09) 100%),
+    linear-gradient(180deg, rgba(244, 232, 208, .012), transparent 42%, rgba(8, 17, 14, .018) 76%, rgba(3, 8, 7, .045) 100%);
 }
 
 .brand,
@@ -155,16 +147,14 @@
 
 @media (max-width: 700px) {
   .world::before {
-    inset: -3%;
-    background-position: center 50%;
-    transform: scale(1.045);
-    opacity: .014;
+    inset: 0;
+    opacity: 1;
   }
   .canvas {
     background:
-      radial-gradient(circle at 68% 12%, rgba(213, 230, 205, .34) 0 5%, rgba(107, 147, 131, .18) 24%, transparent 50%),
-      linear-gradient(180deg, #45645f 0%, #2f5147 35%, #203f34 67%, #132821 100%);
-    filter: saturate(1.03) contrast(1.05) brightness(1.04);
+      radial-gradient(circle at 28% 14%, rgba(225, 207, 173, .12) 0 5%, rgba(104, 132, 128, .07) 28%, transparent 54%),
+      linear-gradient(180deg, #3a5158 0%, #314946 36%, #273d35 68%, #182821 100%);
+    filter: none;
   }
   .brand {
     top: max(14px, env(safe-area-inset-top));

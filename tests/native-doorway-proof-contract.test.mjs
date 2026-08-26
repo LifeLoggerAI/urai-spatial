@@ -5,9 +5,10 @@ import test from 'node:test'
 const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.url), 'utf8')
 
 test('keyboard doorway activation bypasses moving-target geometric stability', () => {
-  assert.match(proof, /node\.focus\(\{ preventScroll: true \}\)/)
-  assert.match(proof, /page\.keyboard\.press\('Enter'\)/)
-  assert.doesNotMatch(proof, /await target\.focus\(\)[\s\S]*target\.press\('Enter'/)
+  assert.match(proof, /await target\.focus\(\)/)
+  assert.match(proof, /target\.press\('Enter'\)/)
+  assert.match(proof, /node === document\.activeElement/)
+  assert.doesNotMatch(proof, /page\.keyboard\.press\('Enter'\)/)
 })
 
 test('pointer and touch use deterministic browser scrolling before hit proof', () => {

@@ -7,6 +7,29 @@
       "**/node_modules/**"
     ],
     "cleanUrls": true,
-    "trailingSlash": false
+    "trailingSlash": false,
+    "rewrites": [
+      {
+        "source": "/api/urai/orb/openai",
+        "function": {
+          "functionId": "openAiOrbProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/urai/narrator/elevenlabs",
+        "function": {
+          "functionId": "elevenLabsVoiceProvider",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/voice/elevenlabs",
+        "function": {
+          "functionId": "elevenLabsVoiceProvider",
+          "region": "us-central1"
+        }
+      }
+    ]
   }
 }

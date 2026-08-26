@@ -4,7 +4,7 @@ import { useAnimations, useGLTF } from '@react-three/drei'
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
-const HOME_HUMAN_MODEL = '/assets/urai/generated/human-rig-v3/home-human-rigged-v3.glb'
+const HOME_HUMAN_MODEL = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
 
 export default function PresenceRig() {
   const model = useGLTF(HOME_HUMAN_MODEL)
@@ -33,7 +33,7 @@ export default function PresenceRig() {
       ref={root}
       position={[2.1, 0, -1.2]}
       rotation={[0, -0.16, 0]}
-      userData={{ representation: 'skinned-animated-home-human-v3', modelUrl: HOME_HUMAN_MODEL, lighting: 'canonical-home-physical' }}
+      userData={{ representation: 'skinned-animated-home-human-v4-preview', modelUrl: HOME_HUMAN_MODEL, lighting: 'canonical-home-physical' }}
     >
       <primitive object={model.scene} />
     </group>

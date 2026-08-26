@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "council-guardian-human-makehuman-v4",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-guardian-human-makehuman-v4.glb",
+  "targetRoutes": ["/council"],
+  "bytes": 1708672,
+  "sha256": "05a5c7c4e2e47c4fb2c831b7c4aeee21d9443ab08ce681e667e730d397046564",
+  "compressionStatus": "candidate-makehuman-v4",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "council-guardian-human-rig-v3",
+  "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+  "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+  "generatedBy": "URAI MakeHuman V4 Forge",
+  "generatedAt": "2026-08-17T03:12:00.000Z",
+  "releaseState": "candidate-not-production-ready"
+}

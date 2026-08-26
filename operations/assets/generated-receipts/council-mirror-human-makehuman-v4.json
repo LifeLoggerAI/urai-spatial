@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "council-mirror-human-makehuman-v4",
+  "fixedPath": "urai-tier1/public/assets/urai/generated/human-makehuman-v4/council-mirror-human-makehuman-v4.glb",
+  "targetRoutes": ["/council"],
+  "bytes": 1708872,
+  "sha256": "41447d012af9fd8abd181135a43cc2877c1318bde1fad6879916cc66c79fda9e",
+  "compressionStatus": "candidate-makehuman-v4",
+  "requiredCompression": "draco-or-meshopt",
+  "fallback": "council-mirror-human-rig-v3",
+  "source": "Pinned MakeHuman CC0 base topology with URAI V4 17-joint skin and five-clip animation contract",
+  "license": "MakeHuman base topology CC0-1.0; URAI V4 rig/animation candidate",
+  "generatedBy": "URAI MakeHuman V4 Forge",
+  "generatedAt": "2026-08-17T03:12:00.000Z",
+  "releaseState": "candidate-not-production-ready"
+}

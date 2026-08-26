@@ -46,32 +46,62 @@ export default function LifeMapSemanticNavigator() {
     return next
   }, [explicitDemo, params])
 
+  const commitBrowserIdentity = useCallback((next: URLSearchParams) => {
+    const destination = `/life-map?${next.toString()}`
+    window.history.replaceState(window.history.state, '', destination)
+    return destination
+  }, [])
+
   const selectNode = useCallback((node: LifeMapNode, source: 'semantic' | 'keyboard' | 'pointer' = 'semantic') => {
     setOpen(false)
-    requestLifeMapSelection(node.id, source)
     const next = withIdentity(new URLSearchParams())
     next.set('memoryId', node.id)
     next.set('node', node.id)
     if (node.eraId) next.set('era', node.eraId)
-    router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [router, withIdentity])
+
+    // Same-route selection identity must become observable before the spatial world begins
+    // its potentially expensive camera/render transition. The world selection event remains
+    // the single authoritative state transaction and owns the normal Next router replacement.
+    commitBrowserIdentity(next)
+    requestLifeMapSelection(node.id, source)
+
+    // Defensive fallback for any future reuse outside the canonical /life-map owner.
+    if (window.location.pathname.replace(/\/+$/, '') !== '/life-map') {
+      router.replace(`/life-map?${next.toString()}`, { scroll: false })
+    }
+  }, [commitBrowserIdentity, router, withIdentity])
 
   const overview = useCallback(() => {
     setOpen(false)
     const next = withIdentity(new URLSearchParams())
-    const memoryId = params.get('memoryId')
-    const node = params.get('node')
+    const current = new URLSearchParams(window.location.search)
+    const memoryId = current.get('memoryId')
+    const node = current.get('node')
     if (memoryId) next.set('memoryId', memoryId)
     if (node) next.set('node', node)
     next.set('overview', '1')
+    commitBrowserIdentity(next)
     router.replace(`/life-map?${next.toString()}`, { scroll: false })
-  }, [params, router, withIdentity])
+  }, [commitBrowserIdentity, router, withIdentity])
 
   const step = useCallback((direction: number) => {
     const candidates = visibleNodes.length ? visibleNodes : nodes
     if (!candidates.length) return
-    const current = selected ? candidates.findIndex((node) => node.id === selected.id) : -1
-    selectNode(candidates[(current + direction + candidates.length) % candidates.length], 'keyboard')
+
+    // Browser identity is committed synchronously before the spatial selection transition.
+    // Read that live identity at activation time so rapid ArrowRight/ArrowLeft input cannot
+    // compute from a stale useSearchParams render and jump to the wrong neighboring memory.
+    const currentParams = new URLSearchParams(window.location.search)
+    const liveSelectedId = currentParams.get('overview') === '1'
+      ? null
+      : currentParams.get('node') || currentParams.get('memoryId')
+    const fallbackSelectedId = selected?.id || null
+    const currentId = liveSelectedId || fallbackSelectedId
+    const current = currentId ? candidates.findIndex((node) => node.id === currentId) : -1
+    const nextIndex = current >= 0
+      ? (current + direction + candidates.length) % candidates.length
+      : direction >= 0 ? 0 : candidates.length - 1
+    selectNode(candidates[nextIndex], 'keyboard')
   }, [nodes, selectNode, selected, visibleNodes])
 
   useEffect(() => {

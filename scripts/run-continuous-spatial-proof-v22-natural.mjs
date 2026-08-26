@@ -15,11 +15,11 @@ if (staleEnvironmentalCount !== 2) {
 }
 
 const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
-const runtimeOrbRadius = "orb: { x: 0, z: -4.25, radius: 2.4"
+const runtimeOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
 const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
-const runtimeGroundTarget = "ground: { x: -5.4, z: -10.8"
+const runtimeGroundTarget = "ground: { x: -5.2, z: -8.4"
 const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"
-const runtimeLifeMapTarget = "'life-map': { x: 5.4, z: -10.8"
+const runtimeLifeMapTarget = "'life-map': { x: 5.2, z: -8.4"
 if (original.split(staleOrbRadius).length - 1 !== 1) throw new Error('Continuous proof Orb interaction-zone contract changed')
 if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continuous proof Ground target contract changed')
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')

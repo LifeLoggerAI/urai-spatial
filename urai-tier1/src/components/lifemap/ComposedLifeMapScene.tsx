@@ -160,63 +160,43 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
   return null;
 }
 
-function LifeMapRenderProofBridge() {
-  const { gl, scene } = useThree();
-  const lastSignature = useRef("");
+function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
+  const context = gl.getContext();
+  const debugInfo = context.getExtension("WEBGL_debug_renderer_info") as { UNMASKED_RENDERER_WEBGL?: number } | null;
+  const renderer = debugInfo?.UNMASKED_RENDERER_WEBGL
+    ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+    : context.getParameter(context.RENDERER);
+  return /swiftshader|llvmpipe|lavapipe|software/i.test(String(renderer || ""));
+}
 
-  const publish = useCallback(() => {
-    let objects = 0;
-    let anchors = 0;
-    scene.traverse((object) => {
-      if (object.visible) objects += 1;
-      if (object.visible && object.name.startsWith("life-map-")) anchors += 1;
-    });
-    const calls = gl.info.render.calls;
-    const triangles = gl.info.render.triangles;
-    const signature = `${objects}:${anchors}:${calls}:${triangles}`;
-    if (signature === lastSignature.current) return;
-    lastSignature.current = signature;
-    const owner = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
-    if (!owner) return;
-    owner.dataset.lifeMapRenderReady = calls > 0 && objects > 20 && anchors >= 8 ? "true" : "false";
-    owner.dataset.lifeMapVisibleObjects = String(objects);
-    owner.dataset.lifeMapVisibleAnchors = String(anchors);
-    owner.dataset.lifeMapRenderCalls = String(calls);
-    owner.dataset.lifeMapRenderTriangles = String(triangles);
-  }, [gl, scene]);
-
+function SoftwareRendererCadence({ active, documentVisible }: { active: boolean; documentVisible: boolean }) {
+  const { invalidate, setFrameloop } = useThree();
   useEffect(() => {
-    const owner = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]');
-    if (owner) {
-      owner.dataset.lifeMapRenderReady = "false";
-      owner.dataset.lifeMapVisibleObjects = "0";
-      owner.dataset.lifeMapVisibleAnchors = "0";
-      owner.dataset.lifeMapRenderCalls = "0";
-      owner.dataset.lifeMapRenderTriangles = "0";
+    if (!active) {
+      setFrameloop(documentVisible ? "always" : "never");
+      return;
     }
-    const interval = window.setInterval(publish, 100);
-    const canvas = gl.domElement;
-    const invalidate = () => {
-      lastSignature.current = "";
-      if (owner) {
-        owner.dataset.lifeMapRenderReady = "false";
-        owner.dataset.lifeMapVisibleObjects = "0";
-        owner.dataset.lifeMapVisibleAnchors = "0";
-        owner.dataset.lifeMapRenderCalls = "0";
-        owner.dataset.lifeMapRenderTriangles = "0";
-      }
-    };
-    canvas.addEventListener("webglcontextlost", invalidate, false);
-    canvas.addEventListener("webglcontextrestored", invalidate, false);
-    publish();
-    return () => {
-      window.clearInterval(interval);
-      canvas.removeEventListener("webglcontextlost", invalidate, false);
-      canvas.removeEventListener("webglcontextrestored", invalidate, false);
-    };
-  }, [gl, publish]);
+    if (!documentVisible) {
+      setFrameloop("never");
+      return;
+    }
 
-  useFrame(publish);
+    // SwiftShader/software WebGL must remain truly 3D without monopolizing the main thread.
+    // Bootstrap enough real frames for render proof, then sustain a bounded ten-FPS cadence.
+    setFrameloop("demand");
+    let disposed = false;
+    const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
+      if (!disposed) invalidate();
+    }, delay));
+    const interval = window.setInterval(() => {
+      if (!disposed) invalidate();
+    }, 100);
+    return () => {
+      disposed = true;
+      bootstrap.forEach((timer) => window.clearTimeout(timer));
+      window.clearInterval(interval);
+    };
+  }, [active, documentVisible, invalidate, setFrameloop]);
   return null;
 }
 
@@ -241,24 +221,26 @@ export default function ComposedLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
   const adaptiveProfile = useAdaptiveSpatialQuality();
+  const [softwareRenderer, setSoftwareRenderer] = useState(false);
   const profile = useMemo(() => ({
     ...adaptiveProfile,
-    tier: adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
-    pixelRatioMax: Math.min(adaptiveProfile.pixelRatioMax, 1.25),
+    tier: softwareRenderer ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
+    pixelRatioMax: softwareRenderer ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
     shadows: false,
     postprocessing: false,
     antialias: false,
-  }), [adaptiveProfile]);
+  }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";
   const { nodes, loading, sourceMode } = useLifeMapEvents(explicitDemoRequested ? "demo-user" : undefined);
   const queryNode = safeToken(params.get("node") || params.get("memoryId"));
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(overviewRequested ? null : queryNode || null);
-  const [phase, setPhase] = useState<JourneyPhase>(selectedId ? "arrival" : "overview");
+  const [phase, setPhase] = useState<JourneyPhase>("overview");
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
+  const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
 
   const withIdentity = useCallback((next: URLSearchParams) => {
@@ -285,6 +267,7 @@ export default function ComposedLifeMapScene() {
   }, [phase, profile.reducedMotion, selected]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    restoredRoutePending.current = false;
     overviewPending.current = false;
     journeyToken.current += 1;
     setSelectedId(node.id);
@@ -299,6 +282,7 @@ export default function ComposedLifeMapScene() {
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;
+    restoredRoutePending.current = false;
     overviewPending.current = true;
     journeyToken.current += 1;
     setSelectedId(null);
@@ -325,6 +309,7 @@ export default function ComposedLifeMapScene() {
 
   useEffect(() => {
     if (!overviewRequested) return;
+    restoredRoutePending.current = false;
     overviewPending.current = false;
     journeyToken.current += 1;
     setSelectedId((current) => current === null ? current : null);
@@ -334,8 +319,20 @@ export default function ComposedLifeMapScene() {
   useEffect(() => {
     if (overviewRequested || overviewPending.current || !queryNode || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNode);
-    if (node && node.id !== selectedId) selectNode(node);
-  }, [nodes, overviewRequested, queryNode, selectNode, selectedId]);
+    if (!node) return;
+    if (selectedId === node.id) {
+      if (phase === "overview") {
+        journeyToken.current += 1;
+        setPhase("arrival");
+      }
+      restoredRoutePending.current = false;
+      return;
+    }
+    restoredRoutePending.current = false;
+    journeyToken.current += 1;
+    setSelectedId(node.id);
+    setPhase("arrival");
+  }, [nodes, overviewRequested, phase, queryNode, selectedId]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -350,7 +347,7 @@ export default function ComposedLifeMapScene() {
   useEffect(() => () => { document.body.style.cursor = ""; }, []);
 
   const recovery = webglState !== "ready";
-  const thresholdsVisible = Boolean(selected && (phase === "approach" || phase === "arrival"));
+  const thresholdsVisible = Boolean(selected);
   return <main
     className="life-map-root"
     style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
@@ -362,6 +359,8 @@ export default function ComposedLifeMapScene() {
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
     data-webgl-state={webglState}
+    data-software-renderer={softwareRenderer ? "true" : "false"}
+    data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
@@ -375,14 +374,15 @@ export default function ComposedLifeMapScene() {
       frameloop={profile.documentVisible ? "always" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
+        setSoftwareRenderer(isSoftwareWebGLRenderer(gl));
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.15;
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.setClearColor("#02050b", 1);
       }}
     >
+      <SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />
       <WebGLRecoveryBridge onStateChange={setWebglState} />
-      <LifeMapRenderProofBridge />
       <Suspense fallback={null}>
         <LifeMapProductionWorld
           nodes={nodes}

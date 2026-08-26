@@ -39,19 +39,27 @@ test('demo memory is explicit, disclosed, and retained through Life Map camera t
   assert.match(replay, /DEMO FIXTURE · NOT PERSONAL DATA/)
 })
 
-test('Focus is an explorable living memory chamber rather than a static composited page', () => {
-  const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction ChamberArchitecture/)?.[0]
+test('Focus is an explorable authored living memory chamber rather than a static composited page', () => {
+  const cameraRig = focus.match(/function FocusCameraRig[\s\S]*?\n}\n\nfunction cloneAuthoredFocusModel/)?.[0]
   assert.ok(cameraRig, 'FocusCameraRig must remain a mounted camera controller')
 
   assert.match(focus, /from '@react-three\/fiber'/)
   assert.match(focus, /import \* as THREE from 'three'/)
+  assert.match(focus, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
+  assert.match(focus, /function cloneAuthoredFocusModel/)
+  assert.match(focus, /function AuthoredFocusChamber/)
+  assert.match(focus, /useGLTF\(FOCUS_CHAMBER_MODEL\)/)
+  assert.match(focus, /object\.castShadow = true/)
+  assert.match(focus, /object\.receiveShadow = true/)
   assert.match(focus, /function FocusScene/)
   assert.match(focus, /function ChamberArchitecture/)
   assert.match(focus, /function MemoryTraces/)
   assert.match(focus, /function MemoryAperture/)
   assert.match(focus, /<Canvas[\s\S]*?<FocusScene/)
+  assert.match(focus, /<AuthoredFocusChamber \/>/)
   assert.match(focus, /<OrbitControls/)
-  assert.match(focus, /data-focus-composition="living-memory-chamber"/)
+  assert.match(focus, /data-focus-composition="authored-final-chamber-with-living-memory-vfx"/)
+  assert.match(focus, /data-focus-physical-asset=\{FOCUS_CHAMBER_MODEL\}/)
   assert.match(focus, /data-focus-spatial="explorable-observatory"/)
   assert.match(focus, /data-focus-movement="walk-keyboard-orbit-touch"/)
   assert.match(focus, /data-focus-pointer-lock="false"/)

@@ -12,6 +12,10 @@ const WORLD_TRAVEL_OBSERVE_MS = 50
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
+function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
+  window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } }))
+}
+
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
@@ -61,6 +65,7 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (shouldBeginHomeAscent(request)) {
     const scene = useSceneStore.getState()
     if (scene.phase !== 'ASCENT') scene.enterLifeMap()
+    dispatchSpatialAudioCue('transition')
     window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_HOME_ASCENT_EVENT, { detail: request }))
     return
   }
@@ -76,6 +81,7 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
   const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
   const fallbackHref = buildFallbackHref(request)
@@ -102,11 +108,13 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }
 
 export function requestUraiWorldOrbOpen() {
   if (typeof window === 'undefined') return
+  dispatchSpatialAudioCue('orb-confirm')
   window.dispatchEvent(new Event(URAI_WORLD_ORB_OPEN_EVENT))
 }
 

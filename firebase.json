@@ -10,6 +10,34 @@
     "trailingSlash": false,
     "rewrites": [
       {
+        "source": "/api/google/oauth/start",
+        "function": {
+          "functionId": "googleOAuthStart",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/google/oauth/callback",
+        "function": {
+          "functionId": "googleOAuthCallback",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/google/oauth/status",
+        "function": {
+          "functionId": "googleOAuthStatus",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/google/oauth/disconnect",
+        "function": {
+          "functionId": "googleOAuthDisconnect",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/urai/orb/openai",
         "function": {
           "functionId": "openAiOrbProvider",

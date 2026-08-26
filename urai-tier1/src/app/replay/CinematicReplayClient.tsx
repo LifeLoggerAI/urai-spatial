@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Environment, useGLTF } from '@react-three/drei'
+import { useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
@@ -159,12 +159,12 @@ function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedM
       <ambientLight intensity={0.26} />
       <hemisphereLight intensity={0.5} color={memory.visuals.light} groundColor={memory.visuals.ground} />
       <directionalLight position={[-4, 7, 6]} intensity={1.3} color={memory.visuals.light} castShadow />
+      <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={3.4} distance={14} color={memory.visuals.accent} />
       <primitive object={model} name="replay-memory-environment-v1" />
       <MemoryMediaSurface media={media} playing={playing} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
-      <Environment preset="night" environmentIntensity={0.24} />
     </>
   )
 }

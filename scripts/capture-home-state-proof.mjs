@@ -17,10 +17,10 @@ const states = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-home-state-proof-4',
+  schemaVersion: 'urai-home-state-proof-5',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
+  runtimeContract: 'sacred-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
   visualGate: {
     source: 'retained-canvas-png',
     sampling: 'distributed-3x3-neighborhood',
@@ -152,6 +152,7 @@ async function capture(state, options = {}) {
     record.primaryOwner = await owner.getAttribute('data-home-primary-owner')
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.movement = await owner.getAttribute('data-home-movement')
+    record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
     record.pointerLock = await page.evaluate(() => document.pointerLockElement === null)
     record.accessibleRuntimeText = (await owner.textContent()) || ''
     record.semanticControls = await page.locator('.home-semantic-navigation button').evaluateAll((buttons) => buttons.map((button) => ({
@@ -181,8 +182,11 @@ async function capture(state, options = {}) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
+      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
+      && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
+      && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
+      && record.runtimeAssets?.includes('portal-ring-master-v1.glb')
       && record.pointerLock
       && record.accessibilityPassed
       && record.visualPassed
@@ -227,8 +231,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
 
     record.listeningState = await owner.getAttribute('data-home-orb-state')
-    record.reducedMotionState = await owner.getAttribute('data-home-orb-reduced-motion')
-    record.stateAnimation = await owner.getAttribute('data-home-orb-animation')
+    record.listeningClip = await owner.getAttribute('data-home-orb-clip')
 
     if (reducedMotion === 'reduce') {
       record.visual = await waitForVisualEvidence(page)
@@ -239,8 +242,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
       record.passed = response?.status() === 200
         && record.listeningState === 'listening'
-        && record.reducedMotionState === 'true'
-        && record.stateAnimation === 'orb-state-static'
+        && record.listeningClip === 'orb-state-static'
         && record.visual?.available === true
         && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
         && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
@@ -258,14 +260,14 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
     record.respondingState = await owner.getAttribute('data-home-orb-state')
-    record.respondingMaterial = await owner.getAttribute('data-home-orb-material')
-    record.respondingCaption = await owner.getAttribute('data-home-orb-caption')
+    record.respondingClip = await owner.getAttribute('data-home-orb-clip')
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
     await consent.uncheck()
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
+    record.privacyClip = await owner.getAttribute('data-home-orb-clip')
 
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
@@ -276,15 +278,22 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.keyboard.press('Escape')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
     record.closedState = await owner.getAttribute('data-home-orb-state')
+    record.closedClip = await owner.getAttribute('data-home-orb-clip')
 
     record.passed = response?.status() === 200
       && record.listeningState === 'listening'
+      && record.listeningClip === 'orb-listening'
       && record.respondingState === 'speaking'
+      && record.respondingClip === 'orb-speaking'
       && record.privacyState === 'privacy'
+      && record.privacyClip === 'orb-privacy'
       && record.closedState === 'idle'
+      && record.closedClip === 'orb-breathe'
       && record.lifecyclePassed
-      && record.respondingMaterial === 'rhythmic-glow'
       && record.visual?.available === true
+      && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
+      && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
+      && record.visual.visibleSamples >= receipt.visualGate.minimumVisibleSamples
       && record.screenshotBytes > 12_000
       && pageErrors.length === 0
   } catch (error) {
@@ -323,7 +332,7 @@ try {
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'authored-coherent-three-dimensional-sanctuary'
+    && transition.visibleWorld === 'moonlit-sacred-tech-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {

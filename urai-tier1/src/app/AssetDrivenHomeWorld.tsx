@@ -9,10 +9,10 @@ type Props = {
   webglAvailable: true
 }
 
-const HOME_SPAWN = { x: 0, z: 8.4 } as const
-const HOME_ORB = { x: 0, z: -4.25 } as const
-const HOME_GROUND = { x: -5.4, z: -10.8 } as const
-const HOME_LIFE_MAP = { x: 5.4, z: -10.8 } as const
+const HOME_SPAWN = { x: 0, z: 6.9 } as const
+const HOME_ORB = { x: 0, z: -2.65 } as const
+const HOME_GROUND = { x: -5.2, z: -8.4 } as const
+const HOME_LIFE_MAP = { x: 5.2, z: -8.4 } as const
 const REVIEW_ORB_STATES = new Set<OrbState>([
   'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
   'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
@@ -85,9 +85,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     <div
       ref={ownerRef}
       data-home-authored-region-contract="true"
-      data-home-visible-world="final-physical-sanctuary-memory-rooms"
-      data-home-route-owner="authored-coherent-three-dimensional-sanctuary"
-      data-home-spatial-regions="home-sanctuary-geometry home-mountain-horizon home-living-vegetation home-reflecting-water"
+      data-home-visible-world="moonlit-sacred-tech-sanctuary"
+      data-home-route-owner="asset-driven-sacred-home"
+      data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal"
       data-home-forge-scenery="suppressed"
       style={{ display: 'contents' }}
     >

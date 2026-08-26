@@ -47,7 +47,10 @@ test('mounted 3D artifacts retain independent pointer activation ownership', () 
 
 test('pointer keyboard and touch semantic paths converge on one single-fire selection transaction', () => {
   assert.match(navigator, /event\.detail === 0 \? 'keyboard' : 'pointer'|event\.detail === 0 \? "keyboard" : "pointer"/)
-  assert.match(navigator, /selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], 'keyboard'\)|selectNode\(candidates\[\(current \+ direction \+ candidates\.length\) % candidates\.length\], "keyboard"\)/)
+  assert.match(navigator, /const currentParams = new URLSearchParams\(window\.location\.search\)/)
+  assert.match(navigator, /const liveSelectedId = currentParams\.get\('overview'\) === '1'/)
+  assert.match(navigator, /const nextIndex = current >= 0[\s\S]*\? \(current \+ direction \+ candidates\.length\) % candidates\.length[\s\S]*: direction >= 0 \? 0 : candidates\.length - 1/)
+  assert.match(navigator, /selectNode\(candidates\[nextIndex\], 'keyboard'\)|selectNode\(candidates\[nextIndex\], "keyboard"\)/)
   assert.doesNotMatch(navigator, /onTouchEnd=/)
   assert.match(founder, /await page\.touchscreen\.tap\(x, y\)/)
   assert.match(founder, /await page\.mouse\.click\(x, y\)/)

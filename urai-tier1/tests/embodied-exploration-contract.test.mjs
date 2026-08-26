@@ -7,7 +7,7 @@ const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionPolished.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -33,7 +33,7 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Home is the live embodied real-world-first sanctuary with an explicit degraded fallback', () => {
+test('Home is the live embodied sacred-tech sanctuary with an explicit degraded fallback', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
@@ -46,38 +46,36 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'aria-label="Open Ground directly"',
     'aria-label="Open Life Map directly"',
   ]) has(homeRuntime, marker)
-  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-visual-owner="final-coherent-sanctuary"|data-home-ground-portal=|data-home-life-map-portal=/)
+  assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-ground-portal=|data-home-life-map-portal=/)
 
   has(assetHome, 'HomeWorldProduction')
   assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionPolished as HomeWorldProduction \} from "\.\/HomeWorldProductionPolished"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
 
   for (const marker of [
+    "const SANCTUARY = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
+    "const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'",
     'data-home-primary-owner="asset-driven"',
-    'data-home-real-world-first="true"',
-    'data-home-visible-world="authored-coherent-three-dimensional-sanctuary"',
-    'data-home-world-character="believable-natural-inhabitable-environment"',
-    'data-home-visible-portals="false"',
-    'data-home-transition-affordances="ground-environmental-descent life-map-sky-lookout"',
-    'data-home-provider-environment={HOME_PROVIDER_ENVIRONMENT}',
-    'data-home-provider-role="atmospheric-support-only"',
-    'data-home-generated-scenery="suppressed"',
-    'data-home-physical-base="authored-coherent-world"',
+    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
+    'data-home-world-character="premium-cinematic-sacred-tech"',
+    'data-home-physical-base="authored-obsidian-ritual-platform"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="privacy-preserving-shadow"',
+    'data-home-embodied-self="makehuman-v4"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-pointer-lock="false"',
+    'data-home-camera-mode={transition',
+    'data-home-orb-state={orbState}',
+    'data-testid="home-visible-navigable-sanctuary-world"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
-    'home-reflecting-water',
     'home-orb-sanctuary',
     'home-authored-embodied-self',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
+    'home-sanctuary-pavilion',
     'stepEmbodiedMotion',
     'useMovementInput',
     'useDragLook',
@@ -85,26 +83,21 @@ test('Home is the live embodied real-world-first sanctuary with an explicit degr
     'requestUraiWorldTravel',
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
-    'data-home-orb-state={orbState}',
-    'data-home-orb-reduced-motion={reducedMotion',
     '<Canvas',
   ]) has(homeProduction, marker)
-  assert.match(homeProduction, /HOME_PROVIDER_ENVIRONMENT = ['"]\/assets\/urai\/replay\/replay-memory-film-main\.webp['"]/)
-  assert.match(homeProduction, /HOME_FERN_MODEL = ['"]\/assets\/urai\/home-production\/cc0\/polyhaven-fern-02-geometry-v1\.glb['"]/)
-  assert.match(homeProduction, /function makeTerrainGeometry\(/)
-  assert.match(homeProduction, /function Terrain\(/)
-  assert.match(homeProduction, /function Vegetation\(/)
-  assert.match(homeProduction, /function Horizon\(/)
-  assert.match(homeProduction, /function Water\(/)
+  assert.match(homeProduction, /useGLTF\(SANCTUARY\)/)
+  assert.match(homeProduction, /useGLTF\(HUMAN\)/)
+  assert.match(homeProduction, /function RitualFloor\(/)
+  assert.match(homeProduction, /function MoonAndMist\(/)
+  assert.match(homeProduction, /function SacredOrb\(/)
+  assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /function Thresholds\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
-  assert.match(homeProduction, /useGLTF\(HOME_FERN_MODEL\)/)
-  assert.match(homeProduction, /data-home-provider-role=["']atmospheric-support-only["']/)
-  assert.match(homeProduction, /const GROUND_THRESHOLD = new THREE\.Vector3\(-5\.4, 0, -10\.8\)/)
-  assert.match(homeProduction, /const LIFE_MAP_LOOKOUT = new THREE\.Vector3\(5\.4, 0, -10\.8\)/)
-  assert.match(homeProduction, /\['ground', GROUND_THRESHOLD, 2\.8\]/)
-  assert.match(homeProduction, /\['life-map', LIFE_MAP_LOOKOUT, 2\.8\]/)
-  assert.doesNotMatch(homeProduction, /WorldPortal|PORTAL_MODEL|home-ground-portal-world-owned|home-life-map-portal-world-owned|dodecahedronGeometry|requestPointerLock|sprint|jump|crouch|latheGeometry|torusKnotGeometry/i)
+  assert.match(homeProduction, /const duration=reducedMotion\?0\.45:/)
+  assert.match(homeProduction, /transition==='life-map'\?3\.4:2\.6/)
+  assert.match(homeProduction, /destination:'infrastructure-hub'/)
+  assert.match(homeProduction, /destination:'life-map'/)
+  assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch/i)
 
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
@@ -122,10 +115,9 @@ test('Home keeps one physical stateful Orb owner and semantic access parity', ()
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<Orb onOpen=\{props\.onOrbOpen\} reducedMotion=\{props\.reducedMotion\} state=\{props\.orbState\} \/>/)
+  assert.match(homeProduction, /<SacredOrb state=\{props\.orbState\} reducedMotion=\{props\.reducedMotion\} onOpen=\{props\.onOrb\} \/>/)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
-  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, onOrbState\)/)
-  assert.match(homeProduction, /if \(phase === 'ASCENT' \|\| groundDescent\) return/)
+  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*listener\)/)
   assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
