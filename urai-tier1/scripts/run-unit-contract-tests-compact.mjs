@@ -23,6 +23,7 @@ const tests = [
   'tests/firebase-hosting-recovery-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
+  'tests/home-relic-machine-realism-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
