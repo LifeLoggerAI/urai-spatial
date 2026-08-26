@@ -10,12 +10,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: home-photo-runtime-optimize-${{ github.sha }}
+  group: home-photo-runtime-optimize
   cancel-in-progress: true
 
 jobs:
   optimize:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout exact candidate
@@ -43,7 +43,7 @@ jobs:
           cwebp -quiet -mt -q 96 -m 6 -sharp_yuv "$root/rock-tile-floor-arm-1k.png" -o "$root/rock-tile-floor-arm-1k.webp"
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib, json, re
+          import hashlib, json
 
           limit = 2_097_152
           root = Path('urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor')
@@ -77,7 +77,8 @@ jobs:
               test_source = test_source.replace(old.replace('.', r'\.'), new.replace('.', r'\.'))
               test_source = test_source.replace(old, new)
           test_source = test_source.replace('cinematic-pbr-v16-photographic-cc0-sanctuary', 'cinematic-pbr-v17-photographic-runtime-sanctuary')
-          test_source = test_source.replace("assert.doesNotMatch(source, /<Lightformer/)", "assert.doesNotMatch(source, /<Lightformer/)\n  assert.doesNotMatch(source, /rock-tile-floor-(?:diff|normal-gl|arm)-1k\\.png/)")
+          if 'source PNG runtime variants stay retired' not in test_source:
+              test_source = test_source.replace("assert.doesNotMatch(source, /<Lightformer/)", "assert.doesNotMatch(source, /<Lightformer/)\n  assert.doesNotMatch(source, /rock-tile-floor-(?:diff|normal-gl|arm)-1k\\.png/, 'source PNG runtime variants stay retired')")
           test_path.write_text(test_source)
 
           receipt_path = Path('operations/assets/third-party/home-photographic-pbr-v1.json')
