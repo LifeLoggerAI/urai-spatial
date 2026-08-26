@@ -1,3 +1,4 @@
+# Owner-authored exact-head trigger for the stabilized V29 certification candidate.
 name: Home Scanned Composition Verification
 
 on:
