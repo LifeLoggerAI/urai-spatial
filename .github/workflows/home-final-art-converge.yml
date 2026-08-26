@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/home-final-art-converge.yml'
       - 'scripts/apply-home-v22-photoreal-architecture-pass.py'
+      - 'scripts/apply-home-v22-contract-safe-orb-shell.py'
 
 permissions:
   contents: write
@@ -16,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  HOME_FINAL_ART_CONVERGENCE_REVISION: '5'
+  HOME_FINAL_ART_CONVERGENCE_REVISION: '6'
 
 jobs:
   converge:
@@ -33,6 +34,9 @@ jobs:
 
       - name: Apply deterministic V22 photoreal architecture pass
         run: python3 scripts/apply-home-v22-photoreal-architecture-pass.py
+
+      - name: Apply contract-safe engineered Orb shell
+        run: python3 scripts/apply-home-v22-contract-safe-orb-shell.py
 
       - name: Run focused live-owner contracts
         working-directory: urai-tier1
