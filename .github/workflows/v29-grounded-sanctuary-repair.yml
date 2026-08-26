@@ -1,0 +1,69 @@
+name: V29 Grounded Sanctuary Repair
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/v29-grounded-sanctuary-repair.yml'
+      - 'scripts/apply-v29-grounded-sanctuary.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v29-grounded-sanctuary-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Apply V29 grounded sanctuary repair
+        run: python3 scripts/apply-v29-grounded-sanctuary.py
+
+      - name: Verify V29 source markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
+          grep -F 'v29-compatibility-glb-provenance-only-no-visible-fantasy-shell' "$file"
+          grep -F 'v29-grounded-vaulted-machine-hall-no-fantasy-shell' "$file"
+          grep -F 'v29-continuous-structural-vault-load-paths' "$file"
+          grep -F 'v29-canopy-is-vault-not-floating-bars' "$file"
+          grep -F 'v29-three-point-articulated-relic-dock' "$file"
+          grep -F 'v29-curved-load-arms-contact-orb-no-pedestal-stem' "$file"
+          grep -F 'v29-integrated-vault-threshold' "$file"
+          ! grep -F 'v28-authored-threshold-court-no-box-walls' "$file"
+          ! grep -F 'v28-curved-machined-load-paths-attached-to-piers' "$file"
+          ! grep -F 'v28-continuous-curved-rib-skylight-no-floating-bars' "$file"
+
+      - name: Verify focused runtime contracts
+        working-directory: urai-tier1
+        run: node --test --test-concurrency=1 tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
+
+      - name: Commit clean successor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-v24-certify-20260826" --jq .object.sha)"
+          test "$current" = "${GITHUB_SHA}"
+          test -n "$(git status --porcelain)"
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git rm .github/workflows/v29-grounded-sanctuary-repair.yml scripts/apply-v29-grounded-sanctuary.py
+          git commit -m 'Apply V29 grounded sanctuary repair'
+          gh auth setup-git
+          git push origin HEAD:home-final-v24-certify-20260826
