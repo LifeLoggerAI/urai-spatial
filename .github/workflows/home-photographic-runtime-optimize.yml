@@ -26,22 +26,20 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Optimize governed photographic maps
+      - name: Optimize or verify governed photographic maps
         shell: bash
         run: |
           set -euo pipefail
           root='urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor'
-          test -s "$root/rock-tile-floor-diff-1k.png"
-          test -s "$root/rock-tile-floor-normal-gl-1k.png"
-          test -s "$root/rock-tile-floor-arm-1k.png"
-          if ! command -v cwebp >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq webp
-          fi
-          cwebp -quiet -mt -q 92 -m 6 "$root/rock-tile-floor-diff-1k.png" -o "$root/rock-tile-floor-diff-1k.webp"
-          cwebp -quiet -mt -q 94 -m 6 -sharp_yuv "$root/rock-tile-floor-normal-gl-1k.png" -o "$root/rock-tile-floor-normal-gl-1k.webp"
-          cwebp -quiet -mt -q 96 -m 6 -sharp_yuv "$root/rock-tile-floor-arm-1k.png" -o "$root/rock-tile-floor-arm-1k.webp"
-          python3 - <<'PY'
+          if [[ -s "$root/rock-tile-floor-diff-1k.png" && -s "$root/rock-tile-floor-normal-gl-1k.png" && -s "$root/rock-tile-floor-arm-1k.png" ]]; then
+            if ! command -v cwebp >/dev/null 2>&1; then
+              sudo apt-get update -qq
+              sudo apt-get install -y -qq webp
+            fi
+            cwebp -quiet -mt -q 92 -m 6 "$root/rock-tile-floor-diff-1k.png" -o "$root/rock-tile-floor-diff-1k.webp"
+            cwebp -quiet -mt -q 94 -m 6 -sharp_yuv "$root/rock-tile-floor-normal-gl-1k.png" -o "$root/rock-tile-floor-normal-gl-1k.webp"
+            cwebp -quiet -mt -q 96 -m 6 -sharp_yuv "$root/rock-tile-floor-arm-1k.png" -o "$root/rock-tile-floor-arm-1k.webp"
+            python3 - <<'PY'
           from pathlib import Path
           import hashlib, json
 
@@ -65,7 +63,6 @@ jobs:
               'rock-tile-floor-arm-1k.png': 'rock-tile-floor-arm-1k.webp',
           }
           for old, new in replacements.items():
-              assert old in source, old
               source = source.replace(old, new)
           source = source.replace('cinematic-pbr-v16-photographic-cc0-sanctuary', 'cinematic-pbr-v17-photographic-runtime-sanctuary')
           source = source.replace('polyhaven-rock-tile-floor-pbr-v1', 'polyhaven-rock-tile-floor-pbr-v2-optimized')
@@ -88,25 +85,35 @@ jobs:
               'singleTextureBudgetBytes': limit,
               'quality': {'diffuse': 92, 'normalGL': 94, 'arm': 96},
               'runtimeFiles': {
-                  role: {
-                      'path': str(path),
-                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
-                      'bytes': path.stat().st_size,
-                  } for role, path in outputs.items()
+                  role: {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'bytes': path.stat().st_size}
+                  for role, path in outputs.items()
               },
               'sourcePngsRetained': False,
               'reason': 'Preserve photographic PBR fidelity while satisfying the governed single-texture production budget.'
           }
           receipt['promotionState'] = 'vendored-production-optimized-pending-exact-head-visual-approval'
           receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
-
-          for path in [
-              root / 'rock-tile-floor-diff-1k.png',
-              root / 'rock-tile-floor-normal-gl-1k.png',
-              root / 'rock-tile-floor-arm-1k.png',
-          ]:
-              path.unlink()
+          for path in [root / 'rock-tile-floor-diff-1k.png', root / 'rock-tile-floor-normal-gl-1k.png', root / 'rock-tile-floor-arm-1k.png']:
+              path.unlink(missing_ok=True)
           PY
+          else
+            python3 - <<'PY'
+          from pathlib import Path
+          limit = 2_097_152
+          root = Path('urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor')
+          for name in ['rock-tile-floor-diff-1k.webp','rock-tile-floor-normal-gl-1k.webp','rock-tile-floor-arm-1k.webp']:
+              path = root / name
+              data = path.read_bytes()
+              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', name
+              assert len(data) < limit, (name, len(data), limit)
+          sacred = Path('urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx').read_text()
+          assert 'rock-tile-floor-diff-1k.webp' in sacred
+          assert 'rock-tile-floor-normal-gl-1k.webp' in sacred
+          assert 'rock-tile-floor-arm-1k.webp' in sacred
+          assert 'rock-tile-floor-diff-1k.png' not in sacred
+          print('Photographic runtime maps already optimized; verified exact head.')
+          PY
+          fi
 
       - name: Prove runtime texture budget
         shell: bash
