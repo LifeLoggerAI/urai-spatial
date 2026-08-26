@@ -57,17 +57,27 @@ jobs:
           grep -F 'home-entry-chamber-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'polyhaven-fern-02-geometry-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F 'CINEMATIC_HOME_ART_MOBILE' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'home-authored-sanctuary-horizon-thresholds-v28' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'v28-filtered-authored-spatial-depth-no-fantasy-families' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'large-format-photographic-stone-court-v28-low-frequency' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'authored-nonprimitive-sacred-tech-sanctuary-v28' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'v28-authored-threshold-court-no-box-walls' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'v28-curved-machined-load-paths-attached-to-piers' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'v28-continuous-curved-rib-skylight-no-floating-bars' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'recessed-machine-foundation-v25-flush-inlay' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'low-three-point-machined-yoke-v27' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'v27-angular-cantilever-docking-frame-no-stem' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v27-authored-pier-and-recess-court' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v27-sparse-structural-glass-fins-open-air' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'v27-faceted-crystalline-relic-machine' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F 'circleGeometry args={[0.92,128]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F 'compact-relic-bay-v23' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F 'v27-authored-pier-and-recess-court' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F 'boxGeometry args={[0.07,3.18,16.3]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F 'size={[0.66,4.1,7.0]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F 'mirror-basin-' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F 'orb-sanctuary-pedestal' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F 'inhabited-village-' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F 'sanctuary-waterfall-' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F 'home-orb-stabilizer-ring-1' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'home-orb-stabilizer-arc-a' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'home-orb-stabilizer-arc-b' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
