@@ -19,12 +19,14 @@ env:
   FERN_BIN_BLOB: b6ae3752172b2f6d074f05d433accdc96b357f2a
   FERN_MIRROR_REPO: Joshkaki00/godotmark
   FERN_MIRROR_COMMIT: cb9d9f5a944cfe24741c528014317b960efc62a5
+  ROCK_TILE_BASE: https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rock_tile_floor
+  STUDIO_HDR_URL: https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr
 
 jobs:
   vendor-home-cc0:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -115,6 +117,71 @@ jobs:
           assert len(data) < 2_000_000
           PY
 
+      - name: Fetch CC0 photographic stone PBR and HDR environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          out='urai-tier1/public/assets/urai/home-production/cc0/rock-tile-floor'
+          envout='urai-tier1/public/assets/urai/home-production/cc0/environment'
+          mkdir -p "$out" "$envout" operations/assets/third-party
+          curl --fail --location --retry 3 --retry-delay 2 --silent --show-error \
+            "${ROCK_TILE_BASE}/rock_tile_floor_diff_1k.png" -o "$out/rock-tile-floor-diff-1k.png"
+          curl --fail --location --retry 3 --retry-delay 2 --silent --show-error \
+            "${ROCK_TILE_BASE}/rock_tile_floor_nor_gl_1k.png" -o "$out/rock-tile-floor-normal-gl-1k.png"
+          curl --fail --location --retry 3 --retry-delay 2 --silent --show-error \
+            "${ROCK_TILE_BASE}/rock_tile_floor_arm_1k.png" -o "$out/rock-tile-floor-arm-1k.png"
+          curl --fail --location --retry 3 --retry-delay 2 --silent --show-error \
+            "${ROCK_TILE_BASE}/rock_tile_floor_disp_1k.png" -o "$out/rock-tile-floor-displacement-1k.png"
+          curl --fail --location --retry 3 --retry-delay 2 --silent --show-error \
+            "$STUDIO_HDR_URL" -o "$envout/studio-small-08-1k.hdr"
+
+      - name: Validate and receipt photographic source assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, struct
+          root = pathlib.Path('urai-tier1/public/assets/urai/home-production/cc0')
+          files = {
+              'diffuse': root / 'rock-tile-floor/rock-tile-floor-diff-1k.png',
+              'normalGL': root / 'rock-tile-floor/rock-tile-floor-normal-gl-1k.png',
+              'arm': root / 'rock-tile-floor/rock-tile-floor-arm-1k.png',
+              'displacement': root / 'rock-tile-floor/rock-tile-floor-displacement-1k.png',
+          }
+          def png_dimensions(path):
+              data = path.read_bytes()
+              assert data[:8] == b'\x89PNG\r\n\x1a\n', path
+              assert data[12:16] == b'IHDR', path
+              width, height = struct.unpack('>II', data[16:24])
+              assert width >= 1024 and height >= 1024, (path, width, height)
+              return width, height, data
+          file_receipts = {}
+          dims = None
+          for role, path in files.items():
+              width, height, data = png_dimensions(path)
+              dims = dims or (width, height)
+              assert dims == (width, height), (role, dims, (width, height))
+              file_receipts[role] = {'path': str(path), 'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data), 'width': width, 'height': height}
+          hdr = root / 'environment/studio-small-08-1k.hdr'
+          hdr_bytes = hdr.read_bytes()
+          assert hdr_bytes.startswith((b'#?RADIANCE', b'#?RGBE'))
+          assert len(hdr_bytes) > 250_000
+          receipt = {
+              'assetId': 'home-photographic-pbr-v1',
+              'license': 'CC0-1.0',
+              'stoneSource': 'https://polyhaven.com/a/rock_tile_floor',
+              'stoneDownloadRoot': 'https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rock_tile_floor',
+              'hdriSource': 'https://polyhaven.com/a/studio_small_08',
+              'hdriDownload': 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr',
+              'runtimeExternalRequests': False,
+              'files': file_receipts,
+              'hdri': {'path': str(hdr), 'sha256': hashlib.sha256(hdr_bytes).hexdigest(), 'bytes': len(hdr_bytes)},
+              'promotionState': 'vendored-final-art-input-pending-exact-head-visual-approval',
+          }
+          pathlib.Path('operations/assets/third-party/home-photographic-pbr-v1.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
+          PY
+
       - name: Compose Home from owned sanctuary and scanned nature
         shell: bash
         run: |
@@ -167,7 +234,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$(git status --porcelain --untracked-files=all -- urai-tier1/public/assets/urai/home-production/cc0 operations/assets/third-party urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx)" ]; then
-            echo 'Home scanned composition already materialized; no successor needed.'
+            echo 'Home CC0 asset set already materialized; no successor needed.'
             exit 0
           fi
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -179,7 +246,7 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          git commit -m 'Compose Home from owned sanctuary and scanned nature'
+          git add urai-tier1/public/assets/urai/home-production/cc0 operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json operations/assets/third-party/home-photographic-pbr-v1.json urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git commit -m 'Vendor Home photographic CC0 PBR and HDR assets'
           gh auth setup-git
           git push origin "HEAD:${PR_BRANCH}"
