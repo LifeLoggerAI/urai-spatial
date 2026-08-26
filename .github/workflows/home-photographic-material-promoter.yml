@@ -1,6 +1,8 @@
 name: Home Photographic Material Promoter
 
 on:
+  push:
+    branches: [home-final-relic-machine-realism-20260826]
   pull_request:
     branches: [main]
   workflow_dispatch:
