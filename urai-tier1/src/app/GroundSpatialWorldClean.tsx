@@ -269,11 +269,11 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
-      <color attach="background" args={["#102b38"]} />
-      <fogExp2 attach="fog" args={["#173843", 0.012]} />
-      <ambientLight intensity={0.52} color="#d8f4f2" />
-      <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
-      <directionalLight position={[9, 18, 12]} intensity={3.25} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
+      <color attach="background" args={["#173a43"]} />
+      <fogExp2 attach="fog" args={["#244b50", 0.0075]} />
+      <ambientLight intensity={0.78} color="#e2f4ef" />
+      <hemisphereLight args={["#f0faf5", "#283b38", 1.34]} />
+      <directionalLight position={[9, 18, 12]} intensity={4.35} color="#ffe0b1" castShadow shadow-mapSize={[1024, 1024]} />
       <directionalLight position={[-11, 9, -8]} intensity={0.9} color="#9edcff" />
       <pointLight position={[0, 4.2, -1]} intensity={3.2} distance={24} decay={2} color="#ffc479" />
       <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
@@ -283,8 +283,8 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
       <ArchitecturalRouteLighting activeId={activeId} />
       <EffectComposer multisampling={0}>
-        <Bloom intensity={0.24} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
-        <Vignette eskil={false} offset={0.12} darkness={0.12} />
+        <Bloom intensity={0.17} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
+        <Vignette eskil={false} offset={0.08} darkness={0.035} />
       </EffectComposer>
     </>
   );
@@ -333,7 +333,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-no-compositing-bands="true"
+      data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v39-screen-space-band-suppressed"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
       data-ground-ready={ready ? "true" : "false"}
@@ -350,7 +350,7 @@ export default function GroundSpatialWorldClean() {
           gl.setClearColor(0x102b38, 1);
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.35;
+          gl.toneMappingExposure = 1.72;
           setReady(true);
         }}
       >
@@ -396,7 +396,7 @@ export default function GroundSpatialWorldClean() {
 
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
-        .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
+        .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.04) contrast(1.01) brightness(1.06)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
         .ground-brand strong{font:650 12px/1.25 system-ui;letter-spacing:.01em;color:rgba(244,251,252,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -411,6 +411,8 @@ export default function GroundSpatialWorldClean() {
         .ground-directory button:is(:hover,:focus-visible,[aria-current="location"]) strong{max-width:122px;opacity:.82}
         .ground-destination-compass :is(a,button) strong{transition:max-width .2s ease,opacity .2s ease}
         @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 48px}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
+        :global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__horizon),:global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__threshold){opacity:0!important;box-shadow:none!important}
+        :global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__depth){box-shadow:inset 0 0 90px rgba(0,0,0,.16),inset 0 -10vh 80px rgba(0,0,0,.12)!important}
         @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
       `}</style>
     </main>
