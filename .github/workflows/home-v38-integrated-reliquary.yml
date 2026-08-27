@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - home-final-v24-certify-20260826
+      - v38-direct-build-20260827
     paths:
       - '.github/workflows/home-v38-integrated-reliquary.yml'
       - 'scripts/apply-home-v38-integrated-reliquary.py'
@@ -13,15 +13,15 @@ permissions:
   contents: write
 
 concurrency:
-  group: home-v38-integrated-reliquary
+  group: home-v38-integrated-reliquary-direct
   cancel-in-progress: true
 
 env:
-  HOME_V38_BUILD_REVISION: '2'
+  HOME_V38_BUILD_REVISION: '3-direct'
 
 jobs:
   rebuild:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 15
     steps:
       - name: Checkout exact candidate
@@ -49,11 +49,11 @@ jobs:
             echo 'V38 already present; no successor commit required.'
             exit 0
           fi
-          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-v24-certify-20260826" --jq .object.sha)"
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/v38-direct-build-20260827" --jq .object.sha)"
           test "$current" = "${GITHUB_SHA}"
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
           git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           git commit -m 'Home: integrate V38 production reliquary into sanctuary'
           gh auth setup-git
-          git push origin HEAD:home-final-v24-certify-20260826
+          git push origin HEAD:v38-direct-build-20260827
