@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Sparkles, useAnimations, useGLTF } from "@react-three/drei";
+import { Environment, Sparkles, useAnimations, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
@@ -36,11 +36,12 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(1.08);
-    clone.emissive.copy(clone.color).multiplyScalar(0.035);
-    clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.16);
-    clone.roughness = Math.max(clone.roughness, 0.5);
-    clone.metalness = Math.min(clone.metalness, 0.3);
+    clone.color.multiplyScalar(0.82);
+    clone.emissive.set("#030807");
+    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, 0.035);
+    clone.roughness = Math.max(clone.roughness, 0.64);
+    clone.metalness = Math.min(clone.metalness, 0.2);
+    clone.envMapIntensity = 0.95;
     clone.needsUpdate = true;
   }
   return clone;
@@ -66,7 +67,8 @@ function prepareModel(source: THREE.Object3D) {
     const root = source.getObjectByName(`ground-destination-${destination.id}`);
     if (!root) continue;
     const character = CHAMBER_CHARACTER[destination.chamberForm];
-    root.scale.set(character[0], character[1], character[2]);
+    root.scale.set(character[0] * 0.88, character[1] * 0.78, character[2] * 0.88);
+    root.position.y = Math.min(root.position.y, 0.12);
     root.userData.uraiChamberForm = destination.chamberForm;
     root.userData.uraiLayer = destination.layer;
   }
@@ -225,8 +227,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     });
 
     const portrait = size.height > size.width;
-    const distance = portrait ? 6.6 : 8.2;
-    const height = portrait ? 3.15 : 3.35;
+    const distance = portrait ? 8.6 : 8.8;
+    const height = portrait ? 2.18 : 2.72;
     cameraOffset.current.set(0, height + pitch.current * 0.72, distance).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     desired.current.copy(position.current).add(cameraOffset.current);
     camera.position.lerp(desired.current, 1 - Math.pow(0.0018, delta));
@@ -269,8 +271,9 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
-      <color attach="background" args={["#173a43"]} />
-      <fogExp2 attach="fog" args={["#244b50", 0.0075]} />
+      <color attach="background" args={["#202d2d"]} />
+      <fogExp2 attach="fog" args={["#202d2d", 0.018]} />
+      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.82} />
       <ambientLight intensity={0.78} color="#e2f4ef" />
       <hemisphereLight args={["#f0faf5", "#283b38", 1.34]} />
       <directionalLight position={[9, 18, 12]} intensity={4.35} color="#ffe0b1" castShadow shadow-mapSize={[1024, 1024]} />
@@ -279,12 +282,13 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
       <pointLight position={[-8.2, 3.4, -23]} intensity={1.4} distance={22} decay={2} color="#cabdff" />
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v40-continuous-architectural-underfloor" userData={{treatment:"v40-continuous-floor-removes-floating-island-edge"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#202822" roughness={0.9} metalness={0.025} clearcoat={0.025} clearcoatRoughness={0.88} envMapIntensity={0.72}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
       <ArchitecturalRouteLighting activeId={activeId} />
       <EffectComposer multisampling={0}>
         <Bloom intensity={0.17} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
-        <Vignette eskil={false} offset={0.08} darkness={0.035} />
+        <Vignette eskil={false} offset={0.12} darkness={0.018} />
       </EffectComposer>
     </>
   );
@@ -298,7 +302,7 @@ export default function GroundSpatialWorldClean() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const yaw = useRef(0);
-  const pitch = useRef(-0.08);
+  const pitch = useRef(-0.025);
   const target = useRef<THREE.Vector3 | null>(null);
 
   const enter = useCallback((destination: GroundDestination) => router.push(destination.href), [router]);
@@ -307,7 +311,7 @@ export default function GroundSpatialWorldClean() {
   }, [enter, nearby]);
   const reset = useCallback(() => {
     yaw.current = 0;
-    pitch.current = -0.08;
+    pitch.current = -0.025;
     target.current = SPAWN.clone();
     setActiveId(null);
   }, []);
@@ -333,7 +337,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v39-screen-space-band-suppressed"
+      data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v40-continuous-floor-hdr-fog-no-screen-space-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
       data-ground-ready={ready ? "true" : "false"}
