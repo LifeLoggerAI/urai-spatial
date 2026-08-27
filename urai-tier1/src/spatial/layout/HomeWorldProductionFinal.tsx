@@ -346,8 +346,6 @@ function ReliquarySpine(){
   </group>
 }
 
-function ReliquaryWing
-
 function ReliquaryWing({side}:{side:-1|1}){
   const geometry=useMemo(()=>{const s=side,shape=new THREE.Shape();shape.moveTo(1.55*s,-1.92);shape.lineTo(3.28*s,-1.72);shape.bezierCurveTo(3.62*s,-.95,3.7*s,.24,3.38*s,1.18);shape.bezierCurveTo(3.12*s,2.0,2.52*s,2.46,1.88*s,2.62);shape.lineTo(1.38*s,1.88);shape.bezierCurveTo(1.82*s,1.34,2.02*s,.7,1.96*s,.06);shape.bezierCurveTo(1.9*s,-.62,1.66*s,-1.18,1.22*s,-1.54);shape.closePath();const g=new THREE.ExtrudeGeometry(shape,{depth:1.06,steps:1,curveSegments:24,bevelEnabled:true,bevelSegments:6,bevelSize:.09,bevelThickness:.09});g.center();g.computeVertexNormals();return g},[side]);
   const inner=useMemo(()=>{const s=side,shape=new THREE.Shape();shape.moveTo(1.72*s,-1.42);shape.lineTo(2.75*s,-1.24);shape.bezierCurveTo(3.0*s,-.42,2.98*s,.56,2.64*s,1.34);shape.bezierCurveTo(2.4*s,1.86,2.06*s,2.12,1.7*s,2.2);shape.lineTo(1.48*s,1.64);shape.bezierCurveTo(1.78*s,.92,1.82*s,-.54,1.46*s,-1.06);shape.closePath();const g=new THREE.ExtrudeGeometry(shape,{depth:1.12,steps:1,curveSegments:20,bevelEnabled:true,bevelSegments:4,bevelSize:.055,bevelThickness:.055});g.center();g.computeVertexNormals();return g},[side]);
