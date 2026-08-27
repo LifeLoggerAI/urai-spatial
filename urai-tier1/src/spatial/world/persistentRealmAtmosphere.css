@@ -108,3 +108,12 @@
   .urai-world-atmosphere > span { transition: none; }
   .urai-world-atmosphere__weather { animation: none; }
 }
+
+
+/* V33 Home owns its physical sky/fog; suppress shared screen-space horizon bars. */
+.urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon,
+.urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__threshold {
+  opacity: 0;
+  box-shadow: none;
+}
+.urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__sky { opacity: .22; }
