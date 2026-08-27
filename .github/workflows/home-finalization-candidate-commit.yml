@@ -5,23 +5,15 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
-      - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
-      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
-      - 'urai-tier1/src/app/spatial-runtime-restoration.css'
-      - 'urai-tier1/src/app/home/**'
-      - 'operations/assets/launch-critical-assets.json'
-      - 'operations/assets/home-finalization-candidate-decisions.json'
-      - 'operations/assets/sources/**'
-      - 'scripts/author-home-finalization-assets.mjs'
-      - 'scripts/record-home-finalization-authored-candidates.mjs'
-      - 'scripts/verify-home-finalization-authored-assets.mjs'
+      - 'scripts/apply-home-v41-production-rebuild.py'
+      - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: home-finalization-candidate-commit-${{ github.event.pull_request.number || github.ref_name }}
+  group: home-v41-pr-materializer-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -30,226 +22,70 @@ jobs:
       github.repository == 'LifeLoggerAI/urai-spatial' &&
       ((github.event_name == 'pull_request' &&
         github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.head.ref == 'feat/home-final-personalized-sanctuary-20260723') ||
-       (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/home-final-personalized-sanctuary-20260723'))
+        github.event.pull_request.head.ref == 'home-final-v24-certify-20260826') ||
+       (github.event_name == 'workflow_dispatch' && github.ref_name == 'home-final-v24-certify-20260826'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      HOME_BRANCH: feat/home-final-personalized-sanctuary-20260723
+      HOME_BRANCH: home-final-v24-certify-20260826
       HOME_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Check out exact Home candidate
+      - name: Check out exact V41 authoring head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.HOME_EXACT_HEAD }}
-          fetch-depth: 0
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
 
-      - name: Refuse stale or unexpected authority
+      - name: Refuse stale authority
         shell: bash
         run: |
           set -euo pipefail
           [[ "$HOME_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$HOME_EXACT_HEAD"
-          test "$(git remote get-url origin)" != ""
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
-          node-version: '22'
+          version: 10.0.0
+          run_install: false
 
-      - name: Validate committed authored source tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check scripts/author-home-finalization-assets.mjs
-          node --check scripts/record-home-finalization-authored-candidates.mjs
-          node --check scripts/verify-home-finalization-authored-assets.mjs
-          grep -q "urai-home-authored-sanctuary-source-v3" scripts/author-home-finalization-assets.mjs
-
-      - name: Repair materialized v3 typecheck manifest provenance fallback visibility and review hydration
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs'
-
-          const runtimePath = 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
-          let runtime = fs.readFileSync(runtimePath, 'utf8')
-          const invalidCleanup = '  useEffect(() => () => mixer.stopAllAction(), [mixer])'
-          const validCleanup = '  useEffect(() => () => { mixer.stopAllAction() }, [mixer])'
-          if (!runtime.includes(validCleanup)) {
-            if (!runtime.includes(invalidCleanup)) throw new Error('Home v3 animation mixer cleanup contract was not found')
-            runtime = runtime.replace(invalidCleanup, validCleanup)
-          }
-
-          const serverLockedReview = "  const reviewMode = useMemo(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('homeAssetReview') === '1', [])"
-          const hydratedReview = `  const [reviewMode, setReviewMode] = useState(false)
-          useEffect(() => {
-            setReviewMode(new URLSearchParams(window.location.search).get('homeAssetReview') === '1')
-          }, [])`
-          if (runtime.includes(serverLockedReview)) runtime = runtime.replace(serverLockedReview, hydratedReview)
-          if (!runtime.includes('const [reviewMode, setReviewMode] = useState(false)')) throw new Error('Hydrated disclosed review-mode contract was not materialized')
-          fs.writeFileSync(runtimePath, runtime)
-
-          const cssPath = 'urai-tier1/src/app/spatial-runtime-restoration.css'
-          const css = fs.readFileSync(cssPath, 'utf8')
-          const broadOwner = 'body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final'
-          const assetOwner = 'body:has(.urai-asset-home-world) .urai-home-spatial-world-final'
-          if (css.includes(broadOwner)) fs.writeFileSync(cssPath, css.split(broadOwner).join(assetOwner))
-          const repairedCss = fs.readFileSync(cssPath, 'utf8')
-          if (repairedCss.includes(broadOwner)) throw new Error('Fallback veil rule still targets the runtime wrapper')
-          if (!repairedCss.includes(assetOwner)) throw new Error('Asset-driven overlay veil rule was not retained')
-
-          const manifestPath = 'operations/assets/launch-critical-assets.json'
-          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
-          const authoredIds = new Set(['home-entry-chamber-v1', 'portal-ring-master-v1', 'urai-orb-avatar-v1'])
-          for (const asset of manifest.assets) {
-            if (!authoredIds.has(asset.id)) continue
-            asset.source = 'URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset'
-            asset.license = 'URAI Labs internal proprietary production asset'
-          }
-          fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
-          NODE
-
-      - name: Forge baseline launch candidates
-        run: node scripts/forge-launch-critical-assets.mjs
-
-      - name: Normalize baseline candidates
-        run: node scripts/normalize-launch-critical-assets.mjs
-
-      - name: Author Home Portal and Orb source candidates
-        run: >-
-          node scripts/author-home-finalization-assets.mjs
-          urai-tier1/public/assets/urai/generated/models
-          operations/assets/sources/home-finalization-authored-source-v2.json
-
-      - name: Apply Meshopt production compression without pruning authored scene structure
-        shell: bash
-        run: |
-          set -euo pipefail
-          files=(
-            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
-            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
-            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
-          )
-          for file in "${files[@]}"; do
-            output="${file%.glb}.meshopt.glb"
-            npx --yes @gltf-transform/cli@4.2.1 meshopt "$file" "$output" --level medium
-            mv "$output" "$file"
-          done
-
-      - name: Record exact authored candidate identities
-        run: node scripts/record-home-finalization-authored-candidates.mjs
-
-      - name: Verify authored structure animation and truth boundary
-        run: node scripts/verify-home-finalization-authored-assets.mjs
-
-      - name: Verify full manifest receipts and budgets
-        run: node scripts/verify-launch-critical-assets.mjs
-
-      - name: Independently audit generated formats
-        run: node scripts/audit-launch-critical-artifact.mjs
-
-      - name: Validate selected GLBs
-        shell: bash
-        run: |
-          set -euo pipefail
-          for file in \
-            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb \
-            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
-            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb; do
-            npx --yes @gltf-transform/cli@4.2.1 validate "$file"
-          done
-
-      - name: Classify generated candidate drift without mutating frozen branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/home-finalization-candidate
-          tracked=(
-            urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-            urai-tier1/src/app/spatial-runtime-restoration.css
-            operations/assets/launch-critical-assets.json
-            scripts/author-home-finalization-assets.mjs
-            scripts/record-home-finalization-authored-candidates.mjs
-            scripts/verify-home-finalization-authored-assets.mjs
-            operations/assets/sources/home-finalization-authored-source-v2.json
-            operations/assets/home-finalization-candidate-decisions.json
-            operations/assets/generated-receipts/forge-summary.json
-            operations/assets/generated-receipts/home-entry-chamber-v1.json
-            operations/assets/generated-receipts/portal-ring-master-v1.json
-            operations/assets/generated-receipts/urai-orb-avatar-v1.json
-            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
-            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
-            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
-          )
-          git add -- "${tracked[@]}"
-          if git diff --cached --quiet; then
-            echo 'Authored compressed candidates already match the frozen exact head.'
-            exit 0
-          fi
-
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs'
-          import { execFileSync } from 'node:child_process'
-
-          const files = [
-            'operations/assets/generated-receipts/forge-summary.json',
-            'operations/assets/generated-receipts/home-entry-chamber-v1.json',
-            'operations/assets/generated-receipts/portal-ring-master-v1.json',
-            'operations/assets/generated-receipts/urai-orb-avatar-v1.json',
-          ]
-          const stripVolatile = (value) => {
-            if (Array.isArray(value)) return value.map(stripVolatile)
-            if (!value || typeof value !== 'object') return value
-            return Object.fromEntries(Object.entries(value)
-              .filter(([key]) => key !== 'generatedAt')
-              .map(([key, child]) => [key, stripVolatile(child)]))
-          }
-          for (const path of files) {
-            if (!fs.existsSync(path)) continue
-            let priorText
-            try {
-              priorText = execFileSync('git', ['show', `${process.env.HOME_EXACT_HEAD}:${path}`], { encoding: 'utf8' })
-            } catch {
-              continue
-            }
-            const current = JSON.parse(fs.readFileSync(path, 'utf8'))
-            const prior = JSON.parse(priorText)
-            if (JSON.stringify(stripVolatile(current)) === JSON.stringify(stripVolatile(prior))) {
-              fs.writeFileSync(path, priorText)
-            }
-          }
-          NODE
-
-          git add -- "${tracked[@]}"
-          if git diff --cached --quiet; then
-            echo 'Only volatile generatedAt receipt fields changed; the branch remains frozen.'
-            exit 0
-          fi
-
-          git diff --cached --name-status | tee artifacts/home-finalization-candidate/substantive-drift-files.txt
-          git diff --cached --binary > artifacts/home-finalization-candidate/substantive-candidate-drift.patch
-          echo 'Substantive authored candidate drift requires an explicit reviewed commit. This verification workflow is not permitted to mutate the branch.' >&2
-          exit 1
-
-      - name: Upload authored candidate evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          name: home-finalization-authored-candidates-${{ env.HOME_EXACT_HEAD }}
-          retention-days: 30
-          if-no-files-found: error
-          path: |
-            artifacts/home-finalization-candidate/**
-            urai-tier1/src/app/spatial-runtime-restoration.css
-            operations/assets/launch-critical-assets.json
-            operations/assets/sources/home-finalization-authored-source-v2.json
-            operations/assets/home-finalization-candidate-decisions.json
-            operations/assets/generated-receipts/home-entry-chamber-v1.json
-            operations/assets/generated-receipts/portal-ring-master-v1.json
-            operations/assets/generated-receipts/urai-orb-avatar-v1.json
-            operations/assets/generated-receipts/forge-summary.json
-            urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
-            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
-            urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Apply deterministic V41 production rebuild
+        run: python3 scripts/apply-home-v41-production-rebuild.py
+
+      - name: Verify V41 realism Ground continuity navigation and TypeScript
+        working-directory: urai-tier1
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
+          pnpm exec tsc --noEmit
+
+      - name: Commit materialized V41 candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${HOME_BRANCH}" --jq .object.sha)"
+          test "$current" = "$HOME_EXACT_HEAD"
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git diff --cached --quiet && { echo 'No V41 materialization required.'; exit 0; }
+          git commit -m 'Home: materialize V41 integrated Orb sanctuary rebuild'
+          gh auth setup-git
+          git push origin HEAD:${HOME_BRANCH}
