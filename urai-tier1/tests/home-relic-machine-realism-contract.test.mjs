@@ -8,35 +8,49 @@ const orbEnd = source.indexOf('function HumanPresence', orbStart)
 assert.ok(orbStart >= 0 && orbEnd > orbStart, 'SacredOrb function boundary must remain discoverable')
 const orbSource = source.slice(orbStart, orbEnd)
 
-test('live Home owner is the V40 open apse production sanctuary candidate', () => {
-  assert.match(source, /v40-open-apse-authored-orb-production-candidate/)
-  assert.match(source, /function SanctuaryShellMass/)
+const architectureStart = source.indexOf('function SanctuaryArchitecture')
+const architectureEnd = source.indexOf('function SanctuaryGlazing', architectureStart)
+assert.ok(architectureStart >= 0 && architectureEnd > architectureStart, 'SanctuaryArchitecture function boundary must remain discoverable')
+const architectureSource = source.slice(architectureStart, architectureEnd)
+
+test('live Home owner is the V41 integrated authored-Orb sanctuary candidate', () => {
+  assert.match(source, /v41-integrated-authored-orb-sanctuary-production-candidate/)
   assert.match(source, /function ContinuousVaultSkin/)
-  assert.match(source, /v40-wide-open-rear-apse-no-oversized-wall-slabs/)
-  assert.match(source, /v40-recessed-buttress-outside-hero-sightline/)
-  assert.match(source, /v40-open-machined-apse-liner-no-egg-backplate/)
+  assert.match(source, /v41-asymmetric-recessed-structural-buttresses/)
+  assert.match(source, /v41-separated-recessed-machine-shoulders-no-arch-no-backplate/)
+  assert.match(source, /v41-single-continuous-vault-skin-over-open-center/)
+  assert.doesNotMatch(architectureSource, /<SanctuaryShellMass/)
+  assert.doesNotMatch(architectureSource, /v40-open-apse-authored-orb-production-candidate/)
 })
 
-test('live reliquary is architectural floor-pier-crown structure without a cage or display platform', () => {
-  assert.match(source, /function ReliquarySpine/)
-  assert.match(source, /v40-open-apse-bearing-arch-no-solid-backplate/)
-  assert.match(source, /v40-floor-rooted-tapered-pier-no-bar-cage/)
-  assert.match(source, /v40-continuous-crown-seated-on-tapered-piers/)
-  assert.match(source, /v40-flush-recessed-service-seam-no-platform/)
-  assert.match(source, /v40-floor-piers-crown-without-cage-or-pedestal/)
+test('live reliquary uses a foundation-to-lateral-pier-to-vault load path with an open center', () => {
+  assert.match(source, /v41-foundation-rooted-heavy-lateral-pier/)
+  assert.match(source, /v41-split-vault-shoulders-no-center-bridge/)
+  assert.match(source, /v41-recessed-foundation-sockets-no-platform/)
+  assert.match(source, /v41-open-center-no-spine-no-ring-no-pedestal/)
   assert.match(source, /home-orb-engineered-cradle/)
+  assert.doesNotMatch(source, /<ReliquarySpine\/>/)
 })
 
-test('live Orb makes the governed authored GLB the primary hero and removes procedural placeholder polyhedra/cage bars', () => {
-  assert.match(orbSource, /v40-governed-authored-orb-primary-hero-inside-open-architectural-apse/)
+test('live Orb makes the governed authored GLB the visible hero and removes display/placeholder centerpiece geometry', () => {
+  assert.match(orbSource, /v41-governed-authored-orb-primary-architectural-hero/)
   assert.match(orbSource, /primitive object=\{authoredOrb\}/)
-  assert.match(orbSource, /scale=\{\.072\}/)
-  assert.match(orbSource, /v40-recessed-retention-collar-not-display-cage/)
+  assert.match(orbSource, /scale=\{\.17\}/)
+  assert.match(orbSource, /v41-engineered-reliquary-is-lateral-architecture-no-display-ring/)
   assert.doesNotMatch(orbSource, /RoundedBox/)
+  assert.doesNotMatch(orbSource, /torusGeometry/)
   assert.doesNotMatch(orbSource, /dodecahedronGeometry/)
   assert.doesNotMatch(orbSource, /icosahedronGeometry/)
   assert.doesNotMatch(orbSource, /octahedronGeometry/)
   assert.doesNotMatch(orbSource, /sphereGeometry/)
+})
+
+test('V41 improves literal visual readability and desktop/mobile framing inputs', () => {
+  assert.match(source, /gl\.toneMappingExposure=1\.62/)
+  assert.match(source, /desiredFov=portrait\?58:54/)
+  assert.match(source, /lookHeight=portrait\?1\.72:1\.48/)
+  assert.match(source, /ambientLight intensity=\{0\.64\}/)
+  assert.match(source, /hemisphereLight args=\{\['#c1d8d0','#202a24',0\.88\]\}/)
 })
 
 test('live Home keeps photographic PBR and local HDR environment assets', () => {
