@@ -6,6 +6,7 @@ on:
       - home-final-relic-machine-realism-20260826
     paths:
       - '.github/workflows/launch-forge-dedicated-carry.yml'
+      - 'scripts/apply-launch-forge-dedicated-carry.py'
 
 permissions:
   contents: write
@@ -33,12 +34,16 @@ jobs:
       - name: Syntax check forge
         run: node --check scripts/forge-launch-critical-assets.mjs
 
-      - name: Commit exact successor
+      - name: Commit exact successor only when patch changed forge
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          if git diff --quiet -- scripts/forge-launch-critical-assets.mjs; then
+            echo 'Dedicated-carry boundary is already patched; no successor commit required.'
+            exit 0
+          fi
           current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-relic-machine-realism-20260826" --jq .object.sha)"
           test "$current" = "${GITHUB_SHA}"
           git config user.name 'urai-release-bot'
