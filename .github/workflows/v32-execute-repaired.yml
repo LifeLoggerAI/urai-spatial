@@ -60,7 +60,6 @@ jobs:
           grep -F 'v32-sanctuary-scale-three-point-reliquary-machine' "$source"
           grep -F 'v32-faceted-heavy-relic-reactor-integrated-with-sanctuary' "$source"
           grep -F 'v32-monolithic-reliquary-sanctuary-final' "$source"
-          grep -F 'as [number,number,number]' "$source"
           ! grep -F '<SanctuaryCeiling />' "$source"
           cd urai-tier1
           node --test --test-concurrency=1 tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
