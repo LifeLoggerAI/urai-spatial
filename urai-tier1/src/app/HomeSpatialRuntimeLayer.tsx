@@ -16,7 +16,7 @@ function directHomeSemanticTravel(href: string) {
 
 const HOME_SEMANTIC_DESTINATIONS = {
   ground: { href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent', travelHref: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' },
-  lifeMap: { href: '/life-map/', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete', travelHref: '/life-map/' },
+  lifeMap: { href: '/life-map/', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete', travelHref: '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' },
 } as const
 
 function HomeSemanticNavigation() {
