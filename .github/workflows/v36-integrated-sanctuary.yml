@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: urai-tier1/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
       - name: Apply V36 production transform
         run: python3 scripts/v36-integrated-sanctuary-transform.py
       - name: Install exact lockfile
