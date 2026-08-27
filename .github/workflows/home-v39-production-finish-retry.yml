@@ -72,3 +72,5 @@ jobs:
           git commit -m 'Home: materialize V41 integrated Orb sanctuary rebuild'
           gh auth setup-git
           git push origin HEAD:home-final-v24-certify-20260826
+
+# V41 execution trigger: 2026-08-27T22:17Z
