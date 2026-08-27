@@ -1,0 +1,124 @@
+name: V37 Final Sanctuary Art Rebuild
+
+on:
+  push:
+    branches: [home-final-v24-certify-20260826]
+    paths: ['.github/workflows/v37-final-art-rebuild.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.actor == 'LifeLoggerAI'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Apply V37 production art rebuild
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
+          source = path.read_text()
+          assert 'cinematic-integrated-megalithic-sanctuary-v36' in source
+          assert "v36-sanctuary-bonded-reliquary-machine" in source
+
+          architecture = r'''function SanctuaryShellMass({pack,position,width,height,depth,openingWidth,openingHeight,color='#292e2a'}:{pack:SurfacePack;position:Vec3;width:number;height:number;depth:number;openingWidth:number;openingHeight:number;color?:string}){
+  const geometry=useMemo(()=>{const shape=new THREE.Shape();shape.moveTo(-width/2,-height/2);shape.lineTo(width/2,-height/2);shape.lineTo(width/2,height*0.02);shape.bezierCurveTo(width*.49,height*.28,width*.32,height*.49,0,height/2);shape.bezierCurveTo(-width*.32,height*.49,-width*.49,height*.28,-width/2,height*.02);shape.closePath();const hole=new THREE.Path();hole.moveTo(-openingWidth/2,-openingHeight/2);hole.lineTo(openingWidth/2,-openingHeight/2);hole.lineTo(openingWidth/2,openingHeight*.02);hole.bezierCurveTo(openingWidth*.48,openingHeight*.31,openingWidth*.29,openingHeight*.47,0,openingHeight/2);hole.bezierCurveTo(-openingWidth*.29,openingHeight*.47,-openingWidth*.48,openingHeight*.31,-openingWidth/2,openingHeight*.02);hole.closePath();shape.holes.push(hole);const g=new THREE.ExtrudeGeometry(shape,{depth,steps:1,curveSegments:24,bevelEnabled:true,bevelSegments:5,bevelSize:.12,bevelThickness:.12});g.center();g.computeVertexNormals();return g},[depth,height,openingHeight,openingWidth,width]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <mesh geometry={geometry} position={position as [number,number,number]} castShadow receiveShadow><meshPhysicalMaterial color={color} map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(.44,.44)} roughnessMap={pack.arm} displacementMap={pack.displacement} displacementScale={.009} displacementBias={-.0045} roughness={.8} metalness={.025} clearcoat={.03} clearcoatRoughness={.84} envMapIntensity={.62}/></mesh>
+}
+
+function ContinuousVaultSkin({pack}:{pack:SurfacePack}){
+  const geometry=useMemo(()=>{const sx=32,sz=26,w=12.7,d=11.8,verts:number[]=[],uvs:number[]=[],idx:number[]=[];for(let iz=0;iz<=sz;iz++){const vz=iz/sz,z=3.4-vz*d;for(let ix=0;ix<=sx;ix++){const vx=ix/sx,x=(vx-.5)*w;const arch=Math.pow(Math.abs(x)/(w*.5),1.72);const longitudinal=.13*Math.cos((vz-.42)*Math.PI*1.15);const y=5.02-.94*arch+longitudinal;verts.push(x,y,z);uvs.push(vx,vz)}}for(let iz=0;iz<sz;iz++)for(let ix=0;ix<sx;ix++){const a=iz*(sx+1)+ix,b=a+1,c=a+(sx+1),e=c+1;idx.push(a,c,b,b,c,e)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(idx);g.computeVertexNormals();return g},[]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <mesh geometry={geometry} castShadow receiveShadow userData={{treatment:'v37-continuous-curved-vault-skin-no-ceiling-slabs'}}><meshPhysicalMaterial color="#242a26" map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(.34,.34)} roughnessMap={pack.arm} roughness={.79} metalness={.035} clearcoat={.025} clearcoatRoughness={.86} envMapIntensity={.56} side={THREE.DoubleSide}/></mesh>
+}
+
+function CantedWallMass({pack,side}:{pack:SurfacePack;side:-1|1}){
+  const geometry=useMemo(()=>{const s=side,shape=new THREE.Shape();shape.moveTo(-1.9*s,-2.75);shape.lineTo(1.45*s,-2.75);shape.lineTo(1.78*s,-1.5);shape.lineTo(1.92*s,.62);shape.lineTo(1.36*s,2.48);shape.lineTo(.54*s,2.76);shape.lineTo(-1.56*s,2.34);shape.lineTo(-2.0*s,.32);shape.closePath();const g=new THREE.ExtrudeGeometry(shape,{depth:7.25,steps:1,bevelEnabled:true,bevelSegments:5,bevelSize:.12,bevelThickness:.12});g.center();g.computeVertexNormals();return g},[side]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <mesh geometry={geometry} position={[side*5.75,2.5,-2.15]} rotation={[0,side*-.08,0]} castShadow receiveShadow userData={{treatment:'v37-continuous-canted-bearing-wall'}}><meshPhysicalMaterial color={side<0?'#252b27':'#302d27'} map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(.35,.35)} roughnessMap={pack.arm} roughness={.82} metalness={.03} clearcoat={.02} clearcoatRoughness={.86} envMapIntensity={.54}/></mesh>
+}
+
+function MachineCavityLiner(){
+  const geometry=useMemo(()=>{const shape=new THREE.Shape();shape.moveTo(-4.25,-1.9);shape.lineTo(4.25,-1.9);shape.lineTo(4.08,.85);shape.bezierCurveTo(3.92,1.78,2.48,2.32,0,2.48);shape.bezierCurveTo(-2.48,2.32,-3.92,1.78,-4.08,.85);shape.closePath();const hole=new THREE.Path();hole.moveTo(-3.42,-1.3);hole.lineTo(3.42,-1.3);hole.lineTo(3.32,.62);hole.bezierCurveTo(3.14,1.28,2.04,1.62,0,1.78);hole.bezierCurveTo(-2.04,1.62,-3.14,1.28,-3.32,.62);hole.closePath();shape.holes.push(hole);const g=new THREE.ExtrudeGeometry(shape,{depth:.72,steps:1,curveSegments:18,bevelEnabled:true,bevelSegments:4,bevelSize:.09,bevelThickness:.09});g.center();g.computeVertexNormals();return g},[]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <mesh geometry={geometry} position={[0,2.16,-5.72]} castShadow receiveShadow userData={{treatment:'v37-recessed-machined-cavity-liner'}}><meshPhysicalMaterial color="#101918" roughness={.38} metalness={.62} clearcoat={.07} clearcoatRoughness={.43} envMapIntensity={.82}/></mesh>
+}
+
+function SanctuaryArchitecture(){const pack=useStonePack(.44,.6);return <group name="home-sanctuary-pavilion" userData={{visualOwner:'cinematic-continuous-vault-sanctuary-v37',construction:'continuous-bearing-walls-curved-vault-recessed-reliquary-cavity',visualTreatment:'v37-finished-continuous-sanctuary-candidate'}}>
+  <group name="home-v30-rear-apse" userData={{treatment:'v37-single-deep-rear-shell-with-recessed-machine-bay'}}><SanctuaryShellMass pack={pack} position={[0,3.16,-7.66]} width={14.9} height={6.72} depth={2.24} openingWidth={8.72} openingHeight={4.62}/></group>
+  <group name="home-v30-side-enclosure" userData={{treatment:'v37-asymmetric-continuous-bearing-walls'}}><CantedWallMass pack={pack} side={-1}/><CantedWallMass pack={pack} side={1}/></group>
+  <group name="home-v30-load-bearing-vault" userData={{treatment:'v37-one-continuous-curved-vault-surface'}}><ContinuousVaultSkin pack={pack}/></group>
+  <group name="home-v30-orb-apse-architecture" userData={{treatment:'v37-reliquary-machinery-recessed-into-rear-shell'}}><MachineCavityLiner/></group>
+  <group name="home-v32-depth-envelope" userData={{treatment:'v37-recessed-practical-lighting-and-material-depth'}}><RecessedPractical position={[-5.45,.5,2.0]}/><RecessedPractical position={[5.38,.5,1.12]} warm={false}/><RecessedPractical position={[-5.02,.5,-5.56]} warm={false}/><RecessedPractical position={[4.92,.5,-5.48]}/></group>
+</group>}
+
+function SanctuaryGlazing(){'''
+          source,n=re.subn(r'function SanctuaryShellMass\([\s\S]*?function SanctuaryGlazing\(\)\{',architecture,source,count=1)
+          assert n==1,n
+
+          machine = r'''function TaperedLoadBeam({from,to,width=.42,depth=.34,color='#53655f'}:{from:Vec3;to:Vec3;width?:number;depth?:number;color?:string}){
+  const {mid,quat,length}=useMemo(()=>{const a=new THREE.Vector3(...from),b=new THREE.Vector3(...to),dir=b.clone().sub(a),length=dir.length(),mid=a.clone().add(b).multiplyScalar(.5),quat=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());return{mid,quat,length}},[from,to]);return <mesh position={mid} quaternion={quat} castShadow receiveShadow><cylinderGeometry args={[width*.62,width,length,6,1,false]}/><meshPhysicalMaterial color={color} roughness={.36} metalness={.7} clearcoat={.045} clearcoatRoughness={.42} envMapIntensity={.8}/></mesh>
+}
+
+function ServiceConduit({side}:{side:-1|1}){const geometry=useMemo(()=>{const s=side,curve=new THREE.CatmullRomCurve3([new THREE.Vector3(s*3.35,.62,-.35),new THREE.Vector3(s*3.52,1.55,-.58),new THREE.Vector3(s*3.36,2.74,-.68),new THREE.Vector3(s*2.7,3.38,-.42)]);return new THREE.TubeGeometry(curve,30,.055,8,false)},[side]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <mesh geometry={geometry} castShadow><meshStandardMaterial color={side<0?'#5f8178':'#8a7755'} emissive={side<0?'#173d37':'#3f2e19'} emissiveIntensity={.1} metalness={.74} roughness={.28}/></mesh>}
+
+function ReliquaryWing({side}:{side:-1|1}){
+  const geometry=useMemo(()=>{const s=side,shape=new THREE.Shape();shape.moveTo(.5*s,-1.58);shape.bezierCurveTo(1.2*s,-1.76,2.18*s,-1.38,2.7*s,-.72);shape.bezierCurveTo(3.0*s,-.22,2.96*s,.62,2.56*s,1.28);shape.bezierCurveTo(2.18*s,1.9,1.36*s,2.24,.6*s,2.02);shape.lineTo(.92*s,1.12);shape.bezierCurveTo(1.2*s,.72,1.3*s,-.46,.92*s,-.9);shape.closePath();const g=new THREE.ExtrudeGeometry(shape,{depth:1.34,steps:1,curveSegments:16,bevelEnabled:true,bevelSegments:5,bevelSize:.11,bevelThickness:.11});g.center();g.computeVertexNormals();return g},[side]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <group position={[0,2.0,-.86]} userData={{treatment:'v37-load-bearing-reliquary-wing'}}><mesh geometry={geometry} castShadow receiveShadow><meshPhysicalMaterial color={side<0?'#172824':'#302b23'} roughness={.31} metalness={.73} clearcoat={.07} clearcoatRoughness={.36} envMapIntensity={.9}/></mesh><mesh position={[side*1.86,.17,.76]} rotation={[0,0,side*.08]} castShadow><capsuleGeometry args={[.12,1.42,6,12]}/><meshStandardMaterial color={side<0?'#6f9287':'#9b8762'} emissive={side<0?'#214b43':'#49351f'} emissiveIntensity={.09} metalness={.78} roughness={.26}/></mesh></group>
+}
+
+function CrownBridge(){const geometry=useMemo(()=>{const shape=new THREE.Shape();shape.moveTo(-3.42,-.34);shape.lineTo(-2.8,.2);shape.bezierCurveTo(-1.72,.74,1.72,.74,2.8,.2);shape.lineTo(3.42,-.34);shape.lineTo(2.86,-.72);shape.bezierCurveTo(1.68,-.28,-1.68,-.28,-2.86,-.72);shape.closePath();const g=new THREE.ExtrudeGeometry(shape,{depth:.82,steps:1,curveSegments:18,bevelEnabled:true,bevelSegments:4,bevelSize:.08,bevelThickness:.08});g.center();g.computeVertexNormals();return g},[]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <mesh geometry={geometry} position={[0,4.05,-1.06]} castShadow receiveShadow userData={{treatment:'v37-curved-load-distribution-crown'}}><meshPhysicalMaterial color="#202c29" roughness={.34} metalness={.7} clearcoat={.055} clearcoatRoughness={.4} envMapIntensity={.84}/></mesh>}
+
+function FloorReliquaryBed(){const geometry=useMemo(()=>{const shape=new THREE.Shape();shape.moveTo(-3.7,-2.55);shape.lineTo(-2.45,-3.05);shape.lineTo(2.52,-3.0);shape.lineTo(3.72,-2.5);shape.lineTo(3.18,.1);shape.lineTo(2.3,.62);shape.lineTo(-2.42,.6);shape.lineTo(-3.22,.08);shape.closePath();const g=new THREE.ExtrudeGeometry(shape,{depth:.12,steps:1,bevelEnabled:true,bevelSegments:3,bevelSize:.07,bevelThickness:.05});g.rotateX(-Math.PI/2);g.computeVertexNormals();return g},[]);useEffect(()=>()=>geometry.dispose(),[geometry]);return <group name="home-orb-machine-plinth" userData={{treatment:'v37-flush-floor-integrated-reliquary-bed',visualTreatment:'v37-no-display-platform'}}><mesh geometry={geometry} position={[0,.018,-2.7]} receiveShadow castShadow><meshPhysicalMaterial color="#101716" roughness={.58} metalness={.42} clearcoat={.035} clearcoatRoughness={.55} envMapIntensity={.62}/></mesh><ServiceConduit side={-1}/><ServiceConduit side={1}/></group>}
+
+function OrbPlatform(){return <FloorReliquaryBed/>}
+
+function OrbCradle(){return <group name="home-orb-engineered-cradle" position={[0,0,-3.72]} userData={{treatment:'v37-architectural-reliquary-machine',visualTreatment:'v37-deep-casing-crown-load-beams-floor-bed-service-conduits'}}><ReliquaryWing side={-1}/><ReliquaryWing side={1}/><CrownBridge/><TaperedLoadBeam from={[-3.0,.46,-.86]} to={[-1.92,1.18,-.28]} width={.46} color="#425a53"/><TaperedLoadBeam from={[3.0,.46,-.86]} to={[1.92,1.18,-.28]} width={.46} color="#6f6047"/><TaperedLoadBeam from={[-3.15,3.36,-.9]} to={[-2.25,3.08,-.3]} width={.38} color="#4d675f"/><TaperedLoadBeam from={[3.15,3.36,-.9]} to={[2.25,3.08,-.3]} width={.38} color="#78684d"/></group>}
+
+function SacredOrb({state,reducedMotion,onOpen}:{state:OrbState;reducedMotion:boolean;onOpen:()=>void}){
+  const root=useRef<THREE.Group>(null),authoredCore=useRef<THREE.Group>(null),activeAction=useRef<THREE.AnimationAction|null>(null);const orb=useGLTF(ORB_MODEL);const authoredOrb=useMemo(()=>cloneOrbModel(orb.scene),[orb.scene]);const {actions}=useAnimations(orb.animations,authoredOrb);const sensory=useMemo(()=>resolveOrbSensoryOutput(state,reducedMotion,true),[state,reducedMotion]);useEffect(()=>{const allActions=Object.values(actions).filter((action):action is THREE.AnimationAction=>Boolean(action));if(reducedMotion){allActions.forEach((action)=>action.stop());activeAction.current=null;return}const next=actions[ORB_CLIPS[state]];if(!next)return;const previous=activeAction.current;if(previous&&previous!==next)previous.fadeOut(.2);next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.2).play();activeAction.current=next},[actions,reducedMotion,state]);useEffect(()=>()=>{Object.values(actions).forEach((action)=>action?.stop())},[actions]);useFrame(({clock})=>{if(!root.current)return;root.current.rotation.y=reducedMotion?0:Math.sin(clock.elapsedTime*.12)*.018;root.current.position.y=ORB.y;if(authoredCore.current)authoredCore.current.scale.setScalar(.035)});const stateColor=state==='warning'?'#d29a65':state==='thinking'||state==='reflecting'?'#99a5d4':'#83d5cb';const intensity=state==='speaking'?1.18:state==='listening'?1.04:.88;return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event)=>{event.stopPropagation();onOpen()}} userData={{orbState:state,animation:sensory.animation,modelClip:ORB_CLIPS[state],runtimeAsset:ORB_MODEL,treatment:'v37-large-faceted-memory-heart-inside-load-bearing-reliquary'}}><group ref={authoredCore} scale={.035} name="home-orb-authored-core"><primitive object={authoredOrb} visible={false}/></group><group name="home-orb-engineered-body" rotation={[.03,.12,-.02]}>
+    <mesh scale={[1.05,1.42,.92]} castShadow receiveShadow><octahedronGeometry args={[1.02,1]}/><meshPhysicalMaterial color="#15231f" emissive={stateColor} emissiveIntensity={intensity*.025} roughness={.31} metalness={.68} clearcoat={.18} clearcoatRoughness={.3} envMapIntensity={.94}/></mesh>
+    <mesh scale={[.58,.78,.5]} rotation={[.18,.38,.08]}><icosahedronGeometry args={[.92,0]}/><meshPhysicalMaterial color="#29443d" emissive={stateColor} emissiveIntensity={intensity*.23} roughness={.22} metalness={.4} transmission={.035} transparent opacity={.86} clearcoat={.3} clearcoatRoughness={.24}/></mesh>
+    <mesh scale={[.3,.42,.27]} rotation={[-.1,-.2,.18]}><dodecahedronGeometry args={[.9,0]}/><meshStandardMaterial color={stateColor} emissive={stateColor} emissiveIntensity={intensity*.54} metalness={.32} roughness={.3}/></mesh>
+    <TaperedLoadBeam from={[-1.78,.74,-.18]} to={[-.8,.42,-.04]} width={.24} color="#5a756d"/><TaperedLoadBeam from={[1.78,.58,-.18]} to={ [.8,.3,-.04]} width={.24} color="#837151"/>
+  </group><pointLight color={stateColor} intensity={intensity*.5} distance={5.8} decay={2}/></group>
+}
+
+function HumanPresence'''
+          source,n=re.subn(r'function MachineLink\([\s\S]*?function HumanPresence',machine,source,count=1)
+          assert n==1,n
+          source=source.replace("cinematic-pbr-v36-integrated-megalithic-reliquary-sanctuary","cinematic-pbr-v37-continuous-vault-reliquary-sanctuary")
+          source=source.replace("v36-integrated-megalithic-reliquary-sanctuary-candidate","v37-continuous-vault-reliquary-sanctuary-candidate")
+          source=source.replace("v36-retained-pixel-candidate","v37-retained-pixel-candidate")
+          source=source.replace("camera.fov=size.height>size.width?62:56","camera.fov=size.height>size.width?66:60")
+          source=source.replace("camera.position.set(0.58,1.64,6.86);camera.lookAt(0,1.38,-2.15)","camera.position.set(1.15,1.68,6.98);camera.lookAt(0,1.65,-3.2)")
+          path.write_text(source)
+          PY
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Verify current Home contracts
+        working-directory: urai-tier1
+        run: node --import tsx --test tests/aaa-presentation-convergence-contract.test.mjs tests/aaa-spatial-world-upgrade.test.mjs tests/aaa-world-artifact-contract.test.mjs
+      - name: Verify TypeScript
+        run: pnpm typecheck
+      - name: Verify production static build
+        run: pnpm build:static
+      - name: Commit V37 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Home: rebuild final V37 sanctuary reliquary art"
+          git push origin HEAD:home-final-v24-certify-20260826
