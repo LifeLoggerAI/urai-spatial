@@ -1,4 +1,4 @@
-name: Home V40 Production Rebuild
+name: Home V41 Production Rebuild
 
 on:
   workflow_dispatch:
@@ -8,12 +8,11 @@ on:
     paths:
       - '.github/workflows/home-v39-production-finish-retry.yml'
 
-# Retrigger V40 after aligning the Ground filter assertion with the deterministic transform output.
 permissions:
   contents: write
 
 concurrency:
-  group: home-v40-production-rebuild
+  group: home-v41-production-rebuild
   cancel-in-progress: true
 
 jobs:
@@ -48,17 +47,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Apply V40 production rebuild
-        run: python3 scripts/apply-home-ground-v40-production-rebuild.py
+      - name: Apply V41 production rebuild
+        run: python3 scripts/apply-home-v41-production-rebuild.py
 
-      - name: Verify V40 realism, Ground continuity, navigation, and TypeScript
+      - name: Verify V41 realism, Ground continuity, navigation, and TypeScript
         working-directory: urai-tier1
         run: |
           set -euo pipefail
           node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
           pnpm exec tsc --noEmit
 
-      - name: Commit materialized V40 candidate
+      - name: Commit materialized V41 candidate
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -68,8 +67,8 @@ jobs:
           test "$current" = "${GITHUB_SHA}"
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx
-          git diff --cached --quiet && { echo 'No V40 materialization required.'; exit 0; }
-          git commit -m 'Home Ground: materialize V40 production rebuild'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git diff --cached --quiet && { echo 'No V41 materialization required.'; exit 0; }
+          git commit -m 'Home: materialize V41 integrated Orb sanctuary rebuild'
           gh auth setup-git
           git push origin HEAD:home-final-v24-certify-20260826
