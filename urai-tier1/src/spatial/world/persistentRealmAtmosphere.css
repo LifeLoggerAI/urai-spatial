@@ -110,7 +110,7 @@
 }
 
 
-/* V34 Home owns its physical sky/fog; suppress shared screen-space horizon bars. */
+/* V35 Home owns its physical sky/fog; suppress shared screen-space horizon bars. */
 .urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon,
 .urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__threshold {
   opacity: 0;
