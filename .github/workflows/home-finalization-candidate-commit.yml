@@ -5,15 +5,14 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
-      - 'scripts/apply-home-v41-production-rebuild.py'
-      - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
+      - 'scripts/apply-ground-v41-production-finish.py'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: home-v41-pr-materializer-${{ github.event.pull_request.number || github.ref_name }}
+  group: ground-v41-pr-materializer-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -30,7 +29,7 @@ jobs:
       HOME_BRANCH: home-final-v24-certify-20260826
       HOME_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Check out exact V41 authoring head
+      - name: Check out exact Ground V41 authoring head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.HOME_EXACT_HEAD }}
@@ -64,17 +63,17 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Apply deterministic V41 production rebuild
-        run: python3 scripts/apply-home-v41-production-rebuild.py
+      - name: Apply deterministic Ground V41 repair
+        run: python3 scripts/apply-ground-v41-production-finish.py
 
-      - name: Verify V41 realism Ground continuity navigation and TypeScript
+      - name: Verify Ground V41 visual invariants and release contracts
         working-directory: urai-tier1
         run: |
           set -euo pipefail
-          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-ground-lifemap-art-bible-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs tests/embodied-exploration-contract.test.mjs
           pnpm exec tsc --noEmit
 
-      - name: Commit materialized V41 candidate
+      - name: Commit materialized Ground V41 candidate
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -84,8 +83,8 @@ jobs:
           test "$current" = "$HOME_EXACT_HEAD"
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          git diff --cached --quiet && { echo 'No V41 materialization required.'; exit 0; }
-          git commit -m 'Home: materialize V41 integrated Orb sanctuary rebuild'
+          git add urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/spatial/world/persistentRealmAtmosphere.css urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs
+          git diff --cached --quiet && { echo 'No Ground V41 materialization required.'; exit 0; }
+          git commit -m 'Ground: materialize V41 seam and readability repair'
           gh auth setup-git
           git push origin HEAD:${HOME_BRANCH}
