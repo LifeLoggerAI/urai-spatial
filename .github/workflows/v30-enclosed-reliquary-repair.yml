@@ -1,0 +1,66 @@
+name: V30 Enclosed Reliquary Repair
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/v30-enclosed-reliquary-repair.yml'
+      - 'scripts/apply-v30-enclosed-reliquary.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v30-enclosed-reliquary-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact staging head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Apply substantive V30 sanctuary and Orb implementation
+        run: python3 scripts/apply-v30-enclosed-reliquary.py
+
+      - name: Verify V30 source authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
+          grep -F 'v30-enclosed-authored-sanctuary-no-test-pavilion' "$source"
+          grep -F 'v30-heavy-vault-ribs-terminate-into-shell' "$source"
+          grep -F 'v30-sanctuary-built-around-orb-reliquary' "$source"
+          grep -F 'v30-armored-socket-clamps-collars-conduits-no-center-stem' "$source"
+          grep -F 'v30-armored-relic-machine-integrated-with-sanctuary' "$source"
+          grep -F 'v30-three-authored-expansion-seams-no-grid-read' "$source"
+          grep -F 'v30-threshold-chamber-integrated-with-rear-apse' "$source"
+          ! grep -F 'v29-curved-load-arms-contact-orb-no-pedestal-stem' "$source"
+
+      - name: Run focused Home runtime contracts
+        working-directory: urai-tier1
+        run: node --test --test-concurrency=1 tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
+
+      - name: Commit clean V30 successor if branch is unchanged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-v24-certify-20260826" --jq .object.sha)"
+          test "$current" = "${GITHUB_SHA}"
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git rm .github/workflows/v30-enclosed-reliquary-repair.yml scripts/apply-v30-enclosed-reliquary.py
+          git commit -m 'Implement V30 enclosed sanctuary reliquary art'
+          gh auth setup-git
+          git push origin HEAD:home-final-v24-certify-20260826
