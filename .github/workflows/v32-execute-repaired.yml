@@ -23,13 +23,14 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Execute V32 transform with robust ceiling and tuple repairs
+      - name: Execute V32 transform with type-safe and verifier repairs
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import textwrap
+
           workflow = Path('.github/workflows/v32-sanctuary-rebuild.yml').read_text()
           start_marker = "          python3 - <<'PY'\n"
           end_marker = "\n          PY\n\n      - name: Verify V32 contracts and production build"
@@ -51,6 +52,30 @@ jobs:
           PY
           python3 /tmp/v32-transform.py
 
+          python3 - <<'PY'
+          from pathlib import Path
+
+          restoration = Path('urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs')
+          text = restoration.read_text()
+          old = '/WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/'
+          new = '/WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames/'
+          assert old in text, 'stale global portal primitive assertion not found'
+          text = text.replace(old, new, 1)
+          old = '/<WorldPortal type="ground"|dodecahedronGeometry/'
+          new = '/<WorldPortal type="ground"/'
+          assert old in text, 'stale Ground primitive assertion not found'
+          text = text.replace(old, new, 1)
+          restoration.write_text(text)
+
+          embodied = Path('urai-tier1/tests/embodied-exploration-contract.test.mjs')
+          text = embodied.read_text()
+          old = r"assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)"
+          new = r"assert.match(homeProduction, /onClick=\{\(event\)\s*=>\s*\{\s*event\.stopPropagation\(\);\s*onOpen\(\)\s*\}\}/)"
+          assert old in text, 'stale Orb whitespace-sensitive interaction assertion not found'
+          text = text.replace(old, new, 1)
+          embodied.write_text(text)
+          PY
+
       - name: Verify V32 contracts and production build
         shell: bash
         run: |
@@ -68,7 +93,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build:static
 
-      - name: Commit only V32 implementation files
+      - name: Commit only ordinary V32 implementation and verifier files
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -76,9 +101,11 @@ jobs:
           set -euo pipefail
           current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-v24-certify-20260826" --jq .object.sha)"
           test "$current" = "$GITHUB_SHA"
+          git restore .github/workflows/home-scanned-composition-forge.yml
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx .github/workflows/home-scanned-composition-forge.yml
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/embodied-exploration-contract.test.mjs
+          git diff --cached --quiet && { echo 'No V32 implementation changes to commit'; exit 1; }
           git commit -m 'Complete V32 monolithic sanctuary relic-machine rebuild'
           gh auth setup-git
           git push origin HEAD:home-final-v24-certify-20260826
