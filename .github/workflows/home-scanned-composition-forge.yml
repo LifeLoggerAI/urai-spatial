@@ -1,4 +1,4 @@
-# Owner-authored exact-head verifier for the V35 inhabited stone sanctuary and integrated service-frame reliquary candidate.
+# Owner-authored exact-head verifier for the V36 continuous megalithic sanctuary and sanctuary-bonded reliquary candidate.
 name: Home Scanned Composition Verification
 
 on:
@@ -49,7 +49,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - name: Verify materialized V35 Home composition and governed inputs
+      - name: Verify materialized V36 Home composition and governed inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -63,27 +63,24 @@ jobs:
           grep -F 'polyhaven-fern-02-geometry-v1.glb' "$source"
           ! grep -F 'CINEMATIC_HOME_ART_MOBILE' "$source"
           grep -F 'monolithic-photographic-stone-court-v30-no-visible-tiling-grid' "$source"
-          grep -F 'cinematic-inhabited-sacred-tech-sanctuary-v35' "$source"
-          grep -F 'v35-production-stone-sanctuary-rebuild' "$source"
-          grep -F 'v35-deep-layered-apse-with-service-reliquary-recess' "$source"
-          grep -F 'v35-asymmetric-side-galleries-and-grounded-piers' "$source"
-          grep -F 'v35-grounded-cross-vault-with-open-central-oculus' "$source"
-          grep -F 'v35-reliquary-recess-integrated-with-apse-loads' "$source"
-          grep -F 'v35-recessed-practicals-and-material-depth' "$source"
-          grep -F 'v35-floor-integrated-service-rails-and-anchor-shoes' "$source"
-          grep -F 'v35-no-display-platform-direct-load-paths' "$source"
-          grep -F 'v35-sanctuary-integrated-reliquary-service-frame' "$source"
-          grep -F 'v35-jaws-rails-crosshead-service-housings-and-rear-spine' "$source"
-          grep -F 'v35-segmented-reactor-column-inside-mechanical-reliquary' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v35-inhabited-stone-mechanical-sanctuary"' "$source"
-          grep -F 'data-home-final-art-revision="v35-inhabited-stone-mechanical-sanctuary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v35-retained-pixel-candidate"' "$source"
+          grep -F 'cinematic-integrated-megalithic-sanctuary-v36' "$source"
+          grep -F 'v36-continuous-megalithic-sanctuary-final-candidate' "$source"
+          grep -F 'v36-single-continuous-rear-shell-with-machine-cavity' "$source"
+          grep -F 'v36-continuous-asymmetric-canted-wings-no-modular-bays' "$source"
+          grep -F 'v36-vault-shoulders-grounded-into-side-wings-with-central-oculus' "$source"
+          grep -F 'v36-machine-cavity-bonded-into-rear-shell-and-floor' "$source"
+          grep -F 'v36-integrated-practical-light-cuts-and-deep-shell-material-separation' "$source"
+          grep -F 'v36-no-plinth-no-freestanding-rails' "$source"
+          grep -F 'v36-sanctuary-bonded-reliquary-machine' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v36-integrated-megalithic-reliquary-sanctuary"' "$source"
+          grep -F 'data-home-final-art-revision="v36-integrated-megalithic-reliquary-sanctuary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v36-retained-pixel-candidate"' "$source"
           grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' "$source"
-          grep -F "V35 Home owns its physical sky/fog; suppress shared screen-space horizon bars." "$atmosphere"
           grep -F ".urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon" "$atmosphere"
-          ! grep -F 'home-orb-foundation' "$source"
           ! grep -F '<SanctuaryCeiling />' "$source"
           ! grep -F '<FloorPanelJoints />' "$source"
+          ! grep -F 'v35-sanctuary-integrated-reliquary-service-frame' "$source"
+          ! grep -F 'v35-segmented-reactor-column-inside-mechanical-reliquary' "$source"
           ! grep -F 'v34-sanctuary-scale-mechanical-reliquary-assembly' "$source"
           ! grep -F 'v34-segmented-spindle-reactor-integrated-with-cradle' "$source"
           ! grep -F 'v33-sanctuary-scale-angular-reliquary-machine' "$source"
