@@ -132,7 +132,7 @@ test('Ground is one embodied cinematic infrastructure world', () => {
   assert.match(groundOwner, /<hemisphereLight args=\{\["#f0faf5", "#283b38", 1\.34\]\}/)
   assert.match(groundOwner, /<directionalLight position=\{\[9, 18, 12\]\} intensity=\{4\.35\}/)
   assert.match(groundOwner, /<Vignette eskil=\{false\} offset=\{0\.12\} darkness=\{0\.018\}/)
-  assert.match(groundOwner, /brightness\(1\.1\)/)
+  assert.match(groundOwner, /brightness\(1\.06\)/)
   assert.match(groundOwner, /infrastructure-hub[^\n]*__horizon[^\n]*opacity:0!important/)
   assert.match(groundOwner, /camera=\{\{ position: \[0, 8\.8, 25\], fov: 52/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
