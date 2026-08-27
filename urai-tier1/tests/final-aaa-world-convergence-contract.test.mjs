@@ -62,7 +62,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,listener\)/)
   assert.match(homeProduction, /data-home-orb-state=\{orbState\}/)
   assert.match(homeProduction, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState,reducedMotion,true\)\.animation\}/)
-  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
+  assert.match(homeProduction, /onClick=\{\(event\)\s*=>\s*\{\s*event\.stopPropagation\(\);\s*onOpen\(\)\s*\}\}/)
   assert.match(homeProduction, /const ORB_MODEL = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
   assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeProduction, /name="home-life-map-physical-portal"/)
