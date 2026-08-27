@@ -8,8 +8,8 @@ const orbEnd = source.indexOf('function HumanPresence', orbStart)
 assert.ok(orbStart >= 0 && orbEnd > orbStart, 'SacredOrb function boundary must remain discoverable')
 const orbSource = source.slice(orbStart, orbEnd)
 
-test('live Home owner is the V38 integrated machine sanctuary candidate', () => {
-  assert.match(source, /v38-integrated-machine-sanctuary-production-candidate/)
+test('live Home owner is the current integrated production sanctuary candidate', () => {
+  assert.match(source, /v39-authored-core-load-path-sanctuary-production-candidate/)
   assert.match(source, /function SanctuaryShellMass/)
   assert.match(source, /function ContinuousVaultSkin/)
   assert.match(source, /function CantedWallMass/)
@@ -18,20 +18,22 @@ test('live Home owner is the V38 integrated machine sanctuary candidate', () => 
 
 test('live reliquary carries loads from floor through piers into the vault crown', () => {
   assert.match(source, /function ReliquarySpine/)
-  assert.match(source, /v38-floor-to-vault-load-bearing-reliquary-pier/)
-  assert.match(source, /v38-structural-vault-crown/)
-  assert.match(source, /v38-recessed-floor-service-integration-no-plinth/)
-  assert.match(source, /v38-recessed-service-trunk/)
+  assert.match(source, /v39-recessed-bearing-machine-spine/)
+  assert.match(source, /v39-floor-to-vault-bearing-pier-no-floating-jaw/)
+  assert.match(source, /v39-structural-vault-crown-direct-pier-bearing/)
+  assert.match(source, /v39-recessed-floor-service-trench-no-plinth/)
+  assert.match(source, /v39-direct-floor-pier-crown-bearing-frame/)
   assert.match(source, /home-orb-engineered-cradle/)
 })
 
-test('live Orb is a recessed armored memory core instead of a pedestal sphere or spindle', () => {
-  assert.match(orbSource, /v38-recessed-armored-memory-core-inside-load-bearing-reliquary/)
-  assert.match(orbSource, /dodecahedronGeometry/)
-  assert.match(orbSource, /icosahedronGeometry/)
-  assert.match(orbSource, /octahedronGeometry/)
+test('live Orb uses the governed authored core inside an armored machine instead of procedural placeholder polyhedra', () => {
+  assert.match(orbSource, /v39-governed-authored-core-inside-load-bearing-reliquary/)
+  assert.match(orbSource, /primitive object=\{authoredOrb\}/)
+  assert.match(orbSource, /home-orb-engineered-body/)
+  assert.doesNotMatch(orbSource, /dodecahedronGeometry/)
+  assert.doesNotMatch(orbSource, /icosahedronGeometry/)
+  assert.doesNotMatch(orbSource, /octahedronGeometry/)
   assert.doesNotMatch(orbSource, /sphereGeometry/)
-  assert.doesNotMatch(orbSource, /cylinderGeometry/)
 })
 
 test('live Home keeps photographic PBR and local HDR environment assets', () => {
