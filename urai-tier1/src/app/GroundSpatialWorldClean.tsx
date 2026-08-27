@@ -36,9 +36,9 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(0.82);
-    clone.emissive.set("#030807");
-    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, 0.035);
+    clone.color.multiplyScalar(1.06);
+    clone.emissive.set("#07110f");
+    clone.emissiveIntensity = Math.max(Math.min(clone.emissiveIntensity, 0.08), 0.035);
     clone.roughness = Math.max(clone.roughness, 0.64);
     clone.metalness = Math.min(clone.metalness, 0.2);
     clone.envMapIntensity = 0.95;
@@ -227,8 +227,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     });
 
     const portrait = size.height > size.width;
-    const distance = portrait ? 8.6 : 8.8;
-    const height = portrait ? 2.18 : 2.72;
+    const distance = portrait ? 7.45 : 7.8;
+    const height = portrait ? 2.08 : 2.34;
     cameraOffset.current.set(0, height + pitch.current * 0.72, distance).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     desired.current.copy(position.current).add(cameraOffset.current);
     camera.position.lerp(desired.current, 1 - Math.pow(0.0018, delta));
@@ -238,7 +238,7 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     } else {
       forward.current.set(0, 0, -12.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
       lookAt.current.copy(position.current).add(forward.current);
-      lookAt.current.y = 1.25 + pitch.current;
+      lookAt.current.y = 1.48 + pitch.current;
     }
     camera.lookAt(lookAt.current);
 
@@ -271,24 +271,24 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
-      <color attach="background" args={["#202d2d"]} />
-      <fogExp2 attach="fog" args={["#202d2d", 0.018]} />
-      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.82} />
-      <ambientLight intensity={0.78} color="#e2f4ef" />
-      <hemisphereLight args={["#f0faf5", "#283b38", 1.34]} />
-      <directionalLight position={[9, 18, 12]} intensity={4.35} color="#ffe0b1" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-11, 9, -8]} intensity={0.9} color="#9edcff" />
-      <pointLight position={[0, 4.2, -1]} intensity={3.2} distance={24} decay={2} color="#ffc479" />
-      <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
-      <pointLight position={[-8.2, 3.4, -23]} intensity={1.4} distance={22} decay={2} color="#cabdff" />
+      <color attach="background" args={["#263937"]} />
+      <fogExp2 attach="fog" args={["#263937", 0.026]} />
+      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={1.12} />
+      <ambientLight intensity={1.08} color="#eaf8f3" />
+      <hemisphereLight args={["#f5fff9", "#324b46", 1.72]} />
+      <directionalLight position={[9, 18, 12]} intensity={5.15} color="#ffe6bd" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[-11, 9, -8]} intensity={1.2} color="#a9e4ff" />
+      <pointLight position={[0, 4.6, -2]} intensity={4.1} distance={24} decay={2} color="#ffc479" />
+      <pointLight position={[7.5, 3.4, -15]} intensity={2.15} distance={22} decay={2} color="#8fe5ff" />
+      <pointLight position={[-8.2, 3.8, -23]} intensity={1.95} distance={22} decay={2} color="#cabdff" />
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v40-continuous-architectural-underfloor" userData={{treatment:"v40-continuous-floor-removes-floating-island-edge"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#202822" roughness={0.9} metalness={0.025} clearcoat={0.025} clearcoatRoughness={0.88} envMapIntensity={0.72}/></mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
       <ArchitecturalRouteLighting activeId={activeId} />
       <EffectComposer multisampling={0}>
-        <Bloom intensity={0.17} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
-        <Vignette eskil={false} offset={0.12} darkness={0.018} />
+        <Bloom intensity={0.14} luminanceThreshold={0.86} luminanceSmoothing={0.2} mipmapBlur />
+        <Vignette eskil={false} offset={0.08} darkness={0.004} />
       </EffectComposer>
     </>
   );
@@ -337,7 +337,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v40-continuous-floor-hdr-fog-no-screen-space-band"
+      data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
       data-ground-ready={ready ? "true" : "false"}
@@ -348,13 +348,13 @@ export default function GroundSpatialWorldClean() {
       <Canvas
         shadows
         dpr={[1, 1.3]}
-        camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
+        camera={{ position: [0, 7.2, 22], fov: 56, near: 0.08, far: 180 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x102b38, 1);
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.72;
+          gl.toneMappingExposure = 1.96;
           setReady(true);
         }}
       >
@@ -400,7 +400,7 @@ export default function GroundSpatialWorldClean() {
 
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
-        .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.04) contrast(1.01) brightness(1.06)}
+        .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.06) contrast(1.015) brightness(1.14)}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
         .ground-brand strong{font:650 12px/1.25 system-ui;letter-spacing:.01em;color:rgba(244,251,252,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

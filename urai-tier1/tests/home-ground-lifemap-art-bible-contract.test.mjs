@@ -12,11 +12,12 @@ const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
+const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
-const groundGraph = `${groundOwner}\n${groundModel}`
+const groundGraph = `${groundOwner}\n${groundModel}\n${atmosphereCss}`
 
 test('Home is one coherent authored Sacred-Tech 3D environment with final physical assets', () => {
   for (const marker of [
@@ -92,9 +93,9 @@ test('Ground is one embodied cinematic infrastructure world', () => {
   for (const marker of [
     'data-ground-visual-owner="shared-continuity-architecture"',
     'data-ground-no-compositing-bands="true"',
-    'data-ground-compositing-treatment="v40-continuous-floor-hdr-fog-no-screen-space-band"',
-    'ground-v40-continuous-architectural-underfloor',
-    'v40-continuous-floor-removes-floating-island-edge',
+    'data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"',
+    'ground-v41-continuous-architectural-underfloor',
+    'v41-depth-fog-continuity-no-horizontal-band',
     'data-ground-exploration="walkable"',
     'data-ground-pointer-lock="false"',
     'data-ground-destination',
@@ -124,17 +125,20 @@ test('Ground is one embodied cinematic infrastructure world', () => {
   assert.match(groundOwner, /min-height:48px/)
   assert.match(groundOwner, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
   assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(groundOwner, /<color attach="background" args=\{\["#202d2d"\]\} \/>/)
-  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#202d2d", 0\.018\]\}/)
-  assert.match(groundOwner, /<Environment files="\/assets\/urai\/home-production\/cc0\/environment\/studio-small-08-1k\.hdr" background=\{false\} environmentIntensity=\{0\.82\}/)
-  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.72/)
-  assert.match(groundOwner, /<ambientLight intensity=\{0\.78\}/)
-  assert.match(groundOwner, /<hemisphereLight args=\{\["#f0faf5", "#283b38", 1\.34\]\}/)
-  assert.match(groundOwner, /<directionalLight position=\{\[9, 18, 12\]\} intensity=\{4\.35\}/)
-  assert.match(groundOwner, /<Vignette eskil=\{false\} offset=\{0\.12\} darkness=\{0\.018\}/)
-  assert.match(groundOwner, /brightness\(1\.06\)/)
+  assert.match(groundOwner, /<color attach="background" args=\{\["#263937"\]\} \/>/)
+  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#263937", 0\.026\]\}/)
+  assert.match(groundOwner, /<Environment files="\/assets\/urai\/home-production\/cc0\/environment\/studio-small-08-1k\.hdr" background=\{false\} environmentIntensity=\{1\.12\}/)
+  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.96/)
+  assert.match(groundOwner, /<ambientLight intensity=\{1\.08\}/)
+  assert.match(groundOwner, /<hemisphereLight args=\{\["#f5fff9", "#324b46", 1\.72\]\}/)
+  assert.match(groundOwner, /<directionalLight position=\{\[9, 18, 12\]\} intensity=\{5\.15\}/)
+  assert.match(groundOwner, /<Vignette eskil=\{false\} offset=\{0\.08\} darkness=\{0\.004\}/)
+  assert.match(groundOwner, /brightness\(1\.14\)/)
   assert.match(groundOwner, /infrastructure-hub[^\n]*__horizon[^\n]*opacity:0!important/)
-  assert.match(groundOwner, /camera=\{\{ position: \[0, 8\.8, 25\], fov: 52/)
+  assert.match(atmosphereCss, /V41 Ground owns physical fog and depth/)
+  assert.match(atmosphereCss, /infrastructure-hub[^}]*__horizon,[\s\S]*display: none !important/)
+  assert.match(groundOwner, /clone\.color\.multiplyScalar\(1\.06\)/)
+  assert.match(groundOwner, /camera=\{\{ position: \[0, 7\.2, 22\], fov: 56/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
   assert.doesNotMatch(groundGraph, /assetCssStack\(groundAssets\.|ground-authored-art|--ground-provider-/)
 })
