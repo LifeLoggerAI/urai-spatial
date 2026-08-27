@@ -1,0 +1,55 @@
+name: Home V39 Production Finish Retry
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/home-v39-production-finish-retry.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-v39-production-finish-retry
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact owner-authored head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Apply V39 production finish
+        run: python3 scripts/apply-home-v39-production-finish.py
+
+      - name: Verify V39 realism, Ground, and TypeScript contracts
+        working-directory: urai-tier1
+        run: |
+          set -euo pipefail
+          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs
+          pnpm exec tsc --noEmit
+
+      - name: Commit materialized V39 candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-v24-certify-20260826" --jq .object.sha)"
+          test "$current" = "${GITHUB_SHA}"
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx
+          git diff --cached --quiet && { echo 'No V39 materialization required.'; exit 0; }
+          git commit -m 'Home: materialize V39 authored-core production finish'
+          gh auth setup-git
+          git push origin HEAD:home-final-v24-certify-20260826
