@@ -92,6 +92,7 @@ test('Ground is one embodied cinematic infrastructure world', () => {
   for (const marker of [
     'data-ground-visual-owner="shared-continuity-architecture"',
     'data-ground-no-compositing-bands="true"',
+    'data-ground-compositing-treatment="v39-screen-space-band-suppressed"',
     'data-ground-exploration="walkable"',
     'data-ground-pointer-lock="false"',
     'data-ground-destination',
@@ -121,12 +122,16 @@ test('Ground is one embodied cinematic infrastructure world', () => {
   assert.match(groundOwner, /min-height:48px/)
   assert.match(groundOwner, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
   assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(groundOwner, /<color attach="background" args=\{\["#102b38"\]\} \/>/)
-  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#173843", 0\.012\]\}/)
-  assert.match(groundOwner, /gl\.setClearColor\(0x102b38, 1\)/)
-  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.35/)
+  assert.match(groundOwner, /<color attach="background" args=\{\["#173a43"\]\} \/>/)
+  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#244b50", 0\.0075\]\}/)
+  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.72/)
+  assert.match(groundOwner, /<ambientLight intensity=\{0\.78\}/)
+  assert.match(groundOwner, /<hemisphereLight args=\{\["#f0faf5", "#283b38", 1\.34\]\}/)
+  assert.match(groundOwner, /<directionalLight position=\{\[9, 18, 12\]\} intensity=\{4\.35\}/)
+  assert.match(groundOwner, /<Vignette eskil=\{false\} offset=\{0\.08\} darkness=\{0\.035\}/)
+  assert.match(groundOwner, /brightness\(1\.06\)/)
+  assert.match(groundOwner, /infrastructure-hub[^\n]*__horizon[^\n]*opacity:0!important/)
   assert.match(groundOwner, /camera=\{\{ position: \[0, 8\.8, 25\], fov: 52/)
-  assert.match(groundOwner, /\.ground-spatial-root\{[^}]*background:#102b38/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
   assert.doesNotMatch(groundGraph, /assetCssStack\(groundAssets\.|ground-authored-art|--ground-provider-/)
 })
