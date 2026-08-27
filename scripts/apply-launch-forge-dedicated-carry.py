@@ -12,7 +12,7 @@ for (const asset of manifest.assets) {
   fs.writeFileSync(absolutePath, payload)
   const receipt = buildReceipt(asset, absolutePath, payload)
   const receiptPath = path.join(receiptRoot, `${asset.id}.json`)
-  fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\\n')
+  fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n')
   generated.push(receipt)
   console.log(`${asset.id}: ${receipt.bytes} bytes ${receipt.sha256}`)
 }
@@ -46,12 +46,19 @@ for (const asset of manifest.assets) {
   const payload = generator()
   fs.writeFileSync(absolutePath, payload)
   const receipt = buildReceipt(asset, absolutePath, payload)
-  fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\\n')
+  fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2) + '\n')
   generated.push(receipt)
   console.log(`${asset.id}: ${receipt.bytes} bytes ${receipt.sha256}`)
 }
 """
-if text.count(old) != 1:
-    raise SystemExit(f'expected one launch forge loop, found {text.count(old)}')
+
+old_count = text.count(old)
+new_count = text.count(new)
+if new_count == 1 and old_count == 0:
+    print('LAUNCH_FORGE_DEDICATED_CARRY_ALREADY_PATCHED')
+    raise SystemExit(0)
+if old_count != 1 or new_count != 0:
+    raise SystemExit(f'launch forge ownership boundary is ambiguous: old={old_count}, new={new_count}')
+
 path.write_text(text.replace(old, new, 1))
 print('LAUNCH_FORGE_DEDICATED_CARRY_PATCHED')
