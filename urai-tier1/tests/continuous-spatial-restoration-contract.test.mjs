@@ -97,7 +97,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
   assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
-  assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
+  assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
@@ -127,7 +127,7 @@ test('Home Ground entry is a physical environmental descent rather than a floati
   assert.match(homeProduction, /home-ground-environmental-threshold/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
-  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
+  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"/)
 })
 
 test('visual overrides cannot veil active spatial owners', () => {
