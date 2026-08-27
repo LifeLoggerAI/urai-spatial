@@ -1,4 +1,4 @@
-# Owner-authored exact-head trigger for the stabilized V29 certification candidate.
+# Owner-authored exact-head trigger for the stabilized V30 enclosed reliquary candidate.
 name: Home Scanned Composition Verification
 
 on:
@@ -51,38 +51,41 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
           test -f urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
           test -f urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb
           test -f operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json
-          grep -F 'HOME_SCANNED_COMPOSITION_V1' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-entry-chamber-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'polyhaven-fern-02-geometry-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'CINEMATIC_HOME_ART_MOBILE' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-built-sanctuary-envelope-v29' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-compatibility-glb-provenance-only-no-visible-fantasy-shell' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'large-format-photographic-stone-court-v29-grounded-low-frequency' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'grounded-cinematic-sacred-tech-sanctuary-v29' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-grounded-vaulted-machine-hall-no-fantasy-shell' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-continuous-structural-vault-load-paths' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-canopy-is-vault-not-floating-bars' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-three-point-articulated-relic-dock' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-curved-load-arms-contact-orb-no-pedestal-stem' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v29-integrated-vault-threshold' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'recessed-machine-foundation-v25-flush-inlay' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v27-faceted-crystalline-relic-machine' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'v28-authored-threshold-court-no-box-walls' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'v28-curved-machined-load-paths-attached-to-piers' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'v28-continuous-curved-rib-skylight-no-floating-bars' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'v27-authored-pier-and-recess-court' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'circleGeometry args={[0.92,128]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'compact-relic-bay-v23' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'boxGeometry args={[0.07,3.18,16.3]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'size={[0.66,4.1,7.0]}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'home-orb-stabilizer-ring-1' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-orb-stabilizer-arc-a' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-orb-stabilizer-arc-b' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-orb-stabilizer-arc-c' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
+          grep -F 'home-entry-chamber-v1.glb' "$source"
+          grep -F 'polyhaven-fern-02-geometry-v1.glb' "$source"
+          ! grep -F 'CINEMATIC_HOME_ART_MOBILE' "$source"
+          grep -F 'monolithic-photographic-stone-court-v30-no-visible-tiling-grid' "$source"
+          grep -F 'v30-enclosed-authored-sanctuary-no-test-pavilion' "$source"
+          grep -F 'v30-massive-arched-background-depth-and-threshold-chambers' "$source"
+          grep -F 'v30-asymmetric-side-chambers-and-structural-masses' "$source"
+          grep -F 'v30-heavy-vault-ribs-terminate-into-shell' "$source"
+          grep -F 'v30-sanctuary-built-around-orb-reliquary' "$source"
+          grep -F 'v30-roof-mass-rests-on-load-bearing-vault' "$source"
+          grep -F 'v30-three-authored-expansion-seams-no-grid-read' "$source"
+          grep -F 'v30-buried-machine-socket-no-display-pedestal' "$source"
+          grep -F 'v30-armored-socket-clamps-collars-conduits-no-center-stem' "$source"
+          grep -F 'v30-segmented-reliquary-collar-not-display-halo' "$source"
+          grep -F 'v30-armored-relic-machine-integrated-with-sanctuary' "$source"
+          grep -F 'v30-threshold-chamber-integrated-with-rear-apse' "$source"
+          grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' "$source"
+          ! grep -F 'v29-curved-load-arms-contact-orb-no-pedestal-stem' "$source"
+          ! grep -F 'v29-three-point-articulated-relic-dock' "$source"
+          ! grep -F 'v29-canopy-is-vault-not-floating-bars' "$source"
+          ! grep -F 'v28-authored-threshold-court-no-box-walls' "$source"
+          ! grep -F 'v28-curved-machined-load-paths-attached-to-piers' "$source"
+          ! grep -F 'v28-continuous-curved-rib-skylight-no-floating-bars' "$source"
+          ! grep -F 'v27-authored-pier-and-recess-court' "$source"
+          ! grep -F 'circleGeometry args={[0.92,128]}' "$source"
+          ! grep -F 'compact-relic-bay-v23' "$source"
+          ! grep -F 'home-orb-stabilizer-ring-1' "$source"
+          grep -F 'home-orb-stabilizer-arc-a' "$source"
+          grep -F 'home-orb-stabilizer-arc-b' "$source"
+          grep -F 'home-orb-stabilizer-arc-c' "$source"
 
       - name: Verify scanned fern receipt identity
         shell: bash
