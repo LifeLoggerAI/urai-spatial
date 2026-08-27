@@ -23,7 +23,7 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Execute V32 transform with robust ceiling removal
+      - name: Execute V32 transform with robust ceiling and tuple repairs
         shell: bash
         run: |
           set -euo pipefail
@@ -36,10 +36,17 @@ jobs:
           start = workflow.index(start_marker) + len(start_marker)
           end = workflow.index(end_marker, start)
           script = textwrap.dedent(workflow[start:end])
-          old = "source = source.replace('<SanctuaryArchitecture /><SanctuaryGlazing /><SanctuaryCeiling /><AtmosphericDepth />', '<SanctuaryArchitecture /><SanctuaryGlazing /><AtmosphericDepth />', 1)"
-          replacement = "assert '<SanctuaryCeiling />' in source, 'live SanctuaryCeiling call missing before V32 transform'\nsource = source.replace('<SanctuaryCeiling />', '', 1)"
-          assert old in script, 'original V32 ceiling transform not found'
-          script = script.replace(old, replacement, 1)
+
+          old_ceiling = "source = source.replace('<SanctuaryArchitecture /><SanctuaryGlazing /><SanctuaryCeiling /><AtmosphericDepth />', '<SanctuaryArchitecture /><SanctuaryGlazing /><AtmosphericDepth />', 1)"
+          replacement_ceiling = "assert '<SanctuaryCeiling />' in source, 'live SanctuaryCeiling call missing before V32 transform'\nsource = source.replace('<SanctuaryCeiling />', '', 1)"
+          assert old_ceiling in script, 'original V32 ceiling transform not found'
+          script = script.replace(old_ceiling, replacement_ceiling, 1)
+
+          old_rotation = "rotation={[0,index===0?0.12:index===1?-0.12:0,0]}"
+          typed_rotation = "rotation={[0,index===0?0.12:index===1?-0.12:0,0] as [number,number,number]}"
+          assert old_rotation in script, 'V32 foundation rotation expression not found'
+          script = script.replace(old_rotation, typed_rotation, 1)
+
           Path('/tmp/v32-transform.py').write_text(script)
           PY
           python3 /tmp/v32-transform.py
@@ -53,6 +60,7 @@ jobs:
           grep -F 'v32-sanctuary-scale-three-point-reliquary-machine' "$source"
           grep -F 'v32-faceted-heavy-relic-reactor-integrated-with-sanctuary' "$source"
           grep -F 'v32-monolithic-reliquary-sanctuary-final' "$source"
+          grep -F 'as [number,number,number]' "$source"
           ! grep -F '<SanctuaryCeiling />' "$source"
           cd urai-tier1
           node --test --test-concurrency=1 tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
