@@ -1,4 +1,4 @@
-# Owner-authored exact-head verifier for the V33 buttressed sanctuary and integrated angular reliquary candidate.
+# Owner-authored exact-head verifier for the V34 authored stone sanctuary and integrated mechanical reliquary candidate.
 name: Home Scanned Composition Verification
 
 on:
@@ -49,7 +49,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - name: Verify materialized V33 Home composition and governed inputs
+      - name: Verify materialized V34 Home composition and governed inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -63,26 +63,31 @@ jobs:
           grep -F 'polyhaven-fern-02-geometry-v1.glb' "$source"
           ! grep -F 'CINEMATIC_HOME_ART_MOBILE' "$source"
           grep -F 'monolithic-photographic-stone-court-v30-no-visible-tiling-grid' "$source"
-          grep -F 'cinematic-enclosed-sacred-tech-sanctuary-v33' "$source"
-          grep -F 'v33-monolithic-buttressed-sanctuary-final' "$source"
-          grep -F 'v33-deep-buttressed-apse-final' "$source"
-          grep -F 'v33-asymmetric-grounded-buttresses' "$source"
-          grep -F 'v33-grounded-vault-shell-final' "$source"
-          grep -F 'v33-reliquary-apse-integrated-final' "$source"
-          grep -F 'v33-authored-depth-and-material-separation' "$source"
-          grep -F 'v33-three-embedded-reliquary-feet' "$source"
-          grep -F 'v33-no-plinth-no-ring-only-machine-load-feet' "$source"
-          grep -F 'v33-sanctuary-scale-angular-reliquary-machine' "$source"
-          grep -F 'v33-housings-beams-jaws-and-rear-load-frame-dominate-reactor' "$source"
-          grep -F 'v33-rear-structural-load-frame-not-halo' "$source"
-          grep -F 'v33-angular-relic-reactor-integrated-with-load-frame' "$source"
-          grep -F 'data-home-final-art-revision="v33-angular-reliquary-sanctuary-final"' "$source"
-          grep -F 'data-home-art-certification="v33-pending-retained-pixel-certification"' "$source"
+          grep -F 'cinematic-enclosed-sacred-tech-sanctuary-v34' "$source"
+          grep -F 'v34-authored-stone-sanctuary-final' "$source"
+          grep -F 'v34-single-deep-apse-with-asymmetric-buttresses' "$source"
+          grep -F 'v34-reliquary-built-into-apse' "$source"
+          grep -F 'v34-asymmetric-grounded-stone-loads' "$source"
+          grep -F 'v34-vaulted-structural-envelope-no-floating-roof' "$source"
+          grep -F 'v34-recessed-side-bays-and-practical-depth' "$source"
+          grep -F 'v34-integrated-reliquary-foundation-shoes' "$source"
+          grep -F 'v34-no-display-plinth-foundation-direct-to-floor' "$source"
+          grep -F 'v34-sanctuary-scale-mechanical-reliquary-assembly' "$source"
+          grep -F 'v34-housings-yoke-jaws-foundation-and-rear-load-column' "$source"
+          grep -F 'v34-segmented-spindle-reactor-integrated-with-cradle' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v34-authored-stone-reliquary-sanctuary"' "$source"
+          grep -F 'data-home-final-art-revision="v34-authored-stone-reliquary-sanctuary-final"' "$source"
+          grep -F 'data-home-art-certification="v34-production-final"' "$source"
           grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' "$source"
-          grep -F "V33 Home owns its physical sky/fog; suppress shared screen-space horizon bars." "$atmosphere"
+          grep -F "V34 Home owns its physical sky/fog; suppress shared screen-space horizon bars." "$atmosphere"
           grep -F ".urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon" "$atmosphere"
           ! grep -F 'home-orb-foundation' "$source"
           ! grep -F '<SanctuaryCeiling />' "$source"
+          ! grep -F '<FloorPanelJoints />' "$source"
+          ! grep -F 'v33-angular-reliquary-sanctuary-final' "$source"
+          ! grep -F 'v33-sanctuary-scale-angular-reliquary-machine' "$source"
+          ! grep -F 'v33-angular-relic-reactor-integrated-with-load-frame' "$source"
+          ! grep -F 'v33-pending-retained-pixel-certification' "$source"
           ! grep -F 'v32-sanctuary-scale-three-point-reliquary-machine' "$source"
           ! grep -F 'v32-faceted-heavy-relic-reactor-integrated-with-sanctuary' "$source"
           ! grep -F 'v31-sanctuary-scale-three-point-armored-reliquary-dock' "$source"
