@@ -31,14 +31,14 @@ jobs:
       - name: Apply V36 production transform
         run: python3 scripts/v36-integrated-sanctuary-transform.py
       - name: Install exact lockfile
-        working-directory: urai-tier1
         run: pnpm install --frozen-lockfile
-      - name: Verify focused Home contracts
+      - name: Verify current Home world contracts
         working-directory: urai-tier1
         run: |
-          pnpm exec vitest run src/spatial/layout/__tests__/homeCohesion.test.ts src/spatial/layout/__tests__/HomeEmbodiedExploration.test.tsx src/spatial/__tests__/continuousSpatialRestoration.test.ts src/spatial/__tests__/homeGroundLifeMapArtBible.test.ts
+          node --import tsx --test tests/aaa-presentation-convergence-contract.test.mjs tests/aaa-spatial-world-upgrade.test.mjs tests/aaa-world-artifact-contract.test.mjs
+      - name: Verify TypeScript runtime contract
+        run: pnpm typecheck
       - name: Verify production static build
-        working-directory: urai-tier1
         run: pnpm build:static
       - name: Commit V36 runtime source if branch unchanged
         shell: bash
