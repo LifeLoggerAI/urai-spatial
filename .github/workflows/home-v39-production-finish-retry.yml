@@ -1,4 +1,4 @@
-name: Home V39 Production Finish Retry
+name: Home V40 Production Rebuild
 
 on:
   workflow_dispatch:
@@ -12,13 +12,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: home-v39-production-finish-retry
+  group: home-v40-production-rebuild
   cancel-in-progress: true
 
 jobs:
   materialize:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout exact owner-authored head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -47,17 +47,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Apply V39 production finish
-        run: python3 scripts/apply-home-v39-production-finish.py
+      - name: Apply V40 production rebuild
+        run: python3 scripts/apply-home-ground-v40-production-rebuild.py
 
-      - name: Verify V39 realism, Ground, and TypeScript contracts
+      - name: Verify V40 realism, Ground continuity, navigation, and TypeScript
         working-directory: urai-tier1
         run: |
           set -euo pipefail
-          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
           pnpm exec tsc --noEmit
 
-      - name: Commit materialized V39 candidate
+      - name: Commit materialized V40 candidate
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -68,7 +68,7 @@ jobs:
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
           git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx
-          git diff --cached --quiet && { echo 'No V39 materialization required.'; exit 0; }
-          git commit -m 'Home: materialize V39 authored-core production finish'
+          git diff --cached --quiet && { echo 'No V40 materialization required.'; exit 0; }
+          git commit -m 'Home Ground: materialize V40 production rebuild'
           gh auth setup-git
           git push origin HEAD:home-final-v24-certify-20260826
