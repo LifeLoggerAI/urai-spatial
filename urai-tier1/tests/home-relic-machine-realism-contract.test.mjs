@@ -4,32 +4,33 @@ import test from 'node:test'
 
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionFinal.tsx', import.meta.url), 'utf8')
 const orbStart = source.indexOf('function SacredOrb(')
-const orbEnd = source.indexOf('function', orbStart + 'function SacredOrb('.length)
-assert.ok(orbStart >= 0, 'SacredOrb function boundary must remain discoverable')
-const orbSource = source.slice(orbStart, orbEnd > orbStart ? orbEnd : source.length)
+const orbEnd = source.indexOf('function HumanPresence', orbStart)
+assert.ok(orbStart >= 0 && orbEnd > orbStart, 'SacredOrb function boundary must remain discoverable')
+const orbSource = source.slice(orbStart, orbEnd)
 
-test('live Home owner is the V37 continuous sanctuary candidate', () => {
-  assert.match(source, /v37-continuous-vault-reliquary-sanctuary-candidate/)
+test('live Home owner is the V38 integrated machine sanctuary candidate', () => {
+  assert.match(source, /v38-integrated-machine-sanctuary-production-candidate/)
   assert.match(source, /function SanctuaryShellMass/)
   assert.match(source, /function ContinuousVaultSkin/)
   assert.match(source, /function CantedWallMass/)
   assert.match(source, /function MachineCavityLiner/)
 })
 
-test('live reliquary is architecturally integrated rather than a pedestal display', () => {
-  assert.match(source, /function ReliquaryWing/)
-  assert.match(source, /function CrownBridge/)
-  assert.match(source, /function FloorReliquaryBed/)
-  assert.match(source, /function ServiceConduit/)
+test('live reliquary carries loads from floor through piers into the vault crown', () => {
+  assert.match(source, /function ReliquarySpine/)
+  assert.match(source, /v38-floor-to-vault-load-bearing-reliquary-pier/)
+  assert.match(source, /v38-structural-vault-crown/)
+  assert.match(source, /v38-recessed-floor-service-integration-no-plinth/)
+  assert.match(source, /v38-recessed-service-trunk/)
   assert.match(source, /home-orb-engineered-cradle/)
-  assert.doesNotMatch(orbSource, /sphereGeometry/)
 })
 
-test('live reliquary exposes layered faceted machinery and restrained machine light', () => {
-  assert.match(orbSource, /octahedronGeometry/)
-  assert.match(orbSource, /icosahedronGeometry/)
+test('live Orb is a recessed armored memory core instead of a pedestal sphere or spindle', () => {
+  assert.match(orbSource, /v38-recessed-armored-memory-core-inside-load-bearing-reliquary/)
   assert.match(orbSource, /dodecahedronGeometry/)
-  assert.match(orbSource, /meshPhysicalMaterial/)
+  assert.match(orbSource, /icosahedronGeometry/)
+  assert.match(orbSource, /octahedronGeometry/)
+  assert.doesNotMatch(orbSource, /sphereGeometry/)
   assert.doesNotMatch(orbSource, /cylinderGeometry/)
 })
 
