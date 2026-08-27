@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  HOME_FINAL_ART_CONVERGENCE_REVISION: '7'
+  HOME_FINAL_ART_CONVERGENCE_REVISION: '8'
 
 jobs:
   converge:
@@ -31,22 +31,34 @@ jobs:
           persist-credentials: false
           show-progress: false
 
-      - name: Apply deterministic V23 final material architecture pass
-        run: python3 scripts/apply-home-v23-final-material-architecture.py
+      - name: Apply V23 transformation only to its original source shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
+          marker='<StoneTopMaterial pack={pack} color="#202827" relief={0.012} />'
+          if grep -Fq "$marker" "$source"; then
+            python3 scripts/apply-home-v23-final-material-architecture.py
+          else
+            echo 'V23 transformation already applied or superseded; no mutation required.'
+          fi
 
       - name: Run focused live-owner contracts
         working-directory: urai-tier1
         run: node --test --test-concurrency=1 tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs
 
-      - name: Commit exact successor
+      - name: Commit exact successor only when transformation changed source
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          if git diff --quiet -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx; then
+            echo 'No V23 transformation delta; workflow is already converged.'
+            exit 0
+          fi
           current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-relic-machine-realism-20260826" --jq .object.sha)"
           test "$current" = "${GITHUB_SHA}"
-          test -n "$(git status --porcelain)"
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
           git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
