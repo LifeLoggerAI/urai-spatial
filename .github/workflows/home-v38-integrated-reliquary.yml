@@ -16,6 +16,9 @@ concurrency:
   group: home-v38-integrated-reliquary
   cancel-in-progress: true
 
+env:
+  HOME_V38_BUILD_REVISION: '2'
+
 jobs:
   rebuild:
     runs-on: ubuntu-latest
@@ -32,7 +35,7 @@ jobs:
       - name: Apply V38 integrated reliquary rebuild
         run: python3 scripts/apply-home-v38-integrated-reliquary.py
 
-      - name: Verify transformed source parses through focused contracts
+      - name: Verify transformed source through focused live-owner contracts
         working-directory: urai-tier1
         run: node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs
 
