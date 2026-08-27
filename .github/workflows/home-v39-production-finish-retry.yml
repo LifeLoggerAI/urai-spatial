@@ -8,7 +8,7 @@ on:
     paths:
       - '.github/workflows/home-v39-production-finish-retry.yml'
 
-# Retrigger V40 after binding the Ground art-bible verifier to the current production treatment.
+# Retrigger V40 after aligning the Ground filter assertion with the deterministic transform output.
 permissions:
   contents: write
 
