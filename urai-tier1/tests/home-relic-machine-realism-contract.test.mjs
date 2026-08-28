@@ -14,7 +14,7 @@ test('V46 owns Home as separated load-bearing apse masses instead of the rejecte
   assert.match(source,/v46-deep-open-machine-bay-with-staggered-bulkheads-and-floor-service-depth/)
   assert.match(source,/home-v46-left-apse-mass/)
   assert.match(source,/home-v46-right-apse-mass/)
-  assert.doesNotMatch(source,/home-v45-monolithic-reliquary-apse/)
+  assert.doesNotMatch(source,/home-v46-monolithic-reliquary-apse/)
 })
 
 test('V46 reliquary uses separated machined cheek yokes with open center and no display mat', () => {
