@@ -29,16 +29,16 @@ jobs:
           ref: home-final-v24-certify-20260826
           fetch-depth: 1
           persist-credentials: true
-      - name: Import committed CC0 production sanctuary assets
-        run: node scripts/import-home-v48-production-assets.mjs
-      - name: Apply V48 production-asset sanctuary integration
+      - name: Materialize V48 production-asset sanctuary only when absent
         shell: bash
         run: |
           set -euo pipefail
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
           if grep -Fq "v48-production-asset-sanctuary-candidate" "$source"; then
-            echo 'V48 production-asset sanctuary is already materialized; no mutation required.'
+            test -f operations/assets/home-v48-production-asset-provenance.json
+            echo 'V48 production-asset sanctuary and provenance are already materialized; no mutation required.'
           else
+            node scripts/import-home-v48-production-assets.mjs
             python3 scripts/apply-home-v48-production-assets.py
           fi
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
