@@ -24,9 +24,9 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
+    'data-home-visible-world="open-air-sacred-tech-reliquary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="built-obsidian-glass-stone-sanctuary"',
+    'data-home-physical-base="authored-stone-machine-reliquary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
@@ -66,7 +66,7 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
     assert.ok(homeProduction.includes(clip), `missing authored Orb state clip: ${clip}`)
   }
-  assert.match(homeProduction, /if\(reducedMotion\)\{allActions\.forEach\(\(action\)=>action\.stop\(\)\)/)
+  assert.match(homeProduction, /if\(reducedMotion\)\{allActions\.forEach\(\(action\)=>action\.stop\(\)/)
   assert.match(homeProduction, /function HumanPresence\(/)
   assert.match(homeProduction, /useGLTF\(HUMAN\)/)
   assert.match(homeProduction, /function ThresholdAlcove\(/)
