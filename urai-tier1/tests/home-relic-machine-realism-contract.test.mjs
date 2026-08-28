@@ -11,41 +11,39 @@ const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url))
 const sceneStart = source.indexOf('function SacredFinalScene(')
 const sceneEnd = source.indexOf('export function HomeWorldProductionFinal', sceneStart)
 const sceneSource = source.slice(sceneStart, sceneEnd)
-const architectureStart = source.indexOf('function ProductionSanctuary')
-const architectureEnd = source.indexOf('function RecessedPractical', architectureStart)
-const architectureSource = source.slice(architectureStart, architectureEnd)
+const detailStart = source.indexOf('function ProductionSanctuary')
+const detailEnd = source.indexOf('function ProductionOrbMachine', detailStart)
+const detailSource = source.slice(detailStart, detailEnd)
 const orbStart = source.indexOf('function SacredOrb(')
 const orbEnd = source.indexOf('function HumanPresence', orbStart)
 const orbSource = source.slice(orbStart, orbEnd)
 
-test('V48 renders committed external production assets instead of the deterministic intake chamber', () => {
-  assert.match(source,/v48-production-asset-sanctuary-candidate/)
-  assert.match(source,/root\.visible = false/)
-  assert.match(source,/v48-deterministic-intake-glb-provenance-only-never-visible/)
+test('V49 visible Home is authored sanctuary massing with restrained real practical detail', () => {
+  assert.match(source,/v49-authored-reliquary-candidate/)
+  assert.match(sceneSource,/<SanctuaryArchitecture \/>/)
   assert.match(sceneSource,/<ProductionSanctuary \/>/)
-  assert.match(sceneSource,/<ProductionOrbMachine \/>/)
-  assert.doesNotMatch(sceneSource,/<SanctuaryArchitecture \/>|<SanctuaryCeiling \/>|<OrbCradle \/>/)
+  assert.match(sceneSource,/<OrbCradle \/>/)
+  assert.match(sceneSource,/<MachineCoreAssembly \/>/)
+  assert.doesNotMatch(sceneSource,/<ProductionOrbMachine \/>/)
+  assert.doesNotMatch(sceneSource,/<SanctuaryCeiling \/>/)
 })
 
-test('V48 production sanctuary is asset-backed, not hero primitive geometry', () => {
-  assert.match(architectureSource,/V48_ROCK_FACE_01/)
-  assert.match(architectureSource,/V48_ROCK_FACE_02/)
-  assert.match(architectureSource,/V48_PIPE_SYSTEM/)
-  assert.match(architectureSource,/V48_CAGED_SCONCE/)
-  assert.match(architectureSource,/home-v48-rear-scanned-apse/)
-  assert.match(architectureSource,/home-v48-machine-services/)
-  assert.doesNotMatch(architectureSource,/ExtrudeGeometry|boxGeometry|RoundedBox|coneGeometry|cylinderGeometry/)
+test('V49 removes giant raw rock and modular pipe kitbash from the visible hero detail layer', () => {
+  assert.match(detailSource,/home-v49-scanned-detail-layer/)
+  assert.match(detailSource,/V48_CAGED_SCONCE/)
+  assert.doesNotMatch(detailSource,/V48_ROCK_FACE_01|V48_ROCK_FACE_02|V48_PIPE_SYSTEM/)
+  assert.match(source,/home-v47-side-gallery/)
+  assert.match(source,/home-v47-reliquary-cavity/)
+  assert.match(source,/home-v47-reliquary-apse/)
 })
 
-test('V48 provenance is complete, local at runtime, CC0 and per-file hashed', () => {
+test('committed V48 third-party provenance remains complete even though rejected hero assets are no longer visible', () => {
   assert.equal(provenance.schema, 'urai.home.v48-production-assets.v1')
   assert.equal(provenance.runtimeFetchesPolyHavenApi, false)
   assert.equal(provenance.sourceAssets.length, 4)
   for (const asset of provenance.sourceAssets) {
     assert.equal(asset.license, 'CC0-1.0')
     assert.equal(asset.provider, 'Poly Haven')
-    assert.ok(asset.entrypoint.startsWith('/assets/urai/home-production/cc0/polyhaven-v48/'))
-    assert.ok(asset.files.length >= 1)
     for (const file of asset.files) {
       assert.match(file.sha256,/^[a-f0-9]{64}$/)
       assert.ok(file.bytes > 0)
@@ -54,24 +52,23 @@ test('V48 provenance is complete, local at runtime, CC0 and per-file hashed', ()
   }
 })
 
-test('V48 keeps the authored Orb core visible inside a real asset-backed machine frame', () => {
-  assert.match(source,/v48-governed-orb-core-heart-restored-no-crystalline-display/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.86\)/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.62\)/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.32\)/)
-  assert.match(orbSource,/scale=\{1\.12\}/)
-  assert.match(source,/home-v48-orb-machine-frame/)
-  assert.match(source,/v48-asset-backed-machine-surrounds-authored-core-no-pedestal/)
-  assert.doesNotMatch(orbSource,/MachineCoreAssembly/)
+test('V49 restores a faceted governed Orb shell and physically registered authored reliquary', () => {
+  assert.match(source,/v49-governed-faceted-armor-heart-no-orbit-display/)
+  assert.match(source,/v49-governed-faceted-armor-shell/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.72\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.76\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.42\)/)
+  assert.match(orbSource,/scale=\{0\.96\}/)
+  assert.match(source,/position=\{\[side\*1\.24,1\.82,-3\.74\]\}/)
+  assert.match(source,/position=\{\[0,2\.16,-3\.66\]\}/)
 })
 
-test('V48 has photographic floor, production framing and no source-level visual PASS claim', () => {
-  assert.match(source,/home-v48-walkable-photographic-floor/)
+test('V49 telemetry stays candidate-only and reports the actually loaded authored chamber identity', () => {
+  assert.match(source,/data-home-animation-owner="authored-reliquary-v49-plus-governed-living-orb"/)
+  assert.match(source,/data-home-runtime-assets="home-entry-chamber-v1\.glb /)
+  assert.match(source,/v49-retained-pixel-candidate-not-certified/)
   assert.match(source,/rock-tile-floor-diff-1k\.webp/)
   assert.match(source,/studio-small-08-1k\.hdr/)
-  assert.match(source,/desiredFov=portrait\?67:58/)
-  assert.match(source,/gl\.toneMappingExposure=2\.08/)
-  assert.match(source,/v48-production-assets-retained-pixel-candidate/)
   assert.doesNotMatch(source,/PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 

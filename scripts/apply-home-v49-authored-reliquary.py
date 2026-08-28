@@ -52,12 +52,16 @@ source = replace_once(source, "const retiredDisplay = object.name === 'orb-aura'
 source = replace_once(source, "object.scale.multiplyScalar(0.86)", "object.scale.multiplyScalar(0.72)", 'Orb core scale')
 source = replace_once(source, "object.scale.multiplyScalar(0.62)", "object.scale.multiplyScalar(0.76)", 'Orb heart scale')
 source = replace_once(source, "object.scale.multiplyScalar(0.32)", "object.scale.multiplyScalar(0.42)", 'Orb filament scale')
-source = replace_once(
-    source,
+orb_model_start = source.index('function cloneOrbModel(source: THREE.Object3D)')
+orb_model_end = source.index('\n\nfunction PouredStone(', orb_model_start)
+orb_model = source[orb_model_start:orb_model_end]
+orb_model = replace_once(
+    orb_model,
     "    if (!(object instanceof THREE.Mesh)) return\n",
     "    if (object.name.startsWith('orb-petal-')) {\n      object.visible = true\n      object.scale.multiplyScalar(0.78)\n      object.userData.uraiIntegratedVisualRole = 'v49-governed-faceted-armor-shell'\n    }\n    if (!(object instanceof THREE.Mesh)) return\n",
     'Orb faceted shell',
 )
+source = source[:orb_model_start] + orb_model + source[orb_model_end:]
 source = replace_once(source, "scale={1.12} position={[0,-.12,0]}", "scale={0.96} position={[0,-.12,0]}", 'Orb reliquary scale')
 source = replace_once(source, "treatment:'v48-governed-orb-core-heart-visible-primary-reliquary-content'", "treatment:'v49-governed-faceted-orb-heart-primary-reliquary-content'", 'Orb scene treatment')
 source = replace_once(source, "treatment:'v48-governed-orb-core-heart-restored-at-reliquary-scale'", "treatment:'v49-governed-faceted-shell-heart-at-reliquary-scale'", 'Orb authored treatment')
