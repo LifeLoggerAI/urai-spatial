@@ -18,8 +18,9 @@ const orbStart = source.indexOf('function SacredOrb(')
 const orbEnd = source.indexOf('function HumanPresence', orbStart)
 const orbSource = source.slice(orbStart, orbEnd)
 
-test('V49 visible Home is authored sanctuary massing with restrained real practical detail', () => {
+test('V50 preserves authored sanctuary massing with restrained real practical detail', () => {
   assert.match(source,/v49-authored-reliquary-candidate/)
+  assert.match(source,/v50-retained-pixel-rebuild/)
   assert.match(sceneSource,/<SanctuaryArchitecture \/>/)
   assert.match(sceneSource,/<ProductionSanctuary \/>/)
   assert.match(sceneSource,/<OrbCradle \/>/)
@@ -28,13 +29,16 @@ test('V49 visible Home is authored sanctuary massing with restrained real practi
   assert.doesNotMatch(sceneSource,/<SanctuaryCeiling \/>/)
 })
 
-test('V49 removes giant raw rock and modular pipe kitbash from the visible hero detail layer', () => {
+test('V50 keeps giant raw rock and modular pipe kitbash out of the visible hero detail layer', () => {
   assert.match(detailSource,/home-v49-scanned-detail-layer/)
   assert.match(detailSource,/V48_CAGED_SCONCE/)
   assert.doesNotMatch(detailSource,/V48_ROCK_FACE_01|V48_ROCK_FACE_02|V48_PIPE_SYSTEM/)
   assert.match(source,/home-v47-side-gallery/)
   assert.match(source,/home-v47-reliquary-cavity/)
   assert.match(source,/home-v47-reliquary-apse/)
+  assert.match(source,/v50-long-perspective-side-returns/)
+  assert.match(source,/v50-machine-bay-three-layer-depth/)
+  assert.match(source,/v50-retained-pixel-depth-shell/)
 })
 
 test('committed V48 third-party provenance remains complete even though rejected hero assets are no longer visible', () => {
@@ -67,6 +71,8 @@ test('V50 replaces the glass-ball display read with opaque engineered Orb armor 
   assert.match(source,/const ORB = new THREE\.Vector3\(0, 2\.22, -5\.05\)/)
   assert.match(source,/position=\{\[side\*1\.42,1\.72,-5\.06\]\}/)
   assert.match(source,/position=\{\[0,2\.22,-5\.22\]\}/)
+  assert.match(source,/v50-four-point-structural-capture/)
+  assert.match(source,/v50-grounded-orb-load-path/)
   assert.doesNotMatch(orbSource,/<sphereGeometry/)
 })
 
