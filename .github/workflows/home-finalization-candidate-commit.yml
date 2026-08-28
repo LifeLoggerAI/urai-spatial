@@ -4,17 +4,17 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
-      - 'scripts/apply-home-v47-sanctuary-depth.py'
+      - 'scripts/apply-home-v48-governed-assets.py'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: home-v47-materializer-${{ github.event.pull_request.number || github.ref_name }}
+  group: home-v48-materializer-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 jobs:
-  materialize-v47:
+  materialize-v48:
     if: >-
       github.repository == 'LifeLoggerAI/urai-spatial' &&
       github.event_name == 'pull_request' &&
@@ -28,8 +28,8 @@ jobs:
           ref: home-final-v24-certify-20260826
           fetch-depth: 1
           persist-credentials: true
-      - name: Apply V47 sanctuary depth correction
-        run: python3 scripts/apply-home-v47-sanctuary-depth.py
+      - name: Apply V48 governed selected asset restoration
+        run: python3 scripts/apply-home-v48-governed-assets.py
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
@@ -43,11 +43,11 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Verify V47 contract and type-check
+      - name: Verify V48 governed asset contract and type-check
         run: |
           node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           pnpm --dir urai-tier1 exec tsc --noEmit
-      - name: Commit V47 runtime and contract
+      - name: Commit V48 runtime and contract
         shell: bash
         run: |
           set -euo pipefail
@@ -55,8 +55,8 @@ jobs:
           git config user.email 'LifeLoggerAI@gmail.com'
           git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           if git diff --cached --quiet; then
-            echo 'No V47 materialized changes to commit'
+            echo 'No V48 materialized changes to commit'
             exit 0
           fi
-          git commit -m 'Home: materialize V47 sanctuary depth'
+          git commit -m 'Home: materialize V48 governed selected assets'
           git push origin HEAD:home-final-v24-certify-20260826
