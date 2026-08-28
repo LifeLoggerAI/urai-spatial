@@ -13,34 +13,36 @@ const architectureEnd = source.indexOf('function SanctuaryGlazing', architecture
 assert.ok(architectureStart >= 0 && architectureEnd > architectureStart, 'SanctuaryArchitecture function boundary must remain discoverable')
 const architectureSource = source.slice(architectureStart, architectureEnd)
 
-test('live Home owner is the V42 sanctuary-integrated relic-machine candidate', () => {
-  assert.match(source, /v42-sanctuary-integrated-relic-machine-production-candidate/)
+test('live Home owner is the V43 open-vault integrated relic-machine candidate', () => {
+  assert.match(source, /v43-relic-machine-open-vault-production-candidate/)
   assert.match(source, /function ContinuousVaultSkin/)
-  assert.match(source, /v42-high-clearance-continuous-bearing-vault/)
-  assert.match(source, /v42-rear-recessed-buttress-outside-orb-hero-frame/)
-  assert.match(source, /v42-grounded-rear-load-paths-no-display-backplate/)
+  assert.match(source, /v43-open-center-asymmetric-vault-shoulders-no-ceiling-sheet/)
+  assert.match(source, /v43-grounded-rear-buttress-fingers-no-backplate-no-square-footings/)
+  assert.match(source, /v43-open-depth-with-grounded-buttress-fingers/)
   assert.doesNotMatch(architectureSource, /<SanctuaryShellMass/)
-  assert.doesNotMatch(architectureSource, /v41-integrated-authored-orb-sanctuary-production-candidate/)
-  assert.doesNotMatch(architectureSource, /v40-open-apse-authored-orb-production-candidate/)
+  assert.doesNotMatch(architectureSource, /v42-sanctuary-integrated-relic-machine-production-candidate/)
 })
 
-test('live reliquary uses articulated foundation-to-capture-pier-to-vault load paths', () => {
-  assert.match(source, /v42-articulated-floor-rooted-capture-pier/)
-  assert.match(source, /v42-split-vault-shoulders-continuous-with-articulated-piers/)
-  assert.match(source, /v42-machinery-embedded-foundation-sockets-no-platform/)
-  assert.match(source, /v42-massive-orb-integrated-with-grounded-lateral-machinery/)
+test('live reliquary uses floor-embedded faceted capture yokes seated into the open vault', () => {
+  assert.match(source, /v43-floor-embedded-faceted-capture-yoke-no-visible-footing/)
+  assert.match(source, /v43-separated-capture-yokes-seat-into-open-vault-shoulders/)
+  assert.match(source, /v43-flush-foundation-service-inlays-no-platform-no-pedestal/)
+  assert.match(source, /v43-authored-heart-captured-by-architectural-yokes-no-display-ring-no-pedestal/)
+  assert.match(source, /v43-faceted-structural-member-no-tube-grammar/)
   assert.match(source, /home-orb-engineered-cradle/)
   assert.match(source, /ServiceConduit side=\{-1\}/)
   assert.match(source, /ServiceConduit side=\{1\}/)
   assert.doesNotMatch(source, /<ReliquarySpine\/>/)
 })
 
-test('live Orb makes the governed authored GLB massive, visible, and free of display/placeholder centerpiece geometry', () => {
-  assert.match(orbSource, /v42-governed-authored-orb-massive-relic-machine-hero/)
+test('live Orb keeps governed authored heart/petal machinery while retiring display shell and orbit rings', () => {
+  assert.match(source, /v43-governed-authored-heart-petal-machine-core/)
   assert.match(orbSource, /primitive object=\{authoredOrb\}/)
-  assert.match(orbSource, /scale=\{1\.05\}/)
-  assert.match(orbSource, /v42-authored-orb-large-visible-integrated-desktop-mobile/)
-  assert.match(orbSource, /v42-engineered-body-is-architectural-capture-system-no-display-ring-no-pedestal/)
+  assert.match(orbSource, /scale=\{1\.32\}/)
+  assert.match(source, /v43-authored-core-no-aura-no-orbit-rings/)
+  assert.match(source, /object\.name === 'orb-aura'/)
+  assert.match(source, /object\.name === 'orb-core'/)
+  assert.match(source, /object\.name\.startsWith\('orb-orbit-'\)/)
   assert.doesNotMatch(orbSource, /RoundedBox/)
   assert.doesNotMatch(orbSource, /torusGeometry/)
   assert.doesNotMatch(orbSource, /dodecahedronGeometry/)
@@ -49,12 +51,12 @@ test('live Orb makes the governed authored GLB massive, visible, and free of dis
   assert.doesNotMatch(orbSource, /sphereGeometry/)
 })
 
-test('V42 materially improves literal visual hierarchy and desktop/mobile framing inputs', () => {
-  assert.match(source, /gl\.toneMappingExposure=1\.7/)
-  assert.match(source, /desiredFov=portrait\?56:50/)
-  assert.match(source, /lookHeight=portrait\?2\.18:2\.04/)
-  assert.match(source, /ambientLight intensity=\{0\.7\}/)
-  assert.match(source, /hemisphereLight args=\{\['#c9ded7','#26322b',0\.98\]\}/)
+test('V43 preserves cinematic exposure and widens desktop/mobile framing without hiding defects', () => {
+  assert.match(source, /gl\.toneMappingExposure=1\.62/)
+  assert.match(source, /desiredFov=portrait\?60:53/)
+  assert.match(source, /lookHeight=portrait\?2\.12:1\.98/)
+  assert.match(source, /ambientLight intensity=\{0\.62\}/)
+  assert.match(source, /hemisphereLight args=\{\['#c8ddd7','#25312b',0\.86\]\}/)
   assert.match(source, /camera\.lookAt\(ORB\.x,ORB\.y-\.08,ORB\.z\)/)
 })
 
