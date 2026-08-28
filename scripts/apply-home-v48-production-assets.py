@@ -6,6 +6,15 @@ SRC = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
 TEST = Path('urai-tier1/tests/home-relic-machine-realism-contract.test.mjs')
 text = SRC.read_text()
 
+if all(marker in text for marker in (
+    'v48-production-asset-sanctuary-candidate',
+    'v48-deterministic-intake-glb-provenance-only-never-visible',
+    'function ProductionSanctuary()',
+    'function ProductionOrbMachine()',
+)):
+    print('V48 materialization already applied; no mutation required.')
+    raise SystemExit(0)
+
 
 def replace_once(old, new, label):
     global text
