@@ -39,8 +39,9 @@ const ORB_CLIPS: Record<OrbState, string> = {
 const SANCTUARY_REQUIRED_OBJECTS = [
   'home-authored-terrain', 'home-authored-embodied-self', 'home-orb-sanctuary',
   'home-ground-environmental-threshold', 'home-life-map-sky-lookout', 'home-life-map-physical-portal',
-  'home-sanctuary-pavilion', 'home-v30-rear-apse', 'home-v30-side-enclosure',
-  'home-v30-load-bearing-vault', 'home-v30-orb-apse-architecture', 'home-orb-engineered-cradle',
+  'home-sanctuary-pavilion', 'home-v44-monolithic-reliquary-apse', 'home-v44-reliquary-cavity',
+  'home-v44-depth-practicals', 'home-v44-left-foundation-yoke', 'home-v44-right-foundation-yoke',
+  'home-orb-engineered-cradle',
 ] as const
 
 type Nearby = 'orb' | 'ground' | 'life-map' | null
