@@ -20,9 +20,11 @@ const orbSource = source.slice(orbStart, orbEnd)
 
 test('V51 is the open reliquary rebuild rather than the rejected V50 house/slab composition', () => {
   assert.match(source,/v51-open-reliquary-retained-pixel-rebuild/)
+  assert.match(source,/visualOwner:'cinematic-open-reliquary-sanctuary-v51'/)
   assert.match(source,/v51-open-asymmetric-buttress-galleries-no-solid-house-blocks-no-repeated-bays/)
   assert.match(source,/v51-open-layered-rear-shell-no-house-slabs-no-front-facade/)
   assert.match(source,/v51-open-machine-bay-rear-ribs-and-depth-no-box-housing/)
+  assert.doesNotMatch(source,/home-v47-left-apse-mass|home-v47-right-apse-mass/)
   assert.match(sceneSource,/<SanctuaryArchitecture \/>/)
   assert.match(sceneSource,/<ProductionSanctuary \/>/)
   assert.match(sceneSource,/<OrbCradle \/>/)
