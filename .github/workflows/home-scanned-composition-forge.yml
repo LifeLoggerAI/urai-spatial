@@ -1,4 +1,4 @@
-# Owner-authored exact-head verifier for V44 monolithic reliquary production candidate.
+# Owner-authored exact-head verifier for the current asset-backed Home composition.
 name: Home Scanned Composition Verification
 on:
   pull_request:
@@ -15,7 +15,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: home-scanned-v44-${{ github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: home-scanned-current-${{ github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 jobs:
   verify-home:
@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-      - name: Verify exact V44 composition
+      - name: Verify exact current production-asset composition
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -37,15 +37,14 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
-          grep -F 'v44-monolithic-reliquary-apse-production-candidate' "$source"
-          grep -F 'v44-single-monolithic-asymmetric-reliquary-apse-no-detached-ceiling-slabs' "$source"
-          grep -F 'v44-layered-recessed-machine-cavity-no-empty-black-void' "$source"
-          grep -F 'v44-broad-floor-rooted-armor-yoke-no-spikes-no-feet' "$source"
-          grep -F 'v44-no-black-platform-floor-remains-continuous' "$source"
-          grep -F 'v44-authored-heart-filament-core-no-glass-petals-no-rings' "$source"
-          grep -F 'scale={1.58}' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v44-monolithic-reliquary-apse"' "$source"
-          grep -F 'data-home-final-art-revision="v44-monolithic-reliquary-apse-production-candidate"' "$source"
-          grep -F 'data-home-art-certification="v44-retained-pixel-candidate"' "$source"
-          ! grep -F '<coneGeometry' "$source"
-          ! grep -F 'v43-relic-machine-open-vault-production-candidate' "$source"
+          grep -F 'v48-production-asset-sanctuary-candidate' "$source"
+          grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
+          grep -F 'function ProductionSanctuary()' "$source"
+          grep -F 'function ProductionOrbMachine()' "$source"
+          grep -F 'home-v48-rear-scanned-apse' "$source"
+          grep -F 'home-v48-machine-services' "$source"
+          grep -F 'home-v48-orb-machine-frame' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v48-committed-production-assets"' "$source"
+          grep -F 'data-home-final-art-revision="v48-production-asset-sanctuary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v48-production-assets-retained-pixel-candidate"' "$source"
+          ! grep -F 'PRODUCTION CERTIFIED' "$source"
