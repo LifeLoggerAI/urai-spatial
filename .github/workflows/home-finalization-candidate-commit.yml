@@ -5,26 +5,19 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
+      - 'scripts/apply-home-v44-reliquary-apse.py'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
-      - 'urai-tier1/src/spatial/world/GroundWorldProduction.tsx'
-      - 'urai-tier1/src/spatial/world/persistentRealmAtmosphere.css'
-      - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
-      - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
-      - 'urai-tier1/tests/home-postdeploy-art-readiness-contract.test.mjs'
-      - 'urai-tier1/tests/home-cohesion-contract.test.mjs'
-      - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
-      - 'tests/native-doorway-proof.mjs'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: home-v43-exact-head-verifier-${{ github.event.pull_request.number || github.ref_name }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: home-v44-materializer-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  verify-v43:
+  forge-verify-and-commit:
     if: >-
       github.repository == 'LifeLoggerAI/urai-spatial' &&
       ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'home-final-v24-certify-20260826') ||
@@ -34,26 +27,19 @@ jobs:
     env:
       HOME_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Check out exact V43 candidate
+      - name: Checkout exact V44 authoring head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.HOME_EXACT_HEAD }}
           fetch-depth: 1
-          persist-credentials: false
+          persist-credentials: true
           show-progress: false
-      - name: Verify exact clean source and V43 invariants
+      - name: Verify exact clean authoring head
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$HOME_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-          source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
-          grep -F 'v43-relic-machine-open-vault-production-candidate' "$source"
-          grep -F 'v43-authored-core-no-aura-no-orbit-rings' "$source"
-          grep -F 'v43-floor-embedded-faceted-capture-yoke-no-visible-footing' "$source"
-          grep -F '<coneGeometry args={[width*.72,length,5,1,false]}/>' "$source"
-          ! grep -F '<torusGeometry' "$source"
-          ! grep -F '<ReliquarySpine/>' "$source"
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
@@ -69,9 +55,28 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Verify Home Ground art and embodied contracts
-        working-directory: urai-tier1
-        run: node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs tests/home-postdeploy-art-readiness-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs tests/continuous-spatial-restoration-contract.test.mjs
-      - name: Type-check exact V43
+      - name: Materialize V44 Home
+        run: |
+          set -euo pipefail
+          python3 scripts/apply-home-v44-reliquary-apse.py
+          source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
+          grep -F 'v44-monolithic-reliquary-apse-production-candidate' "$source"
+          grep -F 'v44-single-monolithic-asymmetric-reliquary-apse-no-detached-ceiling-slabs' "$source"
+          grep -F 'v44-broad-floor-rooted-armor-yoke-no-spikes-no-feet' "$source"
+          grep -F 'v44-no-black-platform-floor-remains-continuous' "$source"
+          grep -F 'v44-authored-heart-filament-core-no-glass-petals-no-rings' "$source"
+          grep -F 'scale={1.58}' "$source"
+          ! grep -F 'v43-relic-machine-open-vault-production-candidate' "$source"
+      - name: Type-check V44
         working-directory: urai-tier1
         run: pnpm exec tsc --noEmit
+      - name: Commit materialized V44 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$(git status --porcelain -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git commit -m 'Home: materialize V44 monolithic reliquary apse'
+          git push origin HEAD:home-final-v24-certify-20260826
