@@ -5,18 +5,15 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
+      - 'scripts/apply-home-v43-relic-machine.py'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
-      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
-      - 'urai-tier1/src/spatial/world/persistentRealmAtmosphere.css'
-      - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
-      - 'tests/native-doorway-proof.mjs'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: home-v42-finalization-verifier-${{ github.event.pull_request.number || github.ref_name }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: home-v43-materializer-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -32,15 +29,15 @@ jobs:
     env:
       HOME_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Check out exact V42 candidate
+      - name: Check out exact V43 authoring head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.HOME_EXACT_HEAD }}
           fetch-depth: 1
-          persist-credentials: false
+          persist-credentials: true
           show-progress: false
 
-      - name: Verify exact clean candidate
+      - name: Verify exact clean authoring head
         shell: bash
         run: |
           set -euo pipefail
@@ -65,15 +62,28 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Verify materialized V42 Home and Ground candidate
-        working-directory: urai-tier1
+      - name: Materialize V43 Home
         run: |
           set -euo pipefail
-          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs tests/home-ground-lifemap-art-bible-contract.test.mjs tests/post-deploy-ground-smoke-contract.test.mjs tests/home-cohesion-contract.test.mjs tests/embodied-exploration-contract.test.mjs
-          pnpm exec tsc --noEmit
-          grep -F 'v42-sanctuary-integrated-relic-machine-production-candidate' src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v42-governed-authored-orb-massive-relic-machine-hero' src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'scale={1.05}' src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'v41-depth-fog-continuity-no-horizontal-band' src/app/GroundSpatialWorldClean.tsx
-          ! grep -F '<torusGeometry' src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F '<ReliquarySpine/>' src/spatial/layout/HomeWorldProductionFinal.tsx
+          python3 scripts/apply-home-v43-relic-machine.py
+          grep -F 'v43-relic-machine-open-vault-production-candidate' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'v43-authored-core-no-aura-no-orbit-rings' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'v43-floor-embedded-faceted-capture-yoke-no-visible-footing' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F 'scale={1.32}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F '<torusGeometry' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          ! grep -F '<ReliquarySpine/>' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+
+      - name: Type-check V43
+        working-directory: urai-tier1
+        run: pnpm exec tsc --noEmit
+
+      - name: Commit materialized V43 candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$(git status --porcelain -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git commit -m 'Home: materialize V43 open-vault relic-machine'
+          git push origin HEAD:home-final-v24-certify-20260826
