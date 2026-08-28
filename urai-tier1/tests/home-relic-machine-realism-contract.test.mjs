@@ -52,18 +52,26 @@ test('committed V48 third-party provenance remains complete even though rejected
   }
 })
 
-test('V49 restores a faceted governed Orb shell and physically registered authored reliquary', () => {
-  assert.match(source,/v49-governed-faceted-armor-heart-no-orbit-display/)
-  assert.match(source,/v49-governed-faceted-armor-shell/)
+test('V50 replaces the glass-ball display read with opaque engineered Orb armor and grounded load paths', () => {
+  assert.match(source,/v50-retained-pixel-rebuild-opaque-governed-heart/)
+  assert.match(source,/v50-six-plate-opaque-reliquary-armor-no-glass-ball-no-orbit-rings/)
+  assert.match(source,/function OrbArmorPlate/)
+  assert.match(source,/material\.transmission = 0/)
+  assert.match(source,/material\.opacity = 1/)
+  assert.match(source,/material\.transparent = false/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.54\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.58\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.34\)/)
   assert.match(source,/object\.scale\.multiplyScalar\(0\.72\)/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.76\)/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.42\)/)
-  assert.match(orbSource,/scale=\{0\.96\}/)
-  assert.match(source,/position=\{\[side\*1\.24,1\.82,-3\.74\]\}/)
-  assert.match(source,/position=\{\[0,2\.16,-3\.66\]\}/)
+  assert.match(orbSource,/scale=\{0\.64\}/)
+  assert.match(source,/const ORB = new THREE\.Vector3\(0, 2\.22, -5\.05\)/)
+  assert.match(source,/position=\{\[side\*1\.42,1\.72,-5\.06\]\}/)
+  assert.match(source,/position=\{\[0,2\.22,-5\.22\]\}/)
+  assert.doesNotMatch(orbSource,/<sphereGeometry/)
 })
 
-test('V49 telemetry stays candidate-only and reports the actually loaded authored chamber identity', () => {
+test('V50 preserves candidate-only telemetry until retained pixels are actually certified', () => {
+  assert.match(source,/v50-retained-pixel-rebuild/)
   assert.match(source,/data-home-animation-owner="authored-reliquary-v49-plus-governed-living-orb"/)
   assert.match(source,/data-home-runtime-assets="home-entry-chamber-v1\.glb /)
   assert.match(source,/v49-retained-pixel-candidate-not-certified/)
