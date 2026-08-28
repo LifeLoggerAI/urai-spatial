@@ -37,30 +37,36 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
 
-          # Preserve the governed composition contract and hidden V48 compatibility provenance.
+          # Preserve governed composition and hidden V48 compatibility provenance.
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
           grep -F "root.visible = false" "$source"
           grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
           grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
 
-          # Verify the current V50 visible-world composition while preserving the V49 candidate telemetry identity.
+          # Verify the current V51 open-reliquary composition.
           grep -F 'function ProductionSanctuary()' "$source"
           grep -F 'function ProductionOrbMachine()' "$source"
           grep -F 'home-v49-scanned-detail-layer' "$source"
           grep -F 'home-v49-authored-practicals' "$source"
-          grep -F "visualOwner:'cinematic-integrated-reliquary-sanctuary-v49'" "$source"
-          grep -F "visualTreatment:'v49-authored-reliquary-production-candidate v50-retained-pixel-rebuild'" "$source"
-          grep -F "root.userData.uraiTreatment = 'v50-retained-pixel-rebuild-opaque-governed-heart'" "$source"
-          grep -F 'v50-six-plate-opaque-reliquary-armor-no-glass-ball-no-orbit-rings' "$source"
-          grep -F 'v50-machine-bay-three-layer-depth' "$source"
-          grep -F 'v50-long-perspective-side-returns' "$source"
-          grep -F 'v50-retained-pixel-depth-shell' "$source"
-          grep -F 'v50-four-point-structural-capture' "$source"
-          grep -F 'v50-grounded-orb-load-path' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v49-authored-reliquary"' "$source"
-          grep -F 'data-home-final-art-revision="v49-authored-reliquary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v49-retained-pixel-candidate-not-certified"' "$source"
-          grep -F 'data-home-animation-owner="authored-reliquary-v49-plus-governed-living-orb"' "$source"
+          grep -F "visualOwner:'cinematic-open-reliquary-sanctuary-v51'" "$source"
+          grep -F "visualTreatment:'v51-open-reliquary-retained-pixel-rebuild'" "$source"
+          grep -F "root.userData.uraiTreatment = 'v51-authored-faceted-heart-with-small-opaque-machine-clamps'" "$source"
+          grep -F 'v51-open-asymmetric-buttress-galleries-no-solid-house-blocks-no-repeated-bays' "$source"
+          grep -F 'v51-open-layered-rear-shell-no-house-slabs-no-front-facade' "$source"
+          grep -F 'v51-open-machine-bay-rear-ribs-and-depth-no-box-housing' "$source"
+          grep -F 'v51-open-four-point-floor-rooted-load-paths-no-display-stand-no-panel-wings' "$source"
+          grep -F 'v51-open-rear-yoke-and-service-crosshead-no-polygon-display-plate' "$source"
+          grep -F 'v51-four-small-opaque-machine-clamps-authored-faceted-heart-remains-primary' "$source"
+          grep -F 'home-v51-central-finished-stone-lane' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v51-open-reliquary"' "$source"
+          grep -F 'data-home-final-art-revision="v51-open-reliquary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v51-retained-pixel-candidate-not-certified"' "$source"
+          grep -F 'data-home-animation-owner="open-reliquary-v51-plus-governed-living-orb"' "$source"
+
+          # Explicitly reject the V50 forms that failed literal retained-pixel review.
+          ! grep -F 'home-v47-left-apse-mass' "$source"
+          ! grep -F 'home-v47-right-apse-mass' "$source"
+          ! grep -F 'v50-six-plate-opaque-reliquary-armor-no-glass-ball-no-orbit-rings' "$source"
 
           # The old V48 pipe-machine helper may remain as provenance, but it must not own the visible scene.
           ! grep -F '<ProductionOrbMachine />' "$source"
