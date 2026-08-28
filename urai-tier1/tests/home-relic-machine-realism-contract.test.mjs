@@ -3,48 +3,46 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionFinal.tsx', import.meta.url), 'utf8')
+const sceneStart = source.indexOf('function SacredFinalScene(')
+const sceneEnd = source.indexOf('export function HomeWorldProductionFinal', sceneStart)
+const sceneSource = source.slice(sceneStart, sceneEnd)
 const orbStart = source.indexOf('function SacredOrb(')
 const orbEnd = source.indexOf('function HumanPresence', orbStart)
-assert.ok(orbStart >= 0 && orbEnd > orbStart)
 const orbSource = source.slice(orbStart, orbEnd)
 
-test('V47 replaces the cabinet facade with asymmetric sanctuary depth', () => {
-  assert.match(source,/v47-sanctuary-depth-production-candidate/)
-  assert.match(source,/v47-asymmetric-load-bearing-apse-masses-with-open-machine-bay-no-arch-facade/)
-  assert.match(source,/v47-staggered-side-gallery-masses-create-sanctuary-depth-no-repeated-bays/)
-  assert.match(source,/v47-deep-open-machine-bay-with-staggered-bulkheads-floor-service-depth-and-side-galleries/)
-  assert.match(source,/home-v47-left-apse-mass/)
-  assert.match(source,/home-v47-right-apse-mass/)
-  assert.doesNotMatch(source,/home-v46-left-machined-yoke|home-v46-right-machined-yoke/)
+test('V48 restores the governed selected sanctuary as visible production world owner', () => {
+  assert.match(source,/v48-governed-selected-assets-production-candidate/)
+  assert.match(source,/root\.visible = true/)
+  assert.match(source,/visibleWorldOwner = 'home-entry-chamber-v1\.glb'/)
+  assert.match(source,/v48-governed-selected-sanctuary-visible-primary-world-owner/)
+  assert.match(source,/home-entry-chamber-v1\.glb/)
+  assert.doesNotMatch(sceneSource,/<SanctuaryArchitecture \/>|<SanctuaryCeiling \/>|<SanctuaryGlazing \/>/)
 })
 
-test('V47 uses low canted load arms and no display stand', () => {
-  assert.match(source,/v47-low-canted-floor-rooted-load-arm-open-center-no-panel-no-visible-feet/)
-  assert.match(source,/v47-no-display-platform-floor-remains-continuous/)
-  assert.match(source,/v47-deep-machine-bay-and-low-load-arms-physically-capture-core-no-display-stand/)
-  assert.doesNotMatch(source,/<coneGeometry/)
-  assert.doesNotMatch(source,/<ContactShadows position=\{\[0,0\.03,-3\.55\]\}/)
+test('V48 removes the visible primitive court and V47 cabinet/slab machine lineage from production composition', () => {
+  assert.doesNotMatch(source,/name="home-obsidian-walkable-terrain"/)
+  assert.doesNotMatch(sceneSource,/<OrbPlatform \/>|<OrbCradle \/>|<FloorPanelJoints \/>|<ReflectingChannel/)
+  assert.doesNotMatch(sceneSource,/<SanctuarySideGallery\/>|<MachineCavityLiner\/>|<ContinuousVaultSkin/)
+  assert.match(source,/home-walkable-navigation-surface/)
 })
 
-test('V47 removes freestanding portal arches from hero composition and deepens the authored core', () => {
-  assert.match(source,/v47-recessed-threshold-seam-no-freestanding-arch-or-columns/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.14\)/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.065\)/)
-  assert.match(source,/v47-authored-heart-filament-trace-deep-behind-machined-aperture-no-crystal-display/)
-  assert.match(orbSource,/scale=\{0\.38\}/)
-  assert.match(orbSource,/position=\{\[0,\.02,-2\.7\]\}/)
-  assert.doesNotMatch(orbSource,/torusGeometry|sphereGeometry|dodecahedronGeometry|icosahedronGeometry|octahedronGeometry/)
+test('V48 restores governed Orb core and heart while retiring crystalline display families', () => {
+  assert.match(source,/object\.name === 'orb-core'/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.86\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.62\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.32\)/)
+  assert.match(source,/v48-governed-orb-core-heart-restored-no-crystalline-display/)
+  assert.match(orbSource,/scale=\{1\.12\}/)
+  assert.match(orbSource,/v48-governed-orb-core-heart-restored-at-reliquary-scale/)
+  assert.doesNotMatch(orbSource,/MachineCoreAssembly/)
 })
 
-test('V47 renders authored room depth and readable PBR without claiming pixel pass in code', () => {
-  assert.match(source,/<SanctuaryCeiling \/>/)
-  assert.match(source,/<FloorPanelJoints \/>/)
-  assert.match(source,/<ReflectingChannel x=\{-4\.72\} \/>/)
-  assert.match(source,/<PlantedEdges reducedMotion=\{props\.reducedMotion\} \/>/)
+test('V48 keeps real PBR/HDR environment and does not encode a visual PASS in source', () => {
   assert.match(source,/rock-tile-floor-diff-1k\.webp/)
   assert.match(source,/studio-small-08-1k\.hdr/)
-  assert.match(source,/gl\.toneMappingExposure=2\.05/)
+  assert.match(source,/gl\.toneMappingExposure=1\.72/)
   assert.match(source,/desiredFov=portrait\?64:54/)
+  assert.doesNotMatch(source,/PRODUCTION CERTIFIED|retained-pixel-pass|visual-pass/)
 })
 
 test('embodied presence remains privacy-preserving',()=>{
