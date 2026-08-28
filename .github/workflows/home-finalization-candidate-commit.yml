@@ -66,10 +66,21 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/apply-home-v43-relic-machine.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
+          source = path.read_text()
+          old = '<coneGeometry args={[width*.72,width,length,5,1,false]}/>'
+          new = '<coneGeometry args={[width*.72,length,5,1,false]}/>'
+          if old not in source:
+              raise SystemExit('Expected V43 coneGeometry tuple not found')
+          path.write_text(source.replace(old, new))
+          PY
           grep -F 'v43-relic-machine-open-vault-production-candidate' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'v43-authored-core-no-aura-no-orbit-rings' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'v43-floor-embedded-faceted-capture-yoke-no-visible-footing' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -F 'scale={1.32}' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -F '<coneGeometry args={[width*.72,length,5,1,false]}/>' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F '<torusGeometry' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           ! grep -F '<ReliquarySpine/>' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
 
