@@ -43,14 +43,20 @@ jobs:
           grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
           grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
 
-          # Verify the current V49 visible-world ownership rather than retired V48 certification identities.
+          # Verify the current V50 visible-world composition while preserving the V49 candidate telemetry identity.
           grep -F 'function ProductionSanctuary()' "$source"
           grep -F 'function ProductionOrbMachine()' "$source"
           grep -F 'home-v49-scanned-detail-layer' "$source"
           grep -F 'home-v49-authored-practicals' "$source"
           grep -F "visualOwner:'cinematic-integrated-reliquary-sanctuary-v49'" "$source"
-          grep -F "visualTreatment:'v49-authored-reliquary-production-candidate'" "$source"
-          grep -F "root.userData.uraiTreatment = 'v49-governed-faceted-armor-heart-no-orbit-display'" "$source"
+          grep -F "visualTreatment:'v49-authored-reliquary-production-candidate v50-retained-pixel-rebuild'" "$source"
+          grep -F "root.userData.uraiTreatment = 'v50-retained-pixel-rebuild-opaque-governed-heart'" "$source"
+          grep -F 'v50-six-plate-opaque-reliquary-armor-no-glass-ball-no-orbit-rings' "$source"
+          grep -F 'v50-machine-bay-three-layer-depth' "$source"
+          grep -F 'v50-long-perspective-side-returns' "$source"
+          grep -F 'v50-retained-pixel-depth-shell' "$source"
+          grep -F 'v50-four-point-structural-capture' "$source"
+          grep -F 'v50-grounded-orb-load-path' "$source"
           grep -F 'data-home-visual-grade="cinematic-pbr-v49-authored-reliquary"' "$source"
           grep -F 'data-home-final-art-revision="v49-authored-reliquary-candidate"' "$source"
           grep -F 'data-home-art-certification="v49-retained-pixel-candidate-not-certified"' "$source"
@@ -61,3 +67,5 @@ jobs:
 
           # Retained-pixel certification is a separate human visual gate and must not be asserted here.
           ! grep -F 'PRODUCTION CERTIFIED' "$source"
+          ! grep -F 'retained-pixel-pass' "$source"
+          ! grep -F 'pixel-certified' "$source"
