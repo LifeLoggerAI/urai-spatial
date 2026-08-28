@@ -17,6 +17,20 @@ const doorways = [
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
+async function settleRenderedDestination(page, doorway) {
+  if (doorway.destination === '/ground') {
+    const readyGround = page.locator('[data-testid="urai-ground-private-workforce-world"][data-ground-ready="true"]')
+    await readyGround.waitFor({ state: 'visible', timeout: 45000 })
+  }
+  await page.evaluate(async () => {
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+    await frame()
+    await frame()
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    await frame()
+  })
+}
+
 async function activate(page, target, method) {
   if (method === 'keyboard') {
     await target.focus()
@@ -76,7 +90,7 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, destinationRendered: false, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
@@ -99,8 +113,10 @@ async function prove(browser, doorway, testCase) {
     record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
+    await settleRenderedDestination(page, doorway)
+    record.destinationRendered = true
     record.resultingUrl = page.url()
-    record.success = normalize(record.resultingUrl) === doorway.destination
+    record.success = normalize(record.resultingUrl) === doorway.destination && record.destinationRendered
   } catch (error) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
@@ -120,7 +136,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 10, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 11, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, renderedDestinationRequiredBeforeCapture: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
