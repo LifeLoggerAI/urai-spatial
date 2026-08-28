@@ -4,32 +4,35 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
-      - 'scripts/apply-home-v48-governed-assets.py'
+      - 'scripts/import-home-v48-production-assets.mjs'
+      - 'scripts/apply-home-v48-production-assets.py'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
   workflow_dispatch:
 permissions:
   contents: write
 concurrency:
-  group: home-v48-materializer-${{ github.event.pull_request.number || github.ref_name }}
+  group: home-v48-production-assets-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 jobs:
-  materialize-v48:
+  materialize-v48-production-assets:
     if: >-
       github.repository == 'LifeLoggerAI/urai-spatial' &&
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.head.ref == 'home-final-v24-certify-20260826'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: home-final-v24-certify-20260826
           fetch-depth: 1
           persist-credentials: true
-      - name: Apply V48 governed selected asset restoration
-        run: python3 scripts/apply-home-v48-governed-assets.py
+      - name: Import committed CC0 production sanctuary assets
+        run: node scripts/import-home-v48-production-assets.mjs
+      - name: Apply V48 production-asset sanctuary integration
+        run: python3 scripts/apply-home-v48-production-assets.py
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
@@ -39,24 +42,28 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - name: Install dependencies
+      - name: Install exact lockfile
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Verify V48 governed asset contract and type-check
+      - name: Verify V48 production asset contract and type-check
         run: |
           node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           pnpm --dir urai-tier1 exec tsc --noEmit
-      - name: Commit V48 runtime and contract
+      - name: Commit V48 runtime, assets and provenance
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'LifeLoggerAI'
           git config user.email 'LifeLoggerAI@gmail.com'
-          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
+          git add \
+            urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48 \
+            operations/assets/home-v48-production-asset-provenance.json \
+            urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx \
+            urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           if git diff --cached --quiet; then
-            echo 'No V48 materialized changes to commit'
+            echo 'No V48 production materialized changes to commit'
             exit 0
           fi
-          git commit -m 'Home: materialize V48 governed selected assets'
+          git commit -m 'Home: materialize V48 committed production sanctuary assets'
           git push origin HEAD:home-final-v24-certify-20260826
