@@ -26,10 +26,10 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-sacred-home-orb-proof-3',
+  schemaVersion: 'urai-sacred-home-orb-proof-4',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'sacred-tech-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+  runtimeContract: 'v49-authored-reliquary-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
   portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
   cases: [],
@@ -93,6 +93,9 @@ for (const spec of cases) {
     record.desktopMobileWorld = await owner.getAttribute('data-home-desktop-mobile-world')
     record.embodiedSelf = await owner.getAttribute('data-home-embodied-self')
     record.movement = await owner.getAttribute('data-home-movement')
+    record.visualGrade = await owner.getAttribute('data-home-visual-grade')
+    record.artRevision = await owner.getAttribute('data-home-final-art-revision')
+    record.artCertification = await owner.getAttribute('data-home-art-certification')
     record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
     record.authoredRegions = await owner.getAttribute('data-home-authored-regions')
     record.cameraMode = await owner.getAttribute('data-home-camera-mode')
@@ -116,13 +119,16 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+      && record.visibleWorld === 'open-air-sacred-tech-reliquary'
       && record.worldCharacter === 'premium-cinematic-sacred-tech'
-      && record.physicalBase === 'built-obsidian-glass-stone-sanctuary'
+      && record.physicalBase === 'authored-stone-machine-reliquary'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'makehuman-v4'
       && record.movement === 'walk-keyboard-click-touch'
+      && record.visualGrade === 'cinematic-pbr-v49-authored-reliquary'
+      && record.artRevision === 'v49-authored-reliquary-candidate'
+      && record.artCertification === 'v49-retained-pixel-candidate-not-certified'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
       && record.runtimeAssets?.includes(path.basename(orbPath))
