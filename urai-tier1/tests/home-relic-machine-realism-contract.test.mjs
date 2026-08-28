@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import test from 'node:test'
 
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionFinal.tsx', import.meta.url), 'utf8')
 const provenancePath = new URL('../../operations/assets/home-v48-production-asset-provenance.json', import.meta.url)
 const provenance = JSON.parse(readFileSync(provenancePath, 'utf8'))
+const repositoryRoot = fileURLToPath(new URL('../../', import.meta.url))
 const sceneStart = source.indexOf('function SacredFinalScene(')
 const sceneEnd = source.indexOf('export function HomeWorldProductionFinal', sceneStart)
 const sceneSource = source.slice(sceneStart, sceneEnd)
@@ -46,7 +49,7 @@ test('V48 provenance is complete, local at runtime, CC0 and per-file hashed', ()
     for (const file of asset.files) {
       assert.match(file.sha256,/^[a-f0-9]{64}$/)
       assert.ok(file.bytes > 0)
-      assert.ok(existsSync(file.path), `missing committed dependency ${file.path}`)
+      assert.ok(existsSync(resolve(repositoryRoot, file.path)), `missing committed dependency ${file.path}`)
     }
   }
 })
