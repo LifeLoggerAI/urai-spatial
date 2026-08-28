@@ -36,15 +36,28 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
+
+          # Preserve the governed composition contract and hidden V48 compatibility provenance.
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
-          grep -F 'v48-production-asset-sanctuary-candidate' "$source"
+          grep -F "root.visible = false" "$source"
+          grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
           grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
+
+          # Verify the current V49 visible-world ownership rather than retired V48 certification identities.
           grep -F 'function ProductionSanctuary()' "$source"
           grep -F 'function ProductionOrbMachine()' "$source"
-          grep -F 'home-v48-rear-scanned-apse' "$source"
-          grep -F 'home-v48-machine-services' "$source"
-          grep -F 'home-v48-orb-machine-frame' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v48-committed-production-assets"' "$source"
-          grep -F 'data-home-final-art-revision="v48-production-asset-sanctuary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v48-production-assets-retained-pixel-candidate"' "$source"
+          grep -F 'home-v49-scanned-detail-layer' "$source"
+          grep -F 'home-v49-authored-practicals' "$source"
+          grep -F "visualOwner:'cinematic-integrated-reliquary-sanctuary-v49'" "$source"
+          grep -F "visualTreatment:'v49-authored-reliquary-production-candidate'" "$source"
+          grep -F "root.userData.uraiTreatment = 'v49-governed-faceted-armor-heart-no-orbit-display'" "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v49-authored-reliquary"' "$source"
+          grep -F 'data-home-final-art-revision="v49-authored-reliquary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v49-retained-pixel-candidate-not-certified"' "$source"
+          grep -F 'data-home-animation-owner="authored-reliquary-v49-plus-governed-living-orb"' "$source"
+
+          # The old V48 pipe-machine helper may remain as provenance, but it must not own the visible scene.
+          ! grep -F '<ProductionOrbMachine />' "$source"
+
+          # Retained-pixel certification is a separate human visual gate and must not be asserted here.
           ! grep -F 'PRODUCTION CERTIFIED' "$source"
