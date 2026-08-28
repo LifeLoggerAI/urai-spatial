@@ -51,7 +51,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - name: Verify materialized production Home composition and governed inputs
+      - name: Verify materialized V42 production Home composition and governed inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -65,20 +65,25 @@ jobs:
           grep -F 'polyhaven-fern-02-geometry-v1.glb' "$source"
           ! grep -F 'CINEMATIC_HOME_ART_MOBILE' "$source"
           grep -F 'monolithic-photographic-stone-court-v30-no-visible-tiling-grid' "$source"
-          grep -F 'v41-integrated-authored-orb-sanctuary-production-candidate' "$source"
-          grep -F 'v41-foundation-rooted-heavy-lateral-pier' "$source"
-          grep -F 'v41-split-vault-shoulders-no-center-bridge' "$source"
-          grep -F 'v41-recessed-foundation-sockets-no-platform' "$source"
-          grep -F 'v41-open-center-no-spine-no-ring-no-pedestal' "$source"
-          grep -F 'v41-governed-authored-orb-primary-architectural-hero' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v41-integrated-authored-orb-sanctuary"' "$source"
-          grep -F 'data-home-final-art-revision="v41-integrated-authored-orb-sanctuary-production-candidate"' "$source"
-          grep -F 'data-home-art-certification="v41-retained-pixel-candidate"' "$source"
+          grep -F 'v42-sanctuary-integrated-relic-machine-production-candidate' "$source"
+          grep -F 'v42-high-clearance-continuous-bearing-vault' "$source"
+          grep -F 'v42-rear-recessed-buttress-outside-orb-hero-frame' "$source"
+          grep -F 'v42-grounded-rear-load-paths-no-display-backplate' "$source"
+          grep -F 'v42-articulated-floor-rooted-capture-pier' "$source"
+          grep -F 'v42-split-vault-shoulders-continuous-with-articulated-piers' "$source"
+          grep -F 'v42-machinery-embedded-foundation-sockets-no-platform' "$source"
+          grep -F 'v42-massive-orb-integrated-with-grounded-lateral-machinery' "$source"
+          grep -F 'v42-governed-authored-orb-massive-relic-machine-hero' "$source"
+          grep -F 'scale={1.05}' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v42-integrated-relic-machine-sanctuary"' "$source"
+          grep -F 'data-home-final-art-revision="v42-sanctuary-integrated-relic-machine-production-candidate"' "$source"
+          grep -F 'data-home-art-certification="v42-retained-pixel-candidate"' "$source"
           grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' "$source"
           grep -F ".urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon" "$atmosphere"
           ! grep -F '<SanctuaryShellMass' "$source"
           ! grep -F '<ReliquarySpine/>' "$source"
           ! grep -F '<torusGeometry' "$source"
+          ! grep -F 'v41-integrated-authored-orb-sanctuary-production-candidate' "$source"
           ! grep -F 'v40-open-apse-authored-orb-production-candidate' "$source"
           ! grep -F 'v40-open-apse-bearing-arch-no-solid-backplate' "$source"
           ! grep -F 'v40-floor-rooted-tapered-pier-no-bar-cage' "$source"
