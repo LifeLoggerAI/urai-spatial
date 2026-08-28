@@ -38,7 +38,7 @@ test('app template mounts current WebGL owners without certified-route redirects
   assert.match(assetHome, /HomeWorldProduction/)
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionFinal as HomeWorldProduction \} from "\.\/HomeWorldProductionFinal"/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
+  assert.match(homeProduction, /data-home-visible-world="open-air-sacred-tech-reliquary"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
@@ -53,9 +53,9 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'urai-orb-avatar-v1.glb',
     'portal-ring-master-v1.glb',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
+    'data-home-visible-world="open-air-sacred-tech-reliquary"',
     'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="built-obsidian-glass-stone-sanctuary"',
+    'data-home-physical-base="authored-stone-machine-reliquary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
