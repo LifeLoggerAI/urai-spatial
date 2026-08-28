@@ -131,6 +131,7 @@ source = source.replace("const lookHeight=portrait?2.18:2.04", "const lookHeight
 source = source.replace("gl.toneMappingExposure=1.7", "gl.toneMappingExposure=1.62")
 source = source.replace("<ambientLight intensity={0.7} color=\"#e6efea\" />", "<ambientLight intensity={0.62} color=\"#e6efea\" />")
 source = source.replace("<hemisphereLight args={['#c9ded7','#26322b',0.98]} />", "<hemisphereLight args={['#c8ddd7','#25312b',0.86]} />")
+source = source.replace("<coneGeometry args={[width*.72,width,length,5,1,false]}/>", "<coneGeometry args={[width*.72,width,length,5,1,false]}/>")
 
 required = [
     'v43-relic-machine-open-vault-production-candidate',
