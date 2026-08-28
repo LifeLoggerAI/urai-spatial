@@ -61,6 +61,30 @@ function safeRelativeUri(uri) {
   return decoded.replaceAll('\\', '/')
 }
 
+function urlBasename(value) {
+  try {
+    return path.posix.basename(decodeURIComponent(new URL(value).pathname))
+  } catch {
+    return ''
+  }
+}
+
+function resolveDependencySource(rawUri, gltfRecord, records) {
+  const relative = safeRelativeUri(rawUri)
+  if (!relative) return null
+  const wantedBase = path.posix.basename(relative)
+  const exact = records
+    .filter((record) => urlBasename(record.url) === wantedBase)
+    .sort((a, b) => {
+      const a1k = /(?:\/|_|-)1k(?:\/|_|-|\.)/i.test(`${a.keyPath}/${a.url}`) ? 0 : 1
+      const b1k = /(?:\/|_|-)1k(?:\/|_|-|\.)/i.test(`${b.keyPath}/${b.url}`) ? 0 : 1
+      if (a1k !== b1k) return a1k - b1k
+      return (a.size ?? Number.MAX_SAFE_INTEGER) - (b.size ?? Number.MAX_SAFE_INTEGER)
+    })[0]
+  if (exact) return { relative, sourceUrl: exact.url, resolution: 'polyhaven-file-map-basename' }
+  return { relative, sourceUrl: new URL(rawUri, gltfRecord.url).toString(), resolution: 'gltf-relative-fallback' }
+}
+
 async function importAsset(asset) {
   const apiUrl = `${API_ROOT}/${asset.id}`
   const apiText = await fetchChecked(apiUrl)
@@ -79,6 +103,7 @@ async function importAsset(asset) {
   files.push({
     path: entrypoint,
     sourceUrl: gltfRecord.url,
+    resolution: 'selected-gltf-entrypoint',
     bytes: Buffer.byteLength(gltfText),
     sha256: sha256(Buffer.from(gltfText)),
   })
@@ -89,14 +114,13 @@ async function importAsset(asset) {
   ])
 
   for (const rawUri of uris) {
-    const uri = safeRelativeUri(rawUri)
-    if (!uri) continue
-    const sourceUrl = new URL(rawUri, gltfRecord.url).toString()
-    const buffer = await fetchChecked(sourceUrl, true)
-    const destination = path.join(outputDir, uri)
+    const resolved = resolveDependencySource(rawUri, gltfRecord, records)
+    if (!resolved) continue
+    const buffer = await fetchChecked(resolved.sourceUrl, true)
+    const destination = path.join(outputDir, resolved.relative)
     await mkdir(path.dirname(destination), { recursive: true })
     await writeFile(destination, buffer)
-    files.push({ path: destination, sourceUrl, bytes: buffer.length, sha256: sha256(buffer) })
+    files.push({ path: destination, sourceUrl: resolved.sourceUrl, resolution: resolved.resolution, bytes: buffer.length, sha256: sha256(buffer) })
   }
 
   const totalBytes = files.reduce((sum, file) => sum + file.bytes, 0)
