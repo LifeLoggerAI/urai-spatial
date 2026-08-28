@@ -7,42 +7,41 @@ TEST = Path('urai-tier1/tests/home-relic-machine-realism-contract.test.mjs')
 text = SRC.read_text()
 
 
-def must_replace(old, new, label):
+def replace_once(old, new, label):
     global text
     if old not in text:
-        raise SystemExit(f'missing V48 replacement anchor: {label}')
+        raise SystemExit(f'missing V48 live anchor: {label}')
     text = text.replace(old, new, 1)
 
 
-def regex_replace(pattern, replacement, label, flags=re.S):
+def regex_once(pattern, replacement, label):
     global text
-    new_text, count = re.subn(pattern, replacement, text, count=1, flags=flags)
+    new_text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
     if count != 1:
-        raise SystemExit(f'expected one V48 regex replacement for {label}, got {count}')
+        raise SystemExit(f'expected one V48 live replacement for {label}, got {count}')
     text = new_text
 
-must_replace(
+replace_once(
 "const HOME_HDR = '/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr'\n",
 "const HOME_HDR = '/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr'\n"
 "const V48_ROCK_FACE_01 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'\n"
 "const V48_ROCK_FACE_02 = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'\n"
 "const V48_PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'\n"
 "const V48_CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'\n",
-'production asset constants')
+'production constants')
 
-regex_replace(
+regex_once(
 r"const SANCTUARY_REQUIRED_OBJECTS = \[.*?\] as const",
 """const SANCTUARY_REQUIRED_OBJECTS = [
   'home-authored-terrain', 'home-authored-embodied-self', 'home-orb-sanctuary',
   'home-ground-environmental-threshold', 'home-life-map-sky-lookout', 'home-life-map-physical-portal',
   'home-sanctuary-pavilion', 'home-v48-left-scanned-vault', 'home-v48-right-scanned-vault',
   'home-v48-rear-scanned-apse', 'home-v48-machine-services', 'home-v48-authored-practicals',
-  'home-v48-orb-machine-frame', 'home-orb-engineered-cradle',
+  'home-orb-engineered-cradle', 'home-v48-orb-machine-frame',
 ] as const""",
-'required object list')
+'required objects')
 
-# Add a normalized production-model helper immediately after cloneModel.
-anchor = """function cloneModel(source: THREE.Object3D) {
+clone_anchor = """function cloneModel(source: THREE.Object3D) {
   const root = source.clone(true)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -53,17 +52,16 @@ anchor = """function cloneModel(source: THREE.Object3D) {
   return root
 }
 """
-helper = anchor + """
+production_helper = clone_anchor + """
 function normalizedProductionModel(source: THREE.Object3D, targetSpan: number) {
   const root = cloneModel(source)
   const bounds = new THREE.Box3().setFromObject(root)
   const center = bounds.getCenter(new THREE.Vector3())
   const size = bounds.getSize(new THREE.Vector3())
-  const span = Math.max(size.x, size.y, size.z, 0.001)
-  const scale = targetSpan / span
+  const sourceSpan = Math.max(size.x, size.y, size.z, 0.001)
   root.position.sub(center)
-  root.scale.setScalar(scale)
-  root.userData.uraiProductionNormalization = { targetSpan, sourceSpan: span }
+  root.scale.setScalar(targetSpan / sourceSpan)
+  root.userData.uraiProductionNormalization = { targetSpan, sourceSpan }
   return root
 }
 
@@ -73,29 +71,32 @@ function ProductionAsset({url,name,position,rotation=[0,0,0],span,scale=[1,1,1]}
   return <group name={name} position={position as [number,number,number]} rotation={rotation as [number,number,number]} scale={scale as [number,number,number]} userData={{runtimeAsset:url,provenance:'poly-haven-cc0-v48-committed'}}><primitive object={model}/></group>
 }
 """
-must_replace(anchor, helper, 'production model helper')
+replace_once(clone_anchor, production_helper, 'production model helper')
 
-# Make the legacy deterministic chamber explicitly provenance-only, never visible.
-must_replace("root.userData.visibleWorldOwner = 'home-built-sanctuary-envelope-v29'", "root.userData.visibleWorldOwner = 'home-v48-production-asset-sanctuary'", 'compatibility owner')
-must_replace("root.userData.treatment = 'v29-compatibility-glb-provenance-only-no-visible-fantasy-shell'", "root.userData.treatment = 'v48-deterministic-intake-glb-provenance-only-never-visible'", 'compatibility treatment')
+regex_once(
+r"root\.visible = true\n  root\.userData\.governedProductionAsset = true\n  root\.userData\.visibleWorldOwner = 'home-entry-chamber-v1\.glb'\n  root\.userData\.treatment = 'v48-governed-selected-sanctuary-visible-primary-world-owner'",
+"""root.visible = false
+  root.userData.retainedForGovernedCompatibilityOnly = true
+  root.userData.visibleWorldOwner = 'home-v48-committed-production-asset-sanctuary'
+  root.userData.treatment = 'v48-deterministic-intake-glb-provenance-only-never-visible'""",
+'compatibility GLB visibility')
 
-# Replace the visible floor box with a textured walkable floor only; perimeter scanned assets will carry visible weight.
-regex_replace(
+regex_once(
 r"function SanctuaryCourt\(\{ target \}: \{ target: MutableRefObject<THREE.Vector3 \| null> \}\) \{.*?\n\}\n\nfunction RecessedPractical",
 """function SanctuaryCourt({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
   const sanctuary = useGLTF(SANCTUARY)
   const compatibilityModel = useMemo(() => cloneCompatibilitySanctuary(sanctuary.scene), [sanctuary.scene])
-  const pack = useStonePack(0.14, 0.18)
+  const pack = useStonePack(0.15, 0.19)
   const onWalk = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (useSceneStore.getState().inputLocked) return
     target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ))
   }
-  return <group name=\"home-authored-terrain\" userData={{ treatment: 'v48-photographic-pbr-floor-with-scanned-architectural-perimeter', source: HOME_PHOTOGRAPHIC_PBR_V19 }}>
+  return <group name=\"home-authored-terrain\" userData={{ treatment: 'v48-photographic-pbr-floor-under-committed-scanned-sanctuary', source: HOME_PHOTOGRAPHIC_PBR_V19 }}>
     <primitive object={compatibilityModel} />
-    <mesh name=\"home-v48-walkable-photographic-floor\" position={[0,-0.15,-1.45]} rotation={[-Math.PI/2,0,0]} receiveShadow>
+    <mesh name=\"home-v48-walkable-photographic-floor\" position={[0,-0.16,-1.45]} rotation={[-Math.PI/2,0,0]} receiveShadow>
       <planeGeometry args={[16.5,19.2,24,24]} />
-      <meshPhysicalMaterial color=\"#252b28\" map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(0.52,0.52)} roughnessMap={pack.arm} displacementMap={pack.displacement} displacementScale={0.025} displacementBias={-0.012} roughness={0.8} metalness={0.02} clearcoat={0.035} clearcoatRoughness={0.8} envMapIntensity={0.74} />
+      <meshPhysicalMaterial color=\"#262c29\" map={pack.color} normalMap={pack.normal} normalScale={new THREE.Vector2(0.54,0.54)} roughnessMap={pack.arm} displacementMap={pack.displacement} displacementScale={0.026} displacementBias={-0.012} roughness={0.8} metalness={0.02} clearcoat={0.035} clearcoatRoughness={0.8} envMapIntensity={0.76} />
     </mesh>
     <mesh name=\"home-walkable-navigation-surface\" position={[0,0.18,-1.45]} rotation={[-Math.PI/2,0,0]} onClick={onWalk}>
       <planeGeometry args={[13.4,17.5]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -103,104 +104,54 @@ r"function SanctuaryCourt\(\{ target \}: \{ target: MutableRefObject<THREE.Vecto
   </group>
 }
 
-function RecessedPractical""",
-'SanctuaryCourt')
-
-# Replace all procedural sanctuary architecture from ContinuousVaultSkin through SanctuaryGlazing with production composition.
-regex_replace(
-r"function ContinuousVaultSkin\(.*?\nfunction SanctuaryGlazing\(\)\{.*?\n\}\n\nfunction SanctuaryCeiling",
-"""function SanctuaryArchitecture(){
-  return <group name=\"home-sanctuary-pavilion\" userData={{visualOwner:'v48-committed-production-assets',construction:'scanned-rock-architecture-plus-modular-industrial-machine-system',visualTreatment:'v48-production-asset-sanctuary-candidate'}}>
-    <ProductionAsset url={V48_ROCK_FACE_01} name=\"home-v48-left-scanned-vault\" position={[-4.65,2.62,-5.45]} rotation={[0.08,1.02,-0.12]} span={7.8} scale={[1.0,1.16,1.24]}/>
-    <ProductionAsset url={V48_ROCK_FACE_02} name=\"home-v48-right-scanned-vault\" position={[4.55,2.48,-5.82]} rotation={[-0.04,-1.18,0.1]} span={7.5} scale={[1.08,1.12,1.2]}/>
-    <ProductionAsset url={V48_ROCK_FACE_01} name=\"home-v48-rear-scanned-apse\" position={[0,3.15,-9.25]} rotation={[1.48,0.12,0.04]} span={9.4} scale={[1.48,1.0,0.82]}/>
-    <ProductionAsset url={V48_ROCK_FACE_02} name=\"home-v48-left-foreground-foundation\" position={[-6.15,0.48,-1.5]} rotation={[1.62,0.44,-0.08]} span={4.2} scale={[1.24,0.68,1.0]}/>
-    <ProductionAsset url={V48_ROCK_FACE_01} name=\"home-v48-right-foreground-foundation\" position={[6.12,0.42,-2.45]} rotation={[1.54,-0.38,0.06]} span={4.4} scale={[1.22,0.7,1.0]}/>
-    <group name=\"home-v48-machine-services\" userData={{treatment:'v48-real-modular-industrial-service-system-integrated-into-apse'}}>
-      <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-left-machine-service\" position={[-2.82,1.72,-6.34]} rotation={[0.04,0.56,-0.08]} span={4.9} scale={[0.82,1.08,0.9]}/>
-      <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-right-machine-service\" position={[2.9,1.78,-6.55]} rotation={[-0.02,-0.62,0.07]} span={4.8} scale={[-0.82,1.06,0.9]}/>
-      <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-rear-machine-service\" position={[0,3.05,-8.1]} rotation={[0.22,1.57,1.42]} span={5.6} scale={[0.72,0.72,1.05]}/>
-    </group>
-    <group name=\"home-v48-authored-practicals\" userData={{treatment:'v48-real-caged-industrial-practicals'}}>
-      <ProductionAsset url={V48_CAGED_SCONCE} name=\"home-v48-left-sconce\" position={[-4.3,2.5,-4.9]} rotation={[0,0.72,0]} span={0.7}/>
-      <ProductionAsset url={V48_CAGED_SCONCE} name=\"home-v48-right-sconce\" position={[4.25,2.42,-5.15]} rotation={[0,-0.74,0]} span={0.7}/>
-      <pointLight position={[-4.15,2.45,-4.7]} color=\"#d6ad71\" intensity={0.72} distance={6.8} decay={2}/>
-      <pointLight position={[4.08,2.38,-4.95]} color=\"#86bdb7\" intensity={0.68} distance={6.4} decay={2}/>
-    </group>
+function ProductionSanctuary(){return <group name=\"home-sanctuary-pavilion\" userData={{visualOwner:'v48-committed-production-assets',construction:'scanned-rock-architecture-plus-modular-industrial-services',visualTreatment:'v48-production-asset-sanctuary-candidate'}}>
+  <ProductionAsset url={V48_ROCK_FACE_01} name=\"home-v48-left-scanned-vault\" position={[-4.75,2.7,-5.35]} rotation={[0.06,1.08,-0.1]} span={7.7} scale={[1.02,1.18,1.2]}/>
+  <ProductionAsset url={V48_ROCK_FACE_02} name=\"home-v48-right-scanned-vault\" position={[4.65,2.55,-5.78]} rotation={[-0.05,-1.14,0.1]} span={7.6} scale={[1.08,1.16,1.2]}/>
+  <ProductionAsset url={V48_ROCK_FACE_01} name=\"home-v48-rear-scanned-apse\" position={[0,3.32,-9.1]} rotation={[1.5,0.1,0.02]} span={9.2} scale={[1.52,1.0,0.84]}/>
+  <ProductionAsset url={V48_ROCK_FACE_02} name=\"home-v48-left-foundation-rock\" position={[-6.1,0.45,-1.75]} rotation={[1.58,0.48,-0.06]} span={4.0} scale={[1.22,0.7,1.0]}/>
+  <ProductionAsset url={V48_ROCK_FACE_01} name=\"home-v48-right-foundation-rock\" position={[6.05,0.42,-2.55]} rotation={[1.56,-0.42,0.05]} span={4.15} scale={[1.2,0.72,1.0]}/>
+  <group name=\"home-v48-machine-services\" userData={{treatment:'v48-real-modular-industrial-services-rooted-in-scanned-apse'}}>
+    <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-left-machine-service\" position={[-2.8,1.72,-6.25]} rotation={[0.04,0.56,-0.08]} span={4.7} scale={[0.84,1.08,0.9]}/>
+    <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-right-machine-service\" position={[2.85,1.78,-6.5]} rotation={[-0.02,-0.62,0.07]} span={4.7} scale={[-0.84,1.06,0.9]}/>
+    <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-upper-machine-service\" position={[0,3.55,-7.6]} rotation={[0.28,1.57,1.42]} span={5.1} scale={[0.7,0.7,1.0]}/>
   </group>
-}
-
-function SanctuaryGlazing(){return <group name=\"home-architectural-glazing\" userData={{treatment:'v48-no-hero-glass-panels-scanned-architecture-owns-depth'}} />}
-
-function SanctuaryCeiling""",
-'procedural sanctuary replacement')
-
-# Retire the old raw ceiling slabs from the rendered scene by making the component semantic only.
-regex_replace(
-r"function SanctuaryCeiling\(\) \{.*?\n\}\n\nfunction FloorPanelJoints",
-"""function SanctuaryCeiling() { return <group name=\"home-architectural-canopy\" userData={{treatment:'v48-open-scanned-rock-vault-no-raw-box-ceiling'}} /> }
-
-function FloorPanelJoints""",
-'ceiling')
-
-# Replace procedural reliquary arms/core with production pipe machine frame. Keep semantic cradle name for interaction/proof contracts.
-regex_replace(
-r"function ReliquarySpine\(\).*?\nfunction SacredOrb\(",
-"""function ReliquarySpine(){return <group name=\"home-orb-reliquary-spine\" userData={{treatment:'v48-production-machine-spine-is-asset-backed'}} />}
-
-function OrbCradle(){return <group name=\"home-orb-engineered-cradle\" userData={{treatment:'v48-asset-backed-machine-physically-surrounds-core-no-pedestal'}}> 
-  <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-orb-machine-frame\" position={[0,2.05,-5.95]} rotation={[0.18,0,1.57]} span={5.2} scale={[0.86,0.86,1.08]}/>
-  <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-orb-machine-frame-left\" position={[-1.72,1.4,-5.72]} rotation={[0.02,0.84,0.32]} span={3.4} scale={[0.68,0.68,0.9]}/>
-  <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-orb-machine-frame-right\" position={[1.72,1.42,-5.76]} rotation={[-0.02,-0.84,-0.32]} span={3.4} scale={[-0.68,0.68,0.9]}/>
+  <group name=\"home-v48-authored-practicals\" userData={{treatment:'v48-real-caged-industrial-practicals'}}>
+    <ProductionAsset url={V48_CAGED_SCONCE} name=\"home-v48-left-sconce\" position={[-4.15,2.52,-4.75]} rotation={[0,0.7,0]} span={0.68}/>
+    <ProductionAsset url={V48_CAGED_SCONCE} name=\"home-v48-right-sconce\" position={[4.1,2.45,-5.02]} rotation={[0,-0.72,0]} span={0.68}/>
+    <pointLight position={[-4.05,2.5,-4.6]} color=\"#d6ad71\" intensity={0.8} distance={6.8} decay={2}/>
+    <pointLight position={[4.0,2.42,-4.88]} color=\"#86bdb7\" intensity={0.74} distance={6.5} decay={2}/>
+  </group>
 </group>}
 
-function OrbPlatform(){return <group name=\"home-v48-foundation-integration\" userData={{treatment:'v48-no-display-platform-machine-services-cross-floor-and-apse'}}/>}
+function ProductionOrbMachine(){return <group name=\"home-orb-engineered-cradle\" userData={{treatment:'v48-asset-backed-machine-surrounds-authored-core-no-pedestal'}}>
+  <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-orb-machine-frame\" position={[0,2.05,-4.85]} rotation={[0.14,0,1.57]} span={5.0} scale={[0.9,0.9,1.08]}/>
+  <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-orb-machine-left\" position={[-1.75,1.25,-4.42]} rotation={[0.02,0.88,0.3]} span={3.25} scale={[0.7,0.7,0.92]}/>
+  <ProductionAsset url={V48_PIPE_SYSTEM} name=\"home-v48-orb-machine-right\" position={[1.75,1.27,-4.46]} rotation={[-0.02,-0.88,-0.3]} span={3.25} scale={[-0.7,0.7,0.92]}/>
+</group>}
 
-function SacredOrb(""",
-'reliquary machinery')
+function RecessedPractical""",
+'SanctuaryCourt and production composition')
 
-# Increase the authored functional heart enough to read while keeping crystalline display families hidden.
-must_replace("object.scale.multiplyScalar(0.14)", "object.scale.multiplyScalar(0.32)", 'orb heart scale')
-must_replace("object.scale.multiplyScalar(0.065)", "object.scale.multiplyScalar(0.14)", 'orb filament scale')
-must_replace("v47-small-authored-heart-deep-in-machined-aperture", "v48-authored-heart-functional-core-inside-production-machine", 'heart role')
-must_replace("v47-minimal-authored-filament-deep-inside-machine-core", "v48-authored-filament-functional-trace-inside-production-machine", 'filament role')
-must_replace("v47-authored-heart-filament-trace-deep-behind-machined-aperture-no-crystal-display", "v48-authored-heart-filament-functional-core-no-crystal-display", 'orb treatment')
+text = text.replace('v48-engineered-body-owned-by-governed-sanctuary-and-orb-assets', 'v48-engineered-body-owned-by-committed-pipe-machine-frame')
 
-regex_replace(
-r"return <group ref=\{root\} name=\"home-orb-sanctuary\".*?\n  </group>\n\}",
-"""return <group ref={root} name=\"home-orb-sanctuary\" position={ORB} onClick={(event)=>{event.stopPropagation();onOpen()}} userData={{orbState:state,animation:sensory.animation,modelClip:ORB_CLIPS[state],runtimeAsset:ORB_MODEL,treatment:'v48-governed-authored-core-inside-committed-production-machine'}}>
-    <group scale={0.64} position={[0,-0.04,-2.38]} rotation={[0,.18,0]} name=\"home-orb-authored-core\" userData={{treatment:'v48-authored-heart-filament-functional-core-no-crystal-display'}}><primitive object={authoredOrb}/></group>
-    <group name=\"home-orb-engineered-body\" userData={{treatment:'v48-production-pipe-machine-frame-is-rendered-by-orb-cradle'}} />
-    <pointLight color={stateColor} intensity={intensity*2.65} distance={12.5} decay={2}/>
-    <pointLight position={[0,.5,-1.55]} color=\"#d7ba82\" intensity={1.7} distance={8.2} decay={2}/>
-    <pointLight position={[0,-.36,.68]} color=\"#75bdb5\" intensity={1.15} distance={6.4} decay={2}/>
-  </group>
-}""",
-'SacredOrb render')
+replace_once(
+'<SanctuaryCourt target={props.target} /><PlantedEdges reducedMotion={props.reducedMotion} /><AtmosphericDepth /><SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />',
+'<SanctuaryCourt target={props.target} /><ProductionSanctuary /><ProductionOrbMachine /><PlantedEdges reducedMotion={props.reducedMotion} /><AtmosphericDepth /><SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />',
+'production scene insertion')
 
-# Remove visible ceiling box component from final scene invocation; asset composition owns the upper frame.
-must_replace("<SanctuaryArchitecture /><SanctuaryCeiling /><SanctuaryGlazing />", "<SanctuaryArchitecture /><SanctuaryGlazing />", 'final scene architecture invocation')
-
-# V48 markers and runtime provenance.
-text = text.replace('v47-sanctuary-depth-production-candidate', 'v48-production-asset-sanctuary-candidate')
-text = text.replace('cinematic-pbr-v47-sanctuary-depth', 'cinematic-pbr-v48-committed-production-assets')
-text = text.replace('v47-retained-pixel-candidate', 'v48-production-assets-retained-pixel-candidate')
-text = text.replace(
-'data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb built-sacred-tech-sanctuary-v19"',
-'data-home-runtime-assets="home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb polyhaven-rock-face-01 polyhaven-rock-face-02 polyhaven-modular-industrial-pipes-01 polyhaven-industrial-caged-sconce"')
-text = text.replace(
-'data-home-scenery-assets="polyhaven-fern-02-geometry-v1.glb polyhaven-rock-tile-floor-pbr-v2-optimized studio-small-08-hdri-v1 architectural-depth-v25-volumetric-only-no-card"',
-'data-home-scenery-assets="polyhaven-rock-face-01 polyhaven-rock-face-02 polyhaven-modular-industrial-pipes-01 polyhaven-industrial-caged-sconce polyhaven-fern-02-geometry-v1.glb polyhaven-rock-tile-floor-pbr-v2-optimized studio-small-08-hdri-v1"')
-
-# Slightly wider production framing and stronger physical environment response.
+text = text.replace('cinematic-pbr-v48-governed-selected-assets', 'cinematic-pbr-v48-committed-production-assets')
+text = text.replace('v48-governed-selected-assets-production-candidate', 'v48-production-asset-sanctuary-candidate')
+text = text.replace('v48-retained-pixel-candidate', 'v48-production-assets-retained-pixel-candidate')
+text = text.replace('governed-home-entry-chamber-v1-plus-governed-orb-v1', 'committed-polyhaven-production-sanctuary-plus-governed-orb-v1')
+text = re.sub(r'data-home-runtime-assets="[^"]*"', 'data-home-runtime-assets="home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb polyhaven-rock-face-01 polyhaven-rock-face-02 polyhaven-modular-industrial-pipes-01 polyhaven-industrial-caged-sconce"', text, count=1)
+text = re.sub(r'data-home-scenery-assets="[^"]*"', 'data-home-scenery-assets="polyhaven-rock-face-01 polyhaven-rock-face-02 polyhaven-modular-industrial-pipes-01 polyhaven-industrial-caged-sconce polyhaven-fern-02-geometry-v1.glb polyhaven-rock-tile-floor-pbr-v2-optimized studio-small-08-hdri-v1"', text, count=1)
 text = text.replace('const desiredFov=portrait?64:54', 'const desiredFov=portrait?67:58')
-text = text.replace('gl.toneMappingExposure=2.05', 'gl.toneMappingExposure=2.18')
+text = text.replace('gl.toneMappingExposure=1.72', 'gl.toneMappingExposure=2.08')
 
-# Preload all committed production assets.
-must_replace(
-"useGLTF.preload(FERN_MODEL)\n",
-"useGLTF.preload(FERN_MODEL)\nuseGLTF.preload(V48_ROCK_FACE_01)\nuseGLTF.preload(V48_ROCK_FACE_02)\nuseGLTF.preload(V48_PIPE_SYSTEM)\nuseGLTF.preload(V48_CAGED_SCONCE)\n",
-'preloads')
+replace_once(
+'useGLTF.preload(FERN_MODEL)\n',
+'useGLTF.preload(FERN_MODEL)\nuseGLTF.preload(V48_ROCK_FACE_01)\nuseGLTF.preload(V48_ROCK_FACE_02)\nuseGLTF.preload(V48_PIPE_SYSTEM)\nuseGLTF.preload(V48_CAGED_SCONCE)\n',
+'production asset preloads')
 
 SRC.write_text(text)
 
@@ -211,24 +162,36 @@ import test from 'node:test'
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionFinal.tsx', import.meta.url), 'utf8')
 const provenancePath = new URL('../../operations/assets/home-v48-production-asset-provenance.json', import.meta.url)
 const provenance = JSON.parse(readFileSync(provenancePath, 'utf8'))
-const architectureStart = source.indexOf('function SanctuaryArchitecture')
-const architectureEnd = source.indexOf('function SanctuaryGlazing', architectureStart)
+const sceneStart = source.indexOf('function SacredFinalScene(')
+const sceneEnd = source.indexOf('export function HomeWorldProductionFinal', sceneStart)
+const sceneSource = source.slice(sceneStart, sceneEnd)
+const architectureStart = source.indexOf('function ProductionSanctuary')
+const architectureEnd = source.indexOf('function RecessedPractical', architectureStart)
 const architectureSource = source.slice(architectureStart, architectureEnd)
 const orbStart = source.indexOf('function SacredOrb(')
 const orbEnd = source.indexOf('function HumanPresence', orbStart)
 const orbSource = source.slice(orbStart, orbEnd)
 
-test('V48 is committed production-asset integration, not a V47 primitive polish', () => {
+test('V48 renders committed external production assets instead of the deterministic intake chamber', () => {
   assert.match(source,/v48-production-asset-sanctuary-candidate/)
-  assert.match(source,/polyhaven-v48\/rock_face_01\/asset\.gltf/)
-  assert.match(source,/polyhaven-v48\/rock_face_02\/asset\.gltf/)
-  assert.match(source,/polyhaven-v48\/modular_industrial_pipes_01\/asset\.gltf/)
-  assert.match(source,/polyhaven-v48\/industrial_caged_sconce\/asset\.gltf/)
-  assert.doesNotMatch(architectureSource,/ExtrudeGeometry|boxGeometry|RoundedBox|coneGeometry|cylinderGeometry/)
-  assert.doesNotMatch(architectureSource,/home-v47-left-apse-mass|home-v47-side-gallery|home-v47-reliquary-cavity/)
+  assert.match(source,/root\.visible = false/)
+  assert.match(source,/v48-deterministic-intake-glb-provenance-only-never-visible/)
+  assert.match(sceneSource,/<ProductionSanctuary \/>/)
+  assert.match(sceneSource,/<ProductionOrbMachine \/>/)
+  assert.doesNotMatch(sceneSource,/<SanctuaryArchitecture \/>|<SanctuaryCeiling \/>|<OrbCradle \/>/)
 })
 
-test('V48 provenance is complete, local at runtime, CC0 and hashed', () => {
+test('V48 production sanctuary is asset-backed, not hero primitive geometry', () => {
+  assert.match(architectureSource,/V48_ROCK_FACE_01/)
+  assert.match(architectureSource,/V48_ROCK_FACE_02/)
+  assert.match(architectureSource,/V48_PIPE_SYSTEM/)
+  assert.match(architectureSource,/V48_CAGED_SCONCE/)
+  assert.match(architectureSource,/home-v48-rear-scanned-apse/)
+  assert.match(architectureSource,/home-v48-machine-services/)
+  assert.doesNotMatch(architectureSource,/ExtrudeGeometry|boxGeometry|RoundedBox|coneGeometry|cylinderGeometry/)
+})
+
+test('V48 provenance is complete, local at runtime, CC0 and per-file hashed', () => {
   assert.equal(provenance.schema, 'urai.home.v48-production-assets.v1')
   assert.equal(provenance.runtimeFetchesPolyHavenApi, false)
   assert.equal(provenance.sourceAssets.length, 4)
@@ -240,31 +203,28 @@ test('V48 provenance is complete, local at runtime, CC0 and hashed', () => {
     for (const file of asset.files) {
       assert.match(file.sha256,/^[a-f0-9]{64}$/)
       assert.ok(file.bytes > 0)
-      assert.ok(existsSync(file.path), `missing committed production asset dependency ${file.path}`)
+      assert.ok(existsSync(file.path), `missing committed dependency ${file.path}`)
     }
   }
 })
 
-test('V48 Orb is the authored functional core of an asset-backed machine, not a display object', () => {
-  assert.match(source,/home-v48-orb-machine-frame/)
-  assert.match(source,/v48-asset-backed-machine-physically-surrounds-core-no-pedestal/)
+test('V48 keeps the authored Orb core visible inside a real asset-backed machine frame', () => {
+  assert.match(source,/v48-governed-orb-core-heart-restored-no-crystalline-display/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.86\)/)
+  assert.match(source,/object\.scale\.multiplyScalar\(0\.62\)/)
   assert.match(source,/object\.scale\.multiplyScalar\(0\.32\)/)
-  assert.match(source,/object\.scale\.multiplyScalar\(0\.14\)/)
-  assert.match(orbSource,/scale=\{0\.64\}/)
-  assert.match(orbSource,/v48-authored-heart-filament-functional-core-no-crystal-display/)
-  assert.doesNotMatch(orbSource,/torusGeometry|sphereGeometry|dodecahedronGeometry|icosahedronGeometry|octahedronGeometry|coneGeometry/)
+  assert.match(orbSource,/scale=\{1\.12\}/)
+  assert.match(source,/home-v48-orb-machine-frame/)
+  assert.match(source,/v48-asset-backed-machine-surrounds-authored-core-no-pedestal/)
+  assert.doesNotMatch(orbSource,/MachineCoreAssembly/)
 })
 
-test('V48 removes raw visible ceiling slabs and keeps procedural primitives to floor/navigation support', () => {
-  assert.match(source,/v48-open-scanned-rock-vault-no-raw-box-ceiling/)
-  assert.doesNotMatch(source,/<SanctuaryCeiling \/>/)
+test('V48 has photographic floor, production framing and no source-level visual PASS claim', () => {
   assert.match(source,/home-v48-walkable-photographic-floor/)
-  assert.match(source,/home-walkable-navigation-surface/)
+  assert.match(source,/rock-tile-floor-diff-1k\.webp/)
+  assert.match(source,/studio-small-08-1k\.hdr/)
   assert.match(source,/desiredFov=portrait\?67:58/)
-  assert.match(source,/gl\.toneMappingExposure=2\.18/)
-})
-
-test('V48 source does not claim retained-pixel certification before literal inspection', () => {
+  assert.match(source,/gl\.toneMappingExposure=2\.08/)
   assert.match(source,/v48-production-assets-retained-pixel-candidate/)
   assert.doesNotMatch(source,/PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
@@ -275,4 +235,4 @@ test('embodied presence remains privacy-preserving',()=>{
 })
 ''')
 
-print('Applied V48 committed-production-asset sanctuary integration and realism contract.')
+print('Applied V48 committed production sanctuary assets to live branch state.')
