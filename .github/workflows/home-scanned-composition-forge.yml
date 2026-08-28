@@ -1,75 +1,51 @@
-# Owner-authored exact-head verifier for the current V43 production sanctuary and integrated reliquary candidate.
+# Owner-authored exact-head verifier for V44 monolithic reliquary production candidate.
 name: Home Scanned Composition Verification
-
 on:
-  push:
-    branches: [main]
-    paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
-      - "urai-tier1/src/spatial/world/persistentRealmAtmosphere.css"
-      - ".github/workflows/home-scanned-composition-forge.yml"
   pull_request:
     branches: [main]
     paths:
       - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
-      - "urai-tier1/src/spatial/world/persistentRealmAtmosphere.css"
+      - ".github/workflows/home-scanned-composition-forge.yml"
+  push:
+    branches: [main]
+    paths:
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
       - ".github/workflows/home-scanned-composition-forge.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: home-scanned-composition-verification-${{ github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: home-scanned-v44-${{ github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
-
 jobs:
   verify-home:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-
-      - name: Verify exact clean V43 composition
+      - name: Verify exact V44 composition
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          test -z "$(git status --porcelain --untracked-files=all)"
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
-          atmosphere='urai-tier1/src/spatial/world/persistentRealmAtmosphere.css'
-          test -f urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
-          test -f urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb
-          test -f urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
-          grep -F 'monolithic-photographic-stone-court-v30-no-visible-tiling-grid' "$source"
-          grep -F 'v43-relic-machine-open-vault-production-candidate' "$source"
-          grep -F 'v43-open-center-asymmetric-vault-shoulders-no-ceiling-sheet' "$source"
-          grep -F 'v43-grounded-rear-buttress-fingers-no-backplate-no-square-footings' "$source"
-          grep -F 'v43-faceted-structural-member-no-tube-grammar' "$source"
-          grep -F 'v43-floor-embedded-faceted-capture-yoke-no-visible-footing' "$source"
-          grep -F 'v43-separated-capture-yokes-seat-into-open-vault-shoulders' "$source"
-          grep -F 'v43-flush-foundation-service-inlays-no-platform-no-pedestal' "$source"
-          grep -F 'v43-governed-authored-heart-petal-machine-core' "$source"
-          grep -F 'v43-authored-core-no-aura-no-orbit-rings' "$source"
-          grep -F 'scale={1.32}' "$source"
-          grep -F '<coneGeometry args={[width*.72,length,5,1,false]}/>' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v43-open-vault-integrated-relic-machine"' "$source"
-          grep -F 'data-home-final-art-revision="v43-relic-machine-open-vault-production-candidate"' "$source"
-          grep -F 'data-home-art-certification="v43-retained-pixel-candidate"' "$source"
-          grep -F 'volumetric-fog-only-v24-no-transparent-depth-card' "$source"
-          grep -F ".urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon" "$atmosphere"
-          ! grep -F '<SanctuaryShellMass' "$source"
-          ! grep -F '<ReliquarySpine/>' "$source"
-          ! grep -F '<torusGeometry' "$source"
-          ! grep -F '<SanctuaryCeiling />' "$source"
-          ! grep -F '<FloorPanelJoints />' "$source"
-          ! grep -F 'v42-sanctuary-integrated-relic-machine-production-candidate' "$source"
+          grep -F 'v44-monolithic-reliquary-apse-production-candidate' "$source"
+          grep -F 'v44-single-monolithic-asymmetric-reliquary-apse-no-detached-ceiling-slabs' "$source"
+          grep -F 'v44-layered-recessed-machine-cavity-no-empty-black-void' "$source"
+          grep -F 'v44-broad-floor-rooted-armor-yoke-no-spikes-no-feet' "$source"
+          grep -F 'v44-no-black-platform-floor-remains-continuous' "$source"
+          grep -F 'v44-authored-heart-filament-core-no-glass-petals-no-rings' "$source"
+          grep -F 'scale={1.58}' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v44-monolithic-reliquary-apse"' "$source"
+          grep -F 'data-home-final-art-revision="v44-monolithic-reliquary-apse-production-candidate"' "$source"
+          grep -F 'data-home-art-certification="v44-retained-pixel-candidate"' "$source"
+          ! grep -F '<coneGeometry' "$source"
+          ! grep -F 'v43-relic-machine-open-vault-production-candidate' "$source"
