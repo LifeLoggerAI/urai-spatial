@@ -138,6 +138,16 @@ async function importAsset(asset) {
   }
 }
 
+let stableImportedAt = null
+try {
+  const previous = JSON.parse(await readFile(PROVENANCE, 'utf8'))
+  if (previous?.schema === 'urai.home.v48-production-assets.v1' && typeof previous.importedAt === 'string') {
+    stableImportedAt = previous.importedAt
+  }
+} catch {
+  // First materialization has no prior provenance receipt.
+}
+
 const imported = []
 for (const asset of ASSETS) {
   const result = await importAsset(asset)
@@ -149,7 +159,7 @@ await mkdir(path.dirname(PROVENANCE), { recursive: true })
 await writeFile(PROVENANCE, `${JSON.stringify({
   schema: 'urai.home.v48-production-assets.v1',
   purpose: 'PR #1177 production sanctuary replacement for rejected procedural V47 art',
-  importedAt: new Date().toISOString(),
+  importedAt: stableImportedAt ?? new Date().toISOString(),
   runtimeFetchesPolyHavenApi: false,
   apiUse: 'materialization-time only; assets are committed into the canonical repository',
   attribution: 'Source assets: Poly Haven (CC0). Live API used only by the governed importer.',
