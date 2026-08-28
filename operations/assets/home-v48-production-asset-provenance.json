@@ -1,7 +1,7 @@
 {
   "schema": "urai.home.v48-production-assets.v1",
   "purpose": "PR #1177 production sanctuary replacement for rejected procedural V47 art",
-  "importedAt": "2026-08-28T10:25:06.193Z",
+  "importedAt": "2026-08-28T17:17:00.926Z",
   "runtimeFetchesPolyHavenApi": false,
   "apiUse": "materialization-time only; assets are committed into the canonical repository",
   "attribution": "Source assets: Poly Haven (CC0). Live API used only by the governed importer.",
