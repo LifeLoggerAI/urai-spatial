@@ -1,4 +1,4 @@
-# V56 owner-authored materialization workflow; this commit retriggers it after the exact-head verifier advanced.
+# V56 owner-authored materialization workflow. Owner exact-head certification trigger after runtime materialization e39cbfaca4a9812a42f455abf1533746729d22dc.
 name: Home Finalization Candidate Commit
 on:
   pull_request:
