@@ -48,6 +48,16 @@ jobs:
           if grep -Fq "v54-authored-relic-sanctuary-retained-pixel-rebuild" "$source"; then
             echo 'V54 authored relic sanctuary is already materialized; no mutation required.'
           else
+            python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-home-v54-authored-relic-sanctuary.py')
+          text = path.read_text()
+          old = "home_state = replace_exact(home_state, \"record.visibleWorld === 'moonlit-sacred-tech-sanctuary'\", \"record.visibleWorld === 'open-air-sacred-tech-reliquary'\", 2, 'Home State current visible world')"
+          new = "home_state = replace_exact(home_state, \"record.visibleWorld === 'moonlit-sacred-tech-sanctuary'\", \"record.visibleWorld === 'open-air-sacred-tech-reliquary'\", 1, 'Home State current visible world')"
+          if old not in text:
+              raise SystemExit('expected V54 Home State replacement-count line was not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
             python3 scripts/apply-home-v54-authored-relic-sanctuary.py
           fi
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
