@@ -1,4 +1,4 @@
-# V57 owner-authored materialization workflow after literal V56 retained-pixel rejection.
+# V57 owner-authored materialization workflow. Owner exact-head certification trigger after runtime materialization 34915e457dd143f1543b2d4db89d8a1e3a47f803.
 name: Home Finalization Candidate Commit
 on:
   pull_request:
