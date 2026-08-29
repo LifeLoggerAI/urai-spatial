@@ -67,9 +67,11 @@ jobs:
           test "$current" = "$GITHUB_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/apply-home-v61-deep-reliquary-vault.py urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs urai-tier1/tests/home-relic-machine-realism-contract.test.mjs .github/workflows/home-scanned-composition-forge.yml
+          # The Actions token intentionally cannot update workflow files. Commit only runtime/proof files here;
+          # the V61 Home composition workflow is applied separately through the owner-authorized GitHub path.
+          git add scripts/apply-home-v61-deep-reliquary-vault.py urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           if git diff --cached --quiet; then
-            echo "No V61 changes to commit"
+            echo "No V61 runtime/proof changes to commit"
             exit 0
           fi
           git commit -m "Home: materialize V61 deep reliquary vault"
