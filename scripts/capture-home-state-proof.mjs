@@ -182,7 +182,7 @@ async function capture(state, options = {}) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+      && record.visibleWorld === 'open-air-sacred-tech-reliquary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
@@ -210,6 +210,24 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   const id = reducedMotion === 'reduce' ? 'orb-lifecycle-reduced-motion' : 'orb-lifecycle-production-ui'
   const record = { id, pageErrors, passed: false, reducedMotion }
+  const fixtureRequests = []
+  record.fixtureRequests = fixtureRequests
+  await page.route('**/api/orb-companion', async (route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.continue()
+    let payload = {}
+    try { payload = request.postDataJSON() || {} } catch {}
+    fixtureRequests.push({ message: payload?.message ?? null, userId: payload?.userId ?? null })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true, service: 'urai-spatial', userId: 'adamclamp', userIdSource: 'default-demo',
+        identityMode: 'public-demo', reply: 'URAI Spatial proof fixture: grounded reflection complete.',
+        mode: 'local-fallback', confidenceLabel: 'fallback', isDemoFallback: true, sources: [],
+      }),
+    })
+  })
   try {
     await page.addInitScript(() => {
       window.__uraiObservedOrbStates = []
@@ -220,7 +238,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
     const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    await openOrb.click()
+    await openOrb.click({ noWaitAfter: true })
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
@@ -256,7 +274,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await consent.check()
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
-    await page.getByRole('button', { name: 'Send' }).click()
+    await page.getByRole('button', { name: 'Send' }).click({ noWaitAfter: true })
     await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
     record.respondingState = await owner.getAttribute('data-home-orb-state')
@@ -290,6 +308,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.closedState === 'idle'
       && record.closedClip === 'orb-breathe'
       && record.lifecyclePassed
+      && record.fixtureRequests.length === 1
+      && record.fixtureRequests[0]?.message === 'Give me a short grounded reflection.'
       && record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
       && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
