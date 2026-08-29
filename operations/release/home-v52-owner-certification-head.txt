@@ -1,0 +1,5 @@
+URAI Home/Ground + Orb V52 owner-authored certification trigger.
+
+This commit does not assert visual certification, Drive lock, governance approval, merge, deployment, or live status.
+The exact PR head created by this owner-authored commit is the only candidate for fresh exact-head verification.
+V52 remains candidate-only until literal retained desktop/mobile pixels and all required release gates pass.
