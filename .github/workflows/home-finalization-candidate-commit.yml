@@ -1,3 +1,4 @@
+# V56 owner-authored materialization workflow; this commit retriggers it after the exact-head verifier advanced.
 name: Home Finalization Candidate Commit
 on:
   pull_request:
