@@ -11,6 +11,7 @@ on:
 permissions:
   contents: write
 
+# Explicit retrigger receipt: V61 runtime materialization must precede certification.
 jobs:
   materialize:
     if: "github.event.head_commit.message != 'Home: materialize V61 deep reliquary vault' && github.event.head_commit.message != 'Home: owner-certify V61 runtime head'"
