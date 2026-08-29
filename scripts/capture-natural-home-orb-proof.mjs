@@ -29,7 +29,7 @@ const receipt = {
   schemaVersion: 'urai-sacred-home-orb-proof-4',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'v54-authored-relic-sanctuary-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
+  runtimeContract: 'v55-integrated-industrial-reliquary-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
   orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
   portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
   cases: [],
@@ -126,9 +126,9 @@ for (const spec of cases) {
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'makehuman-v4'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v54-authored-relic-sanctuary'
-      && record.artRevision === 'v54-authored-relic-sanctuary-candidate'
-      && record.artCertification === 'v54-retained-pixel-candidate-not-certified'
+      && record.visualGrade === 'cinematic-pbr-v55-integrated-industrial-reliquary'
+      && record.artRevision === 'v55-integrated-industrial-reliquary-candidate'
+      && record.artCertification === 'v55-retained-pixel-candidate-not-certified'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
       && record.runtimeAssets?.includes(path.basename(orbPath))
