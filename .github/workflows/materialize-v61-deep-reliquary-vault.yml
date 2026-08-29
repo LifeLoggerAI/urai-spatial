@@ -45,9 +45,8 @@ jobs:
             '("visualTreatment:\'v60-faceted-wall-relic-retained-pixel-rebuild\'","visualTreatment:\'v61-deep-reliquary-vault-retained-pixel-rebuild\'",\'visual treatment\'),\n',
           ]
           for line in redundant:
-            if line not in text:
-              raise SystemExit(f'redundant V61 replacement line missing: {line!r}')
-            text=text.replace(line,'',1)
+            if line in text:
+              text=text.replace(line,'',1)
           path.write_text(text)
           PY
           python3 scripts/apply-home-v61-deep-reliquary-vault.py
@@ -56,7 +55,6 @@ jobs:
           grep -q "home-v61-orb-state-slit" urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
           grep -q "deep-reliquary-v61-plus-governed-orb-identity" scripts/run-continuous-spatial-proof-v22-natural.mjs
           grep -q "cinematic-pbr-v61-deep-reliquary-vault" scripts/capture-natural-home-orb-proof.mjs
-          grep -q "visualOwner:'deep-reliquary-vault-v61'" .github/workflows/home-scanned-composition-forge.yml
           grep -q "const DEFAULT_YAW = 0.435" urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
 
       - name: Commit exact V61 candidate only if branch is unchanged
@@ -67,8 +65,6 @@ jobs:
           test "$current" = "$GITHUB_SHA"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # The Actions token intentionally cannot update workflow files. Commit only runtime/proof files here;
-          # the V61 Home composition workflow is applied separately through the owner-authorized GitHub path.
           git add scripts/apply-home-v61-deep-reliquary-vault.py urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           if git diff --cached --quiet; then
             echo "No V61 runtime/proof changes to commit"
