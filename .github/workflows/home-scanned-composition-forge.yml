@@ -43,35 +43,36 @@ jobs:
           grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
           grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
 
-          # Verify the current V51 open-reliquary composition.
+          # Verify the current V52 deep-reliquary composition without asserting pixel certification.
           grep -F 'function ProductionSanctuary()' "$source"
           grep -F 'function ProductionOrbMachine()' "$source"
           grep -F 'home-v49-scanned-detail-layer' "$source"
           grep -F 'home-v49-authored-practicals' "$source"
-          grep -F "visualOwner:'cinematic-open-reliquary-sanctuary-v51'" "$source"
-          grep -F "visualTreatment:'v51-open-reliquary-retained-pixel-rebuild'" "$source"
-          grep -F "root.userData.uraiTreatment = 'v51-authored-faceted-heart-with-small-opaque-machine-clamps'" "$source"
-          grep -F 'v51-open-asymmetric-buttress-galleries-no-solid-house-blocks-no-repeated-bays' "$source"
-          grep -F 'v51-open-layered-rear-shell-no-house-slabs-no-front-facade' "$source"
-          grep -F 'v51-open-machine-bay-rear-ribs-and-depth-no-box-housing' "$source"
-          grep -F 'v51-open-four-point-floor-rooted-load-paths-no-display-stand-no-panel-wings' "$source"
-          grep -F 'v51-open-rear-yoke-and-service-crosshead-no-polygon-display-plate' "$source"
-          grep -F 'v51-four-small-opaque-machine-clamps-authored-faceted-heart-remains-primary' "$source"
-          grep -F 'home-v51-central-finished-stone-lane' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v51-open-reliquary"' "$source"
-          grep -F 'data-home-final-art-revision="v51-open-reliquary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v51-retained-pixel-candidate-not-certified"' "$source"
-          grep -F 'data-home-animation-owner="open-reliquary-v51-plus-governed-living-orb"' "$source"
+          grep -F "visualOwner:'cinematic-deep-reliquary-sanctuary-v52'" "$source"
+          grep -F "visualTreatment:'v52-deep-reliquary-retained-pixel-rebuild'" "$source"
+          grep -F "root.userData.uraiTreatment = 'v52-large-authored-faceted-heart-integrated-opaque-machine-clamps'" "$source"
+          grep -F 'v52-open-asymmetric-grounded-gallery-frames-no-tall-box-bays-no-solid-house-blocks' "$source"
+          grep -F 'v52-deep-layered-sanctuary-open-vault-no-slab-wall-no-front-facade' "$source"
+          grep -F 'v52-deep-open-machine-bay-multi-depth-ribs-no-flat-box-housing' "$source"
+          grep -F 'v52-four-point-wide-floor-rooted-load-paths-integrated-with-large-orb-no-display-stand' "$source"
+          grep -F 'v52-deep-machine-yoke-integrated-with-vault-no-display-plate-no-flat-crosshead' "$source"
+          grep -F 'v52-four-substantial-opaque-machine-clamps-integrated-with-large-authored-heart' "$source"
+          grep -F 'home-v52-central-finished-stone-lane' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v52-deep-reliquary"' "$source"
+          grep -F 'data-home-final-art-revision="v52-deep-reliquary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v52-retained-pixel-candidate-not-certified"' "$source"
+          grep -F 'data-home-animation-owner="deep-reliquary-v52-plus-governed-living-orb"' "$source"
 
-          # Explicitly reject the V50 forms that failed literal retained-pixel review.
+          # Explicitly reject forms that failed literal retained-pixel review.
           ! grep -F 'home-v47-left-apse-mass' "$source"
           ! grep -F 'home-v47-right-apse-mass' "$source"
           ! grep -F 'v50-six-plate-opaque-reliquary-armor-no-glass-ball-no-orbit-rings' "$source"
+          ! grep -F 'v51-open-four-point-floor-rooted-load-paths-no-display-stand-no-panel-wings' "$source"
 
           # The old V48 pipe-machine helper may remain as provenance, but it must not own the visible scene.
           ! grep -F '<ProductionOrbMachine />' "$source"
 
-          # Retained-pixel certification is a separate human visual gate and must not be asserted here.
+          # Retained-pixel certification is a separate literal visual gate and must not be asserted here.
           ! grep -F 'PRODUCTION CERTIFIED' "$source"
           ! grep -F 'retained-pixel-pass' "$source"
           ! grep -F 'pixel-certified' "$source"
