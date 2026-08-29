@@ -5,7 +5,7 @@ const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
 const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'integrated-chamber-v59-plus-governed-orb-identity'"
+const newOwner = "result.animationOwner === 'faceted-wall-relic-v60-plus-governed-orb-identity'"
 if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
@@ -16,7 +16,7 @@ if (staleEnvironmentalCount !== 2) {
 }
 
 const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
-const runtimeOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
+const runtimeOrbRadius = "orb: { x: 0, z: -6.42, radius: 2.5"
 const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
 const runtimeGroundTarget = "ground: { x: -5.2, z: -8.4"
 const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"

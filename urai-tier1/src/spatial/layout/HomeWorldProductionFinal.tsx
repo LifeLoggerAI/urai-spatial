@@ -28,7 +28,7 @@ const HOME_PHOTOGRAPHIC_PBR_V19 = 'polyhaven-rock-tile-floor-plus-studio-small-0
 const HOME_SCANNED_COMPOSITION_V1 = 'built-sacred-tech-sanctuary-v20'
 
 const SPAWN = new THREE.Vector3(3.45, 0.04, 4.2)
-const ORB = new THREE.Vector3(0, 2.18, -6.0)
+const ORB = new THREE.Vector3(0, 2.18, -6.42)
 const GROUND = new THREE.Vector3(-5.2, 0, -8.4)
 const LIFE_MAP = new THREE.Vector3(5.2, 0, -8.4)
 const BOUNDS = { minX: -6.6, maxX: 6.6, minZ: -9.4, maxZ: 7.2 }
@@ -338,7 +338,7 @@ function SanctuarySideGallery(){
   </group>
 }
 
-function SanctuaryArchitecture(){const pack=useStonePack(.48,.7);return <group name="home-sanctuary-pavilion" userData={{visualOwner:'integrated-chamber-machine-v59',construction:'asymmetric-enclosed-stone-chamber-with-recessed-load-bearing-relic-machine',visualTreatment:'v59-integrated-chamber-machine-retained-pixel-rebuild'}}>
+function SanctuaryArchitecture(){const pack=useStonePack(.48,.7);return <group name="home-sanctuary-pavilion" userData={{visualOwner:'faceted-wall-relic-v60',construction:'asymmetric-enclosed-stone-chamber-with-recessed-load-bearing-relic-machine',visualTreatment:'v60-faceted-wall-relic-retained-pixel-rebuild'}}>
   <ContinuousVaultSkin pack={pack}/><SanctuarySideGallery/><MachineCavityLiner/>
   <group name="home-v59-low-floor-practicals" userData={{treatment:'v59-subtle-depth-light-not-stage-framing'}}><RecessedPractical position={[-1.62,.14,-6.28]} warm={false}/><RecessedPractical position={[1.55,.14,-6.38]}/></group>
 </group>}
@@ -429,24 +429,39 @@ function OrbPlatform(){return <FloorReliquaryBed/>}
 function OrbCradle(){return <group name="home-orb-engineered-cradle" userData={{treatment:'v57-service-vault-load-path-no-pedestal-no-ring-no-primitive-clamps'}}><ReliquaryWing side={-1}/><ReliquaryWing side={1}/></group>}
 
 
+function FacetedMachinePanel({position,rotation=[0,0,0],size,warm=false}:{position:Vec3;rotation?:Vec3;size:Vec3;warm?:boolean}){
+  const geometry=useMemo(()=>{
+    const [width,height,depth]=size
+    const cut=Math.min(width,height)*.16
+    const shape=new THREE.Shape()
+    shape.moveTo(-width/2+cut,-height/2)
+    shape.lineTo(width/2-cut,-height/2)
+    shape.lineTo(width/2,-height/2+cut)
+    shape.lineTo(width/2,height/2-cut)
+    shape.lineTo(width/2-cut,height/2)
+    shape.lineTo(-width/2+cut,height/2)
+    shape.lineTo(-width/2,height/2-cut)
+    shape.lineTo(-width/2,-height/2+cut)
+    shape.closePath()
+    const g=new THREE.ExtrudeGeometry(shape,{depth,steps:1,curveSegments:1,bevelEnabled:true,bevelSegments:2,bevelSize:.035,bevelThickness:.035})
+    g.center();g.computeVertexNormals();return g
+  },[size])
+  useEffect(()=>()=>geometry.dispose(),[geometry])
+  return <mesh geometry={geometry} position={position as [number,number,number]} rotation={rotation as [number,number,number]} castShadow receiveShadow userData={{treatment:'v60-chamfered-structural-armor-panel-no-rounded-bar-grammar'}}>
+    <meshPhysicalMaterial color={warm?'#554b3c':'#223632'} roughness={.7} metalness={.38} clearcoat={.012} clearcoatRoughness={.82} envMapIntensity={.58}/>
+  </mesh>
+}
+
 function MachineCoreAssembly(){
-  return <group name="home-v47-machine-core-assembly" userData={{treatment:'v59-floor-rooted-wall-machine-with-overlapping-armor-and-central-state-slit'}}>
-    <TaperedLoadBeam from={[-1.55,.42,-7.18]} to={[-.72,1.62,-6.72]} width={.2} color="#273832"/>
-    <TaperedLoadBeam from={[1.5,.42,-7.18]} to={[.68,1.58,-6.72]} width={.2} color="#40392f"/>
-    <OrbArmorPlate position={[-.82,2.35,-6.78]} rotation={[0,.16,-.3]} scale={[1.35,1.18,1.12]}/>
-    <OrbArmorPlate position={[.78,2.28,-6.78]} rotation={[0,-.13,.27]} scale={[1.28,1.22,1.12]} warm/>
-    <OrbArmorPlate position={[-.28,3.05,-6.86]} rotation={[0,.06,.18]} scale={[1.12,.96,1.08]}/>
-    <OrbArmorPlate position={[.24,1.42,-6.82]} rotation={[0,-.05,-.2]} scale={[1.08,.92,1.08]} warm/>
-    <pointLight position={[0,2.18,-6.15]} color="#6fa89b" intensity={.28} distance={3.8} decay={2}/>
+  return <group name="home-v47-machine-core-assembly" userData={{treatment:'v60-wall-integrated-faceted-reliquary-no-rods-no-spokes-no-display-frame'}}>
+    <FacetedMachinePanel position={[-1.12,2.25,-6.93]} rotation={[0,.08,-.055]} size={[1.28,2.55,.34]}/>
+    <FacetedMachinePanel position={[1.1,2.22,-6.93]} rotation={[0,-.08,.05]} size={[1.26,2.5,.34]} warm/>
+    <FacetedMachinePanel position={[-.45,3.55,-6.97]} rotation={[0,.03,.018]} size={[1.35,.62,.31]}/>
+    <FacetedMachinePanel position={[.62,.92,-6.94]} rotation={[0,-.03,-.018]} size={[1.26,.54,.3]} warm/>
+    <mesh name="home-v60-machine-shadow-gap" position={[0,2.18,-6.87]}><boxGeometry args={[.52,1.72,.12]}/><meshStandardMaterial color="#050807" roughness={.88} metalness={.08}/></mesh>
+    <pointLight position={[0,2.2,-6.12]} color="#6d988f" intensity={.22} distance={3.6} decay={2}/>
   </group>
 }
-
-function OrbArmorPlate({position,rotation,scale=[1,1,1],warm=false}:{position:Vec3;rotation:Vec3;scale?:Vec3;warm?:boolean}){
-  return <RoundedBox args={[.74,.18,.44]} radius={.08} smoothness={5} position={position as [number,number,number]} rotation={rotation as [number,number,number]} scale={scale as [number,number,number]} castShadow receiveShadow>
-    <meshPhysicalMaterial color={warm?'#756349':'#3c6257'} roughness={.54} metalness={.58} clearcoat={.04} clearcoatRoughness={.68} envMapIntensity={.8}/>
-  </RoundedBox>
-}
-
 
 function SacredOrb({state,reducedMotion,onOpen}:{state:OrbState;reducedMotion:boolean;onOpen:()=>void}){
   const root=useRef<THREE.Group>(null),activeAction=useRef<THREE.AnimationAction|null>(null)
@@ -457,14 +472,16 @@ function SacredOrb({state,reducedMotion,onOpen}:{state:OrbState;reducedMotion:bo
   useEffect(()=>{const allActions=Object.values(actions).filter((action):action is THREE.AnimationAction=>Boolean(action));if(reducedMotion){allActions.forEach((action)=>action.stop());activeAction.current=null;return}const next=actions[ORB_CLIPS[state]];if(!next)return;const previous=activeAction.current;if(previous&&previous!==next)previous.fadeOut(.2);next.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.2).play();activeAction.current=next},[actions,reducedMotion,state])
   useEffect(()=>()=>{Object.values(actions).forEach((action)=>action?.stop())},[actions])
   useFrame(()=>{if(!root.current)return;root.current.rotation.y=0;root.current.position.y=ORB.y})
-  const stateColor=state==='warning'?'#b27a4d':state==='thinking'||state==='reflecting'?'#7886a4':'#5b9689'
-  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event)=>{event.stopPropagation();onOpen()}} userData={{orbState:state,animation:sensory.animation,modelClip:ORB_CLIPS[state],runtimeAsset:ORB_MODEL,treatment:'v59-recessed-machined-state-slit-inside-load-bearing-relic-machine'}}>
-    <group scale={.22} position={[0,0,-.88]} visible={false} name="home-orb-governed-hidden-animation-identity" userData={{treatment:'v59-governed-glb-animation-identity-retained-invisibly-for-state-contract'}}><primitive object={authoredOrb}/></group>
-    <OrbArmorPlate position={[-.38,.02,.02]} rotation={[0,.18,-.18]} scale={[.94,1.34,1.0]}/>
-    <OrbArmorPlate position={ [.38,-.02,.02]} rotation={[0,-.18,.18]} scale={[.94,1.34,1.0]} warm/>
-    <RoundedBox name="home-v59-orb-state-slit-housing" args={[.22,.92,.16]} radius={.07} smoothness={6} position={[0,0,.11]} castShadow receiveShadow><meshPhysicalMaterial color="#0b1210" roughness={.48} metalness={.68} clearcoat={.025} clearcoatRoughness={.7}/></RoundedBox>
-    <mesh name="home-v59-orb-state-slit" position={[0,0,.205]}><boxGeometry args={[.055,.58,.025]}/><meshStandardMaterial color={stateColor} emissive={stateColor} emissiveIntensity={state==='speaking'?.78:.38} metalness={.3} roughness={.34}/></mesh>
-    <pointLight color={stateColor} intensity={state==='speaking'?.34:.16} distance={2.6} decay={2}/>
+  const stateColor=state==='warning'?'#a87650':state==='thinking'||state==='reflecting'?'#718096':'#5f9488'
+  return <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event)=>{event.stopPropagation();onOpen()}} userData={{orbState:state,animation:sensory.animation,modelClip:ORB_CLIPS[state],runtimeAsset:ORB_MODEL,treatment:'v60-recessed-faceted-state-aperture-inside-wall-integrated-relic-machine'}}>
+    <group scale={.22} position={[0,0,-.88]} visible={false} name="home-orb-governed-hidden-animation-identity" userData={{treatment:'v60-governed-glb-animation-identity-retained-invisibly-for-state-contract'}}><primitive object={authoredOrb}/></group>
+    <FacetedMachinePanel position={[-.39,.04,.01]} rotation={[0,.12,-.025]} size={[.58,1.48,.25]}/>
+    <FacetedMachinePanel position={[.39,-.04,.01]} rotation={[0,-.12,.025]} size={[.58,1.48,.25]} warm/>
+    <FacetedMachinePanel position={[0,.89,-.03]} rotation={[0,0,0]} size={[.58,.28,.23]}/>
+    <FacetedMachinePanel position={[0,-.9,-.03]} rotation={[0,0,0]} size={[.56,.26,.23]} warm/>
+    <mesh name="home-v60-orb-state-aperture" position={[0,0,.17]} castShadow receiveShadow><boxGeometry args={[.15,1.02,.11]}/><meshPhysicalMaterial color="#07100e" roughness={.62} metalness={.5} clearcoat={.01} clearcoatRoughness={.82}/></mesh>
+    <mesh name="home-v60-orb-state-slit" position={[0,0,.232]}><boxGeometry args={[.034,.72,.018]}/><meshStandardMaterial color={stateColor} emissive={stateColor} emissiveIntensity={state==='speaking'?.64:.3} metalness={.22} roughness={.38}/></mesh>
+    <pointLight color={stateColor} intensity={state==='speaking'?.28:.12} distance={2.3} decay={2}/>
   </group>
 }
 
@@ -534,7 +551,7 @@ export function HomeWorldProductionFinal({onOrbOpen=requestUraiWorldOrbOpen,webg
   useEffect(()=>{const listener=(event:CustomEvent<OrbStateEventDetail>)=>{if(transition==='none')setOrbState(event.detail.state)};window.addEventListener(URAI_ORB_STATE_EVENT,listener);return()=>window.removeEventListener(URAI_ORB_STATE_EVENT,listener)},[transition])
   useEffect(()=>{const cancel=(event:KeyboardEvent)=>{if(event.key!=='Escape'||transition==='none')return;event.preventDefault();setTransition('none');setPortalSequence('idle');setOrbState('idle');const store=useSceneStore.getState();store.setPhase('HOME');store.unlock()};window.addEventListener('keydown',cancel,true);return()=>window.removeEventListener('keydown',cancel,true)},[transition])
   if(!webglAvailable)return null;const ready=canvasReady&&sceneReady;const context=transition==='life-map'?'Ascending into your Life Map':transition==='ground'?'Descending into Ground':nearby==='orb'?'The Orb is here':nearby==='ground'?'The path descends':nearby==='life-map'?'The threshold opens to your Life Map':null;const complete=()=>{if(transition==='ground')requestUraiWorldTravel({destination:'infrastructure-hub',href:'/ground/',entryPortal:'home-ground',cameraCheckpoint:'home-ground-descent'});else if(transition==='life-map')requestUraiWorldTravel({destination:'life-map',href:'/life-map/?from=home-sky',entryPortal:'home-sky',cameraCheckpoint:'home-sky-ascent-complete'})}
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="open-air-sacred-tech-reliquary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-stone-machine-reliquary" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-presence-presentation="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v59-integrated-chamber-machine" data-home-final-art-revision="v59-integrated-chamber-machine-candidate" data-home-art-certification="v59-retained-pixel-candidate-not-certified" data-home-scanned-composition={HOME_SCANNED_COMPOSITION_V1} data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb polyhaven-industrial-caged-sconce" data-home-scenery-assets="polyhaven-industrial-caged-sconce polyhaven-fern-02-geometry-v1.glb polyhaven-rock-tile-floor-pbr-v2-optimized studio-small-08-hdri-v1" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="integrated-chamber-v59-plus-governed-orb-identity" data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#050a0d'}} {...look}><Canvas className={styles.canvas} dpr={[1,1.5]} shadows camera={{position:[2.75,1.7,5.35],fov:44,near:0.1,far:140}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.36;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}><SacredFinalScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} nearby={setNearby} orbState={orbState} reducedMotion={reducedMotion} transition={transition} onOrb={openOrb} onGround={ground} onLifeMap={lifeMap} onTransitionComplete={complete} onTransitionSequence={setPortalSequence} onReady={markSceneReady} /></Canvas>{context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}{transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls" />:null}<span className="sr-only" data-testid="urai-home-webgl-orb">The sacred-tech Orb companion is physically present in the Home sanctuary and consumes the final authored Orb GLB.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your embodied Home presence uses the real skinned V4 human candidate.</span></main>
+  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="open-air-sacred-tech-reliquary" data-home-world-character="premium-cinematic-sacred-tech" data-home-physical-base="authored-stone-machine-reliquary" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="makehuman-v4" data-home-presence-presentation="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-audio="production-opus-consent-controlled" data-home-visual-grade="cinematic-pbr-v60-faceted-wall-relic" data-home-final-art-revision="v60-faceted-wall-relic-candidate" data-home-art-certification="v60-retained-pixel-candidate-not-certified" data-home-scanned-composition={HOME_SCANNED_COMPOSITION_V1} data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready?'true':'false'} data-home-runtime-assets="home-entry-chamber-v1.glb home-human-makehuman-v4.glb urai-orb-avatar-v1.glb portal-ring-master-v1.glb polyhaven-industrial-caged-sconce" data-home-scenery-assets="polyhaven-industrial-caged-sconce polyhaven-fern-02-geometry-v1.glb polyhaven-rock-tile-floor-pbr-v2-optimized studio-small-08-hdri-v1" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="faceted-wall-relic-v60-plus-governed-orb-identity" data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',background:'#050a0d'}} {...look}><Canvas className={styles.canvas} dpr={[1,1.5]} shadows camera={{position:[2.75,1.7,5.35],fov:44,near:0.1,far:140}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.36;gl.shadowMap.type=THREE.PCFSoftShadowMap;setCanvasReady(true)}}><SacredFinalScene input={input} yaw={yaw} pitch={pitch} target={target} avatar={avatar} nearby={setNearby} orbState={orbState} reducedMotion={reducedMotion} transition={transition} onOrb={openOrb} onGround={ground} onLifeMap={lifeMap} onTransitionComplete={complete} onTransitionSequence={setPortalSequence} onReady={markSceneReady} /></Canvas>{context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}{transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls" />:null}<span className="sr-only" data-testid="urai-home-webgl-orb">The sacred-tech Orb companion is physically present in the Home sanctuary and consumes the final authored Orb GLB.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your embodied Home presence uses the real skinned V4 human candidate.</span></main>
 }
 
 useGLTF.preload(SANCTUARY)
