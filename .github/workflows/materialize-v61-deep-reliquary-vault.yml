@@ -1,0 +1,43 @@
+name: Materialize V61 Deep Reliquary Vault
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - scripts/apply-home-v61-deep-reliquary-vault.py
+      - .github/workflows/materialize-v61-deep-reliquary-vault.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: "github.event.head_commit.message != 'Home: materialize V61 deep reliquary vault' && github.event.head_commit.message != 'Home: owner-certify V61 runtime head'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: home-final-v24-certify-20260826
+          fetch-depth: 0
+      - name: Materialize V61 runtime and exact proof contracts
+        run: |
+          python3 scripts/apply-home-v61-deep-reliquary-vault.py
+          git diff --check
+          grep -q "v61-deep-reliquary-vault-retained-pixel-rebuild" urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -q "home-v61-orb-state-slit" urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -q "deep-reliquary-v61-plus-governed-orb-identity" scripts/run-continuous-spatial-proof-v22-natural.mjs
+          grep -q "cinematic-pbr-v61-deep-reliquary-vault" scripts/capture-natural-home-orb-proof.mjs
+          grep -q "visualOwner:'deep-reliquary-vault-v61'" .github/workflows/home-scanned-composition-forge.yml
+      - name: Commit materialized V61 candidate
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs scripts/run-continuous-spatial-proof-v22-natural.mjs urai-tier1/tests/home-relic-machine-realism-contract.test.mjs .github/workflows/home-scanned-composition-forge.yml
+          if git diff --cached --quiet; then
+            echo "No V61 changes to commit"
+            exit 0
+          fi
+          git commit -m "Home: materialize V61 deep reliquary vault"
+          git push origin HEAD:home-final-v24-certify-20260826
