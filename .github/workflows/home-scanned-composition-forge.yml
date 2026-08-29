@@ -37,47 +37,41 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
 
-          # Preserve governed composition and hidden V48 compatibility provenance.
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
           grep -F "root.visible = false" "$source"
           grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
           grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
 
-          # Verify the current V54 authored-relic composition without asserting pixel certification.
+          # V55 is the current owner-authored candidate; pixel certification remains separate.
           grep -F 'function ProductionSanctuary()' "$source"
-          grep -F 'function ProductionOrbMachine()' "$source"
           grep -F 'home-v49-scanned-detail-layer' "$source"
-          grep -F 'home-v49-authored-practicals' "$source"
-          grep -F "visualOwner:'cinematic-authored-relic-sanctuary-v54'" "$source"
-          grep -F "visualTreatment:'v54-authored-relic-sanctuary-retained-pixel-rebuild'" "$source"
-          grep -F "root.userData.uraiTreatment = 'v54-governed-authored-orb-primary-no-synthetic-polyhedron-shell'" "$source"
-          grep -F 'v54-two-asymmetric-side-alcoves-and-integrated-practicals-no-bollards-no-repeated-bays' "$source"
-          grep -F 'v54-single-sculpted-rear-shell-with-asymmetric-side-returns-no-torus-tunnel-no-scaffold' "$source"
-          grep -F 'v54-recessed-back-machine-seat-with-broad-load-shoulders-no-ring-no-box-housing' "$source"
-          grep -F 'v54-wall-integrated-rear-shoulder-cradle-no-pedestal-no-four-floor-legs' "$source"
-          grep -F 'v54-rear-wall-load-paths-frame-authored-orb-without-ring-collar-or-display-plate' "$source"
-          grep -F 'v54-governed-authored-orb-is-primary-visible-relic-machine-no-polyhedron-shell-no-starburst-no-glass-sphere' "$source"
-          grep -F 'home-v54-central-finished-stone-lane' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v54-authored-relic-sanctuary"' "$source"
-          grep -F 'data-home-final-art-revision="v54-authored-relic-sanctuary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v54-retained-pixel-candidate-not-certified"' "$source"
-          grep -F 'data-home-animation-owner="authored-relic-v54-plus-governed-living-orb"' "$source"
+          grep -F "visualOwner:'cinematic-integrated-industrial-reliquary-v55'" "$source"
+          grep -F "visualTreatment:'v55-integrated-industrial-orb-retained-pixel-rebuild'" "$source"
+          grep -F "root.userData.uraiTreatment = 'v55-governed-orb-glb-retained-for-identity-and-animation-not-visible-glass-starburst'" "$source"
+          grep -F 'v55-single-rear-sanctuary-shell-with-scanned-rock-returns-no-side-arch-corridor-no-torus-tunnel' "$source"
+          grep -F 'v55-authored-industrial-pipe-bay-recessed-into-rear-shell-no-floating-load-bars' "$source"
+          grep -F 'v55-scanned-asymmetric-rock-returns-and-practicals-no-repeated-side-arches-no-bollards' "$source"
+          grep -F 'v55-recessed-wall-machine-seat-no-pedestal-no-floor-legs-no-disconnected-bars' "$source"
+          grep -F 'v55-real-cc0-industrial-machine-core-integrated-in-rear-bay-no-starburst-no-floating-struts' "$source"
+          grep -F 'home-v55-orb-machine-core-network' "$source"
+          grep -F 'home-v55-visible-orb-aperture' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v55-integrated-industrial-reliquary"' "$source"
+          grep -F 'data-home-final-art-revision="v55-integrated-industrial-reliquary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v55-retained-pixel-candidate-not-certified"' "$source"
+          grep -F 'data-home-animation-owner="integrated-industrial-v55-plus-governed-orb-identity"' "$source"
 
-          # Explicitly reject visible owners already failed by literal retained-pixel review.
+          # Retired literal-pixel failures must not own the current visible composition.
+          ! grep -F "visualOwner:'cinematic-authored-relic-sanctuary-v54'" "$source"
+          ! grep -F "visualTreatment:'v54-authored-relic-sanctuary-retained-pixel-rebuild'" "$source"
+          ! grep -F 'v54-governed-authored-orb-is-primary-visible-relic-machine-no-polyhedron-shell-no-starburst-no-glass-sphere' "$source"
+          ! grep -F 'v54-wall-integrated-rear-shoulder-cradle-no-pedestal-no-four-floor-legs' "$source"
           ! grep -F "visualOwner:'cinematic-integrated-arch-reliquary-v53'" "$source"
-          ! grep -F "visualTreatment:'v53-integrated-arch-reliquary-retained-pixel-rebuild'" "$source"
           ! grep -F 'v53-faceted-relic-shell-and-four-compact-machine-clamps' "$source"
-          ! grep -F 'v53-compact-four-point-floor-load-path-integrated-into-recessed-machine-bay-no-display-stand' "$source"
-          ! grep -F 'home-v47-left-apse-mass' "$source"
-          ! grep -F 'home-v47-right-apse-mass' "$source"
           ! grep -F 'v50-six-plate-opaque-reliquary-armor-no-glass-ball-no-orbit-rings' "$source"
           ! grep -F 'v51-open-four-point-floor-rooted-load-paths-no-display-stand-no-panel-wings' "$source"
           ! grep -F 'v52-four-point-wide-floor-rooted-load-paths-integrated-with-large-orb-no-display-stand' "$source"
 
-          # The old V48 pipe-machine helper may remain as provenance, but it must not own the visible scene.
           ! grep -F '<ProductionOrbMachine />' "$source"
-
-          # Retained-pixel certification is a separate literal visual gate and must not be asserted here.
           ! grep -F 'PRODUCTION CERTIFIED' "$source"
           ! grep -F 'retained-pixel-pass' "$source"
           ! grep -F 'pixel-certified' "$source"
