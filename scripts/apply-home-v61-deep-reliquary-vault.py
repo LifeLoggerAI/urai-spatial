@@ -121,7 +121,7 @@ for old,new,label in [
 ("v60-retained-pixel-candidate-not-certified","v61-retained-pixel-candidate-not-certified",'art certification'),
 ("faceted-wall-relic-v60-plus-governed-orb-identity","deep-reliquary-v61-plus-governed-orb-identity",'animation owner'),
 ('const SPAWN = new THREE.Vector3(3.45, 0.04, 4.2)','const SPAWN = new THREE.Vector3(4.45, 0.04, 3.15)','spawn'),
-('const DEFAULT_YAW = 0.18','const DEFAULT_YAW = 0.12','yaw'),
+('const DEFAULT_YAW = 0.18','const DEFAULT_YAW = 0.435','yaw'),
 ('camera.position.set(3.4,1.74,5.05);camera.lookAt(.3,2.0,-6.0)','camera.position.set(4.4,1.72,3.1);camera.lookAt(.1,2.15,-7.0)','initial camera'),
 ('const desiredFov=portrait?46:39','const desiredFov=portrait?52:40','runtime fov'),
 ]: text=replace_exact(text,old,new,label)
@@ -149,6 +149,7 @@ const architecture=source.slice(source.indexOf('function ContinuousVaultSkin'),s
 test('V61 owns a deep continuous sanctuary vault rather than a wall plaque composition',()=>{assert.match(source,/v61-deep-reliquary-vault-retained-pixel-rebuild/);assert.match(source,/visualOwner:'deep-reliquary-vault-v61'/);assert.match(architecture,/v61-meter-deep-stone-and-metal-reliquary-bay-no-flat-backboard/);assert.match(architecture,/home-v61-left-integrated-geology/);assert.match(architecture,/home-v61-right-integrated-geology/)})
 test('V61 machine uses thick asymmetric parallax masses and no rejected rod or plaque grammar',()=>{assert.match(machine,/v61-deep-overlapping-relic-masses-with-real-parallax-no-plaques-no-rods/);assert.match(machine,/v61-thick-asymmetric-load-bearing-relic-mass/);assert.match(machine,/home-v61-orb-state-core/);assert.doesNotMatch(machine,/RoundedBox|TaperedLoadBeam|OrbArmorPlate|FacetedMachinePanel|TubeGeometry|sphereGeometry|icosahedronGeometry|dodecahedronGeometry|torusGeometry|circleGeometry/)})
 test('V61 preserves governed Orb identity invisibly and keeps visible state machine-owned',()=>{assert.match(machine,/visible=\{false\}/);assert.match(machine,/v61-governed-glb-animation-identity-retained-invisibly-for-state-contract/);assert.match(source,/data-home-animation-owner="deep-reliquary-v61-plus-governed-orb-identity"/)})
+test('V61 mobile-safe initial framing aims the offset spawn at the recessed Orb bay',()=>{assert.match(source,/const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/);assert.match(source,/const DEFAULT_YAW = 0\.435/);assert.match(source,/const desiredFov=portrait\?52:40/)})
 test('V61 remains fail closed until literal retained pixels pass',()=>{assert.match(source,/data-home-visual-grade="cinematic-pbr-v61-deep-reliquary-vault"/);assert.match(source,/data-home-final-art-revision="v61-deep-reliquary-vault-candidate"/);assert.match(source,/data-home-art-certification="v61-retained-pixel-candidate-not-certified"/);assert.doesNotMatch(source,/PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)})
 ''')
 
