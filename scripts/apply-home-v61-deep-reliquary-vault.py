@@ -114,8 +114,6 @@ function SacredOrb({state,reducedMotion,onOpen}:{state:OrbState;reducedMotion:bo
 text=replace_between(text,'function FacetedMachinePanel','function HumanPresence',machine)
 
 for old,new,label in [
-("visualOwner:'faceted-wall-relic-v60'","visualOwner:'deep-reliquary-vault-v61'",'visual owner'),
-("visualTreatment:'v60-faceted-wall-relic-retained-pixel-rebuild'","visualTreatment:'v61-deep-reliquary-vault-retained-pixel-rebuild'",'visual treatment'),
 ("cinematic-pbr-v60-faceted-wall-relic","cinematic-pbr-v61-deep-reliquary-vault",'visual grade'),
 ("v60-faceted-wall-relic-candidate","v61-deep-reliquary-vault-candidate",'art revision'),
 ("v60-retained-pixel-candidate-not-certified","v61-retained-pixel-candidate-not-certified",'art certification'),
