@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   materialize:
-    if: "${{ github.event.head_commit.message != 'Home: materialize V58 retained-pixel vault' && github.event.head_commit.message != 'Home: owner-certify V58 runtime head' && !contains(github.event.head_commit.message, 'V59') && github.event.head_commit.message != 'Home: retire V58 materializer after V59 activation' }}"
+    if: "${{ github.event.head_commit.message != 'Home: materialize V58 retained-pixel vault' && github.event.head_commit.message != 'Home: owner-certify V58 runtime head' && !contains(github.event.head_commit.message, 'V59') && !contains(github.event.head_commit.message, 'V60') && github.event.head_commit.message != 'Home: retire V58 materializer after V59 activation' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
