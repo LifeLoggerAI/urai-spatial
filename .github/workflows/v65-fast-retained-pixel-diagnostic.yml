@@ -1,3 +1,4 @@
+# Diagnostic only: source art is unchanged from #1177 exact V65 head 4e5c5200b0bc89b2536334b86ce551927ff53b0f.
 name: V65 Fast Retained Pixel Diagnostic
 on:
   push:
