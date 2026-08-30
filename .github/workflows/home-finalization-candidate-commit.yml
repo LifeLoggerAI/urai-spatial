@@ -1,4 +1,4 @@
-# V64 owner-authorized finalization verifier. V64 is materially landed; verify the exact PR head without rematerializing retired art.
+# V65 owner-authorized finalization verifier. V65 is materially landed; verify the exact PR head without rematerializing retired art.
 name: Home Finalization Candidate Commit
 on:
   pull_request:
@@ -15,10 +15,10 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: home-v64-finalization-${{ github.event.pull_request.number || github.ref_name }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: home-v65-finalization-${{ github.event.pull_request.number || github.ref_name }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 jobs:
-  verify-v64-finalization:
+  verify-v65-finalization:
     if: >-
       github.repository == 'LifeLoggerAI/urai-spatial' &&
       github.event_name == 'pull_request' &&
@@ -32,7 +32,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact V64 candidate markers
+      - name: Verify exact V65 candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -41,25 +41,26 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -f operations/assets/home-v48-production-asset-provenance.json
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
-          grep -Fq "visualOwner:'photogrammetry-orb-sanctuary-v64'" "$source"
-          grep -Fq "visualTreatment:'v64-photogrammetry-orb-sanctuary-retained-pixel-rebuild'" "$source"
-          grep -Fq "v64-photogrammetry-cavern-sanctuary-no-arch-no-flat-backboard" "$source"
-          grep -Fq "home-v64-left-deep-wall" "$source"
-          grep -Fq "home-v64-right-deep-wall" "$source"
-          grep -Fq "home-v64-left-rear-depth" "$source"
-          grep -Fq "home-v64-right-rear-depth" "$source"
-          grep -Fq "home-v64-upper-left-vault" "$source"
-          grep -Fq "home-v64-upper-right-vault" "$source"
-          grep -Fq "v64-service-infrastructure-buried-behind-photogrammetry-geology" "$source"
-          grep -Fq "home-v64-monumental-authored-orb" "$source"
-          grep -Fq "photogrammetry-orb-sanctuary-v64-plus-governed-orb-identity" scripts/run-continuous-spatial-proof-v22-natural.mjs
-          grep -Fq "cinematic-pbr-v64-photogrammetry-orb-sanctuary" scripts/capture-natural-home-orb-proof.mjs
-          grep -Fq "data-home-art-certification=\"v64-retained-pixel-candidate-not-certified\"" "$source"
+          grep -Fq "root.visible = true" "$source"
+          grep -Fq "retainedForGovernedCompatibilityOnly = false" "$source"
+          grep -Fq "v65-authored-home-entry-chamber-visible-primary-enclosure" "$source"
+          grep -Fq "visualOwner:'authored-chamber-orb-sanctuary-v65'" "$source"
+          grep -Fq "visualTreatment:'v65-authored-chamber-revival-retained-pixel-rebuild'" "$source"
+          grep -Fq "v65-authored-chamber-primary-enclosure-with-low-embedded-geology" "$source"
+          grep -Fq "home-v65-left-ground-geology" "$source"
+          grep -Fq "home-v65-right-ground-geology" "$source"
+          grep -Fq "v65-authored-chamber-integrated-practicals-no-visible-pipe-racks" "$source"
+          grep -Fq "home-v65-full-authored-orb" "$source"
+          grep -Fq "authored-chamber-orb-sanctuary-v65-plus-governed-orb-identity" scripts/run-continuous-spatial-proof-v22-natural.mjs
+          grep -Fq "cinematic-pbr-v65-authored-chamber-orb-sanctuary" scripts/capture-natural-home-orb-proof.mjs
+          grep -Fq "data-home-art-certification=\"v65-retained-pixel-candidate-not-certified\"" "$source"
+          grep -Fq "const ORB = new THREE.Vector3(0, 2.18, -6.7)" "$source"
+          ! grep -Fq "visualOwner:'photogrammetry-orb-sanctuary-v64'" "$source"
+          ! grep -Fq "home-v64-left-deep-wall" "$source"
+          ! grep -Fq "home-v64-right-deep-wall" "$source"
+          ! grep -Fq "home-v64-upper-left-vault" "$source"
+          ! grep -Fq "home-v64-upper-right-vault" "$source"
           ! grep -Fq "visualOwner:'authored-orb-sanctuary-v63'" "$source"
-          ! grep -Fq "home-v63-left-orb-service" "$source"
-          ! grep -Fq "home-v63-right-orb-service" "$source"
-          ! grep -Fq "home-v62-orb-core-housing" "$source"
-          ! grep -Fq "v61-deep-reliquary-vault-retained-pixel-rebuild" "$source"
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
@@ -73,7 +74,7 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Verify V64 realism contract and type-check
+      - name: Verify V65 realism contract and type-check
         run: |
           node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           node --check scripts/capture-home-state-proof.mjs
