@@ -1,4 +1,4 @@
-# Owner-authored exact-head verifier for the current asset-backed Home composition.
+# Owner-authored exact-head verifier for the current V63 Home composition.
 name: Home Scanned Composition Verification
 on:
   pull_request:
@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-      - name: Verify exact current V62 production-asset composition
+      - name: Verify exact current V63 authored Orb sanctuary composition
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -37,50 +37,42 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
 
-          # Governed compatibility assets remain retained but never own visible pixels.
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
           grep -F "root.visible = false" "$source"
           grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
           grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
 
-          # V62 visible composition: open asset-backed service vault with integrated geology and real service depth.
-          grep -F "visualOwner:'asset-backed-service-vault-v62'" "$source"
-          grep -F "visualTreatment:'v62-asset-backed-service-vault-retained-pixel-rebuild'" "$source"
-          grep -F 'v62-open-service-vault-with-integrated-geology-no-display-frame' "$source"
-          grep -F 'home-v62-left-geology-foundation' "$source"
-          grep -F 'home-v62-right-geology-foundation' "$source"
-          grep -F 'home-v62-upper-geology-key' "$source"
-          grep -F 'home-v62-rear-service-manifold' "$source"
-          grep -F 'v62-no-rectangular-cavity-frame-open-service-depth' "$source"
-          grep -F 'home-v62-deep-service-layer' "$source"
-          grep -F 'v62-service-galleries-embedded-in-geology' "$source"
-          grep -F 'home-v62-machine-main-manifold' "$source"
-          grep -F 'home-v62-machine-left-load-path' "$source"
-          grep -F 'home-v62-machine-right-load-path' "$source"
-          grep -F 'home-v62-machine-overhead-return' "$source"
-          grep -F 'v62-state-core-suspended-inside-real-service-manifold' "$source"
-          grep -F 'home-v62-orb-core-housing' "$source"
-          grep -F 'home-v62-orb-state-window' "$source"
-          grep -F 'v62-governed-glb-animation-identity-retained-invisibly-for-state-contract' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v62-asset-backed-service-vault"' "$source"
-          grep -F 'data-home-final-art-revision="v62-asset-backed-service-vault-candidate"' "$source"
-          grep -F 'data-home-art-certification="v62-retained-pixel-candidate-not-certified"' "$source"
-          grep -F 'data-home-animation-owner="asset-backed-service-vault-v62-plus-governed-orb-identity"' "$source"
+          grep -F "visualOwner:'authored-orb-sanctuary-v63'" "$source"
+          grep -F "visualTreatment:'v63-authored-orb-sanctuary-retained-pixel-rebuild'" "$source"
+          grep -F 'v63-deep-stone-sanctuary-with-integrated-geology-no-display-frame' "$source"
+          grep -F 'home-v63-left-geology-foundation' "$source"
+          grep -F 'home-v63-right-geology-foundation' "$source"
+          grep -F 'v63-restrained-service-infrastructure-recessed-at-sanctuary-edges' "$source"
+          grep -F 'home-v63-left-recessed-service' "$source"
+          grep -F 'home-v63-right-recessed-service' "$source"
+          grep -F 'home-v63-left-orb-service' "$source"
+          grep -F 'home-v63-right-orb-service' "$source"
+          grep -F 'home-v63-visible-authored-orb' "$source"
+          grep -F 'v63-authored-glb-core-visible-governed-animation-identity' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v63-authored-orb-sanctuary"' "$source"
+          grep -F 'data-home-final-art-revision="v63-authored-orb-sanctuary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v63-retained-pixel-candidate-not-certified"' "$source"
+          grep -F 'data-home-animation-owner="authored-orb-sanctuary-v63-plus-governed-orb-identity"' "$source"
           grep -F 'const SPAWN = new THREE.Vector3(4.45, 0.04, 3.15)' "$source"
           grep -F 'const DEFAULT_YAW = 0.435' "$source"
           grep -F 'const desiredFov=portrait?52:40' "$source"
 
-          # Rejected wall-display and procedural relic-mass grammar must not survive in the V62 visible machine block.
-          machine_block="$(sed -n '/function MachineCoreAssembly/,/function SacredOrb/p' "$source")"
-          ! grep -F 'RelicMass' <<<"$machine_block"
-          ! grep -F 'OrbArmorPlate' <<<"$machine_block"
-          ! grep -F 'FacetedMachinePanel' <<<"$machine_block"
-          ! grep -F 'TaperedLoadBeam' <<<"$machine_block"
+          machine_block="$(sed -n '/function MachineCoreAssembly/,/function HumanPresence/p' "$source")"
+          ! grep -F 'home-v62-orb-core-housing' <<<"$machine_block"
+          ! grep -F 'home-v62-orb-state-window' <<<"$machine_block"
+          ! grep -F 'home-v62-machine-main-manifold' <<<"$machine_block"
+          ! grep -F 'home-v62-machine-overhead-return' <<<"$machine_block"
+          ! grep -F 'cylinderGeometry' <<<"$machine_block"
           ! grep -F '<ProductionOrbMachine />' "$source"
           ! grep -F 'home-v61-orb-state-slit' "$source"
           ! grep -F "visualOwner:'deep-reliquary-vault-v61'" "$source"
+          ! grep -F "visualOwner:'asset-backed-service-vault-v62'" "$source"
 
-          # V62 remains fail-closed until literal retained pixels and governed locks qualify.
           ! grep -F 'PRODUCTION CERTIFIED' "$source"
           ! grep -F 'retained-pixel-pass' "$source"
           ! grep -F 'pixel-certified' "$source"
