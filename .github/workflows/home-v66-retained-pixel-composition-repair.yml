@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Verify bounded retained-pixel repair
+      - name: Verify frozen bounded retained-pixel repair
         shell: bash
         run: |
           set -euo pipefail
