@@ -1,4 +1,4 @@
-# Owner-authored exact-head verifier for the current V64 Home composition.
+# Owner-authored exact-head verifier for the current V65 Home composition.
 name: Home Scanned Composition Verification
 on:
   pull_request:
@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-      - name: Verify exact current V64 photogrammetry Orb sanctuary composition
+      - name: Verify exact current V65 authored chamber Orb sanctuary composition
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -38,42 +38,40 @@ jobs:
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
 
           grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
-          grep -F "root.visible = false" "$source"
-          grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
-          grep -F 'v48-deterministic-intake-glb-provenance-only-never-visible' "$source"
+          grep -F "root.visible = true" "$source"
+          grep -F "retainedForGovernedCompatibilityOnly = false" "$source"
+          grep -F 'v65-authored-home-entry-chamber-visible-primary-enclosure' "$source"
 
-          grep -F "visualOwner:'photogrammetry-orb-sanctuary-v64'" "$source"
-          grep -F "visualTreatment:'v64-photogrammetry-orb-sanctuary-retained-pixel-rebuild'" "$source"
-          grep -F 'v64-photogrammetry-cavern-sanctuary-no-arch-no-flat-backboard' "$source"
-          grep -F 'home-v64-left-deep-wall' "$source"
-          grep -F 'home-v64-right-deep-wall' "$source"
-          grep -F 'home-v64-left-rear-depth' "$source"
-          grep -F 'home-v64-right-rear-depth' "$source"
-          grep -F 'home-v64-upper-left-vault' "$source"
-          grep -F 'home-v64-upper-right-vault' "$source"
-          grep -F 'v64-service-infrastructure-buried-behind-photogrammetry-geology' "$source"
-          grep -F 'home-v64-left-buried-service' "$source"
-          grep -F 'home-v64-right-buried-service' "$source"
-          grep -F 'home-v64-monumental-authored-orb' "$source"
-          grep -F 'v64-authored-glb-body-core-visible-governed-animation-identity' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v64-photogrammetry-orb-sanctuary"' "$source"
-          grep -F 'data-home-final-art-revision="v64-photogrammetry-orb-sanctuary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v64-retained-pixel-candidate-not-certified"' "$source"
-          grep -F 'data-home-animation-owner="photogrammetry-orb-sanctuary-v64-plus-governed-orb-identity"' "$source"
-          grep -F 'const ORB = new THREE.Vector3(0, 2.38, -7.35)' "$source"
+          grep -F "visualOwner:'authored-chamber-orb-sanctuary-v65'" "$source"
+          grep -F "visualTreatment:'v65-authored-chamber-revival-retained-pixel-rebuild'" "$source"
+          grep -F 'v65-authored-chamber-primary-enclosure-with-low-embedded-geology' "$source"
+          grep -F 'home-v65-left-ground-geology' "$source"
+          grep -F 'home-v65-right-ground-geology' "$source"
+          grep -F 'v65-authored-chamber-integrated-practicals-no-visible-pipe-racks' "$source"
+          grep -F 'home-v65-left-chamber-practical' "$source"
+          grep -F 'home-v65-right-chamber-practical' "$source"
+          grep -F 'home-v65-full-authored-orb' "$source"
+          grep -F 'v65-authored-glb-core-orbits-filaments-petals-visible-aura-only-retired' "$source"
+          grep -F 'data-home-visual-grade="cinematic-pbr-v65-authored-chamber-orb-sanctuary"' "$source"
+          grep -F 'data-home-final-art-revision="v65-authored-chamber-orb-sanctuary-candidate"' "$source"
+          grep -F 'data-home-art-certification="v65-retained-pixel-candidate-not-certified"' "$source"
+          grep -F 'data-home-animation-owner="authored-chamber-orb-sanctuary-v65-plus-governed-orb-identity"' "$source"
+          grep -F 'const ORB = new THREE.Vector3(0, 2.18, -6.7)' "$source"
           grep -F 'const SPAWN = new THREE.Vector3(4.45, 0.04, 3.15)' "$source"
           grep -F 'const DEFAULT_YAW = 0.435' "$source"
           grep -F 'const desiredFov=portrait?52:40' "$source"
 
           architecture_block="$(sed -n '/function ContinuousVaultSkin/,/function SanctuaryGlazing/p' "$source")"
           machine_block="$(sed -n '/function MachineCoreAssembly/,/function HumanPresence/p' "$source")"
-          ! grep -F 'SanctuaryShellMass' <<<"$architecture_block"
-          ! grep -F 'ArchitecturalStone' <<<"$architecture_block"
+          ! grep -F 'home-v64-left-deep-wall' <<<"$architecture_block"
+          ! grep -F 'home-v64-right-deep-wall' <<<"$architecture_block"
+          ! grep -F 'home-v64-upper-left-vault' <<<"$architecture_block"
+          ! grep -F 'home-v64-upper-right-vault' <<<"$architecture_block"
           ! grep -F 'ProductionAsset url={V48_PIPE_SYSTEM}' <<<"$machine_block"
           ! grep -F 'cylinderGeometry' <<<"$machine_block"
           ! grep -F '<ProductionOrbMachine />' "$source"
+          ! grep -F "visualOwner:'photogrammetry-orb-sanctuary-v64'" "$source"
           ! grep -F "visualOwner:'authored-orb-sanctuary-v63'" "$source"
-          ! grep -F "visualOwner:'asset-backed-service-vault-v62'" "$source"
 
           ! grep -F 'PRODUCTION CERTIFIED' "$source"
           ! grep -F 'retained-pixel-pass' "$source"
