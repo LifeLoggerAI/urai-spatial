@@ -111,6 +111,19 @@ test('Home is the live embodied sacred-tech sanctuary with an explicit degraded 
   assert.match(homeRuntime, /<HomeSpatialWorldFinal \/>/)
 })
 
+test('Home V66 telemetry uses the same spawn and destination coordinates as the live world', () => {
+  assert.match(assetHome, /const HOME_SPAWN = \{ x: 4\.45, z: 3\.15 \} as const/)
+  assert.match(assetHome, /const HOME_ORB = \{ x: 0, z: -7\.25 \} as const/)
+  assert.match(assetHome, /const HOME_GROUND = \{ x: -5\.2, z: -8\.4 \} as const/)
+  assert.match(assetHome, /const HOME_LIFE_MAP = \{ x: 5\.2, z: -8\.4 \} as const/)
+  assert.match(homeProduction, /const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/)
+  assert.match(homeProduction, /const ORB = new THREE\.Vector3\(0, 2\.35, -7\.25\)/)
+  assert.match(homeProduction, /const GROUND = new THREE\.Vector3\(-5\.2, 0, -8\.4\)/)
+  assert.match(homeProduction, /const LIFE_MAP = new THREE\.Vector3\(5\.2, 0, -8\.4\)/)
+  assert.doesNotMatch(assetHome, /HOME_SPAWN = \{ x: 0, z: 6\.9 \}/)
+  assert.doesNotMatch(assetHome, /HOME_ORB = \{ x: 0, z: -2\.65 \}/)
+})
+
 test('Home keeps one physical stateful Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeProduction, 'name="home-orb-sanctuary"')
