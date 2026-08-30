@@ -83,3 +83,5 @@ jobs:
             urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           git commit -m "Home: materialize V64 photogrammetry sanctuary"
           git push origin HEAD:home-final-v24-certify-20260826
+
+# Owner trigger: V64 workflow existed before this push, so this edit intentionally starts materialization.
