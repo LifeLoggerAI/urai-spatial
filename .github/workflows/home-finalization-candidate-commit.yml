@@ -1,11 +1,10 @@
-# V61 owner-authorized materialization workflow. Uses the trusted PR path to materialize the deep reliquary runtime before exact-head certification.
+# V62 owner-authorized finalization verifier. V62 is already materially landed; this workflow verifies the exact PR head without rematerializing retired V61 art.
 name: Home Finalization Candidate Commit
 on:
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/home-finalization-candidate-commit.yml'
-      - 'scripts/apply-home-v61-deep-reliquary-vault.py'
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/capture-natural-home-orb-proof.mjs'
       - 'scripts/run-continuous-spatial-proof-v22-natural.mjs'
@@ -14,12 +13,12 @@ on:
       - '.github/workflows/home-scanned-composition-forge.yml'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: home-v61-deep-reliquary-${{ github.event.pull_request.number || github.ref_name }}
+  group: home-v62-finalization-${{ github.event.pull_request.number || github.ref_name }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 jobs:
-  materialize-v61-deep-reliquary:
+  verify-v62-finalization:
     if: >-
       github.repository == 'LifeLoggerAI/urai-spatial' &&
       github.event_name == 'pull_request' &&
@@ -30,26 +29,28 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: home-final-v24-certify-20260826
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
-          persist-credentials: true
-      - name: Materialize V61 deep reliquary vault once
+          persist-credentials: false
+      - name: Verify exact V62 candidate markers
         shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -f operations/assets/home-v48-production-asset-provenance.json
           source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
-          if grep -Fq "v61-deep-reliquary-vault-retained-pixel-rebuild" "$source"; then
-            echo 'V61 deep reliquary vault is already materialized.'
-          else
-            python3 scripts/apply-home-v61-deep-reliquary-vault.py
-          fi
-          git diff --check
-          grep -Fq "v61-deep-reliquary-vault-retained-pixel-rebuild" "$source"
-          grep -Fq "home-v61-orb-state-slit" "$source"
-          grep -Fq "deep-reliquary-v61-plus-governed-orb-identity" scripts/run-continuous-spatial-proof-v22-natural.mjs
-          grep -Fq "cinematic-pbr-v61-deep-reliquary-vault" scripts/capture-natural-home-orb-proof.mjs
-          grep -Fq "visualOwner:'deep-reliquary-vault-v61'" .github/workflows/home-scanned-composition-forge.yml
+          grep -Fq "visualOwner:'asset-backed-service-vault-v62'" "$source"
+          grep -Fq "visualTreatment:'v62-asset-backed-service-vault-retained-pixel-rebuild'" "$source"
+          grep -Fq "v62-open-service-vault-with-integrated-geology-no-display-frame" "$source"
+          grep -Fq "home-v62-machine-main-manifold" "$source"
+          grep -Fq "home-v62-orb-core-housing" "$source"
+          grep -Fq "v62-governed-glb-animation-identity-retained-invisibly-for-state-contract" "$source"
+          grep -Fq "asset-backed-service-vault-v62-plus-governed-orb-identity" scripts/run-continuous-spatial-proof-v22-natural.mjs
+          grep -Fq "cinematic-pbr-v62-asset-backed-service-vault" scripts/capture-natural-home-orb-proof.mjs
+          grep -Fq "data-home-art-certification=\"v62-retained-pixel-candidate-not-certified\"" "$source"
+          ! grep -Fq "v61-deep-reliquary-vault-retained-pixel-rebuild" "$source"
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
@@ -63,29 +64,10 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Verify V61 realism contract and type-check
+      - name: Verify V62 realism contract and type-check
         run: |
           node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           node --check scripts/capture-home-state-proof.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
           pnpm --dir urai-tier1 exec tsc --noEmit
-      - name: Commit V61 runtime when changed
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'LifeLoggerAI'
-          git config user.email 'LifeLoggerAI@gmail.com'
-          git add \
-            scripts/apply-home-v61-deep-reliquary-vault.py \
-            scripts/capture-natural-home-orb-proof.mjs \
-            scripts/run-continuous-spatial-proof-v22-natural.mjs \
-            urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx \
-            urai-tier1/tests/home-relic-machine-realism-contract.test.mjs \
-            .github/workflows/home-scanned-composition-forge.yml
-          if git diff --cached --quiet; then
-            echo 'No V61 changes to commit'
-            exit 0
-          fi
-          git commit -m 'Home: materialize V61 deep reliquary vault'
-          git push origin HEAD:home-final-v24-certify-20260826
