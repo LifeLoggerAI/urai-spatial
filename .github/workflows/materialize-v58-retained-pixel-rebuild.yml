@@ -1,27 +1,26 @@
 name: Materialize V58 retained-pixel rebuild
 
+# Historical materializer retained for explicit forensic/manual replay only.
+# V59+ superseded this automatic branch mutator; it must not race current exact-head certification.
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   materialize:
-    if: "${{ github.event.head_commit.message != 'Home: materialize V58 retained-pixel vault' && github.event.head_commit.message != 'Home: owner-certify V58 runtime head' && !contains(github.event.head_commit.message, 'V59') && !contains(github.event.head_commit.message, 'V60') && !contains(github.event.head_commit.message, 'V61') && github.event.head_commit.message != 'Home: retire V58 materializer after V59 activation' }}"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Checkout exact branch head
+      - name: Checkout exact requested head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Apply V58 integrated reliquary rebuild
+      - name: Apply historical V58 integrated reliquary rebuild
         run: python3 scripts/apply-home-v58-integrated-reliquary-vault.py
 
       - name: Validate transformed source
@@ -33,7 +32,7 @@ jobs:
           grep -q 'v58-integrated-reliquary-vault-candidate' scripts/capture-natural-home-orb-proof.mjs
           grep -q 'v58-retained-pixel-rebuild-no-cutout-cave-no-pipe-kitbash' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
 
-      - name: Commit exact V58 successor
+      - name: Commit historical V58 successor only on explicit dispatch
         shell: bash
         run: |
           set -euo pipefail
@@ -41,5 +40,5 @@ jobs:
           git config user.name 'LifeLoggerAI Release Materializer'
           git config user.email 'actions@users.noreply.github.com'
           git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs
-          git commit -m 'Home: materialize V58 retained-pixel vault'
+          git commit -m 'Home: materialize historical V58 retained-pixel vault'
           git push origin HEAD:home-final-v24-certify-20260826
