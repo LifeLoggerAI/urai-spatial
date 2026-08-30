@@ -238,17 +238,15 @@ function SanctuaryCourt({ target }: { target: MutableRefObject<THREE.Vector3 | n
   </group>
 }
 
-function ProductionSanctuary(){return <group name="home-v49-scanned-detail-layer" userData={{visualOwner:'v66r1-photogrammetry-integrated-sanctuary',construction:'restrained-cc0-practicals-and-embedded-photogrammetry-relief',visualTreatment:'v66r1-scanned-relief-breaks-flat-wall-read'}}>
+function ProductionSanctuary(){return <group name="home-v49-scanned-detail-layer" userData={{visualOwner:'v66r2-responsive-photogrammetry-sanctuary',construction:'restrained-cc0-practicals-and-single-embedded-photogrammetry-relief',visualTreatment:'v66r2-scanned-relief-preserved-with-bounded-runtime-cost'}}>
   <group name="home-v49-authored-practicals" userData={{treatment:'v49-real-caged-practicals-integrated-into-authored-apse'}}>
     <ProductionAsset url={V48_CAGED_SCONCE} name="home-v49-left-sconce" position={[-4.42,2.18,-5.92]} rotation={[0,0.72,0]} span={0.56}/>
     <ProductionAsset url={V48_CAGED_SCONCE} name="home-v49-right-sconce" position={[4.34,2.12,-6.08]} rotation={[0,-0.74,0]} span={0.56}/>
     <pointLight position={[-4.28,2.12,-5.72]} color="#d1aa73" intensity={0.62} distance={6.2} decay={2}/>
     <pointLight position={[4.2,2.08,-5.88]} color="#7db0a9" intensity={0.58} distance={6.0} decay={2}/>
   </group>
-  <group name="home-v66r1-embedded-photogrammetry-relief" userData={{treatment:'v66r1-real-scanned-rock-relief-seated-into-wall-mass-not-floating-collage'}}>
-    <ProductionAsset url={V48_ROCK_FACE_01} name="home-v66r1-left-deep-relief" position={[-5.72,1.38,-8.08]} rotation={[0.04,1.08,0.08]} span={3.25} scale={[0.94,1.1,0.62]}/>
-    <ProductionAsset url={V48_ROCK_FACE_02} name="home-v66r1-right-deep-relief" position={[5.7,1.12,-6.86]} rotation={[-0.02,-1.04,-0.06]} span={3.0} scale={[0.98,1.12,0.64]}/>
-    <ProductionAsset url={V48_ROCK_FACE_02} name="home-v66r1-left-mid-relief" position={[-5.75,0.86,-3.38]} rotation={[0.03,1.22,-0.03]} span={2.15} scale={[0.9,1.0,0.58]}/>
+  <group name="home-v66r2-embedded-photogrammetry-relief" userData={{treatment:'v66r2-single-real-scanned-rock-relief-seated-into-load-bearing-wall-not-floating-collage'}}>
+    <ProductionAsset url={V48_ROCK_FACE_01} name="home-v66r2-left-deep-relief" position={[-5.76,1.28,-7.82]} rotation={[0.04,1.08,0.08]} span={2.65} scale={[0.92,1.04,0.52]}/>
   </group>
 </group>}
 
@@ -538,7 +536,5 @@ useGLTF.preload(PORTAL_MODEL)
 useGLTF.preload(HUMAN)
 useGLTF.preload(FERN_MODEL)
 useGLTF.preload(V48_CAGED_SCONCE)
-useGLTF.preload(V48_PIPE_SYSTEM)
 useGLTF.preload(V48_ROCK_FACE_01)
-useGLTF.preload(V48_ROCK_FACE_02)
 useTexture.preload([ROCK_DIFFUSE, ROCK_NORMAL, ROCK_ARM, ROCK_DISPLACEMENT])
