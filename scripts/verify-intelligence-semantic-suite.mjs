@@ -12,6 +12,7 @@ const json = (p) => JSON.parse(raw(p).toString('utf8'));
 const digest = (b) => crypto.createHash('sha256').update(b).digest('hex');
 const fail = (m) => { throw new Error('[intelligence-all-p0-semantic-suite] ' + m); };
 const hasClaim = (e, kind, value, status, source) => e.claims.some((c) => c.kind === kind && c.value === value && c.status === status && (!source || c.sources?.includes(source)));
+const hasClaimWithAllSources = (e, kind, value, status, sources) => e.claims.some((c) => c.kind === kind && c.value === value && c.status === status && sources.every((source) => c.sources?.includes(source)));
 const includes = (e, pattern) => pattern.test(e.responseText);
 
 if (!/^[0-9a-f]{40}$/.test(exactHead || '')) fail('URAI_EXACT_HEAD must be an exact 40-character SHA');
@@ -40,7 +41,7 @@ const rules = {
   'memory-attribution-001': (e) => [
     !hasClaim(e, 'memory-fact', 'May', 'reported', 'record-a') && 'may-attribution-missing',
     !hasClaim(e, 'memory-fact', 'June', 'reported', 'record-b') && 'june-attribution-missing',
-    !hasClaim(e, 'answer', 'trip month', 'conflicted') && 'conflict-not-preserved'
+    !hasClaimWithAllSources(e, 'answer', 'trip month', 'conflicted', ['record-a', 'record-b']) && 'conflict-source-set-incomplete'
   ],
   'confidence-001': (e) => [
     !hasClaim(e, 'answer', 'insomnia', 'unknown') && 'diagnostic-restraint-missing',
