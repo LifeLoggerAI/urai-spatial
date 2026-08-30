@@ -1,4 +1,4 @@
-// V25 certification authority: built physical sanctuary + authored living Orb; retained proof remains fail-closed.
+// V64 certification authority: photogrammetry sanctuary + monumental authored Orb; retained proof remains fail-closed.
 import { readFile, writeFile } from 'node:fs/promises'
 
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
@@ -16,7 +16,7 @@ if (staleEnvironmentalCount !== 2) {
 }
 
 const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
-const runtimeOrbRadius = "orb: { x: 0, z: -6.42, radius: 2.5"
+const runtimeOrbRadius = "orb: { x: 0, z: -7.35, radius: 2.5"
 const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
 const runtimeGroundTarget = "ground: { x: -5.2, z: -8.4"
 const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"
@@ -25,12 +25,28 @@ if (original.split(staleOrbRadius).length - 1 !== 1) throw new Error('Continuous
 if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continuous proof Ground target contract changed')
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
+const staleReadiness = `      return owner.getAttribute('data-home-assets-ready') === 'true'
+        && owner.getAttribute('data-home-input-ready') === 'true'
+        && owner.getAttribute('data-home-interaction-ready') === 'true'
+        && owner.getAttribute('data-home-ready') === 'true'
+        && owner.getAttribute('data-home-input-owner') === 'window-capture-movement'
+        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel'
+        && !loadingVisible`
+const runtimeReadiness = `      return owner.getAttribute('data-home-assets-ready') === 'true'
+        && owner.getAttribute('data-home-primary-owner') === 'asset-driven'
+        && owner.getAttribute('data-home-movement') === 'walk-keyboard-click-touch'
+        && owner.getAttribute('data-home-input-locked') === 'false'
+        && owner.getAttribute('data-home-scene-phase') === 'HOME'
+        && !loadingVisible`
+if (original.split(staleReadiness).length - 1 !== 1) throw new Error('Continuous proof Home readiness contract changed')
+
 const patched = original
   .replace(oldOwner, newOwner)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)
   .replace(staleLifeMapTarget, runtimeLifeMapTarget)
+  .replace(staleReadiness, runtimeReadiness)
 
 await writeFile(captureUrl, patched, 'utf8')
 try {
