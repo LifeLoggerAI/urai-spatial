@@ -9,8 +9,8 @@ type Props = {
   webglAvailable: true
 }
 
-const HOME_SPAWN = { x: 0, z: 6.9 } as const
-const HOME_ORB = { x: 0, z: -2.65 } as const
+const HOME_SPAWN = { x: 4.45, z: 3.15 } as const
+const HOME_ORB = { x: 0, z: -7.25 } as const
 const HOME_GROUND = { x: -5.2, z: -8.4 } as const
 const HOME_LIFE_MAP = { x: 5.2, z: -8.4 } as const
 const REVIEW_ORB_STATES = new Set<OrbState>([
