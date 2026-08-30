@@ -1,0 +1,34 @@
+name: URAI Intelligence Release Eval Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'operations/intelligence/**'
+      - 'scripts/verify-intelligence-release-eval.mjs'
+      - '.github/workflows/intelligence-release-eval.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'operations/intelligence/**'
+      - 'scripts/verify-intelligence-release-eval.mjs'
+      - '.github/workflows/intelligence-release-eval.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-release-eval-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+      - name: Verify fail-closed intelligence release evaluation contract
+        run: node scripts/verify-intelligence-release-eval.mjs
