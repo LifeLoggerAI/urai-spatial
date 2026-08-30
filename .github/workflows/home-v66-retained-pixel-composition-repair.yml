@@ -28,11 +28,59 @@ jobs:
           fetch-depth: 1
           persist-credentials: true
 
-      - name: Apply retained-pixel repair
+      - name: Apply retained-pixel repair and responsiveness correction
         shell: bash
         run: |
           set -euo pipefail
           python3 scripts/apply-home-v66-retained-pixel-composition-repair.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx')
+          text = path.read_text()
+
+          old = '''function ProductionSanctuary(){return <group name="home-v49-scanned-detail-layer" userData={{visualOwner:'v66r1-photogrammetry-integrated-sanctuary',construction:'restrained-cc0-practicals-and-embedded-photogrammetry-relief',visualTreatment:'v66r1-scanned-relief-breaks-flat-wall-read'}}>
+            <group name="home-v49-authored-practicals" userData={{treatment:'v49-real-caged-practicals-integrated-into-authored-apse'}}>
+              <ProductionAsset url={V48_CAGED_SCONCE} name="home-v49-left-sconce" position={[-4.42,2.18,-5.92]} rotation={[0,0.72,0]} span={0.56}/>
+              <ProductionAsset url={V48_CAGED_SCONCE} name="home-v49-right-sconce" position={[4.34,2.12,-6.08]} rotation={[0,-0.74,0]} span={0.56}/>
+              <pointLight position={[-4.28,2.12,-5.72]} color="#d1aa73" intensity={0.62} distance={6.2} decay={2}/>
+              <pointLight position={[4.2,2.08,-5.88]} color="#7db0a9" intensity={0.58} distance={6.0} decay={2}/>
+            </group>
+            <group name="home-v66r1-embedded-photogrammetry-relief" userData={{treatment:'v66r1-real-scanned-rock-relief-seated-into-wall-mass-not-floating-collage'}}>
+              <ProductionAsset url={V48_ROCK_FACE_01} name="home-v66r1-left-deep-relief" position={[-5.72,1.38,-8.08]} rotation={[0.04,1.08,0.08]} span={3.25} scale={[0.94,1.1,0.62]}/>
+              <ProductionAsset url={V48_ROCK_FACE_02} name="home-v66r1-right-deep-relief" position={[5.7,1.12,-6.86]} rotation={[-0.02,-1.04,-0.06]} span={3.0} scale={[0.98,1.12,0.64]}/>
+              <ProductionAsset url={V48_ROCK_FACE_02} name="home-v66r1-left-mid-relief" position={[-5.75,0.86,-3.38]} rotation={[0.03,1.22,-0.03]} span={2.15} scale={[0.9,1.0,0.58]}/>
+            </group>
+          </group>}'''
+          new = '''function ProductionSanctuary(){return <group name="home-v49-scanned-detail-layer" userData={{visualOwner:'v66r2-responsive-photogrammetry-sanctuary',construction:'restrained-cc0-practicals-and-single-embedded-photogrammetry-relief',visualTreatment:'v66r2-scanned-relief-preserved-with-bounded-runtime-cost'}}>
+            <group name="home-v49-authored-practicals" userData={{treatment:'v49-real-caged-practicals-integrated-into-authored-apse'}}>
+              <ProductionAsset url={V48_CAGED_SCONCE} name="home-v49-left-sconce" position={[-4.42,2.18,-5.92]} rotation={[0,0.72,0]} span={0.56}/>
+              <ProductionAsset url={V48_CAGED_SCONCE} name="home-v49-right-sconce" position={[4.34,2.12,-6.08]} rotation={[0,-0.74,0]} span={0.56}/>
+              <pointLight position={[-4.28,2.12,-5.72]} color="#d1aa73" intensity={0.62} distance={6.2} decay={2}/>
+              <pointLight position={[4.2,2.08,-5.88]} color="#7db0a9" intensity={0.58} distance={6.0} decay={2}/>
+            </group>
+            <group name="home-v66r2-embedded-photogrammetry-relief" userData={{treatment:'v66r2-single-real-scanned-rock-relief-seated-into-load-bearing-wall-not-floating-collage'}}>
+              <ProductionAsset url={V48_ROCK_FACE_01} name="home-v66r2-left-deep-relief" position={[-5.76,1.28,-7.82]} rotation={[0.04,1.08,0.08]} span={2.65} scale={[0.92,1.04,0.52]}/>
+            </group>
+          </group>}'''
+          if new not in text:
+              if text.count(old) != 1:
+                  raise SystemExit(f'photogrammetry responsiveness delta expected one match, got {text.count(old)}')
+              text = text.replace(old, new, 1)
+
+          old_preload = '''useGLTF.preload(V48_CAGED_SCONCE)
+          useGLTF.preload(V48_PIPE_SYSTEM)
+          useGLTF.preload(V48_ROCK_FACE_01)
+          useGLTF.preload(V48_ROCK_FACE_02)'''
+          new_preload = '''useGLTF.preload(V48_CAGED_SCONCE)
+          useGLTF.preload(V48_ROCK_FACE_01)'''
+          if new_preload not in text:
+              if text.count(old_preload) != 1:
+                  raise SystemExit(f'bounded preload delta expected one match, got {text.count(old_preload)}')
+              text = text.replace(old_preload, new_preload, 1)
+
+          path.write_text(text)
+          print('Applied V66r2 responsiveness repair: one embedded scanned relief; unused pipe and second-rock preloads removed.')
+          PY
           git diff --check
           git diff -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
 
@@ -59,5 +107,5 @@ jobs:
           git config user.name 'urai-release-bot'
           git config user.email 'urai-release-bot@users.noreply.github.com'
           git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          git commit -m 'Repair V66 retained-pixel composition and threshold framing'
+          git commit -m 'Bound Home scanned relief for retained-pixel responsiveness'
           git push origin HEAD:home-final-v24-certify-20260826
