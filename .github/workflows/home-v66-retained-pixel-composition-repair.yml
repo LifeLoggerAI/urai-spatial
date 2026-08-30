@@ -1,0 +1,63 @@
+name: Home V66 Retained Pixel Composition Repair
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/home-v66-retained-pixel-composition-repair.yml'
+      - 'scripts/apply-home-v66-retained-pixel-composition-repair.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: home-v66-retained-pixel-composition-repair
+  cancel-in-progress: true
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Apply retained-pixel repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/apply-home-v66-retained-pixel-composition-repair.py
+          git diff --check
+          git diff -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+
+      - name: Verify focused Home contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd urai-tier1
+          node --test --test-concurrency=1 \
+            tests/home-cohesion-contract.test.mjs \
+            tests/embodied-exploration-contract.test.mjs \
+            tests/continuous-spatial-restoration-contract.test.mjs \
+            tests/home-ground-lifemap-art-bible-contract.test.mjs \
+            tests/home-relic-machine-realism-contract.test.mjs
+
+      - name: Commit repaired runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx; then
+            echo 'Repair already applied; no source commit required.'
+            exit 0
+          fi
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          git commit -m 'Repair V66 retained-pixel composition and threshold framing'
+          git push origin HEAD:home-final-v24-certify-20260826
