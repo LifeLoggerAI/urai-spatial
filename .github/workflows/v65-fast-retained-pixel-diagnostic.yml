@@ -1,0 +1,89 @@
+name: V65 Fast Retained Pixel Diagnostic
+on:
+  push:
+    branches:
+      - diagnostic/v65-retained-pixel-20260830
+    paths:
+      - '.github/workflows/v65-fast-retained-pixel-diagnostic.yml'
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: '0'
+      NEXT_PUBLIC_URAI_EXPLICIT_DEMO: 'true'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile and build
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build:static
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Capture one exact-art desktop frame
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/v65-fast
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > artifacts/v65-fast/http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/home/ >/dev/null && break
+            sleep 1
+          done
+          cat > /tmp/v65-fast.mjs <<'NODE'
+          import { createRequire } from 'node:module'
+          import { writeFile } from 'node:fs/promises'
+          const requireFromTierOne = createRequire(new URL('./urai-tier1/package.json', `file://${process.cwd()}/`))
+          const { chromium } = requireFromTierOne('playwright')
+          const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
+          const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+          const page = await context.newPage()
+          const errors = []
+          page.on('pageerror', e => errors.push(String(e)))
+          const response = await page.goto('http://127.0.0.1:4173/home/?homeAssetReview=1&homePrivateFixture=1', { waitUntil: 'domcontentloaded', timeout: 60000 })
+          const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+          await owner.waitFor({ state: 'visible', timeout: 45000 })
+          await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45000 })
+          await page.waitForTimeout(1500)
+          const png = await page.screenshot({ path: 'artifacts/v65-fast/desktop.png', fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90000 })
+          const receipt = {
+            sourceExactArtSha: '4e5c5200b0bc89b2536334b86ce551927ff53b0f',
+            diagnosticWorkflowSha: process.env.GITHUB_SHA,
+            status: response?.status(),
+            assetsReady: await owner.getAttribute('data-home-assets-ready'),
+            visualGrade: await owner.getAttribute('data-home-visual-grade'),
+            artRevision: await owner.getAttribute('data-home-final-art-revision'),
+            artCertification: await owner.getAttribute('data-home-art-certification'),
+            screenshotBytes: png.length,
+            pageErrors: errors,
+          }
+          await writeFile('artifacts/v65-fast/receipt.json', `${JSON.stringify(receipt, null, 2)}\n`)
+          if (receipt.status !== 200 || receipt.assetsReady !== 'true' || receipt.visualGrade !== 'cinematic-pbr-v65-authored-chamber-orb-sanctuary' || png.length <= 12000 || errors.length) process.exitCode = 1
+          await context.close()
+          await browser.close()
+          NODE
+          node /tmp/v65-fast.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: v65-fast-retained-pixel-${{ github.sha }}
+          path: artifacts/v65-fast
+          if-no-files-found: error
+          retention-days: 30
