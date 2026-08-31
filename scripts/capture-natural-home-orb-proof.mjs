@@ -38,13 +38,14 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-governed-home-orb-proof-5',
+  schemaVersion: 'urai-scanned-industrial-home-orb-proof-6',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'v67-governed-authored-coordinate-home-orb-portal-semantic-and-retained-pixel-proof',
-  homeIdentity,
-  orbIdentity,
-  portalIdentity: { ...portalIdentity, requiredRuntimeRequest: true },
+  runtimeContract: 'v69-photogrammetry-industrial-home-contained-orb-governed-identity-and-retained-pixel-proof',
+  homeIdentity: { ...homeIdentity, visibleCompositionRequired: false },
+  orbIdentity: { ...orbIdentity, visibleCompositionRequired: false },
+  portalIdentity: { ...portalIdentity, requiredRuntimeRequest: true, visibleCompositionRequired: false },
+  visualPolicy: 'visible Home must be scanned rock / industrial service art; rejected generated GLBs remain identity inputs only',
   cases: [],
   errors: [],
 }
@@ -110,6 +111,8 @@ for (const spec of cases) {
     record.artRevision = await owner.getAttribute('data-home-final-art-revision')
     record.artCertification = await owner.getAttribute('data-home-art-certification')
     record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
+    record.governedIdentityAssets = await owner.getAttribute('data-home-governed-identity-assets')
+    record.visibleProductionAssets = await owner.getAttribute('data-home-visible-production-assets')
     record.authoredRegions = await owner.getAttribute('data-home-authored-regions')
     record.cameraMode = await owner.getAttribute('data-home-camera-mode')
     record.orbState = await owner.getAttribute('data-home-orb-state')
@@ -133,19 +136,21 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'v67-governed-authored-stone-relic-sanctuary'
+      && record.visibleWorld === 'v69-photogrammetry-industrial-reliquary'
       && record.worldCharacter === 'production-cinematic-sacred-tech'
-      && record.physicalBase === 'authored-stone-machine-reliquary'
+      && record.physicalBase === 'scanned-rock-industrial-machine-sanctuary'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v67-governed-reliquary'
-      && record.artRevision === 'v67-governed-authored-coordinate-rebuild'
-      && record.artCertification === 'v67-retained-pixel-candidate-not-certified'
+      && record.visualGrade === 'cinematic-pbr-v69-scanned-industrial'
+      && record.artRevision === 'v69-photogrammetry-industrial-rebuild'
+      && record.artCertification === 'v69-retained-pixel-candidate-not-certified'
       && record.runtimeAssets?.includes(path.basename(homePath))
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))
+      && record.governedIdentityAssets === 'home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb'
+      && record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr'
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
       && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null
