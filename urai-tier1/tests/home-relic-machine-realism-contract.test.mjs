@@ -4,45 +4,56 @@ import test from 'node:test'
 
 const s = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV67.tsx', import.meta.url), 'utf8')
 
-const required = [
-  "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
-  "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'",
-  "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
-  'home-v67-governed-entry-chamber',
-  'home-v67-governed-orb-body',
+const visibleAssets = [
+  "const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'",
+  "const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'",
+  "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'",
+  "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'",
+  'home-v69-scanned-reliquary-back',
+  'home-v69-scanned-left-shell',
+  'home-v69-scanned-right-shell',
+  'home-v69-left-service-manifold',
+  'home-v69-right-service-manifold',
   'home-orb-engineered-cradle',
   'home-ground-environmental-threshold',
   'home-life-map-physical-portal',
-  'v67-six-armored-fragment-machine-with-contained-core',
-  'v67-single-bounded-photogrammetry-relief',
+  'v69-six-armored-fragment-contained-machine-core',
 ]
 
-test('V67 is a governed authored-coordinate PBR sanctuary rather than a recentered blockout', () => {
-  for (const marker of required) assert.ok(s.includes(marker), `missing governed V67 marker: ${marker}`)
-  assert.match(s, /preserveAuthoredCoordinates \? tuneModel\(gltf\.scene, mode\) : prepareModel/)
-  assert.match(s, /name="home-v67-governed-entry-chamber" position=\{\[0, 0, -5\.4\]\} scale=\{\[1\.00, 1\.00, 1\.00\]\} span=\{18\.69\} mode="stone" preserveAuthoredCoordinates/)
-  assert.match(s, /data-home-visible-world="v67-governed-authored-stone-relic-sanctuary"/)
-  assert.match(s, /data-home-physical-base="authored-stone-machine-reliquary"/)
-  assert.match(s, /data-home-visual-grade="cinematic-pbr-v67-governed-reliquary"/)
-  assert.match(s, /data-home-final-art-revision="v67-governed-authored-coordinate-rebuild"/)
-  assert.doesNotMatch(s, /HomeWorldProductionFinal|v66-enclosed-reliquary-candidate/)
+const governedIdentities = [
+  "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
+  "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'",
+  "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
+]
+
+test('V69 visible Home is scanned rock and real industrial service art, not the rejected generated composition', () => {
+  for (const marker of visibleAssets) assert.ok(s.includes(marker), `missing scanned-industrial V69 marker: ${marker}`)
+  for (const marker of governedIdentities) assert.ok(s.includes(marker), `missing governed identity marker: ${marker}`)
+  assert.match(s, /data-home-visible-world="v69-photogrammetry-industrial-reliquary"/)
+  assert.match(s, /data-home-physical-base="scanned-rock-industrial-machine-sanctuary"/)
+  assert.match(s, /data-home-visual-grade="cinematic-pbr-v69-scanned-industrial"/)
+  assert.match(s, /data-home-final-art-revision="v69-photogrammetry-industrial-rebuild"/)
+  assert.match(s, /data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"/)
+  assert.match(s, /useGLTF\.preload\(GOVERNED_HOME\)/)
+  assert.match(s, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
+  assert.match(s, /useGLTF\.preload\(GOVERNED_ORB\)/)
+  assert.doesNotMatch(s, /<GovernedModel|home-v67-governed-entry-chamber|home-v67-governed-orb-body/)
 })
 
-test('V67 uses governed Orb and portal binaries while rejecting the retired glass-sphere grammar', () => {
-  assert.match(s, /<GovernedModel url=\{GOVERNED_ORB\} name="home-v67-governed-orb-body"/)
-  assert.match(s, /<GovernedModel url=\{GOVERNED_PORTAL\}/)
+test('V69 Orb is a contained six-fragment machine with no glass sphere, orbit rings, or generated avatar in visible composition', () => {
+  assert.match(s, /function OrbMachine\(/)
   assert.match(s, /const FRAGMENTS:/)
   assert.match(s, /function ArmoredFragment\(/)
   assert.match(s, /dodecahedronGeometry/)
-  assert.match(s, /transmission = 0/)
-  assert.doesNotMatch(s, /RoundedBox|icosahedronGeometry|#37e5ff|#48dfff|#6cf4ff/i)
+  assert.match(s, /v69-six-armored-fragment-contained-machine-core/)
+  assert.doesNotMatch(s, /RoundedBox|icosahedronGeometry|torusGeometry|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
-test('V67 preserves bounded render cost, real traversal phases, and fail-closed visual certification', () => {
+test('V69 preserves bounded render cost, real traversal phases, and fail-closed visual certification', () => {
   assert.match(s, /dpr=\{1\}/)
   assert.match(s, /shadow-mapSize-width=\{768\}/)
   assert.match(s, /setPortalSequence\(traversal\), reducedMotion \? 180 : 900/)
   assert.match(s, /setPortalSequence\(closing\), reducedMotion \? 700 : 2500/)
-  assert.match(s, /data-home-art-certification="v67-retained-pixel-candidate-not-certified"/)
+  assert.match(s, /data-home-art-certification="v69-retained-pixel-candidate-not-certified"/)
   assert.doesNotMatch(s, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
