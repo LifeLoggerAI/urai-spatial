@@ -8,15 +8,27 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
+const homePath = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const orbPath = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const portalPath = '/assets/urai/generated/models/portal-ring-master-v1.glb'
 const finalPackReceiptPath = path.resolve('operations/assets/generated-receipts/urai-final-glb-pack-v1.json')
 const finalPackReceipt = JSON.parse(await readFile(finalPackReceiptPath, 'utf8'))
-const orbReceipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(orbPath))
-if (!orbReceipt) throw new Error('final GLB receipt is missing Orb identity')
-const orbBytes = await readFile(path.resolve('urai-tier1/public', orbPath.slice(1)))
-const orbSha256 = createHash('sha256').update(orbBytes).digest('hex')
-if (orbBytes.length !== orbReceipt.bytes || orbSha256 !== orbReceipt.sha256) throw new Error('Orb binary identity mismatch')
+
+function verifyGovernedBinary(assetPath) {
+  const receipt = finalPackReceipt.assets?.find((asset) => asset.fileName === path.basename(assetPath))
+  if (!receipt) throw new Error(`final GLB receipt is missing ${path.basename(assetPath)} identity`)
+  return readFile(path.resolve('urai-tier1/public', assetPath.slice(1))).then((bytes) => {
+    const sha256 = createHash('sha256').update(bytes).digest('hex')
+    if (bytes.length !== receipt.bytes || sha256 !== receipt.sha256) throw new Error(`${path.basename(assetPath)} binary identity mismatch`)
+    return { path: assetPath, bytes: bytes.length, sha256, verified: true }
+  })
+}
+
+const [homeIdentity, orbIdentity, portalIdentity] = await Promise.all([
+  verifyGovernedBinary(homePath),
+  verifyGovernedBinary(orbPath),
+  verifyGovernedBinary(portalPath),
+])
 
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 } },
@@ -26,12 +38,13 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-sacred-home-orb-proof-4',
+  schemaVersion: 'urai-governed-home-orb-proof-5',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'v66-enclosed-reliquary-home-real-glb-makehuman-orb-portal-semantic-and-visual-proof',
-  orbIdentity: { path: orbPath, bytes: orbBytes.length, sha256: orbSha256, verified: true },
-  portalIdentity: { path: portalPath, requiredRuntimeRequest: true },
+  runtimeContract: 'v67-governed-authored-coordinate-home-orb-portal-semantic-and-retained-pixel-proof',
+  homeIdentity,
+  orbIdentity,
+  portalIdentity: { ...portalIdentity, requiredRuntimeRequest: true },
   cases: [],
   errors: [],
 }
@@ -101,6 +114,7 @@ for (const spec of cases) {
     record.cameraMode = await owner.getAttribute('data-home-camera-mode')
     record.orbState = await owner.getAttribute('data-home-orb-state')
     record.orbClip = await owner.getAttribute('data-home-orb-clip')
+    record.orbModelClip = await owner.getAttribute('data-home-orb-model-clip')
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count()
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
@@ -119,25 +133,24 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'open-air-sacred-tech-reliquary'
-      && record.worldCharacter === 'premium-cinematic-sacred-tech'
+      && record.visibleWorld === 'v67-governed-authored-stone-relic-sanctuary'
+      && record.worldCharacter === 'production-cinematic-sacred-tech'
       && record.physicalBase === 'authored-stone-machine-reliquary'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
-      && record.embodiedSelf === 'makehuman-v4'
+      && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v66-enclosed-reliquary'
-      && record.artRevision === 'v66-enclosed-reliquary-candidate'
-      && record.artCertification === 'v66-retained-pixel-candidate-not-certified'
-      && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('home-human-makehuman-v4.glb')
+      && record.visualGrade === 'cinematic-pbr-v67-governed-reliquary'
+      && record.artRevision === 'v67-governed-authored-coordinate-rebuild'
+      && record.artCertification === 'v67-retained-pixel-candidate-not-certified'
+      && record.runtimeAssets?.includes(path.basename(homePath))
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
       && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null
       && record.orbState !== null
-      && (spec.reducedMotion !== 'reduce' || record.orbClip === 'orb-state-static')
+      && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
       && record.semanticButtons === 3
