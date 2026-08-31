@@ -46,9 +46,12 @@ test('app template mounts the exact V67 Home production owner without certified-
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('V67 is one embodied production sanctuary with lower-cost scanned architecture, armored Orb, and real thresholds', () => {
+test('V67 is one embodied production sanctuary with governed authored binaries, bounded scanned detail, armored Orb, and real thresholds', () => {
   for (const marker of [
     'HomeWorldProductionV67',
+    'home-entry-chamber-v1.glb',
+    'portal-ring-master-v1.glb',
+    'urai-orb-avatar-v1.glb',
     'rock_face_01/asset.gltf',
     'industrial_caged_sconce/asset.gltf',
     'rock-tile-floor-diff-1k.webp',
@@ -67,13 +70,15 @@ test('V67 is one embodied production sanctuary with lower-cost scanned architect
     'home-mountain-horizon',
     'home-living-vegetation',
     'home-sanctuary-pavilion',
+    'home-v67-governed-entry-chamber',
+    'home-v67-governed-orb-body',
     'home-orb-sanctuary',
     'home-orb-engineered-cradle',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
     'v67-six-armored-fragment-machine-with-contained-core',
-    'v67-single-bounded-photogrammetry-relief',
+    'v67-single-source-bounded-photogrammetry-relief-pair',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -84,6 +89,10 @@ test('V67 is one embodied production sanctuary with lower-cost scanned architect
   ]) assert.ok(homeGraph.includes(marker), `missing V67 Home marker: ${marker}`)
 
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
+  assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
+  assert.match(homeProduction, /const GOVERNED_PORTAL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
+  assert.match(homeProduction, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
+  assert.match(homeProduction, /function GovernedModel\(/)
   assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /function OrbReliquary\(/)
   assert.match(homeProduction, /function ArmoredFragment\(/)
@@ -95,6 +104,10 @@ test('V67 is one embodied production sanctuary with lower-cost scanned architect
   assert.match(homeProduction, /yaw: 0/)
   assert.match(homeProduction, /const FRAGMENTS:/)
   assert.match(homeProduction, /dodecahedronGeometry/)
+  assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
+  assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
+  assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_ORB\)/)
+  assert.match(homeProduction, /transmission = 0/)
   assert.doesNotMatch(homeProduction, /RoundedBox/)
   assert.doesNotMatch(homeProduction, /icosahedronGeometry/)
   assert.doesNotMatch(homeProduction, /#37e5ff|#48dfff|#6cf4ff/i)
