@@ -59,7 +59,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProduction, /name="home-orb-sanctuary"/)
   assert.match(homeProduction, /name="home-orb-engineered-cradle"/)
   assert.match(homeProduction, /data-testid="urai-home-webgl-orb"/)
-  assert.match(homeProduction, /<OrbReliquary state=\{orbState\} reducedMotion=\{reducedMotion\} onOpen=\{openOrb\} \/>/)
+  assert.match(homeProduction, /<OrbReliquary state=\{orbState\} reducedMotion=\{reducedMotion\} onOpen=\{onOrb\} \/>/)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, listener\)/)
   assert.match(homeProduction, /data-home-orb-state=\{orbState\}/)
