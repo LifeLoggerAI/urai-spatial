@@ -54,17 +54,21 @@ test('Home is the live V67 embodied sanctuary with an explicit degraded fallback
 
   for (const marker of [
     'HomeWorldProductionV67',
+    "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
+    "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'",
+    "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     "const ROCK_RELIEF = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'",
     "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'",
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v67-asymmetric-scanned-stone-relic-sanctuary"',
+    'data-home-visible-world="v67-governed-authored-stone-relic-sanctuary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="canted-scanned-stone-machine-reliquary"',
+    'data-home-physical-base="authored-stone-machine-reliquary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v67-armored-reliquary"',
+    'data-home-visual-grade="cinematic-pbr-v67-governed-reliquary"',
+    'data-home-final-art-revision="v67-governed-authored-coordinate-rebuild"',
     'data-home-art-certification="v67-retained-pixel-candidate-not-certified"',
     'data-home-camera-mode={transition',
     'data-home-orb-state={orbState}',
@@ -74,11 +78,14 @@ test('Home is the live V67 embodied sanctuary with an explicit degraded fallback
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
+    'home-v67-governed-entry-chamber',
+    'home-v67-governed-orb-body',
     'home-orb-sanctuary',
     'home-orb-engineered-cradle',
     'home-authored-embodied-self',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
+    'home-life-map-physical-portal',
     'home-sanctuary-pavilion',
     'v67-six-armored-fragment-machine-with-contained-core',
     'stepEmbodiedMotion',
@@ -99,6 +106,7 @@ test('Home is the live V67 embodied sanctuary with an explicit degraded fallback
   assert.match(homeProduction, /destination: 'life-map'/)
   assert.match(homeProduction, /yaw: 0/)
   assert.match(homeProduction, /dpr=\{1\}/)
+  assert.match(homeProduction, /preserveAuthoredCoordinates/)
   assert.doesNotMatch(homeProduction, /RoundedBox|icosahedronGeometry|#37e5ff|#48dfff|#6cf4ff/i)
   assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch/i)
 
@@ -115,16 +123,16 @@ test('Home is the live V67 embodied sanctuary with an explicit degraded fallback
 })
 
 test('Home telemetry uses the same spawn and destination coordinates as the V67 live world', () => {
-  assert.match(assetHome, /const HOME_SPAWN = \{ x: 4\.45, z: 3\.15 \} as const/)
+  assert.match(assetHome, /const HOME_SPAWN = \{ x: 0, z: 4\.6 \} as const/)
   assert.match(assetHome, /const HOME_ORB = \{ x: 0, z: -7\.25 \} as const/)
   assert.match(assetHome, /const HOME_GROUND = \{ x: -5\.2, z: -8\.4 \} as const/)
   assert.match(assetHome, /const HOME_LIFE_MAP = \{ x: 5\.2, z: -8\.4 \} as const/)
-  assert.match(homeProduction, /const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/)
+  assert.match(homeProduction, /const SPAWN = new THREE\.Vector3\(0, 0\.04, 4\.6\)/)
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(0, 2\.35, -7\.25\)/)
   assert.match(homeProduction, /const GROUND = new THREE\.Vector3\(-5\.2, 0, -8\.4\)/)
   assert.match(homeProduction, /const LIFE_MAP = new THREE\.Vector3\(5\.2, 0, -8\.4\)/)
-  assert.doesNotMatch(assetHome, /HOME_SPAWN = \{ x: 0, z: 6\.9 \}/)
-  assert.doesNotMatch(assetHome, /HOME_ORB = \{ x: 0, z: -2\.65 \}/)
+  assert.doesNotMatch(assetHome, /HOME_SPAWN = \{ x: 4\.45, z: 3\.15 \}/)
+  assert.doesNotMatch(homeProduction, /const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/)
 })
 
 test('Home keeps one physical stateful armored Orb owner and semantic access parity', () => {
