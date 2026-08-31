@@ -9,11 +9,13 @@ on:
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/capture-natural-home-orb-proof.mjs'
       - 'scripts/run-continuous-spatial-proof-v22-natural.mjs'
+      - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV67.tsx'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
+      - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
       - '.github/workflows/home-scanned-composition-forge.yml'
   workflow_dispatch:
 permissions:
@@ -47,6 +49,7 @@ jobs:
           test -f operations/assets/home-v48-production-asset-provenance.json
           entry='urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
           source='urai-tier1/src/spatial/layout/HomeWorldProductionV67.tsx'
+          telemetry='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
           proof='scripts/capture-natural-home-orb-proof.mjs'
           grep -Fq 'HomeWorldProductionV67 as HomeWorldProduction' "$entry"
           grep -Fq "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'" "$source"
@@ -65,6 +68,8 @@ jobs:
           grep -Fq 'data-home-visual-grade="cinematic-pbr-v67-governed-reliquary"' "$source"
           grep -Fq 'data-home-final-art-revision="v67-governed-authored-coordinate-rebuild"' "$source"
           grep -Fq 'data-home-art-certification="v67-retained-pixel-candidate-not-certified"' "$source"
+          grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
+          grep -Fq 'const SPAWN = new THREE.Vector3(0, 0.04, 4.6)' "$source"
           grep -Fq 'dpr={1}' "$source"
           grep -Fq 'shadow-mapSize-width={768}' "$source"
           grep -Fq 'transmission = 0' "$source"
@@ -91,15 +96,19 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Verify current realism contracts and type-check
+      - name: Verify root-scoped Home realism and proof syntax
         run: |
           node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
-          node --test --test-concurrency=1 urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
-          node --test --test-concurrency=1 urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs
           node --check scripts/capture-home-state-proof.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
-          pnpm --dir urai-tier1 exec tsc --noEmit
+      - name: Verify tier-one Home restoration and exploration contracts
+        working-directory: urai-tier1
+        run: |
+          node --test --test-concurrency=1 tests/continuous-spatial-restoration-contract.test.mjs
+          node --test --test-concurrency=1 tests/final-aaa-world-convergence-contract.test.mjs
+          node --test --test-concurrency=1 tests/embodied-exploration-contract.test.mjs
+          pnpm exec tsc --noEmit
       - name: Prove exact final clean candidate identity
         shell: bash
         env:
