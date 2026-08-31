@@ -39,7 +39,7 @@ test('app template mounts the exact V67 Home production owner without certified-
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionV67 as HomeWorldProduction \} from "\.\/HomeWorldProductionV67"/)
   assert.match(homeProduction, /export function HomeWorldProductionV67/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="v67-asymmetric-scanned-stone-relic-sanctuary"/)
+  assert.match(homeProduction, /data-home-visible-world="v67-governed-authored-stone-relic-sanctuary"/)
   assert.match(homeProduction, /data-home-art-certification="v67-retained-pixel-candidate-not-certified"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
@@ -58,12 +58,12 @@ test('V67 is one embodied production sanctuary with governed authored binaries, 
     'studio-small-08-1k.hdr',
     'data-home-primary-owner="asset-driven"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="canted-scanned-stone-machine-reliquary"',
+    'data-home-physical-base="authored-stone-machine-reliquary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v67-armored-reliquary"',
-    'data-home-final-art-revision="v67-armored-sanctuary-replacement"',
+    'data-home-visual-grade="cinematic-pbr-v67-governed-reliquary"',
+    'data-home-final-art-revision="v67-governed-authored-coordinate-rebuild"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
@@ -78,7 +78,7 @@ test('V67 is one embodied production sanctuary with governed authored binaries, 
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
     'v67-six-armored-fragment-machine-with-contained-core',
-    'v67-single-source-bounded-photogrammetry-relief-pair',
+    'v67-single-bounded-photogrammetry-relief',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -93,6 +93,8 @@ test('V67 is one embodied production sanctuary with governed authored binaries, 
   assert.match(homeProduction, /const GOVERNED_PORTAL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeProduction, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
   assert.match(homeProduction, /function GovernedModel\(/)
+  assert.match(homeProduction, /preserveAuthoredCoordinates \? tuneModel\(gltf\.scene, mode\) : prepareModel/)
+  assert.match(homeProduction, /name="home-v67-governed-entry-chamber" position=\{\[0, 0, -5\.4\]\} scale=\{\[1\.00, 1\.00, 1\.00\]\} span=\{18\.69\} mode="stone" preserveAuthoredCoordinates/)
   assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /function OrbReliquary\(/)
   assert.match(homeProduction, /function ArmoredFragment\(/)
@@ -108,6 +110,9 @@ test('V67 is one embodied production sanctuary with governed authored binaries, 
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_ORB\)/)
   assert.match(homeProduction, /transmission = 0/)
+  assert.match(homeProduction, /<boxGeometry args=\{\[radius \* 1\.55, length, radius \* 1\.20\]\}/)
+  assert.match(homeProduction, /setPortalSequence\(traversal\), reducedMotion \? 180 : 900/)
+  assert.match(homeProduction, /setPortalSequence\(closing\), reducedMotion \? 700 : 2500/)
   assert.doesNotMatch(homeProduction, /RoundedBox/)
   assert.doesNotMatch(homeProduction, /icosahedronGeometry/)
   assert.doesNotMatch(homeProduction, /#37e5ff|#48dfff|#6cf4ff/i)
