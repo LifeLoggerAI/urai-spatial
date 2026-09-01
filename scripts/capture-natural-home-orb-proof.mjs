@@ -138,7 +138,7 @@ for (const spec of cases) {
     record.passed = record.status === 200
       && record.visibleWorld === 'v72-vertical-armored-industrial-sanctuary'
       && record.worldCharacter === 'production-cinematic-sacred-tech'
-      && record.physicalBase === 'deep-scanned-rock-industrial-machine-sanctuary'
+      && record.physicalBase === 'continuous-pbr-rock-industrial-machine-sanctuary'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
