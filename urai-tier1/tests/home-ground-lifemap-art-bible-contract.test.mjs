@@ -66,7 +66,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     assert.ok(homeProduction.includes(asset), `missing visible production asset: ${asset}`)
   }
 
-  assert.match(homeProduction, /function Beam(/)
+  assert.match(homeProduction, /function Beam\(/)
   assert.match(homeProduction, /function StoneMass\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
   assert.match(homeProduction, /v70-compact-six-panel-contained-machine-core/)
