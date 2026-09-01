@@ -227,8 +227,24 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   try {
     await page.addInitScript(() => {
       window.__uraiObservedOrbStates = []
+      window.__uraiObservedOrbFrames = []
       window.addEventListener('urai:orb-state', (event) => {
-        window.__uraiObservedOrbStates.push(event?.detail?.state ?? 'unknown')
+        const eventState = event?.detail?.state ?? 'unknown'
+        window.__uraiObservedOrbStates.push(eventState)
+        let frame = 0
+        const sampleRenderedState = () => {
+          const owner = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+          const renderedState = owner?.getAttribute('data-home-orb-state') ?? null
+          const renderedClip = owner?.getAttribute('data-home-orb-clip') ?? null
+          window.__uraiObservedOrbFrames.push({ eventState, renderedState, renderedClip, frame })
+          if (eventState === 'speaking'
+            && (renderedState !== 'speaking' || renderedClip !== 'orb-speaking')
+            && frame < 180) {
+            frame += 1
+            window.requestAnimationFrame(sampleRenderedState)
+          }
+        }
+        window.requestAnimationFrame(sampleRenderedState)
       })
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -271,11 +287,16 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
     await Promise.all([
-      page.waitForFunction(() => window.__uraiObservedOrbStates?.includes('speaking'), null, { timeout: 20_000 }),
+      page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
+        && sample.renderedState === 'speaking'
+        && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
       page.getByRole('button', { name: 'Send' }).click({ noWaitAfter: true }),
     ])
-    record.respondingState = await owner.getAttribute('data-home-orb-state')
-    record.respondingClip = await owner.getAttribute('data-home-orb-clip')
+    const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
+      && sample.renderedState === 'speaking'
+      && sample.renderedClip === 'orb-speaking') ?? null)
+    record.respondingState = respondingSample?.renderedState ?? null
+    record.respondingClip = respondingSample?.renderedClip ?? null
     const responsePanel = page.locator('section[aria-label="Orb response"]')
     await responsePanel.waitFor({ state: 'visible', timeout: 20_000 })
     record.responseText = (await responsePanel.textContent()) || ''
