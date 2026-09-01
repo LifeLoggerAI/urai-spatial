@@ -33,7 +33,7 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Home is the live continuous-industrial V71 sanctuary with governed identities fail-closed', () => {
+test('Home is the live vertical-industrial V72 sanctuary with governed identities fail-closed', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
@@ -62,17 +62,17 @@ test('Home is the live continuous-industrial V71 sanctuary with governed identit
     "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'",
     "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'",
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v71-continuous-armored-industrial-sanctuary"',
+    'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
     'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v71-continuous-armored-industrial"',
-    'data-home-final-art-revision="v71-continuous-armored-apse-rebuild"',
-    'data-home-art-certification="v71-retained-pixel-candidate-not-certified"',
-    'data-home-animation-owner="v71-continuous-armored-ten-panel-orb-machine"',
+    'data-home-visual-grade="cinematic-pbr-v72-vertical-armored-industrial"',
+    'data-home-final-art-revision="v72-vertical-armored-threshold-rebuild"',
+    'data-home-art-certification="v72-retained-pixel-candidate-not-certified"',
+    'data-home-animation-owner="v72-vertical-armored-ten-panel-orb-machine"',
     'data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb"',
     'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
     'data-testid="home-visible-navigable-sanctuary-world"',
@@ -91,7 +91,7 @@ test('Home is the live continuous-industrial V71 sanctuary with governed identit
     'home-v71-port-back-buttress',
     'home-v71-inner-port-rib',
     'home-v70-left-service-manifold',
-    'v71-continuous-armored-ovoid-ten-panel-machine',
+    'v72-vertical-armored-ovoid-ten-panel-machine',
     'stepEmbodiedMotion',
     'useMovementInput',
     'useDragLook',

@@ -39,14 +39,14 @@ test('app template mounts the exact active Home production owner without certifi
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="v71-continuous-armored-industrial-sanctuary"/)
-  assert.match(homeProduction, /data-home-art-certification="v71-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /data-home-visible-world="v72-vertical-armored-industrial-sanctuary"/)
+  assert.match(homeProduction, /data-home-art-certification="v72-retained-pixel-candidate-not-certified"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('V71 is one continuous PBR industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
+test('V72 is one continuous PBR industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
   for (const marker of [
     'HomeWorldProductionV70',
     'home-entry-chamber-v1.glb',
@@ -64,8 +64,8 @@ test('V71 is one continuous PBR industrial sanctuary with governed identities, c
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v71-continuous-armored-industrial"',
-    'data-home-final-art-revision="v71-continuous-armored-apse-rebuild"',
+    'data-home-visual-grade="cinematic-pbr-v72-vertical-armored-industrial"',
+    'data-home-final-art-revision="v72-vertical-armored-threshold-rebuild"',
     'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
@@ -86,7 +86,7 @@ test('V71 is one continuous PBR industrial sanctuary with governed identities, c
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
-    'v71-continuous-armored-ovoid-ten-panel-machine',
+    'v72-vertical-armored-ovoid-ten-panel-machine',
     'v71-continuous-ribbed-pbr-shell',
     'stepEmbodiedMotion',
     'useMovementInput',
@@ -95,7 +95,7 @@ test('V71 is one continuous PBR industrial sanctuary with governed identities, c
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
     '<Canvas',
-  ]) assert.ok(homeGraph.includes(marker), `missing V71 Home marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing V72 Home marker: ${marker}`)
 
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
   assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)

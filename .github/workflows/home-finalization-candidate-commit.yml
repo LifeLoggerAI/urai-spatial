@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact continuous-armored V71 candidate markers
+      - name: Verify exact vertical-armored V72 candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -69,13 +69,13 @@ jobs:
           grep -Fq 'home-v70-right-service-manifold' "$source"
           grep -Fq 'home-orb-engineered-cradle' "$source"
           grep -Fq 'home-life-map-physical-portal' "$source"
-          grep -Fq 'v71-continuous-armored-ovoid-ten-panel-machine' "$source"
+          grep -Fq 'v72-vertical-armored-ovoid-ten-panel-machine' "$source"
           grep -Fq 'new THREE.LatheGeometry(profile, 12)' "$source"
-          grep -Fq 'data-home-visible-world="v71-continuous-armored-industrial-sanctuary"' "$source"
+          grep -Fq 'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"' "$source"
           grep -Fq 'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"' "$source"
-          grep -Fq 'data-home-visual-grade="cinematic-pbr-v71-continuous-armored-industrial"' "$source"
-          grep -Fq 'data-home-final-art-revision="v71-continuous-armored-apse-rebuild"' "$source"
-          grep -Fq 'data-home-art-certification="v71-retained-pixel-candidate-not-certified"' "$source"
+          grep -Fq 'data-home-visual-grade="cinematic-pbr-v72-vertical-armored-industrial"' "$source"
+          grep -Fq 'data-home-final-art-revision="v72-vertical-armored-threshold-rebuild"' "$source"
+          grep -Fq 'data-home-art-certification="v72-retained-pixel-candidate-not-certified"' "$source"
           grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"' "$source"
           grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
           grep -Fq 'const HOME_ORB = { x: 0, z: -9.1 } as const' "$telemetry"
