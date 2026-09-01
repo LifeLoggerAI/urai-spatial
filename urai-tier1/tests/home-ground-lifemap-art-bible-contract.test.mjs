@@ -81,7 +81,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   }
 
   assert.match(homeProduction, /data-home-art-certification="v70-retained-pixel-candidate-not-certified"/)
-  assert.match(homeProduction, /privacy-preserving-first-person-presence-v69/)
+  assert.match(homeProduction, /privacy-preserving-first-person-presence-v70/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /governedPortalIdentity: GOVERNED_PORTAL/)
   assert.match(homeProduction, /function PlayerRig\(/)
