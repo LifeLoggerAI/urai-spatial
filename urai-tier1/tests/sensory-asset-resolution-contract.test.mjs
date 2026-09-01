@@ -100,7 +100,7 @@ test('loading animation timing is relative to the mounted sensory layer', () => 
 test('production audio remains consent-controlled on the live final Home owner', () => {
   const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
-  assert.match(homeWorldEntry, /export \\{ HomeWorldProductionV67 as HomeWorldProduction \\} from "\\.\\/HomeWorldProductionV67"/)
+  assert.match(homeWorldEntry, /export \{ HomeWorldProductionV67 as HomeWorldProduction \} from "\.\/HomeWorldProductionV67"/)
   assert.match(homeWorld, /data-home-visible-world="v69-photogrammetry-industrial-reliquary"/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
