@@ -90,7 +90,7 @@ test('Home is the live scanned-industrial V69 sanctuary with governed identities
     'home-v69-scanned-reliquary-back',
     'home-v69-scanned-left-shell',
     'home-v69-left-service-manifold',
-    'v69-six-armored-fragment-contained-machine-core',
+    'v69-ten-armored-fragment-contained-machine-core',
     'stepEmbodiedMotion',
     'useMovementInput',
     'useDragLook',
