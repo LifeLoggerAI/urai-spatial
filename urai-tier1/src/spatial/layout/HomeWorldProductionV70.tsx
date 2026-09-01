@@ -202,7 +202,7 @@ function PortalArchitecture({ destination, tone, onActivate, textures }: { desti
     <mesh position={[0.91, 1.36, -0.48]} rotation={[0, -0.08, 0]} castShadow receiveShadow><boxGeometry args={[0.22, 2.42, 0.92]} /><meshPhysicalMaterial color="#27332f" roughness={0.54} metalness={0.42} envMapIntensity={0.76} /></mesh>
     <mesh position={[0, 0.09, -0.34]} receiveShadow castShadow><boxGeometry args={[1.72, 0.18, 1.34]} /><meshPhysicalMaterial color="#252e2a" map={textures.color} normalMap={textures.normal} roughness={0.88} metalness={0.06} /></mesh>
     <mesh geometry={fieldGeometry} position={[0, 0, -0.96]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
-      <meshPhysicalMaterial color="#06100d" emissive={tone} emissiveIntensity={destination === 'ground' ? 0.10 : 0.14} roughness={0.94} metalness={0.02} side={THREE.DoubleSide} />
+      <meshBasicMaterial color={destination === 'ground' ? '#030806' : '#05050b'} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
     <mesh position={[-0.66, 1.36, -0.91]}><boxGeometry args={[0.035, 1.82, 0.035]} /><meshBasicMaterial color={tone} toneMapped={false} /></mesh>
     <mesh position={[0.66, 1.36, -0.91]}><boxGeometry args={[0.035, 1.82, 0.035]} /><meshBasicMaterial color={tone} toneMapped={false} /></mesh>
@@ -210,10 +210,10 @@ function PortalArchitecture({ destination, tone, onActivate, textures }: { desti
   </group>
 }
 
-function OrbPanel({ fragment }: { fragment: (typeof FRAGMENTS)[number] }) {
+function OrbPanel({ fragment, textures }: { fragment: (typeof FRAGMENTS)[number]; textures: { color: THREE.Texture; normal: THREE.Texture; arm: THREE.Texture } }) {
   const geometry = OrbPanelGeometry()
   return <mesh geometry={geometry} position={fragment.position as [number, number, number]} rotation={fragment.rotation as [number, number, number]} scale={fragment.scale as [number, number, number]} castShadow receiveShadow>
-    <meshPhysicalMaterial color={fragment.color} roughness={0.58} metalness={0.38} clearcoat={0.08} clearcoatRoughness={0.54} envMapIntensity={0.76} />
+    <meshPhysicalMaterial color={fragment.color} map={textures.color} normalMap={textures.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={textures.arm} roughness={0.72} metalness={0.24} clearcoat={0.05} clearcoatRoughness={0.68} envMapIntensity={0.62} />
   </mesh>
 }
 
@@ -253,6 +253,7 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
   const root = useRef<THREE.Group>(null)
   const coreGeometry = OrbPanelGeometry()
   const hullGeometry = EngineeredOrbHullGeometry()
+  const relicTextures = useStoneTextures()
   const portShell = RelicShellGeometry('port')
   const starboardShell = RelicShellGeometry('starboard')
   useFrame(({ clock }) => {
@@ -274,9 +275,9 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
       </mesh>
       <mesh geometry={coreGeometry} position={[0, -0.02, 0.10]} scale={[0.20, 0.54, 0.26]} castShadow receiveShadow><meshPhysicalMaterial color="#182d27" roughness={0.46} metalness={0.58} envMapIntensity={0.74} /></mesh>
       <group name="home-v72-governed-inner-mechanism-no-orbits" position={[0, 0, 0.16]} rotation={[0, 0, 0.06]} scale={[0.72, 1.10, 0.68]} userData={{ governedIdentity: GOVERNED_ORB, orbitNodesVisible: false }}><GovernedOrbMechanism /></group>
-      <mesh name="home-v72-port-relic-shell" geometry={portShell} position={[-0.12, 0.02, 0.18]} rotation={[0.02, -0.12, -0.03]} scale={[0.92, 0.96, 0.92]} castShadow receiveShadow><meshPhysicalMaterial color="#263d35" roughness={0.43} metalness={0.55} clearcoat={0.10} clearcoatRoughness={0.58} envMapIntensity={0.80} /></mesh>
-      <mesh name="home-v72-starboard-relic-shell" geometry={starboardShell} position={[0.12, -0.03, 0.16]} rotation={[-0.02, 0.13, 0.025]} scale={[0.92, 0.96, 0.92]} castShadow receiveShadow><meshPhysicalMaterial color="#344a42" roughness={0.45} metalness={0.52} clearcoat={0.09} clearcoatRoughness={0.60} envMapIntensity={0.78} /></mesh>
-      {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
+      <mesh name="home-v72-port-relic-shell" geometry={portShell} position={[-0.12, 0.02, 0.18]} rotation={[0.02, -0.12, -0.03]} scale={[0.92, 0.96, 0.92]} castShadow receiveShadow><meshPhysicalMaterial color="#263d35" map={relicTextures.color} normalMap={relicTextures.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={relicTextures.arm} roughness={0.68} metalness={0.24} clearcoat={0.05} clearcoatRoughness={0.70} envMapIntensity={0.66} /></mesh>
+      <mesh name="home-v72-starboard-relic-shell" geometry={starboardShell} position={[0.12, -0.03, 0.16]} rotation={[-0.02, 0.13, 0.025]} scale={[0.92, 0.96, 0.92]} castShadow receiveShadow><meshPhysicalMaterial color="#344a42" map={relicTextures.color} normalMap={relicTextures.normal} normalScale={new THREE.Vector2(0.26, 0.26)} roughnessMap={relicTextures.arm} roughness={0.70} metalness={0.22} clearcoat={0.04} clearcoatRoughness={0.72} envMapIntensity={0.64} /></mesh>
+      {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} textures={relicTextures} />)}
       <mesh position={[0, 0.02, 0.48]} castShadow><boxGeometry args={[0.050, 0.88, 0.038]} /><meshPhysicalMaterial color="#f5dfb8" emissive="#c79b63" emissiveIntensity={0.78} roughness={0.12} metalness={0.08} clearcoat={0.48} toneMapped={false} /></mesh>
       <mesh position={[-0.66, 0.10, -0.22]} rotation={[0.05, 0.20, -0.18]} castShadow receiveShadow><boxGeometry args={[0.12, 1.92, 0.18]} /><meshPhysicalMaterial color="#263b35" roughness={0.46} metalness={0.58} /></mesh>
       <mesh position={[0.64, -0.06, -0.24]} rotation={[-0.05, -0.20, 0.16]} castShadow receiveShadow><boxGeometry args={[0.12, 1.82, 0.18]} /><meshPhysicalMaterial color="#2f443d" roughness={0.46} metalness={0.58} /></mesh>
