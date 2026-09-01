@@ -37,6 +37,14 @@ const ORB_CLIPS: Record<OrbState, string> = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening', thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting', calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
 }
 
+const FRAGMENTS: Array<{ id: string; position: Vec3; rotation: Vec3; scale: Vec3; color: string }> = [
+  { id: 'side-left', position: [-0.34, 0, 0], rotation: [0, -0.32, 0], scale: [0.22, 0.62, 0.46], color: '#414b47' },
+  { id: 'side-right', position: [0.34, 0, 0], rotation: [0, 0.32, 0], scale: [0.22, 0.62, 0.46], color: '#414b47' },
+  { id: 'cap-lower', position: [0, -0.34, 0], rotation: [-0.28, 0, 0], scale: [0.48, 0.20, 0.42], color: '#504a40' },
+  { id: 'cap-upper', position: [0, 0.34, 0], rotation: [0.28, 0, 0], scale: [0.48, 0.20, 0.42], color: '#504a40' },
+  { id: 'face', position: [0, 0, 0.24], rotation: [0, 0, 0], scale: [0.38, 0.38, 0.16], color: '#2f3835' },
+]
+
 function useStoneTextures() {
   const [colorSource, normalSource, armSource] = useTexture([ROCK_DIFFUSE, ROCK_NORMAL, ROCK_ARM])
   return useMemo(() => {
@@ -96,9 +104,7 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
     <StoneMass position={[-1.62, 2.00, -10.32]} scale={[0.95, 3.55, 0.96]} /><StoneMass position={[1.62, 2.00, -10.32]} scale={[0.95, 3.55, 0.96]} /><StoneMass position={[0, 3.82, -10.32]} scale={[4.18, 0.48, 0.96]} />
     <Beam from={[-1.00, 0.72, -9.78]} to={[-0.58, 1.78, -9.32]} width={0.20} depth={0.18} /><Beam from={[1.00, 0.72, -9.78]} to={[0.58, 1.78, -9.32]} width={0.20} depth={0.18} />
     <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v70-compact-six-panel-contained-machine-core', governedOrbIdentity: GOVERNED_ORB }}>
-      {[-0.34, 0.34].map((x) => <mesh key={`side-${x}`} position={[x, 0, 0]} rotation={[0, x < 0 ? -0.32 : 0.32, 0]} scale={[0.22, 0.62, 0.46]} castShadow><octahedronGeometry args={[1, 0]} /><meshStandardMaterial color="#414b47" roughness={0.52} metalness={0.54} flatShading /></mesh>)}
-      {[-0.34, 0.34].map((y) => <mesh key={`cap-${y}`} position={[0, y, 0]} rotation={[y < 0 ? -0.28 : 0.28, 0, 0]} scale={[0.48, 0.20, 0.42]} castShadow><octahedronGeometry args={[1, 0]} /><meshStandardMaterial color="#504a40" roughness={0.56} metalness={0.48} flatShading /></mesh>)}
-      <mesh position={[0, 0, 0.24]} scale={[0.38, 0.38, 0.16]} castShadow><octahedronGeometry args={[1, 0]} /><meshStandardMaterial color="#2f3835" roughness={0.58} metalness={0.52} flatShading /></mesh>
+      {FRAGMENTS.map((fragment) => <mesh key={fragment.id} position={fragment.position as [number, number, number]} rotation={fragment.rotation as [number, number, number]} scale={fragment.scale as [number, number, number]} castShadow><octahedronGeometry args={[1, 0]} /><meshStandardMaterial color={fragment.color} roughness={fragment.id === 'face' ? 0.58 : fragment.id.startsWith('cap-') ? 0.56 : 0.52} metalness={fragment.id === 'face' ? 0.52 : fragment.id.startsWith('cap-') ? 0.48 : 0.54} flatShading /></mesh>)}
       <mesh position={[0, 0, -0.10]} scale={[0.20, 0.24, 0.18]} castShadow><dodecahedronGeometry args={[1, 0]} /><meshStandardMaterial color="#17201e" emissive="#536c64" emissiveIntensity={0.08} roughness={0.56} metalness={0.46} flatShading /></mesh>
       <pointLight color="#899f97" intensity={0.18} distance={2.8} decay={2} /><mesh visible={false}><sphereGeometry args={[1.15, 8, 6]} /><meshBasicMaterial /></mesh>
     </group>
