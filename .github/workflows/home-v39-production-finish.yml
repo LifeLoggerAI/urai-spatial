@@ -2,11 +2,6 @@ name: Home V39 Deterministic Materialization
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - '.github/workflows/home-v39-production-finish.yml'
 
 permissions:
   contents: write
@@ -17,6 +12,8 @@ concurrency:
 
 jobs:
   materialize:
+    # Historical materializer retained for provenance; V70 is the only active visual owner.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -27,6 +24,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
+
+      - name: Prove exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Apply V39 production finish
         run: python3 scripts/apply-home-v39-production-finish.py
