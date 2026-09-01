@@ -24,9 +24,9 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary"',
+    'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"',
+    'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
@@ -69,7 +69,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   assert.match(homeProduction, /function OrbMachine\(/)
   assert.match(homeProduction, /function OrbPanelGeometry\(/)
   assert.match(homeProduction, /new THREE\.BufferGeometry\(\)/)
-  assert.match(homeProduction, /v70-asymmetric-ten-panel-industrial-machine-core/)
+  assert.match(homeProduction, /v72-vertical-armored-ovoid-ten-panel-machine/)
   assert.match(homeProduction, /FRAGMENTS\.map/)
   const orbBlock = homeProduction.slice(homeProduction.indexOf('function OrbMachine'), homeProduction.indexOf('function PortalFrame'))
   assert.doesNotMatch(orbBlock, /function Beam\(|function StoneMass\(|sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case/i)
@@ -79,7 +79,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     assert.ok(homeProduction.includes(clip), `missing governed Orb state clip identity: ${clip}`)
   }
 
-  assert.match(homeProduction, /data-home-art-certification="v70-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /data-home-art-certification="v72-retained-pixel-candidate-not-certified"/)
   assert.match(homeProduction, /privacy-preserving-first-person-presence-v70/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /governedPortalIdentity: GOVERNED_PORTAL/)
