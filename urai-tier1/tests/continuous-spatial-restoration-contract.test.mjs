@@ -39,14 +39,14 @@ test('app template mounts the exact active Home production owner without certifi
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary"/)
-  assert.match(homeProduction, /data-home-art-certification="v70-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /data-home-visible-world="v71-continuous-armored-industrial-sanctuary"/)
+  assert.match(homeProduction, /data-home-art-certification="v71-retained-pixel-candidate-not-certified"/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('V70 is one embodied scanned-rock industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
+test('V71 is one continuous PBR industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
   for (const marker of [
     'HomeWorldProductionV70',
     'home-entry-chamber-v1.glb',
@@ -60,12 +60,12 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
     'studio-small-08-1k.hdr',
     'data-home-primary-owner="asset-driven"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"',
+    'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial"',
-    'data-home-final-art-revision="v70-recessed-apse-rebuild"',
+    'data-home-visual-grade="cinematic-pbr-v71-continuous-armored-industrial"',
+    'data-home-final-art-revision="v71-continuous-armored-apse-rebuild"',
     'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
@@ -73,9 +73,12 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
     'home-mountain-horizon',
     'home-living-vegetation',
     'home-sanctuary-pavilion',
-    'home-v70-scanned-reliquary-back',
-    'home-v70-scanned-left-shell',
-    'home-v70-scanned-right-shell',
+    'home-v71-port-back-buttress',
+    'home-v71-inner-port-rib',
+    'home-v71-inner-starboard-rib',
+    'home-v71-starboard-back-buttress',
+    'home-v71-port-foundation-mass',
+    'home-v71-starboard-foundation-mass',
     'home-v70-left-service-manifold',
     'home-v70-right-service-manifold',
     'home-orb-sanctuary',
@@ -83,8 +86,8 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
-    'v70-asymmetric-ten-panel-industrial-machine-core',
-    'v70-deep-multi-face-photogrammetry-shell',
+    'v71-continuous-armored-ovoid-ten-panel-machine',
+    'v71-continuous-ribbed-pbr-shell',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -92,7 +95,7 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
     '<Canvas',
-  ]) assert.ok(homeGraph.includes(marker), `missing V70 Home marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing V71 Home marker: ${marker}`)
 
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
   assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
@@ -101,6 +104,8 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
   assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
   assert.match(homeProduction, /function OrbPanelGeometry\(/)
+  assert.match(homeProduction, /function EngineeredOrbHullGeometry\(/)
+  assert.match(homeProduction, /new THREE\.LatheGeometry\(profile, 12\)/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
