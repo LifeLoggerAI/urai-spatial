@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact scanned-industrial V70 candidate markers
+      - name: Verify exact continuous-armored V71 candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -59,19 +59,23 @@ jobs:
           grep -Fq "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'" "$source"
           grep -Fq "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'" "$source"
           grep -Fq "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'" "$source"
-          grep -Fq 'home-v70-scanned-reliquary-back' "$source"
-          grep -Fq 'home-v70-scanned-left-shell' "$source"
-          grep -Fq 'home-v70-scanned-right-shell' "$source"
+          grep -Fq 'home-v71-port-back-buttress' "$source"
+          grep -Fq 'home-v71-inner-port-rib' "$source"
+          grep -Fq 'home-v71-inner-starboard-rib' "$source"
+          grep -Fq 'home-v71-starboard-back-buttress' "$source"
+          grep -Fq 'home-v71-port-foundation-mass' "$source"
+          grep -Fq 'home-v71-starboard-foundation-mass' "$source"
           grep -Fq 'home-v70-left-service-manifold' "$source"
           grep -Fq 'home-v70-right-service-manifold' "$source"
           grep -Fq 'home-orb-engineered-cradle' "$source"
           grep -Fq 'home-life-map-physical-portal' "$source"
-          grep -Fq 'v70-asymmetric-ten-panel-industrial-machine-core' "$source"
-          grep -Fq 'data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary"' "$source"
-          grep -Fq 'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"' "$source"
-          grep -Fq 'data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial"' "$source"
-          grep -Fq 'data-home-final-art-revision="v70-recessed-apse-rebuild"' "$source"
-          grep -Fq 'data-home-art-certification="v70-retained-pixel-candidate-not-certified"' "$source"
+          grep -Fq 'v71-continuous-armored-ovoid-ten-panel-machine' "$source"
+          grep -Fq 'new THREE.LatheGeometry(profile, 12)' "$source"
+          grep -Fq 'data-home-visible-world="v71-continuous-armored-industrial-sanctuary"' "$source"
+          grep -Fq 'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"' "$source"
+          grep -Fq 'data-home-visual-grade="cinematic-pbr-v71-continuous-armored-industrial"' "$source"
+          grep -Fq 'data-home-final-art-revision="v71-continuous-armored-apse-rebuild"' "$source"
+          grep -Fq 'data-home-art-certification="v71-retained-pixel-candidate-not-certified"' "$source"
           grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"' "$source"
           grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
           grep -Fq 'const HOME_ORB = { x: 0, z: -9.1 } as const' "$telemetry"
