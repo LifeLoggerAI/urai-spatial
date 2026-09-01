@@ -11,7 +11,7 @@ on:
       - 'scripts/run-continuous-spatial-proof-v22-natural.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
-      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV67.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact scanned-industrial V69 candidate markers
+      - name: Verify exact scanned-industrial V70 candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -48,10 +48,10 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=all)"
           test -f operations/assets/home-v48-production-asset-provenance.json
           entry='urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
-          source='urai-tier1/src/spatial/layout/HomeWorldProductionV67.tsx'
+          source='urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
           telemetry='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
           proof='scripts/capture-natural-home-orb-proof.mjs'
-          grep -Fq 'HomeWorldProductionV67 as HomeWorldProduction' "$entry"
+          grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' "$entry"
           grep -Fq "const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'" "$source"
           grep -Fq "const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'" "$source"
           grep -Fq "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'" "$source"
@@ -59,24 +59,24 @@ jobs:
           grep -Fq "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'" "$source"
           grep -Fq "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'" "$source"
           grep -Fq "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'" "$source"
-          grep -Fq 'home-v69-scanned-reliquary-back' "$source"
-          grep -Fq 'home-v69-scanned-left-shell' "$source"
-          grep -Fq 'home-v69-scanned-right-shell' "$source"
-          grep -Fq 'home-v69-left-service-manifold' "$source"
-          grep -Fq 'home-v69-right-service-manifold' "$source"
+          grep -Fq 'home-v70-scanned-reliquary-back' "$source"
+          grep -Fq 'home-v70-scanned-left-shell' "$source"
+          grep -Fq 'home-v70-scanned-right-shell' "$source"
+          grep -Fq 'home-v70-left-service-manifold' "$source"
+          grep -Fq 'home-v70-right-service-manifold' "$source"
           grep -Fq 'home-orb-engineered-cradle' "$source"
           grep -Fq 'home-life-map-physical-portal' "$source"
-          grep -Fq 'v69-ten-armored-fragment-contained-machine-core' "$source"
-          grep -Fq 'data-home-visible-world="v69-photogrammetry-industrial-reliquary"' "$source"
-          grep -Fq 'data-home-physical-base="scanned-rock-industrial-machine-sanctuary"' "$source"
-          grep -Fq 'data-home-visual-grade="cinematic-pbr-v69-scanned-industrial"' "$source"
-          grep -Fq 'data-home-final-art-revision="v69-photogrammetry-industrial-rebuild"' "$source"
-          grep -Fq 'data-home-art-certification="v69-retained-pixel-candidate-not-certified"' "$source"
+          grep -Fq 'v70-compact-six-panel-contained-machine-core' "$source"
+          grep -Fq 'data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary"' "$source"
+          grep -Fq 'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"' "$source"
+          grep -Fq 'data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial"' "$source"
+          grep -Fq 'data-home-final-art-revision="v70-recessed-apse-rebuild"' "$source"
+          grep -Fq 'data-home-art-certification="v70-retained-pixel-candidate-not-certified"' "$source"
           grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"' "$source"
           grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
-          grep -Fq 'const HOME_ORB = { x: 0, z: -9.18 } as const' "$telemetry"
-          grep -Fq 'const HOME_GROUND = { x: -4.45, z: -8.72 } as const' "$telemetry"
-          grep -Fq 'const HOME_LIFE_MAP = { x: 4.45, z: -8.72 } as const' "$telemetry"
+          grep -Fq 'const HOME_ORB = { x: 0, z: -9.1 } as const' "$telemetry"
+          grep -Fq 'const HOME_GROUND = { x: -4.85, z: -8.25 } as const' "$telemetry"
+          grep -Fq 'const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const' "$telemetry"
           grep -Fq 'dpr={1}' "$source"
           grep -Fq 'shadow-mapSize-width={768}' "$source"
           grep -Fq 'setPortalSequence(traversal), reducedMotion ? 180 : 900' "$source"
