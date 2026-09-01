@@ -41,7 +41,7 @@ const receipt = {
   schemaVersion: 'urai-scanned-industrial-home-orb-proof-6',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'v70-deep-photogrammetry-industrial-home-contained-orb-governed-identity-and-retained-pixel-proof',
+  runtimeContract: 'v71-continuous-armored-industrial-home-contained-orb-governed-identity-and-retained-pixel-proof',
   homeIdentity: { ...homeIdentity, visibleCompositionRequired: false },
   orbIdentity: { ...orbIdentity, visibleCompositionRequired: false },
   portalIdentity: { ...portalIdentity, requiredRuntimeRequest: true, visibleCompositionRequired: false },
@@ -136,16 +136,16 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'v70-deep-photogrammetry-industrial-reliquary'
+      && record.visibleWorld === 'v71-continuous-armored-industrial-sanctuary'
       && record.worldCharacter === 'production-cinematic-sacred-tech'
       && record.physicalBase === 'deep-scanned-rock-industrial-machine-sanctuary'
       && record.visualOwnership === 'three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v70-deep-scanned-industrial'
-      && record.artRevision === 'v70-recessed-apse-rebuild'
-      && record.artCertification === 'v70-retained-pixel-candidate-not-certified'
+      && record.visualGrade === 'cinematic-pbr-v71-continuous-armored-industrial'
+      && record.artRevision === 'v71-continuous-armored-apse-rebuild'
+      && record.artCertification === 'v71-retained-pixel-candidate-not-certified'
       && record.runtimeAssets?.includes(path.basename(homePath))
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))
