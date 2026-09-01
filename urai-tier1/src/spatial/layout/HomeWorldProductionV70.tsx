@@ -88,14 +88,6 @@ function ProductionAsset({ url, name, position, rotation = [0, 0, 0], scale = [1
   return <group name={name} position={position as [number, number, number]} rotation={rotation as [number, number, number]} scale={scale as [number, number, number]} userData={{ runtimeAsset: url, provenance: 'poly-haven-cc0-committed', visibleProductionAsset: true }}><primitive object={model} /></group>
 }
 
-function Beam({ from, to, width = 0.16, depth = 0.14 }: { from: Vec3; to: Vec3; width?: number; depth?: number }) {
-  const data = useMemo(() => {
-    const a = new THREE.Vector3(...from); const b = new THREE.Vector3(...to); const direction = b.clone().sub(a)
-    return { midpoint: a.clone().add(b).multiplyScalar(0.5), length: direction.length(), quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize()) }
-  }, [from, to])
-  return <mesh position={data.midpoint} quaternion={data.quaternion} castShadow receiveShadow><boxGeometry args={[width, data.length, depth]} /><meshStandardMaterial color="#363c39" roughness={0.58} metalness={0.50} envMapIntensity={0.62} /></mesh>
-}
-
 function OrbPanelGeometry() {
   return useMemo(() => {
     const geometry = new THREE.BufferGeometry()
@@ -116,13 +108,9 @@ function OrbPanel({ fragment }: { fragment: (typeof FRAGMENTS)[number] }) {
   </mesh>
 }
 
-function StoneMass({ position, scale }: { position: Vec3; scale: Vec3 }) {
-  const textures = useStoneTextures()
-  return <mesh position={position as [number, number, number]} scale={scale as [number, number, number]} castShadow receiveShadow><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color="#242824" map={textures.color} normalMap={textures.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={textures.arm} roughness={0.92} metalness={0.01} envMapIntensity={0.46} /></mesh>
-}
-
 function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
   const root = useRef<THREE.Group>(null)
+  const coreGeometry = OrbPanelGeometry()
   useFrame(({ clock }) => {
     if (!root.current) return
     root.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.20) * 0.025
@@ -136,8 +124,8 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
     <ProductionAsset url={PIPE_SYSTEM} name="home-v70-orb-service-spine" position={[0, 3.66, -9.86]} rotation={[0, Math.PI / 2, 0]} scale={[0.78, 0.72, 0.70]} span={2.10} mode="metal" />
     <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v70-asymmetric-ten-panel-industrial-machine-core', governedOrbIdentity: GOVERNED_ORB }}>
       {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
-      <mesh scale={[0.27, 0.40, 0.24]} castShadow receiveShadow><icosahedronGeometry args={[1, 2]} /><meshPhysicalMaterial color="#18322d" emissive="#82b9a8" emissiveIntensity={state === 'warning' ? 0.38 : 0.22} roughness={0.24} metalness={0.52} clearcoat={0.28} clearcoatRoughness={0.30} /></mesh>
-      <mesh position={[0, 0, 0.31]} scale={[0.085, 0.34, 0.045]} castShadow><capsuleGeometry args={[0.46, 0.62, 6, 14]} /><meshPhysicalMaterial color="#d1f2e7" emissive="#9fd8c6" emissiveIntensity={0.72} roughness={0.18} metalness={0.20} clearcoat={0.42} /></mesh>
+      <mesh geometry={coreGeometry} scale={[0.36, 0.48, 0.30]} castShadow receiveShadow><meshPhysicalMaterial color="#18322d" emissive="#82b9a8" emissiveIntensity={state === 'warning' ? 0.38 : 0.22} roughness={0.24} metalness={0.52} clearcoat={0.28} clearcoatRoughness={0.30} /></mesh>
+      <mesh geometry={coreGeometry} position={[0, 0, 0.34]} rotation={[0, 0, Math.PI / 4]} scale={[0.075, 0.32, 0.045]} castShadow><meshPhysicalMaterial color="#d1f2e7" emissive="#9fd8c6" emissiveIntensity={0.72} roughness={0.18} metalness={0.20} clearcoat={0.42} /></mesh>
       <pointLight color="#9ed0c0" intensity={state === 'dormant' ? 0.34 : 0.78} distance={4.2} decay={2} />
       <mesh visible={false}><sphereGeometry args={[1.20, 12, 8]} /><meshBasicMaterial /></mesh>
     </group>
