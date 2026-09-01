@@ -7,7 +7,7 @@ const kernel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionV67.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -33,7 +33,7 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Home is the live scanned-industrial V69 sanctuary with governed identities fail-closed', () => {
+test('Home is the live scanned-industrial V70 sanctuary with governed identities fail-closed', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
@@ -50,10 +50,10 @@ test('Home is the live scanned-industrial V69 sanctuary with governed identities
 
   has(assetHome, 'HomeWorldProduction')
   assert.match(assetHome, /<HomeWorldProduction onOrbOpen=\{onOrbOpen\} webglAvailable=\{webglAvailable\} \/>/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV67 as HomeWorldProduction \} from "\.\/HomeWorldProductionV67"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
 
   for (const marker of [
-    'HomeWorldProductionV67',
+    'HomeWorldProductionV70',
     "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
     "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'",
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
@@ -62,16 +62,16 @@ test('Home is the live scanned-industrial V69 sanctuary with governed identities
     "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'",
     "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'",
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v69-photogrammetry-industrial-reliquary"',
+    'data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="scanned-rock-industrial-machine-sanctuary"',
+    'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v69-scanned-industrial"',
-    'data-home-final-art-revision="v69-photogrammetry-industrial-rebuild"',
-    'data-home-art-certification="v69-retained-pixel-candidate-not-certified"',
+    'data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial"',
+    'data-home-final-art-revision="v70-recessed-apse-rebuild"',
+    'data-home-art-certification="v70-retained-pixel-candidate-not-certified"',
     'data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb"',
     'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
     'data-testid="home-visible-navigable-sanctuary-world"',
@@ -87,10 +87,10 @@ test('Home is the live scanned-industrial V69 sanctuary with governed identities
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
     'home-sanctuary-pavilion',
-    'home-v69-scanned-reliquary-back',
-    'home-v69-scanned-left-shell',
-    'home-v69-left-service-manifold',
-    'v69-ten-armored-fragment-contained-machine-core',
+    'home-v70-scanned-reliquary-back',
+    'home-v70-scanned-left-shell',
+    'home-v70-left-service-manifold',
+    'v70-compact-six-panel-contained-machine-core',
     'stepEmbodiedMotion',
     'useMovementInput',
     'useDragLook',
@@ -102,7 +102,7 @@ test('Home is the live scanned-industrial V69 sanctuary with governed identities
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /function ArmoredFragment\(/)
+  assert.match(homeProduction, /function StoneMass\(/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /destination: 'infrastructure-hub'/)
@@ -129,11 +129,11 @@ test('Home is the live scanned-industrial V69 sanctuary with governed identities
 
 test('Home telemetry uses the same spawn and destination coordinates as the live scanned-industrial world', () => {
   assert.match(assetHome, /const HOME_SPAWN = \{ x: 0, z: 4\.6 \} as const/)
-  assert.match(assetHome, /const HOME_ORB = \{ x: 0, z: -7\.42 \} as const/)
+  assert.match(assetHome, /const HOME_ORB = \{ x: 0, z: -9\.1 \} as const/)
   assert.match(assetHome, /const HOME_GROUND = \{ x: -4\.85, z: -8\.25 \} as const/)
   assert.match(assetHome, /const HOME_LIFE_MAP = \{ x: 4\.85, z: -8\.25 \} as const/)
   assert.match(homeProduction, /const SPAWN = new THREE\.Vector3\(0, 0\.04, 4\.6\)/)
-  assert.match(homeProduction, /const ORB = new THREE\.Vector3\(0, 2\.42, -7\.42\)/)
+  assert.match(homeProduction, /const ORB = new THREE\.Vector3\(0, 2\.18, -9\.1\)/)
   assert.match(homeProduction, /const GROUND = new THREE\.Vector3\(-4\.85, 0, -8\.25\)/)
   assert.match(homeProduction, /const LIFE_MAP = new THREE\.Vector3\(4\.85, 0, -8\.25\)/)
   assert.doesNotMatch(assetHome, /HOME_SPAWN = \{ x: 4\.45, z: 3\.15 \}/)
