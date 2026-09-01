@@ -42,7 +42,7 @@ test('Home is the live scanned-industrial V70 sanctuary with governed identities
     'data-home-ground-affordance="home-ground-environmental-threshold"',
     'data-home-life-map-affordance="home-life-map-sky-lookout"',
     'data-home-context-owner="world-local-context-only"',
-    'aria-label="Open URAI Orb companion"',
+    'aria-label="Open Orb travel controls"',
     'aria-label="Open Ground directly"',
     'aria-label="Open Life Map directly"',
   ]) has(homeRuntime, marker)
