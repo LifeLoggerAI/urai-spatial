@@ -66,14 +66,13 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     assert.ok(homeProduction.includes(asset), `missing visible production asset: ${asset}`)
   }
 
-  assert.match(homeProduction, /function Beam\(/)
-  assert.match(homeProduction, /function StoneMass\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /v70-compact-six-panel-contained-machine-core/)
+  assert.match(homeProduction, /function OrbPanelGeometry\(/)
+  assert.match(homeProduction, /new THREE\.BufferGeometry\(\)/)
+  assert.match(homeProduction, /v70-asymmetric-ten-panel-industrial-machine-core/)
   assert.match(homeProduction, /FRAGMENTS\.map/)
-  const v69OrbBlock = homeProduction.slice(homeProduction.indexOf('function OrbMachine'), homeProduction.indexOf('function PortalFrame'))
-  assert.match(v69OrbBlock, /<mesh visible=\{false\}><sphereGeometry/)
-  assert.doesNotMatch(v69OrbBlock, /torusGeometry|RoundedBox|icosahedronGeometry|glass|pedestal|display-case/i)
+  const orbBlock = homeProduction.slice(homeProduction.indexOf('function OrbMachine'), homeProduction.indexOf('function PortalFrame'))
+  assert.doesNotMatch(orbBlock, /function Beam\(|function StoneMass\(|sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case/i)
   assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
   assert.match(homeProduction, /root\.current\.rotation\.y = reducedMotion \? 0 :/)
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
