@@ -83,7 +83,7 @@ test('V69 is one embodied scanned-rock industrial sanctuary with governed identi
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
-    'v69-six-armored-fragment-contained-machine-core',
+    'v69-ten-armored-fragment-contained-machine-core',
     'v69-multi-face-photogrammetry-shell',
     'stepEmbodiedMotion',
     'useMovementInput',
