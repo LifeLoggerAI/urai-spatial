@@ -72,6 +72,7 @@ test('Home is the live scanned-industrial V70 sanctuary with governed identities
     'data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial"',
     'data-home-final-art-revision="v70-recessed-apse-rebuild"',
     'data-home-art-certification="v70-retained-pixel-candidate-not-certified"',
+    'data-home-animation-owner="v70-asymmetric-ten-panel-orb-machine"',
     'data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb"',
     'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
     'data-testid="home-visible-navigable-sanctuary-world"',
@@ -90,7 +91,7 @@ test('Home is the live scanned-industrial V70 sanctuary with governed identities
     'home-v70-scanned-reliquary-back',
     'home-v70-scanned-left-shell',
     'home-v70-left-service-manifold',
-    'v70-compact-six-panel-contained-machine-core',
+    'v70-asymmetric-ten-panel-industrial-machine-core',
     'stepEmbodiedMotion',
     'useMovementInput',
     'useDragLook',
@@ -102,7 +103,8 @@ test('Home is the live scanned-industrial V70 sanctuary with governed identities
   ]) has(homeProduction, marker)
   assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /function StoneMass\(/)
+  assert.match(homeProduction, /function OrbPanelGeometry\(/)
+  assert.doesNotMatch(homeProduction, /function StoneMass\(|function Beam\(|octahedronGeometry|icosahedronGeometry|capsuleGeometry/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /destination: 'infrastructure-hub'/)
