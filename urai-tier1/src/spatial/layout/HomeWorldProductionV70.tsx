@@ -40,16 +40,16 @@ const ORB_CLIPS: Record<OrbState, string> = {
 }
 
 const FRAGMENTS: Array<{ id: string; position: Vec3; rotation: Vec3; scale: Vec3; color: string }> = [
-  { id: 'port-crown', position: [-0.36, 0.88, 0.48], rotation: [0.10, -0.10, -0.18], scale: [0.46, 0.40, 0.38], color: '#56635d' },
-  { id: 'starboard-crown', position: [0.30, 0.96, 0.42], rotation: [0.04, 0.12, 0.14], scale: [0.40, 0.34, 0.36], color: '#354b45' },
-  { id: 'port-shoulder', position: [-0.63, 0.34, 0.40], rotation: [0.02, -0.18, -0.26], scale: [0.44, 0.48, 0.40], color: '#304740' },
-  { id: 'starboard-shoulder', position: [0.58, 0.28, 0.38], rotation: [-0.04, 0.20, 0.20], scale: [0.42, 0.44, 0.39], color: '#42534d' },
-  { id: 'port-keel', position: [-0.36, -0.80, 0.44], rotation: [-0.10, 0.08, -0.12], scale: [0.44, 0.42, 0.38], color: '#4a5048' },
-  { id: 'starboard-keel', position: [0.27, -0.92, 0.40], rotation: [-0.08, -0.10, 0.10], scale: [0.38, 0.34, 0.36], color: '#2b413a' },
-  { id: 'port-fin', position: [-0.76, -0.30, 0.26], rotation: [-0.04, 0.18, -0.34], scale: [0.34, 0.42, 0.42], color: '#263c35' },
-  { id: 'starboard-fin', position: [0.72, -0.24, 0.24], rotation: [0.06, -0.16, 0.30], scale: [0.32, 0.38, 0.40], color: '#344a43' },
-  { id: 'aperture-upper', position: [-0.08, 0.30, 0.69], rotation: [0.06, 0.02, -0.04], scale: [0.26, 0.28, 0.16], color: '#182e28' },
-  { id: 'aperture-lower', position: [0.06, -0.28, 0.70], rotation: [-0.06, -0.02, 0.05], scale: [0.24, 0.26, 0.16], color: '#1c332c' },
+  { id: 'port-crown', position: [-0.38, 0.72, 0.38], rotation: [0.08, -0.10, -0.14], scale: [0.70, 0.54, 0.82], color: '#52615a' },
+  { id: 'starboard-crown', position: [0.34, 0.80, 0.32], rotation: [0.04, 0.12, 0.12], scale: [0.60, 0.48, 0.78], color: '#344b43' },
+  { id: 'port-shoulder', position: [-0.48, 0.14, 0.36], rotation: [0.02, -0.16, -0.18], scale: [0.64, 0.68, 0.84], color: '#2d463d' },
+  { id: 'starboard-shoulder', position: [0.46, 0.08, 0.32], rotation: [-0.03, 0.18, 0.16], scale: [0.60, 0.62, 0.82], color: '#40544c' },
+  { id: 'port-keel', position: [-0.34, -0.64, 0.36], rotation: [-0.08, 0.08, -0.10], scale: [0.62, 0.52, 0.80], color: '#484e46' },
+  { id: 'starboard-keel', position: [0.28, -0.72, 0.32], rotation: [-0.06, -0.10, 0.10], scale: [0.52, 0.46, 0.76], color: '#294139' },
+  { id: 'port-fin', position: [-0.72, -0.18, 0.20], rotation: [-0.04, 0.18, -0.30], scale: [0.36, 0.62, 0.72], color: '#253b34' },
+  { id: 'starboard-fin', position: [0.68, -0.12, 0.18], rotation: [0.05, -0.16, 0.28], scale: [0.34, 0.56, 0.70], color: '#31483f' },
+  { id: 'aperture-upper', position: [-0.08, 0.30, 0.58], rotation: [0.04, 0.02, -0.04], scale: [0.30, 0.30, 0.54], color: '#172f27' },
+  { id: 'aperture-lower', position: [0.06, -0.30, 0.58], rotation: [-0.04, -0.02, 0.05], scale: [0.28, 0.28, 0.52], color: '#1b342b' },
 ]
 
 function useStoneTextures() {
@@ -94,8 +94,8 @@ function OrbPanelGeometry() {
   return useMemo(() => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
-      -0.56, -0.22, -0.50, 0.44, -0.18, -0.58, 0.34, 0.24, -0.52, -0.28, 0.30, -0.48,
-      -0.22, -0.14, 0.62, 0.30, -0.10, 0.58, 0.22, 0.18, 0.64, -0.18, 0.23, 0.60,
+      -0.58, -0.45, -0.12, 0.52, -0.38, -0.16, 0.42, 0.46, -0.12, -0.34, 0.52, -0.10,
+      -0.52, -0.40, 0.16, 0.46, -0.34, 0.14, 0.38, 0.41, 0.17, -0.30, 0.46, 0.15,
     ]), 3))
     geometry.setIndex([0,1,2,0,2,3,4,6,5,4,7,6,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0])
     geometry.computeVertexNormals()
@@ -219,14 +219,14 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
     <mesh position={[-1.15, 2.22, -10.65]} rotation={[0, 0, -0.14]} castShadow receiveShadow><boxGeometry args={[0.18, 2.86, 0.26]} /><meshPhysicalMaterial color="#34423c" roughness={0.52} metalness={0.50} /></mesh>
     <mesh position={[1.15, 2.22, -10.65]} rotation={[0, 0, 0.14]} castShadow receiveShadow><boxGeometry args={[0.18, 2.86, 0.26]} /><meshPhysicalMaterial color="#34423c" roughness={0.52} metalness={0.50} /></mesh>
     <group ref={root} name="home-orb-sanctuary" position={ORB} scale={[1.34, 1.34, 1.34]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v72-vertical-armored-ovoid-ten-panel-machine', governedOrbIdentity: GOVERNED_ORB }}>
-      <mesh geometry={hullGeometry} scale={[0.62, 1.02, 0.52]} castShadow receiveShadow>
+      <mesh geometry={hullGeometry} scale={[0.38, 0.88, 0.34]} castShadow receiveShadow>
         <meshPhysicalMaterial color="#10241f" emissive="#1f4c40" emissiveIntensity={state === 'warning' ? 0.24 : 0.07} roughness={0.50} metalness={0.54} clearcoat={0.12} clearcoatRoughness={0.58} envMapIntensity={0.76} flatShading />
       </mesh>
-      <mesh geometry={coreGeometry} position={[0, -0.02, 0.20]} scale={[0.42, 0.90, 0.36]} castShadow receiveShadow><meshPhysicalMaterial color="#182d27" roughness={0.40} metalness={0.62} envMapIntensity={0.82} /></mesh>
+      <mesh geometry={coreGeometry} position={[0, -0.02, 0.18]} scale={[0.46, 0.96, 0.70]} castShadow receiveShadow><meshPhysicalMaterial color="#182d27" roughness={0.40} metalness={0.62} envMapIntensity={0.82} /></mesh>
       {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
-      <mesh position={[0, 0.02, 0.78]} castShadow><boxGeometry args={[0.075, 1.52, 0.055]} /><meshPhysicalMaterial color="#effff9" emissive="#9fe5d2" emissiveIntensity={1.30} roughness={0.12} metalness={0.08} clearcoat={0.48} toneMapped={false} /></mesh>
-      <mesh position={[-0.54, 0.12, -0.26]} rotation={[0.05, 0.20, -0.18]} castShadow receiveShadow><boxGeometry args={[0.16, 1.74, 0.22]} /><meshPhysicalMaterial color="#263b35" roughness={0.46} metalness={0.58} /></mesh>
-      <mesh position={[0.55, -0.08, -0.28]} rotation={[-0.05, -0.20, 0.16]} castShadow receiveShadow><boxGeometry args={[0.16, 1.62, 0.22]} /><meshPhysicalMaterial color="#2f443d" roughness={0.46} metalness={0.58} /></mesh>
+      <mesh position={[0, 0.02, 0.62]} castShadow><boxGeometry args={[0.060, 1.18, 0.045]} /><meshPhysicalMaterial color="#f5dfb8" emissive="#c79b63" emissiveIntensity={0.92} roughness={0.12} metalness={0.08} clearcoat={0.48} toneMapped={false} /></mesh>
+      <mesh position={[-0.66, 0.10, -0.22]} rotation={[0.05, 0.20, -0.18]} castShadow receiveShadow><boxGeometry args={[0.12, 1.92, 0.18]} /><meshPhysicalMaterial color="#263b35" roughness={0.46} metalness={0.58} /></mesh>
+      <mesh position={[0.64, -0.06, -0.24]} rotation={[-0.05, -0.20, 0.16]} castShadow receiveShadow><boxGeometry args={[0.12, 1.82, 0.18]} /><meshPhysicalMaterial color="#2f443d" roughness={0.46} metalness={0.58} /></mesh>
       <pointLight position={[0, 0, 0.82]} color="#9ed0c0" intensity={state === 'dormant' ? 0.54 : 1.10} distance={5.6} decay={2} />
     </group>
   </group>
