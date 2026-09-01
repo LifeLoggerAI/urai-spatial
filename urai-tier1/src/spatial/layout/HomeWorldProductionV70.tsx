@@ -47,7 +47,7 @@ function useStoneTextures() {
   }, [armSource, colorSource, normalSource])
 }
 
-function prepared(source: THREE.Object3D, span: number, mode: 'rock' | 'metal' | 'light') {
+function prepareAsset(source: THREE.Object3D, span: number, mode: 'rock' | 'metal' | 'light') {
   const root = source.clone(true)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -71,7 +71,7 @@ function prepared(source: THREE.Object3D, span: number, mode: 'rock' | 'metal' |
 
 function ProductionAsset({ url, name, position, rotation = [0, 0, 0], scale = [1, 1, 1], span, mode }: { url: string; name: string; position: Vec3; rotation?: Vec3; scale?: Vec3; span: number; mode: 'rock' | 'metal' | 'light' }) {
   const gltf = useGLTF(url)
-  const model = useMemo(() => prepared(gltf.scene, span, mode), [gltf.scene, mode, span])
+  const model = useMemo(() => prepareAsset(gltf.scene, span, mode), [gltf.scene, mode, span])
   return <group name={name} position={position as [number, number, number]} rotation={rotation as [number, number, number]} scale={scale as [number, number, number]} userData={{ runtimeAsset: url, provenance: 'poly-haven-cc0-committed', visibleProductionAsset: true }}><primitive object={model} /></group>
 }
 
