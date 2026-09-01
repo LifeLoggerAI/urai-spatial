@@ -40,11 +40,11 @@ test('V69 visible Home is scanned rock and real industrial service art, not the 
   assert.doesNotMatch(s, /<GovernedModel|home-v67-governed-entry-chamber|home-v67-governed-orb-body/)
 })
 
-test('V69 Orb is a contained six-fragment machine with no glass sphere, orbit rings, or generated avatar in visible composition', () => {
+test('V69 Orb is a contained ten-fragment machine with no glass sphere, orbit rings, or generated avatar in visible composition', () => {
   assert.match(s, /function OrbMachine\(/)
   assert.match(s, /const FRAGMENTS:/)
   assert.match(s, /function ArmoredFragment\(/)
-  assert.match(s, /dodecahedronGeometry/)
+  assert.match(s, /octahedronGeometry/)
   assert.match(s, /v69-ten-armored-fragment-contained-machine-core/)
   assert.doesNotMatch(s, /RoundedBox|icosahedronGeometry|torusGeometry|#37e5ff|#48dfff|#6cf4ff/i)
 })
