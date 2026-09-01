@@ -83,7 +83,7 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
-    'v70-compact-six-panel-contained-machine-core',
+    'v70-asymmetric-ten-panel-industrial-machine-core',
     'v70-deep-multi-face-photogrammetry-shell',
     'stepEmbodiedMotion',
     'useMovementInput',
@@ -100,15 +100,15 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
   assert.match(homeProduction, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
   assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /function StoneMass\(/)
+  assert.match(homeProduction, /function OrbPanelGeometry\\(/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(homeProduction, /dpr=\{1\}/)
   assert.match(homeProduction, /shadow-mapSize-width=\{768\}/)
   assert.match(homeProduction, /yaw: 0/)
-  assert.match(homeProduction, /function Beam\(/)
-  assert.match(homeProduction, /octahedronGeometry/)
+  assert.match(homeProduction, /new THREE\\.BufferGeometry\\(\\)/)
+  assert.doesNotMatch(homeProduction, /function StoneMass\\(|function Beam\\(|octahedronGeometry|icosahedronGeometry|capsuleGeometry/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_ORB\)/)
@@ -118,7 +118,7 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
   assert.match(homeProduction, /transmission = 0/)
   assert.match(homeProduction, /setPortalSequence\(traversal\), reducedMotion \? 180 : 900/)
   assert.match(homeProduction, /setPortalSequence\(closing\), reducedMotion \? 700 : 2500/)
-  assert.doesNotMatch(homeProduction, /<GovernedModel|RoundedBox|icosahedronGeometry|torusGeometry/)
+  assert.doesNotMatch(homeProduction, /<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry/)
   assert.doesNotMatch(homeProduction, /#37e5ff|#48dfff|#6cf4ff/i)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
