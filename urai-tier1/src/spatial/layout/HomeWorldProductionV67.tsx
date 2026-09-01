@@ -221,15 +221,30 @@ function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap
   </>
 }
 
-function PlayerRig({ input, yaw, pitch, target, onNearby, transition }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; onNearby: (value: Nearby) => void; transition: Transition }) {
+function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; onNearby: (value: Nearby) => void; transition: Transition; owner: MutableRefObject<HTMLMainElement | null> }) {
   const { camera, size } = useThree()
   const position = useRef(SPAWN.clone())
   const velocity = useRef(new THREE.Vector3())
   const lastNearby = useRef<Nearby>(null)
+  const renderedFrames = useRef(0)
   useEffect(() => { camera.near = 0.1; camera.far = 100; camera.position.set(SPAWN.x, 1.62, SPAWN.z); camera.lookAt(0, 2.18, -7.25); camera.updateProjectionMatrix() }, [camera])
   useFrame((_, delta) => {
     if (transition === 'none') stepEmbodiedMotion({ position: position.current, velocity: velocity.current, input, target, yaw: 0, delta, speed: 2.9, acceleration: 9, deceleration: 12, bounds: BOUNDS, arrivalRadius: 0.32 })
     else velocity.current.multiplyScalar(0.7)
+    renderedFrames.current += 1
+    const shell = owner.current
+    if (shell) {
+      shell.dataset.homeInputReady = 'true'
+      shell.dataset.homeInteractionReady = 'true'
+      shell.dataset.homeReady = renderedFrames.current >= 8 ? 'true' : 'warming'
+      shell.dataset.homePlayerX = position.current.x.toFixed(3)
+      shell.dataset.homePlayerZ = position.current.z.toFixed(3)
+      shell.dataset.homeDistance = position.current.distanceTo(SPAWN).toFixed(3)
+      shell.dataset.homeDistanceOrb = Math.hypot(position.current.x - ORB.x, position.current.z - ORB.z).toFixed(3)
+      shell.dataset.homeDistanceGround = Math.hypot(position.current.x - GROUND.x, position.current.z - GROUND.z).toFixed(3)
+      shell.dataset.homeDistanceLifeMap = Math.hypot(position.current.x - LIFE_MAP.x, position.current.z - LIFE_MAP.z).toFixed(3)
+      shell.dataset.homeMoving = velocity.current.lengthSq() > 0.0004 ? 'true' : 'false'
+    }
     const portrait = size.height > size.width
     if (camera instanceof THREE.PerspectiveCamera) { const fov = portrait ? 54 : 43; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix() } }
     const back = portrait ? 0.08 : 0.13; const eye = portrait ? 1.55 : 1.60
@@ -245,7 +260,7 @@ function PlayerRig({ input, yaw, pitch, target, onNearby, transition }: { input:
 
 function ReadySignal({ onReady }: { onReady: () => void }) { useEffect(() => { onReady() }, [onReady]); return null }
 
-function Scene({ input, yaw, pitch, target, nearby, transition, reducedMotion, orbState, onOrb, onGround, onLifeMap, onReady }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; nearby: (value: Nearby) => void; transition: Transition; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void; onReady: () => void }) {
+function Scene({ input, yaw, pitch, target, nearby, transition, reducedMotion, orbState, onOrb, onGround, onLifeMap, onReady, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; nearby: (value: Nearby) => void; transition: Transition; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void; onReady: () => void; owner: MutableRefObject<HTMLMainElement | null> }) {
   return <>
     <color attach="background" args={['#080b0b']} />
     <fogExp2 attach="fog" args={['#111614', 0.018]} />
@@ -255,7 +270,7 @@ function Scene({ input, yaw, pitch, target, nearby, transition, reducedMotion, o
     <directionalLight position={[-6, 9, 4]} intensity={0.92} color="#d7c49e" castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} />
     <directionalLight position={[6, 6, -7]} intensity={0.34} color="#79958e" />
     <Sanctuary target={target} reducedMotion={reducedMotion} orbState={orbState} onOrb={onOrb} onGround={onGround} onLifeMap={onLifeMap} />
-    <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} onNearby={nearby} transition={transition} />
+    <PlayerRig input={input} yaw={yaw} pitch={pitch} target={target} onNearby={nearby} transition={transition} owner={owner} />
     <ReadySignal onReady={onReady} />
   </>
 }
@@ -271,6 +286,7 @@ export function HomeWorldProductionV67({ onOrbOpen = requestUraiWorldOrbOpen, we
   const [transition, setTransition] = useState<Transition>('none')
   const [portalSequence, setPortalSequence] = useState<TransitionSequence>('idle')
   const yaw = useRef(DEFAULT_YAW); const pitch = useRef(0.14); const target = useRef<THREE.Vector3 | null>(null)
+  const worldRef = useRef<HTMLMainElement>(null)
   const markSceneReady = useCallback(() => setSceneReady(true), [])
   const openOrb = useCallback(() => { if (transition === 'none') { setOrbState('attention'); onOrbOpen() } }, [onOrbOpen, transition])
   const openGround = useCallback(() => { if (transition === 'none') { target.current = null; setOrbState('transition'); setTransition('ground') } }, [transition])
@@ -296,8 +312,8 @@ export function HomeWorldProductionV67({ onOrbOpen = requestUraiWorldOrbOpen, we
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady
   const context = transition === 'life-map' ? 'Ascending into your Life Map' : transition === 'ground' ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'The threshold opens to your Life Map' : null
-  return <main className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v69-photogrammetry-industrial-reliquary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="scanned-rock-industrial-machine-sanctuary" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-visual-grade="cinematic-pbr-v69-scanned-industrial" data-home-final-art-revision="v69-photogrammetry-industrial-rebuild" data-home-art-certification="v69-retained-pixel-candidate-not-certified" data-home-scanned-composition="two-distinct-photogrammetry-rock-faces-industrial-service-v69" data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb rock_face_01/asset.gltf rock_face_02/asset.gltf modular_industrial_pipes_01/asset.gltf industrial_caged_sconce/asset.gltf rock-tile-floor-pbr studio-small-08-1k.hdr" data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb" data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={transition === 'none' ? 'HOME' : transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="v69-contained-six-fragment-orb-machine" data-home-input-locked={transition !== 'none' ? 'true' : 'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation} data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{ position: 'relative', overflow: 'hidden', background: '#080b0b' }} {...look}>
-    <Canvas className={styles.canvas} dpr={1} shadows camera={{ position: [SPAWN.x, 1.62, SPAWN.z], fov: 43, near: 0.1, far: 100 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.48; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} nearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markSceneReady} /></Canvas>
+  return <main ref={worldRef} className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v69-photogrammetry-industrial-reliquary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="scanned-rock-industrial-machine-sanctuary" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-input-owner="window-capture-movement" data-home-telemetry-owner="embodied-motion-kernel" data-home-input-ready={ready ? 'true' : 'false'} data-home-interaction-ready={ready ? 'true' : 'false'} data-home-ready={ready ? 'true' : 'warming'} data-home-player-x={SPAWN.x.toFixed(3)} data-home-player-z={SPAWN.z.toFixed(3)} data-home-distance="0.000" data-home-distance-orb={Math.hypot(SPAWN.x - ORB.x, SPAWN.z - ORB.z).toFixed(3)} data-home-distance-ground={Math.hypot(SPAWN.x - GROUND.x, SPAWN.z - GROUND.z).toFixed(3)} data-home-distance-life-map={Math.hypot(SPAWN.x - LIFE_MAP.x, SPAWN.z - LIFE_MAP.z).toFixed(3)} data-home-moving="false" data-home-visual-grade="cinematic-pbr-v69-scanned-industrial" data-home-final-art-revision="v69-photogrammetry-industrial-rebuild" data-home-art-certification="v69-retained-pixel-candidate-not-certified" data-home-scanned-composition="two-distinct-photogrammetry-rock-faces-industrial-service-v69" data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb rock_face_01/asset.gltf rock_face_02/asset.gltf modular_industrial_pipes_01/asset.gltf industrial_caged_sconce/asset.gltf rock-tile-floor-pbr studio-small-08-1k.hdr" data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb" data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={transition === 'none' ? 'HOME' : transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="v69-contained-six-fragment-orb-machine" data-home-input-locked={transition !== 'none' ? 'true' : 'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation} data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{ position: 'relative', overflow: 'hidden', background: '#080b0b' }} {...look}>
+    <Canvas className={styles.canvas} dpr={1} shadows camera={{ position: [SPAWN.x, 1.62, SPAWN.z], fov: 43, near: 0.1, far: 100 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.48; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} nearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markSceneReady} owner={worldRef} /></Canvas>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div> : null}{transition === 'none' && mobile ? <MobileMovementPad input={input} label="Home movement controls" /> : null}
     <span className="sr-only" data-testid="urai-home-webgl-orb">The six-fragment engineered Orb machine is integrated into the scanned industrial sanctuary.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied Home presence remains active.</span>
   </main>
