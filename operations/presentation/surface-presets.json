@@ -1,0 +1,17 @@
+{
+  "schemaVersion":"1.0.0",
+  "presets":[
+    {"id":"hero-16x9","width":1920,"height":1080,"safe":{"top":96,"right":96,"bottom":96,"left":96},"captureSlot":"product-capture"},
+    {"id":"social-square","width":1200,"height":1200,"safe":{"top":72,"right":72,"bottom":72,"left":72},"captureSlot":"product-or-brand"},
+    {"id":"vertical-9x16","width":1080,"height":1920,"safe":{"top":120,"right":72,"bottom":160,"left":72},"captureSlot":"product-or-brand"},
+    {"id":"github-card","width":1280,"height":640,"safe":{"top":64,"right":64,"bottom":64,"left":64},"captureSlot":"system-identity"},
+    {"id":"email-header","width":1600,"height":600,"safe":{"top":56,"right":80,"bottom":56,"left":80},"captureSlot":"brand"},
+    {"id":"app-store-portrait","width":1290,"height":2796,"safe":{"top":160,"right":96,"bottom":180,"left":96},"captureSlot":"exact-sha-product"},
+    {"id":"tablet-store","width":2048,"height":2732,"safe":{"top":160,"right":120,"bottom":160,"left":120},"captureSlot":"exact-sha-product"},
+    {"id":"walkthrough-frame","width":1920,"height":1080,"safe":{"top":96,"right":96,"bottom":128,"left":96},"captureSlot":"exact-sha-product"},
+    {"id":"weekly-memory-scroll","width":1440,"height":3120,"safe":{"top":120,"right":96,"bottom":160,"left":96},"captureSlot":"exact-sha-product"},
+    {"id":"investor-frame","width":1920,"height":1080,"safe":{"top":80,"right":80,"bottom":80,"left":80},"captureSlot":"product-or-system"}
+  ],
+  "accessibilityVariants":["default","reduced-motion","forced-colors","large-text","caption-safe"],
+  "requiredProductReceiptFields":["releaseSha","route","viewport","timestampUtc","mode","captureHash","claimClass"]
+}

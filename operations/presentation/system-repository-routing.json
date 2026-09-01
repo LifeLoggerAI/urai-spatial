@@ -1,0 +1,21 @@
+{
+  "schemaVersion":"1.0.0",
+  "canonicalRuntime":"LifeLoggerAI/urai-spatial",
+  "routes":[
+    {"repo":"LifeLoggerAI/urai-spatial","systems":["Genesis","Home Sanctuary","Ground","Life Map / Galaxy","Focus","Replay","Mirror","Shadow","Legacy","Passport","Council","Orb","Privacy Controls","Location Map","Status","Spatial / XR"],"role":"canonical-runtime-and-final-capture"},
+    {"repo":"LifeLoggerAI/asset-factory","systems":["Asset generation","Proof graphics","Proof audio","Proof models"],"role":"generation-adapters-and-zero-cost-proof"},
+    {"repo":"LifeLoggerAI/urai-studio","systems":["URAI Studio","URAI Motion","URAI Cinema","URAI Music","URAI Visuals"],"role":"studio-and-media-authoring"},
+    {"repo":"LifeLoggerAI/urai-content","systems":["URAI Content"],"role":"copy-and-content-packs"},
+    {"repo":"LifeLoggerAI/urai-privacy","systems":["Privacy","Consent","Passport policy"],"role":"privacy-policy-and-controls"},
+    {"repo":"LifeLoggerAI/urai-admin","systems":["URAI Admin"],"role":"operator-control"},
+    {"repo":"LifeLoggerAI/urai-analytics","systems":["URAI Analytics"],"role":"evidence-and-analytics"},
+    {"repo":"LifeLoggerAI/urai-communications","systems":["URAI Communications"],"role":"communications-surfaces"},
+    {"repo":"LifeLoggerAI/urai-jobs","systems":["URAI Jobs"],"role":"jobs-surface"},
+    {"repo":"LifeLoggerAI/urai-foundation","systems":["URAI Foundation"],"role":"foundation-surface"},
+    {"repo":"LifeLoggerAI/urai-labs-llc","systems":["URAI Labs"],"role":"organizational-control-and-evidence"},
+    {"repo":"LifeLoggerAI/B2Bportal","systems":["URAI B2B"],"role":"business-surface"},
+    {"repo":"LifeLoggerAI/urai-marketing","systems":["Launch media","Press","Social"],"role":"public-derivatives-only"},
+    {"repo":"LifeLoggerAI/urai-storytime","systems":["Storytime","Replay media"],"role":"narrative-media"}
+  ],
+  "rule":"No supporting repository becomes runtime authority by consuming this presentation pack. Final product captures originate from the canonical urai-spatial exact release SHA."
+}
