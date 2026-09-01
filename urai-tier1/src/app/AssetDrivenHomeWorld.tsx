@@ -10,9 +10,9 @@ type Props = {
 }
 
 const HOME_SPAWN = { x: 0, z: 4.6 } as const
-const HOME_ORB = { x: 0, z: -9.18 } as const
-const HOME_GROUND = { x: -4.45, z: -8.72 } as const
-const HOME_LIFE_MAP = { x: 4.45, z: -8.72 } as const
+const HOME_ORB = { x: 0, z: -9.1 } as const
+const HOME_GROUND = { x: -4.85, z: -8.25 } as const
+const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const REVIEW_ORB_STATES = new Set<OrbState>([
   'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
   'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
