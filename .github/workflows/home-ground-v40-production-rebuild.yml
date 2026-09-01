@@ -2,11 +2,6 @@ name: Home Ground V40 Production Rebuild
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - '.github/workflows/home-ground-v40-production-rebuild.yml'
 
 permissions:
   contents: write
@@ -17,6 +12,8 @@ concurrency:
 
 jobs:
   materialize:
+    # Historical materializer retained for provenance; V70 is the only active visual owner.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -27,6 +24,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
+
+      - name: Prove exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
