@@ -107,7 +107,7 @@ test('V70 is one embodied scanned-rock industrial sanctuary with governed identi
   assert.match(homeProduction, /dpr=\{1\}/)
   assert.match(homeProduction, /shadow-mapSize-width=\{768\}/)
   assert.match(homeProduction, /yaw: 0/)
-  assert.match(homeProduction, /function Beam(/)
+  assert.match(homeProduction, /function Beam\(/)
   assert.match(homeProduction, /octahedronGeometry/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
