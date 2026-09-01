@@ -25,6 +25,8 @@ const SPAWN = new THREE.Vector3(0, 0.04, 4.6)
 const ORB = new THREE.Vector3(0, 2.18, -9.1)
 const GROUND = new THREE.Vector3(-4.85, 0, -8.25)
 const LIFE_MAP = new THREE.Vector3(4.85, 0, -8.25)
+const GROUND_PORTAL = new THREE.Vector3(-4.48, 0, -10.72)
+const LIFE_MAP_PORTAL = new THREE.Vector3(4.48, 0, -10.72)
 const BOUNDS = { minX: -6.2, maxX: 6.2, minZ: -10.8, maxZ: 6.7 }
 
 type Vec3 = readonly [number, number, number]
@@ -38,16 +40,16 @@ const ORB_CLIPS: Record<OrbState, string> = {
 }
 
 const FRAGMENTS: Array<{ id: string; position: Vec3; rotation: Vec3; scale: Vec3; color: string }> = [
-  { id: 'port-crown', position: [-0.27, 0.50, 0.52], rotation: [0.06, -0.08, -0.08], scale: [0.66, 0.70, 0.62], color: '#43534d' },
-  { id: 'starboard-crown', position: [0.29, 0.48, 0.50], rotation: [0.05, 0.09, 0.09], scale: [0.65, 0.69, 0.62], color: '#3a4b46' },
-  { id: 'port-shoulder', position: [-0.48, 0.10, 0.48], rotation: [0.02, -0.14, -0.16], scale: [0.61, 0.70, 0.64], color: '#2f423d' },
-  { id: 'starboard-shoulder', position: [0.49, 0.08, 0.47], rotation: [-0.02, 0.14, 0.16], scale: [0.60, 0.69, 0.64], color: '#354843' },
-  { id: 'port-keel', position: [-0.27, -0.49, 0.50], rotation: [-0.07, 0.07, -0.08], scale: [0.64, 0.68, 0.61], color: '#45483f' },
-  { id: 'starboard-keel', position: [0.27, -0.50, 0.49], rotation: [-0.07, -0.07, 0.08], scale: [0.63, 0.68, 0.61], color: '#30433e' },
-  { id: 'port-fin', position: [-0.65, -0.14, 0.34], rotation: [-0.04, 0.12, -0.24], scale: [0.48, 0.56, 0.58], color: '#263b36' },
-  { id: 'starboard-fin', position: [0.66, -0.13, 0.33], rotation: [0.04, -0.12, 0.24], scale: [0.47, 0.55, 0.58], color: '#2d423c' },
-  { id: 'aperture-upper', position: [0, 0.20, 0.68], rotation: [0.04, 0, 0], scale: [0.56, 0.32, 0.22], color: '#172d28' },
-  { id: 'aperture-lower', position: [0, -0.19, 0.69], rotation: [-0.04, 0, 0], scale: [0.54, 0.31, 0.22], color: '#192e29' },
+  { id: 'port-crown', position: [-0.36, 0.88, 0.48], rotation: [0.10, -0.10, -0.18], scale: [0.46, 0.40, 0.38], color: '#56635d' },
+  { id: 'starboard-crown', position: [0.30, 0.96, 0.42], rotation: [0.04, 0.12, 0.14], scale: [0.40, 0.34, 0.36], color: '#354b45' },
+  { id: 'port-shoulder', position: [-0.63, 0.34, 0.40], rotation: [0.02, -0.18, -0.26], scale: [0.44, 0.48, 0.40], color: '#304740' },
+  { id: 'starboard-shoulder', position: [0.58, 0.28, 0.38], rotation: [-0.04, 0.20, 0.20], scale: [0.42, 0.44, 0.39], color: '#42534d' },
+  { id: 'port-keel', position: [-0.36, -0.80, 0.44], rotation: [-0.10, 0.08, -0.12], scale: [0.44, 0.42, 0.38], color: '#4a5048' },
+  { id: 'starboard-keel', position: [0.27, -0.92, 0.40], rotation: [-0.08, -0.10, 0.10], scale: [0.38, 0.34, 0.36], color: '#2b413a' },
+  { id: 'port-fin', position: [-0.76, -0.30, 0.26], rotation: [-0.04, 0.18, -0.34], scale: [0.34, 0.42, 0.42], color: '#263c35' },
+  { id: 'starboard-fin', position: [0.72, -0.24, 0.24], rotation: [0.06, -0.16, 0.30], scale: [0.32, 0.38, 0.40], color: '#344a43' },
+  { id: 'aperture-upper', position: [-0.08, 0.30, 0.69], rotation: [0.06, 0.02, -0.04], scale: [0.26, 0.28, 0.16], color: '#182e28' },
+  { id: 'aperture-lower', position: [0.06, -0.28, 0.70], rotation: [-0.06, -0.02, 0.05], scale: [0.24, 0.26, 0.16], color: '#1c332c' },
 ]
 
 function useStoneTextures() {
@@ -156,29 +158,39 @@ function RuggedPanel({ name, position, rotation = [0, 0, 0], scale, seed, textur
   </mesh>
 }
 
-function PortalArchitecture({ destination, tone, onActivate }: { destination: 'ground' | 'life-map'; tone: string; onActivate: () => void }) {
+function PortalArchitecture({ destination, tone, onActivate, textures }: { destination: 'ground' | 'life-map'; tone: string; onActivate: () => void; textures: { color: THREE.Texture; normal: THREE.Texture; arm: THREE.Texture } }) {
   const fieldGeometry = useMemo(() => {
     const shape = new THREE.Shape()
-    shape.moveTo(-0.78, 0.12); shape.lineTo(0.78, 0.12); shape.lineTo(0.78, 1.82)
-    shape.absarc(0, 1.82, 0.78, 0, Math.PI, false)
-    shape.lineTo(-0.78, 0.12)
+    shape.moveTo(-0.70, 0.14); shape.lineTo(0.70, 0.14); shape.lineTo(0.70, 1.78)
+    shape.absarc(0, 1.78, 0.70, 0, Math.PI, false)
+    shape.lineTo(-0.70, 0.14)
     return new THREE.ShapeGeometry(shape, 32)
   }, [])
   const archGeometry = useMemo(() => {
     const outer = new THREE.Shape()
-    outer.moveTo(-1.18, 0); outer.lineTo(1.18, 0); outer.lineTo(1.18, 1.88)
-    outer.absarc(0, 1.88, 1.18, 0, Math.PI, false)
-    outer.lineTo(-1.18, 0)
+    outer.moveTo(-1.22, 0); outer.lineTo(1.22, 0); outer.lineTo(1.22, 1.90)
+    outer.absarc(0, 1.90, 1.22, 0, Math.PI, false)
+    outer.lineTo(-1.22, 0)
     const opening = new THREE.Path()
-    opening.moveTo(-0.78, 0.18); opening.lineTo(-0.78, 1.82)
-    opening.absarc(0, 1.82, 0.78, Math.PI, 0, true)
-    opening.lineTo(0.78, 0.18); opening.closePath()
+    opening.moveTo(-0.74, 0.16); opening.lineTo(-0.74, 1.78)
+    opening.absarc(0, 1.78, 0.74, Math.PI, 0, true)
+    opening.lineTo(0.74, 0.16); opening.closePath()
     outer.holes.push(opening)
-    return new THREE.ExtrudeGeometry(outer, { depth: 0.32, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.055, bevelThickness: 0.055, curveSegments: 32 })
+    return new THREE.ExtrudeGeometry(outer, { depth: 0.82, bevelEnabled: true, bevelSegments: 4, steps: 1, bevelSize: 0.07, bevelThickness: 0.07, curveSegments: 36 })
   }, [])
   return <group name={destination + '-native-doorway-architecture'} position={[0, 0.02, -0.18]}>
-    <mesh geometry={archGeometry} position={[0, 0, -0.12]} castShadow receiveShadow><meshPhysicalMaterial color={destination === 'ground' ? '#27332e' : '#292d3a'} roughness={0.58} metalness={0.34} clearcoat={0.12} clearcoatRoughness={0.62} envMapIntensity={0.78} /></mesh>
-    <mesh geometry={fieldGeometry} position={[0, 0, 0.12]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}><meshPhysicalMaterial color="#07100e" emissive={tone} emissiveIntensity={destination === 'ground' ? 0.16 : 0.22} roughness={0.82} metalness={0.04} clearcoat={0.08} clearcoatRoughness={0.76} side={THREE.DoubleSide} /></mesh>
+    <mesh geometry={archGeometry} position={[0, 0, -0.92]} castShadow receiveShadow>
+      <meshPhysicalMaterial color={destination === 'ground' ? '#29372f' : '#2d3040'} map={textures.color} normalMap={textures.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={textures.arm} roughness={0.82} metalness={0.08} clearcoat={0.04} envMapIntensity={0.62} />
+    </mesh>
+    <mesh position={[-0.91, 1.36, -0.48]} rotation={[0, 0.08, 0]} castShadow receiveShadow><boxGeometry args={[0.22, 2.42, 0.92]} /><meshPhysicalMaterial color="#27332f" roughness={0.54} metalness={0.42} envMapIntensity={0.76} /></mesh>
+    <mesh position={[0.91, 1.36, -0.48]} rotation={[0, -0.08, 0]} castShadow receiveShadow><boxGeometry args={[0.22, 2.42, 0.92]} /><meshPhysicalMaterial color="#27332f" roughness={0.54} metalness={0.42} envMapIntensity={0.76} /></mesh>
+    <mesh position={[0, 0.09, -0.34]} receiveShadow castShadow><boxGeometry args={[1.72, 0.18, 1.34]} /><meshPhysicalMaterial color="#252e2a" map={textures.color} normalMap={textures.normal} roughness={0.88} metalness={0.06} /></mesh>
+    <mesh geometry={fieldGeometry} position={[0, 0, -0.96]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
+      <meshPhysicalMaterial color="#06100d" emissive={tone} emissiveIntensity={destination === 'ground' ? 0.10 : 0.14} roughness={0.94} metalness={0.02} side={THREE.DoubleSide} />
+    </mesh>
+    <mesh position={[-0.66, 1.36, -0.91]}><boxGeometry args={[0.035, 1.82, 0.035]} /><meshBasicMaterial color={tone} toneMapped={false} /></mesh>
+    <mesh position={[0.66, 1.36, -0.91]}><boxGeometry args={[0.035, 1.82, 0.035]} /><meshBasicMaterial color={tone} toneMapped={false} /></mesh>
+    <pointLight position={[0, 1.52, -0.58]} color={tone} intensity={0.78} distance={3.8} decay={2} />
   </group>
 }
 
@@ -195,42 +207,44 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
   const hullGeometry = EngineeredOrbHullGeometry()
   useFrame(({ clock }) => {
     if (!root.current) return
-    root.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.20) * 0.025
-    root.current.position.y = reducedMotion ? ORB.y : ORB.y + Math.sin(clock.elapsedTime * 0.42) * 0.025
+    root.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.20) * 0.018
+    root.current.position.y = reducedMotion ? ORB.y : ORB.y + Math.sin(clock.elapsedTime * 0.42) * 0.018
   })
   const sensory = resolveOrbSensoryOutput(state, reducedMotion, true)
   return <group name="home-orb-engineered-cradle" userData={{ treatment: 'v72-wall-integrated-vertical-armored-orb', governedIdentity: GOVERNED_ORB }}>
-    <ProductionAsset url={PIPE_SYSTEM} name="home-v71-orb-service-spine" position={[0, 4.18, -11.42]} rotation={[0, Math.PI / 2, 0]} scale={[0.42, 0.34, 0.34]} span={1.34} mode="metal" />
-    <mesh name="home-v71-orb-recess" position={[0, 2.26, -11.76]} scale={[1.62, 1.46, 0.18]} castShadow receiveShadow>
-      <cylinderGeometry args={[1, 1, 0.5, 12]} />
-      <meshPhysicalMaterial color="#1b2723" roughness={0.86} metalness={0.10} envMapIntensity={0.48} />
-    </mesh>
-    <group ref={root} name="home-orb-sanctuary" position={ORB} scale={[1.68, 1.68, 1.68]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v72-vertical-armored-ovoid-ten-panel-machine', governedOrbIdentity: GOVERNED_ORB }}>
-      <mesh geometry={hullGeometry} scale={[0.92, 1.10, 0.82]} castShadow receiveShadow>
-        <meshPhysicalMaterial color="#172b25" emissive="#285b4f" emissiveIntensity={state === 'warning' ? 0.28 : 0.10} roughness={0.42} metalness={0.48} clearcoat={0.16} clearcoatRoughness={0.52} envMapIntensity={0.82} flatShading />
+    <ProductionAsset url={PIPE_SYSTEM} name="home-v71-orb-service-spine" position={[0, 4.28, -11.46]} rotation={[0, Math.PI / 2, 0]} scale={[0.50, 0.38, 0.38]} span={1.46} mode="metal" />
+    <mesh name="home-v72-orb-wall-keel" position={[0, 2.26, -11.44]} castShadow receiveShadow><boxGeometry args={[0.52, 4.24, 0.46]} /><meshPhysicalMaterial color="#1b2723" roughness={0.60} metalness={0.46} envMapIntensity={0.64} /></mesh>
+    <mesh name="home-v72-orb-upper-yoke" position={[0, 3.74, -10.72]} castShadow receiveShadow><boxGeometry args={[2.62, 0.24, 0.32]} /><meshPhysicalMaterial color="#36423d" roughness={0.50} metalness={0.54} envMapIntensity={0.72} /></mesh>
+    <mesh name="home-v72-orb-lower-yoke" position={[0, 0.70, -10.72]} castShadow receiveShadow><boxGeometry args={[2.28, 0.22, 0.30]} /><meshPhysicalMaterial color="#2a3732" roughness={0.56} metalness={0.48} envMapIntensity={0.66} /></mesh>
+    <mesh position={[-1.15, 2.22, -10.65]} rotation={[0, 0, -0.14]} castShadow receiveShadow><boxGeometry args={[0.18, 2.86, 0.26]} /><meshPhysicalMaterial color="#34423c" roughness={0.52} metalness={0.50} /></mesh>
+    <mesh position={[1.15, 2.22, -10.65]} rotation={[0, 0, 0.14]} castShadow receiveShadow><boxGeometry args={[0.18, 2.86, 0.26]} /><meshPhysicalMaterial color="#34423c" roughness={0.52} metalness={0.50} /></mesh>
+    <group ref={root} name="home-orb-sanctuary" position={ORB} scale={[1.34, 1.34, 1.34]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v72-vertical-armored-ovoid-ten-panel-machine', governedOrbIdentity: GOVERNED_ORB }}>
+      <mesh geometry={hullGeometry} scale={[0.62, 1.02, 0.52]} castShadow receiveShadow>
+        <meshPhysicalMaterial color="#10241f" emissive="#1f4c40" emissiveIntensity={state === 'warning' ? 0.24 : 0.07} roughness={0.50} metalness={0.54} clearcoat={0.12} clearcoatRoughness={0.58} envMapIntensity={0.76} flatShading />
       </mesh>
+      <mesh geometry={coreGeometry} position={[0, -0.02, 0.20]} scale={[0.42, 0.90, 0.36]} castShadow receiveShadow><meshPhysicalMaterial color="#182d27" roughness={0.40} metalness={0.62} envMapIntensity={0.82} /></mesh>
       {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
-      <mesh geometry={coreGeometry} position={[0, 0, 0.94]} scale={[0.10, 0.72, 0.070]} castShadow>
-        <meshPhysicalMaterial color="#e8fff8" emissive="#9fe5d2" emissiveIntensity={1.42} roughness={0.12} metalness={0.10} clearcoat={0.52} />
-      </mesh>
-      <pointLight position={[0, 0, 0.72]} color="#9ed0c0" intensity={state === 'dormant' ? 0.62 : 1.28} distance={6.0} decay={2} />
+      <mesh position={[0, 0.02, 0.78]} castShadow><boxGeometry args={[0.075, 1.52, 0.055]} /><meshPhysicalMaterial color="#effff9" emissive="#9fe5d2" emissiveIntensity={1.30} roughness={0.12} metalness={0.08} clearcoat={0.48} toneMapped={false} /></mesh>
+      <mesh position={[-0.54, 0.12, -0.26]} rotation={[0.05, 0.20, -0.18]} castShadow receiveShadow><boxGeometry args={[0.16, 1.74, 0.22]} /><meshPhysicalMaterial color="#263b35" roughness={0.46} metalness={0.58} /></mesh>
+      <mesh position={[0.55, -0.08, -0.28]} rotation={[-0.05, -0.20, 0.16]} castShadow receiveShadow><boxGeometry args={[0.16, 1.62, 0.22]} /><meshPhysicalMaterial color="#2f443d" roughness={0.46} metalness={0.58} /></mesh>
+      <pointLight position={[0, 0, 0.82]} color="#9ed0c0" intensity={state === 'dormant' ? 0.54 : 1.10} distance={5.6} decay={2} />
     </group>
   </group>
 }
-function PortalFrame({ destination, position, onActivate }: { destination: 'ground' | 'life-map'; position: THREE.Vector3; onActivate: () => void }) {
+
+function PortalFrame({ destination, position, onActivate, textures }: { destination: 'ground' | 'life-map'; position: THREE.Vector3; onActivate: () => void; textures: { color: THREE.Texture; normal: THREE.Texture; arm: THREE.Texture } }) {
   const tone = destination === 'ground' ? '#789b8d' : '#8b90ac'
   const name = destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'
-  const facing = destination === 'ground' ? 0.22 : -0.22
-  const sideAsset = destination === 'ground' ? ROCK_FACE_B : ROCK_FACE_A
-  return <group name={name} position={position} rotation={[0, facing, 0]} userData={{ treatment: 'v70-native-arched-service-threshold', destination, governedPortalIdentity: GOVERNED_PORTAL }}>
-    <ProductionAsset url={sideAsset} name={destination + '-threshold-port-mass'} position={[-1.34, 1.28, -0.36]} rotation={[0.02, 0.18, -0.04]} scale={[0.48, 1.12, 0.58]} span={2.18} mode="rock" />
-    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_A : ROCK_FACE_B} name={destination + '-threshold-starboard-mass'} position={[1.34, 1.30, -0.38]} rotation={[0.02, -0.18, 0.04]} scale={[0.48, 1.12, 0.58]} span={2.16} mode="rock" />
-    <ProductionAsset url={sideAsset} name={destination + '-threshold-floor-mass'} position={[0, 0.18, 0.72]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.18, 0.54, 0.66]} span={2.42} mode="rock" />
-    <ProductionAsset url={PIPE_SYSTEM} name={destination + '-service-threshold-manifold'} position={[destination === 'ground' ? -1.18 : 1.18, 2.72, -0.46]} rotation={[0, Math.PI / 2, 0]} scale={[0.32, 0.30, 0.28]} span={1.04} mode="metal" />
-    <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'}><PortalArchitecture destination={destination} tone={tone} onActivate={onActivate} /></group>
-    <pointLight position={[0, 1.92, 0.12]} color={tone} intensity={0.92} distance={5.4} decay={2} />
+  const facing = destination === 'ground' ? 0.12 : -0.12
+  return <group name={name} position={position} rotation={[0, facing, 0]} scale={[1.08, 1.08, 1.08]} userData={{ treatment: 'v70-native-arched-service-threshold', destination, governedPortalIdentity: GOVERNED_PORTAL }}>
+    <RuggedPanel name={destination + '-threshold-port-buttress'} position={[-1.52, 1.58, -0.82]} rotation={[0, 0.10, -0.02]} scale={[0.54, 1.72, 1]} seed={destination === 'ground' ? 4.12 : 4.68} textures={textures} tint="#35423c" />
+    <RuggedPanel name={destination + '-threshold-starboard-buttress'} position={[1.52, 1.58, -0.82]} rotation={[0, -0.10, 0.02]} scale={[0.54, 1.72, 1]} seed={destination === 'ground' ? 5.18 : 5.72} textures={textures} tint="#35423c" />
+    <ProductionAsset url={PIPE_SYSTEM} name={destination + '-service-threshold-manifold'} position={[destination === 'ground' ? -1.30 : 1.30, 2.78, -0.70]} rotation={[0, Math.PI / 2, 0]} scale={[0.30, 0.28, 0.26]} span={0.96} mode="metal" />
+    <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'}><PortalArchitecture destination={destination} tone={tone} onActivate={onActivate} textures={textures} /></group>
+    <pointLight position={[0, 1.90, -0.24]} color={tone} intensity={0.82} distance={4.8} decay={2} />
   </group>
 }
+
 function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap }: { target: MutableRefObject<THREE.Vector3 | null>; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
   const textures = useStoneTextures()
   const onWalk = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ)) }
@@ -247,13 +261,13 @@ function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap
       <RuggedPanel name="home-v71-starboard-back-buttress" position={[5.20, 2.62, -11.72]} scale={[0.78, 2.58, 1]} seed={3.67} textures={textures} tint="#3b4942" />
       <ProductionAsset url={PIPE_SYSTEM} name="home-v70-left-service-manifold" position={[-4.30, 1.24, -10.92]} rotation={[0.02, 0.18, 0.02]} scale={[0.42, 0.48, 0.38]} span={1.30} mode="metal" /><ProductionAsset url={PIPE_SYSTEM} name="home-v70-right-service-manifold" position={[4.30, 1.22, -10.94]} rotation={[0.01, -0.18, -0.02]} scale={[0.41, 0.47, 0.37]} span={1.28} mode="metal" />
       <ProductionAsset url={CAGED_SCONCE} name="home-v70-left-sconce" position={[-3.38, 2.48, -10.98]} rotation={[0, 0.12, 0]} span={0.52} mode="light" /><ProductionAsset url={CAGED_SCONCE} name="home-v70-right-sconce" position={[3.38, 2.46, -10.98]} rotation={[0, -0.12, 0]} span={0.52} mode="light" />
-      <ProductionAsset url={ROCK_FACE_A} name="home-v71-port-foundation-mass" position={[-5.52, 0.70, -11.18]} rotation={[-0.02, 0.18, -0.04]} scale={[0.72, 0.82, 0.58]} span={2.36} mode="rock" />
-      <ProductionAsset url={ROCK_FACE_B} name="home-v71-starboard-foundation-mass" position={[5.52, 0.72, -11.18]} rotation={[-0.02, -0.18, 0.04]} scale={[0.72, 0.82, 0.58]} span={2.34} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v71-port-foundation-mass" position={[-5.72, 0.42, -11.66]} rotation={[-0.02, 0.18, -0.04]} scale={[0.42, 0.52, 0.38]} span={1.72} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v71-starboard-foundation-mass" position={[5.72, 0.44, -11.66]} rotation={[-0.02, -0.18, 0.04]} scale={[0.42, 0.52, 0.38]} span={1.70} mode="rock" />
       <pointLight position={[-3.20, 2.30, -9.55]} color="#c5935a" intensity={0.40} distance={4.2} decay={2} /><pointLight position={[3.18, 2.28, -9.54]} color="#899f98" intensity={0.30} distance={4.0} decay={2} />
       <group name="home-v47-reliquary-cavity" /><group name="home-v47-side-gallery" /><group name="home-v47-reliquary-apse" />
     </group>
     <group name="home-v49-scanned-detail-layer" userData={{ treatment: 'v71-continuous-ribbed-pbr-shell' }} /><group name="home-v49-authored-practicals" userData={{ treatment: 'v70-wall-integrated-industrial-service' }} />
-    <OrbMachine state={orbState} reducedMotion={reducedMotion} onOpen={onOrb} /><PortalFrame destination="ground" position={GROUND} onActivate={onGround} /><PortalFrame destination="life-map" position={LIFE_MAP} onActivate={onLifeMap} />
+    <OrbMachine state={orbState} reducedMotion={reducedMotion} onOpen={onOrb} /><PortalFrame destination="ground" position={GROUND_PORTAL} onActivate={onGround} textures={textures} /><PortalFrame destination="life-map" position={LIFE_MAP_PORTAL} onActivate={onLifeMap} textures={textures} />
     <group name="home-authored-embodied-self" userData={{ presentation: 'privacy-preserving-first-person-presence-v70' }} /><group name="home-mountain-horizon" userData={{ presentation: 'deep-photogrammetry-sanctuary-depth-v70' }} /><group name="home-living-vegetation" userData={{ treatment: 'suppressed-from-primary-sanctuary-composition-v70' }} />
     <pointLight position={[0, 3.15, -9.0]} color="#b9c5bf" intensity={0.40} distance={6.2} decay={2} /><spotLight position={[0, 5.25, -5.6]} target-position={[0, 2.0, -9.15]} angle={0.40} penumbra={0.80} intensity={0.62} color="#cbb99e" distance={11} decay={2} />
   </>
