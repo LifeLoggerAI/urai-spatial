@@ -38,11 +38,16 @@ const ORB_CLIPS: Record<OrbState, string> = {
 }
 
 const FRAGMENTS: Array<{ id: string; position: Vec3; rotation: Vec3; scale: Vec3; color: string }> = [
-  { id: 'side-left', position: [-0.34, 0, 0], rotation: [0, -0.32, 0], scale: [0.22, 0.62, 0.46], color: '#414b47' },
-  { id: 'side-right', position: [0.34, 0, 0], rotation: [0, 0.32, 0], scale: [0.22, 0.62, 0.46], color: '#414b47' },
-  { id: 'cap-lower', position: [0, -0.34, 0], rotation: [-0.28, 0, 0], scale: [0.48, 0.20, 0.42], color: '#504a40' },
-  { id: 'cap-upper', position: [0, 0.34, 0], rotation: [0.28, 0, 0], scale: [0.48, 0.20, 0.42], color: '#504a40' },
-  { id: 'face', position: [0, 0, 0.24], rotation: [0, 0, 0], scale: [0.38, 0.38, 0.16], color: '#2f3835' },
+  { id: 'port-crown', position: [-0.28, 0.52, -0.08], rotation: [0.32, -0.24, -0.22], scale: [0.30, 0.48, 0.36], color: '#5b625d' },
+  { id: 'starboard-crown', position: [0.30, 0.48, -0.10], rotation: [0.26, 0.28, 0.20], scale: [0.29, 0.46, 0.35], color: '#4f5b56' },
+  { id: 'port-shoulder', position: [-0.50, 0.10, 0.01], rotation: [0.08, -0.38, -0.42], scale: [0.24, 0.54, 0.42], color: '#394743' },
+  { id: 'starboard-shoulder', position: [0.49, 0.08, 0.02], rotation: [-0.10, 0.40, 0.40], scale: [0.23, 0.52, 0.41], color: '#48524d' },
+  { id: 'port-keel', position: [-0.30, -0.48, -0.02], rotation: [-0.34, 0.20, -0.18], scale: [0.25, 0.46, 0.36], color: '#50483d' },
+  { id: 'starboard-keel', position: [0.29, -0.50, -0.04], rotation: [-0.30, -0.20, 0.17], scale: [0.24, 0.45, 0.35], color: '#3e4945' },
+  { id: 'port-fin', position: [-0.61, -0.26, -0.18], rotation: [-0.20, 0.30, -0.56], scale: [0.17, 0.34, 0.29], color: '#2f3c39' },
+  { id: 'starboard-fin', position: [0.61, -0.24, -0.19], rotation: [0.22, -0.26, 0.54], scale: [0.17, 0.34, 0.29], color: '#3a4541' },
+  { id: 'aperture-upper', position: [0, 0.20, 0.30], rotation: [0.18, 0, 0], scale: [0.33, 0.18, 0.12], color: '#273a36' },
+  { id: 'aperture-lower', position: [0, -0.18, 0.31], rotation: [-0.18, 0, 0], scale: [0.31, 0.17, 0.12], color: '#26332f' },
 ]
 
 function useStoneTextures() {
@@ -91,6 +96,26 @@ function Beam({ from, to, width = 0.16, depth = 0.14 }: { from: Vec3; to: Vec3; 
   return <mesh position={data.midpoint} quaternion={data.quaternion} castShadow receiveShadow><boxGeometry args={[width, data.length, depth]} /><meshStandardMaterial color="#363c39" roughness={0.58} metalness={0.50} envMapIntensity={0.62} /></mesh>
 }
 
+function OrbPanelGeometry() {
+  return useMemo(() => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      -0.56, -0.22, -0.50, 0.44, -0.18, -0.58, 0.34, 0.24, -0.52, -0.28, 0.30, -0.48,
+      -0.22, -0.14, 0.62, 0.30, -0.10, 0.58, 0.22, 0.18, 0.64, -0.18, 0.23, 0.60,
+    ]), 3))
+    geometry.setIndex([0,1,2,0,2,3,4,6,5,4,7,6,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0])
+    geometry.computeVertexNormals()
+    return geometry
+  }, [])
+}
+
+function OrbPanel({ fragment }: { fragment: (typeof FRAGMENTS)[number] }) {
+  const geometry = OrbPanelGeometry()
+  return <mesh geometry={geometry} position={fragment.position as [number, number, number]} rotation={fragment.rotation as [number, number, number]} scale={fragment.scale as [number, number, number]} castShadow receiveShadow>
+    <meshPhysicalMaterial color={fragment.color} roughness={0.34} metalness={0.58} clearcoat={0.22} clearcoatRoughness={0.46} envMapIntensity={0.82} flatShading />
+  </mesh>
+}
+
 function StoneMass({ position, scale }: { position: Vec3; scale: Vec3 }) {
   const textures = useStoneTextures()
   return <mesh position={position as [number, number, number]} scale={scale as [number, number, number]} castShadow receiveShadow><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color="#242824" map={textures.color} normalMap={textures.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={textures.arm} roughness={0.92} metalness={0.01} envMapIntensity={0.46} /></mesh>
@@ -98,26 +123,38 @@ function StoneMass({ position, scale }: { position: Vec3; scale: Vec3 }) {
 
 function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
   const root = useRef<THREE.Group>(null)
-  useFrame(({ clock }) => { if (root.current) root.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.18) * 0.010 })
+  useFrame(({ clock }) => {
+    if (!root.current) return
+    root.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.20) * 0.025
+    root.current.position.y = reducedMotion ? ORB.y : ORB.y + Math.sin(clock.elapsedTime * 0.42) * 0.025
+  })
   const sensory = resolveOrbSensoryOutput(state, reducedMotion, true)
-  return <group name="home-orb-engineered-cradle" userData={{ treatment: 'v70-recessed-wall-integrated-reliquary', governedIdentity: GOVERNED_ORB }}>
-    <StoneMass position={[-1.62, 2.00, -10.32]} scale={[0.95, 3.55, 0.96]} /><StoneMass position={[1.62, 2.00, -10.32]} scale={[0.95, 3.55, 0.96]} /><StoneMass position={[0, 3.82, -10.32]} scale={[4.18, 0.48, 0.96]} />
-    <Beam from={[-1.00, 0.72, -9.78]} to={[-0.58, 1.78, -9.32]} width={0.20} depth={0.18} /><Beam from={[1.00, 0.72, -9.78]} to={[0.58, 1.78, -9.32]} width={0.20} depth={0.18} />
-    <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v70-compact-six-panel-contained-machine-core', governedOrbIdentity: GOVERNED_ORB }}>
-      {FRAGMENTS.map((fragment) => <mesh key={fragment.id} position={fragment.position as [number, number, number]} rotation={fragment.rotation as [number, number, number]} scale={fragment.scale as [number, number, number]} castShadow><octahedronGeometry args={[1, 0]} /><meshStandardMaterial color={fragment.color} roughness={fragment.id === 'face' ? 0.58 : fragment.id.startsWith('cap-') ? 0.56 : 0.52} metalness={fragment.id === 'face' ? 0.52 : fragment.id.startsWith('cap-') ? 0.48 : 0.54} flatShading /></mesh>)}
-      <mesh position={[0, 0, -0.10]} scale={[0.20, 0.24, 0.18]} castShadow><dodecahedronGeometry args={[1, 0]} /><meshStandardMaterial color="#17201e" emissive="#536c64" emissiveIntensity={0.08} roughness={0.56} metalness={0.46} flatShading /></mesh>
-      <pointLight color="#899f97" intensity={0.18} distance={2.8} decay={2} /><mesh visible={false}><sphereGeometry args={[1.15, 8, 6]} /><meshBasicMaterial /></mesh>
+  return <group name="home-orb-engineered-cradle" userData={{ treatment: 'v70-scanned-wall-integrated-service-reliquary', governedIdentity: GOVERNED_ORB }}>
+    <ProductionAsset url={ROCK_FACE_A} name="home-v70-orb-niche-back" position={[0, 2.42, -10.72]} rotation={[0, 0.02, 0]} scale={[0.82, 0.72, 0.42]} span={3.65} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v70-orb-niche-port" position={[-1.48, 2.16, -10.06]} rotation={[0.06, 0.82, -0.05]} scale={[0.56, 0.80, 0.52]} span={2.34} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v70-orb-niche-starboard" position={[1.46, 2.18, -10.04]} rotation={[0.04, -0.80, 0.04]} scale={[0.55, 0.79, 0.50]} span={2.30} mode="rock" />
+    <ProductionAsset url={PIPE_SYSTEM} name="home-v70-orb-service-spine" position={[0, 3.66, -9.86]} rotation={[0, Math.PI / 2, 0]} scale={[0.78, 0.72, 0.70]} span={2.10} mode="metal" />
+    <group ref={root} name="home-orb-sanctuary" position={ORB} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v70-asymmetric-ten-panel-industrial-machine-core', governedOrbIdentity: GOVERNED_ORB }}>
+      {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
+      <mesh scale={[0.27, 0.40, 0.24]} castShadow receiveShadow><icosahedronGeometry args={[1, 2]} /><meshPhysicalMaterial color="#18322d" emissive="#82b9a8" emissiveIntensity={state === 'warning' ? 0.38 : 0.22} roughness={0.24} metalness={0.52} clearcoat={0.28} clearcoatRoughness={0.30} /></mesh>
+      <mesh position={[0, 0, 0.31]} scale={[0.085, 0.34, 0.045]} castShadow><capsuleGeometry args={[0.46, 0.62, 6, 14]} /><meshPhysicalMaterial color="#d1f2e7" emissive="#9fd8c6" emissiveIntensity={0.72} roughness={0.18} metalness={0.20} clearcoat={0.42} /></mesh>
+      <pointLight color="#9ed0c0" intensity={state === 'dormant' ? 0.34 : 0.78} distance={4.2} decay={2} />
+      <mesh visible={false}><sphereGeometry args={[1.20, 12, 8]} /><meshBasicMaterial /></mesh>
     </group>
   </group>
 }
 
 function PortalFrame({ destination, position, onActivate }: { destination: 'ground' | 'life-map'; position: THREE.Vector3; onActivate: () => void }) {
-  const tone = destination === 'ground' ? '#778d84' : '#7f8498'; const name = destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'; const facing = destination === 'ground' ? 0.28 : -0.28
-  return <group name={name} position={position} rotation={[0, facing, 0]} userData={{ treatment: 'v70-recessed-stone-industrial-threshold', destination, governedPortalIdentity: GOVERNED_PORTAL }}>
-    <StoneMass position={[-1.13, 1.52, -0.38]} scale={[0.52, 3.34, 0.88]} /><StoneMass position={[1.13, 1.52, -0.38]} scale={[0.52, 3.34, 0.88]} /><StoneMass position={[0, 3.08, -0.38]} scale={[2.78, 0.44, 0.88]} />
-    <mesh name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} position={[0, 1.48, -0.30]} receiveShadow><planeGeometry args={[1.55, 2.38]} /><meshStandardMaterial color="#050706" emissive={tone} emissiveIntensity={0.10} roughness={0.96} metalness={0.01} /></mesh>
+  const tone = destination === 'ground' ? '#789b8d' : '#8b90ac'
+  const name = destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'
+  const facing = destination === 'ground' ? 0.30 : -0.30
+  const sideAsset = destination === 'ground' ? ROCK_FACE_B : ROCK_FACE_A
+  return <group name={name} position={position} rotation={[0, facing, 0]} userData={{ treatment: 'v70-scanned-rock-service-threshold', destination, governedPortalIdentity: GOVERNED_PORTAL }}>
+    <ProductionAsset url={sideAsset} name={destination + '-scanned-threshold-shell'} position={[0, 1.78, -0.78]} rotation={[0.04, destination === 'ground' ? 0.18 : -0.18, 0]} scale={[0.78, 0.88, 0.46]} span={3.05} mode="rock" />
+    <ProductionAsset url={PIPE_SYSTEM} name={destination + '-service-threshold-manifold'} position={[0, 2.86, -0.10]} rotation={[0, Math.PI / 2, 0]} scale={[0.62, 0.48, 0.52]} span={1.78} mode="metal" />
+    <mesh name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} position={[0, 1.46, -0.22]} receiveShadow><planeGeometry args={[1.42, 2.24]} /><meshPhysicalMaterial color="#09100e" emissive={tone} emissiveIntensity={0.16} roughness={0.78} metalness={0.08} clearcoat={0.08} /></mesh>
     <mesh position={[0, 1.48, 0.08]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}><boxGeometry args={[2.12, 3.10, 0.76]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh>
-    <pointLight position={[0, 2.0, 0.08]} color={tone} intensity={0.38} distance={3.6} decay={2} />
+    <pointLight position={[0, 1.92, 0.02]} color={tone} intensity={0.62} distance={4.0} decay={2} />
   </group>
 }
 
@@ -132,8 +169,9 @@ function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap
       <ProductionAsset url={ROCK_FACE_B} name="home-v70-left-apse-shoulder" position={[-2.90, 2.66, -11.05]} rotation={[0.02, 0.72, -0.03]} scale={[0.80, 0.90, 0.60]} span={3.45} mode="rock" /><ProductionAsset url={ROCK_FACE_A} name="home-v70-right-apse-shoulder" position={[2.88, 2.68, -10.98]} rotation={[0.01, -0.70, 0.03]} scale={[0.78, 0.88, 0.58]} span={3.40} mode="rock" />
       <ProductionAsset url={PIPE_SYSTEM} name="home-v70-left-service-manifold" position={[-4.62, 1.30, -9.15]} rotation={[0.02, 0.90, 0.02]} scale={[0.62, 0.68, 0.56]} span={1.85} mode="metal" /><ProductionAsset url={PIPE_SYSTEM} name="home-v70-right-service-manifold" position={[4.60, 1.28, -9.18]} rotation={[0.01, -0.88, -0.02]} scale={[0.60, 0.66, 0.54]} span={1.82} mode="metal" />
       <ProductionAsset url={CAGED_SCONCE} name="home-v70-left-sconce" position={[-3.26, 2.38, -9.86]} rotation={[0, 0.56, 0]} span={0.48} mode="light" /><ProductionAsset url={CAGED_SCONCE} name="home-v70-right-sconce" position={[3.24, 2.36, -9.84]} rotation={[0, -0.56, 0]} span={0.48} mode="light" />
-      <StoneMass position={[-3.78, 0.42, -8.0]} scale={[2.25, 0.70, 5.30]} /><StoneMass position={[3.78, 0.42, -8.0]} scale={[2.25, 0.70, 5.30]} />
-      <Beam from={[-4.65, 4.48, -10.55]} to={[-2.10, 4.98, -9.55]} width={0.17} depth={0.15} /><Beam from={[4.65, 4.48, -10.55]} to={[2.10, 4.98, -9.55]} width={0.17} depth={0.15} /><Beam from={[-2.10, 4.98, -9.55]} to={[2.10, 4.98, -9.55]} width={0.16} depth={0.14} />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v70-lower-port-foundation" position={[-4.02, 0.68, -8.68]} rotation={[-0.06, 0.98, -0.10]} scale={[0.82, 0.58, 0.66]} span={3.30} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v70-lower-starboard-foundation" position={[4.02, 0.70, -8.62]} rotation={[-0.04, -0.96, 0.08]} scale={[0.80, 0.57, 0.64]} span={3.26} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v70-scanned-vault" position={[0, 4.92, -10.08]} rotation={[Math.PI / 2, 0.04, Math.PI]} scale={[1.08, 0.72, 0.78]} span={5.35} mode="rock" />
       <pointLight position={[-3.20, 2.30, -9.55]} color="#c5935a" intensity={0.40} distance={4.2} decay={2} /><pointLight position={[3.18, 2.28, -9.54]} color="#899f98" intensity={0.30} distance={4.0} decay={2} />
       <group name="home-v47-reliquary-cavity" /><group name="home-v47-side-gallery" /><group name="home-v47-reliquary-apse" />
     </group>
@@ -186,7 +224,7 @@ export function HomeWorldProductionV70({ onOrbOpen = requestUraiWorldOrbOpen, we
   useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key === 'Escape' && transition !== 'none') { event.preventDefault(); setTransition('none'); setPortalSequence('idle'); setOrbState('idle') } }; window.addEventListener('keydown', cancel, true); return () => window.removeEventListener('keydown', cancel, true) }, [transition])
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady; const context = transition === 'life-map' ? 'Ascending into your Life Map' : transition === 'ground' ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'The threshold opens to your Life Map' : null
-  return <main ref={worldRef} className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-input-owner="window-capture-movement" data-home-telemetry-owner="embodied-motion-kernel" data-home-input-ready={ready ? 'true' : 'false'} data-home-interaction-ready={ready ? 'true' : 'false'} data-home-ready={ready ? 'true' : 'warming'} data-home-player-x={SPAWN.x.toFixed(3)} data-home-player-z={SPAWN.z.toFixed(3)} data-home-distance="0.000" data-home-distance-orb={Math.hypot(SPAWN.x - ORB.x, SPAWN.z - ORB.z).toFixed(3)} data-home-distance-ground={Math.hypot(SPAWN.x - GROUND.x, SPAWN.z - GROUND.z).toFixed(3)} data-home-distance-life-map={Math.hypot(SPAWN.x - LIFE_MAP.x, SPAWN.z - LIFE_MAP.z).toFixed(3)} data-home-moving="false" data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial" data-home-final-art-revision="v70-recessed-apse-rebuild" data-home-art-certification="v70-retained-pixel-candidate-not-certified" data-home-scanned-composition="deep-multi-face-photogrammetry-apse-integrated-service-v70" data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb rock_face_01/asset.gltf rock_face_02/asset.gltf modular_industrial_pipes_01/asset.gltf industrial_caged_sconce/asset.gltf rock-tile-floor-pbr studio-small-08-1k.hdr" data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb" data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={transition === 'none' ? 'HOME' : transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="v70-compact-six-panel-orb-machine" data-home-input-locked={transition !== 'none' ? 'true' : 'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation} data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{ position: 'relative', overflow: 'hidden', background: '#080b0b' }} {...look}>
+  return <main ref={worldRef} className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="scanned-rock-industrial-machine-sanctuary" data-home-visual-ownership="three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-input-owner="window-capture-movement" data-home-telemetry-owner="embodied-motion-kernel" data-home-input-ready={ready ? 'true' : 'false'} data-home-interaction-ready={ready ? 'true' : 'false'} data-home-ready={ready ? 'true' : 'warming'} data-home-player-x={SPAWN.x.toFixed(3)} data-home-player-z={SPAWN.z.toFixed(3)} data-home-distance="0.000" data-home-distance-orb={Math.hypot(SPAWN.x - ORB.x, SPAWN.z - ORB.z).toFixed(3)} data-home-distance-ground={Math.hypot(SPAWN.x - GROUND.x, SPAWN.z - GROUND.z).toFixed(3)} data-home-distance-life-map={Math.hypot(SPAWN.x - LIFE_MAP.x, SPAWN.z - LIFE_MAP.z).toFixed(3)} data-home-moving="false" data-home-visual-grade="cinematic-pbr-v70-deep-scanned-industrial" data-home-final-art-revision="v70-recessed-apse-rebuild" data-home-art-certification="v70-retained-pixel-candidate-not-certified" data-home-scanned-composition="deep-multi-face-photogrammetry-apse-integrated-service-v70" data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb rock_face_01/asset.gltf rock_face_02/asset.gltf modular_industrial_pipes_01/asset.gltf industrial_caged_sconce/asset.gltf rock-tile-floor-pbr studio-small-08-1k.hdr" data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb" data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={transition === 'none' ? 'HOME' : transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="v70-compact-six-panel-orb-machine" data-home-input-locked={transition !== 'none' ? 'true' : 'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation} data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{ position: 'relative', overflow: 'hidden', background: '#080b0b' }} {...look}>
     <Canvas className={styles.canvas} dpr={1} shadows camera={{ position: [SPAWN.x, 1.60, SPAWN.z], fov: 46, near: 0.1, far: 110 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.52; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} nearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markSceneReady} owner={worldRef} /></Canvas>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div> : null}{transition === 'none' && mobile ? <MobileMovementPad input={input} label="Home movement controls" /> : null}<span className="sr-only" data-testid="urai-home-webgl-orb">The compact engineered Orb machine is integrated into the deep scanned industrial sanctuary.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied Home presence remains active.</span>
   </main>
