@@ -40,16 +40,16 @@ const ORB_CLIPS: Record<OrbState, string> = {
 }
 
 const FRAGMENTS: Array<{ id: string; position: Vec3; rotation: Vec3; scale: Vec3; color: string }> = [
-  { id: 'port-crown', position: [-0.38, 0.72, 0.38], rotation: [0.08, -0.10, -0.14], scale: [0.70, 0.54, 0.82], color: '#52615a' },
-  { id: 'starboard-crown', position: [0.34, 0.80, 0.32], rotation: [0.04, 0.12, 0.12], scale: [0.60, 0.48, 0.78], color: '#344b43' },
-  { id: 'port-shoulder', position: [-0.48, 0.14, 0.36], rotation: [0.02, -0.16, -0.18], scale: [0.64, 0.68, 0.84], color: '#2d463d' },
-  { id: 'starboard-shoulder', position: [0.46, 0.08, 0.32], rotation: [-0.03, 0.18, 0.16], scale: [0.60, 0.62, 0.82], color: '#40544c' },
-  { id: 'port-keel', position: [-0.34, -0.64, 0.36], rotation: [-0.08, 0.08, -0.10], scale: [0.62, 0.52, 0.80], color: '#484e46' },
-  { id: 'starboard-keel', position: [0.28, -0.72, 0.32], rotation: [-0.06, -0.10, 0.10], scale: [0.52, 0.46, 0.76], color: '#294139' },
-  { id: 'port-fin', position: [-0.72, -0.18, 0.20], rotation: [-0.04, 0.18, -0.30], scale: [0.36, 0.62, 0.72], color: '#253b34' },
-  { id: 'starboard-fin', position: [0.68, -0.12, 0.18], rotation: [0.05, -0.16, 0.28], scale: [0.34, 0.56, 0.70], color: '#31483f' },
-  { id: 'aperture-upper', position: [-0.08, 0.30, 0.58], rotation: [0.04, 0.02, -0.04], scale: [0.30, 0.30, 0.54], color: '#172f27' },
-  { id: 'aperture-lower', position: [0.06, -0.30, 0.58], rotation: [-0.04, -0.02, 0.05], scale: [0.28, 0.28, 0.52], color: '#1b342b' },
+  { id: 'port-crown', position: [-0.42, 0.78, 0.54], rotation: [0.06, -0.08, -0.12], scale: [0.38, 0.27, 0.34], color: '#5a665f' },
+  { id: 'starboard-crown', position: [0.38, 0.84, 0.50], rotation: [0.03, 0.10, 0.10], scale: [0.34, 0.24, 0.32], color: '#3d5149' },
+  { id: 'port-shoulder', position: [-0.58, 0.28, 0.56], rotation: [0.02, -0.12, -0.16], scale: [0.34, 0.30, 0.34], color: '#344b42' },
+  { id: 'starboard-shoulder', position: [0.54, 0.22, 0.52], rotation: [-0.02, 0.14, 0.14], scale: [0.32, 0.28, 0.32], color: '#45574f' },
+  { id: 'port-keel', position: [-0.38, -0.78, 0.54], rotation: [-0.06, 0.06, -0.08], scale: [0.36, 0.26, 0.32], color: '#50564e' },
+  { id: 'starboard-keel', position: [0.32, -0.84, 0.50], rotation: [-0.05, -0.08, 0.08], scale: [0.32, 0.24, 0.30], color: '#31483f' },
+  { id: 'port-fin', position: [-0.72, -0.24, 0.46], rotation: [-0.03, 0.14, -0.24], scale: [0.26, 0.32, 0.30], color: '#2d433a' },
+  { id: 'starboard-fin', position: [0.68, -0.18, 0.44], rotation: [0.04, -0.13, 0.22], scale: [0.25, 0.30, 0.29], color: '#3a5047' },
+  { id: 'aperture-upper', position: [-0.18, 0.30, 0.60], rotation: [0.03, 0.02, -0.03], scale: [0.24, 0.22, 0.28], color: '#1b342b' },
+  { id: 'aperture-lower', position: [0.16, -0.32, 0.60], rotation: [-0.03, -0.02, 0.04], scale: [0.22, 0.21, 0.27], color: '#20382f' },
 ]
 
 function useStoneTextures() {
@@ -118,6 +118,22 @@ function EngineeredOrbHullGeometry() {
     geometry.computeVertexNormals()
     return geometry
   }, [])
+}
+
+function RelicShellGeometry(side: 'port' | 'starboard') {
+  return useMemo(() => {
+    const shape = new THREE.Shape()
+    const points = side === 'port'
+      ? [[-0.08, -1.18], [-0.54, -1.02], [-0.88, -0.48], [-0.82, 0.30], [-0.50, 0.96], [-0.12, 1.20], [-0.08, 0.42], [-0.20, 0.02], [-0.08, -0.46]]
+      : [[0.10, -1.14], [0.48, -1.04], [0.82, -0.54], [0.90, 0.18], [0.62, 0.88], [0.16, 1.16], [0.10, 0.38], [0.22, -0.04], [0.10, -0.50]]
+    shape.moveTo(points[0][0], points[0][1])
+    for (const [x, y] of points.slice(1)) shape.lineTo(x, y)
+    shape.closePath()
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.34, bevelEnabled: true, bevelSegments: 4, steps: 1, bevelSize: 0.075, bevelThickness: 0.075, curveSegments: 10 })
+    geometry.center()
+    geometry.computeVertexNormals()
+    return geometry
+  }, [side])
 }
 
 function RuggedPanel({ name, position, rotation = [0, 0, 0], scale, seed, textures, tint = '#3f4640' }: { name: string; position: Vec3; rotation?: Vec3; scale: Vec3; seed: number; textures: { color: THREE.Texture; normal: THREE.Texture; arm: THREE.Texture }; tint?: string }) {
@@ -205,6 +221,8 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
   const root = useRef<THREE.Group>(null)
   const coreGeometry = OrbPanelGeometry()
   const hullGeometry = EngineeredOrbHullGeometry()
+  const portShell = RelicShellGeometry('port')
+  const starboardShell = RelicShellGeometry('starboard')
   useFrame(({ clock }) => {
     if (!root.current) return
     root.current.rotation.y = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.20) * 0.018
@@ -219,12 +237,14 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
     <mesh position={[-1.15, 2.22, -10.65]} rotation={[0, 0, -0.14]} castShadow receiveShadow><boxGeometry args={[0.18, 2.86, 0.26]} /><meshPhysicalMaterial color="#34423c" roughness={0.52} metalness={0.50} /></mesh>
     <mesh position={[1.15, 2.22, -10.65]} rotation={[0, 0, 0.14]} castShadow receiveShadow><boxGeometry args={[0.18, 2.86, 0.26]} /><meshPhysicalMaterial color="#34423c" roughness={0.52} metalness={0.50} /></mesh>
     <group ref={root} name="home-orb-sanctuary" position={ORB} scale={[1.34, 1.34, 1.34]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v72-vertical-armored-ovoid-ten-panel-machine', governedOrbIdentity: GOVERNED_ORB }}>
-      <mesh geometry={hullGeometry} scale={[0.38, 0.88, 0.34]} castShadow receiveShadow>
+      <mesh geometry={hullGeometry} scale={[0.20, 0.62, 0.18]} castShadow receiveShadow>
         <meshPhysicalMaterial color="#10241f" emissive="#1f4c40" emissiveIntensity={state === 'warning' ? 0.24 : 0.07} roughness={0.50} metalness={0.54} clearcoat={0.12} clearcoatRoughness={0.58} envMapIntensity={0.76} flatShading />
       </mesh>
-      <mesh geometry={coreGeometry} position={[0, -0.02, 0.18]} scale={[0.46, 0.96, 0.70]} castShadow receiveShadow><meshPhysicalMaterial color="#182d27" roughness={0.40} metalness={0.62} envMapIntensity={0.82} /></mesh>
+      <mesh geometry={coreGeometry} position={[0, -0.02, 0.10]} scale={[0.24, 0.64, 0.30]} castShadow receiveShadow><meshPhysicalMaterial color="#182d27" roughness={0.40} metalness={0.62} envMapIntensity={0.82} /></mesh>
+      <mesh name="home-v72-port-relic-shell" geometry={portShell} position={[-0.03, 0.02, 0.18]} rotation={[0.02, -0.10, -0.03]} castShadow receiveShadow><meshPhysicalMaterial color="#263d35" roughness={0.43} metalness={0.55} clearcoat={0.10} clearcoatRoughness={0.58} envMapIntensity={0.80} /></mesh>
+      <mesh name="home-v72-starboard-relic-shell" geometry={starboardShell} position={[0.03, -0.03, 0.16]} rotation={[-0.02, 0.11, 0.025]} castShadow receiveShadow><meshPhysicalMaterial color="#344a42" roughness={0.45} metalness={0.52} clearcoat={0.09} clearcoatRoughness={0.60} envMapIntensity={0.78} /></mesh>
       {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
-      <mesh position={[0, 0.02, 0.62]} castShadow><boxGeometry args={[0.060, 1.18, 0.045]} /><meshPhysicalMaterial color="#f5dfb8" emissive="#c79b63" emissiveIntensity={0.92} roughness={0.12} metalness={0.08} clearcoat={0.48} toneMapped={false} /></mesh>
+      <mesh position={[0, 0.02, 0.48]} castShadow><boxGeometry args={[0.055, 1.10, 0.040]} /><meshPhysicalMaterial color="#f5dfb8" emissive="#c79b63" emissiveIntensity={0.92} roughness={0.12} metalness={0.08} clearcoat={0.48} toneMapped={false} /></mesh>
       <mesh position={[-0.66, 0.10, -0.22]} rotation={[0.05, 0.20, -0.18]} castShadow receiveShadow><boxGeometry args={[0.12, 1.92, 0.18]} /><meshPhysicalMaterial color="#263b35" roughness={0.46} metalness={0.58} /></mesh>
       <mesh position={[0.64, -0.06, -0.24]} rotation={[-0.05, -0.20, 0.16]} castShadow receiveShadow><boxGeometry args={[0.12, 1.82, 0.18]} /><meshPhysicalMaterial color="#2f443d" roughness={0.46} metalness={0.58} /></mesh>
       <pointLight position={[0, 0, 0.82]} color="#9ed0c0" intensity={state === 'dormant' ? 0.54 : 1.10} distance={5.6} decay={2} />
