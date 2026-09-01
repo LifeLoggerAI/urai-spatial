@@ -365,7 +365,35 @@ export function HomeWorldProductionV70({ onOrbOpen = requestUraiWorldOrbOpen, we
   const input = useMovementInput({ enabled: transition === 'none', onInteract: interact, onReset: () => { target.current = SPAWN.clone(); yaw.current = 0; pitch.current = 0.06 } }); const look = useDragLook({ yaw, pitch, enabled: transition === 'none', sensitivity: 0.003, minPitch: -0.46, maxPitch: 0.50, onDragState: setDragging })
   useEffect(() => { const rm = window.matchMedia('(prefers-reduced-motion: reduce)'); const mq = window.matchMedia('(pointer: coarse), (max-width: 700px)'); const apply = () => { setReducedMotion(rm.matches); setMobile(mq.matches) }; apply(); rm.addEventListener?.('change', apply); mq.addEventListener?.('change', apply); return () => { rm.removeEventListener?.('change', apply); mq.removeEventListener?.('change', apply) } }, [])
   useEffect(() => { const listener = (event: CustomEvent<OrbStateEventDetail>) => { if (transition === 'none') setOrbState(event.detail.state) }; window.addEventListener(URAI_ORB_STATE_EVENT, listener); return () => window.removeEventListener(URAI_ORB_STATE_EVENT, listener) }, [transition])
-  useEffect(() => { if (transition === 'none') { setPortalSequence('idle'); return }; const traversal = `${transition}:traversal` as TransitionSequence; const closing = `${transition}:closing` as TransitionSequence; setPortalSequence(`${transition}:opening` as TransitionSequence); const traversalTimer = window.setTimeout(() => setPortalSequence(traversal), reducedMotion ? 180 : 900); const closingTimer = window.setTimeout(() => setPortalSequence(closing), reducedMotion ? 700 : 2500); const navigationTimer = window.setTimeout(() => { if (transition === 'ground') requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' }); else requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' }) }, reducedMotion ? 1200 : 3600); return () => { window.clearTimeout(traversalTimer); window.clearTimeout(closingTimer); window.clearTimeout(navigationTimer) } }, [reducedMotion, transition])
+  useEffect(() => {
+    if (transition === 'none') {
+      setPortalSequence('idle')
+      return
+    }
+    const traversal = `${transition}:traversal` as TransitionSequence
+    const closing = `${transition}:closing` as TransitionSequence
+    let closingTimer: number | undefined
+    let navigationTimer: number | undefined
+    setPortalSequence(`${transition}:opening` as TransitionSequence)
+    const traversalTimer = window.setTimeout(() => {
+      setPortalSequence(traversal)
+      closingTimer = window.setTimeout(() => {
+        setPortalSequence(closing)
+        navigationTimer = window.setTimeout(() => {
+          if (transition === 'ground') {
+            requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })
+          } else {
+            requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })
+          }
+        }, reducedMotion ? 500 : 1100)
+      }, reducedMotion ? 520 : 1600)
+    }, reducedMotion ? 180 : 900)
+    return () => {
+      window.clearTimeout(traversalTimer)
+      if (closingTimer !== undefined) window.clearTimeout(closingTimer)
+      if (navigationTimer !== undefined) window.clearTimeout(navigationTimer)
+    }
+  }, [reducedMotion, transition])
   useEffect(() => { const cancel = (event: KeyboardEvent) => { if (event.key === 'Escape' && transition !== 'none') { event.preventDefault(); setTransition('none'); setPortalSequence('idle'); setOrbState('idle') } }; window.addEventListener('keydown', cancel, true); return () => window.removeEventListener('keydown', cancel, true) }, [transition])
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady; const context = transition === 'life-map' ? 'Ascending into your Life Map' : transition === 'ground' ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'The threshold opens to your Life Map' : null
