@@ -160,7 +160,7 @@ async function capture(state, options = {}) {
       text: button.textContent,
     })))
     record.accessibilityPassed = record.semanticControls.length >= 3
-      && record.semanticControls.some((control) => control.label === 'Open URAI Orb companion')
+      && record.semanticControls.some((control) => control.label === 'Open Orb travel controls')
       && record.semanticControls.some((control) => control.label === 'Open Ground directly')
       && record.semanticControls.some((control) => control.label === 'Open Life Map directly' || control.label === 'Ascend to Life Map')
 
@@ -182,7 +182,7 @@ async function capture(state, options = {}) {
     record.passed = record.status === 200
       && record.canvasReady === 'true'
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'open-air-sacred-tech-reliquary'
+      && record.visibleWorld === 'v72-vertical-armored-industrial-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
@@ -237,7 +237,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
+    const openOrb = page.getByRole('button', { name: 'Open Orb travel controls' }).first()
     await openOrb.click({ noWaitAfter: true })
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
@@ -352,7 +352,7 @@ try {
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+    && transition.visibleWorld === 'v72-vertical-armored-industrial-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {
