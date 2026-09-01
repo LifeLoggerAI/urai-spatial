@@ -68,7 +68,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProduction, /const FRAGMENTS:/)
   assert.match(homeProduction, /function ArmoredFragment\(/)
   assert.match(homeProduction, /v69-ten-armored-fragment-contained-machine-core/)
-  assert.match(homeProduction, /dodecahedronGeometry/)
+  assert.match(homeProduction, /octahedronGeometry/)
   assert.match(homeProduction, /const GOVERNED_PORTAL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeProduction, /destination === 'life-map' \? 'home-life-map-physical-portal'/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
