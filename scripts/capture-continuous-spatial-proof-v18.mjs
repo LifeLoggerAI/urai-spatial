@@ -138,7 +138,7 @@ async function waitForAssetHome(page, { ready = true } = {}) {
         && owner.getAttribute('data-home-interaction-ready') === 'true'
         && owner.getAttribute('data-home-ready') === 'true'
         && owner.getAttribute('data-home-input-owner') === 'window-capture-movement'
-        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel'
+        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel-v66'
         && !loadingVisible
     }, ownerSelector, { timeout: 45_000 })
   }
