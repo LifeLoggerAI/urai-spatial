@@ -221,7 +221,7 @@ function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap
   </>
 }
 
-function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; onNearby: (value: Nearby) => void; transition: Transition; owner: MutableRefObject<HTMLMainElement | null> }) {
+function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; onNearby: (value: Nearby) => void; transition: Transition; owner: MutableRefObject<HTMLElement | null> }) {
   const { camera, size } = useThree()
   const position = useRef(SPAWN.clone())
   const velocity = useRef(new THREE.Vector3())
@@ -260,7 +260,7 @@ function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: {
 
 function ReadySignal({ onReady }: { onReady: () => void }) { useEffect(() => { onReady() }, [onReady]); return null }
 
-function Scene({ input, yaw, pitch, target, nearby, transition, reducedMotion, orbState, onOrb, onGround, onLifeMap, onReady, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; nearby: (value: Nearby) => void; transition: Transition; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void; onReady: () => void; owner: MutableRefObject<HTMLMainElement | null> }) {
+function Scene({ input, yaw, pitch, target, nearby, transition, reducedMotion, orbState, onOrb, onGround, onLifeMap, onReady, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; nearby: (value: Nearby) => void; transition: Transition; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void; onReady: () => void; owner: MutableRefObject<HTMLElement | null> }) {
   return <>
     <color attach="background" args={['#080b0b']} />
     <fogExp2 attach="fog" args={['#111614', 0.018]} />
@@ -286,7 +286,7 @@ export function HomeWorldProductionV67({ onOrbOpen = requestUraiWorldOrbOpen, we
   const [transition, setTransition] = useState<Transition>('none')
   const [portalSequence, setPortalSequence] = useState<TransitionSequence>('idle')
   const yaw = useRef(DEFAULT_YAW); const pitch = useRef(0.14); const target = useRef<THREE.Vector3 | null>(null)
-  const worldRef = useRef<HTMLMainElement>(null)
+  const worldRef = useRef<HTMLElement>(null)
   const markSceneReady = useCallback(() => setSceneReady(true), [])
   const openOrb = useCallback(() => { if (transition === 'none') { setOrbState('attention'); onOrbOpen() } }, [onOrbOpen, transition])
   const openGround = useCallback(() => { if (transition === 'none') { target.current = null; setOrbState('transition'); setTransition('ground') } }, [transition])
