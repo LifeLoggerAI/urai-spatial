@@ -53,14 +53,14 @@ function prepareAsset(source: THREE.Object3D, span: number, mode: 'rock' | 'meta
     if (!(object instanceof THREE.Mesh)) return
     const originals = Array.isArray(object.material) ? object.material : [object.material]
     const materials = originals.map((entry) => {
-      const material = entry.clone()
-      if (material instanceof THREE.MeshStandardMaterial) {
-        material.roughness = Math.max(material.roughness, mode === 'rock' ? 0.80 : 0.52)
-        material.metalness = mode === 'rock' ? Math.min(material.metalness, 0.03) : Math.min(Math.max(material.metalness, 0.22), 0.60)
-        material.envMapIntensity = mode === 'rock' ? 0.58 : 0.64
-        if ('transmission' in material) (material as THREE.MeshPhysicalMaterial).transmission = 0
+      const clone = entry.clone()
+      if (clone instanceof THREE.MeshStandardMaterial) {
+        clone.roughness = Math.max(clone.roughness, mode === 'rock' ? 0.80 : 0.52)
+        clone.metalness = mode === 'rock' ? Math.min(clone.metalness, 0.03) : Math.min(Math.max(clone.metalness, 0.22), 0.60)
+        clone.envMapIntensity = mode === 'rock' ? 0.58 : 0.64
+        if ('transmission' in clone) (clone as THREE.MeshPhysicalMaterial).transmission = 0
       }
-      return material
+      return clone
     })
     object.material = Array.isArray(object.material) ? materials : materials[0]
     object.castShadow = true; object.receiveShadow = true
