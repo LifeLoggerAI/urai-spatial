@@ -42,7 +42,7 @@ test('V70 visible Home is scanned rock and real industrial service art, not the 
 
 test('V70 Orb is a compact six-panel machine with no glass sphere, orbit rings, or generated avatar in visible composition', () => {
   assert.match(s, /function OrbMachine\(/)
-  assert.match(s, /function Beam(/)
+  assert.match(s, /function Beam\(/)
   assert.match(s, /function StoneMass\(/)
   assert.match(s, /octahedronGeometry/)
   assert.match(s, /v70-compact-six-panel-contained-machine-core/)
