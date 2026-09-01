@@ -210,22 +210,18 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   const id = reducedMotion === 'reduce' ? 'orb-lifecycle-reduced-motion' : 'orb-lifecycle-production-ui'
   const record = { id, pageErrors, passed: false, reducedMotion }
-  const fixtureRequests = []
-  record.fixtureRequests = fixtureRequests
-  await page.route('**/api/orb-companion', async (route) => {
+  const providerBoundaryRequests = []
+  record.providerBoundaryRequests = providerBoundaryRequests
+  await page.route('**/api/urai/orb/openai', async (route) => {
     const request = route.request()
     if (request.method() !== 'POST') return route.continue()
     let payload = {}
     try { payload = request.postDataJSON() || {} } catch {}
-    fixtureRequests.push({ message: payload?.message ?? null, userId: payload?.userId ?? null })
+    providerBoundaryRequests.push({ message: payload?.message ?? null, authorization: request.headers().authorization ? 'present' : 'absent' })
     await route.fulfill({
-      status: 200,
+      status: 503,
       contentType: 'application/json',
-      body: JSON.stringify({
-        ok: true, service: 'urai-spatial', userId: 'adamclamp', userIdSource: 'default-demo',
-        identityMode: 'public-demo', reply: 'URAI Spatial proof fixture: grounded reflection complete.',
-        mode: 'local-fallback', confidenceLabel: 'fallback', isDemoFallback: true, sources: [],
-      }),
+      body: JSON.stringify({ error: 'PROOF_UNEXPECTED_PROVIDER_REQUEST' }),
     })
   })
   try {
@@ -274,11 +270,15 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await consent.check()
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
-    await page.getByRole('button', { name: 'Send' }).click({ noWaitAfter: true })
-    await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
+    await Promise.all([
+      page.waitForFunction(() => window.__uraiObservedOrbStates?.includes('speaking'), null, { timeout: 20_000 }),
+      page.getByRole('button', { name: 'Send' }).click({ noWaitAfter: true }),
+    ])
     record.respondingState = await owner.getAttribute('data-home-orb-state')
     record.respondingClip = await owner.getAttribute('data-home-orb-clip')
+    const responsePanel = page.locator('section[aria-label="Orb response"]')
+    await responsePanel.waitFor({ state: 'visible', timeout: 20_000 })
+    record.responseText = (await responsePanel.textContent()) || ''
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
@@ -308,8 +308,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.closedState === 'idle'
       && record.closedClip === 'orb-breathe'
       && record.lifecyclePassed
-      && record.fixtureRequests.length === 1
-      && record.fixtureRequests[0]?.message === 'Give me a short grounded reflection.'
+      && record.providerBoundaryRequests.length === 0
+      && record.responseText.includes('Deterministic local fallback — no external AI provider processed this message.')
       && record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
       && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
