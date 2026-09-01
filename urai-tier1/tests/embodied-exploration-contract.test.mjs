@@ -64,7 +64,7 @@ test('Home is the live vertical-industrial V72 sanctuary with governed identitie
     'data-home-primary-owner="asset-driven"',
     'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"',
+    'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
