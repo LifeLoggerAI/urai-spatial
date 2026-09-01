@@ -168,7 +168,7 @@ function PortalArchitecture({ destination, tone, onActivate }: { destination: 'g
 function OrbPanel({ fragment }: { fragment: (typeof FRAGMENTS)[number] }) {
   const geometry = OrbPanelGeometry()
   return <mesh geometry={geometry} position={fragment.position as [number, number, number]} rotation={fragment.rotation as [number, number, number]} scale={fragment.scale as [number, number, number]} castShadow receiveShadow>
-    <meshPhysicalMaterial color={fragment.color} roughness={0.34} metalness={0.58} clearcoat={0.22} clearcoatRoughness={0.46} envMapIntensity={0.88} />
+    <meshPhysicalMaterial color={fragment.color} roughness={0.48} metalness={0.46} clearcoat={0.14} clearcoatRoughness={0.54} envMapIntensity={0.76} />
   </mesh>
 }
 
@@ -181,33 +181,31 @@ function OrbMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduced
     root.current.position.y = reducedMotion ? ORB.y : ORB.y + Math.sin(clock.elapsedTime * 0.42) * 0.025
   })
   const sensory = resolveOrbSensoryOutput(state, reducedMotion, true)
-  return <group name="home-orb-engineered-cradle" userData={{ treatment: 'v70-scanned-wall-integrated-service-reliquary', governedIdentity: GOVERNED_ORB }}>
-    <ProductionAsset url={ROCK_FACE_A} name="home-v70-orb-niche-back" position={[0, 2.42, -10.72]} rotation={[0, 0.02, 0]} scale={[0.82, 0.72, 0.42]} span={3.65} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v70-orb-niche-port" position={[-1.48, 2.16, -10.06]} rotation={[0.06, 0.82, -0.05]} scale={[0.56, 0.80, 0.52]} span={2.34} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v70-orb-niche-starboard" position={[1.46, 2.18, -10.04]} rotation={[0.04, -0.80, 0.04]} scale={[0.55, 0.79, 0.50]} span={2.30} mode="rock" />
-    <ProductionAsset url={PIPE_SYSTEM} name="home-v70-orb-service-spine" position={[0, 3.66, -9.86]} rotation={[0, Math.PI / 2, 0]} scale={[0.78, 0.72, 0.70]} span={2.10} mode="metal" />
-    <group ref={root} name="home-orb-sanctuary" position={ORB} scale={[1.32, 1.32, 1.32]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v70-asymmetric-ten-panel-industrial-machine-core', governedOrbIdentity: GOVERNED_ORB }}>
+  return <group name="home-orb-engineered-cradle" userData={{ treatment: 'v70-wall-integrated-service-reliquary', governedIdentity: GOVERNED_ORB }}>
+    <ProductionAsset url={ROCK_FACE_A} name="home-v70-orb-niche-back" position={[0, 2.62, -11.70]} rotation={[0, 0.02, 0]} scale={[0.92, 0.70, 0.055]} span={2.55} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v70-orb-niche-port" position={[-1.72, 2.20, -11.66]} rotation={[0.02, 0.10, -0.03]} scale={[0.48, 0.58, 0.045]} span={1.72} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v70-orb-niche-starboard" position={[1.72, 2.22, -11.66]} rotation={[0.02, -0.10, 0.03]} scale={[0.48, 0.58, 0.045]} span={1.70} mode="rock" />
+    <ProductionAsset url={PIPE_SYSTEM} name="home-v70-orb-service-spine" position={[0, 4.32, -11.40]} rotation={[0, Math.PI / 2, 0]} scale={[0.34, 0.30, 0.28]} span={1.18} mode="metal" />
+    <group ref={root} name="home-orb-sanctuary" position={ORB} scale={[1.42, 1.42, 1.42]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} userData={{ orbState: state, animation: sensory.animation, treatment: 'v70-asymmetric-ten-panel-industrial-machine-core', governedOrbIdentity: GOVERNED_ORB }}>
+      <mesh geometry={coreGeometry} scale={[0.74, 0.98, 0.62]} castShadow receiveShadow><meshPhysicalMaterial color="#132822" emissive="#397f70" emissiveIntensity={state === 'warning' ? 0.24 : 0.12} roughness={0.40} metalness={0.46} clearcoat={0.18} clearcoatRoughness={0.48} envMapIntensity={0.76} /></mesh>
       {FRAGMENTS.map((fragment) => <OrbPanel key={fragment.id} fragment={fragment} />)}
-      <mesh geometry={coreGeometry} scale={[0.36, 0.48, 0.30]} castShadow receiveShadow><meshPhysicalMaterial color="#18322d" emissive="#82b9a8" emissiveIntensity={state === 'warning' ? 0.38 : 0.22} roughness={0.24} metalness={0.52} clearcoat={0.28} clearcoatRoughness={0.30} /></mesh>
-      <mesh geometry={coreGeometry} position={[0, 0, 0.34]} rotation={[0, 0, Math.PI / 4]} scale={[0.075, 0.32, 0.045]} castShadow><meshPhysicalMaterial color="#d1f2e7" emissive="#9fd8c6" emissiveIntensity={0.72} roughness={0.18} metalness={0.20} clearcoat={0.42} /></mesh>
-      <pointLight color="#9ed0c0" intensity={state === 'dormant' ? 0.34 : 0.78} distance={4.2} decay={2} />
+      <mesh geometry={coreGeometry} position={[0, 0, 0.64]} rotation={[0, 0, Math.PI / 4]} scale={[0.10, 0.54, 0.055]} castShadow><meshPhysicalMaterial color="#e2fff5" emissive="#9fe5d2" emissiveIntensity={1.18} roughness={0.14} metalness={0.14} clearcoat={0.48} /></mesh>
+      <pointLight color="#9ed0c0" intensity={state === 'dormant' ? 0.48 : 1.05} distance={5.2} decay={2} />
     </group>
   </group>
 }
-
 function PortalFrame({ destination, position, onActivate }: { destination: 'ground' | 'life-map'; position: THREE.Vector3; onActivate: () => void }) {
   const tone = destination === 'ground' ? '#789b8d' : '#8b90ac'
   const name = destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'
-  const facing = destination === 'ground' ? 0.30 : -0.30
+  const facing = destination === 'ground' ? 0.22 : -0.22
   const sideAsset = destination === 'ground' ? ROCK_FACE_B : ROCK_FACE_A
-  return <group name={name} position={position} rotation={[0, facing, 0]} userData={{ treatment: 'v70-scanned-rock-service-threshold', destination, governedPortalIdentity: GOVERNED_PORTAL }}>
-    <ProductionAsset url={sideAsset} name={destination + '-scanned-threshold-shell'} position={[0, 1.78, -0.78]} rotation={[0.04, destination === 'ground' ? 0.18 : -0.18, 0]} scale={[0.78, 0.88, 0.46]} span={3.05} mode="rock" />
-    <ProductionAsset url={PIPE_SYSTEM} name={destination + '-service-threshold-manifold'} position={[0, 2.86, -0.10]} rotation={[0, Math.PI / 2, 0]} scale={[0.62, 0.48, 0.52]} span={1.78} mode="metal" />
+  return <group name={name} position={position} rotation={[0, facing, 0]} userData={{ treatment: 'v70-native-arched-service-threshold', destination, governedPortalIdentity: GOVERNED_PORTAL }}>
+    <ProductionAsset url={sideAsset} name={destination + '-scanned-threshold-shell'} position={[0, 2.30, -2.02]} rotation={[0.02, 0, 0]} scale={[0.50, 0.42, 0.035]} span={1.62} mode="rock" />
+    <ProductionAsset url={PIPE_SYSTEM} name={destination + '-service-threshold-manifold'} position={[destination === 'ground' ? -1.18 : 1.18, 2.72, -0.46]} rotation={[0, Math.PI / 2, 0]} scale={[0.26, 0.24, 0.22]} span={0.90} mode="metal" />
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'}><PortalArchitecture destination={destination} tone={tone} onActivate={onActivate} /></group>
     <pointLight position={[0, 1.92, 0.12]} color={tone} intensity={0.92} distance={5.4} decay={2} />
   </group>
 }
-
 function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap }: { target: MutableRefObject<THREE.Vector3 | null>; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
   const textures = useStoneTextures()
   const onWalk = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); target.current = new THREE.Vector3(THREE.MathUtils.clamp(event.point.x, BOUNDS.minX, BOUNDS.maxX), 0, THREE.MathUtils.clamp(event.point.z, BOUNDS.minZ, BOUNDS.maxZ)) }
@@ -218,14 +216,14 @@ function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap
       <RuggedPanel name="home-v70-continuous-port-shell" position={[-6.18, 3.0, -3.0]} rotation={[0, Math.PI / 2, 0]} scale={[8.9, 3.55, 1]} seed={0.67} textures={textures} tint="#2d3934" />
       <RuggedPanel name="home-v70-continuous-starboard-shell" position={[6.18, 3.0, -3.0]} rotation={[0, -Math.PI / 2, 0]} scale={[8.9, 3.55, 1]} seed={1.13} textures={textures} tint="#303b36" />
       <RuggedPanel name="home-v70-continuous-vault-shell" position={[0, 6.18, -3.25]} rotation={[Math.PI / 2, 0, 0]} scale={[6.35, 8.75, 1]} seed={1.79} textures={textures} tint="#2b3531" />
-      <ProductionAsset url={ROCK_FACE_A} name="home-v70-scanned-reliquary-back" position={[0.05, 3.0, -13.0]} rotation={[0.02, 0.04, 0.01]} scale={[1.02, 0.80, 0.44]} span={5.25} mode="rock" />
-      <ProductionAsset url={ROCK_FACE_B} name="home-v70-scanned-left-shell" position={[-5.58, 2.48, -8.2]} rotation={[0.03, 1.16, -0.02]} scale={[1.18, 1.12, 0.80]} span={5.35} mode="rock" /><ProductionAsset url={ROCK_FACE_A} name="home-v70-scanned-right-shell" position={[5.60, 2.5, -8.05]} rotation={[0.02, -1.14, 0.03]} scale={[1.15, 1.08, 0.78]} span={5.15} mode="rock" />
-      <ProductionAsset url={ROCK_FACE_B} name="home-v70-left-apse-shoulder" position={[-2.90, 2.66, -11.05]} rotation={[0.02, 0.72, -0.03]} scale={[0.80, 0.90, 0.60]} span={3.45} mode="rock" /><ProductionAsset url={ROCK_FACE_A} name="home-v70-right-apse-shoulder" position={[2.88, 2.68, -10.98]} rotation={[0.01, -0.70, 0.03]} scale={[0.78, 0.88, 0.58]} span={3.40} mode="rock" />
-      <ProductionAsset url={PIPE_SYSTEM} name="home-v70-left-service-manifold" position={[-4.62, 1.30, -9.15]} rotation={[0.02, 0.90, 0.02]} scale={[0.62, 0.68, 0.56]} span={1.85} mode="metal" /><ProductionAsset url={PIPE_SYSTEM} name="home-v70-right-service-manifold" position={[4.60, 1.28, -9.18]} rotation={[0.01, -0.88, -0.02]} scale={[0.60, 0.66, 0.54]} span={1.82} mode="metal" />
-      <ProductionAsset url={CAGED_SCONCE} name="home-v70-left-sconce" position={[-3.26, 2.38, -9.86]} rotation={[0, 0.56, 0]} span={0.48} mode="light" /><ProductionAsset url={CAGED_SCONCE} name="home-v70-right-sconce" position={[3.24, 2.36, -9.84]} rotation={[0, -0.56, 0]} span={0.48} mode="light" />
-      <ProductionAsset url={ROCK_FACE_A} name="home-v70-lower-port-foundation" position={[-4.02, 0.68, -8.68]} rotation={[-0.06, 0.98, -0.10]} scale={[0.82, 0.58, 0.66]} span={3.30} mode="rock" />
-      <ProductionAsset url={ROCK_FACE_B} name="home-v70-lower-starboard-foundation" position={[4.02, 0.70, -8.62]} rotation={[-0.04, -0.96, 0.08]} scale={[0.80, 0.57, 0.64]} span={3.26} mode="rock" />
-      <ProductionAsset url={ROCK_FACE_B} name="home-v70-scanned-vault" position={[0, 4.92, -10.08]} rotation={[Math.PI / 2, 0.04, Math.PI]} scale={[1.08, 0.72, 0.78]} span={5.35} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v70-scanned-reliquary-back" position={[0, 3.08, -11.70]} rotation={[0.01, 0.02, 0]} scale={[1.18, 0.92, 0.055]} span={3.10} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v70-scanned-left-shell" position={[-4.46, 3.02, -11.66]} rotation={[0.02, 0.08, -0.02]} scale={[0.92, 0.98, 0.05]} span={2.72} mode="rock" /><ProductionAsset url={ROCK_FACE_A} name="home-v70-scanned-right-shell" position={[4.46, 3.04, -11.66]} rotation={[0.02, -0.08, 0.02]} scale={[0.92, 0.98, 0.05]} span={2.70} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v70-left-apse-shoulder" position={[-2.64, 1.48, -11.62]} rotation={[0.01, 0.06, -0.03]} scale={[0.72, 0.68, 0.045]} span={2.18} mode="rock" /><ProductionAsset url={ROCK_FACE_A} name="home-v70-right-apse-shoulder" position={[2.64, 1.50, -11.62]} rotation={[0.01, -0.06, 0.03]} scale={[0.72, 0.68, 0.045]} span={2.16} mode="rock" />
+      <ProductionAsset url={PIPE_SYSTEM} name="home-v70-left-service-manifold" position={[-4.30, 1.24, -10.92]} rotation={[0.02, 0.18, 0.02]} scale={[0.42, 0.48, 0.38]} span={1.30} mode="metal" /><ProductionAsset url={PIPE_SYSTEM} name="home-v70-right-service-manifold" position={[4.30, 1.22, -10.94]} rotation={[0.01, -0.18, -0.02]} scale={[0.41, 0.47, 0.37]} span={1.28} mode="metal" />
+      <ProductionAsset url={CAGED_SCONCE} name="home-v70-left-sconce" position={[-3.38, 2.48, -10.98]} rotation={[0, 0.12, 0]} span={0.52} mode="light" /><ProductionAsset url={CAGED_SCONCE} name="home-v70-right-sconce" position={[3.38, 2.46, -10.98]} rotation={[0, -0.12, 0]} span={0.52} mode="light" />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v70-lower-port-foundation" position={[-4.10, 0.62, -11.52]} rotation={[-0.02, 0.08, -0.04]} scale={[0.68, 0.44, 0.04]} span={2.30} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v70-lower-starboard-foundation" position={[4.10, 0.64, -11.52]} rotation={[-0.02, -0.08, 0.04]} scale={[0.68, 0.44, 0.04]} span={2.28} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v70-scanned-vault" position={[0, 5.72, -8.80]} rotation={[Math.PI / 2, 0.02, Math.PI]} scale={[0.72, 0.34, 0.05]} span={2.30} mode="rock" />
       <pointLight position={[-3.20, 2.30, -9.55]} color="#c5935a" intensity={0.40} distance={4.2} decay={2} /><pointLight position={[3.18, 2.28, -9.54]} color="#899f98" intensity={0.30} distance={4.0} decay={2} />
       <group name="home-v47-reliquary-cavity" /><group name="home-v47-side-gallery" /><group name="home-v47-reliquary-apse" />
     </group>
