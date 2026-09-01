@@ -17,7 +17,8 @@ const visibleAssets = [
   'home-orb-engineered-cradle',
   'home-ground-environmental-threshold',
   'home-life-map-physical-portal',
-  'v70-compact-six-panel-contained-machine-core',
+  'v70-asymmetric-ten-panel-industrial-machine-core',
+  'data-home-animation-owner="v70-asymmetric-ten-panel-orb-machine"',
 ]
 
 const governedIdentities = [
@@ -40,13 +41,14 @@ test('V70 visible Home is scanned rock and real industrial service art, not the 
   assert.doesNotMatch(s, /<GovernedModel|home-v67-governed-entry-chamber|home-v67-governed-orb-body/)
 })
 
-test('V70 Orb is a compact six-panel machine with no glass sphere, orbit rings, or generated avatar in visible composition', () => {
+test('V70 Orb is an authored asymmetric ten-panel machine with no greybox mass, glass sphere, or orbit rings', () => {
   assert.match(s, /function OrbMachine\(/)
-  assert.match(s, /function Beam\(/)
-  assert.match(s, /function StoneMass\(/)
-  assert.match(s, /octahedronGeometry/)
-  assert.match(s, /v70-compact-six-panel-contained-machine-core/)
-  assert.doesNotMatch(s, /RoundedBox|icosahedronGeometry|torusGeometry|#37e5ff|#48dfff|#6cf4ff/i)
+  assert.match(s, /function OrbPanelGeometry\(/)
+  assert.match(s, /new THREE\.BufferGeometry\(\)/)
+  assert.match(s, /FRAGMENTS\.map\(\(fragment\) => <OrbPanel/)
+  assert.match(s, /v70-asymmetric-ten-panel-industrial-machine-core/)
+  assert.match(s, /data-home-animation-owner="v70-asymmetric-ten-panel-orb-machine"/)
+  assert.doesNotMatch(s, /function Beam\(|function StoneMass\(|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
 test('V70 preserves bounded render cost, real traversal phases, and fail-closed visual certification', () => {
