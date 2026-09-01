@@ -6,7 +6,7 @@ const read = (path) => fs.readFileSync(path, 'utf8')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionV67.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
@@ -24,9 +24,9 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v69-photogrammetry-industrial-reliquary"',
+    'data-home-visible-world="v70-deep-photogrammetry-industrial-reliquary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="scanned-rock-industrial-machine-sanctuary"',
+    'data-home-physical-base="deep-scanned-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
@@ -51,7 +51,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     'MobileMovementPad',
   ]) assert.ok(homeGraph.includes(marker), `missing production Home convergence marker: ${marker}`)
 
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV67 as HomeWorldProduction \} from "\.\/HomeWorldProductionV67"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
   assert.match(homeProduction, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
@@ -66,10 +66,10 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     assert.ok(homeProduction.includes(asset), `missing visible production asset: ${asset}`)
   }
 
-  assert.match(homeProduction, /const FRAGMENTS:/)
-  assert.match(homeProduction, /function ArmoredFragment\(/)
+  assert.match(homeProduction, /function Beam(/)
+  assert.match(homeProduction, /function StoneMass\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /v69-six-armored-fragment-contained-machine-core/)
+  assert.match(homeProduction, /v70-compact-six-panel-contained-machine-core/)
   assert.match(homeProduction, /FRAGMENTS\.map/)
   const v69OrbBlock = homeProduction.slice(homeProduction.indexOf('function OrbMachine'), homeProduction.indexOf('function PortalFrame'))
   assert.match(v69OrbBlock, /<mesh visible=\{false\}><sphereGeometry/)
@@ -80,7 +80,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     assert.ok(homeProduction.includes(clip), `missing governed Orb state clip identity: ${clip}`)
   }
 
-  assert.match(homeProduction, /data-home-art-certification="v69-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /data-home-art-certification="v70-retained-pixel-candidate-not-certified"/)
   assert.match(homeProduction, /privacy-preserving-first-person-presence-v69/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /governedPortalIdentity: GOVERNED_PORTAL/)
