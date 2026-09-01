@@ -17,7 +17,7 @@ const visibleAssets = [
   'home-orb-engineered-cradle',
   'home-ground-environmental-threshold',
   'home-life-map-physical-portal',
-  'v69-six-armored-fragment-contained-machine-core',
+  'v69-ten-armored-fragment-contained-machine-core',
 ]
 
 const governedIdentities = [
@@ -45,7 +45,7 @@ test('V69 Orb is a contained six-fragment machine with no glass sphere, orbit ri
   assert.match(s, /const FRAGMENTS:/)
   assert.match(s, /function ArmoredFragment\(/)
   assert.match(s, /dodecahedronGeometry/)
-  assert.match(s, /v69-six-armored-fragment-contained-machine-core/)
+  assert.match(s, /v69-ten-armored-fragment-contained-machine-core/)
   assert.doesNotMatch(s, /RoundedBox|icosahedronGeometry|torusGeometry|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
