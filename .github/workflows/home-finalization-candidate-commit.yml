@@ -39,7 +39,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact single-Canvas V76 candidate markers
+      - name: Verify exact single-Canvas V83 governed candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -62,12 +62,12 @@ jobs:
           grep -Fq "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'" "$source"
           grep -Fq "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'" "$source"
           grep -Fq 'HomeV76Sanctuary' "$source"
-          grep -Fq 'home-v76-continuous-hand-cut-vault' "$art"
-          grep -Fq 'home-v76-port-canted-bearing-wall' "$art"
-          grep -Fq 'home-v76-starboard-canted-bearing-wall' "$art"
-          grep -Fq 'home-v76-deep-concave-apse' "$art"
-          grep -Fq 'home-v76-port-apse-foundation' "$art"
-          grep -Fq 'home-v76-starboard-apse-foundation' "$art"
+          grep -Fq 'home-v83-governed-open-sanctuary-environment' "$art"
+          grep -Fq 'home-v83-authored-open-sanctuary' "$art"
+          grep -Fq 'committed-governed-home-environment' "$art"
+          grep -Fq 'home-v83-removed-procedural-tunnel' "$art"
+          grep -Fq 'home-v83-removed-panel-like-orb-armor' "$art"
+          grep -Fq "liveArtRevision: 'v83-governed-open-sanctuary-recomposition'" "$art"
           grep -Fq 'home-v76-port-integrated-service-manifold' "$art"
           grep -Fq 'home-v76-starboard-integrated-service-manifold' "$art"
           grep -Fq 'home-v76-apse-embedded-orb-relic-machine' "$art"
@@ -100,6 +100,7 @@ jobs:
           grep -Fq "record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr'" "$proof"
           test "$(grep -Fo '<Canvas' "$source" | wc -l)" -eq 1
           ! grep -Fq '<Canvas' "$art"
+          ! grep -Eq '<VaultShell|<CantedWall|<DeepApse|<BearingRib|<ExtrudedBody' "$art"
           ! grep -Fq 'HomeV75RetainedPixelWorld' "$telemetry"
           ! grep -Eq '<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff' "$art"
           ! grep -Fq 'PRODUCTION CERTIFIED' "$source"
