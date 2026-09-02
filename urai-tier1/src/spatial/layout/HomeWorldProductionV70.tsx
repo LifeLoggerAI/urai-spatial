@@ -342,7 +342,35 @@ function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: {
 function ReadySignal({ onReady }: { onReady: () => void }) { useEffect(() => onReady(), [onReady]); return null }
 
 function Scene(props: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; nearby: (value: Nearby) => void; transition: Transition; reducedMotion: boolean; orbState: OrbState; onOrb: () => void; onGround: () => void; onLifeMap: () => void; onReady: () => void; owner: MutableRefObject<HTMLElement | null> }) {
-  return <><color attach="background" args={['#08100e']} /><fogExp2 attach="fog" args={['#17201b', 0.012]} /><Environment files={HOME_HDR} background={false} environmentIntensity={0.54} /><ambientLight intensity={0.24} color="#c9d4ce" /><hemisphereLight args={['#aebfb6', '#211c17', 0.38]} /><directionalLight position={[-6, 9, 4]} intensity={0.98} color="#e0c79c" castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} /><directionalLight position={[6, 6, -9]} intensity={0.24} color="#789a91" /><Sanctuary target={props.target} reducedMotion={props.reducedMotion} orbState={props.orbState} onOrb={props.onOrb} onGround={props.onGround} onLifeMap={props.onLifeMap} /><PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} onNearby={props.nearby} transition={props.transition} owner={props.owner} /><ReadySignal onReady={props.onReady} /></>
+  return <><ReducedMotionCadence active={props.reducedMotion} /><color attach="background" args={['#08100e']} /><fogExp2 attach="fog" args={['#17201b', 0.012]} /><Environment files={HOME_HDR} background={false} environmentIntensity={0.54} /><ambientLight intensity={0.24} color="#c9d4ce" /><hemisphereLight args={['#aebfb6', '#211c17', 0.38]} /><directionalLight position={[-6, 9, 4]} intensity={0.98} color="#e0c79c" castShadow shadow-mapSize-width={768} shadow-mapSize-height={768} /><directionalLight position={[6, 6, -9]} intensity={0.24} color="#789a91" /><Sanctuary target={props.target} reducedMotion={props.reducedMotion} orbState={props.orbState} onOrb={props.onOrb} onGround={props.onGround} onLifeMap={props.onLifeMap} /><PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} onNearby={props.nearby} transition={props.transition} owner={props.owner} /><ReadySignal onReady={props.onReady} /></>
+}
+
+function ReducedMotionCadence({ active }: { active: boolean }) {
+  const { invalidate, setFrameloop } = useThree()
+  useEffect(() => {
+    if (!active) {
+      setFrameloop('always')
+      return
+    }
+    setFrameloop('demand')
+    let disposed = false
+    const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
+      if (!disposed) invalidate()
+    }, delay))
+    let cadenceTimer = 0
+    const renderNext = () => {
+      if (disposed) return
+      invalidate()
+      cadenceTimer = window.setTimeout(renderNext, 250)
+    }
+    cadenceTimer = window.setTimeout(renderNext, 250)
+    return () => {
+      disposed = true
+      bootstrap.forEach((timer) => window.clearTimeout(timer))
+      window.clearTimeout(cadenceTimer)
+    }
+  }, [active, invalidate, setFrameloop])
+  return null
 }
 
 export function HomeWorldProductionV70({ onOrbOpen = requestUraiWorldOrbOpen, webglAvailable = true }: Props) {
@@ -386,7 +414,7 @@ export function HomeWorldProductionV70({ onOrbOpen = requestUraiWorldOrbOpen, we
   if (!webglAvailable) return null
   const ready = canvasReady && sceneReady; const context = transition === 'life-map' ? 'Ascending into your Life Map' : transition === 'ground' ? 'Descending into Ground' : nearby === 'orb' ? 'The Orb is here' : nearby === 'ground' ? 'The path descends' : nearby === 'life-map' ? 'The threshold opens to your Life Map' : null
   return <main ref={worldRef} className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v76-deep-apse-relic-machine-sanctuary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary" data-home-visual-ownership="single-canvas-three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-audio="production-opus-consent-controlled" data-home-input-owner="window-capture-movement" data-home-telemetry-owner="embodied-motion-kernel-v66" data-home-input-ready={ready ? 'true' : 'false'} data-home-interaction-ready={ready ? 'true' : 'false'} data-home-ready={ready ? 'true' : 'warming'} data-home-player-x={SPAWN.x.toFixed(3)} data-home-player-z={SPAWN.z.toFixed(3)} data-home-distance="0.000" data-home-distance-orb={Math.hypot(SPAWN.x - ORB.x, SPAWN.z - ORB.z).toFixed(3)} data-home-distance-ground={Math.hypot(SPAWN.x - GROUND.x, SPAWN.z - GROUND.z).toFixed(3)} data-home-distance-life-map={Math.hypot(SPAWN.x - LIFE_MAP.x, SPAWN.z - LIFE_MAP.z).toFixed(3)} data-home-moving="false" data-home-visual-grade="cinematic-pbr-v76-photogrammetry-relic-machine" data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild" data-home-art-certification="v76-retained-pixel-candidate-not-certified" data-home-scanned-composition="single-canvas-deep-apse-curved-load-bearing-relic-v76" data-home-pbr-environment="local-cc0-hdri-studio-small-08" data-home-assets-ready={ready ? 'true' : 'false'} data-home-runtime-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb rock_face_01/asset.gltf rock_face_02/asset.gltf modular_industrial_pipes_01/asset.gltf industrial_caged_sconce/asset.gltf rock-face-pbr studio-small-08-1k.hdr" data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb" data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-nearby={nearby ?? 'none'} data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'look' : 'embodied-first-person'} data-home-scene-phase={transition === 'none' ? 'HOME' : transition.toUpperCase()} data-home-portal-sequence={portalSequence} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-animation-owner="v76-curved-load-bearing-relic-machine" data-home-input-locked={transition !== 'none' ? 'true' : 'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState, reducedMotion, true).animation} data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : ORB_CLIPS[orbState]} data-testid="home-visible-navigable-sanctuary-world" style={{ position: 'relative', overflow: 'hidden', background: '#080b0b' }} {...look}>
-    <Canvas className={styles.canvas} dpr={1} shadows camera={{ position: [SPAWN.x, 1.60, SPAWN.z], fov: 44, near: 0.1, far: 110 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.38; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} nearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markSceneReady} owner={worldRef} /></Canvas>
+    <Canvas className={styles.canvas} dpr={1} shadows frameloop={reducedMotion ? 'demand' : 'always'} camera={{ position: [SPAWN.x, 1.60, SPAWN.z], fov: 44, near: 0.1, far: 110 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.38; gl.shadowMap.type = THREE.PCFSoftShadowMap; setCanvasReady(true) }}><Scene input={input} yaw={yaw} pitch={pitch} target={target} nearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markSceneReady} owner={worldRef} /></Canvas>
     {context ? <div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div> : null}{transition === 'none' && mobile ? <MobileMovementPad input={input} label="Home movement controls" /> : null}<span className="sr-only" data-testid="urai-home-webgl-orb">The vertical armored Orb machine is integrated into the deep scanned industrial sanctuary.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied Home presence remains active.</span>
   </main>
 }

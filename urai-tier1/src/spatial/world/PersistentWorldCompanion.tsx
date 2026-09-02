@@ -9,6 +9,7 @@ import {
   requestUraiWorldReturn,
   requestUraiWorldTravel,
   URAI_WORLD_ORB_OPEN_EVENT,
+  type UraiWorldOrbOpenDetail,
 } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
@@ -69,6 +70,7 @@ export function PersistentWorldCompanion() {
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
+  const externalActivatorRef = useRef<HTMLElement | null>(null)
   const restoreFocusRef = useRef(false)
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
@@ -91,6 +93,7 @@ export function PersistentWorldCompanion() {
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
     else {
+      externalActivatorRef.current = null
       setOpen(true)
       publishOrbState('attention', 'companion')
       window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
@@ -105,7 +108,8 @@ export function PersistentWorldCompanion() {
   }, [audioEnabled])
 
   useEffect(() => {
-    const openCompanion = () => {
+    const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
+      externalActivatorRef.current = event.detail.returnFocusTo ?? null
       setOpen(true)
       publishOrbState('attention', 'companion')
     }
@@ -126,7 +130,10 @@ export function PersistentWorldCompanion() {
     }
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
-      orbRef.current?.focus()
+      const activator = externalActivatorRef.current
+      externalActivatorRef.current = null
+      if (activator?.isConnected) activator.focus()
+      else orbRef.current?.focus()
     }
   }, [open])
 

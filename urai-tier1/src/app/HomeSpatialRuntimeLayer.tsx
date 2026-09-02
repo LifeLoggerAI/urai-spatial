@@ -22,7 +22,7 @@ const HOME_SEMANTIC_DESTINATIONS = {
 function HomeSemanticNavigation() {
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
-      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" data-urai-audit-action="home-orb-direct" onClick={requestUraiWorldOrbOpen}>Open URAI Orb companion</button>
+      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" data-urai-audit-action="home-orb-direct" onClick={(event) => requestUraiWorldOrbOpen(event.currentTarget)}>Open URAI Orb companion</button>
       <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={() => directHomeSemanticTravel(HOME_SEMANTIC_DESTINATIONS.ground.travelHref)}>Ground</button>
       <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={() => directHomeSemanticTravel(HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref)}>Life Map</button>
     </nav>

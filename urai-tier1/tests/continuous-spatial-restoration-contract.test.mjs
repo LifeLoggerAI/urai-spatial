@@ -96,6 +96,9 @@ test('V76 is one continuous single-Canvas industrial sanctuary with governed ide
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
+    'function ReducedMotionCadence',
+    "frameloop={reducedMotion ? 'demand' : 'always'}",
+    'cadenceTimer = window.setTimeout(renderNext, 250)',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing V76 Home marker: ${marker}`)
 
