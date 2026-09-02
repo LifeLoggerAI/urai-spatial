@@ -251,7 +251,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
-    const openOrb = page.getByRole('button', { name: 'Open Orb travel controls' }).first()
+    const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
     await openOrb.click({ noWaitAfter: true })
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
