@@ -101,7 +101,7 @@ test('production audio remains consent-controlled on the live final Home owner',
   const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
   assert.match(homeWorldEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
-  assert.match(homeWorld, /data-home-visible-world="v72-vertical-armored-industrial-sanctuary"/)
+  assert.match(homeWorld, /data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(liveHome, /urai-ambient-bed-v1\.opus/)

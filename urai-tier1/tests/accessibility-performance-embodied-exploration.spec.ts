@@ -23,7 +23,7 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-ready', 'true', { timeout: 45_000 })
   await expect(home).toHaveAttribute('data-home-input-owner', 'window-capture-movement')
-  await expect(home).toHaveAttribute('data-home-telemetry-owner', 'embodied-motion-kernel')
+  await expect(home).toHaveAttribute('data-home-telemetry-owner', 'embodied-motion-kernel-v66')
   await expect(home).toHaveAttribute('data-home-player-z', /-?\d+\.\d+/)
   await expect(home).toHaveAttribute('data-home-distance', /\d+\.\d+/)
 }

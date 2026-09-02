@@ -38,10 +38,10 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-scanned-industrial-home-orb-proof-6',
+  schemaVersion: 'urai-scanned-industrial-home-orb-proof-7',
   exactHead,
   capturedAt: new Date().toISOString(),
-  runtimeContract: 'v72-vertical-armored-industrial-home-contained-orb-governed-identity-and-retained-pixel-proof',
+  runtimeContract: 'v76-single-canvas-deep-apse-relic-machine-governed-identity-and-retained-pixel-proof',
   homeIdentity: { ...homeIdentity, visibleCompositionRequired: false },
   orbIdentity: { ...orbIdentity, visibleCompositionRequired: false },
   portalIdentity: { ...portalIdentity, requiredRuntimeRequest: true, visibleCompositionRequired: false },
@@ -100,6 +100,7 @@ for (const spec of cases) {
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
     await frames(page)
     record.status = response?.status()
+    record.canvasCount = await owner.locator('canvas').count()
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.worldCharacter = await owner.getAttribute('data-home-world-character')
     record.physicalBase = await owner.getAttribute('data-home-physical-base')
@@ -136,21 +137,22 @@ for (const spec of cases) {
     record.luminanceRange = visual.luminanceRange
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
-      && record.visibleWorld === 'v72-vertical-armored-industrial-sanctuary'
+      && record.canvasCount === 1
+      && record.visibleWorld === 'v76-deep-apse-relic-machine-sanctuary'
       && record.worldCharacter === 'production-cinematic-sacred-tech'
       && record.physicalBase === 'continuous-pbr-rock-industrial-machine-sanctuary'
-      && record.visualOwnership === 'three-dimensional-geometry'
+      && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v72-vertical-armored-industrial'
-      && record.artRevision === 'v72-vertical-armored-threshold-rebuild'
-      && record.artCertification === 'v72-retained-pixel-candidate-not-certified'
+      && record.visualGrade === 'cinematic-pbr-v76-photogrammetry-relic-machine'
+      && record.artRevision === 'v76-single-canvas-deep-apse-rebuild'
+      && record.artCertification === 'v76-retained-pixel-candidate-not-certified'
       && record.runtimeAssets?.includes(path.basename(homePath))
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))
       && record.governedIdentityAssets === 'home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb'
-      && record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr'
+      && record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr'
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
       && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null

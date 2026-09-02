@@ -12,6 +12,7 @@ on:
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
@@ -38,7 +39,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact vertical-armored V72 candidate markers
+      - name: Verify exact single-Canvas V76 candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -49,6 +50,7 @@ jobs:
           test -f operations/assets/home-v48-production-asset-provenance.json
           entry='urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
           source='urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
+          art='urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
           telemetry='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
           proof='scripts/capture-natural-home-orb-proof.mjs'
           grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' "$entry"
@@ -59,24 +61,25 @@ jobs:
           grep -Fq "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'" "$source"
           grep -Fq "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'" "$source"
           grep -Fq "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'" "$source"
-          grep -Fq 'home-v71-port-back-buttress' "$source"
-          grep -Fq 'home-v71-inner-port-rib' "$source"
-          grep -Fq 'home-v71-inner-starboard-rib' "$source"
-          grep -Fq 'home-v71-starboard-back-buttress' "$source"
-          grep -Fq 'home-v71-port-foundation-mass' "$source"
-          grep -Fq 'home-v71-starboard-foundation-mass' "$source"
-          grep -Fq 'home-v70-left-service-manifold' "$source"
-          grep -Fq 'home-v70-right-service-manifold' "$source"
-          grep -Fq 'home-orb-engineered-cradle' "$source"
-          grep -Fq 'home-life-map-physical-portal' "$source"
-          grep -Fq 'v72-vertical-armored-ovoid-ten-panel-machine' "$source"
-          grep -Fq 'new THREE.LatheGeometry(profile, 12)' "$source"
-          grep -Fq 'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"' "$source"
+          grep -Fq 'HomeV76Sanctuary' "$source"
+          grep -Fq 'home-v76-continuous-hand-cut-vault' "$art"
+          grep -Fq 'home-v76-port-canted-bearing-wall' "$art"
+          grep -Fq 'home-v76-starboard-canted-bearing-wall' "$art"
+          grep -Fq 'home-v76-deep-concave-apse' "$art"
+          grep -Fq 'home-v76-port-apse-foundation' "$art"
+          grep -Fq 'home-v76-starboard-apse-foundation' "$art"
+          grep -Fq 'home-v76-port-integrated-service-manifold' "$art"
+          grep -Fq 'home-v76-starboard-integrated-service-manifold' "$art"
+          grep -Fq 'home-v76-apse-embedded-orb-relic-machine' "$art"
+          grep -Fq 'home-life-map-physical-portal' "$art"
+          grep -Fq 'connectedLoadPaths: true' "$art"
+          grep -Fq 'data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"' "$source"
           grep -Fq 'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"' "$source"
-          grep -Fq 'data-home-visual-grade="cinematic-pbr-v72-vertical-armored-industrial"' "$source"
-          grep -Fq 'data-home-final-art-revision="v72-vertical-armored-threshold-rebuild"' "$source"
-          grep -Fq 'data-home-art-certification="v72-retained-pixel-candidate-not-certified"' "$source"
-          grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"' "$source"
+          grep -Fq 'data-home-visual-grade="cinematic-pbr-v76-photogrammetry-relic-machine"' "$source"
+          grep -Fq 'data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild"' "$source"
+          grep -Fq 'data-home-art-certification="v76-retained-pixel-candidate-not-certified"' "$source"
+          grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"' "$source"
+          grep -Fq 'data-home-telemetry-owner="embodied-motion-kernel-v66"' "$source"
           grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
           grep -Fq 'const HOME_ORB = { x: 0, z: -9.1 } as const' "$telemetry"
           grep -Fq 'const HOME_GROUND = { x: -4.85, z: -8.25 } as const' "$telemetry"
@@ -89,13 +92,16 @@ jobs:
           grep -Fq '}, reducedMotion ? 500 : 1100)' "$source"
           grep -Fq '}, reducedMotion ? 520 : 1600)' "$source"
           grep -Fq '}, reducedMotion ? 180 : 900)' "$source"
-          grep -Fq "schemaVersion: 'urai-scanned-industrial-home-orb-proof-6'" "$proof"
+          grep -Fq "schemaVersion: 'urai-scanned-industrial-home-orb-proof-7'" "$proof"
           grep -Fq 'verifyGovernedBinary(homePath)' "$proof"
           grep -Fq 'verifyGovernedBinary(orbPath)' "$proof"
           grep -Fq 'verifyGovernedBinary(portalPath)' "$proof"
           grep -Fq 'record.portalRequests.length >= 1' "$proof"
-          grep -Fq "record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr'" "$proof"
-          ! grep -Eq '<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff' "$source"
+          grep -Fq "record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr'" "$proof"
+          test "$(grep -Fo '<Canvas' "$source" | wc -l)" -eq 1
+          ! grep -Fq '<Canvas' "$art"
+          ! grep -Fq 'HomeV75RetainedPixelWorld' "$telemetry"
+          ! grep -Eq '<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff' "$art"
           ! grep -Fq 'PRODUCTION CERTIFIED' "$source"
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:

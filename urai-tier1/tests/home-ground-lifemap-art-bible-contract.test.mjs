@@ -7,6 +7,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
+const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const fallbackHome = read('src/app/FinalHomeWorld.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
@@ -16,7 +17,7 @@ const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}\n${fallbackHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeArt}\n${homeCss}\n${fallbackHome}`
 const groundGraph = `${groundOwner}\n${groundModel}\n${atmosphereCss}`
 
 test('Home is one coherent production Sacred-Tech 3D environment with governed identity and retained-pixel-safe visible art', () => {
@@ -24,17 +25,17 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"',
+    'data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
     'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
-    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"',
     'data-home-audio="production-opus-consent-controlled"',
     'data-home-input-owner="window-capture-movement"',
-    'data-home-telemetry-owner="embodied-motion-kernel"',
+    'data-home-telemetry-owner="embodied-motion-kernel-v66"',
     'data-home-ready=',
     'data-home-player-z=',
     'home-visible-navigable-sanctuary-world',
@@ -42,7 +43,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     'data-testid="urai-home-webgl-orb"',
     'home-authored-terrain',
     'home-sanctuary-pavilion',
-    'home-orb-sanctuary',
+    'home-v76-apse-embedded-orb-relic-machine',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
@@ -62,25 +63,22 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   assert.match(homeProduction, /object\.receiveShadow = true/)
   assert.match(homeProduction, /function ProductionAsset\(/)
   assert.match(homeProduction, /provenance: 'poly-haven-cc0-committed'/)
-  for (const asset of ['rock_face_01/asset.gltf','rock_face_02/asset.gltf','modular_industrial_pipes_01/asset.gltf','industrial_caged_sconce/asset.gltf','rock-tile-floor-pbr','studio-small-08-1k.hdr']) {
-    assert.ok(homeProduction.includes(asset), `missing visible production asset: ${asset}`)
+  for (const asset of ['rock_face_01/asset.gltf','rock_face_02/asset.gltf','modular_industrial_pipes_01/asset.gltf','industrial_caged_sconce/asset.gltf','rock-face-pbr','studio-small-08-1k.hdr']) {
+    assert.ok(homeGraph.includes(asset), `missing visible production asset: ${asset}`)
   }
 
-  assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /function OrbPanelGeometry\(/)
-  assert.match(homeProduction, /new THREE\.BufferGeometry\(\)/)
-  assert.match(homeProduction, /v72-vertical-armored-ovoid-ten-panel-machine/)
-  assert.match(homeProduction, /FRAGMENTS\.map/)
-  const orbBlock = homeProduction.slice(homeProduction.indexOf('function OrbMachine'), homeProduction.indexOf('function PortalFrame'))
-  assert.doesNotMatch(orbBlock, /function Beam\(|function StoneMass\(|sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case/i)
-  assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
-  assert.match(homeProduction, /root\.current\.rotation\.y = reducedMotion \? 0 :/)
+  assert.match(homeArt, /function RelicMachine\(/)
+  assert.match(homeArt, /function useCurvedArmorGeometry\(/)
+  assert.match(homeArt, /new THREE\.ExtrudeGeometry/)
+  assert.match(homeArt, /home-v76-machine-vertical-aperture/)
+  assert.match(homeArt, /connectedLoadPaths: true/)
+  assert.doesNotMatch(homeArt, /sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case/i)
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
     assert.ok(homeProduction.includes(clip), `missing governed Orb state clip identity: ${clip}`)
   }
 
-  assert.match(homeProduction, /data-home-art-certification="v72-retained-pixel-candidate-not-certified"/)
-  assert.match(homeProduction, /privacy-preserving-first-person-presence-v70/)
+  assert.match(homeProduction, /data-home-art-certification="v76-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /privacy-preserving-first-person-presence-v76/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /governedPortalIdentity: GOVERNED_PORTAL/)
   assert.match(homeProduction, /function PlayerRig\(/)
@@ -92,13 +90,15 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   assert.match(homeProduction, /cameraCheckpoint: 'home-sky-ascent-complete'/)
   assert.match(homeProduction, /href: '\/life-map\/\?from=home-sky'/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
-  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb portal-ring-master-v1\.glb urai-orb-avatar-v1\.glb rock_face_01\/asset\.gltf rock_face_02\/asset\.gltf modular_industrial_pipes_01\/asset\.gltf industrial_caged_sconce\/asset\.gltf rock-tile-floor-pbr studio-small-08-1k\.hdr"/)
+  assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb portal-ring-master-v1\.glb urai-orb-avatar-v1\.glb rock_face_01\/asset\.gltf rock_face_02\/asset\.gltf modular_industrial_pipes_01\/asset\.gltf industrial_caged_sconce\/asset\.gltf rock-face-pbr studio-small-08-1k\.hdr"/)
   assert.match(homeProduction, /data-home-orb-model-clip=/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_ORB\)/)
   assert.doesNotMatch(homeProduction, /<ProductionAsset url=\{GOVERNED_(?:HOME|PORTAL|ORB)\}/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
+  assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
+  assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /genesis-orb-placeholder\.svg|fallback-sky-bloom-12\.webp|fallback-ground-bloom-12\.png|TRANSPARENT_PIXEL/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })

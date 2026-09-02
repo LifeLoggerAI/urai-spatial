@@ -12,6 +12,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
+const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -28,7 +29,7 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeArt}\n${homeCss}`
 const groundGraph = `${ground}\n${groundModel}`
 const groundCanonical = canonical(ground)
 
@@ -39,14 +40,16 @@ test('app template mounts the exact active Home production owner without certifi
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="v72-vertical-armored-industrial-sanctuary"/)
-  assert.match(homeProduction, /data-home-art-certification="v72-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"/)
+  assert.match(homeProduction, /data-home-art-certification="v76-retained-pixel-candidate-not-certified"/)
+  assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
+  assert.doesNotMatch(homeArt, /<Canvas/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('V72 is one continuous PBR industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
+test('V76 is one continuous single-Canvas industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
   for (const marker of [
     'HomeWorldProductionV70',
     'home-entry-chamber-v1.glb',
@@ -56,38 +59,37 @@ test('V72 is one continuous PBR industrial sanctuary with governed identities, c
     'rock_face_02/asset.gltf',
     'modular_industrial_pipes_01/asset.gltf',
     'industrial_caged_sconce/asset.gltf',
-    'rock-tile-floor-diff-1k.webp',
+    'rock_face_01_diff_1k.jpg',
     'studio-small-08-1k.hdr',
     'data-home-primary-owner="asset-driven"',
     'data-home-world-character="production-cinematic-sacred-tech"',
     'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
-    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v72-vertical-armored-industrial"',
-    'data-home-final-art-revision="v72-vertical-armored-threshold-rebuild"',
-    'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
+    'data-home-visual-grade="cinematic-pbr-v76-photogrammetry-relic-machine"',
+    'data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild"',
+    'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
     'home-sanctuary-pavilion',
-    'home-v71-port-back-buttress',
-    'home-v71-inner-port-rib',
-    'home-v71-inner-starboard-rib',
-    'home-v71-starboard-back-buttress',
-    'home-v71-port-foundation-mass',
-    'home-v71-starboard-foundation-mass',
-    'home-v70-left-service-manifold',
-    'home-v70-right-service-manifold',
-    'home-orb-sanctuary',
-    'home-orb-engineered-cradle',
+    'home-v76-continuous-hand-cut-vault',
+    'home-v76-port-canted-bearing-wall',
+    'home-v76-starboard-canted-bearing-wall',
+    'home-v76-deep-concave-apse',
+    'home-v76-port-apse-foundation',
+    'home-v76-starboard-apse-foundation',
+    'home-v76-port-integrated-service-manifold',
+    'home-v76-starboard-integrated-service-manifold',
+    'home-v76-apse-embedded-orb-relic-machine',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
-    'v72-vertical-armored-ovoid-ten-panel-machine',
-    'v71-continuous-ribbed-pbr-shell',
+    'v76-curved-load-bearing-relic-machine',
+    'v76-single-canvas-deep-apse-sanctuary',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -95,13 +97,15 @@ test('V72 is one continuous PBR industrial sanctuary with governed identities, c
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
     '<Canvas',
-  ]) assert.ok(homeGraph.includes(marker), `missing V72 Home marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing V76 Home marker: ${marker}`)
 
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
   assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
   assert.match(homeProduction, /const GOVERNED_PORTAL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeProduction, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
   assert.match(homeProduction, /function Sanctuary\(/)
+  assert.match(homeProduction, /<HomeV76Sanctuary/)
+  assert.match(homeArt, /export function HomeV76Sanctuary\(/)
   assert.match(homeProduction, /function OrbMachine\(/)
   assert.match(homeProduction, /function OrbPanelGeometry\(/)
   assert.match(homeProduction, /function EngineeredOrbHullGeometry\(/)
@@ -121,6 +125,7 @@ test('V72 is one continuous PBR industrial sanctuary with governed identities, c
   assert.match(homeProduction, /useGLTF\.preload\(ROCK_FACE_B\)/)
   assert.match(homeProduction, /useGLTF\.preload\(PIPE_SYSTEM\)/)
   assert.match(homeProduction, /transmission = 0/)
+  assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)
   const traversalTimerIndex = homeProduction.indexOf('const traversalTimer = window.setTimeout(() => {')
   const closingTimerIndex = homeProduction.indexOf('closingTimer = window.setTimeout(() => {')
   const navigationTimerIndex = homeProduction.indexOf('navigationTimer = window.setTimeout(() => {')

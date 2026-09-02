@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
 import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
-import { HomeV75RetainedPixelWorld } from '@/spatial/layout/HomeWorldProductionV75'
 
 type Props = {
   onOrbOpen: () => void
@@ -59,8 +58,8 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
       world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
       world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
-      world.setAttribute('data-home-v75-art-layer', 'continuous-vaulted-relic-sanctuary')
-      world.setAttribute('data-home-v75-certification', 'retained-pixel-candidate-not-certified')
+      world.setAttribute('data-home-v76-art-layer', 'single-canvas-deep-apse-relic-machine-sanctuary')
+      world.setAttribute('data-home-v76-certification', 'retained-pixel-candidate-not-certified')
       synchronizeCanonicalHomeTelemetry(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
@@ -92,11 +91,11 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-route-owner="asset-driven-sacred-home"
       data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal"
       data-home-forge-scenery="suppressed"
-      data-home-v75-retained-pixel-rebuild="active"
+      data-home-v76-retained-pixel-rebuild="active"
+      data-home-canvas-owner="home-world-production-v70-single-authority"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
-      <HomeV75RetainedPixelWorld />
     </div>
   )
 }

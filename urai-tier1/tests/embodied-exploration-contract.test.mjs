@@ -8,6 +8,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
+const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const finalHome = read('src/app/FinalHomeWorld.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -20,7 +21,7 @@ const embodiedLayout = read('src/spatial/world/embodiedExplorationLayout.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const worldTransitions = read('src/spatial/world/WorldTransitionController.tsx')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${finalHome}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeArt}\n${finalHome}`
 const groundGraph = `${ground}\n${groundModel}`
 
 const has = (source, marker) => assert.match(source, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
@@ -33,7 +34,7 @@ test('shared movement kernel owns stable input, calm motion, boundaries and coll
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|movementX|movementY|sprint|jump|crouch/i)
 })
 
-test('Home is the live vertical-industrial V72 sanctuary with governed identities fail-closed', () => {
+test('Home is the live single-Canvas V76 relic sanctuary with governed identities fail-closed', () => {
   for (const marker of [
     'AssetDrivenHomeWorld',
     'data-urai-home-runtime="asset-driven-primary-with-procedural-degraded-fallback"',
@@ -42,7 +43,7 @@ test('Home is the live vertical-industrial V72 sanctuary with governed identitie
     'data-home-ground-affordance="home-ground-environmental-threshold"',
     'data-home-life-map-affordance="home-life-map-sky-lookout"',
     'data-home-context-owner="world-local-context-only"',
-    'aria-label="Open Orb travel controls"',
+    'aria-label="Open URAI Orb companion"',
     'aria-label="Open Ground directly"',
     'aria-label="Open Life Map directly"',
   ]) has(homeRuntime, marker)
@@ -62,36 +63,35 @@ test('Home is the live vertical-industrial V72 sanctuary with governed identitie
     "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'",
     "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'",
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v72-vertical-armored-industrial-sanctuary"',
+    'data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"',
     'data-home-world-character="production-cinematic-sacred-tech"',
     'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
-    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v72-vertical-armored-industrial"',
-    'data-home-final-art-revision="v72-vertical-armored-threshold-rebuild"',
-    'data-home-art-certification="v72-retained-pixel-candidate-not-certified"',
-    'data-home-animation-owner="v72-vertical-armored-ten-panel-orb-machine"',
+    'data-home-visual-grade="cinematic-pbr-v76-photogrammetry-relic-machine"',
+    'data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild"',
+    'data-home-art-certification="v76-retained-pixel-candidate-not-certified"',
+    'data-home-animation-owner="v76-curved-load-bearing-relic-machine"',
     'data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb"',
-    'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-tile-floor-pbr"',
+    'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"',
     'data-testid="home-visible-navigable-sanctuary-world"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
-    'home-orb-sanctuary',
-    'home-orb-engineered-cradle',
+    'home-v76-apse-embedded-orb-relic-machine',
     'home-authored-embodied-self',
     'home-ground-environmental-threshold',
     'home-life-map-sky-lookout',
     'home-life-map-physical-portal',
     'home-sanctuary-pavilion',
-    'home-v71-port-back-buttress',
-    'home-v71-inner-port-rib',
-    'home-v70-left-service-manifold',
-    'v72-vertical-armored-ovoid-ten-panel-machine',
+    'home-v76-continuous-hand-cut-vault',
+    'home-v76-port-canted-bearing-wall',
+    'home-v76-port-integrated-service-manifold',
+    'v76-curved-load-bearing-relic-machine',
     'stepEmbodiedMotion',
     'useMovementInput',
     'useDragLook',
@@ -100,12 +100,12 @@ test('Home is the live vertical-industrial V72 sanctuary with governed identitie
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     '<Canvas',
-  ]) has(homeProduction, marker)
+  ]) has(homeGraph, marker)
   assert.match(homeProduction, /function Sanctuary\(/)
-  assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /function OrbPanelGeometry\(/)
-  assert.doesNotMatch(homeProduction, /function StoneMass\(|function Beam\(|octahedronGeometry|icosahedronGeometry|capsuleGeometry/)
-  assert.match(homeProduction, /function PortalFrame\(/)
+  assert.match(homeProduction, /<HomeV76Sanctuary/)
+  assert.match(homeArt, /function RelicMachine\(/)
+  assert.match(homeArt, /function PortalRecess\(/)
+  assert.doesNotMatch(homeArt, /function StoneMass\(|function Beam\(|octahedronGeometry|icosahedronGeometry|capsuleGeometry/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /destination: 'infrastructure-hub'/)
   assert.match(homeProduction, /destination: 'life-map'/)
@@ -114,8 +114,11 @@ test('Home is the live vertical-industrial V72 sanctuary with governed identitie
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_ORB\)/)
-  assert.doesNotMatch(homeProduction, /<GovernedModel|RoundedBox|icosahedronGeometry|#37e5ff|#48dfff|#6cf4ff/i)
+  assert.doesNotMatch(homeArt, /<GovernedModel|RoundedBox|icosahedronGeometry|#37e5ff|#48dfff|#6cf4ff/i)
   assert.doesNotMatch(homeProduction, /requestPointerLock|sprint|jump|crouch/i)
+  assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
+  assert.doesNotMatch(homeArt, /<Canvas/)
+  assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)
 
   for (const marker of [
     'data-home-visible-world="final-physical-sanctuary-memory-rooms"',
@@ -142,14 +145,13 @@ test('Home telemetry uses the same spawn and destination coordinates as the live
   assert.doesNotMatch(homeProduction, /const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/)
 })
 
-test('Home keeps one physical stateful armored Orb owner and semantic access parity', () => {
+test('Home keeps one physical stateful relic-machine Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
-  has(homeProduction, 'name="home-orb-sanctuary"')
+  has(homeArt, 'name="home-v76-apse-embedded-orb-relic-machine"')
   has(homeProduction, 'data-testid="urai-home-webgl-orb"')
-  assert.match(homeProduction, /<OrbMachine state=\{orbState\} reducedMotion=\{reducedMotion\} onOpen=\{onOrb\} \/>/)
-  assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
+  assert.match(homeProduction, /<HomeV76Sanctuary reducedMotion=\{reducedMotion\} orbState=\{orbState\}/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, listener\)/)
-  assert.match(homeProduction, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
+  assert.match(homeArt, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)

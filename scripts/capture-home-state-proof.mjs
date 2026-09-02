@@ -149,6 +149,7 @@ async function capture(state, options = {}) {
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
+    record.canvasCount = await owner.locator('canvas').count()
     record.primaryOwner = await owner.getAttribute('data-home-primary-owner')
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.movement = await owner.getAttribute('data-home-movement')
@@ -160,7 +161,7 @@ async function capture(state, options = {}) {
       text: button.textContent,
     })))
     record.accessibilityPassed = record.semanticControls.length >= 3
-      && record.semanticControls.some((control) => control.label === 'Open Orb travel controls')
+      && record.semanticControls.some((control) => control.label === 'Open URAI Orb companion')
       && record.semanticControls.some((control) => control.label === 'Open Ground directly')
       && record.semanticControls.some((control) => control.label === 'Open Life Map directly' || control.label === 'Ascend to Life Map')
 
@@ -181,8 +182,9 @@ async function capture(state, options = {}) {
 
     record.passed = record.status === 200
       && record.canvasReady === 'true'
+      && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'v72-vertical-armored-industrial-sanctuary'
+      && record.visibleWorld === 'v76-deep-apse-relic-machine-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
@@ -367,13 +369,15 @@ try {
   await settleAnimationFrames(transitionPage, 30)
   transition.status = response?.status()
   transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
+  transition.canvasCount = await owner.locator('canvas').count()
   transition.primaryOwner = await owner.getAttribute('data-home-primary-owner')
   transition.visibleWorld = await owner.getAttribute('data-home-visible-world')
   transition.pointerLock = await transitionPage.evaluate(() => document.pointerLockElement === null)
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
+    && transition.canvasCount === 1
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'v72-vertical-armored-industrial-sanctuary'
+    && transition.visibleWorld === 'v76-deep-apse-relic-machine-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {
