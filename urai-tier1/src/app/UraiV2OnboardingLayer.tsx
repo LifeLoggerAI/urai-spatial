@@ -97,7 +97,7 @@ function OnboardingCardContent() {
   };
 
   return (
-    <aside className="uraiV2OnboardingCard" aria-label={`${card.label} first-run guide`} data-first-run={automaticFirstRun ? "automatic" : "guided"}>
+    <aside className="uraiV2OnboardingCard" aria-label={`${card.label} first-run guide`} data-first-run={automaticFirstRun ? "automatic" : "guided"} data-route={pathname}>
       <img
         src={card.asset.src}
         alt={card.asset.alt}

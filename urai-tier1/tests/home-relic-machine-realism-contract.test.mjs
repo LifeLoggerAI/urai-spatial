@@ -7,14 +7,13 @@ const art = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.t
 const owner = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
 
 const productionAssets = [
+  "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'",
   "const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'",
   "const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'",
   "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'",
   "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'",
-  'home-v76-port-foreground-embedded-rock',
-  'home-v76-starboard-midground-embedded-rock',
-  'home-v76-port-apse-foundation',
-  'home-v76-starboard-apse-foundation',
+  'home-v83-governed-open-sanctuary-environment',
+  'home-v83-authored-open-sanctuary',
   'home-v76-port-integrated-service-manifold',
   'home-v76-starboard-integrated-service-manifold',
   'home-v76-port-caged-practical',
@@ -71,23 +70,27 @@ test('V76 Orb is a curved load-bearing apse machine with connected service paths
   assert.match(art, /new THREE\.CatmullRomCurve3/)
   assert.match(art, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(runtime, /data-home-animation-owner="v76-curved-load-bearing-relic-machine"/)
-  assert.doesNotMatch(art, /sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case|#37e5ff|#48dfff|#6cf4ff/i)
+  assert.doesNotMatch(art, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
-test('V82 replaces repeated flat panels with governed rock mass, natural fissures, and material depth', () => {
+test('V83 replaces the procedural tunnel and panel armor with the governed open sanctuary', () => {
   for (const marker of [
-    'home-v82-port-near-field-rock-mass',
-    'home-v82-starboard-near-field-rock-mass',
-    'home-v82-port-mid-field-buttress',
-    'home-v82-starboard-deep-field-buttress',
-    'home-v82-${destination}-port-natural-fissure',
-    'home-v82-${destination}-starboard-natural-fissure',
-    "liveArtRevision: 'v82-governed-orb-natural-fissure-depth-rebuild'",
-  ]) assert.ok(art.includes(marker), `missing V82 material-depth marker: ${marker}`)
-  assert.match(runtime, /data-home-live-art-revision="v82-governed-orb-natural-fissure-depth-rebuild"/)
+    'home-v83-governed-open-sanctuary-environment',
+    'home-v83-authored-open-sanctuary',
+    'committed-governed-home-environment',
+    'full-authored-composition-with-duplicate-interaction-art-suppressed',
+    'home-v83-removed-procedural-tunnel',
+    'home-v83-removed-panel-like-orb-armor',
+    "liveArtRevision: 'v83-governed-open-sanctuary-recomposition'",
+  ]) assert.ok(art.includes(marker), `missing V83 governed-composition marker: ${marker}`)
+  assert.match(runtime, /data-home-live-art-revision="v83-governed-open-sanctuary-recomposition"/)
   assert.match(runtime, /data-home-live-orb-owner="governed-urai-orb-avatar-v1"/)
-  assert.match(art, /\[-0\.92, 2\.58, -8\.96\], \[-0\.64, 2\.68, -8\.90\]/)
-  assert.match(art, /\[0\.42, 2\.62, -8\.96\], \[0\.02, 2\.70, -8\.90\]/)
+  assert.match(art, /root\.position\.set\(0, -0\.16, -8\.2\)/)
+  assert.match(art, /root\.scale\.setScalar\(0\.70\)/)
+  assert.match(art, /position=\{\[-0\.18, 1\.42, -8\.86\]\}/)
+  const liveComposition = art.slice(art.indexOf('export function HomeV76Sanctuary'))
+  assert.doesNotMatch(liveComposition, /<VaultShell|<CantedWall|<DeepApse|<BearingRib|<ExtrudedBody/)
+  assert.doesNotMatch(liveComposition, /<ProductionAsset url=\{ROCK_FACE_[AB]\} name="home-v(?:76|82)-(?:port|starboard)-(?:foreground|midground|near-field|mid-field|deep-field|apse)/)
 })
 
 test('V76 preserves bounded rendering, real traversal, and fail-closed certification', () => {

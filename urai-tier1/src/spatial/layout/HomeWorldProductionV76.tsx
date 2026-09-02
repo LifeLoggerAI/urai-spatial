@@ -10,6 +10,7 @@ const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01
 const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'
 const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'
 const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'
+const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 
 const ROCK_A_DIFFUSE = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_diff_1k.jpg'
@@ -264,6 +265,53 @@ function ProductionAsset({ url, name, position, rotation = [0, 0, 0], scale = [1
   </group>
 }
 
+function useGovernedHomeEnvironment() {
+  const gltf = useGLTF(GOVERNED_HOME)
+  return useMemo(() => {
+    const root = gltf.scene.clone(true)
+    const duplicateInteractionArt = /orb-sanctuary-pedestal|portal|ring|threshold|embodied|presence|memory-place-anchor|debug|marker|label/i
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      object.visible = !duplicateInteractionArt.test(object.name)
+      if (!object.visible) return
+      const originals = Array.isArray(object.material) ? object.material : [object.material]
+      const materials = originals.map((entry) => {
+        const clone = entry.clone()
+        if (clone instanceof THREE.MeshStandardMaterial) {
+          clone.roughness = Math.max(clone.roughness, 0.52)
+          clone.metalness = Math.min(clone.metalness, 0.18)
+          clone.envMapIntensity = 0.92
+          if ('transmission' in clone) (clone as THREE.MeshPhysicalMaterial).transmission = Math.min((clone as THREE.MeshPhysicalMaterial).transmission, 0.18)
+        }
+        return clone
+      })
+      object.material = Array.isArray(object.material) ? materials : materials[0]
+      object.castShadow = !/terrain|water|mountain/i.test(object.name)
+      object.receiveShadow = true
+    })
+    root.name = 'home-v83-governed-open-sanctuary-environment'
+    root.position.set(0, -0.16, -8.2)
+    root.scale.setScalar(0.70)
+    root.userData = {
+      runtimeAsset: GOVERNED_HOME,
+      visualOwner: 'committed-governed-home-environment',
+      treatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
+    }
+    return root
+  }, [gltf.scene])
+}
+
+function GovernedHomeEnvironment({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
+  const environment = useGovernedHomeEnvironment()
+  return <group name="home-v83-authored-open-sanctuary" onClick={onWalk}>
+    <primitive object={environment} />
+    <mesh name="home-walkable-navigation-surface" position={[0, 0.12, -3.2]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[24, 27]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+  </group>
+}
+
 function ExtrudedBody({ name, points, position, rotation = [0, 0, 0], scale = [1, 1, 1], depth = 0.54, color = '#34463f', metalness = 0.38, roughness = 0.56 }: { name: string; points: readonly (readonly [number, number])[]; position: Vec3; rotation?: Vec3; scale?: Vec3; depth?: number; color?: string; metalness?: number; roughness?: number }) {
   const geometry = useMemo(() => {
     const shape = new THREE.Shape()
@@ -403,7 +451,7 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     [new THREE.Vector3(-0.72, -0.94, -0.08), new THREE.Vector3(-0.98, 0.12, 0.18), new THREE.Vector3(0.14, 0.78, 0.22), new THREE.Vector3(0.84, -0.72, -0.10)],
     [new THREE.Vector3(-0.20, 1.18, -0.18), new THREE.Vector3(0.82, 0.42, 0.18), new THREE.Vector3(0.58, -0.66, 0.26), new THREE.Vector3(-0.54, -0.84, -0.12)],
   ].map((points) => new THREE.CatmullRomCurve3(points, true, 'centripetal')), [])
-  return <group name="home-v82-governed-living-orb" position={[-0.34, 2.72, -8.86]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.42, -8.86]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
     <group ref={filaments}>
       {filamentCurves.map((curve, index) => <mesh key={index}>
@@ -481,26 +529,24 @@ function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduc
       <group name="home-v76-machine-crown-crosshead" />
     </group>
     <Conduit name="home-v76-port-floor-keel-feed" points={[
-      [-4.88, 0.02, -6.82], [-4.10, 0.12, -8.18], [-3.14, 0.54, -9.44], [-2.04, 1.72, -9.58], [-0.92, 2.58, -8.96], [-0.64, 2.68, -8.90],
-    ]} radius={0.13} color="#584b39" />
+      [-2.36, 0.08, -8.18], [-1.82, 0.22, -8.72], [-1.34, 0.66, -9.12], [-0.82, 1.18, -9.06], [-0.48, 1.38, -8.92],
+    ]} radius={0.075} color="#65513a" />
     <Conduit name="home-v76-starboard-floor-keel-feed" points={[
-      [4.42, 0.02, -7.42], [3.74, 0.10, -8.72], [2.92, 0.68, -9.72], [1.90, 1.86, -9.46], [0.42, 2.62, -8.96], [0.02, 2.70, -8.90],
-    ]} radius={0.11} color="#405248" />
+      [2.18, 0.08, -8.34], [1.72, 0.24, -8.82], [1.18, 0.72, -9.08], [0.62, 1.20, -9.02], [0.18, 1.40, -8.92],
+    ]} radius={0.068} color="#456459" />
     <Conduit name="home-v76-port-apse-load-feed" points={[
-      [-3.82, 5.46, -10.22], [-2.92, 5.18, -9.74], [-2.22, 4.46, -9.26], [-1.24, 3.34, -8.98], [-0.72, 3.02, -8.92],
-    ]} radius={0.085} color="#66523b" />
+      [-1.62, 2.88, -9.44], [-1.22, 2.62, -9.22], [-0.86, 2.18, -9.02], [-0.52, 1.66, -8.92],
+    ]} radius={0.048} color="#725b3e" />
     <Conduit name="home-v76-starboard-apse-load-feed" points={[
-      [3.92, 4.78, -10.46], [3.18, 4.40, -9.82], [2.46, 3.72, -9.34], [0.94, 3.18, -8.98], [0.10, 2.98, -8.92],
-    ]} radius={0.065} color="#4a655a" />
-    <ExtrudedBody name="home-v76-port-curved-armor" points={[
-      [-0.72, -1.22], [0.48, -1.04], [0.76, 0.42], [0.16, 1.36], [-0.52, 0.78],
-    ]} position={[-2.54, 1.14, -9.92]} rotation={[0.24, 0.46, -0.38]} scale={[0.72, 1.18, 0.82]} depth={0.34} color="#4b4134" metalness={0.04} roughness={0.90} />
-    <ExtrudedBody name="home-v76-starboard-curved-armor" points={[
-      [-0.52, -0.92], [0.58, -1.18], [0.68, 0.46], [0.02, 1.18], [-0.68, 0.32],
-    ]} position={[2.42, 1.42, -10.02]} rotation={[-0.18, -0.42, 0.34]} scale={[0.62, 1.02, 0.74]} depth={0.28} color="#37483f" metalness={0.04} roughness={0.90} />
+      [1.58, 2.84, -9.42], [1.18, 2.56, -9.20], [0.82, 2.12, -9.02], [0.40, 1.64, -8.92],
+    ]} radius={0.044} color="#52766a" />
+    <group name="home-v83-removed-panel-like-orb-armor" userData={{ nonRenderingCompatibilityMarkers: true }}>
+      <group name="home-v76-port-curved-armor" />
+      <group name="home-v76-starboard-curved-armor" />
+    </group>
     <OrbPresence state={state} reducedMotion={reducedMotion} />
-    <mesh name="home-v78-orb-interaction-volume" position={[-0.34, 2.72, -8.86]}>
-      <boxGeometry args={[3.62, 4.12, 1.48]} />
+    <mesh name="home-v78-orb-interaction-volume" position={[-0.18, 1.42, -8.86]}>
+      <boxGeometry args={[2.8, 3.0, 1.8]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
   </group>
@@ -532,40 +578,27 @@ function DustField({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onLifeMap, onWalk }: Props) {
-  const textures = useSanctuaryTextures()
   return <group
     name="home-v76-single-canvas-retained-pixel-sanctuary"
     userData={{
       visualOwner: 'v76-single-canvas-deep-apse-sanctuary',
       construction: 'continuous-photogrammetry-shell-curved-load-bearing-relic-machine',
-      liveArtRevision: 'v82-governed-orb-natural-fissure-depth-rebuild',
+      liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
       retainedPixelStatus: 'candidate-not-certified',
     }}
   >
-    <mesh name="home-v76-continuous-stone-floor" position={[0, -0.14, -2.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[12.7, 20.4, 42, 58]} />
-      <StoneMaterial textures={textures.floor} tint="#504b3f" />
-    </mesh>
-    <mesh name="home-walkable-navigation-surface" position={[0, 0.065, -2.0]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
-      <planeGeometry args={[12.4, 18.8]} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
-    </mesh>
-
-    <VaultShell textures={textures.shell} />
-    <CantedWall side="port" textures={textures.shell} />
-    <CantedWall side="starboard" textures={textures.shell} />
-    <DeepApse textures={textures.shell} />
-    <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
-    <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
-
-    <ProductionAsset url={ROCK_FACE_A} name="home-v76-port-foreground-embedded-rock" position={[-6.02, 1.28, 0.38]} rotation={[0.08, 0.82, -0.12]} scale={[1.18, 1.42, 0.96]} span={3.72} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v76-starboard-midground-embedded-rock" position={[6.08, 1.18, -3.18]} rotation={[-0.08, -0.76, 0.10]} scale={[1.10, 1.34, 0.94]} span={3.64} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v82-port-near-field-rock-mass" position={[-5.68, 0.74, 3.28]} rotation={[0.16, 1.18, -0.18]} scale={[1.42, 1.08, 1.26]} span={4.18} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v82-starboard-near-field-rock-mass" position={[5.86, 0.82, 2.12]} rotation={[-0.12, -1.02, 0.14]} scale={[1.34, 1.16, 1.18]} span={3.96} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v82-port-mid-field-buttress" position={[-5.74, 2.08, -5.86]} rotation={[0.24, 0.94, -0.20]} scale={[1.18, 1.62, 1.06]} span={4.24} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v82-starboard-deep-field-buttress" position={[5.72, 2.34, -7.12]} rotation={[-0.18, -0.88, 0.16]} scale={[1.12, 1.72, 1.02]} span={4.36} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v76-port-apse-foundation" position={[-5.52, 1.20, -11.66]} rotation={[-0.06, 0.76, -0.10]} scale={[1.20, 1.46, 1.02]} span={3.86} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v76-starboard-apse-foundation" position={[5.76, 1.12, -11.82]} rotation={[0.04, -0.70, 0.08]} scale={[1.14, 1.38, 0.98]} span={3.72} mode="rock" />
+    <GovernedHomeEnvironment onWalk={onWalk} />
+    <group name="home-v83-removed-procedural-tunnel" userData={{ nonRenderingCompatibilityMarkers: true }}>
+      <group name="home-v76-continuous-stone-floor" />
+      <group name="home-v76-continuous-hand-cut-vault" />
+      <group name="home-v76-port-canted-bearing-wall" />
+      <group name="home-v76-starboard-canted-bearing-wall" />
+      <group name="home-v76-deep-concave-apse" />
+      <group name="home-v82-port-near-field-rock-mass" />
+      <group name="home-v82-starboard-near-field-rock-mass" />
+      <group name="home-v82-port-mid-field-buttress" />
+      <group name="home-v82-starboard-deep-field-buttress" />
+    </group>
 
     <PortalRecess destination="ground" position={[-5.34, 0.02, -9.52]} rotation={[0, 0.62, -0.02]} onActivate={onGround} />
     <PortalRecess destination="life-map" position={[5.48, 0.02, -10.12]} rotation={[0, -0.72, 0.03]} onActivate={onLifeMap} />
@@ -577,11 +610,10 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <RelicMachine state={orbState} reducedMotion={reducedMotion} onOpen={onOrb} />
     <DustField reducedMotion={reducedMotion} />
 
-    <pointLight position={[-4.56, 2.08, -7.24]} color="#d29a58" intensity={1.08} distance={7.8} decay={2} />
-    <pointLight position={[4.62, 2.68, -8.36]} color="#71988d" intensity={0.82} distance={7.4} decay={2} />
-    <pointLight position={[0.18, 0.68, 1.42]} color="#d9c7a0" intensity={0.54} distance={9.2} decay={2} />
-    <spotLight position={[-3.6, 5.92, 1.8]} target-position={[-0.38, 2.44, -10.5]} angle={0.38} penumbra={0.78} intensity={1.34} color="#d7b37b" distance={18} decay={2} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
-    <spotLight position={[4.2, 4.82, -1.8]} target-position={[0.12, 2.64, -9.2]} angle={0.30} penumbra={0.88} intensity={0.74} color="#82a99e" distance={16} decay={2} />
+    <pointLight position={[-4.56, 2.08, -7.24]} color="#d29a58" intensity={0.82} distance={8.8} decay={2} />
+    <pointLight position={[4.62, 2.68, -8.36]} color="#71988d" intensity={0.68} distance={8.4} decay={2} />
+    <directionalLight position={[-6, 10, 5]} color="#e5d4ae" intensity={1.22} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
+    <directionalLight position={[7, 6, -9]} color="#7ca89f" intensity={0.52} />
   </group>
 }
 
@@ -589,5 +621,6 @@ useGLTF.preload(ROCK_FACE_A)
 useGLTF.preload(ROCK_FACE_B)
 useGLTF.preload(PIPE_SYSTEM)
 useGLTF.preload(CAGED_SCONCE)
+useGLTF.preload(GOVERNED_HOME)
 useGLTF.preload(GOVERNED_ORB)
 useTexture.preload([ROCK_A_DIFFUSE, ROCK_A_NORMAL, ROCK_A_ARM, ROCK_B_DIFFUSE, ROCK_B_NORMAL, ROCK_B_ARM])

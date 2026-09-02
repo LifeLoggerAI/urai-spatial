@@ -72,7 +72,10 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   assert.match(homeArt, /new THREE\.ExtrudeGeometry/)
   assert.match(homeArt, /home-v76-machine-vertical-aperture/)
   assert.match(homeArt, /connectedLoadPaths: true/)
-  assert.doesNotMatch(homeArt, /sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case/i)
+  assert.match(homeArt, /home-v83-governed-open-sanctuary-environment/)
+  assert.match(homeArt, /home-v83-removed-procedural-tunnel/)
+  assert.match(homeArt, /home-v83-removed-panel-like-orb-armor/)
+  assert.doesNotMatch(homeArt, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case/i)
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
     assert.ok(homeProduction.includes(clip), `missing governed Orb state clip identity: ${clip}`)
   }
