@@ -241,7 +241,7 @@ function ConcaveApse({ textures }: { textures: TextureSet }) {
   return <mesh name="home-v75-concave-apse" geometry={geometry} receiveShadow castShadow><StoneMaterial textures={textures} tint="#3c4138" side={THREE.DoubleSide} /></mesh>
 }
 
-function ExtrudedPlate({ name, points, position, rotation = [0, 0, 0], scale = [1, 1, 1], color = '#35483f', depth = 0.28, metalness = 0.48 }: { name: string; points: readonly [number, number][]; position: Vec3; rotation?: Vec3; scale?: Vec3; color?: string; depth?: number; metalness?: number }) {
+function ExtrudedPlate({ name, points, position, rotation = [0, 0, 0], scale = [1, 1, 1], color = '#35483f', depth = 0.28, metalness = 0.48 }: { name: string; points: readonly (readonly [number, number])[]; position: Vec3; rotation?: Vec3; scale?: Vec3; color?: string; depth?: number; metalness?: number }) {
   const geometry = useMemo(() => {
     const shape = new THREE.Shape()
     shape.moveTo(points[0][0], points[0][1])
