@@ -61,6 +61,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(routeOwnerCss, 'left: auto !important;')
   requireText(routeOwnerCss, 'top: auto !important;')
   requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
+  requireText(routeOwnerCss, "data-world-destination='home'] .urai-world-companion__menu")
+  requireText(routeOwnerCss, 'max-height: min(50svh, 400px);')
   requireText(companionCss, 'width: 64px;')
   requireText(companionCss, 'height: 64px;')
   requireText(companionCss, 'min-height: 48px;')

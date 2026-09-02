@@ -63,11 +63,31 @@ test('V76 Orb is a curved load-bearing apse machine with connected service paths
   ]) assert.ok(art.includes(marker), `missing V76 relic-machine marker: ${marker}`)
 
   assert.match(art, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
+  assert.match(art, /function useGovernedOrbModel\(/)
+  assert.match(art, /<primitive object=\{governedOrb\} \/>/)
+  assert.match(art, /home-v82-governed-living-orb/)
+  assert.doesNotMatch(art, /ORB_MEMORY_SHARDS|function MemoryShard\(/)
   assert.match(art, /new THREE\.ExtrudeGeometry/)
   assert.match(art, /new THREE\.CatmullRomCurve3/)
   assert.match(art, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(runtime, /data-home-animation-owner="v76-curved-load-bearing-relic-machine"/)
   assert.doesNotMatch(art, /sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox|glass|pedestal|display-case|#37e5ff|#48dfff|#6cf4ff/i)
+})
+
+test('V82 replaces repeated flat panels with governed rock mass, natural fissures, and material depth', () => {
+  for (const marker of [
+    'home-v82-port-near-field-rock-mass',
+    'home-v82-starboard-near-field-rock-mass',
+    'home-v82-port-mid-field-buttress',
+    'home-v82-starboard-deep-field-buttress',
+    'home-v82-${destination}-port-natural-fissure',
+    'home-v82-${destination}-starboard-natural-fissure',
+    "liveArtRevision: 'v82-governed-orb-natural-fissure-depth-rebuild'",
+  ]) assert.ok(art.includes(marker), `missing V82 material-depth marker: ${marker}`)
+  assert.match(runtime, /data-home-live-art-revision="v82-governed-orb-natural-fissure-depth-rebuild"/)
+  assert.match(runtime, /data-home-live-orb-owner="governed-urai-orb-avatar-v1"/)
+  assert.match(art, /\[-0\.92, 2\.58, -8\.96\], \[-0\.64, 2\.68, -8\.90\]/)
+  assert.match(art, /\[0\.42, 2\.62, -8\.96\], \[0\.02, 2\.70, -8\.90\]/)
 })
 
 test('V76 preserves bounded rendering, real traversal, and fail-closed certification', () => {
