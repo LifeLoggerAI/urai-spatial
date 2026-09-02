@@ -55,9 +55,9 @@ function useSanctuaryTextures() {
 
     return {
       shell: {
-        color: clone(sources[0], [3.6, 4.8], true),
-        normal: clone(sources[1], [3.6, 4.8]),
-        arm: clone(sources[2], [3.6, 4.8]),
+        color: clone(sources[0], [1.45, 2.35], true),
+        normal: clone(sources[1], [1.45, 2.35]),
+        arm: clone(sources[2], [1.45, 2.35]),
       },
       floor: {
         color: clone(sources[3], [2.8, 5.4], true),
@@ -359,25 +359,77 @@ const PORTAL_STARBOARD_CHEEK = [[0.24, -1.18], [0.84, -1.02], [1.10, 0.18], [0.6
 const PORTAL_THRESHOLD = [[-1.16, -0.24], [1.04, -0.38], [0.72, 0.18], [-0.92, 0.34]] as const
 
 const ORB_MEMORY_SHARDS = [
-  { id: 'crown', points: [[-0.34, -0.34], [0.28, -0.46], [0.52, 0.18], [-0.08, 0.62]], position: [-0.34, 3.40, -10.04], rotation: [0.02, -0.08, -0.24], scale: [0.72, 0.72, 0.72], color: '#725f48' },
-  { id: 'port', points: [[-0.46, -0.50], [0.18, -0.34], [0.34, 0.34], [-0.30, 0.48]], position: [-0.92, 2.56, -10.02], rotation: [-0.04, 0.12, 0.16], scale: [0.86, 0.86, 0.86], color: '#3b4e45' },
-  { id: 'keel', points: [[-0.26, -0.54], [0.36, -0.38], [0.18, 0.52], [-0.42, 0.20]], position: [-0.18, 1.64, -10.00], rotation: [0.03, -0.12, -0.08], scale: [0.78, 0.78, 0.78], color: '#584a3d' },
-  { id: 'starboard', points: [[-0.28, -0.36], [0.44, -0.48], [0.30, 0.42], [-0.18, 0.54]], position: [0.58, 2.82, -10.12], rotation: [-0.02, 0.10, 0.26], scale: [0.70, 0.70, 0.70], color: '#46584d' },
-  { id: 'inner', points: [[-0.24, -0.42], [0.32, -0.26], [0.20, 0.36], [-0.30, 0.28]], position: [-0.18, 2.62, -9.86], rotation: [0.02, -0.04, 0.08], scale: [0.62, 0.62, 0.62], color: '#836d4e' },
-  { id: 'wake', points: [[-0.36, -0.22], [0.30, -0.42], [0.46, 0.18], [-0.20, 0.40]], position: [0.34, 2.04, -10.08], rotation: [-0.03, 0.14, -0.18], scale: [0.68, 0.68, 0.68], color: '#32483f' },
+  { id: 'north', position: [-0.18, 0.92, 0.02], rotation: [0.32, -0.18, 0.22], scale: 0.62, color: '#e4c78f' },
+  { id: 'port-high', position: [-0.92, 0.40, -0.16], rotation: [-0.18, 0.52, -0.46], scale: 0.48, color: '#83b8aa' },
+  { id: 'port-low', position: [-0.70, -0.54, 0.18], rotation: [0.42, 0.22, 0.28], scale: 0.54, color: '#b88455' },
+  { id: 'heart', position: [0.04, 0.02, 0.34], rotation: [-0.26, 0.18, -0.12], scale: 0.74, color: '#fff0bf' },
+  { id: 'star-high', position: [0.72, 0.56, 0.04], rotation: [0.20, -0.48, 0.52], scale: 0.46, color: '#8bc6b5' },
+  { id: 'star-low', position: [0.88, -0.38, -0.12], rotation: [-0.34, 0.28, -0.38], scale: 0.58, color: '#cf9f68' },
+  { id: 'south', position: [0.10, -0.98, 0.06], rotation: [0.46, -0.22, 0.16], scale: 0.50, color: '#7aa89d' },
 ] as const
+
+function MemoryShard({ position, rotation, scale, color }: { position: Vec3; rotation: Vec3; scale: number; color: string }) {
+  const geometry = useMemo(() => {
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, 0.72, 0.06, -0.38, -0.18, 0.24, 0.28, -0.30, 0.34,
+      0, 0.72, 0.06, 0.28, -0.30, 0.34, 0.18, -0.08, -0.38,
+      0, 0.72, 0.06, 0.18, -0.08, -0.38, -0.38, -0.18, 0.24,
+      -0.38, -0.18, 0.24, 0.18, -0.08, -0.38, 0.28, -0.30, 0.34,
+    ], 3))
+    result.computeVertexNormals()
+    return result
+  }, [])
+  return <mesh geometry={geometry} position={position as [number, number, number]} rotation={rotation as [number, number, number]} scale={scale} castShadow>
+    <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.34} roughness={0.34} metalness={0.08} clearcoat={0.18} toneMapped={false} side={THREE.DoubleSide} />
+  </mesh>
+}
+
+function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion: boolean }) {
+  const swarm = useRef<THREE.Group>(null)
+  const filaments = useRef<THREE.Group>(null)
+  useFrame(({ clock }) => {
+    if (!swarm.current || !filaments.current || reducedMotion) return
+    const urgency = state === 'warning' ? 1.8 : state === 'dormant' ? 0.46 : 0.92
+    swarm.current.rotation.y = Math.sin(clock.elapsedTime * 0.34 * urgency) * 0.22
+    swarm.current.rotation.z = Math.sin(clock.elapsedTime * 0.21 * urgency) * 0.07
+    const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
+    swarm.current.scale.setScalar(breath)
+    filaments.current.rotation.y = clock.elapsedTime * 0.08 * urgency
+    filaments.current.rotation.x = Math.sin(clock.elapsedTime * 0.19) * 0.12
+  })
+  const filamentCurves = useMemo(() => [
+    [new THREE.Vector3(-1.22, -0.16, 0.02), new THREE.Vector3(-0.54, 0.92, 0.28), new THREE.Vector3(0.52, 0.84, -0.18), new THREE.Vector3(1.16, -0.26, 0.12)],
+    [new THREE.Vector3(-0.72, -0.94, -0.08), new THREE.Vector3(-0.98, 0.12, 0.18), new THREE.Vector3(0.14, 0.78, 0.22), new THREE.Vector3(0.84, -0.72, -0.10)],
+    [new THREE.Vector3(-0.20, 1.18, -0.18), new THREE.Vector3(0.82, 0.42, 0.18), new THREE.Vector3(0.58, -0.66, 0.26), new THREE.Vector3(-0.54, -0.84, -0.12)],
+  ].map((points) => new THREE.CatmullRomCurve3(points, true, 'centripetal')), [])
+  return <group name="home-v78-living-memory-swarm" position={[-0.34, 2.72, -8.86]}>
+    <group ref={filaments}>
+      {filamentCurves.map((curve, index) => <mesh key={index}>
+        <tubeGeometry args={[curve, 48, 0.018 + index * 0.006, 5, true]} />
+        <meshBasicMaterial color={index === 1 ? '#8fd0bd' : '#d4aa6d'} transparent opacity={0.74} toneMapped={false} />
+      </mesh>)}
+    </group>
+    <group ref={swarm}>
+      {ORB_MEMORY_SHARDS.map((shard) => <MemoryShard key={shard.id} position={shard.position} rotation={shard.rotation} scale={shard.scale} color={shard.color} />)}
+    </group>
+    <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.05 : state === 'warning' ? 2.2 : 1.55} distance={7.4} decay={2} />
+    <pointLight position={[0.7, 0.3, -0.5]} color="#78baa8" intensity={0.86} distance={5.8} decay={2} />
+  </group>
+}
 
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
   const tone = destination === 'ground' ? '#b6c98c' : '#9fb3da'
-  const shadow = destination === 'ground' ? '#101813' : '#10131c'
+  const shadow = destination === 'ground' ? '#243027' : '#262b38'
   const field = useMemo(() => {
     const shape = new THREE.Shape()
-    shape.moveTo(-0.72, -1.18)
-    shape.lineTo(0.54, -1.28)
-    shape.lineTo(0.72, 0.36)
-    shape.lineTo(0.18, 1.20)
-    shape.lineTo(-0.34, 1.06)
-    shape.lineTo(-0.60, 0.34)
+    shape.moveTo(-0.34, -1.16)
+    shape.lineTo(0.32, -1.30)
+    shape.lineTo(0.52, -0.22)
+    shape.lineTo(0.24, 0.46)
+    shape.lineTo(0.04, 1.26)
+    shape.lineTo(-0.36, 0.52)
+    shape.lineTo(-0.48, -0.18)
     shape.closePath()
     return shape
   }, [])
@@ -385,16 +437,16 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
     position={position as [number, number, number]}
     rotation={rotation as [number, number, number]}
-    userData={{ destination, treatment: 'v76-integrated-trapezoid-service-recess', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
+    userData={{ destination, treatment: 'v78-rock-cut-navigation-fissure', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
   >
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} />
-    <mesh name={`home-v76-${destination}-recess-field`} position={[0, 1.46, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.08 : 0.12]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
+    <mesh name={`home-v78-${destination}-recess-field`} position={[0, 1.44, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.08 : 0.12]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
       <shapeGeometry args={[field]} />
-      <meshPhysicalMaterial color={shadow} emissive={tone} emissiveIntensity={0.025} roughness={0.62} metalness={0.12} side={THREE.DoubleSide} />
+      <meshPhysicalMaterial color={shadow} emissive={tone} emissiveIntensity={0.16} roughness={0.82} metalness={0.02} side={THREE.DoubleSide} />
     </mesh>
-    <ExtrudedBody name={`home-v76-${destination}-port-cheek`} points={PORTAL_PORT_CHEEK} position={[-0.16, 1.42, -0.18]} rotation={[0.02, 0.02, -0.07]} scale={[1.0, 0.92, 1]} color="#332f28" metalness={0.05} roughness={0.88} depth={0.42} />
-    <ExtrudedBody name={`home-v76-${destination}-starboard-cheek`} points={PORTAL_STARBOARD_CHEEK} position={[0.24, 1.36, -0.26]} rotation={[-0.02, -0.04, 0.10]} scale={[0.78, 0.72, 1]} color="#29322d" metalness={0.08} roughness={0.84} depth={0.34} />
-    <ExtrudedBody name={`home-v76-${destination}-threshold`} points={PORTAL_THRESHOLD} position={[-0.08, 0.20, -0.04]} rotation={[-Math.PI / 2, 0.08, -0.04]} scale={[0.92, 0.92, 0.92]} color="#302f29" metalness={0.10} roughness={0.82} depth={0.20} />
+    <ExtrudedBody name={`home-v78-${destination}-port-rock-lip`} points={PORTAL_PORT_CHEEK} position={[-0.42, 1.36, -0.24]} rotation={[0.04, 0.18, -0.11]} scale={[0.48, 0.92, 0.72]} color="#3c392f" metalness={0.01} roughness={0.96} depth={0.34} />
+    <ExtrudedBody name={`home-v78-${destination}-starboard-rock-lip`} points={PORTAL_STARBOARD_CHEEK} position={[0.34, 1.28, -0.34]} rotation={[-0.02, -0.22, 0.14]} scale={[0.42, 0.78, 0.64]} color="#303a34" metalness={0.01} roughness={0.94} depth={0.30} />
+    <ExtrudedBody name={`home-v78-${destination}-broken-sill`} points={PORTAL_THRESHOLD} position={[-0.10, 0.18, -0.08]} rotation={[-Math.PI / 2, 0.16, -0.07]} scale={[0.56, 0.78, 0.72]} color="#39372f" metalness={0.01} roughness={0.94} depth={0.14} />
     <Conduit name={`home-v76-${destination}-luminous-service-seam`} points={[
       [-0.72, 0.28, 0.12],
       [-0.64, 1.24, 0.10],
@@ -405,28 +457,16 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
       <boxGeometry args={[1.56, 2.62, 0.08]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
-    <pointLight position={[-0.18, 1.54, 0.48]} color={tone} intensity={0.46} distance={3.8} decay={2} />
+    <pointLight position={[-0.18, 1.54, 0.48]} color={tone} intensity={0.72} distance={4.6} decay={2} />
   </group>
 }
 
 function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
-  const apertureMaterial = useRef<THREE.MeshPhysicalMaterial>(null)
-  const portArmor = useCurvedArmorGeometry('port')
-  const starboardArmor = useCurvedArmorGeometry('starboard')
-  const aperture = useVerticalApertureGeometry()
-
-  useFrame(({ clock }) => {
-    if (apertureMaterial.current) {
-      const active = state === 'dormant' ? 0.72 : state === 'warning' ? 1.52 : 1.12
-      apertureMaterial.current.emissiveIntensity = reducedMotion ? active : active + Math.sin(clock.elapsedTime * 0.72) * 0.12
-    }
-  })
-
   return <group
     name="home-v76-apse-embedded-orb-relic-machine"
     onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }}
     userData={{
-      treatment: 'v76-curved-load-bearing-relic-machine',
+      treatment: 'v78-open-apse-rooted-memory-swarm',
       governedOrbIdentity: GOVERNED_ORB,
       orbState: state,
       noSphere: true,
@@ -434,63 +474,29 @@ function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduc
       connectedLoadPaths: true,
     }}
   >
-    <ExtrudedBody name="home-v76-machine-rear-bearing-plate" points={[
-      [-2.22, -1.84], [1.62, -2.12], [2.34, -0.46], [1.74, 1.46], [0.62, 2.18], [-1.54, 1.82], [-2.46, 0.42],
-    ]} position={[-0.42, 2.46, -11.72]} rotation={[0.02, -0.02, -0.035]} scale={[1.08, 1.04, 1]} depth={0.46} color="#1f2824" metalness={0.16} roughness={0.78} />
-    <mesh name="home-v76-port-curved-armor" geometry={portArmor} position={[-0.56, 2.50, -10.98]} rotation={[0.04, -0.12, -0.12]} scale={[1.08, 1.02, 1.0]} castShadow receiveShadow>
-      <meshPhysicalMaterial color="#493f34" roughness={0.76} metalness={0.18} clearcoat={0.02} clearcoatRoughness={0.88} envMapIntensity={0.54} side={THREE.DoubleSide} />
-    </mesh>
-    <mesh name="home-v76-starboard-curved-armor" geometry={starboardArmor} position={[0.34, 2.24, -10.92]} rotation={[-0.03, 0.16, 0.17]} scale={[0.88, 0.92, 0.96]} castShadow receiveShadow>
-      <meshPhysicalMaterial color="#2d3c35" roughness={0.72} metalness={0.22} clearcoat={0.03} clearcoatRoughness={0.84} envMapIntensity={0.56} side={THREE.DoubleSide} />
-    </mesh>
-    <mesh name="home-v76-machine-aperture-recess" geometry={aperture} position={[-0.18, 2.56, -10.24]} rotation={[0.02, -0.04, -0.10]} scale={[0.92, 0.86, 0.72]} castShadow>
-      <meshPhysicalMaterial color="#0b100e" roughness={0.68} metalness={0.24} envMapIntensity={0.32} />
-    </mesh>
-    <mesh name="home-v76-machine-vertical-aperture" geometry={aperture} position={[-0.16, 2.56, -10.12]} rotation={[0.02, -0.04, -0.10]} scale={[0.18, 0.62, 0.36]}>
-      <meshPhysicalMaterial ref={apertureMaterial} color="#d8bd86" emissive="#b0783d" emissiveIntensity={1.0} roughness={0.38} metalness={0.05} clearcoat={0.04} toneMapped={false} />
-    </mesh>
-    {ORB_MEMORY_SHARDS.map((shard) => <ExtrudedBody
-      key={shard.id}
-      name={`home-v77-orb-memory-shard-${shard.id}`}
-      points={shard.points}
-      position={shard.position}
-      rotation={shard.rotation}
-      scale={shard.scale}
-      depth={0.22}
-      color={shard.color}
-      metalness={0.20}
-      roughness={0.72}
-    />)}
-    <ExtrudedBody name="home-v76-machine-floor-cradle" points={[
-      [-2.34, -0.62], [1.72, -0.84], [2.10, 0.10], [0.82, 0.54], [-0.58, 0.40], [-1.92, 0.68],
-    ]} position={[-0.28, 0.01, -10.48]} rotation={[-Math.PI / 2, 0.08, -0.03]} scale={[1.04, 1, 1]} depth={0.18} color="#2b302a" metalness={0.12} roughness={0.82} />
-    <ExtrudedBody name="home-v76-machine-crown-crosshead" points={[
-      [-2.02, -0.30], [1.54, -0.42], [1.88, 0.06], [0.68, 0.48], [-0.84, 0.38], [-1.72, 0.56],
-    ]} position={[-0.48, 4.62, -11.10]} rotation={[0.02, -0.05, -0.09]} depth={0.38} color="#403b31" metalness={0.18} roughness={0.76} />
-    <ExtrudedBody name="home-v77-port-apse-coupling" points={[
-      [-1.34, -0.58], [0.84, -0.82], [1.18, 0.24], [0.14, 0.72], [-1.08, 0.48],
-    ]} position={[-2.42, 2.10, -11.36]} rotation={[0.02, 0.10, 0.22]} depth={0.34} color="#353129" metalness={0.10} roughness={0.84} />
-    <ExtrudedBody name="home-v77-starboard-apse-coupling" points={[
-      [-0.86, -0.42], [1.18, -0.64], [1.42, 0.18], [0.32, 0.58], [-0.68, 0.42],
-    ]} position={[2.10, 1.62, -11.46]} rotation={[-0.02, -0.12, -0.16]} scale={[0.86, 0.86, 1]} depth={0.28} color="#29352f" metalness={0.12} roughness={0.82} />
-    <Conduit name="home-v76-port-apse-load-feed" points={[
-      [-4.28, 0.82, -11.44], [-3.54, 1.08, -11.54], [-2.74, 1.72, -11.42], [-1.38, 2.88, -11.04],
-    ]} radius={0.075} color="#493f34" />
-    <Conduit name="home-v76-starboard-apse-load-feed" points={[
-      [4.10, 1.78, -11.32], [3.18, 1.62, -11.48], [2.42, 2.14, -11.34], [0.98, 2.30, -10.98],
-    ]} radius={0.065} color="#33443b" />
-    <Conduit name="home-v76-port-floor-keel-feed" points={[
-      [-3.14, 0.04, -8.42], [-2.62, 0.05, -9.06], [-1.84, 0.08, -9.88], [-0.92, 0.12, -10.36],
-    ]} radius={0.055} color="#3b433a" />
-    <Conduit name="home-v76-starboard-floor-keel-feed" points={[
-      [2.82, 0.04, -9.18], [2.20, 0.06, -9.68], [1.44, 0.10, -10.06], [0.82, 0.16, -10.34],
-    ]} radius={0.045} color="#465047" />
-    <mesh name="home-v76-orb-interaction-volume" position={[-0.18, 2.42, -10.40]}>
+    <Conduit name="home-v78-port-floor-root" points={[
+      [-4.88, 0.02, -6.82], [-4.10, 0.12, -8.18], [-3.14, 0.54, -9.44], [-2.04, 1.72, -9.58], [-1.30, 2.44, -9.12],
+    ]} radius={0.13} color="#584b39" />
+    <Conduit name="home-v78-starboard-floor-root" points={[
+      [4.42, 0.02, -7.42], [3.74, 0.10, -8.72], [2.92, 0.68, -9.72], [1.90, 1.86, -9.46], [0.98, 2.54, -9.02],
+    ]} radius={0.11} color="#405248" />
+    <Conduit name="home-v78-vault-suspension-root" points={[
+      [-3.82, 5.46, -10.22], [-2.92, 5.18, -9.74], [-2.22, 4.46, -9.26], [-1.42, 3.42, -8.98],
+    ]} radius={0.085} color="#66523b" />
+    <Conduit name="home-v78-apse-signal-root" points={[
+      [3.92, 4.78, -10.46], [3.18, 4.40, -9.82], [2.46, 3.72, -9.34], [1.28, 3.18, -8.98],
+    ]} radius={0.065} color="#4a655a" />
+    <ExtrudedBody name="home-v78-port-root-anchor" points={[
+      [-0.72, -1.22], [0.48, -1.04], [0.76, 0.42], [0.16, 1.36], [-0.52, 0.78],
+    ]} position={[-2.54, 1.14, -9.92]} rotation={[0.24, 0.46, -0.38]} scale={[0.72, 1.18, 0.82]} depth={0.34} color="#4b4134" metalness={0.04} roughness={0.90} />
+    <ExtrudedBody name="home-v78-starboard-root-anchor" points={[
+      [-0.52, -0.92], [0.58, -1.18], [0.68, 0.46], [0.02, 1.18], [-0.68, 0.32],
+    ]} position={[2.42, 1.42, -10.02]} rotation={[-0.18, -0.42, 0.34]} scale={[0.62, 1.02, 0.74]} depth={0.28} color="#37483f" metalness={0.04} roughness={0.90} />
+    <OrbPresence state={state} reducedMotion={reducedMotion} />
+    <mesh name="home-v78-orb-interaction-volume" position={[-0.34, 2.72, -8.86]}>
       <boxGeometry args={[3.62, 4.12, 1.48]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
-    <pointLight position={[-0.26, 2.54, -9.72]} color="#c9aa76" intensity={state === 'dormant' ? 0.34 : 0.72} distance={4.8} decay={2} />
-    <pointLight position={[-1.52, 3.92, -10.10]} color="#d29a58" intensity={0.48} distance={4.0} decay={2} />
   </group>
 }
 
