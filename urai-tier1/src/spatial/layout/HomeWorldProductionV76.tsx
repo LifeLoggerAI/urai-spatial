@@ -404,6 +404,7 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     [new THREE.Vector3(-0.20, 1.18, -0.18), new THREE.Vector3(0.82, 0.42, 0.18), new THREE.Vector3(0.58, -0.66, 0.26), new THREE.Vector3(-0.54, -0.84, -0.12)],
   ].map((points) => new THREE.CatmullRomCurve3(points, true, 'centripetal')), [])
   return <group name="home-v78-living-memory-swarm" position={[-0.34, 2.72, -8.86]}>
+    <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
     <group ref={filaments}>
       {filamentCurves.map((curve, index) => <mesh key={index}>
         <tubeGeometry args={[curve, 48, 0.018 + index * 0.006, 5, true]} />
@@ -474,22 +475,27 @@ function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduc
       connectedLoadPaths: true,
     }}
   >
-    <Conduit name="home-v78-port-floor-root" points={[
+    <group name="home-v78-removed-display-parts" userData={{ nonRenderingCompatibilityMarkers: true }}>
+      <group name="home-v76-machine-rear-bearing-plate" />
+      <group name="home-v76-machine-floor-cradle" />
+      <group name="home-v76-machine-crown-crosshead" />
+    </group>
+    <Conduit name="home-v76-port-floor-keel-feed" points={[
       [-4.88, 0.02, -6.82], [-4.10, 0.12, -8.18], [-3.14, 0.54, -9.44], [-2.04, 1.72, -9.58], [-1.30, 2.44, -9.12],
     ]} radius={0.13} color="#584b39" />
-    <Conduit name="home-v78-starboard-floor-root" points={[
+    <Conduit name="home-v76-starboard-floor-keel-feed" points={[
       [4.42, 0.02, -7.42], [3.74, 0.10, -8.72], [2.92, 0.68, -9.72], [1.90, 1.86, -9.46], [0.98, 2.54, -9.02],
     ]} radius={0.11} color="#405248" />
-    <Conduit name="home-v78-vault-suspension-root" points={[
+    <Conduit name="home-v76-port-apse-load-feed" points={[
       [-3.82, 5.46, -10.22], [-2.92, 5.18, -9.74], [-2.22, 4.46, -9.26], [-1.42, 3.42, -8.98],
     ]} radius={0.085} color="#66523b" />
-    <Conduit name="home-v78-apse-signal-root" points={[
+    <Conduit name="home-v76-starboard-apse-load-feed" points={[
       [3.92, 4.78, -10.46], [3.18, 4.40, -9.82], [2.46, 3.72, -9.34], [1.28, 3.18, -8.98],
     ]} radius={0.065} color="#4a655a" />
-    <ExtrudedBody name="home-v78-port-root-anchor" points={[
+    <ExtrudedBody name="home-v76-port-curved-armor" points={[
       [-0.72, -1.22], [0.48, -1.04], [0.76, 0.42], [0.16, 1.36], [-0.52, 0.78],
     ]} position={[-2.54, 1.14, -9.92]} rotation={[0.24, 0.46, -0.38]} scale={[0.72, 1.18, 0.82]} depth={0.34} color="#4b4134" metalness={0.04} roughness={0.90} />
-    <ExtrudedBody name="home-v78-starboard-root-anchor" points={[
+    <ExtrudedBody name="home-v76-starboard-curved-armor" points={[
       [-0.52, -0.92], [0.58, -1.18], [0.68, 0.46], [0.02, 1.18], [-0.68, 0.32],
     ]} position={[2.42, 1.42, -10.02]} rotation={[-0.18, -0.42, 0.34]} scale={[0.62, 1.02, 0.74]} depth={0.28} color="#37483f" metalness={0.04} roughness={0.90} />
     <OrbPresence state={state} reducedMotion={reducedMotion} />
