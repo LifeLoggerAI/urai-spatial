@@ -12,7 +12,6 @@ const HOME_HDR = '/assets/urai/home-production/cc0/environment/studio-small-08-1
 const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'
 const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'
 const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'
-const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'
 
 type Vec3 = readonly [number, number, number]
 type TextureSet = { color: THREE.Texture; normal: THREE.Texture; arm: THREE.Texture }
@@ -27,7 +26,7 @@ function useStoneTextures(): TextureSet {
   }, [armSource, colorSource, normalSource])
 }
 
-function prepareAsset(source: THREE.Object3D, span: number, mode: 'rock' | 'metal' | 'light') {
+function prepareAsset(source: THREE.Object3D, span: number, mode: 'rock' | 'metal') {
   const root = source.clone(true)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
@@ -49,7 +48,7 @@ function prepareAsset(source: THREE.Object3D, span: number, mode: 'rock' | 'meta
   root.position.sub(center); root.scale.setScalar(span / Math.max(size.x, size.y, size.z, 0.001)); return root
 }
 
-function ProductionAsset({ url, name, position, rotation = [0, 0, 0], scale = [1, 1, 1], span, mode }: { url: string; name: string; position: Vec3; rotation?: Vec3; scale?: Vec3; span: number; mode: 'rock' | 'metal' | 'light' }) {
+function ProductionAsset({ url, name, position, rotation = [0, 0, 0], scale = [1, 1, 1], span, mode }: { url: string; name: string; position: Vec3; rotation?: Vec3; scale?: Vec3; span: number; mode: 'rock' | 'metal' }) {
   const gltf = useGLTF(url); const model = useMemo(() => prepareAsset(gltf.scene, span, mode), [gltf.scene, mode, span])
   return <group name={name} position={position as [number, number, number]} rotation={rotation as [number, number, number]} scale={scale as [number, number, number]} userData={{ productionAsset: url, retainedPixelAuthority: 'v74' }}><primitive object={model} /></group>
 }
@@ -146,9 +145,11 @@ function V74Scene({ reducedMotion }: { reducedMotion: boolean }) {
     </group>
     <group name="home-v74-integrated-services">
       <ProductionAsset url={PIPE_SYSTEM} name="home-v74-port-service-manifold" position={[-3.16, 1.36, -8.68]} rotation={[0.08, 0.42, 0.04]} scale={[0.66, 0.80, 0.62]} span={2.0} mode="metal" /><ProductionAsset url={PIPE_SYSTEM} name="home-v74-starboard-service-manifold" position={[3.34, 1.66, -8.96]} rotation={[-0.06, -0.36, -0.04]} scale={[0.62, 0.76, 0.62]} span={1.9} mode="metal" />
-      <ProductionAsset url={CAGED_SCONCE} name="home-v74-port-practical" position={[-2.82, 2.70, -9.78]} rotation={[0, 0.28, 0]} span={0.64} mode="light" /><ProductionAsset url={CAGED_SCONCE} name="home-v74-starboard-practical" position={[2.88, 2.44, -9.92]} rotation={[0, -0.26, 0]} span={0.60} mode="light" />
       <TaperedMember name="home-v74-port-midground-load-rib" position={[-3.26, 2.22, -6.82]} rotation={[0.10, -0.14, -0.34]} scale={[0.30, 1.48, 0.42]} color="#33433b" /><TaperedMember name="home-v74-starboard-midground-load-rib" position={[3.54, 2.04, -7.40]} rotation={[-0.08, 0.12, 0.30]} scale={[0.28, 1.36, 0.40]} color="#2d4037" />
       <TaperedMember name="home-v74-port-overhead-service-rib" position={[-1.76, 4.54, -8.28]} rotation={[0.10, 0.16, 1.12]} scale={[0.22, 1.30, 0.36]} color="#455047" /><TaperedMember name="home-v74-starboard-overhead-service-rib" position={[1.94, 4.30, -8.74]} rotation={[-0.08, -0.14, -1.04]} scale={[0.22, 1.24, 0.36]} color="#39473f" />
+      <mesh name="home-v74-port-integrated-practical" position={[-2.82, 2.70, -9.70]} castShadow><cylinderGeometry args={[0.10, 0.13, 0.42, 10]} /><meshPhysicalMaterial color="#5a5245" emissive="#c28c52" emissiveIntensity={0.42} roughness={0.48} metalness={0.46} /></mesh>
+      <mesh name="home-v74-starboard-integrated-practical" position={[2.88, 2.44, -9.82]} castShadow><cylinderGeometry args={[0.10, 0.13, 0.42, 10]} /><meshPhysicalMaterial color="#46564f" emissive="#7fa99b" emissiveIntensity={0.34} roughness={0.50} metalness={0.44} /></mesh>
+      <pointLight position={[-2.82, 2.52, -9.35]} color="#d5a15f" intensity={0.62} distance={3.8} decay={2} /><pointLight position={[2.88, 2.28, -9.46]} color="#86ad9f" intensity={0.48} distance={3.6} decay={2} />
     </group>
     <RelicMachine /><TrapezoidThreshold name="home-v74-ground-service-threshold" position={[-4.34, 1.32, -10.36]} rotation={[0.02, 0.22, 0.02]} tone="#8cae8f" textures={textures} /><TrapezoidThreshold name="home-v74-life-map-service-threshold" position={[4.38, 1.34, -10.42]} rotation={[-0.02, -0.20, -0.02]} tone="#98a8cf" textures={textures} /><DustField reducedMotion={reducedMotion} />
   </>
@@ -160,4 +161,4 @@ export function HomeV74RetainedPixelWorld() {
   return <div aria-hidden="true" data-home-v74-retained-pixel-world="photogrammetry-relic-sanctuary" data-home-v74-reduced-motion={reducedMotion ? 'true' : 'false'} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 4, background: '#07100e' }}><Canvas dpr={1} shadows camera={{ position: [0, 1.58, 4.6], fov: 45, near: 0.1, far: 120 }} gl={{ alpha: false, antialias: true, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.46; gl.shadowMap.type = THREE.PCFSoftShadowMap }}><V74Scene reducedMotion={reducedMotion} /></Canvas></div>
 }
 
-useGLTF.preload(ROCK_FACE_A); useGLTF.preload(ROCK_FACE_B); useGLTF.preload(PIPE_SYSTEM); useGLTF.preload(CAGED_SCONCE)
+useGLTF.preload(ROCK_FACE_A); useGLTF.preload(ROCK_FACE_B); useGLTF.preload(PIPE_SYSTEM)
