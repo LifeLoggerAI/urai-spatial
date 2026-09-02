@@ -96,11 +96,22 @@ contains(".github/workflows/spatial-production-lock.yml", "pnpm runtime:authorit
 contains("urai-tier1/scripts/tier-lock/tier-config.mjs", "{ route: '/ascent'", "ascent route tier coverage");
 
 for (const envName of [
-  "FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL",
   "URAI_SPATIAL_FIREBASE_PROJECT_ID",
   "URAI_SPATIAL_FIREBASE_WEB_CONFIG"
 ]) {
-  if (!process.env[envName]) warnings.push(`Environment secret not present in this runtime: ${envName}`);
+  if (!process.env[envName]) warnings.push(`Environment configuration not present in this runtime: ${envName}`);
+}
+
+for (const forbidden of [
+  "FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL",
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+  "FIREBASE_PRIVATE_KEY",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_TOKEN"
+]) {
+  if (String(process.env[forbidden] || "").trim()) {
+    failures.push(`Long-lived Google/Firebase credential variable is prohibited: ${forbidden}`);
+  }
 }
 
 if (warnings.length) {
