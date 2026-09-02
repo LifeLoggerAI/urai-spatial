@@ -122,7 +122,10 @@ test('direct Focus entry remains a truthful neutral observatory and never mounts
 test('Focus retains adaptive quality, reduced motion, visibility pausing, and WebGL fallback', () => {
   assert.match(focus, /useAdaptiveSpatialQuality/)
   assert.match(focus, /profile\.pixelRatioMax/)
-  assert.match(focus, /profile\.documentVisible \? 'always' : 'never'/)
+  assert.match(focus, /profile\.documentVisible \? 'demand' : 'never'/)
+  assert.match(focus, /function FocusRenderCadence/)
+  assert.match(focus, /setFrameloop\('always'\)/)
+  assert.match(focus, /setFrameloop\('never'\)/)
   assert.match(focus, /useWebGLAvailable/)
   assert.match(focus, /Spatial view unavailable/)
   assert.match(focus, /profile\.reducedMotion/)
