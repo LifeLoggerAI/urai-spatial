@@ -73,7 +73,7 @@ test('V76 Orb is a curved load-bearing apse machine with connected service paths
   assert.doesNotMatch(art, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
-test('V101 combines governed thresholds with the repaired open physical PBR sanctuary', () => {
+test('V102 combines governed thresholds with aligned Orb rendering and proximity authority', () => {
   for (const marker of [
     'home-v83-governed-open-sanctuary-environment',
     'home-v83-authored-open-sanctuary',
@@ -88,6 +88,9 @@ test('V101 combines governed thresholds with the repaired open physical PBR sanc
   assert.match(art, /root\.position\.set\(0, -0\.16, -8\.2\)/)
   assert.match(art, /root\.scale\.setScalar\(0\.70\)/)
   assert.match(art, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
+  assert.match(art, /swarm\.current\.scale\.setScalar\(1\.90 \* breath\)/)
+  assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.28, 2\.48, -6\.18\)/)
+  assert.match(owner, /const HOME_ORB = \{ x: -0\.28, z: -6\.18 \} as const/)
   const liveComposition = art.slice(art.indexOf('export function HomeV76Sanctuary'))
   const sanctuaryBackdrop = art.slice(art.indexOf('function SanctuaryBackdrop'), art.indexOf('function GovernedHomeEnvironment'))
   assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*<VaultShell[\s\S]*<CantedWall[\s\S]*<DeepApse[\s\S]*<BearingRib/)

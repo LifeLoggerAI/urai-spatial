@@ -23,7 +23,7 @@ const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb
 const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 
 const SPAWN = new THREE.Vector3(0, 0.04, 4.6)
-const ORB = new THREE.Vector3(0, 2.18, -9.1)
+const ORB = new THREE.Vector3(-0.28, 2.48, -6.18)
 const GROUND = new THREE.Vector3(-4.85, 0, -8.25)
 const LIFE_MAP = new THREE.Vector3(4.85, 0, -8.25)
 const GROUND_PORTAL = new THREE.Vector3(-4.48, 0, -10.72)

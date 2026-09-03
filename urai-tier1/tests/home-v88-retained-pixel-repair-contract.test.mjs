@@ -61,7 +61,7 @@ test('V88 retains the petal-and-heart Orb and real interaction volume', () => {
   assert.match(world, /onClick=\{\(event: ThreeEvent<MouseEvent>\)/)
 })
 
-test('V101 removes rejected portal and rock repetition while restoring Orb hierarchy', () => {
+test('V102 preserves the V101 composition while retaining authored Orb scale at runtime', () => {
   assert.match(world, /rejectedUtilityDetail = \/\(\?:pipe\|tube\|conduit\|duct\|cable\)\/i/)
   assert.match(world, /home-v101-removed-entrance-rock-clutter/)
   assert.match(world, /home-v101-\$\{destination\}-foreground-portal-frame-removed/)
@@ -70,6 +70,8 @@ test('V101 removes rejected portal and rock repetition while restoring Orb hiera
   assert.doesNotMatch(world, /<ProductionAsset[^>]*entry-buttress/)
   assert.match(world, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
   assert.match(world, /scale=\{\[1\.90, 1\.90, 1\.90\]\}/)
+  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.90 \* breath\)/)
+  assert.match(world, /v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned'/)
   assert.match(world, /home-v101-\$\{destination\}-embedded-wayfinding-inlay/)
   assert.match(world, /successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds'/)
 })

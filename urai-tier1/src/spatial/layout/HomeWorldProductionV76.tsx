@@ -580,9 +580,9 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     swarm.current.rotation.y = Math.sin(clock.elapsedTime * 0.34 * urgency) * 0.22
     swarm.current.rotation.z = Math.sin(clock.elapsedTime * 0.21 * urgency) * 0.07
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
-    swarm.current.scale.setScalar(breath)
+    swarm.current.scale.setScalar(1.90 * breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.28, 2.48, -6.18]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage', v101Composition: 'foreground-legible-living-presence' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.28, 2.48, -6.18]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage', v101Composition: 'foreground-legible-living-presence', v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
     <group ref={swarm} scale={[1.90, 1.90, 1.90]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
