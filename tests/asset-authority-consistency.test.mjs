@@ -93,3 +93,36 @@ test('route-consumption accepts the governed runtime resolver id in the active o
     fs.rmSync(root, { recursive: true, force: true })
   }
 })
+
+
+test('pending human constructors participate in runtime authority checks', () => {
+  const humanAsset = {
+    id: 'home-human-makehuman-v4',
+    fixedPath: 'public/human-makehuman-v4/home-human-makehuman-v4.glb',
+    releaseState: 'pending-final-review',
+  }
+  const runtimeManifestSource = `
+    const finalGlb = () => ({ status: 'candidate' })
+    const pendingHuman = () => ({ status: 'ready' })
+    export const uraiSpatialAssetManifest = [
+      pendingHuman('home-human-makehuman-v4', 'Home Human', 'home-human-makehuman-v4.glb', 'home')
+    ]
+  `
+  const errors = canonicalRuntimeStatusErrors({
+    canonicalAssets: [humanAsset],
+    runtimeManifestSource,
+    promotionStateSource: 'export const uraiPromotedAssetIds = new Set<string>([])',
+  })
+  assert.equal(errors.length, 1)
+  assert.match(errors[0], /canonical pending asset is runtime-ready/)
+})
+
+test('production audio alias remains bound to canonical pending authority', () => {
+  const audioAsset = { id: 'urai-ambient-bed-v1', releaseState: 'pending-final-review' }
+  const errors = sensoryRuntimeStatusErrors({
+    canonicalAssets: [audioAsset],
+    sensoryManifestSource: `ambientAudio: { id: 'production-spatial-audio-v1', status: 'ready' }`,
+  })
+  assert.equal(errors.length, 1)
+  assert.match(errors[0], /urai-ambient-bed-v1: canonical pending sensory asset is runtime-ready/)
+})
