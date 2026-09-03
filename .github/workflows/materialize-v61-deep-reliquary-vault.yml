@@ -1,12 +1,7 @@
 name: Materialize V61 Deep Reliquary Vault
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v61-deep-reliquary-vault.py
-      - .github/workflows/materialize-v61-deep-reliquary-vault.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
