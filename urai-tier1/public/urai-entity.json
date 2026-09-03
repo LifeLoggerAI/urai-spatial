@@ -6,8 +6,10 @@
     "product": {
       "name": "UrAi",
       "capitalization": "UrAi",
+      "currentTechnicalAliases": [
+        "URAI"
+      ],
       "legacyTechnicalAliases": [
-        "URAI",
         "URAI Spatial"
       ],
       "type": "product",
