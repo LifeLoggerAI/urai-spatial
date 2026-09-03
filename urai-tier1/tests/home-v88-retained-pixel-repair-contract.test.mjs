@@ -19,11 +19,21 @@ test('V95 replaces rings and foreground occluders with human-scale integrated th
   assert.doesNotMatch(world, /<ringGeometry/)
   assert.match(world, /v95-architectural-rock-cut-threshold-no-ring-marker/)
   assert.match(world, /home-v95-\$\{destination\}-threshold-lintel/)
-  assert.match(world, /scale=\{\[0\.78, 0\.78, 0\.78\]\}/)
+  assert.match(world, /scale=\{\[1\.06, 1\.06, 1\.06\]\}/)
   assert.match(world, /home-v96-\$\{destination\}-recess-depth/)
   assert.match(world, /home-v97-\$\{destination\}-(?:port|starboard)-(?:lower|shoulder)-masonry/)
   assert.match(world, /home-v97-\$\{destination\}-floor-integrated-guidance/)
   assert.doesNotMatch(world, /home-v93-(?:port|starboard)-foreground-rock-mass/)
+})
+
+test('V98 replaces the rejected cave room and flat portal cards with open dimensional architecture', () => {
+  assert.match(world, /home-v98-open-canyon-sanctuary-architecture/)
+  assert.match(world, /home-v98-open-atmospheric-depth/)
+  assert.match(world, /home-v98-terraced-navigable-ground/)
+  assert.match(world, /home-v98-\$\{destination\}-single-connected-rock-cut-frame/)
+  assert.match(world, /home-v98-\$\{destination\}-volumetric-threshold-depth/)
+  assert.doesNotMatch(world, /<mesh name=\{`home-v95-\$\{destination\}-recess-veil`\}/)
+  assert.doesNotMatch(world, /new THREE\.TubeGeometry\(curve, 56, 0\.026/)
 })
 
 test('V93 removes the sphere shell and temporary industrial overlay composition', () => {

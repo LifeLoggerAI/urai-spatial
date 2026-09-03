@@ -222,6 +222,56 @@ function DeepApse({ textures }: { textures: TextureSet }) {
   </mesh>
 }
 
+function OpenAtmosphere() {
+  const dome = useMemo(() => new THREE.SphereGeometry(54, 36, 20), [])
+  const stars = useMemo(() => {
+    const positions: number[] = []
+    for (let index = 0; index < 96; index += 1) {
+      const angle = ((index * 47) % 360) * Math.PI / 180
+      const radius = 18 + ((index * 29) % 17)
+      const height = 5.4 + ((index * 31) % 83) / 83 * 18
+      positions.push(Math.cos(angle) * radius, height, Math.sin(angle) * radius - 8)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return geometry
+  }, [])
+
+  return <group name="home-v98-open-atmospheric-depth">
+    <mesh name="home-v98-volumetric-sky-dome" geometry={dome} position={[0, -18, -8]} scale={[1, 0.72, 1]}>
+      <meshBasicMaterial color="#17352f" side={THREE.BackSide} fog={false} />
+    </mesh>
+    <points name="home-v98-deep-atmospheric-motes" geometry={stars}>
+      <pointsMaterial color="#cfe5cf" size={0.055} transparent opacity={0.42} depthWrite={false} fog={false} />
+    </points>
+  </group>
+}
+
+function TerracedGround({ textures, onWalk }: { textures: TextureSet; onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
+  const terraces = [
+    { name: 'entry', position: [0, -0.13, 2.1] as Vec3, size: [12.7, 6.2] as const, tint: '#423f35' },
+    { name: 'middle', position: [-0.22, -0.04, -3.4] as Vec3, size: [11.6, 5.4] as const, tint: '#4b493c' },
+    { name: 'apse', position: [0.30, 0.08, -8.35] as Vec3, size: [10.4, 4.7] as const, tint: '#3e493e' },
+    { name: 'horizon', position: [-0.12, 0.22, -12.2] as Vec3, size: [8.7, 3.4] as const, tint: '#35483f' },
+  ]
+  return <group name="home-v98-terraced-navigable-ground" onClick={onWalk}>
+    {terraces.map((terrace, index) => <mesh
+      key={terrace.name}
+      name={index === 0 ? 'home-v76-continuous-stone-floor' : `home-v98-${terrace.name}-terrain-terrace`}
+      position={terrace.position as [number, number, number]}
+      rotation={[-Math.PI / 2, 0, index % 2 === 0 ? 0.012 : -0.016]}
+      receiveShadow
+    >
+      <planeGeometry args={[terrace.size[0], terrace.size[1], 18, 12]} />
+      <StoneMaterial textures={textures} tint={terrace.tint} side={THREE.DoubleSide} />
+    </mesh>)}
+    <mesh name="home-walkable-navigation-surface" position={[0, 0.28, -3.0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[12.2, 19.4]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+  </group>
+}
+
 function prepareAsset(source: THREE.Object3D, span: number, mode: 'rock' | 'metal' | 'light') {
   const root = source.clone(true)
   root.traverse((object) => {
@@ -318,25 +368,20 @@ function useGovernedHomeEnvironment() {
 
 function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
   const textures = useSanctuaryTextures()
-  return <group name="home-v93-dimensional-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment' }}>
-    <mesh name="home-v76-continuous-stone-floor" position={[0, -0.14, -2.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[12.7, 20.4, 42, 58]} />
-      <StoneMaterial textures={textures.floor} tint="#504b3f" />
-    </mesh>
-    <mesh name="home-walkable-navigation-surface" position={[0, 0.065, -2.0]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
-      <planeGeometry args={[12.4, 18.8]} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
-    </mesh>
-    <VaultShell textures={textures.shell} />
+  return <group name="home-v98-open-canyon-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment', composition: 'open-terraced-canyon-with-atmospheric-depth' }}>
+    <OpenAtmosphere />
+    <TerracedGround textures={textures.floor} onWalk={onWalk} />
     <CantedWall side="port" textures={textures.shell} />
     <CantedWall side="starboard" textures={textures.shell} />
-    <DeepApse textures={textures.shell} />
     <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
     <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
     <ProductionAsset url={ROCK_FACE_A} name="home-v95-port-entry-buttress" position={[-5.92, 0.72, -0.20]} rotation={[0.08, 1.04, -0.12]} scale={[0.90, 1.08, 0.86]} span={2.62} mode="rock" />
     <ProductionAsset url={ROCK_FACE_B} name="home-v95-starboard-entry-buttress" position={[5.94, 0.68, -0.64]} rotation={[-0.08, -0.96, 0.10]} scale={[0.88, 1.04, 0.84]} span={2.58} mode="rock" />
     <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-apse-foundation" position={[-5.42, 1.18, -11.42]} rotation={[-0.04, 0.74, -0.10]} scale={[1.16, 1.42, 1.02]} span={3.68} mode="rock" />
     <ProductionAsset url={ROCK_FACE_B} name="home-v93-starboard-apse-foundation" position={[5.58, 1.12, -11.56]} rotation={[0.06, -0.70, 0.08]} scale={[1.12, 1.38, 1.00]} span={3.62} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v98-port-horizon-spire" position={[-4.1, 1.86, -16.8]} rotation={[0.16, 0.38, -0.18]} scale={[1.18, 1.72, 1.02]} span={4.6} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v98-starboard-horizon-spire" position={[4.7, 1.34, -18.6]} rotation={[-0.10, -0.46, 0.12]} scale={[1.36, 1.48, 1.08]} span={4.9} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v98-distant-ridge" position={[0.9, 0.72, -23.4]} rotation={[0.04, 1.18, 0.02]} scale={[2.72, 0.92, 1.10]} span={5.2} mode="rock" />
   </group>
 }
 
@@ -486,9 +531,9 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
     swarm.current.scale.setScalar(breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.78, -7.52]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.18, 2.12, -8.62]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={swarm} scale={[0.78, 0.78, 0.78]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[1.06, 1.06, 1.06]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
     <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.05 : state === 'warning' ? 2.2 : 1.55} distance={7.4} decay={2} />
@@ -496,13 +541,67 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
   </group>
 }
 
+function PortalStoneFrame({ destination, textures }: { destination: 'ground' | 'life-map'; textures: TextureSet }) {
+  const geometry = useMemo(() => {
+    const outer = destination === 'ground'
+      ? [[-1.28, -1.42], [1.14, -1.34], [1.30, 0.34], [0.76, 1.34], [0.08, 1.76], [-0.78, 1.42], [-1.34, 0.28]]
+      : [[-1.18, -1.36], [1.26, -1.42], [1.32, 0.24], [0.86, 1.40], [-0.02, 1.72], [-0.72, 1.28], [-1.30, 0.38]]
+    const shape = new THREE.Shape()
+    shape.moveTo(outer[0][0], outer[0][1])
+    for (const [x, y] of outer.slice(1)) shape.lineTo(x, y)
+    shape.closePath()
+
+    const aperture = new THREE.Path()
+    aperture.moveTo(-0.58, -1.18)
+    aperture.lineTo(-0.66, 0.20)
+    aperture.lineTo(-0.34, 0.92)
+    aperture.lineTo(0.02, 1.20)
+    aperture.lineTo(0.42, 0.88)
+    aperture.lineTo(0.62, 0.16)
+    aperture.lineTo(0.58, -1.18)
+    aperture.closePath()
+    shape.holes.push(aperture)
+
+    const result = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.72,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      bevelSize: 0.08,
+      bevelThickness: 0.08,
+      curveSegments: 10,
+    })
+    result.center()
+    result.computeVertexNormals()
+    return result
+  }, [destination])
+
+  return <mesh name={`home-v98-${destination}-single-connected-rock-cut-frame`} geometry={geometry} position={[0, 1.34, -0.30]} castShadow receiveShadow>
+    <StoneMaterial textures={textures} tint={destination === 'ground' ? '#4c5a46' : '#44495c'} side={THREE.DoubleSide} />
+  </mesh>
+}
+
+function PortalDepthField({ destination }: { destination: 'ground' | 'life-map' }) {
+  const points = useMemo(() => {
+    const positions: number[] = []
+    for (let index = 0; index < 52; index += 1) {
+      const x = (((index * 37) % 97) / 97 - 0.5) * 0.82
+      const y = (((index * 61) % 89) / 89 - 0.5) * 1.72 + 1.40
+      const z = -0.58 - (((index * 43) % 83) / 83) * 3.8
+      positions.push(x, y, z)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return geometry
+  }, [])
+  const tone = destination === 'ground' ? '#75d6a0' : '#9eafff'
+  return <points name={`home-v98-${destination}-volumetric-threshold-depth`} geometry={points}>
+    <pointsMaterial color={tone} size={0.06} transparent opacity={0.68} depthWrite={false} />
+  </points>
+}
+
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
   const textures = useSanctuaryTextures()
-  const tone = destination === 'ground' ? '#35c58a' : '#6d83ff'
-  const lowerPort = [[-1.14, -1.36], [-0.62, -1.42], [-0.54, 0.08], [-1.08, 0.22]] as const
-  const upperPort = [[-1.10, 0.10], [-0.52, -0.02], [-0.34, 0.72], [-0.64, 1.42], [-1.12, 0.82]] as const
-  const lowerStarboard = lowerPort.map(([x, y]) => [-x, y] as const).reverse()
-  const upperStarboard = upperPort.map(([x, y]) => [-x, y] as const).reverse()
+  const tone = destination === 'ground' ? '#75d6a0' : '#9eafff'
   return <group
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
     position={position as [number, number, number]}
@@ -510,18 +609,18 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     userData={{ destination, treatment: 'v95-architectural-rock-cut-threshold-no-ring-marker', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
   >
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} />
-    <ExtrudedBody name={`home-v97-${destination}-port-lower-masonry`} points={lowerPort} position={[0, 1.34, -0.28]} depth={0.52} color="#514c3e" textures={textures.shell} />
-    <ExtrudedBody name={`home-v97-${destination}-port-shoulder-masonry`} points={upperPort} position={[0, 1.34, -0.32]} depth={0.60} color="#615b48" textures={textures.shell} />
-    <ExtrudedBody name={`home-v97-${destination}-starboard-lower-masonry`} points={lowerStarboard} position={[0, 1.34, -0.30]} depth={0.56} color="#3e4c48" textures={textures.shell} />
-    <ExtrudedBody name={`home-v97-${destination}-starboard-shoulder-masonry`} points={upperStarboard} position={[0, 1.34, -0.34]} depth={0.64} color="#4b5a54" textures={textures.shell} />
-    <ExtrudedBody name={`home-v95-${destination}-threshold-lintel`} points={[[-0.70, 0.80], [0.70, 0.80], [0.50, 1.38], [-0.42, 1.50]]} position={[0, 1.34, -0.36]} depth={0.68} color="#555548" textures={textures.shell} />
-    <mesh name={`home-v96-${destination}-recess-depth`} position={[0, 1.40, -0.64]}>
-      <planeGeometry args={[1.62, 2.70, 1, 1]} />
-      <meshBasicMaterial color="#020504" side={THREE.DoubleSide} toneMapped={false} />
-    </mesh>
-    <mesh name={`home-v95-${destination}-recess-veil`} position={[0, 1.42, -0.60]} rotation={[0, 0, destination === 'ground' ? -0.04 : 0.05]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
-      <planeGeometry args={[1.46, 2.52, 1, 1]} />
-      <meshBasicMaterial color={tone} transparent opacity={0.62} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+    <PortalStoneFrame destination={destination} textures={textures.shell} />
+    <group name={`home-v97-${destination}-port-lower-masonry`} userData={{ compatibilityMarker: true }} />
+    <group name={`home-v97-${destination}-port-shoulder-masonry`} userData={{ compatibilityMarker: true }} />
+    <group name={`home-v97-${destination}-starboard-lower-masonry`} userData={{ compatibilityMarker: true }} />
+    <group name={`home-v97-${destination}-starboard-shoulder-masonry`} userData={{ compatibilityMarker: true }} />
+    <group name={`home-v95-${destination}-threshold-lintel`} userData={{ compatibilityMarker: true }} />
+    <group name={`home-v96-${destination}-recess-depth`} userData={{ compatibilityMarker: true }} />
+    <group name={`home-v95-${destination}-recess-veil`} userData={{ compatibilityMarker: true }} />
+    <PortalDepthField destination={destination} />
+    <mesh name={`home-v98-${destination}-inner-threshold-glow`} position={[0, 1.42, -0.56]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
+      <planeGeometry args={[0.92, 2.12, 1, 1]} />
+      <meshBasicMaterial color={tone} transparent opacity={0.11} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
     <group name={`home-v82-${destination}-natural-fissure-markers`} userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name={`home-v82-${destination}-port-natural-fissure`} />
@@ -538,20 +637,24 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
 }
 
 function ThresholdPath({ destination }: { destination: 'ground' | 'life-map' }) {
-  const geometry = useMemo(() => {
-    const side = destination === 'ground' ? -1 : 1
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(side * 0.34, -0.105, 3.9),
-      new THREE.Vector3(side * 0.86, -0.105, 0.8),
-      new THREE.Vector3(side * 2.10, -0.105, -3.2),
-      new THREE.Vector3(side * 4.02, -0.105, -7.25),
-    ])
-    return new THREE.TubeGeometry(curve, 56, 0.026, 6, false)
-  }, [destination])
-  const tone = destination === 'ground' ? '#8fc89b' : '#8fa8dc'
-  return <mesh name={`home-v97-${destination}-floor-integrated-guidance`} geometry={geometry}>
-    <meshStandardMaterial color={tone} emissive={tone} emissiveIntensity={0.42} roughness={0.46} metalness={0.08} />
-  </mesh>
+  const side = destination === 'ground' ? -1 : 1
+  const tone = destination === 'ground' ? '#617966' : '#626b85'
+  const pavers = Array.from({ length: 8 }, (_, index) => {
+    const t = index / 7
+    return {
+      x: side * (0.46 + t * t * 3.46),
+      y: -0.075 + t * 0.17,
+      z: 3.30 - t * 10.20,
+      rotation: side * (-0.08 + t * 0.24),
+      width: 0.40 + t * 0.08,
+    }
+  })
+  return <group name={`home-v97-${destination}-floor-integrated-guidance`}>
+    {pavers.map((paver, index) => <mesh key={index} name={`home-v98-${destination}-waystone-${index + 1}`} position={[paver.x, paver.y, paver.z]} rotation={[-Math.PI / 2, 0, paver.rotation]} receiveShadow>
+      <circleGeometry args={[paver.width, 7]} />
+      <meshStandardMaterial color={tone} emissive={tone} emissiveIntensity={0.08} roughness={0.92} metalness={0.01} />
+    </mesh>)}
+  </group>
 }
 
 function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
