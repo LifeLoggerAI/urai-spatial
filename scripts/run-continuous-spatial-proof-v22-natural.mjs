@@ -12,7 +12,7 @@ if (original.split(sourceOwner).length - 1 !== 1) {
 }
 
 const telemetryContracts = [
-  "orb: { x: -0.28, z: -6.18, radius: 2.35",
+  "orb: { x: -0.18, z: -6.90, radius: 2.35",
   "ground: { x: -4.85, z: -8.25, radius: 2.65",
   "'life-map': { x: 4.85, z: -8.25, radius: 2.65",
   "owner.getAttribute('data-home-assets-ready') === 'true'",
