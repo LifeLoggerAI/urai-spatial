@@ -4,22 +4,48 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx"
+      - "urai-tier1/src/app/AssetDrivenHomeWorld.tsx"
+      - "urai-tier1/src/app/FinalHomeWorld.tsx"
       - "urai-tier1/src/spatial/layout/HomeWorldProduction.tsx"
       - "urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx"
       - "urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProduction.module.css"
+      - "urai-tier1/src/spatial/world/GroundGateway.tsx"
+      - "urai-tier1/src/app/GroundSpatialWorldClean.tsx"
+      - "urai-tier1/src/app/ground/GroundWorldModel.ts"
+      - "urai-tier1/src/spatial/world/persistentRealmAtmosphere.css"
+      - "urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx"
+      - "urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx"
+      - "scripts/capture-continuous-spatial-proof-v18.mjs"
+      - "scripts/run-continuous-spatial-proof-v22-natural.mjs"
       - "urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs"
       - "urai-tier1/tests/home-relic-machine-realism-contract.test.mjs"
       - "urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs"
+      - ".github/workflows/home-finalization-candidate-commit.yml"
       - ".github/workflows/home-scanned-composition-forge.yml"
   push:
     branches: [main]
     paths:
+      - "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx"
+      - "urai-tier1/src/app/AssetDrivenHomeWorld.tsx"
+      - "urai-tier1/src/app/FinalHomeWorld.tsx"
       - "urai-tier1/src/spatial/layout/HomeWorldProduction.tsx"
       - "urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx"
       - "urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProduction.module.css"
+      - "urai-tier1/src/spatial/world/GroundGateway.tsx"
+      - "urai-tier1/src/app/GroundSpatialWorldClean.tsx"
+      - "urai-tier1/src/app/ground/GroundWorldModel.ts"
+      - "urai-tier1/src/spatial/world/persistentRealmAtmosphere.css"
+      - "urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx"
+      - "urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx"
+      - "scripts/capture-continuous-spatial-proof-v18.mjs"
+      - "scripts/run-continuous-spatial-proof-v22-natural.mjs"
       - "urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs"
       - "urai-tier1/tests/home-relic-machine-realism-contract.test.mjs"
       - "urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs"
+      - ".github/workflows/home-finalization-candidate-commit.yml"
       - ".github/workflows/home-scanned-composition-forge.yml"
   workflow_dispatch:
 permissions:
@@ -65,12 +91,15 @@ jobs:
           grep -Fq 'const ORB = new THREE.Vector3(-0.28, 2.48, -6.18)' "$runtime"
           grep -Fq "const inspectionClearance = nearby === 'orb' ? (portrait ? 2.80 : 2.40) : nearby ? (portrait ? 2.10 : 1.65) : 0.10" "$runtime"
 
-          ! grep -Eq '(root|object)\.visible[[:space:]]*=[[:space:]]*false' "$art"
+          ! grep -Eq '(root|object)\\.visible[[:space:]]*=[[:space:]]*false' "$art"
           ! grep -Fq 'PRODUCTION CERTIFIED' "$runtime"
           ! grep -Fq 'retained-pixel-pass' "$runtime"
           ! grep -Fq 'pixel-certified' "$runtime"
 
-          node --test \
-            urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs \
-            urai-tier1/tests/home-relic-machine-realism-contract.test.mjs \
-            urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs
+          (
+            cd urai-tier1
+            node --test \
+              tests/home-ground-lifemap-art-bible-contract.test.mjs \
+              tests/home-relic-machine-realism-contract.test.mjs \
+              tests/home-v88-retained-pixel-repair-contract.test.mjs
+          )
