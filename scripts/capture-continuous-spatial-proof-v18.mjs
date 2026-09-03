@@ -25,7 +25,7 @@ const orbModelClips = {
 }
 
 const destinationTelemetry = {
-  orb: { x: -0.28, z: -6.18, radius: 2.35, attribute: 'data-home-distance-orb' },
+  orb: { x: -0.18, z: -6.90, radius: 2.35, attribute: 'data-home-distance-orb' },
   ground: { x: -4.85, z: -8.25, radius: 2.65, attribute: 'data-home-distance-ground' },
   'life-map': { x: 4.85, z: -8.25, radius: 2.65, attribute: 'data-home-distance-life-map' },
 }
