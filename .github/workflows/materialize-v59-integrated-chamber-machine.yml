@@ -1,12 +1,7 @@
 name: Materialize V59 Integrated Chamber Machine
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v59-integrated-chamber-machine.py
-      - .github/workflows/materialize-v59-integrated-chamber-machine.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
