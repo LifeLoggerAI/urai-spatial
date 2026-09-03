@@ -125,7 +125,15 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
     camera.position.set(...DEFAULT_CAMERA)
     controls.current?.target.set(...DEFAULT_TARGET)
     controls.current?.update()
-  }, [camera, controls, recenterSignal])
+    const shell = shellRef.current
+    if (shell) {
+      shell.dataset.focusCameraX = camera.position.x.toFixed(3)
+      shell.dataset.focusCameraY = camera.position.y.toFixed(3)
+      shell.dataset.focusCameraZ = camera.position.z.toFixed(3)
+      shell.dataset.focusDistance = camera.position.distanceTo(defaultCamera).toFixed(3)
+      shell.dataset.focusMoving = 'false'
+    }
+  }, [camera, controls, defaultCamera, recenterSignal, shellRef])
 
   useFrame((_, delta) => {
     const moving = keys.current.size > 0
