@@ -35,6 +35,15 @@ function sha256(payload) {
   return crypto.createHash('sha256').update(payload).digest('hex')
 }
 
+function safeRepositoryRelativePath(value) {
+  return typeof value === 'string'
+    && value.length > 0
+    && !path.isAbsolute(value)
+    && !value.includes('\\')
+    && path.posix.normalize(value) === value
+    && value.split('/').every((segment) => segment && segment !== '.' && segment !== '..')
+}
+
 function constructorStatus(source, constructorName) {
   const start = source.indexOf(`const ${constructorName}`)
   if (start < 0) return null
@@ -182,21 +191,43 @@ export function authoritySupersessionErrors({ root, documents }) {
       errors.push(`${relativePath}: unsupported authority supersession schema`)
       continue
     }
+    if (document.repository !== 'LifeLoggerAI/urai-spatial') {
+      errors.push(`${relativePath}: supersession repository is invalid`)
+    }
+    if (typeof document.effectiveAt !== 'string' || Number.isNaN(Date.parse(document.effectiveAt))) {
+      errors.push(`${relativePath}: supersession effectiveAt must be an ISO timestamp`)
+    }
     if (document.status !== 'historical-superseded' || document.currentAuthority !== false) {
       errors.push(`${relativePath}: supersession must explicitly deny current authority`)
     }
-    for (const record of document.records ?? []) {
-      if (!record.path || !record.sha256) {
-        errors.push(`${relativePath}: superseded record must bind path and SHA-256`)
+    if (typeof document.reason !== 'string' || document.reason.trim().length === 0) {
+      errors.push(`${relativePath}: supersession reason is required`)
+    }
+    if (!Array.isArray(document.records) || document.records.length === 0) {
+      errors.push(`${relativePath}: supersession must bind at least one historical record`)
+      continue
+    }
+    for (const record of document.records) {
+      if (!safeRepositoryRelativePath(record.path) || !/^[0-9a-f]{64}$/.test(String(record.sha256 ?? ''))) {
+        errors.push(`${relativePath}: superseded record must bind a safe repository-relative path and SHA-256`)
+        continue
+      }
+      if (record.path.startsWith(`${AUTHORITY_SUPERSESSIONS}/`)) {
+        errors.push(`${relativePath}: a supersession record cannot supersede another supersession record`)
         continue
       }
       if (supersededPaths.has(record.path)) {
         errors.push(`${relativePath}: duplicate supersession for ${record.path}`)
         continue
       }
-      const absolute = path.join(root, record.path)
-      if (!fs.existsSync(absolute)) {
+      const absolute = path.resolve(root, record.path)
+      if (!absolute.startsWith(`${path.resolve(root)}${path.sep}`) || !fs.existsSync(absolute)) {
         errors.push(`${relativePath}: superseded record is missing: ${record.path}`)
+        continue
+      }
+      const stat = fs.lstatSync(absolute)
+      if (!stat.isFile() || stat.isSymbolicLink()) {
+        errors.push(`${relativePath}: superseded record must be an immutable regular file: ${record.path}`)
         continue
       }
       if (sha256(fs.readFileSync(absolute)) !== record.sha256) {
