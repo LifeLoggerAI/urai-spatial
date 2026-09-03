@@ -239,7 +239,7 @@ try {
       if (pendingLocalAssets.size > 0) {
         for (const request of pendingLocalAssets) {
           failedRequests.push({
-            kind: 'request-failed',
+            kind: 'asset-settle-timeout',
             status: 0,
             url: request.url(),
             method: request.method(),
