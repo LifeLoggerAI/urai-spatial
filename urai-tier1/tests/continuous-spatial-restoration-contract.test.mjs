@@ -49,7 +49,7 @@ test('app template mounts the exact active Home production owner without certifi
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('V76 is one continuous single-Canvas industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
+test('V93 is one continuous single-Canvas dimensional sanctuary with governed identities, contained Orb and real thresholds', () => {
   for (const marker of [
     'HomeWorldProductionV70',
     'home-entry-chamber-v1.glb',
@@ -67,8 +67,8 @@ test('V76 is one continuous single-Canvas industrial sanctuary with governed ide
     'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v76-photogrammetry-relic-machine"',
-    'data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild"',
+    'data-home-visual-grade="cinematic-pbr-v93-governed-dimensional-sanctuary"',
+    'data-home-final-art-revision="v93-dimensional-governed-rebuild"',
     'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
@@ -102,7 +102,7 @@ test('V76 is one continuous single-Canvas industrial sanctuary with governed ide
     "frameloop={reducedMotion ? 'demand' : 'always'}",
     'cadenceTimer = window.setTimeout(renderNext, 250)',
     '<Canvas',
-  ]) assert.ok(homeGraph.includes(marker), `missing V76 Home marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing V93 Home marker: ${marker}`)
 
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
   assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
