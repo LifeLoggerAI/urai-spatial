@@ -120,10 +120,27 @@ async function screenshot(page, name, { fontReadyTimeoutMs = 0, timeoutMs = 6000
   const motionFreeze = await page.addStyleTag({
     content: '*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;caret-color:transparent!important}',
   })
+  const cdp = await page.context().newCDPSession(page)
+  let timeoutHandle
   try {
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-    await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'allow', caret: 'hide', timeout: timeoutMs })
+    // Capture the actual Chromium surface directly. Playwright's higher-level
+    // screenshot path performs an additional unbounded document.fonts wait;
+    // Replay can keep that path occupied after client navigation even though
+    // the rendered browser surface and font set are already stable.
+    const captured = await Promise.race([
+      cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false }),
+      new Promise((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error(`CDP screenshot timed out after ${timeoutMs}ms`)), timeoutMs)
+      }),
+    ])
+    if (!captured || typeof captured !== 'object' || !('data' in captured) || typeof captured.data !== 'string' || captured.data.length === 0) {
+      throw new Error('CDP screenshot returned no PNG data')
+    }
+    await fs.writeFile(path.join(outDir, relative), Buffer.from(captured.data, 'base64'))
   } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle)
+    await cdp.detach().catch(() => {})
     await motionFreeze.evaluate((node) => node.remove()).catch(() => {})
   }
   return relative
