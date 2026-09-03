@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "lastVerified": "2026-09-03",
+  "canonicalHost": "https://urai.app",
+  "entities": {
+    "product": {
+      "name": "UrAi",
+      "capitalization": "UrAi",
+      "alternateNames": [
+        "URAI",
+        "URAI Spatial"
+      ],
+      "type": "product",
+      "category": "privacy-first personal intelligence platform",
+      "canonicalUrl": "https://urai.app/",
+      "description": "UrAi is a privacy-first personal intelligence platform by UrAi Labs that makes memory, reflection, relationships, and direction spatial.",
+      "sourceAuthority": "https://github.com/LifeLoggerAI/urai-spatial",
+      "productionCertification": "gated"
+    },
+    "organization": {
+      "name": "UrAi Labs",
+      "type": "product organization",
+      "canonicalUrl": "https://urai.app/about/labs",
+      "description": "The founder-led product organization building UrAi.",
+      "legalStatusClaim": "not asserted by this registry",
+      "githubAuthority": "https://github.com/LifeLoggerAI"
+    },
+    "founder": {
+      "name": "Adam Clamp",
+      "role": "Founder and system architect",
+      "canonicalUrl": "https://urai.app/founder",
+      "relationship": [
+        "Founder of UrAi Labs",
+        "Founder and system architect for UrAi"
+      ],
+      "publicProfile": "https://github.com/LifeLoggerAI"
+    },
+    "foundation": {
+      "name": "UrAi Foundation",
+      "type": "formation-stage public-interest standards and governance initiative",
+      "canonicalUrl": "https://uraifoundation.org/",
+      "repository": "https://github.com/LifeLoggerAI/urai-foundation",
+      "status": "formation-stage",
+      "notClaimed": [
+        "incorporation",
+        "501(c)(3) status",
+        "charity status",
+        "tax deductibility",
+        "active certification authority",
+        "launched programs"
+      ]
+    }
+  },
+  "systems": [
+    {
+      "name": "UrAi Studio",
+      "repository": "https://github.com/LifeLoggerAI/urai-studio",
+      "class": "creator-orchestration-system",
+      "publicStatus": "source-public; production status separately gated"
+    },
+    {
+      "name": "UrAi Jobs",
+      "repository": "https://github.com/LifeLoggerAI/urai-jobs",
+      "class": "internal-service",
+      "publicStatus": "source-public; provider/runtime status separately gated"
+    },
+    {
+      "name": "UrAi Asset Factory",
+      "repository": "https://github.com/LifeLoggerAI/asset-factory",
+      "class": "developer-infrastructure",
+      "publicStatus": "source-public; provider activity separately gated"
+    },
+    {
+      "name": "UrAi Analytics",
+      "class": "internal-service",
+      "publicStatus": "private repository; production status separately gated"
+    },
+    {
+      "name": "UrAi Content",
+      "repository": "https://github.com/LifeLoggerAI/urai-content",
+      "class": "developer-infrastructure",
+      "publicStatus": "source-public; deployment separately gated"
+    },
+    {
+      "name": "UrAi Privacy",
+      "repository": "https://github.com/LifeLoggerAI/urai-privacy",
+      "class": "trust-system",
+      "publicStatus": "source-public; production status separately gated"
+    },
+    {
+      "name": "UrAi Admin",
+      "repository": "https://github.com/LifeLoggerAI/urai-admin",
+      "class": "administrative-surface",
+      "publicStatus": "source-public; protected runtime status separately gated"
+    },
+    {
+      "name": "UrAi Investors",
+      "class": "gated-information-surface",
+      "publicStatus": "private repository"
+    },
+    {
+      "name": "UrAi B2B / Partner systems",
+      "class": "gated-service",
+      "publicStatus": "private repository; environment and legal readiness separately gated"
+    },
+    {
+      "name": "UrAi Storytime",
+      "repository": "https://github.com/LifeLoggerAI/urai-storytime",
+      "class": "experimental-product",
+      "publicStatus": "source-public; safety/deployment separately gated"
+    },
+    {
+      "name": "UrAi Communications",
+      "class": "internal-service",
+      "publicStatus": "private repository; provider activity separately gated"
+    }
+  ],
+  "authority": {
+    "deploymentRepository": "https://github.com/LifeLoggerAI/urai-spatial",
+    "deploymentPath": "urai-tier1",
+    "deploymentBranch": "main",
+    "legacyRepository": "https://github.com/LifeLoggerAI/UrAi",
+    "legacyStatus": "reference only; not production authority"
+  },
+  "media": {
+    "logoStatus": "use only approved first-party assets",
+    "screenshotStatus": "final launch imagery must be bound to a certified release SHA",
+    "contact": "mailto:press@urai.app"
+  }
+}
