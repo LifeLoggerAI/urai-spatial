@@ -1,4 +1,4 @@
-# Owner-authored exact-head verifier for the current V112 Home composition.
+# Owner-authored exact-head verifier for the current V122 Home composition.
 name: Home Scanned Composition Verification
 on:
   pull_request:
@@ -74,7 +74,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-      - name: Verify exact current V112 visible governed relief composition
+      - name: Verify exact current V122 visible governed relief composition
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -91,14 +91,16 @@ jobs:
           grep -Fq 'home-v83-authored-open-sanctuary' "$art"
           grep -Fq 'committed-governed-home-distant-architectural-relief' "$art"
           grep -Fq 'governed-home-source-visible-distant-relief-outside-approach-cameras' "$art"
-          grep -Fq "successorVisualRepair: 'v112-reposition-and-rescale-governed-relief'" "$art"
+          grep -Fq "composition: 'v122-open-asymmetric-authored-canyon'" "$art"
+          grep -Fq "successorVisualRepair: 'v122-remove-repetitive-procedural-shell-dominance'" "$art"
           grep -Fq "approachVisibilityRepair: 'v112-visible-governed-relief-outside-approach-cameras'" "$art"
           grep -Fq 'root.position.set(0, -0.12, -20.8)' "$art"
           grep -Fq 'root.scale.setScalar(0.18)' "$art"
           grep -Fq 'for (const object of rejectedNodes) object.parent?.remove(object)' "$art"
           grep -Fq '<PortalStoneFrame destination={destination} textures={textures.shell} />' "$art"
-          grep -Fq 'swarm.current.scale.setScalar(1.90 * breath)' "$art"
-          grep -Fq 'const ORB = new THREE.Vector3(-0.28, 2.48, -6.18)' "$runtime"
+          grep -Fq 'swarm.current.scale.setScalar(1.08 * breath)' "$art"
+          grep -Fq 'const ORB = new THREE.Vector3(-0.18, 2.18, -6.90)' "$runtime"
+          grep -Fq 'data-home-visible-world="v122-open-authored-canyon-contained-orb"' "$runtime"
           grep -Fq "const inspectionClearance = nearby === 'orb' ? (portrait ? 2.80 : 2.40) : nearby ? (portrait ? 2.10 : 1.65) : 0.10" "$runtime"
 
           ! grep -Eq '(root|object)\\.visible[[:space:]]*=[[:space:]]*false' "$art"
