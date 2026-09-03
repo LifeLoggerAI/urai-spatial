@@ -92,8 +92,8 @@ test('V122 preserves the 1.08 Orb hierarchy throughout normal animation', () => 
 test('V122 binds live proximity and all proof telemetry to the rendered Orb position', () => {
   assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.match(telemetry, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)
-  assert.match(proof, /orb: \{ x: -0\.18, z: -6\.9, radius: 2\.35/)
-  assert.match(naturalProof, /orb: \{ x: -0\.18, z: -6\.9, radius: 2\.35/)
+  assert.match(proof, /orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35/)
+  assert.match(naturalProof, /orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35/)
 })
 
 test('V108 preserves exact proximity gates and backs only the inspection camera out of rendered meshes', () => {
