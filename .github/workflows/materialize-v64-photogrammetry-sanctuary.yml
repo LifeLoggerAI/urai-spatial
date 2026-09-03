@@ -1,12 +1,7 @@
 name: Materialize V64 Photogrammetry Sanctuary
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v64-photogrammetry-sanctuary.py
-      - .github/workflows/materialize-v64-photogrammetry-sanctuary.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
