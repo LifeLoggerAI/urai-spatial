@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'Contact',
   description: 'Official public contact status and authority links for UrAi and URAI Labs.',
-  alternates: { canonical: 'https://urai.app/contact' },
-  openGraph: { url: 'https://urai.app/contact' },
+  alternates: { canonical: 'https://urai.app/contact/' },
+  openGraph: { url: 'https://urai.app/contact/' },
 }
 
 export default function ContactPage() {
