@@ -16,15 +16,15 @@ import {
   type MovementInput,
 } from '@/spatial/navigation/EmbodiedNavigation'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { resolvePromotedUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
 
-const HUMAN_ROOT = '/assets/urai/generated/human-makehuman-v4'
 const HUMAN_MODELS = [
-  `${HUMAN_ROOT}/council-guide-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-archivist-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-guardian-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-builder-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-mirror-human-makehuman-v4.glb`,
-  `${HUMAN_ROOT}/council-trickster-human-makehuman-v4.glb`,
+  resolvePromotedUraiSpatialAssetPath('council-guide-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-archivist-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-guardian-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-builder-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-mirror-human-makehuman-v4'),
+  resolvePromotedUraiSpatialAssetPath('council-trickster-human-makehuman-v4'),
 ] as const
 
 const POSITIONS: [number, number, number][] = [
@@ -242,14 +242,14 @@ function CouncilStage() {
             </mesh>
 
             {DEMO_COUNCIL_AGENTS.map((agent, index) => (
-              <RiggedCouncilHuman
+              {HUMAN_MODELS[index] ? <RiggedCouncilHuman
                 key={agent.id}
-                modelUrl={HUMAN_MODELS[index] ?? HUMAN_MODELS[0]}
+                modelUrl={HUMAN_MODELS[index]}
                 index={index}
                 selected={selected === index}
                 reducedMotion={reducedMotion}
                 onSelect={() => setSelected(index)}
-              />
+              /> : <group key={agent.id} name={`council-semantic-presence-${agent.id}`} position={POSITIONS[index]} userData={{ fallback: 'no-rigged-human', agentId: agent.id }} />}
             ))}
 
             {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
@@ -280,4 +280,4 @@ export function CouncilRealm() {
   return <CouncilStage />
 }
 
-for (const model of HUMAN_MODELS) useGLTF.preload(model)
+for (const model of HUMAN_MODELS) if (model) useGLTF.preload(model)
