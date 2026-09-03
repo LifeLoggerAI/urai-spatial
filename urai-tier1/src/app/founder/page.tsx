@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: 'Adam Clamp — Founder',
   description: 'Adam Clamp is the founder and system architect behind URAI Labs and UrAi.',
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Adam Clamp — Founder',
     description: 'Adam Clamp is the founder and system architect behind URAI Labs and UrAi.',
   },

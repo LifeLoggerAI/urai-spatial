@@ -2,8 +2,11 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  title: 'UrAi Terms',
+  description: 'Terms for the public UrAi spatial experience, including its preview, consent, and non-clinical boundaries.',
   alternates: { canonical: 'https://urai.app/terms/' },
-  openGraph: { url: 'https://urai.app/terms/' },
+  openGraph: { url: 'https://urai.app/terms/', title: 'UrAi Terms', description: 'Terms for the public UrAi spatial experience, including its preview, consent, and non-clinical boundaries.' },
+  twitter: { card: 'summary', title: 'UrAi Terms', description: 'Terms for the public UrAi spatial experience, including its preview, consent, and non-clinical boundaries.' },
 }
 
 const sectionStyle = { maxWidth: "860px", margin: "0 auto", display: "grid", gap: "22px" } as const;

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Contact',
   description: 'Official public contact status and authority links for UrAi and URAI Labs.',
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Contact',
     description: 'Official public contact status and authority links for UrAi and URAI Labs.',
   },

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'What is UrAi?',
   description: 'UrAi is a privacy-first personal intelligence platform by URAI Labs that turns personal context into a navigable spatial world.',
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'What is UrAi?',
     description: 'UrAi is a privacy-first personal intelligence platform by URAI Labs that turns personal context into a navigable spatial world.',
   },

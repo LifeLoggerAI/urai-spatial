@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Press and Media',
   description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Press and Media',
     description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
   },

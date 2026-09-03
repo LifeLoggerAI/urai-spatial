@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'UrAi Ecosystem',
   description: 'The factual relationship between UrAi, URAI Labs, the URAI Foundation, and supporting systems.',
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'UrAi Ecosystem',
     description: 'The factual relationship between UrAi, URAI Labs, the URAI Foundation, and supporting systems.',
   },

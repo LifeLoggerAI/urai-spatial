@@ -11,8 +11,11 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  title: 'UrAi Location Map',
+  description: 'Explore disclosed sample places through UrAi’s consent-bounded spatial location map.',
   alternates: { canonical: 'https://urai.app/location-map/' },
-  openGraph: { url: 'https://urai.app/location-map/' },
+  openGraph: { url: 'https://urai.app/location-map/', title: 'UrAi Location Map', description: 'Explore disclosed sample places through UrAi’s consent-bounded spatial location map.' },
+  twitter: { card: 'summary', title: 'UrAi Location Map', description: 'Explore disclosed sample places through UrAi’s consent-bounded spatial location map.' },
 }
 
 export default async function LocationMapPage() {

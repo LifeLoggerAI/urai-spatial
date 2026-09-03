@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'About URAI Labs',
   description: 'URAI Labs is the founder-led product organization building UrAi.',
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'About URAI Labs',
     description: 'URAI Labs is the founder-led product organization building UrAi.',
   },
