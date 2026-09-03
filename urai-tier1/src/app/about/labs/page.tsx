@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'About URAI Labs',
   description: 'URAI Labs is the founder-led product organization building UrAi.',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About URAI Labs',
+    description: 'URAI Labs is the founder-led product organization building UrAi.',
+  },
   alternates: { canonical: 'https://urai.app/about/labs/' },
   openGraph: {
     type: 'website',
