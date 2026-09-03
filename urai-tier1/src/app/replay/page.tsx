@@ -3,6 +3,8 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/replay/' },
+  openGraph: { url: 'https://urai.app/replay/' },
 }
 
 const FinalReplayFilm = CinematicReplayClient
