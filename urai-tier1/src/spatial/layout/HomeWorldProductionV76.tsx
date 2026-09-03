@@ -301,7 +301,8 @@ function SanctuaryBackdrop() {
     const previous = scene.background
     texture.colorSpace = THREE.SRGBColorSpace
     texture.needsUpdate = true
-    scene.background = texture
+    scene.background = null
+    scene.userData.sanctuaryBackdrop = SANCTUARY_BACKDROP
     return () => { scene.background = previous }
   }, [scene, texture])
 
@@ -559,6 +560,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
       candidateArtRevision: 'v88-governed-sanctuary-plate-composition',
       visualRepair: 'v88-remove-rejected-overlay-geometry',
+      portraitCompositionRevision: 'v91-aspect-correct-cover',
       retainedPixelStatus: 'candidate-not-certified',
     }}
   >
