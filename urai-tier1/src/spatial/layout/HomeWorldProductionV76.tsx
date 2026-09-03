@@ -420,23 +420,25 @@ function useGovernedHomeEnvironment() {
 
 function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
   const textures = useSanctuaryTextures()
-  return <group name="home-v98-open-canyon-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment', composition: 'open-terraced-canyon-with-atmospheric-depth', successorVisualRepair: 'v105-tapered-apse-shoulders' }}>
+  return <group name="home-v98-open-canyon-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment', composition: 'v122-open-asymmetric-authored-canyon', successorVisualRepair: 'v122-remove-repetitive-procedural-shell-dominance' }}>
     <OpenAtmosphere />
     <TerracedGround textures={textures.floor} onWalk={onWalk} />
-    <VaultShell textures={textures.shell} />
-    <CantedWall side="port" textures={textures.shell} />
-    <CantedWall side="starboard" textures={textures.shell} />
-    <DeepApse textures={textures.shell} />
-    <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
+    <group name="home-v122-retired-procedural-shells" userData={{ nonRenderingCompatibilityMarkers: true, reason: 'literal-retained-pixel-rejection-repetitive-slabs-and-arches' }}>
+      <group name="home-v76-continuous-hand-cut-vault" />
+      <group name="home-v76-port-canted-bearing-wall" />
+      <group name="home-v76-starboard-canted-bearing-wall" />
+      <group name="home-v76-deep-concave-apse" />
+      <group name="home-v76-bearing-rib-3.8" />
+    </group>
     <group name="home-v101-removed-entrance-rock-clutter" userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name="home-v95-port-entry-buttress" />
       <group name="home-v95-starboard-entry-buttress" />
       <group name="home-v98-port-horizon-spire" />
       <group name="home-v98-starboard-horizon-spire" />
     </group>
-    <ProductionAsset url={ROCK_FACE_A} name="home-v101-port-apse-foundation" position={[-5.58, 0.58, -12.10]} rotation={[-0.04, 0.74, -0.10]} scale={[1.22, 0.72, 1.04]} span={3.24} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v101-starboard-apse-foundation" position={[5.66, 0.52, -12.28]} rotation={[0.06, -0.70, 0.08]} scale={[1.18, 0.68, 1.02]} span={3.18} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v101-distant-ridge" position={[0.9, 0.42, -23.4]} rotation={[0.04, 1.18, 0.02]} scale={[2.92, 0.62, 1.10]} span={5.2} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v101-port-apse-foundation" position={[-5.92, 0.34, -14.20]} rotation={[-0.04, 0.74, -0.10]} scale={[0.78, 0.48, 0.72]} span={3.24} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v101-starboard-apse-foundation" position={[5.74, 0.28, -15.60]} rotation={[0.06, -0.70, 0.08]} scale={[0.72, 0.44, 0.68]} span={3.18} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v101-distant-ridge" position={[0.9, 0.12, -28.4]} rotation={[0.04, 1.18, 0.02]} scale={[2.58, 0.38, 0.86]} span={5.2} mode="rock" />
   </group>
 }
 
@@ -584,15 +586,15 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     swarm.current.rotation.y = Math.sin(clock.elapsedTime * 0.34 * urgency) * 0.22
     swarm.current.rotation.z = Math.sin(clock.elapsedTime * 0.21 * urgency) * 0.07
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
-    swarm.current.scale.setScalar(1.90 * breath)
+    swarm.current.scale.setScalar(1.08 * breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.28, 2.48, -6.18]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage', v101Composition: 'foreground-legible-living-presence', v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.18, 2.18, -6.90]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage', v101Composition: 'foreground-legible-living-presence', v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned', v122Composition: 'contained-human-scale-orb-clear-of-portrait-crop' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={swarm} scale={[1.90, 1.90, 1.90]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[1.08, 1.08, 1.08]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
-    <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.35 : state === 'warning' ? 2.65 : 1.92} distance={8.6} decay={2} />
-    <pointLight position={[0.7, 0.3, -0.5]} color="#78baa8" intensity={0.86} distance={5.8} decay={2} />
+    <pointLight color="#e3b878" intensity={state === 'dormant' ? 0.82 : state === 'warning' ? 1.72 : 1.18} distance={6.8} decay={2} />
+    <pointLight position={[0.7, 0.3, -0.5]} color="#78baa8" intensity={0.48} distance={4.8} decay={2} />
   </group>
 }
 
@@ -630,7 +632,7 @@ function PortalStoneFrame({ destination, textures }: { destination: 'ground' | '
     return result
   }, [destination])
 
-  return <mesh name={`home-v98-${destination}-single-connected-rock-cut-frame`} geometry={geometry} position={[0, 1.34, -0.30]} castShadow receiveShadow>
+  return <mesh name={`home-v98-${destination}-single-connected-rock-cut-frame`} geometry={geometry} position={[0, 1.34, -0.30]} scale={[0.88, 0.88, 0.88]} castShadow receiveShadow>
     <StoneMaterial textures={textures} tint={destination === 'ground' ? '#4c5a46' : '#44495c'} side={THREE.DoubleSide} />
   </mesh>
 }
@@ -695,8 +697,8 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
 function ThresholdPath({ destination }: { destination: 'ground' | 'life-map' }) {
   const side = destination === 'ground' ? -1 : 1
   const tone = destination === 'ground' ? '#3f5546' : '#434a5f'
-  const pavers = Array.from({ length: 5 }, (_, index) => {
-    const t = index / 4
+  const pavers = Array.from({ length: 4 }, (_, index) => {
+    const t = index / 3
     return {
       x: side * (0.46 + t * t * 3.46),
       y: -0.075 + t * 0.17,
@@ -742,7 +744,7 @@ function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduc
       <group name="home-v76-starboard-curved-armor" />
     </group>
     <OrbPresence state={state} reducedMotion={reducedMotion} />
-    <mesh name="home-v78-orb-interaction-volume" position={[-0.28, 2.48, -6.18]}>
+    <mesh name="home-v78-orb-interaction-volume" position={[-0.18, 2.18, -6.90]}>
       <boxGeometry args={[3.8, 3.8, 2.4]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
@@ -753,7 +755,7 @@ function DustField({ reducedMotion }: { reducedMotion: boolean }) {
   const points = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
     const positions: number[] = []
-    for (let index = 0; index < 84; index += 1) {
+    for (let index = 0; index < 48; index += 1) {
       const x = ((index * 37) % 101) / 101 * 10.8 - 5.4
       const y = 0.42 + (((index * 53) % 97) / 97) * 5.2
       const z = 5.4 - (((index * 71) % 113) / 113) * 17.8
@@ -783,7 +785,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       liveArtRevision: 'v93-governed-dimensional-sanctuary',
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
-      successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds',
+      successorVisualRepair: 'v122-authored-depth-contained-orb-simplified-thresholds',
       approachVisibilityRepair: 'v112-visible-governed-relief-outside-approach-cameras',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
       successorPortraitRepair: 'v105-balanced-58-degree-portrait-fov',
