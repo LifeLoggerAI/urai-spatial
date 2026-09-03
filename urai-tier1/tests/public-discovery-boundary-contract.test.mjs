@@ -10,6 +10,8 @@ const robots = read('src/app/robots.ts')
 const sitemap = read('src/app/sitemap.ts')
 const publicIndexing = read('src/app/public-indexing.ts')
 const privacyAlias = read('src/app/privacy/page.tsx')
+const privacyControls = read('src/app/privacy-controls/page.tsx')
+const llms = read('public/llms.txt')
 const entity = JSON.parse(read('public/urai-entity.json'))
 const staticHosting = JSON.parse(read('../firebase.static.json'))
 
@@ -77,6 +79,15 @@ test('privacy compatibility alias stays noindex and points at the canonical cont
   assert.match(privacyAlias, /robots:\s*\{\s*index: false,\s*follow: true,\s*noarchive: true,/)
   assert.match(privacyAlias, /alternates: \{ canonical: 'https:\/\/urai\.app\/privacy-controls\/' \}/)
   assert.match(privacyAlias, /redirect\('\/privacy-controls\/\?from=privacy'\)/)
+})
+
+test('privacy controls and llms discovery links publish final canonical URLs', () => {
+  assert.match(privacyControls, /alternates: \{ canonical: 'https:\/\/urai\.app\/privacy-controls\/' \}/)
+  assert.match(privacyControls, /openGraph: \{ url: 'https:\/\/urai\.app\/privacy-controls\/' \}/)
+
+  for (const route of ['about/', 'about/labs/', 'founder/', 'ecosystem/', 'press/', 'status/']) {
+    assert.ok(llms.includes(`https://urai.app/${route}`), `llms.txt missing canonical URL for /${route}`)
+  }
 })
 
 test('entity registry distinguishes canonical product names from current and legacy technical aliases', () => {
