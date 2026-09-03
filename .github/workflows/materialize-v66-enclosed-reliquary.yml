@@ -2,12 +2,7 @@
 name: Materialize V66 Enclosed Reliquary
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v66-enclosed-reliquary.py
-      - .github/workflows/materialize-v66-enclosed-reliquary.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
