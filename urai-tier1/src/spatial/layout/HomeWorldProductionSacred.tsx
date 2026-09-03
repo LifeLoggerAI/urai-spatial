@@ -750,7 +750,7 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
     <MoonAndMist reducedMotion={props.reducedMotion} />
     <OrbPlatform />
     <SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />
-    {HUMAN ? <HumanPresence root={props.avatar} modelUrl={HUMAN} /> : <group name="home-semantic-human-presence" userData={{ fallback: 'no-rigged-human' }} />}
+    {HUMAN ? <HumanPresence root={props.avatar} modelUrl={HUMAN} /> : <group name="home-authored-embodied-self" userData={{ fallback: 'semantic-no-rigged-human', readinessAuthority: 'semantic-fallback' }} />}
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
     <ContactShadows position={[0,0.05,-2.2]} opacity={0.38} scale={20} blur={2.8} far={7} resolution={256} frames={1} color="#171b17" />
     <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.nearby} transition={props.transition} reducedMotion={props.reducedMotion} onTransitionComplete={props.onTransitionComplete} />
