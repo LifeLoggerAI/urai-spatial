@@ -25,7 +25,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     'AssetDrivenHomeWorld',
     'HomeWorldProduction',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"',
+    'data-home-visible-world="v122-open-authored-canyon-contained-orb"',
     'data-home-world-character="production-cinematic-sacred-tech"',
     'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
@@ -153,11 +153,11 @@ test('Ground is one embodied cinematic infrastructure world', () => {
 
   assert.match(groundOwner, /min-height:48px/)
   assert.match(groundOwner, /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/)
-  assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*false/s)
-  assert.match(groundOwner, /<color attach="background" args=\{\["#263937"\]\} \/>/)
-  assert.match(groundOwner, /<fogExp2 attach="fog" args=\{\["#263937", 0\.026\]\}/)
+  assert.match(groundOwner, /gl=\{\{[^}]*alpha:\s*true/s)
+  assert.match(groundOwner, /gl\.setClearColor\(0x000000, 0\)/)
+  assert.match(groundOwner, /scene\.background = null/)
   assert.match(groundOwner, /<Environment files="\/assets\/urai\/home-production\/cc0\/environment\/studio-small-08-1k\.hdr" background=\{false\} environmentIntensity=\{1\.12\}/)
-  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.96/)
+  assert.match(groundOwner, /gl\.toneMappingExposure = 1\.45/)
   assert.match(groundOwner, /<ambientLight intensity=\{1\.08\}/)
   assert.match(groundOwner, /<hemisphereLight args=\{\["#f5fff9", "#324b46", 1\.72\]\}/)
   assert.match(groundOwner, /<directionalLight position=\{\[9, 18, 12\]\} intensity=\{5\.15\}/)
