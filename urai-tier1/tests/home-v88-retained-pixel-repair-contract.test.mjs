@@ -19,7 +19,9 @@ test('V95 replaces rings and foreground occluders with human-scale integrated th
   assert.doesNotMatch(world, /<ringGeometry/)
   assert.match(world, /v95-architectural-rock-cut-threshold-no-ring-marker/)
   assert.match(world, /home-v95-\$\{destination\}-threshold-lintel/)
-  assert.match(world, /scale=\{\[0\.64, 0\.64, 0\.64\]\}/)
+  assert.match(world, /scale=\{\[0\.78, 0\.78, 0\.78\]\}/)
+  assert.match(world, /home-v96-\$\{destination\}-recess-depth/)
+  assert.match(world, /home-v96-\$\{destination\}-(?:port|starboard)-threshold-rock/)
   assert.doesNotMatch(world, /home-v93-(?:port|starboard)-foreground-rock-mass/)
 })
 

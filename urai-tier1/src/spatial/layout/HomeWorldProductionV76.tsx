@@ -335,8 +335,8 @@ function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>)
     <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
     <ProductionAsset url={ROCK_FACE_A} name="home-v95-port-entry-buttress" position={[-5.92, 0.72, -0.20]} rotation={[0.08, 1.04, -0.12]} scale={[0.90, 1.08, 0.86]} span={2.62} mode="rock" />
     <ProductionAsset url={ROCK_FACE_B} name="home-v95-starboard-entry-buttress" position={[5.94, 0.68, -0.64]} rotation={[-0.08, -0.96, 0.10]} scale={[0.88, 1.04, 0.84]} span={2.58} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-apse-foundation" position={[-5.42, 1.18, -11.42]} rotation={[-0.04, 0.74, -0.10]} scale={[1.16, 1.42, 1.02]} span={3.68} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v93-starboard-apse-foundation" position={[5.58, 1.12, -11.56]} rotation={[0.06, -0.70, 0.08]} scale={[1.12, 1.38, 1.00]} span={3.62} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v96-port-apse-foundation" position={[-3.48, 1.04, -8.92]} rotation={[-0.04, 0.74, -0.10]} scale={[0.92, 1.28, 0.88]} span={3.34} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v96-starboard-apse-foundation" position={[3.62, 1.00, -9.12]} rotation={[0.06, -0.70, 0.08]} scale={[0.88, 1.24, 0.86]} span={3.28} mode="rock" />
   </group>
 }
 
@@ -486,9 +486,9 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
     swarm.current.scale.setScalar(breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.72, -8.28]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.78, -7.52]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={swarm} scale={[0.64, 0.64, 0.64]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[0.78, 0.78, 0.78]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
     <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.05 : state === 'warning' ? 2.2 : 1.55} distance={7.4} decay={2} />
@@ -497,11 +497,7 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
 }
 
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
-  const textures = useSanctuaryTextures()
   const tone = destination === 'ground' ? '#b6c98c' : '#9fb3da'
-  const stone = destination === 'ground' ? '#625d45' : '#45565d'
-  const portCheek = [[-1.08, -1.34], [-0.52, -1.44], [-0.44, 0.58], [-0.22, 1.30], [-0.60, 1.68], [-1.04, 0.92], [-1.22, -0.18]] as const
-  const starboardCheek = portCheek.map(([x, y]) => [-x, y] as const).reverse()
   return <group
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
     position={position as [number, number, number]}
@@ -509,12 +505,16 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     userData={{ destination, treatment: 'v95-architectural-rock-cut-threshold-no-ring-marker', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
   >
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} />
-    <ExtrudedBody name={`home-v95-${destination}-port-threshold-cheek`} points={portCheek} position={[0, 1.34, -0.30]} depth={0.58} color={stone} textures={textures.shell} />
-    <ExtrudedBody name={`home-v95-${destination}-starboard-threshold-cheek`} points={starboardCheek} position={[0, 1.34, -0.30]} depth={0.58} color={stone} textures={textures.shell} />
-    <ExtrudedBody name={`home-v95-${destination}-threshold-lintel`} points={[[-0.82, -0.26], [0.82, -0.26], [0.54, 0.34], [-0.50, 0.42]]} position={[0, 2.88, -0.31]} depth={0.62} color={stone} textures={textures.shell} />
-    <mesh name={`home-v95-${destination}-recess-veil`} position={[0, 1.44, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.04 : 0.05]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
-      <planeGeometry args={[1.18, 2.42, 1, 1]} />
-      <meshPhysicalMaterial color={tone} emissive={tone} emissiveIntensity={0.42} transparent opacity={0.22} roughness={0.34} metalness={0.04} depthWrite={false} side={THREE.DoubleSide} />
+    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_A : ROCK_FACE_B} name={`home-v96-${destination}-port-threshold-rock`} position={[-0.92, 1.28, -0.24]} rotation={[0.04, 0.72, -0.12]} scale={[0.52, 1.22, 0.58]} span={3.20} mode="rock" />
+    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_B : ROCK_FACE_A} name={`home-v96-${destination}-starboard-threshold-rock`} position={[0.94, 1.20, -0.34]} rotation={[-0.06, -0.68, 0.10]} scale={[0.50, 1.18, 0.56]} span={3.16} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name={`home-v95-${destination}-threshold-lintel`} position={[0, 2.74, -0.34]} rotation={[0.10, 0.12, 1.46]} scale={[0.74, 0.34, 0.52]} span={2.70} mode="rock" />
+    <mesh name={`home-v96-${destination}-recess-depth`} position={[0, 1.40, -0.64]}>
+      <planeGeometry args={[1.62, 2.70, 1, 1]} />
+      <meshBasicMaterial color="#050807" side={THREE.DoubleSide} />
+    </mesh>
+    <mesh name={`home-v95-${destination}-recess-veil`} position={[0, 1.42, -0.60]} rotation={[0, 0, destination === 'ground' ? -0.04 : 0.05]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
+      <planeGeometry args={[1.46, 2.52, 1, 1]} />
+      <meshPhysicalMaterial color={tone} emissive={tone} emissiveIntensity={1.12} transparent opacity={0.58} roughness={0.26} metalness={0.02} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
     <group name={`home-v82-${destination}-natural-fissure-markers`} userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name={`home-v82-${destination}-port-natural-fissure`} />
@@ -526,7 +526,7 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
       <boxGeometry args={[1.56, 2.62, 0.08]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
-    <pointLight position={[-0.18, 1.54, 0.48]} color={tone} intensity={0.72} distance={4.6} decay={2} />
+    <pointLight position={[-0.18, 1.54, 0.48]} color={tone} intensity={1.32} distance={5.8} decay={2} />
   </group>
 }
 
@@ -619,8 +619,8 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       <group name="home-v82-starboard-deep-field-buttress" />
     </group>
 
-    <PortalRecess destination="ground" position={[-4.58, 0.02, -8.34]} rotation={[0, 0.48, -0.03]} onActivate={onGround} />
-    <PortalRecess destination="life-map" position={[4.62, 0.02, -8.52]} rotation={[0, -0.52, 0.04]} onActivate={onLifeMap} />
+    <PortalRecess destination="ground" position={[-4.34, 0.02, -7.72]} rotation={[0, 0.42, -0.03]} onActivate={onGround} />
+    <PortalRecess destination="life-map" position={[4.38, 0.02, -7.86]} rotation={[0, -0.46, 0.04]} onActivate={onLifeMap} />
     <group name="home-v88-removed-industrial-overlays" userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name="home-v76-port-caged-practical" />
       <group name="home-v76-starboard-caged-practical" />
