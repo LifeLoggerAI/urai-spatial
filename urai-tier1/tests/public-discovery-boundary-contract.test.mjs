@@ -10,6 +10,16 @@ const robots = read('src/app/robots.ts')
 const sitemap = read('src/app/sitemap.ts')
 const publicIndexing = read('src/app/public-indexing.ts')
 const entity = JSON.parse(read('public/urai-entity.json'))
+const staticHosting = JSON.parse(read('../firebase.static.json'))
+
+function evaluateSitemap() {
+  const executable = sitemap
+    .replace(/^import type .*\n/m, '')
+    .replace(/ as const/g, '')
+    .replace(/export const dynamic = 'force-static'/, "const dynamic = 'force-static'")
+    .replace(/export default function sitemap\(\): MetadataRoute\.Sitemap/, 'function sitemap()')
+  return new Function(`${executable}\nreturn sitemap();`)()
+}
 
 const authorityRoutes = [
   ['about', 'src/app/about/page.tsx'],
@@ -36,9 +46,12 @@ test('root metadata denies indexing by default and production public routes opt 
   }
 })
 
-test('robots lets crawlers observe per-route noindex metadata', () => {
+test('robots lets crawlers observe per-route noindex metadata while exported APIs use response headers', () => {
   assert.match(robots, /allow:/)
   assert.doesNotMatch(robots, /disallow:/)
+  const apiRule = staticHosting.hosting.headers.find((entry) => entry.source === '/api/**')
+  assert.ok(apiRule)
+  assert.ok(apiRule.headers.some((header) => header.key === 'X-Robots-Tag' && /noindex/.test(header.value)))
 })
 
 test('each authority page owns its canonical Open Graph URL', () => {
@@ -58,8 +71,8 @@ test('entity registry distinguishes canonical product names from current and leg
   assert.equal(entity.entities.product.name, 'UrAi')
   assert.equal(entity.entities.product.capitalization, 'UrAi')
   assert.equal(entity.entities.product.alternateNames, undefined)
-  assert.deepEqual(entity.entities.product.currentTechnicalAliases, ['URAI'])
-  assert.deepEqual(entity.entities.product.legacyTechnicalAliases, ['URAI Spatial'])
+  assert.deepEqual(entity.entities.product.currentTechnicalAliases, ['URAI', 'URAI Spatial'])
+  assert.deepEqual(entity.entities.product.legacyTechnicalAliases, [])
   assert.equal(entity.entities.organization.name, 'URAI Labs')
   assert.equal(entity.entities.foundation.name, 'URAI Foundation')
   assert.equal(entity.entities.foundation.canonicalUrl, 'https://github.com/LifeLoggerAI/urai-foundation')
