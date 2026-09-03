@@ -9,6 +9,7 @@ const layout = read('src/app/layout.tsx')
 const robots = read('src/app/robots.ts')
 const sitemap = read('src/app/sitemap.ts')
 const publicIndexing = read('src/app/public-indexing.ts')
+const privacyAlias = read('src/app/privacy/page.tsx')
 const entity = JSON.parse(read('public/urai-entity.json'))
 const staticHosting = JSON.parse(read('../firebase.static.json'))
 
@@ -69,6 +70,13 @@ test('sitemap has one Home URL, excludes redirect aliases, and matches exported 
   assert.ok(urls.every((url) => url.endsWith('/')))
   assert.ok(!urls.includes('https://urai.app/home/'))
   assert.ok(!urls.includes('https://urai.app/privacy/'))
+})
+
+test('privacy compatibility alias stays noindex and points at the canonical controls route', () => {
+  assert.doesNotMatch(privacyAlias, /publicIndexing/)
+  assert.match(privacyAlias, /robots:\s*\{\s*index: false,\s*follow: true,\s*noarchive: true,/)
+  assert.match(privacyAlias, /alternates: \{ canonical: 'https:\/\/urai\.app\/privacy-controls\/' \}/)
+  assert.match(privacyAlias, /redirect\('\/privacy-controls\/\?from=privacy'\)/)
 })
 
 test('entity registry distinguishes canonical product names from current and legacy technical aliases', () => {
