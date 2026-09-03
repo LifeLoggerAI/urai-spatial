@@ -1,12 +1,7 @@
 name: Materialize V60 Faceted Wall Relic
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v60-faceted-wall-relic.py
-      - .github/workflows/materialize-v60-faceted-wall-relic.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
