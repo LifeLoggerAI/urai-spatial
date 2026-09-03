@@ -4,32 +4,14 @@ export const dynamic = 'force-static'
 
 export default function robots(): MetadataRoute.Robots {
   return {
+    // Exported HTML is deny-by-default and public pages opt in with route
+    // metadata. Crawlers must be allowed to fetch a discovered private URL so
+    // they can observe its noindex directive; blocking it here can leave the
+    // URL indexed without content.
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: [
-          '/admin',
-          '/api/',
-          '/asset-audit',
-          '/brand-system',
-          '/capture/',
-          '/control',
-          '/focus/session/',
-          '/internal/',
-          '/invite/',
-          '/life-map/star/',
-          '/memory/',
-          '/passport/',
-          '/place/',
-          '/proof',
-          '/receipts',
-          '/replay/',
-          '/spatial/memory/',
-          '/tier',
-          '/u/',
-          '/v1',
-        ],
       },
     ],
     sitemap: 'https://urai.app/sitemap.xml',
