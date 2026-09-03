@@ -242,14 +242,18 @@ function CouncilStage() {
             </mesh>
 
             {DEMO_COUNCIL_AGENTS.map((agent, index) => (
-              {HUMAN_MODELS[index] ? <RiggedCouncilHuman
-                key={agent.id}
-                modelUrl={HUMAN_MODELS[index]}
-                index={index}
-                selected={selected === index}
-                reducedMotion={reducedMotion}
-                onSelect={() => setSelected(index)}
-              /> : <group key={agent.id} name={`council-semantic-presence-${agent.id}`} position={POSITIONS[index]} userData={{ fallback: 'no-rigged-human', agentId: agent.id }} />}
+              HUMAN_MODELS[index] ? (
+                <RiggedCouncilHuman
+                  key={agent.id}
+                  modelUrl={HUMAN_MODELS[index]}
+                  index={index}
+                  selected={selected === index}
+                  reducedMotion={reducedMotion}
+                  onSelect={() => setSelected(index)}
+                />
+              ) : (
+                <group key={agent.id} name={`council-semantic-presence-${agent.id}`} position={POSITIONS[index]} userData={{ fallback: 'no-rigged-human', agentId: agent.id }} />
+              )
             ))}
 
             {quality.tier === 'low' ? null : <ContactShadows position={[0, 0.01, -0.8]} opacity={0.48} scale={10} blur={2.7} far={7} />}
