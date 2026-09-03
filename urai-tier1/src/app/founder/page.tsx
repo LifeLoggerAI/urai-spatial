@@ -9,7 +9,13 @@ export const metadata: Metadata = {
   title: 'Adam Clamp — Founder',
   description: 'Adam Clamp is the founder and system architect behind URAI Labs and UrAi.',
   alternates: { canonical: 'https://urai.app/founder/' },
-  openGraph: { url: 'https://urai.app/founder/' },
+  openGraph: {
+    type: 'website',
+    url: 'https://urai.app/founder/',
+    title: 'Adam Clamp — Founder',
+    description: 'Adam Clamp is the founder and system architect behind URAI Labs and UrAi.',
+    siteName: 'UrAi',
+  },
 }
 
 export default function FounderPage() {
