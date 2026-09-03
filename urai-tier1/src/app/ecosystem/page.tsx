@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'UrAi Ecosystem',
   description: 'The factual relationship between UrAi, URAI Labs, the URAI Foundation, and supporting systems.',
-  alternates: { canonical: 'https://urai.app/ecosystem' },
-  openGraph: { url: 'https://urai.app/ecosystem' },
+  alternates: { canonical: 'https://urai.app/ecosystem/' },
+  openGraph: { url: 'https://urai.app/ecosystem/' },
 }
 
 const systems = [
