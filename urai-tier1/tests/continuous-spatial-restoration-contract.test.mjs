@@ -120,7 +120,7 @@ test('V76 is one continuous single-Canvas industrial sanctuary with governed ide
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(homeProduction, /dpr=\{1\}/)
   assert.match(homeProduction, /shadow-mapSize-width=\{768\}/)
-  assert.match(homeProduction, /yaw: yaw\\.current/)
+  assert.match(homeProduction, /yaw: yaw\.current/)
   assert.match(homeProduction, /new THREE\.BufferGeometry\(\)/)
   assert.doesNotMatch(homeProduction, /function StoneMass\(|function Beam\(|octahedronGeometry|icosahedronGeometry|capsuleGeometry/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
