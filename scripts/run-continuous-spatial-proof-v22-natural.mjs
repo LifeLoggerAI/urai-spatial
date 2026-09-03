@@ -1,4 +1,4 @@
-// V76 exact-head authority: run the grouped proof against the current production telemetry.
+// Current exact-head authority: run the grouped proof against the production telemetry.
 import { readFile, writeFile } from 'node:fs/promises'
 
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
@@ -6,7 +6,7 @@ const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', imp
 const original = await readFile(captureUrl, 'utf8')
 
 const sourceOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const runtimeOwner = "result.animationOwner === 'v76-curved-load-bearing-relic-machine'"
+const runtimeOwner = "result.animationOwner === 'v93-dimensional-governed-sanctuary'"
 if (original.split(sourceOwner).length - 1 !== 1) {
   throw new Error('Continuous proof animation-owner contract changed')
 }
