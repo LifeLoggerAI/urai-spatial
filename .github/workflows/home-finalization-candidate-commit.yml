@@ -39,7 +39,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact single-Canvas V83 governed candidate markers
+      - name: Verify exact single-Canvas V93 governed candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -75,8 +75,8 @@ jobs:
           grep -Fq 'connectedLoadPaths: true' "$art"
           grep -Fq 'data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"' "$source"
           grep -Fq 'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"' "$source"
-          grep -Fq 'data-home-visual-grade="cinematic-pbr-v76-photogrammetry-relic-machine"' "$source"
-          grep -Fq 'data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild"' "$source"
+          grep -Fq 'data-home-visual-grade="cinematic-pbr-v93-governed-dimensional-sanctuary"' "$source"
+          grep -Fq 'data-home-final-art-revision="v93-dimensional-governed-rebuild"' "$source"
           grep -Fq 'data-home-art-certification="v76-retained-pixel-candidate-not-certified"' "$source"
           grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"' "$source"
           grep -Fq 'data-home-telemetry-owner="embodied-motion-kernel-v66"' "$source"
@@ -100,7 +100,18 @@ jobs:
           grep -Fq "record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr'" "$proof"
           test "$(grep -Fo '<Canvas' "$source" | wc -l)" -eq 1
           ! grep -Fq '<Canvas' "$art"
-          ! grep -Eq '<VaultShell|<CantedWall|<DeepApse|<BearingRib|<ExtrudedBody' "$art"
+          grep -Fq 'name="home-v93-dimensional-sanctuary-architecture"' "$art"
+          grep -Fq "retainedPixelOwner: 'physical-pbr-three-dimensional-environment'" "$art"
+          grep -Fq 'function VaultShell(' "$art"
+          grep -Fq 'function CantedWall(' "$art"
+          grep -Fq 'function DeepApse(' "$art"
+          grep -Fq 'function BearingRib(' "$art"
+          grep -Fq '<VaultShell textures={textures.shell}' "$art"
+          grep -Fq '<CantedWall side="port" textures={textures.shell}' "$art"
+          grep -Fq '<CantedWall side="starboard" textures={textures.shell}' "$art"
+          grep -Fq '<DeepApse textures={textures.shell}' "$art"
+          grep -Fq '<BearingRib z={-3.8}' "$art"
+          grep -Fq '<BearingRib z={-9.55}' "$art"
           ! grep -Fq 'HomeV75RetainedPixelWorld' "$telemetry"
           ! grep -Eq '<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff' "$art"
           ! grep -Fq 'PRODUCTION CERTIFIED' "$source"
