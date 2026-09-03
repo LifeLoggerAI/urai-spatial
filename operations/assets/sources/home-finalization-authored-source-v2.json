@@ -87,5 +87,12 @@
         ]
       }
     }
-  ]
+  ],
+  "currentAuthority": false,
+  "evidenceStatus": "historical-superseded",
+  "authorityBoundary": {
+    "canonicalManifest": "operations/assets/launch-critical-assets.json",
+    "canonicalState": "pending-final-review",
+    "note": "Preserved authored-source receipt for predecessor binaries. Current GLB derivatives require a freshly bound source/provenance receipt."
+  }
 }

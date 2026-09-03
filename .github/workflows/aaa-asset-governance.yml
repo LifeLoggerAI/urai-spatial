@@ -7,6 +7,10 @@ on:
       - 'urai-tier1/public/assets/urai/generated/fallbacks/**'
       - 'urai-tier1/public/assets/urai/generated/haptics/**'
       - 'scripts/verify-aaa-asset-governance.mjs'
+      - 'scripts/verify-asset-authority-consistency.mjs'
+      - 'tests/asset-authority-consistency.test.mjs'
+      - 'urai-tier1/src/spatial/assets/assetManifest.ts'
+      - 'urai-tier1/src/spatial/assets/assetPromotionState.ts'
       - '.github/workflows/aaa-asset-governance.yml'
   workflow_dispatch:
 
@@ -33,4 +37,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node scripts/verify-aaa-asset-governance.mjs
+      - name: Test asset authority consistency
+        run: node --test tests/asset-authority-consistency.test.mjs
+      - name: Verify asset authority consistency
+        run: node scripts/verify-asset-authority-consistency.mjs
+      - name: Verify AAA asset governance
+        run: node scripts/verify-aaa-asset-governance.mjs

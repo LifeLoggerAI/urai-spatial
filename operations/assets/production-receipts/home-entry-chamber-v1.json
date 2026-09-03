@@ -3,20 +3,40 @@
   "id": "home-entry-chamber-v1",
   "assetId": "home-entry-chamber-model-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "targetRoutes": ["/", "/home"],
+  "targetRoutes": [
+    "/",
+    "/home"
+  ],
   "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
   "bytes": 184160,
   "measured": {
     "triangleCount": 12934,
     "boundsMeters": {
-      "min": [-9.345, -1.83, -9.238],
-      "max": [9.345, 5.0844, 7.452],
-      "size": [18.69, 6.9144, 16.69]
+      "min": [
+        -9.345,
+        -1.83,
+        -9.238
+      ],
+      "max": [
+        9.345,
+        5.0844,
+        7.452
+      ],
+      "size": [
+        18.69,
+        6.9144,
+        16.69
+      ]
     },
     "repairedEulerRotations": 2,
     "nodeCount": 160,
     "materialCount": 13,
-    "animationClips": ["Home_Breathing", "Presence_Idle", "Presence_Privacy", "Presence_Forming"]
+    "animationClips": [
+      "Home_Breathing",
+      "Presence_Idle",
+      "Presence_Privacy",
+      "Presence_Forming"
+    ]
   },
   "compressionStatus": "meshopt",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",
@@ -46,5 +66,13 @@
   "paidExecutionAuthorized": true,
   "providerCallsForPromotion": 0,
   "providerSpendForPromotionUsd": "0.00",
-  "providerRegenerationSkippedReason": "The exact accepted Meshopt binary was already present on current main; regeneration would spend credits without changing the reviewed artifact."
+  "providerRegenerationSkippedReason": "The exact accepted Meshopt binary was already present on current main; regeneration would spend credits without changing the reviewed artifact.",
+  "currentAuthority": false,
+  "evidenceStatus": "historical-superseded",
+  "authorityBoundary": {
+    "canonicalManifest": "operations/assets/launch-critical-assets.json",
+    "canonicalState": "pending-final-review",
+    "note": "Preserved historical evidence only. It cannot authorize the current asset bytes, promotion, merge, or deployment.",
+    "currentBinarySha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2"
+  }
 }

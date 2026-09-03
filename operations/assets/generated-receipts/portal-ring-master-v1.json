@@ -5,7 +5,7 @@
   "bytes": 242072,
   "sha256": "5b751cc6e7caa9667d48e4860e76a7b39f6cf84a60afb252497a19f323bb19c5",
   "measured": {
-    "triangleCount": 7576,
+    "triangleCount": 3816,
     "boundsMeters": {
       "min": [
         -1.9753,
@@ -24,7 +24,7 @@
       ]
     },
     "repairedEulerRotations": 2,
-    "nodeCount": 53,
+    "nodeCount": 40,
     "materialCount": 8,
     "animationClips": [
       "Portal_Closed",
