@@ -39,7 +39,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact single-Canvas V93 governed dimensional candidate markers
+      - name: Verify exact single-Canvas open-canyon candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -100,9 +100,9 @@ jobs:
           grep -Fq "record.visibleProductionAssets === 'governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr'" "$proof"
           test "$(grep -Fo '<Canvas' "$source" | wc -l)" -eq 1
           ! grep -Fq '<Canvas' "$art"
-          grep -Fq '<VaultShell textures={textures.shell}' "$art"
+          grep -Fq '<OpenAtmosphere />' "$art"
           grep -Fq '<CantedWall side="port" textures={textures.shell}' "$art"
-          grep -Fq '<DeepApse textures={textures.shell}' "$art"
+          grep -Fq '<TerracedGround textures={textures.ground} onWalk={onWalk} />' "$art"
           grep -Fq '<BearingRib z={-3.8}' "$art"
           grep -Fq 'const rejectedFamily = /^(?:sanctuary-terrain|' "$art"
           grep -Fq 'root.traverse((object) => {' "$art"
