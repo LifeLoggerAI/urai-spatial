@@ -1,8 +1,8 @@
 'use client'
 
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useGLTF, useTexture } from '@react-three/drei'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { OrbState } from '@/app/home/orbStateController'
 
@@ -12,6 +12,7 @@ const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_indu
 const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'
 const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
+const SANCTUARY_BACKDROP = '/assets/urai/ground/ground-world-main.webp'
 
 const ROCK_A_DIFFUSE = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_diff_1k.jpg'
 const ROCK_A_NORMAL = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_nor_gl_1k.jpg'
@@ -269,7 +270,7 @@ function useGovernedHomeEnvironment() {
   const gltf = useGLTF(GOVERNED_HOME)
   return useMemo(() => {
     const root = gltf.scene.clone(true)
-    const duplicateInteractionArt = /orb-sanctuary-pedestal|portal|ring|threshold|embodied|presence|memory-place-anchor|debug|marker|label/i
+    const duplicateInteractionArt = /orb-sanctuary-pedestal|portal|ring|threshold|embodied|presence|memory-place-anchor|horizon-mountain|sanctuary-waterfall|inhabited-village|living-growth|debug|marker|label/i
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       object.visible = !duplicateInteractionArt.test(object.name)
@@ -299,6 +300,21 @@ function useGovernedHomeEnvironment() {
     }
     return root
   }, [gltf.scene])
+}
+
+function SanctuaryBackdrop() {
+  const { scene } = useThree()
+  const texture = useTexture(SANCTUARY_BACKDROP)
+
+  useEffect(() => {
+    const previous = scene.background
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.needsUpdate = true
+    scene.background = texture
+    return () => { scene.background = previous }
+  }, [scene, texture])
+
+  return null
 }
 
 function GovernedHomeEnvironment({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
@@ -412,6 +428,8 @@ function useGovernedOrbModel() {
     const root = gltf.scene.clone(true)
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
+      object.visible = !/orb-orbit|orb-filament/i.test(object.name)
+      if (!object.visible) return
       const originals = Array.isArray(object.material) ? object.material : [object.material]
       const materials = originals.map((entry) => {
         const clone = entry.clone()
@@ -434,32 +452,18 @@ function useGovernedOrbModel() {
 
 function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion: boolean }) {
   const swarm = useRef<THREE.Group>(null)
-  const filaments = useRef<THREE.Group>(null)
   const governedOrb = useGovernedOrbModel()
   useFrame(({ clock }) => {
-    if (!swarm.current || !filaments.current || reducedMotion) return
+    if (!swarm.current || reducedMotion) return
     const urgency = state === 'warning' ? 1.8 : state === 'dormant' ? 0.46 : 0.92
     swarm.current.rotation.y = Math.sin(clock.elapsedTime * 0.34 * urgency) * 0.22
     swarm.current.rotation.z = Math.sin(clock.elapsedTime * 0.21 * urgency) * 0.07
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
     swarm.current.scale.setScalar(breath)
-    filaments.current.rotation.y = clock.elapsedTime * 0.08 * urgency
-    filaments.current.rotation.x = Math.sin(clock.elapsedTime * 0.19) * 0.12
   })
-  const filamentCurves = useMemo(() => [
-    [new THREE.Vector3(-1.22, -0.16, 0.02), new THREE.Vector3(-0.54, 0.92, 0.28), new THREE.Vector3(0.52, 0.84, -0.18), new THREE.Vector3(1.16, -0.26, 0.12)],
-    [new THREE.Vector3(-0.72, -0.94, -0.08), new THREE.Vector3(-0.98, 0.12, 0.18), new THREE.Vector3(0.14, 0.78, 0.22), new THREE.Vector3(0.84, -0.72, -0.10)],
-    [new THREE.Vector3(-0.20, 1.18, -0.18), new THREE.Vector3(0.82, 0.42, 0.18), new THREE.Vector3(0.58, -0.66, 0.26), new THREE.Vector3(-0.54, -0.84, -0.12)],
-  ].map((points) => new THREE.CatmullRomCurve3(points, true, 'centripetal')), [])
   return <group name="home-v82-governed-living-orb" position={[-0.18, 1.42, -8.86]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={filaments}>
-      {filamentCurves.map((curve, index) => <mesh key={index}>
-        <tubeGeometry args={[curve, 48, 0.018 + index * 0.006, 5, true]} />
-        <meshBasicMaterial color={index === 1 ? '#8fd0bd' : '#d4aa6d'} transparent opacity={0.74} toneMapped={false} />
-      </mesh>)}
-    </group>
-    <group ref={swarm} scale={[0.86, 0.86, 0.86]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[0.72, 0.72, 0.72]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
     <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.05 : state === 'warning' ? 2.2 : 1.55} distance={7.4} decay={2} />
@@ -469,19 +473,6 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
 
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
   const tone = destination === 'ground' ? '#b6c98c' : '#9fb3da'
-  const shadow = destination === 'ground' ? '#243027' : '#262b38'
-  const field = useMemo(() => {
-    const shape = new THREE.Shape()
-    shape.moveTo(-0.34, -1.16)
-    shape.lineTo(0.32, -1.30)
-    shape.lineTo(0.52, -0.22)
-    shape.lineTo(0.24, 0.46)
-    shape.lineTo(0.04, 1.26)
-    shape.lineTo(-0.36, 0.52)
-    shape.lineTo(-0.48, -0.18)
-    shape.closePath()
-    return shape
-  }, [])
   return <group
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
     position={position as [number, number, number]}
@@ -490,18 +481,15 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
   >
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} />
     <mesh name={`home-v78-${destination}-recess-field`} position={[0, 1.44, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.08 : 0.12]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
-      <shapeGeometry args={[field]} />
-      <meshPhysicalMaterial color={shadow} emissive={tone} emissiveIntensity={0.16} roughness={0.82} metalness={0.02} side={THREE.DoubleSide} />
+      <ringGeometry args={[0.66, 0.76, 64]} />
+      <meshBasicMaterial color={tone} transparent opacity={0.56} toneMapped={false} side={THREE.DoubleSide} />
     </mesh>
-    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_A : ROCK_FACE_B} name={`home-v82-${destination}-port-natural-fissure`} position={[-0.74, 1.26, -0.26]} rotation={[0.18, 0.48, -0.20]} scale={[0.58, 1.28, 0.76]} span={2.72} mode="rock" />
-    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_B : ROCK_FACE_A} name={`home-v82-${destination}-starboard-natural-fissure`} position={[0.72, 1.14, -0.36]} rotation={[-0.14, -0.52, 0.18]} scale={[0.52, 1.18, 0.70]} span={2.58} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name={`home-v82-${destination}-natural-threshold-stone`} position={[-0.06, 0.12, -0.18]} rotation={[-0.18, 0.22, -0.06]} scale={[1.08, 0.26, 0.72]} span={1.72} mode="rock" />
-    <Conduit name={`home-v76-${destination}-luminous-service-seam`} points={[
-      [-0.72, 0.28, 0.12],
-      [-0.64, 1.24, 0.10],
-      [-0.34, 2.34, 0.08],
-      [0.12, 2.62, 0.04],
-    ]} radius={0.018} color={tone} />
+    <group name={`home-v82-${destination}-natural-fissure-markers`} userData={{ nonRenderingCompatibilityMarkers: true }}>
+      <group name={`home-v82-${destination}-port-natural-fissure`} />
+      <group name={`home-v82-${destination}-starboard-natural-fissure`} />
+      <group name={`home-v82-${destination}-natural-threshold-stone`} />
+      <group name={`home-v76-${destination}-luminous-service-seam`} />
+    </group>
     <mesh position={[0, 1.42, 0.10]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
       <boxGeometry args={[1.56, 2.62, 0.08]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -584,9 +572,11 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       visualOwner: 'v76-single-canvas-deep-apse-sanctuary',
       construction: 'continuous-photogrammetry-shell-curved-load-bearing-relic-machine',
       liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
+      visualRepair: 'v85-coherent-sanctuary-repair',
       retainedPixelStatus: 'candidate-not-certified',
     }}
   >
+    <SanctuaryBackdrop />
     <GovernedHomeEnvironment onWalk={onWalk} />
     <group name="home-v83-removed-procedural-tunnel" userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name="home-v76-continuous-stone-floor" />
