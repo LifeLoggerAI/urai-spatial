@@ -123,24 +123,41 @@ async function closeAndRecordVideo(context, page, id) {
 async function waitForAssetHome(page, { ready = true } = {}) {
   await page.locator(ownerSelector).waitFor({ state: 'visible', timeout: 45_000 })
   if (ready) {
-    await page.waitForFunction((selector) => {
-      const owner = document.querySelector(selector)
-      if (!owner) return false
-      const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
-        .some((node) => {
+    try {
+      await page.waitForFunction((selector) => {
+        const owner = document.querySelector(selector)
+        if (!owner) return false
+        const loadingVisible = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')]
+          .some((node) => {
+            const style = getComputedStyle(node)
+            const rect = node.getBoundingClientRect()
+            return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
+              && rect.width > 4 && rect.height > 4
+          })
+        return owner.getAttribute('data-home-assets-ready') === 'true'
+          && owner.getAttribute('data-home-input-ready') === 'true'
+          && owner.getAttribute('data-home-interaction-ready') === 'true'
+          && owner.getAttribute('data-home-ready') === 'true'
+          && owner.getAttribute('data-home-input-owner') === 'window-capture-movement'
+          && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel-v66'
+          && !loadingVisible
+      }, ownerSelector, { timeout: 45_000 })
+    } catch (error) {
+      const diagnostic = await page.evaluate((selector) => {
+        const owner = document.querySelector(selector)
+        const attributes = owner ? Object.fromEntries([...owner.attributes].map((entry) => [entry.name, entry.value])) : null
+        const loading = [...document.querySelectorAll('.home-runtime-loading, .home-world-loading, .home-world-loading-canvas')].map((node) => {
           const style = getComputedStyle(node)
           const rect = node.getBoundingClientRect()
-          return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.02
-            && rect.width > 4 && rect.height > 4
+          return { className: node.className, display: style.display, visibility: style.visibility, opacity: style.opacity, width: rect.width, height: rect.height }
         })
-      return owner.getAttribute('data-home-assets-ready') === 'true'
-        && owner.getAttribute('data-home-input-ready') === 'true'
-        && owner.getAttribute('data-home-interaction-ready') === 'true'
-        && owner.getAttribute('data-home-ready') === 'true'
-        && owner.getAttribute('data-home-input-owner') === 'window-capture-movement'
-        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel-v66'
-        && !loadingVisible
-    }, ownerSelector, { timeout: 45_000 })
+        return { attributes, loading, canvasCount: document.querySelectorAll('canvas').length, title: document.title, url: location.href }
+      }, ownerSelector)
+      const screenshot = `home-readiness-timeout-${safeName(exactHead.slice(0, 12))}.png`
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: true }).catch(() => {})
+      receipt.errors.push({ id: 'home-readiness-timeout', screenshot, diagnostic })
+      throw new Error(`Home readiness timed out: ${JSON.stringify(diagnostic)}; cause=${String(error)}`)
+    }
   }
   await waitFrames(page, 3)
 }
