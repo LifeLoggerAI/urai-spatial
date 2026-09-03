@@ -14,6 +14,7 @@ on:
       - 'urai-tier1/src/spatial/**'
       - 'urai-tier1/src/app/**'
       - 'urai-tier1/tests/sensory-asset-resolution-contract.test.mjs'
+      - 'docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json'
       - 'operations/assets/production-sensory-asset-receipt.json'
       - '.github/workflows/aaa-asset-governance.yml'
   workflow_dispatch:
