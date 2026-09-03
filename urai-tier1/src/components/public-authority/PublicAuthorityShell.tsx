@@ -8,7 +8,7 @@ const nav = [
   ['Ecosystem', '/ecosystem'],
   ['Press', '/press'],
   ['Status', '/status'],
-  ['Privacy', '/privacy'],
+  ['Privacy', '/privacy-controls/'],
 ] as const
 
 export default function PublicAuthorityShell({
