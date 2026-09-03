@@ -91,7 +91,7 @@ function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLSt
 }
 
 function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefObject<OrbitControlsImpl | null>; recenterSignal: number; shellRef: RefObject<HTMLElement | null> }) {
-  const { camera } = useThree()
+  const { camera, invalidate } = useThree()
   const keys = useRef(new Set<string>())
   const target = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
   const defaultTarget = useMemo(() => new THREE.Vector3(...DEFAULT_TARGET), [])
@@ -105,11 +105,12 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
       if (event.target instanceof HTMLElement && event.target.matches('input,textarea,select,[contenteditable="true"]')) return
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
         keys.current.add(event.code)
+        invalidate()
         event.preventDefault()
       }
     }
-    const up = (event: KeyboardEvent) => keys.current.delete(event.code)
-    const clearKeys = () => keys.current.clear()
+    const up = (event: KeyboardEvent) => { keys.current.delete(event.code); invalidate() }
+    const clearKeys = () => { keys.current.clear(); invalidate() }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
     window.addEventListener('blur', clearKeys)
@@ -119,7 +120,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
       window.removeEventListener('keyup', up)
       window.removeEventListener('blur', clearKeys)
     }
-  }, [])
+  }, [invalidate])
 
   useEffect(() => {
     camera.position.set(...DEFAULT_CAMERA)
@@ -150,7 +151,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
         if (keys.current.has('KeyD') || keys.current.has('ArrowRight')) movementVector.add(rightVector)
         if (keys.current.has('KeyA') || keys.current.has('ArrowLeft')) movementVector.sub(rightVector)
         if (movementVector.lengthSq()) {
-          movementVector.normalize().multiplyScalar(2.15 * Math.min(delta, 0.05))
+          movementVector.normalize().multiplyScalar(2.15 * Math.min(delta, 0.25))
           camera.position.add(movementVector)
           camera.position.x = THREE.MathUtils.clamp(camera.position.x, -CAMERA_LIMIT, CAMERA_LIMIT)
           camera.position.y = THREE.MathUtils.clamp(camera.position.y, -1.2, 5.5)
