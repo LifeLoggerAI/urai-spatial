@@ -74,7 +74,7 @@ jobs:
           grep -Fq 'HomeV76Sanctuary' "$source"
           grep -Fq 'home-v83-governed-open-sanctuary-environment' "$art"
           grep -Fq 'home-v83-authored-open-sanctuary' "$art"
-          grep -Fq 'committed-governed-home-environment' "$art"
+          grep -Fq 'committed-governed-home-distant-architectural-relief' "$art"
           grep -Fq 'home-v83-removed-procedural-tunnel' "$art"
           grep -Fq 'home-v83-removed-panel-like-orb-armor' "$art"
           grep -Fq "liveArtRevision: 'v93-governed-dimensional-sanctuary'" "$art"
