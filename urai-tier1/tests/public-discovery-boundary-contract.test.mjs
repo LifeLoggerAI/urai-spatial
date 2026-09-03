@@ -62,9 +62,13 @@ test('each authority page owns its canonical Open Graph URL', () => {
   }
 })
 
-test('sitemap has one Home URL and exported trailing-slash canonicals', () => {
-  assert.match(sitemap, /const publicRoutes = \[\s*'\/'/)
-  assert.doesNotMatch(sitemap, /'\/home'/)
+test('sitemap has one Home URL, excludes redirect aliases, and matches exported trailing-slash canonicals', () => {
+  const entries = evaluateSitemap()
+  const urls = entries.map((entry) => entry.url)
+  assert.equal(urls.filter((url) => url === 'https://urai.app/').length, 1)
+  assert.ok(urls.every((url) => url.endsWith('/')))
+  assert.ok(!urls.includes('https://urai.app/home/'))
+  assert.ok(!urls.includes('https://urai.app/privacy/'))
 })
 
 test('entity registry distinguishes canonical product names from current and legacy technical aliases', () => {
