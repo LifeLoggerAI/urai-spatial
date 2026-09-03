@@ -11,6 +11,10 @@ on:
       - 'tests/asset-authority-consistency.test.mjs'
       - 'urai-tier1/src/spatial/assets/assetManifest.ts'
       - 'urai-tier1/src/spatial/assets/assetPromotionState.ts'
+      - 'urai-tier1/src/spatial/**'
+      - 'urai-tier1/src/app/**'
+      - 'urai-tier1/tests/sensory-asset-resolution-contract.test.mjs'
+      - 'operations/assets/production-sensory-asset-receipt.json'
       - '.github/workflows/aaa-asset-governance.yml'
   workflow_dispatch:
 
