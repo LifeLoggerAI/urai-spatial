@@ -15,7 +15,7 @@ import {
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
 
-const GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";
+const GROUND_MODEL = resolvePromotedUraiSpatialAssetPath('ground-world-terrain-glb-v1')!;
 const BOUNDS = { minX: -14, maxX: 14, minZ: -34, maxZ: 11 };
 const SPAWN = new THREE.Vector3(0, 0, 4);
 
