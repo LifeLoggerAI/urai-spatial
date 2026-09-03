@@ -14,7 +14,7 @@ import styles from './HomeWorldProduction.module.css'
 const SANCTUARY = resolvePromotedUraiSpatialAssetPath('home-entry-chamber-model-v1')!
 const ORB_MODEL = resolvePromotedUraiSpatialAssetPath('urai-orb-avatar-glb-v1')!
 const PORTAL_MODEL = resolvePromotedUraiSpatialAssetPath('portal-ring-master-glb-v1')!
-const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
+const HUMAN = resolvePromotedUraiSpatialAssetPath('home-human-makehuman-v4')
 const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const SPAWN = new THREE.Vector3(2.35, 0.04, 7.9)
 const ORB = new THREE.Vector3(0, 1.62, -2.65)
@@ -623,8 +623,8 @@ function OrbPlatform() {
   </group>
 }
 
-function HumanPresence({ root }: { root: MutableRefObject<THREE.Group | null> }) {
-  const human = useGLTF(HUMAN)
+function HumanPresence({ root, modelUrl }: { root: MutableRefObject<THREE.Group | null>; modelUrl: string }) {
+  const human = useGLTF(modelUrl)
   const model = useMemo(() => cloneAuthoredModel(human.scene), [human.scene])
   return <group ref={root} name="home-authored-embodied-self" position={SPAWN} rotation={[0,Math.PI,0]} userData={{ presentation: 'privacy-preserving-first-person-presence' }}><primitive object={model} visible={false} scale={0.72} /></group>
 }
@@ -750,7 +750,7 @@ function SacredScene(props:{input:MovementInput;yaw:MutableRefObject<number>;pit
     <MoonAndMist reducedMotion={props.reducedMotion} />
     <OrbPlatform />
     <SacredOrb state={props.orbState} reducedMotion={props.reducedMotion} onOpen={props.onOrb} />
-    <HumanPresence root={props.avatar} />
+    {HUMAN ? <HumanPresence root={props.avatar} modelUrl={HUMAN} /> : <group name="home-semantic-human-presence" userData={{ fallback: 'no-rigged-human' }} />}
     <Thresholds onGround={props.onGround} onLifeMap={props.onLifeMap} />
     <ContactShadows position={[0,0.05,-2.2]} opacity={0.38} scale={20} blur={2.8} far={7} resolution={256} frames={1} color="#171b17" />
     <PlayerRig input={props.input} yaw={props.yaw} pitch={props.pitch} target={props.target} avatar={props.avatar} onNearby={props.nearby} transition={props.transition} reducedMotion={props.reducedMotion} onTransitionComplete={props.onTransitionComplete} />
@@ -832,5 +832,5 @@ export function HomeWorldProductionSacred({onOrbOpen=requestUraiWorldOrbOpen,web
 useGLTF.preload(SANCTUARY)
 useGLTF.preload(ORB_MODEL)
 useGLTF.preload(PORTAL_MODEL)
-useGLTF.preload(HUMAN)
+if (HUMAN) useGLTF.preload(HUMAN)
 useGLTF.preload(FERN_MODEL)
