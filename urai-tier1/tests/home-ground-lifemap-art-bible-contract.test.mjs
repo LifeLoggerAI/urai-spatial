@@ -92,7 +92,7 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
     assert.ok(homeProduction.includes(clip), `missing governed Orb state clip identity: ${clip}`)
   }
 
-  assert.match(homeProduction, /data-home-art-certification="v76-retained-pixel-candidate-not-certified"/)
+  assert.match(homeProduction, /data-home-art-certification="v122-retained-pixels-pending-not-certified"/)
   assert.match(homeProduction, /privacy-preserving-first-person-presence-v76/)
   assert.match(homeProduction, /function PortalFrame\(/)
   assert.match(homeProduction, /governedPortalIdentity: GOVERNED_PORTAL/)
