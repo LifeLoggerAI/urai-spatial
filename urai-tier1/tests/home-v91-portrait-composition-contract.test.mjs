@@ -16,11 +16,15 @@ test('V93 uses one opaque responsive Canvas for the same dimensional world on de
   assert.match(styles, /\.canvas/)
 })
 
-test('V93 removes the flat backdrop and retains dimensional governed and PBR architecture', () => {
+test('V98 removes the flat backdrop and retains open dimensional governed and PBR architecture', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
-  assert.match(art, /home-v93-dimensional-sanctuary-architecture/)
+  assert.match(art, /home-v98-open-canyon-sanctuary-architecture/)
+  assert.match(art, /<OpenAtmosphere \/>/)
+  assert.match(art, /<TerracedGround textures=\{textures\.floor\}/)
   assert.match(art, /<VaultShell textures=\{textures\.shell\}/)
   assert.match(art, /<DeepApse textures=\{textures\.shell\}/)
+  assert.match(art, /home-v98-distant-ridge/)
+  assert.match(art, /home-v98-\$\{destination\}-single-connected-rock-cut-frame/)
   assert.match(art, /<primitive object=\{environment\}/)
   assert.match(art, /portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene'/)
 })

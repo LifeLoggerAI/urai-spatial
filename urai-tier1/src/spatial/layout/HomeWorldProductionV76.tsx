@@ -107,6 +107,11 @@ function VaultShell({ textures }: { textures: TextureSet }) {
 
     for (let zIndex = 0; zIndex < zSegments; zIndex += 1) {
       for (let xIndex = 0; xIndex < xSegments; xIndex += 1) {
+        const xCenter = -6.35 + ((xIndex + 0.5) / xSegments) * 12.7
+        // Keep two load-bearing canopy shelves while opening the full center
+        // to atmospheric depth. This preserves a real roof structure without
+        // returning to the rejected sealed cave/room composition.
+        if (Math.abs(xCenter) < 3.35) continue
         const a = zIndex * (xSegments + 1) + xIndex
         const b = a + 1
         const c = a + xSegments + 1
@@ -201,6 +206,10 @@ function DeepApse({ textures }: { textures: TextureSet }) {
 
     for (let yIndex = 0; yIndex < ySegments; yIndex += 1) {
       for (let xIndex = 0; xIndex < xSegments; xIndex += 1) {
+        const xCenter = -6.2 + ((xIndex + 0.5) / xSegments) * 12.4
+        // Retain asymmetric rear bearing wings and leave a broad central
+        // horizon opening for the Orb, ridge and sky to occupy in depth.
+        if (Math.abs(xCenter) < 3.15) continue
         const a = yIndex * (xSegments + 1) + xIndex
         const b = a + 1
         const c = a + xSegments + 1
@@ -371,8 +380,10 @@ function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>)
   return <group name="home-v98-open-canyon-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment', composition: 'open-terraced-canyon-with-atmospheric-depth' }}>
     <OpenAtmosphere />
     <TerracedGround textures={textures.floor} onWalk={onWalk} />
+    <VaultShell textures={textures.shell} />
     <CantedWall side="port" textures={textures.shell} />
     <CantedWall side="starboard" textures={textures.shell} />
+    <DeepApse textures={textures.shell} />
     <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
     <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
     <ProductionAsset url={ROCK_FACE_A} name="home-v95-port-entry-buttress" position={[-5.92, 0.72, -0.20]} rotation={[0.08, 1.04, -0.12]} scale={[0.90, 1.08, 0.86]} span={2.62} mode="rock" />
