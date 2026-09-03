@@ -1,6 +1,6 @@
 export type UraiSpatialAssetType = 'model' | 'texture' | 'skybox' | 'portal' | 'world' | 'ui' | 'audio' | 'fallback'
 export type UraiSpatialAssetStatus = 'ready' | 'candidate' | 'fallback' | 'missing' | 'future'
-export type UraiSpatialTargetSurface = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'status' | 'ar-vr' | 'global'
+export type UraiSpatialTargetSurface = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'status' | 'council' | 'ar-vr' | 'global'
 
 export interface UraiSpatialAssetManifestEntry {
   readonly id: string
