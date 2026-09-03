@@ -8,6 +8,8 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/ground/' },
+  openGraph: { url: 'https://urai.app/ground/' },
   title: 'URAI Ground',
   description: 'The URAI Ground route opens the final walkable first-person ground layer.',
 }
