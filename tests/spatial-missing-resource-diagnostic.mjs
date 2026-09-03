@@ -237,9 +237,16 @@ try {
         await page.waitForTimeout(100);
       }
       if (pendingLocalAssets.size > 0) {
-        throw new Error(`Spatial diagnostic asset settle timed out for ${route}: ${[
-          ...pendingLocalAssets,
-        ].map((request) => request.url()).join(', ')}`);
+        for (const request of pendingLocalAssets) {
+          failedRequests.push({
+            kind: 'request-failed',
+            status: 0,
+            url: request.url(),
+            method: request.method(),
+            resourceType: request.resourceType(),
+            failure: 'diagnostic asset settle timeout',
+          });
+        }
       }
     } finally {
       page.removeListener('request', trackLocalAsset);
