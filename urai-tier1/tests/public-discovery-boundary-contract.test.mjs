@@ -61,7 +61,7 @@ test('each authority page owns its canonical Open Graph URL', () => {
   for (const [route, sourcePath] of authorityRoutes) {
     const source = read(sourcePath)
     assert.ok(source.includes(`alternates: { canonical: 'https://urai.app/${route}/' }`), `missing canonical URL for /${route}`)
-    const openGraph = source.match(/openGraph:\\s*\\{[\\s\\S]*?\\n  \\},/)?.[0] ?? ''
+    const openGraph = source.match(/openGraph:\s*\{[\s\S]*?\n  \},/)?.[0] ?? ''
     assert.ok(openGraph.includes(`url: 'https://urai.app/${route}/'`), `missing Open Graph URL for /${route}`)
     assert.match(openGraph, /title:/, `missing Open Graph title for /${route}`)
     assert.match(openGraph, /description:/, `missing Open Graph description for /${route}`)
