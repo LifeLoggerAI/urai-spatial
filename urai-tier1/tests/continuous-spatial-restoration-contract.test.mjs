@@ -60,6 +60,9 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="makehuman-v4"',
     'data-home-movement="walk-keyboard-click-touch"',
+    'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
+    'data-home-portal-sequence={portalSequence}',
+    'data-home-portal-lifecycle="environmental-approach-traversal-arrival"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain',
@@ -127,6 +130,8 @@ test('Home Ground entry is a physical environmental descent rather than a floati
   assert.match(homeProduction, /home-ground-environmental-threshold/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
+  assert.match(homeProduction, /setPortalSequence\(`\$\{destination\}:traversal`\)/)
+  assert.match(homeProduction, /setPortalSequence\(`\$\{destination\}:closing`\)/)
   assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
 })
 
