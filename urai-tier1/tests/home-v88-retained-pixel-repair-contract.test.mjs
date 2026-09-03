@@ -21,7 +21,8 @@ test('V95 replaces rings and foreground occluders with human-scale integrated th
   assert.match(world, /home-v95-\$\{destination\}-threshold-lintel/)
   assert.match(world, /scale=\{\[0\.78, 0\.78, 0\.78\]\}/)
   assert.match(world, /home-v96-\$\{destination\}-recess-depth/)
-  assert.match(world, /home-v96-\$\{destination\}-(?:port|starboard)-threshold-rock/)
+  assert.match(world, /home-v97-\$\{destination\}-(?:port|starboard)-(?:lower|shoulder)-masonry/)
+  assert.match(world, /home-v97-\$\{destination\}-floor-integrated-guidance/)
   assert.doesNotMatch(world, /home-v93-(?:port|starboard)-foreground-rock-mass/)
 })
 
