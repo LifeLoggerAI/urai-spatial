@@ -109,7 +109,7 @@ test('Home is the live single-Canvas V76 relic sanctuary with governed identitie
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /destination: 'infrastructure-hub'/)
   assert.match(homeProduction, /destination: 'life-map'/)
-  assert.match(homeProduction, /yaw: 0/)
+  assert.match(homeProduction, /yaw: yaw\\.current/)
   assert.match(homeProduction, /dpr=\{1\}/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
   assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
