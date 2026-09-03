@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url'
 const DEFAULT_ROOT = process.cwd()
 const CANONICAL_MANIFEST = 'operations/assets/launch-critical-assets.json'
 const RUNTIME_MANIFEST = 'urai-tier1/src/spatial/assets/assetManifest.ts'
+const SENSORY_RUNTIME_MANIFEST = 'urai-tier1/src/spatial/assets/sensoryAssetManifest.ts'
 const PROMOTION_STATE = 'urai-tier1/src/spatial/assets/assetPromotionState.ts'
 const HISTORICAL_LEDGER = 'docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json'
 
@@ -77,6 +78,18 @@ export function canonicalRuntimeStatusErrors({ canonicalAssets, runtimeManifestS
     }
   }
 
+  return errors
+}
+
+export function sensoryRuntimeStatusErrors({ canonicalAssets, sensoryManifestSource }) {
+  const errors = []
+  const canonicalById = new Map(canonicalAssets.map((asset) => [asset.id, asset]))
+  for (const match of sensoryManifestSource.matchAll(/id:\s*'([^']+)'[\s\S]*?status:\s*'([^']+)'/g)) {
+    const canonical = canonicalById.get(match[1])
+    if (canonical?.releaseState === 'pending-final-review' && match[2] === 'ready') {
+      errors.push(`${canonical.id}: canonical pending sensory asset is runtime-ready`)
+    }
+  }
   return errors
 }
 
@@ -154,10 +167,11 @@ export function productionEvidenceErrors({ asset, evidence, payload, evidencePat
   return errors
 }
 
-export function routeConsumptionErrors({ asset, evidence, root, routeOwners = ROUTE_OWNERS }) {
+export function routeConsumptionErrors({ asset, evidence, root, runtimeManifestSource = '', routeOwners = ROUTE_OWNERS }) {
   if (evidence.currentAuthority === false || evidence.routeConsumptionVerified !== true) return []
   const errors = []
   const fileName = path.basename(asset.fixedPath)
+  const runtimeId = [...finalGlbEntries(runtimeManifestSource)].find(([, candidateFile]) => candidateFile === fileName)?.[0] ?? null
   for (const route of asset.targetRoutes ?? []) {
     const ownerPath = routeOwners[route]
     if (!ownerPath) {
@@ -165,7 +179,7 @@ export function routeConsumptionErrors({ asset, evidence, root, routeOwners = RO
       continue
     }
     const absolute = path.join(root, ownerPath)
-    if (!fs.existsSync(absolute) || !fs.readFileSync(absolute, 'utf8').includes(fileName)) {
+    if (!fs.existsSync(absolute) || ![fileName, runtimeId].filter(Boolean).some((token) => fs.readFileSync(absolute, 'utf8').includes(token))) {
       errors.push(`${asset.id}: claimed route ${route} owner ${ownerPath} does not consume ${fileName}`)
     }
   }
@@ -182,10 +196,15 @@ export function collectAuthorityErrors(root = DEFAULT_ROOT) {
   const manifest = readJson(root, CANONICAL_MANIFEST)
   const canonicalAssets = manifest.assets ?? []
   const byId = new Map(canonicalAssets.map((asset) => [asset.id, asset]))
+  const runtimeManifestSource = readText(root, RUNTIME_MANIFEST)
   errors.push(...canonicalRuntimeStatusErrors({
     canonicalAssets,
-    runtimeManifestSource: readText(root, RUNTIME_MANIFEST),
+    runtimeManifestSource,
     promotionStateSource: readText(root, PROMOTION_STATE),
+  }))
+  errors.push(...sensoryRuntimeStatusErrors({
+    canonicalAssets,
+    sensoryManifestSource: readText(root, SENSORY_RUNTIME_MANIFEST),
   }))
 
   const ledger = readJson(root, HISTORICAL_LEDGER)
@@ -209,7 +228,7 @@ export function collectAuthorityErrors(root = DEFAULT_ROOT) {
       if (!asset || evidence.fixedPath !== asset.fixedPath && evidence.canonicalPath !== asset.fixedPath) continue
       const payload = fs.readFileSync(path.join(root, asset.fixedPath))
       errors.push(...productionEvidenceErrors({ asset, evidence, payload, evidencePath: relative }))
-      errors.push(...routeConsumptionErrors({ asset, evidence, root }))
+      errors.push(...routeConsumptionErrors({ asset, evidence, root, runtimeManifestSource }))
     }
   }
   return errors
