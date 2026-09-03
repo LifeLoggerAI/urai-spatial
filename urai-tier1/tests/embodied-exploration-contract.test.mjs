@@ -145,6 +145,18 @@ test('Home telemetry uses the same spawn and destination coordinates as the live
   assert.doesNotMatch(homeProduction, /const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/)
 })
 
+test('V122 visual rebuild removes rejected shell dominance and simplifies Life Map hierarchy', () => {
+  has(homeArt, 'home-v122-retired-procedural-shells')
+  has(homeArt, "v122Composition: 'contained-human-scale-orb-clear-of-portrait-crop'")
+  assert.doesNotMatch(homeArt, /<VaultShell\s|<CantedWall\s|<DeepApse\s|<BearingRib\s/)
+  assert.match(homeArt, /scale=\{\[1\.08, 1\.08, 1\.08\]\}/)
+  assert.match(lifeMapScene, /slice\(0, 1\)/)
+  assert.match(lifeMapScene, /if \(activeId && !active\) return null/)
+  assert.match(lifeMapScene, /showLabel=\{selected \? selected\.id === node\.id : index < 5\}/)
+  assert.match(lifeMapScene, /size\.height > size\.width \? 52 : 44/)
+  has(lifeMapScene, 'life-map-v122-retired-foreground-crystalline-clutter')
+})
+
 test('Home keeps one physical stateful relic-machine Orb owner and semantic access parity', () => {
   assert.match(homeProduction, /const ORB = new THREE\.Vector3\(/)
   has(homeArt, 'name="home-v76-apse-embedded-orb-relic-machine"')
