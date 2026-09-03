@@ -2,12 +2,7 @@
 name: Materialize V65 Authored Chamber Revival
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v65-authored-chamber-revival.py
-      - .github/workflows/materialize-v65-authored-chamber-revival.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
