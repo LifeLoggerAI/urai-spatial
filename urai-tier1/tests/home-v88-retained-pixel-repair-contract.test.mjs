@@ -18,6 +18,7 @@ test('V108 keeps the governed Home source bound while suppressing imported appro
   assert.match(world, /legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed'/)
   assert.match(world, /successorVisualRepair: 'v95-recursive-rejected-family-removal'/)
   assert.doesNotMatch(world, /root\.visible\s*=\s*false/)
+  assert.match(world, /object\.visible = false/)
 })
 
 test('V95 replaces rings and foreground occluders with human-scale integrated thresholds', () => {
@@ -70,7 +71,7 @@ test('V102 preserves the V101 composition while retaining authored Orb scale at 
   assert.match(world, /rejectedUtilityDetail = \/\(\?:pipe\|tube\|conduit\|duct\|cable\)\/i/)
   assert.match(world, /home-v101-removed-entrance-rock-clutter/)
   assert.match(world, /home-v101-\$\{destination\}-foreground-portal-frame-removed/)
-  assert.match(world, /<PortalStoneFrame destination=\\{destination\\} textures=\\{textures\\} \\/>/)
+  assert.match(world, /<PortalStoneFrame destination=\{destination\} textures=\{textures\.shell\} \/>/)
   assert.doesNotMatch(world, /<circleGeometry/)
   assert.doesNotMatch(world, /<ProductionAsset[^>]*entry-buttress/)
   assert.match(world, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
