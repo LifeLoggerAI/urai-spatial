@@ -1,12 +1,7 @@
 name: Materialize V63 Authored Orb Sanctuary
 
 on:
-  push:
-    branches:
-      - home-final-v24-certify-20260826
-    paths:
-      - scripts/apply-home-v63-authored-orb-sanctuary.py
-      - .github/workflows/materialize-v63-authored-orb-sanctuary.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
