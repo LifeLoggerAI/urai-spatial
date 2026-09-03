@@ -5,6 +5,8 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/mirror/' },
+  openGraph: { url: 'https://urai.app/mirror/' },
 }
 
 const routeFingerprintStyle = {
