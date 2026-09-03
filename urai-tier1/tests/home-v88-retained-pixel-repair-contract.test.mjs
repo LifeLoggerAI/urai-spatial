@@ -9,16 +9,18 @@ const proof = readFileSync(new URL('../../scripts/capture-continuous-spatial-pro
 const naturalProof = readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v22-natural.mjs', import.meta.url), 'utf8')
 const finalizer = readFileSync(new URL('../../.github/workflows/home-finalization-candidate-commit.yml', import.meta.url), 'utf8')
 
-test('V108 keeps the governed Home source bound while suppressing imported approach occluders', () => {
+test('V112 keeps governed Home source visibly embedded beyond approach cameras', () => {
   assert.match(world, /root\.traverse\(\(object\) =>/)
   assert.match(world, /for \(const object of rejectedNodes\) object\.parent\?\.remove\(object\)/)
   assert.match(world, /sanctuary-terrain\|mirror-basin\|orb-sanctuary-pedestal/)
   assert.match(world, /home-v83-governed-open-sanctuary-environment/)
-  assert.match(world, /governed-home-source-bound-imported-occluder-meshes-suppressed/)
-  assert.match(world, /legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed'/)
-  assert.match(world, /successorVisualRepair: 'v95-recursive-rejected-family-removal'/)
+  assert.match(world, /root\.position\.set\(0, -0\.12, -20\.8\)/)
+  assert.match(world, /root\.scale\.setScalar\(0\.18\)/)
+  assert.match(world, /governed-home-source-visible-distant-relief-outside-approach-cameras/)
+  assert.match(world, /committed-governed-home-distant-architectural-relief/)
+  assert.match(world, /successorVisualRepair: 'v112-reposition-and-rescale-governed-relief'/)
   assert.doesNotMatch(world, /root\.visible\s*=\s*false/)
-  assert.match(world, /object\.visible = false/)
+  assert.doesNotMatch(world, /object\.visible\s*=\s*false/)
 })
 
 test('V95 replaces rings and foreground occluders with human-scale integrated thresholds', () => {
@@ -98,7 +100,7 @@ test('V108 preserves exact proximity gates and backs only the inspection camera 
   assert.match(runtime, /\['orb', ORB, 2\.35\], \['ground', GROUND, 2\.65\], \['life-map', LIFE_MAP, 2\.65\]/)
   assert.match(runtime, /const inspectionClearance = nearby === 'orb' \? \(portrait \? 2\.80 : 2\.40\) : nearby \? \(portrait \? 2\.10 : 1\.65\) : 0\.10/)
   assert.match(runtime, /data-home-approach-clearance="v108-camera-outside-unchanged-thresholds"/)
-  assert.match(world, /approachVisibilityRepair: 'v107-suppress-imported-occluders-restore-stone-thresholds'/)
+  assert.match(world, /approachVisibilityRepair: 'v112-visible-governed-relief-outside-approach-cameras'/)
   assert.match(world, /visibleThresholdAuthority: 'authored-open-canyon-stone-cut-thresholds'/)
 })
 
