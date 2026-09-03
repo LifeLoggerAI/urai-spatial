@@ -27,7 +27,7 @@ test('V95 replaces rings and foreground occluders with human-scale integrated th
   assert.doesNotMatch(world, /<ringGeometry/)
   assert.match(world, /v95-architectural-rock-cut-threshold-no-ring-marker/)
   assert.match(world, /home-v95-\$\{destination\}-threshold-lintel/)
-  assert.match(world, /scale=\{\[1\.90, 1\.90, 1\.90\]\}/)
+  assert.match(world, /scale=\{\[1\.08, 1\.08, 1\.08\]\}/)
   assert.match(world, /home-v96-\$\{destination\}-recess-depth/)
   assert.match(world, /home-v97-\$\{destination\}-(?:port|starboard)-(?:lower|shoulder)-masonry/)
   assert.match(world, /home-v97-\$\{destination\}-floor-integrated-guidance/)
@@ -69,31 +69,31 @@ test('V88 retains the petal-and-heart Orb and real interaction volume', () => {
   assert.match(world, /onClick=\{\(event: ThreeEvent<MouseEvent>\)/)
 })
 
-test('V102 preserves the V101 composition while retaining authored Orb scale at runtime', () => {
+test('V122 preserves the contained Orb composition and aligned runtime scale', () => {
   assert.match(world, /rejectedUtilityDetail = \/\(\?:pipe\|tube\|conduit\|duct\|cable\)\/i/)
   assert.match(world, /home-v101-removed-entrance-rock-clutter/)
   assert.match(world, /home-v101-\$\{destination\}-foreground-portal-frame-removed/)
   assert.match(world, /<PortalStoneFrame destination=\{destination\} textures=\{textures\.shell\} \/>/)
   assert.doesNotMatch(world, /<circleGeometry/)
   assert.doesNotMatch(world, /<ProductionAsset[^>]*entry-buttress/)
-  assert.match(world, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
-  assert.match(world, /scale=\{\[1\.90, 1\.90, 1\.90\]\}/)
-  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.90 \* breath\)/)
+  assert.match(world, /position=\{\[-0\.18, 2\.18, -6\.90\]\}/)
+  assert.match(world, /scale=\{\[1\.08, 1\.08, 1\.08\]\}/)
+  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
   assert.match(world, /v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned'/)
   assert.match(world, /home-v101-\$\{destination\}-embedded-wayfinding-inlay/)
-  assert.match(world, /successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds'/)
+  assert.match(world, /successorVisualRepair: 'v122-authored-depth-contained-orb-simplified-thresholds'/)
 })
 
-test('V101 preserves the 1.90 Orb hierarchy throughout normal animation', () => {
-  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.90 \* breath\)/)
+test('V122 preserves the 1.08 Orb hierarchy throughout normal animation', () => {
+  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
   assert.doesNotMatch(world, /swarm\.current\.scale\.setScalar\(breath\)/)
 })
 
-test('V101 binds live proximity and all proof telemetry to the rendered Orb position', () => {
-  assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.28, 2\.48, -6\.18\)/)
-  assert.match(telemetry, /const HOME_ORB = \{ x: -0\.28, z: -6\.18 \} as const/)
-  assert.match(proof, /orb: \{ x: -0\.28, z: -6\.18, radius: 2\.35/)
-  assert.match(naturalProof, /orb: \{ x: -0\.28, z: -6\.18, radius: 2\.35/)
+test('V122 binds live proximity and all proof telemetry to the rendered Orb position', () => {
+  assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
+  assert.match(telemetry, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)
+  assert.match(proof, /orb: \{ x: -0\.18, z: -6\.9, radius: 2\.35/)
+  assert.match(naturalProof, /orb: \{ x: -0\.18, z: -6\.9, radius: 2\.35/)
 })
 
 test('V108 preserves exact proximity gates and backs only the inspection camera out of rendered meshes', () => {
@@ -106,7 +106,6 @@ test('V108 preserves exact proximity gates and backs only the inspection camera 
 
 test('V101 finalization executes this contract and checks current source markers', () => {
   assert.match(finalizer, /urai-tier1\/tests\/home-v88-retained-pixel-repair-contract\.test\.mjs/)
-  assert.match(finalizer, /if \(Math\.abs\(xCenter\) < 2\.15\) continue/)
-  assert.match(finalizer, /if \(Math\.abs\(xCenter\) < 2\.30\) continue/)
-  assert.match(finalizer, /rejectedUtilityDetail\.test\(object\.name\)/)
+  assert.match(finalizer, /home-v122-retired-procedural-shells/)
+  assert.match(finalizer, /v122-authored-depth-contained-orb-simplified-thresholds/)
 })
