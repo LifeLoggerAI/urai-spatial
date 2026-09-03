@@ -3,8 +3,9 @@ import PublicAuthorityShell from '@/components/public-authority/PublicAuthorityS
 
 export const metadata: Metadata = {
   title: 'Contact',
-  description: 'Official public contact status and authority links for UrAi and UrAi Labs.',
+  description: 'Official public contact status and authority links for UrAi and URAI Labs.',
   alternates: { canonical: 'https://urai.app/contact' },
+  openGraph: { url: 'https://urai.app/contact' },
 }
 
 export default function ContactPage() {

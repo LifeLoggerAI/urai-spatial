@@ -5,7 +5,7 @@ const launchSocialImage = 'https://urai.app/assets/urai/social/open-graph-launch
 
 export const metadata: Metadata = {
   title: 'UrAi — Personal intelligence, made spatial',
-  description: 'Meet UrAi by UrAi Labs: a privacy-first personal intelligence platform for memory, reflection, relationships, and direction.',
+  description: 'Meet UrAi by URAI Labs: a privacy-first personal intelligence platform for memory, reflection, relationships, and direction.',
   alternates: {
     canonical: 'https://urai.app/',
   },
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://urai.app/',
     title: 'UrAi — Personal intelligence, made spatial',
-    description: 'A privacy-first personal intelligence platform by UrAi Labs, expressed as a spatial world.',
+    description: 'A privacy-first personal intelligence platform by URAI Labs, expressed as a spatial world.',
     siteName: 'UrAi',
     images: [
       {
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'UrAi — Personal intelligence, made spatial',
-    description: 'A privacy-first personal intelligence platform by UrAi Labs, expressed as a spatial world.',
+    description: 'A privacy-first personal intelligence platform by URAI Labs, expressed as a spatial world.',
     images: [launchSocialImage],
   },
 }

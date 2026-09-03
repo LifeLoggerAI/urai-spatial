@@ -5,13 +5,14 @@ const profile = {"@context":"https://schema.org","@type":"ProfilePage","@id":"ht
 
 export const metadata: Metadata = {
   title: 'Adam Clamp — Founder',
-  description: 'Adam Clamp is the founder and system architect behind UrAi Labs and UrAi.',
+  description: 'Adam Clamp is the founder and system architect behind URAI Labs and UrAi.',
   alternates: { canonical: 'https://urai.app/founder' },
+  openGraph: { url: 'https://urai.app/founder' },
 }
 
 export default function FounderPage() {
   return (
-    <PublicAuthorityShell eyebrow="Founder" title="Adam Clamp" intro="Adam Clamp is the founder and system architect behind UrAi Labs and the UrAi product direction.">
+    <PublicAuthorityShell eyebrow="Founder" title="Adam Clamp" intro="Adam Clamp is the founder and system architect behind URAI Labs and the UrAi product direction.">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profile) }} />
       <h2>Work</h2>
       <p>His documented work focuses on spatial interfaces for memory, reflection, relationships, places, user-owned context, and proof-first release infrastructure.</p>

@@ -100,10 +100,19 @@ async function createPage(browser, deviceName, options = {}) {
   return { context, page, consoleErrors, failedRequests, httpErrors }
 }
 
-async function screenshot(page, name) {
+async function screenshot(page, name, { fontReadyTimeoutMs = 0, timeoutMs = 60000 } = {}) {
   const relative = path.join('screenshots', `${name}.png`)
+  if (fontReadyTimeoutMs > 0) {
+    await page.evaluate(async (maxWaitMs) => {
+      if (!document.fonts || document.fonts.status === 'loaded') return
+      await Promise.race([
+        document.fonts.ready,
+        new Promise((resolve) => window.setTimeout(resolve, maxWaitMs)),
+      ])
+    }, fontReadyTimeoutMs)
+  }
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60000 })
+  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: timeoutMs })
   return relative
 }
 
@@ -230,7 +239,11 @@ async function proveTransition(browser, destination, buttonName) {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
-    const shot = await screenshot(page, `desktop-${name}`)
+    const shot = await screenshot(
+      page,
+      `desktop-${name}`,
+      destination === 'replay' ? { fontReadyTimeoutMs: 5000, timeoutMs: 20000 } : undefined,
+    )
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {

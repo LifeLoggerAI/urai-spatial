@@ -7,18 +7,21 @@
       "name": "UrAi",
       "capitalization": "UrAi",
       "alternateNames": [
+        "UrAi Spatial"
+      ],
+      "legacyTechnicalAliases": [
         "URAI",
         "URAI Spatial"
       ],
       "type": "product",
       "category": "privacy-first personal intelligence platform",
       "canonicalUrl": "https://urai.app/",
-      "description": "UrAi is a privacy-first personal intelligence platform by UrAi Labs that makes memory, reflection, relationships, and direction spatial.",
+      "description": "UrAi is a privacy-first personal intelligence platform by URAI Labs that makes memory, reflection, relationships, and direction spatial.",
       "sourceAuthority": "https://github.com/LifeLoggerAI/urai-spatial",
       "productionCertification": "gated"
     },
     "organization": {
-      "name": "UrAi Labs",
+      "name": "URAI Labs",
       "type": "product organization",
       "canonicalUrl": "https://urai.app/about/labs",
       "description": "The founder-led product organization building UrAi.",
@@ -30,14 +33,14 @@
       "role": "Founder and system architect",
       "canonicalUrl": "https://urai.app/founder",
       "relationship": [
-        "Founder of UrAi Labs",
+        "Founder of URAI Labs",
         "Founder and system architect for UrAi"
       ],
       "publicProfile": "https://urai.app/founder",
       "githubAccountAuthority": "https://github.com/LifeLoggerAI"
     },
     "foundation": {
-      "name": "UrAi Foundation",
+      "name": "URAI Foundation",
       "type": "formation-stage public-interest standards and governance initiative",
       "canonicalUrl": "https://uraifoundation.org/",
       "repository": "https://github.com/LifeLoggerAI/urai-foundation",

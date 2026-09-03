@@ -72,25 +72,22 @@ export const metadata: Metadata = {
         default: 'UrAi — Personal intelligence, made spatial',
         template: '%s | UrAi',
       },
-  description: 'UrAi by UrAi Labs is a privacy-first personal intelligence platform that makes memory, reflection, relationships, and direction spatial.',
-  creator: 'UrAi Labs',
-  publisher: 'UrAi Labs',
+  description: 'UrAi by URAI Labs is a privacy-first personal intelligence platform that makes memory, reflection, relationships, and direction spatial.',
+  creator: 'URAI Labs',
+  publisher: 'URAI Labs',
   category: 'personal intelligence software',
-  robots: previewMode
-    ? { index: false, follow: false, noarchive: true }
-    : { index: true, follow: true },
+  ...(previewMode ? { robots: { index: false, follow: false, noarchive: true } } : {}),
   openGraph: {
     type: 'website',
-    url: 'https://urai.app/',
     title: 'UrAi — Personal intelligence, made spatial',
-    description: 'A privacy-first personal intelligence platform by UrAi Labs.',
+    description: 'A privacy-first personal intelligence platform by URAI Labs.',
     siteName: 'UrAi',
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'UrAi — Personal intelligence, made spatial',
-    description: 'A privacy-first personal intelligence platform by UrAi Labs.',
+    description: 'A privacy-first personal intelligence platform by URAI Labs.',
   },
   icons: {
     icon: embeddedIcon,
@@ -121,7 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: "{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"Organization\",\"@id\":\"https://urai.app/#organization\",\"name\":\"UrAi Labs\",\"url\":\"https://urai.app/about/labs\",\"description\":\"The founder-led product organization building UrAi.\",\"founder\":{\"@id\":\"https://urai.app/founder#person\"}},{\"@type\":\"Person\",\"@id\":\"https://urai.app/founder#person\",\"name\":\"Adam Clamp\",\"url\":\"https://urai.app/founder\",\"jobTitle\":\"Founder and system architect\",\"worksFor\":{\"@id\":\"https://urai.app/#organization\"}},{\"@type\":\"SoftwareApplication\",\"@id\":\"https://urai.app/#product\",\"name\":\"UrAi\",\"alternateName\":[\"URAI\",\"URAI Spatial\"],\"url\":\"https://urai.app/\",\"applicationCategory\":\"LifestyleApplication\",\"operatingSystem\":\"Web\",\"description\":\"A privacy-first personal intelligence platform that makes memory, reflection, relationships, and direction spatial.\",\"creator\":{\"@id\":\"https://urai.app/founder#person\"},\"publisher\":{\"@id\":\"https://urai.app/#organization\"},\"sameAs\":[\"https://github.com/LifeLoggerAI/urai-spatial\"],\"subjectOf\":{\"@id\":\"https://github.com/LifeLoggerAI/urai-spatial\"}},{\"@type\":\"WebSite\",\"@id\":\"https://urai.app/#website\",\"name\":\"UrAi\",\"url\":\"https://urai.app/\",\"publisher\":{\"@id\":\"https://urai.app/#organization\"},\"about\":{\"@id\":\"https://urai.app/#product\"}}]}" }}
+          dangerouslySetInnerHTML={{ __html: "{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"Organization\",\"@id\":\"https://urai.app/#organization\",\"name\":\"URAI Labs\",\"url\":\"https://urai.app/about/labs\",\"description\":\"The founder-led product organization building UrAi.\",\"founder\":{\"@id\":\"https://urai.app/founder#person\"}},{\"@type\":\"Person\",\"@id\":\"https://urai.app/founder#person\",\"name\":\"Adam Clamp\",\"url\":\"https://urai.app/founder\",\"jobTitle\":\"Founder and system architect\",\"worksFor\":{\"@id\":\"https://urai.app/#organization\"}},{\"@type\":\"SoftwareApplication\",\"@id\":\"https://urai.app/#product\",\"name\":\"UrAi\",\"alternateName\":[\"UrAi Spatial\"],\"url\":\"https://urai.app/\",\"applicationCategory\":\"LifestyleApplication\",\"operatingSystem\":\"Web\",\"description\":\"A privacy-first personal intelligence platform that makes memory, reflection, relationships, and direction spatial.\",\"creator\":{\"@id\":\"https://urai.app/founder#person\"},\"publisher\":{\"@id\":\"https://urai.app/#organization\"},\"sameAs\":[\"https://github.com/LifeLoggerAI/urai-spatial\"],\"subjectOf\":{\"@id\":\"https://github.com/LifeLoggerAI/urai-spatial\"}},{\"@type\":\"WebSite\",\"@id\":\"https://urai.app/#website\",\"name\":\"UrAi\",\"url\":\"https://urai.app/\",\"publisher\":{\"@id\":\"https://urai.app/#organization\"},\"about\":{\"@id\":\"https://urai.app/#product\"}}]}" }}
         />
       </head>
       <body

@@ -15,7 +15,7 @@
   "claims": [
     {
       "id": "product-owner",
-      "claim": "UrAi is a product built by UrAi Labs.",
+      "claim": "UrAi is a product built by URAI Labs.",
       "status": "verified-source",
       "evidence": [
         "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_ADAM_CLAMP.md",
@@ -24,7 +24,7 @@
     },
     {
       "id": "founder",
-      "claim": "Adam Clamp is the founder and system architect behind UrAi Labs and the UrAi product direction.",
+      "claim": "Adam Clamp is the founder and system architect behind URAI Labs and the UrAi product direction.",
       "status": "verified-source",
       "evidence": [
         "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_ADAM_CLAMP.md"
@@ -58,7 +58,7 @@
     },
     {
       "id": "foundation",
-      "claim": "UrAi Foundation is a formation-stage public-interest standards and governance initiative.",
+      "claim": "URAI Foundation is a formation-stage public-interest standards and governance initiative.",
       "status": "verified-source",
       "evidence": [
         "https://github.com/LifeLoggerAI/urai-spatial/blob/main/governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"
@@ -66,7 +66,7 @@
     },
     {
       "id": "foundation-legal",
-      "claim": "UrAi Foundation is incorporated, tax-exempt, a charity, or an active certification authority.",
+      "claim": "URAI Foundation is incorporated, tax-exempt, a charity, or an active certification authority.",
       "status": "unsupported-do-not-publish"
     },
     {

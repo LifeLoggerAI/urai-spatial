@@ -1,10 +1,10 @@
 # UrAi
 
-> UrAi is a privacy-first personal intelligence platform by UrAi Labs that makes memory, reflection, relationships, and direction spatial.
+> UrAi is a privacy-first personal intelligence platform by URAI Labs that makes memory, reflection, relationships, and direction spatial.
 
 Canonical product: https://urai.app/
 Official overview: https://urai.app/about
-UrAi Labs: https://urai.app/about/labs
+URAI Labs: https://urai.app/about/labs
 Founder: Adam Clamp — https://urai.app/founder
 Ecosystem: https://urai.app/ecosystem
 Press facts: https://urai.app/press
@@ -13,6 +13,6 @@ Canonical source authority: https://github.com/LifeLoggerAI/urai-spatial
 Machine-readable entity registry: https://urai.app/urai-entity.json
 Public claims registry: https://urai.app/urai-public-claims.json
 
-UrAi Foundation is described as a formation-stage public-interest standards and governance initiative. No incorporation, charity, tax-exempt, donation-deductibility, certification-authority, or launched-program claim should be inferred without separate primary evidence.
+URAI Foundation is described as a formation-stage public-interest standards and governance initiative. No incorporation, charity, tax-exempt, donation-deductibility, certification-authority, or launched-program claim should be inferred without separate primary evidence.
 
 A reachable route does not by itself prove authenticated persistence, active providers, device certification, clinical validation, or a fully certified production release.

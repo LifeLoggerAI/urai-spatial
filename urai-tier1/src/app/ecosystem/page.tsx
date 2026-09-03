@@ -3,8 +3,9 @@ import PublicAuthorityShell from '@/components/public-authority/PublicAuthorityS
 
 export const metadata: Metadata = {
   title: 'UrAi Ecosystem',
-  description: 'The factual relationship between UrAi, UrAi Labs, the UrAi Foundation, and supporting systems.',
+  description: 'The factual relationship between UrAi, URAI Labs, the URAI Foundation, and supporting systems.',
   alternates: { canonical: 'https://urai.app/ecosystem' },
+  openGraph: { url: 'https://urai.app/ecosystem' },
 }
 
 const systems = [
@@ -24,9 +25,9 @@ const systems = [
 
 export default function EcosystemPage() {
   return (
-    <PublicAuthorityShell eyebrow="Entity map" title="One product family. Clear boundaries." intro="UrAi Labs builds UrAi. Supporting repositories and services have distinct roles, and none independently declare the whole ecosystem live.">
-      <h2>UrAi Foundation</h2>
-      <p>The UrAi Foundation is described as a formation-stage public-interest standards and governance initiative related to accessibility, consent, safety, and risk review. It is organizationally distinct from the product. This site does not claim incorporation, charity status, tax exemption, donation deductibility, active certification authority, or launched programs.</p>
+    <PublicAuthorityShell eyebrow="Entity map" title="One product family. Clear boundaries." intro="URAI Labs builds UrAi. Supporting repositories and services have distinct roles, and none independently declare the whole ecosystem live.">
+      <h2>URAI Foundation</h2>
+      <p>The URAI Foundation is described as a formation-stage public-interest standards and governance initiative related to accessibility, consent, safety, and risk review. It is organizationally distinct from the product. This site does not claim incorporation, charity status, tax exemption, donation deductibility, active certification authority, or launched programs.</p>
       <h2>Systems</h2>
       <dl>{systems.map(([name, kind, detail]) => <div key={name} style={{ borderTop: '1px solid rgba(140,231,238,.18)', padding: '20px 0' }}><dt><strong>{name}</strong> — {kind}</dt><dd style={{ margin: '8px 0 0', color: '#c9d9e5' }}>{detail}</dd></div>)}</dl>
       <p>The complete machine-readable registry is available at <a href="/urai-entity.json">/urai-entity.json</a>.</p>

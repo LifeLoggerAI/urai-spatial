@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 const nav = [
   ['What is UrAi?', '/about'],
-  ['UrAi Labs', '/about/labs'],
+  ['URAI Labs', '/about/labs'],
   ['Founder', '/founder'],
   ['Ecosystem', '/ecosystem'],
   ['Press', '/press'],

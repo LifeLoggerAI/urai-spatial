@@ -8,7 +8,6 @@ const publicRoutes = [
   '/ecosystem',
   '/press',
   '/contact',
-  '/home',
   '/ground',
   '/life-map',
   '/focus',
