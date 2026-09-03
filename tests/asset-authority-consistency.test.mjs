@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import {
+  authoritySupersessionErrors,
   canonicalRuntimeStatusErrors,
   productionEvidenceErrors,
   routeConsumptionErrors,
@@ -31,20 +33,18 @@ test('pending canonical assets cannot be runtime-ready or promoted', () => {
   assert.match(errors[1], /hard-coded promoted/)
 })
 
-test('superseded production evidence is explicit and cannot act as current authority', () => {
+test('in-record historical flags cannot bypass current authority checks', () => {
   const payload = Buffer.from('candidate-bytes')
-  assert.deepEqual(productionEvidenceErrors({
+  const errors = productionEvidenceErrors({
     asset,
     payload,
     evidencePath: 'receipt.json',
     evidence: { currentAuthority: false, evidenceStatus: 'historical-superseded' },
-  }), [])
-  assert.match(productionEvidenceErrors({
-    asset,
-    payload,
-    evidencePath: 'receipt.json',
-    evidence: { releaseState: 'production-ready', bytes: 1, sha256: 'stale' },
-  })[0], /current production evidence exists/)
+  })
+  assert.equal(errors.length, 3)
+  assert.match(errors[0], /current production evidence exists/)
+  assert.match(errors[1], /byte count drift/)
+  assert.match(errors[2], /SHA-256 drift/)
 })
 
 test('route-consumption claims require the active route owner to reference the asset', () => {
@@ -117,12 +117,59 @@ test('pending human constructors participate in runtime authority checks', () =>
   assert.match(errors[0], /canonical pending asset is runtime-ready/)
 })
 
-test('production audio alias remains bound to canonical pending authority', () => {
+test('an unmatched production audio pack cannot become runtime-ready', () => {
   const audioAsset = { id: 'urai-ambient-bed-v1', releaseState: 'pending-final-review' }
   const errors = sensoryRuntimeStatusErrors({
     canonicalAssets: [audioAsset],
     sensoryManifestSource: `ambientAudio: { id: 'production-spatial-audio-v1', status: 'ready' }`,
   })
   assert.equal(errors.length, 1)
-  assert.match(errors[0], /urai-ambient-bed-v1: canonical pending sensory asset is runtime-ready/)
+  assert.match(errors[0], /production-spatial-audio-v1: ready sensory asset has no canonical launch asset mapping/)
+})
+
+test('supersession records are repository-bound, path-safe, and tamper-evident', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'urai-authority-supersession-'))
+  try {
+    const recordPath = 'evidence/historical-receipt.json'
+    const absolute = path.join(root, recordPath)
+    fs.mkdirSync(path.dirname(absolute), { recursive: true })
+    fs.writeFileSync(absolute, '{"historical":true}\n')
+    const document = {
+      schemaVersion: 'urai-asset-authority-supersession-1',
+      repository: 'LifeLoggerAI/urai-spatial',
+      effectiveAt: '2026-09-03T00:00:00Z',
+      status: 'historical-superseded',
+      currentAuthority: false,
+      reason: 'Current canonical bytes require fresh evidence.',
+      records: [{
+        path: recordPath,
+        sha256: crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex'),
+      }],
+    }
+
+    const valid = authoritySupersessionErrors({
+      root,
+      documents: [{ relativePath: 'operations/assets/authority-supersessions/test.json', document }],
+    })
+    assert.deepEqual(valid.errors, [])
+    assert.equal(valid.supersededPaths.has(recordPath), true)
+
+    fs.writeFileSync(absolute, '{"historical":false}\n')
+    const tampered = authoritySupersessionErrors({
+      root,
+      documents: [{ relativePath: 'operations/assets/authority-supersessions/test.json', document }],
+    })
+    assert.match(tampered.errors[0], /immutable record hash drift/)
+
+    const unsafe = authoritySupersessionErrors({
+      root,
+      documents: [{
+        relativePath: 'operations/assets/authority-supersessions/unsafe.json',
+        document: { ...document, records: [{ path: '../outside.json', sha256: '0'.repeat(64) }] },
+      }],
+    })
+    assert.match(unsafe.errors[0], /safe repository-relative path/)
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
 })
