@@ -367,9 +367,10 @@ function useGovernedHomeEnvironment() {
   return useMemo(() => {
     const root = gltf.scene.clone(true)
     // V87 retained pixels rejected the terrain slab, repeated growth/village field,
-    // pedestal, mountains and temporary embodiment markers. Remove those authored
-    // subtrees while retaining the governed Ground, Life Map and horizon threshold
-    // architecture as visible geometry in the navigable sanctuary.
+    // pedestal, mountains and temporary embodiment markers. V106 continuous approach
+    // pixels then proved that the remaining imported threshold meshes still occluded
+    // the first-person camera. Keep the governed source bound for provenance while
+    // the authored open-canyon geometry and stone-cut thresholds own visible pixels.
     const rejectedFamily = /^(?:sanctuary-terrain|mirror-basin|orb-sanctuary-pedestal|horizon-mountain-|sanctuary-waterfall-|inhabited-village-|living-growth-|embodied-presence-root|memory-place-anchor-)/
     // V101 retained pixels also rejected the imported utility tubes as raw scene
     // dressing. Strip those authored details while keeping destination roots live.
@@ -399,6 +400,7 @@ function useGovernedHomeEnvironment() {
       object.material = Array.isArray(object.material) ? materials : materials[0]
       object.castShadow = true
       object.receiveShadow = true
+      object.visible = false
     })
     root.name = 'home-v83-governed-open-sanctuary-environment'
     root.position.set(0, -0.16, -8.2)
@@ -406,11 +408,11 @@ function useGovernedHomeEnvironment() {
     root.userData = {
       runtimeAsset: GOVERNED_HOME,
       visualOwner: 'committed-governed-home-environment',
-      treatment: 'visible-governed-threshold-architecture-with-rejected-node-families-removed',
+      treatment: 'governed-home-source-bound-imported-occluder-meshes-suppressed',
       legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       successorVisualRepair: 'v95-recursive-rejected-family-removal',
-      visibleGovernedFamilies: 'ground-alcove life-map-alcove horizon-threshold',
+      visibleThresholdAuthority: 'authored-open-canyon-stone-cut-thresholds',
     }
     return root
   }, [gltf.scene])
@@ -654,6 +656,7 @@ function PortalDepthField({ destination }: { destination: 'ground' | 'life-map' 
 
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
   const tone = destination === 'ground' ? '#75d6a0' : '#9eafff'
+  const textures = useSanctuaryTextures()
   return <group
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
     position={position as [number, number, number]}
@@ -669,6 +672,7 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     <group name={`home-v95-${destination}-threshold-lintel`} userData={{ compatibilityMarker: true }} />
     <group name={`home-v96-${destination}-recess-depth`} userData={{ compatibilityMarker: true }} />
     <group name={`home-v95-${destination}-recess-veil`} userData={{ compatibilityMarker: true }} />
+    <PortalStoneFrame destination={destination} textures={textures} />
     <PortalDepthField destination={destination} />
     <mesh name={`home-v98-${destination}-inner-threshold-glow`} position={[0, 1.42, -0.56]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
       <planeGeometry args={[0.92, 2.12, 1, 1]} />
@@ -780,6 +784,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
       successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds',
+      approachVisibilityRepair: 'v107-suppress-imported-occluders-restore-stone-thresholds',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
       successorPortraitRepair: 'v105-balanced-58-degree-portrait-fov',
       retainedPixelStatus: 'candidate-not-certified',
