@@ -1,6 +1,6 @@
 {
   "name": "URAI Spatial Launch Verification Lock",
-  "version": 2,
+  "version": 3,
   "status": "locked_until_verified",
   "requiredChecks": [
     "source-integrity",
@@ -20,19 +20,35 @@
     "firebase-tier1-boundary-lock",
     "preflight",
     "verification-lock-preflight",
+    "production-wif-iam-proof",
+    "runtime-identity-readback",
+    "historical-key-revocation-proof",
     "preview-deploy",
-    "production-smoke"
+    "production-smoke",
+    "rollback-proof"
   ],
-  "requiredSecrets": [
-    "FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL",
+  "requiredConfiguration": [
     "URAI_SPATIAL_FIREBASE_PROJECT_ID",
     "URAI_SPATIAL_FIREBASE_WEB_CONFIG"
+  ],
+  "requiredIdentity": [
+    "least-privilege Workload Identity Federation or managed ADC",
+    "approved production service account",
+    "independent IAM binding verification",
+    "runtime identity read-back"
+  ],
+  "prohibitedCredentialVariables": [
+    "FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
+    "FIREBASE_PRIVATE_KEY",
+    "FIREBASE_CLIENT_EMAIL",
+    "FIREBASE_TOKEN"
   ],
   "requiredFirebaseSetup": [
     "Firebase Hosting site connected",
     "Firebase Auth authorized domains configured",
     "Firestore rules deployed",
-    "Functions deployed using nodejs20 runtime",
+    "Functions runtime matches firebase.json",
     "Admin/founder custom claims assigned where required"
   ],
   "requiredManualSignoffs": [
@@ -43,13 +59,6 @@
     "product_launch"
   ],
   "manualVerificationCommand": "pnpm verify:release:full",
-  "manualWorkflow": {
-    "workflow": ".github/workflows/urai-spatial-ci.yml",
-    "event": "workflow_dispatch",
-    "input": {
-      "verification_ref": "fix/spatial-release-gate-guards"
-    }
-  },
-  "unlockRule": "Do not mark the PR ready, merge, update URAI_SPATIAL_TIER_LOCK_AUDIT.md to LOCKED, or production deploy until all required checks pass, workflow/manual evidence is attached to the PR, and signoffs.md has no Status: PENDING entries.",
-  "lastUpdated": "2026-05-08"
+  "unlockRule": "Do not restore production mutation authority or claim GO until all required checks pass on one locked SHA; short-lived production identity, least-privilege IAM, runtime read-back, historical compromised-key revocation, rollback proof, live smoke, and signoffs are independently evidenced.",
+  "lastUpdated": "2026-08-16"
 }

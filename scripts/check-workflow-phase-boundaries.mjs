@@ -136,17 +136,36 @@ for (const forbidden of [
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'FIREBASE_TOKEN',
   'GOOGLE_APPLICATION_CREDENTIALS',
-  'id-token: write',
   'contents: write',
   'actions: write',
   'node scripts/live-release.mjs --deploy-prebuilt',
 ]) {
   if (deploy.includes(forbidden)) failures.push(`${deployPath} quarantine workflow contains forbidden production authority marker: ${forbidden}`)
 }
-if (/\bfirebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(deploy) || /\bgcloud\s+deploy\b/i.test(deploy)) {
+
+for (const marker of [
+  'name: Prove short-lived Google WIF identity',
+  "if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'",
+  'id-token: write',
+  'google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093',
+  "workload_identity_provider: 'projects/952723774155/locations/global/workloadIdentityPools/urai-github-prod/providers/github-actions'",
+  "service_account: 'urai-spatial-github-deployer@urai-4dc1d.iam.gserviceaccount.com'",
+  "access_token_scopes: 'https://www.googleapis.com/auth/cloud-platform.read-only'",
+  'create_credentials_file: false',
+  'export_environment_variables: false',
+  'Production mutation command: none',
+]) {
+  if (!deploy.includes(marker)) failures.push(`${deployPath} must retain isolated read-only WIF proof marker: ${marker}`)
+}
+
+const idTokenWriteCount = (deploy.match(/id-token\s*:\s*write/g) || []).length
+if (idTokenWriteCount !== 1) failures.push(`${deployPath} must expose id-token: write exactly once for the isolated main-only WIF proof; found ${idTokenWriteCount}`)
+if (/\bsecrets\s*\./.test(deploy)) failures.push(`${deployPath} quarantine workflow must not reference repository secrets`)
+if (/\benvironment\s*:\s*production\b/.test(deploy)) failures.push(`${deployPath} quarantine workflow must not enter the production environment`)
+if (/\n  deploy\s*:/.test(deploy)) failures.push(`${deployPath} must not restore a production mutation job before WIF/IAM is independently proven`)
+if (/\bfirebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(deploy) || /\bgcloud\s+deploy\b/i.test(deploy) || /\blive-release\.mjs\s+--deploy(?:-prebuilt)?\b/i.test(deploy)) {
   failures.push(`${deployPath} quarantine workflow must not execute production deployment`)
 }
-if (/\n  deploy\s*:/.test(deploy)) failures.push(`${deployPath} must not restore a production mutation job before WIF/IAM is independently proven`)
 
 if (failures.length) {
   console.error('Workflow phase-boundary check failed:')
@@ -171,5 +190,5 @@ for (const file of retainedSourceFiles) {
 }
 
 console.log(`Workflow phase-boundary check passed for ${releaseWorkflows.length} release workflows.`)
-console.log('Production authority remains verification-only and NO-GO until provider WIF/IAM is independently proven.')
+console.log('Production authority remains verification-only and NO-GO; exactly one main-only read-only WIF identity proof is permitted while provider IAM remains independently gated.')
 console.log(`Retained ${retainedSourceFiles.length} bounded Life Map source files for exact-head repair.`)
