@@ -56,14 +56,14 @@ function useSanctuaryTextures() {
 
     return {
       shell: {
-        color: clone(sources[0], [0.82, 1.18], true),
-        normal: clone(sources[1], [0.82, 1.18]),
-        arm: clone(sources[2], [0.82, 1.18]),
+        color: clone(sources[0], [2.8, 4.6], true),
+        normal: clone(sources[1], [2.8, 4.6]),
+        arm: clone(sources[2], [2.8, 4.6]),
       },
       floor: {
-        color: clone(sources[3], [1.35, 2.2], true),
-        normal: clone(sources[4], [1.35, 2.2]),
-        arm: clone(sources[5], [1.35, 2.2]),
+        color: clone(sources[3], [3.6, 7.2], true),
+        normal: clone(sources[4], [3.6, 7.2]),
+        arm: clone(sources[5], [3.6, 7.2]),
       },
     }
   }, [sources])
@@ -74,7 +74,7 @@ function StoneMaterial({ textures, tint, side = THREE.FrontSide }: { textures: T
     color={tint}
     map={textures.color}
     normalMap={textures.normal}
-    normalScale={new THREE.Vector2(0.62, 0.62)}
+    normalScale={new THREE.Vector2(0.34, 0.34)}
     roughnessMap={textures.arm}
     roughness={0.94}
     metalness={0.01}
@@ -351,7 +351,7 @@ function GovernedHomeEnvironment({ onWalk }: { onWalk: (event: ThreeEvent<MouseE
   </group>
 }
 
-function ExtrudedBody({ name, points, position, rotation = [0, 0, 0], scale = [1, 1, 1], depth = 0.54, color = '#34463f', metalness = 0.38, roughness = 0.56 }: { name: string; points: readonly (readonly [number, number])[]; position: Vec3; rotation?: Vec3; scale?: Vec3; depth?: number; color?: string; metalness?: number; roughness?: number }) {
+function ExtrudedBody({ name, points, position, rotation = [0, 0, 0], scale = [1, 1, 1], depth = 0.54, color = '#34463f', metalness = 0.38, roughness = 0.56, textures }: { name: string; points: readonly (readonly [number, number])[]; position: Vec3; rotation?: Vec3; scale?: Vec3; depth?: number; color?: string; metalness?: number; roughness?: number; textures?: TextureSet }) {
   const geometry = useMemo(() => {
     const shape = new THREE.Shape()
     shape.moveTo(points[0][0], points[0][1])
@@ -372,7 +372,9 @@ function ExtrudedBody({ name, points, position, rotation = [0, 0, 0], scale = [1
   }, [depth, points])
 
   return <mesh name={name} geometry={geometry} position={position as [number, number, number]} rotation={rotation as [number, number, number]} scale={scale as [number, number, number]} castShadow receiveShadow>
-    <meshPhysicalMaterial color={color} roughness={roughness} metalness={metalness} clearcoat={0.08} clearcoatRoughness={0.66} envMapIntensity={0.72} side={THREE.DoubleSide} />
+    {textures
+      ? <StoneMaterial textures={textures} tint={color} side={THREE.DoubleSide} />
+      : <meshPhysicalMaterial color={color} roughness={roughness} metalness={metalness} clearcoat={0.08} clearcoatRoughness={0.66} envMapIntensity={0.72} side={THREE.DoubleSide} />}
   </mesh>
 }
 
@@ -484,9 +486,9 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
     swarm.current.scale.setScalar(breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.54, -9.34]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.72, -8.28]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={swarm} scale={[0.44, 0.44, 0.44]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[0.64, 0.64, 0.64]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
     <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.05 : state === 'warning' ? 2.2 : 1.55} distance={7.4} decay={2} />
@@ -495,8 +497,10 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
 }
 
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
+  const textures = useSanctuaryTextures()
   const tone = destination === 'ground' ? '#b6c98c' : '#9fb3da'
-  const portCheek = [[-0.98, -1.36], [-0.50, -1.42], [-0.42, 0.76], [-0.20, 1.42], [-0.64, 1.62], [-1.06, 0.62]] as const
+  const stone = destination === 'ground' ? '#625d45' : '#45565d'
+  const portCheek = [[-1.08, -1.34], [-0.52, -1.44], [-0.44, 0.58], [-0.22, 1.30], [-0.60, 1.68], [-1.04, 0.92], [-1.22, -0.18]] as const
   const starboardCheek = portCheek.map(([x, y]) => [-x, y] as const).reverse()
   return <group
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
@@ -505,9 +509,9 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     userData={{ destination, treatment: 'v95-architectural-rock-cut-threshold-no-ring-marker', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
   >
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} />
-    <ExtrudedBody name={`home-v95-${destination}-port-threshold-cheek`} points={portCheek} position={[0, 1.34, -0.30]} depth={0.42} color="#39483f" metalness={0.12} roughness={0.82} />
-    <ExtrudedBody name={`home-v95-${destination}-starboard-threshold-cheek`} points={starboardCheek} position={[0, 1.34, -0.30]} depth={0.42} color="#39483f" metalness={0.12} roughness={0.82} />
-    <ExtrudedBody name={`home-v95-${destination}-threshold-lintel`} points={[[-0.72, -0.24], [0.72, -0.24], [0.50, 0.30], [-0.46, 0.36]]} position={[0, 2.82, -0.31]} depth={0.46} color="#46564c" metalness={0.10} roughness={0.84} />
+    <ExtrudedBody name={`home-v95-${destination}-port-threshold-cheek`} points={portCheek} position={[0, 1.34, -0.30]} depth={0.58} color={stone} textures={textures.shell} />
+    <ExtrudedBody name={`home-v95-${destination}-starboard-threshold-cheek`} points={starboardCheek} position={[0, 1.34, -0.30]} depth={0.58} color={stone} textures={textures.shell} />
+    <ExtrudedBody name={`home-v95-${destination}-threshold-lintel`} points={[[-0.82, -0.26], [0.82, -0.26], [0.54, 0.34], [-0.50, 0.42]]} position={[0, 2.88, -0.31]} depth={0.62} color={stone} textures={textures.shell} />
     <mesh name={`home-v95-${destination}-recess-veil`} position={[0, 1.44, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.04 : 0.05]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
       <planeGeometry args={[1.18, 2.42, 1, 1]} />
       <meshPhysicalMaterial color={tone} emissive={tone} emissiveIntensity={0.42} transparent opacity={0.22} roughness={0.34} metalness={0.04} depthWrite={false} side={THREE.DoubleSide} />
@@ -615,8 +619,8 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       <group name="home-v82-starboard-deep-field-buttress" />
     </group>
 
-    <PortalRecess destination="ground" position={[-5.34, 0.02, -9.52]} rotation={[0, 0.62, -0.02]} onActivate={onGround} />
-    <PortalRecess destination="life-map" position={[5.48, 0.02, -10.12]} rotation={[0, -0.72, 0.03]} onActivate={onLifeMap} />
+    <PortalRecess destination="ground" position={[-4.58, 0.02, -8.34]} rotation={[0, 0.48, -0.03]} onActivate={onGround} />
+    <PortalRecess destination="life-map" position={[4.62, 0.02, -8.52]} rotation={[0, -0.52, 0.04]} onActivate={onLifeMap} />
     <group name="home-v88-removed-industrial-overlays" userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name="home-v76-port-caged-practical" />
       <group name="home-v76-starboard-caged-practical" />
@@ -627,10 +631,10 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <RelicMachine state={orbState} reducedMotion={reducedMotion} onOpen={onOrb} />
     <DustField reducedMotion={reducedMotion} />
 
-    <pointLight position={[-4.56, 2.08, -7.24]} color="#d29a58" intensity={0.82} distance={8.8} decay={2} />
-    <pointLight position={[4.62, 2.68, -8.36]} color="#71988d" intensity={0.68} distance={8.4} decay={2} />
-    <directionalLight position={[-6, 10, 5]} color="#e5d4ae" intensity={1.22} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
-    <directionalLight position={[7, 6, -9]} color="#7ca89f" intensity={0.52} />
+    <pointLight position={[-4.56, 2.08, -7.24]} color="#d29a58" intensity={1.18} distance={9.8} decay={2} />
+    <pointLight position={[4.62, 2.68, -8.36]} color="#71988d" intensity={0.98} distance={9.4} decay={2} />
+    <directionalLight position={[-6, 10, 5]} color="#e5d4ae" intensity={1.48} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
+    <directionalLight position={[7, 6, -9]} color="#7ca89f" intensity={0.74} />
   </group>
 }
 

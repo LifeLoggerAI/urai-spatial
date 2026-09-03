@@ -11,7 +11,8 @@ test('V93 uses one opaque responsive Canvas for the same dimensional world on de
   assert.match(runtime, /data-home-desktop-mobile-world="same-scene"/)
   assert.match(runtime, /alpha: false/)
   assert.match(runtime, /gl\.setClearColor\(0x080b0b, 1\)/)
-  assert.match(runtime, /camera=\{\{ position: \[SPAWN\.x, 1\.60, SPAWN\.z\], fov: 44/)
+  assert.match(runtime, /camera=\{\{ position: \[SPAWN\.x, 1\.60, SPAWN\.z\], fov: 42/)
+  assert.match(runtime, /const fov = portrait \? 86 : 42/)
   assert.match(styles, /\.canvas/)
 })
 
