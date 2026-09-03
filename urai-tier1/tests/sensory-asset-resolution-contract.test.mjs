@@ -27,17 +27,17 @@ const productionAudioFiles = [
   'ui-error-v1.opus',
 ]
 
-test('evidence-backed sensory assets and production audio are ready', () => {
-  assert.match(manifest, /materials:[\s\S]*status: 'ready'/)
-  assert.match(manifest, /particles:[\s\S]*status: 'ready'/)
-  assert.match(manifest, /loading:[\s\S]*status: 'ready'/)
+test('pending sensory assets and production audio remain fail closed', () => {
+  assert.match(manifest, /materials:[\s\S]*status: 'candidate'/)
+  assert.match(manifest, /particles:[\s\S]*status: 'candidate'/)
+  assert.match(manifest, /loading:[\s\S]*status: 'candidate'/)
   assert.match(manifest, /skybox:[\s\S]*status: 'candidate'/)
-  assert.match(manifest, /ambientAudio:[\s\S]*id: 'production-spatial-audio-v1'[\s\S]*status: 'ready'/)
+  assert.match(manifest, /ambientAudio:[\s\S]*id: 'production-spatial-audio-v1'[\s\S]*status: 'candidate'/)
   for (const fileName of productionAudioFiles) assert.match(manifest, new RegExp(fileName.replaceAll('.', '\\.')))
   assert.doesNotMatch(manifest, /urai-ambient-bed-v1\.opus/)
 })
 
-test('active spatial routes consume promoted visual sensory component and shared production audio runtime', () => {
+test('active spatial routes consume governed sensory fallback and shared silent audio runtime', () => {
   assert.match(worldLayer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
   assert.match(worldLayer, /<SpatialSensoryLayer \/>/)
   assert.doesNotMatch(worldLayer, /function SpatialSensoryLayer\s*\(/)
@@ -46,11 +46,16 @@ test('active spatial routes consume promoted visual sensory component and shared
   assert.match(sensoryLayer, /spatial-particle-atlas-v1|particlePath/)
   assert.match(sensoryLayer, /urai-loading-sequence-v1|loadingPath/)
   for (const fileName of productionAudioFiles) assert.match(audioController, new RegExp(fileName.replaceAll('.', '\\.')))
+  assert.match(audioController, /PRODUCTION_AUDIO_READY/)
+  assert.match(audioController, /if \(!nextSrc\)/)
+  assert.match(audioController, /if \(!src\) return/)
   assert.match(audioRuntime, /urai:spatial-audio-consent-v1/)
   assert.match(audioRuntime, /urai:spatial-audio-muted-v1/)
 })
 
-test('production sensory receipt includes verified audio while unpromoted skybox stays excluded', () => {
+test('historical sensory receipt is retained without current authority', () => {
+  assert.equal(receipt.currentAuthority, false)
+  assert.equal(receipt.evidenceStatus, 'historical-superseded')
   assert.equal(receipt.releaseState, 'production-integrated-candidate')
   assert.equal(receipt.verificationResult, 'pending-exact-head-ci')
   assert.deepEqual(receipt.assets.map((asset) => asset.id).sort(), [
