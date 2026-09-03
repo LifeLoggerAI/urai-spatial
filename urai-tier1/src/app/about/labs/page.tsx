@@ -7,7 +7,13 @@ export const metadata: Metadata = {
   title: 'About URAI Labs',
   description: 'URAI Labs is the founder-led product organization building UrAi.',
   alternates: { canonical: 'https://urai.app/about/labs/' },
-  openGraph: { url: 'https://urai.app/about/labs/' },
+  openGraph: {
+    type: 'website',
+    url: 'https://urai.app/about/labs/',
+    title: 'About URAI Labs',
+    description: 'URAI Labs is the founder-led product organization building UrAi.',
+    siteName: 'UrAi',
+  },
 }
 
 export default function LabsPage() {
