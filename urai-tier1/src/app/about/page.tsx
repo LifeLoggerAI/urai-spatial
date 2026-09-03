@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'What is UrAi?',
   description: 'UrAi is a privacy-first personal intelligence platform by URAI Labs that turns personal context into a navigable spatial world.',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'What is UrAi?',
+    description: 'UrAi is a privacy-first personal intelligence platform by URAI Labs that turns personal context into a navigable spatial world.',
+  },
   alternates: { canonical: 'https://urai.app/about/' },
   openGraph: {
     type: 'website',
