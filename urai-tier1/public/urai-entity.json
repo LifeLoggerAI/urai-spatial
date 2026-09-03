@@ -7,11 +7,10 @@
       "name": "UrAi",
       "capitalization": "UrAi",
       "currentTechnicalAliases": [
-        "URAI"
-      ],
-      "legacyTechnicalAliases": [
+        "URAI",
         "URAI Spatial"
       ],
+      "legacyTechnicalAliases": [],
       "type": "product",
       "category": "privacy-first personal intelligence platform",
       "canonicalUrl": "https://urai.app/",
