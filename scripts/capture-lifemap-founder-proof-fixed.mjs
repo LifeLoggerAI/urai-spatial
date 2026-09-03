@@ -668,7 +668,7 @@ async function desktopArrivalEvidence() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 30_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
