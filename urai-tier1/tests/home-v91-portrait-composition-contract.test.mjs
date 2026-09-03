@@ -27,7 +27,7 @@ test('V105 retains open dimensional architecture without slab-shaped rear should
   assert.match(art, /const wingRise = THREE\.MathUtils\.clamp\(\(Math\.abs\(x\) - 2\.30\) \/ 3\.90, 0, 1\)/)
   assert.match(art, /const shoulderHeight = 1\.12 \+ wingRise \* 2\.42/)
   assert.match(art, /successorVisualRepair: 'v105-tapered-apse-shoulders'/)
-  assert.match(art, /home-v98-distant-ridge/)
+  assert.match(art, /home-v101-distant-ridge/)
   assert.match(art, /home-v98-\$\{destination\}-single-connected-rock-cut-frame/)
   assert.match(art, /<primitive object=\{environment\}/)
   assert.match(art, /portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene'/)
