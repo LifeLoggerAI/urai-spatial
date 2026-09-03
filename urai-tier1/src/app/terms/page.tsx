@@ -2,6 +2,8 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/terms/' },
+  openGraph: { url: 'https://urai.app/terms/' },
 }
 
 const sectionStyle = { maxWidth: "860px", margin: "0 auto", display: "grid", gap: "22px" } as const;
