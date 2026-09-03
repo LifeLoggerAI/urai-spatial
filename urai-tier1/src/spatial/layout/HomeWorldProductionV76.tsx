@@ -286,6 +286,7 @@ function useGovernedHomeEnvironment() {
       runtimeAsset: GOVERNED_HOME,
       visualOwner: 'committed-governed-home-environment',
       treatment: 'loaded-governed-source-with-rejected-overlay-geometry-suppressed',
+      legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
       candidateArtRevision: 'v88-governed-sanctuary-plate-composition',
     }
     return root

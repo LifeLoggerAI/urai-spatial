@@ -8,6 +8,7 @@ test('V88 keeps the governed Home source bound without rendering its rejected ov
   assert.match(world, /root\.visible = false/)
   assert.match(world, /home-v83-governed-open-sanctuary-environment/)
   assert.match(world, /loaded-governed-source-with-rejected-overlay-geometry-suppressed/)
+  assert.match(world, /legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed'/)
   assert.match(world, /candidateArtRevision: 'v88-governed-sanctuary-plate-composition'/)
 })
 
