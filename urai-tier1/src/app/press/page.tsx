@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'Press and Media',
   description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
-  alternates: { canonical: 'https://urai.app/press' },
-  openGraph: { url: 'https://urai.app/press' },
+  alternates: { canonical: 'https://urai.app/press/' },
+  openGraph: { url: 'https://urai.app/press/' },
 }
 
 export default function PressPage() {
