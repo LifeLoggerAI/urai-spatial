@@ -6,8 +6,9 @@ const world = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76
 
 test('V88 keeps the governed Home source bound without rendering its rejected overlay geometry', () => {
   assert.match(world, /root\.visible = false/)
-  assert.match(world, /home-v88-governed-sanctuary-source-binding/)
+  assert.match(world, /home-v83-governed-open-sanctuary-environment/)
   assert.match(world, /loaded-governed-source-with-rejected-overlay-geometry-suppressed/)
+  assert.match(world, /candidateArtRevision: 'v88-governed-sanctuary-plate-composition'/)
 })
 
 test('V88 removes the sphere shell and temporary industrial overlay composition', () => {

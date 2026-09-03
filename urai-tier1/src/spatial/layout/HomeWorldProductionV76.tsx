@@ -279,13 +279,14 @@ function useGovernedHomeEnvironment() {
       if (!(object instanceof THREE.Mesh)) return
       object.visible = false
     })
-    root.name = 'home-v88-governed-sanctuary-source-binding'
+    root.name = 'home-v83-governed-open-sanctuary-environment'
     root.position.set(0, -0.16, -8.2)
     root.scale.setScalar(0.70)
     root.userData = {
       runtimeAsset: GOVERNED_HOME,
       visualOwner: 'committed-governed-home-environment',
       treatment: 'loaded-governed-source-with-rejected-overlay-geometry-suppressed',
+      candidateArtRevision: 'v88-governed-sanctuary-plate-composition',
     }
     return root
   }, [gltf.scene])
@@ -554,7 +555,8 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     userData={{
       visualOwner: 'v76-single-canvas-deep-apse-sanctuary',
       construction: 'continuous-photogrammetry-shell-curved-load-bearing-relic-machine',
-      liveArtRevision: 'v88-governed-sanctuary-plate-composition',
+      liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
+      candidateArtRevision: 'v88-governed-sanctuary-plate-composition',
       visualRepair: 'v88-remove-rejected-overlay-geometry',
       retainedPixelStatus: 'candidate-not-certified',
     }}
