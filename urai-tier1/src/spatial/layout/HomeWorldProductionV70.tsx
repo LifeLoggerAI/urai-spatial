@@ -333,7 +333,7 @@ function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: {
       shell.dataset.homeMoving = velocity.current.lengthSq() > 0.0004 ? 'true' : 'false'
     }
     const portrait = size.height > size.width
-    if (camera instanceof THREE.PerspectiveCamera) { const fov = portrait ? 86 : 42; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix() } }
+    if (camera instanceof THREE.PerspectiveCamera) { const fov = portrait ? 58 : 42; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix() } }
     camera.position.lerp(position.current.clone().add(new THREE.Vector3(Math.sin(yaw.current) * 0.10, portrait ? 1.54 : 1.59, Math.cos(yaw.current) * 0.10)), 1 - Math.pow(0.0008, delta))
     camera.lookAt(position.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current) * 10.5, 1.82 + pitch.current * 0.5, -Math.cos(yaw.current) * 10.5)))
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.35], ['ground', GROUND, 2.65], ['life-map', LIFE_MAP, 2.65]]; let nearby: Nearby = null; let best = Infinity

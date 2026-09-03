@@ -25,6 +25,7 @@ const tests = [
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
   'tests/home-relic-machine-realism-contract.test.mjs',
   'tests/home-v88-retained-pixel-repair-contract.test.mjs',
+  'tests/home-v91-portrait-composition-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',

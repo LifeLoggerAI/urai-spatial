@@ -192,10 +192,12 @@ function DeepApse({ textures }: { textures: TextureSet }) {
 
     for (let yIndex = 0; yIndex <= ySegments; yIndex += 1) {
       const ty = yIndex / ySegments
-      const y = -0.16 + ty * 3.54
       for (let xIndex = 0; xIndex <= xSegments; xIndex += 1) {
         const tx = xIndex / xSegments
         const x = -6.2 + tx * 12.4
+        const wingRise = THREE.MathUtils.clamp((Math.abs(x) - 2.30) / 3.90, 0, 1)
+        const shoulderHeight = 1.12 + wingRise * 2.42
+        const y = -0.16 + ty * shoulderHeight
         const recess = Math.cos((x / 6.2) * Math.PI * 0.5)
         const relief = Math.sin(x * 1.37 + y * 0.61) * 0.055 + Math.cos(y * 1.22 - x * 0.38) * 0.03
         const z = -10.7 - recess * 2.72 + relief
@@ -416,7 +418,7 @@ function useGovernedHomeEnvironment() {
 
 function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
   const textures = useSanctuaryTextures()
-  return <group name="home-v98-open-canyon-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment', composition: 'open-terraced-canyon-with-atmospheric-depth' }}>
+  return <group name="home-v98-open-canyon-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment', composition: 'open-terraced-canyon-with-atmospheric-depth', successorVisualRepair: 'v105-tapered-apse-shoulders' }}>
     <OpenAtmosphere />
     <TerracedGround textures={textures.floor} onWalk={onWalk} />
     <VaultShell textures={textures.shell} />
@@ -779,6 +781,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
       successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
+      successorPortraitRepair: 'v105-balanced-58-degree-portrait-fov',
       retainedPixelStatus: 'candidate-not-certified',
     }}
   >

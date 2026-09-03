@@ -15,6 +15,7 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs'
+      - 'urai-tier1/tests/home-v91-portrait-composition-contract.test.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
       - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
@@ -123,6 +124,9 @@ jobs:
           grep -Fq 'if (rejectedFamily.test(object.name) || rejectedUtilityDetail.test(object.name)) rejectedNodes.push(object)' "$art"
           grep -Fq 'for (const object of rejectedNodes) object.parent?.remove(object)' "$art"
           grep -Fq 'swarm.current.scale.setScalar(1.90 * breath)' "$art"
+          grep -Fq 'const fov = portrait ? 58 : 42' "$source"
+          grep -Fq 'const wingRise = THREE.MathUtils.clamp((Math.abs(x) - 2.30) / 3.90, 0, 1)' "$art"
+          grep -Fq "successorPortraitRepair: 'v105-balanced-58-degree-portrait-fov'" "$art"
           ! grep -Fq 'root.remove(...root.children.filter' "$art"
           ! grep -Fq 'root.visible = false' "$art"
           ! grep -Fq 'backgroundImage:' "$source"
@@ -147,6 +151,7 @@ jobs:
         run: |
           node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
           node --test --test-concurrency=1 urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs
+          node --test --test-concurrency=1 urai-tier1/tests/home-v91-portrait-composition-contract.test.mjs
           node --check scripts/capture-home-state-proof.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
