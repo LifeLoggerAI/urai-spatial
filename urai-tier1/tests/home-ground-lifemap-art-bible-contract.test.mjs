@@ -75,7 +75,6 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   assert.match(homeArt, /home-v83-governed-open-sanctuary-environment/)
   assert.match(homeArt, /home-v83-removed-procedural-tunnel/)
   assert.match(homeArt, /home-v83-removed-panel-like-orb-armor/)
-
   // A retained-pixel Home cannot claim a navigable three-dimensional environment
   // while its visible room is a flat DOM/scene backdrop and the governed Home
   // hierarchy is wholly hidden. Orb and portal overlays do not make a flat plate
@@ -88,7 +87,6 @@ test('Home is one coherent production Sacred-Tech 3D environment with governed i
   assert.doesNotMatch(homeArt, /scene\.(?:background|userData\.sanctuaryBackdrop)\s*=\s*(?:texture|SANCTUARY_BACKDROP)/)
   assert.doesNotMatch(governedEnvironment, /root\.visible\s*=\s*false/)
   assert.doesNotMatch(governedEnvironment, /object\.visible\s*=\s*false/)
-
   assert.doesNotMatch(homeArt, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case/i)
   for (const clip of ['Orb_Resting','Orb_Idle','Orb_Attention','Orb_Listening','Orb_Thinking','Orb_Speaking','Orb_Guiding','Orb_Reflecting','Orb_Calming','Orb_Privacy','Orb_Degraded','Orb_Transition']) {
     assert.ok(homeProduction.includes(clip), `missing governed Orb state clip identity: ${clip}`)

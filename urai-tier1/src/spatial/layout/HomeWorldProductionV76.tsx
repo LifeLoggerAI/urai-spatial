@@ -1,6 +1,6 @@
 'use client'
 
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useGLTF, useTexture } from '@react-three/drei'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -12,7 +12,6 @@ const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_indu
 const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'
 const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
-const SANCTUARY_BACKDROP = '/assets/urai/ground/ground-world-main.webp'
 
 const ROCK_A_DIFFUSE = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_diff_1k.jpg'
 const ROCK_A_NORMAL = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_nor_gl_1k.jpg'
@@ -270,14 +269,28 @@ function useGovernedHomeEnvironment() {
   const gltf = useGLTF(GOVERNED_HOME)
   return useMemo(() => {
     const root = gltf.scene.clone(true)
-    // V87 retained pixels proved that child meshes escaped name-based suppression
-    // and rebuilt a procedural slab/cage field over the accepted sanctuary plate.
-    // Keep the governed asset loaded and bound, but do not composite its rejected
-    // geometry over the production backdrop.
-    root.visible = false
+    // V87 retained pixels rejected the terrain slab, repeated growth/village field,
+    // pedestal, mountains and temporary embodiment markers. Remove those authored
+    // subtrees while retaining the governed Ground, Life Map and horizon threshold
+    // architecture as visible geometry in the navigable sanctuary.
+    const rejectedFamily = /^(?:sanctuary-terrain|mirror-basin|orb-sanctuary-pedestal|horizon-mountain-|sanctuary-waterfall-|inhabited-village-|living-growth-|embodied-presence-root|memory-place-anchor-)/
+    root.remove(...root.children.filter((child) => rejectedFamily.test(child.name)))
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
-      object.visible = false
+      const originals = Array.isArray(object.material) ? object.material : [object.material]
+      const materials = originals.map((entry) => {
+        const clone = entry.clone()
+        if (clone instanceof THREE.MeshStandardMaterial) {
+          clone.roughness = Math.max(clone.roughness, 0.62)
+          clone.metalness = Math.min(clone.metalness, 0.22)
+          clone.envMapIntensity = 0.78
+          if ('transmission' in clone) (clone as THREE.MeshPhysicalMaterial).transmission = Math.min((clone as THREE.MeshPhysicalMaterial).transmission, 0.08)
+        }
+        return clone
+      })
+      object.material = Array.isArray(object.material) ? materials : materials[0]
+      object.castShadow = true
+      object.receiveShadow = true
     })
     root.name = 'home-v83-governed-open-sanctuary-environment'
     root.position.set(0, -0.16, -8.2)
@@ -285,28 +298,36 @@ function useGovernedHomeEnvironment() {
     root.userData = {
       runtimeAsset: GOVERNED_HOME,
       visualOwner: 'committed-governed-home-environment',
-      treatment: 'loaded-governed-source-with-rejected-overlay-geometry-suppressed',
+      treatment: 'visible-governed-threshold-architecture-with-rejected-node-families-removed',
       legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
-      candidateArtRevision: 'v88-governed-sanctuary-plate-composition',
+      candidateArtRevision: 'v93-governed-dimensional-sanctuary',
     }
     return root
   }, [gltf.scene])
 }
 
-function SanctuaryBackdrop() {
-  const { scene } = useThree()
-  const texture = useTexture(SANCTUARY_BACKDROP)
-
-  useEffect(() => {
-    const previous = scene.background
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.needsUpdate = true
-    scene.background = null
-    scene.userData.sanctuaryBackdrop = SANCTUARY_BACKDROP
-    return () => { scene.background = previous }
-  }, [scene, texture])
-
-  return null
+function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
+  const textures = useSanctuaryTextures()
+  return <group name="home-v93-dimensional-sanctuary-architecture" userData={{ retainedPixelOwner: 'physical-pbr-three-dimensional-environment' }}>
+    <mesh name="home-v76-continuous-stone-floor" position={[0, -0.14, -2.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[12.7, 20.4, 42, 58]} />
+      <StoneMaterial textures={textures.floor} tint="#504b3f" />
+    </mesh>
+    <mesh name="home-walkable-navigation-surface" position={[0, 0.065, -2.0]} rotation={[-Math.PI / 2, 0, 0]} onClick={onWalk}>
+      <planeGeometry args={[12.4, 18.8]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+    </mesh>
+    <VaultShell textures={textures.shell} />
+    <CantedWall side="port" textures={textures.shell} />
+    <CantedWall side="starboard" textures={textures.shell} />
+    <DeepApse textures={textures.shell} />
+    <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
+    <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-foreground-rock-mass" position={[-5.76, 1.12, 1.84]} rotation={[0.14, 1.04, -0.16]} scale={[1.24, 1.34, 1.04]} span={3.86} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v93-starboard-foreground-rock-mass" position={[5.84, 1.02, 0.62]} rotation={[-0.12, -0.96, 0.12]} scale={[1.18, 1.30, 1.02]} span={3.72} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-apse-foundation" position={[-5.42, 1.18, -11.42]} rotation={[-0.04, 0.74, -0.10]} scale={[1.16, 1.42, 1.02]} span={3.68} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v93-starboard-apse-foundation" position={[5.58, 1.12, -11.56]} rotation={[0.06, -0.70, 0.08]} scale={[1.12, 1.38, 1.00]} span={3.62} mode="rock" />
+  </group>
 }
 
 function GovernedHomeEnvironment({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
@@ -558,13 +579,13 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       visualOwner: 'v76-single-canvas-deep-apse-sanctuary',
       construction: 'continuous-photogrammetry-shell-curved-load-bearing-relic-machine',
       liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
-      candidateArtRevision: 'v88-governed-sanctuary-plate-composition',
-      visualRepair: 'v88-remove-rejected-overlay-geometry',
-      portraitCompositionRevision: 'v91-aspect-correct-cover',
+      candidateArtRevision: 'v93-governed-dimensional-sanctuary',
+      visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
+      portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
       retainedPixelStatus: 'candidate-not-certified',
     }}
   >
-    <SanctuaryBackdrop />
+    <SanctuaryBackdrop onWalk={onWalk} />
     <GovernedHomeEnvironment onWalk={onWalk} />
     <group name="home-v83-removed-procedural-tunnel" userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name="home-v76-continuous-stone-floor" />

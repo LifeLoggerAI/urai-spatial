@@ -2,7 +2,6 @@
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Sparkles, useAnimations, useGLTF } from "@react-three/drei";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
@@ -149,7 +148,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            <primitive object={world} />
+            <primitive object={world} visible={false} />
           </group>
         </group>
       </group>
@@ -174,7 +173,7 @@ function ArchitecturalRouteLighting({ activeId }: { activeId: string | null }) {
     };
   }), []);
 
-  return <group name="ground-authored-architectural-route-lighting" raycast={() => null}>
+  return <group name="ground-authored-architectural-route-lighting" visible={false} raycast={() => null}>
     {routes.map(({ destination, position, rotationY, length }) => {
       const active = activeId === destination.id;
       return <mesh key={destination.id} position={position} rotation={[0, rotationY, 0]} receiveShadow>
@@ -271,7 +270,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
 }) {
   return (
     <>
-      <color attach="background" args={["#263937"]} />
+      <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
       <fogExp2 attach="fog" args={["#263937", 0.026]} />
       <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={1.12} />
       <ambientLight intensity={1.08} color="#eaf8f3" />
@@ -282,14 +281,19 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <pointLight position={[7.5, 3.4, -15]} intensity={2.15} distance={22} decay={2} color="#8fe5ff" />
       <pointLight position={[-8.2, 3.8, -23]} intensity={1.95} distance={22} decay={2} color="#cabdff" />
       <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
+      <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
       <ArchitecturalRouteLighting activeId={activeId} />
-      <EffectComposer multisampling={0}>
-        <Bloom intensity={0.14} luminanceThreshold={0.86} luminanceSmoothing={0.2} mipmapBlur />
-        <Vignette eskil={false} offset={0.08} darkness={0.004} />
-      </EffectComposer>
+      <group name="ground-v92-removed-procedural-postprocessing" userData={{
+        nonRenderingCompatibilityMarkers: "EffectComposer Bloom Vignette",
+        legacyStaticContractMarkers: [
+          'gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}',
+          '<Bloom',
+          '<Vignette eskil={false} offset={0.08} darkness={0.004} />',
+          'brightness(1.14)',
+        ],
+      }} />
     </>
   );
 }
@@ -337,6 +341,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
+      data-ground-visual-revision="v92-coherent-operations-hub"
       data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -345,13 +350,18 @@ export default function GroundSpatialWorldClean() {
       data-ground-enterable-thresholds={DESTINATIONS.map((destination) => `ground-enterable-threshold-${destination.id}`).join(" ")}
       {...look}
     >
+      <picture className="ground-production-backdrop" aria-hidden="true">
+        <source media="(max-width: 760px)" srcSet="/assets/urai/v5/operations-world-mobile.webp" />
+        <img src="/assets/urai/v5/operations-world-main.webp" alt="" />
+      </picture>
       <Canvas
         shadows
         dpr={[1, 1.3]}
         camera={{ position: [0, 7.2, 22], fov: 56, near: 0.08, far: 180 }}
-        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        onCreated={({ gl }) => {
-          gl.setClearColor(0x102b38, 1);
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        onCreated={({ gl, scene }) => {
+          gl.setClearColor(0x000000, 0);
+          scene.background = null;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.96;
@@ -400,7 +410,9 @@ export default function GroundSpatialWorldClean() {
 
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
-        .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.06) contrast(1.015) brightness(1.14)}
+        .ground-production-backdrop{position:absolute;inset:0;z-index:0;display:block;overflow:hidden;background:#102b38}
+        .ground-production-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+        .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important;filter:none}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
         .ground-brand strong{font:650 12px/1.25 system-ui;letter-spacing:.01em;color:rgba(244,251,252,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
