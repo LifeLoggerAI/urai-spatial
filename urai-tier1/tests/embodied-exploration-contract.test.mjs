@@ -70,8 +70,8 @@ test('Home is the live single-Canvas V76 relic sanctuary with governed identitie
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v93-governed-dimensional-sanctuary"',
-    'data-home-final-art-revision="v93-dimensional-governed-rebuild"',
+    'data-home-visual-grade="cinematic-pbr-v122-contained-orb-authored-depth-candidate"',
+    'data-home-final-art-revision="v122-authored-depth-rebuild-pending-pixels"',
     'data-home-art-certification="v76-retained-pixel-candidate-not-certified"',
     'data-home-animation-owner="v93-dimensional-governed-sanctuary"',
     'data-home-governed-identity-assets="home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb"',
@@ -134,11 +134,11 @@ test('Home is the live single-Canvas V76 relic sanctuary with governed identitie
 
 test('Home telemetry uses the same spawn and destination coordinates as the live scanned-industrial world', () => {
   assert.match(assetHome, /const HOME_SPAWN = \{ x: 0, z: 4\.6 \} as const/)
-  assert.match(assetHome, /const HOME_ORB = \{ x: -0\.28, z: -6\.18 \} as const/)
+  assert.match(assetHome, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)
   assert.match(assetHome, /const HOME_GROUND = \{ x: -4\.85, z: -8\.25 \} as const/)
   assert.match(assetHome, /const HOME_LIFE_MAP = \{ x: 4\.85, z: -8\.25 \} as const/)
   assert.match(homeProduction, /const SPAWN = new THREE\.Vector3\(0, 0\.04, 4\.6\)/)
-  assert.match(homeProduction, /const ORB = new THREE\.Vector3\(-0\.28, 2\.48, -6\.18\)/)
+  assert.match(homeProduction, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.match(homeProduction, /const GROUND = new THREE\.Vector3\(-4\.85, 0, -8\.25\)/)
   assert.match(homeProduction, /const LIFE_MAP = new THREE\.Vector3\(4\.85, 0, -8\.25\)/)
   assert.doesNotMatch(assetHome, /HOME_SPAWN = \{ x: 4\.45, z: 3\.15 \}/)
