@@ -20,6 +20,7 @@ on:
       - "operations/assets/home-v48-production-asset-provenance.json"
       - "operations/assets/third-party/home-photographic-pbr-v1.json"
       - "operations/assets/third-party/home-photographic-material-promotion-v16.json"
+      - "operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json"
       - "urai-tier1/public/assets/urai/home-production/cc0/**"
       - "scripts/capture-continuous-spatial-proof-v18.mjs"
       - "scripts/run-continuous-spatial-proof-v22-natural.mjs"
@@ -47,6 +48,7 @@ on:
       - "operations/assets/home-v48-production-asset-provenance.json"
       - "operations/assets/third-party/home-photographic-pbr-v1.json"
       - "operations/assets/third-party/home-photographic-material-promotion-v16.json"
+      - "operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json"
       - "urai-tier1/public/assets/urai/home-production/cc0/**"
       - "scripts/capture-continuous-spatial-proof-v18.mjs"
       - "scripts/run-continuous-spatial-proof-v22-natural.mjs"
@@ -106,17 +108,19 @@ jobs:
 
           node --input-type=commonjs <<'NODE'
           const { createHash } = require('node:crypto')
-          const { existsSync, readFileSync } = require('node:fs')
+          const { existsSync, readFileSync, readdirSync } = require('node:fs')
           const path = require('node:path')
 
           const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'))
           const v48ReceiptPath = 'operations/assets/home-v48-production-asset-provenance.json'
           const pbrReceiptPath = 'operations/assets/third-party/home-photographic-pbr-v1.json'
           const promotionPath = 'operations/assets/third-party/home-photographic-material-promotion-v16.json'
+          const fernReceiptPath = 'operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json'
           const v48 = readJson(v48ReceiptPath)
           const pbr = readJson(pbrReceiptPath)
           const promotion = readJson(promotionPath)
-          if (v48.runtimeFetchesPolyHavenApi !== false || pbr.runtimeExternalRequests !== false || promotion.runtimeExternalRequests !== false) {
+          const fern = readJson(fernReceiptPath)
+          if (v48.runtimeFetchesPolyHavenApi !== false || pbr.runtimeExternalRequests !== false || promotion.runtimeExternalRequests !== false || fern.runtimeExternalRequests !== false) {
             throw new Error('Home runtime asset receipts must remain locally vendored and network-independent')
           }
           if (promotion.sourceReceipt !== pbrReceiptPath) throw new Error('Home PBR promotion receipt is not bound to its source receipt')
@@ -144,14 +148,33 @@ jobs:
               ...(gltf.buffers || []).map((item) => item.uri),
               ...(gltf.images || []).map((item) => item.uri),
             ].filter(Boolean)) {
-              if (/^(?:data:|https?:)/i.test(uri)) throw new Error(`External or embedded GLTF dependency is not allowed: ${entry.path}`)
+              if (/^(?:data:|https?:|\/\/)/i.test(uri)) throw new Error(`External or embedded GLTF dependency is not allowed: ${entry.path}`)
               const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(entry.path), decodeURIComponent(uri)))
               if (!recorded.has(dependency)) throw new Error(`Unreceipted GLTF dependency: ${dependency}`)
             }
           }
 
           for (const record of Object.values(pbr.runtimeOptimization.runtimeFiles)) verifyRecord(record)
+          for (const record of Object.values(pbr.files)) {
+            if (existsSync(record.path)) verifyRecord(record)
+          }
           verifyRecord(pbr.hdri)
+          verifyRecord({ path: fern.output, bytes: fern.outputBytes, sha256: fern.outputSha256 })
+
+          const cc0Root = 'urai-tier1/public/assets/urai/home-production/cc0'
+          const walkFiles = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+            const target = path.posix.join(dir, entry.name)
+            return entry.isDirectory() ? walkFiles(target) : [target]
+          })
+          const committedCc0Files = new Set(walkFiles(cc0Root))
+          for (const file of committedCc0Files) {
+            if (!recorded.has(file)) throw new Error(`Committed CC0 runtime asset lacks a receipt: ${file}`)
+          }
+          for (const file of recorded.keys()) {
+            if (file.startsWith(`${cc0Root}/`) && !committedCc0Files.has(file)) {
+              throw new Error(`Receipt points to a missing CC0 runtime asset: ${file}`)
+            }
+          }
 
           const runtimeSources = [
             'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx',
