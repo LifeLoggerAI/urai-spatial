@@ -106,10 +106,10 @@ async function screenshot(page, name, options = {}) {
   await page.screenshot({
     path: path.join(outDir, relative),
     fullPage: false,
-    // Chromium can deadlock while fast-forwarding a continuously rendered WebGL
-    // destination. Transition proofs capture the settled destination with its
-    // animation clock left running; static Mirror states remain frozen.
-    animations: options.liveWebGL ? 'allow' : 'disabled',
+    // Freeze CSS animations for deterministic exact-head pixels. WebGL keeps its
+    // own bounded render cadence and does not require Playwright CSS animation
+    // fast-forwarding, including after client-side transitions.
+    animations: 'disabled',
     caret: 'hide',
     timeout: 90000,
   })
@@ -241,7 +241,7 @@ async function proveTransition(browser, destination, buttonName) {
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
     await page.locator('main').first().waitFor({ state: 'visible', timeout: 30000 })
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-    const shot = await screenshot(page, `desktop-${name}`, { liveWebGL: true })
+    const shot = await screenshot(page, `desktop-${name}`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
