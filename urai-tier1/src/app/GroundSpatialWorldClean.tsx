@@ -13,6 +13,7 @@ import {
   useMovementInput,
   type MovementInput,
 } from "@/spatial/navigation/EmbodiedNavigation";
+import { resolvePromotedUraiSpatialAssetPath } from "@/spatial/assets/promotedAssetResolver";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
 
 const GROUND_MODEL = resolvePromotedUraiSpatialAssetPath('ground-world-terrain-glb-v1')!;
