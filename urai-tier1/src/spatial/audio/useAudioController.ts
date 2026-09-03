@@ -168,8 +168,10 @@ export function useAudioController() {
 
   const playCue = useCallback((cue: SpatialAudioCue) => {
     if (!hasWindow()) return;
+    const src = CUE_SRC[cue];
+    if (!src) return;
     stopCue();
-    const audio = new Audio(CUE_SRC[cue]);
+    const audio = new Audio(src);
     audio.preload = "auto";
     audio.volume = cue === "error" ? 0.42 : 0.5;
     cueAudioRef.current = audio;
