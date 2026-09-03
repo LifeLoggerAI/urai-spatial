@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 
 const focusedContractTests = [
+  'tests/ai-evolution-policy-safety.test.mjs',
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
