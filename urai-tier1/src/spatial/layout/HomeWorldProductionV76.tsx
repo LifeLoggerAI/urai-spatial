@@ -274,7 +274,15 @@ function useGovernedHomeEnvironment() {
     // subtrees while retaining the governed Ground, Life Map and horizon threshold
     // architecture as visible geometry in the navigable sanctuary.
     const rejectedFamily = /^(?:sanctuary-terrain|mirror-basin|orb-sanctuary-pedestal|horizon-mountain-|sanctuary-waterfall-|inhabited-village-|living-growth-|embodied-presence-root|memory-place-anchor-)/
-    root.remove(...root.children.filter((child) => rejectedFamily.test(child.name)))
+    // The governed GLB wraps all authored families below home-sanctuary-root.
+    // Filtering only scene.children left the rejected village/growth field live.
+    // Remove matching subtrees at their actual depth while retaining the three
+    // governed destination threshold roots as visible geometry.
+    const rejectedNodes: THREE.Object3D[] = []
+    root.traverse((object) => {
+      if (rejectedFamily.test(object.name)) rejectedNodes.push(object)
+    })
+    for (const object of rejectedNodes) object.parent?.remove(object)
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
       const originals = Array.isArray(object.material) ? object.material : [object.material]
@@ -301,6 +309,8 @@ function useGovernedHomeEnvironment() {
       treatment: 'visible-governed-threshold-architecture-with-rejected-node-families-removed',
       legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
+      successorVisualRepair: 'v95-recursive-rejected-family-removal',
+      visibleGovernedFamilies: 'ground-alcove life-map-alcove horizon-threshold',
     }
     return root
   }, [gltf.scene])
@@ -323,8 +333,8 @@ function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>)
     <DeepApse textures={textures.shell} />
     <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
     <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-foreground-rock-mass" position={[-5.76, 1.12, 1.84]} rotation={[0.14, 1.04, -0.16]} scale={[1.24, 1.34, 1.04]} span={3.86} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v93-starboard-foreground-rock-mass" position={[5.84, 1.02, 0.62]} rotation={[-0.12, -0.96, 0.12]} scale={[1.18, 1.30, 1.02]} span={3.72} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_A} name="home-v95-port-entry-buttress" position={[-5.92, 0.72, -0.20]} rotation={[0.08, 1.04, -0.12]} scale={[0.90, 1.08, 0.86]} span={2.62} mode="rock" />
+    <ProductionAsset url={ROCK_FACE_B} name="home-v95-starboard-entry-buttress" position={[5.94, 0.68, -0.64]} rotation={[-0.08, -0.96, 0.10]} scale={[0.88, 1.04, 0.84]} span={2.58} mode="rock" />
     <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-apse-foundation" position={[-5.42, 1.18, -11.42]} rotation={[-0.04, 0.74, -0.10]} scale={[1.16, 1.42, 1.02]} span={3.68} mode="rock" />
     <ProductionAsset url={ROCK_FACE_B} name="home-v93-starboard-apse-foundation" position={[5.58, 1.12, -11.56]} rotation={[0.06, -0.70, 0.08]} scale={[1.12, 1.38, 1.00]} span={3.62} mode="rock" />
   </group>
@@ -474,9 +484,9 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
     swarm.current.scale.setScalar(breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.42, -8.86]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.18, 1.54, -9.34]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={swarm} scale={[0.72, 0.72, 0.72]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[0.44, 0.44, 0.44]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
     <pointLight color="#e3b878" intensity={state === 'dormant' ? 1.05 : state === 'warning' ? 2.2 : 1.55} distance={7.4} decay={2} />
@@ -486,16 +496,21 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
 
 function PortalRecess({ destination, position, rotation, onActivate }: { destination: 'ground' | 'life-map'; position: Vec3; rotation: Vec3; onActivate: () => void }) {
   const tone = destination === 'ground' ? '#b6c98c' : '#9fb3da'
+  const portCheek = [[-0.98, -1.36], [-0.50, -1.42], [-0.42, 0.76], [-0.20, 1.42], [-0.64, 1.62], [-1.06, 0.62]] as const
+  const starboardCheek = portCheek.map(([x, y]) => [-x, y] as const).reverse()
   return <group
     name={destination === 'ground' ? 'home-ground-environmental-threshold' : 'home-life-map-sky-lookout'}
     position={position as [number, number, number]}
     rotation={rotation as [number, number, number]}
-    userData={{ destination, treatment: 'v78-rock-cut-navigation-fissure', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
+    userData={{ destination, treatment: 'v95-architectural-rock-cut-threshold-no-ring-marker', governedPortalIdentity: 'portal-ring-master-v1.glb' }}
   >
     <group name={destination === 'life-map' ? 'home-life-map-physical-portal' : 'home-ground-physical-threshold'} />
-    <mesh name={`home-v78-${destination}-recess-field`} position={[0, 1.44, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.08 : 0.12]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
-      <ringGeometry args={[0.66, 0.76, 64]} />
-      <meshBasicMaterial color={tone} transparent opacity={0.56} toneMapped={false} side={THREE.DoubleSide} />
+    <ExtrudedBody name={`home-v95-${destination}-port-threshold-cheek`} points={portCheek} position={[0, 1.34, -0.30]} depth={0.42} color="#39483f" metalness={0.12} roughness={0.82} />
+    <ExtrudedBody name={`home-v95-${destination}-starboard-threshold-cheek`} points={starboardCheek} position={[0, 1.34, -0.30]} depth={0.42} color="#39483f" metalness={0.12} roughness={0.82} />
+    <ExtrudedBody name={`home-v95-${destination}-threshold-lintel`} points={[[-0.72, -0.24], [0.72, -0.24], [0.50, 0.30], [-0.46, 0.36]]} position={[0, 2.82, -0.31]} depth={0.46} color="#46564c" metalness={0.10} roughness={0.84} />
+    <mesh name={`home-v95-${destination}-recess-veil`} position={[0, 1.44, -0.48]} rotation={[0, 0, destination === 'ground' ? -0.04 : 0.05]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
+      <planeGeometry args={[1.18, 2.42, 1, 1]} />
+      <meshPhysicalMaterial color={tone} emissive={tone} emissiveIntensity={0.42} transparent opacity={0.22} roughness={0.34} metalness={0.04} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
     <group name={`home-v82-${destination}-natural-fissure-markers`} userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name={`home-v82-${destination}-port-natural-fissure`} />
@@ -581,6 +596,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       liveArtRevision: 'v93-governed-dimensional-sanctuary',
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
+      successorVisualRepair: 'v95-recursive-rejected-family-removal-and-architectural-thresholds',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
       retainedPixelStatus: 'candidate-not-certified',
     }}

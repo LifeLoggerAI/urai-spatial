@@ -4,14 +4,23 @@ import test from 'node:test'
 
 const world = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
 
-test('V93 keeps the governed Home source visibly bound while removing only rejected node families', () => {
-  assert.match(world, /root\.remove\(\.\.\.root\.children\.filter/)
+test('V95 keeps the governed Home source visibly bound while recursively removing rejected node families', () => {
+  assert.match(world, /root\.traverse\(\(object\) =>/)
+  assert.match(world, /for \(const object of rejectedNodes\) object\.parent\?\.remove\(object\)/)
   assert.match(world, /sanctuary-terrain\|mirror-basin\|orb-sanctuary-pedestal/)
   assert.match(world, /home-v83-governed-open-sanctuary-environment/)
   assert.match(world, /visible-governed-threshold-architecture-with-rejected-node-families-removed/)
   assert.match(world, /legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed'/)
-  assert.match(world, /candidateArtRevision: 'v93-governed-dimensional-sanctuary'/)
+  assert.match(world, /successorVisualRepair: 'v95-recursive-rejected-family-removal'/)
   assert.doesNotMatch(world, /root\.visible\s*=\s*false/)
+})
+
+test('V95 replaces rings and foreground occluders with human-scale integrated thresholds', () => {
+  assert.doesNotMatch(world, /<ringGeometry/)
+  assert.match(world, /v95-architectural-rock-cut-threshold-no-ring-marker/)
+  assert.match(world, /home-v95-\$\{destination\}-threshold-lintel/)
+  assert.match(world, /scale=\{\[0\.44, 0\.44, 0\.44\]\}/)
+  assert.doesNotMatch(world, /home-v93-(?:port|starboard)-foreground-rock-mass/)
 })
 
 test('V93 removes the sphere shell and temporary industrial overlay composition', () => {
