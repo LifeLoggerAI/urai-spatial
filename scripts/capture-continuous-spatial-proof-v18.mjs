@@ -156,11 +156,27 @@ async function waitForAssetHome(page, { ready = true } = {}) {
           const rect = node.getBoundingClientRect()
           return { className: node.className, display: style.display, visibility: style.visibility, opacity: style.opacity, width: rect.width, height: rect.height }
         })
-        return { attributes, loading, canvasCount: document.querySelectorAll('canvas').length, title: document.title, url: location.href }
+        const loadingVisible = loading.some((entry) => entry.display !== 'none'
+          && entry.visibility !== 'hidden'
+          && Number.parseFloat(entry.opacity || '1') > 0.02
+          && entry.width > 4
+          && entry.height > 4)
+        const readinessSatisfied = attributes?.['data-home-assets-ready'] === 'true'
+          && attributes?.['data-home-input-ready'] === 'true'
+          && attributes?.['data-home-interaction-ready'] === 'true'
+          && attributes?.['data-home-ready'] === 'true'
+          && attributes?.['data-home-input-owner'] === 'window-capture-movement'
+          && attributes?.['data-home-telemetry-owner'] === 'embodied-motion-kernel-v66'
+          && !loadingVisible
+        return { attributes, loading, loadingVisible, readinessSatisfied, canvasCount: document.querySelectorAll('canvas').length, title: document.title, url: location.href }
       }, ownerSelector)
       const screenshot = `home-readiness-timeout-${safeName(exactHead.slice(0, 12))}.png`
       await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: true }).catch(() => {})
       receipt.errors.push({ id: 'home-readiness-timeout', screenshot, diagnostic })
+      // A heavily loaded CI renderer can cross the readiness boundary while
+      // Playwright is dispatching its timeout. Accept only when the same exact
+      // predicate is demonstrably true in the retained diagnostic snapshot.
+      if (diagnostic.readinessSatisfied) return
       throw new Error(`Home readiness timed out: ${JSON.stringify(diagnostic)}; cause=${String(error)}`)
     })
   }

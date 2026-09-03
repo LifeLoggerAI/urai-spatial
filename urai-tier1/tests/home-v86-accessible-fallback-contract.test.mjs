@@ -23,4 +23,5 @@ test('V86 retains exact timeout pixels and readiness telemetry instead of emitti
   assert.match(continuousProof, /home-readiness-timeout-/)
   assert.match(continuousProof, /Object\.fromEntries\(\[\.\.\.owner\.attributes\]/)
   assert.match(continuousProof, /receipt\.errors\.push\(\{ id: 'home-readiness-timeout'/)
+  assert.match(continuousProof, /if \(diagnostic\.readinessSatisfied\) return/)
 })

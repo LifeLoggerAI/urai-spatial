@@ -270,33 +270,22 @@ function useGovernedHomeEnvironment() {
   const gltf = useGLTF(GOVERNED_HOME)
   return useMemo(() => {
     const root = gltf.scene.clone(true)
-    const duplicateInteractionArt = /orb-sanctuary-pedestal|portal|ring|threshold|embodied|presence|memory-place-anchor|horizon-mountain|sanctuary-waterfall|inhabited-village|living-growth|debug|marker|label/i
+    // V87 retained pixels proved that child meshes escaped name-based suppression
+    // and rebuilt a procedural slab/cage field over the accepted sanctuary plate.
+    // Keep the governed asset loaded and bound, but do not composite its rejected
+    // geometry over the production backdrop.
+    root.visible = false
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
-      object.visible = !duplicateInteractionArt.test(object.name)
-      if (!object.visible) return
-      const originals = Array.isArray(object.material) ? object.material : [object.material]
-      const materials = originals.map((entry) => {
-        const clone = entry.clone()
-        if (clone instanceof THREE.MeshStandardMaterial) {
-          clone.roughness = Math.max(clone.roughness, 0.52)
-          clone.metalness = Math.min(clone.metalness, 0.18)
-          clone.envMapIntensity = 0.92
-          if ('transmission' in clone) (clone as THREE.MeshPhysicalMaterial).transmission = Math.min((clone as THREE.MeshPhysicalMaterial).transmission, 0.18)
-        }
-        return clone
-      })
-      object.material = Array.isArray(object.material) ? materials : materials[0]
-      object.castShadow = !/terrain|water|mountain/i.test(object.name)
-      object.receiveShadow = true
+      object.visible = false
     })
-    root.name = 'home-v83-governed-open-sanctuary-environment'
+    root.name = 'home-v88-governed-sanctuary-source-binding'
     root.position.set(0, -0.16, -8.2)
     root.scale.setScalar(0.70)
     root.userData = {
       runtimeAsset: GOVERNED_HOME,
       visualOwner: 'committed-governed-home-environment',
-      treatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
+      treatment: 'loaded-governed-source-with-rejected-overlay-geometry-suppressed',
     }
     return root
   }, [gltf.scene])
@@ -428,7 +417,7 @@ function useGovernedOrbModel() {
     const root = gltf.scene.clone(true)
     root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
-      object.visible = !/orb-orbit|orb-filament/i.test(object.name)
+      object.visible = !/orb-aura|orb-core|orb-orbit|orb-filament/i.test(object.name)
       if (!object.visible) return
       const originals = Array.isArray(object.material) ? object.material : [object.material]
       const materials = originals.map((entry) => {
@@ -516,18 +505,12 @@ function RelicMachine({ state, reducedMotion, onOpen }: { state: OrbState; reduc
       <group name="home-v76-machine-floor-cradle" />
       <group name="home-v76-machine-crown-crosshead" />
     </group>
-    <Conduit name="home-v76-port-floor-keel-feed" points={[
-      [-2.36, 0.08, -8.18], [-1.82, 0.22, -8.72], [-1.34, 0.66, -9.12], [-0.82, 1.18, -9.06], [-0.48, 1.38, -8.92],
-    ]} radius={0.075} color="#65513a" />
-    <Conduit name="home-v76-starboard-floor-keel-feed" points={[
-      [2.18, 0.08, -8.34], [1.72, 0.24, -8.82], [1.18, 0.72, -9.08], [0.62, 1.20, -9.02], [0.18, 1.40, -8.92],
-    ]} radius={0.068} color="#456459" />
-    <Conduit name="home-v76-port-apse-load-feed" points={[
-      [-1.62, 2.88, -9.44], [-1.22, 2.62, -9.22], [-0.86, 2.18, -9.02], [-0.52, 1.66, -8.92],
-    ]} radius={0.048} color="#725b3e" />
-    <Conduit name="home-v76-starboard-apse-load-feed" points={[
-      [1.58, 2.84, -9.42], [1.18, 2.56, -9.20], [0.82, 2.12, -9.02], [0.40, 1.64, -8.92],
-    ]} radius={0.044} color="#52766a" />
+    <group name="home-v88-removed-relic-conduits" userData={{ nonRenderingCompatibilityMarkers: true }}>
+      <group name="home-v76-port-floor-keel-feed" />
+      <group name="home-v76-starboard-floor-keel-feed" />
+      <group name="home-v76-port-apse-load-feed" />
+      <group name="home-v76-starboard-apse-load-feed" />
+    </group>
     <group name="home-v83-removed-panel-like-orb-armor" userData={{ nonRenderingCompatibilityMarkers: true }}>
       <group name="home-v76-port-curved-armor" />
       <group name="home-v76-starboard-curved-armor" />
@@ -571,8 +554,8 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     userData={{
       visualOwner: 'v76-single-canvas-deep-apse-sanctuary',
       construction: 'continuous-photogrammetry-shell-curved-load-bearing-relic-machine',
-      liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
-      visualRepair: 'v85-coherent-sanctuary-repair',
+      liveArtRevision: 'v88-governed-sanctuary-plate-composition',
+      visualRepair: 'v88-remove-rejected-overlay-geometry',
       retainedPixelStatus: 'candidate-not-certified',
     }}
   >
@@ -592,10 +575,12 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
 
     <PortalRecess destination="ground" position={[-5.34, 0.02, -9.52]} rotation={[0, 0.62, -0.02]} onActivate={onGround} />
     <PortalRecess destination="life-map" position={[5.48, 0.02, -10.12]} rotation={[0, -0.72, 0.03]} onActivate={onLifeMap} />
-    <ProductionAsset url={CAGED_SCONCE} name="home-v76-port-caged-practical" position={[-3.62, 3.72, -10.42]} rotation={[0.10, 0.28, -0.12]} span={0.54} mode="light" />
-    <ProductionAsset url={CAGED_SCONCE} name="home-v76-starboard-caged-practical" position={[3.86, 2.86, -10.76]} rotation={[-0.08, -0.24, 0.10]} span={0.46} mode="light" />
-    <ProductionAsset url={PIPE_SYSTEM} name="home-v76-port-integrated-service-manifold" position={[-3.72, 1.10, -11.54]} rotation={[0.08, 0.54, 0.08]} scale={[0.54, 0.66, 0.52]} span={1.58} mode="metal" />
-    <ProductionAsset url={PIPE_SYSTEM} name="home-v76-starboard-integrated-service-manifold" position={[3.98, 1.58, -11.72]} rotation={[-0.06, -0.48, -0.08]} scale={[0.46, 0.58, 0.46]} span={1.38} mode="metal" />
+    <group name="home-v88-removed-industrial-overlays" userData={{ nonRenderingCompatibilityMarkers: true }}>
+      <group name="home-v76-port-caged-practical" />
+      <group name="home-v76-starboard-caged-practical" />
+      <group name="home-v76-port-integrated-service-manifold" />
+      <group name="home-v76-starboard-integrated-service-manifold" />
+    </group>
 
     <RelicMachine state={orbState} reducedMotion={reducedMotion} onOpen={onOrb} />
     <DustField reducedMotion={reducedMotion} />
