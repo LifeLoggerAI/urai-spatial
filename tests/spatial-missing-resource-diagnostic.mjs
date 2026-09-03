@@ -184,6 +184,22 @@ try {
 
   for (const route of routes) {
     const page = await context.newPage();
+    const pendingLocalAssets = new Set();
+    const trackLocalAsset = (request) => {
+      try {
+        const parsed = new URL(request.url());
+        if (parsed.origin === baseOrigin && parsed.pathname.startsWith('/assets/')) {
+          pendingLocalAssets.add(request);
+        }
+      } catch {
+        // Invalid URLs are captured by the context route boundary.
+      }
+    };
+    const releaseLocalAsset = (request) => pendingLocalAssets.delete(request);
+    page.on('request', trackLocalAsset);
+    page.on('requestfinished', releaseLocalAsset);
+    page.on('requestfailed', releaseLocalAsset);
+
     try {
       const response = await page.goto(`${baseUrl}${route}`, {
         waitUntil: 'domcontentloaded',
@@ -204,8 +220,31 @@ try {
         }
       }
 
-      await page.waitForTimeout(1_000);
+      // Do not close a route while its committed runtime assets are still loading.
+      // A blind one-second delay converted legitimate in-flight requests into
+      // status-0 requestfailed events when page.close() aborted them. Require a
+      // stable idle window after all same-origin /assets/ requests finish instead.
+      await page.waitForTimeout(500);
+      const settleDeadline = Date.now() + 45_000;
+      let idleSince = null;
+      while (Date.now() < settleDeadline) {
+        if (pendingLocalAssets.size === 0) {
+          idleSince ??= Date.now();
+          if (Date.now() - idleSince >= 1_500) break;
+        } else {
+          idleSince = null;
+        }
+        await page.waitForTimeout(100);
+      }
+      if (pendingLocalAssets.size > 0) {
+        throw new Error(`Spatial diagnostic asset settle timed out for ${route}: ${[
+          ...pendingLocalAssets,
+        ].map((request) => request.url()).join(', ')}`);
+      }
     } finally {
+      page.removeListener('request', trackLocalAsset);
+      page.removeListener('requestfinished', releaseLocalAsset);
+      page.removeListener('requestfailed', releaseLocalAsset);
       await page.close().catch(() => undefined);
     }
   }
