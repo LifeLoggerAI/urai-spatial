@@ -42,10 +42,7 @@
       "path": "/assets/urai/generated/models/home-entry-chamber-v1.glb",
       "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
       "bytes": 184160,
-      "receipts": [
-        "PR #986",
-        "PR #987"
-      ]
+      "receipts": ["PR #986", "PR #987"]
     },
     {
       "id": "portal-ring-master-glb-v1",
@@ -53,10 +50,7 @@
       "path": "/assets/urai/generated/models/portal-ring-master-v1.glb",
       "sha256": "6e29acaaab0eb048ddd2e4690bf5949ef58865061574ca961bdec6b6312d80f5",
       "bytes": 73164,
-      "receipts": [
-        "PR #998",
-        "artifact 8816835462"
-      ]
+      "receipts": ["PR #998", "artifact 8816835462"]
     },
     {
       "id": "urai-orb-avatar-glb-v1",
@@ -64,42 +58,31 @@
       "path": "/assets/urai/generated/models/urai-orb-avatar-v1.glb",
       "sha256": "34f48f2bc042458c041d738d2b68d390eab05a61f91b37a8cd30defd0753d18c",
       "bytes": 83984,
-      "receipts": [
-        "PR #998",
-        "artifact 8816835462"
-      ]
+      "receipts": ["PR #998", "artifact 8816835462"]
     },
     {
       "id": "ground-world-terrain-glb-v1",
       "state": "promoted",
       "path": "/assets/urai/generated/models/ground-world-terrain-v1.gltf",
-      "receipts": [
-        "PR #537"
-      ]
+      "receipts": ["PR #537"]
     },
     {
       "id": "life-map-memory-star-glb-v1",
       "state": "promoted",
       "path": "/assets/urai/generated/models/life-map-memory-star-v1.gltf",
-      "receipts": [
-        "PR #538"
-      ]
+      "receipts": ["PR #538"]
     },
     {
       "id": "focus-memory-chamber-glb-v1",
       "state": "promoted",
       "path": "/assets/urai/generated/models/focus-memory-chamber-v1.gltf",
-      "receipts": [
-        "PR #538"
-      ]
+      "receipts": ["PR #538"]
     },
     {
       "id": "replay-memory-environment-glb-v1",
       "state": "promoted",
       "path": "/assets/urai/generated/models/replay-memory-environment-v1.gltf",
-      "receipts": [
-        "PR #538"
-      ]
+      "receipts": ["PR #538"]
     }
   ],
   "sharedSensoryAssets": [
@@ -137,45 +120,11 @@
     }
   ],
   "runtimeImageEstate": {
-    "v1": {
-      "ready": 53,
-      "missing": 0,
-      "receipts": [
-        "PR #979"
-      ]
-    },
-    "v2": {
-      "ready": 80,
-      "missing": 0,
-      "generatedReplacements": 71,
-      "preservedCertifiedSources": 9,
-      "receipts": [
-        "PR #982",
-        "PR #993"
-      ]
-    },
-    "v3": {
-      "ready": 14,
-      "missing": 0,
-      "receipts": [
-        "PR #982"
-      ]
-    },
-    "v4": {
-      "ready": 39,
-      "missing": 0,
-      "receipts": [
-        "PR #982",
-        "external program PR #223"
-      ]
-    },
-    "v5": {
-      "ready": 27,
-      "missing": 0,
-      "receipts": [
-        "PR #982"
-      ]
-    }
+    "v1": {"ready": 53, "missing": 0, "receipts": ["PR #979"]},
+    "v2": {"ready": 80, "missing": 0, "generatedReplacements": 71, "preservedCertifiedSources": 9, "receipts": ["PR #982", "PR #993"]},
+    "v3": {"ready": 14, "missing": 0, "receipts": ["PR #982"]},
+    "v4": {"ready": 39, "missing": 0, "receipts": ["PR #982", "external program PR #223"]},
+    "v5": {"ready": 27, "missing": 0, "receipts": ["PR #982"]}
   },
   "separateEvidenceGates": [
     {

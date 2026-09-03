@@ -137,6 +137,7 @@ test('supersession records are repository-bound, path-safe, and tamper-evident',
     const document = {
       schemaVersion: 'urai-asset-authority-supersession-1',
       repository: 'LifeLoggerAI/urai-spatial',
+      predecessorCommit: 'a'.repeat(40),
       effectiveAt: '2026-09-03T00:00:00Z',
       status: 'historical-superseded',
       currentAuthority: false,
@@ -150,14 +151,23 @@ test('supersession records are repository-bound, path-safe, and tamper-evident',
     const valid = authoritySupersessionErrors({
       root,
       documents: [{ relativePath: 'operations/assets/authority-supersessions/test.json', document }],
+      predecessorReader: () => Buffer.from('{"historical":true}\n'),
     })
     assert.deepEqual(valid.errors, [])
     assert.equal(valid.supersededPaths.has(recordPath), true)
+
+    const rewrittenPredecessor = authoritySupersessionErrors({
+      root,
+      documents: [{ relativePath: 'operations/assets/authority-supersessions/test.json', document }],
+      predecessorReader: () => Buffer.from('{"historical":"rewritten"}\n'),
+    })
+    assert.match(rewrittenPredecessor.errors[0], /predecessor Git blob drift/)
 
     fs.writeFileSync(absolute, '{"historical":false}\n')
     const tampered = authoritySupersessionErrors({
       root,
       documents: [{ relativePath: 'operations/assets/authority-supersessions/test.json', document }],
+      predecessorReader: () => Buffer.from('{"historical":true}\n'),
     })
     assert.match(tampered.errors[0], /immutable record hash drift/)
 
@@ -167,6 +177,7 @@ test('supersession records are repository-bound, path-safe, and tamper-evident',
         relativePath: 'operations/assets/authority-supersessions/unsafe.json',
         document: { ...document, records: [{ path: '../outside.json', sha256: '0'.repeat(64) }] },
       }],
+      predecessorReader: () => Buffer.from('{"historical":true}\n'),
     })
     assert.match(unsafe.errors[0], /safe repository-relative path/)
   } finally {

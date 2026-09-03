@@ -8,13 +8,15 @@ import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbS
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
-import { resolvePromotedUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
+import { resolveDisclosedReviewUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
 import styles from './HomeWorldProduction.module.css'
 
-const SANCTUARY = resolvePromotedUraiSpatialAssetPath('home-entry-chamber-model-v1')!
-const ORB_MODEL = resolvePromotedUraiSpatialAssetPath('urai-orb-avatar-glb-v1')!
-const PORTAL_MODEL = resolvePromotedUraiSpatialAssetPath('portal-ring-master-glb-v1')!
-const HUMAN = resolvePromotedUraiSpatialAssetPath('home-human-makehuman-v4')
+const DISCLOSED_REVIEW = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('homeAssetReview') === '1'
+const SANCTUARY = resolveDisclosedReviewUraiSpatialAssetPath('home-entry-chamber-model-v1', DISCLOSED_REVIEW)!
+const ORB_MODEL = resolveDisclosedReviewUraiSpatialAssetPath('urai-orb-avatar-glb-v1', DISCLOSED_REVIEW)!
+const PORTAL_MODEL = resolveDisclosedReviewUraiSpatialAssetPath('portal-ring-master-glb-v1', DISCLOSED_REVIEW)!
+const HUMAN = resolveDisclosedReviewUraiSpatialAssetPath('home-human-makehuman-v4', DISCLOSED_REVIEW)
 const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const SPAWN = new THREE.Vector3(2.35, 0.04, 7.9)
 const ORB = new THREE.Vector3(0, 1.62, -2.65)

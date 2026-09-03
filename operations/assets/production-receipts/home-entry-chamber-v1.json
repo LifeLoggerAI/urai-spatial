@@ -3,40 +3,20 @@
   "id": "home-entry-chamber-v1",
   "assetId": "home-entry-chamber-model-v1",
   "fixedPath": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
-  "targetRoutes": [
-    "/",
-    "/home"
-  ],
+  "targetRoutes": ["/", "/home"],
   "sha256": "b7bdced5a721598a9dfe592ee19da04d754d5b8b1d48b23cc44403a89b1ee529",
   "bytes": 184160,
   "measured": {
     "triangleCount": 12934,
     "boundsMeters": {
-      "min": [
-        -9.345,
-        -1.83,
-        -9.238
-      ],
-      "max": [
-        9.345,
-        5.0844,
-        7.452
-      ],
-      "size": [
-        18.69,
-        6.9144,
-        16.69
-      ]
+      "min": [-9.345, -1.83, -9.238],
+      "max": [9.345, 5.0844, 7.452],
+      "size": [18.69, 6.9144, 16.69]
     },
     "repairedEulerRotations": 2,
     "nodeCount": 160,
     "materialCount": 13,
-    "animationClips": [
-      "Home_Breathing",
-      "Presence_Idle",
-      "Presence_Privacy",
-      "Presence_Forming"
-    ]
+    "animationClips": ["Home_Breathing", "Presence_Idle", "Presence_Privacy", "Presence_Forming"]
   },
   "compressionStatus": "meshopt",
   "source": "URAI Labs deterministic authored sanctuary v3 pipeline; replaceable only by a separately reviewed provider asset",

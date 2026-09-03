@@ -2,6 +2,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
 const DEFAULT_ROOT = process.cwd()
@@ -183,7 +184,13 @@ export function productionEvidenceErrors({ asset, evidence, payload, evidencePat
   return errors
 }
 
-export function authoritySupersessionErrors({ root, documents }) {
+export function authoritySupersessionErrors({
+  root,
+  documents,
+  predecessorReader = (commit, recordPath) => execFileSync(
+    'git', ['show', `${commit}:${recordPath}`], { cwd: root, maxBuffer: 16 * 1024 * 1024 },
+  ),
+}) {
   const errors = []
   const supersededPaths = new Set()
   for (const { relativePath, document } of documents) {
@@ -202,6 +209,10 @@ export function authoritySupersessionErrors({ root, documents }) {
     }
     if (typeof document.reason !== 'string' || document.reason.trim().length === 0) {
       errors.push(`${relativePath}: supersession reason is required`)
+    }
+    if (!/^[0-9a-f]{40}$/.test(String(document.predecessorCommit ?? ''))) {
+      errors.push(`${relativePath}: supersession predecessorCommit must be an immutable Git SHA`)
+      continue
     }
     if (!Array.isArray(document.records) || document.records.length === 0) {
       errors.push(`${relativePath}: supersession must bind at least one historical record`)
@@ -232,6 +243,15 @@ export function authoritySupersessionErrors({ root, documents }) {
       }
       if (sha256(fs.readFileSync(absolute)) !== record.sha256) {
         errors.push(`${relativePath}: immutable record hash drift for ${record.path}`)
+        continue
+      }
+      try {
+        if (sha256(predecessorReader(document.predecessorCommit, record.path)) !== record.sha256) {
+          errors.push(`${relativePath}: predecessor Git blob drift for ${record.path}`)
+          continue
+        }
+      } catch {
+        errors.push(`${relativePath}: predecessor Git blob is unavailable for ${record.path}`)
         continue
       }
       supersededPaths.add(record.path)

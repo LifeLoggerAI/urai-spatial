@@ -3,14 +3,7 @@
   "family": "urai-sensory-layer-v1",
   "releaseState": "production-integrated-candidate",
   "reviewedAt": "2026-08-08T20:00:00Z",
-  "routes": [
-    "/",
-    "/home",
-    "/ground",
-    "/life-map",
-    "/focus",
-    "/replay"
-  ],
+  "routes": ["/", "/home", "/ground", "/life-map", "/focus", "/replay"],
   "activation": {
     "consumer": "urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx",
     "component": "urai-tier1/src/spatial/scene/SpatialSensoryLayer.tsx",
@@ -27,12 +20,7 @@
       "path": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
       "bytes": 622,
       "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
-      "validation": [
-        "complete SVG",
-        "1024x1024 viewbox",
-        "four radial sprites",
-        "under 524288-byte budget"
-      ]
+      "validation": ["complete SVG", "1024x1024 viewbox", "four radial sprites", "under 524288-byte budget"]
     },
     {
       "id": "global-cinematic-material-pack-v1",
@@ -40,12 +28,7 @@
       "path": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
       "bytes": 579,
       "sha256": "8c518c715e60fa41dc49bb0a89f543232ce180d0c3a2f48b075cebe5e49edc04",
-      "validation": [
-        "schemaVersion 1",
-        "JSON parsed",
-        "portal and memory colors consumed by runtime",
-        "under 262144-byte budget"
-      ]
+      "validation": ["schemaVersion 1", "JSON parsed", "portal and memory colors consumed by runtime", "under 262144-byte budget"]
     },
     {
       "id": "urai-loading-sequence-v1",
@@ -53,12 +36,7 @@
       "path": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
       "bytes": 480,
       "sha256": "d023d471800e2385b0525bddc490ad2a7a227c16fc3305cb948b7238c2f835aa",
-      "validation": [
-        "JSON parsed",
-        "2200ms deterministic sequence",
-        "accessible label retained",
-        "under 262144-byte budget"
-      ]
+      "validation": ["JSON parsed", "2200ms deterministic sequence", "accessible label retained", "under 262144-byte budget"]
     }
   ],
   "integratedProductionAudio": {
