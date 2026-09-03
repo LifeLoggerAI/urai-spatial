@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import PublicAuthorityShell from '@/components/public-authority/PublicAuthorityShell'
 import { publicIndexing } from '../public-indexing'
 
-const profile = {"@context":"https://schema.org","@type":"ProfilePage","@id":"https://urai.app/founder#profile","url":"https://urai.app/founder","mainEntity":{"@type":"Person","@id":"https://urai.app/founder#person","name":"Adam Clamp","jobTitle":"Founder and system architect","worksFor":{"@id":"https://urai.app/#organization"}}}
+const profile = {"@context":"https://schema.org","@type":"ProfilePage","@id":"https://urai.app/founder/#profile","url":"https://urai.app/founder/","mainEntity":{"@type":"Person","@id":"https://urai.app/founder/#person","name":"Adam Clamp","jobTitle":"Founder and system architect","worksFor":{"@id":"https://urai.app/#organization"}}}
 
 export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'Adam Clamp — Founder',
   description: 'Adam Clamp is the founder and system architect behind URAI Labs and UrAi.',
-  alternates: { canonical: 'https://urai.app/founder' },
-  openGraph: { url: 'https://urai.app/founder' },
+  alternates: { canonical: 'https://urai.app/founder/' },
+  openGraph: { url: 'https://urai.app/founder/' },
 }
 
 export default function FounderPage() {
