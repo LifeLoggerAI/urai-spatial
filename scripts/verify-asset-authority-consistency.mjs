@@ -11,8 +11,8 @@ const PROMOTION_STATE = 'urai-tier1/src/spatial/assets/assetPromotionState.ts'
 const HISTORICAL_LEDGER = 'docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json'
 
 const ROUTE_OWNERS = Object.freeze({
-  '/': 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx',
-  '/home': 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx',
+  '/': 'urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx',
+  '/home': 'urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx',
   '/ground': 'urai-tier1/src/app/GroundSpatialWorldClean.tsx',
   '/life-map': 'urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx',
   '/focus': 'urai-tier1/src/app/focus/FocusChamberClient.tsx',
