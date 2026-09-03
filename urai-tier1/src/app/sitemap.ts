@@ -25,7 +25,7 @@ export const dynamic = 'force-static'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return publicRoutes.map((route) => ({
-    url: new URL(route, 'https://urai.app').toString(),
+    url: route === '/' ? 'https://urai.app/' : new URL(`${route}/`, 'https://urai.app').toString(),
     changeFrequency: route === '/' ? 'weekly' : 'monthly',
     priority: route === '/' ? 1 : route.startsWith('/about') || route === '/founder' ? 0.8 : 0.6,
   }))
