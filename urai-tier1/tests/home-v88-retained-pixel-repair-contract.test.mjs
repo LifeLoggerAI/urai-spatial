@@ -9,12 +9,12 @@ const proof = readFileSync(new URL('../../scripts/capture-continuous-spatial-pro
 const naturalProof = readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v22-natural.mjs', import.meta.url), 'utf8')
 const finalizer = readFileSync(new URL('../../.github/workflows/home-finalization-candidate-commit.yml', import.meta.url), 'utf8')
 
-test('V95 keeps the governed Home source visibly bound while recursively removing rejected node families', () => {
+test('V108 keeps the governed Home source bound while suppressing imported approach occluders', () => {
   assert.match(world, /root\.traverse\(\(object\) =>/)
   assert.match(world, /for \(const object of rejectedNodes\) object\.parent\?\.remove\(object\)/)
   assert.match(world, /sanctuary-terrain\|mirror-basin\|orb-sanctuary-pedestal/)
   assert.match(world, /home-v83-governed-open-sanctuary-environment/)
-  assert.match(world, /visible-governed-threshold-architecture-with-rejected-node-families-removed/)
+  assert.match(world, /governed-home-source-bound-imported-occluder-meshes-suppressed/)
   assert.match(world, /legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed'/)
   assert.match(world, /successorVisualRepair: 'v95-recursive-rejected-family-removal'/)
   assert.doesNotMatch(world, /root\.visible\s*=\s*false/)
@@ -70,7 +70,7 @@ test('V102 preserves the V101 composition while retaining authored Orb scale at 
   assert.match(world, /rejectedUtilityDetail = \/\(\?:pipe\|tube\|conduit\|duct\|cable\)\/i/)
   assert.match(world, /home-v101-removed-entrance-rock-clutter/)
   assert.match(world, /home-v101-\$\{destination\}-foreground-portal-frame-removed/)
-  assert.doesNotMatch(world, /<PortalStoneFrame/)
+  assert.match(world, /<PortalStoneFrame destination=\\{destination\\} textures=\\{textures\\} \\/>/)
   assert.doesNotMatch(world, /<circleGeometry/)
   assert.doesNotMatch(world, /<ProductionAsset[^>]*entry-buttress/)
   assert.match(world, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
@@ -91,6 +91,14 @@ test('V101 binds live proximity and all proof telemetry to the rendered Orb posi
   assert.match(telemetry, /const HOME_ORB = \{ x: -0\.28, z: -6\.18 \} as const/)
   assert.match(proof, /orb: \{ x: -0\.28, z: -6\.18, radius: 2\.35/)
   assert.match(naturalProof, /orb: \{ x: -0\.28, z: -6\.18, radius: 2\.35/)
+})
+
+test('V108 preserves exact proximity gates and backs only the inspection camera out of rendered meshes', () => {
+  assert.match(runtime, /\['orb', ORB, 2\.35\], \['ground', GROUND, 2\.65\], \['life-map', LIFE_MAP, 2\.65\]/)
+  assert.match(runtime, /const inspectionClearance = nearby === 'orb' \? \(portrait \? 2\.80 : 2\.40\) : nearby \? \(portrait \? 2\.10 : 1\.65\) : 0\.10/)
+  assert.match(runtime, /data-home-approach-clearance="v108-camera-outside-unchanged-thresholds"/)
+  assert.match(world, /approachVisibilityRepair: 'v107-suppress-imported-occluders-restore-stone-thresholds'/)
+  assert.match(world, /visibleThresholdAuthority: 'authored-open-canyon-stone-cut-thresholds'/)
 })
 
 test('V101 finalization executes this contract and checks current source markers', () => {
