@@ -21,7 +21,8 @@ export default function PressPage() {
       <h2>Media assets</h2>
       <p>Use only logos, founder photography, screenshots, and video that are explicitly approved for public use. Final product imagery must be tied to a certified release SHA. No final launch-image pack is represented as approved on this page.</p>
       <h2>Contact and links</h2>
-      <ul><li><a href="mailto:press@urai.app">press@urai.app</a></li><li><a href="https://urai.app/">urai.app</a></li><li><a href="https://github.com/LifeLoggerAI/urai-spatial">Canonical public repository</a></li><li><a href="/status">Current status</a></li></ul>
+      <p>Public media mailbox routing is not yet provider-verified, so no email address is represented here as operational.</p>
+      <ul><li><a href="https://urai.app/">urai.app</a></li><li><a href="https://github.com/LifeLoggerAI/urai-spatial">Canonical public repository</a></li><li><a href="/status">Current status</a></li></ul>
     </PublicAuthorityShell>
   )
 }
