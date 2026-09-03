@@ -1,15 +1,25 @@
-# Owner-authored exact-head verifier for the current V66 Home composition.
+# Owner-authored exact-head verifier for the current V112 Home composition.
 name: Home Scanned Composition Verification
 on:
   pull_request:
     branches: [main]
     paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProduction.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx"
+      - "urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs"
+      - "urai-tier1/tests/home-relic-machine-realism-contract.test.mjs"
+      - "urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs"
       - ".github/workflows/home-scanned-composition-forge.yml"
   push:
     branches: [main]
     paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProduction.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx"
+      - "urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx"
+      - "urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs"
+      - "urai-tier1/tests/home-relic-machine-realism-contract.test.mjs"
+      - "urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs"
       - ".github/workflows/home-scanned-composition-forge.yml"
   workflow_dispatch:
 permissions:
@@ -28,53 +38,39 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           show-progress: false
-      - name: Verify exact current V66 enclosed reliquary Orb composition
+      - name: Verify exact current V112 visible governed relief composition
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          source='urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx'
+          entry='urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
+          runtime='urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
+          art='urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
 
-          grep -F 'HOME_SCANNED_COMPOSITION_V1' "$source"
-          grep -F "root.visible = false" "$source"
-          grep -F "retainedForGovernedCompatibilityOnly = true" "$source"
-          grep -F "visibleWorldOwner = 'home-v66-enclosed-reliquary'" "$source"
-          grep -F 'v66-authored-chamber-retained-provenance-never-visible' "$source"
+          grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' "$entry"
+          grep -Fq "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'" "$art"
+          grep -Fq 'home-v83-governed-open-sanctuary-environment' "$art"
+          grep -Fq 'home-v83-authored-open-sanctuary' "$art"
+          grep -Fq 'committed-governed-home-distant-architectural-relief' "$art"
+          grep -Fq 'governed-home-source-visible-distant-relief-outside-approach-cameras' "$art"
+          grep -Fq "successorVisualRepair: 'v112-reposition-and-rescale-governed-relief'" "$art"
+          grep -Fq "approachVisibilityRepair: 'v112-visible-governed-relief-outside-approach-cameras'" "$art"
+          grep -Fq 'root.position.set(0, -0.12, -20.8)' "$art"
+          grep -Fq 'root.scale.setScalar(0.18)' "$art"
+          grep -Fq 'for (const object of rejectedNodes) object.parent?.remove(object)' "$art"
+          grep -Fq '<PortalStoneFrame destination={destination} textures={textures.shell} />' "$art"
+          grep -Fq 'swarm.current.scale.setScalar(1.90 * breath)' "$art"
+          grep -Fq 'const ORB = new THREE.Vector3(-0.28, 2.48, -6.18)' "$runtime"
+          grep -Fq "const inspectionClearance = nearby === 'orb' ? (portrait ? 2.80 : 2.40) : nearby ? (portrait ? 2.10 : 1.65) : 0.10" "$runtime"
 
-          grep -F "visualOwner:'enclosed-reliquary-v66'" "$source"
-          grep -F "construction:'contiguous-pbr-stone-enclosure-with-recessed-reliquary-focus'" "$source"
-          grep -F "visualTreatment:'v66-enclosed-reliquary-retained-pixel-rebuild'" "$source"
-          grep -F 'v66-contiguous-enclosed-stone-reliquary-no-open-sky-no-floating-geology' "$source"
-          grep -F 'v66-recessed-practicals-integrated-into-enclosure' "$source"
-          grep -F 'v66-six-fragment-engineered-orb-no-glass-sphere-no-pedestal' "$source"
-          grep -F 'v66-interaction-anchor-for-six-fragment-engineered-orb' "$source"
-          grep -F 'data-home-visual-grade="cinematic-pbr-v66-enclosed-reliquary"' "$source"
-          grep -F 'data-home-final-art-revision="v66-enclosed-reliquary-candidate"' "$source"
-          grep -F 'data-home-art-certification="v66-retained-pixel-candidate-not-certified"' "$source"
-          grep -F 'data-home-animation-owner="enclosed-reliquary-v66-six-fragment-orb"' "$source"
-          grep -F 'const ORB = new THREE.Vector3(0, 2.35, -7.25)' "$source"
-          grep -F 'const SPAWN = new THREE.Vector3(4.45, 0.04, 3.15)' "$source"
-          grep -F 'const DEFAULT_YAW = 0.435' "$source"
-          grep -F 'const desiredFov=portrait?52:40' "$source"
+          ! grep -Eq '(root|object)\.visible[[:space:]]*=[[:space:]]*false' "$art"
+          ! grep -Fq 'PRODUCTION CERTIFIED' "$runtime"
+          ! grep -Fq 'retained-pixel-pass' "$runtime"
+          ! grep -Fq 'pixel-certified' "$runtime"
 
-          architecture_block="$(sed -n '/function ContinuousVaultSkin/,/function SanctuaryGlazing/p' "$source")"
-          machine_block="$(sed -n '/function MachineCoreAssembly/,/function HumanPresence/p' "$source")"
-          ! grep -F 'home-v64-left-deep-wall' <<<"$architecture_block"
-          ! grep -F 'home-v64-right-deep-wall' <<<"$architecture_block"
-          ! grep -F 'home-v64-upper-left-vault' <<<"$architecture_block"
-          ! grep -F 'home-v64-upper-right-vault' <<<"$architecture_block"
-          ! grep -F 'ProductionAsset url={V48_ROCK_FACE' <<<"$architecture_block"
-          ! grep -F 'sphereGeometry' <<<"$machine_block"
-          ! grep -F 'torusGeometry' <<<"$machine_block"
-          ! grep -F 'ProductionAsset url={V48_PIPE_SYSTEM}' <<<"$machine_block"
-          ! grep -F 'cylinderGeometry' <<<"$machine_block"
-          ! grep -F '<ProductionOrbMachine />' "$source"
-          ! grep -F "visualOwner:'photogrammetry-orb-sanctuary-v64'" "$source"
-          ! grep -F "visualOwner:'authored-orb-sanctuary-v63'" "$source"
-          ! grep -F 'data-home-art-certification="v65-retained-pixel-candidate-not-certified"' "$source"
-
-          ! grep -F 'PRODUCTION CERTIFIED' "$source"
-          ! grep -F 'retained-pixel-pass' "$source"
-          ! grep -F 'pixel-certified' "$source"
+          node --test \
+            urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs \
+            urai-tier1/tests/home-relic-machine-realism-contract.test.mjs \
+            urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs
