@@ -17,6 +17,10 @@ on:
       - "urai-tier1/src/spatial/world/persistentRealmAtmosphere.css"
       - "urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx"
       - "urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx"
+      - "operations/assets/home-v48-production-asset-provenance.json"
+      - "operations/assets/third-party/home-photographic-pbr-v1.json"
+      - "operations/assets/third-party/home-photographic-material-promotion-v16.json"
+      - "urai-tier1/public/assets/urai/home-production/cc0/**"
       - "scripts/capture-continuous-spatial-proof-v18.mjs"
       - "scripts/run-continuous-spatial-proof-v22-natural.mjs"
       - "urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs"
@@ -40,6 +44,10 @@ on:
       - "urai-tier1/src/spatial/world/persistentRealmAtmosphere.css"
       - "urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx"
       - "urai-tier1/src/components/lifemap/LifeMapProductionWorld.tsx"
+      - "operations/assets/home-v48-production-asset-provenance.json"
+      - "operations/assets/third-party/home-photographic-pbr-v1.json"
+      - "operations/assets/third-party/home-photographic-material-promotion-v16.json"
+      - "urai-tier1/public/assets/urai/home-production/cc0/**"
       - "scripts/capture-continuous-spatial-proof-v18.mjs"
       - "scripts/run-continuous-spatial-proof-v22-natural.mjs"
       - "urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs"
@@ -95,6 +103,70 @@ jobs:
           ! grep -Fq 'PRODUCTION CERTIFIED' "$runtime"
           ! grep -Fq 'retained-pixel-pass' "$runtime"
           ! grep -Fq 'pixel-certified' "$runtime"
+
+          node --input-type=commonjs <<'NODE'
+          const { createHash } = require('node:crypto')
+          const { existsSync, readFileSync } = require('node:fs')
+          const path = require('node:path')
+
+          const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'))
+          const v48ReceiptPath = 'operations/assets/home-v48-production-asset-provenance.json'
+          const pbrReceiptPath = 'operations/assets/third-party/home-photographic-pbr-v1.json'
+          const promotionPath = 'operations/assets/third-party/home-photographic-material-promotion-v16.json'
+          const v48 = readJson(v48ReceiptPath)
+          const pbr = readJson(pbrReceiptPath)
+          const promotion = readJson(promotionPath)
+          if (v48.runtimeFetchesPolyHavenApi !== false || pbr.runtimeExternalRequests !== false || promotion.runtimeExternalRequests !== false) {
+            throw new Error('Home runtime asset receipts must remain locally vendored and network-independent')
+          }
+          if (promotion.sourceReceipt !== pbrReceiptPath) throw new Error('Home PBR promotion receipt is not bound to its source receipt')
+
+          const recorded = new Map()
+          const verifyRecord = (record) => {
+            const repoPath = path.posix.normalize(record.path)
+            if (recorded.has(repoPath)) throw new Error(`Duplicate runtime asset receipt entry: ${repoPath}`)
+            if (!existsSync(repoPath)) throw new Error(`Missing runtime asset: ${repoPath}`)
+            const bytes = readFileSync(repoPath)
+            if (bytes.length !== record.bytes) throw new Error(`Runtime asset byte mismatch: ${repoPath}`)
+            const digest = createHash('sha256').update(bytes).digest('hex')
+            if (digest !== record.sha256) throw new Error(`Runtime asset SHA-256 mismatch: ${repoPath}`)
+            recorded.set(repoPath, record)
+          }
+
+          for (const source of v48.sourceAssets) {
+            for (const record of source.files) verifyRecord(record)
+            const total = source.files.reduce((sum, record) => sum + record.bytes, 0)
+            if (total !== source.totalBytes) throw new Error(`Receipt total mismatch: ${source.id}`)
+            const entry = source.files.find((record) => record.path.endsWith('/asset.gltf'))
+            if (!entry) throw new Error(`Missing GLTF entrypoint receipt: ${source.id}`)
+            const gltf = readJson(entry.path)
+            for (const uri of [
+              ...(gltf.buffers || []).map((item) => item.uri),
+              ...(gltf.images || []).map((item) => item.uri),
+            ].filter(Boolean)) {
+              if (/^(?:data:|https?:)/i.test(uri)) throw new Error(`External or embedded GLTF dependency is not allowed: ${entry.path}`)
+              const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(entry.path), decodeURIComponent(uri)))
+              if (!recorded.has(dependency)) throw new Error(`Unreceipted GLTF dependency: ${dependency}`)
+            }
+          }
+
+          for (const record of Object.values(pbr.runtimeOptimization.runtimeFiles)) verifyRecord(record)
+          verifyRecord(pbr.hdri)
+
+          const runtimeSources = [
+            'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx',
+            'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx',
+          ].map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n')
+          const runtimeUrls = new Set(
+            [...runtimeSources.matchAll(/['"`](\/assets\/urai\/home-production\/cc0\/[^'"`]+)['"`]/g)]
+              .map((match) => match[1]),
+          )
+          if (runtimeUrls.size === 0) throw new Error('No committed Home runtime assets were discovered')
+          for (const runtimeUrl of runtimeUrls) {
+            const repoPath = path.posix.join('urai-tier1/public', runtimeUrl.slice(1))
+            if (!recorded.has(repoPath)) throw new Error(`Runtime asset lacks an exact receipt: ${runtimeUrl}`)
+          }
+          NODE
 
           (
             cd urai-tier1
