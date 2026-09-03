@@ -209,12 +209,5 @@
       "keep deployment fingerprint-gated behind DNS recovery",
       "retain device-specific XR proof as a separate physical-device gate"
     ]
-  },
-  "currentAuthority": false,
-  "evidenceStatus": "historical-superseded",
-  "authorityBoundary": {
-    "canonicalManifest": "operations/assets/launch-critical-assets.json",
-    "canonicalState": "pending-final-review",
-    "note": "Preserved historical evidence only. It cannot authorize the current asset bytes, promotion, merge, or deployment."
   }
 }

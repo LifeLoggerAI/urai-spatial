@@ -66,13 +66,5 @@
   "paidExecutionAuthorized": true,
   "providerCallsForPromotion": 0,
   "providerSpendForPromotionUsd": "0.00",
-  "providerRegenerationSkippedReason": "The exact accepted Meshopt binary was already present on current main; regeneration would spend credits without changing the reviewed artifact.",
-  "currentAuthority": false,
-  "evidenceStatus": "historical-superseded",
-  "authorityBoundary": {
-    "canonicalManifest": "operations/assets/launch-critical-assets.json",
-    "canonicalState": "pending-final-review",
-    "note": "Preserved historical evidence only. It cannot authorize the current asset bytes, promotion, merge, or deployment.",
-    "currentBinarySha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2"
-  }
+  "providerRegenerationSkippedReason": "The exact accepted Meshopt binary was already present on current main; regeneration would spend credits without changing the reviewed artifact."
 }

@@ -83,11 +83,5 @@
   "verificationCommand": "node scripts/verify-production-sensory-assets.mjs",
   "verificationResult": "pending-exact-head-ci",
   "license": "URAI Labs internal production assets",
-  "provenance": "Deterministic URAI forge; receipt regenerated from exact committed ready-asset bytes; production audio is separately hash/loudness/codec verified and runtime consent-controlled.",
-  "currentAuthority": false,
-  "evidenceStatus": "historical-superseded",
-  "authorityBoundary": {
-    "canonicalManifest": "operations/assets/launch-critical-assets.json",
-    "note": "Preserved historical integration receipt. Current sensory bytes and active-route consumption require fresh exact-head evidence."
-  }
+  "provenance": "Deterministic URAI forge; receipt regenerated from exact committed ready-asset bytes; production audio is separately hash/loudness/codec verified and runtime consent-controlled."
 }

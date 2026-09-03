@@ -95,7 +95,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
+  assert.match(homeProduction, /const PORTAL_MODEL = resolvePromotedUraiSpatialAssetPath\('portal-ring-master-glb-v1'\)!/)
   assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)

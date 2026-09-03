@@ -30,13 +30,5 @@
     "reason": "Aligns the governed target contract with the exact independently reviewed production binary; no binary, runtime, route, license, spend, or deployment authority changed.",
     "approvedAt": "2026-08-01T03:08:00-05:00"
   },
-  "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed. This follow-up metadata correction aligns the manifest X-axis target to the reviewed 18.69m binary bound without altering the asset.",
-  "currentAuthority": false,
-  "evidenceStatus": "historical-superseded",
-  "authorityBoundary": {
-    "canonicalManifest": "operations/assets/launch-critical-assets.json",
-    "canonicalState": "pending-final-review",
-    "note": "Preserved historical evidence only. It cannot authorize the current asset bytes, promotion, merge, or deployment.",
-    "currentBinarySha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2"
-  }
+  "notes": "Promotes the immutable reviewed Meshopt Home asset already present on current main. Historical independent visual proof, current route consumption, fallback behavior, ownership, optimization, and exact binary identity are retained. No provider regeneration was needed. This follow-up metadata correction aligns the manifest X-axis target to the reviewed 18.69m binary bound without altering the asset."
 }

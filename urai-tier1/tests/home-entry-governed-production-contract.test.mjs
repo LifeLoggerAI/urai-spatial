@@ -2,12 +2,15 @@ import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
+import { currentProductionEvidenceErrors } from '../../scripts/verify-asset-authority-consistency.mjs'
 
 const binaryPath = 'public/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const binary = fs.readFileSync(binaryPath)
 const launchManifest = JSON.parse(fs.readFileSync('../operations/assets/launch-critical-assets.json', 'utf8'))
 const productionReceipt = JSON.parse(fs.readFileSync('../operations/assets/production-receipts/home-entry-chamber-v1.json', 'utf8'))
 const promotionDecision = JSON.parse(fs.readFileSync('../operations/assets/promotion-decisions/home-entry-chamber-v1.json', 'utf8'))
+const supersession = JSON.parse(fs.readFileSync('../operations/assets/authority-supersessions/2026-09-03-canonical-pending-authority.json', 'utf8'))
+const supersededByPath = new Map(supersession.records.map((record) => [record.path, record]))
 const promotionState = fs.readFileSync('src/spatial/assets/assetPromotionState.ts', 'utf8')
 const resolver = fs.readFileSync('src/spatial/assets/promotedAssetResolver.ts', 'utf8')
 const layer = fs.readFileSync('src/spatial/scene/SpatialWorldAssetLayer.tsx', 'utf8')
@@ -22,7 +25,7 @@ test('binds canonical pending authority to the current Home GLB', () => {
   assert.equal(home.source, productionReceipt.source)
   assert.equal(home.license, productionReceipt.license)
   assert.equal(home.fallback, promotionDecision.fallback)
-  assert.equal(productionReceipt.authorityBoundary.currentBinarySha256, crypto.createHash('sha256').update(binary).digest('hex'))
+  assert.equal(supersession.supersedingAuthority.state, 'pending-final-review')
 })
 
 test('preserves historical acceptance evidence without granting it current authority', () => {
@@ -30,9 +33,10 @@ test('preserves historical acceptance evidence without granting it current autho
   assert.equal(productionReceipt.visualAcceptance.continuousSpatialVisualProofRunId, 30432962277)
   assert.equal(productionReceipt.visualAcceptance.independentProofPullRequest, 968)
   assert.equal(productionReceipt.compressionStatus, 'meshopt')
-  assert.equal(productionReceipt.currentAuthority, false)
-  assert.equal(productionReceipt.evidenceStatus, 'historical-superseded')
-  assert.equal(productionReceipt.authorityBoundary.canonicalState, 'pending-final-review')
+  const record = supersededByPath.get('operations/assets/production-receipts/home-entry-chamber-v1.json')
+  assert.equal(supersession.currentAuthority, false)
+  assert.equal(supersession.status, 'historical-superseded')
+  assert.equal(record.sha256, crypto.createHash('sha256').update(fs.readFileSync('../operations/assets/production-receipts/home-entry-chamber-v1.json')).digest('hex'))
   assert.equal(productionReceipt.providerCallsForPromotion, 0)
   assert.equal(productionReceipt.providerSpendForPromotionUsd, '0.00')
 })
@@ -40,10 +44,8 @@ test('preserves historical acceptance evidence without granting it current autho
 test('preserves the superseded promotion decision as non-authoritative history', () => {
   assert.equal(promotionDecision.mode, 'promotion')
   assert.equal(promotionDecision.promote, true)
-  assert.equal(promotionDecision.currentAuthority, false)
-  assert.equal(promotionDecision.evidenceStatus, 'historical-superseded')
-  assert.equal(promotionDecision.authorityBoundary.canonicalState, 'pending-final-review')
-  assert.equal(promotionDecision.authorityBoundary.currentBinarySha256, crypto.createHash('sha256').update(binary).digest('hex'))
+  const record = supersededByPath.get('operations/assets/promotion-decisions/home-entry-chamber-v1.json')
+  assert.equal(record.sha256, crypto.createHash('sha256').update(fs.readFileSync('../operations/assets/promotion-decisions/home-entry-chamber-v1.json')).digest('hex'))
   assert.notEqual(promotionDecision.producer, promotionDecision.reviewer)
   assert.equal(promotionDecision.receiptPath, 'operations/assets/production-receipts/home-entry-chamber-v1.json')
 })
@@ -55,4 +57,21 @@ test('current runtime falls back until a fresh governed promotion exists', () =>
   assert.match(resolver, /!selectedAsset \|\| !isUraiAssetPromoted\(assetId\)/)
   assert.match(resolver, /uraiPromotedAssetPathOverrides\[assetId\] \?\? selectedAsset\.path/)
   assert.match(layer, /assetId="home-entry-chamber-model-v1"/)
+})
+
+test('production-ready authority requires both current decision and receipt', () => {
+  const asset = { id: 'future-promoted-asset', releaseState: 'production-ready' }
+  assert.deepEqual(currentProductionEvidenceErrors({
+    canonicalAssets: [asset],
+    currentDecisions: new Set(),
+    currentReceipts: new Set(),
+  }), [
+    'future-promoted-asset: production-ready asset has no matching current promotion decision',
+    'future-promoted-asset: production-ready asset has no matching current production receipt',
+  ])
+  assert.deepEqual(currentProductionEvidenceErrors({
+    canonicalAssets: [asset],
+    currentDecisions: new Set([asset.id]),
+    currentReceipts: new Set([asset.id]),
+  }), [])
 })

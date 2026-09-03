@@ -13,8 +13,10 @@ const homeWorldEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeWorld = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
 const audioRuntime = read('src/spatial/audio/SpatialAmbientRuntime.tsx')
 const audioController = read('src/spatial/audio/useAudioController.ts')
+const positionedAudio = read('src/spatial/audio/SpatialPositionedAudioRuntime.tsx')
 const receipt = JSON.parse(read('../operations/assets/production-receipts/sensory-layer-v1.json'))
 const audioReceipt = JSON.parse(read('../operations/assets/production-receipts/spatial-audio-production-v1.json'))
+const supersession = JSON.parse(read('../operations/assets/authority-supersessions/2026-09-03-canonical-pending-authority.json'))
 
 const productionAudioFiles = [
   'home-ambient-v1.opus',
@@ -47,6 +49,8 @@ test('active spatial routes consume governed sensory fallback and shared silent 
   assert.match(sensoryLayer, /urai-loading-sequence-v1|loadingPath/)
   for (const fileName of productionAudioFiles) assert.match(audioController, new RegExp(fileName.replaceAll('.', '\\.')))
   assert.match(audioController, /PRODUCTION_AUDIO_READY/)
+  assert.match(positionedAudio, /resolveReadyUraiSensoryAssetPath\('ambientAudio'\)/)
+  assert.match(positionedAudio, /if \(!PRODUCTION_AUDIO_READY\) return/)
   assert.match(audioController, /if \(!nextSrc\)/)
   assert.match(audioController, /if \(!src\) return/)
   assert.match(audioRuntime, /urai:spatial-audio-consent-v1/)
@@ -54,8 +58,9 @@ test('active spatial routes consume governed sensory fallback and shared silent 
 })
 
 test('historical sensory receipt is retained without current authority', () => {
-  assert.equal(receipt.currentAuthority, false)
-  assert.equal(receipt.evidenceStatus, 'historical-superseded')
+  assert.equal(supersession.currentAuthority, false)
+  assert.equal(supersession.status, 'historical-superseded')
+  assert.ok(supersession.records.some((record) => record.path === 'operations/assets/production-receipts/sensory-layer-v1.json'))
   assert.equal(receipt.releaseState, 'production-integrated-candidate')
   assert.equal(receipt.verificationResult, 'pending-exact-head-ci')
   assert.deepEqual(receipt.assets.map((asset) => asset.id).sort(), [

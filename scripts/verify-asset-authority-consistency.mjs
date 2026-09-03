@@ -10,6 +10,7 @@ const RUNTIME_MANIFEST = 'urai-tier1/src/spatial/assets/assetManifest.ts'
 const SENSORY_RUNTIME_MANIFEST = 'urai-tier1/src/spatial/assets/sensoryAssetManifest.ts'
 const PROMOTION_STATE = 'urai-tier1/src/spatial/assets/assetPromotionState.ts'
 const HISTORICAL_LEDGER = 'docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json'
+const AUTHORITY_SUPERSESSIONS = 'operations/assets/authority-supersessions'
 
 const ROUTE_OWNERS = Object.freeze({
   '/': 'urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx',
@@ -88,18 +89,13 @@ export function canonicalRuntimeStatusErrors({ canonicalAssets, runtimeManifestS
   return errors
 }
 
-const SENSORY_CANONICAL_ALIASES = Object.freeze({
-  'production-spatial-audio-v1': 'urai-ambient-bed-v1',
-})
-
 export function sensoryRuntimeStatusErrors({ canonicalAssets, sensoryManifestSource }) {
   const errors = []
   const canonicalById = new Map(canonicalAssets.map((asset) => [asset.id, asset]))
   for (const match of sensoryManifestSource.matchAll(/id:\s*'([^']+)'[\s\S]*?status:\s*'([^']+)'/g)) {
     const runtimeId = match[1]
     const status = match[2]
-    const canonicalId = SENSORY_CANONICAL_ALIASES[runtimeId] ?? runtimeId
-    const canonical = canonicalById.get(canonicalId)
+    const canonical = canonicalById.get(runtimeId)
     if (status === 'ready' && !canonical) {
       errors.push(`${runtimeId}: ready sensory asset has no canonical launch asset mapping`)
     } else if (canonical?.releaseState === 'pending-final-review' && status === 'ready') {
@@ -169,11 +165,6 @@ export function generatedReceiptErrors({ asset, receipt, payload }) {
 }
 
 export function productionEvidenceErrors({ asset, evidence, payload, evidencePath }) {
-  if (evidence.currentAuthority === false) {
-    return evidence.evidenceStatus === 'historical-superseded'
-      ? []
-      : [`${evidencePath}: non-current evidence must be explicitly historical-superseded`]
-  }
   const errors = []
   if (asset.releaseState !== 'production-ready') {
     errors.push(`${evidencePath}: current production evidence exists for ${asset.releaseState} asset ${asset.id}`)
@@ -183,8 +174,56 @@ export function productionEvidenceErrors({ asset, evidence, payload, evidencePat
   return errors
 }
 
+export function authoritySupersessionErrors({ root, documents }) {
+  const errors = []
+  const supersededPaths = new Set()
+  for (const { relativePath, document } of documents) {
+    if (document.schemaVersion !== 'urai-asset-authority-supersession-1') {
+      errors.push(`${relativePath}: unsupported authority supersession schema`)
+      continue
+    }
+    if (document.status !== 'historical-superseded' || document.currentAuthority !== false) {
+      errors.push(`${relativePath}: supersession must explicitly deny current authority`)
+    }
+    for (const record of document.records ?? []) {
+      if (!record.path || !record.sha256) {
+        errors.push(`${relativePath}: superseded record must bind path and SHA-256`)
+        continue
+      }
+      if (supersededPaths.has(record.path)) {
+        errors.push(`${relativePath}: duplicate supersession for ${record.path}`)
+        continue
+      }
+      const absolute = path.join(root, record.path)
+      if (!fs.existsSync(absolute)) {
+        errors.push(`${relativePath}: superseded record is missing: ${record.path}`)
+        continue
+      }
+      if (sha256(fs.readFileSync(absolute)) !== record.sha256) {
+        errors.push(`${relativePath}: immutable record hash drift for ${record.path}`)
+        continue
+      }
+      supersededPaths.add(record.path)
+    }
+  }
+  return { errors, supersededPaths }
+}
+
+export function currentProductionEvidenceErrors({ canonicalAssets, currentDecisions, currentReceipts }) {
+  const errors = []
+  for (const asset of canonicalAssets.filter((candidate) => candidate.releaseState === 'production-ready')) {
+    if (!currentDecisions.has(asset.id)) {
+      errors.push(`${asset.id}: production-ready asset has no matching current promotion decision`)
+    }
+    if (!currentReceipts.has(asset.id)) {
+      errors.push(`${asset.id}: production-ready asset has no matching current production receipt`)
+    }
+  }
+  return errors
+}
+
 export function routeConsumptionErrors({ asset, evidence, root, runtimeManifestSource = '', routeOwners = ROUTE_OWNERS }) {
-  if (evidence.currentAuthority === false || evidence.routeConsumptionVerified !== true) return []
+  if (evidence.routeConsumptionVerified !== true) return []
   const errors = []
   const fileName = path.basename(asset.fixedPath)
   const runtimeId = [...runtimeAssetEntries(runtimeManifestSource)].find(([, entry]) => entry.fileName === fileName)?.[0] ?? null
@@ -223,8 +262,15 @@ export function collectAuthorityErrors(root = DEFAULT_ROOT) {
     sensoryManifestSource: readText(root, SENSORY_RUNTIME_MANIFEST),
   }))
 
+  const supersessionDocuments = listJson(path.join(root, AUTHORITY_SUPERSESSIONS)).map((file) => {
+    const relativePath = path.join(AUTHORITY_SUPERSESSIONS, file)
+    return { relativePath, document: readJson(root, relativePath) }
+  })
+  const supersessions = authoritySupersessionErrors({ root, documents: supersessionDocuments })
+  errors.push(...supersessions.errors)
+
   const ledger = readJson(root, HISTORICAL_LEDGER)
-  if ((ledger.summary?.launchCriticalModels?.promoted ?? 0) > 0 && ledger.currentAuthority !== false) {
+  if ((ledger.summary?.launchCriticalModels?.promoted ?? 0) > 0 && !supersessions.supersededPaths.has(HISTORICAL_LEDGER)) {
     errors.push(`${HISTORICAL_LEDGER}: promoted summary must be explicitly historical when canonical assets are pending`)
   }
 
@@ -235,6 +281,8 @@ export function collectAuthorityErrors(root = DEFAULT_ROOT) {
     errors.push(...generatedReceiptErrors({ asset, receipt, payload }))
   }
 
+  const currentDecisions = new Set()
+  const currentReceipts = new Set()
   for (const relativeDirectory of ['operations/assets/promotion-decisions', 'operations/assets/production-receipts']) {
     const directory = path.join(root, relativeDirectory)
     for (const file of listJson(directory)) {
@@ -242,11 +290,18 @@ export function collectAuthorityErrors(root = DEFAULT_ROOT) {
       const evidence = readJson(root, relative)
       const asset = byId.get(evidence.assetId) ?? byId.get(evidence.id)
       if (!asset || evidence.fixedPath !== asset.fixedPath && evidence.canonicalPath !== asset.fixedPath) continue
+      const isSuperseded = supersessions.supersededPaths.has(relative)
+      if (!isSuperseded) {
+        if (relativeDirectory.endsWith('promotion-decisions')) currentDecisions.add(asset.id)
+        else currentReceipts.add(asset.id)
+      }
+      if (isSuperseded) continue
       const payload = fs.readFileSync(path.join(root, asset.fixedPath))
       errors.push(...productionEvidenceErrors({ asset, evidence, payload, evidencePath: relative }))
       errors.push(...routeConsumptionErrors({ asset, evidence, root, runtimeManifestSource }))
     }
   }
+  errors.push(...currentProductionEvidenceErrors({ canonicalAssets, currentDecisions, currentReceipts }))
   return errors
 }
 
