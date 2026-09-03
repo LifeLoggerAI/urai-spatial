@@ -27,7 +27,6 @@ const assets = Array.isArray(manifest.assets) ? manifest.assets : []
 const aliasOfAssetId = typeof decision.aliasOfAssetId === 'string' ? decision.aliasOfAssetId : null
 const asset = assets.find((entry) => entry.id === (aliasOfAssetId || decision.assetId))
 const aliasMode = Boolean(aliasOfAssetId)
-const historicalSuperseded = decision.currentAuthority === false && decision.evidenceStatus === 'historical-superseded'
 
 requireCondition(decision.schemaVersion === 1, 'decision schemaVersion must equal 1')
 requireCondition(decision.mode === 'rehearsal' || decision.mode === 'promotion', 'decision mode must be rehearsal or promotion')
@@ -62,7 +61,7 @@ if (asset) {
   requireCondition(asset.releaseState === 'pending-final-review' || asset.releaseState === 'production-ready', `unsupported manifest releaseState: ${asset.releaseState}`)
 }
 
-if (safePath(decision.canonicalPath) && !historicalSuperseded) {
+if (safePath(decision.canonicalPath)) {
   const absolute = path.resolve(root, decision.canonicalPath)
   requireCondition(absolute.startsWith(`${root}${path.sep}`), 'canonicalPath escapes repository root')
   requireCondition(existsSync(absolute), `promoted asset does not exist: ${decision.canonicalPath}`)
@@ -90,14 +89,7 @@ if (safePath(decision.canonicalPath) && !historicalSuperseded) {
   }
 }
 
-if (historicalSuperseded) {
-  requireCondition(decision.mode === 'promotion', 'historical superseded evidence must preserve its original promotion mode')
-  requireCondition(decision.promote === true, 'historical superseded promotion must preserve promote=true')
-  requireCondition(decision.authorityBoundary?.canonicalManifest === manifestPath, 'historical authority boundary must name the canonical manifest')
-  requireCondition(decision.authorityBoundary?.canonicalState === 'pending-final-review', 'historical authority boundary must remain pending-final-review')
-  requireCondition(typeof decision.authorityBoundary?.note === 'string' && decision.authorityBoundary.note.length > 0, 'historical authority boundary note is required')
-  requireCondition(/^[0-9a-f]{64}$/.test(String(decision.authorityBoundary?.currentBinarySha256 || '')), 'historical authority boundary must bind the current binary SHA-256')
-} else if (decision.mode === 'rehearsal') {
+if (decision.mode === 'rehearsal') {
   requireCondition(decision.promote === false, 'rehearsal must set promote=false')
   requireCondition(asset?.releaseState !== 'production-ready', 'rehearsal may not mark canonical manifest production-ready')
   requireCondition(decision.humanReviewApproved === false, 'rehearsal must not claim human approval')
@@ -123,7 +115,6 @@ if (failures.length) {
 
 console.log('GOVERNED_ASSET_PROMOTION=GREEN')
 console.log(`MODE=${decision.mode}`)
-console.log(`HISTORICAL_SUPERSEDED=${historicalSuperseded}`)
 console.log(`ASSET_ID=${decision.assetId}`)
 if (aliasMode) console.log(`ALIAS_OF_ASSET_ID=${aliasOfAssetId}`)
 console.log(`CANONICAL_PATH=${decision.canonicalPath}`)
