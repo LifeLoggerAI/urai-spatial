@@ -138,16 +138,16 @@ for (const spec of cases) {
     record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200
       && record.canvasCount === 1
-      && record.visibleWorld === 'v76-deep-apse-relic-machine-sanctuary'
+      && record.visibleWorld === 'v122-open-authored-canyon-contained-orb'
       && record.worldCharacter === 'production-cinematic-sacred-tech'
       && record.physicalBase === 'continuous-pbr-rock-industrial-machine-sanctuary'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v93-governed-dimensional-sanctuary'
-      && record.artRevision === 'v93-dimensional-governed-rebuild'
-      && record.artCertification === 'v76-retained-pixel-candidate-not-certified'
+      && record.visualGrade === 'cinematic-pbr-v122-contained-orb-authored-depth-candidate'
+      && record.artRevision === 'v122-authored-depth-rebuild-pending-pixels'
+      && record.artCertification === 'v122-retained-pixels-pending-not-certified'
       && record.runtimeAssets?.includes(path.basename(homePath))
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))

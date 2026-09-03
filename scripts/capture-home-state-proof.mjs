@@ -184,7 +184,7 @@ async function capture(state, options = {}) {
       && record.canvasReady === 'true'
       && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'v76-deep-apse-relic-machine-sanctuary'
+      && record.visibleWorld === 'v122-open-authored-canyon-contained-orb'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
@@ -377,7 +377,7 @@ try {
     && transition.canvasReady === 'true'
     && transition.canvasCount === 1
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'v76-deep-apse-relic-machine-sanctuary'
+    && transition.visibleWorld === 'v122-open-authored-canyon-contained-orb'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {

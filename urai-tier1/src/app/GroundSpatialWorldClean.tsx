@@ -122,7 +122,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       if (!node) continue;
       const character = CHAMBER_CHARACTER[destination.chamberForm];
       const attention = activeId === destination.id ? 1.07 : 1;
-      node.scale.set(character[0] * attention, character[1] * attention, character[2] * attention);
+      node.scale.set(character[0] * 0.88 * attention, character[1] * 0.78 * attention, character[2] * 0.88 * attention);
     }
   }, [activeId, world]);
 
