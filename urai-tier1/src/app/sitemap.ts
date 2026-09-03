@@ -16,7 +16,6 @@ const publicRoutes = [
   '/passport',
   '/privacy-controls',
   '/location-map',
-  '/privacy',
   '/terms',
   '/status',
 ] as const
