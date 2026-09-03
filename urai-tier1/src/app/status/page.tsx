@@ -9,6 +9,8 @@ const shortBuildSha = embeddedBuildSha === 'unverified' ? embeddedBuildSha : emb
 
 export const metadata = {
   robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/status/' },
+  openGraph: { url: 'https://urai.app/status/' },
   title: 'URAI Status',
   description: 'URAI Spatial fingerprint-gated release authority and bounded certification matrix.',
 }
