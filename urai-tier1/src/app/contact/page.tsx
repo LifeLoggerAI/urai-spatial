@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'Contact',
   description: 'Official public contact status and authority links for UrAi and URAI Labs.',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact',
+    description: 'Official public contact status and authority links for UrAi and URAI Labs.',
+  },
   alternates: { canonical: 'https://urai.app/contact/' },
   openGraph: {
     type: 'website',
