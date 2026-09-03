@@ -34,19 +34,27 @@ function sha256(payload) {
   return crypto.createHash('sha256').update(payload).digest('hex')
 }
 
-function finalGlbEntries(source) {
-  const entries = new Map()
-  for (const match of source.matchAll(/finalGlb\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*'([^']+)'/g)) {
-    entries.set(match[1], match[2])
-  }
-  return entries
+function constructorStatus(source, constructorName) {
+  const start = source.indexOf(`const ${constructorName}`)
+  if (start < 0) return null
+  const candidates = [
+    source.indexOf('\nconst ', start + 1),
+    source.indexOf('\nexport const ', start + 1),
+  ].filter((index) => index > start)
+  const end = candidates.length ? Math.min(...candidates) : source.length
+  return source.slice(start, end).match(/\bstatus:\s*'([^']+)'/)?.[1] ?? null
 }
 
-function finalGlbStatus(source) {
-  const start = source.indexOf('const finalGlb')
-  const end = source.indexOf('export const uraiSpatialAssetManifest')
-  if (start < 0 || end <= start) return null
-  return source.slice(start, end).match(/\bstatus:\s*'([^']+)'/)?.[1] ?? null
+function runtimeAssetEntries(source) {
+  const entries = new Map()
+  for (const constructorName of ['finalGlb', 'pendingHuman']) {
+    const status = constructorStatus(source, constructorName)
+    const expression = new RegExp(`${constructorName}\\(\\s*'([^']+)'\\s*,\\s*'[^']*'\\s*,\\s*'([^']+)'`, 'g')
+    for (const match of source.matchAll(expression)) {
+      entries.set(match[1], { fileName: match[2], status })
+    }
+  }
+  return entries
 }
 
 function promotedIds(source) {
@@ -57,20 +65,19 @@ function promotedIds(source) {
 export function canonicalRuntimeStatusErrors({ canonicalAssets, runtimeManifestSource, promotionStateSource }) {
   const errors = []
   const byFile = new Map(canonicalAssets.map((asset) => [path.basename(asset.fixedPath), asset]))
-  const entries = finalGlbEntries(runtimeManifestSource)
-  const status = finalGlbStatus(runtimeManifestSource)
+  const entries = runtimeAssetEntries(runtimeManifestSource)
 
-  for (const [runtimeId, fileName] of entries) {
-    const canonical = byFile.get(fileName)
+  for (const [runtimeId, entry] of entries) {
+    const canonical = byFile.get(entry.fileName)
     if (!canonical) continue
-    if (canonical.releaseState === 'pending-final-review' && status === 'ready') {
+    if (canonical.releaseState === 'pending-final-review' && entry.status === 'ready') {
       errors.push(`${canonical.id}: canonical pending asset is runtime-ready as ${runtimeId}`)
     }
   }
 
   for (const runtimeId of promotedIds(promotionStateSource)) {
-    const fileName = entries.get(runtimeId)
-    const canonical = fileName ? byFile.get(fileName) : null
+    const entry = entries.get(runtimeId)
+    const canonical = entry ? byFile.get(entry.fileName) : null
     if (!canonical) {
       errors.push(`${runtimeId}: promoted runtime id has no canonical launch asset mapping`)
     } else if (canonical.releaseState !== 'production-ready') {
@@ -81,12 +88,21 @@ export function canonicalRuntimeStatusErrors({ canonicalAssets, runtimeManifestS
   return errors
 }
 
+const SENSORY_CANONICAL_ALIASES = Object.freeze({
+  'production-spatial-audio-v1': 'urai-ambient-bed-v1',
+})
+
 export function sensoryRuntimeStatusErrors({ canonicalAssets, sensoryManifestSource }) {
   const errors = []
   const canonicalById = new Map(canonicalAssets.map((asset) => [asset.id, asset]))
   for (const match of sensoryManifestSource.matchAll(/id:\s*'([^']+)'[\s\S]*?status:\s*'([^']+)'/g)) {
-    const canonical = canonicalById.get(match[1])
-    if (canonical?.releaseState === 'pending-final-review' && match[2] === 'ready') {
+    const runtimeId = match[1]
+    const status = match[2]
+    const canonicalId = SENSORY_CANONICAL_ALIASES[runtimeId] ?? runtimeId
+    const canonical = canonicalById.get(canonicalId)
+    if (status === 'ready' && !canonical) {
+      errors.push(`${runtimeId}: ready sensory asset has no canonical launch asset mapping`)
+    } else if (canonical?.releaseState === 'pending-final-review' && status === 'ready') {
       errors.push(`${canonical.id}: canonical pending sensory asset is runtime-ready`)
     }
   }
@@ -171,7 +187,7 @@ export function routeConsumptionErrors({ asset, evidence, root, runtimeManifestS
   if (evidence.currentAuthority === false || evidence.routeConsumptionVerified !== true) return []
   const errors = []
   const fileName = path.basename(asset.fixedPath)
-  const runtimeId = [...finalGlbEntries(runtimeManifestSource)].find(([, candidateFile]) => candidateFile === fileName)?.[0] ?? null
+  const runtimeId = [...runtimeAssetEntries(runtimeManifestSource)].find(([, entry]) => entry.fileName === fileName)?.[0] ?? null
   for (const route of asset.targetRoutes ?? []) {
     const ownerPath = routeOwners[route]
     if (!ownerPath) {
