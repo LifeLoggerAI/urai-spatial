@@ -125,6 +125,6 @@
   "media": {
     "logoStatus": "use only approved first-party assets",
     "screenshotStatus": "final launch imagery must be bound to a certified release SHA",
-    "contact": "mailto:press@urai.app"
+    "contactStatus": "public mailbox routing requires provider verification before publication"
   }
 }
