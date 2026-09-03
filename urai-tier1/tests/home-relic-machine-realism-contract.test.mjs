@@ -20,7 +20,7 @@ const productionAssets = [
   'home-v76-starboard-caged-practical',
 ]
 
-test('V76 is one authoritative Canvas with a deep continuous photogrammetry sanctuary', () => {
+test('V122 is one authoritative Canvas with an open authored canyon sanctuary', () => {
   for (const marker of productionAssets) assert.ok(art.includes(marker), `missing V76 production marker: ${marker}`)
   for (const marker of [
     'home-v76-continuous-hand-cut-vault',
@@ -33,9 +33,9 @@ test('V76 is one authoritative Canvas with a deep continuous photogrammetry sanc
   ]) assert.ok(art.includes(marker), `missing V76 continuous-world marker: ${marker}`)
 
   assert.match(runtime, /<HomeV76Sanctuary reducedMotion=\{reducedMotion\}/)
-  assert.match(runtime, /data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"/)
+  assert.match(runtime, /data-home-visible-world="v122-open-authored-canyon-contained-orb"/)
   assert.match(runtime, /data-home-visual-ownership="single-canvas-three-dimensional-geometry"/)
-  assert.match(runtime, /data-home-final-art-revision="v93-dimensional-governed-rebuild"/)
+  assert.match(runtime, /data-home-final-art-revision="v122-authored-depth-rebuild-pending-pixels"/)
   assert.match(runtime, /data-home-visible-production-assets="governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr"/)
   assert.match(owner, /data-home-canvas-owner="home-world-production-v70-single-authority"/)
   assert.doesNotMatch(owner, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
@@ -87,13 +87,14 @@ test('V112 combines visible governed relief with aligned Orb rendering and proxi
   assert.match(runtime, /data-home-live-orb-owner="governed-urai-orb-avatar-v1"/)
   assert.match(art, /root\.position\.set\(0, -0\.12, -20\.8\)/)
   assert.match(art, /root\.scale\.setScalar\(0\.18\)/)
-  assert.match(art, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
-  assert.match(art, /swarm\.current\.scale\.setScalar\(1\.90 \* breath\)/)
-  assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.28, 2\.48, -6\.18\)/)
-  assert.match(owner, /const HOME_ORB = \{ x: -0\.28, z: -6\.18 \} as const/)
+  assert.match(art, /position=\{\[-0\.18, 2\.18, -6\.90\]\}/)
+  assert.match(art, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
+  assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
+  assert.match(owner, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)
   const liveComposition = art.slice(art.indexOf('export function HomeV76Sanctuary'))
   const sanctuaryBackdrop = art.slice(art.indexOf('function SanctuaryBackdrop'), art.indexOf('function GovernedHomeEnvironment'))
-  assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*<VaultShell[\s\S]*<CantedWall[\s\S]*<DeepApse[\s\S]*<BearingRib/)
+  assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*home-v122-retired-procedural-shells[\s\S]*home-v101-port-apse-foundation[\s\S]*home-v101-starboard-apse-foundation/)
+  assert.doesNotMatch(sanctuaryBackdrop, /<VaultShell|<CantedWall|<DeepApse|<BearingRib/)
   assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.15\) continue/)
   assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.30\) continue/)
   assert.match(art, /if \(rejectedFamily\.test\(object\.name\) \|\| rejectedUtilityDetail\.test\(object\.name\)\) rejectedNodes\.push\(object\)/)
@@ -114,6 +115,6 @@ test('V76 preserves bounded rendering, real traversal, and fail-closed certifica
   assert.match(runtime, /reducedMotion \? 180 : 900/)
   assert.match(runtime, /reducedMotion \? 520 : 1600/)
   assert.match(runtime, /reducedMotion \? 500 : 1100/)
-  assert.match(runtime, /data-home-art-certification="v76-retained-pixel-candidate-not-certified"/)
+  assert.match(runtime, /data-home-art-certification="v122-retained-pixels-pending-not-certified"/)
   assert.doesNotMatch(`${runtime}\n${art}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
