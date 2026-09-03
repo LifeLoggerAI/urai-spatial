@@ -21,7 +21,7 @@
     "organization": {
       "name": "URAI Labs",
       "type": "product organization",
-      "canonicalUrl": "https://urai.app/about/labs",
+      "canonicalUrl": "https://urai.app/about/labs/",
       "description": "The founder-led product organization building UrAi.",
       "legalStatusClaim": "not asserted by this registry",
       "githubAuthority": "https://github.com/LifeLoggerAI"
@@ -29,12 +29,12 @@
     "founder": {
       "name": "Adam Clamp",
       "role": "Founder and system architect",
-      "canonicalUrl": "https://urai.app/founder",
+      "canonicalUrl": "https://urai.app/founder/",
       "relationship": [
         "Founder of URAI Labs",
         "Founder and system architect for UrAi"
       ],
-      "publicProfile": "https://urai.app/founder",
+      "publicProfile": "https://urai.app/founder/",
       "githubAccountAuthority": "https://github.com/LifeLoggerAI"
     },
     "foundation": {
