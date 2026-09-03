@@ -148,15 +148,26 @@ jobs:
               ...(gltf.buffers || []).map((item) => item.uri),
               ...(gltf.images || []).map((item) => item.uri),
             ].filter(Boolean)) {
-              if (/^(?:data:|https?:|\/\/)/i.test(uri)) throw new Error(`External or embedded GLTF dependency is not allowed: ${entry.path}`)
+              if (/^(?:data:|blob:|https?:|\/\/)/i.test(uri)) throw new Error(`External or embedded GLTF dependency is not allowed: ${entry.path}`)
               const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(entry.path), decodeURIComponent(uri)))
               if (!recorded.has(dependency)) throw new Error(`Unreceipted GLTF dependency: ${dependency}`)
             }
           }
 
           for (const record of Object.values(pbr.runtimeOptimization.runtimeFiles)) verifyRecord(record)
-          for (const record of Object.values(pbr.files)) {
-            if (existsSync(record.path)) verifyRecord(record)
+          const retainedSourceKeys = pbr.runtimeOptimization.retainedSourceKeys
+          if (!Array.isArray(retainedSourceKeys) || retainedSourceKeys.length === 0) {
+            throw new Error('PBR receipt must declare every intentionally retained source asset')
+          }
+          for (const key of retainedSourceKeys) {
+            const record = pbr.files[key]
+            if (!record) throw new Error(`Unknown retained PBR source key: ${key}`)
+            verifyRecord(record)
+          }
+          for (const [key, record] of Object.entries(pbr.files)) {
+            if (!retainedSourceKeys.includes(key) && existsSync(record.path)) {
+              throw new Error(`PBR source file exists without retained-source authority: ${record.path}`)
+            }
           }
           verifyRecord(pbr.hdri)
           verifyRecord({ path: fern.output, bytes: fern.outputBytes, sha256: fern.outputSha256 })

@@ -68,6 +68,9 @@
       }
     },
     "sourcePngsRetained": false,
-    "reason": "Preserve photographic PBR fidelity while satisfying the governed single-texture production budget."
+    "reason": "Preserve photographic PBR fidelity while satisfying the governed single-texture production budget.",
+    "retainedSourceKeys": [
+      "displacement"
+    ]
   }
 }
