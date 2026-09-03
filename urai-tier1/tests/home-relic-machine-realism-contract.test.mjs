@@ -96,6 +96,7 @@ test('V102 combines governed thresholds with aligned Orb rendering and proximity
   assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*<VaultShell[\s\S]*<CantedWall[\s\S]*<DeepApse[\s\S]*<BearingRib/)
   assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.15\) continue/)
   assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.30\) continue/)
+  assert.match(art, /if \(rejectedFamily\.test\(object\.name\) \|\| rejectedUtilityDetail\.test\(object\.name\)\) rejectedNodes\.push\(object\)/)
   assert.match(art, /<ProductionAsset url=\{ROCK_FACE_A\}/)
   assert.match(art, /<ProductionAsset url=\{ROCK_FACE_B\}/)
   assert.match(liveComposition, /<SanctuaryBackdrop onWalk=\{onWalk\}/)

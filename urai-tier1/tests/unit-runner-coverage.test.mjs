@@ -27,3 +27,7 @@ test('both focused unit runners include critical Spatial public contract tests',
     assert.ok(compactRunnerSource.includes(`'${testPath}'`), `compact unit runner must include ${testPath}`)
   }
 })
+
+test('compact unit runner includes the V101 retained-pixel repair contract', () => {
+  assert.ok(compactRunnerSource.includes("'tests/home-v88-retained-pixel-repair-contract.test.mjs'"))
+})

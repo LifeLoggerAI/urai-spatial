@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const world = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
+const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV70.tsx', import.meta.url), 'utf8')
+const telemetry = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
+const proof = readFileSync(new URL('../../scripts/capture-continuous-spatial-proof-v18.mjs', import.meta.url), 'utf8')
+const naturalProof = readFileSync(new URL('../../scripts/run-continuous-spatial-proof-v22-natural.mjs', import.meta.url), 'utf8')
+const finalizer = readFileSync(new URL('../../.github/workflows/home-finalization-candidate-commit.yml', import.meta.url), 'utf8')
 
 test('V95 keeps the governed Home source visibly bound while recursively removing rejected node families', () => {
   assert.match(world, /root\.traverse\(\(object\) =>/)
@@ -74,4 +79,23 @@ test('V102 preserves the V101 composition while retaining authored Orb scale at 
   assert.match(world, /v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned'/)
   assert.match(world, /home-v101-\$\{destination\}-embedded-wayfinding-inlay/)
   assert.match(world, /successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds'/)
+})
+
+test('V101 preserves the 1.90 Orb hierarchy throughout normal animation', () => {
+  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.90 \* breath\)/)
+  assert.doesNotMatch(world, /swarm\.current\.scale\.setScalar\(breath\)/)
+})
+
+test('V101 binds live proximity and all proof telemetry to the rendered Orb position', () => {
+  assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.28, 2\.48, -6\.18\)/)
+  assert.match(telemetry, /const HOME_ORB = \{ x: -0\.28, z: -6\.18 \} as const/)
+  assert.match(proof, /orb: \{ x: -0\.28, z: -6\.18, radius: 2\.35/)
+  assert.match(naturalProof, /orb: \{ x: -0\.28, z: -6\.18, radius: 2\.35/)
+})
+
+test('V101 finalization executes this contract and checks current source markers', () => {
+  assert.match(finalizer, /urai-tier1\/tests\/home-v88-retained-pixel-repair-contract\.test\.mjs/)
+  assert.match(finalizer, /if \(Math\.abs\(xCenter\) < 2\.15\) continue/)
+  assert.match(finalizer, /if \(Math\.abs\(xCenter\) < 2\.30\) continue/)
+  assert.match(finalizer, /rejectedUtilityDetail\.test\(object\.name\)/)
 })
