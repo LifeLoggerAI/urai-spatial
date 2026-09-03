@@ -17,18 +17,18 @@ test('V105 uses one opaque responsive Canvas with balanced portrait hierarchy', 
   assert.match(styles, /\.canvas/)
 })
 
-test('V105 retains open dimensional architecture without slab-shaped rear shoulders', () => {
+test('V124 retains open dimensional architecture without slab-shaped rear shoulders', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
   assert.match(art, /home-v98-open-canyon-sanctuary-architecture/)
   assert.match(art, /<OpenAtmosphere \/>/)
   assert.match(art, /<TerracedGround textures=\{textures\.floor\}/)
   const liveBackdrop = art.slice(art.indexOf('function SanctuaryBackdrop'), art.indexOf('function GovernedHomeEnvironment'))
   assert.match(liveBackdrop, /home-v122-retired-procedural-shells/)
-  assert.match(liveBackdrop, /home-v101-port-apse-foundation/)
-  assert.match(liveBackdrop, /home-v101-starboard-apse-foundation/)
+  assert.match(liveBackdrop, /home-v124-port-threshold-landform/)
+  assert.match(liveBackdrop, /home-v124-starboard-threshold-landform/)
   assert.doesNotMatch(liveBackdrop, /<VaultShell|<CantedWall|<DeepApse|<BearingRib/)
   assert.match(art, /successorVisualRepair: 'v122-remove-repetitive-procedural-shell-dominance'/)
-  assert.match(art, /home-v101-distant-ridge/)
+  assert.match(art, /home-v124-distant-ridge/)
   assert.match(art, /home-v98-\$\{destination\}-single-connected-rock-cut-frame/)
   assert.match(art, /<primitive object=\{environment\}/)
   assert.match(art, /portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene'/)

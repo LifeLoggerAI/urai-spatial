@@ -73,7 +73,7 @@ test('V76 Orb is a curved load-bearing apse machine with connected service paths
   assert.doesNotMatch(art, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
-test('V112 combines visible governed relief with aligned Orb rendering and proximity authority', () => {
+test('V124 combines visible governed relief, authored canyon depth, and aligned Orb authority', () => {
   for (const marker of [
     'home-v83-governed-open-sanctuary-environment',
     'home-v83-authored-open-sanctuary',
@@ -88,12 +88,12 @@ test('V112 combines visible governed relief with aligned Orb rendering and proxi
   assert.match(art, /root\.position\.set\(0, -0\.12, -20\.8\)/)
   assert.match(art, /root\.scale\.setScalar\(0\.18\)/)
   assert.match(art, /position=\{\[-0\.18, 2\.18, -6\.90\]\}/)
-  assert.match(art, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
+  assert.match(art, /swarm\.current\.scale\.setScalar\(0\.68 \* breath\)/)
   assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.match(owner, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)
   const liveComposition = art.slice(art.indexOf('export function HomeV76Sanctuary'))
   const sanctuaryBackdrop = art.slice(art.indexOf('function SanctuaryBackdrop'), art.indexOf('function GovernedHomeEnvironment'))
-  assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*home-v122-retired-procedural-shells[\s\S]*home-v101-port-apse-foundation[\s\S]*home-v101-starboard-apse-foundation/)
+  assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*home-v122-retired-procedural-shells[\s\S]*home-v124-authored-asymmetric-landform[\s\S]*home-v124-port-near-landform[\s\S]*home-v124-starboard-deep-landform/)
   assert.doesNotMatch(sanctuaryBackdrop, /<VaultShell|<CantedWall|<DeepApse|<BearingRib/)
   assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.15\) continue/)
   assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.30\) continue/)

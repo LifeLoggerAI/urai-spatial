@@ -98,12 +98,12 @@ export function useMovementInput({
     const onKeyUp = (event: KeyboardEvent) => {
       if (keys.current.delete(event.code)) notifyChange()
     }
-    const clear = (notify = true) => {
+    const clear = () => {
       const changed = keys.current.size > 0 || virtualX.current !== 0 || virtualZ.current !== 0
       keys.current.clear()
       virtualX.current = 0
       virtualZ.current = 0
-      if (changed && notify) notifyChange()
+      if (changed) notifyChange()
     }
     window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
@@ -114,7 +114,9 @@ export function useMovementInput({
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', clear)
       document.removeEventListener('visibilitychange', clear)
-      clear(false)
+      keys.current.clear()
+      virtualX.current = 0
+      virtualZ.current = 0
     }
   }, [enabled, notifyChange])
 

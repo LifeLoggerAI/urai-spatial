@@ -23,11 +23,12 @@ test('V112 keeps governed Home source visibly embedded beyond approach cameras',
   assert.doesNotMatch(world, /object\.visible\s*=\s*false/)
 })
 
-test('V95 replaces rings and foreground occluders with human-scale integrated thresholds', () => {
+test('V124 keeps thresholds human-scale and embeds them in natural shoulders', () => {
   assert.doesNotMatch(world, /<ringGeometry/)
   assert.match(world, /v95-architectural-rock-cut-threshold-no-ring-marker/)
   assert.match(world, /home-v95-\$\{destination\}-threshold-lintel/)
-  assert.match(world, /scale=\{\[1\.08, 1\.08, 1\.08\]\}/)
+  assert.match(world, /<group scale=\{\[0\.82, 0\.88, 0\.82\]\}>/)
+  assert.match(world, /home-v124-\$\{destination\}-portal-port-natural-shoulder/)
   assert.match(world, /home-v96-\$\{destination\}-recess-depth/)
   assert.match(world, /home-v97-\$\{destination\}-(?:port|starboard)-(?:lower|shoulder)-masonry/)
   assert.match(world, /home-v97-\$\{destination\}-floor-integrated-guidance/)
@@ -69,7 +70,7 @@ test('V88 retains the petal-and-heart Orb and real interaction volume', () => {
   assert.match(world, /onClick=\{\(event: ThreeEvent<MouseEvent>\)/)
 })
 
-test('V122 preserves the contained Orb composition and aligned runtime scale', () => {
+test('V124 preserves the contained Orb composition and aligned runtime scale', () => {
   assert.match(world, /rejectedUtilityDetail = \/\(\?:pipe\|tube\|conduit\|duct\|cable\)\/i/)
   assert.match(world, /home-v101-removed-entrance-rock-clutter/)
   assert.match(world, /home-v101-\$\{destination\}-foreground-portal-frame-removed/)
@@ -77,15 +78,15 @@ test('V122 preserves the contained Orb composition and aligned runtime scale', (
   assert.doesNotMatch(world, /<circleGeometry/)
   assert.doesNotMatch(world, /<ProductionAsset[^>]*entry-buttress/)
   assert.match(world, /position=\{\[-0\.18, 2\.18, -6\.90\]\}/)
-  assert.match(world, /scale=\{\[1\.08, 1\.08, 1\.08\]\}/)
-  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
+  assert.match(world, /scale=\{\[0\.68, 0\.68, 0\.68\]\}/)
+  assert.match(world, /swarm\.current\.scale\.setScalar\(0\.68 \* breath\)/)
   assert.match(world, /v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned'/)
   assert.match(world, /home-v101-\$\{destination\}-embedded-wayfinding-inlay/)
-  assert.match(world, /successorVisualRepair: 'v122-authored-depth-contained-orb-simplified-thresholds'/)
+  assert.match(world, /successorVisualRepair: 'v124-continuous-canyon-contained-orb-embedded-thresholds'/)
 })
 
-test('V122 preserves the 1.08 Orb hierarchy throughout normal animation', () => {
-  assert.match(world, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
+test('V124 preserves the contained Orb hierarchy throughout normal animation', () => {
+  assert.match(world, /swarm\.current\.scale\.setScalar\(0\.68 \* breath\)/)
   assert.doesNotMatch(world, /swarm\.current\.scale\.setScalar\(breath\)/)
 })
 

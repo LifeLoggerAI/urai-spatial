@@ -145,11 +145,13 @@ test('Home telemetry uses the same spawn and destination coordinates as the live
   assert.doesNotMatch(homeProduction, /const SPAWN = new THREE\.Vector3\(4\.45, 0\.04, 3\.15\)/)
 })
 
-test('V122 visual rebuild removes rejected shell dominance and simplifies Life Map hierarchy', () => {
+test('V124 visual rebuild keeps rejected shells retired and restores authored canyon hierarchy', () => {
   has(homeArt, 'home-v122-retired-procedural-shells')
   has(homeArt, "v122Composition: 'contained-human-scale-orb-clear-of-portrait-crop'")
   assert.doesNotMatch(homeArt, /<VaultShell\s|<CantedWall\s|<DeepApse\s|<BearingRib\s/)
-  assert.match(homeArt, /scale=\{\[1\.08, 1\.08, 1\.08\]\}/)
+  assert.match(homeArt, /scale=\{\[0\.68, 0\.68, 0\.68\]\}/)
+  has(homeArt, 'home-v124-authored-asymmetric-landform')
+  has(homeArt, 'v124-continuous-canyon-contained-orb-embedded-thresholds')
   assert.match(lifeMapScene, /slice\(0, 1\)/)
   assert.match(lifeMapScene, /if \(activeId && !active\) return null/)
   assert.match(lifeMapScene, /showLabel=\{selected \? selected\.id === node\.id : index < 5\}/)

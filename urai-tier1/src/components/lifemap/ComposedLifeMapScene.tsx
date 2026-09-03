@@ -13,7 +13,7 @@ import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSyste
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
-const SELECTED_MEMORY_STANDOFF = 5.8;
+const SELECTED_MEMORY_STANDOFF = 7.4;
 const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as const;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
@@ -74,7 +74,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
       } else {
-        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
+        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.48);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
       }

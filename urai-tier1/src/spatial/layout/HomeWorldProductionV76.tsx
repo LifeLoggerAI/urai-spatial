@@ -61,9 +61,9 @@ function useSanctuaryTextures() {
         arm: clone(sources[2], [2.8, 4.6]),
       },
       floor: {
-        color: clone(sources[3], [3.6, 7.2], true),
-        normal: clone(sources[4], [3.6, 7.2]),
-        arm: clone(sources[5], [3.6, 7.2]),
+        color: clone(sources[3], [1.7, 3.1], true),
+        normal: clone(sources[4], [1.7, 3.1]),
+        arm: clone(sources[5], [1.7, 3.1]),
       },
     }
   }, [sources])
@@ -286,8 +286,9 @@ function TerracedGround({ textures, onWalk }: { textures: TextureSet; onWalk: (e
         const x = -6.35 + tx * 12.7
         const edgeLift = Math.pow(Math.abs(x) / 6.35, 2.2) * 0.18
         const walkingChannel = Math.exp(-Math.pow(x / 2.8, 2)) * -0.055
-        const geologicalRelief = Math.sin(z * 0.62 + x * 0.28) * 0.035 + Math.cos(z * 1.18 - x * 0.41) * 0.018
-        const y = -0.12 + tz * 0.42 + edgeLift + walkingChannel + geologicalRelief
+        const geologicalRelief = Math.sin(z * 0.43 + x * 0.22) * 0.075 + Math.cos(z * 0.81 - x * 0.31) * 0.042
+        const broadTerrace = Math.sin(tz * Math.PI * 2.2) * 0.055 * Math.pow(Math.abs(x) / 6.35, 0.72)
+        const y = -0.12 + tz * 0.42 + edgeLift + walkingChannel + geologicalRelief + broadTerrace
         positions.push(x, y, z)
         uvs.push(tx * 3.6, tz * 7.2)
       }
@@ -436,9 +437,16 @@ function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>)
       <group name="home-v98-port-horizon-spire" />
       <group name="home-v98-starboard-horizon-spire" />
     </group>
-    <ProductionAsset url={ROCK_FACE_A} name="home-v101-port-apse-foundation" position={[-5.92, 0.34, -14.20]} rotation={[-0.04, 0.74, -0.10]} scale={[0.78, 0.48, 0.72]} span={3.24} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_B} name="home-v101-starboard-apse-foundation" position={[5.74, 0.28, -15.60]} rotation={[0.06, -0.70, 0.08]} scale={[0.72, 0.44, 0.68]} span={3.18} mode="rock" />
-    <ProductionAsset url={ROCK_FACE_A} name="home-v101-distant-ridge" position={[0.9, 0.12, -28.4]} rotation={[0.04, 1.18, 0.02]} scale={[2.58, 0.38, 0.86]} span={5.2} mode="rock" />
+    <group name="home-v124-authored-asymmetric-landform" userData={{ visualRepair: 'v124-continuous-canyon-depth-and-embedded-thresholds' }}>
+      <ProductionAsset url={ROCK_FACE_A} name="home-v124-port-near-landform" position={[-6.05, 0.72, -4.90]} rotation={[-0.12, 0.58, -0.16]} scale={[1.42, 0.94, 1.18]} span={5.4} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v124-port-threshold-landform" position={[-5.42, 1.18, -9.72]} rotation={[0.08, 0.86, -0.08]} scale={[1.58, 1.28, 1.20]} span={5.8} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v124-port-deep-landform" position={[-7.12, 1.26, -15.48]} rotation={[0.18, 1.08, 0.10]} scale={[1.86, 1.12, 1.34]} span={6.5} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v124-starboard-near-landform" position={[6.34, 0.42, -6.18]} rotation={[0.10, -0.48, 0.14]} scale={[1.18, 0.82, 1.08]} span={4.8} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v124-starboard-threshold-landform" position={[5.58, 1.02, -10.38]} rotation={[-0.06, -0.92, 0.08]} scale={[1.46, 1.18, 1.12]} span={5.5} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v124-starboard-deep-landform" position={[7.44, 1.58, -16.82]} rotation={[0.12, -1.16, -0.06]} scale={[1.92, 1.24, 1.42]} span={6.8} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_A} name="home-v124-orb-horizon-landform" position={[0.72, 0.48, -14.76]} rotation={[0.06, 1.34, 0.02]} scale={[2.34, 0.76, 1.18]} span={6.2} mode="rock" />
+      <ProductionAsset url={ROCK_FACE_B} name="home-v124-distant-ridge" position={[-1.2, 1.10, -25.8]} rotation={[-0.04, -1.24, 0.02]} scale={[3.1, 0.72, 1.24]} span={7.6} mode="rock" />
+    </group>
   </group>
 }
 
@@ -586,11 +594,11 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     swarm.current.rotation.y = Math.sin(clock.elapsedTime * 0.34 * urgency) * 0.22
     swarm.current.rotation.z = Math.sin(clock.elapsedTime * 0.21 * urgency) * 0.07
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
-    swarm.current.scale.setScalar(1.08 * breath)
+    swarm.current.scale.setScalar(0.68 * breath)
   })
   return <group name="home-v82-governed-living-orb" position={[-0.18, 2.18, -6.90]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage', v101Composition: 'foreground-legible-living-presence', v102InteractionRepair: 'authored-scale-retained-and-proximity-aligned', v122Composition: 'contained-human-scale-orb-clear-of-portrait-crop' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
-    <group ref={swarm} scale={[1.08, 1.08, 1.08]} rotation={[0.04, -0.18, -0.06]}>
+    <group ref={swarm} scale={[0.68, 0.68, 0.68]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
     </group>
     <pointLight color="#e3b878" intensity={state === 'dormant' ? 0.82 : state === 'warning' ? 1.72 : 1.18} distance={6.8} decay={2} />
@@ -674,7 +682,11 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     <group name={`home-v95-${destination}-threshold-lintel`} userData={{ compatibilityMarker: true }} />
     <group name={`home-v96-${destination}-recess-depth`} userData={{ compatibilityMarker: true }} />
     <group name={`home-v95-${destination}-recess-veil`} userData={{ compatibilityMarker: true }} />
-    <PortalStoneFrame destination={destination} textures={textures.shell} />
+    <group scale={[0.82, 0.88, 0.82]}>
+      <PortalStoneFrame destination={destination} textures={textures.shell} />
+    </group>
+    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_A : ROCK_FACE_B} name={`home-v124-${destination}-portal-port-natural-shoulder`} position={[-1.48, 0.52, -0.82]} rotation={[0.04, 0.62, -0.10]} scale={[0.82, 1.12, 0.92]} span={2.35} mode="rock" />
+    <ProductionAsset url={destination === 'ground' ? ROCK_FACE_B : ROCK_FACE_A} name={`home-v124-${destination}-portal-starboard-natural-shoulder`} position={[1.42, 0.42, -1.04]} rotation={[-0.06, -0.72, 0.08]} scale={[0.76, 0.96, 0.88]} span={2.18} mode="rock" />
     <PortalDepthField destination={destination} />
     <mesh name={`home-v98-${destination}-inner-threshold-glow`} position={[0, 1.42, -0.56]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
       <planeGeometry args={[0.92, 2.12, 1, 1]} />
@@ -785,7 +797,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       liveArtRevision: 'v93-governed-dimensional-sanctuary',
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
-      successorVisualRepair: 'v122-authored-depth-contained-orb-simplified-thresholds',
+      successorVisualRepair: 'v124-continuous-canyon-contained-orb-embedded-thresholds',
       approachVisibilityRepair: 'v112-visible-governed-relief-outside-approach-cameras',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
       successorPortraitRepair: 'v105-balanced-58-degree-portrait-fov',
@@ -806,8 +818,8 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       <group name="home-v82-starboard-deep-field-buttress" />
     </group>
 
-    <PortalRecess destination="ground" position={[-4.34, 0.02, -7.72]} rotation={[0, 0.42, -0.03]} onActivate={onGround} />
-    <PortalRecess destination="life-map" position={[4.38, 0.02, -7.86]} rotation={[0, -0.46, 0.04]} onActivate={onLifeMap} />
+    <PortalRecess destination="ground" position={[-4.62, 0.08, -8.18]} rotation={[0, 0.34, -0.03]} onActivate={onGround} />
+    <PortalRecess destination="life-map" position={[4.70, 0.08, -8.42]} rotation={[0, -0.38, 0.04]} onActivate={onLifeMap} />
     <ThresholdPath destination="ground" />
     <ThresholdPath destination="life-map" />
     <group name="home-v88-removed-industrial-overlays" userData={{ nonRenderingCompatibilityMarkers: true }}>
@@ -820,8 +832,9 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <RelicMachine state={orbState} reducedMotion={reducedMotion} onOpen={onOrb} />
     <DustField reducedMotion={reducedMotion} />
 
-    <pointLight position={[-4.56, 2.08, -7.24]} color="#d29a58" intensity={1.18} distance={9.8} decay={2} />
-    <pointLight position={[4.62, 2.68, -8.36]} color="#71988d" intensity={0.98} distance={9.4} decay={2} />
+    <pointLight position={[-4.72, 2.18, -8.02]} color="#d29a58" intensity={1.42} distance={10.8} decay={2} />
+    <pointLight position={[4.78, 2.42, -8.50]} color="#71988d" intensity={1.20} distance={10.4} decay={2} />
+    <pointLight position={[0, 3.52, -11.40]} color="#d8be83" intensity={1.12} distance={12.6} decay={2} />
     <directionalLight position={[-6, 10, 5]} color="#e5d4ae" intensity={1.48} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
     <directionalLight position={[7, 6, -9]} color="#7ca89f" intensity={0.74} />
   </group>

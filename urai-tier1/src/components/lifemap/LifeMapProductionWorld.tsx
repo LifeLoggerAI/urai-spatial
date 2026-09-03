@@ -457,7 +457,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 1.72 : 0.9 + importance * 0.38}
+      scale={active ? 1.18 : 0.82 + importance * 0.30}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
@@ -567,8 +567,8 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
       ref={group}
       name="life-map-selected-arrival-sanctuary"
       userData={{ scaleMode: "intimate", depthBand: "near", semanticOwner: "life-map-intimate-memory-chamber", runtimeAsset: MEMORY_CHAMBER_MODEL }}
-      position={selected.position}
-      scale={1.18}
+      position={[selected.position[0], selected.position[1] - 0.28, selected.position[2] - 2.6]}
+      scale={0.34}
     >
       <primitive object={chamber} />
       <FieldParticles seed={996} count={160} radius={5.4} depth={8.2} height={7.6} color={selected.aura} opacity={0.42} size={0.065} />
