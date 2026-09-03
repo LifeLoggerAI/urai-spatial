@@ -105,8 +105,16 @@ test('V108 preserves exact proximity gates and backs only the inspection camera 
   assert.match(world, /visibleThresholdAuthority: 'authored-open-canyon-stone-cut-thresholds'/)
 })
 
-test('V101 finalization executes this contract and checks current source markers', () => {
+test('V124 finalization executes this contract and checks the complete current source markers', () => {
   assert.match(finalizer, /urai-tier1\/tests\/home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /home-v122-retired-procedural-shells/)
-  assert.match(finalizer, /v122-authored-depth-contained-orb-simplified-thresholds/)
+  assert.match(finalizer, /home-v124-authored-asymmetric-landform/)
+  assert.match(finalizer, /home-v124-port-near-landform/)
+  assert.match(finalizer, /home-v124-starboard-deep-landform/)
+  assert.match(finalizer, /home-v124-ground-portal-port-natural-shoulder/)
+  assert.match(finalizer, /home-v124-life-map-portal-starboard-natural-shoulder/)
+  assert.match(finalizer, /swarm\.current\.scale\.setScalar\(0\.68 \* breath\)/)
+  assert.match(finalizer, /v124-continuous-canyon-contained-orb-embedded-thresholds/)
+  assert.doesNotMatch(finalizer, /swarm\.current\.scale\.setScalar\(1\.08 \* breath\)/)
+  assert.doesNotMatch(finalizer, /home-v101-(?:port|starboard)-apse-foundation/)
 })
