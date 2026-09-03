@@ -76,7 +76,11 @@ export const metadata: Metadata = {
   creator: 'URAI Labs',
   publisher: 'URAI Labs',
   category: 'personal intelligence software',
-  ...(previewMode ? { robots: { index: false, follow: false, noarchive: true } } : {}),
+  robots: {
+    index: false,
+    follow: false,
+    ...(previewMode ? { noarchive: true } : {}),
+  },
   openGraph: {
     type: 'website',
     title: 'UrAi — Personal intelligence, made spatial',

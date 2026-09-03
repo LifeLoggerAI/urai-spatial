@@ -8,6 +8,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const layout = read('src/app/layout.tsx')
 const robots = read('src/app/robots.ts')
 const sitemap = read('src/app/sitemap.ts')
+const publicIndexing = read('src/app/public-indexing.ts')
 const entity = JSON.parse(read('public/urai-entity.json'))
 
 const authorityRoutes = [
@@ -19,12 +20,18 @@ const authorityRoutes = [
   ['contact', 'src/app/contact/page.tsx'],
 ]
 
-test('root metadata preserves preview noindex without positively indexing every child route', () => {
+test('root metadata denies indexing by default and public routes opt in explicitly', () => {
   const rootOpenGraph = layout.match(/openGraph:\s*\{[\s\S]*?\n  \},\n  twitter:/)?.[0] ?? ''
-  assert.match(layout, /previewMode \? \{ robots: \{ index: false, follow: false, noarchive: true \} \} : \{\}/)
+  assert.match(layout, /robots:\s*\{\s*index: false,\s*follow: false,/)
+  assert.match(publicIndexing, /index: true/)
+  assert.match(publicIndexing, /follow: true/)
   assert.doesNotMatch(layout, /index: true/)
   assert.ok(rootOpenGraph)
   assert.doesNotMatch(rootOpenGraph, /url:/)
+
+  for (const [, sourcePath] of authorityRoutes) {
+    assert.match(read(sourcePath), /robots: publicIndexing/)
+  }
 })
 
 test('robots keeps classified private and internal route families out of crawl scope', () => {
@@ -49,8 +56,11 @@ test('sitemap has one canonical Home URL', () => {
 test('entity registry distinguishes canonical product names from legacy technical aliases', () => {
   assert.equal(entity.entities.product.name, 'UrAi')
   assert.equal(entity.entities.product.capitalization, 'UrAi')
-  assert.deepEqual(entity.entities.product.alternateNames, ['UrAi Spatial'])
+  assert.equal(entity.entities.product.alternateNames, undefined)
   assert.deepEqual(entity.entities.product.legacyTechnicalAliases, ['URAI', 'URAI Spatial'])
   assert.equal(entity.entities.organization.name, 'URAI Labs')
   assert.equal(entity.entities.foundation.name, 'URAI Foundation')
+  assert.equal(entity.entities.foundation.canonicalUrl, 'https://github.com/LifeLoggerAI/urai-foundation')
+  assert.equal(entity.entities.foundation.publicDomainTarget, 'https://uraifoundation.org/')
+  assert.match(entity.entities.foundation.publicDomainStatus, /unverified/)
 })

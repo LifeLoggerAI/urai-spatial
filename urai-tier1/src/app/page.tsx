@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import FinalHomeThreshold from './FinalHomeThreshold'
+import { publicIndexing } from './public-indexing'
 
 const launchSocialImage = 'https://urai.app/assets/urai/social/open-graph-launch.webp'
 
 export const metadata: Metadata = {
+  robots: publicIndexing,
   title: 'UrAi — Personal intelligence, made spatial',
   description: 'Meet UrAi by URAI Labs: a privacy-first personal intelligence platform for memory, reflection, relationships, and direction.',
   alternates: {

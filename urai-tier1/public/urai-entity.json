@@ -39,7 +39,9 @@
     "foundation": {
       "name": "URAI Foundation",
       "type": "formation-stage public-interest standards and governance initiative",
-      "canonicalUrl": "https://uraifoundation.org/",
+      "canonicalUrl": "https://github.com/LifeLoggerAI/urai-foundation",
+      "publicDomainTarget": "https://uraifoundation.org/",
+      "publicDomainStatus": "unverified; DNS and sitemap evidence required",
       "repository": "https://github.com/LifeLoggerAI/urai-foundation",
       "status": "formation-stage",
       "notClaimed": [

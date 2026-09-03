@@ -1,3 +1,9 @@
+import { publicIndexing } from '../public-indexing'
+
+export const metadata = {
+  robots: publicIndexing,
+}
+
 const sectionStyle = { maxWidth: "860px", margin: "0 auto", display: "grid", gap: "22px" } as const;
 const cardStyle = { border: "1px solid rgba(186,230,253,.16)", borderRadius: "28px", background: "rgba(3,8,20,.42)", padding: "24px", boxShadow: "0 24px 90px rgba(0,0,0,.24)" } as const;
 

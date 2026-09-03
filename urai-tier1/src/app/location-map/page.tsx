@@ -7,6 +7,11 @@ import '@/spatial/places/location-map-mobile-release-fixes.css'
 import '@/spatial/places/location-map-r3f-final.css'
 import './geographic-route-bridge.css'
 import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
+import { publicIndexing } from '../public-indexing'
+
+export const metadata = {
+  robots: publicIndexing,
+}
 
 export default async function LocationMapPage() {
   const repositoryPlaces = await listMemoryPlaces({ source: 'demo' })

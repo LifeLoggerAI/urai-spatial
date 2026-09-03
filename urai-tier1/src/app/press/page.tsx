@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import PublicAuthorityShell from '@/components/public-authority/PublicAuthorityShell'
+import { publicIndexing } from '../public-indexing'
 
 export const metadata: Metadata = {
+  robots: publicIndexing,
   title: 'Press and Media',
   description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
   alternates: { canonical: 'https://urai.app/press' },

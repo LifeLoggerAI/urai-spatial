@@ -1,4 +1,9 @@
 import CinematicReplayClient from './CinematicReplayClient'
+import { publicIndexing } from '../public-indexing'
+
+export const metadata = {
+  robots: publicIndexing,
+}
 
 const FinalReplayFilm = CinematicReplayClient
 

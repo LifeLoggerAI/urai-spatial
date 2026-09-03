@@ -1,6 +1,11 @@
 import './mirror-mobile-inspection.css'
 import MirrorBareEntryGuard from './MirrorBareEntryGuard'
 import MirrorSpatialClient from './MirrorSpatialClient'
+import { publicIndexing } from '../public-indexing'
+
+export const metadata = {
+  robots: publicIndexing,
+}
 
 const routeFingerprintStyle = {
   position: 'absolute',

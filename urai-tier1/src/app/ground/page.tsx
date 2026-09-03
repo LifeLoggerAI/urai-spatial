@@ -4,8 +4,10 @@ import GroundFocusContainment from './GroundFocusContainment'
 import './ground-focus-containment.css'
 import './ground-production-polish.css'
 import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
+import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
+  robots: publicIndexing,
   title: 'URAI Ground',
   description: 'The URAI Ground route opens the final walkable first-person ground layer.',
 }
