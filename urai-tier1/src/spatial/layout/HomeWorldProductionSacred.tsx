@@ -8,11 +8,12 @@ import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbS
 import { MobileMovementPad, stepEmbodiedMotion, useDragLook, useMovementInput, type MovementInput } from '@/spatial/navigation/EmbodiedNavigation'
 import { useSceneStore } from '@/spatial/store/useSceneStore'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { resolvePromotedUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
 import styles from './HomeWorldProduction.module.css'
 
-const SANCTUARY = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
-const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
-const PORTAL_MODEL = '/assets/urai/generated/models/portal-ring-master-v1.glb'
+const SANCTUARY = resolvePromotedUraiSpatialAssetPath('home-entry-chamber-model-v1')!
+const ORB_MODEL = resolvePromotedUraiSpatialAssetPath('urai-orb-avatar-glb-v1')!
+const PORTAL_MODEL = resolvePromotedUraiSpatialAssetPath('portal-ring-master-glb-v1')!
 const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
 const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 const SPAWN = new THREE.Vector3(2.35, 0.04, 7.9)
