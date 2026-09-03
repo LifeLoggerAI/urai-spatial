@@ -672,7 +672,7 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
     <group name={`home-v95-${destination}-threshold-lintel`} userData={{ compatibilityMarker: true }} />
     <group name={`home-v96-${destination}-recess-depth`} userData={{ compatibilityMarker: true }} />
     <group name={`home-v95-${destination}-recess-veil`} userData={{ compatibilityMarker: true }} />
-    <PortalStoneFrame destination={destination} textures={textures} />
+    <PortalStoneFrame destination={destination} textures={textures.shell} />
     <PortalDepthField destination={destination} />
     <mesh name={`home-v98-${destination}-inner-threshold-glow`} position={[0, 1.42, -0.56]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onActivate() }}>
       <planeGeometry args={[0.92, 2.12, 1, 1]} />
