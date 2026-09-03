@@ -76,6 +76,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
+    'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)

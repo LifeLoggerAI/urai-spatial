@@ -9,4 +9,8 @@ test('Mirror to Replay proof bounds font readiness and screenshot waits', () => 
   assert.match(mirrorReleaseProof, /Promise\.race/)
   assert.match(mirrorReleaseProof, /window\.setTimeout\(resolve, maxWaitMs\)/)
   assert.match(mirrorReleaseProof, /destination === 'replay' \? \{ fontReadyTimeoutMs: 5000, timeoutMs: 20000 \} : undefined/)
+  assert.match(mirrorReleaseProof, /page\.addStyleTag/)
+  assert.match(mirrorReleaseProof, /animation:none!important;transition:none!important/)
+  assert.match(mirrorReleaseProof, /animations: 'allow'/)
+  assert.match(mirrorReleaseProof, /motionFreeze\.evaluate\(\(node\) => node\.remove\(\)\)/)
 })

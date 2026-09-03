@@ -112,7 +112,20 @@ async function screenshot(page, name, { fontReadyTimeoutMs = 0, timeoutMs = 6000
     }, fontReadyTimeoutMs)
   }
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: timeoutMs })
+  // Playwright's built-in animation disabling waits for finite animations to
+  // finish before capture. Replay owns several route-entry transitions, so the
+  // screenshot can otherwise exhaust its timeout while the page is healthy.
+  // Freeze every animation and transition explicitly, then capture the exact
+  // settled pixels without asking Playwright to fast-forward page timelines.
+  const motionFreeze = await page.addStyleTag({
+    content: '*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;caret-color:transparent!important}',
+  })
+  try {
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'allow', caret: 'hide', timeout: timeoutMs })
+  } finally {
+    await motionFreeze.evaluate((node) => node.remove()).catch(() => {})
+  }
   return relative
 }
 
