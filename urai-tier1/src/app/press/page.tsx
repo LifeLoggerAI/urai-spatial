@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'Press and Media',
   description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Press and Media',
+    description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
+  },
   alternates: { canonical: 'https://urai.app/press/' },
   openGraph: {
     type: 'website',
