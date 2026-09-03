@@ -166,6 +166,34 @@ function RiggedCouncilHuman({
   )
 }
 
+function SemanticCouncilPresence({ index, selected, onSelect }: { index: number; selected: boolean; onSelect: () => void }) {
+  return (
+    <group
+      name={`council-semantic-presence-${DEMO_COUNCIL_AGENTS[index]?.id ?? index}`}
+      position={POSITIONS[index] ?? [0, 0, -2]}
+      rotation={ROTATIONS[index] ?? [0, 0, 0]}
+      onClick={(event) => {
+        event.stopPropagation()
+        onSelect()
+      }}
+      userData={{ fallback: 'semantic-interactive-presence', agentId: DEMO_COUNCIL_AGENTS[index]?.id }}
+    >
+      <mesh position={[0, 0.9, 0]} castShadow receiveShadow>
+        <capsuleGeometry args={[0.22, 1.12, 8, 16]} />
+        <meshStandardMaterial color={selected ? '#d8c29e' : '#66747a'} roughness={0.78} metalness={0.04} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]} castShadow receiveShadow>
+        <sphereGeometry args={[0.2, 20, 16]} />
+        <meshStandardMaterial color={selected ? '#ead9bd' : '#7a878c'} roughness={0.82} metalness={0.02} />
+      </mesh>
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.28, 0.36, 48]} />
+        <meshBasicMaterial color={selected ? '#e9d6b7' : '#b8c7cf'} transparent opacity={selected ? 0.34 : 0.08} depthWrite={false} />
+      </mesh>
+    </group>
+  )
+}
+
 function CouncilStage() {
   const [selected, setSelected] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -252,7 +280,12 @@ function CouncilStage() {
                   onSelect={() => setSelected(index)}
                 />
               ) : (
-                <group key={agent.id} name={`council-semantic-presence-${agent.id}`} position={POSITIONS[index]} userData={{ fallback: 'no-rigged-human', agentId: agent.id }} />
+                <SemanticCouncilPresence
+                  key={agent.id}
+                  index={index}
+                  selected={selected === index}
+                  onSelect={() => setSelected(index)}
+                />
               )
             ))}
 
