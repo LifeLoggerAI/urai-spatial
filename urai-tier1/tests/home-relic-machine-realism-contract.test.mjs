@@ -35,8 +35,8 @@ test('V76 is one authoritative Canvas with a deep continuous photogrammetry sanc
   assert.match(runtime, /<HomeV76Sanctuary reducedMotion=\{reducedMotion\}/)
   assert.match(runtime, /data-home-visible-world="v76-deep-apse-relic-machine-sanctuary"/)
   assert.match(runtime, /data-home-visual-ownership="single-canvas-three-dimensional-geometry"/)
-  assert.match(runtime, /data-home-final-art-revision="v76-single-canvas-deep-apse-rebuild"/)
-  assert.match(runtime, /data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"/)
+  assert.match(runtime, /data-home-final-art-revision="v93-dimensional-governed-rebuild"/)
+  assert.match(runtime, /data-home-visible-production-assets="governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr"/)
   assert.match(owner, /data-home-canvas-owner="home-world-production-v70-single-authority"/)
   assert.doesNotMatch(owner, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
   assert.doesNotMatch(art, /<Canvas|from '@react-three\/fiber'.*Canvas/)
@@ -69,11 +69,11 @@ test('V76 Orb is a curved load-bearing apse machine with connected service paths
   assert.match(art, /new THREE\.ExtrudeGeometry/)
   assert.match(art, /new THREE\.CatmullRomCurve3/)
   assert.match(art, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
-  assert.match(runtime, /data-home-animation-owner="v76-curved-load-bearing-relic-machine"/)
+  assert.match(runtime, /data-home-animation-owner="v93-dimensional-governed-sanctuary"/)
   assert.doesNotMatch(art, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
-test('V83 replaces the procedural tunnel and panel armor with the governed open sanctuary', () => {
+test('V93 combines visible governed thresholds with a physical PBR sanctuary', () => {
   for (const marker of [
     'home-v83-governed-open-sanctuary-environment',
     'home-v83-authored-open-sanctuary',
@@ -81,16 +81,19 @@ test('V83 replaces the procedural tunnel and panel armor with the governed open 
     'full-authored-composition-with-duplicate-interaction-art-suppressed',
     'home-v83-removed-procedural-tunnel',
     'home-v83-removed-panel-like-orb-armor',
-    "liveArtRevision: 'v83-governed-open-sanctuary-recomposition'",
-  ]) assert.ok(art.includes(marker), `missing V83 governed-composition marker: ${marker}`)
-  assert.match(runtime, /data-home-live-art-revision="v83-governed-open-sanctuary-recomposition"/)
+    "liveArtRevision: 'v93-governed-dimensional-sanctuary'",
+  ]) assert.ok(art.includes(marker), `missing V93 governed-composition marker: ${marker}`)
+  assert.match(runtime, /data-home-live-art-revision="v93-governed-dimensional-sanctuary"/)
   assert.match(runtime, /data-home-live-orb-owner="governed-urai-orb-avatar-v1"/)
   assert.match(art, /root\.position\.set\(0, -0\.16, -8\.2\)/)
   assert.match(art, /root\.scale\.setScalar\(0\.70\)/)
   assert.match(art, /position=\{\[-0\.18, 1\.42, -8\.86\]\}/)
   const liveComposition = art.slice(art.indexOf('export function HomeV76Sanctuary'))
-  assert.doesNotMatch(liveComposition, /<VaultShell|<CantedWall|<DeepApse|<BearingRib|<ExtrudedBody/)
-  assert.doesNotMatch(liveComposition, /<ProductionAsset url=\{ROCK_FACE_[AB]\} name="home-v(?:76|82)-(?:port|starboard)-(?:foreground|midground|near-field|mid-field|deep-field|apse)/)
+  assert.match(art, /function SanctuaryBackdrop[\s\S]*<VaultShell[\s\S]*<CantedWall[\s\S]*<DeepApse[\s\S]*<BearingRib/)
+  assert.match(art, /<ProductionAsset url=\{ROCK_FACE_A\}/)
+  assert.match(art, /<ProductionAsset url=\{ROCK_FACE_B\}/)
+  assert.match(liveComposition, /<SanctuaryBackdrop onWalk=\{onWalk\}/)
+  assert.doesNotMatch(art, /backgroundImage:|scene\.userData\.sanctuaryBackdrop|root\.visible\s*=\s*false/)
 })
 
 test('V76 preserves bounded rendering, real traversal, and fail-closed certification', () => {

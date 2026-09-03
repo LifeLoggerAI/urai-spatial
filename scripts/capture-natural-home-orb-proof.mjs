@@ -145,14 +145,14 @@ for (const spec of cases) {
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v76-photogrammetry-relic-machine'
-      && record.artRevision === 'v76-single-canvas-deep-apse-rebuild'
+      && record.visualGrade === 'cinematic-pbr-v93-governed-dimensional-sanctuary'
+      && record.artRevision === 'v93-dimensional-governed-rebuild'
       && record.artCertification === 'v76-retained-pixel-candidate-not-certified'
       && record.runtimeAssets?.includes(path.basename(homePath))
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.runtimeAssets?.includes(path.basename(portalPath))
       && record.governedIdentityAssets === 'home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb'
-      && record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr'
+      && record.visibleProductionAssets === 'governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr'
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
       && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null

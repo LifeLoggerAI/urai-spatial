@@ -68,7 +68,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeProduction, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState, reducedMotion, true\)\.animation\}/)
   assert.match(homeArt, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
   assert.match(homeArt, /new THREE\.ExtrudeGeometry/)
-  assert.match(homeProduction, /data-home-animation-owner="v76-curved-load-bearing-relic-machine"/)
+  assert.match(homeProduction, /data-home-animation-owner="v93-dimensional-governed-sanctuary"/)
   assert.doesNotMatch(homeArt, /function Beam\(|function StoneMass\(|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry/)
   assert.match(homeProduction, /const GOVERNED_PORTAL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
   assert.match(homeArt, /destination === 'life-map' \? 'home-life-map-physical-portal'/)

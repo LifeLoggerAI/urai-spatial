@@ -578,7 +578,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     userData={{
       visualOwner: 'v76-single-canvas-deep-apse-sanctuary',
       construction: 'continuous-photogrammetry-shell-curved-load-bearing-relic-machine',
-      liveArtRevision: 'v83-governed-open-sanctuary-recomposition',
+      liveArtRevision: 'v93-governed-dimensional-sanctuary',
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',

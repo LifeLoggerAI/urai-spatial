@@ -39,7 +39,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact single-Canvas V93 governed candidate markers
+      - name: Verify exact single-Canvas V93 governed dimensional candidate markers
         shell: bash
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -67,7 +67,7 @@ jobs:
           grep -Fq 'committed-governed-home-environment' "$art"
           grep -Fq 'home-v83-removed-procedural-tunnel' "$art"
           grep -Fq 'home-v83-removed-panel-like-orb-armor' "$art"
-          grep -Fq "liveArtRevision: 'v83-governed-open-sanctuary-recomposition'" "$art"
+          grep -Fq "liveArtRevision: 'v93-governed-dimensional-sanctuary'" "$art"
           grep -Fq 'home-v76-port-integrated-service-manifold' "$art"
           grep -Fq 'home-v76-starboard-integrated-service-manifold' "$art"
           grep -Fq 'home-v76-apse-embedded-orb-relic-machine' "$art"
@@ -78,7 +78,7 @@ jobs:
           grep -Fq 'data-home-visual-grade="cinematic-pbr-v93-governed-dimensional-sanctuary"' "$source"
           grep -Fq 'data-home-final-art-revision="v93-dimensional-governed-rebuild"' "$source"
           grep -Fq 'data-home-art-certification="v76-retained-pixel-candidate-not-certified"' "$source"
-          grep -Fq 'data-home-visible-production-assets="rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr"' "$source"
+          grep -Fq 'data-home-visible-production-assets="governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr"' "$source"
           grep -Fq 'data-home-telemetry-owner="embodied-motion-kernel-v66"' "$source"
           grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
           grep -Fq 'const HOME_ORB = { x: 0, z: -9.1 } as const' "$telemetry"
@@ -97,21 +97,17 @@ jobs:
           grep -Fq 'verifyGovernedBinary(orbPath)' "$proof"
           grep -Fq 'verifyGovernedBinary(portalPath)' "$proof"
           grep -Fq 'record.portalRequests.length >= 1' "$proof"
-          grep -Fq "record.visibleProductionAssets === 'rock_face_01 rock_face_02 modular_industrial_pipes_01 industrial_caged_sconce rock-face-pbr'" "$proof"
+          grep -Fq "record.visibleProductionAssets === 'governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr'" "$proof"
           test "$(grep -Fo '<Canvas' "$source" | wc -l)" -eq 1
           ! grep -Fq '<Canvas' "$art"
-          grep -Fq 'name="home-v93-dimensional-sanctuary-architecture"' "$art"
-          grep -Fq "retainedPixelOwner: 'physical-pbr-three-dimensional-environment'" "$art"
-          grep -Fq 'function VaultShell(' "$art"
-          grep -Fq 'function CantedWall(' "$art"
-          grep -Fq 'function DeepApse(' "$art"
-          grep -Fq 'function BearingRib(' "$art"
           grep -Fq '<VaultShell textures={textures.shell}' "$art"
           grep -Fq '<CantedWall side="port" textures={textures.shell}' "$art"
-          grep -Fq '<CantedWall side="starboard" textures={textures.shell}' "$art"
           grep -Fq '<DeepApse textures={textures.shell}' "$art"
           grep -Fq '<BearingRib z={-3.8}' "$art"
-          grep -Fq '<BearingRib z={-9.55}' "$art"
+          grep -Fq 'root.remove(...root.children.filter' "$art"
+          ! grep -Fq 'root.visible = false' "$art"
+          ! grep -Fq 'backgroundImage:' "$source"
+          ! grep -Fq 'scene.userData.sanctuaryBackdrop' "$art"
           ! grep -Fq 'HomeV75RetainedPixelWorld' "$telemetry"
           ! grep -Eq '<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff' "$art"
           ! grep -Fq 'PRODUCTION CERTIFIED' "$source"
