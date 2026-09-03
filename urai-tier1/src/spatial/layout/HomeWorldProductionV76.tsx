@@ -368,9 +368,10 @@ function useGovernedHomeEnvironment() {
     const root = gltf.scene.clone(true)
     // V87 retained pixels rejected the terrain slab, repeated growth/village field,
     // pedestal, mountains and temporary embodiment markers. V106 continuous approach
-    // pixels then proved that the remaining imported threshold meshes still occluded
-    // the first-person camera. Keep the governed source bound for provenance while
-    // the authored open-canyon geometry and stone-cut thresholds own visible pixels.
+    // pixels then proved that the remaining imported threshold meshes occluded the
+    // first-person camera at interaction distance. Keep the governed source visibly
+    // embedded as a distant architectural relief while authored open-canyon geometry
+    // and stone-cut thresholds own the approach paths.
     const rejectedFamily = /^(?:sanctuary-terrain|mirror-basin|orb-sanctuary-pedestal|horizon-mountain-|sanctuary-waterfall-|inhabited-village-|living-growth-|embodied-presence-root|memory-place-anchor-)/
     // V101 retained pixels also rejected the imported utility tubes as raw scene
     // dressing. Strip those authored details while keeping destination roots live.
@@ -400,18 +401,17 @@ function useGovernedHomeEnvironment() {
       object.material = Array.isArray(object.material) ? materials : materials[0]
       object.castShadow = true
       object.receiveShadow = true
-      object.visible = false
     })
     root.name = 'home-v83-governed-open-sanctuary-environment'
-    root.position.set(0, -0.16, -8.2)
-    root.scale.setScalar(0.70)
+    root.position.set(0, -0.12, -20.8)
+    root.scale.setScalar(0.18)
     root.userData = {
       runtimeAsset: GOVERNED_HOME,
-      visualOwner: 'committed-governed-home-environment',
-      treatment: 'governed-home-source-bound-imported-occluder-meshes-suppressed',
+      visualOwner: 'committed-governed-home-distant-architectural-relief',
+      treatment: 'governed-home-source-visible-distant-relief-outside-approach-cameras',
       legacyTreatment: 'full-authored-composition-with-duplicate-interaction-art-suppressed',
-      candidateArtRevision: 'v93-governed-dimensional-sanctuary',
-      successorVisualRepair: 'v95-recursive-rejected-family-removal',
+      candidateArtRevision: 'v112-governed-visible-relief-approach-clearance',
+      successorVisualRepair: 'v112-reposition-and-rescale-governed-relief',
       visibleThresholdAuthority: 'authored-open-canyon-stone-cut-thresholds',
     }
     return root
@@ -784,7 +784,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
       candidateArtRevision: 'v93-governed-dimensional-sanctuary',
       visualRepair: 'v93-remove-flat-plate-and-retain-governed-threshold-architecture',
       successorVisualRepair: 'v101-legible-orb-decluttered-asymmetric-thresholds',
-      approachVisibilityRepair: 'v107-suppress-imported-occluders-restore-stone-thresholds',
+      approachVisibilityRepair: 'v112-visible-governed-relief-outside-approach-cameras',
       portraitCompositionRevision: 'v93-single-responsive-three-dimensional-scene',
       successorPortraitRepair: 'v105-balanced-58-degree-portrait-fov',
       retainedPixelStatus: 'candidate-not-certified',
