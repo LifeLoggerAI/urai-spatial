@@ -36,6 +36,15 @@ test('V98 replaces the rejected cave room and flat portal cards with open dimens
   assert.doesNotMatch(world, /new THREE\.TubeGeometry\(curve, 56, 0\.026/)
 })
 
+test('V99 closes terrain seams and keeps wayfinding subordinate to the open world', () => {
+  assert.match(world, /geometry\.setAttribute\('position', new THREE\.Float32BufferAttribute\(positions, 3\)\)/)
+  assert.match(world, /home-v76-continuous-stone-floor" geometry=\{ground\}/)
+  assert.match(world, /<meshBasicMaterial vertexColors side=\{THREE\.BackSide\}/)
+  assert.match(world, /width: 0\.17 \+ t \* 0\.09/)
+  assert.match(world, /emissiveIntensity=\{0\.025\}/)
+  assert.doesNotMatch(world, /terraces\.map/)
+})
+
 test('V93 removes the sphere shell and temporary industrial overlay composition', () => {
   assert.match(world, /orb-aura\|orb-core\|orb-orbit\|orb-filament/)
   assert.match(world, /home-v88-removed-relic-conduits/)

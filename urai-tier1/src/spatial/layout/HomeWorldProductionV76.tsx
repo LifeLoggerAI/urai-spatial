@@ -192,7 +192,7 @@ function DeepApse({ textures }: { textures: TextureSet }) {
 
     for (let yIndex = 0; yIndex <= ySegments; yIndex += 1) {
       const ty = yIndex / ySegments
-      const y = -0.16 + ty * 6.54
+      const y = -0.16 + ty * 2.24
       for (let xIndex = 0; xIndex <= xSegments; xIndex += 1) {
         const tx = xIndex / xSegments
         const x = -6.2 + tx * 12.4
@@ -232,7 +232,20 @@ function DeepApse({ textures }: { textures: TextureSet }) {
 }
 
 function OpenAtmosphere() {
-  const dome = useMemo(() => new THREE.SphereGeometry(54, 36, 20), [])
+  const dome = useMemo(() => {
+    const geometry = new THREE.SphereGeometry(54, 36, 20)
+    const positions = geometry.getAttribute('position')
+    const colors: number[] = []
+    const horizon = new THREE.Color('#5b786b')
+    const zenith = new THREE.Color('#071c29')
+    for (let index = 0; index < positions.count; index += 1) {
+      const t = THREE.MathUtils.clamp((positions.getY(index) / 54 + 1) * 0.58, 0, 1)
+      const color = horizon.clone().lerp(zenith, t)
+      colors.push(color.r, color.g, color.b)
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    return geometry
+  }, [])
   const stars = useMemo(() => {
     const positions: number[] = []
     for (let index = 0; index < 96; index += 1) {
@@ -248,7 +261,7 @@ function OpenAtmosphere() {
 
   return <group name="home-v98-open-atmospheric-depth">
     <mesh name="home-v98-volumetric-sky-dome" geometry={dome} position={[0, -18, -8]} scale={[1, 0.72, 1]}>
-      <meshBasicMaterial color="#17352f" side={THREE.BackSide} fog={false} />
+      <meshBasicMaterial vertexColors side={THREE.BackSide} fog={false} />
     </mesh>
     <points name="home-v98-deep-atmospheric-motes" geometry={stars}>
       <pointsMaterial color="#cfe5cf" size={0.055} transparent opacity={0.42} depthWrite={false} fog={false} />
@@ -257,23 +270,46 @@ function OpenAtmosphere() {
 }
 
 function TerracedGround({ textures, onWalk }: { textures: TextureSet; onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
-  const terraces = [
-    { name: 'entry', position: [0, -0.13, 2.1] as Vec3, size: [12.7, 6.2] as const, tint: '#423f35' },
-    { name: 'middle', position: [-0.22, -0.04, -3.4] as Vec3, size: [11.6, 5.4] as const, tint: '#4b493c' },
-    { name: 'apse', position: [0.30, 0.08, -8.35] as Vec3, size: [10.4, 4.7] as const, tint: '#3e493e' },
-    { name: 'horizon', position: [-0.12, 0.22, -12.2] as Vec3, size: [8.7, 3.4] as const, tint: '#35483f' },
-  ]
+  const ground = useMemo(() => {
+    const xSegments = 36
+    const zSegments = 64
+    const positions: number[] = []
+    const uvs: number[] = []
+    const indices: number[] = []
+    for (let zIndex = 0; zIndex <= zSegments; zIndex += 1) {
+      const tz = zIndex / zSegments
+      const z = 5.2 - tz * 19.2
+      for (let xIndex = 0; xIndex <= xSegments; xIndex += 1) {
+        const tx = xIndex / xSegments
+        const x = -6.35 + tx * 12.7
+        const edgeLift = Math.pow(Math.abs(x) / 6.35, 2.2) * 0.18
+        const walkingChannel = Math.exp(-Math.pow(x / 2.8, 2)) * -0.055
+        const geologicalRelief = Math.sin(z * 0.62 + x * 0.28) * 0.035 + Math.cos(z * 1.18 - x * 0.41) * 0.018
+        const y = -0.12 + tz * 0.42 + edgeLift + walkingChannel + geologicalRelief
+        positions.push(x, y, z)
+        uvs.push(tx * 3.6, tz * 7.2)
+      }
+    }
+    for (let zIndex = 0; zIndex < zSegments; zIndex += 1) {
+      for (let xIndex = 0; xIndex < xSegments; xIndex += 1) {
+        const a = zIndex * (xSegments + 1) + xIndex
+        const b = a + 1
+        const c = a + xSegments + 1
+        const d = c + 1
+        indices.push(a, c, b, b, c, d)
+      }
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+    geometry.setIndex(indices)
+    geometry.computeVertexNormals()
+    return geometry
+  }, [])
   return <group name="home-v98-terraced-navigable-ground" onClick={onWalk}>
-    {terraces.map((terrace, index) => <mesh
-      key={terrace.name}
-      name={index === 0 ? 'home-v76-continuous-stone-floor' : `home-v98-${terrace.name}-terrain-terrace`}
-      position={terrace.position as [number, number, number]}
-      rotation={[-Math.PI / 2, 0, index % 2 === 0 ? 0.012 : -0.016]}
-      receiveShadow
-    >
-      <planeGeometry args={[terrace.size[0], terrace.size[1], 18, 12]} />
-      <StoneMaterial textures={textures} tint={terrace.tint} side={THREE.DoubleSide} />
-    </mesh>)}
+    <mesh name="home-v76-continuous-stone-floor" geometry={ground} receiveShadow>
+      <StoneMaterial textures={textures} tint="#47483b" side={THREE.DoubleSide} />
+    </mesh>
     <mesh name="home-walkable-navigation-surface" position={[0, 0.28, -3.0]} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry args={[12.2, 19.4]} />
       <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
@@ -385,7 +421,6 @@ function SanctuaryBackdrop({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>)
     <CantedWall side="starboard" textures={textures.shell} />
     <DeepApse textures={textures.shell} />
     <BearingRib z={-3.8} skew={0.18} textures={textures.shell} />
-    <BearingRib z={-9.55} skew={-0.16} textures={textures.shell} />
     <ProductionAsset url={ROCK_FACE_A} name="home-v95-port-entry-buttress" position={[-5.92, 0.72, -0.20]} rotation={[0.08, 1.04, -0.12]} scale={[0.90, 1.08, 0.86]} span={2.62} mode="rock" />
     <ProductionAsset url={ROCK_FACE_B} name="home-v95-starboard-entry-buttress" position={[5.94, 0.68, -0.64]} rotation={[-0.08, -0.96, 0.10]} scale={[0.88, 1.04, 0.84]} span={2.58} mode="rock" />
     <ProductionAsset url={ROCK_FACE_A} name="home-v93-port-apse-foundation" position={[-5.42, 1.18, -11.42]} rotation={[-0.04, 0.74, -0.10]} scale={[1.16, 1.42, 1.02]} span={3.68} mode="rock" />
@@ -542,7 +577,7 @@ function OrbPresence({ state, reducedMotion }: { state: OrbState; reducedMotion:
     const breath = 1 + Math.sin(clock.elapsedTime * 0.88 * urgency) * 0.055
     swarm.current.scale.setScalar(breath)
   })
-  return <group name="home-v82-governed-living-orb" position={[-0.18, 2.12, -8.62]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage' }}>
+  return <group name="home-v82-governed-living-orb" position={[-0.92, 2.42, -8.34]} userData={{ runtimeAsset: GOVERNED_ORB, retainedPixelRole: 'primary-intelligent-presence', v95Composition: 'human-scale-apse-integrated-no-stage-prop', v96Composition: 'legible-living-presence-no-pedestal', v98Composition: 'open-air-living-presence-without-stage' }}>
     <group name="home-v76-machine-vertical-aperture" userData={{ legacyContractMarker: true, visibleApertureRemovedIn: 'v78' }} />
     <group ref={swarm} scale={[1.06, 1.06, 1.06]} rotation={[0.04, -0.18, -0.06]}>
       <primitive object={governedOrb} />
@@ -649,7 +684,7 @@ function PortalRecess({ destination, position, rotation, onActivate }: { destina
 
 function ThresholdPath({ destination }: { destination: 'ground' | 'life-map' }) {
   const side = destination === 'ground' ? -1 : 1
-  const tone = destination === 'ground' ? '#617966' : '#626b85'
+  const tone = destination === 'ground' ? '#3f5546' : '#434a5f'
   const pavers = Array.from({ length: 8 }, (_, index) => {
     const t = index / 7
     return {
@@ -657,13 +692,13 @@ function ThresholdPath({ destination }: { destination: 'ground' | 'life-map' }) 
       y: -0.075 + t * 0.17,
       z: 3.30 - t * 10.20,
       rotation: side * (-0.08 + t * 0.24),
-      width: 0.40 + t * 0.08,
+      width: 0.17 + t * 0.09,
     }
   })
   return <group name={`home-v97-${destination}-floor-integrated-guidance`}>
     {pavers.map((paver, index) => <mesh key={index} name={`home-v98-${destination}-waystone-${index + 1}`} position={[paver.x, paver.y, paver.z]} rotation={[-Math.PI / 2, 0, paver.rotation]} receiveShadow>
       <circleGeometry args={[paver.width, 7]} />
-      <meshStandardMaterial color={tone} emissive={tone} emissiveIntensity={0.08} roughness={0.92} metalness={0.01} />
+      <meshStandardMaterial color={tone} emissive={tone} emissiveIntensity={0.025} roughness={0.96} metalness={0.01} />
     </mesh>)}
   </group>
 }
