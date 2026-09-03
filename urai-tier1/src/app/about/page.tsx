@@ -7,7 +7,13 @@ export const metadata: Metadata = {
   title: 'What is UrAi?',
   description: 'UrAi is a privacy-first personal intelligence platform by URAI Labs that turns personal context into a navigable spatial world.',
   alternates: { canonical: 'https://urai.app/about/' },
-  openGraph: { url: 'https://urai.app/about/' },
+  openGraph: {
+    type: 'website',
+    url: 'https://urai.app/about/',
+    title: 'What is UrAi?',
+    description: 'UrAi is a privacy-first personal intelligence platform by URAI Labs that turns personal context into a navigable spatial world.',
+    siteName: 'UrAi',
+  },
 }
 
 export default function AboutPage() {
