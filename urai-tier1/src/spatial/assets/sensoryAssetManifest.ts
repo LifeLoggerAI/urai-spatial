@@ -64,6 +64,6 @@ export const uraiSensoryAssetManifest = {
 } as const satisfies Record<string, UraiSensoryAssetEntry>
 
 export function resolveReadyUraiSensoryAssetPath(key: keyof typeof uraiSensoryAssetManifest): string | null {
-  const asset = uraiSensoryAssetManifest[key]
+  const asset: UraiSensoryAssetEntry = uraiSensoryAssetManifest[key]
   return asset.status === 'ready' ? asset.path : null
 }
