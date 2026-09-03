@@ -11,6 +11,8 @@ import { publicIndexing } from '../public-indexing'
 
 export const metadata = {
   robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/location-map/' },
+  openGraph: { url: 'https://urai.app/location-map/' },
 }
 
 export default async function LocationMapPage() {
