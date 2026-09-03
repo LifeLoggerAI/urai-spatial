@@ -73,7 +73,7 @@ test('V76 Orb is a curved load-bearing apse machine with connected service paths
   assert.doesNotMatch(art, /<(?:sphereGeometry|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|RoundedBox)|display-case|#37e5ff|#48dfff|#6cf4ff/i)
 })
 
-test('V98 combines visible governed thresholds with an open physical PBR sanctuary', () => {
+test('V101 combines governed thresholds with the repaired open physical PBR sanctuary', () => {
   for (const marker of [
     'home-v83-governed-open-sanctuary-environment',
     'home-v83-authored-open-sanctuary',
@@ -87,12 +87,12 @@ test('V98 combines visible governed thresholds with an open physical PBR sanctua
   assert.match(runtime, /data-home-live-orb-owner="governed-urai-orb-avatar-v1"/)
   assert.match(art, /root\.position\.set\(0, -0\.16, -8\.2\)/)
   assert.match(art, /root\.scale\.setScalar\(0\.70\)/)
-  assert.match(art, /position=\{\[-0\.18, 1\.42, -8\.86\]\}/)
+  assert.match(art, /position=\{\[-0\.28, 2\.48, -6\.18\]\}/)
   const liveComposition = art.slice(art.indexOf('export function HomeV76Sanctuary'))
   const sanctuaryBackdrop = art.slice(art.indexOf('function SanctuaryBackdrop'), art.indexOf('function GovernedHomeEnvironment'))
   assert.match(sanctuaryBackdrop, /<OpenAtmosphere[\s\S]*<TerracedGround[\s\S]*<VaultShell[\s\S]*<CantedWall[\s\S]*<DeepApse[\s\S]*<BearingRib/)
-  assert.match(art, /if \(Math\.abs\(xCenter\) < 3\.35\) continue/)
-  assert.match(art, /if \(Math\.abs\(xCenter\) < 3\.15\) continue/)
+  assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.15\) continue/)
+  assert.match(art, /if \(Math\.abs\(xCenter\) < 2\.30\) continue/)
   assert.match(art, /<ProductionAsset url=\{ROCK_FACE_A\}/)
   assert.match(art, /<ProductionAsset url=\{ROCK_FACE_B\}/)
   assert.match(liveComposition, /<SanctuaryBackdrop onWalk=\{onWalk\}/)
