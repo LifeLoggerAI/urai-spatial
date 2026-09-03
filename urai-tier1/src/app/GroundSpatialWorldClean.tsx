@@ -52,7 +52,11 @@ function prepareModel(source: THREE.Object3D) {
       object.visible = false;
       return;
     }
-    if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.62);
+    if (/(?:nexus-(?:orbit|spoke|pedestal)|destination-(?:plinth|vase)|rainbow-spoke)/i.test(object.name)) {
+      object.visible = false;
+      return;
+    }
+    if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.42);
     if (!(object instanceof THREE.Mesh)) return;
     object.material = Array.isArray(object.material)
       ? object.material.map(liftedMaterial)
@@ -148,7 +152,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            <primitive object={world} visible={false} />
+            <primitive object={world} visible />
           </group>
         </group>
       </group>
@@ -280,7 +284,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <pointLight position={[0, 4.6, -2]} intensity={4.1} distance={24} decay={2} color="#ffc479" />
       <pointLight position={[7.5, 3.4, -15]} intensity={2.15} distance={22} decay={2} color="#8fe5ff" />
       <pointLight position={[-8.2, 3.8, -23]} intensity={1.95} distance={22} decay={2} color="#cabdff" />
-      <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
+      <Sparkles count={12} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
@@ -341,7 +345,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-visual-revision="v92-coherent-operations-hub"
+      data-ground-visual-revision="v122-authored-depth-no-flat-backdrop-authority"
       data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -364,7 +368,7 @@ export default function GroundSpatialWorldClean() {
           scene.background = null;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.96;
+          gl.toneMappingExposure = 1.45;
           setReady(true);
         }}
       >
@@ -410,8 +414,9 @@ export default function GroundSpatialWorldClean() {
 
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
-        .ground-production-backdrop{position:absolute;inset:0;z-index:0;display:block;overflow:hidden;background:#102b38}
-        .ground-production-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+        .ground-production-backdrop{position:absolute;inset:0;z-index:0;display:block;overflow:hidden;background:#071319}
+        .ground-production-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.16;filter:saturate(.55) contrast(1.08)}
+        .ground-production-backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 56%,rgba(26,69,75,.08) 0 25%,rgba(4,12,17,.72) 78%),linear-gradient(180deg,rgba(3,10,15,.16),rgba(3,10,15,.66));pointer-events:none}
         .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important;filter:none}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
