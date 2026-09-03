@@ -57,8 +57,8 @@ test('robots lets crawlers observe per-route noindex metadata while exported API
 test('each authority page owns its canonical Open Graph URL', () => {
   for (const [route, sourcePath] of authorityRoutes) {
     const source = read(sourcePath)
-    assert.ok(source.includes(`alternates: { canonical: 'https://urai.app/${route}' }`), `missing canonical URL for /${route}`)
-    assert.ok(source.includes(`openGraph: { url: 'https://urai.app/${route}' }`), `missing Open Graph URL for /${route}`)
+    assert.ok(source.includes(`alternates: { canonical: 'https://urai.app/${route}/' }`), `missing canonical URL for /${route}`)
+    assert.ok(source.includes(`openGraph: { url: 'https://urai.app/${route}/' }`), `missing Open Graph URL for /${route}`)
   }
 })
 
@@ -78,6 +78,9 @@ test('entity registry distinguishes canonical product names from current and leg
   assert.deepEqual(entity.entities.product.currentTechnicalAliases, ['URAI', 'URAI Spatial'])
   assert.deepEqual(entity.entities.product.legacyTechnicalAliases, [])
   assert.equal(entity.entities.organization.name, 'URAI Labs')
+  assert.equal(entity.entities.organization.canonicalUrl, 'https://urai.app/about/labs/')
+  assert.equal(entity.entities.founder.canonicalUrl, 'https://urai.app/founder/')
+  assert.equal(entity.entities.founder.publicProfile, 'https://urai.app/founder/')
   assert.equal(entity.entities.foundation.name, 'URAI Foundation')
   assert.equal(entity.entities.foundation.canonicalUrl, 'https://github.com/LifeLoggerAI/urai-foundation')
   assert.equal(entity.entities.foundation.publicDomainTarget, 'https://uraifoundation.org/')
