@@ -132,6 +132,8 @@ test('Home Ground entry is a physical environmental descent rather than a floati
   assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
   assert.match(homeProduction, /setPortalSequence\(`\$\{destination\}:traversal`\)/)
   assert.match(homeProduction, /setPortalSequence\(`\$\{destination\}:closing`\)/)
+  assert.match(homeProduction, /window\.clearTimeout\(traversalTimer\)/)
+  assert.match(homeProduction, /window\.clearTimeout\(navigationTimer\)/)
   assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
 })
 
