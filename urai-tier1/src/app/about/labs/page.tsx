@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'About URAI Labs',
   description: 'URAI Labs is the founder-led product organization building UrAi.',
-  alternates: { canonical: 'https://urai.app/about/labs' },
-  openGraph: { url: 'https://urai.app/about/labs' },
+  alternates: { canonical: 'https://urai.app/about/labs/' },
+  openGraph: { url: 'https://urai.app/about/labs/' },
 }
 
 export default function LabsPage() {
