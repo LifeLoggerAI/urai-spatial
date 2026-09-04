@@ -169,8 +169,8 @@ test('Home keeps one physical stateful relic-machine Orb owner and semantic acce
   assert.match(worldShell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(routeOwner, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwner, /background:\s*transparent\s*!important/)
-  assert.match(homeRuntime, />Ground<\/button>/)
-  assert.match(homeRuntime, />Life Map<\/button>/)
+  assert.match(homeRuntime, /<a aria-label="Open Ground directly"[^>]*data-testid="home-semantic-ground"[^>]*href=\{HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref\}>Ground<\/a>/)
+  assert.match(homeRuntime, /<a aria-label="Open Life Map directly"[^>]*data-testid="home-semantic-life-map"[^>]*href=\{HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref\}>Life Map<\/a>/)
 })
 
 test('Ground remains walkable infrastructure with paths, boundaries and semantic exits', () => {
