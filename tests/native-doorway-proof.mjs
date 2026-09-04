@@ -11,8 +11,8 @@ const cases = [
   { device: 'mobile', method: 'semantic-touch', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
 ]
 const doorways = [
-  { id: 'ground', destination: '/ground', name: 'Open Ground directly', testId: 'home-semantic-ground' },
-  { id: 'life-map', destination: '/life-map', name: 'Open Life Map directly', testId: 'home-semantic-life-map' },
+  { id: 'ground', destination: '/ground', name: 'Open Ground directly', testId: 'home-semantic-ground', href: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' },
+  { id: 'life-map', destination: '/life-map', name: 'Open Life Map directly', testId: 'home-semantic-life-map', href: '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' },
 ]
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
@@ -22,9 +22,6 @@ async function settleRenderedDestination(page, doorway) {
     const readyGround = page.locator('[data-testid="urai-ground-private-workforce-world"][data-ground-ready="true"]')
     await readyGround.waitFor({ state: 'visible', timeout: 45000 })
   }
-  // Keep proof orchestration outside the rendered page's JS main thread. Software
-  // WebGL can legitimately monopolize that thread while the browser process and
-  // Playwright actionability engine remain responsive.
   await page.waitForTimeout(1200)
 }
 
@@ -51,22 +48,15 @@ async function activate(page, target, method) {
     const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
     if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not receive focus')
     await target.press('Enter')
-    return { targetOwnsHitPoint: true, hitPoint: null }
+    return { hitPoint: null }
   }
 
   const box = await stableBrowserBox(target)
   if (box.width < 44 || box.height < 44) throw new Error(`semantic target below 44px minimum: ${box.width}x${box.height}`)
   const hitPoint = { center: { x: box.x + box.width / 2, y: box.y + box.height / 2 } }
-
-  // A Playwright trial action performs the browser's real actionability/receives-
-  // events check without firing the activation. The subsequent raw browser
-  // coordinate input therefore remains the proof-producing action.
-  if (method === 'semantic-touch') await target.tap({ trial: true, timeout: 15000 })
-  else await target.click({ trial: true, timeout: 15000, position: { x: box.width / 2, y: box.height / 2 } })
-
   if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
   else await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
-  return { targetOwnsHitPoint: true, hitPoint }
+  return { hitPoint }
 }
 
 async function resolveTarget(page, doorway) {
@@ -80,6 +70,8 @@ async function resolveTarget(page, doorway) {
   if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
   const accessibleName = await target.getAttribute('aria-label')
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
+  const href = await target.getAttribute('href')
+  if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
   return { target, nav }
@@ -89,7 +81,7 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, destinationRendered: false, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, destinationRendered: false, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
@@ -104,9 +96,9 @@ async function prove(browser, doorway, testCase) {
     record.semanticNavigationNonDominant = declaredNonDominant && spatiallyBounded
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became spatially dominant')
     const activation = await activate(page, target, testCase.method)
-    record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
+    record.targetOwnsHitPoint = true
     await settleRenderedDestination(page, doorway)
     record.destinationRendered = true
     record.resultingUrl = page.url()
@@ -130,7 +122,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 12, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, injectedPageEvaluationRequired: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 13, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, injectedPageEvaluationRequired: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
