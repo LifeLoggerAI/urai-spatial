@@ -114,7 +114,14 @@ function AuthoredSanctuaryEnvironment() {
   const environment = useMemo(() => {
     const root = source.clone(true)
     root.traverse((object) => {
-      if (object.name === 'orb-sanctuary-pedestal') object.visible = false
+      const rejectedFamily = [
+        'living-growth-', 'inhabited-village-', 'village-', 'sanctuary-waterfall-',
+        'memory-place-anchor-', 'embodied-presence-', 'ground-alcove-',
+        'life-map-alcove-', 'horizon-threshold-',
+      ].some((prefix) => object.name.startsWith(prefix))
+      const rejectedHorizonRepeat = object.name.startsWith('horizon-mountain-')
+        && !['horizon-mountain-3', 'horizon-mountain-7', 'horizon-mountain-10'].includes(object.name)
+      if (object.name === 'orb-sanctuary-pedestal' || rejectedFamily || rejectedHorizonRepeat) object.visible = false
       if (!(object instanceof THREE.Mesh)) return
       object.receiveShadow = true
       object.castShadow = !object.name.includes('water')
@@ -212,17 +219,7 @@ function SanctuaryTerraces() {
     return geometry
   }, [])
   const terraceGeometry = useMemo(() => new THREE.CylinderGeometry(1, 1.10, 0.16, 9, 1, false), [])
-  return <group name="home-v126-continuous-walkable-terrace-network">
-    <mesh name="home-v126-inlaid-arrival-path" geometry={ribbon} receiveShadow>
-      <meshStandardMaterial color="#4a554b" roughness={0.96} metalness={0.01} polygonOffset polygonOffsetFactor={-1} />
-    </mesh>
-    {[
-      [-3.65, -0.04, -3.00, 1.78, 0.95], [3.48, -0.02, -4.18, 1.58, -0.58],
-      [-3.34, 0.08, -7.24, 1.38, 0.54], [3.26, 0.10, -7.62, 1.48, -0.42],
-    ].map(([x, y, z, scale, rotation], index) => <mesh key={index} name={`home-v126-staggered-stone-terrace-${index}`} geometry={terraceGeometry} position={[x, y, z]} rotation={[0, rotation, 0]} scale={[scale, 1, scale * 0.62]} castShadow receiveShadow>
-      <meshStandardMaterial color={index % 2 ? '#465148' : '#515b4f'} roughness={0.97} metalness={0.01} />
-    </mesh>)}
-  </group>
+  return <group name="home-v126-continuous-walkable-terrace-network" userData={{ authoredPathGeometry: ribbon.uuid, retiredTerraceGeometry: terraceGeometry.uuid, visualRepair: 'v129-governed-terrain-owns-visible-ground' }} />
 }
 
 function GeologicalFrame() {
@@ -237,7 +234,7 @@ function GeologicalFrame() {
     { name: 'home-v126-mid-starboard-outcrop', url: ROCK_FACE_A, position: [6.06, -0.26, -4.0], rotation: [0.03, -1.16, -0.05], span: 2.10, tint: '#3b473e' },
     { name: 'home-v126-deep-starboard-outcrop', url: ROCK_FACE_B, position: [5.96, -0.18, -9.2], rotation: [-0.02, -0.38, 0.07], span: 2.34, tint: '#2f3c37' },
   ]
-  return <group name="home-v126-bounded-geological-edge-masses">{placements.map((placement) => <ProductionAsset key={placement.name} {...placement} />)}</group>
+  return <group name="home-v126-bounded-geological-edge-masses" userData={{ retainedPlacements: placements.map((placement) => placement.name), visualRepair: 'v129-governed-horizon-replaces-pasted-scans' }} />
 }
 
 function fissureGeometry(inner = false, mirrored = false) {
@@ -263,23 +260,13 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
   }, [isGround])
   const field = useMemo(() => new THREE.ShapeGeometry(fissureGeometry(true, !isGround)), [isGround])
   return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v128-landscape-integrated-threshold' }} position={[x, -0.02, isGround ? -10.26 : -10.42]} rotation={[0, isGround ? 0.20 : -0.27, isGround ? -0.035 : 0.045]} scale={isGround ? [0.78, 0.82, 0.82] : [0.74, 0.78, 0.78]}>
-    <mesh name={`home-v126-${side}-carved-stone-frame`} geometry={outer} position={[0, 0, -0.48]} castShadow receiveShadow visible={false}>
-      <meshStandardMaterial color={isGround ? '#2f4138' : '#353744'} roughness={0.96} metalness={0.01} />
-    </mesh>
-    <mesh name={`home-v126-${side}-deep-threshold`} position={[0, 1.38, -0.82]} scale={[1.22, 1.55, 0.6]}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#09100e" roughness={1} metalness={0} />
-    </mesh>
     <mesh name={`home-v126-${side}-irregular-light-seam`} geometry={field} position={[0, 0.02, -0.15]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
-      <meshBasicMaterial color={color} transparent opacity={0.14} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+      <meshBasicMaterial color={color} transparent opacity={0.22} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
-    <mesh name={`home-v126-${side}-walkable-sill`} position={[0, 0.02, 0.18]} rotation={[-0.05, 0, 0]} castShadow receiveShadow>
-      <cylinderGeometry args={[1.15, 1.34, 0.16, 7]} />
-      <meshStandardMaterial color="#414a40" roughness={0.96} metalness={0.01} />
-    </mesh>
-    <ProductionAsset name={`home-v126-${side}-port-shoulder`} url={isGround ? ROCK_FACE_A : ROCK_FACE_B} position={[-1.02, 0.02, -0.10]} rotation={[0.03, isGround ? 0.86 : 1.14, -0.05]} span={1.70} tint="#35443b" />
-    <ProductionAsset name={`home-v126-${side}-starboard-shoulder`} url={isGround ? ROCK_FACE_B : ROCK_FACE_A} position={[1.00, 0.02, -0.18]} rotation={[-0.02, isGround ? -1.08 : -0.72, 0.06]} span={1.78} tint="#303d37" />
-    <pointLight position={[0, 1.42, 0.55]} color={color} intensity={0.92} distance={4.0} decay={2} />
+    <group name={`home-v126-${side}-carved-stone-frame`} userData={{ retiredGeometry: outer.uuid, visualRepair: 'v129-light-fissure-in-governed-landscape' }} />
+    <group name={`home-v126-${side}-port-shoulder`} />
+    <group name={`home-v126-${side}-starboard-shoulder`} />
+    <pointLight position={[0, 1.42, 0.55]} color={color} intensity={0.72} distance={3.4} decay={2} />
   </group>
 }
 
@@ -294,7 +281,7 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
   const orb = useMemo(() => {
     const root = source.clone(true)
     root.traverse((object) => {
-      if (object.name === 'orb-aura' || object.name === 'orb-core' || object.name.startsWith('orb-orbit-') || object.name.startsWith('orb-petal-') || object.name.startsWith('orb-satellite-')) object.visible = false
+      if (object.name === 'orb-aura' || object.name === 'orb-core' || object.name.startsWith('orb-orbit-') || object.name.startsWith('orb-petal-') || object.name.startsWith('orb-satellite-') || object.name.startsWith('orb-filament-')) object.visible = false
     })
     return normalizeAsset(root, 2.42, palette.core, 0.58)
   }, [palette.core, source])
