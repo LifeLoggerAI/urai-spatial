@@ -45,10 +45,11 @@ test('Home keeps one capability-aware accessible fallback', () => {
 
 test('Home keeps direct semantic Ground, Orb, and Life Map navigation in the runtime boundary', () => {
   assert.match(runtime, /requestUraiWorldOrbOpen/)
-  assert.match(runtime, /href: '\/ground\/'/)
+  assert.match(runtime, /ground: \{ travelHref: '\/ground\/\?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' \}/)
+  assert.match(runtime, /lifeMap: \{ travelHref: '\/life-map\/\?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' \}/)
+  assert.match(runtime, /data-testid="home-semantic-ground" href=\{HOME_SEMANTIC_DESTINATIONS\.ground\.travelHref\}/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
-  assert.match(runtime, /href: '\/life-map\/'/)
-  assert.match(runtime, /entryPortal: 'home-ground'/)
+  assert.match(runtime, /data-testid="home-semantic-life-map" href=\{HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref\}/)
 })
 
 test('Home world preserves separate bounded cinematic ascent and reduced-motion behavior', () => {
