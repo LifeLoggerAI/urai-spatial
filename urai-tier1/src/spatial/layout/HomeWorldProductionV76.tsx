@@ -93,7 +93,7 @@ function normalizeAsset(source: THREE.Object3D, span: number, tint?: string, rou
         next.roughness = Math.max(next.roughness, roughness)
         next.metalness = Math.min(next.metalness, 0.06)
         next.envMapIntensity = 0.56
-        if (tint) next.color.lerp(new THREE.Color(tint), 0.22)
+        if (tint) next.color.lerp(new THREE.Color(tint), 0.48)
       }
       return next
     })
@@ -200,12 +200,12 @@ function GeologicalFrame() {
     // The scans are geological accents, never the architecture or the horizon.
     // Keeping every mass below eye level prevents the old pasted-cliff crop and
     // gives the same camera rig a readable sanctuary on portrait displays.
-    { name: 'home-v126-near-port-outcrop', url: ROCK_FACE_A, position: [-6.05, -0.34, 2.0], rotation: [0.04, 0.88, -0.08], span: 2.85, tint: '#35423a' },
-    { name: 'home-v126-mid-port-outcrop', url: ROCK_FACE_B, position: [-5.86, -0.28, -3.1], rotation: [-0.02, 1.22, 0.05], span: 3.45, tint: '#404b41' },
-    { name: 'home-v126-deep-port-outcrop', url: ROCK_FACE_A, position: [-5.72, -0.18, -8.8], rotation: [0.03, 0.42, -0.06], span: 3.75, tint: '#303d36' },
-    { name: 'home-v126-near-starboard-outcrop', url: ROCK_FACE_B, position: [6.06, -0.36, 1.2], rotation: [-0.03, -0.80, 0.06], span: 2.75, tint: '#3b4a41' },
-    { name: 'home-v126-mid-starboard-outcrop', url: ROCK_FACE_A, position: [5.84, -0.26, -4.0], rotation: [0.03, -1.16, -0.05], span: 3.50, tint: '#3b473e' },
-    { name: 'home-v126-deep-starboard-outcrop', url: ROCK_FACE_B, position: [5.72, -0.18, -9.2], rotation: [-0.02, -0.38, 0.07], span: 3.90, tint: '#2f3c37' },
+    { name: 'home-v126-near-port-outcrop', url: ROCK_FACE_A, position: [-6.18, -0.34, 2.0], rotation: [0.04, 0.88, -0.08], span: 1.72, tint: '#35423a' },
+    { name: 'home-v126-mid-port-outcrop', url: ROCK_FACE_B, position: [-6.08, -0.28, -3.1], rotation: [-0.02, 1.22, 0.05], span: 2.08, tint: '#404b41' },
+    { name: 'home-v126-deep-port-outcrop', url: ROCK_FACE_A, position: [-5.98, -0.18, -8.8], rotation: [0.03, 0.42, -0.06], span: 2.24, tint: '#303d36' },
+    { name: 'home-v126-near-starboard-outcrop', url: ROCK_FACE_B, position: [6.20, -0.36, 1.2], rotation: [-0.03, -0.80, 0.06], span: 1.66, tint: '#3b4a41' },
+    { name: 'home-v126-mid-starboard-outcrop', url: ROCK_FACE_A, position: [6.06, -0.26, -4.0], rotation: [0.03, -1.16, -0.05], span: 2.10, tint: '#3b473e' },
+    { name: 'home-v126-deep-starboard-outcrop', url: ROCK_FACE_B, position: [5.96, -0.18, -9.2], rotation: [-0.02, -0.38, 0.07], span: 2.34, tint: '#2f3c37' },
   ]
   return <group name="home-v126-bounded-geological-edge-masses">{placements.map((placement) => <ProductionAsset key={placement.name} {...placement} />)}</group>
 }
@@ -213,7 +213,7 @@ function GeologicalFrame() {
 function fissureGeometry(inner = false, mirrored = false) {
   const shape = new THREE.Shape()
   const points: Array<[number, number]> = inner
-    ? [[-0.38, 0], [-0.46, 0.72], [-0.32, 1.34], [-0.43, 1.96], [-0.16, 2.46], [0.08, 2.72], [0.30, 2.31], [0.27, 1.70], [0.42, 1.12], [0.35, 0.50], [0.36, 0]]
+    ? [[-0.58, 0], [-0.62, 0.72], [-0.50, 1.34], [-0.57, 1.96], [-0.25, 2.46], [0.08, 2.72], [0.42, 2.31], [0.46, 1.70], [0.60, 1.12], [0.55, 0.50], [0.56, 0]]
     : [[-1.00, 0], [-1.08, 0.66], [-0.88, 1.22], [-0.96, 1.92], [-0.55, 2.62], [-0.18, 3.15], [0.20, 3.38], [0.55, 2.82], [0.88, 2.34], [0.82, 1.60], [1.02, 0.82], [0.92, 0]]
   const oriented = mirrored ? points.map(([x, y]) => [-x, y] as [number, number]) : points
   shape.moveTo(oriented[0][0], oriented[0][1])
@@ -266,7 +266,7 @@ function ApseAndOrbCradle() {
       const angle = THREE.MathUtils.lerp(-1.18, 1.12, t)
       const x = Math.sin(angle) * 3.25
       const z = Math.cos(angle) * 1.34
-      const crown = 3.30 + Math.sin(t * Math.PI) * 0.82 + Math.sin(index * 1.73) * 0.12
+      const crown = 1.02 + Math.sin(t * Math.PI) * 0.62 + Math.sin(index * 1.73) * 0.10
       positions.push(x, 0.10, z, x, crown, z)
       const shade = low.clone().lerp(high, 0.28 + Math.sin(t * Math.PI) * 0.42)
       colors.push(low.r, low.g, low.b, shade.r, shade.g, shade.b)
@@ -292,7 +292,7 @@ function ApseAndOrbCradle() {
     <mesh name="home-v127-continuous-curved-apse" geometry={apseWall} receiveShadow>
       <meshStandardMaterial vertexColors roughness={0.98} metalness={0.01} side={THREE.DoubleSide} />
     </mesh>
-    {[-2.48, -1.38, 1.18, 2.36].map((x, index) => <mesh key={x} name={`home-v127-staggered-apse-fin-${index}`} position={[x, 1.82 + (index % 2) * 0.22, 0.54 + index * 0.09]} rotation={[0, x < 0 ? -0.20 : 0.20, x < 0 ? -0.12 : 0.12]} scale={[0.14, 1.78 - index * 0.08, 0.34]} castShadow receiveShadow>
+    {[-2.48, -1.38, 1.18, 2.36].map((x, index) => <mesh key={x} name={`home-v127-staggered-apse-fin-${index}`} position={[x, 1.62 + (index % 2) * 0.18, 0.54 + index * 0.09]} rotation={[0, x < 0 ? -0.20 : 0.20, x < 0 ? -0.14 : 0.14]} scale={[0.11, 1.42 - index * 0.06, 0.26]} castShadow receiveShadow>
       <cylinderGeometry args={[1, 1.22, 1, 7]} />
       <meshStandardMaterial color={index % 2 ? '#56665b' : '#46564d'} roughness={0.84} metalness={0.05} />
     </mesh>)}
@@ -302,7 +302,7 @@ function ApseAndOrbCradle() {
     <mesh name="home-v126-starboard-load-arm" geometry={cradleStarboard} position={[0, 0, 0.48]} castShadow>
       <meshStandardMaterial color="#69776d" roughness={0.60} metalness={0.24} />
     </mesh>
-    <mesh name="home-v127-cantilevered-apse-crosshead" position={[-0.18, 3.42, 0.50]} rotation={[0, 0, -0.055]} scale={[1.42, 0.12, 0.18]} castShadow receiveShadow>
+    <mesh name="home-v127-cantilevered-apse-crosshead" position={[-0.28, 3.02, 0.50]} rotation={[0, 0, -0.075]} scale={[1.10, 0.095, 0.14]} castShadow receiveShadow>
       <cylinderGeometry args={[1, 1.08, 1, 7]} />
       <meshStandardMaterial color="#526158" roughness={0.68} metalness={0.18} />
     </mesh>
@@ -337,12 +337,12 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return
     const t = clock.getElapsedTime()
-    group.current.position.y = Math.sin(t * (state === 'speaking' ? 1.55 : 0.74)) * 0.065
+    group.current.position.y = ORB.y + Math.sin(t * (state === 'speaking' ? 1.55 : 0.74)) * 0.065
     group.current.rotation.y = Math.sin(t * 0.18) * 0.075
   })
 
   return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }}>
-    <primitive object={orb} position={[0, -1.20, 0]} scale={[1.82, 1.82, 1.82]} />
+    <primitive object={orb} position={[0, -1.20, 0]} scale={[1.34, 1.34, 1.34]} />
     <points name="home-v126-orb-memory-motes" geometry={moteGeometry}>
       <pointsMaterial color={palette.accent} size={palette.moteSize} transparent opacity={0.60} depthWrite={false} sizeAttenuation />
     </points>
