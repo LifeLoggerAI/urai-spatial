@@ -286,7 +286,43 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
 }
 
 function ApseAndOrbCradle() {
-  return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v128-governed-mirror-basin-integration', loadPath: 'landscape-basin-to-orb' }} />
+  const branches = useMemo(() => [
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.72, 0.02, 0.18), new THREE.Vector3(-1.36, 0.58, 0.10), new THREE.Vector3(-0.92, 1.02, 0.04), new THREE.Vector3(-0.58, 1.36, 0),
+    ]), 22, 0.075, 6, false),
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(1.48, 0.02, 0.10), new THREE.Vector3(1.18, 0.64, 0.18), new THREE.Vector3(0.82, 1.10, 0.10), new THREE.Vector3(0.52, 1.48, 0),
+    ]), 22, 0.072, 6, false),
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.68, 0.02, -0.72), new THREE.Vector3(0.46, 0.72, -0.52), new THREE.Vector3(0.18, 1.46, -0.30), new THREE.Vector3(-0.08, 1.90, -0.10),
+    ]), 26, 0.055, 6, false),
+  ], [])
+  return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v131-asymmetric-basin-root-cradle', loadPath: 'three-grounded-branches-to-memory-swarm' }} position={[ORB.x, 0.04, ORB.z]}>
+    {branches.map((geometry, index) => <mesh key={index} name={`home-v131-grounded-cradle-branch-${index}`} geometry={geometry} castShadow receiveShadow>
+      <meshStandardMaterial color={index === 2 ? '#71877c' : '#4b5e55'} roughness={0.70} metalness={0.18} />
+    </mesh>)}
+  </group>
+}
+
+function ArrivalSignalPath({ reducedMotion }: { reducedMotion: boolean }) {
+  const geometry = useMemo(() => {
+    const positions: number[] = []
+    for (let index = 0; index < 130; index += 1) {
+      const t = index / 129
+      const z = 4.8 - t * 11.55
+      const center = Math.sin(t * Math.PI * 1.45) * 0.32 - t * 0.16
+      const offset = (((index * 19) % 17) / 16 - 0.5) * (0.10 + t * 0.06)
+      positions.push(center + offset, -0.01 + t * 0.22, z)
+    }
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return result
+  }, [])
+  const path = useRef<THREE.Points>(null)
+  useFrame((_, delta) => { if (path.current && !reducedMotion) path.current.rotation.y += delta * 0.0018 })
+  return <points ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry}>
+    <pointsMaterial color="#86aa98" size={0.052} transparent opacity={0.64} depthWrite={false} sizeAttenuation toneMapped={false} />
+  </points>
 }
 
 function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
@@ -324,10 +360,10 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
 
   return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }}>
     <primitive object={orb} position={[0, -1.08, 0.16]} scale={[1.50, 1.50, 1.50]} />
-    <points name="home-v126-orb-memory-motes" geometry={moteGeometry}>
+    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} position={[0, -0.66, 0]}>
       <pointsMaterial color={palette.core} size={palette.moteSize * 1.18} transparent opacity={0.82} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
-    <points name="home-v130-orb-inner-memory-swarm" geometry={moteGeometry} scale={[0.58, 0.64, 0.58]} rotation={[0.22, 0.54, -0.12]}>
+    <points name="home-v130-orb-inner-memory-swarm" geometry={moteGeometry} position={[0, -0.66, 0]} scale={[0.58, 0.64, 0.58]} rotation={[0.22, 0.54, -0.12]}>
       <pointsMaterial color={palette.accent} size={palette.moteSize * 0.82} transparent opacity={0.72} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
     <mesh name="home-v126-orb-generous-hit-target">
@@ -377,6 +413,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <FramedFissure side="ground" onActivate={onGround} />
     <FramedFissure side="life-map" onActivate={onLifeMap} />
     <ApseAndOrbCradle />
+    <ArrivalSignalPath reducedMotion={reducedMotion} />
     <LivingOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
     <AtmosphericDepth reducedMotion={reducedMotion} />
     <ambientLight intensity={0.46} color="#d5e2db" />
