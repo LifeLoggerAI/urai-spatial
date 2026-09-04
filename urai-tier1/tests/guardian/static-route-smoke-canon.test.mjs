@@ -35,7 +35,7 @@ const redirectAliases = [
   ['src/app/spatial/life-map/page.tsx', '/life-map?from=spatial-life-map'],
   ['src/app/spatial/life-map-r3f/page.tsx', '/life-map?from=spatial-life-map-r3f'],
   ['src/app/spatial/life-map-orbit/page.tsx', '/life-map?from=spatial-life-map-orbit'],
-  ['src/app/privacy/page.tsx', '/privacy-controls?from=privacy'],
+  ['src/app/privacy/page.tsx', '/privacy-controls/?from=privacy'],
 ]
 
 for (const [file, destination] of redirectAliases) {
