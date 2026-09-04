@@ -34,12 +34,13 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   assert.doesNotMatch(kernel, /requestPointerLock|pointerlockchange|sprint|jump|crouch/i)
 })
 
-test('Home keeps one V70 Canvas owner while V125 owns the visible sanctuary art', () => {
+test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art', () => {
   has(homeEntry, 'HomeWorldProductionV70 as HomeWorldProduction')
   has(assetHome, 'data-home-canvas-owner="home-world-production-v70-single-authority"')
   has(assetHome, 'data-home-v125-retained-pixel-rebuild="active"')
-  has(assetHome, "data-home-v125-art-layer', 'single-canvas-sculpted-canyon-natural-fissures-prismatic-orb")
-  has(assetHome, "data-home-visual-repair', 'v125-sculpted-canyon-natural-fissures-state-readable-orb")
+  has(assetHome, 'data-home-v126-retained-pixel-rebuild="active"')
+  has(assetHome, "data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse")
+  has(assetHome, "data-home-visual-repair', 'v126-bounded-geology-continuous-ground-framed-fissures-integrated-orb")
   has(homeRuntime3d, 'HomeWorldProductionV70')
   has(homeRuntime3d, '<HomeV76Sanctuary')
   has(homeRuntime3d, 'data-home-primary-owner="asset-driven"')
@@ -58,23 +59,27 @@ test('Home keeps one V70 Canvas owner while V125 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V125 removes slab-and-twin-arch staging while preserving governed Orb identity', () => {
+test('V126 removes scan-owned staging while preserving governed Orb identity and spatial gates', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
+    'function SanctuaryTerraces(',
+    'home-v126-continuous-walkable-terrace-network',
     'function GeologicalFrame(',
-    'home-v125-asymmetric-geological-frame',
-    'function NaturalFissure(',
-    'home-v125-${side}-natural-fissure',
+    'home-v126-bounded-geological-edge-masses',
+    'function FramedFissure(',
+    'home-v126-${side}-framed-fissure',
+    'function ApseAndOrbCradle(',
+    'home-v126-layered-apse-orb-cradle',
     'function LivingOrb(',
-    'home-v125-living-orb-presence',
-    'home-v125-orb-memory-motes',
+    'home-v126-apse-integrated-orb',
+    'home-v126-orb-memory-motes',
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
-    'v125-sculpted-canyon-natural-fissures-state-readable-orb',
+    'v126-ground-owned-sanctuary-framed-fissures-integrated-orb-apse',
   ]) has(homeArt, marker)
-  assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|TerracedGround|home-v124-authored-asymmetric-landform|home-v76-apse-embedded-orb-relic-machine/)
+  assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
   assert.match(homeArt, /<primitive object=\{orb\}/)
   assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)

@@ -19,7 +19,7 @@ const groundGraph = `${groundOwner}\n${groundModel}\n${atmosphereCss}`
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is one coherent Sacred-Tech 3D environment with V125 visible art and governed identity', () => {
+test('Home is one coherent Sacred-Tech 3D environment with V126 visible art and governed identity', () => {
   for (const marker of [
     'AssetDrivenHomeWorld','HomeWorldProduction','data-home-primary-owner="asset-driven"',
     'data-home-visual-ownership="single-canvas-three-dimensional-geometry"','data-home-desktop-mobile-world="same-scene"',
@@ -27,14 +27,14 @@ test('Home is one coherent Sacred-Tech 3D environment with V125 visible art and 
     'data-home-pointer-lock="false"','data-testid="urai-home-webgl-orb"','data-testid="urai-home-embodied-avatar"',
     'home-authored-terrain','home-sanctuary-pavilion','stepEmbodiedMotion','useMovementInput','MobileMovementPad',
   ]) has(homeGraph, marker)
-  has(assetHome, "data-home-v125-art-layer', 'single-canvas-sculpted-canyon-natural-fissures-prismatic-orb")
-  has(assetHome, "data-home-physical-base', 'sculpted-geological-canyon-natural-fissures-governed-orb")
+  has(assetHome, "data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse")
+  has(assetHome, "data-home-physical-base', 'continuous-sculpted-ground-staggered-terraces-layered-apse")
   for (const marker of [
     "const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'",
     "const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'",
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
-    'function SculptedCanyonGround(','function GeologicalFrame(','function NaturalFissure(','function LivingOrb(',
-    'home-v125-sculpted-canyon-ground','home-v125-asymmetric-geological-frame','home-v125-orb-memory-motes',
+    'function SculptedCanyonGround(','function GeologicalFrame(','function FramedFissure(','function LivingOrb(',
+    'home-v125-sculpted-canyon-ground','home-v126-bounded-geological-edge-masses','home-v126-orb-memory-motes','home-v126-layered-apse-orb-cradle',
   ]) has(homeArt, marker)
   assert.match(homeEntry, /HomeWorldProductionV70 as HomeWorldProduction/)
   assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)

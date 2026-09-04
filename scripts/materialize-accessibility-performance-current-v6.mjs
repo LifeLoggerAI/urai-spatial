@@ -20,10 +20,66 @@ async function transformFile(path, transform) {
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => replaceExact(
   input,
   "    await expect(home).toHaveAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')",
-  "    await expect(home).toHaveAttribute('data-home-animation-owner', 'v93-dimensional-governed-sanctuary')",
+  "    await expect(home).toHaveAttribute('data-home-animation-owner', 'v126-ground-owned-apse-sanctuary')",
   1,
-  'current V93 Home animation owner',
+  'current V126 Home animation owner',
 ))
+
+await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {
+  let source = replaceExact(
+    input,
+    "    await expect(direct.getByRole('button', { name: 'Open Ground directly' })).toBeVisible()",
+    "    await expect(direct.getByRole('link', { name: 'Open Ground directly' })).toBeVisible()",
+    1,
+    'current native Ground destination role',
+  )
+  source = replaceExact(
+    source,
+    "    await expect(direct.getByRole('button', { name: 'Open Life Map directly' })).toBeVisible()",
+    "    await expect(direct.getByRole('link', { name: 'Open Life Map directly' })).toBeVisible()",
+    1,
+    'current native Life Map destination role',
+  )
+  source = replaceExact(
+    source,
+    `    await expect(direct.getByRole('button')).toHaveCount(3)
+    for (const name of [/Open URAI Orb companion/i, /Open Ground directly/i, /Open Life Map directly/i]) {
+      const target = direct.getByRole('button', { name })
+      await target.evaluate((element: HTMLElement) => element.focus())
+      await expect(target).toBeFocused()
+    }`,
+    `    await expect(direct.locator('button, a[href]')).toHaveCount(3)
+    for (const target of [
+      direct.getByRole('button', { name: /Open URAI Orb companion/i }),
+      direct.getByRole('link', { name: /Open Ground directly/i }),
+      direct.getByRole('link', { name: /Open Life Map directly/i }),
+    ]) {
+      await target.evaluate((element: HTMLElement) => element.focus())
+      await expect(target).toBeFocused()
+    }`,
+    1,
+    'current mixed native semantic destination roles',
+  )
+  return source
+})
+
+await transformFile('urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts', (input) => {
+  let source = replaceExact(
+    input,
+    "    await expect(navigation.getByRole('button', { name: 'Open Ground directly', exact: true })).toBeVisible()",
+    "    await expect(navigation.getByRole('link', { name: 'Open Ground directly', exact: true })).toBeVisible()",
+    1,
+    'visual native Ground destination role',
+  )
+  source = replaceExact(
+    source,
+    "    await expect(navigation.getByRole('button', { name: 'Open Life Map directly', exact: true })).toBeVisible()",
+    "    await expect(navigation.getByRole('link', { name: 'Open Life Map directly', exact: true })).toBeVisible()",
+    1,
+    'visual native Life Map destination role',
+  )
+  return source
+})
 
 await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts', (input) => {
   let source = replaceExact(

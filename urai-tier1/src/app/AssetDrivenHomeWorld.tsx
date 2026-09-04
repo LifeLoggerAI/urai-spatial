@@ -62,15 +62,17 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v76-certification', 'retained-pixel-candidate-not-certified')
       world.setAttribute('data-home-v125-art-layer', 'single-canvas-sculpted-canyon-natural-fissures-prismatic-orb')
       world.setAttribute('data-home-v125-certification', 'retained-pixel-candidate-not-certified')
-      world.setAttribute('data-home-visual-repair', 'v125-sculpted-canyon-natural-fissures-state-readable-orb')
-      world.setAttribute('data-home-physical-base', 'sculpted-geological-canyon-natural-fissures-governed-orb')
-      world.setAttribute('data-home-visual-grade', 'cinematic-pbr-v125-sculpted-depth-candidate')
-      world.setAttribute('data-home-final-art-revision', 'v125-retained-pixels-pending')
-      world.setAttribute('data-home-live-art-revision', 'v125-sculpted-open-sanctuary')
-      world.setAttribute('data-home-art-certification', 'v125-retained-pixels-pending-not-certified')
-      world.setAttribute('data-home-scanned-composition', 'v125-asymmetric-geological-depth')
-      world.setAttribute('data-home-visible-production-assets', 'rock_face_01 rock_face_02 sculpted-canyon natural-fissures governed-orb-memory-motes')
-      world.setAttribute('data-home-animation-owner', 'v125-sculpted-geological-sanctuary')
+      world.setAttribute('data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse')
+      world.setAttribute('data-home-v126-certification', 'retained-pixel-candidate-not-certified')
+      world.setAttribute('data-home-visual-repair', 'v126-bounded-geology-continuous-ground-framed-fissures-integrated-orb')
+      world.setAttribute('data-home-physical-base', 'continuous-sculpted-ground-staggered-terraces-layered-apse')
+      world.setAttribute('data-home-visual-grade', 'cinematic-pbr-v126-ground-owned-depth-candidate')
+      world.setAttribute('data-home-final-art-revision', 'v126-retained-pixels-pending')
+      world.setAttribute('data-home-live-art-revision', 'v126-ground-owned-open-sanctuary')
+      world.setAttribute('data-home-art-certification', 'v126-retained-pixels-pending-not-certified')
+      world.setAttribute('data-home-scanned-composition', 'v126-bounded-lower-edge-geology')
+      world.setAttribute('data-home-visible-production-assets', 'rock_face_01 rock_face_02 sculpted-ground staggered-terraces framed-fissures governed-orb-petal-heart layered-apse')
+      world.setAttribute('data-home-animation-owner', 'v126-ground-owned-apse-sanctuary')
       synchronizeCanonicalHomeTelemetry(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
@@ -104,6 +106,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-forge-scenery="suppressed"
       data-home-v76-retained-pixel-rebuild="active"
       data-home-v125-retained-pixel-rebuild="active"
+      data-home-v126-retained-pixel-rebuild="active"
       data-home-canvas-owner="home-world-production-v70-single-authority"
       style={{ display: 'contents' }}
     >

@@ -114,17 +114,17 @@ for (const spec of cases) {
       && record.canvasCount === 1
       && record.visibleWorld === 'v122-open-authored-canyon-contained-orb'
       && record.worldCharacter === 'production-cinematic-sacred-tech'
-      && record.physicalBase === 'sculpted-geological-canyon-natural-fissures-governed-orb'
+      && record.physicalBase === 'continuous-sculpted-ground-staggered-terraces-layered-apse'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene'
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'cinematic-pbr-v125-sculpted-depth-candidate'
-      && record.artRevision === 'v125-retained-pixels-pending'
-      && record.artCertification === 'v125-retained-pixels-pending-not-certified'
+      && record.visualGrade === 'cinematic-pbr-v126-ground-owned-depth-candidate'
+      && record.artRevision === 'v126-retained-pixels-pending'
+      && record.artCertification === 'v126-retained-pixels-pending-not-certified'
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.governedIdentityAssets === 'home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb'
-      && record.visibleProductionAssets === 'rock_face_01 rock_face_02 sculpted-canyon natural-fissures governed-orb-memory-motes'
+      && record.visibleProductionAssets === 'rock_face_01 rock_face_02 sculpted-ground staggered-terraces framed-fissures governed-orb-petal-heart layered-apse'
       && record.authoredRegions?.includes('home-sanctuary-pavilion')
       && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null && record.orbState !== null

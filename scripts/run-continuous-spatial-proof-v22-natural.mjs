@@ -6,7 +6,7 @@ const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', imp
 const original = await readFile(captureUrl, 'utf8')
 
 const sourceOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const runtimeOwner = "result.animationOwner === 'v93-dimensional-governed-sanctuary'"
+const runtimeOwner = "result.animationOwner === 'v126-ground-owned-apse-sanctuary'"
 if (original.split(sourceOwner).length - 1 !== 1) {
   throw new Error('Continuous proof animation-owner contract changed')
 }

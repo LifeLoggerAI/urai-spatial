@@ -11,42 +11,46 @@ const finalizer = readFileSync(new URL('../../.github/workflows/home-finalizatio
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('V125 terrain is continuous generated geometry and not a tiled slab', () => {
+test('V126 terrain is continuous generated geometry with a readable authored path', () => {
   has(art, 'function SculptedCanyonGround(')
   has(art, 'home-v125-sculpted-canyon-ground')
+  has(art, 'function SanctuaryTerraces(')
+  has(art, 'home-v126-continuous-walkable-terrace-network')
   assert.match(art, /setAttribute\('position', new THREE\.Float32BufferAttribute\(positions, 3\)\)/)
   assert.match(art, /computeVertexNormals\(\)/)
   assert.doesNotMatch(art, /terraces\.map|home-v76-continuous-stone-floor|TerracedGround/)
 })
 
-test('V125 thresholds are natural rock fissures without ring/arch presentation', () => {
-  has(art, 'function NaturalFissure(')
-  has(art, 'home-v125-${side}-natural-fissure')
-  has(art, 'home-v125-${side}-left-bearing-rock')
-  has(art, 'home-v125-${side}-right-bearing-rock')
-  assert.doesNotMatch(art, /<ringGeometry|PortalStoneFrame|PortalRecess|threshold-lintel/)
+test('V126 thresholds are structurally framed irregular fissures without glowing rings', () => {
+  has(art, 'function FramedFissure(')
+  has(art, 'home-v126-${side}-framed-fissure')
+  has(art, 'home-v126-${side}-port-shoulder')
+  has(art, 'home-v126-${side}-starboard-shoulder')
+  assert.doesNotMatch(art, /<ringGeometry|<torusGeometry/)
 })
 
-test('V125 Orb hierarchy stays aligned with live proximity and proof telemetry', () => {
+test('V126 Orb hierarchy stays aligned with live proximity and proof telemetry', () => {
   has(art, 'function LivingOrb(')
-  has(art, 'home-v125-orb-memory-motes')
+  has(art, 'home-v126-orb-memory-motes')
+  has(art, 'home-v126-layered-apse-orb-cradle')
+  has(art, "object.name.startsWith('orb-orbit-')")
   assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.match(telemetry, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)
   assert.match(proof, /orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35/)
   assert.match(naturalProof, /orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35/)
 })
 
-test('V125 preserves exact proximity and travel gates in the unchanged V70 owner', () => {
+test('V126 preserves exact proximity and travel gates in the unchanged V70 owner', () => {
   assert.match(runtime, /\['orb', ORB, 2\.35\], \['ground', GROUND, 2\.65\], \['life-map', LIFE_MAP, 2\.65\]/)
   assert.match(runtime, /const inspectionClearance = nearby === 'orb'/)
   assert.match(runtime, /destination: 'infrastructure-hub'/)
   assert.match(runtime, /destination: 'life-map'/)
 })
 
-test('V125 finalization executes current contracts and remains explicitly uncertified pending pixels', () => {
+test('V126 finalization executes current contracts and remains explicitly uncertified pending pixels', () => {
   assert.match(finalizer, /home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /embodied-exploration-contract\.test\.mjs/)
-  has(telemetry, "data-home-v125-certification', 'retained-pixel-candidate-not-certified")
-  has(telemetry, "data-home-art-certification', 'v125-retained-pixels-pending-not-certified")
+  has(telemetry, "data-home-v126-certification', 'retained-pixel-candidate-not-certified")
+  has(telemetry, "data-home-art-certification', 'v126-retained-pixels-pending-not-certified")
   assert.doesNotMatch(`${runtime}\n${art}\n${telemetry}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })

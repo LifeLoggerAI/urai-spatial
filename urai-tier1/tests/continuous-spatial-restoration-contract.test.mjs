@@ -40,8 +40,8 @@ test('app template mounts the exact active Home production owner without certifi
   assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="v122-open-authored-canyon-contained-orb"/)
-  assert.match(homeProduction, /data-home-art-certification="v122-retained-pixels-pending-not-certified"/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-art-certification', 'v126-retained-pixels-pending-not-certified'\)/)
   assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
@@ -49,49 +49,39 @@ test('app template mounts the exact active Home production owner without certifi
   assert.doesNotMatch(template, /focus|replay/i)
 })
 
-test('V76 is one continuous single-Canvas industrial sanctuary with governed identities, contained Orb and real thresholds', () => {
+test('V126 is one continuous single-Canvas sanctuary with bounded geology, framed fissures and an integrated Orb', () => {
   for (const marker of [
     'HomeWorldProductionV70',
-    'home-entry-chamber-v1.glb',
-    'portal-ring-master-v1.glb',
     'urai-orb-avatar-v1.glb',
     'rock_face_01/asset.gltf',
     'rock_face_02/asset.gltf',
-    'modular_industrial_pipes_01/asset.gltf',
-    'industrial_caged_sconce/asset.gltf',
-    'rock_face_01_diff_1k.jpg',
-    'studio-small-08-1k.hdr',
     'data-home-primary-owner="asset-driven"',
-    'data-home-world-character="production-cinematic-sacred-tech"',
-    'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"',
     'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
     'data-home-movement="walk-keyboard-click-touch"',
-    'data-home-visual-grade="cinematic-pbr-v122-contained-orb-authored-depth-candidate"',
-    'data-home-final-art-revision="v122-authored-depth-rebuild-pending-pixels"',
-    'data-home-visible-production-assets="governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
+    'data-home-v126-retained-pixel-rebuild="active"',
+    "data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse",
+    "data-home-physical-base', 'continuous-sculpted-ground-staggered-terraces-layered-apse",
+    "data-home-visual-grade', 'cinematic-pbr-v126-ground-owned-depth-candidate",
+    "data-home-final-art-revision', 'v126-retained-pixels-pending",
+    "data-home-visible-production-assets', 'rock_face_01 rock_face_02 sculpted-ground staggered-terraces framed-fissures governed-orb-petal-heart layered-apse",
+    'function SculptedCanyonGround(',
+    'home-v125-sculpted-canyon-ground',
+    'function GeologicalFrame(',
+    'home-v126-bounded-geological-edge-masses',
+    'function FramedFissure(',
+    'home-v126-${side}-framed-fissure',
+    'function LivingOrb(',
+    'home-v126-apse-integrated-orb',
+    'home-v126-orb-memory-motes',
+    'home-v126-layered-apse-orb-cradle',
+    'home-v125-atmospheric-depth-motes',
     'home-authored-terrain',
     'home-mountain-horizon',
     'home-living-vegetation',
     'home-sanctuary-pavilion',
-    'home-v76-continuous-hand-cut-vault',
-    'home-v76-port-canted-bearing-wall',
-    'home-v76-starboard-canted-bearing-wall',
-    'home-v76-deep-concave-apse',
-    'home-v83-governed-open-sanctuary-environment',
-    'home-v83-authored-open-sanctuary',
-    'home-v83-removed-procedural-tunnel',
-    'home-v83-removed-panel-like-orb-armor',
-    'home-v76-port-integrated-service-manifold',
-    'home-v76-starboard-integrated-service-manifold',
-    'home-v76-apse-embedded-orb-relic-machine',
-    'home-ground-environmental-threshold',
-    'home-life-map-sky-lookout',
-    'home-life-map-physical-portal',
-    'v93-dimensional-governed-sanctuary',
-    'v76-single-canvas-deep-apse-sanctuary',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -102,34 +92,25 @@ test('V76 is one continuous single-Canvas industrial sanctuary with governed ide
     "frameloop={reducedMotion ? 'demand' : 'always'}",
     'cadenceTimer = window.setTimeout(renderNext, 250)',
     '<Canvas',
-  ]) assert.ok(homeGraph.includes(marker), `missing V76 Home marker: ${marker}`)
+  ]) assert.ok(homeGraph.includes(marker), `missing V126 Home marker: ${marker}`)
 
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
-  assert.match(homeProduction, /const GOVERNED_HOME = '\/assets\/urai\/generated\/models\/home-entry-chamber-v1\.glb'/)
-  assert.match(homeProduction, /const GOVERNED_PORTAL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
-  assert.match(homeProduction, /function Sanctuary\(/)
   assert.match(homeProduction, /<HomeV76Sanctuary/)
   assert.match(homeArt, /export function HomeV76Sanctuary\(/)
-  assert.match(homeProduction, /function OrbMachine\(/)
-  assert.match(homeProduction, /function OrbPanelGeometry\(/)
-  assert.match(homeProduction, /function EngineeredOrbHullGeometry\(/)
-  assert.match(homeProduction, /new THREE\.LatheGeometry\(profile, 12\)/)
-  assert.match(homeProduction, /function PortalFrame\(/)
+  assert.match(homeArt, /const GOVERNED_ORB = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
+  assert.match(homeArt, /const source = useGLTF\(GOVERNED_ORB\)\.scene/)
+  assert.match(homeArt, /<primitive object=\{orb\}/)
+  assert.match(homeArt, /<FramedFissure side="ground" onActivate=\{onGround\}/)
+  assert.match(homeArt, /<FramedFissure side="life-map" onActivate=\{onLifeMap\}/)
   assert.match(homeProduction, /function PlayerRig\(/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(homeProduction, /dpr=\{1\}/)
   assert.match(homeProduction, /shadow-mapSize-width=\{768\}/)
   assert.match(homeProduction, /yaw: yaw\.current/)
   assert.match(homeProduction, /new THREE\.BufferGeometry\(\)/)
-  assert.doesNotMatch(homeProduction, /function StoneMass\(|function Beam\(|octahedronGeometry|icosahedronGeometry|capsuleGeometry/)
-  assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_HOME\)/)
-  assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_PORTAL\)/)
-  assert.match(homeProduction, /useGLTF\.preload\(GOVERNED_ORB\)/)
-  assert.match(homeProduction, /useGLTF\.preload\(ROCK_FACE_A\)/)
-  assert.match(homeProduction, /useGLTF\.preload\(ROCK_FACE_B\)/)
-  assert.match(homeProduction, /useGLTF\.preload\(PIPE_SYSTEM\)/)
-  assert.match(homeProduction, /transmission = 0/)
+  assert.match(homeArt, /useGLTF\.preload\(GOVERNED_ORB\)/)
+  assert.match(homeArt, /useGLTF\.preload\(ROCK_FACE_A\)/)
+  assert.match(homeArt, /useGLTF\.preload\(ROCK_FACE_B\)/)
   assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)
   const traversalTimerIndex = homeProduction.indexOf('const traversalTimer = window.setTimeout(() => {')
   const closingTimerIndex = homeProduction.indexOf('closingTimer = window.setTimeout(() => {')
@@ -138,9 +119,8 @@ test('V76 is one continuous single-Canvas industrial sanctuary with governed ide
   assert.match(homeProduction, /reducedMotion \? 180 : 900/)
   assert.match(homeProduction, /reducedMotion \? 520 : 1600/)
   assert.match(homeProduction, /reducedMotion \? 500 : 1100/)
-  assert.doesNotMatch(homeProduction, /<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry/)
-  assert.doesNotMatch(homeProduction, /#37e5ff|#48dfff|#6cf4ff/i)
-  assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames/)
+  assert.doesNotMatch(homeArt, /<TerracedGround|<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry/)
+  assert.doesNotMatch(homeArt, /#37e5ff|#48dfff|#6cf4ff/i)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
   assert.match(groundGateway, /Open the ground and descend into Hidden Infrastructure/)
   assert.match(homeRuntime, /requestUraiWorldOrbOpen/)

@@ -156,9 +156,10 @@ async function capture(state, options = {}) {
     record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
     record.pointerLock = await page.evaluate(() => document.pointerLockElement === null)
     record.accessibleRuntimeText = (await owner.textContent()) || ''
-    record.semanticControls = await page.locator('.home-semantic-navigation button').evaluateAll((buttons) => buttons.map((button) => ({
-      label: button.getAttribute('aria-label'),
-      text: button.textContent,
+    record.semanticControls = await page.locator('.home-semantic-navigation [data-testid^="home-semantic-"]').evaluateAll((controls) => controls.map((control) => ({
+      label: control.getAttribute('aria-label'),
+      text: control.textContent,
+      tag: control.tagName.toLowerCase(),
     })))
     record.accessibilityPassed = record.semanticControls.length >= 3
       && record.semanticControls.some((control) => control.label === 'Open URAI Orb companion')

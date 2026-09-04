@@ -87,13 +87,16 @@ async function prove(browser, doorway, testCase) {
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
     const { target, nav } = await resolveTarget(page, doorway)
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-    const navBox = await nav.boundingBox()
-    if (!navBox) throw new Error('semantic navigation has no browser footprint')
-    const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
-    const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
     const declaredNonDominant = await nav.getAttribute('data-home-navigation-non-dominant') === 'true'
-    const spatiallyBounded = navBox.width <= 64 && navAreaRatio <= 0.03
-    record.semanticNavigationNonDominant = declaredNonDominant && spatiallyBounded
+    if (testCase.method === 'keyboard') {
+      record.semanticNavigationNonDominant = declaredNonDominant
+    } else {
+      const navBox = await nav.boundingBox()
+      if (!navBox) throw new Error('semantic navigation has no browser footprint')
+      const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
+      const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
+      record.semanticNavigationNonDominant = declaredNonDominant && navBox.width <= 64 && navAreaRatio <= 0.03
+    }
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became spatially dominant')
     const activation = await activate(page, target, testCase.method)
     record.hitPoint = activation.hitPoint

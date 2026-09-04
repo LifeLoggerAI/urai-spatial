@@ -44,12 +44,13 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=all)"
           grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' urai-tier1/src/spatial/layout/HomeWorldProduction.tsx
           grep -Fq 'function SculptedCanyonGround(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'function NaturalFissure(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'function FramedFissure(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
           grep -Fq 'function LivingOrb(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v125-sculpted-canyon-ground' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v125-asymmetric-geological-frame' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v125-orb-memory-motes' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq "data-home-art-certification', 'v125-retained-pixels-pending-not-certified"" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq 'home-v126-continuous-walkable-terrace-network' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-bounded-geological-edge-masses' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-orb-memory-motes' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-layered-apse-orb-cradle' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq "data-home-art-certification', 'v126-retained-pixels-pending-not-certified" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
           ! grep -Eq 'PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified' urai-tier1/src/app/AssetDrivenHomeWorld.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with: { version: 10.0.0, run_install: false }

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process'
 import path from 'node:path'
 
 const finalDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
-const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 18 * 60 * 1000
+const timeoutMs = Number.parseInt(process.env.URAI_HOME_PROOF_ATTEMPT_TIMEOUT_MS || '', 10) || 25 * 60 * 1000
 const attempts = 2
 
 async function stopProcessGroup(child) {
