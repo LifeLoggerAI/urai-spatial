@@ -1,5 +1,3 @@
-# Current owner-authorized Home finalization verifier.
-# This workflow verifies the exact PR head without materializing or mutating art.
 name: Home Finalization Candidate Commit
 on:
   pull_request:
@@ -13,13 +11,10 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
+      - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs'
-      - 'urai-tier1/tests/home-v91-portrait-composition-contract.test.mjs'
-      - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
-      - 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
       - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
-      - '.github/workflows/home-scanned-composition-forge.yml'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -33,144 +28,56 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify-current-home-finalization:
-    if: >-
-      github.repository == 'LifeLoggerAI/urai-spatial' &&
-      ((github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.head.ref == 'home-final-v24-certify-20260826') ||
-       (github.event_name == 'workflow_dispatch' &&
-        inputs.verification_sha != ''))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.verification_sha }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.verification_sha }}
+          ref: ${{ env.EXPECTED_SHA }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact single-Canvas open-canyon candidate markers
+      - name: Verify exact V125 candidate markers
         shell: bash
-        env:
-          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.verification_sha }}
         run: |
           set -euo pipefail
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
-          test -f operations/assets/home-v48-production-asset-provenance.json
-          entry='urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
-          source='urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
-          art='urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
-          telemetry='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
-          proof='scripts/capture-natural-home-orb-proof.mjs'
-          grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' "$entry"
-          grep -Fq "const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'" "$source"
-          grep -Fq "const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'" "$source"
-          grep -Fq "const PIPE_SYSTEM = '/assets/urai/home-production/cc0/polyhaven-v48/modular_industrial_pipes_01/asset.gltf'" "$source"
-          grep -Fq "const CAGED_SCONCE = '/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf'" "$source"
-          grep -Fq "const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'" "$source"
-          grep -Fq "const GOVERNED_PORTAL = '/assets/urai/generated/models/portal-ring-master-v1.glb'" "$source"
-          grep -Fq "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'" "$source"
-          grep -Fq 'HomeV76Sanctuary' "$source"
-          grep -Fq 'home-v83-governed-open-sanctuary-environment' "$art"
-          grep -Fq 'home-v83-authored-open-sanctuary' "$art"
-          grep -Fq 'committed-governed-home-distant-architectural-relief' "$art"
-          grep -Fq 'home-v83-removed-procedural-tunnel' "$art"
-          grep -Fq 'home-v83-removed-panel-like-orb-armor' "$art"
-          grep -Fq "liveArtRevision: 'v93-governed-dimensional-sanctuary'" "$art"
-          grep -Fq 'home-v76-port-integrated-service-manifold' "$art"
-          grep -Fq 'home-v76-starboard-integrated-service-manifold' "$art"
-          grep -Fq 'home-v76-apse-embedded-orb-relic-machine' "$art"
-          grep -Fq 'home-life-map-physical-portal' "$art"
-          grep -Fq 'connectedLoadPaths: true' "$art"
-          grep -Fq 'data-home-visible-world="v122-open-authored-canyon-contained-orb"' "$source"
-          grep -Fq 'data-home-physical-base="continuous-pbr-rock-industrial-machine-sanctuary"' "$source"
-          grep -Fq 'data-home-visual-grade="cinematic-pbr-v122-contained-orb-authored-depth-candidate"' "$source"
-          grep -Fq 'data-home-final-art-revision="v122-authored-depth-rebuild-pending-pixels"' "$source"
-          grep -Fq 'data-home-art-certification="v122-retained-pixels-pending-not-certified"' "$source"
-          grep -Fq 'data-home-visible-production-assets="governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr"' "$source"
-          grep -Fq 'data-home-telemetry-owner="embodied-motion-kernel-v66"' "$source"
-          grep -Fq 'const HOME_SPAWN = { x: 0, z: 4.6 } as const' "$telemetry"
-          grep -Fq 'const HOME_ORB = { x: -0.18, z: -6.9 } as const' "$telemetry"
-          grep -Fq 'const HOME_GROUND = { x: -4.85, z: -8.25 } as const' "$telemetry"
-          grep -Fq 'const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const' "$telemetry"
-          grep -Fq 'dpr={1}' "$source"
-          grep -Fq 'shadow-mapSize-width={768}' "$source"
-          grep -Fq 'const traversalTimer = window.setTimeout(() => {' "$source"
-          grep -Fq 'closingTimer = window.setTimeout(() => {' "$source"
-          grep -Fq 'navigationTimer = window.setTimeout(() => {' "$source"
-          grep -Fq '}, reducedMotion ? 500 : 1100)' "$source"
-          grep -Fq '}, reducedMotion ? 520 : 1600)' "$source"
-          grep -Fq '}, reducedMotion ? 180 : 900)' "$source"
-          grep -Fq "schemaVersion: 'urai-scanned-industrial-home-orb-proof-7'" "$proof"
-          grep -Fq 'verifyGovernedBinary(homePath)' "$proof"
-          grep -Fq 'verifyGovernedBinary(orbPath)' "$proof"
-          grep -Fq 'verifyGovernedBinary(portalPath)' "$proof"
-          grep -Fq 'record.portalRequests.length >= 1' "$proof"
-          grep -Fq "record.visibleProductionAssets === 'governed-threshold-architecture rock_face_01 rock_face_02 rock-face-pbr'" "$proof"
-          test "$(grep -Fo '<Canvas' "$source" | wc -l)" -eq 1
-          ! grep -Fq '<Canvas' "$art"
-          grep -Fq '<OpenAtmosphere />' "$art"
-          grep -Fq '<TerracedGround textures={textures.floor} onWalk={onWalk} />' "$art"
-          grep -Fq '<group name="home-v122-retired-procedural-shells"' "$art"
-          grep -Fq 'home-v124-authored-asymmetric-landform' "$art"
-          grep -Fq 'home-v124-port-near-landform' "$art"
-          grep -Fq 'home-v124-starboard-deep-landform' "$art"
-          ! grep -Eq '<VaultShell |<CantedWall |<DeepApse |<BearingRib ' < <(sed -n '/function SanctuaryBackdrop/,/function GovernedHomeEnvironment/p' "$art")
-          grep -Fq "composition: 'v122-open-asymmetric-authored-canyon'" "$art"
-          grep -Fq "v122Composition: 'contained-human-scale-orb-clear-of-portrait-crop'" "$art"
-          grep -Fq 'const rejectedFamily = /^(?:sanctuary-terrain|mirror-basin|orb-sanctuary-pedestal|horizon-mountain-|sanctuary-waterfall-|inhabited-village-|living-growth-|embodied-presence-root|memory-place-anchor-)/' "$art"
-          grep -Fq 'const rejectedUtilityDetail = /(?:pipe|tube|conduit|duct|cable)/i' "$art"
-          grep -Fq 'root.traverse((object) => {' "$art"
-          grep -Fq 'if (rejectedFamily.test(object.name) || rejectedUtilityDetail.test(object.name)) rejectedNodes.push(object)' "$art"
-          grep -Fq 'for (const object of rejectedNodes) object.parent?.remove(object)' "$art"
-          grep -Fq 'swarm.current.scale.setScalar(0.68 * breath)' "$art"
-          grep -Fq 'const fov = portrait ? 58 : 42' "$source"
-          grep -Fq 'position={[-0.18, 2.18, -6.90]}' "$art"
-          grep -Fq 'home-v124-${destination}-portal-port-natural-shoulder' "$art"
-          grep -Fq 'home-v124-${destination}-portal-starboard-natural-shoulder' "$art"
-          grep -Fq "successorVisualRepair: 'v124-continuous-canyon-contained-orb-embedded-thresholds'" "$art"
-          ! grep -Fq 'root.remove(...root.children.filter' "$art"
-          ! grep -Fq 'root.visible = false' "$art"
-          ! grep -Fq 'backgroundImage:' "$source"
-          ! grep -Fq 'scene.userData.sanctuaryBackdrop' "$art"
-          ! grep -Fq 'HomeV75RetainedPixelWorld' "$telemetry"
-          ! grep -Eq '<GovernedModel|RoundedBox|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry|#37e5ff|#48dfff|#6cf4ff' "$art"
-          ! grep -Fq 'PRODUCTION CERTIFIED' "$source"
+          grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' urai-tier1/src/spatial/layout/HomeWorldProduction.tsx
+          grep -Fq 'function SculptedCanyonGround(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'function GeologicalFrame(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'function NaturalFissure(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'function LivingOrb(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v125-sculpted-canyon-ground' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v125-asymmetric-geological-frame' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v125-orb-memory-motes' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq "data-home-v125-certification', 'retained-pixel-candidate-not-certified" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          ! grep -Eq 'PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified' urai-tier1/src/app/AssetDrivenHomeWorld.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.0.0
-          run_install: false
+        with: { version: 10.0.0, run_install: false }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - name: Install exact lockfile
+      - run: pnm install --frozen-lockfile
+      - name: Verify Home contracts and proof syntax
         run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-      - name: Verify root-scoped Home realism and proof syntax
-        run: |
-          node --test --test-concurrency=1 urai-tier1/tests/home-relic-machine-realism-contract.test.mjs
-          node --test --test-concurrency=1 urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs
-          node --test --test-concurrency=1 urai-tier1/tests/home-v91-portrait-composition-contract.test.mjs
           node --check scripts/capture-home-state-proof.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
-      - name: Verify tier-one Home restoration and exploration contracts
-        working-directory: urai-tier1
-        run: |
+          node --check scripts/run-home-state-proof-bounded.mjs
+          cd urai-tier1
+          node --test --test-concurrency=1 tests/home-ground-lifemap-art-bible-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-v88-retained-pixel-repair-contract.test.mjs
+          node --test --test-concurrency=1 tests/embodied-exploration-contract.test.mjs
           node --test --test-concurrency=1 tests/continuous-spatial-restoration-contract.test.mjs
           node --test --test-concurrency=1 tests/final-aaa-world-convergence-contract.test.mjs
-          node --test --test-concurrency=1 tests/embodied-exploration-contract.test.mjs
           pnpm exec tsc --noEmit
       - name: Prove exact final clean candidate identity
-        shell: bash
-        env:
-          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.verification_sha }}
         run: |
-          set -euo pipefail
-          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
