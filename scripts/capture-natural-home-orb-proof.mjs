@@ -123,6 +123,9 @@ for (const spec of cases) {
     record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const semanticNav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await semanticNav.getByRole('button').count()
+    record.semanticLinks = await semanticNav.getByRole('link').count()
+    record.semanticGroundHref = await semanticNav.getByTestId('home-semantic-ground').getAttribute('href')
+    record.semanticLifeMapHref = await semanticNav.getByTestId('home-semantic-life-map').getAttribute('href')
     record.semanticOwner = await semanticNav.getAttribute('data-home-navigation-owner')
     record.semanticNonDominant = await semanticNav.getAttribute('data-home-navigation-non-dominant')
     record.semanticOpacity = await page.evaluate(() => {
@@ -160,7 +163,10 @@ for (const spec of cases) {
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1
       && record.embodimentMarkers === 1
-      && record.semanticButtons === 3
+      && record.semanticButtons === 1
+      && record.semanticLinks === 2
+      && record.semanticGroundHref === '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'
+      && record.semanticLifeMapHref === '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
       && record.semanticOwner === 'runtime-boundary'
       && record.semanticNonDominant === 'true'
       && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
