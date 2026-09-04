@@ -33,6 +33,14 @@ const authorityRoutes = [
   ['contact', 'src/app/contact/page.tsx'],
 ]
 
+const indexedProductRoutes = [
+  ['ground', 'src/app/ground/page.tsx'],
+  ['focus', 'src/app/focus/page.tsx'],
+  ['passport', 'src/app/passport/page.tsx'],
+  ['privacy-controls', 'src/app/privacy-controls/page.tsx'],
+  ['status', 'src/app/status/page.tsx'],
+]
+
 test('root metadata denies indexing by default and production public routes opt in explicitly', () => {
   const rootOpenGraph = layout.match(/openGraph:\s*\{[\s\S]*?\n  \},\n  twitter:/)?.[0] ?? ''
   assert.match(layout, /robots:\s*\{\s*index: false,\s*follow: false,/)
@@ -69,6 +77,23 @@ test('each authority page owns its canonical Open Graph URL', () => {
   }
 })
 
+test('indexable product routes own route-specific Open Graph and Twitter metadata', () => {
+  for (const [route, sourcePath] of indexedProductRoutes) {
+    const source = read(sourcePath)
+    assert.ok(source.includes(`alternates: { canonical: 'https://urai.app/${route}/' }`), `missing canonical URL for /${route}`)
+    const openGraph = source.match(/openGraph:\s*\{[\s\S]*?\n  \},/)?.[0] ?? ''
+    const twitter = source.match(/twitter:\s*\{[\s\S]*?\n  \},/)?.[0] ?? ''
+    assert.ok(openGraph.includes(`url: 'https://urai.app/${route}/'`), `missing Open Graph URL for /${route}`)
+    assert.match(openGraph, /title,/, `missing route-owned Open Graph title for /${route}`)
+    assert.match(openGraph, /description,/, `missing route-owned Open Graph description for /${route}`)
+    assert.match(openGraph, /siteName: 'UrAi'/, `missing Open Graph site name for /${route}`)
+    assert.match(twitter, /card: 'summary'/, `missing safe route-owned Twitter card for /${route}`)
+    assert.match(twitter, /title,/, `missing route-owned Twitter title for /${route}`)
+    assert.match(twitter, /description,/, `missing route-owned Twitter description for /${route}`)
+    assert.doesNotMatch(twitter, /summary_large_image/, `/${route} must not inherit the homepage large-image card without a route-owned image`)
+  }
+})
+
 test('sitemap has one Home URL, excludes redirect aliases, and matches exported trailing-slash canonicals', () => {
   const entries = evaluateSitemap()
   const urls = entries.map((entry) => entry.url)
@@ -87,7 +112,7 @@ test('privacy compatibility alias stays noindex and points at the canonical cont
 
 test('privacy controls and llms discovery links publish final canonical URLs', () => {
   assert.match(privacyControls, /alternates: \{ canonical: 'https:\/\/urai\.app\/privacy-controls\/' \}/)
-  assert.match(privacyControls, /openGraph: \{ url: 'https:\/\/urai\.app\/privacy-controls\/' \}/)
+  assert.match(privacyControls, /openGraph:\s*\{[\s\S]*url: 'https:\/\/urai\.app\/privacy-controls\/'/)
 
   for (const route of ['about/', 'about/labs/', 'founder/', 'ecosystem/', 'press/', 'status/']) {
     assert.ok(llms.includes(`https://urai.app/${route}`), `llms.txt missing canonical URL for /${route}`)
