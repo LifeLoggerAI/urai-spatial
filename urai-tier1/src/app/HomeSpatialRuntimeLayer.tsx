@@ -166,7 +166,26 @@ export default function HomeSpatialRuntimeLayer() {
     }
   }, [homeRuntimeActive, recoveryKey, rendererState])
 
-  if (!homeRouteActive || webglAvailable === null) return null
+  if (!homeRouteActive) return null
+
+  if (webglAvailable === null) {
+    return (
+      <section
+        className="urai-home-spatial-runtime-layer"
+        data-testid="urai-home-webgl-detecting"
+        data-webgl-state="detecting"
+        data-urai-home-runtime="accessible-boundary-while-detecting-webgl"
+        data-webgl-ready="recovering"
+        aria-label="URAI Home startup"
+      >
+        <div role="status" aria-live="polite" className="sr-only">
+          Detecting spatial rendering support. Accessible Home controls remain available.
+        </div>
+        <HomeSemanticNavigation />
+        <style jsx global>{runtimeStyles}</style>
+      </section>
+    )
+  }
 
   if (webglAvailable === false || rendererState === 'failed') {
     const unavailable = webglAvailable === false
