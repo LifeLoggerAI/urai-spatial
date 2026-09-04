@@ -8,6 +8,7 @@ import type { OrbState } from '@/app/home/orbStateController'
 
 const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'
 const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'
+const GOVERNED_HOME = '/assets/urai/generated/models/home-entry-chamber-v1.glb'
 const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 
 const LEGACY_CONTRACT_MARKERS = [
@@ -108,6 +109,35 @@ function ProductionAsset({ url, position, rotation = [0, 0, 0], span, tint, roug
   return <group name={name} position={position} rotation={rotation}><primitive object={asset} /></group>
 }
 
+function AuthoredSanctuaryEnvironment() {
+  const source = useGLTF(GOVERNED_HOME).scene
+  const environment = useMemo(() => {
+    const root = source.clone(true)
+    root.traverse((object) => {
+      if (object.name === 'orb-sanctuary-pedestal') object.visible = false
+      if (!(object instanceof THREE.Mesh)) return
+      object.receiveShadow = true
+      object.castShadow = !object.name.includes('water')
+      const originals = Array.isArray(object.material) ? object.material : [object.material]
+      const materials = originals.map((material) => {
+        const next = material.clone()
+        if (next instanceof THREE.MeshStandardMaterial) {
+          next.roughness = Math.max(next.roughness, 0.76)
+          next.metalness = Math.min(next.metalness, 0.08)
+          next.envMapIntensity = 0.62
+          if (!object.name.includes('water')) next.color.lerp(new THREE.Color('#60776b'), 0.10)
+        }
+        return next
+      })
+      object.material = Array.isArray(object.material) ? materials : materials[0]
+    })
+    return root
+  }, [source])
+  return <group name="home-v128-governed-landscape-sanctuary" position={[0, -0.24, -6.20]} scale={[0.92, 0.92, 0.92]}>
+    <primitive object={environment} />
+  </group>
+}
+
 function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
   const geometry = useMemo(() => {
     const xSegments = 58
@@ -115,8 +145,8 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
     const positions: number[] = []
     const colors: number[] = []
     const indices: number[] = []
-    const shadow = new THREE.Color('#131c18')
-    const moss = new THREE.Color('#52685a')
+    const shadow = new THREE.Color('#30372f')
+    const moss = new THREE.Color('#657064')
     for (let zi = 0; zi <= zSegments; zi += 1) {
       const tz = zi / zSegments
       const z = 6.25 - tz * 18.45
@@ -131,7 +161,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
         const descent = tz * 0.39
         const y = -0.22 + descent + edgeShelf + fractured * (1 - walkingChannel * 0.84) + channelRelief
         positions.push(x, y, z)
-        const shade = THREE.MathUtils.clamp(0.10 + y * 0.28 + (1 - tz) * 0.13 + Math.sin(x * 2.4 + z * 1.7) * 0.055, 0, 1)
+        const shade = THREE.MathUtils.clamp(0.16 + y * 0.20 + (1 - tz) * 0.08, 0, 1)
         const color = shadow.clone().lerp(moss, shade)
         colors.push(color.r, color.g, color.b)
       }
@@ -154,7 +184,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
   }, [])
 
   return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} receiveShadow onClick={onWalk}>
-    <meshStandardMaterial vertexColors roughness={0.97} metalness={0} envMapIntensity={0.48} />
+    <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
   </mesh>
 }
 
@@ -232,8 +262,8 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     return new THREE.ExtrudeGeometry(frame, { depth: 0.78, bevelEnabled: true, bevelSize: 0.075, bevelThickness: 0.09, bevelSegments: 2, curveSegments: 4 })
   }, [isGround])
   const field = useMemo(() => new THREE.ShapeGeometry(fissureGeometry(true, !isGround)), [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v127-irregular-carved-threshold' }} position={[x, -0.02, isGround ? -10.26 : -10.42]} rotation={[0, isGround ? 0.20 : -0.27, isGround ? -0.035 : 0.045]} scale={isGround ? [0.78, 0.82, 0.82] : [0.74, 0.78, 0.78]}>
-    <mesh name={`home-v126-${side}-carved-stone-frame`} geometry={outer} position={[0, 0, -0.48]} castShadow receiveShadow>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v128-landscape-integrated-threshold' }} position={[x, -0.02, isGround ? -10.26 : -10.42]} rotation={[0, isGround ? 0.20 : -0.27, isGround ? -0.035 : 0.045]} scale={isGround ? [0.78, 0.82, 0.82] : [0.74, 0.78, 0.78]}>
+    <mesh name={`home-v126-${side}-carved-stone-frame`} geometry={outer} position={[0, 0, -0.48]} castShadow receiveShadow visible={false}>
       <meshStandardMaterial color={isGround ? '#2f4138' : '#353744'} roughness={0.96} metalness={0.01} />
     </mesh>
     <mesh name={`home-v126-${side}-deep-threshold`} position={[0, 1.38, -0.82]} scale={[1.22, 1.55, 0.6]}>
@@ -241,7 +271,7 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
       <meshStandardMaterial color="#09100e" roughness={1} metalness={0} />
     </mesh>
     <mesh name={`home-v126-${side}-irregular-light-seam`} geometry={field} position={[0, 0.02, -0.15]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
-      <meshBasicMaterial color={color} transparent opacity={0.27} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+      <meshBasicMaterial color={color} transparent opacity={0.14} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
     <mesh name={`home-v126-${side}-walkable-sill`} position={[0, 0.02, 0.18]} rotation={[-0.05, 0, 0]} castShadow receiveShadow>
       <cylinderGeometry args={[1.15, 1.34, 0.16, 7]} />
@@ -254,59 +284,7 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
 }
 
 function ApseAndOrbCradle() {
-  const apseWall = useMemo(() => {
-    const segments = 18
-    const positions: number[] = []
-    const colors: number[] = []
-    const indices: number[] = []
-    const low = new THREE.Color('#28362f')
-    const high = new THREE.Color('#56685c')
-    for (let index = 0; index <= segments; index += 1) {
-      const t = index / segments
-      const angle = THREE.MathUtils.lerp(-1.18, 1.12, t)
-      const x = Math.sin(angle) * 3.25
-      const z = Math.cos(angle) * 1.34
-      const crown = 1.02 + Math.sin(t * Math.PI) * 0.62 + Math.sin(index * 1.73) * 0.10
-      positions.push(x, 0.10, z, x, crown, z)
-      const shade = low.clone().lerp(high, 0.28 + Math.sin(t * Math.PI) * 0.42)
-      colors.push(low.r, low.g, low.b, shade.r, shade.g, shade.b)
-      if (index < segments) {
-        const a = index * 2
-        indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3)
-      }
-    }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-    geometry.setIndex(indices)
-    geometry.computeVertexNormals()
-    return geometry
-  }, [])
-  const cradlePort = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-1.92, 0.18, 0), new THREE.Vector3(-1.62, 1.28, 0.10), new THREE.Vector3(-1.18, 2.16, 0.28), new THREE.Vector3(-0.72, 2.62, 0.42),
-  ]), 24, 0.13, 7, false), [])
-  const cradleStarboard = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-    new THREE.Vector3(1.92, 0.18, 0), new THREE.Vector3(1.62, 1.24, 0.10), new THREE.Vector3(1.14, 2.14, 0.28), new THREE.Vector3(0.68, 2.60, 0.42),
-  ]), 24, 0.13, 7, false), [])
-  return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v127-sculpted-asymmetric-apse' }} position={[ORB.x, -0.22, -10.18]}>
-    <mesh name="home-v127-continuous-curved-apse" geometry={apseWall} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.98} metalness={0.01} side={THREE.DoubleSide} />
-    </mesh>
-    {[-2.48, -1.38, 1.18, 2.36].map((x, index) => <mesh key={x} name={`home-v127-staggered-apse-fin-${index}`} position={[x, 1.62 + (index % 2) * 0.18, 0.54 + index * 0.09]} rotation={[0, x < 0 ? -0.20 : 0.20, x < 0 ? -0.14 : 0.14]} scale={[0.11, 1.42 - index * 0.06, 0.26]} castShadow receiveShadow>
-      <cylinderGeometry args={[1, 1.22, 1, 7]} />
-      <meshStandardMaterial color={index % 2 ? '#56665b' : '#46564d'} roughness={0.84} metalness={0.05} />
-    </mesh>)}
-    <mesh name="home-v126-port-load-arm" geometry={cradlePort} position={[0, 0, 0.48]} castShadow>
-      <meshStandardMaterial color="#82968b" roughness={0.60} metalness={0.24} />
-    </mesh>
-    <mesh name="home-v126-starboard-load-arm" geometry={cradleStarboard} position={[0, 0, 0.48]} castShadow>
-      <meshStandardMaterial color="#69776d" roughness={0.60} metalness={0.24} />
-    </mesh>
-    <mesh name="home-v127-cantilevered-apse-crosshead" position={[-0.28, 3.46, 0.72]} rotation={[0, 0, -0.075]} scale={[0.78, 0.07, 0.11]} castShadow receiveShadow>
-      <cylinderGeometry args={[1, 1.08, 1, 7]} />
-      <meshStandardMaterial color="#526158" roughness={0.68} metalness={0.18} />
-    </mesh>
-  </group>
+  return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v128-governed-mirror-basin-integration', loadPath: 'landscape-basin-to-orb' }} />
 }
 
 function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
@@ -387,6 +365,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     }}
   >
     <SculptedCanyonGround onWalk={onWalk} />
+    <AuthoredSanctuaryEnvironment />
     <SanctuaryTerraces />
     <GeologicalFrame />
     <FramedFissure side="ground" onActivate={onGround} />
@@ -411,4 +390,5 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
 
 useGLTF.preload(ROCK_FACE_A)
 useGLTF.preload(ROCK_FACE_B)
+useGLTF.preload(GOVERNED_HOME)
 useGLTF.preload(GOVERNED_ORB)
