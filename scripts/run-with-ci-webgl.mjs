@@ -13,8 +13,12 @@ const FOUNDER_ROOT_SELECTOR = '[data-testid="urai-true-3d-life-map"]'
 
 async function installFounderPhaseLedger(context) {
   await context.addInitScript(({ rootSelector, storageKey }) => {
-    const inspect = () => {
-      const root = document.querySelector(rootSelector)
+    const relevantAttributes = new Set(['data-life-map-phase', 'data-life-map-mode', 'data-life-map-scale'])
+
+    const inspect = (candidate = null) => {
+      const root = candidate instanceof HTMLElement && candidate.matches(rootSelector)
+        ? candidate
+        : document.querySelector(rootSelector)
       if (!(root instanceof HTMLElement)) return
       if (root.dataset.lifeMapMode !== 'selected') return
 
@@ -40,7 +44,19 @@ async function installFounderPhaseLedger(context) {
       }
     }
 
-    const observer = new MutationObserver(inspect)
+    // Software WebGL can monopolize the main thread long enough for a MutationObserver
+    // callback to see only the state after a short-lived production phase has already
+    // advanced. Record the real data-attribute write synchronously as it happens instead
+    // of extending or replacing any production timer. The observer below remains a
+    // second independent path for initial DOM insertion and non-setAttribute mutations.
+    const originalSetAttribute = Element.prototype.setAttribute
+    Element.prototype.setAttribute = function patchedFounderPhaseAttribute(name, value) {
+      const result = originalSetAttribute.call(this, name, value)
+      if (relevantAttributes.has(String(name))) inspect(this)
+      return result
+    }
+
+    const observer = new MutationObserver(() => inspect())
     window.__uraiFounderJourneyPhaseLedgerObserver = observer
     observer.observe(document, {
       subtree: true,
