@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastVerified": "2026-09-03",
+  "lastVerified": "2026-09-04",
   "canonicalHost": "https://urai.app",
   "entities": {
     "product": {
@@ -36,6 +36,19 @@
       ],
       "publicProfile": "https://urai.app/founder/",
       "githubAccountAuthority": "https://github.com/LifeLoggerAI"
+    },
+    "foundingEngineer": {
+      "name": "Chris Herrin",
+      "role": "Founding Engineer",
+      "type": "person",
+      "canonicalUrl": "https://urai.app/about/labs/#chris-herrin",
+      "relationship": [
+        "Founding Engineer at URAI Labs",
+        "Founding engineering contributor to UrAi"
+      ],
+      "publicProfile": "https://urai.app/about/labs/#chris-herrin",
+      "externalProfiles": [],
+      "externalProfileStatus": "not linked until identity-matched and approved"
     },
     "foundation": {
       "name": "URAI Foundation",

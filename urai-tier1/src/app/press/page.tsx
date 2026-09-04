@@ -5,18 +5,18 @@ import { publicIndexing } from '../public-indexing'
 export const metadata: Metadata = {
   robots: publicIndexing,
   title: 'Press and Media',
-  description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
+  description: 'Official, factual UrAi naming, descriptions, founder and founding-engineer information, links, and status language.',
   twitter: {
     card: 'summary',
     title: 'Press and Media',
-    description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
+    description: 'Official, factual UrAi naming, descriptions, founder and founding-engineer information, links, and status language.',
   },
   alternates: { canonical: 'https://urai.app/press/' },
   openGraph: {
     type: 'website',
     url: 'https://urai.app/press/',
     title: 'Press and Media',
-    description: 'Official, factual UrAi naming, descriptions, founder information, links, and status language.',
+    description: 'Official, factual UrAi naming, descriptions, founder and founding-engineer information, links, and status language.',
     siteName: 'UrAi',
   },
 }
@@ -30,6 +30,8 @@ export default function PressPage() {
       <p>UrAi explores a navigable personal world built from disclosed or permissioned context. Its public experience connects Home, Ground, Life Map, Focus, Replay, Mirror, Passport, privacy controls, and release status. Public demonstrations use sample or clearly disclosed content.</p>
       <h2>Founder</h2>
       <p>Adam Clamp is the founder and system architect behind URAI Labs and the UrAi product direction.</p>
+      <h2>Founding Engineer</h2>
+      <p>Chris Herrin is the Founding Engineer at URAI Labs and a founding engineering contributor to UrAi. No external social profile is represented as canonical until the identity match is separately verified and approved.</p>
       <h2>Status language</h2>
       <p>Safe current wording: “The public UrAi web experience is reachable while the current coherent-3D Home release remains exact-head CI, visual acceptance, governance, protected deployment, and live-verification gated.”</p>
       <h2>Media assets</h2>
