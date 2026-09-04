@@ -60,6 +60,17 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
       world.setAttribute('data-home-v76-art-layer', 'single-canvas-deep-apse-relic-machine-sanctuary')
       world.setAttribute('data-home-v76-certification', 'retained-pixel-candidate-not-certified')
+      world.setAttribute('data-home-v125-art-layer', 'single-canvas-sculpted-canyon-natural-fissures-prismatic-orb')
+      world.setAttribute('data-home-v125-certification', 'retained-pixel-candidate-not-certified')
+      world.setAttribute('data-home-visual-repair', 'v125-sculpted-canyon-natural-fissures-state-readable-orb')
+      world.setAttribute('data-home-physical-base', 'sculpted-geological-canyon-natural-fissures-governed-orb')
+      world.setAttribute('data-home-visual-grade', 'cinematic-pbr-v125-sculpted-depth-candidate')
+      world.setAttribute('data-home-final-art-revision', 'v125-retained-pixels-pending')
+      world.setAttribute('data-home-live-art-revision', 'v125-sculpted-open-sanctuary')
+      world.setAttribute('data-home-art-certification', 'v125-retained-pixels-pending-not-certified')
+      world.setAttribute('data-home-scanned-composition', 'v125-asymmetric-geological-depth')
+      world.setAttribute('data-home-visible-production-assets', 'rock_face_01 rock_face_02 sculpted-canyon natural-fissures governed-orb-memory-motes')
+      world.setAttribute('data-home-animation-owner', 'v125-sculpted-geological-sanctuary')
       synchronizeCanonicalHomeTelemetry(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
@@ -92,6 +103,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal"
       data-home-forge-scenery="suppressed"
       data-home-v76-retained-pixel-rebuild="active"
+      data-home-v125-retained-pixel-rebuild="active"
       data-home-canvas-owner="home-world-production-v70-single-authority"
       style={{ display: 'contents' }}
     >

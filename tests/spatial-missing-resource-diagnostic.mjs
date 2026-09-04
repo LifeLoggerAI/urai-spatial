@@ -26,6 +26,9 @@ const canonicalRedirectTargets = new Map([
   ['/ascent', '/home?from=ascent'],
   ['/unwind', '/life-map?from=unwind&overview=1'],
 ]);
+const canonicalRedirectUrls = new Set(
+  [...canonicalRedirectTargets.values()].map((target) => new URL(target, baseUrl).toString()),
+);
 const promotedGeneratedAssetPaths = new Set([
   '/assets/urai/generated/models/home-entry-chamber-v1.glb',
   '/assets/urai/generated/models/portal-ring-master-v1.glb',
@@ -76,7 +79,15 @@ function key(entry) {
   return `${entry.kind}:${entry.status ?? 0}:${entry.method ?? ''}:${entry.url}`;
 }
 
-function isBenignLocalAbort(entry) {
+function requestKey(method, url) {
+  try {
+    return `${String(method || '').toUpperCase()}:${new URL(url).toString()}`;
+  } catch {
+    return `${String(method || '').toUpperCase()}:${url}`;
+  }
+}
+
+function isBenignLocalAbort(entry, successfulResponses) {
   if (entry.failure !== 'net::ERR_ABORTED') return false;
   let parsed;
   try {
@@ -85,6 +96,16 @@ function isBenignLocalAbort(entry) {
     return false;
   }
   if (parsed.origin !== baseOrigin) return false;
+
+  // A Next client transition can start the canonical document navigation twice
+  // and cancel one request after the identical target has already returned a
+  // successful document response. Ignore only that proven-success duplicate.
+  // An aborted document with no successful same-target response remains fatal.
+  if (entry.method === 'GET'
+    && entry.resourceType === 'document'
+    && canonicalRedirectUrls.has(parsed.toString())
+    && successfulResponses.has(requestKey(entry.method, parsed.toString()))) return true;
+
   if (parsed.searchParams.has('_rsc')) return true;
   if (parsed.pathname.startsWith('/_next/static/webpack/')) {
     return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
@@ -120,6 +141,7 @@ let context;
 const httpFailures = [];
 const failedRequests = [];
 const blockedExternalRequests = [];
+const successfulResponses = new Set();
 
 try {
   await waitForServer();
@@ -162,13 +184,17 @@ try {
   });
 
   context.on('response', (response) => {
-    if (response.status() < 400) return;
+    const request = response.request();
+    if (response.status() < 400) {
+      successfulResponses.add(requestKey(request.method(), response.url()));
+      return;
+    }
     httpFailures.push({
       kind: 'http-error',
       status: response.status(),
       url: response.url(),
-      method: response.request().method(),
-      resourceType: response.request().resourceType(),
+      method: request.method(),
+      resourceType: request.resourceType(),
     });
   });
   context.on('requestfailed', (request) => {
@@ -188,9 +214,7 @@ try {
     const trackLocalAsset = (request) => {
       try {
         const parsed = new URL(request.url());
-        if (parsed.origin === baseOrigin && parsed.pathname.startsWith('/assets/')) {
-          pendingLocalAssets.add(request);
-        }
+        if (parsed.origin === baseOrigin && parsed.pathname.startsWith('/assets/')) pendingLocalAssets.add(request);
       } catch {
         // Invalid URLs are captured by the context route boundary.
       }
@@ -220,10 +244,6 @@ try {
         }
       }
 
-      // Do not close a route while its committed runtime assets are still loading.
-      // A blind one-second delay converted legitimate in-flight requests into
-      // status-0 requestfailed events when page.close() aborted them. Require a
-      // stable idle window after all same-origin /assets/ requests finish instead.
       await page.waitForTimeout(500);
       const settleDeadline = Date.now() + 45_000;
       let idleSince = null;
@@ -257,9 +277,9 @@ try {
   }
 
   const blockedKeys = new Set(blockedExternalRequests.map((entry) => `${entry.method}:${entry.url}`));
-  const ignored = failedRequests.filter((entry) => isBenignLocalAbort(entry));
+  const ignored = failedRequests.filter((entry) => isBenignLocalAbort(entry, successfulResponses));
   const actionableFailedRequests = failedRequests.filter((entry) => {
-    if (isBenignLocalAbort(entry)) return false;
+    if (isBenignLocalAbort(entry, successfulResponses)) return false;
     return !blockedKeys.has(`${entry.method}:${entry.url}`);
   });
 
@@ -270,7 +290,7 @@ try {
   ].map((entry) => [key(entry), entry])).values()];
 
   const report = {
-    schemaVersion: 'urai-spatial-missing-resource-diagnostics-6',
+    schemaVersion: 'urai-spatial-missing-resource-diagnostics-7',
     generatedAt: new Date().toISOString(),
     baseUrl,
     routes,
@@ -282,6 +302,7 @@ try {
       externalRequestsAllowed: false,
       externalRequestsBlockedBeforeSend: true,
       ignoredLocalAbortClasses: [
+        'canonical-document-duplicate-navigation-abort-with-successful-response',
         'next-rsc-navigation',
         'next-hmr-hot-update',
         'next-dev-route-chunk-navigation',
@@ -289,6 +310,7 @@ try {
         'promoted-generated-asset-navigation-cancellation',
       ],
     },
+    successfulResponseCount: successfulResponses.size,
     actionable,
     ignored,
   };
@@ -296,12 +318,10 @@ try {
 
   if (actionable.length) {
     console.error('SPATIAL_ACTIONABLE_RESOURCE_FAILURES');
-    for (const entry of actionable) {
-      console.error(`${entry.kind} ${entry.status} ${entry.method} ${entry.resourceType} ${entry.url}`);
-    }
+    for (const entry of actionable) console.error(`${entry.kind} ${entry.status} ${entry.method} ${entry.resourceType} ${entry.url}`);
     process.exitCode = 1;
   } else {
-    console.log(`PASS no actionable missing or external spatial resources; ignored ${ignored.length} benign local aborts`);
+    console.log(`PASS no actionable missing or external spatial resources; ignored ${ignored.length} proven benign local aborts`);
   }
 } finally {
   if (context) await context.close().catch(() => undefined);
