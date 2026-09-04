@@ -121,7 +121,7 @@ function AuthoredSanctuaryEnvironment() {
       ].some((prefix) => object.name.startsWith(prefix))
       const rejectedHorizonRepeat = object.name.startsWith('horizon-mountain-')
         && !['horizon-mountain-3', 'horizon-mountain-7', 'horizon-mountain-10'].includes(object.name)
-      if (object.name === 'orb-sanctuary-pedestal' || rejectedFamily || rejectedHorizonRepeat) object.visible = false
+      if (object.name === 'orb-sanctuary-pedestal' || object.name === 'mirror-basin-rim' || rejectedFamily || rejectedHorizonRepeat) object.visible = false
       if (!(object instanceof THREE.Mesh)) return
       object.receiveShadow = true
       object.castShadow = !object.name.includes('water')
@@ -259,11 +259,26 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     return new THREE.ExtrudeGeometry(frame, { depth: 0.78, bevelEnabled: true, bevelSize: 0.075, bevelThickness: 0.09, bevelSegments: 2, curveSegments: 4 })
   }, [isGround])
   const field = useMemo(() => new THREE.ShapeGeometry(fissureGeometry(true, !isGround)), [isGround])
+  const seamMotes = useMemo(() => {
+    const positions: number[] = []
+    for (let index = 0; index < 96; index += 1) {
+      const t = index / 95
+      const y = 0.08 + t * 2.62
+      const bend = Math.sin(t * Math.PI * 2.7 + (isGround ? 0.4 : 1.2)) * 0.16
+      const width = 0.05 + Math.sin(t * Math.PI) * 0.28
+      const sideOffset = ((index * 17) % 23) / 22 - 0.5
+      positions.push(bend + sideOffset * width, y, (((index * 29) % 19) / 18 - 0.5) * 0.34)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return geometry
+  }, [isGround])
   return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v128-landscape-integrated-threshold' }} position={[x, -0.02, isGround ? -10.26 : -10.42]} rotation={[0, isGround ? 0.20 : -0.27, isGround ? -0.035 : 0.045]} scale={isGround ? [0.78, 0.82, 0.82] : [0.74, 0.78, 0.78]}>
-    <mesh name={`home-v126-${side}-irregular-light-seam`} geometry={field} position={[0, 0.02, -0.15]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
-      <meshBasicMaterial color={color} transparent opacity={0.22} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
-    </mesh>
+    <points name={`home-v126-${side}-irregular-light-seam`} geometry={seamMotes} onClick={(event) => { event.stopPropagation(); onActivate() }}>
+      <pointsMaterial color={color} size={0.075} transparent opacity={0.72} depthWrite={false} sizeAttenuation toneMapped={false} />
+    </points>
     <group name={`home-v126-${side}-carved-stone-frame`} userData={{ retiredGeometry: outer.uuid, visualRepair: 'v129-light-fissure-in-governed-landscape' }} />
+    <group name={`home-v129-${side}-retired-flat-field`} userData={{ retiredGeometry: field.uuid }} />
     <group name={`home-v126-${side}-port-shoulder`} />
     <group name={`home-v126-${side}-starboard-shoulder`} />
     <pointLight position={[0, 1.42, 0.55]} color={color} intensity={0.72} distance={3.4} decay={2} />
@@ -281,18 +296,19 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
   const orb = useMemo(() => {
     const root = source.clone(true)
     root.traverse((object) => {
-      if (object.name === 'orb-aura' || object.name === 'orb-core' || object.name.startsWith('orb-orbit-') || object.name.startsWith('orb-petal-') || object.name.startsWith('orb-satellite-') || object.name.startsWith('orb-filament-')) object.visible = false
+      if (object.name === 'orb-aura' || object.name === 'orb-core' || object.name === 'orb-heart' || object.name.startsWith('orb-orbit-') || object.name.startsWith('orb-petal-') || object.name.startsWith('orb-satellite-') || object.name.startsWith('orb-filament-')) object.visible = false
     })
     return normalizeAsset(root, 2.42, palette.core, 0.58)
   }, [palette.core, source])
   const moteGeometry = useMemo(() => {
     const positions: number[] = []
-    for (let index = 0; index < 54; index += 1) {
-      const angle = index * 2.3999632297
-      const radius = 0.76 + ((index * 17) % 25) / 50
-      const y = -0.68 + ((index * 29) % 69) / 50
-      const depth = 0.58 + ((index * 11) % 18) / 40
-      positions.push(Math.cos(angle) * radius, y, Math.sin(angle) * radius * depth)
+    for (let index = 0; index < 280; index += 1) {
+      const t = index / 279
+      const y = -1.02 + t * 2.04
+      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.08, 2)))
+      const angle = index * 2.3999632297 + Math.sin(index * 0.37) * 0.16
+      const radius = envelope * (0.54 + ((index * 17) % 31) / 86)
+      positions.push(Math.cos(angle) * radius, y, Math.sin(angle) * radius * 0.72)
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -309,7 +325,10 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
   return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }}>
     <primitive object={orb} position={[0, -1.08, 0.16]} scale={[1.50, 1.50, 1.50]} />
     <points name="home-v126-orb-memory-motes" geometry={moteGeometry}>
-      <pointsMaterial color={palette.accent} size={palette.moteSize} transparent opacity={0.60} depthWrite={false} sizeAttenuation />
+      <pointsMaterial color={palette.core} size={palette.moteSize * 1.18} transparent opacity={0.82} depthWrite={false} sizeAttenuation toneMapped={false} />
+    </points>
+    <points name="home-v130-orb-inner-memory-swarm" geometry={moteGeometry} scale={[0.58, 0.64, 0.58]} rotation={[0.22, 0.54, -0.12]}>
+      <pointsMaterial color={palette.accent} size={palette.moteSize * 0.82} transparent opacity={0.72} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
     <mesh name="home-v126-orb-generous-hit-target">
       <sphereGeometry args={[1.38, 16, 12]} />
