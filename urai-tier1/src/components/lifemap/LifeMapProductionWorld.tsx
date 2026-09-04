@@ -32,10 +32,18 @@ const ICE = "#dff8ff";
 const CYAN = "#78e7ff";
 const VIOLET = "#b18cff";
 
-function prepareAuthoredModel(source: THREE.Object3D, aura: string) {
+function hideRejectedMemoryStarPresentationNode(name: string) {
+  return name === "memory-star-heart" || name.startsWith("memory-star-orbit-");
+}
+
+function prepareAuthoredModel(source: THREE.Object3D, aura: string, shouldHideNode?: (name: string) => boolean) {
   const clone = source.clone(true);
   const auraColor = new THREE.Color(aura);
   clone.traverse((object) => {
+    if (shouldHideNode?.(object.name)) {
+      object.visible = false;
+      return;
+    }
     if (!(object instanceof THREE.Mesh)) return;
     object.castShadow = true;
     object.receiveShadow = true;
@@ -272,7 +280,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
   const reducedMotion = useContext(LifeMapReducedMotionContext);
   const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
   const root = useRef<THREE.Group>(null);
-  const model = useMemo(() => prepareAuthoredModel(scene, aura), [aura, scene]);
+  const model = useMemo(() => prepareAuthoredModel(scene, aura, hideRejectedMemoryStarPresentationNode), [aura, scene]);
   const { actions } = useAnimations(animations, root);
   useEffect(() => {
     const chosen = actions[clip || (active ? "MemoryStar_Selected" : "MemoryStar_Idle")] || actions.MemoryStar_Idle;
