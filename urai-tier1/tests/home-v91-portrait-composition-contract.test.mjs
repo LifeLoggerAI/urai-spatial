@@ -17,7 +17,7 @@ test('V105 uses one opaque responsive Canvas with balanced portrait hierarchy', 
   assert.match(styles, /\.canvas/)
 })
 
-test('V158 keeps responsive framing while replacing the V157 road/gate read with a hairline stone trace, ground-laid rifts and sunken geology around the contained no-pedestal memory core', () => {
+test('V159 keeps responsive framing while replacing the broad approach with the exact hairline stone trace while preserving ground-laid rifts and sunken geology around the contained no-pedestal memory core', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
   assert.match(art, /function SculptedCanyonGround/)
   assert.match(art, /name="home-v125-sculpted-canyon-ground"/)
@@ -27,7 +27,7 @@ test('V158 keeps responsive framing while replacing the V157 road/gate read with
   assert.match(art, /narrow-meandering-inlay-not-road-slab/)
   assert.match(art, /hairline-stone-trace-integrated-into-ground-no-road-read/)
   assert.match(art, /const stations = 80/)
-  assert.match(art, /const half = 0\.13 - t \* 0\.035/)
+  assert.match(art, /const half = 0\.032 - t \* 0\.010/)
   assert.match(art, /function GeologicalFrame/)
   assert.match(art, /name="home-v126-bounded-geological-edge-masses"/)
   assert.match(art, /scan-provenance-kept-off-axis-while-authored-ground-owns-frame/)
