@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
 import { resolveApprovedReturnUrl } from '@/lib/server/approved-return-url';
 import { verifyFirebaseUser } from '@/lib/server/firebase-user';
-import { parseStripeRuntimeMode, stripeRuntimeMatchesSecret } from '@/lib/server/stripe-runtime-config';
+import {
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+} from '@/lib/server/stripe-runtime-config';
 
 export async function POST(request: Request) {
   const uid = await verifyFirebaseUser(request);
@@ -40,8 +44,24 @@ export async function POST(request: Request) {
   const stripe = new Stripe(secretKey);
   const configuration = process.env.STRIPE_BILLING_PORTAL_CONFIGURATION;
 
+  // Resolve the server-owned customer before opening the portal. A credential prefix alone
+  // is not enough authority: the provider object itself must belong to the declared realm.
+  let customer;
+  try {
+    customer = await stripe.customers.retrieve(entitlement.stripeCustomerId);
+  } catch (error) {
+    console.error('Stripe Billing Portal could not verify customer', { userId: uid, error });
+    return NextResponse.json({ error: 'Stripe customer could not be verified.' }, { status: 502 });
+  }
+  if ('deleted' in customer && customer.deleted) {
+    return NextResponse.json({ error: 'Stripe customer is no longer active.' }, { status: 409 });
+  }
+  if (!stripeLivemodeMatchesRuntime(customer.livemode, stripeMode)) {
+    return NextResponse.json({ error: 'Stripe customer mode mismatch.' }, { status: 500 });
+  }
+
   const session = await stripe.billingPortal.sessions.create({
-    customer: entitlement.stripeCustomerId,
+    customer: customer.id,
     return_url: redirectBase.toString(),
     configuration: configuration || undefined,
   });

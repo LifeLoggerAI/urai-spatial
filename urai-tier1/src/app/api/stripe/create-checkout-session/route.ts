@@ -5,6 +5,7 @@ import {
   checkoutModeForPlan,
   isPaidPlanId,
   parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
   stripeRuntimeMatchesSecret,
   STRIPE_PRICE_ENV_BY_PLAN,
 } from '@/lib/server/stripe-runtime-config';
@@ -48,6 +49,20 @@ export async function POST(request: Request) {
   const stripeModule = await import('stripe');
   const Stripe = stripeModule.default;
   const stripe = new Stripe(secretKey);
+
+  // The configured Price is provider-owned authority. Do not create a session until
+  // Stripe itself confirms the object belongs to the declared test/production realm.
+  let price;
+  try {
+    price = await stripe.prices.retrieve(priceId);
+  } catch (error) {
+    console.error('Stripe Checkout could not verify configured Price', { planId, error });
+    return NextResponse.json({ error: 'Configured Stripe Price could not be verified.' }, { status: 502 });
+  }
+  if (!stripeLivemodeMatchesRuntime(price.livemode, stripeMode)) {
+    return NextResponse.json({ error: 'Stripe Price mode mismatch.' }, { status: 500 });
+  }
+
   const mode = checkoutModeForPlan(planId);
   const metadata = {
     planId,
@@ -57,7 +72,7 @@ export async function POST(request: Request) {
 
   const session = await stripe.checkout.sessions.create({
     mode,
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: price.id, quantity: 1 }],
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
     metadata,

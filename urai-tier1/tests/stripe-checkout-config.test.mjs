@@ -47,7 +47,7 @@ test('Stripe secret key mode must agree with declared runtime mode', () => {
   assert.equal(stripeRuntimeMatchesSecret('production', 'sk_test_example'), false);
 });
 
-test('Stripe event livemode must agree with declared runtime mode', () => {
+test('Stripe event and provider object livemode must agree with declared runtime mode', () => {
   assert.equal(stripeLivemodeMatchesRuntime(false, 'test'), true);
   assert.equal(stripeLivemodeMatchesRuntime(true, 'production'), true);
   assert.equal(stripeLivemodeMatchesRuntime(true, 'test'), false);
