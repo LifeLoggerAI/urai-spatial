@@ -576,7 +576,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
   return <group
     name="home-v126-ground-owned-open-sanctuary"
     userData={{
-      activeArtRevision: 'v149-weathered-rift-thresholds-filled-memory-volume',
+      activeArtRevision: 'v150-sculpted-stone-thresholds-dense-memory-volume',
       compatibilityMarkers: LEGACY_CONTRACT_MARKERS,
       legacySourceAssets: LEGACY_SOURCE_ASSETS,
       historicalV76ContractOnly: true,
