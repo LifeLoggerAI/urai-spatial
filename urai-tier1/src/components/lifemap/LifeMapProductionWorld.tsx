@@ -163,18 +163,8 @@ function seeded(index: number, salt: number) {
   return value - Math.floor(value);
 }
 
-function authoredCurve(points: Point3[]) {
-  return new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)), false, "catmullrom", 0.28);
-}
-
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
-  const path = useMemo(() => authoredCurve(points), [points]);
-  return (
-    <mesh>
-      <tubeGeometry args={[path, 72, width, 10, false]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.2} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </mesh>
-  );
+  return <group name="life-map-v150-retired-primitive-current" userData={{ retiredTubeCurrent: true, pointCount: points.length, color, opacity, width }} />;
 }
 
 function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0.5, size = 0.055 }: {
@@ -288,7 +278,7 @@ function MemorySeed({ aura, active }: { aura: string; active: boolean }) {
   }, []);
   return <group name="life-map-sculpted-memory-seed">
     <mesh geometry={geometry} castShadow>
-      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.24 : 0.10} roughness={0.72} metalness={0.02} transmission={0.12} thickness={0.42} transparent opacity={active ? 0.46 : 0.34} depthWrite={false} flatShading clearcoat={0.03} clearcoatRoughness={0.74} />
+      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.18 : 0.065} roughness={0.86} metalness={0.01} transmission={0} thickness={0.18} transparent opacity={active ? 0.78 : 0.58} depthWrite flatShading clearcoat={0.01} clearcoatRoughness={0.86} />
     </mesh>
     <mesh geometry={geometry} scale={0.34}>
       <meshStandardMaterial color={aura} emissive={ICE} emissiveIntensity={active ? 0.62 : 0.34} roughness={0.68} flatShading />
@@ -427,7 +417,7 @@ function AudioArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78, 0, z], [-0.3, index * 0.2, z], [0.18, -index * 0.14, z], [0.82, 0.04, z]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.82 : 0.42} width={0.025} />)}</group>;
 }
 function RelationshipArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.1 : 0.82} /><Line points={[[-0.72, 0.02, 0.18], [0, 0.72, -0.4], [0.72, 0.08, 0.12]]} color={node.aura} lineWidth={active ? 1.4 : 0.8} /></group>;
+  return <AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.1 : 0.82} />;
 }
 function PlaceArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.2 : 0.9} rotation={[-0.25, 0.18, 0.08]} /><Current points={[[-1.1, -0.35, 0.4], [-0.45, -0.1, -0.35], [0.35, -0.15, -0.6], [1.1, -0.32, 0.2]]} color={node.aura} opacity={active ? 0.66 : 0.3} width={0.022} /></group>;
@@ -527,7 +517,7 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return (
     <group>
-      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.72 : 0.24} transparent opacity={kind === "protected" ? 0.035 : active ? 0.42 : 0.075} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.52 : 0.18} transparent opacity={kind === "protected" ? 0.02 : active ? 0.24 : 0.035} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
       {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * 0.19) % 1} /> : null}
     </group>
   );
@@ -554,7 +544,7 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
     <group name="life-map-curved-semantic-paths">
       {links.map((link, index) => {
         const active = Boolean(selected && (selected.id === link.source.id || selected.id === link.target.id));
-        if (!selected && index % 3 !== 0) return null;
+        if (!selected) return null;
         if (selected && phase === "arrival" && !active) return null;
         return <SemanticPath key={`${link.source.id}:${link.target.id}`} source={link.source} target={link.target} active={active} reducedMotion={reducedMotion} index={index} />;
       })}

@@ -311,8 +311,9 @@ function fissureGeometry(inner = false, mirrored = false) {
 }
 
 function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onActivate: () => void }) {
+  const stone = useSanctuaryStone()
   const isGround = side === 'ground'
-  const x = isGround ? -3.12 : 2.74
+  const x = isGround ? -3.34 : 3.02
   const color = isGround ? '#8dd9ad' : '#b7a3e3'
   const outer = useMemo(() => {
     const frame = fissureGeometry(false, !isGround)
@@ -334,13 +335,16 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v149-recessed-signal-rift-inside-weathered-geology', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.06 : 0.30, isGround ? -8.10 : -8.40]} rotation={[0, isGround ? 0.08 : -0.08, isGround ? -0.018 : 0.018]} scale={isGround ? [0.90, 0.86, 0.68] : [0.84, 0.82, 0.64]}>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v150-sculpted-stone-reveal-with-recessed-signal-field', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.10 : 0.22, isGround ? -8.14 : -8.38]} rotation={[0, isGround ? 0.10 : -0.11, isGround ? -0.025 : 0.022]} scale={isGround ? [0.78, 0.76, 0.58] : [0.72, 0.73, 0.55]}>
+    <mesh name={`home-v150-${side}-sculpted-rift-reveal`} geometry={outer} castShadow receiveShadow>
+      <meshStandardMaterial color={isGround ? '#263a31' : '#2d3433'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.24, 0.24)} roughnessMap={stone.arm} roughness={0.98} metalness={0.002} />
+    </mesh>
     <group name={`home-v149-${side}-weathered-rift-shell`} userData={{ structuralOwner: 'open-buttress-sanctuary-wing', retiredFreestandingFrame: true }} />
-    <mesh name={`home-v149-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
-      <meshStandardMaterial color={isGround ? '#0d1b15' : '#191626'} emissive={color} emissiveIntensity={0.14} roughness={0.96} transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
+    <mesh name={`home-v149-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.18]}>
+      <meshStandardMaterial color={isGround ? '#0b1612' : '#15131f'} emissive={color} emissiveIntensity={0.09} roughness={0.98} transparent opacity={0.24} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
     <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.36]}>
-      <pointsMaterial color={color} size={0.030} transparent opacity={0.42} depthWrite={false} sizeAttenuation />
+      <pointsMaterial color={color} size={0.026} transparent opacity={0.34} depthWrite={false} sizeAttenuation />
     </points>
     <mesh name={`home-v133-${side}-authored-threshold-hit-target`} position={[0, 1.48, 0.12]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
       <boxGeometry args={[2.75, 3.3, 1.1]} />
@@ -353,7 +357,7 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
 }
 
 function weatheredSanctuaryMassGeometry(seed: number) {
-  const geometry = new THREE.DodecahedronGeometry(1, 3)
+  const geometry = new THREE.SphereGeometry(1, 36, 24)
   const positions = geometry.getAttribute('position') as THREE.BufferAttribute
   for (let index = 0; index < positions.count; index += 1) {
     const x = positions.getX(index)
@@ -387,10 +391,10 @@ function SanctuaryArchitecture() {
       scale: Vec3
       color: string
     }[] = [
-      { name: 'ground-rift-bearing-mass', seed: 1.3, position: [-3.24, 1.24, -8.78], rotation: [0.03, 0.18, -0.13], scale: [1.72, 1.72, 0.72], color: '#25382f' },
-      { name: 'ground-rift-settled-shoulder', seed: 2.7, position: [-4.56, 0.43, -8.62], rotation: [-0.12, 0.52, 0.09], scale: [1.12, 0.74, 0.82], color: '#2d3e34' },
-      { name: 'life-map-rift-bearing-mass', seed: 4.1, position: [2.82, 1.32, -8.88], rotation: [-0.04, -0.16, 0.11], scale: [1.62, 1.62, 0.69], color: '#2a3933' },
-      { name: 'life-map-rift-settled-shoulder', seed: 5.6, position: [4.04, 0.39, -8.68], rotation: [0.10, -0.44, -0.08], scale: [1.18, 0.68, 0.86], color: '#314139' },
+      { name: 'ground-rift-bearing-mass', seed: 1.3, position: [-3.46, 0.78, -8.82], rotation: [0.08, 0.34, -0.22], scale: [1.10, 1.28, 0.62], color: '#23352d' },
+      { name: 'ground-rift-settled-shoulder', seed: 2.7, position: [-4.42, 0.24, -8.66], rotation: [-0.14, 0.62, 0.10], scale: [0.76, 0.42, 0.68], color: '#2b3b32' },
+      { name: 'life-map-rift-bearing-mass', seed: 4.1, position: [3.14, 0.74, -8.90], rotation: [-0.08, -0.28, 0.17], scale: [1.02, 1.18, 0.58], color: '#283630' },
+      { name: 'life-map-rift-settled-shoulder', seed: 5.6, position: [4.02, 0.20, -8.70], rotation: [0.12, -0.52, -0.10], scale: [0.72, 0.38, 0.64], color: '#2e3d35' },
     ]
     return placements.map((placement) => ({
       ...placement,
@@ -486,16 +490,16 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
   }, [palette.core, source])
   const moteGeometry = useMemo(() => {
     const positions: number[] = []
-    for (let index = 0; index < 640; index += 1) {
-      const t = index / 639
-      const y = -1.02 + t * 2.04
-      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.08, 2)))
+    for (let index = 0; index < 760; index += 1) {
+      const t = index / 759
+      const y = -1.08 + t * 2.16
+      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.14, 2)))
       const angle = index * 2.3999632297 + Math.sin(index * 0.37) * 0.16
-      const radialSample = ((index * 173) % 641) / 640
+      const radialSample = ((index * 173) % 761) / 760
       const fill = index % 4 === 0
         ? Math.pow(radialSample, 2.35) * 0.38
         : Math.pow(radialSample, 1.48)
-      const radius = envelope * fill * 0.72
+      const radius = envelope * fill * 0.86
       const drift = y * 0.12 + Math.sin(y * 3.4) * 0.06
       positions.push(Math.cos(angle) * radius + drift, y, Math.sin(angle) * radius * 0.70)
     }
@@ -532,11 +536,11 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
       <meshPhysicalMaterial color="#28483d" emissive={palette.accent} emissiveIntensity={0.08} roughness={0.78} metalness={0.01} transmission={0.18} thickness={0.42} transparent opacity={0.07} depthWrite={false} clearcoat={0.01} clearcoatRoughness={0.82} />
     </mesh>
     <primitive object={orb} visible={false} />
-    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.78, 0.84, 0.72]}>
-      <pointsMaterial color={palette.core} size={palette.moteSize * 0.62} transparent opacity={0.68} depthWrite={false} sizeAttenuation toneMapped={false} />
+    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.90, 0.92, 0.78]}>
+      <pointsMaterial color={palette.core} size={palette.moteSize * 0.78} transparent opacity={0.62} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
-    <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.22, 0.27, 0.22]}>
-      <meshStandardMaterial color="#355c4e" emissive={palette.accent} emissiveIntensity={0.34} roughness={0.74} flatShading />
+    <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.28, 0.34, 0.27]}>
+      <meshStandardMaterial color="#284b3e" emissive={palette.accent} emissiveIntensity={0.22} roughness={0.82} flatShading />
     </mesh>
     <mesh name="home-v126-orb-generous-hit-target">
       <sphereGeometry args={[1.38, 16, 12]} />

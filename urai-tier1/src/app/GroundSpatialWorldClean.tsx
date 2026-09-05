@@ -35,12 +35,12 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(1.06);
-    clone.emissive.set("#07110f");
-    clone.emissiveIntensity = Math.max(Math.min(clone.emissiveIntensity, 0.08), 0.035);
-    clone.roughness = Math.max(clone.roughness, 0.64);
-    clone.metalness = Math.min(clone.metalness, 0.2);
-    clone.envMapIntensity = 0.95;
+    clone.color.multiplyScalar(0.72);
+    clone.emissive.set("#020706");
+    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, 0.018);
+    clone.roughness = Math.max(clone.roughness, 0.88);
+    clone.metalness = Math.min(clone.metalness, 0.045);
+    clone.envMapIntensity = 0.32;
     clone.needsUpdate = true;
   }
   return clone;
@@ -52,7 +52,7 @@ function prepareModel(source: THREE.Object3D) {
       object.visible = false;
       return;
     }
-    if (/(?:nexus-(?:orbit|spoke|pedestal)|destination-(?:plinth|vase)|rainbow-spoke)/i.test(object.name)) {
+    if (/(?:nexus-(?:orbit|spoke|pedestal|core|halo|beacon)|destination-(?:plinth|vase)|rainbow-spoke)/i.test(object.name)) {
       object.visible = false;
       return;
     }
@@ -74,6 +74,8 @@ function prepareModel(source: THREE.Object3D) {
     root.position.y = Math.min(root.position.y, 0.12);
     root.userData.uraiChamberForm = destination.chamberForm;
     root.userData.uraiLayer = destination.layer;
+    root.userData.uraiRetiredVisualRole = "v150-provenance-only-destination-mass";
+    root.visible = false;
   }
   return source;
 }
@@ -276,14 +278,14 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
     <>
       <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
       <fogExp2 attach="fog" args={["#263937", 0.026]} />
-      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={1.12} />
-      <ambientLight intensity={1.08} color="#eaf8f3" />
-      <hemisphereLight args={["#f5fff9", "#324b46", 1.72]} />
-      <directionalLight position={[9, 18, 12]} intensity={5.15} color="#ffe6bd" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-11, 9, -8]} intensity={1.2} color="#a9e4ff" />
-      <pointLight position={[0, 4.6, -2]} intensity={4.1} distance={24} decay={2} color="#ffc479" />
-      <pointLight position={[7.5, 3.4, -15]} intensity={2.15} distance={22} decay={2} color="#8fe5ff" />
-      <pointLight position={[-8.2, 3.8, -23]} intensity={1.95} distance={22} decay={2} color="#cabdff" />
+      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.44} />
+      <ambientLight intensity={0.34} color="#d8ebe5" />
+      <hemisphereLight args={["#dcefe9", "#17231f", 0.68]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.45} color="#efd8b8" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[-11, 9, -8]} intensity={0.34} color="#91bfd0" />
+      <pointLight position={[0, 4.6, -2]} intensity={0.62} distance={20} decay={2} color="#d8aa79" />
+      <pointLight position={[7.5, 3.4, -15]} intensity={0.32} distance={18} decay={2} color="#78b7c8" />
+      <pointLight position={[-8.2, 3.8, -23]} intensity={0.28} distance={18} decay={2} color="#9d93bc" />
       <Sparkles count={12} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
@@ -345,7 +347,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-visual-revision="v122-authored-depth-no-flat-backdrop-authority"
+      data-ground-visual-revision="v150-cinematic-backdrop-with-quiet-walkable-terrain"
       data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -368,7 +370,7 @@ export default function GroundSpatialWorldClean() {
           scene.background = null;
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.45;
+          gl.toneMappingExposure = 0.82;
           setReady(true);
         }}
       >
@@ -415,7 +417,7 @@ export default function GroundSpatialWorldClean() {
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
         .ground-production-backdrop{position:absolute;inset:0;z-index:0;display:block;overflow:hidden;background:#071319}
-        .ground-production-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.16;filter:saturate(.55) contrast(1.08)}
+        .ground-production-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.46;filter:saturate(.58) contrast(1.06) brightness(.74)}
         .ground-production-backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 56%,rgba(26,69,75,.08) 0 25%,rgba(4,12,17,.72) 78%),linear-gradient(180deg,rgba(3,10,15,.16),rgba(3,10,15,.66));pointer-events:none}
         .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important;filter:none}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
