@@ -124,7 +124,7 @@ function AuthoredSanctuaryEnvironment() {
       ].some((prefix) => object.name.startsWith(prefix))
       const rejectedHorizonRepeat = object.name.startsWith('horizon-mountain-')
         && !['horizon-mountain-3', 'horizon-mountain-7', 'horizon-mountain-10'].includes(object.name)
-      if (object.name === 'orb-sanctuary-pedestal' || object.name === 'mirror-basin-rim' || rejectedFamily || rejectedHorizonRepeat) object.visible = false
+      if (object.name === 'orb-sanctuary-pedestal' || object.name.startsWith('mirror-basin') || rejectedFamily || rejectedHorizonRepeat) object.visible = false
       if (!(object instanceof THREE.Mesh)) return
       object.receiveShadow = true
       object.castShadow = !object.name.includes('water')
@@ -302,7 +302,7 @@ function fissureGeometry(inner = false, mirrored = false) {
 
 function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onActivate: () => void }) {
   const isGround = side === 'ground'
-  const x = isGround ? -3.72 : 3.72
+  const x = isGround ? -2.72 : 2.86
   const color = isGround ? '#8dd9ad' : '#b7a3e3'
   const stone = useSanctuaryStone()
   const outer = useMemo(() => {
@@ -325,9 +325,9 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v136-recessed-rock-cut-threshold', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, 0.10, -7.12]} scale={[0.88, 0.88, 0.88]}>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v137-integrated-narrow-rock-cut-threshold', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.18 : 0.46, isGround ? -7.34 : -7.48]} rotation={[0, isGround ? 0.08 : -0.10, isGround ? -0.025 : 0.035]} scale={isGround ? [0.68, 0.72, 0.58] : [0.58, 0.64, 0.54]}>
     <mesh name={`home-v136-${side}-load-bearing-fissure-shell`} geometry={outer} castShadow receiveShadow>
-      <meshPhysicalMaterial color={isGround ? '#293a31' : '#30333d'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.93} metalness={0.01} envMapIntensity={0.42} />
+      <meshPhysicalMaterial color={isGround ? '#26362f' : '#2b3332'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.95} metalness={0.005} envMapIntensity={0.28} />
     </mesh>
     <mesh name={`home-v136-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
       <meshStandardMaterial color={isGround ? '#15291f' : '#242234'} emissive={color} emissiveIntensity={0.16} roughness={0.88} transparent opacity={0.86} side={THREE.DoubleSide} />
@@ -405,10 +405,7 @@ function SanctuaryArchitecture() {
       <meshPhysicalMaterial color={index % 2 ? '#35443c' : '#2d3c34'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.90} metalness={0.015} envMapIntensity={0.52} />
     </mesh>)}
     <group name="home-v136-open-apse-crown" userData={{ treatment: 'open-sky-arched-stone-silhouette-no-tubular-canopy' }} />
-    {[[-2.56, 1.02, -7.50, 1.18], [2.72, 1.24, -7.72, 0.92], [-1.74, 3.34, -7.62, 0.74]].map(([x, y, z, length], index) => <mesh key={index} name={`home-v133-recessed-service-light-${index}`} position={[x, y, z]} rotation={[0, 0, index % 2 ? -0.16 : 0.14]}>
-      <boxGeometry args={[0.035, length, 0.04]} />
-      <meshStandardMaterial color="#638b78" emissive="#638b78" emissiveIntensity={0.32} roughness={0.56} />
-    </mesh>)}
+    <group name="home-v137-recessed-service-light-coves" userData={{ treatment: 'light-belongs-to-threshold-recesses-no-floating-bars' }} />
   </group>
 }
 
@@ -421,9 +418,10 @@ function cradleSupportGeometry(side: -1 | 1) {
 
 function ApseAndOrbCradle() {
   const supports = useMemo(() => [cradleSupportGeometry(-1), cradleSupportGeometry(1)], [])
+  const stone = useSanctuaryStone()
   return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v136-wall-seated-stone-yoke', loadPath: 'apse-bearing-brackets-to-memory-volume' }} position={[ORB.x, 0, ORB.z - 0.34]}>
     {supports.map((geometry, index) => <mesh key={index} name={`home-v136-grounded-cradle-bracket-${index}`} geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial color={index ? '#35483f' : '#2e4038'} roughness={0.91} metalness={0.02} />
+      <meshPhysicalMaterial color={index ? '#2b3c34' : '#26372f'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.24, 0.24)} roughnessMap={stone.arm} roughness={0.96} metalness={0.005} envMapIntensity={0.24} />
     </mesh>)}
   </group>
 }
@@ -484,16 +482,16 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
     return geometry
   }, [])
   const memoryVolume = useMemo(() => {
-    const geometry = new THREE.SphereGeometry(0.88, 34, 24)
+    const geometry = new THREE.IcosahedronGeometry(0.82, 4)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
     for (let index = 0; index < positions.count; index += 1) {
       const x = positions.getX(index)
       const y = positions.getY(index)
       const z = positions.getZ(index)
-      const latitude = y / 0.88
-      const shoulder = 0.82 + Math.sin(latitude * Math.PI * 1.15) * 0.085 + Math.cos((x + z) * 3.4) * 0.028
-      const taper = 0.82 - latitude * 0.14
-      positions.setXYZ(index, x * shoulder * taper * 0.78, y * 1.12 + 0.055 * Math.sin(x * 4.2) - 0.08, z * shoulder * (0.62 + 0.045 * latitude))
+      const latitude = y / 0.82
+      const shoulder = 0.90 + Math.sin(latitude * Math.PI * 1.35) * 0.10 + Math.cos((x + z) * 4.2) * 0.045
+      const taper = 0.94 - latitude * 0.10
+      positions.setXYZ(index, x * shoulder * taper * 1.02, y * 0.92 + 0.075 * Math.sin(x * 4.2) - 0.04, z * shoulder * (0.84 + 0.055 * latitude))
     }
     positions.needsUpdate = true
     geometry.computeVertexNormals()

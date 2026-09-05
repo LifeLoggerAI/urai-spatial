@@ -249,7 +249,7 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
         vec3 color = mix(deep, cyan, smoothstep(-0.7, 0.75, vElevation));
         color = mix(color, violet, smoothstep(0.45, 1.0, radial) * 0.55);
         float contour = 0.45 + 0.55 * sin((vElevation + radial) * 15.0);
-        float alpha = fade * (0.08 + contour * 0.075);
+        float alpha = fade * (0.08 + contour * 0.075) * mix(1.0, 1.7, uSelected);
         gl_FragColor = vec4(color, alpha);
       }
     `,
@@ -272,14 +272,14 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
 
 function MemorySeed({ aura, active }: { aura: string; active: boolean }) {
   const geometry = useMemo(() => {
-    const seed = new THREE.SphereGeometry(1, 28, 20);
+    const seed = new THREE.IcosahedronGeometry(0.62, 3);
     const positions = seed.getAttribute("position") as THREE.BufferAttribute;
     for (let index = 0; index < positions.count; index += 1) {
       const x = positions.getX(index);
       const y = positions.getY(index);
       const z = positions.getZ(index);
-      const ripple = 1 + Math.sin(x * 3.7 + y * 2.4) * 0.035 + Math.cos(z * 4.1 - y) * 0.025;
-      positions.setXYZ(index, x * ripple * 0.86, y * ripple * 0.96, z * ripple * 0.72);
+      const ripple = 1 + Math.sin(x * 5.7 + y * 3.4) * 0.075 + Math.cos(z * 6.1 - y * 1.4) * 0.055;
+      positions.setXYZ(index, x * ripple * 0.88, y * ripple * 1.06, z * ripple * 0.74);
     }
     positions.needsUpdate = true;
     seed.computeVertexNormals();
@@ -291,8 +291,8 @@ function MemorySeed({ aura, active }: { aura: string; active: boolean }) {
     </mesh>
     <FieldParticles seed={active ? 417 : 211} count={active ? 30 : 12} radius={active ? 1.05 : 0.72} depth={active ? 1.8 : 1.15} height={active ? 1.8 : 1.15} color={ICE} opacity={active ? 0.58 : 0.34} size={active ? 0.052 : 0.034} />
     {active ? <>
-      <Current points={[[-1.52, -0.18, 0.18], [-0.82, 0.18, -0.28], [-0.22, 0.34, -0.54]]} color={aura} opacity={0.34} width={0.018} />
-      <Current points={[[0.30, -0.42, -0.44], [0.92, -0.10, -0.20], [1.48, 0.28, 0.22]]} color={ICE} opacity={0.26} width={0.014} />
+      <Current points={[[-0.88, -0.16, 0.12], [-0.56, 0.10, -0.22], [-0.24, 0.24, -0.40]]} color={aura} opacity={0.26} width={0.012} />
+      <Current points={[[0.24, -0.30, -0.32], [0.52, -0.08, -0.18], [0.86, 0.20, 0.14]]} color={ICE} opacity={0.20} width={0.010} />
     </> : null}
   </group>;
 }
@@ -336,7 +336,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
   });
   return (
     <group ref={root} name="life-map-white-gold-life-core" position={LIFE_MAP_CORE_POSITION} visible={!hidden}>
-      <AuthoredMemoryStar aura={GOLD} active scale={1.62} clip="MemoryStar_Focus" />
+      <AuthoredMemoryStar aura={GOLD} active scale={0.92} clip="MemoryStar_Focus" />
       <Current points={[[-4.8, 0.15, 0.5], [-2.2, 0.9, -0.7], [0, 0.25, -1.2], [2.4, -0.7, -0.6], [5.0, 0.18, 0.4]]} color={GOLD} opacity={0.24} width={0.018} />
       <Sparkles count={tier === "low" ? 16 : 30} scale={[6, 4.5, 6]} size={1.6} speed={reducedMotion ? 0 : 0.08} opacity={0.38} color={GOLD} />
       <pointLight color={GOLD} intensity={tier === "low" ? 4 : 7} distance={22} decay={2} />
@@ -347,7 +347,7 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden: boolean; reducedMot
 function ChapterAnchor({ aura, index }: { aura: string; index: number }) {
   return (
     <group rotation={[index * 0.18, index * 0.33, index * 0.11]}>
-      <AuthoredMemoryStar aura={aura} active={false} scale={0.82 + index * 0.035} />
+      <AuthoredMemoryStar aura={aura} active={false} scale={0.48 + index * 0.018} />
       <Current points={[[-2.3, -0.25, 0.7], [-1.2, 0.6, -0.45], [0.15, 0.95, -0.85], [2.45, 0.15, 0.35]]} color={aura} opacity={0.4} width={0.023} />
     </group>
   );
@@ -488,7 +488,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 1.18 : 0.82 + importance * 0.30}
+      scale={active ? 0.56 : 0.42 + importance * 0.14}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
@@ -523,7 +523,7 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return (
     <group>
-      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 1.35 : 0.62} transparent opacity={kind === "protected" ? 0.08 : active ? 0.7 : 0.23} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+      <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 0.72 : 0.24} transparent opacity={kind === "protected" ? 0.035 : active ? 0.42 : 0.075} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
       {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * 0.19) % 1} /> : null}
     </group>
   );
@@ -550,6 +550,7 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
     <group name="life-map-curved-semantic-paths">
       {links.map((link, index) => {
         const active = Boolean(selected && (selected.id === link.source.id || selected.id === link.target.id));
+        if (!selected && index % 3 !== 0) return null;
         if (selected && phase === "arrival" && !active) return null;
         return <SemanticPath key={`${link.source.id}:${link.target.id}`} source={link.source} target={link.target} active={active} reducedMotion={reducedMotion} index={index} />;
       })}
@@ -603,8 +604,8 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
     >
       <primitive object={chamber} visible={false} />
       <group scale={2.94}>
-        <Current points={[[-5.8, -2.4, 0.8], [-3.6, 1.5, -1.7], [0, 3.5, -2.8], [3.4, 1.7, -1.8], [5.4, -2.1, 0.6]]} color={selected.aura} opacity={0.18} width={0.030} />
-        <Current points={[[-4.7, -2.0, -1.4], [-2.8, 1.0, -3.0], [0.2, 2.6, -3.8], [3.1, 0.8, -3.0], [4.8, -1.8, -1.6]]} color={ICE} opacity={0.12} width={0.020} />
+        <Current points={[[-2.7, -1.4, 0.4], [-1.5, 0.8, -1.0], [0, 1.8, -1.8], [1.6, 0.7, -1.1], [2.8, -1.2, 0.3]]} color={selected.aura} opacity={0.12} width={0.016} />
+        <Current points={[[-2.1, -1.1, -0.8], [-1.2, 0.5, -1.7], [0.1, 1.3, -2.2], [1.3, 0.4, -1.7], [2.2, -1.0, -0.9]]} color={ICE} opacity={0.08} width={0.012} />
         <FieldParticles seed={996} count={82} radius={5.2} depth={7.2} height={6.6} color={selected.aura} opacity={0.28} size={0.046} />
         <Sparkles count={36} scale={[8, 6, 8]} size={1.7} speed={reducedMotion ? 0 : 0.06} opacity={0.30} color={ICE} />
         <pointLight color={selected.aura} intensity={6} distance={22} decay={2} />
