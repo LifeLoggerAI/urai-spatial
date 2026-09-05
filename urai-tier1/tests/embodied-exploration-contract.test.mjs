@@ -15,15 +15,15 @@ const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
-const travel = read('src/spatial/travelKernel.ts')
+const travel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 
 
 test('shared movement kernel preserves stable embodied controls and bounded motion', () => {
   for (const marker of [
-    'createTravelKernel',
-    'resolveTravelDestination',
-    'resolveTravelIntent',
-    'clampTravelPosition',
+    'useMovementInput',
+    'stepEmbodiedMotion',
+    'MovementBounds',
+    'THREE.MathUtils.clamp',
   ]) has(travel, marker)
 })
 
@@ -144,9 +144,11 @@ test('Life Map preserves private-by-default canonical ownership and semantic ret
   ]) has(lifeMap, marker)
 })
 
-test('travel infrastructure keeps fallback and canonical ascent capability', () => {
+test('travel infrastructure keeps movement input, bounded stepping, and virtual controls', () => {
   for (const marker of [
-    'resolveTravelDestination',
-    'clampTravelPosition',
+    'useMovementInput',
+    'stepEmbodiedMotion',
+    'setVirtualMovement',
+    'clearVirtualMovement',
   ]) has(travel, marker)
 })
