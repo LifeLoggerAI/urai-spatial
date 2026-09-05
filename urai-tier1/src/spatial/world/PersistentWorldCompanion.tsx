@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
@@ -116,7 +117,10 @@ export function PersistentWorldCompanion() {
   useEffect(() => {
     const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
       externalActivatorRef.current = event.detail.returnFocusTo ?? null
-      setOpen(true)
+      // External semantic Home controls dispatch a native window event. Commit the
+      // accessibility state synchronously so heavy spatial formation work cannot
+      // leave the visible companion stale/aria-hidden after an intentional click.
+      flushSync(() => setOpen(true))
       publishCompanionAttention()
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
