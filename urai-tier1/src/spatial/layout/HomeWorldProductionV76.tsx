@@ -281,7 +281,7 @@ function SanctuaryTerraces() {
       const t = index / stations
       const z = 5.85 - t * 16.10
       const center = Math.sin(t * Math.PI * 1.55) * 0.42 + Math.sin(t * Math.PI * 4.0) * 0.10 - t * 0.08
-      const half = 0.13 - t * 0.035
+      const half = 0.032 - t * 0.010
       const y = -0.125 + t * 0.39 + Math.sin(z * 0.38) * 0.024
       positions.push(center - half, y, z, center + half, y, z)
       if (index < stations) {
