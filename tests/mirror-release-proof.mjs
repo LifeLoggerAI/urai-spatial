@@ -100,49 +100,10 @@ async function createPage(browser, deviceName, options = {}) {
   return { context, page, consoleErrors, failedRequests, httpErrors }
 }
 
-async function screenshot(page, name, { fontReadyTimeoutMs = 0, timeoutMs = 60000 } = {}) {
+async function screenshot(page, name) {
   const relative = path.join('screenshots', `${name}.png`)
-  if (fontReadyTimeoutMs > 0) {
-    await page.evaluate(async (maxWaitMs) => {
-      if (!document.fonts || document.fonts.status === 'loaded') return
-      await Promise.race([
-        document.fonts.ready,
-        new Promise((resolve) => window.setTimeout(resolve, maxWaitMs)),
-      ])
-    }, fontReadyTimeoutMs)
-  }
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  // Playwright's built-in animation disabling waits for finite animations to
-  // finish before capture. Replay owns several route-entry transitions, so the
-  // screenshot can otherwise exhaust its timeout while the page is healthy.
-  // Freeze every animation and transition explicitly, then capture the exact
-  // settled pixels without asking Playwright to fast-forward page timelines.
-  const motionFreeze = await page.addStyleTag({
-    content: '*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;caret-color:transparent!important}',
-  })
-  const cdp = await page.context().newCDPSession(page)
-  let timeoutHandle
-  try {
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-    // Capture the actual Chromium surface directly. Playwright's higher-level
-    // screenshot path performs an additional unbounded document.fonts wait;
-    // Replay can keep that path occupied after client navigation even though
-    // the rendered browser surface and font set are already stable.
-    const captured = await Promise.race([
-      cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false }),
-      new Promise((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error(`CDP screenshot timed out after ${timeoutMs}ms`)), timeoutMs)
-      }),
-    ])
-    if (!captured || typeof captured !== 'object' || !('data' in captured) || typeof captured.data !== 'string' || captured.data.length === 0) {
-      throw new Error('CDP screenshot returned no PNG data')
-    }
-    await fs.writeFile(path.join(outDir, relative), Buffer.from(captured.data, 'base64'))
-  } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle)
-    await cdp.detach().catch(() => {})
-    await motionFreeze.evaluate((node) => node.remove()).catch(() => {})
-  }
+  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60000 })
   return relative
 }
 
@@ -269,11 +230,7 @@ async function proveTransition(browser, destination, buttonName) {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
-    const shot = await screenshot(
-      page,
-      `desktop-${name}`,
-      destination === 'replay' ? { fontReadyTimeoutMs: 5000, timeoutMs: 20000 } : undefined,
-    )
+    const shot = await screenshot(page, `desktop-${name}`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {

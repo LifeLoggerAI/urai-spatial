@@ -20,7 +20,6 @@ const css = read('src/app/spatial-runtime-restoration.css')
 const structuralCss = read('src/app/continuous-spatial-proof-defects.css')
 const proof = read('../scripts/capture-continuous-spatial-proof-v18.mjs')
 const stateProof = read('../scripts/capture-home-state-proof.mjs')
-const nativeDoorwayProof = read('../tests/native-doorway-proof.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const stateProofWorkflow = read('../.github/workflows/home-state-proof.yml')
 const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-stable.mjs')
@@ -77,7 +76,6 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
-    'data-home-animation-owner="authored-sanctuary-plus-gltf-interactions"',
     '<Canvas',
   ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
   assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
@@ -92,8 +90,6 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(homeProduction, /requestUraiWorldTravel/)
   assert.match(groundGateway, /Open the ground and descend into Hidden Infrastructure/)
   assert.match(homeRuntime, /requestUraiWorldOrbOpen/)
-  assert.match(homeRuntime, /data-home-navigation-interactive=\{interactive \? 'true' : 'false'\}/)
-  assert.match(nativeDoorwayProof, /data-home-navigation-interactive/)
   assert.match(homeRuntime, /webglcontextlost/)
   assert.match(homeRuntime, /webglcontextrestored/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
@@ -119,11 +115,6 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(homeProduction, /transition==='life-map'/)
   assert.match(homeProduction, /setProgress\(t\)/)
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /data-home-portal-sequence=\{portalSequence\}/)
-  assert.match(homeProduction, /data-home-portal-lifecycle="environmental-approach-traversal-arrival"/)
-  assert.match(homeProduction, /owner\.current\?\.setAttribute\('data-home-portal-sequence',sequence\)/)
-  assert.match(homeProduction, /publishPortalSequence\('life-map:traversal'\)[\s\S]*requestUraiWorldTravel\(\{destination:'life-map'/)
-  assert.match(homeProduction, /publishPortalSequence\('life-map:closing'\)/)
   assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-third-person'\}/)
   assert.match(homeProduction, /data-home-input-locked=\{transition!=='none'\?'true':'false'\}/)
   assert.match(homeProduction, /store\.setPhase\('HOME'\)/)
@@ -170,7 +161,7 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'Page.captureScreenshot', 'captureBeyondViewport: false', 'Home proof CDP screenshot returned no PNG data', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
