@@ -82,4 +82,6 @@ jobs:
           name: portal-orb-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/portal-orb-proof
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
+          retention-days: 90
