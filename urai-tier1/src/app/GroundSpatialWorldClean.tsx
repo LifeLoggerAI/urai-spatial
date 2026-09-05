@@ -13,10 +13,13 @@ import {
   useMovementInput,
   type MovementInput,
 } from "@/spatial/navigation/EmbodiedNavigation";
-import { resolvePromotedUraiSpatialAssetPath } from "@/spatial/assets/promotedAssetResolver";
+import { resolveDisclosedReviewUraiSpatialAssetPath } from "@/spatial/assets/promotedAssetResolver";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
 
-const GROUND_MODEL = resolvePromotedUraiSpatialAssetPath('ground-world-terrain-glb-v1')!;
+const GROUND_MODEL = resolveDisclosedReviewUraiSpatialAssetPath(
+  'ground-world-terrain-glb-v1',
+  process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true',
+)!;
 const BOUNDS = { minX: -14, maxX: 14, minZ: -34, maxZ: 11 };
 const SPAWN = new THREE.Vector3(0, 0, 4);
 
