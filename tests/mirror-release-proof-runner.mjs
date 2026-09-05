@@ -81,7 +81,6 @@ async function proveReplayCaptureReconciliation() {
     await page.getByRole('button', { name: 'Replay this thread', exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === '/replay', { timeout: 30000 })
 
-    // Require the destination's canonical proof/timeline ownership before retained capture.
     await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
     await page.getByTestId('urai-replay-timeline').first().waitFor({ state: 'attached', timeout: 45000 })
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
@@ -117,7 +116,7 @@ if (original.code === 0 && !original.signal) {
   process.exit(0)
 }
 
-const receipt = JSON.parse(await readFile(path.join(outDir, 'receipt.json'), 'utf8'))
+const receipt = JSON.parse(await readFile(path.join(outDir, 'mirror-release-receipt.json'), 'utf8'))
 if (!isNarrowReplayScreenshotFailure(receipt)) {
   throw new Error(`Mirror release proof failed without eligible reconciliation: code=${original.code} signal=${original.signal || 'none'}`)
 }
