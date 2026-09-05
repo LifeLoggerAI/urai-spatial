@@ -301,7 +301,6 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
   const isGround = side === 'ground'
   const x = isGround ? -3.12 : 2.74
   const color = isGround ? '#8dd9ad' : '#b7a3e3'
-  const stone = useSanctuaryStone()
   const outer = useMemo(() => {
     const frame = fissureGeometry(false, !isGround)
     frame.holes.push(new THREE.Path(fissureGeometry(true, !isGround).getPoints(18).reverse()))
@@ -322,12 +321,10 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v142-asymmetric-bedrock-seated-threshold', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.10 : 0.42, isGround ? -7.42 : -8.10]} rotation={[0, isGround ? 0.16 : -0.19, isGround ? -0.055 : 0.045]} scale={isGround ? [0.56, 0.66, 0.62] : [0.46, 0.56, 0.58]}>
-    <mesh name={`home-v136-${side}-load-bearing-fissure-shell`} geometry={outer} castShadow receiveShadow>
-      <meshPhysicalMaterial color={isGround ? '#26362f' : '#2b3332'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.95} metalness={0.005} envMapIntensity={0.28} />
-    </mesh>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v146-recessed-field-inside-bearing-wing-aperture', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.10 : 0.42, isGround ? -8.10 : -8.40]} rotation={[0, isGround ? 0.08 : -0.08, isGround ? -0.025 : 0.025]} scale={isGround ? [0.62, 0.70, 0.62] : [0.52, 0.62, 0.58]}>
+    <group name={`home-v136-${side}-load-bearing-fissure-shell`} userData={{ structuralOwner: 'layered-sanctuary-wing', retiredFreestandingFrame: true }} />
     <mesh name={`home-v136-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
-      <meshStandardMaterial color={isGround ? '#15291f' : '#242234'} emissive={color} emissiveIntensity={0.16} roughness={0.88} transparent opacity={0.86} side={THREE.DoubleSide} />
+      <meshStandardMaterial color={isGround ? '#11251b' : '#211d31'} emissive={color} emissiveIntensity={0.22} roughness={0.91} transparent opacity={0.80} side={THREE.DoubleSide} />
     </mesh>
     <points name={`home-v136-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.38]}>
       <pointsMaterial color={color} size={0.035} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
@@ -399,6 +396,12 @@ function layeredSanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
       const b = a + 1
       const c = a + xSegments + 1
       const d = c + 1
+      const cellTx = (xi + 0.5) / xSegments
+      const cellTy = (yi + 0.5) / ySegments
+      const portalX = left ? -3.12 : 2.74
+      const portalTx = (portalX - outerX) / (innerX - outerX)
+      const apertureHalf = cellTy < 0.50 ? 0.145 : Math.max(0.025, 0.145 - (cellTy - 0.50) * 0.54)
+      if (cellTy < 0.76 && Math.abs(cellTx - portalTx) < apertureHalf) continue
       indices.push(a, b, c, b, d, c)
     }
   }
@@ -412,7 +415,7 @@ function layeredSanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
 
 function SanctuaryArchitecture() {
   const stone = useSanctuaryStone()
-  const wings = useMemo(() => (['left', 'right'] as const).flatMap((side) => [0, 1, 2].map((layer) => ({ side, layer, geometry: layeredSanctuaryWingGeometry(side, layer) }))), [])
+  const wings = useMemo(() => (['left', 'right'] as const).flatMap((side) => (side === 'left' ? [0, 1, 2] : [0, 1]).map((layer) => ({ side, layer, geometry: layeredSanctuaryWingGeometry(side, layer) }))), [])
   const ribs = useMemo(() => [
     { side: 'left' as const, layer: 0, position: [-4.64, 1.54, -8.18] as Vec3, rotation: [0.02, 0.40, -0.08] as Vec3, scale: [0.34, 0.82, 0.88] as Vec3 },
     { side: 'left' as const, layer: 2, position: [-1.68, 1.02, -8.42] as Vec3, rotation: [0.01, 0.10, -0.12] as Vec3, scale: [0.28, 0.56, 0.72] as Vec3 },
