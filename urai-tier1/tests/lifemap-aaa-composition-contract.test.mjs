@@ -89,6 +89,7 @@ test('overview composition is opaque, authored, and independently framed for por
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
+  assert.match(world, /fragmentShader: `\s+uniform float uSelected;/)
   assert.match(world, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 150 : 240/)
   assert.match(world, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)
   assert.match(world, /profile\.tier === "low" \? 70 : 160/)

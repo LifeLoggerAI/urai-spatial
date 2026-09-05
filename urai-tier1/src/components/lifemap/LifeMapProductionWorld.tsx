@@ -238,6 +238,7 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
       }
     `,
     fragmentShader: `
+      uniform float uSelected;
       varying float vElevation;
       varying vec2 vUv;
       void main() {
