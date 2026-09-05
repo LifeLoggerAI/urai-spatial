@@ -17,7 +17,7 @@ test('V105 uses one opaque responsive Canvas with balanced portrait hierarchy', 
   assert.match(styles, /\.canvas/)
 })
 
-test('V149 keeps portrait framing while replacing slab portals and detached Orb supports', () => {
+test('V150 keeps portrait framing with sculpted stone thresholds and grounded Orb volume', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
   assert.match(art, /function SculptedCanyonGround/)
   assert.match(art, /name="home-v125-sculpted-canyon-ground"/)
@@ -27,8 +27,8 @@ test('V149 keeps portrait framing while replacing slab portals and detached Orb 
   assert.match(art, /name="home-v126-bounded-geological-edge-masses"/)
   assert.match(art, /function FramedFissure/)
   assert.match(art, /home-v126-\$\{side\}-framed-fissure/)
-  assert.match(art, /v149-recessed-signal-rift-inside-weathered-geology/)
-  assert.match(art, /scale=\{isGround \? \[0\.90, 0\.86, 0\.68\] : \[0\.84, 0\.82, 0\.64\]\}/)
+  assert.match(art, /v150-sculpted-stone-reveal-with-recessed-signal-field/)
+  assert.match(art, /scale=\{isGround \? \[0\.78, 0\.76, 0\.58\] : \[0\.72, 0\.73, 0\.55\]\}/)
   assert.match(art, /function weatheredSanctuaryMassGeometry/)
   assert.match(art, /home-v149-weathered-rift-threshold-sanctuary/)
   assert.match(art, /ground-rift-settled-shoulder/)
@@ -39,7 +39,8 @@ test('V149 keeps portrait framing while replacing slab portals and detached Orb 
   assert.match(art, /function LivingOrb/)
   assert.match(art, /name="home-v126-apse-integrated-orb"/)
   assert.match(art, /name="home-v125-atmospheric-depth-motes"/)
-  assert.match(art, /activeArtRevision: 'v149-weathered-rift-thresholds-filled-memory-volume'/)
+  assert.match(art, /activeArtRevision: 'v150-sculpted-stone-thresholds-dense-memory-volume'/)
+  assert.match(art, /new THREE\.SphereGeometry\(1, 36, 24\)/)
   assert.match(art, /object\.name === 'orb-aura'/)
   assert.match(art, /object\.name\.startsWith\('orb-orbit-'/)
   assert.doesNotMatch(art, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry/)
