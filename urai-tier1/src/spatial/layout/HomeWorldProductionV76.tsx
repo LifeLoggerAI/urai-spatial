@@ -275,17 +275,17 @@ function SanctuaryTerraces() {
 
 function GeologicalFrame() {
   const placements: AssetProps[] = [
-    // The scans are geological accents, never the architecture or the horizon.
-    // Keeping every mass below eye level prevents the old pasted-cliff crop and
-    // gives the same camera rig a readable sanctuary on portrait displays.
-    { name: 'home-v126-near-port-outcrop', url: ROCK_FACE_A, position: [-6.18, -0.34, 2.0], rotation: [0.04, 0.88, -0.08], span: 1.72, tint: '#35423a' },
-    { name: 'home-v126-mid-port-outcrop', url: ROCK_FACE_B, position: [-6.08, -0.28, -3.1], rotation: [-0.02, 1.22, 0.05], span: 2.08, tint: '#404b41' },
-    { name: 'home-v126-deep-port-outcrop', url: ROCK_FACE_A, position: [-5.98, -0.18, -8.8], rotation: [0.03, 0.42, -0.06], span: 2.24, tint: '#303d36' },
-    { name: 'home-v126-near-starboard-outcrop', url: ROCK_FACE_B, position: [6.20, -0.36, 1.2], rotation: [-0.03, -0.80, 0.06], span: 1.66, tint: '#3b4a41' },
-    { name: 'home-v126-mid-starboard-outcrop', url: ROCK_FACE_A, position: [6.06, -0.26, -4.0], rotation: [0.03, -1.16, -0.05], span: 2.10, tint: '#3b473e' },
-    { name: 'home-v126-deep-starboard-outcrop', url: ROCK_FACE_B, position: [5.96, -0.18, -9.2], rotation: [-0.02, -0.38, 0.07], span: 2.34, tint: '#2f3c37' },
+    // Scanned stone now completes the load paths behind the authored thresholds.
+    // Their staggered depth creates a readable canyon rather than a pasted wall.
+    { name: 'home-v142-port-threshold-bedrock', url: ROCK_FACE_A, position: [-3.78, -0.22, -7.62], rotation: [0.06, 0.72, -0.09], span: 2.62, tint: '#34453b' },
+    { name: 'home-v142-port-deep-outcrop', url: ROCK_FACE_B, position: [-5.20, -0.08, -9.42], rotation: [-0.04, 1.02, 0.04], span: 3.10, tint: '#2c3932' },
+    { name: 'home-v142-orb-cradle-bedrock', url: ROCK_FACE_B, position: [-0.64, -0.14, -8.34], rotation: [0.02, -0.30, -0.03], span: 1.72, tint: '#425047' },
+    { name: 'home-v142-starboard-threshold-bedrock', url: ROCK_FACE_A, position: [3.46, -0.20, -8.28], rotation: [-0.03, -0.86, 0.07], span: 2.36, tint: '#38483e' },
+    { name: 'home-v142-starboard-deep-outcrop', url: ROCK_FACE_B, position: [5.52, -0.10, -10.10], rotation: [0.04, -0.48, -0.06], span: 3.42, tint: '#29372f' },
   ]
-  return <group name="home-v126-bounded-geological-edge-masses" userData={{ retainedPlacements: placements.map((placement) => placement.name), visualRepair: 'v129-governed-horizon-replaces-pasted-scans' }} />
+  return <group name="home-v126-bounded-geological-edge-masses" userData={{ retainedPlacements: placements.map((placement) => placement.name), visualRepair: 'v142-scanned-bedrock-completes-asymmetric-load-paths' }}>
+    {placements.map((placement) => <ProductionAsset key={placement.name} {...placement} />)}
+  </group>
 }
 
 function fissureGeometry(inner = false, mirrored = false) {
@@ -302,7 +302,7 @@ function fissureGeometry(inner = false, mirrored = false) {
 
 function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onActivate: () => void }) {
   const isGround = side === 'ground'
-  const x = isGround ? -2.72 : 2.86
+  const x = isGround ? -3.12 : 2.74
   const color = isGround ? '#8dd9ad' : '#b7a3e3'
   const stone = useSanctuaryStone()
   const outer = useMemo(() => {
@@ -325,7 +325,7 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v137-integrated-narrow-rock-cut-threshold', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.18 : 0.46, isGround ? -7.34 : -7.48]} rotation={[0, isGround ? 0.08 : -0.10, isGround ? -0.025 : 0.035]} scale={isGround ? [0.68, 0.72, 0.58] : [0.58, 0.64, 0.54]}>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v142-asymmetric-bedrock-seated-threshold', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.10 : 0.42, isGround ? -7.42 : -8.10]} rotation={[0, isGround ? 0.16 : -0.19, isGround ? -0.055 : 0.045]} scale={isGround ? [0.56, 0.66, 0.62] : [0.46, 0.56, 0.58]}>
     <mesh name={`home-v136-${side}-load-bearing-fissure-shell`} geometry={outer} castShadow receiveShadow>
       <meshPhysicalMaterial color={isGround ? '#26362f' : '#2b3332'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.95} metalness={0.005} envMapIntensity={0.28} />
     </mesh>
@@ -369,44 +369,18 @@ function sanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
 
 function SanctuaryArchitecture() {
   const stone = useSanctuaryStone()
-  const apse = useMemo(() => {
-    const positions: number[] = [], uvs: number[] = [], indices: number[] = []
-    const xs = 34, ys = 24
-    for (let yi = 0; yi <= ys; yi += 1) {
-      const ty = yi / ys
-      for (let xi = 0; xi <= xs; xi += 1) {
-        const tx = xi / xs, x = -3.15 + tx * 6.3
-        const crown = 3.36 + Math.pow(Math.max(0, 1 - Math.abs(x) / 3.15), 1.6) * 0.92
-        const y = 0.10 + ty * crown
-        const z = -8.72 + x * x * 0.105 + Math.sin(x * 1.7 + y * 0.62) * 0.035
-        positions.push(x, y, z); uvs.push(tx * 2.5, ty * 2.8)
-      }
-    }
-    for (let yi = 0; yi < ys; yi += 1) for (let xi = 0; xi < xs; xi += 1) {
-      const a = yi * (xs + 1) + xi, b = a + 1, c = a + xs + 1, d = c + 1
-      const cellX = -3.15 + ((xi + 0.5) / xs) * 6.3
-      if (Math.abs(cellX) < 1.24 && yi / ys > 0.22) continue
-      indices.push(a, b, c, b, d, c)
-    }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-    geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry
-  }, [])
   const buttresses = useMemo(() => ([
-    { side: 'left' as const, layer: 0, position: [-3.62, 1.54, -7.56] as Vec3, rotation: [0.02, 0.48, -0.08] as Vec3, scale: [0.88, 0.92, 1] as Vec3 },
-    { side: 'left' as const, layer: 1, position: [-3.10, 2.05, -8.10] as Vec3, rotation: [-0.02, 0.28, 0.04] as Vec3, scale: [0.68, 0.78, 1] as Vec3 },
-    { side: 'right' as const, layer: 0, position: [3.52, 1.44, -7.82] as Vec3, rotation: [-0.02, -0.42, 0.065] as Vec3, scale: [0.84, 0.86, 1] as Vec3 },
-    { side: 'right' as const, layer: 2, position: [2.98, 2.28, -8.34] as Vec3, rotation: [0.025, -0.24, -0.035] as Vec3, scale: [0.60, 0.68, 1] as Vec3 },
+    { side: 'left' as const, layer: 0, position: [-4.18, 1.22, -8.22] as Vec3, rotation: [0.08, 0.64, -0.18] as Vec3, scale: [0.68, 0.78, 1.18] as Vec3 },
+    { side: 'left' as const, layer: 2, position: [-2.18, 2.72, -9.18] as Vec3, rotation: [0.12, 0.18, -0.88] as Vec3, scale: [0.42, 1.16, 1.52] as Vec3 },
+    { side: 'left' as const, layer: 1, position: [-1.02, 3.54, -9.38] as Vec3, rotation: [0.08, -0.06, -1.14] as Vec3, scale: [0.30, 0.98, 1.28] as Vec3 },
+    { side: 'right' as const, layer: 0, position: [3.98, 1.02, -8.74] as Vec3, rotation: [-0.04, -0.58, 0.14] as Vec3, scale: [0.60, 0.72, 1.08] as Vec3 },
+    { side: 'right' as const, layer: 2, position: [2.62, 2.92, -9.62] as Vec3, rotation: [-0.10, -0.20, 0.96] as Vec3, scale: [0.34, 0.92, 1.34] as Vec3 },
   ].map((entry) => ({ ...entry, geometry: sanctuaryWingGeometry(entry.side, entry.layer) }))), [])
-  return <group name="home-v133-asymmetric-stone-apse-sanctuary">
-    <mesh name="home-v133-deep-concave-stone-apse" geometry={apse} receiveShadow castShadow>
-      <meshPhysicalMaterial color="#28372f" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.91} metalness={0.01} envMapIntensity={0.54} side={THREE.DoubleSide} />
-    </mesh>
+  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v142-open-canyon-no-flat-apse-facade' }}>
     {buttresses.map((entry, index) => <mesh key={index} name={`home-v133-staggered-bearing-buttress-${index}`} geometry={entry.geometry} position={entry.position} rotation={entry.rotation} scale={entry.scale} castShadow receiveShadow>
       <meshPhysicalMaterial color={index % 2 ? '#35443c' : '#2d3c34'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.90} metalness={0.015} envMapIntensity={0.52} />
     </mesh>)}
-    <group name="home-v136-open-apse-crown" userData={{ treatment: 'open-sky-arched-stone-silhouette-no-tubular-canopy' }} />
+    <group name="home-v136-open-apse-crown" userData={{ treatment: 'v142-staggered-cantilevered-stone-ribs-open-to-sky' }} />
     <group name="home-v137-recessed-service-light-coves" userData={{ treatment: 'light-belongs-to-threshold-recesses-no-floating-bars' }} />
   </group>
 }
