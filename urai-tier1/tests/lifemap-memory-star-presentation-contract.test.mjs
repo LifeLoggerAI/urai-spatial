@@ -22,15 +22,17 @@ assert.ok(
   source.includes('prepareAuthoredModel(scene, aura, hideRejectedMemoryStarPresentationNode)'),
   'AuthoredMemoryStar must apply the rejected-presentation filter to its cloned governed asset',
 );
-assert.equal(
+assert.ok(
   source.includes('name.startsWith("memory-star-shard-")'),
-  false,
-  'governed memory-star shards must not be suppressed by the presentation filter',
+  'Life Map must suppress the rejected repeated shard-star presentation family',
 );
-assert.equal(
+assert.ok(
   source.includes('name === "memory-star-core"'),
-  false,
-  'governed memory-star core must not be suppressed by the presentation filter',
+  'Life Map must suppress the rejected generic energy-core presentation node',
+);
+assert.ok(
+  source.includes('function MemorySeed(') && source.includes('name="life-map-sculpted-memory-seed"'),
+  'Life Map must replace rejected starburst geometry with the restrained sculpted memory seed',
 );
 
 console.log('Life Map memory-star presentation contract passed');

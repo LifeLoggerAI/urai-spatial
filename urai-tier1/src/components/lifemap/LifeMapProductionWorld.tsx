@@ -360,7 +360,7 @@ function ChapterTerritories({ selected }: { selected: LifeMapNode | null }) {
       {LIFE_MAP_CHAPTERS.map((chapter, index) => (
         <group key={chapter.id} position={chapter.position} rotation={chapter.rotation}>
           <FieldParticles seed={index * 71 + 19} count={36} radius={2.8} depth={3.8} height={2.6} color={chapter.aura} opacity={0.30} size={0.045} />
-          <group name={`life-map-chapter-anchor-${index}`} userData={{ retiredRepeatedShardStar: true }} />
+          <ChapterAnchor aura={chapter.aura} index={index} />
         </group>
       ))}
     </group>
