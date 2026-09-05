@@ -364,36 +364,69 @@ function sanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
   return geometry
 }
 
+function layeredSanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
+  const positions: number[] = []
+  const uvs: number[] = []
+  const indices: number[] = []
+  const xSegments = 20
+  const ySegments = 12
+  const left = side === 'left'
+  const outerX = left ? -5.18 + layer * 0.20 : 4.92 - layer * 0.18
+  const innerX = left ? -1.46 - layer * 0.16 : 1.72 + layer * 0.14
+
+  for (let yi = 0; yi <= ySegments; yi += 1) {
+    const ty = yi / ySegments
+    for (let xi = 0; xi <= xSegments; xi += 1) {
+      const tx = xi / xSegments
+      const x = THREE.MathUtils.lerp(outerX, innerX, tx)
+      const innerness = tx
+      const outerHeight = left ? 3.95 : 3.18
+      const innerHeight = left ? 2.22 : 2.54
+      const crown = THREE.MathUtils.lerp(outerHeight, innerHeight, innerness)
+        + Math.sin(tx * Math.PI * (left ? 1.35 : 1.15)) * (left ? 0.58 : 0.34)
+        - layer * 0.24
+      const sill = 0.04 + Math.sin(tx * Math.PI) * 0.10
+      const y = sill + ty * crown
+      const depthCurve = Math.pow(Math.abs(x) / 5.2, 1.55) * 0.62
+      const z = -8.88 + depthCurve + layer * 0.28 + Math.sin(tx * 3.7 + ty * 1.4 + layer) * 0.045
+      positions.push(x, y, z)
+      uvs.push(tx * 2.4, ty * 2.8)
+    }
+  }
+  for (let yi = 0; yi < ySegments; yi += 1) {
+    for (let xi = 0; xi < xSegments; xi += 1) {
+      const a = yi * (xSegments + 1) + xi
+      const b = a + 1
+      const c = a + xSegments + 1
+      const d = c + 1
+      indices.push(a, b, c, b, d, c)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 function SanctuaryArchitecture() {
   const stone = useSanctuaryStone()
-  const wings = useMemo(() => [
-    {
-      name: 'port',
-      geometry: new THREE.CylinderGeometry(4.72, 5.04, 3.82, 34, 8, true, Math.PI + 0.34, 0.76),
-      position: [0, 1.82, -4.36] as Vec3,
-      color: '#23352d',
-    },
-    {
-      name: 'starboard',
-      geometry: new THREE.CylinderGeometry(4.48, 4.82, 3.12, 30, 7, true, Math.PI - 1.02, 0.67),
-      position: [0.18, 1.46, -4.56] as Vec3,
-      color: '#293a32',
-    },
-  ], [])
+  const wings = useMemo(() => (['left', 'right'] as const).flatMap((side) => [0, 1, 2].map((layer) => ({ side, layer, geometry: layeredSanctuaryWingGeometry(side, layer) }))), [])
   const ribs = useMemo(() => [
-    { angle: Math.PI + 0.38, length: 0.055, height: 4.02, y: 1.92, radius: 4.78 },
-    { angle: Math.PI + 0.68, length: 0.050, height: 3.62, y: 1.70, radius: 4.86 },
-    { angle: Math.PI - 0.96, length: 0.052, height: 3.34, y: 1.56, radius: 4.58 },
-    { angle: Math.PI - 0.54, length: 0.046, height: 2.92, y: 1.36, radius: 4.64 },
-  ].map((rib) => ({ ...rib, geometry: new THREE.CylinderGeometry(rib.radius, rib.radius + 0.12, rib.height, 6, 1, true, rib.angle, rib.length) })), [])
-  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v144-curved-open-wings-no-freestanding-slabs' }}>
-    {wings.map((wing) => <mesh key={wing.name} name={`home-v144-${wing.name}-curved-bearing-wing`} geometry={wing.geometry} position={wing.position} castShadow receiveShadow>
-      <meshPhysicalMaterial color={wing.color} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.95} metalness={0.006} envMapIntensity={0.34} side={THREE.DoubleSide} />
+    { side: 'left' as const, layer: 0, position: [-4.64, 1.54, -8.18] as Vec3, rotation: [0.02, 0.40, -0.08] as Vec3, scale: [0.34, 0.82, 0.88] as Vec3 },
+    { side: 'left' as const, layer: 2, position: [-1.68, 1.02, -8.42] as Vec3, rotation: [0.01, 0.10, -0.12] as Vec3, scale: [0.28, 0.56, 0.72] as Vec3 },
+    { side: 'right' as const, layer: 0, position: [4.32, 1.30, -8.34] as Vec3, rotation: [-0.02, -0.36, 0.06] as Vec3, scale: [0.32, 0.70, 0.82] as Vec3 },
+    { side: 'right' as const, layer: 2, position: [1.92, 1.08, -8.50] as Vec3, rotation: [0.02, -0.10, 0.09] as Vec3, scale: [0.24, 0.58, 0.70] as Vec3 },
+  ].map((entry) => ({ ...entry, geometry: sanctuaryWingGeometry(entry.side, entry.layer) })), [])
+  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v145-layered-irregular-wings-no-rectangular-facades' }}>
+    {wings.map((wing) => <mesh key={`${wing.side}-${wing.layer}`} name={`home-v145-${wing.side}-layered-bearing-wing-${wing.layer}`} geometry={wing.geometry} castShadow receiveShadow>
+      <meshPhysicalMaterial color={wing.side === 'left' ? (wing.layer === 0 ? '#22342c' : '#30443a') : (wing.layer === 0 ? '#293b33' : '#35483e')} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.94} metalness={0.006} envMapIntensity={0.36} side={THREE.DoubleSide} transparent opacity={1 - wing.layer * 0.13} />
     </mesh>)}
-    {ribs.map((rib, index) => <mesh key={index} name={`home-v133-staggered-bearing-buttress-${index}`} geometry={rib.geometry} position={[0.10, rib.y, -4.42]} castShadow receiveShadow>
-      <meshPhysicalMaterial color={index % 2 ? '#35483e' : '#405248'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.90} metalness={0.008} envMapIntensity={0.42} side={THREE.DoubleSide} />
+    {ribs.map((rib, index) => <mesh key={index} name={`home-v133-staggered-bearing-buttress-${index}`} geometry={rib.geometry} position={rib.position} rotation={rib.rotation} scale={rib.scale} castShadow receiveShadow>
+      <meshPhysicalMaterial color={index % 2 ? '#3c5045' : '#31443a'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.91} metalness={0.008} envMapIntensity={0.40} />
     </mesh>)}
-    <group name="home-v136-open-apse-crown" userData={{ treatment: 'v144-unequal-curved-wings-open-mountain-aperture' }} />
+    <group name="home-v136-open-apse-crown" userData={{ treatment: 'v145-layered-crown-profiles-open-mountain-aperture' }} />
     <group name="home-v137-recessed-service-light-coves" userData={{ treatment: 'light-belongs-to-threshold-recesses-no-floating-bars' }} />
   </group>
 }
