@@ -697,7 +697,7 @@ async function desktopActionsAndKeyboard() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await clickRouteAction(page, 'Replay', '/replay', 'main')
+    await clickRouteAction(page, 'Replay', '/replay', '[data-testid="cinematic-replay-client"]')
     await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)
