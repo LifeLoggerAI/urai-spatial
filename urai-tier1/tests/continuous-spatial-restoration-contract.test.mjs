@@ -166,9 +166,10 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
     'MobileMovementPad',
   ]) assert.ok(includesCanonical(groundGraph, marker), `missing Ground marker: ${marker}`)
   assert.doesNotMatch(groundGraph, /requestPointerLock|OrbitControls/)
-  assert.match(groundModel, /export type GroundNodeId/)
-  assert.match(groundModel, /GROUND_NODES/)
-  assert.match(groundModel, /GROUND_EDGES/)
+  assert.match(groundModel, /export type GroundDestination/)
+  assert.match(groundModel, /export const DESTINATIONS/)
+  assert.match(ground, /import \{ DESTINATIONS, type GroundDestination, type GroundChamberForm \} from "\.\/ground\/GroundWorldModel"/)
+  assert.match(ground, /ground-enterable-threshold-\$\{destination\.id\}/)
   assert.match(groundCanonical, /data-ground-destination/)
 })
 
