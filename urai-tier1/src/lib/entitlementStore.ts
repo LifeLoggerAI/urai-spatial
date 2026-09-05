@@ -1,4 +1,5 @@
 import { assertExternalAccountAdc } from '@/lib/server/google-adc';
+import { decideStripeEventApplication } from '@/lib/server/stripe-event-order';
 
 export type InsightPlanId = 'free' | 'pro' | 'therapist' | 'founder';
 
@@ -89,10 +90,12 @@ export async function applyStripeEntitlementEvent(input: StripeEntitlementEvent)
       ? { ...defaultEntitlement(input.userId), ...(entitlementSnapshot.data() as Partial<StoredEntitlement>), userId: input.userId }
       : defaultEntitlement(input.userId);
 
-    const isOlder = input.eventCreated < current.lastStripeEventCreated;
-    const wouldResurrectCanceledAtSameTime = input.eventCreated === current.lastStripeEventCreated
-      && current.subscriptionStatus === 'canceled'
-      && input.subscriptionStatus !== 'canceled';
+    const decision = decideStripeEventApplication({
+      currentEventCreated: current.lastStripeEventCreated,
+      currentStatus: current.subscriptionStatus,
+      incomingEventCreated: input.eventCreated,
+      incomingStatus: input.subscriptionStatus,
+    });
 
     const receipt = {
       eventId: input.eventId,
@@ -104,13 +107,13 @@ export async function applyStripeEntitlementEvent(input: StripeEntitlementEvent)
       stripeSubscriptionId: input.stripeSubscriptionId,
       processorStatus: input.subscriptionStatus,
       processingTime: Date.now(),
-      applied: !isOlder && !wouldResurrectCanceledAtSameTime,
-      reason: isOlder ? 'stale-event' : wouldResurrectCanceledAtSameTime ? 'cancellation-precedence' : 'applied',
+      applied: decision.apply,
+      reason: decision.reason,
     };
 
     transaction.create(eventRef, receipt);
 
-    if (isOlder || wouldResurrectCanceledAtSameTime) return 'stale';
+    if (!decision.apply) return 'stale';
 
     transaction.set(entitlementRef, {
       userId: input.userId,
