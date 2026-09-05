@@ -339,95 +339,57 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
   </group>
 }
 
-function sanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
-  const direction = side === 'left' ? -1 : 1
-  const inset = layer * 0.06
-  const shape = new THREE.Shape()
-  const points: Array<[number, number]> = side === 'left'
-    ? [[-0.78 + inset, -1.54], [0.54 - inset, -1.34], [0.72 - inset, 0.82], [0.18, 1.82 - inset], [-0.68 + inset, 1.18], [-0.90 + inset, -0.30]]
-    : [[-0.56 + inset, -1.38], [0.76 - inset, -1.52], [0.88 - inset, -0.20], [0.62 - inset, 1.20], [-0.14, 1.74 - inset], [-0.74 + inset, 0.76]]
-  shape.moveTo(points[0][0], points[0][1])
-  points.slice(1).forEach(([x, y]) => shape.lineTo(x, y))
-  shape.closePath()
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.48 + layer * 0.16,
-    bevelEnabled: true,
-    bevelSize: 0.08,
-    bevelThickness: 0.10,
-    bevelSegments: 2,
-    curveSegments: 2,
-  })
-  geometry.translate(direction * layer * 0.05, 0, 0)
-  return geometry
-}
-
 function layeredSanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
-  const positions: number[] = []
-  const uvs: number[] = []
-  const indices: number[] = []
-  const xSegments = 20
-  const ySegments = 12
   const left = side === 'left'
-  const outerX = left ? -5.18 + layer * 0.20 : 4.92 - layer * 0.18
-  const innerX = left ? -1.46 - layer * 0.16 : 1.72 + layer * 0.14
+  const inset = layer * 0.12
+  const shape = new THREE.Shape()
+  if (left) {
+    shape.moveTo(-5.02 + inset, 0.02)
+    shape.lineTo(-4.98 + inset, 2.78 - layer * 0.12)
+    shape.bezierCurveTo(-4.86, 3.58, -4.18, 4.12 - layer * 0.10, -3.64, 4.00 - layer * 0.12)
+    shape.bezierCurveTo(-2.90, 3.82, -2.16, 2.92, -1.50 - inset, 2.08 - layer * 0.10)
+    shape.lineTo(-1.50 - inset, 0.02)
+  } else {
+    shape.moveTo(1.48 + inset, 0.02)
+    shape.lineTo(1.50 + inset, 1.82 - layer * 0.08)
+    shape.bezierCurveTo(2.02, 2.42, 2.66, 3.02 - layer * 0.08, 3.28, 3.26 - layer * 0.10)
+    shape.bezierCurveTo(3.86, 3.46, 4.42, 3.14, 4.70 - inset, 2.70 - layer * 0.10)
+    shape.lineTo(4.70 - inset, 0.02)
+  }
+  shape.closePath()
 
-  for (let yi = 0; yi <= ySegments; yi += 1) {
-    const ty = yi / ySegments
-    for (let xi = 0; xi <= xSegments; xi += 1) {
-      const tx = xi / xSegments
-      const x = THREE.MathUtils.lerp(outerX, innerX, tx)
-      const innerness = tx
-      const outerHeight = left ? 3.95 : 3.18
-      const innerHeight = left ? 2.22 : 2.54
-      const crown = THREE.MathUtils.lerp(outerHeight, innerHeight, innerness)
-        + Math.sin(tx * Math.PI * (left ? 1.35 : 1.15)) * (left ? 0.58 : 0.34)
-        - layer * 0.24
-      const sill = 0.04 + Math.sin(tx * Math.PI) * 0.10
-      const y = sill + ty * crown
-      const depthCurve = Math.pow(Math.abs(x) / 5.2, 1.55) * 0.62
-      const z = -8.88 + depthCurve + layer * 0.28 + Math.sin(tx * 3.7 + ty * 1.4 + layer) * 0.045
-      positions.push(x, y, z)
-      uvs.push(tx * 2.4, ty * 2.8)
-    }
-  }
-  for (let yi = 0; yi < ySegments; yi += 1) {
-    for (let xi = 0; xi < xSegments; xi += 1) {
-      const a = yi * (xSegments + 1) + xi
-      const b = a + 1
-      const c = a + xSegments + 1
-      const d = c + 1
-      const cellTx = (xi + 0.5) / xSegments
-      const cellTy = (yi + 0.5) / ySegments
-      const portalX = left ? -3.12 : 2.74
-      const portalTx = (portalX - outerX) / (innerX - outerX)
-      const apertureHalf = cellTy < 0.50 ? 0.145 : Math.max(0.025, 0.145 - (cellTy - 0.50) * 0.54)
-      if (cellTy < 0.76 && Math.abs(cellTx - portalTx) < apertureHalf) continue
-      indices.push(a, b, c, b, d, c)
-    }
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-  geometry.setIndex(indices)
+  const portalX = left ? -3.12 : 2.74
+  const portalY = left ? 0.10 : 0.42
+  const portalScaleX = (left ? 0.62 : 0.52) + layer * 0.035
+  const portalScaleY = (left ? 0.70 : 0.62) + layer * 0.025
+  const aperture = new THREE.Path()
+  const aperturePoints = fissureGeometry(true, !left).getPoints(36)
+    .map((point) => new THREE.Vector2(portalX + point.x * portalScaleX, portalY + point.y * portalScaleY))
+    .reverse()
+  aperture.moveTo(aperturePoints[0].x, aperturePoints[0].y)
+  aperturePoints.slice(1).forEach((point) => aperture.lineTo(point.x, point.y))
+  aperture.closePath()
+  shape.holes.push(aperture)
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.46 + layer * 0.08,
+    bevelEnabled: true,
+    bevelSize: 0.055,
+    bevelThickness: 0.075,
+    bevelSegments: 3,
+    curveSegments: 10,
+  })
+  geometry.translate(0, 0, -8.70 + layer * 0.12)
   geometry.computeVertexNormals()
   return geometry
 }
 
 function SanctuaryArchitecture() {
   const stone = useSanctuaryStone()
-  const wings = useMemo(() => (['left', 'right'] as const).flatMap((side) => (side === 'left' ? [0, 1, 2] : [0, 1]).map((layer) => ({ side, layer, geometry: layeredSanctuaryWingGeometry(side, layer) }))), [])
-  const ribs = useMemo(() => [
-    { side: 'left' as const, layer: 0, position: [-4.64, 1.54, -8.18] as Vec3, rotation: [0.02, 0.40, -0.08] as Vec3, scale: [0.34, 0.82, 0.88] as Vec3 },
-    { side: 'left' as const, layer: 2, position: [-1.68, 1.02, -8.42] as Vec3, rotation: [0.01, 0.10, -0.12] as Vec3, scale: [0.28, 0.56, 0.72] as Vec3 },
-    { side: 'right' as const, layer: 0, position: [4.32, 1.30, -8.34] as Vec3, rotation: [-0.02, -0.36, 0.06] as Vec3, scale: [0.32, 0.70, 0.82] as Vec3 },
-    { side: 'right' as const, layer: 2, position: [1.92, 1.08, -8.50] as Vec3, rotation: [0.02, -0.10, 0.09] as Vec3, scale: [0.24, 0.58, 0.70] as Vec3 },
-  ].map((entry) => ({ ...entry, geometry: sanctuaryWingGeometry(entry.side, entry.layer) })), [])
-  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v145-layered-irregular-wings-no-rectangular-facades' }}>
+  const wings = useMemo(() => (['left', 'right'] as const).flatMap((side) => (side === 'left' ? [0, 1] : [0]).map((layer) => ({ side, layer, geometry: layeredSanctuaryWingGeometry(side, layer) }))), [])
+  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v147-thick-curved-bearing-masses-with-smooth-apertures' }}>
     {wings.map((wing) => <mesh key={`${wing.side}-${wing.layer}`} name={`home-v145-${wing.side}-layered-bearing-wing-${wing.layer}`} geometry={wing.geometry} castShadow receiveShadow>
-      <meshPhysicalMaterial color={wing.side === 'left' ? (wing.layer === 0 ? '#22342c' : '#30443a') : (wing.layer === 0 ? '#293b33' : '#35483e')} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.94} metalness={0.006} envMapIntensity={0.36} side={THREE.DoubleSide} transparent opacity={1 - wing.layer * 0.13} />
-    </mesh>)}
-    {ribs.map((rib, index) => <mesh key={index} name={`home-v133-staggered-bearing-buttress-${index}`} geometry={rib.geometry} position={rib.position} rotation={rib.rotation} scale={rib.scale} castShadow receiveShadow>
-      <meshPhysicalMaterial color={index % 2 ? '#3c5045' : '#31443a'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.91} metalness={0.008} envMapIntensity={0.40} />
+      <meshPhysicalMaterial color={wing.side === 'left' ? (wing.layer === 0 ? '#22342c' : '#30443a') : '#293b33'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.94} metalness={0.006} envMapIntensity={0.36} side={THREE.DoubleSide} />
     </mesh>)}
     <group name="home-v136-open-apse-crown" userData={{ treatment: 'v145-layered-crown-profiles-open-mountain-aperture' }} />
     <group name="home-v137-recessed-service-light-coves" userData={{ treatment: 'light-belongs-to-threshold-recesses-no-floating-bars' }} />
@@ -435,17 +397,21 @@ function SanctuaryArchitecture() {
 }
 
 function cradleSupportGeometry(side: -1 | 1) {
-  const shape = new THREE.Shape()
-  const points: Array<[number, number]> = [[2.12 * side, 0.18], [1.72 * side, 0.62], [1.12 * side, 1.72], [0.70 * side, 1.92], [0.84 * side, 1.48], [1.38 * side, 0.42]]
-  shape.moveTo(points[0][0], points[0][1]); points.slice(1).forEach(([x, y]) => shape.lineTo(x, y)); shape.closePath()
-  return new THREE.ExtrudeGeometry(shape, { depth: 0.42, bevelEnabled: true, bevelSize: 0.055, bevelThickness: 0.07, bevelSegments: 2 })
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(1.62 * side, 0.10, -0.30),
+    new THREE.Vector3(1.34 * side, 0.52, -0.16),
+    new THREE.Vector3(1.08 * side, 1.18, -0.04),
+    new THREE.Vector3(0.90 * side, 1.72, 0.04),
+    new THREE.Vector3(0.78 * side, 2.08, 0.10),
+  ])
+  return new THREE.TubeGeometry(curve, 28, side === -1 ? 0.16 : 0.13, 8, false)
 }
 
 function ApseAndOrbCradle() {
   const supports = useMemo(() => [cradleSupportGeometry(-1), cradleSupportGeometry(1)], [])
   const stone = useSanctuaryStone()
-  return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v136-wall-seated-stone-yoke', loadPath: 'apse-bearing-brackets-to-memory-volume' }} position={[ORB.x, 0, ORB.z - 0.34]}>
-    {supports.map((geometry, index) => <mesh key={index} name={`home-v136-grounded-cradle-bracket-${index}`} geometry={geometry} scale={index ? [0.78, 0.92, 0.88] : [1, 1, 1]} castShadow receiveShadow>
+  return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v147-continuous-stone-yoke', loadPath: 'grounded-curved-ribs-seat-the-memory-volume' }} position={[ORB.x, 0, ORB.z - 0.34]}>
+    {supports.map((geometry, index) => <mesh key={index} name={`home-v147-grounded-curved-cradle-rib-${index}`} geometry={geometry} castShadow receiveShadow>
       <meshPhysicalMaterial color={index ? '#2b3c34' : '#26372f'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.24, 0.24)} roughnessMap={stone.arm} roughness={0.96} metalness={0.005} envMapIntensity={0.24} />
     </mesh>)}
   </group>

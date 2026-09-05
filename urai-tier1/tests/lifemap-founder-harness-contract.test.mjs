@@ -77,6 +77,7 @@ test('Founder transient probes do not compete with a retained production WebGL c
   assert.match(desktopArrival, /await arrivalPage\?\.context\.close\(\)\s+await arrivalBrowser\.close\(\)/)
   assert.match(desktopActions, /const actionBrowser = await chromium\.launch\(\{ headless: true \}\)/)
   assert.match(desktopActions, /await clickRouteAction\(page, 'Enter Focus'/)
+  assert.match(desktopActions, /\[data-testid="cinematic-replay-client"\]\[data-memory-id\]/)
   assert.match(desktopActions, /await actionPage\?\.context\.close\(\)\s+await actionBrowser\.close\(\)/)
   assert.match(runner, /await desktopJourney\(\)\s+await desktopArrivalEvidence\(\)\s+await desktopActionsAndKeyboard\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
   assert.match(runner, /await isolated\?\.context\.close\(\)\s+await isolatedBrowser\.close\(\)/)
