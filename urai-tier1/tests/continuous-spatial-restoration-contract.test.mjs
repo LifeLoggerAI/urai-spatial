@@ -157,9 +157,6 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
     'ground-workforce-and-council-presences',
     'ground-authored-architectural-route-lighting',
     'data-ground-camera-mode',
-    'data-ground-mobile-controls',
-    'data-ground-transition-phase',
-    'data-ground-fallback-mode',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
@@ -167,6 +164,8 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
   assert.doesNotMatch(groundGraph, /requestPointerLock|OrbitControls/)
   assert.match(groundModel, /export type GroundDestination/)
   assert.match(groundModel, /export const DESTINATIONS/)
+  assert.match(ground, /resolveDisclosedReviewUraiSpatialAssetPath/)
+  assert.match(ground, /process\.env\.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === 'true'/)
   assert.match(ground, /import \{ DESTINATIONS, type GroundDestination, type GroundChamberForm \} from "\.\/ground\/GroundWorldModel"/)
   assert.match(ground, /ground-enterable-threshold-\$\{destination\.id\}/)
   assert.match(groundCanonical, /data-ground-destination/)
