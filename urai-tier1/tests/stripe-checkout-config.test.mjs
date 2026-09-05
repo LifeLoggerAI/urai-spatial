@@ -5,6 +5,9 @@ import {
   checkoutModeForPlan,
   isPaidPlanId,
   parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+  stripeSecretKeyMode,
   STRIPE_PRICE_ENV_BY_PLAN,
 } from '../src/lib/server/stripe-runtime-config.ts';
 
@@ -31,6 +34,24 @@ test('runtime mode fails closed unless explicitly test or production', () => {
   assert.equal(parseStripeRuntimeMode('live'), null);
   assert.equal(parseStripeRuntimeMode(''), null);
   assert.equal(parseStripeRuntimeMode(undefined), null);
+});
+
+test('Stripe secret key mode must agree with declared runtime mode', () => {
+  assert.equal(stripeSecretKeyMode('sk_test_example'), 'test');
+  assert.equal(stripeSecretKeyMode('sk_live_example'), 'production');
+  assert.equal(stripeSecretKeyMode('rk_live_example'), null);
+  assert.equal(stripeSecretKeyMode(undefined), null);
+  assert.equal(stripeRuntimeMatchesSecret('test', 'sk_test_example'), true);
+  assert.equal(stripeRuntimeMatchesSecret('production', 'sk_live_example'), true);
+  assert.equal(stripeRuntimeMatchesSecret('test', 'sk_live_example'), false);
+  assert.equal(stripeRuntimeMatchesSecret('production', 'sk_test_example'), false);
+});
+
+test('Stripe event livemode must agree with declared runtime mode', () => {
+  assert.equal(stripeLivemodeMatchesRuntime(false, 'test'), true);
+  assert.equal(stripeLivemodeMatchesRuntime(true, 'production'), true);
+  assert.equal(stripeLivemodeMatchesRuntime(true, 'test'), false);
+  assert.equal(stripeLivemodeMatchesRuntime(false, 'production'), false);
 });
 
 test('plan billing modes are fixed server-side', () => {
