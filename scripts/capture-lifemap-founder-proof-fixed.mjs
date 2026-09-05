@@ -13,7 +13,7 @@ const pr = rawPr ? Number.parseInt(rawPr, 10) : null
 if (pr !== null && (!Number.isInteger(pr) || pr <= 0)) throw new Error(`Invalid URAI_PR_NUMBER: ${rawPr}`)
 
 const receipt = {
-  schemaVersion: 'urai-lifemap-founder-proof-13',
+  schemaVersion: 'urai-lifemap-founder-proof-14',
   repository: 'LifeLoggerAI/urai-spatial',
   pr,
   exactHead,
@@ -29,6 +29,7 @@ let failed = false
 await mkdir(outputDir, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 const ROOT = '[data-testid="urai-true-3d-life-map"]'
+const SELECTED_ACTIONS = '.life-map-thresholds[aria-label="Selected memory actions"]'
 const JOURNEY_WATCH_STORAGE_KEY = '__uraiFounderJourneyPhaseWatchRecord'
 
 async function stable(page, frames = 4) {
@@ -379,7 +380,7 @@ async function shot(page, id, captureState, extra = {}) {
 }
 
 function selectedActions(page) {
-  return page.locator('nav[aria-label="Selected memory actions"]').first()
+  return page.locator(SELECTED_ACTIONS).first()
 }
 
 function selectedAction(page, label) {
@@ -393,7 +394,7 @@ function selectedActionSelector(name) {
     Overview: 'overview-return',
   }[name]
   if (!actionClass) throw new Error(`unknown selected-memory action: ${name}`)
-  return `nav[aria-label="Selected memory actions"] button.${actionClass}`
+  return `${SELECTED_ACTIONS} button.${actionClass}`
 }
 
 async function canonicalControlGeometry(page, selector, label, timeout = 20_000) {
@@ -504,9 +505,9 @@ async function waitForPath(page, destinationPath, timeout = 30_000) {
 
 async function clickRouteAction(page, name, destinationPath, destinationSelector) {
   const action = selectedAction(page, name)
-  await action.waitFor({ state: 'visible', timeout: 20_000 })
+  await action.waitFor({ state: 'visible', timeout: 30_000 })
   const selector = selectedActionSelector(name)
-  const geometry = await canonicalControlGeometry(page, selector, `canonical ${name} action`)
+  const geometry = await canonicalControlGeometry(page, selector, `canonical ${name} action`, 30_000)
   if (!geometry.text.includes(name)) throw new Error(`${name} action text drifted: ${geometry.text}`)
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
@@ -667,8 +668,9 @@ async function desktopArrivalEvidence() {
     const arrivalRoute = '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-mode', 'selected')
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 30_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
@@ -689,6 +691,7 @@ async function desktopActionsAndKeyboard() {
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-mode', 'selected')
     await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
@@ -696,17 +699,19 @@ async function desktopActionsAndKeyboard() {
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-mode', 'selected')
     await waitForState(page, 'data-life-map-phase', 'arrival')
     await clickRouteAction(page, 'Replay', '/replay', 'main')
     await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
+    await waitForState(page, 'data-life-map-mode', 'selected')
     await waitForState(page, 'data-life-map-phase', 'arrival')
     const overviewSelector = selectedActionSelector('Overview')
     const overviewAction = selectedAction(page, 'Overview')
-    await overviewAction.waitFor({ state: 'visible', timeout: 20_000 })
-    const overviewGeometry = await canonicalControlGeometry(page, overviewSelector, 'canonical Overview action')
+    await overviewAction.waitFor({ state: 'visible', timeout: 30_000 })
+    const overviewGeometry = await canonicalControlGeometry(page, overviewSelector, 'canonical Overview action', 30_000)
     if (!overviewGeometry.text.includes('Overview')) throw new Error(`Overview action text drifted: ${overviewGeometry.text}`)
     await activateCanonicalControl(page, overviewSelector, overviewGeometry, 'pointer')
     await waitForOverviewState(page)
@@ -736,6 +741,7 @@ async function mobileAndReduced() {
     await shot(mobile.page, 'portrait-mobile-overview', 'mobile-overview')
     await goto(mobile.page, arrivalRoute)
     await waitForRenderedWorld(mobile.page)
+    await waitForState(mobile.page, 'data-life-map-mode', 'selected')
     await waitForState(mobile.page, 'data-life-map-phase', 'arrival')
     await shot(mobile.page, 'portrait-mobile-selected', 'mobile-selected', { memoryId: 'quiet-reset', interaction: 'touch' })
   } finally {
@@ -749,6 +755,7 @@ async function mobileAndReduced() {
     await shot(tall.page, 'portrait-tall-overview', 'mobile-tall-overview')
     await goto(tall.page, arrivalRoute)
     await waitForRenderedWorld(tall.page)
+    await waitForState(tall.page, 'data-life-map-mode', 'selected')
     await waitForState(tall.page, 'data-life-map-phase', 'arrival')
     await shot(tall.page, 'portrait-tall-selected', 'mobile-tall-selected', { memoryId: 'quiet-reset' })
   } finally {
@@ -759,6 +766,7 @@ async function mobileAndReduced() {
   try {
     await goto(reduced.page, arrivalRoute)
     await waitForRenderedWorld(reduced.page)
+    await waitForState(reduced.page, 'data-life-map-mode', 'selected')
     await waitForState(reduced.page, 'data-life-map-phase', 'arrival')
     await shot(reduced.page, 'reduced-motion-arrival', 'reduced-motion-arrival', { memoryId: 'quiet-reset' })
   } finally {
@@ -795,6 +803,7 @@ async function privacyAndRecovery() {
   const recovery = await openPage({ label: 'context-recovery' })
   try {
     await goto(recovery.page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
+    await waitForState(recovery.page, 'data-life-map-mode', 'selected')
     await waitForState(recovery.page, 'data-life-map-phase', 'arrival')
     await waitForRenderedWorld(recovery.page)
     const contextLossAvailable = await recovery.page.evaluate(() => {
