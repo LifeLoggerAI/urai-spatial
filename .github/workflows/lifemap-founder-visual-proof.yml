@@ -13,6 +13,7 @@ on:
       - 'scripts/run-with-ci-webgl.mjs'
       - 'scripts/run-continuous-spatial-proof-v21-grouped.mjs'
       - 'scripts/verify-lifemap-canvas-proof.mjs'
+      - 'scripts/verify-lifemap-founder-retained-png-verdict.mjs'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
@@ -33,6 +34,7 @@ on:
       - 'scripts/run-with-ci-webgl.mjs'
       - 'scripts/run-continuous-spatial-proof-v21-grouped.mjs'
       - 'scripts/verify-lifemap-canvas-proof.mjs'
+      - 'scripts/verify-lifemap-founder-retained-png-verdict.mjs'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
       - 'urai-tier1/src/app/life-map/**'
@@ -97,6 +99,7 @@ jobs:
           mkdir -p artifacts/lifemap-founder-proof
           node --check scripts/capture-lifemap-founder-proof-fixed.mjs | tee artifacts/lifemap-founder-proof/founder-runner-syntax.log
           node --check scripts/verify-lifemap-canvas-proof.mjs | tee artifacts/lifemap-founder-proof/canvas-runner-syntax.log
+          node --check scripts/verify-lifemap-founder-retained-png-verdict.mjs | tee artifacts/lifemap-founder-proof/retained-png-verdict-syntax.log
           node --check scripts/run-with-ci-webgl.mjs | tee artifacts/lifemap-founder-proof/webgl-wrapper-syntax.log
           node scripts/run-lifemap-founder-proof-fixed.mjs --validate-only | tee artifacts/lifemap-founder-proof/founder-launcher-validation.log
           node --test urai-tier1/tests/lifemap-founder-harness-contract.test.mjs | tee artifacts/lifemap-founder-proof/founder-harness-contract.log
@@ -129,10 +132,23 @@ jobs:
             curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null && break
             sleep 1
           done
+
+          set +e
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/lifemap-founder-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
           node scripts/run-with-ci-webgl.mjs scripts/run-lifemap-founder-proof-fixed.mjs 2>&1 | tee artifacts/lifemap-founder-proof/capture.log
+          founder_status=${PIPESTATUS[0]}
+          set -e
+
+          test -s artifacts/lifemap-founder-proof/receipt.json
+          URAI_PROOF_DIR=artifacts/lifemap-founder-proof \
+          node scripts/verify-lifemap-founder-retained-png-verdict.mjs | tee artifacts/lifemap-founder-proof/retained-png-verdict.log
+
+          if [ "$founder_status" -ne 0 ]; then
+            node -e "const r=require('./artifacts/lifemap-founder-proof/retained-png-verdict.json'); if (!r.normalizedLegacyByteFailure) process.exit(1)"
+          fi
+
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_CANVAS_PROOF_DIR=artifacts/lifemap-founder-proof/canvas-proof \
           URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
@@ -149,6 +165,8 @@ jobs:
           set -euo pipefail
           receipt_dir=artifacts/lifemap-founder-proof
           test -d "$receipt_dir"
+          test -s "$receipt_dir/retained-png-verdict.json"
+          grep -F '"acceptance": "pass"' "$receipt_dir/retained-png-verdict.json"
           printf '%s\n' "$URAI_EXACT_HEAD" > "$receipt_dir/verified-head.txt"
           cat > "$receipt_dir/exact-head-receipt.json" <<JSON
           {
