@@ -5,6 +5,7 @@ import {
   checkoutModeForPlan,
   isPaidPlanId,
   parseStripeRuntimeMode,
+  stripeRuntimeMatchesSecret,
   STRIPE_PRICE_ENV_BY_PLAN,
 } from '@/lib/server/stripe-runtime-config';
 
@@ -31,6 +32,10 @@ export async function POST(request: Request) {
 
   if (!secretKey || !appUrl || !priceId || !stripeMode) {
     return NextResponse.json({ error: 'Stripe environment is not configured.' }, { status: 500 });
+  }
+
+  if (!stripeRuntimeMatchesSecret(stripeMode, secretKey)) {
+    return NextResponse.json({ error: 'Stripe credential mode mismatch.' }, { status: 500 });
   }
 
   let redirectBase: URL;
