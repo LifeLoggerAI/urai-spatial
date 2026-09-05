@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastVerified": "2026-09-04",
+  "lastVerified": "2026-09-05",
   "statuses": [
     "verified-public",
     "verified-source",
@@ -31,8 +31,8 @@
       ]
     },
     {
-      "id": "founding-engineer",
-      "claim": "Chris Herrin is the Founding Engineer at URAI Labs and a founding engineering contributor to UrAi.",
+      "id": "lead-engineer",
+      "claim": "Chris Herrin is the Lead Engineer at URAI Labs and an engineering contributor to UrAi.",
       "status": "verified-source",
       "evidence": [
         "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_CHRIS_HERRIN.md"
