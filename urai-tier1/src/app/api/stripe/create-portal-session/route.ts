@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
 import { resolveApprovedReturnUrl } from '@/lib/server/approved-return-url';
 import { verifyFirebaseUser } from '@/lib/server/firebase-user';
-import { parseStripeRuntimeMode } from '@/lib/server/stripe-runtime-config';
+import { parseStripeRuntimeMode, stripeRuntimeMatchesSecret } from '@/lib/server/stripe-runtime-config';
 
 export async function POST(request: Request) {
   const uid = await verifyFirebaseUser(request);
@@ -17,6 +17,10 @@ export async function POST(request: Request) {
 
   if (!secretKey || !appUrl || !stripeMode) {
     return NextResponse.json({ error: 'Stripe environment is not configured.' }, { status: 500 });
+  }
+
+  if (!stripeRuntimeMatchesSecret(stripeMode, secretKey)) {
+    return NextResponse.json({ error: 'Stripe credential mode mismatch.' }, { status: 500 });
   }
 
   const entitlement = await readEntitlement(uid);
