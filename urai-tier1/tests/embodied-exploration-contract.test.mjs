@@ -110,15 +110,17 @@ test('V161 keeps V158 ground integration, breaks the visible approach into burie
   assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)
 })
 
-test('Home telemetry and destination authority remain aligned to the unchanged V70 runtime', () => {
+test('Home telemetry, transition, and destination authority remain aligned to the current V70 runtime', () => {
   for (const marker of [
-    'HOME_GROUND_DESTINATION',
-    'HOME_LIFE_MAP_DESTINATION',
-    'HOME_ORB_POSITION',
-    'HOME_ORB_STATE_EVENT',
+    'const ORB = new THREE.Vector3(',
+    'const GROUND = new THREE.Vector3(',
+    'const LIFE_MAP = new THREE.Vector3(',
     'URAI_ORB_STATE_EVENT',
-    'resolveHomeTravelDestination',
     'resolveOrbSensoryOutput',
+    'requestUraiWorldTravel',
+    "destination: 'infrastructure-hub'",
+    "destination: 'life-map'",
+    'requestUraiWorldOrbOpen',
   ]) has(homeRuntime3d, marker)
 })
 
