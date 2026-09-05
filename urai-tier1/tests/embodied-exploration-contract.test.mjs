@@ -39,7 +39,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   has(assetHome, 'data-home-canvas-owner="home-world-production-v70-single-authority"')
   has(assetHome, 'data-home-v125-retained-pixel-rebuild="active"')
   has(assetHome, 'data-home-v126-retained-pixel-rebuild="active"')
-  has(assetHome, "data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse")
+  has(assetHome, "data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb")
   has(assetHome, "data-home-visual-repair', 'v126-bounded-geology-continuous-ground-framed-fissures-integrated-orb")
   has(homeRuntime3d, 'HomeWorldProductionV70')
   has(homeRuntime3d, '<HomeV76Sanctuary')
@@ -59,7 +59,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V155 refines the visible canyon into embedded fissures and a contained memory core without restoring rejected facade geometry or a pedestal', () => {
+test('V157 refines the visible canyon into a narrow path, recessed geological rifts and low sanctuary masses around a contained memory core without restoring rejected facade geometry or a pedestal', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
@@ -67,44 +67,60 @@ test('V155 refines the visible canyon into embedded fissures and a contained mem
     'home-v126-continuous-walkable-terrace-network',
     'home-v154-inlaid-stone-approach',
     'quiet-recessed-approach',
+    'readable-inlaid-path-without-neon-runway',
+    'narrow-meandering-inlay-not-road-slab',
     'function GeologicalFrame(',
     'home-v126-bounded-geological-edge-masses',
     'v154-integrated-edge-scans-buried-into-canyon-walls',
     'edge-scans-pushed-behind-primary-composition',
+    'scan-provenance-retained-beyond-primary-frustum-no-visible-card-slabs',
+    'scan-provenance-kept-off-axis-while-authored-ground-owns-frame',
     'function FramedFissure(',
     'home-v126-${side}-framed-fissure',
     'v153-localized-signal-fissures-no-facade-hoops-or-translucent-panels',
     'v154-buried-irregular-stone-fissure-no-facade-hoops-or-translucent-panels',
     'narrow-geological-scar-no-freestanding-door-silhouette',
+    'hairline-navigation-rift-buried-in-bearing-geology',
+    'recessed-navigation-cut-not-upright-door-form',
     'function weatheredSanctuaryMassGeometry(',
     'home-v149-weathered-rift-threshold-sanctuary',
     'v154-faceted-broken-buttresses-no-rounded-boulder-gates',
     'lower-silhouette-masses-frame-negative-space',
+    'settled-bearing-shelves-no-boulder-gate-silhouette',
+    'low-eroded-shelves-replace-boulder-piles',
     'ground-rift-bearing-mass',
     'life-map-rift-bearing-mass',
     'function ApseAndOrbCradle(',
     'home-v126-layered-apse-orb-cradle',
     'v154-broken-side-shelves-frame-orb-without-pedestal',
     'quiet-side-shelves-leave-air-around-memory-core',
+    'settled-side-ledges-with-clear-orb-negative-space',
+    'low-apse-ledges-anchor-orb-without-pedestal',
     'function LivingOrb(',
     'home-v126-apse-integrated-orb',
     'home-v126-orb-memory-motes',
     'home-v154-orb-memory-depth-motes',
     'contained-memory-core-not-particle-fountain',
+    'contained-memory-core-remains-primary-focal-presence',
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
     'v154-visible-canyon-fissures-memory-swarm-no-pedestal',
-    'v155-contained-memory-core-embedded-rifts-background-scans',
+    'v157-canyon-path-thin-rifts-low-geology-contained-orb',
+    'v156-no-scan-slabs-hairline-rifts-settled-geology',
   ]) has(homeArt, marker)
   assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry|home-v148-open-buttress-threshold-sanctuary/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
+  assert.match(homeArt, /const half = 0\.58 - t \* 0\.18/)
   assert.match(homeArt, /new THREE\.IcosahedronGeometry\(1, 2\)/)
   assert.match(homeArt, /new THREE\.IcosahedronGeometry\(0\.72, 3\)/)
   assert.match(homeArt, /for \(let index = 0; index < 980; index \+= 1\)/)
   assert.match(homeArt, /Array\.from\(\{ length: 6 \}/)
-  assert.match(homeArt, /scale=\{isGround \? \[0\.56, 0\.66, 0\.46\] : \[0\.54, 0\.68, 0\.46\]\}/)
+  assert.match(homeArt, /scale=\{isGround \? \[0\.40, 0\.58, 0\.40\] : \[0\.38, 0\.60, 0\.40\]\}/)
+  assert.match(homeArt, /for \(let index = 0; index < 72; index \+= 1\)/)
+  assert.match(homeArt, /new THREE\.ExtrudeGeometry\(frame, \{ depth: 0\.22/)
+  assert.match(homeArt, /boxGeometry args=\{\[3\.60, 3\.70, 2\.20\]\}/)
   assert.match(homeArt, /name="home-v125-sculpted-canyon-ground"[^>]*>[\s\S]*?<meshPhysicalMaterial/)
   assert.match(homeArt, /retained-stone-provenance[^\n]*castShadow receiveShadow>/)
   assert.match(homeArt, /retired-threshold-panel[^\n]*geometry=\{field\}[^\n]*>/)
