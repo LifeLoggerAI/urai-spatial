@@ -117,11 +117,19 @@ function AuthoredSanctuaryEnvironment() {
   const environment = useMemo(() => {
     const root = source.clone(true)
     root.traverse((object) => {
+      const retainedAsymmetricWorld = [
+        'sanctuary-waterfall-2', 'sanctuary-waterfall-5',
+        'inhabited-village-3', 'village-tower-3', 'village-roof-3',
+        'inhabited-village-11', 'village-tower-11', 'village-roof-11',
+        'living-growth-4', 'living-growth-trunk-4', 'living-growth-crown-4',
+        'living-growth-19', 'living-growth-trunk-19', 'living-growth-crown-19',
+        'living-growth-37', 'living-growth-trunk-37', 'living-growth-crown-37',
+      ].some((name) => object.name === name)
       const rejectedFamily = [
         'living-growth-', 'inhabited-village-', 'village-', 'sanctuary-waterfall-',
         'memory-place-anchor-', 'embodied-presence-', 'ground-alcove-',
         'life-map-alcove-', 'horizon-threshold-',
-      ].some((prefix) => object.name.startsWith(prefix))
+      ].some((prefix) => object.name.startsWith(prefix)) && !retainedAsymmetricWorld
       const rejectedHorizonRepeat = object.name.startsWith('horizon-mountain-')
         && !['horizon-mountain-3', 'horizon-mountain-7', 'horizon-mountain-10'].includes(object.name)
       if (object.name === 'orb-sanctuary-pedestal' || object.name.startsWith('mirror-basin') || rejectedFamily || rejectedHorizonRepeat) object.visible = false
@@ -384,6 +392,8 @@ function SanctuaryArchitecture() {
     }
     for (let yi = 0; yi < ys; yi += 1) for (let xi = 0; xi < xs; xi += 1) {
       const a = yi * (xs + 1) + xi, b = a + 1, c = a + xs + 1, d = c + 1
+      const cellX = -3.15 + ((xi + 0.5) / xs) * 6.3
+      if (Math.abs(cellX) < 1.24 && yi / ys > 0.22) continue
       indices.push(a, b, c, b, d, c)
     }
     const geometry = new THREE.BufferGeometry()
@@ -469,8 +479,8 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
   }, [palette.core, source])
   const moteGeometry = useMemo(() => {
     const positions: number[] = []
-    for (let index = 0; index < 112; index += 1) {
-      const t = index / 111
+    for (let index = 0; index < 420; index += 1) {
+      const t = index / 419
       const y = -1.02 + t * 2.04
       const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.08, 2)))
       const angle = index * 2.3999632297 + Math.sin(index * 0.37) * 0.16
@@ -507,14 +517,14 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
 
   return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }}>
     <mesh name="home-v132-orb-memory-volume" geometry={memoryVolume} castShadow>
-      <meshPhysicalMaterial color="#28483d" emissive={palette.accent} emissiveIntensity={0.16} roughness={0.68} metalness={0.025} transmission={0.10} thickness={0.72} transparent opacity={0.96} clearcoat={0.04} clearcoatRoughness={0.70} />
+      <meshPhysicalMaterial color="#28483d" emissive={palette.accent} emissiveIntensity={0.10} roughness={0.74} metalness={0.01} transmission={0.22} thickness={0.52} transparent opacity={0.16} depthWrite={false} clearcoat={0.02} clearcoatRoughness={0.78} />
     </mesh>
     <primitive object={orb} visible={false} />
     <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.88, 0.78, 0.88]}>
-      <pointsMaterial color={palette.core} size={palette.moteSize * 0.54} transparent opacity={0.54} depthWrite={false} sizeAttenuation toneMapped={false} />
+      <pointsMaterial color={palette.core} size={palette.moteSize * 0.68} transparent opacity={0.76} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
     <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.27, 0.31, 0.27]}>
-      <meshStandardMaterial color={palette.accent} emissive={palette.core} emissiveIntensity={0.48} roughness={0.58} />
+      <meshStandardMaterial color={palette.accent} emissive={palette.core} emissiveIntensity={0.64} roughness={0.66} flatShading />
     </mesh>
     <mesh name="home-v126-orb-generous-hit-target">
       <sphereGeometry args={[1.38, 16, 12]} />

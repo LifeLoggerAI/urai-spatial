@@ -287,9 +287,12 @@ function MemorySeed({ aura, active }: { aura: string; active: boolean }) {
   }, []);
   return <group name="life-map-sculpted-memory-seed">
     <mesh geometry={geometry} castShadow>
-      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.28 : 0.12} roughness={0.52} metalness={0.04} transmission={0.24} thickness={0.62} transparent opacity={active ? 0.88 : 0.72} clearcoat={0.10} clearcoatRoughness={0.54} />
+      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.24 : 0.10} roughness={0.72} metalness={0.02} transmission={0.12} thickness={0.42} transparent opacity={active ? 0.46 : 0.34} depthWrite={false} flatShading clearcoat={0.03} clearcoatRoughness={0.74} />
     </mesh>
-    <FieldParticles seed={active ? 417 : 211} count={active ? 30 : 12} radius={active ? 1.05 : 0.72} depth={active ? 1.8 : 1.15} height={active ? 1.8 : 1.15} color={ICE} opacity={active ? 0.58 : 0.34} size={active ? 0.052 : 0.034} />
+    <mesh geometry={geometry} scale={0.34}>
+      <meshStandardMaterial color={aura} emissive={ICE} emissiveIntensity={active ? 0.62 : 0.34} roughness={0.68} flatShading />
+    </mesh>
+    <FieldParticles seed={active ? 417 : 211} count={active ? 52 : 20} radius={active ? 1.05 : 0.72} depth={active ? 1.8 : 1.15} height={active ? 1.8 : 1.15} color={ICE} opacity={active ? 0.62 : 0.38} size={active ? 0.046 : 0.030} />
     {active ? <>
       <Current points={[[-0.88, -0.16, 0.12], [-0.56, 0.10, -0.22], [-0.24, 0.24, -0.40]]} color={aura} opacity={0.26} width={0.012} />
       <Current points={[[0.24, -0.30, -0.32], [0.52, -0.08, -0.18], [0.86, 0.20, 0.14]]} color={ICE} opacity={0.20} width={0.010} />
@@ -433,7 +436,7 @@ function EmotionArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={0.72} color={node.aura} /></group>;
 }
 function PatternArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{[-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.92 : 0.48} width={0.031} />)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{!active ? [-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={0.26} width={0.014} />) : null}</group>;
 }
 function AchievementArtifact({ node, active }: ArtifactProps) {
   return <group><AuthoredMemoryStar aura={GOLD} active={active} scale={active ? 1.24 : 0.9} rotation={[0.12, 0.72, 0.2]} /><Current points={[[-0.9, -0.65, 0.2], [-0.35, 0.05, -0.2], [0.05, 0.75, -0.5], [0.55, 1.42, -0.18], [0.95, 2.05, 0.2]]} color={GOLD} opacity={active ? 0.82 : 0.38} width={0.03} /></group>;
@@ -488,7 +491,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={node.position}
       visible={visible}
-      scale={active ? 0.56 : 0.42 + importance * 0.14}
+      scale={active ? 0.56 : 0.50 + importance * 0.16}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
@@ -655,8 +658,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   return (
     <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
       <>
-        <color attach="background" args={[DEEP]} />
-        <fog attach="fog" args={["#061020", 14, 88]} />
+        <color attach="background" args={["#071525"]} />
+        <fog attach="fog" args={["#071525", 14, 88]} />
         <ambientLight intensity={0.34} color="#ccecff" />
         <hemisphereLight args={["#dff8ff", "#02030a", 0.82]} />
         <directionalLight position={[9, 14, 10]} intensity={2.25} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
@@ -665,7 +668,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         <RenderProofRepublisher />
         {cameraRig}
         <group name="life-map-authored-environment">
-          <mesh><sphereGeometry args={[86, 48, 36]} /><meshBasicMaterial color="#020713" side={THREE.BackSide} /></mesh>
+          <mesh><sphereGeometry args={[86, 48, 36]} /><meshBasicMaterial color="#071525" side={THREE.BackSide} /></mesh>
           <FieldParticles seed={1220} count={profile.tier === "low" ? 120 : 320} radius={42} depth={70} height={32} color={VIOLET} opacity={0.16} size={0.065} />
         </group>
         <group name="life-map-temporal-horizon">
