@@ -17,6 +17,20 @@ export function parseStripeRuntimeMode(value: string | undefined): StripeRuntime
   return value === 'test' || value === 'production' ? value : null;
 }
 
+export function stripeSecretKeyMode(secretKey: string | undefined): StripeRuntimeMode | null {
+  if (secretKey?.startsWith('sk_test_')) return 'test';
+  if (secretKey?.startsWith('sk_live_')) return 'production';
+  return null;
+}
+
+export function stripeLivemodeMatchesRuntime(livemode: boolean, mode: StripeRuntimeMode): boolean {
+  return livemode === (mode === 'production');
+}
+
+export function stripeRuntimeMatchesSecret(mode: StripeRuntimeMode, secretKey: string | undefined): boolean {
+  return stripeSecretKeyMode(secretKey) === mode;
+}
+
 export function checkoutModeForPlan(planId: PaidInsightPlanId): 'subscription' | 'payment' {
   return planId === 'founder' ? 'payment' : 'subscription';
 }
