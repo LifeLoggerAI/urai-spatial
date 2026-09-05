@@ -3,12 +3,15 @@ import type { ReactNode } from 'react'
 
 const nav = [
   ['What is UrAi?', '/about'],
+  ['Business', '/business'],
   ['URAI Labs', '/about/labs'],
   ['Founder', '/founder'],
   ['Ecosystem', '/ecosystem'],
   ['Press', '/press'],
+  ['Contact', '/contact'],
   ['Status', '/status'],
   ['Privacy', '/privacy-controls/'],
+  ['Terms', '/terms'],
 ] as const
 
 export default function PublicAuthorityShell({
