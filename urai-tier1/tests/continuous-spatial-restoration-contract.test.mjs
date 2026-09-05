@@ -99,7 +99,7 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(homeProduction, /function LifeMapPortal\(\{ onActivate, modelUrl \}/)
   assert.match(homeProduction, /const portal = useGLTF\(modelUrl\)/)
   assert.match(homeProduction, /<LifeMapPortal onActivate=\{onLifeMap\} modelUrl=\{portalModel\}/)
-  assert.match(homeProduction, /<Thresholds onGround=\{ground\} onLifeMap=\{lifeMap\} portalModel=\{assets\.portal\}/)
+  assert.match(homeProduction, /<Thresholds onGround=\{props\.onGround\} onLifeMap=\{props\.onLifeMap\} portalModel=\{props\.assets\.portal\}/)
   assert.doesNotMatch(homeProduction, /const PORTAL_MODEL\s*=|useGLTF\(['"]\/.*portal-ring/)
   assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
   assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
@@ -164,7 +164,7 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
-  ]) assert.ok(groundGraph.includes(marker), `missing Ground marker: ${marker}`)
+  ]) assert.ok(includesCanonical(groundGraph, marker), `missing Ground marker: ${marker}`)
   assert.doesNotMatch(groundGraph, /requestPointerLock|OrbitControls/)
   assert.match(groundModel, /export type GroundNodeId/)
   assert.match(groundModel, /GROUND_NODES/)
@@ -172,11 +172,14 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
   assert.match(groundCanonical, /data-ground-destination/)
 })
 
-test('browser proof and supplemental state proof cover required exact-head evidence', () => {
+test('browser proof and supplemental state proof cover their current exact-head evidence contract', () => {
+  const proofGraph = `${proof}\n${stateProof}\n${proofWorkflow}\n${stateProofWorkflow}`
   for (const marker of [
-    'Home', 'Ground', 'Life Map', 'Focus', 'Replay', 'Mirror', 'Passport',
-    'desktop', 'mobile', 'reduced-motion', 'fallback', 'exact', 'screenshot',
-  ]) assert.ok(`${proof}\n${stateProof}\n${proofWorkflow}\n${stateProofWorkflow}`.includes(marker), `missing proof marker: ${marker}`)
+    'captureHomeState', 'captureOrbStates', 'captureInteraction', 'capturePointerLook', 'capturePortalSequence',
+    "for (const destination of ['ground', 'life-map'])",
+    'desktop', 'portrait-mobile', 'landscape-mobile', 'reducedMotion', 'fallbackSelector', 'screenshot',
+    'permission-limited', 'unavailable', 'offline', 'orb-lifecycle-reduced-motion', 'forcedColors',
+  ]) assert.ok(proofGraph.includes(marker), `missing proof marker: ${marker}`)
   assert.match(proofWorkflow, /capture-continuous-spatial-proof-v18/)
   assert.match(stateProofWorkflow, /capture-home-state-proof/)
   assert.match(hostStableProof, /capture-continuous-spatial-proof-v18/)
@@ -184,7 +187,8 @@ test('browser proof and supplemental state proof cover required exact-head evide
 
 test('Life Map owner and legacy veil suppression remain full viewport', () => {
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
-  assert.match(css, /urai-spatial-world-root/)
+  assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
+  assert.match(css, /data-testid="urai-true-3d-life-map"/)
   assert.match(structuralCss, /life-map/i)
 })
 
