@@ -176,6 +176,22 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await stable(page)
 }
 
+async function waitForFocusRendered(page, timeout = 30_000) {
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-testid="urai-final-focus-chamber"]')
+    if (!root) return false
+    const canvas = root.querySelector('.focusCanvas canvas')
+    const fallback = root.querySelector('.focusFallback')
+    const renderer = root.getAttribute('data-software-renderer')
+    return root.getAttribute('data-chamber-state') === 'ready'
+      && root.getAttribute('data-webgl-state') === 'ready'
+      && renderer !== 'detecting'
+      && Boolean(canvas)
+      && fallback === null
+  }, null, { timeout, polling: 50 })
+  await stable(page, 12)
+}
+
 function assertVisualSanity() {
   const byId = new Map(receipt.captures.map((capture) => [capture.id, capture]))
   const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
@@ -226,6 +242,7 @@ async function desktopJourney() {
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
+    await waitForFocusRendered(page)
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
     await goto(page, '/life-map/?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset')
     await waitForState(page, 'data-life-map-mode', 'selected')
