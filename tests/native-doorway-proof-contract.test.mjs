@@ -4,6 +4,16 @@ import test from 'node:test'
 
 const proof = await readFile(new URL('./native-doorway-proof.mjs', import.meta.url), 'utf8')
 
+test('doorway activation waits for canonical rendered Home and input readiness', () => {
+  assert.match(proof, /async function waitForHomeInputReady\(page\)/)
+  assert.match(proof, /data-home-primary-owner=\\?"asset-driven\\?"/)
+  assert.match(proof, /data-home-assets-ready/)
+  assert.match(proof, /data-home-input-ready/)
+  assert.match(proof, /await waitForHomeInputReady\(page\)/)
+  assert.match(proof, /canonicalHomeReadinessRequiredBeforeActivation: true/)
+  assert.doesNotMatch(proof, /waitForTimeout\(/)
+})
+
 test('keyboard doorway activation bypasses moving-target geometric stability', () => {
   assert.match(proof, /await target\.focus\(\)/)
   assert.match(proof, /target\.press\('Enter'\)/)
