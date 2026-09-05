@@ -17,7 +17,7 @@ test('V105 uses one opaque responsive Canvas with balanced portrait hierarchy', 
   assert.match(styles, /\.canvas/)
 })
 
-test('V150 keeps portrait framing with sculpted stone thresholds and grounded Orb volume', () => {
+test('V151 keeps portrait framing with buried asymmetric fissures and a lower Orb cloud', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
   assert.match(art, /function SculptedCanyonGround/)
   assert.match(art, /name="home-v125-sculpted-canyon-ground"/)
@@ -27,8 +27,8 @@ test('V150 keeps portrait framing with sculpted stone thresholds and grounded Or
   assert.match(art, /name="home-v126-bounded-geological-edge-masses"/)
   assert.match(art, /function FramedFissure/)
   assert.match(art, /home-v126-\$\{side\}-framed-fissure/)
-  assert.match(art, /v150-sculpted-stone-reveal-with-recessed-signal-field/)
-  assert.match(art, /scale=\{isGround \? \[0\.78, 0\.76, 0\.58\] : \[0\.72, 0\.73, 0\.55\]\}/)
+  assert.match(art, /v151-asymmetric-buried-signal-fissures-no-facade-hoops/)
+  assert.match(art, /scale=\{isGround \? \[0\.60, 0\.66, 0\.42\] : \[0\.48, 0\.70, 0\.38\]\}/)
   assert.match(art, /function weatheredSanctuaryMassGeometry/)
   assert.match(art, /home-v149-weathered-rift-threshold-sanctuary/)
   assert.match(art, /ground-rift-settled-shoulder/)
@@ -39,8 +39,10 @@ test('V150 keeps portrait framing with sculpted stone thresholds and grounded Or
   assert.match(art, /function LivingOrb/)
   assert.match(art, /name="home-v126-apse-integrated-orb"/)
   assert.match(art, /name="home-v125-atmospheric-depth-motes"/)
-  assert.match(art, /activeArtRevision: 'v150-sculpted-stone-thresholds-dense-memory-volume'/)
+  assert.match(art, /activeArtRevision: 'v151-asymmetric-buried-fissures-low-orb-memory-cloud'/)
   assert.match(art, /new THREE\.SphereGeometry\(1, 36, 24\)/)
+  assert.match(art, /retained-stone-provenance[^\n]*visible=\{false\}/)
+  assert.match(art, /const ORB = new THREE\.Vector3\(-0\.34, 1\.62, -7\.08\)/)
   assert.match(art, /object\.name === 'orb-aura'/)
   assert.match(art, /object\.name\.startsWith\('orb-orbit-'/)
   assert.doesNotMatch(art, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry/)
