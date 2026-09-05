@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       expected_deployed_sha:
-        description: Exact protected SHA expected in the live deployment proof
+        description: Exact canonical main SHA expected in the live deployment proof
         required: true
         type: string
 
@@ -24,9 +24,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Refresh canonical main authority
+        shell: bash
+        run: git fetch --no-tags origin main:refs/remotes/origin/main
+      - name: Verify expected deployed SHA is canonical main authority
+        env:
+          URAI_EXPECTED_DEPLOYED_SHA: ${{ inputs.expected_deployed_sha }}
+        run: node scripts/verify-custom-domain-deployed-sha-authority.mjs
       - name: Verify canonical custom-domain route authority
         env:
           URAI_DEPLOY_URL: https://urai.app
@@ -48,7 +57,7 @@ jobs:
               `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               `Commit: ${context.sha}`,
               '',
-              'Do not claim production route continuity until both slash variants resolve to the same spatial runtime and all route fingerprints pass.'
+              'Do not claim production route continuity until the supplied deployment SHA is canonical main authority, both slash variants resolve to the same spatial runtime, and all route fingerprints pass.'
             ].join('\n');
             const issues = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
