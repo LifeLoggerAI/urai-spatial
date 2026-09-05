@@ -17,7 +17,7 @@ test('V105 uses one opaque responsive Canvas with balanced portrait hierarchy', 
   assert.match(styles, /\.canvas/)
 })
 
-test('V126 keeps geology bounded and gives portrait framing to the ground, fissures, apse, and Orb', () => {
+test('V148 keeps geology bounded and opens portrait threshold framing around the ground, fissures, apse, and Orb', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
   assert.match(art, /function SculptedCanyonGround/)
   assert.match(art, /name="home-v125-sculpted-canyon-ground"/)
@@ -27,12 +27,17 @@ test('V126 keeps geology bounded and gives portrait framing to the ground, fissu
   assert.match(art, /name="home-v126-bounded-geological-edge-masses"/)
   assert.match(art, /function FramedFissure/)
   assert.match(art, /home-v126-\$\{side\}-framed-fissure/)
+  assert.match(art, /v148-wide-smooth-recessed-threshold-inside-open-buttress-wing/)
+  assert.match(art, /scale=\{isGround \? \[0\.90, 0\.86, 0\.68\] : \[0\.84, 0\.82, 0\.64\]\}/)
+  assert.match(art, /const portalScaleX = left \? 0\.96 : 0\.90/)
+  assert.match(art, /const portalScaleY = left \? 0\.88 : 0\.84/)
+  assert.match(art, /home-v148-open-buttress-threshold-sanctuary/)
   assert.match(art, /function ApseAndOrbCradle/)
   assert.match(art, /home-v126-layered-apse-orb-cradle/)
   assert.match(art, /function LivingOrb/)
   assert.match(art, /name="home-v126-apse-integrated-orb"/)
   assert.match(art, /name="home-v125-atmospheric-depth-motes"/)
-  assert.match(art, /activeArtRevision: 'v126-ground-owned-sanctuary-framed-fissures-integrated-orb-apse'/)
+  assert.match(art, /activeArtRevision: 'v148-open-buttress-thresholds-wide-smooth-apertures'/)
   assert.match(art, /object\.name === 'orb-aura'/)
   assert.match(art, /object\.name\.startsWith\('orb-orbit-'/)
   assert.doesNotMatch(art, /<ringGeometry|<torusGeometry/)
