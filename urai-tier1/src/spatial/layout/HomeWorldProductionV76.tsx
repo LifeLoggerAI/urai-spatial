@@ -287,12 +287,25 @@ function GeologicalFrame() {
 
 function fissureGeometry(inner = false, mirrored = false) {
   const shape = new THREE.Shape()
-  const points: Array<[number, number]> = inner
-    ? [[-0.58, 0], [-0.62, 0.72], [-0.50, 1.34], [-0.57, 1.96], [-0.25, 2.46], [0.08, 2.72], [0.42, 2.31], [0.46, 1.70], [0.60, 1.12], [0.55, 0.50], [0.56, 0]]
-    : [[-1.00, 0], [-1.08, 0.66], [-0.88, 1.22], [-0.96, 1.92], [-0.55, 2.62], [-0.18, 3.15], [0.20, 3.38], [0.55, 2.82], [0.88, 2.34], [0.82, 1.60], [1.02, 0.82], [0.92, 0]]
-  const oriented = mirrored ? points.map(([x, y]) => [-x, y] as [number, number]) : points
-  shape.moveTo(oriented[0][0], oriented[0][1])
-  oriented.slice(1).forEach(([x, y]) => shape.lineTo(x, y))
+  if (inner) {
+    const x = mirrored ? -1 : 1
+    shape.moveTo(-0.96 * x, 0)
+    shape.bezierCurveTo(-1.00 * x, 0.62, -0.90 * x, 1.12, -0.82 * x, 1.48)
+    shape.bezierCurveTo(-0.74 * x, 1.94, -0.58 * x, 2.48, -0.22 * x, 2.88)
+    shape.bezierCurveTo(0.02 * x, 3.16, 0.30 * x, 3.08, 0.54 * x, 2.72)
+    shape.bezierCurveTo(0.84 * x, 2.28, 0.94 * x, 1.72, 0.98 * x, 1.18)
+    shape.bezierCurveTo(1.02 * x, 0.70, 0.98 * x, 0.30, 0.94 * x, 0)
+    shape.closePath()
+    return shape
+  }
+
+  const x = mirrored ? -1 : 1
+  shape.moveTo(-1.22 * x, 0)
+  shape.bezierCurveTo(-1.28 * x, 0.72, -1.14 * x, 1.46, -1.02 * x, 1.94)
+  shape.bezierCurveTo(-0.90 * x, 2.54, -0.62 * x, 3.10, -0.26 * x, 3.48)
+  shape.bezierCurveTo(0.04 * x, 3.78, 0.42 * x, 3.62, 0.72 * x, 3.14)
+  shape.bezierCurveTo(1.02 * x, 2.66, 1.18 * x, 1.94, 1.22 * x, 1.28)
+  shape.bezierCurveTo(1.26 * x, 0.70, 1.20 * x, 0.30, 1.16 * x, 0)
   shape.closePath()
   return shape
 }
@@ -303,67 +316,66 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
   const color = isGround ? '#8dd9ad' : '#b7a3e3'
   const outer = useMemo(() => {
     const frame = fissureGeometry(false, !isGround)
-    frame.holes.push(new THREE.Path(fissureGeometry(true, !isGround).getPoints(18).reverse()))
-    return new THREE.ExtrudeGeometry(frame, { depth: 0.78, bevelEnabled: true, bevelSize: 0.075, bevelThickness: 0.09, bevelSegments: 2, curveSegments: 4 })
+    frame.holes.push(new THREE.Path(fissureGeometry(true, !isGround).getPoints(32).reverse()))
+    return new THREE.ExtrudeGeometry(frame, { depth: 0.60, bevelEnabled: true, bevelSize: 0.055, bevelThickness: 0.07, bevelSegments: 3, curveSegments: 12 })
   }, [isGround])
-  const field = useMemo(() => new THREE.ShapeGeometry(fissureGeometry(true, !isGround)), [isGround])
+  const field = useMemo(() => new THREE.ShapeGeometry(fissureGeometry(true, !isGround), 18), [isGround])
   const seamMotes = useMemo(() => {
     const positions: number[] = []
-    for (let index = 0; index < 96; index += 1) {
-      const t = index / 95
-      const y = 0.08 + t * 2.62
-      const bend = Math.sin(t * Math.PI * 2.7 + (isGround ? 0.4 : 1.2)) * 0.16
-      const width = 0.05 + Math.sin(t * Math.PI) * 0.28
-      const sideOffset = ((index * 17) % 23) / 22 - 0.5
-      positions.push(bend + sideOffset * width, y, (((index * 29) % 19) / 18 - 0.5) * 0.34)
+    for (let index = 0; index < 120; index += 1) {
+      const t = index / 119
+      const y = 0.12 + t * 2.82
+      const bend = Math.sin(t * Math.PI * 2.2 + (isGround ? 0.4 : 1.2)) * 0.20
+      const width = 0.10 + Math.sin(t * Math.PI) * 0.42
+      const sideOffset = ((index * 17) % 29) / 28 - 0.5
+      positions.push(bend + sideOffset * width, y, (((index * 29) % 23) / 22 - 0.5) * 0.42)
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v146-recessed-field-inside-bearing-wing-aperture', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.10 : 0.42, isGround ? -8.10 : -8.40]} rotation={[0, isGround ? 0.08 : -0.08, isGround ? -0.025 : 0.025]} scale={isGround ? [0.62, 0.70, 0.62] : [0.52, 0.62, 0.58]}>
-    <group name={`home-v136-${side}-load-bearing-fissure-shell`} userData={{ structuralOwner: 'layered-sanctuary-wing', retiredFreestandingFrame: true }} />
-    <mesh name={`home-v136-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
-      <meshStandardMaterial color={isGround ? '#11251b' : '#211d31'} emissive={color} emissiveIntensity={0.22} roughness={0.91} transparent opacity={0.80} side={THREE.DoubleSide} />
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v148-wide-smooth-recessed-threshold-inside-open-buttress-wing', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.06 : 0.30, isGround ? -8.10 : -8.40]} rotation={[0, isGround ? 0.08 : -0.08, isGround ? -0.018 : 0.018]} scale={isGround ? [0.90, 0.86, 0.68] : [0.84, 0.82, 0.64]}>
+    <group name={`home-v148-${side}-load-bearing-fissure-shell`} userData={{ structuralOwner: 'open-buttress-sanctuary-wing', retiredFreestandingFrame: true }} />
+    <mesh name={`home-v148-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
+      <meshStandardMaterial color={isGround ? '#11251b' : '#211d31'} emissive={color} emissiveIntensity={0.20} roughness={0.93} transparent opacity={0.76} side={THREE.DoubleSide} />
     </mesh>
-    <points name={`home-v136-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.38]}>
-      <pointsMaterial color={color} size={0.035} transparent opacity={0.48} depthWrite={false} sizeAttenuation />
+    <points name={`home-v148-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.36]}>
+      <pointsMaterial color={color} size={0.030} transparent opacity={0.42} depthWrite={false} sizeAttenuation />
     </points>
-    <mesh name={`home-v133-${side}-authored-threshold-hit-target`} position={[0, 1.55, 0.12]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
+    <mesh name={`home-v133-${side}-authored-threshold-hit-target`} position={[0, 1.48, 0.12]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
       <boxGeometry args={[2.75, 3.3, 1.1]} />
       <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
     </mesh>
     <group name={`home-v126-${side}-port-shoulder`} />
     <group name={`home-v126-${side}-starboard-shoulder`} />
-    <pointLight position={[0, 1.64, 0.85]} color={color} intensity={0.52} distance={4.2} decay={2} />
+    <pointLight position={[0, 1.64, 0.85]} color={color} intensity={0.46} distance={4.6} decay={2} />
   </group>
 }
 
-function layeredSanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
+function layeredSanctuaryWingGeometry(side: 'left' | 'right') {
   const left = side === 'left'
-  const inset = layer * 0.12
   const shape = new THREE.Shape()
   if (left) {
-    shape.moveTo(-5.02 + inset, 0.02)
-    shape.lineTo(-4.98 + inset, 2.78 - layer * 0.12)
-    shape.bezierCurveTo(-4.86, 3.58, -4.18, 4.12 - layer * 0.10, -3.64, 4.00 - layer * 0.12)
-    shape.bezierCurveTo(-2.90, 3.82, -2.16, 2.92, -1.50 - inset, 2.08 - layer * 0.10)
-    shape.lineTo(-1.50 - inset, 0.02)
+    shape.moveTo(-4.72, 0.02)
+    shape.lineTo(-4.68, 2.24)
+    shape.bezierCurveTo(-4.62, 2.96, -4.14, 3.54, -3.64, 3.52)
+    shape.bezierCurveTo(-2.98, 3.50, -2.30, 2.92, -1.80, 2.12)
+    shape.lineTo(-1.76, 0.02)
   } else {
-    shape.moveTo(1.48 + inset, 0.02)
-    shape.lineTo(1.50 + inset, 1.82 - layer * 0.08)
-    shape.bezierCurveTo(2.02, 2.42, 2.66, 3.02 - layer * 0.08, 3.28, 3.26 - layer * 0.10)
-    shape.bezierCurveTo(3.86, 3.46, 4.42, 3.14, 4.70 - inset, 2.70 - layer * 0.10)
-    shape.lineTo(4.70 - inset, 0.02)
+    shape.moveTo(1.42, 0.02)
+    shape.lineTo(1.46, 1.94)
+    shape.bezierCurveTo(1.88, 2.54, 2.34, 3.16, 2.94, 3.30)
+    shape.bezierCurveTo(3.54, 3.42, 4.18, 3.08, 4.48, 2.52)
+    shape.lineTo(4.50, 0.02)
   }
   shape.closePath()
 
   const portalX = left ? -3.12 : 2.74
-  const portalY = left ? 0.10 : 0.42
-  const portalScaleX = (left ? 0.62 : 0.52) + layer * 0.035
-  const portalScaleY = (left ? 0.70 : 0.62) + layer * 0.025
+  const portalY = left ? 0.06 : 0.30
+  const portalScaleX = left ? 0.96 : 0.90
+  const portalScaleY = left ? 0.88 : 0.84
   const aperture = new THREE.Path()
-  const aperturePoints = fissureGeometry(true, !left).getPoints(36)
+  const aperturePoints = fissureGeometry(true, !left).getPoints(64)
     .map((point) => new THREE.Vector2(portalX + point.x * portalScaleX, portalY + point.y * portalScaleY))
     .reverse()
   aperture.moveTo(aperturePoints[0].x, aperturePoints[0].y)
@@ -372,27 +384,27 @@ function layeredSanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
   shape.holes.push(aperture)
 
   const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.46 + layer * 0.08,
+    depth: left ? 0.40 : 0.36,
     bevelEnabled: true,
-    bevelSize: 0.055,
-    bevelThickness: 0.075,
-    bevelSegments: 3,
-    curveSegments: 10,
+    bevelSize: 0.045,
+    bevelThickness: 0.06,
+    bevelSegments: 4,
+    curveSegments: 16,
   })
-  geometry.translate(0, 0, -8.70 + layer * 0.12)
+  geometry.translate(0, 0, left ? -8.72 : -8.68)
   geometry.computeVertexNormals()
   return geometry
 }
 
 function SanctuaryArchitecture() {
   const stone = useSanctuaryStone()
-  const wings = useMemo(() => (['left', 'right'] as const).flatMap((side) => (side === 'left' ? [0, 1] : [0]).map((layer) => ({ side, layer, geometry: layeredSanctuaryWingGeometry(side, layer) }))), [])
-  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v147-thick-curved-bearing-masses-with-smooth-apertures' }}>
-    {wings.map((wing) => <mesh key={`${wing.side}-${wing.layer}`} name={`home-v145-${wing.side}-layered-bearing-wing-${wing.layer}`} geometry={wing.geometry} castShadow receiveShadow>
-      <meshPhysicalMaterial color={wing.side === 'left' ? (wing.layer === 0 ? '#22342c' : '#30443a') : '#293b33'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.94} metalness={0.006} envMapIntensity={0.36} side={THREE.DoubleSide} />
+  const wings = useMemo(() => (['left', 'right'] as const).map((side) => ({ side, geometry: layeredSanctuaryWingGeometry(side) })), [])
+  return <group name="home-v148-open-buttress-threshold-sanctuary" userData={{ visualRepair: 'v148-open-buttress-threshold-masses-wide-smooth-apertures' }}>
+    {wings.map((wing) => <mesh key={wing.side} name={`home-v148-${wing.side}-open-bearing-wing`} geometry={wing.geometry} castShadow receiveShadow>
+      <meshPhysicalMaterial color={wing.side === 'left' ? '#263a31' : '#2b3d35'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.24, 0.24)} roughnessMap={stone.arm} roughness={0.96} metalness={0.004} envMapIntensity={0.30} side={THREE.DoubleSide} />
     </mesh>)}
-    <group name="home-v136-open-apse-crown" userData={{ treatment: 'v145-layered-crown-profiles-open-mountain-aperture' }} />
-    <group name="home-v137-recessed-service-light-coves" userData={{ treatment: 'light-belongs-to-threshold-recesses-no-floating-bars' }} />
+    <group name="home-v148-open-apse-crown" userData={{ treatment: 'open-buttress-crown-preserves-mountain-negative-space' }} />
+    <group name="home-v148-recessed-service-light-coves" userData={{ treatment: 'threshold-light-remains-recessed-no-floating-bars' }} />
   </group>
 }
 
@@ -543,7 +555,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
   return <group
     name="home-v126-ground-owned-open-sanctuary"
     userData={{
-      activeArtRevision: 'v126-ground-owned-sanctuary-framed-fissures-integrated-orb-apse',
+      activeArtRevision: 'v148-open-buttress-thresholds-wide-smooth-apertures',
       compatibilityMarkers: LEGACY_CONTRACT_MARKERS,
       legacySourceAssets: LEGACY_SOURCE_ASSETS,
       historicalV76ContractOnly: true,
@@ -567,11 +579,11 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <directionalLight position={[5, 5, -7]} intensity={0.36} color="#7da398" />
     <spotLight position={[0, 7.2, -3.4]} target-position={[ORB.x, ORB.y, ORB.z]} angle={0.62} penumbra={0.72} intensity={1.36} color="#c8e6d7" distance={18} />
     <group name="home-authored-terrain" userData={{ treatment: 'v126-continuous-sculpted-ground-and-terraces' }} />
-    <group name="home-sanctuary-pavilion" userData={{ visualOwner: 'v126-layered-apse-sanctuary', construction: 'bounded-geology-framed-fissures-structural-orb-cradle' }} />
+    <group name="home-sanctuary-pavilion" userData={{ visualOwner: 'v148-open-buttress-threshold-sanctuary', construction: 'open-buttress-geology-wide-smooth-fissures-structural-orb-cradle' }} />
     <group name="home-v49-scanned-detail-layer" userData={{ treatment: 'v126-bounded-lower-edge-geology-only' }} />
-    <group name="home-v49-authored-practicals" userData={{ treatment: 'v126-apse-orb-and-recessed-fissure-light' }} />
+    <group name="home-v49-authored-practicals" userData={{ treatment: 'v148-apse-orb-and-wide-recessed-fissure-light' }} />
     <group name="home-authored-embodied-self" userData={{ presentation: 'privacy-preserving-first-person-presence-v126' }} />
-    <group name="home-mountain-horizon" userData={{ presentation: 'v126-open-atmospheric-horizon-above-bounded-masses' }} />
+    <group name="home-mountain-horizon" userData={{ presentation: 'v148-open-negative-space-horizon-between-buttress-masses' }} />
     <group name="home-living-vegetation" userData={{ treatment: 'reserved-beyond-clear-navigation-channel-v126' }} />
   </group>
 }
