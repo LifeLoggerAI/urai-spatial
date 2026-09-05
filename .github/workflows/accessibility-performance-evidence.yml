@@ -179,4 +179,6 @@ jobs:
           name: accessibility-performance-evidence-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/accessibility-performance
           if-no-files-found: error
-          retention-days: 365
+          # GitHub public repositories currently support at most 90 days here.
+          # Any longer-lived evidence claim requires a separately verified durable archive.
+          retention-days: 90
