@@ -1,0 +1,115 @@
+name: V161 One-Shot Visual Repair
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - .github/workflows/v161-one-shot-visual-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v161-one-shot-visual-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.head_commit.message == 'CI: execute governed V161 visual repair'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: home-final-v24-certify-20260826
+          fetch-depth: 0
+
+      - name: Apply bounded V161 source repair
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx')
+          text = path.read_text()
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one occurrence, found {count}: {old!r}')
+              text = text.replace(old, new, 1)
+
+          # The two previous continuous ribbons produced a literal double-track/runway read.
+          # Break both into short, recessed geological cues rather than continuous rails.
+          replace_once(
+              'const half = 0.032 - t * 0.010',
+              'const half = 0.018 - t * 0.006',
+          )
+          replace_once(
+              'if (index < stations) {',
+              'if (index < stations && Math.floor(index / 5) % 2 === 0) {',
+          )
+          replace_once(
+              'const half = 0.008 + t * 0.004',
+              'const half = 0.006 + t * 0.002',
+          )
+          replace_once(
+              'if (index < 84) {',
+              'if (index < 84 && Math.floor(index / 6) % 2 === 0) {',
+          )
+          replace_once(
+              '<meshStandardMaterial color="#53665d" emissive="#5f8875" emissiveIntensity={0.042} roughness={0.94} transparent opacity={0.28} side={THREE.DoubleSide} />',
+              '<meshStandardMaterial color="#53665d" emissive="#5f8875" emissiveIntensity={0.028} roughness={0.96} transparent opacity={0.16} side={THREE.DoubleSide} />',
+          )
+
+          # Restore restrained terrain micro-relief through the navigation channel so the
+          # foreground does not read as a smooth runway while keeping it fully walkable.
+          replace_once(
+              'const descent = tz * 0.44\n        const y = -0.24 + descent + shelf + fracture * (1 - walkingChannel * 0.88) + pathRelief',
+              "const descent = tz * 0.44\n        const depthFold = (Math.sin(z * 0.26 + x * 0.19) * 0.055 + Math.cos(z * 0.15 - x * 0.31) * 0.035) * (0.28 + lateral * 0.72)\n        const y = -0.24 + descent + shelf + fracture * (1 - walkingChannel * 0.56) + pathRelief + depthFold",
+          )
+
+          # Lay the destination scars materially closer to the ground plane so their signal
+          # fields read as embedded geological cuts instead of distant upright gate slivers.
+          replace_once(
+              'position={[x, isGround ? 0.15 : 0.17, isGround ? -10.92 : -10.98]}\n    rotation={[-1.02, isGround ? 0.16 : -0.16, isGround ? -0.12 : 0.12]}',
+              'position={[x, isGround ? 0.10 : 0.11, isGround ? -10.92 : -10.98]}\n    rotation={[-1.42, isGround ? 0.16 : -0.16, isGround ? -0.12 : 0.12]}',
+          )
+
+          # Exact source-truth markers for the successor visual candidate.
+          replace_once(
+              "v160Refinement: 'hairline-path-retained-after-literal-pixel-review',",
+              "v160Refinement: 'hairline-path-retained-after-literal-pixel-review',\n      v161Refinement: 'broken-embedded-stone-cues-no-continuous-track-read',",
+          )
+          replace_once(
+              "v158Refinement: 'ground-laid-navigation-scar-no-upright-gate-silhouette',",
+              "v158Refinement: 'ground-laid-navigation-scar-no-upright-gate-silhouette',\n      v161Refinement: 'more-horizontal-recessed-navigation-scar',",
+          )
+          replace_once(
+              "currentVisualRefinement: 'v160-compact-orb-cloud-lifted-exposure-depth',",
+              "currentVisualRefinement: 'v161-broken-ground-cues-recessed-scars-terrain-depth',",
+          )
+          replace_once(
+              "v160Refinement: 'lifted-ground-exposure-without-neon-or-flat-fill'",
+              "v160Refinement: 'lifted-ground-exposure-without-neon-or-flat-fill', v161Refinement: 'broken-embedded-cues-with-restored-terrain-micro-relief'",
+          )
+          replace_once(
+              "v160Refinement: 'lifted-readable-horizon-depth'",
+              "v160Refinement: 'lifted-readable-horizon-depth', v161Refinement: 'foreground-depth-restored-without-boulder-clutter'",
+          )
+
+          path.write_text(text)
+          PY
+
+      - name: Commit repair and remove one-shot executor
+        shell: bash
+        run: |
+          rm .github/workflows/v161-one-shot-visual-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx .github/workflows/v161-one-shot-visual-repair.yml
+          git diff --cached --check
+          git commit -m "Home: break track read and recess V161 scars"
+          git push origin HEAD:home-final-v24-certify-20260826
