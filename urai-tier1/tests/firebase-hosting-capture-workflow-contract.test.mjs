@@ -49,13 +49,15 @@ test('legacy Hosting recovery verification exposes no production credential or m
   assert.match(workflow, /providerRecoveryVerified: false/)
 })
 
-test('quarantine receipt remains outside source and is retained without claiming recovery proof', () => {
+test('quarantine receipt remains outside source and uses truthful GitHub retention without claiming recovery proof', () => {
   assert.match(workflow, /schemaVersion: 'urai-legacy-hosting-recovery-quarantine-1'/)
   assert.match(workflow, /classification: 'NO-GO'/)
   assert.match(workflow, /checksOnly: true/)
   assert.match(workflow, /exactHeadSha: process\.env\.EXPECTED_SHA/)
   assert.match(workflow, /path: artifacts\/legacy-hosting-recovery\/quarantine\.json/)
-  assert.match(workflow, /retention-days: 365/)
+  assert.match(workflow, /retention-days: 90/)
+  assert.match(workflow, /Longer-lived evidence requires a separately verified durable archive/)
+  assert.doesNotMatch(workflow, /retention-days: 365/)
   assert.match(workflow, /test -z "\$\(git status --porcelain --untracked-files=all\)"/)
   assert.doesNotMatch(workflow, /legacy-live-release\.json|URAI_HOSTING_RECOVERY_RECEIPT/)
 })
