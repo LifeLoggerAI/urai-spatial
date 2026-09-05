@@ -90,15 +90,21 @@ export function PersistentWorldCompanion() {
     }
   }, [])
 
+  const publishCompanionAttention = useCallback(() => {
+    window.queueMicrotask(() => {
+      publishOrbState('attention', 'companion')
+      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+    })
+  }, [])
+
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
     else {
       externalActivatorRef.current = null
       setOpen(true)
-      publishOrbState('attention', 'companion')
-      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+      publishCompanionAttention()
     }
-  }, [closeCompanion, open])
+  }, [closeCompanion, open, publishCompanionAttention])
 
   const toggleAudio = useCallback(() => {
     const enabled = !audioEnabled
@@ -111,11 +117,11 @@ export function PersistentWorldCompanion() {
     const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
       externalActivatorRef.current = event.detail.returnFocusTo ?? null
       setOpen(true)
-      publishOrbState('attention', 'companion')
+      publishCompanionAttention()
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
     return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
-  }, [])
+  }, [publishCompanionAttention])
 
   useEffect(() => {
     if (phase !== 'idle') closeCompanion(false)
