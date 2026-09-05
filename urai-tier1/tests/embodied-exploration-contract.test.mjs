@@ -13,8 +13,8 @@ const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
-const ground = read('src/spatial/layout/GroundWorldProduction.tsx')
-const lifeMap = read('src/spatial/layout/LifeMapWorldProduction.tsx')
+const ground = read('src/app/GroundSpatialWorldClean.tsx')
+const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const travel = read('src/spatial/travelKernel.ts')
 
 
@@ -124,19 +124,23 @@ test('Home telemetry and destination authority remain aligned to the unchanged V
 
 test('Ground remains a walkable infrastructure world with semantic exits', () => {
   for (const marker of [
-    'GroundWorldProduction',
-    'createTravelKernel',
-    'onExit',
-    'onUnwind',
+    'function GroundWorld(',
+    'stepEmbodiedMotion({',
+    'useMovementInput({',
+    'router.push(destination.href)',
+    'router.push("/home?returnFrom=ground")',
+    'data-ground-exploration="walkable"',
   ]) has(ground, marker)
 })
 
-test('Life Map preserves independent travel, depth and semantic Focus/Replay exits', () => {
+test('Life Map preserves private-by-default canonical ownership and semantic return behavior', () => {
   for (const marker of [
-    'LifeMapWorldProduction',
-    'createTravelKernel',
-    'onFocus',
-    'onReplay',
+    'SpatialLifeMapCanonical',
+    'LifeMapRouteBoundary',
+    'requestUraiWorldReturn',
+    'data-private-memory-mounted="false"',
+    'data-life-map-access={mode}',
+    'data-selected-memory-owner="spatial-lens-only"',
   ]) has(lifeMap, marker)
 })
 
