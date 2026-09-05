@@ -59,7 +59,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V150 replaces flat threshold facades with sculpted stone reveals and grounded memory volume', () => {
+test('V151 replaces facade hoops with buried asymmetric fissures and a grounded Orb cloud', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
@@ -69,7 +69,7 @@ test('V150 replaces flat threshold facades with sculpted stone reveals and groun
     'home-v126-bounded-geological-edge-masses',
     'function FramedFissure(',
     'home-v126-${side}-framed-fissure',
-    'v150-sculpted-stone-reveal-with-recessed-signal-field',
+    'v151-asymmetric-buried-signal-fissures-no-facade-hoops',
     'function weatheredSanctuaryMassGeometry(',
     'home-v149-weathered-rift-threshold-sanctuary',
     'v149-weathered-grounded-rift-masses-no-flat-facades',
@@ -84,12 +84,14 @@ test('V150 replaces flat threshold facades with sculpted stone reveals and groun
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
-    'v150-sculpted-stone-thresholds-dense-memory-volume',
+    'v151-asymmetric-buried-fissures-low-orb-memory-cloud',
   ]) has(homeArt, marker)
   assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry|home-v148-open-buttress-threshold-sanctuary/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
   assert.match(homeArt, /new THREE\.SphereGeometry\(1, 36, 24\)/)
+  assert.match(homeArt, /retained-stone-provenance[^\n]*visible=\{false\}/)
+  assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.34, 1\.62, -7\.08\)/)
   assert.match(homeArt, /<primitive object=\{orb\}/)
   assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)
 })
