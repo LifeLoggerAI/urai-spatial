@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/run-home-state-proof-bounded.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 60
     env:
       URAI_EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       PLAYWRIGHT_BROWSERS_PATH: '0'
@@ -50,6 +51,7 @@ jobs:
       - name: Verify state-proof contract and build
         run: |
           (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
+          node --check scripts/run-home-state-proof-bounded.mjs
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof
@@ -58,7 +60,7 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:4173/home/ >/dev/null && break; sleep 1; done
-          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/home-state-proof node scripts/capture-home-state-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/home-state-proof node scripts/run-home-state-proof-bounded.mjs
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
