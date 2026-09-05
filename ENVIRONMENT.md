@@ -25,8 +25,6 @@ NEXT_PUBLIC_FIREBASE_APP_ID
 
 ```txt
 FIREBASE_PROJECT_ID
-FIREBASE_CLIENT_EMAIL
-FIREBASE_PRIVATE_KEY
 URAI_SPATIAL_INTEGRATION_API_KEY
 URAI_CORE_BASE_URL
 URAI_STUDIO_BASE_URL
@@ -34,7 +32,17 @@ ASSET_FACTORY_BASE_URL
 URAI_JOBS_BASE_URL
 ```
 
-Do not commit real secrets. Use deployment provider secret storage or local `.env.local` files.
+### Managed identity boundary
+
+Production deployment and runtime identity must use managed, short-lived authentication:
+
+- GitHub Actions deployment uses OIDC + Google Workload Identity Federation through the repository's protected release authority.
+- Google-managed runtimes use attached Application Default Credentials (ADC) and the exact least-privilege runtime service account.
+- Provider and integration secrets, where required, belong in protected provider secret storage and must not be committed.
+
+Do **not** provision or document `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_TOKEN`, downloaded service-account JSON, or another user-managed long-lived Google credential as production deployment or runtime authority.
+
+Local development may use supported local ADC where an authenticated provider test is explicitly required, but local credentials are never production evidence and must never be committed.
 
 ## Fallback behavior
 
