@@ -21,6 +21,17 @@ function prepareReplayModel(source: THREE.Object3D) {
   const clone = source.clone(true)
   clone.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
+    const growthMatch = object.name.match(/^replay-memory-growth(?:-(?:trunk|crown))?-(\d+)$/)
+    const retainedGrowth = growthMatch ? [3, 12, 24, 31].includes(Number(growthMatch[1])) : false
+    const rejectedPresentation = object.name === 'replay-film-portal'
+      || object.name === 'replay-film-veil'
+      || object.name === 'replay-camera-track'
+      || object.name.startsWith('replay-memory-panel-')
+      || (Boolean(growthMatch) && !retainedGrowth)
+    if (rejectedPresentation) {
+      object.visible = false
+      object.userData.uraiRetiredVisualRole = 'v149-no-flat-film-portal-panel-wall-or-repeated-growth-grid'
+    }
     object.castShadow = true
     object.receiveShadow = true
     object.frustumCulled = true
@@ -46,6 +57,20 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
 function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const surfaceGeometry = useMemo(() => {
+    const geometry = new THREE.PlaneGeometry(8.9, 5.05, 40, 12)
+    const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = positions.getX(index)
+      const y = positions.getY(index)
+      const normalizedX = x / 4.45
+      const depth = -0.86 * normalizedX * normalizedX + Math.sin(y * 1.3) * 0.025
+      positions.setZ(index, depth)
+    }
+    positions.needsUpdate = true
+    geometry.computeVertexNormals()
+    return geometry
+  }, [])
 
   useEffect(() => {
     let disposed = false
@@ -53,12 +78,13 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
     let localVideo: HTMLVideoElement | null = null
 
     setTexture(null)
-    if (!media) return
+    const sourceUrl = media?.url ?? replayAssets.primary.src
+    const sourceKind = media?.kind ?? 'image'
 
-    if (media.kind === 'image') {
+    if (sourceKind === 'image') {
       const loader = new THREE.TextureLoader()
       loader.setCrossOrigin('anonymous')
-      loader.load(media.url, (loaded) => {
+      loader.load(sourceUrl, (loaded) => {
         if (disposed) {
           loaded.dispose()
           return
@@ -70,9 +96,9 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
       })
     }
 
-    if (media.kind === 'video') {
+    if (sourceKind === 'video') {
       const video = document.createElement('video')
-      video.src = media.url
+      video.src = sourceUrl
       video.crossOrigin = 'anonymous'
       video.playsInline = true
       video.muted = true
@@ -105,16 +131,11 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
   }, [playing])
 
   return (
-    <group name="replay-memory-media-surface">
-      <mesh position={REPLAY_SCREEN_POSITION}>
-        <planeGeometry args={[7.25, 4.08]} />
+    <group name="replay-v149-curved-memory-horizon" userData={{ visualRepair: 'no-flat-fog-card-or-portal-ring' }}>
+      <mesh position={REPLAY_SCREEN_POSITION} geometry={surfaceGeometry}>
         {texture
           ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
-          : <meshPhysicalMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.18} roughness={0.34} metalness={0.16} />}
-      </mesh>
-      <mesh position={[0, 0.58, -5.96]}>
-        <planeGeometry args={[7.5, 4.32]} />
-        <meshBasicMaterial color="#bff8ff" transparent opacity={0.035} depthWrite={false} />
+          : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}
       </mesh>
     </group>
   )
@@ -239,7 +260,7 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="curved-memory-horizon-no-flat-portal-panels">
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
     </Canvas>
