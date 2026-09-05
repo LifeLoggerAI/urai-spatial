@@ -59,7 +59,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V126 removes scan-owned staging while preserving governed Orb identity and spatial gates', () => {
+test('V148 opens the V126 sanctuary thresholds while preserving governed Orb identity and spatial gates', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
@@ -69,6 +69,9 @@ test('V126 removes scan-owned staging while preserving governed Orb identity and
     'home-v126-bounded-geological-edge-masses',
     'function FramedFissure(',
     'home-v126-${side}-framed-fissure',
+    'v148-wide-smooth-recessed-threshold-inside-open-buttress-wing',
+    'home-v148-open-buttress-threshold-sanctuary',
+    'v148-open-buttress-threshold-masses-wide-smooth-apertures',
     'function ApseAndOrbCradle(',
     'home-v126-layered-apse-orb-cradle',
     'function LivingOrb(',
@@ -77,10 +80,13 @@ test('V126 removes scan-owned staging while preserving governed Orb identity and
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
-    'v126-ground-owned-sanctuary-framed-fissures-integrated-orb-apse',
+    'v148-open-buttress-thresholds-wide-smooth-apertures',
   ]) has(homeArt, marker)
   assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
+  assert.match(homeArt, /const portalScaleX = left \? 0\.96 : 0\.90/)
+  assert.match(homeArt, /const portalScaleY = left \? 0\.88 : 0\.84/)
+  assert.match(homeArt, /\(\['left', 'right'\] as const\)\.map/)
   assert.match(homeArt, /<primitive object=\{orb\}/)
   assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)
 })
