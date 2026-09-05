@@ -59,42 +59,51 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V153 replaces facade hoops and translucent panels with localized fissures and no Orb pedestal', () => {
+test('V154 renders the canyon, buried fissures and memory-swarm Orb without restoring rejected facade geometry or a pedestal', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
     'function SanctuaryTerraces(',
     'home-v126-continuous-walkable-terrace-network',
+    'home-v154-inlaid-stone-approach',
     'function GeologicalFrame(',
     'home-v126-bounded-geological-edge-masses',
+    'v154-integrated-edge-scans-buried-into-canyon-walls',
     'function FramedFissure(',
     'home-v126-${side}-framed-fissure',
     'v153-localized-signal-fissures-no-facade-hoops-or-translucent-panels',
+    'v154-buried-irregular-stone-fissure-no-facade-hoops-or-translucent-panels',
     'function weatheredSanctuaryMassGeometry(',
     'home-v149-weathered-rift-threshold-sanctuary',
     'v149-weathered-grounded-rift-masses-no-flat-facades',
+    'v154-faceted-broken-buttresses-no-rounded-boulder-gates',
     'ground-rift-bearing-mass',
     'life-map-rift-bearing-mass',
     'function ApseAndOrbCradle(',
     'home-v126-layered-apse-orb-cradle',
     'v149-retired-detached-cradle-blades',
+    'v154-broken-side-shelves-frame-orb-without-pedestal',
     'function LivingOrb(',
     'home-v126-apse-integrated-orb',
     'home-v126-orb-memory-motes',
+    'home-v154-orb-memory-depth-motes',
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
     'v153-localized-fissures-asymmetric-orb-plume-no-pedestal',
+    'v154-visible-canyon-fissures-memory-swarm-no-pedestal',
   ]) has(homeArt, marker)
   assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry|home-v148-open-buttress-threshold-sanctuary/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
-  assert.match(homeArt, /new THREE\.SphereGeometry\(1, 36, 24\)/)
-  assert.match(homeArt, /retained-stone-provenance[^\n]*visible=\{false\}/)
-  assert.match(homeArt, /retired-threshold-panel[^\n]*visible=\{false\}/)
+  assert.match(homeArt, /new THREE\.IcosahedronGeometry\(1, 2\)/)
+  assert.match(homeArt, /new THREE\.IcosahedronGeometry\(0\.92, 4\)/)
+  assert.match(homeArt, /name="home-v125-sculpted-canyon-ground"[^>]*>[\s\S]*?<meshPhysicalMaterial/)
+  assert.match(homeArt, /retained-stone-provenance[^\n]*castShadow receiveShadow>/)
+  assert.match(homeArt, /retired-threshold-panel[^\n]*geometry=\{field\}[^\n]*>/)
   assert.match(homeArt, /const rejectedHorizonRepeat = object\.name\.startsWith\('horizon-mountain-'\)/)
-  assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.34, 1\.62, -7\.08\)/)
-  assert.match(homeArt, /<primitive object=\{orb\}/)
+  assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
+  assert.match(homeArt, /<primitive object=\{orb\} visible=\{false\} \/>/)
   assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)
 })
 
