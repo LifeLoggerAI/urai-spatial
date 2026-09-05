@@ -117,19 +117,11 @@ function AuthoredSanctuaryEnvironment() {
   const environment = useMemo(() => {
     const root = source.clone(true)
     root.traverse((object) => {
-      const retainedAsymmetricWorld = [
-        'sanctuary-waterfall-2', 'sanctuary-waterfall-5',
-        'inhabited-village-3', 'village-tower-3', 'village-roof-3',
-        'inhabited-village-11', 'village-tower-11', 'village-roof-11',
-        'living-growth-4', 'living-growth-trunk-4', 'living-growth-crown-4',
-        'living-growth-19', 'living-growth-trunk-19', 'living-growth-crown-19',
-        'living-growth-37', 'living-growth-trunk-37', 'living-growth-crown-37',
-      ].some((name) => object.name === name)
       const rejectedFamily = [
         'living-growth-', 'inhabited-village-', 'village-', 'sanctuary-waterfall-',
         'memory-place-anchor-', 'embodied-presence-', 'ground-alcove-',
         'life-map-alcove-', 'horizon-threshold-',
-      ].some((prefix) => object.name.startsWith(prefix)) && !retainedAsymmetricWorld
+      ].some((prefix) => object.name.startsWith(prefix))
       const rejectedHorizonRepeat = object.name.startsWith('horizon-mountain-')
         && !['horizon-mountain-3', 'horizon-mountain-7', 'horizon-mountain-10'].includes(object.name)
       if (object.name === 'orb-sanctuary-pedestal' || object.name.startsWith('mirror-basin') || rejectedFamily || rejectedHorizonRepeat) object.visible = false
@@ -430,7 +422,7 @@ function ApseAndOrbCradle() {
   const supports = useMemo(() => [cradleSupportGeometry(-1), cradleSupportGeometry(1)], [])
   const stone = useSanctuaryStone()
   return <group name="home-v126-layered-apse-orb-cradle" userData={{ visualRepair: 'v136-wall-seated-stone-yoke', loadPath: 'apse-bearing-brackets-to-memory-volume' }} position={[ORB.x, 0, ORB.z - 0.34]}>
-    {supports.map((geometry, index) => <mesh key={index} name={`home-v136-grounded-cradle-bracket-${index}`} geometry={geometry} castShadow receiveShadow>
+    {supports.map((geometry, index) => <mesh key={index} name={`home-v136-grounded-cradle-bracket-${index}`} geometry={geometry} scale={index ? [0.78, 0.92, 0.88] : [1, 1, 1]} castShadow receiveShadow>
       <meshPhysicalMaterial color={index ? '#2b3c34' : '#26372f'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.24, 0.24)} roughnessMap={stone.arm} roughness={0.96} metalness={0.005} envMapIntensity={0.24} />
     </mesh>)}
   </group>
@@ -460,7 +452,7 @@ function ArrivalSignalPath({ reducedMotion }: { reducedMotion: boolean }) {
   const path = useRef<THREE.Mesh>(null)
   useFrame(({ clock }) => { if (path.current && !reducedMotion) (path.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.18 + Math.sin(clock.elapsedTime * 0.72) * 0.035 })
   return <mesh ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry} receiveShadow>
-    <meshStandardMaterial color="#587064" emissive="#6f9c87" emissiveIntensity={0.18} roughness={0.82} transparent opacity={0.72} side={THREE.DoubleSide} />
+    <meshStandardMaterial color="#43594f" emissive="#5e806f" emissiveIntensity={0.10} roughness={0.88} transparent opacity={0.34} side={THREE.DoubleSide} />
   </mesh>
 }
 
@@ -484,8 +476,10 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
       const y = -1.02 + t * 2.04
       const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.08, 2)))
       const angle = index * 2.3999632297 + Math.sin(index * 0.37) * 0.16
-      const radius = envelope * (0.38 + ((index * 17) % 31) / 112)
-      positions.push(Math.cos(angle) * radius, y, Math.sin(angle) * radius * 0.72)
+      const fill = Math.pow(((index * 17) % 97) / 96, 0.62)
+      const radius = envelope * fill * 0.76
+      const drift = y * 0.12 + Math.sin(y * 3.4) * 0.06
+      positions.push(Math.cos(angle) * radius + drift, y, Math.sin(angle) * radius * 0.70)
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -517,14 +511,14 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
 
   return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }}>
     <mesh name="home-v132-orb-memory-volume" geometry={memoryVolume} castShadow>
-      <meshPhysicalMaterial color="#28483d" emissive={palette.accent} emissiveIntensity={0.10} roughness={0.74} metalness={0.01} transmission={0.22} thickness={0.52} transparent opacity={0.16} depthWrite={false} clearcoat={0.02} clearcoatRoughness={0.78} />
+      <meshPhysicalMaterial color="#28483d" emissive={palette.accent} emissiveIntensity={0.08} roughness={0.78} metalness={0.01} transmission={0.18} thickness={0.42} transparent opacity={0.07} depthWrite={false} clearcoat={0.01} clearcoatRoughness={0.82} />
     </mesh>
     <primitive object={orb} visible={false} />
     <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.88, 0.78, 0.88]}>
       <pointsMaterial color={palette.core} size={palette.moteSize * 0.68} transparent opacity={0.76} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
     <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.27, 0.31, 0.27]}>
-      <meshStandardMaterial color={palette.accent} emissive={palette.core} emissiveIntensity={0.64} roughness={0.66} flatShading />
+      <meshStandardMaterial color="#355c4e" emissive={palette.accent} emissiveIntensity={0.34} roughness={0.74} flatShading />
     </mesh>
     <mesh name="home-v126-orb-generous-hit-target">
       <sphereGeometry args={[1.38, 16, 12]} />
