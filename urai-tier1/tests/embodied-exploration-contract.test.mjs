@@ -59,7 +59,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V149 replaces flat threshold facades and detached Orb blades with grounded weathered geology', () => {
+test('V150 replaces flat threshold facades with sculpted stone reveals and grounded memory volume', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
@@ -69,7 +69,7 @@ test('V149 replaces flat threshold facades and detached Orb blades with grounded
     'home-v126-bounded-geological-edge-masses',
     'function FramedFissure(',
     'home-v126-${side}-framed-fissure',
-    'v149-recessed-signal-rift-inside-weathered-geology',
+    'v150-sculpted-stone-reveal-with-recessed-signal-field',
     'function weatheredSanctuaryMassGeometry(',
     'home-v149-weathered-rift-threshold-sanctuary',
     'v149-weathered-grounded-rift-masses-no-flat-facades',
@@ -84,12 +84,12 @@ test('V149 replaces flat threshold facades and detached Orb blades with grounded
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
-    'v149-weathered-rift-thresholds-filled-memory-volume',
+    'v150-sculpted-stone-thresholds-dense-memory-volume',
   ]) has(homeArt, marker)
   assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry|home-v148-open-buttress-threshold-sanctuary/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
-  assert.match(homeArt, /new THREE\.DodecahedronGeometry\(1, 3\)/)
+  assert.match(homeArt, /new THREE\.SphereGeometry\(1, 36, 24\)/)
   assert.match(homeArt, /<primitive object=\{orb\}/)
   assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)
 })
