@@ -3,9 +3,8 @@ import { readFile, writeFile } from 'node:fs/promises'
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
-const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
-if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
+const activeOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
+if (original.split(activeOwner).length - 1 !== 1) throw new Error('Continuous proof active Home animation-owner contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
@@ -25,11 +24,12 @@ if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continu
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
 const patched = original
-  .replace(oldOwner, newOwner)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)
   .replace(staleLifeMapTarget, runtimeLifeMapTarget)
+
+if (patched.split(activeOwner).length - 1 !== 1) throw new Error('Continuous proof lost the active Home animation-owner guard')
 
 await writeFile(captureUrl, patched, 'utf8')
 try {
