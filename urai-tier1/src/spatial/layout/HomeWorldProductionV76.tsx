@@ -366,22 +366,34 @@ function sanctuaryWingGeometry(side: 'left' | 'right', layer: number) {
 
 function SanctuaryArchitecture() {
   const stone = useSanctuaryStone()
-  const buttresses = useMemo(() => ([
-    { side: 'left' as const, layer: 0, position: [-4.42, 1.46, -8.68] as Vec3, rotation: [0.03, 0.56, -0.12] as Vec3, scale: [0.82, 0.92, 1.30] as Vec3 },
-    { side: 'left' as const, layer: 1, position: [-3.52, 1.58, -8.12] as Vec3, rotation: [-0.02, 0.34, 0.05] as Vec3, scale: [0.64, 0.82, 1.14] as Vec3 },
-    { side: 'left' as const, layer: 2, position: [-1.86, 1.16, -8.92] as Vec3, rotation: [0.02, 0.12, -0.12] as Vec3, scale: [0.42, 0.60, 0.96] as Vec3 },
-    { side: 'right' as const, layer: 0, position: [4.18, 1.34, -9.22] as Vec3, rotation: [-0.03, -0.52, 0.10] as Vec3, scale: [0.74, 0.84, 1.20] as Vec3 },
-    { side: 'right' as const, layer: 2, position: [2.76, 1.08, -8.34] as Vec3, rotation: [0.02, -0.20, 0.07] as Vec3, scale: [0.46, 0.64, 1.02] as Vec3 },
-  ].map((entry) => ({ ...entry, geometry: sanctuaryWingGeometry(entry.side, entry.layer) }))), [])
-  const cantilever = useMemo(() => sanctuaryWingGeometry('left', 1), [])
-  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v142-open-canyon-no-flat-apse-facade' }}>
-    {buttresses.map((entry, index) => <mesh key={index} name={`home-v133-staggered-bearing-buttress-${index}`} geometry={entry.geometry} position={entry.position} rotation={entry.rotation} scale={entry.scale} castShadow receiveShadow>
-      <meshPhysicalMaterial color={index % 2 ? '#26372f' : '#223129'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.93} metalness={0.01} envMapIntensity={0.36} />
+  const wings = useMemo(() => [
+    {
+      name: 'port',
+      geometry: new THREE.CylinderGeometry(4.72, 5.04, 3.82, 34, 8, true, Math.PI + 0.34, 0.76),
+      position: [0, 1.82, -4.36] as Vec3,
+      color: '#23352d',
+    },
+    {
+      name: 'starboard',
+      geometry: new THREE.CylinderGeometry(4.48, 4.82, 3.12, 30, 7, true, Math.PI - 1.02, 0.67),
+      position: [0.18, 1.46, -4.56] as Vec3,
+      color: '#293a32',
+    },
+  ], [])
+  const ribs = useMemo(() => [
+    { angle: Math.PI + 0.38, length: 0.055, height: 4.02, y: 1.92, radius: 4.78 },
+    { angle: Math.PI + 0.68, length: 0.050, height: 3.62, y: 1.70, radius: 4.86 },
+    { angle: Math.PI - 0.96, length: 0.052, height: 3.34, y: 1.56, radius: 4.58 },
+    { angle: Math.PI - 0.54, length: 0.046, height: 2.92, y: 1.36, radius: 4.64 },
+  ].map((rib) => ({ ...rib, geometry: new THREE.CylinderGeometry(rib.radius, rib.radius + 0.12, rib.height, 6, 1, true, rib.angle, rib.length) })), [])
+  return <group name="home-v133-asymmetric-stone-apse-sanctuary" userData={{ visualRepair: 'v144-curved-open-wings-no-freestanding-slabs' }}>
+    {wings.map((wing) => <mesh key={wing.name} name={`home-v144-${wing.name}-curved-bearing-wing`} geometry={wing.geometry} position={wing.position} castShadow receiveShadow>
+      <meshPhysicalMaterial color={wing.color} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.95} metalness={0.006} envMapIntensity={0.34} side={THREE.DoubleSide} />
     </mesh>)}
-    <mesh name="home-v143-single-asymmetric-cantilever" geometry={cantilever} position={[-3.70, 3.36, -9.10]} rotation={[0.08, 0.30, -1.18]} scale={[0.28, 0.82, 1.16]} castShadow receiveShadow>
-      <meshPhysicalMaterial color="#26372f" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.20, 0.20)} roughnessMap={stone.arm} roughness={0.94} metalness={0.008} envMapIntensity={0.34} />
-    </mesh>
-    <group name="home-v136-open-apse-crown" userData={{ treatment: 'v143-single-grounded-cantilever-open-to-sky' }} />
+    {ribs.map((rib, index) => <mesh key={index} name={`home-v133-staggered-bearing-buttress-${index}`} geometry={rib.geometry} position={[0.10, rib.y, -4.42]} castShadow receiveShadow>
+      <meshPhysicalMaterial color={index % 2 ? '#35483e' : '#405248'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.22, 0.22)} roughnessMap={stone.arm} roughness={0.90} metalness={0.008} envMapIntensity={0.42} side={THREE.DoubleSide} />
+    </mesh>)}
+    <group name="home-v136-open-apse-crown" userData={{ treatment: 'v144-unequal-curved-wings-open-mountain-aperture' }} />
     <group name="home-v137-recessed-service-light-coves" userData={{ treatment: 'light-belongs-to-threshold-recesses-no-floating-bars' }} />
   </group>
 }

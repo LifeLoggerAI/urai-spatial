@@ -511,6 +511,8 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  const loadingSurface = page.locator('main[aria-busy="true"]')
+  if (await loadingSurface.count()) await loadingSurface.first().waitFor({ state: 'hidden', timeout: 45_000 })
   await stable(page)
 }
 
