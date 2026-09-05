@@ -1,5 +1,9 @@
 # URAI Spatial Release Lock
 
+> **SUPERSEDED HISTORICAL SNAPSHOT — DO NOT USE AS CURRENT DEPLOYMENT AUTHORITY.**
+>
+> This file records a May 7, 2026 branch snapshot and intentionally preserves its historical command text for audit history. Current canonical source explicitly quarantines production mutation: `.github/workflows/spatial-live-deploy.yml` is verification + short-lived read-only WIF identity proof only, and `scripts/live-release.mjs deploy` fails closed. The `firebase deploy` and hosting-clone commands below must not be executed as current URAI Spatial release authority. Use current `DEPLOYMENT.md`, `ENVIRONMENT.md`, and `docs/LIVE_DEPLOY_RUNBOOK.md` for the present fail-closed boundary.
+
 ## Snapshot
 
 - Date/time UTC: 2026-05-07
@@ -75,14 +79,14 @@ pnpm launch:check
 - Fallback/demo behavior is explicit and deterministic.
 - Final pass/fail status depends on running `pnpm launch:check` in CI or a local checkout with dependency/network access.
 
-## Deployment command
+## Historical deployment command
 
 ```bash
 pnpm launch:check
 firebase deploy --only hosting
 ```
 
-## Rollback command
+## Historical rollback command
 
 ```bash
 git revert <release-commit-sha>
