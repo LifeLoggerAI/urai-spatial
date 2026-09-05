@@ -3,8 +3,14 @@ import { readFile, writeFile } from 'node:fs/promises'
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
-const activeOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-if (original.split(activeOwner).length - 1 !== 1) throw new Error('Continuous proof active Home animation-owner contract changed')
+
+const staleOwnerGetter = "    animationOwner: await owner.getAttribute('data-home-animation-owner'),"
+const runtimeOwnerGetter = "    animationOwner: await page.locator('.urai-home-spatial-runtime-layer').getAttribute('data-home-visual-owner'),"
+if (original.split(staleOwnerGetter).length - 1 !== 1) throw new Error('Continuous proof Home ownership getter contract changed')
+
+const staleOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
+const runtimeOwner = "result.animationOwner === 'asset-driven-personalized-sanctuary'"
+if (original.split(staleOwner).length - 1 !== 1) throw new Error('Continuous proof Home ownership value contract changed')
 
 const staleOrbClipBlock = `const orbClips = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
@@ -36,13 +42,16 @@ if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continu
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
 const patched = original
+  .replace(staleOwnerGetter, runtimeOwnerGetter)
+  .replace(staleOwner, runtimeOwner)
   .replace(staleOrbClipBlock, runtimeOrbClipBlock)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)
   .replace(staleLifeMapTarget, runtimeLifeMapTarget)
 
-if (patched.split(activeOwner).length - 1 !== 1) throw new Error('Continuous proof lost the active Home animation-owner guard')
+if (patched.split(runtimeOwnerGetter).length - 1 !== 1) throw new Error('Continuous proof lost the runtime Home ownership getter')
+if (patched.split(runtimeOwner).length - 1 !== 1) throw new Error('Continuous proof lost the runtime Home ownership guard')
 if (!patched.includes("dormant: 'orb-rest', idle: 'orb-breathe'")) throw new Error('Continuous proof lost the runtime Orb animation guard')
 
 await writeFile(captureUrl, patched, 'utf8')
