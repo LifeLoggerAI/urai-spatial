@@ -1,0 +1,90 @@
+name: Retention Truth One Shot
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - .github/workflows/retention-truth-one-shot.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: retention-truth-one-shot
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: home-final-v24-certify-20260826
+          fetch-depth: 0
+
+      - name: Reconcile public-repository artifact retention truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          workflow_root = Path('.github/workflows')
+          helper = workflow_root / 'retention-truth-one-shot.yml'
+          changed = []
+
+          for path in sorted(workflow_root.glob('*.y*ml')):
+              if path == helper:
+                  continue
+              text = path.read_text()
+              pattern = re.compile(r'(?m)^(\s*)retention-days:\s*365\s*$')
+              if not pattern.search(text):
+                  continue
+              def repl(match):
+                  indent = match.group(1)
+                  return (
+                      f'{indent}# Public-repo GitHub artifact retention is capped at 90 days; '
+                      'longer-lived evidence requires a separately verified durable archive.\n'
+                      f'{indent}retention-days: 90'
+                  )
+              updated = pattern.sub(repl, text)
+              path.write_text(updated)
+              changed.append(str(path))
+
+          contract_roots = [Path('urai-tier1/tests'), Path('tests'), Path('scripts')]
+          for root in contract_roots:
+              if not root.exists():
+                  continue
+              for path in sorted(root.rglob('*')):
+                  if not path.is_file() or path.suffix not in {'.mjs', '.js', '.ts', '.tsx', '.yml', '.yaml', '.md'}:
+                      continue
+                  text = path.read_text(errors='ignore')
+                  if 'retention-days: 365' not in text:
+                      continue
+                  path.write_text(text.replace('retention-days: 365', 'retention-days: 90'))
+                  changed.append(str(path))
+
+          if not changed:
+              raise SystemExit('no executable/current-contract 365-day retention references were found')
+
+          print('RETENTION_TRUTH_CHANGED_FILES')
+          for path in changed:
+              print(path)
+          PY
+
+          if git grep -n 'retention-days: 365' -- '.github/workflows' 'urai-tier1/tests' 'tests' 'scripts' 2>/dev/null; then
+            echo 'FAIL: executable/current-contract 365-day retention reference remains' >&2
+            exit 1
+          fi
+
+          rm .github/workflows/retention-truth-one-shot.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows urai-tier1/tests tests scripts
+          git add -u .github/workflows/retention-truth-one-shot.yml
+          git diff --cached --check
+          git commit -m 'CI: make Spatial artifact retention truthful'
+          git push origin HEAD:home-final-v24-certify-20260826
