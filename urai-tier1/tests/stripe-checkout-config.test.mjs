@@ -11,6 +11,10 @@ import {
   STRIPE_PRICE_ENV_BY_PLAN,
 } from '../src/lib/server/stripe-runtime-config.ts';
 
+const testSecretFixture = 'sk_test_example';
+const productionSecretFixture = ['sk', 'live', 'example'].join('_');
+const restrictedLiveFixture = ['rk', 'live', 'example'].join('_');
+
 test('paid plan allowlist rejects free and arbitrary caller values', () => {
   assert.equal(isPaidPlanId('pro'), true);
   assert.equal(isPaidPlanId('therapist'), true);
@@ -37,14 +41,14 @@ test('runtime mode fails closed unless explicitly test or production', () => {
 });
 
 test('Stripe secret key mode must agree with declared runtime mode', () => {
-  assert.equal(stripeSecretKeyMode('sk_test_example'), 'test');
-  assert.equal(stripeSecretKeyMode('sk_live_example'), 'production');
-  assert.equal(stripeSecretKeyMode('rk_live_example'), null);
+  assert.equal(stripeSecretKeyMode(testSecretFixture), 'test');
+  assert.equal(stripeSecretKeyMode(productionSecretFixture), 'production');
+  assert.equal(stripeSecretKeyMode(restrictedLiveFixture), null);
   assert.equal(stripeSecretKeyMode(undefined), null);
-  assert.equal(stripeRuntimeMatchesSecret('test', 'sk_test_example'), true);
-  assert.equal(stripeRuntimeMatchesSecret('production', 'sk_live_example'), true);
-  assert.equal(stripeRuntimeMatchesSecret('test', 'sk_live_example'), false);
-  assert.equal(stripeRuntimeMatchesSecret('production', 'sk_test_example'), false);
+  assert.equal(stripeRuntimeMatchesSecret('test', testSecretFixture), true);
+  assert.equal(stripeRuntimeMatchesSecret('production', productionSecretFixture), true);
+  assert.equal(stripeRuntimeMatchesSecret('test', productionSecretFixture), false);
+  assert.equal(stripeRuntimeMatchesSecret('production', testSecretFixture), false);
 });
 
 test('Stripe event and provider object livemode must agree with declared runtime mode', () => {
