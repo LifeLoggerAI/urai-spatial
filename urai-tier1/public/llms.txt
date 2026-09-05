@@ -6,7 +6,7 @@ Canonical product: https://urai.app/
 Official overview: https://urai.app/about/
 URAI Labs: https://urai.app/about/labs/
 Founder: Adam Clamp — https://urai.app/founder/
-Founding Engineer: Chris Herrin — https://urai.app/about/labs/#chris-herrin
+Lead Engineer: Chris Herrin — https://urai.app/about/labs/#chris-herrin
 Ecosystem: https://urai.app/ecosystem/
 Press facts: https://urai.app/press/
 Release status: https://urai.app/status/
