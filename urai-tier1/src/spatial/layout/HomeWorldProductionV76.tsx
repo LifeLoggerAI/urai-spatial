@@ -123,7 +123,6 @@ function AuthoredSanctuaryEnvironment() {
         'life-map-alcove-', 'horizon-threshold-',
       ].some((prefix) => object.name.startsWith(prefix))
       const rejectedHorizonRepeat = object.name.startsWith('horizon-mountain-')
-        && !['horizon-mountain-3', 'horizon-mountain-10'].includes(object.name)
       if (object.name === 'orb-sanctuary-pedestal' || object.name.startsWith('mirror-basin') || rejectedFamily || rejectedHorizonRepeat) object.visible = false
       if (!(object instanceof THREE.Mesh)) return
       object.receiveShadow = true
@@ -335,12 +334,12 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v151-asymmetric-buried-signal-fissures-no-facade-hoops', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.04 : 0.28, isGround ? -8.18 : -8.58]} rotation={[0, isGround ? 0.21 : -0.26, isGround ? -0.10 : 0.14]} scale={isGround ? [0.60, 0.66, 0.42] : [0.48, 0.70, 0.38]}>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v153-localized-signal-fissures-no-facade-hoops-or-translucent-panels', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.04 : 0.28, isGround ? -8.18 : -8.58]} rotation={[0, isGround ? 0.21 : -0.26, isGround ? -0.10 : 0.14]} scale={isGround ? [0.60, 0.66, 0.42] : [0.48, 0.70, 0.38]}>
     <mesh name={`home-v151-${side}-retained-stone-provenance`} geometry={outer} castShadow receiveShadow visible={false}>
       <meshStandardMaterial color={isGround ? '#263a31' : '#2d3433'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.24, 0.24)} roughnessMap={stone.arm} roughness={0.98} metalness={0.002} />
     </mesh>
     <group name={`home-v149-${side}-weathered-rift-shell`} userData={{ structuralOwner: 'open-buttress-sanctuary-wing', retiredFreestandingFrame: true }} />
-    <mesh name={`home-v149-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.18]}>
+    <mesh name={`home-v153-${side}-retired-threshold-panel`} geometry={field} position={[0, 0, 0.18]} visible={false}>
       <meshStandardMaterial color={isGround ? '#0b1612' : '#15131f'} emissive={color} emissiveIntensity={0.12} roughness={0.98} transparent opacity={0.31} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
     <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.36]}>
@@ -391,9 +390,9 @@ function SanctuaryArchitecture() {
       scale: Vec3
       color: string
     }[] = [
-      { name: 'ground-rift-bearing-mass', seed: 1.3, position: [-3.46, 0.78, -8.82], rotation: [0.08, 0.34, -0.22], scale: [1.10, 1.28, 0.62], color: '#23352d' },
+      { name: 'ground-rift-bearing-mass', seed: 1.3, position: [-3.54, 0.54, -8.82], rotation: [0.08, 0.48, -0.28], scale: [1.06, 0.86, 0.72], color: '#23352d' },
       { name: 'ground-rift-settled-shoulder', seed: 2.7, position: [-4.42, 0.24, -8.66], rotation: [-0.14, 0.62, 0.10], scale: [0.76, 0.42, 0.68], color: '#2b3b32' },
-      { name: 'life-map-rift-bearing-mass', seed: 4.1, position: [3.14, 0.74, -8.90], rotation: [-0.08, -0.28, 0.17], scale: [1.02, 1.18, 0.58], color: '#283630' },
+      { name: 'life-map-rift-bearing-mass', seed: 4.1, position: [2.92, 0.72, -9.02], rotation: [-0.16, -0.48, 0.24], scale: [0.72, 1.34, 0.54], color: '#283630' },
       { name: 'life-map-rift-settled-shoulder', seed: 5.6, position: [4.02, 0.20, -8.70], rotation: [0.12, -0.52, -0.10], scale: [0.72, 0.38, 0.64], color: '#2e3d35' },
     ]
     return placements.map((placement) => ({
@@ -492,23 +491,20 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
     const positions: number[] = []
     for (let index = 0; index < 760; index += 1) {
       const t = index / 759
-      const y = -0.72 + t * 1.44
-      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 0.78, 2)))
+      const y = -0.58 + t * 1.16
       const angle = index * 2.3999632297 + Math.sin(index * 0.37) * 0.16
       const radialSample = ((index * 173) % 761) / 760
-      const fill = index % 4 === 0
-        ? Math.pow(radialSample, 2.35) * 0.38
-        : Math.pow(radialSample, 1.48)
-      const radius = envelope * fill * 0.86
-      const drift = y * 0.08 + Math.sin(y * 3.4) * 0.05
-      positions.push(Math.cos(angle) * radius + drift, y, Math.sin(angle) * radius * 0.70)
+      const taper = 0.72 + Math.sin(t * Math.PI) * 0.28
+      const radius = (0.035 + Math.pow(radialSample, 1.7) * 0.34) * taper
+      const drift = Math.sin(y * 2.8) * 0.14 + (t - 0.5) * 0.24
+      positions.push(Math.cos(angle) * radius * 0.72 + drift, y, Math.sin(angle) * radius * 0.58)
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [])
   const memoryVolume = useMemo(() => {
-    const geometry = new THREE.IcosahedronGeometry(0.82, 4)
+    const geometry = new THREE.SphereGeometry(0.82, 36, 24)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
     for (let index = 0; index < positions.count; index += 1) {
       const x = positions.getX(index)
@@ -536,11 +532,11 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
       <meshPhysicalMaterial color="#28483d" emissive={palette.accent} emissiveIntensity={0.08} roughness={0.78} metalness={0.01} transmission={0.18} thickness={0.42} transparent opacity={0.07} depthWrite={false} clearcoat={0.01} clearcoatRoughness={0.82} />
     </mesh>
     <primitive object={orb} visible={false} />
-    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[1.04, 0.86, 0.90]}>
+    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.86, 0.82, 0.76]}>
       <pointsMaterial color={palette.core} size={palette.moteSize * 0.78} transparent opacity={0.62} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
-    <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.22, 0.26, 0.22]}>
-      <meshStandardMaterial color="#284b3e" emissive={palette.accent} emissiveIntensity={0.22} roughness={0.82} flatShading />
+    <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.18, 0.22, 0.18]}>
+      <meshStandardMaterial color="#284b3e" emissive={palette.accent} emissiveIntensity={0.14} roughness={0.92} />
     </mesh>
     <mesh name="home-v126-orb-generous-hit-target">
       <sphereGeometry args={[1.38, 16, 12]} />
@@ -576,7 +572,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
   return <group
     name="home-v126-ground-owned-open-sanctuary"
     userData={{
-      activeArtRevision: 'v151-asymmetric-buried-fissures-low-orb-memory-cloud',
+      activeArtRevision: 'v153-localized-fissures-asymmetric-orb-plume-no-pedestal',
       compatibilityMarkers: LEGACY_CONTRACT_MARKERS,
       legacySourceAssets: LEGACY_SOURCE_ASSETS,
       historicalV76ContractOnly: true,
@@ -600,7 +596,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <directionalLight position={[5, 5, -7]} intensity={0.36} color="#7da398" />
     <spotLight position={[0, 7.2, -3.4]} target-position={[ORB.x, ORB.y, ORB.z]} angle={0.62} penumbra={0.72} intensity={1.36} color="#c8e6d7" distance={18} />
     <group name="home-authored-terrain" userData={{ treatment: 'v126-continuous-sculpted-ground-and-terraces' }} />
-    <group name="home-sanctuary-pavilion" userData={{ visualOwner: 'v151-asymmetric-buried-fissure-sanctuary', construction: 'overlapping-weathered-geology-buried-signal-fissures-no-facade-hoops-no-detached-cradle' }} />
+    <group name="home-sanctuary-pavilion" userData={{ visualOwner: 'v153-localized-buried-fissure-sanctuary', construction: 'asymmetric-weathered-geology-local-signal-fissures-no-panels-no-facade-hoops-no-pedestal' }} />
     <group name="home-v49-scanned-detail-layer" userData={{ treatment: 'v126-bounded-lower-edge-geology-only' }} />
     <group name="home-v49-authored-practicals" userData={{ treatment: 'v149-grounded-apse-orb-and-recessed-rift-light' }} />
     <group name="home-authored-embodied-self" userData={{ presentation: 'privacy-preserving-first-person-presence-v126' }} />
