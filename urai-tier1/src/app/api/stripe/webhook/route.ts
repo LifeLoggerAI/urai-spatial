@@ -7,6 +7,11 @@ import {
   mapStripeStatus,
   type SubscriptionStatus,
 } from '@/lib/entitlementStore';
+import {
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+} from '@/lib/server/stripe-runtime-config';
 
 const WEBHOOK_EVENTS = new Set([
   'checkout.session.completed',
@@ -134,9 +139,14 @@ export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const secretKey = process.env.STRIPE_SECRET_KEY;
+  const stripeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
 
-  if (!signature || !webhookSecret || !secretKey) {
+  if (!signature || !webhookSecret || !secretKey || !stripeMode) {
     return NextResponse.json({ error: 'Missing Stripe webhook configuration' }, { status: 400 });
+  }
+
+  if (!stripeRuntimeMatchesSecret(stripeMode, secretKey)) {
+    return NextResponse.json({ error: 'Stripe credential mode mismatch' }, { status: 500 });
   }
 
   const stripeModule = await import('stripe');
@@ -150,6 +160,11 @@ export async function POST(request: Request) {
   } catch (error) {
     console.warn('Stripe webhook signature verification failed', error);
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+  }
+
+  if (!stripeLivemodeMatchesRuntime(event.livemode, stripeMode)) {
+    console.warn('Stripe webhook rejected cross-mode event', { eventId: event.id, type: event.type });
+    return NextResponse.json({ error: 'Stripe event mode mismatch' }, { status: 400 });
   }
 
   if (!WEBHOOK_EVENTS.has(event.type)) {
