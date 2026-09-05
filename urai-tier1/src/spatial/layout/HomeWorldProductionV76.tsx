@@ -334,12 +334,12 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v148-wide-smooth-recessed-threshold-inside-open-buttress-wing', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.06 : 0.30, isGround ? -8.10 : -8.40]} rotation={[0, isGround ? 0.08 : -0.08, isGround ? -0.018 : 0.018]} scale={isGround ? [0.90, 0.86, 0.68] : [0.84, 0.82, 0.64]}>
-    <group name={`home-v148-${side}-load-bearing-fissure-shell`} userData={{ structuralOwner: 'open-buttress-sanctuary-wing', retiredFreestandingFrame: true }} />
-    <mesh name={`home-v148-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{ visualRepair: 'v149-recessed-signal-rift-inside-weathered-geology', retainedOuter: outer.uuid, retainedField: field.uuid, retainedMotes: seamMotes.uuid }} position={[x, isGround ? 0.06 : 0.30, isGround ? -8.10 : -8.40]} rotation={[0, isGround ? 0.08 : -0.08, isGround ? -0.018 : 0.018]} scale={isGround ? [0.90, 0.86, 0.68] : [0.84, 0.82, 0.64]}>
+    <group name={`home-v149-${side}-weathered-rift-shell`} userData={{ structuralOwner: 'open-buttress-sanctuary-wing', retiredFreestandingFrame: true }} />
+    <mesh name={`home-v149-${side}-recessed-threshold-field`} geometry={field} position={[0, 0, 0.12]}>
       <meshStandardMaterial color={isGround ? '#0d1b15' : '#191626'} emissive={color} emissiveIntensity={0.14} roughness={0.96} transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
     </mesh>
-    <points name={`home-v148-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.36]}>
+    <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.36]}>
       <pointsMaterial color={color} size={0.030} transparent opacity={0.42} depthWrite={false} sizeAttenuation />
     </points>
     <mesh name={`home-v133-${side}-authored-threshold-hit-target`} position={[0, 1.48, 0.12]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
