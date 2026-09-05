@@ -208,8 +208,8 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
     const positions: number[] = []
     const colors: number[] = []
     const indices: number[] = []
-    const shadow = new THREE.Color('#626e66')
-    const moss = new THREE.Color('#99a69b')
+    const shadow = new THREE.Color('#66736a')
+    const moss = new THREE.Color('#a0ada2')
 
     for (let zi = 0; zi <= zSegments; zi += 1) {
       const tz = zi / zSegments
@@ -229,7 +229,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
         const descent = tz * 0.44
         const y = -0.24 + descent + shelf + fracture * (1 - walkingChannel * 0.88) + pathRelief
         positions.push(x, y, z)
-        const shade = THREE.MathUtils.clamp(0.36 + y * 0.14 + (1 - tz) * 0.09 - lateral * 0.05, 0, 1)
+        const shade = THREE.MathUtils.clamp(0.38 + y * 0.14 + (1 - tz) * 0.10 - lateral * 0.05, 0, 1)
         const color = shadow.clone().lerp(moss, shade)
         colors.push(color.r, color.g, color.b)
       }
@@ -255,14 +255,14 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
 
   return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} position={[0, 0.035, 0]} receiveShadow onClick={onWalk}>
     <meshPhysicalMaterial
-      color="#7f8981"
+      color="#87928a"
       map={stone.color}
       normalMap={stone.normal}
       normalScale={new THREE.Vector2(0.30, 0.30)}
       roughnessMap={stone.arm}
       roughness={0.96}
       metalness={0.002}
-      envMapIntensity={0.46}
+      envMapIntensity={0.48}
       vertexColors
       polygonOffset
       polygonOffsetFactor={-1}
@@ -276,12 +276,12 @@ function SanctuaryTerraces() {
   const ribbon = useMemo(() => {
     const positions: number[] = []
     const indices: number[] = []
-    const stations = 48
+    const stations = 64
     for (let index = 0; index <= stations; index += 1) {
       const t = index / stations
       const z = 5.85 - t * 16.10
       const center = Math.sin(t * Math.PI * 1.35) * 0.28 - t * 0.10
-      const half = 1.22 - t * 0.34
+      const half = 0.58 - t * 0.18
       const y = -0.135 + t * 0.39 + Math.sin(z * 0.38) * 0.026
       positions.push(center - half, y, z, center + half, y, z)
       if (index < stations) {
@@ -305,21 +305,22 @@ function SanctuaryTerraces() {
       visualRepair: 'v154-visible-inlaid-approach-over-governed-terrain',
       v155Refinement: 'quiet-recessed-approach',
       v156Refinement: 'readable-inlaid-path-without-neon-runway',
+      v157Refinement: 'narrow-meandering-inlay-not-road-slab',
       predecessorVisualRepair: 'v129-governed-terrain-owns-visible-ground',
     }}
   >
     <mesh name="home-v154-inlaid-stone-approach" geometry={ribbon} receiveShadow>
       <meshPhysicalMaterial
-        color="#526159"
+        color="#53645b"
         map={stone.color}
         normalMap={stone.normal}
         normalScale={new THREE.Vector2(0.16, 0.16)}
         roughnessMap={stone.arm}
-        roughness={0.92}
-        metalness={0.005}
-        envMapIntensity={0.44}
-        emissive="#2f493f"
-        emissiveIntensity={0.038}
+        roughness={0.93}
+        metalness={0.004}
+        envMapIntensity={0.42}
+        emissive="#2d463c"
+        emissiveIntensity={0.030}
         side={THREE.DoubleSide}
       />
     </mesh>
@@ -343,6 +344,7 @@ function GeologicalFrame() {
       visualRepair: 'v154-integrated-edge-scans-buried-into-canyon-walls',
       v155Refinement: 'edge-scans-pushed-behind-primary-composition',
       v156Refinement: 'scan-provenance-retained-beyond-primary-frustum-no-visible-card-slabs',
+      v157Refinement: 'scan-provenance-kept-off-axis-while-authored-ground-owns-frame',
       predecessorVisualRepair: 'v143-scans-bounded-off-camera-no-pasted-cutouts',
     }}
   >
@@ -365,25 +367,25 @@ function fissureGeometry(inner = false, mirrored = false) {
 function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onActivate: () => void }) {
   const stone = useSanctuaryStone()
   const isGround = side === 'ground'
-  const x = isGround ? -4.72 : 4.72
-  const color = isGround ? '#73b798' : '#9288b8'
+  const x = isGround ? -4.92 : 4.92
+  const color = isGround ? '#6eae92' : '#8d83ad'
   const outer = useMemo(() => {
     const frame = fissureGeometry(false, !isGround)
     frame.holes.push(new THREE.Path(fissureGeometry(true, !isGround).getPoints(18).reverse()))
-    const geometry = new THREE.ExtrudeGeometry(frame, { depth: 0.28, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.035, bevelSegments: 2, curveSegments: 4 })
+    const geometry = new THREE.ExtrudeGeometry(frame, { depth: 0.22, bevelEnabled: true, bevelSize: 0.028, bevelThickness: 0.030, bevelSegments: 2, curveSegments: 4 })
     geometry.computeVertexNormals()
     return geometry
   }, [isGround])
   const field = useMemo(() => new THREE.ShapeGeometry(fissureGeometry(true, !isGround), 8), [isGround])
   const seamMotes = useMemo(() => {
     const positions: number[] = []
-    for (let index = 0; index < 90; index += 1) {
-      const t = index / 89
+    for (let index = 0; index < 72; index += 1) {
+      const t = index / 71
       const y = 0.08 + t * 2.02
-      const bend = Math.sin(t * Math.PI * 2.7 + (isGround ? 0.35 : 1.15)) * 0.055
-      const width = 0.025 + Math.sin(t * Math.PI) * 0.10
+      const bend = Math.sin(t * Math.PI * 2.7 + (isGround ? 0.35 : 1.15)) * 0.045
+      const width = 0.018 + Math.sin(t * Math.PI) * 0.078
       const sideOffset = ((index * 31) % 61) / 60 - 0.5
-      positions.push(bend + sideOffset * width, y, 0.025 + (((index * 29) % 47) / 46 - 0.5) * 0.10)
+      positions.push(bend + sideOffset * width, y, 0.020 + (((index * 29) % 47) / 46 - 0.5) * 0.08)
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -396,41 +398,42 @@ function FramedFissure({ side, onActivate }: { side: 'ground' | 'life-map'; onAc
       visualRepair: 'v154-buried-irregular-stone-fissure-no-facade-hoops-or-translucent-panels',
       v155Refinement: 'narrow-geological-scar-no-freestanding-door-silhouette',
       v156Refinement: 'hairline-navigation-rift-buried-in-bearing-geology',
+      v157Refinement: 'recessed-navigation-cut-not-upright-door-form',
       predecessorVisualRepair: 'v153-localized-signal-fissures-no-facade-hoops-or-translucent-panels',
       retainedOuter: outer.uuid,
       retainedField: field.uuid,
       retainedMotes: seamMotes.uuid,
     }}
-    position={[x, isGround ? 0.18 : 0.22, isGround ? -10.42 : -10.52]}
-    rotation={[0, isGround ? 0.20 : -0.20, isGround ? -0.12 : 0.12]}
-    scale={isGround ? [0.56, 0.66, 0.46] : [0.54, 0.68, 0.46]}
+    position={[x, isGround ? 0.10 : 0.14, isGround ? -10.72 : -10.80]}
+    rotation={[0, isGround ? 0.24 : -0.24, isGround ? -0.14 : 0.14]}
+    scale={isGround ? [0.40, 0.58, 0.40] : [0.38, 0.60, 0.40]}
   >
     <mesh name={`home-v151-${side}-retained-stone-provenance`} geometry={outer} castShadow receiveShadow>
       <meshPhysicalMaterial
-        color={isGround ? '#45564d' : '#4b4d5a'}
+        color={isGround ? '#44554c' : '#494b57'}
         map={stone.color}
         normalMap={stone.normal}
-        normalScale={new THREE.Vector2(0.32, 0.32)}
+        normalScale={new THREE.Vector2(0.28, 0.28)}
         roughnessMap={stone.arm}
         roughness={0.98}
         metalness={0.001}
-        envMapIntensity={0.34}
+        envMapIntensity={0.30}
       />
     </mesh>
     <group name={`home-v149-${side}-weathered-rift-shell`} userData={{ structuralOwner: 'open-buttress-sanctuary-wing', retiredFreestandingFrame: true }} />
-    <mesh name={`home-v153-${side}-retired-threshold-panel`} geometry={field} position={[0, 0, 0.04]}>
+    <mesh name={`home-v153-${side}-retired-threshold-panel`} geometry={field} position={[0, 0, 0.035]}>
       <meshBasicMaterial color={isGround ? '#020604' : '#040407'} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
-    <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.17]}>
-      <pointsMaterial color={color} size={0.014} transparent opacity={0.38} depthWrite={false} sizeAttenuation toneMapped={false} />
+    <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0, 0, 0.14]}>
+      <pointsMaterial color={color} size={0.012} transparent opacity={0.34} depthWrite={false} sizeAttenuation toneMapped={false} />
     </points>
     <mesh name={`home-v133-${side}-authored-threshold-hit-target`} position={[0, 1.08, 0.08]} onClick={(event) => { event.stopPropagation(); onActivate() }}>
-      <boxGeometry args={[1.74, 2.72, 1.10]} />
+      <boxGeometry args={[3.60, 3.70, 2.20]} />
       <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
     </mesh>
     <group name={`home-v126-${side}-port-shoulder`} />
     <group name={`home-v126-${side}-starboard-shoulder`} />
-    <pointLight position={[0, 1.12, 0.54]} color={color} intensity={0.14} distance={2.6} decay={2} />
+    <pointLight position={[0, 1.10, 0.48]} color={color} intensity={0.10} distance={2.2} decay={2} />
   </group>
 }
 
@@ -469,14 +472,14 @@ function SanctuaryArchitecture() {
       scale: Vec3
       color: string
     }[] = [
-      { name: 'ground-rift-bearing-mass', seed: 1.3, position: [-5.54, 0.64, -10.92], rotation: [0.10, 0.62, -0.28], scale: [0.90, 0.94, 0.70], color: '#3d4d45' },
-      { name: 'ground-rift-settled-shoulder', seed: 2.7, position: [-4.06, 0.18, -11.32], rotation: [-0.12, 0.74, 0.10], scale: [1.00, 0.36, 0.78], color: '#46564d' },
-      { name: 'life-map-rift-bearing-mass', seed: 4.1, position: [5.56, 0.68, -11.02], rotation: [-0.16, -0.64, 0.26], scale: [0.88, 0.96, 0.68], color: '#414f49' },
-      { name: 'life-map-rift-settled-shoulder', seed: 5.6, position: [4.04, 0.18, -11.36], rotation: [0.12, -0.66, -0.10], scale: [0.98, 0.36, 0.78], color: '#4a5851' },
-      { name: 'apse-port-broken-crown', seed: 6.8, position: [-1.98, 0.78, -11.92], rotation: [0.20, 0.30, -0.32], scale: [0.90, 0.78, 0.66], color: '#3b4a43' },
-      { name: 'apse-starboard-broken-crown', seed: 8.2, position: [1.78, 0.82, -12.02], rotation: [-0.18, -0.26, 0.30], scale: [0.86, 0.80, 0.66], color: '#404f47' },
-      { name: 'apse-port-lower-shelf', seed: 9.7, position: [-2.52, 0.14, -10.34], rotation: [0.06, 0.42, -0.10], scale: [1.06, 0.28, 0.72], color: '#46554d' },
-      { name: 'apse-starboard-lower-shelf', seed: 11.1, position: [2.38, 0.10, -10.42], rotation: [-0.04, -0.36, 0.08], scale: [1.04, 0.27, 0.72], color: '#495850' },
+      { name: 'ground-rift-bearing-mass', seed: 1.3, position: [-5.44, 0.34, -11.16], rotation: [0.10, 0.64, -0.28], scale: [0.92, 0.46, 0.70], color: '#415148' },
+      { name: 'ground-rift-settled-shoulder', seed: 2.7, position: [-4.08, 0.12, -11.42], rotation: [-0.12, 0.76, 0.10], scale: [1.04, 0.22, 0.78], color: '#4b5b51' },
+      { name: 'life-map-rift-bearing-mass', seed: 4.1, position: [5.46, 0.36, -11.24], rotation: [-0.16, -0.66, 0.26], scale: [0.90, 0.48, 0.68], color: '#45534c' },
+      { name: 'life-map-rift-settled-shoulder', seed: 5.6, position: [4.06, 0.12, -11.46], rotation: [0.12, -0.68, -0.10], scale: [1.02, 0.22, 0.78], color: '#4e5d55' },
+      { name: 'apse-port-broken-crown', seed: 6.8, position: [-2.02, 0.40, -12.04], rotation: [0.20, 0.32, -0.32], scale: [0.90, 0.34, 0.66], color: '#405047' },
+      { name: 'apse-starboard-broken-crown', seed: 8.2, position: [1.82, 0.42, -12.10], rotation: [-0.18, -0.28, 0.30], scale: [0.86, 0.36, 0.66], color: '#45544c' },
+      { name: 'apse-port-lower-shelf', seed: 9.7, position: [-2.54, 0.10, -10.46], rotation: [0.06, 0.44, -0.10], scale: [1.08, 0.18, 0.72], color: '#4b5a51' },
+      { name: 'apse-starboard-lower-shelf', seed: 11.1, position: [2.40, 0.08, -10.54], rotation: [-0.04, -0.38, 0.08], scale: [1.06, 0.18, 0.72], color: '#4e5d54' },
     ]
     return placements.map((placement) => ({ ...placement, geometry: weatheredSanctuaryMassGeometry(placement.seed) }))
   }, [])
@@ -487,6 +490,7 @@ function SanctuaryArchitecture() {
       visualRepair: 'v154-faceted-broken-buttresses-no-rounded-boulder-gates',
       v155Refinement: 'lower-silhouette-masses-frame-negative-space',
       v156Refinement: 'settled-bearing-shelves-no-boulder-gate-silhouette',
+      v157Refinement: 'low-eroded-shelves-replace-boulder-piles',
       predecessorVisualRepair: 'v149-weathered-grounded-rift-masses-no-flat-facades',
       composition: 'asymmetric-overlapping-geology-with-recessed-navigation-scars',
     }}
@@ -509,7 +513,7 @@ function SanctuaryArchitecture() {
         roughnessMap={stone.arm}
         roughness={0.97}
         metalness={0.001}
-        envMapIntensity={0.34}
+        envMapIntensity={0.36}
       />
     </mesh>)}
     <group name="home-v149-open-apse-crown" userData={{ treatment: 'weathered-rift-masses-preserve-negative-space' }} />
@@ -527,20 +531,21 @@ function ApseAndOrbCradle() {
       visualRepair: 'v154-broken-side-shelves-frame-orb-without-pedestal',
       v155Refinement: 'quiet-side-shelves-leave-air-around-memory-core',
       v156Refinement: 'settled-side-ledges-with-clear-orb-negative-space',
+      v157Refinement: 'low-apse-ledges-anchor-orb-without-pedestal',
       predecessorVisualRepair: 'v149-retired-detached-cradle-blades',
       loadPath: 'orb-memory-volume-rises-from-continuous-central-geology',
       retiredFreestandingSupports: true,
     }}
-    position={[ORB.x, 0, ORB.z - 0.56]}
+    position={[ORB.x, 0, ORB.z - 0.62]}
   >
-    <mesh geometry={supportGeometry} position={[-1.72, 0.66, -0.76]} rotation={[0.20, 0.50, -0.28]} scale={[0.80, 0.28, 0.50]} castShadow receiveShadow>
-      <meshPhysicalMaterial color="#43534a" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.97} metalness={0.001} envMapIntensity={0.34} />
+    <mesh geometry={supportGeometry} position={[-1.76, 0.46, -0.82]} rotation={[0.20, 0.52, -0.28]} scale={[0.82, 0.20, 0.50]} castShadow receiveShadow>
+      <meshPhysicalMaterial color="#46564c" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.30, 0.30)} roughnessMap={stone.arm} roughness={0.97} metalness={0.001} envMapIntensity={0.36} />
     </mesh>
-    <mesh geometry={supportGeometry} position={[1.56, 0.58, -0.86]} rotation={[-0.16, -0.44, 0.24]} scale={[0.76, 0.27, 0.48]} castShadow receiveShadow>
-      <meshPhysicalMaterial color="#405047" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.98} metalness={0.001} envMapIntensity={0.32} />
+    <mesh geometry={supportGeometry} position={[1.60, 0.42, -0.92]} rotation={[-0.16, -0.46, 0.24]} scale={[0.78, 0.20, 0.48]} castShadow receiveShadow>
+      <meshPhysicalMaterial color="#435249" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28, 0.28)} roughnessMap={stone.arm} roughness={0.98} metalness={0.001} envMapIntensity={0.34} />
     </mesh>
-    <pointLight position={[-1.26, 1.04, 0.12]} color="#77a993" intensity={0.14} distance={2.5} decay={2} />
-    <pointLight position={[1.14, 0.94, 0.10]} color="#9187b8" intensity={0.10} distance={2.3} decay={2} />
+    <pointLight position={[-1.26, 0.92, 0.12]} color="#77a993" intensity={0.12} distance={2.4} decay={2} />
+    <pointLight position={[1.14, 0.88, 0.10]} color="#9187b8" intensity={0.09} distance={2.2} decay={2} />
   </group>
 }
 
@@ -552,7 +557,7 @@ function ArrivalSignalPath({ reducedMotion }: { reducedMotion: boolean }) {
       const t = index / 84
       const z = 5.15 - t * 11.80
       const center = Math.sin(t * Math.PI * 1.45) * 0.30 - t * 0.13
-      const half = 0.024 + t * 0.016
+      const half = 0.018 + t * 0.012
       positions.push(center - half, 0.006 + t * 0.22, z, center + half, 0.006 + t * 0.22, z)
       if (index < 84) {
         const a = index * 2
@@ -568,12 +573,12 @@ function ArrivalSignalPath({ reducedMotion }: { reducedMotion: boolean }) {
   const path = useRef<THREE.Mesh>(null)
   useFrame(({ clock }) => {
     if (path.current && !reducedMotion) {
-      (path.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.10 + Math.sin(clock.elapsedTime * 0.72) * 0.018
+      (path.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.085 + Math.sin(clock.elapsedTime * 0.72) * 0.014
     }
   })
 
   return <mesh ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry} receiveShadow>
-    <meshStandardMaterial color="#43584f" emissive="#5f8875" emissiveIntensity={0.09} roughness={0.88} transparent opacity={0.54} side={THREE.DoubleSide} />
+    <meshStandardMaterial color="#465b52" emissive="#5f8875" emissiveIntensity={0.078} roughness={0.90} transparent opacity={0.46} side={THREE.DoubleSide} />
   </mesh>
 }
 
@@ -650,7 +655,7 @@ function LivingOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMo
     group.current.rotation.y = Math.sin(t * 0.14) * 0.035
   })
 
-  return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }} userData={{ v155Refinement: 'contained-memory-core-not-particle-fountain', v156Refinement: 'orb-kept-contained-while-sanctuary-composition-is-refined' }}>
+  return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x, ORB.y, ORB.z]} onClick={(event) => { event.stopPropagation(); onOrb() }} userData={{ v155Refinement: 'contained-memory-core-not-particle-fountain', v156Refinement: 'orb-kept-contained-while-sanctuary-composition-is-refined', v157Refinement: 'contained-memory-core-remains-primary-focal-presence' }}>
     <mesh name="home-v132-orb-memory-volume" geometry={memoryVolume} castShadow scale={[0.66, 0.78, 0.62]}>
       <meshPhysicalMaterial color="#477563" emissive={palette.accent} emissiveIntensity={0.12} roughness={0.62} metalness={0.005} transmission={0.06} thickness={0.22} transparent opacity={0.10} depthWrite={false} clearcoat={0.04} clearcoatRoughness={0.78} />
     </mesh>
@@ -704,8 +709,8 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     name="home-v126-ground-owned-open-sanctuary"
     userData={{
       activeArtRevision: 'v154-visible-canyon-fissures-memory-swarm-no-pedestal',
-      visualIteration: 'v156-no-scan-slabs-hairline-rifts-settled-geology',
-      predecessorVisualIteration: 'v155-contained-memory-core-embedded-rifts-background-scans',
+      visualIteration: 'v157-canyon-path-thin-rifts-low-geology-contained-orb',
+      predecessorVisualIteration: 'v156-no-scan-slabs-hairline-rifts-settled-geology',
       predecessorArtRevision: 'v153-localized-fissures-asymmetric-orb-plume-no-pedestal',
       compatibilityMarkers: LEGACY_CONTRACT_MARKERS,
       legacySourceAssets: LEGACY_SOURCE_ASSETS,
@@ -724,18 +729,18 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     <ArrivalSignalPath reducedMotion={reducedMotion} />
     <LivingOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
     <AtmosphericDepth reducedMotion={reducedMotion} />
-    <ambientLight intensity={0.52} color="#d1ddd6" />
-    <hemisphereLight args={['#d0dfd6', '#253028', 0.76]} />
-    <directionalLight position={[-4, 8, 5]} intensity={1.22} color="#e2cfad" castShadow />
-    <directionalLight position={[5, 5, -7]} intensity={0.38} color="#82a69b" />
-    <spotLight position={[0, 7.4, -3.2]} target-position={[ORB.x, ORB.y, ORB.z]} angle={0.58} penumbra={0.86} intensity={1.08} color="#d3e9de" distance={18} />
-    <pointLight position={[0, 1.8, 2.8]} intensity={0.22} color="#dcc9aa" distance={8} decay={2} />
-    <group name="home-authored-terrain" userData={{ treatment: 'v154-visible-sculpted-ground-and-inlaid-approach' }} />
-    <group name="home-sanctuary-pavilion" userData={{ visualOwner: 'v154-buried-fissure-canyon-sanctuary', construction: 'asymmetric-faceted-geology-local-signal-fissures-no-panels-no-facade-hoops-no-pedestal', v155Refinement: 'background-scans-embedded-rifts-contained-memory-core', v156Refinement: 'no-visible-scan-cards-hairline-rifts-settled-geology' }} />
-    <group name="home-v49-scanned-detail-layer" userData={{ treatment: 'v155-background-edge-scans-not-camera-walls', v156Refinement: 'scan-provenance-beyond-primary-frustum' }} />
-    <group name="home-v49-authored-practicals" userData={{ treatment: 'v155-contained-memory-core-and-recessed-rift-light', v156Refinement: 'subtle-navigation-scar-practicals' }} />
+    <ambientLight intensity={0.58} color="#d5e0da" />
+    <hemisphereLight args={['#d5e2da', '#28332b', 0.84]} />
+    <directionalLight position={[-4, 8, 5]} intensity={1.35} color="#e6d2af" castShadow />
+    <directionalLight position={[5, 5, -7]} intensity={0.42} color="#88ada1" />
+    <spotLight position={[0, 7.4, -3.2]} target-position={[ORB.x, ORB.y, ORB.z]} angle={0.58} penumbra={0.86} intensity={1.16} color="#d6ece1" distance={18} />
+    <pointLight position={[0, 1.8, 2.8]} intensity={0.24} color="#e0ccac" distance={8} decay={2} />
+    <group name="home-authored-terrain" userData={{ treatment: 'v154-visible-sculpted-ground-and-inlaid-approach', v157Refinement: 'narrow-meandering-inlay-not-road-slab' }} />
+    <group name="home-sanctuary-pavilion" userData={{ visualOwner: 'v154-buried-fissure-canyon-sanctuary', construction: 'asymmetric-faceted-geology-local-signal-fissures-no-panels-no-facade-hoops-no-pedestal', v155Refinement: 'background-scans-embedded-rifts-contained-memory-core', v156Refinement: 'no-visible-scan-cards-hairline-rifts-settled-geology', v157Refinement: 'low-eroded-shelves-recessed-rifts-narrow-path' }} />
+    <group name="home-v49-scanned-detail-layer" userData={{ treatment: 'v155-background-edge-scans-not-camera-walls', v156Refinement: 'scan-provenance-beyond-primary-frustum', v157Refinement: 'off-axis-provenance-only' }} />
+    <group name="home-v49-authored-practicals" userData={{ treatment: 'v155-contained-memory-core-and-recessed-rift-light', v156Refinement: 'subtle-navigation-scar-practicals', v157Refinement: 'quiet-rift-light-primary-orb-focus' }} />
     <group name="home-authored-embodied-self" userData={{ presentation: 'privacy-preserving-first-person-presence-v126' }} />
-    <group name="home-mountain-horizon" userData={{ presentation: 'v155-open-negative-space-between-low-broken-buttresses', v156Refinement: 'settled-horizon-masses-with-clear-central-air' }} />
+    <group name="home-mountain-horizon" userData={{ presentation: 'v155-open-negative-space-between-low-broken-buttresses', v156Refinement: 'settled-horizon-masses-with-clear-central-air', v157Refinement: 'low-eroded-horizon-with-clear-orb-silhouette' }} />
     <group name="home-living-vegetation" userData={{ treatment: 'reserved-beyond-clear-navigation-channel-v126' }} />
   </group>
 }
