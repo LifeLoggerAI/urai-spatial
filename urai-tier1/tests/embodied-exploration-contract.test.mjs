@@ -59,7 +59,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V158 turns the V157 road and gate silhouettes into a ground-integrated stone trace and terrain scars while preserving the contained no-pedestal memory core', () => {
+test('V159 keeps the V158 ground-integrated terrain and narrows the approach to a hairline trace while preserving the contained no-pedestal memory core', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
@@ -103,7 +103,7 @@ test('V158 turns the V157 road and gate silhouettes into a ground-integrated sto
   assert.doesNotMatch(homeArt, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry|home-v148-open-buttress-threshold-sanctuary/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
   assert.match(homeArt, /const stations = 80/)
-  assert.match(homeArt, /const half = 0\.13 - t \* 0\.035/)
+  assert.match(homeArt, /const half = 0\.032 - t \* 0\.010/)
   assert.match(homeArt, /new THREE\.IcosahedronGeometry\(1, 2\)/)
   assert.match(homeArt, /new THREE\.IcosahedronGeometry\(0\.72, 3\)/)
   assert.match(homeArt, /for \(let index = 0; index < 980; index \+= 1\)/)
