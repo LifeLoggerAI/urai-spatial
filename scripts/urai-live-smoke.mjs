@@ -2,6 +2,12 @@
 const baseUrl = process.env.URAI_DEPLOY_URL
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
+const expectedDeployedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim().toLowerCase()
+
+if (requireLiveCommitSha && !/^[0-9a-f]{40}$/.test(expectedDeployedSha)) {
+  console.error('REQUIRE_LIVE_COMMIT_SHA=true requires URAI_EXPECTED_DEPLOYED_SHA as an exact 40-character commit SHA')
+  process.exit(1)
+}
 
 if (!baseUrl) {
   console.error('URAI_DEPLOY_URL is required, for example https://urai.app')
@@ -128,10 +134,15 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const missingQuery = [...requestedUrl.searchParams.entries()].find(
         ([key, value]) => finalUrl.searchParams.get(key) !== value,
       )
-      const liveCommitShaMissing =
-        requestedUrl.pathname.replace(/\/$/, '') === '/api/system/deploy-proof' &&
+      const isDeployProof = requestedUrl.pathname.replace(/\/$/, '') === '/api/system/deploy-proof'
+      const deployedCommitSha = isDeployProof
+        ? body.match(/"commitSha"\s*:\s*"([0-9a-f]{40}|unknown)"/i)?.[1]?.toLowerCase()
+        : undefined
+      const liveCommitShaMissing = isDeployProof && requireLiveCommitSha && !deployedCommitSha
+      const liveCommitShaMismatch =
+        isDeployProof &&
         requireLiveCommitSha &&
-        /"commitSha"\s*:\s*"unknown"/i.test(body)
+        deployedCommitSha !== expectedDeployedSha
 
       if (
         !response.ok ||
@@ -142,14 +153,16 @@ for (const { paths, markers, forbidden = [] } of routes) {
         forbiddenMarker ||
         pathMismatch ||
         missingQuery ||
-        liveCommitShaMissing
+        liveCommitShaMissing ||
+        liveCommitShaMismatch
       ) {
         failures.push(
           `${url} returned ${response.status} finalUrl=${response.url} expectedContent=${hasExpectedContent} ` +
             `stale=${stale?.source ?? 'no'} legacyRuntime=${legacyRuntime?.source ?? 'no'} ` +
             `missing=${missingMarker?.source ?? 'none'} forbidden=${forbiddenMarker?.source ?? 'none'} ` +
             `pathMismatch=${pathMismatch} missingQuery=${missingQuery ? missingQuery.join('=') : 'none'} ` +
-            `liveCommitShaMissing=${liveCommitShaMissing}`,
+            `liveCommitShaMissing=${liveCommitShaMissing} liveCommitShaMismatch=${liveCommitShaMismatch} ` +
+            `expectedDeployedSha=${expectedDeployedSha || 'none'} observedDeployedSha=${deployedCommitSha || 'none'}`,
         )
       } else {
         console.log(`OK ${response.status} ${url} -> ${response.url}`)
@@ -167,5 +180,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain}`,
+  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain} expectedDeployedSha=${expectedDeployedSha}`,
 )

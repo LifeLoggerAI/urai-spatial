@@ -8,6 +8,10 @@ on:
         required: true
         default: https://urai-4dc1d.web.app
         type: string
+      expected_deployed_sha:
+        description: Exact deployed Git SHA to verify against canonical main authority
+        required: true
+        type: string
 
 concurrency:
   group: spatial-post-deploy-verify-${{ github.ref }}
@@ -19,10 +23,20 @@ jobs:
     runs-on: ubuntu-latest
     env:
       URAI_DEPLOY_URL: ${{ inputs.live_url }}
+      URAI_EXPECTED_DEPLOYED_SHA: ${{ inputs.expected_deployed_sha }}
       REQUIRE_LIVE_COMMIT_SHA: "true"
     steps:
-      - name: Checkout repository
+      - name: Checkout expected deployed source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_deployed_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify expected deployed SHA is canonical main authority
+        run: |
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          node scripts/verify-custom-domain-deployed-sha-authority.mjs
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
