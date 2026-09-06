@@ -11,6 +11,13 @@ const original = await readFile(captureUrl, 'utf8')
 const runtimeOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
 if (original.split(runtimeOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
+// Reconcile only the stale proof-side Orb clip labels with the canonical authored
+// runtime labels currently exposed through data-home-orb-clip. State identity and
+// exact equality remain enforced by verifyHome; this does not relax the contract.
+const staleOrbClips = `const orbClips = {\n  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',\n  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',\n  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',\n}`
+const runtimeOrbClips = `const orbClips = {\n  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',\n  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',\n  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',\n}`
+if (original.split(staleOrbClips).length - 1 !== 1) throw new Error('Continuous proof Orb clip contract changed')
+
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
 const staleEnvironmentalCount = original.split(staleEnvironmentalRadius).length - 1
@@ -29,6 +36,7 @@ if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continu
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
 const patched = original
+  .replace(staleOrbClips, runtimeOrbClips)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)
