@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 
 const runnerPath = path.resolve('scripts/capture-lifemap-founder-proof-fixed.mjs')
 const syntax = spawnSync(process.execPath, ['--check', runnerPath], { encoding: 'utf8' })
@@ -11,5 +10,5 @@ if (syntax.status !== 0) {
 
 console.log(`FOUNDER_CAPTURE_SYNTAX_OK ${runnerPath}`)
 if (!process.argv.includes('--validate-only')) {
-  await import(pathToFileURL(runnerPath).href)
+  await import('../scripts/capture-lifemap-founder-proof-fixed.mjs')
 }

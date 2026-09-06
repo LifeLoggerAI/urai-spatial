@@ -3,9 +3,20 @@ import { readFile, writeFile } from 'node:fs/promises'
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
-const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
-if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
+
+// The current public-authority candidate intentionally retains the authored Home
+// animation owner. Do not rewrite this proof to an older sibling-owner marker:
+// the underlying v18 assertion already requires the exact runtime owner and the
+// grouped proof preserves that fail-closed equality check.
+const runtimeOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
+if (original.split(runtimeOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
+
+// Reconcile only the stale proof-side Orb clip labels with the canonical authored
+// runtime labels currently exposed through data-home-orb-clip. State identity and
+// exact equality remain enforced by verifyHome; this does not relax the contract.
+const staleOrbClips = `const orbClips = {\n  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',\n  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',\n  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',\n}`
+const runtimeOrbClips = `const orbClips = {\n  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',\n  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',\n  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',\n}`
+if (original.split(staleOrbClips).length - 1 !== 1) throw new Error('Continuous proof Orb clip contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
@@ -25,7 +36,7 @@ if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continu
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
 const patched = original
-  .replace(oldOwner, newOwner)
+  .replace(staleOrbClips, runtimeOrbClips)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)

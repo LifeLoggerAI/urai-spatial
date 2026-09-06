@@ -23,10 +23,80 @@
     "/status"
   ],
   "classification": {
-    "servicePrefixes": ["/api"],
-    "internalPrefixes": ["/admin", "/internal", "/control", "/capture", "/brand-system", "/asset-audit", "/proof", "/receipts", "/tier", "/v1"],
-    "privatePrefixes": ["/u/", "/place/", "/memory/", "/focus/session/", "/life-map/star/", "/replay/", "/passport/", "/spatial/memory/"],
-    "publicExact": ["/", "/home", "/ground", "/life-map", "/focus", "/replay", "/mirror", "/shadow", "/legacy", "/passport", "/privacy-controls", "/location-map", "/privacy", "/terms", "/status", "/about", "/contact", "/early-access", "/event", "/council", "/dream", "/unwind", "/spatial", "/spatial-fallback", "/xr", "/world", "/ascent", "/launch", "/login", "/onboarding", "/offline", "/glass", "/report-bug", "/settings", "/demo", "/technology"],
-    "publicPrefixes": ["/demo/", "/invite/", "/location-map/", "/spatial/", "/xr/"]
+    "servicePrefixes": [
+      "/api"
+    ],
+    "internalPrefixes": [
+      "/admin",
+      "/internal",
+      "/control",
+      "/capture",
+      "/brand-system",
+      "/asset-audit",
+      "/proof",
+      "/receipts",
+      "/tier",
+      "/v1"
+    ],
+    "privatePrefixes": [
+      "/u/",
+      "/place/",
+      "/memory/",
+      "/focus/session/",
+      "/life-map/star/",
+      "/replay/",
+      "/passport/",
+      "/spatial/memory/"
+    ],
+    "publicExact": [
+      "/",
+      "/home",
+      "/ground",
+      "/life-map",
+      "/focus",
+      "/replay",
+      "/mirror",
+      "/shadow",
+      "/legacy",
+      "/passport",
+      "/privacy-controls",
+      "/location-map",
+      "/privacy",
+      "/terms",
+      "/status",
+      "/about",
+      "/contact",
+      "/early-access",
+      "/event",
+      "/council",
+      "/dream",
+      "/unwind",
+      "/spatial",
+      "/spatial-fallback",
+      "/xr",
+      "/world",
+      "/ascent",
+      "/launch",
+      "/login",
+      "/onboarding",
+      "/offline",
+      "/glass",
+      "/report-bug",
+      "/settings",
+      "/demo",
+      "/technology",
+      "/about/labs",
+      "/founder",
+      "/ecosystem",
+      "/press",
+      "/business"
+    ],
+    "publicPrefixes": [
+      "/demo/",
+      "/invite/",
+      "/location-map/",
+      "/spatial/",
+      "/xr/"
+    ]
   }
 }

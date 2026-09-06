@@ -22,7 +22,7 @@ const aliases = [
   ['src/app/spatial/life-map/page.tsx', /redirect\(['"]\/life-map\?from=spatial-life-map['"]\)/],
   ['src/app/spatial/life-map-r3f/page.tsx', /redirect\(['"]\/life-map\?from=spatial-life-map-r3f['"]\)/],
   ['src/app/spatial/life-map-orbit/page.tsx', /redirect\(['"]\/life-map\?from=spatial-life-map-orbit['"]\)/],
-  ['src/app/privacy/page.tsx', /redirect\(['"]\/privacy-controls\?from=privacy['"]\)/],
+  ['src/app/privacy/page.tsx', /redirect\(['"]\/privacy-controls\/\?from=privacy['"]\)/],
 ]
 
 for (const [route, expectedRedirect] of aliases) {

@@ -1,0 +1,44 @@
+import type { Metadata } from 'next'
+import PublicAuthorityShell from '@/components/public-authority/PublicAuthorityShell'
+import { publicIndexing } from '../public-indexing'
+
+export const metadata: Metadata = {
+  robots: publicIndexing,
+  title: 'Press and Media',
+  description: 'Official, factual UrAi naming, descriptions, founder and Founding Engineer information, links, and status language.',
+  twitter: {
+    card: 'summary',
+    title: 'Press and Media',
+    description: 'Official, factual UrAi naming, descriptions, founder and Founding Engineer information, links, and status language.',
+  },
+  alternates: { canonical: 'https://urai.app/press/' },
+  openGraph: {
+    type: 'website',
+    url: 'https://urai.app/press/',
+    title: 'Press and Media',
+    description: 'Official, factual UrAi naming, descriptions, founder and Founding Engineer information, links, and status language.',
+    siteName: 'UrAi',
+  },
+}
+
+export default function PressPage() {
+  return (
+    <PublicAuthorityShell eyebrow="Official media facts" title="UrAi press and media" intro="Use UrAi for the product name and URAI Labs for the founder-led product organization.">
+      <h2>Short description</h2>
+      <p>UrAi is a privacy-first personal intelligence platform by URAI Labs that makes memory, reflection, relationships, and direction spatial.</p>
+      <h2>Extended description</h2>
+      <p>UrAi explores a navigable personal world built from disclosed or permissioned context. Its public experience connects Home, Ground, Life Map, Focus, Replay, Mirror, Passport, privacy controls, and release status. Public demonstrations use sample or clearly disclosed content.</p>
+      <h2>Founder</h2>
+      <p>Adam Clamp is the founder and system architect behind URAI Labs and the UrAi product direction.</p>
+      <h2>Founding Engineer</h2>
+      <p>Chris Herrin is the Founding Engineer at URAI Labs and an engineering contributor to UrAi. The title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification. No external social profile is represented as canonical until the identity match is separately verified and approved.</p>
+      <h2>Status language</h2>
+      <p>Safe current wording: “The public UrAi web experience is reachable while the current coherent-3D Home release remains exact-head CI, visual acceptance, governance, protected deployment, and live-verification gated.”</p>
+      <h2>Media assets</h2>
+      <p>Use only logos, founder photography, screenshots, and video that are explicitly approved for public use. Final product imagery must be tied to a certified release SHA. No final launch-image pack is represented as approved on this page.</p>
+      <h2>Contact and links</h2>
+      <p>Public media mailbox routing is not yet provider-verified, so no email address is represented here as operational.</p>
+      <ul><li><a href="https://urai.app/">urai.app</a></li><li><a href="https://github.com/LifeLoggerAI/urai-spatial">Canonical public repository</a></li><li><a href="/status">Current status</a></li></ul>
+    </PublicAuthorityShell>
+  )
+}

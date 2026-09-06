@@ -1,4 +1,14 @@
 import CinematicReplayClient from './CinematicReplayClient'
+import { publicIndexing } from '../public-indexing'
+
+export const metadata = {
+  robots: publicIndexing,
+  title: 'UrAi Replay',
+  description: 'Replay disclosed memories through UrAi’s cinematic spatial experience.',
+  alternates: { canonical: 'https://urai.app/replay/' },
+  openGraph: { url: 'https://urai.app/replay/', title: 'UrAi Replay', description: 'Replay disclosed memories through UrAi’s cinematic spatial experience.' },
+  twitter: { card: 'summary', title: 'UrAi Replay', description: 'Replay disclosed memories through UrAi’s cinematic spatial experience.' },
+}
 
 const FinalReplayFilm = CinematicReplayClient
 

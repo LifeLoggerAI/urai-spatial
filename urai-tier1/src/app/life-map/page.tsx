@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import { publicIndexing } from '../public-indexing'
 
 const lifeMapSocialImage = 'https://urai.app/assets/urai/social/open-graph-life-map.webp'
 
 export const metadata: Metadata = {
+  robots: publicIndexing,
   title: 'URAI Life Map',
   description: 'Enter the canonical URAI Life Map: a private spatial constellation of memories, people, places, and meaning.',
   alternates: {

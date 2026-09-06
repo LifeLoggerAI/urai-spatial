@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "lastVerified": "2026-09-05",
+  "statuses": [
+    "verified-public",
+    "verified-source",
+    "verified-production",
+    "independently-verified",
+    "planned",
+    "experimental",
+    "private",
+    "gated",
+    "unsupported-do-not-publish"
+  ],
+  "claims": [
+    {
+      "id": "product-owner",
+      "claim": "UrAi is a product built by URAI Labs.",
+      "status": "verified-source",
+      "evidence": [
+        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_ADAM_CLAMP.md",
+        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"
+      ]
+    },
+    {
+      "id": "founder",
+      "claim": "Adam Clamp is the founder and system architect behind URAI Labs and the UrAi product direction.",
+      "status": "verified-source",
+      "evidence": [
+        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_ADAM_CLAMP.md"
+      ]
+    },
+    {
+      "id": "founding-engineer",
+      "claim": "Chris Herrin is the Founding Engineer at URAI Labs and an engineering contributor to UrAi. The title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification.",
+      "status": "verified-source",
+      "evidence": [
+        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_CHRIS_HERRIN.md"
+      ]
+    },
+    {
+      "id": "canonical-runtime",
+      "claim": "LifeLoggerAI/urai-spatial/urai-tier1/main is the canonical public product source authority for urai.app.",
+      "status": "verified-source",
+      "evidence": [
+        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/README.md",
+        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/release/route-manifest.json"
+      ]
+    },
+    {
+      "id": "public-runtime",
+      "claim": "The UrAi public web experience is reachable at urai.app.",
+      "status": "verified-public",
+      "evidence": ["https://urai.app/"]
+    },
+    {
+      "id": "current-release-certification",
+      "claim": "The current coherent-3D Home release is fully production certified.",
+      "status": "gated",
+      "publicWording": "The current release remains exact-head CI, visual acceptance, governance, protected deployment, and live-verification gated.",
+      "evidence": ["https://github.com/LifeLoggerAI/urai-spatial/pull/1177"]
+    },
+    {
+      "id": "foundation",
+      "claim": "URAI Foundation is a formation-stage public-interest standards and governance initiative.",
+      "status": "verified-source",
+      "evidence": ["https://github.com/LifeLoggerAI/urai-spatial/blob/main/governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"]
+    },
+    {
+      "id": "foundation-legal",
+      "claim": "URAI Foundation is incorporated, tax-exempt, a charity, or an active certification authority.",
+      "status": "unsupported-do-not-publish"
+    },
+    {
+      "id": "clinical",
+      "claim": "UrAi is clinically proven, diagnostic, or a treatment.",
+      "status": "unsupported-do-not-publish"
+    },
+    {
+      "id": "third-party-validation",
+      "claim": "UrAi has customers, revenue, funding, awards, partnerships, patents, certifications, or independent reviews.",
+      "status": "unsupported-do-not-publish"
+    }
+  ]
+}
