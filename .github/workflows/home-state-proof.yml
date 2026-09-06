@@ -67,4 +67,4 @@ jobs:
           name: home-state-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/home-state-proof
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
