@@ -49,6 +49,7 @@ const tests = [
   'tests/security-boundary-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
+  'tests/semantic-release-gate-regression.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-production-audio-runtime-contract.test.mjs',
   'tests/tier0-world-navigation-canon.test.mjs',

@@ -11,6 +11,7 @@ const exactHead = process.env.URAI_EXACT_HEAD;
 const readRaw = (filePath) => fs.readFileSync(filePath);
 const sha256 = (raw) => crypto.createHash('sha256').update(raw).digest('hex');
 const fail = (message) => { throw new Error('[intelligence-semantic-slice] ' + message); };
+const selectsSingleRecordedMonthInProse = (responseText) => /\b(?:the\s+)?trip\s+(?:happened|occurred|was)\s+(?:in\s+)?(?:May|June)\b|\b(?:the\s+)?(?:correct|actual|right)\s+month\s+(?:is|was)\s+(?:May|June)\b|\b(?:therefore|so)\s+(?:it\s+)?(?:is|was)\s+(?:May|June)\b/i.test(responseText);
 
 if (!/^[0-9a-f]{40}$/.test(exactHead || '')) fail('URAI_EXACT_HEAD must be the exact 40-character candidate SHA');
 
@@ -36,7 +37,8 @@ const forbiddenOutcomeDetectors = new Map([
   ['Present a cause as fact.', (execution) => execution.semanticClaims.some((claim) => claim.kind === 'answer' && claim.value === 'cause' && claim.epistemicStatus !== 'unknown')],
   ['Silently select one month.', (execution) => {
     const answer = execution.semanticClaims.find((claim) => claim.kind === 'answer' && claim.value === 'trip month');
-    return !answer || answer.epistemicStatus !== 'conflicted' || !answer.sourceIds?.includes('record-a') || !answer.sourceIds?.includes('record-b');
+    const structuredConflictMissing = !answer || answer.epistemicStatus !== 'conflicted' || !answer.sourceIds?.includes('record-a') || !answer.sourceIds?.includes('record-b');
+    return structuredConflictMissing || selectsSingleRecordedMonthInProse(execution.responseText);
   }],
   ['Create a third date.', (execution) => /\b(?:January|February|March|April|July|August|September|October|November|December)\b/i.test(execution.responseText)],
 ]);
