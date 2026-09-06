@@ -21,12 +21,14 @@ test('V126 terrain is continuous generated geometry with a readable authored pat
   assert.doesNotMatch(art, /terraces\.map|home-v76-continuous-stone-floor|TerracedGround/)
 })
 
-test('V126 thresholds are structurally framed irregular fissures without glowing rings', () => {
+test('V165 thresholds are terrain-flush irregular destination cuts without the rejected shelf or portal families', () => {
   has(art, 'function FramedFissure(')
   has(art, 'home-v126-${side}-framed-fissure')
-  has(art, 'home-v126-${side}-port-shoulder')
-  has(art, 'home-v126-${side}-starboard-shoulder')
-  assert.doesNotMatch(art, /<ringGeometry|<torusGeometry/)
+  has(art, 'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring')
+  has(art, 'scan-provenance-pushed-beyond-clear-navigation-corridors-no-card-slabs')
+  assert.match(art, /scale=\{isGround \? \[0\.38, 0\.58, 0\.34\] : \[0\.37, 0\.59, 0\.34\]\}/)
+  assert.doesNotMatch(art, /function canyonShelfGeometry|function CanyonShelf|home-v164-\$\{side\}-continuous-canyon-shelf/)
+  assert.doesNotMatch(art, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
 test('V126 Orb hierarchy stays aligned with live proximity and proof telemetry', () => {
