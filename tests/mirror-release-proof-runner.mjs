@@ -5,6 +5,7 @@ import { chromium } from 'playwright'
 
 const outDir = process.env.URAI_MIRROR_PROOF_OUT_DIR || 'mirror-release-proof'
 const baseUrl = String(process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
+const baseOrigin = new URL(`${baseUrl}/`).origin
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
 
 function runOriginalProof() {
@@ -19,7 +20,19 @@ function runOriginalProof() {
 }
 
 function pathname(value) {
-  return new URL(value).pathname.replace(/\/$/, '') || '/'
+  return new URL(value, `${baseUrl}/`).pathname.replace(/\/$/, '') || '/'
+}
+
+function isExactCandidateRoute(value, expectedPath) {
+  const parsed = new URL(String(value), `${baseUrl}/`)
+  return parsed.origin === baseOrigin && pathname(parsed.toString()) === expectedPath
+}
+
+function requireExactCandidateRoute(value, expectedPath, label) {
+  if (!isExactCandidateRoute(value, expectedPath)) {
+    const parsed = new URL(String(value), `${baseUrl}/`)
+    throw new Error(`${label} must stay on exact candidate origin ${baseOrigin}${expectedPath}: ${parsed.toString()}`)
+  }
 }
 
 function isNarrowReplayScreenshotFailure(receipt) {
@@ -29,7 +42,7 @@ function isNarrowReplayScreenshotFailure(receipt) {
   const failure = failedCases[0]
   if (failure?.name !== 'transition-to-replay' || failure?.device !== 'desktop') return false
   if (!String(failure?.error || '').includes('page.screenshot: Timeout 60000ms exceeded')) return false
-  if (pathname(String(failure?.finalUrl || 'http://invalid/')) !== '/replay') return false
+  if (!isExactCandidateRoute(String(failure?.finalUrl || ''), '/replay')) return false
   if ((failure?.consoleErrors || []).length) return false
   if ((failure?.failedRequests || []).length) return false
   if ((failure?.httpErrors || []).length) return false
@@ -68,6 +81,7 @@ async function proveReplayCaptureReconciliation(failure) {
     case: 'transition-to-replay-retained-capture-only',
     originalTransitionAlreadyReachedReplay: true,
     originalFinalUrl: failure.finalUrl,
+    requiredOrigin: baseOrigin,
     startedAt: new Date().toISOString(),
     passed: false,
   }
@@ -76,12 +90,13 @@ async function proveReplayCaptureReconciliation(failure) {
     // The original proof has already exercised Mirror -> Replay and records the
     // exact /replay URL before failing only inside Playwright's screenshot call.
     // Reconciliation therefore retries ONLY the retained-pixel capture on that
-    // exact destination instead of attempting to recreate the interaction with
-    // a second, potentially state-dependent Mirror control.
+    // exact candidate-origin destination instead of attempting to recreate the
+    // interaction with a second, potentially state-dependent Mirror control.
     const replayUrl = String(failure.finalUrl)
+    requireExactCandidateRoute(replayUrl, '/replay', 'Original Replay receipt URL')
     const response = await page.goto(replayUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
     if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for Replay`)
-    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted: ${page.url()}`)
+    requireExactCandidateRoute(page.url(), '/replay', 'Replay destination after navigation')
 
     await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
     await page.getByTestId('urai-replay-timeline').first().waitFor({ state: 'attached', timeout: 45000 })
@@ -96,7 +111,7 @@ async function proveReplayCaptureReconciliation(failure) {
       timeout: 120000,
     })
 
-    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted after capture: ${page.url()}`)
+    requireExactCandidateRoute(page.url(), '/replay', 'Replay destination after capture')
     if (consoleErrors.length) throw new Error(`console errors: ${consoleErrors.join(' | ')}`)
     if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.join(' | ')}`)
     if (httpErrors.length) throw new Error(`HTTP resource errors: ${httpErrors.join(' | ')}`)
