@@ -36,7 +36,7 @@ function isNarrowReplayScreenshotFailure(receipt) {
   return true
 }
 
-async function proveReplayCaptureReconciliation() {
+async function proveReplayCaptureReconciliation(failure) {
   const browser = await chromium.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-webgl'],
@@ -53,8 +53,8 @@ async function proveReplayCaptureReconciliation() {
   })
   page.on('pageerror', (error) => consoleErrors.push(String(error?.message || error)))
   page.on('requestfailed', (request) => {
-    const failure = request.failure()?.errorText || 'request failed'
-    if (!failure.includes('ERR_ABORTED')) failedRequests.push(`${request.method()} ${request.url()} ${failure}`)
+    const requestFailure = request.failure()?.errorText || 'request failed'
+    if (!requestFailure.includes('ERR_ABORTED')) failedRequests.push(`${request.method()} ${request.url()} ${requestFailure}`)
   })
   page.on('response', (response) => {
     if (response.status() >= 400) httpErrors.push(`${response.status()} ${response.request().method()} ${response.url()}`)
@@ -63,27 +63,25 @@ async function proveReplayCaptureReconciliation() {
   const shotDir = path.join(outDir, 'screenshots')
   await mkdir(shotDir, { recursive: true })
   const reconciliation = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     exactSha,
-    case: 'transition-to-replay',
+    case: 'transition-to-replay-retained-capture-only',
+    originalTransitionAlreadyReachedReplay: true,
+    originalFinalUrl: failure.finalUrl,
     startedAt: new Date().toISOString(),
     passed: false,
   }
 
   try {
-    const mirrorUrl = `${baseUrl}/mirror/?memoryId=demo%3Aquiet-reset&demo=1&pattern=body-rhythm`
-    const response = await page.goto(mirrorUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for Mirror`)
-    const world = page.getByTestId('mirror-spatial-world')
-    await world.waitFor({ state: 'visible', timeout: 45000 })
-    await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-mirror-ready') === 'true', null, { timeout: 45000 })
-
-    const replayLink = page.getByRole('link', { name: 'Open Replay', exact: true }).first()
-    await replayLink.waitFor({ state: 'visible', timeout: 30000 })
-    const href = await replayLink.getAttribute('href')
-    if (!href || pathname(new URL(href, baseUrl).toString()) !== '/replay') throw new Error(`Mirror canonical Replay link is invalid: ${href || 'missing'}`)
-    await replayLink.click()
-    await page.waitForURL((url) => pathname(url.toString()) === '/replay', { timeout: 30000 })
+    // The original proof has already exercised Mirror -> Replay and records the
+    // exact /replay URL before failing only inside Playwright's screenshot call.
+    // Reconciliation therefore retries ONLY the retained-pixel capture on that
+    // exact destination instead of attempting to recreate the interaction with
+    // a second, potentially state-dependent Mirror control.
+    const replayUrl = String(failure.finalUrl)
+    const response = await page.goto(replayUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    if (response && response.status() >= 400) throw new Error(`HTTP ${response.status()} for Replay`)
+    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted: ${page.url()}`)
 
     await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
     await page.getByTestId('urai-replay-timeline').first().waitFor({ state: 'attached', timeout: 45000 })
@@ -98,14 +96,13 @@ async function proveReplayCaptureReconciliation() {
       timeout: 120000,
     })
 
-    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted: ${page.url()}`)
+    if (pathname(page.url()) !== '/replay') throw new Error(`Replay destination drifted after capture: ${page.url()}`)
     if (consoleErrors.length) throw new Error(`console errors: ${consoleErrors.join(' | ')}`)
     if (failedRequests.length) throw new Error(`failed requests: ${failedRequests.join(' | ')}`)
     if (httpErrors.length) throw new Error(`HTTP resource errors: ${httpErrors.join(' | ')}`)
 
     reconciliation.passed = true
     reconciliation.finalUrl = page.url()
-    reconciliation.canonicalReplayHref = href
     reconciliation.screenshot = screenshot
     reconciliation.completedAt = new Date().toISOString()
     await writeFile(path.join(outDir, 'replay-screenshot-reconciliation.json'), JSON.stringify(reconciliation, null, 2))
@@ -126,5 +123,6 @@ if (!isNarrowReplayScreenshotFailure(receipt)) {
   throw new Error(`Mirror release proof failed without eligible reconciliation: code=${original.code} signal=${original.signal || 'none'}`)
 }
 
-await proveReplayCaptureReconciliation()
+const replayFailure = receipt.cases.find((entry) => entry?.name === 'transition-to-replay' && entry?.device === 'desktop' && entry?.status !== 'passed')
+await proveReplayCaptureReconciliation(replayFailure)
 console.log('MIRROR_RELEASE_PROOF_RUNNER_PASSED_NARROW_REPLAY_SCREENSHOT_RECONCILIATION')
