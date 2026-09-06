@@ -17,13 +17,13 @@ function ownSemanticKeyboardActivation(event: ReactKeyboardEvent<HTMLButtonEleme
 }
 
 function HomeSemanticNavigation() {
-  const openOrb = () => requestUraiWorldOrbOpen()
+  const openOrb = (returnFocusTo?: HTMLElement) => requestUraiWorldOrbOpen(returnFocusTo)
   const openGround = () => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground', cameraCheckpoint: 'home-ground-descent' })
-  const openLifeMap = () => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/' })
+  const openLifeMap = () => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' })
 
   return (
     <nav className="home-semantic-navigation" aria-label="Accessible Home destinations" data-home-navigation-owner="runtime-boundary" data-home-navigation-non-dominant="true">
-      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={openOrb} onKeyDown={(event) => ownSemanticKeyboardActivation(event, openOrb)}>Open URAI Orb companion</button>
+      <button type="button" aria-label="Open URAI Orb companion" data-testid="home-semantic-orb" onClick={(event) => openOrb(event.currentTarget)} onKeyDown={(event) => ownSemanticKeyboardActivation(event, () => openOrb(event.currentTarget))}>Open URAI Orb companion</button>
       <button type="button" aria-label="Open Ground directly" data-testid="home-semantic-ground" onClick={openGround} onKeyDown={(event) => ownSemanticKeyboardActivation(event, openGround)}>Ground</button>
       <button type="button" aria-label="Open Life Map directly" data-testid="home-semantic-life-map" onClick={openLifeMap} onKeyDown={(event) => ownSemanticKeyboardActivation(event, openLifeMap)}>Life Map</button>
     </nav>
