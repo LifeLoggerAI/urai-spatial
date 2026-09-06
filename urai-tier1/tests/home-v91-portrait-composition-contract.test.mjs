@@ -6,18 +6,19 @@ const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV
 const art = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
 const styles = readFileSync(new URL('../src/spatial/layout/HomeWorldProduction.module.css', import.meta.url), 'utf8')
 
-test('V105 uses one opaque responsive Canvas with balanced portrait hierarchy', () => {
+test('V162 uses one opaque responsive Canvas with tightened lower-horizon framing', () => {
   assert.doesNotMatch(runtime, /backgroundImage:/)
   assert.match(runtime, /data-home-desktop-mobile-world="same-scene"/)
   assert.match(runtime, /alpha: false/)
   assert.match(runtime, /gl\.setClearColor\(0x080b0b, 1\)/)
   assert.match(runtime, /camera=\{\{ position: \[SPAWN\.x, 1\.60, SPAWN\.z\], fov: 42/)
-  assert.match(runtime, /const fov = portrait \? 58 : 42/)
+  assert.match(runtime, /const fov = portrait \? 50 : 40/)
+  assert.doesNotMatch(runtime, /const fov = portrait \? 58 : 42/)
   assert.doesNotMatch(runtime, /const fov = portrait \? 86 : 42/)
   assert.match(styles, /\.canvas/)
 })
 
-test('V161 keeps responsive framing while replacing the broad approach with broken buried wayfinding traces, terrain-flush rifts, asymmetric canyon depth, and a contained no-pedestal memory core', () => {
+test('V162 keeps responsive framing while removing the visible runway, preserving terrain-flush rifts, asymmetric canyon depth, and a contained no-pedestal memory core', () => {
   assert.doesNotMatch(art, /SANCTUARY_BACKDROP|scene\.userData\.sanctuaryBackdrop/)
   assert.match(art, /function SculptedCanyonGround/)
   assert.match(art, /name="home-v125-sculpted-canyon-ground"/)
@@ -32,6 +33,9 @@ test('V161 keeps responsive framing while replacing the broad approach with brok
   assert.match(art, /if \(phase > 2\) continue/)
   assert.match(art, /short buried stone traces provide orientation without reading as a road or rail pair/)
   assert.match(art, /v161Refinement: 'broken-buried-wayfinding-traces-no-continuous-track'/)
+  assert.match(art, /v162Refinement: 'orientation-traces-retained-as-nonrendered-geometry-no-runway-read'/)
+  assert.match(art, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
+  assert.match(art, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
   assert.match(art, /function GeologicalFrame/)
   assert.match(art, /name="home-v126-bounded-geological-edge-masses"/)
   assert.match(art, /scan-provenance-kept-off-axis-while-authored-ground-owns-frame/)
@@ -69,7 +73,7 @@ test('V161 keeps responsive framing while replacing the broad approach with brok
   assert.match(art, /name="home-v125-atmospheric-depth-motes"/)
   assert.match(art, /activeArtRevision: 'v154-visible-canyon-fissures-memory-swarm-no-pedestal'/)
   assert.match(art, /visualIteration: 'v158-ground-scar-thresholds-hairline-path-sunken-geology'/)
-  assert.match(art, /currentVisualRefinement: 'v161-broken-wayfinding-deeper-canyon-terrain-flush-rifts'/)
+  assert.match(art, /currentVisualRefinement: 'v162-no-runway-lower-horizon-canyon-composition'/)
   assert.match(art, /predecessorVisualIteration: 'v157-canyon-path-thin-rifts-low-geology-contained-orb'/)
   assert.match(art, /predecessorArtRevision: 'v153-localized-fissures-asymmetric-orb-plume-no-pedestal'/)
   assert.match(art, /new THREE\.IcosahedronGeometry\(1, 2\)/)
