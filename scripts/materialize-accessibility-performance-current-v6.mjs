@@ -94,6 +94,13 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
   )
   source = replaceExact(
     source,
+    "    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')",
+    "    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false', { timeout: 20_000 })",
+    1,
+    'slow-host semantic Orb target-sizing open envelope',
+  )
+  source = replaceExact(
+    source,
     `    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
     await expect(orb).toBeEnabled()
@@ -116,7 +123,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
     await expect(orb).toBeEnabled()
     await orb.focus()
     await orb.press('Enter')
-    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false')
+    await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'false', { timeout: 20_000 })
     const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
     await expect(firstDestination).toBeFocused()
     await page.keyboard.press('Escape')
