@@ -63,7 +63,7 @@ async function proveReplayCaptureReconciliation() {
   const shotDir = path.join(outDir, 'screenshots')
   await mkdir(shotDir, { recursive: true })
   const reconciliation = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exactSha,
     case: 'transition-to-replay',
     startedAt: new Date().toISOString(),
@@ -78,7 +78,11 @@ async function proveReplayCaptureReconciliation() {
     await world.waitFor({ state: 'visible', timeout: 45000 })
     await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-mirror-ready') === 'true', null, { timeout: 45000 })
 
-    await page.getByRole('button', { name: 'Replay this thread', exact: true }).click()
+    const replayLink = page.getByRole('link', { name: 'Open Replay', exact: true }).first()
+    await replayLink.waitFor({ state: 'visible', timeout: 30000 })
+    const href = await replayLink.getAttribute('href')
+    if (!href || pathname(new URL(href, baseUrl).toString()) !== '/replay') throw new Error(`Mirror canonical Replay link is invalid: ${href || 'missing'}`)
+    await replayLink.click()
     await page.waitForURL((url) => pathname(url.toString()) === '/replay', { timeout: 30000 })
 
     await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
@@ -101,6 +105,7 @@ async function proveReplayCaptureReconciliation() {
 
     reconciliation.passed = true
     reconciliation.finalUrl = page.url()
+    reconciliation.canonicalReplayHref = href
     reconciliation.screenshot = screenshot
     reconciliation.completedAt = new Date().toISOString()
     await writeFile(path.join(outDir, 'replay-screenshot-reconciliation.json'), JSON.stringify(reconciliation, null, 2))
