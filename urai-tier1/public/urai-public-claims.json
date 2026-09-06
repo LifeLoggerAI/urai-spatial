@@ -31,8 +31,8 @@
       ]
     },
     {
-      "id": "lead-engineer",
-      "claim": "Chris Herrin is the Lead Engineer at URAI Labs and an engineering contributor to UrAi.",
+      "id": "founding-engineer",
+      "claim": "Chris Herrin is the Founding Engineer at URAI Labs and an engineering contributor to UrAi. The title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification.",
       "status": "verified-source",
       "evidence": [
         "https://github.com/LifeLoggerAI/urai-spatial/blob/main/docs/PUBLIC_FOOTPRINT_CHRIS_HERRIN.md"
@@ -51,26 +51,20 @@
       "id": "public-runtime",
       "claim": "The UrAi public web experience is reachable at urai.app.",
       "status": "verified-public",
-      "evidence": [
-        "https://urai.app/"
-      ]
+      "evidence": ["https://urai.app/"]
     },
     {
       "id": "current-release-certification",
       "claim": "The current coherent-3D Home release is fully production certified.",
       "status": "gated",
       "publicWording": "The current release remains exact-head CI, visual acceptance, governance, protected deployment, and live-verification gated.",
-      "evidence": [
-        "https://github.com/LifeLoggerAI/urai-spatial/pull/1177"
-      ]
+      "evidence": ["https://github.com/LifeLoggerAI/urai-spatial/pull/1177"]
     },
     {
       "id": "foundation",
       "claim": "URAI Foundation is a formation-stage public-interest standards and governance initiative.",
       "status": "verified-source",
-      "evidence": [
-        "https://github.com/LifeLoggerAI/urai-spatial/blob/main/governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"
-      ]
+      "evidence": ["https://github.com/LifeLoggerAI/urai-spatial/blob/main/governance/ORGANIZATIONAL_OPERATING_BOUNDARIES.md"]
     },
     {
       "id": "foundation-legal",

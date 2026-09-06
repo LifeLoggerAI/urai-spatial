@@ -37,15 +37,16 @@
       "publicProfile": "https://urai.app/founder/",
       "githubAccountAuthority": "https://github.com/LifeLoggerAI"
     },
-    "leadEngineer": {
+    "foundingEngineer": {
       "name": "Chris Herrin",
-      "role": "Lead Engineer",
+      "role": "Founding Engineer",
       "type": "person",
       "canonicalUrl": "https://urai.app/about/labs/#chris-herrin",
       "relationship": [
-        "Lead Engineer at URAI Labs",
+        "Founding Engineer at URAI Labs",
         "Engineering contributor to UrAi"
       ],
+      "roleBoundary": "The Founding Engineer title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification.",
       "publicProfile": "https://urai.app/about/labs/#chris-herrin",
       "externalProfiles": [],
       "externalProfileStatus": "not linked until identity-matched and approved"

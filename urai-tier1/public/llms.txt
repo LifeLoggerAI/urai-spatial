@@ -6,7 +6,7 @@ Canonical product: https://urai.app/
 Official overview: https://urai.app/about/
 URAI Labs: https://urai.app/about/labs/
 Founder: Adam Clamp — https://urai.app/founder/
-Lead Engineer: Chris Herrin — https://urai.app/about/labs/#chris-herrin
+Founding Engineer: Chris Herrin — https://urai.app/about/labs/#chris-herrin
 Ecosystem: https://urai.app/ecosystem/
 Press facts: https://urai.app/press/
 Release status: https://urai.app/status/
@@ -14,7 +14,7 @@ Canonical source authority: https://github.com/LifeLoggerAI/urai-spatial
 Machine-readable entity registry: https://urai.app/urai-entity.json
 Public claims registry: https://urai.app/urai-public-claims.json
 
-No external Chris Herrin social or professional profile is represented as canonical until the identity match is separately verified and approved.
+No external Chris Herrin social or professional profile is represented as canonical until the identity match is separately verified and approved. The Founding Engineer role title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification.
 
 URAI Foundation is described as a formation-stage public-interest standards and governance initiative. No incorporation, charity, tax-exempt, donation-deductibility, certification-authority, or launched-program claim should be inferred without separate primary evidence.
 

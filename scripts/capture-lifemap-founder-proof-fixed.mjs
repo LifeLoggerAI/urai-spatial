@@ -253,7 +253,7 @@ async function armJourneyPhaseWatch(page, expectedPhase) {
   }, { rootSelector: ROOT, phase: expectedPhase, storageKey: JOURNEY_WATCH_STORAGE_KEY })
 }
 
-async function readJourneyPhaseWatch(page, expectedPhase, timeout = 12_000) {
+async function readJourneyPhaseWatch(page, expectedPhase, timeout = 30_000) {
   const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate(({ phase, storageKey }) => {
     const watch = window.__uraiFounderJourneyPhaseWatch
     if (watch?.expectedPhase === phase && watch.observed) return watch.observed

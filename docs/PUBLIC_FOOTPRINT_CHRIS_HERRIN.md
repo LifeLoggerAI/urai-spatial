@@ -6,14 +6,14 @@ Last verified: 2026-09-05
 ## Canonical public identity
 
 - Name: **Chris Herrin**
-- Role: **Lead Engineer**
+- Role: **Founding Engineer**
 - Organization: **URAI Labs**
 - Product relationship: **Engineering contributor to UrAi**
 - Canonical public profile target: `https://urai.app/about/labs/#chris-herrin`
 
 ## Public-use rule
 
-Use **Chris Herrin — Lead Engineer, URAI Labs** when a concise public role line is needed. The product name remains **UrAi** and the organization name remains **URAI Labs**.
+Use **Chris Herrin — Founding Engineer, URAI Labs** when a concise public role line is needed. The product name remains **UrAi** and the organization name remains **URAI Labs**.
 
 ## External identity boundary
 
@@ -21,7 +21,7 @@ No LinkedIn, GitHub, social-media, employer, biography, location, credential, or
 
 ## Claims this record does not make
 
-This record does not establish or imply founding status, equity ownership, corporate-officer or director status, employment classification, compensation, credentials, residence, prior employment, independent verification, or third-party endorsement.
+The **Founding Engineer** role title alone does not establish or imply equity ownership, corporate-officer or director status, legal co-founder status, employment classification, compensation, credentials, residence, prior employment, independent verification, or third-party endorsement.
 
 ## Source class
 
