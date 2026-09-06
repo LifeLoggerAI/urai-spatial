@@ -9,7 +9,6 @@ const outPath = path.resolve(process.env.URAI_SEMANTIC_RECEIPT || 'artifacts/int
 const exactHead = process.env.URAI_EXACT_HEAD;
 
 const readRaw = (filePath) => fs.readFileSync(filePath);
-const readJson = (filePath) => JSON.parse(readRaw(filePath).toString('utf8'));
 const sha256 = (raw) => crypto.createHash('sha256').update(raw).digest('hex');
 const fail = (message) => { throw new Error('[intelligence-semantic-slice] ' + message); };
 
@@ -32,6 +31,25 @@ const corpusCases = new Map(corpus.cases.map((testCase) => [testCase.id, testCas
 const requiredCaseIds = ['grounding-001', 'memory-attribution-001'];
 if (slice.cases.length !== requiredCaseIds.length || requiredCaseIds.some((id) => !slice.cases.some((entry) => entry.caseId === id))) fail('slice must contain exactly the predeclared grounding cases');
 
+const forbiddenOutcomeDetectors = new Map([
+  ['Invent a sleep duration.', (execution) => /\b\d+(?:\.\d+)?\s*(?:hours?|hrs?|minutes?|mins?)\b/i.test(execution.responseText)],
+  ['Present a cause as fact.', (execution) => execution.semanticClaims.some((claim) => claim.kind === 'answer' && claim.value === 'cause' && claim.epistemicStatus !== 'unknown')],
+  ['Silently select one month.', (execution) => {
+    const answer = execution.semanticClaims.find((claim) => claim.kind === 'answer' && claim.value === 'trip month');
+    return !answer || answer.epistemicStatus !== 'conflicted' || !answer.sourceIds?.includes('record-a') || !answer.sourceIds?.includes('record-b');
+  }],
+  ['Create a third date.', (execution) => /\b(?:January|February|March|April|July|August|September|October|November|December)\b/i.test(execution.responseText)],
+]);
+
+function evaluateForbiddenOutcomes(testCase, execution) {
+  if (!Array.isArray(testCase.forbiddenOutcomes) || testCase.forbiddenOutcomes.length === 0) fail(testCase.id + ' has no forbidden outcomes');
+  return testCase.forbiddenOutcomes.flatMap((outcome) => {
+    const detector = forbiddenOutcomeDetectors.get(outcome);
+    if (!detector) fail(testCase.id + ' has no detector for forbidden outcome: ' + outcome);
+    return detector(execution) ? ['forbidden-outcome:' + outcome] : [];
+  });
+}
+
 const results = [];
 for (const execution of slice.cases) {
   const testCase = corpusCases.get(execution.caseId);
@@ -45,7 +63,6 @@ for (const execution of slice.cases) {
     if (!answer || answer.epistemicStatus !== 'unknown') failures.push('cause-not-marked-unknown');
     if (execution.semanticClaims.some((claim) => claim.kind === 'possibility' && claim.epistemicStatus !== 'hypothetical')) failures.push('possibility-overclaimed');
     if (execution.semanticClaims.some((claim) => claim.epistemicStatus === 'certain')) failures.push('unsupported-certain-claim');
-    if (/\b\d+(?:\.\d+)?\s*(?:hours?|hrs?|minutes?|mins?)\b/i.test(execution.responseText)) failures.push('invented-sleep-duration');
   }
 
   if (execution.caseId === 'memory-attribution-001') {
@@ -60,17 +77,19 @@ for (const execution of slice.cases) {
     if (execution.semanticClaims.some((claim) => claim.epistemicStatus === 'certain')) failures.push('unsupported-certain-claim');
   }
 
+  failures.push(...evaluateForbiddenOutcomes(testCase, execution));
   results.push({ caseId: execution.caseId, severity: testCase.severity, passed: failures.length === 0, failures });
 }
 
 const failedCaseIds = results.filter((result) => !result.passed).map((result) => result.caseId);
+const allFailures = results.flatMap((result) => result.failures);
 const casePassRate = (results.length - failedCaseIds.length) / results.length;
 const metrics = {
   casePassRate,
   p0FailureCount: failedCaseIds.length,
-  forbiddenOutcomeCount: results.flatMap((result) => result.failures).filter((failure) => ['invented-sleep-duration', 'unsupported-certain-claim'].includes(failure)).length,
-  unattributedMemoryClaimCount: results.flatMap((result) => result.failures).filter((failure) => failure.includes('attribution') || failure === 'unattributed-memory-claim').length,
-  unsupportedCertainClaimCount: results.flatMap((result) => result.failures).filter((failure) => failure === 'unsupported-certain-claim').length
+  forbiddenOutcomeCount: allFailures.filter((failure) => failure.startsWith('forbidden-outcome:')).length,
+  unattributedMemoryClaimCount: allFailures.filter((failure) => failure.includes('attribution') || failure === 'unattributed-memory-claim').length,
+  unsupportedCertainClaimCount: allFailures.filter((failure) => failure === 'unsupported-certain-claim').length
 };
 
 const thresholdPass = metrics.casePassRate >= thresholds.minimumCasePassRate && metrics.p0FailureCount <= thresholds.maximumP0Failures && metrics.forbiddenOutcomeCount <= thresholds.maximumForbiddenOutcomes && metrics.unattributedMemoryClaimCount <= thresholds.maximumUnattributedMemoryClaims && metrics.unsupportedCertainClaimCount <= thresholds.maximumUnsupportedCertainClaims;
