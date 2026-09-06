@@ -78,7 +78,14 @@ async function proveReplayCaptureReconciliation() {
     await world.waitFor({ state: 'visible', timeout: 45000 })
     await page.waitForFunction(() => document.querySelector('[data-testid="mirror-spatial-world"]')?.getAttribute('data-mirror-ready') === 'true', null, { timeout: 45000 })
 
-    await page.getByRole('button', { name: 'Replay this thread', exact: true }).click()
+    const replayLink = page.getByRole('link', { name: 'Open Replay', exact: true }).first()
+    await replayLink.waitFor({ state: 'visible', timeout: 30000 })
+    const replayHref = await replayLink.getAttribute('href')
+    if (!replayHref) throw new Error('Open Replay link has no href')
+    if (pathname(new URL(replayHref, page.url()).toString()) !== '/replay') {
+      throw new Error(`Open Replay href is not canonical /replay: ${replayHref}`)
+    }
+    await replayLink.click()
     await page.waitForURL((url) => pathname(url.toString()) === '/replay', { timeout: 30000 })
     await page.getByTestId('urai-replay-surface').waitFor({ state: 'attached', timeout: 45000 })
     await page.getByTestId('urai-replay-timeline').first().waitFor({ state: 'attached', timeout: 45000 })
