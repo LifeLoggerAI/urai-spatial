@@ -37,7 +37,7 @@ test('Home keeps one V70 Canvas owner while V126 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V162 keeps V158 ground integration, removes the visible runway approach, recesses destination scars, and preserves the compact no-pedestal memory core', () => {
+test('V163 keeps the runway suppressed while deepening basin geology, destination scars, and the compact no-pedestal Orb', () => {
   for (const marker of [
     'function SculptedCanyonGround(',
     'home-v125-sculpted-canyon-ground',
@@ -47,6 +47,8 @@ test('V162 keeps V158 ground integration, removes the visible runway approach, r
     'narrow-meandering-inlay-not-road-slab',
     'hairline-stone-trace-integrated-into-ground-no-road-read',
     'broken-buried-wayfinding-traces-no-continuous-track',
+    'orientation-traces-retained-as-nonrendered-geometry-no-runway-read',
+    'legacy-alcove-meshes-remain-disabled-no-gate-facade',
     'function GeologicalFrame(',
     'home-v126-bounded-geological-edge-masses',
     'scan-provenance-kept-off-axis-while-authored-ground-owns-frame',
@@ -56,6 +58,7 @@ test('V162 keeps V158 ground integration, removes the visible runway approach, r
     'v154-buried-irregular-stone-fissure-no-facade-hoops-or-translucent-panels',
     'ground-laid-navigation-scar-no-upright-gate-silhouette',
     'terrain-flush-navigation-scar-no-upright-sliver',
+    'larger-terrain-basin-scar-with-localized-destination-light-no-gate',
     'function weatheredSanctuaryMassGeometry(',
     'home-v149-weathered-rift-threshold-sanctuary',
     'v154-faceted-broken-buttresses-no-rounded-boulder-gates',
@@ -67,10 +70,13 @@ test('V162 keeps V158 ground integration, removes the visible runway approach, r
     'mid-port-canyon-shoulder',
     'mid-starboard-canyon-shoulder',
     'asymmetric-canyon-ridges-add-depth-without-gates-or-boulder-piles',
+    'deep-overlapping-canyon-basin-landmarks-without-rings-facades-or-boulder-piles',
+    'deep-asymmetric-basin-geology-with-recessed-lit-navigation-scars',
     'function ApseAndOrbCradle(',
     'home-v126-layered-apse-orb-cradle',
     'v154-broken-side-shelves-frame-orb-without-pedestal',
     'apse-ledges-sunk-into-terrain-clear-orb-air-gap',
+    'raised-side-geology-frames-orb-without-under-orb-pedestal',
     'function LivingOrb(',
     'home-v126-apse-integrated-orb',
     'home-v126-orb-memory-motes',
@@ -78,15 +84,19 @@ test('V162 keeps V158 ground integration, removes the visible runway approach, r
     'contained-memory-core-not-particle-fountain',
     'orb-floats-over-continuous-terrain-without-rock-cradle-clutter',
     'compact-memory-cloud-preserved-unchanged',
+    'orb-primary-focal-presence-framed-by-side-geology-not-pedestal',
     "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
     'ORB_PALETTE',
     'home-v125-atmospheric-depth-motes',
     'v154-visible-canyon-fissures-memory-swarm-no-pedestal',
     'v158-ground-scar-thresholds-hairline-path-sunken-geology',
-    'orientation-traces-retained-as-nonrendered-geometry-no-runway-read',
+    'v163-deeper-canyon-basin-landmarks-no-runway',
+    'destination-basin-light-without-gate-facade',
+    'taller-overlapping-ridges-reduce-empty-sky-without-wall-or-ring',
   ]) has(homeArt, marker)
   assert.match(homeArt, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
   assert.match(homeArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
+  assert.match(homeArt, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
   assert.doesNotMatch(homeArt, /function RelicMachine\(|function PortalRecess\(|<TerracedGround|name="home-v124-authored-asymmetric-landform"|name="home-v76-apse-embedded-orb-relic-machine"/)
   assert.doesNotMatch(homeArt, /function layeredSanctuaryWingGeometry|function cradleSupportGeometry|home-v148-open-buttress-threshold-sanctuary/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
@@ -99,10 +109,18 @@ test('V162 keeps V158 ground integration, removes the visible runway approach, r
   assert.match(homeArt, /for \(let index = 0; index < 980; index \+= 1\)/)
   assert.match(homeArt, /Array\.from\(\{ length: 6 \}/)
   assert.match(homeArt, /rotation=\{\[-1\.38, isGround \? 0\.16 : -0\.16, isGround \? -0\.10 : 0\.10\]\}/)
-  assert.match(homeArt, /scale=\{isGround \? \[0\.24, 0\.36, 0\.28\] : \[0\.23, 0\.37, 0\.28\]\}/)
+  assert.match(homeArt, /scale=\{isGround \? \[0\.31, 0\.46, 0\.32\] : \[0\.30, 0\.47, 0\.32\]\}/)
+  assert.match(homeArt, /size=\{0\.012\} transparent opacity=\{0\.34\}/)
+  assert.match(homeArt, /intensity=\{0\.16\} distance=\{3\.2\}/)
   assert.match(homeArt, /for \(let index = 0; index < 48; index \+= 1\)/)
   assert.match(homeArt, /new THREE\.ExtrudeGeometry\(frame, \{ depth: 0\.12/)
   assert.match(homeArt, /boxGeometry args=\{\[4\.20, 4\.20, 2\.80\]\}/)
+  assert.match(homeArt, /far-port-weathered-ridge[^\n]*scale: \[3\.72, 1\.04, 1\.34\]/)
+  assert.match(homeArt, /far-starboard-weathered-ridge[^\n]*scale: \[4\.02, 1\.14, 1\.42\]/)
+  assert.match(homeArt, /mid-port-canyon-shoulder[^\n]*scale: \[2\.28, 0\.70, 1\.02\]/)
+  assert.match(homeArt, /mid-starboard-canyon-shoulder[^\n]*scale: \[2\.42, 0\.66, 1\.08\]/)
+  assert.match(homeArt, /scale=\{\[1\.18, 0\.18, 0\.72\]\}/)
+  assert.match(homeArt, /scale=\{\[1\.10, 0\.17, 0\.70\]\}/)
   assert.match(homeArt, /name="home-v125-sculpted-canyon-ground"[^>]*>[\s\S]*?<meshPhysicalMaterial/)
   assert.match(homeArt, /retained-stone-provenance[^\n]*castShadow receiveShadow>/)
   assert.match(homeArt, /retired-threshold-panel[^\n]*geometry=\{field\}[^\n]*>/)
