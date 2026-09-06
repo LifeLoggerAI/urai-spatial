@@ -7,7 +7,9 @@ import test from 'node:test'
 import {
   authoritySupersessionErrors,
   canonicalRuntimeStatusErrors,
+  currentProductionEvidenceErrors,
   productionEvidenceErrors,
+  recordCurrentAuthorityEvidence,
   routeConsumptionErrors,
   sensoryRuntimeStatusErrors,
 } from '../scripts/verify-asset-authority-consistency.mjs'
@@ -45,6 +47,71 @@ test('in-record historical flags cannot bypass current authority checks', () => 
   assert.match(errors[0], /current production evidence exists/)
   assert.match(errors[1], /byte count drift/)
   assert.match(errors[2], /SHA-256 drift/)
+})
+
+test('non-authoritative evidence cannot satisfy production-ready current authority', () => {
+  const productionAsset = {
+    id: 'production-asset-v1',
+    fixedPath: 'public/production-asset-v1.glb',
+    releaseState: 'production-ready',
+  }
+  const currentDecisions = new Set()
+  const currentReceipts = new Set()
+
+  assert.equal(recordCurrentAuthorityEvidence({
+    evidence: { currentAuthority: false },
+    assetId: productionAsset.id,
+    relativeDirectory: 'operations/assets/promotion-decisions',
+    currentDecisions,
+    currentReceipts,
+  }), false)
+  assert.equal(recordCurrentAuthorityEvidence({
+    evidence: { currentAuthority: false },
+    assetId: productionAsset.id,
+    relativeDirectory: 'operations/assets/production-receipts',
+    currentDecisions,
+    currentReceipts,
+  }), false)
+
+  const errors = currentProductionEvidenceErrors({
+    canonicalAssets: [productionAsset],
+    currentDecisions,
+    currentReceipts,
+  })
+  assert.equal(errors.length, 2)
+  assert.match(errors[0], /no matching current promotion decision/)
+  assert.match(errors[1], /no matching current production receipt/)
+})
+
+test('explicitly authoritative evidence satisfies production-ready current authority', () => {
+  const productionAsset = {
+    id: 'production-asset-v1',
+    fixedPath: 'public/production-asset-v1.glb',
+    releaseState: 'production-ready',
+  }
+  const currentDecisions = new Set()
+  const currentReceipts = new Set()
+
+  assert.equal(recordCurrentAuthorityEvidence({
+    evidence: { currentAuthority: true },
+    assetId: productionAsset.id,
+    relativeDirectory: 'operations/assets/promotion-decisions',
+    currentDecisions,
+    currentReceipts,
+  }), true)
+  assert.equal(recordCurrentAuthorityEvidence({
+    evidence: { currentAuthority: true },
+    assetId: productionAsset.id,
+    relativeDirectory: 'operations/assets/production-receipts',
+    currentDecisions,
+    currentReceipts,
+  }), true)
+
+  assert.deepEqual(currentProductionEvidenceErrors({
+    canonicalAssets: [productionAsset],
+    currentDecisions,
+    currentReceipts,
+  }), [])
 })
 
 test('route-consumption claims require the active route owner to reference the asset', () => {
