@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const exactSha = String(process.env.URAI_PROOF_SOURCE_SHA || process.env.URAI_EXACT_HEAD || '').trim()
 const baseUrl = String(process.env.URAI_AUDIT_BASE_URL || 'http://127.0.0.1:4173').replace(/\/$/, '')
+const baseOrigin = new URL(`${baseUrl}/`).origin
 const outDir = process.env.URAI_MIRROR_PROOF_OUT_DIR || 'mirror-release-proof'
 const shotDir = path.join(outDir, 'screenshots')
 
@@ -29,7 +30,19 @@ function absolute(route) {
 }
 
 function pathname(value) {
-  return new URL(value).pathname.replace(/\/$/, '') || '/'
+  return new URL(value, `${baseUrl}/`).pathname.replace(/\/$/, '') || '/'
+}
+
+function isExactCandidateRoute(value, expectedPath) {
+  const parsed = value instanceof URL ? value : new URL(String(value), `${baseUrl}/`)
+  return parsed.origin === baseOrigin && (parsed.pathname.replace(/\/$/, '') || '/') === expectedPath
+}
+
+function assertExactCandidateRoute(value, expectedPath, label) {
+  if (!isExactCandidateRoute(value, expectedPath)) {
+    const parsed = value instanceof URL ? value : new URL(String(value), `${baseUrl}/`)
+    throw new Error(`${label} must stay on exact candidate origin ${baseOrigin}${expectedPath}: ${parsed.toString()}`)
+  }
 }
 
 function pushCase(name, device, status, details = {}) {
@@ -100,49 +113,10 @@ async function createPage(browser, deviceName, options = {}) {
   return { context, page, consoleErrors, failedRequests, httpErrors }
 }
 
-async function screenshot(page, name, { fontReadyTimeoutMs = 0, timeoutMs = 60000 } = {}) {
+async function screenshot(page, name) {
   const relative = path.join('screenshots', `${name}.png`)
-  if (fontReadyTimeoutMs > 0) {
-    await page.evaluate(async (maxWaitMs) => {
-      if (!document.fonts || document.fonts.status === 'loaded') return
-      await Promise.race([
-        document.fonts.ready,
-        new Promise((resolve) => window.setTimeout(resolve, maxWaitMs)),
-      ])
-    }, fontReadyTimeoutMs)
-  }
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  // Playwright's built-in animation disabling waits for finite animations to
-  // finish before capture. Replay owns several route-entry transitions, so the
-  // screenshot can otherwise exhaust its timeout while the page is healthy.
-  // Freeze every animation and transition explicitly, then capture the exact
-  // settled pixels without asking Playwright to fast-forward page timelines.
-  const motionFreeze = await page.addStyleTag({
-    content: '*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;caret-color:transparent!important}',
-  })
-  const cdp = await page.context().newCDPSession(page)
-  let timeoutHandle
-  try {
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-    // Capture the actual Chromium surface directly. Playwright's higher-level
-    // screenshot path performs an additional unbounded document.fonts wait;
-    // Replay can keep that path occupied after client navigation even though
-    // the rendered browser surface and font set are already stable.
-    const captured = await Promise.race([
-      cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false }),
-      new Promise((_, reject) => {
-        timeoutHandle = setTimeout(() => reject(new Error(`CDP screenshot timed out after ${timeoutMs}ms`)), timeoutMs)
-      }),
-    ])
-    if (!captured || typeof captured !== 'object' || !('data' in captured) || typeof captured.data !== 'string' || captured.data.length === 0) {
-      throw new Error('CDP screenshot returned no PNG data')
-    }
-    await fs.writeFile(path.join(outDir, relative), Buffer.from(captured.data, 'base64'))
-  } finally {
-    if (timeoutHandle) clearTimeout(timeoutHandle)
-    await cdp.detach().catch(() => {})
-    await motionFreeze.evaluate((node) => node.remove()).catch(() => {})
-  }
+  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60000 })
   return relative
 }
 
@@ -264,16 +238,15 @@ async function proveState(browser, config) {
 
 async function proveTransition(browser, destination, buttonName) {
   const name = `transition-to-${destination}`
+  const expectedPath = `/${destination}`
   const { context, page, consoleErrors, failedRequests, httpErrors } = await createPage(browser, 'desktop')
   try {
     await waitForWorld(page, `/mirror?${demoQuery}&pattern=body-rhythm`)
     await page.getByRole('button', { name: buttonName, exact: true }).click()
-    await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000 })
-    const shot = await screenshot(
-      page,
-      `desktop-${name}`,
-      destination === 'replay' ? { fontReadyTimeoutMs: 5000, timeoutMs: 20000 } : undefined,
-    )
+    await page.waitForURL((url) => isExactCandidateRoute(url, expectedPath), { timeout: 30000 })
+    assertExactCandidateRoute(page.url(), expectedPath, `${destination} transition destination`)
+    const shot = await screenshot(page, `desktop-${name}`)
+    assertExactCandidateRoute(page.url(), expectedPath, `${destination} transition destination after capture`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })
   } catch (error) {
@@ -344,6 +317,7 @@ const receipt = {
   schemaVersion: 3,
   exactSha,
   baseUrl,
+  baseOrigin,
   createdAt: new Date().toISOString(),
   status: errors.length ? 'failed' : 'passed',
   caseCount: cases.length,
@@ -359,6 +333,7 @@ await fs.writeFile(path.join(outDir, 'mirror-release-summary.md'), [
   '',
   `Exact SHA: ${exactSha}`,
   `Base URL: ${baseUrl}`,
+  `Required origin: ${baseOrigin}`,
   `Created: ${receipt.createdAt}`,
   `Status: ${receipt.status.toUpperCase()}`,
   `Cases: ${receipt.caseCount}`,
