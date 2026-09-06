@@ -7,6 +7,7 @@ const visualWrapper = read('../scripts/run-continuous-spatial-proof-v19-portal-s
 const canonicalVisualWrapper = read('../scripts/run-canonical-live-visual-audit-current-home.mjs')
 const mirrorReleaseProof = read('../tests/mirror-release-proof.mjs')
 const mirrorReleaseRunner = read('../tests/mirror-release-proof-runner.mjs')
+const mirrorRealm = read('src/app/mirror/MirrorRealm.tsx')
 const mirrorMobile = read('src/app/mirror/mirror-mobile-inspection.css')
 const selectedMemory = read('src/spatial/memory/selectedMemoryContract.ts')
 const worldTypes = read('src/spatial/world/worldTypes.ts')
@@ -38,6 +39,14 @@ test('Mirror browser proof validates accepted mobile suppression without reconci
   assert.match(mirrorReleaseProof, /requestAnimationFrame\(\(\) => requestAnimationFrame\(resolve\)\)/)
   assert.match(mirrorReleaseRunner, /failed without reconciliation/)
   assert.doesNotMatch(mirrorReleaseRunner, /reconciledCases|intentional mobile Orb suppression|Replay screenshot timeout/)
+})
+
+test('Mirror replay reconciliation is bound to the real canonical Open Replay link', () => {
+  assert.match(mirrorRealm, /<Link href=\{replayHref\}>Open Replay<\/Link>/)
+  assert.match(mirrorReleaseRunner, /getByRole\('link', \{ name: 'Open Replay', exact: true \}\)/)
+  assert.match(mirrorReleaseRunner, /getAttribute\('href'\)/)
+  assert.match(mirrorReleaseRunner, /pathname\(new URL\(replayHref, page\.url\(\)\)\.toString\(\)\) !== '\/replay'/)
+  assert.doesNotMatch(mirrorReleaseRunner, /Replay this thread/)
 })
 
 test('Mirror inspector removes competing help and mobile hit owners while pinning semantic thresholds', () => {
