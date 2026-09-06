@@ -146,7 +146,12 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
     for (let zi=0; zi<zSegments; zi += 1) for (let xi=0; xi<xSegments; xi += 1) {
       const a=zi*(xSegments+1)+xi,b=a+1,c=a+xSegments+1,d=c+1; indices.push(a,b,c,b,d,c)
     }
-    const result = new THREE.BufferGeometry(); result.setAttribute('position',new THREE.Float32BufferAttribute(positions,3)); result.setAttribute('color',new THREE.Float32BufferAttribute(colors,3)); result.setIndex(indices); result.computeVertexNormals(); return result
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    result.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    result.setIndex(indices)
+    result.computeVertexNormals()
+    return result
   },[])
   return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} position={[0,0.035,0]} receiveShadow onClick={onWalk} userData={{ v165Refinement: 'smoothed-open-basin-clear-camera-corridors-no-road-groove', v167Refinement: 'single-authority-deep-canyon-basin-raised-horizon-no-overlap-islands' }}><meshPhysicalMaterial color="#587367" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.48,0.48)} roughnessMap={stone.arm} roughness={0.88} metalness={0.002} envMapIntensity={0.82} vertexColors /></mesh>
 }
@@ -181,7 +186,7 @@ function FramedFissure({side,onActivate}:{side:'ground'|'life-map';onActivate:()
   const outer=useMemo(()=>{const frame=fissureGeometry(false,!isGround);frame.holes.push(new THREE.Path(fissureGeometry(true,!isGround).getPoints(18).reverse()));const g=new THREE.ExtrudeGeometry(frame,{depth:0.10,bevelEnabled:true,bevelSize:0.016,bevelThickness:0.018,bevelSegments:2,curveSegments:4});g.computeVertexNormals();return g},[isGround])
   const field=useMemo(()=>new THREE.ShapeGeometry(fissureGeometry(true,!isGround),8),[isGround])
   const seamMotes=useMemo(()=>{const positions:number[]=[];for(let index=0;index<42;index+=1){const t=index/41,y=0.08+t*2.02,bend=Math.sin(t*Math.PI*2.7+(isGround?0.35:1.15))*0.034,width=0.012+Math.sin(t*Math.PI)*0.052,sideOffset=((index*31)%61)/60-0.5;positions.push(bend+sideOffset*width,y,0.014+(((index*29)%47)/46-0.5)*0.055)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));return g},[isGround])
-  return <group name={`home-v126-${side}-framed-fissure`} userData={{v165Refinement:'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',v167Refinement:'destination-cut-owned-by-single-basin-no-overlap'}} position={[x,isGround?0.05:0.06,isGround?-9.72:-9.80]} rotation={[-1.47,isGround?0.13:-0.13,isGround?-0.08:0.08]} scale={isGround?[0.38,0.58,0.34]:[0.37,0.59,0.34]}>
+  return <group name={`home-v126-${side}-framed-fissure`} userData={{v165Refinement:'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',v167Refinement:'destination-cut-owned-by-single-basin-no-overlap'}} position={[x,isGround?0.05:0.06,isGround?-9.72:-9.80]} rotation={[-1.47,isGround?0.13:-0.13,isGround?-0.08:0.08]} scale={isGround ? [0.38, 0.58, 0.34] : [0.37, 0.59, 0.34]}>
     <mesh name={`home-v151-${side}-retained-stone-provenance`} geometry={outer} castShadow receiveShadow><meshPhysicalMaterial color={isGround?'#3f574b':'#4b4c61'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.28,0.28)} roughnessMap={stone.arm} roughness={0.95} metalness={0.001} envMapIntensity={0.54}/></mesh>
     <mesh name={`home-v153-${side}-retired-threshold-panel`} geometry={field} position={[0,0,0.025]}><meshStandardMaterial color={isGround?'#06100b':'#0a0910'} emissive={color} emissiveIntensity={0.055} roughness={1} side={THREE.DoubleSide}/></mesh>
     <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0,0,0.10]}><pointsMaterial color={color} size={0.014} transparent opacity={0.50} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
@@ -214,7 +219,7 @@ function LivingOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boo
     {shards.map((shard,index)=><mesh key={index} position={shard.position} rotation={shard.rotation} scale={shard.scale}><tetrahedronGeometry args={[1,0]}/><meshStandardMaterial color={palette.core} emissive={palette.accent} emissiveIntensity={0.10} roughness={0.56} transparent opacity={0.46}/></mesh>)}
     <mesh name="home-v126-orb-generous-hit-target"><sphereGeometry args={[1.50,16,12]}/><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false}/></mesh>
     <pointLight color={palette.core} intensity={palette.intensity*0.82} distance={5.4} decay={2}/><pointLight position={[0.48,-0.10,0.52]} color={palette.accent} intensity={palette.intensity*0.24} distance={3.2} decay={2}/>
-    <group name={`home-v126-orb-state-${state}`} userData={{state,treatment:'governed-petal-heart-no-aura-no-orbit-rings'}}/>
+    <group name={`home-v126-orb-state-${state}`} userData={{ state, treatment: 'governed-petal-heart-no-aura-no-orbit-rings' }}/>
   </group>
 }
 
