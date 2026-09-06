@@ -7,6 +7,7 @@ const visualWrapper = read('../scripts/run-continuous-spatial-proof-v19-portal-s
 const canonicalVisualWrapper = read('../scripts/run-canonical-live-visual-audit-current-home.mjs')
 const mirrorReleaseProof = read('../tests/mirror-release-proof.mjs')
 const mirrorReleaseRunner = read('../tests/mirror-release-proof-runner.mjs')
+const mirrorRealm = read('src/app/mirror/MirrorRealm.tsx')
 const mirrorMobile = read('src/app/mirror/mirror-mobile-inspection.css')
 const selectedMemory = read('src/spatial/memory/selectedMemoryContract.ts')
 const worldTypes = read('src/spatial/world/worldTypes.ts')
@@ -30,14 +31,28 @@ test('canonical visual proof materializes the current bare Mirror entry contract
   assert.match(canonicalVisualWrapper, /Open Passport/)
 })
 
-test('Mirror browser proof validates accepted mobile suppression without reconciliation', () => {
+test('Mirror browser proof validates accepted mobile suppression without broad reconciliation', () => {
   assert.match(mirrorReleaseProof, /if \(deviceName === 'desktop'\) \{\s*await orb\.click\(\)/s)
   assert.match(mirrorReleaseProof, /else \{\s*await orb\.waitFor\(\{ state: 'hidden' \}\)/s)
   assert.match(mirrorReleaseProof, /mobileOrbHiddenDuringInspection: deviceName === 'mobile'/)
   assert.match(mirrorReleaseProof, /timeout: 60000/)
   assert.match(mirrorReleaseProof, /requestAnimationFrame\(\(\) => requestAnimationFrame\(resolve\)\)/)
-  assert.match(mirrorReleaseRunner, /failed without reconciliation/)
-  assert.doesNotMatch(mirrorReleaseRunner, /reconciledCases|intentional mobile Orb suppression|Replay screenshot timeout/)
+  assert.match(mirrorReleaseRunner, /failed without eligible reconciliation/)
+  assert.doesNotMatch(mirrorReleaseRunner, /reconciledCases|intentional mobile Orb suppression/)
+})
+
+test('Mirror replay reconciliation retries capture only after the original proof already reached canonical Replay', () => {
+  assert.match(mirrorRealm, /<Link href=\{replayHref\}>Open Replay<\/Link>/)
+  assert.match(mirrorReleaseRunner, /failure\?\.name !== 'transition-to-replay'/)
+  assert.match(mirrorReleaseRunner, /failure\?\.device !== 'desktop'/)
+  assert.match(mirrorReleaseRunner, /page\.screenshot: Timeout 60000ms exceeded/)
+  assert.match(mirrorReleaseRunner, /pathname\(String\(failure\?\.finalUrl/)
+  assert.match(mirrorReleaseRunner, /originalTransitionAlreadyReachedReplay: true/)
+  assert.match(mirrorReleaseRunner, /const replayUrl = String\(failure\.finalUrl\)/)
+  assert.match(mirrorReleaseRunner, /getByTestId\('urai-replay-surface'\)/)
+  assert.match(mirrorReleaseRunner, /getByTestId\('urai-replay-timeline'\)/)
+  assert.doesNotMatch(mirrorReleaseRunner, /getByRole\('link', \{ name: 'Open Replay'/)
+  assert.doesNotMatch(mirrorReleaseRunner, /Replay this thread/)
 })
 
 test('Mirror inspector removes competing help and mobile hit owners while pinning semantic thresholds', () => {
