@@ -64,6 +64,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('serialized Orb and Focus targets meet 48 CSS pixel minimum', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.getByRole('button', { name: /open orb travel controls/i })

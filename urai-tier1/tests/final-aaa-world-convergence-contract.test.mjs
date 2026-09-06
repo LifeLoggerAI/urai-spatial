@@ -14,7 +14,8 @@ const worldEvents = read('src/spatial/world/worldEvents.ts')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
+const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const focusClient = read('src/app/focus/FocusChamberClient.tsx')
 const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
@@ -54,19 +55,31 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeRuntime, /data-home-visual-owner="asset-driven-personalized-sanctuary"/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-visual-owner="final-coherent-sanctuary"/)
   assert.match(assetHome, /HomeWorldProduction/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
-  assert.match(homeProduction, /name="home-orb-sanctuary"/)
+  assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
+  assert.match(homeProduction, /export function HomeWorldProductionV70/)
+  assert.match(homeProduction, /<HomeV76Sanctuary/)
   assert.match(homeProduction, /data-testid="urai-home-webgl-orb"/)
-  assert.match(homeProduction, /<SacredOrb state=\{props\.orbState\} reducedMotion=\{props\.reducedMotion\} onOpen=\{props\.onOrb\} \/>/)
-  assert.match(homeProduction, /resolveOrbSensoryOutput\(state, reducedMotion, true\)/)
-  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT,\s*listener\)/)
+  assert.match(homeArt, /export function HomeV76Sanctuary/)
+  assert.match(homeArt, /function LivingOrb/)
+  assert.match(homeArt, /name="home-v126-apse-integrated-orb"/)
+  assert.match(homeArt, /const source = useGLTF\(GOVERNED_ORB\)\.scene/)
+  assert.match(homeArt, /name="home-v126-orb-memory-motes"/)
+  assert.match(homeArt, /treatment: 'governed-petal-heart-no-aura-no-orbit-rings'/)
+  assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, listener\)/)
   assert.match(homeProduction, /data-home-orb-state=\{orbState\}/)
-  assert.match(homeProduction, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState,reducedMotion,true\)\.animation\}/)
-  assert.match(homeProduction, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOpen\(\) \}\}/)
-  assert.match(homeProduction, /const ORB_MODEL = '\/assets\/urai\/generated\/models\/urai-orb-avatar-v1\.glb'/)
-  assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /name="home-life-map-physical-portal"/)
-  assert.doesNotMatch(homeProduction, /name="home-only-companion"/)
+  assert.match(homeProduction, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState, reducedMotion, true\)\.animation\}/)
+  assert.match(homeArt, /onClick=\{\(event\) => \{ event\.stopPropagation\(\); onOrb\(\) \}\}/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-animation-owner', 'v126-ground-owned-apse-sanctuary'\)/)
+  assert.doesNotMatch(homeArt, /function Beam\(|function StoneMass\(|octahedronGeometry|icosahedronGeometry|torusGeometry|capsuleGeometry/)
+  assert.match(homeArt, /function FramedFissure/)
+  assert.match(homeArt, /home-v126-\$\{side\}-framed-fissure/)
+  assert.match(homeArt, /<FramedFissure side="ground" onActivate=\{onGround\}/)
+  assert.match(homeArt, /<FramedFissure side="life-map" onActivate=\{onLifeMap\}/)
+  assert.doesNotMatch(homeArt, /<GovernedModel|name="home-only-companion"/)
+  assert.doesNotMatch(homeArt, /RoundedBox|#37e5ff|#48dfff|#6cf4ff/i)
+  assert.doesNotMatch(homeArt, /<Canvas/)
+  assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)
   assert.match(routeOwnerConvergence, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
   assert.match(routeOwnerConvergence, /background:\s*transparent\s*!important/)
   assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
@@ -161,10 +174,10 @@ test('Life Map renders luminous spatial lenses with dominant selected mode and r
     /function MemoryLens/,
     /name=\{`life-map-memory-\$\{node\.id\}`\}/,
     /data-depth-anchor="true"/,
-    /sphereGeometry args=\{\[\.42 \+ node\.intensity \* \.16, 32, 32\]\}/,
+    /sphereGeometry args=\{\[\.30 \+ node\.intensity \* \.10, 28, 28\]\}/,
     /meshPhysicalMaterial color=\{color\} emissive=\{color\}/,
     /emissiveIntensity=\{active \? 1\.5 : \.55\}/,
-    /const scale = active \? 1\.7 : muted \? \.72 : 1/,
+    /const scale = active \? 1\.34 : muted \? \.58 : \.82/,
     /name="life-map-anchored-paths"/,
     /activeId=\{selected\?\.id \|\| null\}/,
     /name="life-map-depth-near"/,

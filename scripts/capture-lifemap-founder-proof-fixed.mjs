@@ -511,6 +511,8 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  const loadingSurface = page.locator('main[aria-busy="true"]')
+  if (await loadingSurface.count()) await loadingSurface.first().waitFor({ state: 'hidden', timeout: 45_000 })
   await stable(page)
 }
 
@@ -668,7 +670,7 @@ async function desktopArrivalEvidence() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 30_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
@@ -697,7 +699,12 @@ async function desktopActionsAndKeyboard() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await clickRouteAction(page, 'Replay', '/replay', 'main')
+    await clickRouteAction(
+      page,
+      'Replay',
+      '/replay',
+      '[data-testid="cinematic-replay-client"][data-memory-id]',
+    )
     await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)

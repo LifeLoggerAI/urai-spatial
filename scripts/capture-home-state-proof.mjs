@@ -149,15 +149,17 @@ async function capture(state, options = {}) {
 
     record.status = response?.status()
     record.canvasReady = await owner.getAttribute('data-home-assets-ready')
+    record.canvasCount = await owner.locator('canvas').count()
     record.primaryOwner = await owner.getAttribute('data-home-primary-owner')
     record.visibleWorld = await owner.getAttribute('data-home-visible-world')
     record.movement = await owner.getAttribute('data-home-movement')
     record.runtimeAssets = await owner.getAttribute('data-home-runtime-assets')
     record.pointerLock = await page.evaluate(() => document.pointerLockElement === null)
     record.accessibleRuntimeText = (await owner.textContent()) || ''
-    record.semanticControls = await page.locator('.home-semantic-navigation button').evaluateAll((buttons) => buttons.map((button) => ({
-      label: button.getAttribute('aria-label'),
-      text: button.textContent,
+    record.semanticControls = await page.locator('.home-semantic-navigation [data-testid^="home-semantic-"]').evaluateAll((controls) => controls.map((control) => ({
+      label: control.getAttribute('aria-label'),
+      text: control.textContent,
+      tag: control.tagName.toLowerCase(),
     })))
     record.accessibilityPassed = record.semanticControls.length >= 3
       && record.semanticControls.some((control) => control.label === 'Open URAI Orb companion')
@@ -181,8 +183,9 @@ async function capture(state, options = {}) {
 
     record.passed = record.status === 200
       && record.canvasReady === 'true'
+      && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+      && record.visibleWorld === 'v122-open-authored-canyon-contained-orb'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
       && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
@@ -210,17 +213,47 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
   page.on('pageerror', (error) => pageErrors.push(String(error)))
   const id = reducedMotion === 'reduce' ? 'orb-lifecycle-reduced-motion' : 'orb-lifecycle-production-ui'
   const record = { id, pageErrors, passed: false, reducedMotion }
+  const providerBoundaryRequests = []
+  record.providerBoundaryRequests = providerBoundaryRequests
+  await page.route('**/api/urai/orb/openai', async (route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.continue()
+    let payload = {}
+    try { payload = request.postDataJSON() || {} } catch {}
+    providerBoundaryRequests.push({ message: payload?.message ?? null, authorization: request.headers().authorization ? 'present' : 'absent' })
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'PROOF_UNEXPECTED_PROVIDER_REQUEST' }),
+    })
+  })
   try {
     await page.addInitScript(() => {
       window.__uraiObservedOrbStates = []
+      window.__uraiObservedOrbFrames = []
       window.addEventListener('urai:orb-state', (event) => {
-        window.__uraiObservedOrbStates.push(event?.detail?.state ?? 'unknown')
+        const eventState = event?.detail?.state ?? 'unknown'
+        window.__uraiObservedOrbStates.push(eventState)
+        let frame = 0
+        const sampleRenderedState = () => {
+          const owner = document.querySelector('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+          const renderedState = owner?.getAttribute('data-home-orb-state') ?? null
+          const renderedClip = owner?.getAttribute('data-home-orb-clip') ?? null
+          window.__uraiObservedOrbFrames.push({ eventState, renderedState, renderedClip, frame })
+          if (eventState === 'speaking'
+            && (renderedState !== 'speaking' || renderedClip !== 'orb-speaking')
+            && frame < 180) {
+            frame += 1
+            window.requestAnimationFrame(sampleRenderedState)
+          }
+        }
+        window.requestAnimationFrame(sampleRenderedState)
       })
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = await waitForHomeReady(page)
     const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-    await openOrb.click()
+    await openOrb.click({ noWaitAfter: true })
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
@@ -256,11 +289,20 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await consent.check()
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
-    await page.getByRole('button', { name: 'Send' }).click()
-    await page.locator('section[aria-label="Orb response"]').waitFor({ state: 'visible', timeout: 20_000 })
-    await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'speaking', ownerSelector)
-    record.respondingState = await owner.getAttribute('data-home-orb-state')
-    record.respondingClip = await owner.getAttribute('data-home-orb-clip')
+    await Promise.all([
+      page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
+        && sample.renderedState === 'speaking'
+        && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
+      page.getByRole('button', { name: 'Send' }).click({ noWaitAfter: true }),
+    ])
+    const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
+      && sample.renderedState === 'speaking'
+      && sample.renderedClip === 'orb-speaking') ?? null)
+    record.respondingState = respondingSample?.renderedState ?? null
+    record.respondingClip = respondingSample?.renderedClip ?? null
+    const responsePanel = page.locator('section[aria-label="Orb response"]')
+    await responsePanel.waitFor({ state: 'visible', timeout: 20_000 })
+    record.responseText = (await responsePanel.textContent()) || ''
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
@@ -290,6 +332,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.closedState === 'idle'
       && record.closedClip === 'orb-breathe'
       && record.lifecyclePassed
+      && record.providerBoundaryRequests.length === 0
+      && record.responseText.includes('Deterministic local fallback — no external AI provider processed this message.')
       && record.visual?.available === true
       && record.visual.viewportCoverage >= receipt.visualGate.minimumViewportCoverage
       && record.visual.luminanceRange >= receipt.visualGate.minimumLuminanceRange
@@ -326,13 +370,15 @@ try {
   await settleAnimationFrames(transitionPage, 30)
   transition.status = response?.status()
   transition.canvasReady = await owner.getAttribute('data-home-assets-ready')
+  transition.canvasCount = await owner.locator('canvas').count()
   transition.primaryOwner = await owner.getAttribute('data-home-primary-owner')
   transition.visibleWorld = await owner.getAttribute('data-home-visible-world')
   transition.pointerLock = await transitionPage.evaluate(() => document.pointerLockElement === null)
   transition.passed = transition.status === 200
     && transition.canvasReady === 'true'
+    && transition.canvasCount === 1
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'moonlit-sacred-tech-sanctuary'
+    && transition.visibleWorld === 'v122-open-authored-canyon-contained-orb'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {

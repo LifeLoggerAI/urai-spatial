@@ -10,7 +10,7 @@ const sensoryLayer = read('src/spatial/scene/SpatialSensoryLayer.tsx')
 const worldLayer = read('src/spatial/scene/SpatialWorldAssetLayer.tsx')
 const homeRouteOwner = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeWorldEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeWorld = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeWorld = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const audioRuntime = read('src/spatial/audio/SpatialAmbientRuntime.tsx')
 const audioController = read('src/spatial/audio/useAudioController.ts')
 const receipt = JSON.parse(read('../operations/assets/production-receipts/sensory-layer-v1.json'))
@@ -97,11 +97,11 @@ test('loading animation timing is relative to the mounted sensory layer', () => 
   assert.doesNotMatch(sensoryLayer, /\(clock\.elapsedTime \* 1000\) \/ loadingDurationMs/)
 })
 
-test('production audio remains consent-controlled on the live Sacred Home owner', () => {
+test('production audio remains consent-controlled on the live final Home owner', () => {
   const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
-  assert.match(homeWorldEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
-  assert.match(homeWorld, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
+  assert.match(homeWorldEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
+  assert.match(homeWorld, /data-home-visible-world="v122-open-authored-canyon-contained-orb"/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(liveHome, /urai-ambient-bed-v1\.opus/)

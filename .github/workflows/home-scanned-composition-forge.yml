@@ -1,78 +1,87 @@
 name: Home Scanned Composition Verification
-
 on:
-  push:
-    branches: [main]
-    paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
-      - "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
-      - "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb"
-      - "operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json"
-      - ".github/workflows/home-scanned-composition-forge.yml"
   pull_request:
     branches: [main]
     paths:
-      - "urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx"
-      - "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
-      - "urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb"
-      - "operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json"
-      - ".github/workflows/home-scanned-composition-forge.yml"
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
+      - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
+      - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
+      - 'urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs'
+      - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
+      - 'operations/assets/home-v48-production-asset-provenance.json'
+      - 'operations/assets/third-party/**'
+      - 'urai-tier1/public/assets/urai/home-production/cc0/**'
+      - '.github/workflows/home-scanned-composition-forge.yml'
+  push:
+    branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: home-scanned-composition-verification-${{ github.ref }}-${{ github.sha }}
+  group: home-scanned-current-${{ github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
-
 jobs:
   verify-home:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 20
+    env:
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.EXPECTED_SHA }}
           fetch-depth: 1
           persist-credentials: false
-          show-progress: false
-
-      - name: Verify exact clean candidate
+      - name: Verify exact V125 source and fail-closed candidate state
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
-
-      - name: Verify materialized Home composition and governed inputs
+          grep -Fq 'HomeWorldProductionV70 as HomeWorldProduction' urai-tier1/src/spatial/layout/HomeWorldProduction.tsx
+          grep -Fq 'function SculptedCanyonGround(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'function FramedFissure(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'function LivingOrb(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-continuous-walkable-terrace-network' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-bounded-geological-edge-masses' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-orb-memory-motes' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq 'home-v126-layered-apse-orb-cradle' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          grep -Fq "data-home-art-certification', 'v126-retained-pixels-pending-not-certified" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          ! grep -Eq 'PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified' urai-tier1/src/app/AssetDrivenHomeWorld.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with: { version: 10.0.0, run_install: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Verify current Home/Ground/Life Map contracts
+        working-directory: urai-tier1
+        run: |
+          node --test --test-concurrency=1 tests/home-ground-lifemap-art-bible-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-v88-retained-pixel-repair-contract.test.mjs
+          node --test --test-concurrency=1 tests/embodied-exploration-contract.test.mjs
+      - name: Verify committed asset provenance remains local and receipted
         shell: bash
         run: |
           set -euo pipefail
-          test -f urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb
-          test -f urai-tier1/public/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb
-          test -f operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json
-          grep -F 'HOME_SCANNED_COMPOSITION_V1' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'home-entry-chamber-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          grep -F 'polyhaven-fern-02-geometry-v1.glb' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F 'CINEMATIC_HOME_ART_MOBILE' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-          ! grep -F '<cylinderGeometry' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
-
-      - name: Verify scanned fern receipt identity
-        shell: bash
+          test -f operations/assets/home-v48-production-asset-provenance.json
+          test -f operations/assets/third-party/home-photographic-pbr-v1.json
+          test -f operations/assets/third-party/home-photographic-material-promotion-v16.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          for (const file of ['operations/assets/home-v48-production-asset-provenance.json','operations/assets/third-party/home-photographic-pbr-v1.json','operations/assets/third-party/home-photographic-material-promotion-v16.json']) {
+            const data=JSON.parse(fs.readFileSync(file,'utf8'));
+            if (data.runtimeExternalRequests === true || data.runtimeFetchesPolyHavenApi === true) throw new Error(`${file} permits runtime external fetches`);
+          }
+          NODE
+      - name: Prove clean exact head
         run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import hashlib
-          import json
-          from pathlib import Path
-
-          receipt = json.loads(Path('operations/assets/third-party/home-polyhaven-fern-02-geometry-v1.json').read_text())
-          asset = Path(receipt['output'])
-          assert asset.is_file(), asset
-          digest = hashlib.sha256(asset.read_bytes()).hexdigest()
-          assert digest == receipt['outputSha256']
-          assert digest == '9e3d29b1f917ec9f6e72f713fc7131f1d413ffecfbd3c96e7d72f92529f31a87'
-          assert receipt['runtimeExternalRequests'] is False
-          PY
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"

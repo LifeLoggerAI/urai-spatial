@@ -36,14 +36,14 @@ const pairs = [
     legacy: 'urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb',
   },
   {
-    id: 'life-map-galaxy-skybox',
-    current: 'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr',
-    legacy: 'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr',
-  },
-  {
     id: 'global-cinematic-material-pack',
     current: 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
     legacy: 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
+  },
+  {
+    id: 'passport-status-room',
+    current: 'urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb',
+    legacy: 'urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb',
   },
 ]
 
@@ -55,8 +55,12 @@ const unmatchedCurrent = [
   'urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav',
 ]
 
+// The former Life Map HDR is intentionally not a current launch candidate.
+// assetManifest.ts marks it `future` and routes Life Map through its governed
+// fallback while the final memory-star GLB is ready. Preserve the pinned HDR
+// here as explicit legacy-only evidence rather than fabricating a current file.
 const unmatchedLegacy = [
-  'urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb',
+  'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr',
 ]
 
 fs.mkdirSync(outputRoot, { recursive: true })

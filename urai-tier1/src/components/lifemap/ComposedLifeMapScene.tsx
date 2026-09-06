@@ -13,7 +13,7 @@ import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSyste
 const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
 const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
-const SELECTED_MEMORY_STANDOFF = 5.8;
+const SELECTED_MEMORY_STANDOFF = 7.4;
 const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as const;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
@@ -74,7 +74,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
         positionGoal.current.set(0, 2.15, 16.6);
         targetGoal.current.set(0, 0.2, -4.6);
       } else {
-        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.34);
+        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.48);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.42;
       }
@@ -181,20 +181,25 @@ function SoftwareRendererCadence({ active, documentVisible }: { active: boolean;
       return;
     }
 
-    // SwiftShader/software WebGL must remain truly 3D without monopolizing the main thread.
-    // Bootstrap enough real frames for render proof, then sustain a bounded ten-FPS cadence.
+    // SwiftShader/software WebGL and reduced-motion sessions must remain truly 3D
+    // without monopolizing the main thread that owns semantic navigation.
+    // Bootstrap enough real frames for render proof, then sustain a bounded cadence.
     setFrameloop("demand");
     let disposed = false;
     const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
       if (!disposed) invalidate();
     }, delay));
-    const interval = window.setInterval(() => {
-      if (!disposed) invalidate();
-    }, 100);
+    let cadenceTimer = 0;
+    const renderNext = () => {
+      if (disposed) return;
+      invalidate();
+      cadenceTimer = window.setTimeout(renderNext, 250);
+    };
+    cadenceTimer = window.setTimeout(renderNext, 250);
     return () => {
       disposed = true;
       bootstrap.forEach((timer) => window.clearTimeout(timer));
-      window.clearInterval(interval);
+      window.clearTimeout(cadenceTimer);
     };
   }, [active, documentVisible, invalidate, setFrameloop]);
   return null;
@@ -221,11 +226,11 @@ export default function ComposedLifeMapScene() {
   const router = useRouter();
   const params = useSearchParams();
   const adaptiveProfile = useAdaptiveSpatialQuality();
-  const [softwareRenderer, setSoftwareRenderer] = useState(false);
+  const [softwareRenderer, setSoftwareRenderer] = useState<boolean | null>(null);
   const profile = useMemo(() => ({
     ...adaptiveProfile,
-    tier: softwareRenderer ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
-    pixelRatioMax: softwareRenderer ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
+    tier: softwareRenderer === true ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
+    pixelRatioMax: softwareRenderer === true ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
     shadows: false,
     postprocessing: false,
     antialias: false,
@@ -359,8 +364,8 @@ export default function ComposedLifeMapScene() {
     data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"}
     data-life-map-production-world="true"
     data-webgl-state={webglState}
-    data-software-renderer={softwareRenderer ? "true" : "false"}
-    data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}
+    data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}
+    data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}
     data-home-companion-owned="false"
   >
     <h1 className="sr-only">URAI Life Map private universe</h1>
@@ -371,7 +376,7 @@ export default function ComposedLifeMapScene() {
       camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
       dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
-      frameloop={profile.documentVisible ? "always" : "never"}
+      frameloop={profile.documentVisible ? "demand" : "never"}
       gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }}
       onCreated={({ gl }) => {
         setSoftwareRenderer(isSoftwareWebGLRenderer(gl));
@@ -381,7 +386,7 @@ export default function ComposedLifeMapScene() {
         gl.setClearColor("#02050b", 1);
       }}
     >
-      <SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />
+      <SoftwareRendererCadence active={softwareRenderer !== false || profile.reducedMotion} documentVisible={profile.documentVisible} />
       <WebGLRecoveryBridge onStateChange={setWebglState} />
       <Suspense fallback={null}>
         <LifeMapProductionWorld

@@ -4,7 +4,10 @@ const homeOwnerSelector = '.urai-asset-home-world[data-home-primary-owner="asset
 const homeAmbiencePattern = /\/assets\/urai\/generated\/audio\/home-ambient-v1\.opus(?:[?#]|$)/
 
 test.describe('Home sensory consent boundary evidence', () => {
-  test.describe.configure({ timeout: 90_000 })
+  // The exact-head software-rendered Actions host can spend more than a minute
+  // forming Home before the consent transition and evidence attachment complete.
+  // Keep the assertions unchanged and allow the proven host envelope to finish.
+  test.describe.configure({ timeout: 150_000 })
 
   test('production ambience remains silent before consent and activates only after explicit consent', async ({ page }) => {
     const ambienceRequests: string[] = []

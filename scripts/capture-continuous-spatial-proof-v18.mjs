@@ -13,16 +13,21 @@ const expectReady = process.env.URAI_HOME_EXPECT_READY === 'true'
 const ownerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
 const fallbackSelector = '.urai-home-asset-fallback, .urai-final-home-world, .urai-genesis-home__world'
 const orbStates = ['dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking', 'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition']
-const orbClips = {
+const orbSensoryClips = {
+  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',
+  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',
+  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',
+}
+const orbModelClips = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
   thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
   calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
 }
 
 const destinationTelemetry = {
-  orb: { x: 0, z: -0.65, radius: 1.8, attribute: 'data-home-distance-orb' },
-  ground: { x: -4.55, z: -6.55, radius: 2.2, attribute: 'data-home-distance-ground' },
-  'life-map': { x: 4.55, z: -6.65, radius: 2.2, attribute: 'data-home-distance-life-map' },
+  orb: { x: -0.18, z: -6.90, radius: 2.35, attribute: 'data-home-distance-orb' },
+  ground: { x: -4.85, z: -8.25, radius: 2.65, attribute: 'data-home-distance-ground' },
+  'life-map': { x: 4.85, z: -8.25, radius: 2.65, attribute: 'data-home-distance-life-map' },
 }
 const movementKeys = { forward: 'w', back: 's', left: 'a', right: 'd' }
 const movementButtonNames = { forward: 'Move forward', back: 'Move backward', left: 'Move left', right: 'Move right' }
@@ -133,9 +138,47 @@ async function waitForAssetHome(page, { ready = true } = {}) {
         && owner.getAttribute('data-home-interaction-ready') === 'true'
         && owner.getAttribute('data-home-ready') === 'true'
         && owner.getAttribute('data-home-input-owner') === 'window-capture-movement'
-        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel'
+        && owner.getAttribute('data-home-telemetry-owner') === 'embodied-motion-kernel-v66'
         && !loadingVisible
-    }, ownerSelector, { timeout: 45_000 })
+    }, ownerSelector, { timeout: 45_000 }).catch(async (error) => {
+      const diagnostic = await page.evaluate((selector) => {
+        const owner = document.querySelector(selector)
+        const attributes = owner ? Object.fromEntries([...owner.attributes].map((entry) => [entry.name, entry.value])) : null
+        const retiredLoadingClasses = [
+          ['home', 'world', 'loading'].join('-'),
+          ['home', 'world', 'loading', 'canvas'].join('-'),
+        ]
+        const loading = [
+          ...document.querySelectorAll('.home-runtime-loading'),
+          ...retiredLoadingClasses.flatMap((className) => [...document.getElementsByClassName(className)]),
+        ].map((node) => {
+          const style = getComputedStyle(node)
+          const rect = node.getBoundingClientRect()
+          return { className: node.className, display: style.display, visibility: style.visibility, opacity: style.opacity, width: rect.width, height: rect.height }
+        })
+        const loadingVisible = loading.some((entry) => entry.display !== 'none'
+          && entry.visibility !== 'hidden'
+          && Number.parseFloat(entry.opacity || '1') > 0.02
+          && entry.width > 4
+          && entry.height > 4)
+        const readinessSatisfied = attributes?.['data-home-assets-ready'] === 'true'
+          && attributes?.['data-home-input-ready'] === 'true'
+          && attributes?.['data-home-interaction-ready'] === 'true'
+          && attributes?.['data-home-ready'] === 'true'
+          && attributes?.['data-home-input-owner'] === 'window-capture-movement'
+          && attributes?.['data-home-telemetry-owner'] === 'embodied-motion-kernel-v66'
+          && !loadingVisible
+        return { attributes, loading, loadingVisible, readinessSatisfied, canvasCount: document.querySelectorAll('canvas').length, title: document.title, url: location.href }
+      }, ownerSelector)
+      const screenshot = `home-readiness-timeout-${safeName(exactHead.slice(0, 12))}.png`
+      await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: true }).catch(() => {})
+      receipt.errors.push({ id: 'home-readiness-timeout', screenshot, diagnostic })
+      // A heavily loaded CI renderer can cross the readiness boundary while
+      // Playwright is dispatching its timeout. Accept only when the same exact
+      // predicate is demonstrably true in the retained diagnostic snapshot.
+      if (diagnostic.readinessSatisfied) return
+      throw new Error(`Home readiness timed out: ${JSON.stringify(diagnostic)}; cause=${String(error)}`)
+    })
   }
   await waitFrames(page, 3)
 }
@@ -156,6 +199,7 @@ async function verifyHome(page, expected) {
     reviewFixture: await owner.getAttribute('data-home-review-fixture'),
     orbState: await owner.getAttribute('data-home-orb-state'),
     orbClip: await owner.getAttribute('data-home-orb-clip'),
+    orbModelClip: await owner.getAttribute('data-home-orb-model-clip'),
     animationOwner: await owner.getAttribute('data-home-animation-owner'),
     assetsReady: await owner.getAttribute('data-home-assets-ready'),
     fallbackVisible: await visibleCount(page.locator(fallbackSelector)),
@@ -167,7 +211,8 @@ async function verifyHome(page, expected) {
   const passed = result.ownerCount === 1 && result.canvasVisible && result.canvasWidth >= 240 && result.canvasHeight >= 240
     && result.assetMode === requiredMode && result.personalizationMode === expected.mode
     && result.reviewFixture === (expected.fixture || 'none') && result.orbState === expected.orbState
-    && result.orbClip === orbClips[expected.orbState] && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
+    && result.orbClip === orbSensoryClips[expected.orbState] && result.orbModelClip === orbModelClips[expected.orbState]
+    && result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'
     && result.assetsReady === 'true' && result.fallbackVisible === 0
     && result.semanticButtons === 3 && result.semanticVisible === 0 && result.discreetControls === 2
   return { ...result, passed }

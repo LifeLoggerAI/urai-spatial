@@ -108,3 +108,31 @@
   .urai-world-atmosphere > span { transition: none; }
   .urai-world-atmosphere__weather { animation: none; }
 }
+
+
+/* V35 Home owns its physical sky/fog; suppress shared screen-space horizon bars. */
+.urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__horizon,
+.urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__threshold {
+  opacity: 0;
+  box-shadow: none;
+}
+.urai-world-atmosphere[data-realm='home'] .urai-world-atmosphere__sky { opacity: .22; }
+
+
+/* V41 Ground owns physical fog and depth. Shared screen-space layers must never create a retained-pixel horizon band. */
+.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__horizon,
+.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__threshold {
+  display: none !important;
+  opacity: 0 !important;
+  box-shadow: none !important;
+}
+.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__sky {
+  opacity: .12;
+  mix-blend-mode: screen;
+}
+.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__weather {
+  opacity: .18;
+}
+.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__depth {
+  box-shadow: inset 0 0 72px rgba(0,0,0,.12), inset 0 -8vh 62px rgba(0,0,0,.08);
+}

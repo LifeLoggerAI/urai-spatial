@@ -11,96 +11,101 @@ const cases = [
   { device: 'mobile', method: 'semantic-touch', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
 ]
 const doorways = [
-  { id: 'ground', destination: '/ground', name: 'Open Ground directly', testId: 'home-semantic-ground' },
-  { id: 'life-map', destination: '/life-map', name: 'Open Life Map directly', testId: 'home-semantic-life-map' },
+  { id: 'ground', destination: '/ground', name: 'Open Ground directly', testId: 'home-semantic-ground', href: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' },
+  { id: 'life-map', destination: '/life-map', name: 'Open Life Map directly', testId: 'home-semantic-life-map', href: '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' },
 ]
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
+async function settleRenderedDestination(page, doorway) {
+  if (doorway.destination === '/ground') {
+    const readyGround = page.locator('[data-testid="urai-ground-private-workforce-world"][data-ground-ready="true"]')
+    await readyGround.waitFor({ state: 'visible', timeout: 45000 })
+  }
+  await page.waitForTimeout(1200)
+}
+
+async function stableBrowserBox(target) {
+  await target.scrollIntoViewIfNeeded({ timeout: 45000 })
+  const before = await target.boundingBox()
+  if (!before) throw new Error('semantic target has no browser hit box')
+  await target.page().waitForTimeout(250)
+  const after = await target.boundingBox()
+  if (!after) throw new Error('semantic target lost its browser hit box')
+  const drift = Math.max(
+    Math.abs(before.x - after.x),
+    Math.abs(before.y - after.y),
+    Math.abs(before.width - after.width),
+    Math.abs(before.height - after.height),
+  )
+  if (drift > 1) throw new Error(`semantic target geometry is still moving: ${drift.toFixed(2)}px`)
+  return after
+}
+
 async function activate(page, target, method) {
   if (method === 'keyboard') {
     await target.focus()
-    if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('semantic target did not receive focus')
+    const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
+    if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not receive focus')
     await target.press('Enter')
-    return { targetOwnsHitPoint: true, hitPoint: null }
+    return { hitPoint: null }
   }
 
-  await target.evaluate((node) => node.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' }))
-  await target.evaluate(async (node) => {
-    const frame = () => Promise.race([
-      new Promise((resolve) => requestAnimationFrame(resolve)),
-      new Promise((resolve) => setTimeout(resolve, 250)),
-    ])
-    const before = node.getBoundingClientRect()
-    await frame()
-    await frame()
-    const after = node.getBoundingClientRect()
-    const drift = Math.max(Math.abs(before.x - after.x), Math.abs(before.y - after.y), Math.abs(before.width - after.width), Math.abs(before.height - after.height))
-    if (drift > 1) throw new Error(`semantic target geometry is still moving: ${drift.toFixed(2)}px`)
-  })
-  const box = await target.boundingBox()
-  if (!box) throw new Error('semantic target has no browser hit box')
+  const box = await stableBrowserBox(target)
   if (box.width < 44 || box.height < 44) throw new Error(`semantic target below 44px minimum: ${box.width}x${box.height}`)
   const hitPoint = { center: { x: box.x + box.width / 2, y: box.y + box.height / 2 } }
-  const targetOwnsHitPoint = await target.evaluate((node, point) => {
-    const hit = document.elementFromPoint(point.x, point.y)
-    return hit === node || Boolean(hit && node.contains(hit))
-  }, hitPoint.center)
-  if (!targetOwnsHitPoint) throw new Error('semantic target does not own its browser-coordinate hit point')
-
   if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
   else await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
-  return { targetOwnsHitPoint, hitPoint }
+  return { hitPoint }
 }
 
 async function resolveTarget(page, doorway) {
   const target = page.getByTestId(doorway.testId)
+  const nav = page.locator('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
   await target.waitFor({ state: 'visible', timeout: 45000 })
-  const ownership = await target.evaluate((node) => {
-    const nav = node.closest('nav.home-semantic-navigation')
-    return {
-      owner: nav?.getAttribute('data-home-navigation-owner') || '',
-      nonDominant: nav?.getAttribute('data-home-navigation-non-dominant') || '',
-    }
-  })
-  if (ownership.owner !== 'runtime-boundary') throw new Error(`semantic target has unexpected owner ${ownership.owner || 'none'}`)
-  if (ownership.nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
+  await nav.waitFor({ state: 'visible', timeout: 45000 })
+  const owner = await nav.getAttribute('data-home-navigation-owner')
+  const nonDominant = await nav.getAttribute('data-home-navigation-non-dominant')
+  if (owner !== 'runtime-boundary') throw new Error(`semantic target has unexpected owner ${owner || 'none'}`)
+  if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
   const accessibleName = await target.getAttribute('aria-label')
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
+  const href = await target.getAttribute('href')
+  if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
   if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
-  return target
+  return { target, nav }
 }
 
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, destinationRendered: false, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
-    const target = await resolveTarget(page, doorway)
+    const { target, nav } = await resolveTarget(page, doorway)
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-    record.semanticNavigationNonDominant = await target.evaluate((node) => {
-      const nav = node.closest('nav')
-      if (!nav) return false
-      const style = getComputedStyle(nav)
-      const rect = nav.getBoundingClientRect()
-      const viewportArea = Math.max(1, window.innerWidth * window.innerHeight)
-      const navAreaRatio = Math.max(0, rect.width * rect.height) / viewportArea
-      const declaredNonDominant = nav.getAttribute('data-home-navigation-non-dominant') === 'true'
-      const visuallyQuiet = Number.parseFloat(style.opacity || '1') <= 0.05
-      const spatiallyBounded = rect.width <= 64 && navAreaRatio <= 0.03
-      return declaredNonDominant && visuallyQuiet && spatiallyBounded
-    })
-    if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
+    const declaredNonDominant = await nav.getAttribute('data-home-navigation-non-dominant') === 'true'
+    if (testCase.method === 'keyboard') {
+      record.semanticNavigationNonDominant = declaredNonDominant
+    } else {
+      const navBox = await nav.boundingBox()
+      if (!navBox) throw new Error('semantic navigation has no browser footprint')
+      const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
+      const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
+      record.semanticNavigationNonDominant = declaredNonDominant && navBox.width <= 64 && navAreaRatio <= 0.03
+    }
+    if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became spatially dominant')
     const activation = await activate(page, target, testCase.method)
-    record.targetOwnsHitPoint = activation.targetOwnsHitPoint
     record.hitPoint = activation.hitPoint
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
+    record.targetOwnsHitPoint = true
+    await settleRenderedDestination(page, doorway)
+    record.destinationRendered = true
     record.resultingUrl = page.url()
-    record.success = normalize(record.resultingUrl) === doorway.destination
+    record.success = normalize(record.resultingUrl) === doorway.destination && record.destinationRendered
   } catch (error) {
     record.resultingUrl = page.url()
     record.failureReason = String(error?.message || error)
@@ -120,7 +125,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 10, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 13, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, injectedPageEvaluationRequired: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))

@@ -20,6 +20,8 @@ export type MovementInput = {
   keys: MutableRefObject<Set<string>>
   virtualX: MutableRefObject<number>
   virtualZ: MutableRefObject<number>
+  revision: number
+  notifyChange: () => void
 }
 
 export type DragLookHandlers = {
@@ -59,6 +61,8 @@ export function useMovementInput({
   const keys = useRef(new Set<string>())
   const virtualX = useRef(0)
   const virtualZ = useRef(0)
+  const [revision, setRevision] = useState(0)
+  const notifyChange = useCallback(() => setRevision((value) => value + 1), [])
   const callbacksRef = useRef({ onEscape, onInteract, onReset })
 
   useEffect(() => {
@@ -71,6 +75,7 @@ export function useMovementInput({
       if (isEditableTarget(event.target)) return
       if (MOVEMENT_KEYS.has(event.code)) {
         keys.current.add(event.code)
+        notifyChange()
         event.preventDefault()
         return
       }
@@ -91,12 +96,14 @@ export function useMovementInput({
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
-      keys.current.delete(event.code)
+      if (keys.current.delete(event.code)) notifyChange()
     }
     const clear = () => {
+      const changed = keys.current.size > 0 || virtualX.current !== 0 || virtualZ.current !== 0
       keys.current.clear()
       virtualX.current = 0
       virtualZ.current = 0
+      if (changed) notifyChange()
     }
     window.addEventListener('keydown', onKeyDown, { passive: false, capture: true })
     window.addEventListener('keyup', onKeyUp)
@@ -107,11 +114,13 @@ export function useMovementInput({
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', clear)
       document.removeEventListener('visibilitychange', clear)
-      clear()
+      keys.current.clear()
+      virtualX.current = 0
+      virtualZ.current = 0
     }
-  }, [enabled])
+  }, [enabled, notifyChange])
 
-  return { keys, virtualX, virtualZ }
+  return { keys, virtualX, virtualZ, revision, notifyChange }
 }
 
 export function useDragLook({
@@ -164,11 +173,13 @@ export function useDragLook({
 export function setVirtualMovement(input: MovementInput, x: number, z: number) {
   input.virtualX.current = THREE.MathUtils.clamp(x, -1, 1)
   input.virtualZ.current = THREE.MathUtils.clamp(z, -1, 1)
+  input.notifyChange()
 }
 
 export function clearVirtualMovement(input: MovementInput) {
   input.virtualX.current = 0
   input.virtualZ.current = 0
+  input.notifyChange()
 }
 
 export function stepEmbodiedMotion({
@@ -252,10 +263,13 @@ export function stepEmbodiedMotion({
   if (typeof document !== 'undefined') {
     const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     if (owner) {
-      const spawnX = 0
-      const spawnZ = 6.9
+      // These diagnostics are part of the Home interaction contract. Keep them in
+      // lockstep with HomeWorldProductionFinal's canonical V66 coordinates so
+      // proof, accessibility telemetry, and runtime proximity describe one world.
+      const spawnX = 4.45
+      const spawnZ = 3.15
       owner.dataset.homeInputOwner = 'window-capture-movement'
-      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel'
+      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel-v66'
       owner.dataset.homeInputReady = 'true'
       const assetsReady = owner.dataset.homeAssetsReady === 'true'
       owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'
@@ -263,7 +277,7 @@ export function stepEmbodiedMotion({
       owner.dataset.homePlayerX = position.x.toFixed(3)
       owner.dataset.homePlayerZ = position.z.toFixed(3)
       owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 2.65).toFixed(3)
+      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 7.25).toFixed(3)
       owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.2, position.z + 8.4).toFixed(3)
       owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.2, position.z + 8.4).toFixed(3)
       owner.dataset.homeMoving = moving ? 'true' : 'false'
