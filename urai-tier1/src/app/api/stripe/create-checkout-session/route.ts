@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import type { InsightPlanId } from '@/lib/entitlementStore';
 import { resolveApprovedReturnUrl, withStripeResult } from '@/lib/server/approved-return-url';
 import { verifyFirebaseUser } from '@/lib/server/firebase-user';
-
-const PRICE_ENV_BY_PLAN: Record<Exclude<InsightPlanId, 'free'>, string> = {
-  pro: 'NEXT_PUBLIC_STRIPE_PRICE_PRO',
-  therapist: 'NEXT_PUBLIC_STRIPE_PRICE_THERAPIST',
-  founder: 'NEXT_PUBLIC_STRIPE_PRICE_FOUNDER',
-};
-
-function isPaidPlanId(value: unknown): value is Exclude<InsightPlanId, 'free'> {
-  return value === 'pro' || value === 'therapist' || value === 'founder';
-}
+import {
+  checkoutModeForPlan,
+  isPaidPlanId,
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+  STRIPE_PRICE_ENV_BY_PLAN,
+} from '@/lib/server/stripe-runtime-config';
 
 export async function POST(request: Request) {
   const uid = await verifyFirebaseUser(request);
@@ -30,11 +27,16 @@ export async function POST(request: Request) {
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const priceEnvKey = PRICE_ENV_BY_PLAN[planId];
+  const stripeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
+  const priceEnvKey = STRIPE_PRICE_ENV_BY_PLAN[planId];
   const priceId = process.env[priceEnvKey];
 
-  if (!secretKey || !appUrl || !priceId) {
+  if (!secretKey || !appUrl || !priceId || !stripeMode) {
     return NextResponse.json({ error: 'Stripe environment is not configured.' }, { status: 500 });
+  }
+
+  if (!stripeRuntimeMatchesSecret(stripeMode, secretKey)) {
+    return NextResponse.json({ error: 'Stripe credential mode mismatch.' }, { status: 500 });
   }
 
   let redirectBase: URL;
@@ -48,21 +50,34 @@ export async function POST(request: Request) {
   const Stripe = stripeModule.default;
   const stripe = new Stripe(secretKey);
 
+  // The configured Price is provider-owned authority. Do not create a session until
+  // Stripe itself confirms the object belongs to the declared test/production realm.
+  let price;
+  try {
+    price = await stripe.prices.retrieve(priceId);
+  } catch (error) {
+    console.error('Stripe Checkout could not verify configured Price', { planId, error });
+    return NextResponse.json({ error: 'Configured Stripe Price could not be verified.' }, { status: 502 });
+  }
+  if (!stripeLivemodeMatchesRuntime(price.livemode, stripeMode)) {
+    return NextResponse.json({ error: 'Stripe Price mode mismatch.' }, { status: 500 });
+  }
+
+  const mode = checkoutModeForPlan(planId);
+  const metadata = {
+    planId,
+    userId: uid,
+    environment: stripeMode,
+  };
+
   const session = await stripe.checkout.sessions.create({
-    mode: planId === 'founder' ? 'payment' : 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
+    mode,
+    line_items: [{ price: price.id, quantity: 1 }],
     success_url: withStripeResult(redirectBase, 'success', planId),
     cancel_url: withStripeResult(redirectBase, 'cancelled', planId),
-    metadata: {
-      planId,
-      userId: uid,
-    },
-    subscription_data: planId === 'founder' ? undefined : {
-      metadata: {
-        planId,
-        userId: uid,
-      },
-    },
+    metadata,
+    subscription_data: mode === 'subscription' ? { metadata } : undefined,
+    payment_intent_data: mode === 'payment' ? { metadata } : undefined,
   });
 
   return NextResponse.json({ url: session.url });
