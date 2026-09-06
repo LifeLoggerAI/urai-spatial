@@ -273,6 +273,13 @@ export function currentProductionEvidenceErrors({ canonicalAssets, currentDecisi
   return errors
 }
 
+export function recordCurrentAuthorityEvidence({ evidence, assetId, relativeDirectory, currentDecisions, currentReceipts }) {
+  if (evidence?.currentAuthority !== true) return false
+  if (relativeDirectory.endsWith('promotion-decisions')) currentDecisions.add(assetId)
+  else currentReceipts.add(assetId)
+  return true
+}
+
 export function routeConsumptionErrors({ asset, evidence, root, runtimeManifestSource = '', routeOwners = ROUTE_OWNERS }) {
   if (evidence.routeConsumptionVerified !== true) return []
   const errors = []
@@ -343,8 +350,13 @@ export function collectAuthorityErrors(root = DEFAULT_ROOT) {
       if (!asset || evidence.fixedPath !== asset.fixedPath && evidence.canonicalPath !== asset.fixedPath) continue
       const isSuperseded = supersessions.supersededPaths.has(relative)
       if (!isSuperseded) {
-        if (relativeDirectory.endsWith('promotion-decisions')) currentDecisions.add(asset.id)
-        else currentReceipts.add(asset.id)
+        recordCurrentAuthorityEvidence({
+          evidence,
+          assetId: asset.id,
+          relativeDirectory,
+          currentDecisions,
+          currentReceipts,
+        })
       }
       if (isSuperseded) continue
       const payload = fs.readFileSync(path.join(root, asset.fixedPath))
