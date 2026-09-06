@@ -14,7 +14,7 @@ export const uraiSensoryAssetManifest = {
   materials: {
     id: 'global-cinematic-material-pack-v1',
     path: '/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
-    status: 'ready',
+    status: 'candidate',
     routes: ['/', '/home', '/ground', '/life-map', '/focus', '/replay'],
     fallback: 'runtime-default-materials',
     license: 'URAI Labs internal production asset',
@@ -22,7 +22,7 @@ export const uraiSensoryAssetManifest = {
   particles: {
     id: 'spatial-particle-atlas-v1',
     path: '/assets/urai/generated/textures/spatial-particle-atlas-v1.svg',
-    status: 'ready',
+    status: 'candidate',
     routes: ['/', '/home', '/ground', '/life-map', '/focus', '/replay'],
     fallback: 'shader-point-particles',
     license: 'URAI Labs internal production asset',
@@ -30,7 +30,7 @@ export const uraiSensoryAssetManifest = {
   loading: {
     id: 'urai-loading-sequence-v1',
     path: '/assets/urai/generated/loading/urai-loading-sequence-v1.json',
-    status: 'ready',
+    status: 'candidate',
     routes: ['/', '/home', '/life-map', '/focus', '/replay'],
     fallback: 'accessible-static-loading-state',
     license: 'URAI Labs internal production asset',
@@ -56,14 +56,14 @@ export const uraiSensoryAssetManifest = {
       '/assets/urai/generated/audio/orb-confirm-v1.opus',
       '/assets/urai/generated/audio/ui-error-v1.opus',
     ],
-    status: 'ready',
+    status: 'candidate',
     routes: ['/home', '/ground', '/life-map', '/focus', '/replay'],
     fallback: 'silent-audio-with-user-controlled-enable',
-    license: 'URAI Labs internal production assets; verified by spatial-audio-production-v1 receipt',
+    license: 'URAI Labs internal production assets; historical receipt retained; fresh promotion evidence required',
   },
 } as const satisfies Record<string, UraiSensoryAssetEntry>
 
 export function resolveReadyUraiSensoryAssetPath(key: keyof typeof uraiSensoryAssetManifest): string | null {
-  const asset = uraiSensoryAssetManifest[key]
+  const asset: UraiSensoryAssetEntry = uraiSensoryAssetManifest[key]
   return asset.status === 'ready' ? asset.path : null
 }

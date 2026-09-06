@@ -6,12 +6,14 @@ on:
       - feat/real-spatial-models-v1-20260710
     paths:
       - scripts/generate-real-spatial-models-v1.py
+      - scripts/postprocess-ground-degraded-fallback.py
       - operations/assets/spatial-proof-fallbacks-v1.json
       - docs/REAL_SPATIAL_MODELS_V1.md
       - .github/workflows/forge-real-spatial-models-v1.yml
   pull_request:
     paths:
       - scripts/generate-real-spatial-models-v1.py
+      - scripts/postprocess-ground-degraded-fallback.py
       - operations/assets/spatial-proof-fallbacks-v1.json
       - docs/REAL_SPATIAL_MODELS_V1.md
       - urai-tier1/public/assets/urai/spatial/**
@@ -47,6 +49,9 @@ jobs:
       - name: Generate real spatial fallback models
         run: python scripts/generate-real-spatial-models-v1.py
 
+      - name: Apply governed degraded Ground fallback
+        run: python scripts/postprocess-ground-degraded-fallback.py
+
       - name: Verify receipt, non-empty geometry and authority boundary
         run: |
           python - <<'PY'
@@ -55,8 +60,10 @@ jobs:
 
           receipt_path = Path('docs/generated/spatial-models-v1-receipt.json')
           inventory_path = Path('operations/assets/spatial-proof-fallbacks-v1.json')
+          ground_path = Path('urai-tier1/public/assets/urai/spatial/ground-room/models/ground-room-shell-v1.gltf')
           receipt = json.loads(receipt_path.read_text())
           inventory = json.loads(inventory_path.read_text())
+          ground = json.loads(ground_path.read_text())
 
           assert receipt['modelCount'] == 14, receipt
           assert receipt['totalVertices'] >= 20000, receipt
@@ -66,6 +73,17 @@ jobs:
           assert inventory['authority']['selectedProduction'] is False, inventory
           assert inventory['policy']['mayBeDescribedAsFinalArt'] is False, inventory
           assert inventory['policy']['maySilentlyOverrideSelectedAsset'] is False, inventory
+
+          expected_ground_nodes = {
+              'ground-destination-reception', 'ground-destination-privacy', 'ground-destination-council',
+              'ground-destination-logistics', 'ground-destination-wellness', 'ground-destination-archive',
+              'ground-destination-mirror', 'ground-destination-passport', 'ground-destination-consent',
+              'ground-destination-atlas', 'ground-destination-focus', 'ground-destination-replay',
+          }
+          assert {node['name'] for node in ground['nodes']} == expected_ground_nodes, ground['nodes']
+          assert ground['asset']['extras']['promotionAuthority'] is False, ground['asset']
+          assert ground['extras']['promotionAuthority'] is False, ground['extras']
+          assert all(node['extras']['promotionAuthority'] is False for node in ground['nodes']), ground['nodes']
 
           receipt_files = {model['file'] for model in receipt['models']}
           inventory_files = {model['file'] for model in inventory['models']}
@@ -83,6 +101,8 @@ jobs:
               'modelCount': receipt['modelCount'],
               'totalVertices': receipt['totalVertices'],
               'totalFaces': receipt['totalFaces'],
+              'groundFallbackDestinationCount': len(expected_ground_nodes),
+              'groundFallbackPromotionAuthority': False,
           }, indent=2))
           PY
 

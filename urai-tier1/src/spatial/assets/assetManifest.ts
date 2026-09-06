@@ -1,6 +1,6 @@
 export type UraiSpatialAssetType = 'model' | 'texture' | 'skybox' | 'portal' | 'world' | 'ui' | 'audio' | 'fallback'
 export type UraiSpatialAssetStatus = 'ready' | 'candidate' | 'fallback' | 'missing' | 'future'
-export type UraiSpatialTargetSurface = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'status' | 'ar-vr' | 'global'
+export type UraiSpatialTargetSurface = 'home' | 'ground' | 'life-map' | 'focus' | 'replay' | 'passport' | 'status' | 'council' | 'ar-vr' | 'global'
 
 export interface UraiSpatialAssetManifestEntry {
   readonly id: string
@@ -45,17 +45,42 @@ const finalGlb = (
   name,
   type,
   path: `${generatedRoot}/models/${fileName}`,
-  status: 'ready',
+  status: 'candidate',
   targetSurface,
   priority,
-  notes: 'Final deterministic URAI Labs GLB. Binary integrity, named scene structure, PBR material extensions, animation clips, and triangle budget are verified during every production build. Rendered visual acceptance remains an exact-head review gate.',
+  notes: 'Deterministic URAI Labs GLB candidate. Binary integrity, named scene structure, PBR material extensions, animation clips, and triangle budget are build-verified; runtime selection remains fallback-first until canonical promotion and exact-head visual acceptance.',
   createdAt,
   updatedAt,
   fallbackAssetId,
   generationPromptId,
 })
 
+const pendingHuman = (
+  id: string,
+  name: string,
+  fileName: string,
+  targetSurface: UraiSpatialTargetSurface,
+): UraiSpatialAssetManifestEntry => ({
+  id,
+  name,
+  type: 'model',
+  path: `${generatedRoot}/human-makehuman-v4/${fileName}`,
+  status: 'candidate',
+  targetSurface,
+  priority: 'high',
+  notes: 'Pending governed human binary. Runtime uses a semantic no-model fallback until exact-binary visual approval and promotion.',
+  createdAt,
+  updatedAt,
+})
+
 export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] = [
+  pendingHuman('home-human-makehuman-v4', 'Home MakeHuman Presence', 'home-human-makehuman-v4.glb', 'home'),
+  pendingHuman('council-guide-human-makehuman-v4', 'Council Guide MakeHuman', 'council-guide-human-makehuman-v4.glb', 'council'),
+  pendingHuman('council-archivist-human-makehuman-v4', 'Council Archivist MakeHuman', 'council-archivist-human-makehuman-v4.glb', 'council'),
+  pendingHuman('council-guardian-human-makehuman-v4', 'Council Guardian MakeHuman', 'council-guardian-human-makehuman-v4.glb', 'council'),
+  pendingHuman('council-builder-human-makehuman-v4', 'Council Builder MakeHuman', 'council-builder-human-makehuman-v4.glb', 'council'),
+  pendingHuman('council-mirror-human-makehuman-v4', 'Council Mirror MakeHuman', 'council-mirror-human-makehuman-v4.glb', 'council'),
+  pendingHuman('council-trickster-human-makehuman-v4', 'Council Trickster MakeHuman', 'council-trickster-human-makehuman-v4.glb', 'council'),
   finalGlb('home-entry-chamber-model-v1', 'Home Entry Chamber GLB', 'home-entry-chamber-v1.glb', 'model', 'home', 'critical', 'home-entry-chamber-proof-fallback', 'home-world-assets'),
   finalGlb('portal-ring-master-glb-v1', 'Portal Ring Master GLB', 'portal-ring-master-v1.glb', 'portal', 'global', 'critical', 'portal-ring-proof-fallback', 'home-world-assets'),
   finalGlb('ground-world-terrain-glb-v1', 'Ground World Terrain GLB', 'ground-world-terrain-v1.glb', 'world', 'ground', 'critical', 'ground-room-shell-proof-fallback', 'ground-world-assets'),

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "urai-asset-authority-supersession-1",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "predecessorCommit": "3d46fc0b1f663d540c57f8197f8c767b45a15ffa",
+  "effectiveAt": "2026-09-03T00:00:00Z",
+  "status": "historical-superseded",
+  "currentAuthority": false,
+  "supersedingAuthority": {
+    "path": "operations/assets/launch-critical-assets.json",
+    "sha256AtDecision": "88c68f5fe182168c0e913d85d9b656457c84cf5bd49c65496d8f08718064b06c",
+    "state": "pending-final-review"
+  },
+  "records": [
+    {
+      "path": "operations/assets/production-receipts/home-entry-chamber-v1.json",
+      "sha256": "6cd2478a14217d9ab0f7e0d6941593d960c005be37da500d87be33c8b351a8d2"
+    },
+    {
+      "path": "operations/assets/promotion-decisions/home-entry-chamber-v1.json",
+      "sha256": "c6155deaa8889710293da0069c964cc60cc23d0023a4c24235d1c0d962d6623d"
+    },
+    {
+      "path": "operations/assets/production-receipts/sensory-layer-v1.json",
+      "sha256": "2e3d2fc05640194cd3ff0747761add8b32920a4b391f9e8f2302d07c520b39ce"
+    },
+    {
+      "path": "operations/assets/production-receipts/spatial-audio-production-v1.json",
+      "sha256": "3301db5c7d2eaa7bfa1d4ba080c23f757a64fb94a66a833d60d4c9268d8fe45e"
+    },
+    {
+      "path": "operations/assets/sources/home-finalization-authored-source-v2.json",
+      "sha256": "21521c87c40fe6adb89a6d89099488a90d8894118143d01ee7bd446828a945aa"
+    },
+    {
+      "path": "docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json",
+      "sha256": "3fe4694395358a336d48cc76a827d8f989d016e7fd7116376edbf0bfbf404e17"
+    }
+  ],
+  "reason": "The canonical manifest now classifies the current candidate bytes as pending final review. These exact predecessor records remain immutable historical evidence and cannot authorize current promotion, runtime selection, merge, or deployment."
+}
