@@ -319,10 +319,11 @@ function SanctuaryTerraces() {
       v158Refinement: 'hairline-stone-trace-integrated-into-ground-no-road-read',
       v160Refinement: 'hairline-path-retained-after-literal-pixel-review',
       v161Refinement: 'broken-buried-wayfinding-traces-no-continuous-track',
+      v162Refinement: 'orientation-traces-retained-as-nonrendered-geometry-no-runway-read',
       predecessorVisualRepair: 'v129-governed-terrain-owns-visible-ground',
     }}
   >
-    <mesh name="home-v154-inlaid-stone-approach" geometry={ribbon} receiveShadow>
+    <mesh name="home-v154-inlaid-stone-approach" geometry={ribbon} receiveShadow visible={false}>
       <meshPhysicalMaterial
         color="#68736c"
         map={stone.color}
@@ -600,7 +601,7 @@ function ArrivalSignalPath({ reducedMotion }: { reducedMotion: boolean }) {
     }
   })
 
-  return <mesh ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry} receiveShadow>
+  return <mesh ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry} receiveShadow visible={false}>
     <meshStandardMaterial color="#45554d" emissive="#527163" emissiveIntensity={0.010} roughness={0.97} transparent opacity={0.10} side={THREE.DoubleSide} />
   </mesh>
 }
@@ -730,7 +731,7 @@ export function HomeV76Sanctuary({ reducedMotion, orbState, onOrb, onGround, onL
     userData={{
       activeArtRevision: 'v154-visible-canyon-fissures-memory-swarm-no-pedestal',
       visualIteration: 'v158-ground-scar-thresholds-hairline-path-sunken-geology',
-      currentVisualRefinement: 'v161-broken-wayfinding-deeper-canyon-terrain-flush-rifts',
+      currentVisualRefinement: 'v162-no-runway-lower-horizon-canyon-composition',
       predecessorVisualIteration: 'v157-canyon-path-thin-rifts-low-geology-contained-orb',
       predecessorArtRevision: 'v153-localized-fissures-asymmetric-orb-plume-no-pedestal',
       compatibilityMarkers: LEGACY_CONTRACT_MARKERS,

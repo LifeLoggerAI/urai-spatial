@@ -317,7 +317,7 @@ function Sanctuary({ target, reducedMotion, orbState, onOrb, onGround, onLifeMap
 
 function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: { input: MovementInput; yaw: MutableRefObject<number>; pitch: MutableRefObject<number>; target: MutableRefObject<THREE.Vector3 | null>; onNearby: (value: Nearby) => void; transition: Transition; owner: MutableRefObject<HTMLElement | null> }) {
   const { camera, size } = useThree(); const position = useRef(SPAWN.clone()); const velocity = useRef(new THREE.Vector3()); const lastNearby = useRef<Nearby>(null); const renderedFrames = useRef(0)
-  useEffect(() => { camera.near = 0.1; camera.far = 110; camera.position.set(SPAWN.x, 1.60, SPAWN.z); camera.lookAt(0, 2.02, -8.75); camera.updateProjectionMatrix() }, [camera])
+  useEffect(() => { camera.near = 0.1; camera.far = 110; camera.position.set(SPAWN.x, 1.60, SPAWN.z); camera.lookAt(0, 1.36, -8.75); camera.updateProjectionMatrix() }, [camera])
   useFrame((_, delta) => {
     if (transition === 'none') stepEmbodiedMotion({ position: position.current, velocity: velocity.current, input, target, yaw: yaw.current, delta, speed: 2.9, acceleration: 9, deceleration: 12, bounds: BOUNDS, arrivalRadius: 0.32 }); else velocity.current.multiplyScalar(0.7)
     renderedFrames.current += 1
@@ -335,13 +335,13 @@ function PlayerRig({ input, yaw, pitch, target, onNearby, transition, owner }: {
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb', ORB, 2.35], ['ground', GROUND, 2.65], ['life-map', LIFE_MAP, 2.65]]; let nearby: Nearby = null; let best = Infinity
     for (const [name, point, radius] of candidates) { const distance = Math.hypot(position.current.x - point.x, position.current.z - point.z); if (distance < radius && distance < best) { best = distance; nearby = name } }
     const portrait = size.height > size.width
-    if (camera instanceof THREE.PerspectiveCamera) { const fov = portrait ? 58 : 42; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix() } }
+    if (camera instanceof THREE.PerspectiveCamera) { const fov = portrait ? 50 : 40; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix() } }
     // Keep the first-person camera outside destination and Orb meshes after the
     // player truthfully reaches the unchanged interaction radius. This is a
     // visual clearance rig, not a looser proximity or navigation gate.
     const inspectionClearance = nearby === 'orb' ? (portrait ? 2.80 : 2.40) : nearby ? (portrait ? 2.10 : 1.65) : 0.10
     camera.position.lerp(position.current.clone().add(new THREE.Vector3(Math.sin(yaw.current) * inspectionClearance, portrait ? 1.54 : 1.59, Math.cos(yaw.current) * inspectionClearance)), 1 - Math.pow(0.0008, delta))
-    camera.lookAt(position.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current) * 10.5, 1.82 + pitch.current * 0.5, -Math.cos(yaw.current) * 10.5)))
+    camera.lookAt(position.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current) * 10.5, 1.30 + pitch.current * 0.38, -Math.cos(yaw.current) * 10.5)))
     if (nearby !== lastNearby.current) { lastNearby.current = nearby; onNearby(nearby) }
   })
   return null
