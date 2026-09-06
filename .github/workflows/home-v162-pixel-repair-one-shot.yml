@@ -1,0 +1,71 @@
+name: Home V162 Pixel Repair One Shot
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/home-v162-pixel-repair-one-shot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: home-final-v24-certify-20260826
+          fetch-depth: 0
+
+      - name: Apply exact V162 visual repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          v70 = Path('urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx')
+          source = v70.read_text()
+          replacements = {
+            "camera.lookAt(0, 2.02, -8.75)": "camera.lookAt(0, 1.36, -8.75)",
+            "const fov = portrait ? 58 : 42": "const fov = portrait ? 50 : 40",
+            "1.82 + pitch.current * 0.5": "1.30 + pitch.current * 0.38",
+          }
+          for before, after in replacements.items():
+            if source.count(before) != 1:
+              raise SystemExit(f'expected one V70 marker: {before!r}; found {source.count(before)}')
+            source = source.replace(before, after)
+          v70.write_text(source)
+
+          v76 = Path('urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx')
+          source = v76.read_text()
+          replacements = {
+            '<mesh name="home-v154-inlaid-stone-approach" geometry={ribbon} receiveShadow>': '<mesh name="home-v154-inlaid-stone-approach" geometry={ribbon} receiveShadow visible={false}>',
+            '<mesh ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry} receiveShadow>': '<mesh ref={path} name="home-v131-passive-signal-arrival-path" geometry={geometry} receiveShadow visible={false}>',
+            "currentVisualRefinement: 'v161-broken-wayfinding-deeper-canyon-terrain-flush-rifts'": "currentVisualRefinement: 'v162-no-runway-lower-horizon-canyon-composition'",
+            "v161Refinement: 'broken-buried-wayfinding-traces-no-continuous-track',": "v161Refinement: 'broken-buried-wayfinding-traces-no-continuous-track',\n      v162Refinement: 'orientation-traces-retained-as-nonrendered-geometry-no-runway-read',",
+          }
+          for before, after in replacements.items():
+            if source.count(before) != 1:
+              raise SystemExit(f'expected one V76 marker: {before!r}; found {source.count(before)}')
+            source = source.replace(before, after)
+          v76.write_text(source)
+          PY
+
+          git diff --check
+          git diff -- urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+
+      - name: Remove one-shot executor and push successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/home-v162-pixel-repair-one-shot.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx .github/workflows/home-v162-pixel-repair-one-shot.yml
+          git commit -m 'Home: V162 remove runway read and lower horizon composition'
+          git push origin HEAD:home-final-v24-certify-20260826
