@@ -5,6 +5,7 @@ const nav = [
   ['What is UrAi?', '/about'],
   ['Business', '/business'],
   ['URAI Labs', '/about/labs'],
+  ['Identity', '/identity'],
   ['Founder', '/founder'],
   ['Ecosystem', '/ecosystem'],
   ['Press', '/press'],

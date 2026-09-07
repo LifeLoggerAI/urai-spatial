@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastVerified": "2026-09-05",
+  "lastVerified": "2026-09-07",
   "canonicalHost": "https://urai.app",
   "entities": {
     "product": {
@@ -68,6 +68,30 @@
         "launched programs"
       ]
     }
+  },
+  "disambiguation": {
+    "canonicalIdentityPage": "https://urai.app/identity/",
+    "rule": "Name, acronym, ticker, or spelling similarity does not establish ownership, partnership, endorsement, or affiliation.",
+    "notAffiliatedWith": [
+      {
+        "name": "Urai AI Corp.",
+        "canonicalUrl": "https://uraiai.com/",
+        "description": "Separate Canadian AI-agent company.",
+        "relationship": "none"
+      },
+      {
+        "name": "Inturai Ventures Corp.",
+        "canonicalUrl": "https://inturai.com/",
+        "description": "Separate company that uses URAI as a market symbol.",
+        "relationship": "none"
+      },
+      {
+        "name": "URAI product listed by Perfect10 AI",
+        "canonicalUrl": "https://perfect10.id/products",
+        "description": "Separate psychometric-assessment product using the name URAI.",
+        "relationship": "none"
+      }
+    ]
   },
   "systems": [
     {

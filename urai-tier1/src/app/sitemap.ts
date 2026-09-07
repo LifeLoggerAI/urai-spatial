@@ -5,6 +5,7 @@ const publicRoutes = [
   '/about',
   '/business',
   '/about/labs',
+  '/identity',
   '/founder',
   '/ecosystem',
   '/press',
@@ -27,6 +28,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return publicRoutes.map((route) => ({
     url: route === '/' ? 'https://urai.app/' : new URL(`${route}/`, 'https://urai.app').toString(),
     changeFrequency: route === '/' ? 'weekly' : 'monthly',
-    priority: route === '/' ? 1 : route.startsWith('/about') || route === '/business' || route === '/founder' ? 0.8 : 0.6,
+    priority: route === '/' ? 1 : route.startsWith('/about') || route === '/business' || route === '/identity' || route === '/founder' ? 0.8 : 0.6,
   }))
 }
