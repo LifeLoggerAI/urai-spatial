@@ -15,7 +15,7 @@ test('V185 preserves the single opaque responsive Canvas owner', () => {
   assert.match(styles, /\.canvas/)
 })
 
-test('V185 removes the contour-staircase and carves camera-safe destination basins while preserving one road-free terrain authority', () => {
+test('V188 keeps one road-free terrain authority while breaking the smooth stretched-heightfield read', () => {
   assert.match(art, /governed-landscape-provenance-retained-nonrendered-single-ground-owner/)
   assert.match(art, /<primitive object=\{environment\} visible=\{false\} \/>/)
   assert.match(art, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
@@ -27,7 +27,10 @@ test('V185 removes the contour-staircase and carves camera-safe destination basi
   assert.match(art, /const terraceHeight = 0\.14/)
   assert.match(art, /const ridgeMask = THREE\.MathUtils\.clamp\([^\n]+,0,0\.16\)/)
   assert.match(art, /continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase/)
-  assert.match(art, /normalScale=\{new THREE\.Vector2\(1\.46,1\.46\)\}/)
+  assert.match(art, /texture\.repeat\.set\(12\.5,15\.5\)/)
+  assert.match(art, /const chippedRelief=/)
+  assert.match(art, /const lateralWarp=/)
+  assert.match(art, /fine-scale-chipped-relief-warped-strata-and-human-scale-stone-texels-break-smooth-heightfield-read/)
   assert.match(art, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
   assert.match(art, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
 })
@@ -41,7 +44,7 @@ test('V185 uses a continuous world-space memory sky without dead-black zenith or
   assert.doesNotMatch(art, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
-test('V185 destinations are broad ground-level signal places in camera-safe basins, never gates or slabs', () => {
+test('V188 destinations are bounded solid terrain-seated memory stones, never particle planes, gates, or slabs', () => {
   assert.match(art, /terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring/)
   assert.match(art, /camera-safe-basin-wide-ground-level-signal-place-no-upright-gate/)
   assert.match(art, /position=\{\[x,isGround\?0\.70:0\.64,isGround\?-8\.72:-8\.78\]\}/)
@@ -49,13 +52,19 @@ test('V185 destinations are broad ground-level signal places in camera-safe basi
   assert.match(art, /for\(let branch=0;branch<15;branch\+=1\)/)
   assert.match(art, /home-v151-\$\{side\}-retained-stone-provenance[^>]*visible=\{false\}/)
   assert.match(art, /home-v153-\$\{side\}-retired-threshold-panel[^>]*visible=\{false\}/)
+  assert.match(art, /home-v177-emotional-memory-weather" geometry=\{geometry\} visible=\{false\}/)
+  assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone/)
+  assert.match(art, /scale=\{\[1\.18,0\.26,0\.78\]\}/)
 })
 
-test('V185 Orb is a larger contained point-memory presence with the solid seed suppressed', () => {
+test('V188 Orb has a coherent asymmetric three-lobe heart with only a tight supporting mote field', () => {
   assert.match(art, /for\(let index=0;index<1540;index\+=1\)/)
   assert.match(art, /large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain/)
   assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.72,1\.72,1\.72\]\}/)
-  assert.match(art, /name="home-v126-orb-memory-motes"[^>]*scale=\{\[1\.34,0\.92,1\.18\]\}/)
+  assert.match(art, /name="home-v188-orb-heart-port-lobe"/)
+  assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
+  assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
+  assert.match(art, /name="home-v126-orb-memory-motes"[^>]*scale=\{\[0\.62,0\.48,0\.56\]\}/)
   assert.match(art, /name="home-v179-orb-memory-heart-motes"[^>]*scale=\{\[0\.38,0\.28,0\.34\]\}/)
   assert.match(art, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
   assert.match(art, /object\.name === 'orb-aura'/)
