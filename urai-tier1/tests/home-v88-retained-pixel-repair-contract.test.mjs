@@ -21,12 +21,14 @@ test('V126 terrain is continuous generated geometry with a readable authored pat
   assert.doesNotMatch(art, /terraces\.map|home-v76-continuous-stone-floor|TerracedGround/)
 })
 
-test('V165 thresholds are terrain-flush irregular destination cuts without the rejected shelf or portal families', () => {
+test('V172 thresholds are terrain-flush irregular destination cuts bound to the live carved basins without rejected shelf or portal families', () => {
   has(art, 'function FramedFissure(')
   has(art, 'home-v126-${side}-framed-fissure')
   has(art, 'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring')
   has(art, 'scan-provenance-pushed-beyond-clear-navigation-corridors-no-card-slabs')
-  assert.match(art, /scale=\{isGround \? \[0\.38, 0\.58, 0\.34\] : \[0\.37, 0\.59, 0\.34\]\}/)
+  has(art, 'recessed-basin-scar-raised-to-live-terrain-surface-local-color-language-no-gate')
+  assert.match(art, /position=\{\[x,isGround\?1\.80:1\.50,isGround\?-9\.72:-9\.80\]\}/)
+  assert.match(art, /scale=\{isGround \? \[0\.72, 0\.96, 0\.46\] : \[0\.70, 0\.96, 0\.46\]\}/)
   assert.doesNotMatch(art, /function canyonShelfGeometry|function CanyonShelf|home-v164-\$\{side\}-continuous-canyon-shelf/)
   assert.doesNotMatch(art, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
