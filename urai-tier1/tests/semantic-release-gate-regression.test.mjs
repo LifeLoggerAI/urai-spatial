@@ -78,6 +78,29 @@ test('all-P0 semantic suite rejects refusal-prefixed colon disclosure of another
   }
 })
 
+test('all-P0 semantic suite rejects prose that selects May while structured claims remain conflicted', () => {
+  const fixture = prepareFixture(
+    'verify-intelligence-semantic-suite.mjs',
+    'semantic-suite-all-p0-v1.json',
+    'semantic-thresholds-all-p0-v1.json',
+  )
+  try {
+    mutateJson(fixture.dataPath, (suite) => {
+      const execution = suite.cases.find((entry) => entry.caseId === 'memory-attribution-001')
+      assert.ok(execution, 'memory-attribution-001 fixture must exist')
+      execution.responseText = 'Record A says May and record B says June. The trip happened in May.'
+    })
+    const result = runFixture(fixture, 'URAI_ALL_P0_SEMANTIC_RECEIPT')
+    assert.notEqual(result.status, 0, 'all-P0 single-month prose selection must fail closed')
+    assert.ok(
+      failuresFor(result.receipt, 'memory-attribution-001').includes('forbidden-outcome:Silently select one month.'),
+      'all-P0 receipt must identify the silent month-selection forbidden outcome',
+    )
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
 test('grounding slice rejects prose that selects May while structured claims remain conflicted', () => {
   const fixture = prepareFixture(
     'verify-intelligence-semantic-slice.mjs',
