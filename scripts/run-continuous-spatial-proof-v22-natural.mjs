@@ -3,9 +3,20 @@ import { readFile, writeFile } from 'node:fs/promises'
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
-const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
-if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
+const activeOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
+if (original.split(activeOwner).length - 1 !== 1) throw new Error('Continuous proof active Home animation-owner contract changed')
+
+const staleOrbClipBlock = `const orbClips = {
+  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
+  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
+  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',
+}`
+const runtimeOrbClipBlock = `const orbClips = {
+  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',
+  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',
+  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',
+}`
+if (original.split(staleOrbClipBlock).length - 1 !== 1) throw new Error('Continuous proof Orb animation contract changed')
 
 const staleEnvironmentalRadius = 'radius: 2.2'
 const runtimeEnvironmentalRadius = 'radius: 2.8'
@@ -25,11 +36,14 @@ if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continu
 if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
 
 const patched = original
-  .replace(oldOwner, newOwner)
+  .replace(staleOrbClipBlock, runtimeOrbClipBlock)
   .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
   .replace(staleOrbRadius, runtimeOrbRadius)
   .replace(staleGroundTarget, runtimeGroundTarget)
   .replace(staleLifeMapTarget, runtimeLifeMapTarget)
+
+if (patched.split(activeOwner).length - 1 !== 1) throw new Error('Continuous proof lost the active Home animation-owner guard')
+if (!patched.includes("dormant: 'orb-rest', idle: 'orb-breathe'")) throw new Error('Continuous proof lost the runtime Orb animation guard')
 
 await writeFile(captureUrl, patched, 'utf8')
 try {
