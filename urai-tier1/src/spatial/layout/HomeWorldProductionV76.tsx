@@ -124,8 +124,8 @@ function useSanctuaryStone() {
 function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEvent>) => void }) {
   const stone = useSanctuaryStone()
   const geometry = useMemo(() => {
-    const xSegments = 96
-    const zSegments = 128
+    const xSegments = 72
+    const zSegments = 96
     const positions: number[] = []; const colors: number[] = []; const uvs: number[] = []; const indices: number[] = []
     const shadow = new THREE.Color('#052422'); const moss = new THREE.Color('#668f82'); const warmStrata = new THREE.Color('#9b7d60')
     const groundTint = new THREE.Color('#2f8d5c'); const lifeTint = new THREE.Color('#765eb1')
@@ -155,12 +155,12 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
         const centralNotch = Math.exp(-Math.pow(x/2.30,2))*0.42
         const farBasinLift = Math.pow(tz,2.82)*(4.78 + Math.sin(x*0.36+0.72)*0.82 + Math.sin(x*0.91-1.15)*0.34 - centralNotch)
         const macroHeight = -0.46 + descent + farBasinLift + sideRise + asymmetricRidges + destinationShoulder - destinationCarve - cameraSafeCarve + fracture*(1-walkingChannel*0.86) + floorRelief + nearRelief + basinLayer
-        const ridgeMask = THREE.MathUtils.clamp((tz-0.36)*0.24 + lateral*0.14 + asymmetricRidges*0.05,0,0.16)
+        const ridgeMask = 0
         const terraceHeight = 0.14
         const terracedHeight = Math.floor((macroHeight+0.08)/terraceHeight)*terraceHeight - 0.08
         const erosionRills = (Math.abs(Math.sin(x*1.63+z*0.93))*0.065 + Math.abs(Math.cos(x*0.77-z*1.51))*0.040 - 0.048)*ridgeMask
         const chippedRelief=(Math.sin(x*5.7+z*3.1)*0.120+Math.cos(x*3.9-z*6.2)*0.085+Math.sin(x*8.3+z*1.9)*0.052)*(0.34+lateral*0.66)
-        const y = THREE.MathUtils.lerp(macroHeight,terracedHeight,ridgeMask) + erosionRills + chippedRelief
+        const y = macroHeight + erosionRills + chippedRelief
         const lateralWarp=(Math.sin(z*1.17+x*.43)*.034+Math.sin(z*3.7-x*1.2)*.018)*(0.22+lateral*.78)
         positions.push(x+lateralWarp,y,z+Math.cos(x*2.9+z*.67)*.018); uvs.push(tx,tz)
         const band = 0.5 + 0.5*Math.sin(y*7.1 + z*0.22 + x*0.15)
@@ -182,7 +182,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
     result.computeVertexNormals()
     return result
   },[])
-  return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} position={[0,0.035,0]} receiveShadow onClick={onWalk} userData={{ v175Refinement: 'terraced-erosion-canyon-visible-strata-raised-far-rim-detailed-foreground-no-smooth-bowl', v185Refinement: 'continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase', v188Refinement:'fine-scale-chipped-relief-warped-strata-and-human-scale-stone-texels-break-smooth-heightfield-read',v189Refinement:'actual-geometric-rock-breakup-without-diffuse-masonry-pasted-over-heightfield' }}><meshPhysicalMaterial color="#647a70" normalMap={stone.normal} normalScale={new THREE.Vector2(1.12,1.12)} roughness={0.92} metalness={0.001} envMapIntensity={0.64} vertexColors /></mesh>
+  return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} position={[0,0.035,0]} receiveShadow onClick={onWalk} userData={{ v175Refinement: 'terraced-erosion-canyon-visible-strata-raised-far-rim-detailed-foreground-no-smooth-bowl', v185Refinement: 'continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase', v188Refinement:'fine-scale-chipped-relief-warped-strata-and-human-scale-stone-texels-break-smooth-heightfield-read',v189Refinement:'actual-geometric-rock-breakup-without-diffuse-masonry-pasted-over-heightfield',v190Refinement:'no-terrace-blend-medium-density-flat-faceted-rock-surface-breaks-contour-heightfield' }}><meshPhysicalMaterial color="#526b61" roughness={0.94} metalness={0.001} envMapIntensity={0.58} vertexColors flatShading /></mesh>
 }
 
 function MemoryConstellation({ reducedMotion }: { reducedMotion: boolean }) {
@@ -252,7 +252,7 @@ function FramedFissure({side,onActivate}:{side:'ground'|'life-map';onActivate:()
   return <group name={`home-v126-${side}-framed-fissure`} userData={{v165Refinement:'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',v167Refinement:'destination-cut-owned-by-single-basin-no-overlap',v172Refinement:'recessed-basin-scar-raised-to-live-terrain-surface-local-color-language-no-gate',v174Refinement:'recessed-basin-scar-seated-in-live-terrain-amphitheater-local-color-language-no-gate',v175Refinement:'basin-wide-branching-signal-field-no-slab-no-door-no-ring',v185Refinement:'camera-safe-basin-wide-ground-level-signal-place-no-upright-gate'}} position={[x,isGround?0.70:0.64,isGround?-8.72:-8.78]} rotation={[0,isGround?0.10:-0.10,0]} scale={[1,1,1]}>
     <mesh name={`home-v151-${side}-retained-stone-provenance`} geometry={outer} castShadow receiveShadow visible={false}><meshPhysicalMaterial color={isGround?'#356949':'#514d76'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.62,0.62)} roughnessMap={stone.arm} roughness={0.80} metalness={0.001} envMapIntensity={0.96}/></mesh>
     <mesh name={`home-v153-${side}-retired-threshold-panel`} geometry={field} position={[0,0,0.025]} visible={false}><meshStandardMaterial color={isGround?'#07170f':'#100d19'} emissive={color} emissiveIntensity={0.46} roughness={1} side={THREE.DoubleSide}/></mesh>
-    <mesh name={`home-v188-${side}-terrain-seated-memory-stone`} geometry={memoryStone} position={[0,-1.18,0]} rotation={[0.06,isGround?0.34:-0.28,isGround?-0.08:0.07]} scale={[0.74,0.58,0.68]} castShadow receiveShadow><meshStandardMaterial color={isGround?'#173c2d':'#31284c'} emissive={color} emissiveIntensity={0.055} roughness={0.90} metalness={0.002} flatShading/></mesh>
+    <mesh name={`home-v188-${side}-terrain-seated-memory-stone`} geometry={memoryStone} position={[0,-0.98,0]} rotation={[0.06,isGround?0.34:-0.28,isGround?-0.08:0.07]} scale={[0.58,0.82,0.62]} castShadow receiveShadow><meshStandardMaterial color={isGround?'#173c2d':'#31284c'} emissive={color} emissiveIntensity={0.038} roughness={0.92} metalness={0.001} flatShading/></mesh>
     <points name={`home-v149-${side}-threshold-signal-field`} geometry={seamMotes} position={[0,-0.62,0]} scale={[0.46,0.22,0.44]}><pointsMaterial color={color} size={0.018} transparent opacity={0.26} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
     <lineSegments name={`home-v175-${side}-terrain-signal-veins`} geometry={signalVeins} visible={false}><lineBasicMaterial color={color} transparent opacity={0.80} toneMapped={false}/></lineSegments>
     <mesh name={`home-v133-${side}-authored-threshold-hit-target`} position={[0,0.62,0]} onClick={e=>{e.stopPropagation();onActivate()}}><boxGeometry args={[4.20,2.20,3.20]}/><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false}/></mesh>
@@ -281,12 +281,12 @@ function LivingOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boo
     <mesh name="home-v188-orb-heart-port-lobe" geometry={heartGeometry} position={[-0.12,0.03,0.01]} rotation={[0.18,-0.34,0.22]} scale={[1.06,1.26,0.88]} castShadow><meshStandardMaterial color="#1b3f35" emissive={palette.core} emissiveIntensity={0.095} roughness={0.78} metalness={0.004}/></mesh>
     <mesh name="home-v188-orb-heart-starboard-lobe" geometry={heartGeometry} position={[0.11,-0.025,0.035]} rotation={[-0.14,0.42,-0.31]} scale={[0.90,1.02,0.76]} castShadow><meshStandardMaterial color="#284b3e" emissive={palette.accent} emissiveIntensity={0.075} roughness={0.80} metalness={0.003}/></mesh>
     <mesh name="home-v188-orb-heart-crown-lobe" geometry={heartGeometry} position={[-0.015,0.16,-0.025]} rotation={[0.34,0.12,0.46]} scale={[0.68,0.82,0.62]} castShadow><meshStandardMaterial color="#214439" emissive={palette.core} emissiveIntensity={0.085} roughness={0.79} metalness={0.003}/></mesh>
-    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.46,0.36,0.42]}><pointsMaterial color={palette.core} size={palette.moteSize*0.18} transparent opacity={0.18} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
-    <points name="home-v154-orb-memory-depth-motes" geometry={moteGeometry} scale={[0.52,0.40,0.48]}><pointsMaterial color={palette.accent} size={palette.moteSize*0.14} transparent opacity={0.14} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
-    <points name="home-v174-orb-memory-nucleus-motes" geometry={moteGeometry} position={[-0.16,0.04,0]} scale={[0.46,0.58,0.42]}><pointsMaterial color={palette.core} size={palette.moteSize*0.27} transparent opacity={0.60} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
+    <points name="home-v126-orb-memory-motes" geometry={moteGeometry} scale={[0.46,0.36,0.42]} visible={false}><pointsMaterial color={palette.core} size={palette.moteSize*0.18} transparent opacity={0.18} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
+    <points name="home-v154-orb-memory-depth-motes" geometry={moteGeometry} scale={[0.52,0.40,0.48]} visible={false}><pointsMaterial color={palette.accent} size={palette.moteSize*0.14} transparent opacity={0.14} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
+    <points name="home-v174-orb-memory-nucleus-motes" geometry={moteGeometry} position={[-0.16,0.04,0]} scale={[0.46,0.58,0.42]} visible={false}><pointsMaterial color={palette.core} size={palette.moteSize*0.27} transparent opacity={0.60} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
     <points name="home-v175-orb-memory-heart-motes" geometry={moteGeometry} scale={[0.30,0.24,0.28]} visible={false}><pointsMaterial color={palette.accent} size={palette.moteSize*0.48} transparent opacity={0.58} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
-    <points name="home-v179-orb-memory-heart-motes" geometry={moteGeometry} position={[0.14,-0.03,0.03]} scale={[0.38,0.28,0.34]}><pointsMaterial color={palette.accent} size={palette.moteSize*0.25} transparent opacity={0.58} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
-    <points name="home-v186-orb-memory-heart-bridge" geometry={moteGeometry} position={[0,0.10,-0.04]} rotation={[0,0,.72]} scale={[0.18,0.42,0.20]}><pointsMaterial color={palette.core} size={palette.moteSize*0.22} transparent opacity={0.50} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
+    <points name="home-v179-orb-memory-heart-motes" geometry={moteGeometry} position={[0.14,-0.03,0.03]} scale={[0.38,0.28,0.34]} visible={false}><pointsMaterial color={palette.accent} size={palette.moteSize*0.25} transparent opacity={0.58} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
+    <points name="home-v186-orb-memory-heart-bridge" geometry={moteGeometry} position={[0,0.10,-0.04]} rotation={[0,0,.72]} scale={[0.18,0.42,0.20]} visible={false}><pointsMaterial color={palette.core} size={palette.moteSize*0.22} transparent opacity={0.50} depthWrite={false} sizeAttenuation toneMapped={false}/></points>
     <mesh name="home-v133-orb-memory-seed" geometry={memoryVolume} scale={[0.012,0.016,0.011]} visible={false}><meshPhysicalMaterial color="#426d5b" emissive={palette.accent} emissiveIntensity={0.012} roughness={0.62} metalness={0.001} clearcoat={0.01} transparent opacity={0.10}/></mesh>
     <mesh name="home-v182-orb-faceted-mineral-seed" geometry={heartGeometry} rotation={[0.18,-0.34,0.10]} scale={[0.82,0.88,0.76]} castShadow visible={false}><meshStandardMaterial color="#244d42" emissive={palette.accent} emissiveIntensity={0.018} roughness={0.66} metalness={0.018} flatShading/></mesh>
     <mesh name="home-v126-orb-generous-hit-target"><sphereGeometry args={[1.50,16,12]}/><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false}/></mesh>
