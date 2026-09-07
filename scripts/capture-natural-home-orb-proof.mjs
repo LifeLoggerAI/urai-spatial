@@ -35,12 +35,12 @@ const cases = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-8', exactHead, capturedAt: new Date().toISOString(),
-  runtimeContract: 'v125-single-canvas-sculpted-canyon-natural-fissures-governed-orb-retained-pixel-proof',
+  schemaVersion: 'urai-natural-home-orb-proof-9', exactHead, capturedAt: new Date().toISOString(),
+  runtimeContract: 'v185-single-canvas-continuous-weathered-canyon-camera-safe-destinations-contained-memory-orb-retained-pixel-proof',
   homeIdentity: { ...homeIdentity, visibleCompositionRequired: false },
   orbIdentity: { ...orbIdentity, visibleCompositionRequired: true },
   portalIdentity: { ...portalIdentity, requiredRuntimeRequest: false, visibleCompositionRequired: false },
-  visualPolicy: 'V125 visible Home must be sculpted asymmetric geology with natural fissures and a state-readable governed Orb; generated home/portal GLBs remain verified identity inputs, not required visible geometry.',
+  visualPolicy: 'V185 visible Home must retain one navigable continuous canyon owner, camera-safe Ground/Life Map signal places, a contained state-readable living-memory Orb, and no road/ring/door/card/pedestal/aura/orbit family. Literal rendered inspection remains required.',
   cases: [], errors: [],
 }
 
@@ -120,7 +120,7 @@ for (const spec of cases) {
       && record.embodiedSelf === 'privacy-preserving-first-person'
       && record.movement === 'walk-keyboard-click-touch'
       && record.visualGrade === 'cinematic-pbr-v126-ground-owned-depth-candidate'
-      && record.artRevision === 'v126-retained-pixels-pending'
+      && record.artRevision === 'v176-retained-pixels-pending'
       && record.artCertification === 'v126-retained-pixels-pending-not-certified'
       && record.runtimeAssets?.includes(path.basename(orbPath))
       && record.governedIdentityAssets === 'home-entry-chamber-v1.glb portal-ring-master-v1.glb urai-orb-avatar-v1.glb'
