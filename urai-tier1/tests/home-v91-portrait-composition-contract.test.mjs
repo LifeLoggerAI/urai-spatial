@@ -38,7 +38,7 @@ test('V185 uses a continuous world-space memory sky without dead-black zenith or
   assert.match(art, /new THREE\.Color\('#0d3438'\)/)
   assert.match(art, /new THREE\.Color\('#2b625a'\)/)
   assert.match(art, /deep-teal-memory-sky-preserves-night-without-dead-black-field-or-flat-veil/)
-  assert.doesNotMatch(art, /ancestral-weather-veil|weather-veil-/)
+  assert.doesNotMatch(art, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
 test('V185 destinations are broad ground-level signal places in camera-safe basins, never gates or slabs', () => {

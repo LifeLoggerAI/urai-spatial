@@ -43,7 +43,7 @@ test('V185 keeps world-space atmosphere and reduced-motion-safe visual ownership
   has(art, 'home-v183-world-space-memory-sky')
   has(art, 'deep-teal-memory-sky-preserves-night-without-dead-black-field-or-flat-veil')
   has(art, 'four-low-bounded-world-space-memory-weather-fields-localize-ground-life-map-and-deep-basin-no-upright-gates')
-  assert.doesNotMatch(art, /ancestral-weather-veil|weather-veil-/)
+  assert.doesNotMatch(art, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
 test('V185 preserves exact proximity and travel gates in the unchanged V70 owner', () => {
