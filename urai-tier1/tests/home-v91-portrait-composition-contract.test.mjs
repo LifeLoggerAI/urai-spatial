@@ -15,7 +15,7 @@ test('V185 preserves the single opaque responsive Canvas owner', () => {
   assert.match(styles, /\.canvas/)
 })
 
-test('V188 keeps one road-free terrain authority while breaking the smooth stretched-heightfield read', () => {
+test('V189 keeps one road-free terrain authority with geometric breakup and no pasted diffuse masonry', () => {
   assert.match(art, /governed-landscape-provenance-retained-nonrendered-single-ground-owner/)
   assert.match(art, /<primitive object=\{environment\} visible=\{false\} \/>/)
   assert.match(art, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
@@ -31,6 +31,8 @@ test('V188 keeps one road-free terrain authority while breaking the smooth stret
   assert.match(art, /const chippedRelief=/)
   assert.match(art, /const lateralWarp=/)
   assert.match(art, /fine-scale-chipped-relief-warped-strata-and-human-scale-stone-texels-break-smooth-heightfield-read/)
+  assert.match(art, /actual-geometric-rock-breakup-without-diffuse-masonry-pasted-over-heightfield/)
+  assert.doesNotMatch(art, /color="#647a70" map=\{stone\.color\}/)
   assert.match(art, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
   assert.match(art, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
 })
@@ -54,7 +56,8 @@ test('V188 destinations are bounded solid terrain-seated memory stones, never pa
   assert.match(art, /home-v153-\$\{side\}-retired-threshold-panel[^>]*visible=\{false\}/)
   assert.match(art, /home-v177-emotional-memory-weather" geometry=\{geometry\} visible=\{false\}/)
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone/)
-  assert.match(art, /scale=\{\[1\.18,0\.26,0\.78\]\}/)
+  assert.match(art, /position=\{\[0,-1\.18,0\]\}/)
+  assert.match(art, /scale=\{\[0\.74,0\.58,0\.68\]\}/)
 })
 
 test('V188 Orb has a coherent asymmetric three-lobe heart with only a tight supporting mote field', () => {
@@ -64,7 +67,8 @@ test('V188 Orb has a coherent asymmetric three-lobe heart with only a tight supp
   assert.match(art, /name="home-v188-orb-heart-port-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
-  assert.match(art, /name="home-v126-orb-memory-motes"[^>]*scale=\{\[0\.62,0\.48,0\.56\]\}/)
+  assert.match(art, /new THREE\.IcosahedronGeometry\(0\.16,2\)/)
+  assert.match(art, /name="home-v126-orb-memory-motes"[^>]*scale=\{\[0\.46,0\.36,0\.42\]\}/)
   assert.match(art, /name="home-v179-orb-memory-heart-motes"[^>]*scale=\{\[0\.38,0\.28,0\.34\]\}/)
   assert.match(art, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
   assert.match(art, /object\.name === 'orb-aura'/)
