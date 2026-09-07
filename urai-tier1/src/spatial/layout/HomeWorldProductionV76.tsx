@@ -126,7 +126,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
   const geometry = useMemo(() => {
     const xSegments = 96
     const zSegments = 128
-    const positions: number[] = []; const colors: number[] = []; const indices: number[] = []
+    const positions: number[] = []; const colors: number[] = []; const uvs: number[] = []; const indices: number[] = []
     const shadow = new THREE.Color('#052422'); const moss = new THREE.Color('#668f82'); const warmStrata = new THREE.Color('#9b7d60')
     const groundTint = new THREE.Color('#2f8d5c'); const lifeTint = new THREE.Color('#765eb1')
     for (let zi=0; zi<=zSegments; zi += 1) {
@@ -160,7 +160,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
         const terracedHeight = Math.floor((macroHeight+0.08)/terraceHeight)*terraceHeight - 0.08
         const erosionRills = (Math.abs(Math.sin(x*1.63+z*0.93))*0.065 + Math.abs(Math.cos(x*0.77-z*1.51))*0.040 - 0.048)*ridgeMask
         const y = THREE.MathUtils.lerp(macroHeight,terracedHeight,ridgeMask) + erosionRills
-        positions.push(x,y,z)
+        positions.push(x,y,z); uvs.push(tx,tz)
         const band = 0.5 + 0.5*Math.sin(y*7.1 + z*0.22 + x*0.15)
         const shade = THREE.MathUtils.clamp(0.24+y*0.12+(1-tz)*0.16+Math.abs(fracture)*0.76+asymmetricRidges*0.08,0,1)
         const c = shadow.clone().lerp(moss,shade)
@@ -175,6 +175,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
     const result = new THREE.BufferGeometry()
     result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     result.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    result.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
     result.setIndex(indices)
     result.computeVertexNormals()
     return result
@@ -192,9 +193,9 @@ function MemoryConstellation({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 function MemoryWeather({ reducedMotion }: { reducedMotion: boolean }) {
-  const geometry=useMemo(()=>{const positions:number[]=[];const colors:number[]=[];const warm=new THREE.Color('#efc98f'),green=new THREE.Color('#70d69d'),violet=new THREE.Color('#a99aea');const loci=[[-4.7,-8.8,green],[-2.7,-11.7,warm],[2.5,-12.2,warm],[4.8,-8.9,violet]] as const;for(let cluster=0;cluster<loci.length;cluster+=1){const [cx,cz,tint]=loci[cluster];for(let index=0;index<150;index+=1){const t=((index*47)%151)/150,angle=index*2.3999632297+cluster,radius=(1-t)*(.18+((index*31)%97)/250);positions.push(cx+Math.cos(angle)*radius,0.22+t*(1.36+cluster*.12)+Math.sin(index*.47)*.06,cz+Math.sin(angle)*radius);const c=tint.clone().lerp(warm,t*.18);colors.push(c.r,c.g,c.b)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));return g},[])
+  const geometry=useMemo(()=>{const positions:number[]=[];const colors:number[]=[];const warm=new THREE.Color('#efc98f'),green=new THREE.Color('#70d69d'),violet=new THREE.Color('#a99aea');const loci=[[-4.7,-8.8,green],[-2.7,-11.7,warm],[2.5,-12.2,warm],[4.8,-8.9,violet]] as const;for(let cluster=0;cluster<loci.length;cluster+=1){const [cx,cz,tint]=loci[cluster];for(let index=0;index<150;index+=1){const t=((index*47)%151)/150,angle=index*2.3999632297+cluster,radius=.16+Math.sqrt(t)*(.22+((index*31)%97)/310);positions.push(cx+Math.cos(angle)*radius,.10+(1-t)*.14+Math.abs(Math.sin(index*.47))*.065,cz+Math.sin(angle)*radius*.72);const c=tint.clone().lerp(warm,t*.18);colors.push(c.r,c.g,c.b)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));return g},[])
   const points=useRef<THREE.Points>(null);useFrame(({clock})=>{if(points.current&&!reducedMotion)points.current.position.y=Math.sin(clock.elapsedTime*.22)*.025})
-  return <points ref={points} name="home-v177-emotional-memory-weather" geometry={geometry} userData={{treatment:'four-low-bounded-world-space-memory-weather-fields-localize-ground-life-map-and-deep-basin-no-upright-gates'}}><pointsMaterial vertexColors size={0.050} transparent opacity={0.52} depthWrite={false} sizeAttenuation toneMapped={false} fog/></points>
+  return <points ref={points} name="home-v177-emotional-memory-weather" geometry={geometry} userData={{treatment:'four-low-bounded-world-space-memory-weather-fields-localize-ground-life-map-and-deep-basin-no-upright-gates',v187Refinement:'terrain-hugging-memory-deposits-no-conical-spires'}}><pointsMaterial vertexColors size={0.034} transparent opacity={0.40} depthWrite={false} sizeAttenuation toneMapped={false} fog/></points>
 }
 
 function MemorySediment({ reducedMotion }: { reducedMotion: boolean }) {
@@ -243,7 +244,7 @@ function FramedFissure({side,onActivate}:{side:'ground'|'life-map';onActivate:()
   const stone=useSanctuaryStone();const isGround=side==='ground';const x=isGround?-4.92:4.92;const color=isGround?'#69f2a8':'#c0adff'
   const outer=useMemo(()=>{const frame=fissureGeometry(false,!isGround);frame.holes.push(new THREE.Path(fissureGeometry(true,!isGround).getPoints(18).reverse()));const g=new THREE.ExtrudeGeometry(frame,{depth:0.10,bevelEnabled:true,bevelSize:0.016,bevelThickness:0.018,bevelSegments:2,curveSegments:4});g.computeVertexNormals();return g},[isGround])
   const field=useMemo(()=>new THREE.ShapeGeometry(fissureGeometry(true,!isGround),8),[isGround])
-  const seamMotes=useMemo(()=>{const positions:number[]=[];for(let index=0;index<360;index+=1){const t=(((index*53)%421)+.5)/421,angle=index*2.3999632297+(isGround?.28:.91),radial=Math.pow(t,.62),lobe=.72+.18*Math.sin(angle*3+(isGround?.4:1.2)),rx=1.34*lobe,rz=.78*(.86+.14*Math.cos(angle*2));const x=Math.cos(angle)*radial*rx+Math.sin(index*.43)*.045,z=Math.sin(angle)*radial*rz+Math.cos(index*.31)*.04,y=.025+Math.pow(1-radial,1.7)*.52+Math.abs(Math.sin(index*.71))*.075;positions.push(x,y,z)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));return g},[isGround])
+  const seamMotes=useMemo(()=>{const positions:number[]=[];for(let index=0;index<360;index+=1){const t=(((index*53)%421)+.5)/421,angle=index*2.3999632297+(isGround?.28:.91),radial=Math.pow(t,.62),lobe=.72+.18*Math.sin(angle*3+(isGround?.4:1.2)),rx=1.34*lobe,rz=.78*(.86+.14*Math.cos(angle*2));const x=Math.cos(angle)*radial*rx+Math.sin(index*.43)*.045,z=Math.sin(angle)*radial*rz+Math.cos(index*.31)*.04,y=.018+Math.pow(1-radial,1.7)*.13+Math.abs(Math.sin(index*.71))*.035;positions.push(x,y,z)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));return g},[isGround])
   const signalVeins=useMemo(()=>{const positions:number[]=[];for(let branch=0;branch<15;branch+=1){const angle=(branch/15)*Math.PI*2+(isGround?0.18:0.52),length=0.72+((branch*7)%5)*0.13;let px=Math.cos(angle)*0.14,pz=Math.sin(angle)*0.10;for(let step=0;step<5;step+=1){const t=(step+1)/5,nx=Math.cos(angle+(step%2===0?0.09:-0.07))*length*t,nz=Math.sin(angle+(step%2===0?0.09:-0.07))*length*t*0.76;positions.push(px,0.045,pz,nx,0.045,nz);px=nx;pz=nz}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));return g},[isGround])
   return <group name={`home-v126-${side}-framed-fissure`} userData={{v165Refinement:'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',v167Refinement:'destination-cut-owned-by-single-basin-no-overlap',v172Refinement:'recessed-basin-scar-raised-to-live-terrain-surface-local-color-language-no-gate',v174Refinement:'recessed-basin-scar-seated-in-live-terrain-amphitheater-local-color-language-no-gate',v175Refinement:'basin-wide-branching-signal-field-no-slab-no-door-no-ring',v185Refinement:'camera-safe-basin-wide-ground-level-signal-place-no-upright-gate'}} position={[x,isGround?0.70:0.64,isGround?-8.72:-8.78]} rotation={[0,isGround?0.10:-0.10,0]} scale={[1,1,1]}>
     <mesh name={`home-v151-${side}-retained-stone-provenance`} geometry={outer} castShadow receiveShadow visible={false}><meshPhysicalMaterial color={isGround?'#356949':'#514d76'} map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(0.62,0.62)} roughnessMap={stone.arm} roughness={0.80} metalness={0.001} envMapIntensity={0.96}/></mesh>
