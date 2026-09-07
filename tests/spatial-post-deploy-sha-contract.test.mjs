@@ -16,6 +16,8 @@ test('post-deploy verification binds checkout and canonical authority to the exp
   assert.match(workflow, /ref:\s*\$\{\{ inputs\.expected_deployed_sha \}\}/)
   assert.match(workflow, /fetch-depth:\s*0/)
   assert.match(workflow, /persist-credentials:\s*false/)
+  assert.match(workflow, /git rev-parse HEAD/)
+  assert.match(workflow, /git status --porcelain --untracked-files=all/)
   assert.match(workflow, /git fetch --no-tags origin main:refs\/remotes\/origin\/main/)
   assert.match(workflow, /node scripts\/verify-custom-domain-deployed-sha-authority\.mjs/)
 
