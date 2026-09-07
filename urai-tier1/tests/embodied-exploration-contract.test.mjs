@@ -21,7 +21,7 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   for (const marker of ['useMovementInput','stepEmbodiedMotion','MovementBounds','THREE.MathUtils.clamp']) has(travel, marker)
 })
 
-test('Home keeps one V70 Canvas owner while V172 owns the visible sanctuary art', () => {
+test('Home keeps one V70 Canvas owner while V174 owns the visible sanctuary art', () => {
   has(homeRuntime, 'HomeWorldProductionV70 as HomeWorldProduction')
   has(homeRuntime3d, 'HomeV76Sanctuary')
   has(homeRuntime3d, 'URAI_ORB_STATE_EVENT')
@@ -31,32 +31,33 @@ test('Home keeps one V70 Canvas owner while V172 owns the visible sanctuary art'
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V172 preserves embodied authority while repairing buried destinations, dead midground, weak geology, and bright-seed regressions', () => {
+test('V174 preserves embodied authority while repairing the smooth-bowl, weak-destination and particle-fountain regressions', () => {
   for (const marker of [
     'function SculptedCanyonGround(', 'home-v125-sculpted-canyon-ground',
-    'stratified-high-rim-canyon-with-recessed-destination-basins-no-dead-midground',
+    'asymmetric-continuous-ridge-geology-destination-amphitheaters-textured-floor-no-dead-midground',
     'home-v126-continuous-walkable-terrace-network',
     'governed-landscape-provenance-retained-nonrendered-single-ground-owner',
     'legacy-alcove-meshes-remain-disabled-no-gate-facade',
     'edge-scans-outside-primary-frustum-no-pasted-islands',
     'function FramedFissure(', 'terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring',
-    'recessed-basin-scar-raised-to-live-terrain-surface-local-color-language-no-gate',
+    'recessed-basin-scar-seated-in-live-terrain-amphitheater-local-color-language-no-gate',
     'function weatheredSanctuaryMassGeometry(', 'home-v149-weathered-rift-threshold-sanctuary',
     'detached-mass-family-retained-as-nonrendered-provenance-no-piles',
     'function ApseAndOrbCradle(', 'home-v126-layered-apse-orb-cradle',
     'detached-apse-masses-retained-nonrendered-no-pedestal',
     'function LivingOrb(', 'home-v126-apse-integrated-orb', 'home-v126-orb-memory-motes',
-    'home-v154-orb-memory-depth-motes', 'larger-filled-memory-swarm-near-invisible-seed-open-air-beneath-no-aura-no-pedestal',
-    'v172-stratified-destination-basins-larger-memory-swarm-no-runway',
-    'carve-destination-basins-raise-live-scars-strengthen-strata-enlarge-swarm-reduce-dead-sky',
+    'home-v154-orb-memory-depth-motes', 'home-v174-orb-memory-nucleus-motes',
+    'wide-contained-memory-swarm-dense-living-heart-open-air-beneath-no-aura-no-pedestal',
+    'v174-asymmetric-layered-canyon-destination-amphitheaters-wide-memory-swarm-no-runway',
+    'break-symmetric-bowl-with-continuous-ridge-overlap-seat-destinations-compress-orb-fountain-into-wide-swarm',
   ]) has(homeArt, marker)
   assert.match(homeArt, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
   assert.match(homeArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
   assert.match(homeArt, /<primitive object=\{environment\} visible=\{false\} \/>/)
   assert.match(homeArt, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
-  assert.match(homeArt, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.65,1\.65,1\.65\]\}/)
-  assert.match(homeArt, /transparent opacity=\{0\.012\}/)
-  assert.match(homeArt, /name="home-v133-orb-memory-seed"[^>]*scale=\{\[0\.045,0\.060,0\.040\]\}/)
+  assert.match(homeArt, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.52,1\.52,1\.52\]\}/)
+  assert.match(homeArt, /transparent opacity=\{0\.006\}/)
+  assert.match(homeArt, /name="home-v133-orb-memory-seed"[^>]*scale=\{\[0\.018,0\.024,0\.016\]\}/)
   assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.doesNotMatch(homeArt, /function canyonShelfGeometry|function CanyonShelf|home-v164-\$\{side\}-continuous-canyon-shelf/)
   assert.doesNotMatch(homeArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
