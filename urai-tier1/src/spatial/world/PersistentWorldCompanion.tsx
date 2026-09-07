@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
@@ -131,11 +131,14 @@ export function PersistentWorldCompanion() {
     if (phase !== 'idle') closeCompanion(false)
   }, [closeCompanion, phase])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (open) {
       restoreFocusRef.current = false
       const firstControl = menuRef.current?.querySelector<HTMLElement>('button:not([disabled])')
-      firstControl?.focus()
+      if (firstControl) {
+        firstControl?.focus()
+        if (document.activeElement !== firstControl) window.requestAnimationFrame(() => firstControl.focus({ preventScroll: true }))
+      }
       return
     }
     if (restoreFocusRef.current) {
@@ -144,8 +147,10 @@ export function PersistentWorldCompanion() {
       externalActivatorRef.current = null
       if (activator?.isConnected) activator.focus()
       else orbRef.current?.focus()
+      const focusTarget = activator?.isConnected ? activator : orbRef.current
+      if (focusTarget && document.activeElement !== focusTarget) window.requestAnimationFrame(() => focusTarget.focus({ preventScroll: true }))
     }
-  }, [open])
+  }, [hydrated, open, phase])
 
   useEffect(() => {
     if (!open) return
@@ -154,8 +159,8 @@ export function PersistentWorldCompanion() {
       event.preventDefault()
       closeCompanion(true)
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [closeCompanion, open])
 
   const travel = useCallback((destination: UraiDestination) => {
