@@ -153,8 +153,9 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
         const farBasinLift = Math.pow(tz,2.72)*(5.05 + Math.sin(x*0.36+0.72)*1.02 + Math.sin(x*0.91-1.15)*0.48 - centralNotch)
         const macroHeight = -0.42 + descent + farBasinLift + sideRise + asymmetricRidges + destinationShoulder - destinationCarve + fracture*(1-walkingChannel*0.84) + floorRelief + nearRelief + basinLayer
         const ridgeMask = THREE.MathUtils.clamp((tz-0.28)*0.64 + lateral*0.38 + asymmetricRidges*0.16,0,0.46)
-        const terraceHeight = 0.24
-        const terracedHeight = Math.floor((macroHeight+0.18)/terraceHeight)*terraceHeight - 0.18
+        const terraceHeight = 0.32
+        const selectiveTerraceHeight = terraceHeight*0.75
+        const terracedHeight = Math.floor((macroHeight+0.18)/selectiveTerraceHeight)*selectiveTerraceHeight - 0.18
         const erosionRills = (Math.abs(Math.sin(x*1.63+z*0.93))*0.13 + Math.abs(Math.cos(x*0.77-z*1.51))*0.08 - 0.10)*ridgeMask
         const y = THREE.MathUtils.lerp(macroHeight,terracedHeight,ridgeMask) + erosionRills
         positions.push(x,y,z)
@@ -176,7 +177,7 @@ function SculptedCanyonGround({ onWalk }: { onWalk: (event: ThreeEvent<MouseEven
     result.computeVertexNormals()
     return result
   },[])
-  return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} position={[0,0.035,0]} receiveShadow onClick={onWalk} userData={{ v175Refinement: 'terraced-erosion-canyon-visible-strata-raised-far-rim-detailed-foreground-no-smooth-bowl', v176Refinement: 'weathered-basin-with-selective-strata-readable-foreground-and-clear-hero-silhouette' }}><meshPhysicalMaterial color="#8c9a87" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(1.08,1.08)} roughnessMap={stone.arm} roughness={0.82} metalness={0.001} envMapIntensity={0.92} vertexColors /></mesh>
+  return <mesh name="home-v125-sculpted-canyon-ground" geometry={geometry} position={[0,0.035,0]} receiveShadow onClick={onWalk} userData={{ v175Refinement: 'terraced-erosion-canyon-visible-strata-raised-far-rim-detailed-foreground-no-smooth-bowl', v176Refinement: 'weathered-basin-with-selective-strata-readable-foreground-and-clear-hero-silhouette' }}><meshPhysicalMaterial color="#8c9a87" map={stone.color} normalMap={stone.normal} normalScale={new THREE.Vector2(1.34,1.34)} roughnessMap={stone.arm} roughness={0.82} metalness={0.001} envMapIntensity={0.92} vertexColors /></mesh>
 }
 
 function MemoryConstellation({ reducedMotion }: { reducedMotion: boolean }) {

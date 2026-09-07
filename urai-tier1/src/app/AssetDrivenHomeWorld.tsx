@@ -13,6 +13,7 @@ const HOME_SPAWN = { x: 0, z: 4.6 } as const
 const HOME_ORB = { x: -0.18, z: -6.9 } as const
 const HOME_GROUND = { x: -4.85, z: -8.25 } as const
 const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
+const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
 const REVIEW_ORB_STATES = new Set<OrbState>([
   'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
   'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
@@ -66,6 +67,7 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v126-certification', 'retained-pixel-candidate-not-certified')
       world.setAttribute('data-home-v176-art-layer', 'weathered-basin-recollection-constellation-faceted-orb-heart')
       world.setAttribute('data-home-v176-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
       world.setAttribute('data-home-visual-repair', 'v126-bounded-geology-continuous-ground-framed-fissures-integrated-orb')
       world.setAttribute('data-home-physical-base', 'continuous-sculpted-ground-staggered-terraces-layered-apse')
       world.setAttribute('data-home-visual-grade', 'cinematic-pbr-v126-ground-owned-depth-candidate')
