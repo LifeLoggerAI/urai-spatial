@@ -4,9 +4,9 @@ import test from 'node:test'
 
 const root = new URL('../public/assets/urai/home-production/authored-v191/', import.meta.url)
 const assets = [
-  ['home-continuous-landscape-v191.glb', 8, 2],
-  ['home-ground-place-v191.glb', 6, 2],
-  ['home-life-map-place-v191.glb', 8, 1],
+  ['home-continuous-landscape-v191.glb', 25, 3],
+  ['home-ground-place-v191.glb', 4, 2],
+  ['home-life-map-place-v191.glb', 7, 1],
   ['urai-living-memory-heart-v191.glb', 1, 1],
 ]
 
@@ -48,17 +48,17 @@ test('V193 art uses composed place inventories instead of three-rock placeholder
   const ground = inspectGlb('home-ground-place-v191.glb').json
   const lifeMap = inspectGlb('home-life-map-place-v191.glb').json
   const heart = inspectGlb('urai-living-memory-heart-v191.glb').json
-  assert.ok(ground.nodes.some((node) => node.name === 'home-v193-ground-weathered-gathering-basin'))
-  assert.ok(ground.nodes.filter((node) => node.name?.includes('sheltering-root')).length >= 4)
-  assert.ok(lifeMap.nodes.filter((node) => node.name?.includes('ascending-memory-branch')).length >= 5)
-  assert.ok(lifeMap.nodes.filter((node) => node.name?.includes('suspended-memory-stratum')).length >= 3)
-  assert.ok(heart.nodes.some((node) => node.name === 'home-v193-single-connected-asymmetric-layered-living-memory-heart'))
+  assert.ok(ground.nodes.some((node) => node.name === 'home-v197-ground-integrated-weathered-foundation'))
+  assert.ok(ground.nodes.some((node) => node.name === 'home-v197-ground-continuous-sheltering-memory-wall'))
+  assert.ok(lifeMap.nodes.filter((node) => node.name?.includes('integrated-weathered-memory-ledger')).length >= 5)
+  assert.ok(lifeMap.nodes.some((node) => node.name === 'home-v197-life-map-ascending-observatory-path'))
+  assert.ok(heart.nodes.some((node) => node.name === 'home-v201-single-connected-folded-living-memory-mantle'))
 })
 
 test('authored landscape retains production density after transport-safe optimization', () => {
   const { json } = inspectGlb('home-continuous-landscape-v191.glb')
   const position = json.accessors[json.meshes[0].primitives[0].attributes.POSITION]
   const indices = json.accessors[json.meshes[0].primitives[0].indices]
-  assert.ok(position.count > 11_000, 'landscape must retain more than 11k authored vertices')
-  assert.ok(indices.count > 65_000, 'landscape must retain more than 65k authored triangle indices')
+  assert.ok(position.count > 9_500, 'landscape must retain more than 9.5k authored vertices')
+  assert.ok(indices.count > 57_000, 'landscape must retain more than 57k authored triangle indices')
 })

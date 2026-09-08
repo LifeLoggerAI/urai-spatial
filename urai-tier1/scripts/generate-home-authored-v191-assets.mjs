@@ -167,30 +167,36 @@ function makePlace(kind) {
 }
 
 function makeHeart() {
-  const shape=new THREE.Shape()
-  for(let i=0;i<=96;i++){
-    const t=i/96*Math.PI*2
-    const x=Math.pow(Math.sin(t),3)
-    const y=(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17
-    const px=x*.82+(y>.25?.055:0),py=y*.92
-    if(i===0)shape.moveTo(px,py);else shape.lineTo(px,py)
+  // A single folded mantle, not a ball or literal heart. The offset S-curve gives
+  // the companion a changing open silhouette while the irregular tube section
+  // keeps it tactile at close range. This is the editable source authority used
+  // to produce the runtime GLB.
+  const spine=[]
+  for(let i=0;i<18;i++){
+    const t=i/17, angle=-1.05+t*Math.PI*2.18
+    const radius=.34+.19*Math.sin(t*Math.PI)+.07*Math.sin(t*Math.PI*5.0)
+    spine.push(new THREE.Vector3(
+      Math.cos(angle)*radius-.14+t*.28,
+      .72-t*1.42+.18*Math.sin(t*Math.PI*3.0),
+      Math.sin(angle)*radius*.62+.10*Math.sin(t*Math.PI*4.0),
+    ))
   }
-  const g=new THREE.ExtrudeGeometry(shape,{depth:.46,steps:3,bevelEnabled:true,bevelSegments:5,bevelSize:.10,bevelThickness:.10,curveSegments:96})
-  g.center()
+  const curve=new THREE.CatmullRomCurve3(spine,false,'centripetal',.42)
+  const g=new THREE.TubeGeometry(curve,144,.25,14,false)
   const p=g.getAttribute('position')
   for(let i=0;i<p.count;i++){
     const x=p.getX(i),y=p.getY(i),z=p.getZ(i)
-    const strata=Math.sin(y*13+x*7+z*11)*.035+Math.sin(x*19-z*9)*.018
-    const scar=Math.exp(-Math.pow((x-.30)/.18,2)-Math.pow((y+.02)/.44,2))*.10
-    p.setXYZ(i,x*(1+strata)-scar,y*(1+strata*.55)+.035*Math.sin(x*8),z*(1+strata*.35))
+    const strata=Math.sin(y*15+x*9+z*12)*.036+Math.sin(x*23-z*11)*.019
+    const current=Math.exp(-Math.pow((x-.18)/.22,2)-Math.pow((y+.08)/.48,2))*.075
+    p.setXYZ(i,x*(1+strata)-current,y*(1+strata*.48)+.028*Math.sin(x*9),z*(1+strata*.72))
   }
   p.needsUpdate=true;g.computeVertexNormals()
   const deep=color('#163c34'),light=color('#78bda5'),warm=color('#b79b79'),colors=[]
   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i);const band=.5+.5*Math.sin(y*12+x*8);const c=deep.clone().lerp(light,.24+band*.22).lerp(warm,Math.max(0,x)*.12);colors.push(c.r,c.g,c.b)}
   g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
   const m = new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#496f63',vertexColors:true,emissive:'#6ba891',emissiveIntensity:0.025,roughness:0.91,metalness:0,flatShading:true}))
-  m.name='home-v200-single-connected-scarred-stratified-living-memory-heart';m.rotation.set(-0.10,0.30,-0.10);m.castShadow=true
-  const scene=new THREE.Scene();scene.name='home-v191-authored-orb-heart';scene.add(m);return scene
+  m.name='home-v201-single-connected-folded-living-memory-mantle';m.rotation.set(-0.12,0.36,-0.08);m.castShadow=true
+  const scene=new THREE.Scene();scene.name='home-v201-authored-orb-presence';scene.add(m);return scene
 }
 
 async function exportGlb(scene, name) {

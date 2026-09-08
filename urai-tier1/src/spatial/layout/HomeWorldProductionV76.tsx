@@ -51,6 +51,21 @@ const ORB_PALETTE: Record<OrbState, { core: string; accent: string; intensity: n
   transition: { core: '#fff1d5', accent: '#d1ae7c', intensity: 1.52, moteSize: 0.051 },
 }
 
+const ORB_MOTION: Record<OrbState, { scale: Vec3; tilt: Vec3; breath: number; speed: number }> = {
+  dormant:{scale:[1.40,1.18,1.30],tilt:[0.18,-0.18,-0.20],breath:.008,speed:.18},
+  idle:{scale:[1.62,1.52,1.48],tilt:[-0.08,.18,-.05],breath:.020,speed:.62},
+  attention:{scale:[1.72,1.68,1.36],tilt:[-.18,.32,.16],breath:.028,speed:.88},
+  listening:{scale:[1.48,1.82,1.32],tilt:[.22,-.28,-.12],breath:.018,speed:.44},
+  thinking:{scale:[1.78,1.38,1.62],tilt:[-.28,.56,.22],breath:.032,speed:.36},
+  speaking:{scale:[1.82,1.56,1.24],tilt:[.10,.18,-.24],breath:.050,speed:1.30},
+  guiding:{scale:[1.54,1.92,1.30],tilt:[-.34,-.12,.18],breath:.030,speed:.72},
+  reflecting:{scale:[1.44,1.58,1.72],tilt:[.26,.62,-.18],breath:.014,speed:.28},
+  calming:{scale:[1.72,1.32,1.58],tilt:[-.05,-.24,.08],breath:.012,speed:.24},
+  privacy:{scale:[1.28,1.46,1.18],tilt:[.38,.74,.28],breath:.006,speed:.16},
+  warning:{scale:[1.88,1.78,1.18],tilt:[-.38,-.42,-.28],breath:.058,speed:1.55},
+  transition:{scale:[1.36,2.02,1.22],tilt:[-.44,.34,.30],breath:.040,speed:1.04},
+}
+
 function normalizeAsset(source: THREE.Object3D, span: number, tint?: string, roughness = 0.90) {
   const root = source.clone(true)
   const box = new THREE.Box3().setFromObject(root)
@@ -277,6 +292,7 @@ function ArrivalSignalPath({reducedMotion}:{reducedMotion:boolean}){const geomet
 function LivingOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boolean;onOrb:()=>void}){
   const group = useRef<THREE.Group>(null)
   const palette = ORB_PALETTE[state]
+  const motion = ORB_MOTION[state]
   const source = useGLTF(GOVERNED_ORB).scene
   const authoredHeartSource=useGLTF(AUTHORED_ORB_V191).scene
   const authoredHeart=useMemo(()=>{const root=authoredHeartSource.clone(true);root.traverse(object=>{if(object instanceof THREE.Mesh&&object.material instanceof THREE.MeshStandardMaterial){const material=object.material.clone();material.emissive=new THREE.Color(palette.accent);material.emissiveIntensity=0.055*palette.intensity;object.material=material;object.castShadow=true}});return root},[authoredHeartSource,palette.accent,palette.intensity])
@@ -284,11 +300,11 @@ function LivingOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boo
   const moteGeometry=useMemo(()=>{const positions:number[]=[];for(let index=0;index<1540;index+=1){const verticalSample=((((index*613)%1543)/1542)*2)-1;const angle=index*2.3999632297+Math.sin(index*0.31)*0.14;const radialSample=((index*431)%1553)/1552;const radius=0.035+Math.pow(radialSample,1.52)*0.66;const latitude=Math.sqrt(Math.max(0,1-verticalSample*verticalSample));const irregular=0.84+Math.sin(index*0.19)*0.13+Math.cos(index*0.073)*0.07;positions.push(Math.cos(angle)*latitude*radius*1.16*irregular,verticalSample*radius*0.58+Math.sin(index*0.11)*0.016,Math.sin(angle)*latitude*radius*0.98*irregular)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));return g},[])
   const memoryVolume=useMemo(()=>{const geometry=new THREE.IcosahedronGeometry(0.72,3);const positions=geometry.getAttribute('position') as THREE.BufferAttribute;for(let index=0;index<positions.count;index+=1){const x=positions.getX(index),y=positions.getY(index),z=positions.getZ(index),latitude=y/0.72,shoulder=0.94+Math.sin(latitude*Math.PI*1.40)*0.08+Math.cos((x+z)*4.8)*0.035,taper=0.97-latitude*0.06;positions.setXYZ(index,x*shoulder*taper*0.88,y*1.02+0.035*Math.sin(x*4.8),z*shoulder*(0.78+0.05*latitude))}positions.needsUpdate=true;geometry.computeVertexNormals();return geometry},[])
   const heartGeometry=useMemo(()=>{const geometry=new THREE.IcosahedronGeometry(0.16,2);const positions=geometry.getAttribute('position') as THREE.BufferAttribute;for(let index=0;index<positions.count;index+=1){const x=positions.getX(index),y=positions.getY(index),z=positions.getZ(index),latitude=y/.16,weathering=0.91+Math.sin(index*2.17)*0.075+Math.cos(index*.73)*0.035;positions.setXYZ(index,x*weathering*(0.82-latitude*.16),y*weathering*1.04,z*weathering*.70)}positions.needsUpdate=true;geometry.computeVertexNormals();return geometry},[])
-  useFrame(({clock})=>{if(!group.current||reducedMotion)return;const t=clock.getElapsedTime();group.current.position.y=ORB.y+Math.sin(t*(state==='speaking'?1.30:0.62))*0.020;group.current.rotation.y=Math.sin(t*0.14)*0.026})
-  return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x,ORB.y,ORB.z]} scale={[1.72,1.72,1.72]} onClick={(event) => { event.stopPropagation(); onOrb() }} userData={{v165Refinement:'contained-memory-mote-heart-primary-presence-no-capsule-no-aura-no-pedestal',v167Refinement:'filled-irregular-memory-swarm-small-seed-no-shell-silhouette',v172Refinement:'larger-filled-memory-swarm-near-invisible-seed-open-air-beneath-no-aura-no-pedestal',v174Refinement:'wide-contained-memory-swarm-dense-living-heart-open-air-beneath-no-aura-no-pedestal',v175Refinement:'dense-horizontal-living-memory-cloud-with-compact-multi-depth-heart-no-fountain-no-ball',v185Refinement:'large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain',v186Refinement:'bounded-fine-grain-memory-heart-readable-near-and-far-no-particle-wall'}}>
+  useFrame(({clock},delta)=>{if(!group.current)return;const t=clock.getElapsedTime(),pulse=reducedMotion?0:Math.sin(t*motion.speed)*motion.breath;group.current.position.y=ORB.y+pulse;group.current.scale.lerp(new THREE.Vector3(motion.scale[0]+pulse,motion.scale[1]-pulse*.4,motion.scale[2]+pulse*.25),1-Math.pow(.0008,delta));group.current.rotation.set(motion.tilt[0]+(reducedMotion?0:Math.sin(t*.21)*.025),motion.tilt[1]+(reducedMotion?0:Math.sin(t*.14)*.055),motion.tilt[2]+(reducedMotion?0:Math.cos(t*.19)*.022))})
+  return <group ref={group} name="home-v126-apse-integrated-orb" position={[ORB.x,ORB.y,ORB.z]} scale={motion.scale} onClick={(event) => { event.stopPropagation(); onOrb() }} userData={{v201Refinement:'single-connected-folded-memory-mantle-with-state-specific-silhouette-timing-emission-and-surface-response'}}>
     <mesh name="home-v132-orb-memory-volume" geometry={memoryVolume} castShadow scale={[0.24,0.20,0.23]}><meshPhysicalMaterial color="#416f5c" emissive={palette.accent} emissiveIntensity={0.010} roughness={0.70} metalness={0.003} transmission={0.01} thickness={0.10} transparent opacity={0.002} depthWrite={false}/></mesh>
     <primitive object={orb} visible={false}/>
-    <primitive object={authoredHeart} name="home-v200-authored-single-connected-scarred-living-memory-heart" scale={[0.42,0.42,0.42]}/>
+    <primitive object={authoredHeart} name="home-v201-authored-single-connected-folded-living-memory-presence" scale={[0.54,0.54,0.54]}/>
     <mesh name="home-v188-orb-heart-port-lobe" geometry={heartGeometry} visible={false}><meshBasicMaterial transparent opacity={0}/></mesh>
     <mesh name="home-v188-orb-heart-starboard-lobe" geometry={heartGeometry} visible={false}><meshBasicMaterial transparent opacity={0}/></mesh>
     <mesh name="home-v188-orb-heart-crown-lobe" geometry={heartGeometry} visible={false}><meshBasicMaterial transparent opacity={0}/></mesh>
@@ -302,7 +318,7 @@ function LivingOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boo
     <mesh name="home-v182-orb-faceted-mineral-seed" geometry={heartGeometry} rotation={[0.18,-0.34,0.10]} scale={[0.82,0.88,0.76]} castShadow visible={false}><meshStandardMaterial color="#244d42" emissive={palette.accent} emissiveIntensity={0.018} roughness={0.66} metalness={0.018} flatShading/></mesh>
     <mesh name="home-v126-orb-generous-hit-target"><sphereGeometry args={[1.50,16,12]}/><meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false}/></mesh>
     <pointLight color={palette.core} intensity={palette.intensity*0.34} distance={4.8} decay={2}/><pointLight position={[0.42,-0.08,0.46]} color={palette.accent} intensity={palette.intensity*0.10} distance={3.2} decay={2}/>
-    <group name={`home-v126-orb-state-${state}`} userData={{ state, treatment: 'governed-petal-heart-no-aura-no-orbit-rings' }}/>
+    <group name={`home-v201-orb-state-${state}`} userData={{ state, treatment: 'connected-folded-memory-mantle-state-specific-silhouette' }}/>
   </group>
 }
 

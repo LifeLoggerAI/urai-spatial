@@ -65,7 +65,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeArt, /name="home-v126-apse-integrated-orb"/)
   assert.match(homeArt, /const source = useGLTF\(GOVERNED_ORB\)\.scene/)
   assert.match(homeArt, /name="home-v126-orb-memory-motes"/)
-  assert.match(homeArt, /treatment: 'governed-petal-heart-no-aura-no-orbit-rings'/)
+  assert.match(homeArt, /treatment: 'connected-folded-memory-mantle-state-specific-silhouette'/)
   assert.match(homeProduction, /window\.addEventListener\(URAI_ORB_STATE_EVENT, listener\)/)
   assert.match(homeProduction, /data-home-orb-state=\{orbState\}/)
   assert.match(homeProduction, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState, reducedMotion, true\)\.animation\}/)

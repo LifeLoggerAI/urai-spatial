@@ -54,15 +54,15 @@ test('V193 destinations use distinct authored places and suppress predecessor cr
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone[^>]*visible=\{false\}/)
 })
 
-test('V193 Orb uses one connected layered asymmetric heart and suppresses every predecessor point or lobe identity', () => {
+test('V201 Orb uses one connected folded asymmetric presence and suppresses every predecessor point or lobe identity', () => {
   assert.match(art, /for\(let index=0;index<1540;index\+=1\)/)
-  assert.match(art, /large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain/)
-  assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.72,1\.72,1\.72\]\}/)
+  assert.match(art, /single-connected-folded-memory-mantle-with-state-specific-silhouette-timing-emission-and-surface-response/)
+  assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{motion\.scale\}/)
   assert.match(art, /name="home-v188-orb-heart-port-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
   assert.match(art, /AUTHORED_ORB_V191/)
-  assert.match(art, /home-v200-authored-single-connected-scarred-living-memory-heart/)
+  assert.match(art, /home-v201-authored-single-connected-folded-living-memory-presence/)
   assert.match(art, /home-v188-orb-heart-port-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-starboard-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-crown-lobe[^>]*visible=\{false\}/)

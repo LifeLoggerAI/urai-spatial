@@ -18,10 +18,10 @@ test('V197 replaces the Life Map stick-and-ball diagram with a grounded observat
   assert.doesNotMatch(generator, /home-v196-life-map-ascending-memory-branch|home-v196-life-map-suspended-memory-canopy/)
 })
 
-test('V197 gives the single connected Orb a scarred asymmetric silhouette', () => {
-  assert.match(generator, /new THREE\.ExtrudeGeometry\(shape/)
-  assert.match(generator, /const scar=/)
-  assert.match(generator, /home-v200-single-connected-scarred-stratified-living-memory-heart/)
+test('V201 gives the single connected Orb a folded asymmetric silhouette', () => {
+  assert.match(generator, /new THREE\.TubeGeometry\(curve,144/)
+  assert.match(generator, /const current=/)
+  assert.match(generator, /home-v201-single-connected-folded-living-memory-mantle/)
 })
 
 test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
@@ -37,6 +37,6 @@ test('V199 runtime composes both places and the Orb inside the initial portrait-
   assert.match(runtime, /home-v199-\$\{side\}-authored-memory-place/)
   assert.match(runtime, /position=\{\[isGround\?1\.15:-1\.15,isGround\?-0\.82:-0\.84,0\]\}/)
   assert.match(runtime, /scale=\{isGround\?\[1\.34,1\.34,1\.34\]:\[0\.82,0\.82,0\.82\]\}/)
-  assert.match(runtime, /home-v200-authored-single-connected-scarred-living-memory-heart/)
-  assert.match(runtime, /scale=\{\[0\.42,0\.42,0\.42\]\}/)
+  assert.match(runtime, /home-v201-authored-single-connected-folded-living-memory-presence/)
+  assert.match(runtime, /scale=\{\[0\.54,0\.54,0\.54\]\}/)
 })

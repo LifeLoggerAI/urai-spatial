@@ -29,9 +29,9 @@ test('V185 destinations stay terrain-bound and readable from the real nearby cam
   assert.doesNotMatch(art, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
-test('V185 Orb remains aligned to exact proximity authority and is a large point-memory presence without a solid seed', () => {
-  for (const marker of ['function LivingOrb(','home-v126-orb-memory-motes','home-v154-orb-memory-depth-motes','home-v174-orb-memory-nucleus-motes','home-v179-orb-memory-heart-motes','large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain']) has(art, marker)
-  assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.72,1\.72,1\.72\]\}/)
+test('V201 Orb remains aligned to exact proximity authority with a state-responsive folded presence', () => {
+  for (const marker of ['function LivingOrb(','home-v126-orb-memory-motes','home-v154-orb-memory-depth-motes','home-v174-orb-memory-nucleus-motes','home-v179-orb-memory-heart-motes','single-connected-folded-memory-mantle-with-state-specific-silhouette-timing-emission-and-surface-response']) has(art, marker)
+  assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{motion\.scale\}/)
   assert.match(art, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
   assert.match(runtime, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.match(telemetry, /const HOME_ORB = \{ x: -0\.18, z: -6\.9 \} as const/)

@@ -261,33 +261,69 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
   );
 }
 
+function memoryLedgerGeometry(seed: number) {
+  const shape = new THREE.Shape();
+  const lean = ((seed % 7) - 3) * 0.018;
+  shape.moveTo(-0.42, -0.62);
+  shape.bezierCurveTo(-0.52, -0.20, -0.38 + lean, 0.34, -0.18, 0.67);
+  shape.bezierCurveTo(0.02, 0.82, 0.31, 0.61, 0.39, 0.22);
+  shape.bezierCurveTo(0.47, -0.16, 0.31, -0.52, 0.08, -0.70);
+  shape.bezierCurveTo(-0.10, -0.77, -0.31, -0.72, -0.42, -0.62);
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.24, steps: 2, curveSegments: 10, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.06, bevelThickness: 0.06 });
+  geometry.center();
+  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index), y = position.getY(index), z = position.getZ(index);
+    const age = Math.sin(x * (8.4 + seed * 0.07) + y * 6.1 + z * 13.0) * 0.035 + Math.cos(y * 15.0 - x * 5.2) * 0.018;
+    position.setXYZ(index, x * (1 + age), y + age * 0.55, z * (1 + age * 1.7));
+  }
+  position.needsUpdate = true; geometry.computeVertexNormals();
+  return geometry;
+}
+
 function MemorySeed({ aura, active }: { aura: string; active: boolean }) {
-  const geometry = useMemo(() => {
-    const seed = new THREE.IcosahedronGeometry(0.62, 3);
-    const positions = seed.getAttribute("position") as THREE.BufferAttribute;
-    for (let index = 0; index < positions.count; index += 1) {
-      const x = positions.getX(index);
-      const y = positions.getY(index);
-      const z = positions.getZ(index);
-      const ripple = 1 + Math.sin(x * 5.7 + y * 3.4) * 0.075 + Math.cos(z * 6.1 - y * 1.4) * 0.055;
-      positions.setXYZ(index, x * ripple * 0.88, y * ripple * 1.06, z * ripple * 0.74);
-    }
-    positions.needsUpdate = true;
-    seed.computeVertexNormals();
-    return seed;
-  }, []);
-  return <group name="life-map-sculpted-memory-seed">
+  const geometry = useMemo(() => memoryLedgerGeometry(aura.split("").reduce((sum, letter) => sum + letter.charCodeAt(0), 0)), [aura]);
+  return <group name="life-map-weathered-memory-ledger">
     <mesh geometry={geometry} castShadow>
-      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.18 : 0.065} roughness={0.86} metalness={0.01} transmission={0} thickness={0.18} transparent opacity={active ? 0.78 : 0.58} depthWrite flatShading clearcoat={0.01} clearcoatRoughness={0.86} />
+      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.16 : 0.045} roughness={0.91} metalness={0.005} transmission={0} thickness={0.18} clearcoat={0.015} clearcoatRoughness={0.90} />
     </mesh>
-    <mesh geometry={geometry} scale={0.34}>
-      <meshStandardMaterial color={aura} emissive={ICE} emissiveIntensity={active ? 0.62 : 0.34} roughness={0.68} flatShading />
+    <mesh geometry={geometry} scale={[0.78, 0.82, 0.76]} position={[0.08, -0.02, 0.04]}>
+      <meshStandardMaterial color="#18292d" emissive={aura} emissiveIntensity={active ? 0.32 : 0.12} roughness={0.94} />
     </mesh>
-    <FieldParticles seed={active ? 417 : 211} count={active ? 52 : 20} radius={active ? 1.05 : 0.72} depth={active ? 1.8 : 1.15} height={active ? 1.8 : 1.15} color={ICE} opacity={active ? 0.62 : 0.38} size={active ? 0.046 : 0.030} />
-    {active ? <>
-      <Current points={[[-0.88, -0.16, 0.12], [-0.56, 0.10, -0.22], [-0.24, 0.24, -0.40]]} color={aura} opacity={0.26} width={0.012} />
-      <Current points={[[0.24, -0.30, -0.32], [0.52, -0.08, -0.18], [0.86, 0.20, 0.14]]} color={ICE} opacity={0.20} width={0.010} />
-    </> : null}
+    <pointLight color={aura} intensity={active ? 1.8 : 0.42} distance={active ? 4.8 : 2.4} decay={2} />
+  </group>;
+}
+
+function MemoryLandscape({ selected }: { selected: LifeMapNode | null }) {
+  const terrain = useMemo(() => {
+    const columns = 56, rows = 68, positions: number[] = [], colors: number[] = [], indices: number[] = [];
+    const deep = new THREE.Color("#102126"), mineral = new THREE.Color("#344844"), memory = new THREE.Color("#403d59");
+    for (let row = 0; row <= rows; row += 1) for (let column = 0; column <= columns; column += 1) {
+      const u = column / columns, v = row / rows, x = (u - 0.5) * 38, z = 5 - v * 52;
+      const valley = -2.55 + Math.pow(Math.abs(x) / 19, 2.2) * (1.2 + v * 2.4);
+      const history = Math.sin(x * 0.31 + z * 0.16) * 0.34 + Math.sin(x * 0.83 - z * 0.29) * 0.13;
+      const ascent = Math.pow(v, 2.4) * 4.8 + Math.exp(-Math.pow((x - 7) / 5, 2) - Math.pow((z + 22) / 10, 2)) * 2.1;
+      const y = valley + history * (0.28 + Math.abs(x) / 19) + ascent;
+      positions.push(x, y, z);
+      const c = deep.clone().lerp(mineral, Math.min(1, (y + 3) * 0.16)).lerp(memory, Math.max(0, v - 0.45) * 0.34);
+      colors.push(c.r, c.g, c.b);
+    }
+    for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+      const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
+      if ((row + column) % 2) indices.push(a, b, d, a, d, c); else indices.push(a, b, c, b, d, c);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
+  }, []);
+  const landmarks = useMemo(() => [17, 29, 43, 61, 83].map(memoryLedgerGeometry), []);
+  if (selected) return null;
+  return <group name="life-map-inhabitable-memory-landscape">
+    <mesh geometry={terrain} receiveShadow><meshStandardMaterial vertexColors roughness={0.98} metalness={0} /></mesh>
+    {landmarks.map((geometry, index) => <mesh key={index} geometry={geometry} position={[-11 + index * 5.4, -0.9 + index * 0.42, -11 - index * 5.1]} rotation={[0.05 * index, index * 0.29 - 0.5, index % 2 ? -0.12 : 0.09]} scale={[1.5 + index * 0.18, 2.8 + index * 0.42, 1.3]} castShadow receiveShadow>
+      <meshStandardMaterial color={index % 2 ? "#2c3342" : "#263a38"} emissive={index % 2 ? VIOLET : CYAN} emissiveIntensity={0.035} roughness={0.94} />
+    </mesh>)}
   </group>;
 }
 
@@ -666,6 +702,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
           <Current points={[[-28, 8, -42], [-12, 10, -48], [0, 7, -54], [13, 11, -48], [28, 8, -42]]} color={CYAN} opacity={0.08} width={0.18} />
         </group>
         <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
+        <MemoryLandscape selected={selected} />
         <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
           <LifeCore hidden={Boolean(selected)} reducedMotion={profile.reducedMotion} tier={profile.tier} />
           <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>

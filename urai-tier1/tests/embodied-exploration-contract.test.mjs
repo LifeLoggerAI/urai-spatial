@@ -47,7 +47,7 @@ test('V185 preserves embodied authority while repairing contour terrain, camera 
     'detached-apse-masses-retained-nonrendered-no-pedestal',
     'function LivingOrb(', 'home-v126-apse-integrated-orb', 'home-v126-orb-memory-motes',
     'home-v154-orb-memory-depth-motes', 'home-v174-orb-memory-nucleus-motes', 'home-v179-orb-memory-heart-motes',
-    'large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain',
+    'single-connected-folded-memory-mantle-with-state-specific-silhouette-timing-emission-and-surface-response',
     'v185-continuous-weathered-canyon-camera-safe-destination-basins-large-contained-memory-orb-no-runway',
     'remove-contour-staircase-carve-camera-safe-destination-basins-brighten-world-sky-enlarge-point-orb-hide-solid-seed',
   ]) has(homeArt, marker)
@@ -55,7 +55,7 @@ test('V185 preserves embodied authority while repairing contour terrain, camera 
   assert.match(homeArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
   assert.match(homeArt, /<primitive object=\{environment\} visible=\{false\} \/>/)
   assert.match(homeArt, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
-  assert.match(homeArt, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.72,1\.72,1\.72\]\}/)
+  assert.match(homeArt, /name="home-v126-apse-integrated-orb"[^>]*scale=\{motion\.scale\}/)
   assert.match(homeArt, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
   assert.match(homeArt, /const ORB = new THREE\.Vector3\(-0\.18, 2\.18, -6\.90\)/)
   assert.doesNotMatch(homeArt, /function canyonShelfGeometry|function CanyonShelf|home-v164-\$\{side\}-continuous-canyon-shelf/)
