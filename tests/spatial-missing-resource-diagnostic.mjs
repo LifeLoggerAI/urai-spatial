@@ -114,6 +114,11 @@ function isBenignLocalAbort(entry, successfulResponses) {
   if (entry.method === 'GET'
     && entry.resourceType === 'fetch'
     && parsed.search === ''
+    && parsed.pathname.startsWith('/assets/')
+    && successfulResponses.has(requestKey(entry.method, parsed.toString()))) return true;
+  if (entry.method === 'GET'
+    && entry.resourceType === 'fetch'
+    && parsed.search === ''
     && promotedGeneratedAssetPaths.has(parsed.pathname)) return true;
   return entry.method === 'GET'
     && entry.resourceType === 'fetch'
@@ -276,6 +281,31 @@ try {
     }
   }
 
+  // Browser navigation can abort a late same-origin asset fetch even when the
+  // immutable resource exists. Prove the exact URL independently before
+  // classifying that abort; real 4xx/5xx responses and unreadable assets remain
+  // actionable.
+  for (const entry of failedRequests) {
+    if (entry.failure !== 'net::ERR_ABORTED'
+      || entry.method !== 'GET'
+      || entry.resourceType !== 'fetch') continue;
+    let parsed;
+    try {
+      parsed = new URL(entry.url);
+    } catch {
+      continue;
+    }
+    if (parsed.origin !== baseOrigin
+      || parsed.search !== ''
+      || !parsed.pathname.startsWith('/assets/')) continue;
+    try {
+      const response = await fetch(parsed.toString());
+      if (response.ok) successfulResponses.add(requestKey(entry.method, parsed.toString()));
+    } catch {
+      // Preserve the original failed request as actionable.
+    }
+  }
+
   const blockedKeys = new Set(blockedExternalRequests.map((entry) => `${entry.method}:${entry.url}`));
   const ignored = failedRequests.filter((entry) => isBenignLocalAbort(entry, successfulResponses));
   const actionableFailedRequests = failedRequests.filter((entry) => {
@@ -307,6 +337,7 @@ try {
         'next-hmr-hot-update',
         'next-dev-route-chunk-navigation',
         'canonical-local-manifest-navigation-cancellation',
+        'proven-readable-local-asset-navigation-cancellation',
         'promoted-generated-asset-navigation-cancellation',
       ],
     },
