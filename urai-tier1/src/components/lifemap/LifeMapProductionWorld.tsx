@@ -19,6 +19,8 @@ import {
   resolvePathKind,
 } from "./lifeMapVisualSystem";
 
+// V215 literal-pixel authority: one continuous terrain surface and low interlocking memory strata.
+
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
