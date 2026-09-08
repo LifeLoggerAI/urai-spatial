@@ -50,7 +50,7 @@ test('V193 destinations use distinct authored places and suppress predecessor cr
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone/)
   assert.match(art, /AUTHORED_GROUND_V191/)
   assert.match(art, /AUTHORED_LIFE_MAP_V191/)
-  assert.match(art, /home-v194-\$\{side\}-authored-memory-place/)
+  assert.match(art, /home-v196-\$\{side\}-authored-memory-place/)
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone[^>]*visible=\{false\}/)
 })
 
@@ -62,7 +62,7 @@ test('V193 Orb uses one connected layered asymmetric heart and suppresses every 
   assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
   assert.match(art, /AUTHORED_ORB_V191/)
-  assert.match(art, /home-v194-authored-single-connected-layered-living-memory-heart/)
+  assert.match(art, /home-v196-authored-single-connected-stratified-living-memory-heart/)
   assert.match(art, /home-v188-orb-heart-port-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-starboard-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-crown-lobe[^>]*visible=\{false\}/)

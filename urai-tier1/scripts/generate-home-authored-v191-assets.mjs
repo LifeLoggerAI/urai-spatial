@@ -74,10 +74,6 @@ function makeLandscape() {
     shelf.position.set(x,y,z); shelf.scale.set(sx,sy,sz); shelf.rotation.set(0.08 * (index % 2 ? -1 : 1),ry,index % 2 ? 0.11 : -0.08)
     shelf.castShadow = true; shelf.receiveShadow = true; scene.add(shelf)
   })
-  const lintelGeometry = deformGeometry(new THREE.CapsuleGeometry(0.72,4.8,6,12),37,0.82)
-  const lintel = new THREE.Mesh(lintelGeometry,strataMaterial)
-  lintel.name='home-v193-deep-memory-overhang'; lintel.position.set(-0.8,3.55,-16.4); lintel.rotation.set(0,0,Math.PI/2.25); lintel.scale.set(1,1.75,1.25)
-  lintel.castShadow=true; lintel.receiveShadow=true; scene.add(lintel)
   return scene
 }
 
@@ -97,24 +93,25 @@ function makePlace(kind) {
   const baseColor = isGround ? '#204b37' : '#3d315d', glow = isGround ? '#72d59a' : '#a99be0'
   const material = new THREE.MeshStandardMaterial({color:baseColor,emissive:glow,emissiveIntensity:0.055,roughness:0.89,metalness:0.002})
   if (isGround) {
-    const basin = new THREE.Mesh(deformGeometry(new THREE.TorusGeometry(1.28,.24,16,64),9,.72),material)
-    basin.name='home-v193-ground-weathered-gathering-basin'; basin.rotation.x=Math.PI/2; basin.scale.set(1.18,.88,1); basin.receiveShadow=true; scene.add(basin)
-    const roots = [[-1.0,.25,.15,-.55],[.92,.22,.10,.48],[-.64,.32,-.58,-.20],[.62,.29,-.62,.24]]
-    roots.forEach(([x,y,z,rz],i)=>{const g=deformGeometry(new THREE.CapsuleGeometry(.15,1.05,8,16),13+i,.88);const m=new THREE.Mesh(g,material);m.name=`home-v193-ground-sheltering-root-${i+1}`;m.position.set(x,y,z);m.rotation.set(Math.PI/2.35,0,rz);m.castShadow=true;m.receiveShadow=true;scene.add(m)})
+    const basin = new THREE.Mesh(deformGeometry(new THREE.CylinderGeometry(1.65,1.9,.20,18),9,.58),material)
+    basin.name='home-v196-ground-weathered-gathering-earth'; basin.position.y=-.04; basin.scale.set(1.18,1,.86); basin.receiveShadow=true; scene.add(basin)
+    const roots = [[-1.35,.18,.16,-.72],[1.28,.16,.10,.66],[-.92,.22,-.72,-.34],[.90,.20,-.74,.38],[-.18,.16,.96,-1.18]]
+    roots.forEach(([x,y,z,rz],i)=>{const g=deformGeometry(new THREE.CapsuleGeometry(.17,1.22,6,12),13+i,.78);const m=new THREE.Mesh(g,material);m.name=`home-v196-ground-sheltering-root-${i+1}`;m.position.set(x,y,z);m.rotation.set(Math.PI/2.55,0,rz);m.castShadow=true;m.receiveShadow=true;scene.add(m)})
+    for (let i=0;i<8;i++) { const angle=i/8*Math.PI*2; const g=deformGeometry(new THREE.DodecahedronGeometry(.34,1),70+i,.72); const seat=new THREE.Mesh(g,material); seat.name=`home-v196-ground-gathering-seat-${i+1}`; seat.position.set(Math.cos(angle)*1.42,.22,Math.sin(angle)*1.12); seat.scale.set(1.20,.58,.92); seat.rotation.y=-angle; seat.castShadow=true; seat.receiveShadow=true; scene.add(seat) }
     const hearthMaterial=new THREE.MeshStandardMaterial({color:'#6f5842',emissive:'#c19462',emissiveIntensity:.16,roughness:.96})
-    const hearth=new THREE.Mesh(deformGeometry(new THREE.CylinderGeometry(.48,.62,.18,14),31,.8),hearthMaterial);hearth.name='home-v193-ground-tactile-memory-hearth';hearth.position.y=.10;hearth.receiveShadow=true;scene.add(hearth)
+    const hearth=new THREE.Mesh(deformGeometry(new THREE.CylinderGeometry(.62,.78,.24,12),31,.8),hearthMaterial);hearth.name='home-v196-ground-tactile-memory-hearth';hearth.position.y=.16;hearth.receiveShadow=true;scene.add(hearth)
   } else {
     const strataMaterial=new THREE.MeshStandardMaterial({color:'#413b62',emissive:glow,emissiveIntensity:.07,roughness:.84,metalness:0})
-    const branches=[[-.92,.38,0,.9,.18,-.32],[-.50,.92,-.08,1.15,.15,.36],[.02,1.48,0,1.38,.14,-.22],[.55,2.05,-.12,1.12,.13,.42],[.92,2.58,0,.82,.12,-.28]]
-    branches.forEach(([x,y,z,len,r,rz],i)=>{const g=deformGeometry(new THREE.CapsuleGeometry(r,len,6,12),41+i,1);const m=new THREE.Mesh(g,strataMaterial);m.name=`home-v193-life-map-ascending-memory-branch-${i+1}`;m.position.set(x,y,z);m.rotation.set(0,0,Math.PI/2+rz);m.castShadow=true;scene.add(m)})
-    const layers=[[-.72,.55,.12,.48],[.20,1.38,-.06,.58],[.74,2.30,.10,.42]]
-    layers.forEach(([x,y,z,s],i)=>{const g=deformGeometry(new THREE.TorusKnotGeometry(s,.07,72,10,2,3),52+i,1);const m=new THREE.Mesh(g,strataMaterial);m.name=`home-v193-life-map-suspended-memory-stratum-${i+1}`;m.position.set(x,y,z);m.rotation.set(.35,i*.4,.18);scene.add(m)})
+    const branches=[[0,.62,0,1.30,.22,0],[-.48,1.45,0,1.08,.16,-.58],[.48,1.45,-.04,1.08,.16,.58],[-.92,2.18,.02,.92,.13,-.82],[.92,2.18,-.06,.92,.13,.82],[-.34,2.50,.04,.78,.12,-.34],[.34,2.50,-.02,.78,.12,.34]]
+    branches.forEach(([x,y,z,len,r,rz],i)=>{const g=deformGeometry(new THREE.CapsuleGeometry(r,len,5,10),41+i,1);const m=new THREE.Mesh(g,strataMaterial);m.name=`home-v196-life-map-ascending-memory-branch-${i+1}`;m.position.set(x,y,z);m.rotation.set(0,0,rz);m.castShadow=true;scene.add(m)})
+    const layers=[[-1.28,2.52,.08,.30],[-.62,2.88,-.08,.36],[0,3.10,.06,.42],[.64,2.88,-.04,.34],[1.28,2.52,.10,.29],[-.78,1.92,.12,.24],[.78,1.92,-.10,.24]]
+    layers.forEach(([x,y,z,s],i)=>{const g=deformGeometry(new THREE.DodecahedronGeometry(s,1),52+i,1.12);const m=new THREE.Mesh(g,strataMaterial);m.name=`home-v196-life-map-suspended-memory-canopy-${i+1}`;m.position.set(x,y,z);m.rotation.set(.22,i*.47,.15);m.castShadow=true;scene.add(m)})
   }
   return scene
 }
 
 function makeHeart() {
-  const u = 120, v = 84, positions = [], colors = [], indices = []
+  const u = 52, v = 38, positions = [], colors = [], indices = []
   const deep = color('#163c34'), light = color('#78bda5'), warm = color('#b79b79')
   for (let yi = 0; yi <= v; yi++) {
     const phi = yi / v * Math.PI
@@ -124,8 +121,8 @@ function makeHeart() {
       let x = ring * Math.cos(theta), z = ring * Math.sin(theta), y = sy
       const cleft = Math.exp(-Math.pow(x / 0.27, 2)) * Math.exp(-Math.pow((y - 0.72) / 0.34, 2)) * 0.34
       const taper = 0.54 + 0.46 * ((y + 1) * 0.5)
-      const memoryLayer = Math.sin(theta * 7 + phi * 5.3) * 0.030 + Math.sin(theta * 13 - phi * 3.7) * 0.014
-      const living = 1 + Math.sin(theta * 3 + phi * 2.1) * 0.070 + Math.cos(theta * 5 - phi * 1.4) * 0.040 + memoryLayer
+      const memoryLayer = Math.sin(theta * 7 + phi * 5.3) * 0.070 + Math.sin(theta * 13 - phi * 3.7) * 0.035
+      const living = 1 + Math.sin(theta * 3 + phi * 2.1) * 0.115 + Math.cos(theta * 5 - phi * 1.4) * 0.075 + memoryLayer
       x = x * taper * 0.72 * living * (1 + 0.08 * Math.sin(theta + 0.6))
       z = z * taper * 0.56 * living
       y = y * 0.90 - cleft + 0.055 * Math.sin(theta * 2 + phi) * ring
@@ -137,8 +134,8 @@ function makeHeart() {
   }
   for (let y=0;y<v;y++) for(let x=0;x<u;x++){const a=y*(u+1)+x,b=a+1,c=a+u+1,d=c+1;indices.push(a,b,c,b,d,c)}
   const g = new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals()
-  const m = new THREE.Mesh(g,new THREE.MeshPhysicalMaterial({color:'#496f63',vertexColors:true,emissive:'#6ba891',emissiveIntensity:0.045,roughness:0.92,metalness:0,clearcoat:0.05,clearcoatRoughness:0.94}))
-  m.name='home-v193-single-connected-asymmetric-layered-living-memory-heart';m.rotation.set(-0.08,0.31,-0.10);m.castShadow=true
+  const m = new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#496f63',vertexColors:true,emissive:'#6ba891',emissiveIntensity:0.035,roughness:0.98,metalness:0,flatShading:true}))
+  m.name='home-v196-single-connected-asymmetric-stratified-living-memory-heart';m.rotation.set(-0.12,0.38,-0.14);m.castShadow=true
   const scene=new THREE.Scene();scene.name='home-v191-authored-orb-heart';scene.add(m);return scene
 }
 
