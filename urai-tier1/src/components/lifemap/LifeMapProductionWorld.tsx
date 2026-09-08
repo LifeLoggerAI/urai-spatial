@@ -353,6 +353,85 @@ function erodedRidgeGeometry(seed: number, width: number, height: number, depth:
   return geometry;
 }
 
+function weatheredOutcropGeometry(seed: number, radius: number, height: number) {
+  const sides = 9 + seed % 5;
+  const levels = 5;
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const indices: number[] = [];
+  const shadow = new THREE.Color("#182827");
+  const stone = new THREE.Color(seed % 3 === 0 ? "#52625a" : seed % 3 === 1 ? "#3f5551" : "#47495a");
+  for (let level = 0; level <= levels; level += 1) {
+    const v = level / levels;
+    const taper = 1 - Math.pow(v, 1.6) * (0.64 + seeded(seed, 90) * 0.2);
+    for (let side = 0; side < sides; side += 1) {
+      const angle = side / sides * Math.PI * 2;
+      const ledge = level === 1 || level === 3 ? 1.12 : 1;
+      const weather = 0.76 + seeded(seed * 17 + level * 41 + side, 91) * 0.42;
+      const x = Math.cos(angle) * radius * taper * ledge * weather;
+      const z = Math.sin(angle) * radius * taper * ledge * weather * (0.68 + seeded(seed, 92) * 0.5);
+      const y = v * height + Math.sin(angle * 3 + seed) * 0.07 * (1 - v);
+      positions.push(x, y, z);
+      const color = shadow.clone().lerp(stone, 0.24 + v * 0.7);
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+  for (let level = 0; level < levels; level += 1) for (let side = 0; side < sides; side += 1) {
+    const a = level * sides + side;
+    const b = level * sides + (side + 1) % sides;
+    const c = (level + 1) * sides + side;
+    const d = (level + 1) * sides + (side + 1) % sides;
+    if ((side + level) % 2) indices.push(a, c, b, b, c, d); else indices.push(a, c, d, a, d, b);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function WeatheredOutcrops() {
+  const outcrops = useMemo(() => [
+    [-15.2, -2.25, 1.4, 1.8, 1.15, 11], [-11.8, -2.35, -1.7, 2.5, 1.7, 19],
+    [13.7, -2.30, 0.1, 2.1, 1.35, 27], [16.5, -2.0, -5.2, 3.2, 2.4, 31],
+    [-16.8, -1.8, -8.0, 3.8, 3.0, 43], [-12.4, -1.55, -13.6, 2.7, 2.7, 47],
+    [12.8, -1.75, -10.8, 3.5, 2.9, 59], [16.2, -1.2, -17.4, 3.6, 3.8, 67],
+    [-14.9, -0.9, -21.0, 4.2, 4.5, 71], [-10.4, -0.5, -27.2, 3.1, 4.1, 79],
+    [10.8, -0.3, -25.8, 3.4, 4.2, 83], [15.0, 0.15, -31.8, 4.6, 5.1, 97],
+  ].map(([x, y, z, radius, height, seed]) => ({
+    geometry: weatheredOutcropGeometry(seed, radius, height),
+    position: [x, y, z] as Point3,
+    rotation: [0, seeded(seed, 94) * Math.PI, (seeded(seed, 95) - 0.5) * 0.12] as Point3,
+  })), []);
+  return <group name="life-map-weathered-inhabited-outcrops">
+    {outcrops.map((outcrop, index) => <mesh key={index} geometry={outcrop.geometry} position={outcrop.position} rotation={outcrop.rotation} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors roughness={0.99} metalness={0} flatShading />
+    </mesh>)}
+  </group>;
+}
+
+function InhabitedMemoryAlcoves() {
+  const alcoves = [
+    { position: [-8.6, -1.45, -5.8] as Point3, turn: 0.32, color: CYAN, seed: 121 },
+    { position: [8.9, -1.18, -12.8] as Point3, turn: -0.46, color: GOLD, seed: 133 },
+    { position: [-7.3, -0.58, -20.2] as Point3, turn: 0.22, color: VIOLET, seed: 149 },
+    { position: [6.4, 0.25, -28.5] as Point3, turn: -0.18, color: ICE, seed: 163 },
+  ];
+  return <group name="life-map-inhabited-memory-alcoves">
+    {alcoves.map(({ position, turn, color, seed }, index) => {
+      const shelter = weatheredOutcropGeometry(seed, 2.1 + index * 0.22, 1.25 + index * 0.18);
+      return <group key={seed} position={position} rotation={[0, turn, 0]}>
+        <mesh geometry={shelter} scale={[1.5, 0.72, 0.62]} castShadow receiveShadow>
+          <meshStandardMaterial color={index % 2 ? "#37423e" : "#334b48"} roughness={1} flatShading />
+        </mesh>
+        <Line points={[[-1.45, 0.18, 0.72], [-0.72, 0.25, 0.82], [0.05, 0.2, 0.76], [0.82, 0.28, 0.58], [1.48, 0.16, 0.35]]} color={color} lineWidth={0.5} transparent opacity={0.42} />
+        <pointLight color={color} intensity={0.8} distance={4.2} decay={2} position={[0.15, 0.42, 0.55]} />
+      </group>;
+    })}
+  </group>;
+}
+
 function MemoryLandscapeArchitecture() {
   const ridges = useMemo(() => [
     { geometry: erodedRidgeGeometry(17, 18, 3.1, 4.8), position: [-10, -2.45, -7] as Point3, rotation: [0, 0.34, -0.03] as Point3 },
@@ -363,6 +442,8 @@ function MemoryLandscapeArchitecture() {
     {ridges.map((ridge, index) => <mesh key={index} geometry={ridge.geometry} position={ridge.position} rotation={ridge.rotation} castShadow receiveShadow>
       <meshStandardMaterial color={index === 1 ? "#303344" : index === 2 ? "#35464a" : "#29403f"} roughness={0.94} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.032 : 0.045} flatShading />
     </mesh>)}
+    <WeatheredOutcrops />
+    <InhabitedMemoryAlcoves />
     <group name="life-map-lineage-embankment" position={[0, -1.45, -29]}>
       <Line points={[[-9, -0.4, 1.8], [-5.2, 0.35, 0.1], [-1.5, 1.25, -1.4], [2.3, 2.4, -2.8], [7.8, 4.0, -4.2]]} color={GOLD} lineWidth={0.42} transparent opacity={0.22} />
       <Line points={[[-8.2, -0.8, 2.4], [-3.8, -0.05, 0.4], [0.4, 0.8, -1.2], [4.8, 2.05, -2.5], [9.5, 3.1, -3.5]]} color={CYAN} lineWidth={0.28} transparent opacity={0.16} />
@@ -376,12 +457,18 @@ function MemoryLandscape({ selected }: { selected: LifeMapNode | null }) {
     const deep = new THREE.Color("#102126"), mineral = new THREE.Color("#344844"), memory = new THREE.Color("#403d59");
     for (let row = 0; row <= rows; row += 1) for (let column = 0; column <= columns; column += 1) {
       const u = column / columns, v = row / rows, x = (u - 0.5) * 38, z = 5 - v * 52;
-      const valley = -2.55 + Math.pow(Math.abs(x) / 19, 2.2) * (1.2 + v * 2.4);
-      const history = Math.sin(x * 0.31 + z * 0.16) * 0.34 + Math.sin(x * 0.83 - z * 0.29) * 0.13;
-      const ascent = Math.pow(v, 2.4) * 4.8 + Math.exp(-Math.pow((x - 7) / 5, 2) - Math.pow((z + 22) / 10, 2)) * 2.1;
-      const y = valley + history * (0.28 + Math.abs(x) / 19) + ascent;
+      const pathCenter = Math.sin(v * 8.4) * 2.15 + Math.sin(v * 19.0) * 0.55;
+      const pathDistance = Math.abs(x - pathCenter);
+      const canyon = Math.pow(Math.max(0, (Math.abs(x) - 5.4) / 13.6), 1.65) * (3.8 + v * 8.4);
+      const terraces = Math.floor(canyon * 1.65) / 1.65;
+      const history = Math.sin(x * 0.36 + z * 0.18) * 0.42 + Math.sin(x * 1.16 - z * 0.31) * 0.18 + Math.sin(x * 2.7 + z * 0.8) * 0.055;
+      const carvedPath = pathDistance < 2.25 ? -0.46 * (1 - pathDistance / 2.25) : 0;
+      const ascent = Math.pow(v, 2.25) * 5.8 + Math.exp(-Math.pow((x - 6.8) / 4.5, 2) - Math.pow((z + 24) / 8, 2)) * 2.4;
+      const y = -2.48 + terraces + history * (0.5 + Math.abs(x) / 15) + carvedPath + ascent;
       positions.push(x, y, z);
-      const c = deep.clone().lerp(mineral, Math.min(1, (y + 3) * 0.16)).lerp(memory, Math.max(0, v - 0.45) * 0.34);
+      const strata = 0.5 + Math.sin(y * 7.6 + x * 0.42) * 0.5;
+      const c = deep.clone().lerp(mineral, Math.min(1, (y + 3) * 0.12 + strata * 0.22)).lerp(memory, Math.max(0, v - 0.42) * 0.38);
+      if (pathDistance < 2.0) c.lerp(new THREE.Color("#6b6250"), (1 - pathDistance / 2.0) * 0.34);
       colors.push(c.r, c.g, c.b);
     }
     for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
