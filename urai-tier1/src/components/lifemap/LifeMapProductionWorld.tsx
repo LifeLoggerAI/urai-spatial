@@ -281,16 +281,99 @@ function memoryLedgerGeometry(seed: number) {
   return geometry;
 }
 
-function MemorySeed({ aura, active }: { aura: string; active: boolean }) {
-  const geometry = useMemo(() => memoryLedgerGeometry(aura.split("").reduce((sum, letter) => sum + letter.charCodeAt(0), 0)), [aura]);
-  return <group name="life-map-weathered-memory-ledger">
-    <mesh geometry={geometry} castShadow>
-      <meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 0.16 : 0.045} roughness={0.91} metalness={0.005} transmission={0} thickness={0.18} clearcoat={0.015} clearcoatRoughness={0.90} />
+function memorySiteGeometry(seed: number) {
+  const shape = new THREE.Shape();
+  const count = 11;
+  for (let index = 0; index < count; index += 1) {
+    const angle = (index / count) * Math.PI * 2;
+    const radius = 0.82 + seeded(index + seed, 33) * 0.52;
+    const x = Math.cos(angle) * radius * (1.05 + seeded(seed, 40) * 0.55);
+    const y = Math.sin(angle) * radius * (0.72 + seeded(seed, 41) * 0.38);
+    if (index === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+  }
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.12 + seeded(seed, 42) * 0.12,
+    steps: 1,
+    curveSegments: 2,
+    bevelEnabled: true,
+    bevelSegments: 2,
+    bevelSize: 0.08,
+    bevelThickness: 0.05,
+  });
+  geometry.center();
+  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index), y = position.getY(index), z = position.getZ(index);
+    const weathering = Math.sin(x * 5.3 + seed) * 0.035 + Math.cos(y * 7.1 - seed * 0.3) * 0.025;
+    position.setXYZ(index, x + weathering, y + weathering * 0.6, z * (0.78 + seeded(index + seed, 43) * 0.34));
+  }
+  position.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; siteKey: string }) {
+  const seed = useMemo(() => siteKey.split("").reduce((sum, letter) => sum + letter.charCodeAt(0), 0), [siteKey]);
+  const site = useMemo(() => memorySiteGeometry(seed), [seed]);
+  const ledger = useMemo(() => memoryLedgerGeometry(seed), [seed]);
+  const stretch = 1.05 + seeded(seed, 51) * 0.75;
+  const turn = seeded(seed, 52) * Math.PI;
+  return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]}>
+    <mesh geometry={site} rotation={[-Math.PI / 2, 0, 0]} scale={[stretch, 1, active ? 0.32 : 0.22]} position={[0, -0.04, 0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#22383a" emissive={aura} emissiveIntensity={active ? 0.18 : 0.035} roughness={0.97} metalness={0} />
     </mesh>
-    <mesh geometry={geometry} scale={[0.78, 0.82, 0.76]} position={[0.08, -0.02, 0.04]}>
-      <meshStandardMaterial color="#18292d" emissive={aura} emissiveIntensity={active ? 0.32 : 0.12} roughness={0.94} />
+    <mesh geometry={ledger} rotation={[-Math.PI / 2 + 0.14, seeded(seed, 53) * 0.24 - 0.12, 0]} scale={[0.72 + seeded(seed, 54) * 0.5, 0.34, 0.52]} position={[0.12, 0.10, -0.05]} castShadow receiveShadow>
+      <meshStandardMaterial color="#30484a" emissive={aura} emissiveIntensity={active ? 0.46 : 0.095} roughness={0.88} metalness={0.01} />
     </mesh>
-    <pointLight color={aura} intensity={active ? 1.8 : 0.42} distance={active ? 4.8 : 2.4} decay={2} />
+    <pointLight color={aura} intensity={active ? 2.2 : 0.36} distance={active ? 5.8 : 2.8} decay={2} position={[0, 0.35, 0]} />
+  </group>;
+}
+
+function erodedRidgeGeometry(seed: number, width: number, height: number, depth: number) {
+  const columns = 22, rows = 8, positions: number[] = [], colors: number[] = [], indices: number[] = [];
+  const shadow = new THREE.Color("#17282b"), mineral = new THREE.Color("#49605b"), memory = new THREE.Color(seed % 2 ? "#344b54" : "#403d52");
+  for (let row = 0; row <= rows; row += 1) for (let column = 0; column <= columns; column += 1) {
+    const u = column / columns, v = row / rows;
+    const x = (u - 0.5) * width;
+    const shoulder = Math.pow(Math.sin(u * Math.PI), 0.65);
+    const cut = Math.sin(u * 15.0 + seed) * 0.12 + Math.sin(u * 33.0 - seed) * 0.045;
+    const y = v * height * shoulder + cut * (0.35 + v);
+    const z = (v - 0.5) * depth + Math.sin(u * 7.0 + v * 3.0 + seed) * 0.34;
+    positions.push(x, y, z);
+    const color = shadow.clone().lerp(mineral, v * 0.72).lerp(memory, Math.max(0, shoulder - 0.55) * 0.5);
+    colors.push(color.r, color.g, color.b);
+  }
+  for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+    const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
+    indices.push(a, b, d, a, d, c);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function MemoryLandscapeArchitecture() {
+  const ridges = useMemo(() => [
+    { geometry: erodedRidgeGeometry(17, 18, 3.1, 4.8), position: [-10, -2.45, -7] as Point3, rotation: [0, 0.34, -0.03] as Point3 },
+    { geometry: erodedRidgeGeometry(41, 13, 5.2, 4.2), position: [11.2, -2.2, -18] as Point3, rotation: [0, -0.42, 0.02] as Point3 },
+    { geometry: erodedRidgeGeometry(73, 24, 7.8, 5.5), position: [-2, -1.4, -37] as Point3, rotation: [0, 0.08, -0.015] as Point3 },
+  ], []);
+  return <group name="life-map-authored-geologic-history">
+    {ridges.map((ridge, index) => <mesh key={index} geometry={ridge.geometry} position={ridge.position} rotation={ridge.rotation} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors roughness={0.96} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.018 : 0.026} />
+    </mesh>)}
+    <mesh position={[0, -2.18, -12]} rotation={[-Math.PI / 2, 0, -0.08]} receiveShadow>
+      <planeGeometry args={[5.4, 29, 5, 28]} />
+      <meshStandardMaterial color="#273b3a" roughness={1} emissive={CYAN} emissiveIntensity={0.025} />
+    </mesh>
+    <group name="life-map-lineage-embankment" position={[0, -1.45, -29]}>
+      <Current points={[[-9, -0.4, 1.8], [-5.2, 0.35, 0.1], [-1.5, 1.25, -1.4], [2.3, 2.4, -2.8], [7.8, 4.0, -4.2]]} color={GOLD} opacity={0.28} width={0.035} />
+      <Current points={[[-8.2, -0.8, 2.4], [-3.8, -0.05, 0.4], [0.4, 0.8, -1.2], [4.8, 2.05, -2.5], [9.5, 3.1, -3.5]]} color={CYAN} opacity={0.18} width={0.024} />
+    </group>
   </group>;
 }
 
@@ -317,21 +400,19 @@ function MemoryLandscape({ selected }: { selected: LifeMapNode | null }) {
     geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
   }, []);
-  const landmarks = useMemo(() => [17, 29, 43, 61, 83].map(memoryLedgerGeometry), []);
   return <group name="life-map-inhabitable-memory-landscape">
     <mesh geometry={terrain} receiveShadow><meshStandardMaterial vertexColors roughness={0.98} metalness={0} /></mesh>
-    {landmarks.map((geometry, index) => <mesh key={index} geometry={geometry} position={[-11 + index * 5.4, -0.9 + index * 0.42, -11 - index * 5.1]} rotation={[0.05 * index, index * 0.29 - 0.5, index % 2 ? -0.12 : 0.09]} scale={[1.5 + index * 0.18, 2.8 + index * 0.42, 1.3]} castShadow receiveShadow>
-      <meshStandardMaterial color={index % 2 ? "#2c3342" : "#263a38"} emissive={index % 2 ? VIOLET : CYAN} emissiveIntensity={0.035} roughness={0.94} />
-    </mesh>)}
+    <MemoryLandscapeArchitecture />
   </group>;
 }
 
-function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], clip }: {
+function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], clip, siteKey }: {
   aura: string;
   active: boolean;
   scale?: number;
   rotation?: Point3;
   clip?: "MemoryStar_Idle" | "MemoryStar_Selected" | "MemoryStar_Focus";
+  siteKey?: string;
 }) {
   const reducedMotion = useContext(LifeMapReducedMotionContext);
   const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
@@ -351,7 +432,7 @@ function AuthoredMemoryStar({ aura, active, scale = 1, rotation = [0, 0, 0], cli
   return (
     <group ref={root} scale={scale} rotation={rotation} userData={{ runtimeAsset: MEMORY_STAR_MODEL, authored: true }}>
       <primitive object={model} visible={false} />
-      <MemorySeed aura={aura} active={active} />
+      <MemorySeed aura={aura} active={active} siteKey={siteKey || aura} />
     </group>
   );
 }
@@ -446,41 +527,41 @@ function MemoryWeather({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 function VisualArtifact({ node, active }: ArtifactProps) {
-  return <AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.18 : 0.92} rotation={[0.22, 0.55, 0.1]} />;
+  return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.18 : 0.92} rotation={[0.02, 0.55, 0.01]} />;
 }
 function AudioArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78, 0, z], [-0.3, index * 0.2, z], [0.18, -index * 0.14, z], [0.82, 0.04, z]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.82 : 0.42} width={0.025} />)}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78, 0, z], [-0.3, index * 0.2, z], [0.18, -index * 0.14, z], [0.82, 0.04, z]]} color={index === 1 ? ICE : node.aura} opacity={active ? 0.82 : 0.42} width={0.025} />)}</group>;
 }
 function RelationshipArtifact({ node, active }: ArtifactProps) {
-  return <AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.1 : 0.82} />;
+  return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.1 : 0.82} />;
 }
 function PlaceArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.2 : 0.9} rotation={[-0.25, 0.18, 0.08]} /><Current points={[[-1.1, -0.35, 0.4], [-0.45, -0.1, -0.35], [0.35, -0.15, -0.6], [1.1, -0.32, 0.2]]} color={node.aura} opacity={active ? 0.66 : 0.3} width={0.022} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.2 : 0.9} rotation={[0, 0.18, 0]} /><Current points={[[-1.1, -0.35, 0.4], [-0.45, -0.1, -0.35], [0.35, -0.15, -0.6], [1.1, -0.32, 0.2]]} color={node.aura} opacity={active ? 0.66 : 0.3} width={0.022} /></group>;
 }
 function EmotionArtifact({ node, active }: ArtifactProps) {
   const reducedMotion = useContext(LifeMapReducedMotionContext);
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 2.4, 2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={0.72} color={node.aura} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2, 1.1, 2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={0.52} color={node.aura} /></group>;
 }
 function PatternArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.12 : 0.82} />{!active ? [-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={0.26} width={0.014} />) : null}</group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.12 : 0.82} />{!active ? [-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85, y, 0], [-0.35, y + 0.24, -0.25], [0.28, y - 0.18, -0.32], [0.88, y, 0]]} color={index === 1 ? ICE : node.aura} opacity={0.26} width={0.014} />) : null}</group>;
 }
 function AchievementArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={GOLD} active={active} scale={active ? 1.24 : 0.9} rotation={[0.12, 0.72, 0.2]} /><Current points={[[-0.9, -0.65, 0.2], [-0.35, 0.05, -0.2], [0.05, 0.75, -0.5], [0.55, 1.42, -0.18], [0.95, 2.05, 0.2]]} color={GOLD} opacity={active ? 0.82 : 0.38} width={0.03} /></group>;
+  return <group><AuthoredMemoryStar aura={GOLD} active={active} siteKey={node.id} scale={active ? 1.24 : 0.9} rotation={[0, 0.72, 0]} /><Current points={[[-0.9, -0.1, 0.2], [-0.35, 0.05, -0.2], [0.05, 0.18, -0.5], [0.55, 0.28, -0.18], [0.95, 0.34, 0.2]]} color={GOLD} opacity={active ? 0.82 : 0.38} width={0.03} /></group>;
 }
 function GoalArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={active ? GOLD : node.aura} active={active} scale={active ? 1.16 : 0.86} /><Current points={[[0, -0.78, 0], [0.06, 0.15, -0.18], [0.38, 1.15, -0.52]]} color={active ? GOLD : node.aura} opacity={0.92} width={0.045} /></group>;
+  return <group><AuthoredMemoryStar aura={active ? GOLD : node.aura} active={active} siteKey={node.id} scale={active ? 1.16 : 0.86} /><Current points={[[-0.8, -0.1, 0.15], [0.06, 0.06, -0.18], [0.88, 0.22, -0.52]]} color={active ? GOLD : node.aura} opacity={0.68} width={0.035} /></group>;
 }
 function FutureArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.18 : 0.84} rotation={[0.35, -0.4, 0.15]} /><Current points={[[-0.8, -0.3, 0.15], [-0.25, 0.4, -0.45], [0.35, 1.15, -0.72], [0.9, 1.85, -0.28]]} color={node.aura} opacity={active ? 0.76 : 0.34} width={0.027} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.18 : 0.84} rotation={[0, -0.4, 0]} /><Current points={[[-0.8, -0.12, 0.15], [-0.25, 0.05, -0.45], [0.35, 0.24, -0.72], [0.9, 0.42, -0.28]]} color={node.aura} opacity={active ? 0.76 : 0.34} width={0.027} /></group>;
 }
 function EverydayArtifact({ node, active }: ArtifactProps) {
-  return <AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.02 : 0.76} />;
+  return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.02 : 0.76} />;
 }
 function ArchiveArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.08 : 0.78} rotation={[0.25, 0.2, 0.55]} /><FieldParticles seed={77} count={active ? 34 : 18} radius={1.4} depth={2.2} height={1.7} color={ICE} opacity={active ? 0.42 : 0.22} size={0.042} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.08 : 0.78} rotation={[0, 0.2, 0]} /><FieldParticles seed={77} count={active ? 34 : 18} radius={1.4} depth={2.2} height={0.55} color={ICE} opacity={active ? 0.42 : 0.22} size={0.042} /></group>;
 }
 function ProtectedArtifact({ node, active }: ArtifactProps) {
-  return <group><AuthoredMemoryStar aura={node.aura} active={active} scale={active ? 1.0 : 0.7} rotation={[0.5, 0.7, 0.2]} /><FieldParticles seed={91} count={24} radius={1.65} depth={2.4} height={2} color={node.aura} opacity={0.24} size={0.045} /></group>;
+  return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.0 : 0.7} rotation={[0, 0.7, 0]} /><FieldParticles seed={91} count={24} radius={1.65} depth={2.4} height={0.48} color={node.aura} opacity={0.24} size={0.045} /></group>;
 }
 
 function ArtifactShape(props: ArtifactProps) {
@@ -692,9 +773,9 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       <>
         <color attach="background" args={["#071525"]} />
         <fog attach="fog" args={["#071525", 14, 88]} />
-        <ambientLight intensity={0.34} color="#ccecff" />
+        <ambientLight intensity={0.48} color="#ccecff" />
         <hemisphereLight args={["#dff8ff", "#02030a", 0.82]} />
-        <directionalLight position={[9, 14, 10]} intensity={2.25} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
+        <directionalLight position={[9, 14, 10]} intensity={2.85} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
         <directionalLight position={[-10, 8, -16]} intensity={1.6} color={VIOLET} />
         {webglRecovery}
         <RenderProofRepublisher />
