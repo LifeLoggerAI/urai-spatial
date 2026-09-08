@@ -64,8 +64,8 @@ function makeLandscape() {
   const scene = new THREE.Scene(); scene.name = 'home-v191-authored-landscape'; scene.add(mesh)
   const strataMaterial = new THREE.MeshStandardMaterial({color:'#30473d',roughness:0.98,metalness:0,flatShading:true})
   const shelves = [
-    [-7.7,0.15,-2.6,4.8,1.7,2.5,0.18],[-8.1,0.62,-8.0,5.6,2.4,3.4,-0.12],[-7.2,1.35,-14.2,6.8,3.2,3.8,0.22],
-    [7.8,0.08,-3.8,4.9,1.8,2.7,-0.16],[8.2,0.72,-9.3,5.8,2.5,3.2,0.14],[6.9,1.48,-15.0,6.5,3.4,4.0,-0.20],
+    [-10.2,-0.42,-3.8,3.6,1.25,2.2,0.18],[-10.7,0.15,-9.0,4.2,1.75,2.8,-0.12],[-9.5,1.05,-15.2,5.2,2.5,3.3,0.22],
+    [10.3,-0.46,-4.6,3.7,1.3,2.3,-0.16],[10.8,0.18,-10.0,4.3,1.8,2.7,0.14],[9.3,1.08,-15.8,5.1,2.6,3.4,-0.20],
   ]
   shelves.forEach(([x,y,z,sx,sy,sz,ry], index) => {
     const geometry = deformGeometry(new THREE.DodecahedronGeometry(1, 1), 21 + index, 1.08)
@@ -130,7 +130,8 @@ function makeHeart() {
       z = z * taper * 0.56 * living
       y = y * 0.90 - cleft + 0.055 * Math.sin(theta * 2 + phi) * ring
       positions.push(x,y,z)
-      const c = deep.clone().lerp(light, THREE.MathUtils.clamp((y + 0.9) / 1.8,0,1) * 0.42).lerp(warm, Math.max(0,x) * 0.10)
+      const stratum = .5 + .5 * Math.sin(theta * 9 + phi * 11)
+      const c = deep.clone().lerp(light, THREE.MathUtils.clamp((y + 0.9) / 1.8,0,1) * (0.25 + stratum * .22)).lerp(warm, Math.max(0,x) * (0.08 + stratum * .08))
       colors.push(c.r,c.g,c.b)
     }
   }
