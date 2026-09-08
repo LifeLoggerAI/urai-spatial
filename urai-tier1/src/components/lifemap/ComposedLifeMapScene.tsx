@@ -245,6 +245,7 @@ export default function ComposedLifeMapScene() {
   const [webglState, setWebglState] = useState<WebGLState>("ready");
   const journeyToken = useRef(0);
   const overviewPending = useRef(overviewRequested);
+  const selectionRoutePending = useRef(false);
   const restoredRoutePending = useRef(Boolean(!overviewRequested && queryNode));
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
 
@@ -275,6 +276,7 @@ export default function ComposedLifeMapScene() {
     restoredRoutePending.current = false;
     overviewPending.current = false;
     journeyToken.current += 1;
+    selectionRoutePending.current = true;
     setSelectedId(node.id);
     if (profile.reducedMotion) setPhase("arrival");
     else setPhase("departure");
@@ -313,6 +315,8 @@ export default function ComposedLifeMapScene() {
   }, [selected, withIdentity]);
 
   useEffect(() => {
+    if (!overviewRequested) selectionRoutePending.current = false;
+    if (selectionRoutePending.current) return;
     if (!overviewRequested) return;
     restoredRoutePending.current = false;
     overviewPending.current = false;

@@ -31,7 +31,7 @@ assert.ok(
   'Life Map must suppress the rejected generic energy-core presentation node',
 );
 assert.ok(
-  source.includes('function MemorySeed(') && source.includes('name="life-map-v214-rooted-strata-memory"') && source.includes('function memoryLedgerGeometry('),
+  source.includes('function MemorySeed(') && source.includes('name="life-map-v215-rooted-strata-memory"') && source.includes('function memoryLedgerGeometry('),
   'Life Map must replace rejected starburst geometry with grounded interlocking authored memory strata',
 );
 

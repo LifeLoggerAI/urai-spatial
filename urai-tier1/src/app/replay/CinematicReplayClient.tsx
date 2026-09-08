@@ -57,13 +57,13 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const surfaceGeometry = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(15.8, 9.2, 72, 36)
+    const geometry = new THREE.PlaneGeometry(13.8, 7.4, 72, 36)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
     for (let index = 0; index < positions.count; index += 1) {
       const x = positions.getX(index)
       const y = positions.getY(index)
-      const normalizedX = x / 7.9
-      const depth = -1.18 * normalizedX * normalizedX + Math.sin(y * 1.3) * 0.06 + Math.sin(x * 1.7 + y * 0.8) * 0.035
+      const normalizedX = x / 6.9
+      const depth = -0.34 * normalizedX * normalizedX + Math.sin(y * 1.3) * 0.025 + Math.sin(x * 1.7 + y * 0.8) * 0.012
       positions.setZ(index, depth)
     }
     positions.needsUpdate = true
@@ -135,8 +135,8 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
         {texture
           ? <shaderMaterial
               uniforms={{ uMap: { value: texture }, uPlaying: { value: playing ? 1 : 0 } }}
-              vertexShader={`varying vec2 vUv; varying float vFold; void main(){vUv=uv;vec3 p=position;p.z+=sin(uv.x*17.0+uv.y*5.0)*0.08+sin(uv.y*23.0)*0.035;vFold=p.z;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`}
-              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; varying float vFold; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.025+0.012*sin(vUv.y*31.0)+0.009*sin(vUv.x*53.0+vUv.y*17.0);float mask=smoothstep(erosion,erosion+0.035,min(edge.x,edge.y));vec2 sampleUv=vUv+vec2(0.008*sin(vUv.y*41.0),0.006*sin(vUv.x*37.0));vec3 source=texture2D(uMap,sampleUv).rgb;float warp=vUv.y+0.038*sin(vUv.x*10.0)+0.012*sin(vUv.x*37.0);float vein=0.5+0.5*sin(warp*71.0);float fine=0.5+0.5*sin(vUv.x*257.0-vUv.y*193.0);float fissure=pow(abs(sin(vUv.x*91.0+sin(vUv.y*29.0)*4.0-vUv.y*53.0)),24.0);float current=pow(max(0.0,sin(vUv.x*13.0-vUv.y*8.0+uPlaying*2.0)),10.0);vec3 deep=vec3(0.025,0.09,0.10);vec3 mineral=vec3(0.16,0.48,0.42);vec3 ember=vec3(0.78,0.38,0.12);vec3 color=mix(deep,source,0.58);color=mix(color,mineral,vein*0.18);color+=fine*0.045; color*=1.0-fissure*0.34;color=mix(color,ember,current*0.28);gl_FragColor=vec4(color*mask,1.0);}`}
+              vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.018+0.008*sin(vUv.y*19.0)+0.006*sin(vUv.x*31.0+vUv.y*11.0);float mask=smoothstep(erosion,erosion+0.028,min(edge.x,edge.y));vec3 source=texture2D(uMap,vUv).rgb;float grain=0.5+0.5*sin(vUv.x*173.0-vUv.y*127.0);float fissure=pow(abs(sin(vUv.x*67.0+sin(vUv.y*17.0)*2.0-vUv.y*41.0)),28.0);float current=pow(max(0.0,sin(vUv.x*11.0-vUv.y*7.0+uPlaying*2.0)),14.0);vec3 mineral=vec3(0.12,0.34,0.30);vec3 ember=vec3(0.68,0.31,0.10);vec3 color=mix(source,mineral,0.08);color+=grain*0.018;color*=1.0-fissure*0.12;color=mix(color,ember,current*0.10);gl_FragColor=vec4(color*mask,1.0);}`}
               depthWrite toneMapped={false} side={THREE.DoubleSide}
             />
           : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}

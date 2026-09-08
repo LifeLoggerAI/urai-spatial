@@ -316,19 +316,19 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     for (let section = 0; section <= sections; section += 1) {
       const t = section / sections
       const envelope = Math.pow(Math.sin(Math.PI * t), 0.42)
-      const centerX = -0.22 + t * 0.46 + Math.sin(t * 7.2) * 0.14
-      const centerY = -1.18 + t * 2.36
-      const centerZ = Math.sin(t * 5.3 + 0.8) * 0.16
+      const centerX = -1.32 + t * 2.64
+      const centerY = -0.66 + Math.sin(t * Math.PI) * 0.72 + Math.sin(t * 7.2) * 0.08
+      const centerZ = Math.sin(t * 5.3 + 0.8) * 0.24
       for (let side = 0; side < sides; side += 1) {
         const angle = side / sides * Math.PI * 2 + t * 1.35
         const ridge = 0.82 + 0.17 * Math.sin(angle * 3 + t * 11) + 0.08 * Math.cos(angle * 5 - t * 7)
-        const rx = envelope * (0.50 + 0.13 * Math.sin(t * 9.0)) * ridge + 0.035
-        const rz = envelope * (0.29 + 0.08 * Math.cos(t * 8.0)) * ridge + 0.025
+        const rx = envelope * (0.29 + 0.08 * Math.sin(t * 9.0)) * ridge + 0.035
+        const rz = envelope * (0.42 + 0.10 * Math.cos(t * 8.0)) * ridge + 0.025
         const x = centerX + Math.cos(angle) * rx + Math.sin(angle * 2) * 0.07 * envelope
         const y = centerY + Math.sin(angle * 2 + t * 5) * 0.045 * envelope
         const z = centerZ + Math.sin(angle) * rz
         positions.push(x, y, z)
-        const band = 0.16 + 0.66 * (0.5 + 0.5 * Math.sin(centerY * 12.0 + angle * 1.4))
+        const band = 0.12 + 0.52 * (0.5 + 0.5 * Math.sin(centerX * 9.0 + angle * 1.4))
         const color = dark.clone().lerp(mineral, band)
         colors.push(color.r, color.g, color.b)
       }
@@ -375,7 +375,7 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
-  return <group ref={group} position={[0, 0.04, -1.72]} name="focus-memory-aperture">
+  return <group ref={group} position={[0, -0.18, -1.72]} name="focus-memory-aperture">
     <points geometry={fieldGeometry}>
       <pointsMaterial color={light} size={0.018} transparent opacity={memory ? 0.58 : 0.22} depthWrite={false} sizeAttenuation />
     </points>
@@ -388,10 +388,10 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     >
       <meshStandardMaterial vertexColors emissive={accent} emissiveIntensity={memory ? (hovered ? 0.22 : 0.08) : 0.04} roughness={0.96} metalness={0} />
     </mesh>
-    <mesh geometry={seedGeometry} position={[-0.58, -0.26, 0.08]} rotation={[0.18, -0.42, -0.72]} scale={[0.72, 0.58, 0.78]} castShadow receiveShadow>
+    <mesh geometry={seedGeometry} position={[-0.36, -0.22, 0.10]} rotation={[0.12, -0.32, -0.10]} scale={[0.76, 0.62, 0.82]} castShadow receiveShadow>
       <meshStandardMaterial vertexColors color="#718178" emissive={accent} emissiveIntensity={memory ? 0.055 : 0.025} roughness={0.99} metalness={0} />
     </mesh>
-    <mesh geometry={seedGeometry} position={[0.62, -0.38, -0.12]} rotation={[-0.16, 0.38, 0.84]} scale={[0.62, 0.48, 0.68]} castShadow receiveShadow>
+    <mesh geometry={seedGeometry} position={[0.44, -0.30, -0.16]} rotation={[-0.10, 0.34, 0.14]} scale={[0.66, 0.52, 0.72]} castShadow receiveShadow>
       <meshStandardMaterial vertexColors color="#4e625a" emissive={accent} emissiveIntensity={memory ? 0.045 : 0.02} roughness={0.99} metalness={0} />
     </mesh>
     <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />

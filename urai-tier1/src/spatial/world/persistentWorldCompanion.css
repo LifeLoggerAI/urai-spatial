@@ -12,10 +12,11 @@
 
 .urai-world-companion__orb {
   position: relative;
-  width: 142px;
-  height: 72px;
+  width: 154px;
+  height: 78px;
   border: 1px solid rgba(207, 250, 254, .38);
-  border-radius: 78% 22% 69% 31% / 35% 74% 26% 65%;
+  border-radius: 18px 42px 14px 36px;
+  clip-path: polygon(2% 48%,14% 27%,31% 31%,44% 8%,58% 25%,78% 16%,98% 42%,83% 57%,91% 78%,68% 73%,52% 94%,37% 72%,16% 81%,22% 60%);
   padding: 0;
   background:
     linear-gradient(168deg,transparent 0 16%,rgba(214,255,244,.56) 18% 21%,transparent 24% 37%,rgba(91,186,164,.34) 39% 43%,transparent 46% 61%,rgba(178,143,211,.28) 63% 67%,transparent 70%),
@@ -26,7 +27,7 @@
     inset 0 0 28px rgba(255,255,255,.3);
   cursor: pointer;
   pointer-events: auto;
-  transform: rotate(-5deg) skewX(-9deg) scaleY(.9);
+  transform: rotate(-4deg) skewX(-6deg) scaleY(.94);
   transition: transform 180ms ease, box-shadow 180ms ease, border-radius 360ms ease;
 }
 
@@ -37,7 +38,8 @@
   position: absolute;
   inset: 7% 43% 51% 8%;
   border: 0;
-  border-radius: 78% 22% 66% 34%;
+  border-radius: 8px 28px 7px 22px;
+  clip-path: polygon(0 45%,22% 10%,55% 24%,100% 0,78% 57%,94% 100%,47% 72%,16% 94%);
   background:linear-gradient(108deg,rgba(226,255,248,.74),rgba(65,176,170,.16));
   transform:rotate(-17deg);
 }

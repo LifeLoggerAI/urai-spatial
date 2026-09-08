@@ -26,7 +26,7 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
-const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v214/life-map-memory-sanctuary-v214.glb";
+const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v215/life-map-memory-sanctuary-v215.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -265,11 +265,11 @@ function EmotionalTerrain({ reducedMotion, selected }: { reducedMotion: boolean;
 function memoryLedgerGeometry(seed: number) {
   const shape = new THREE.Shape();
   const lean = ((seed % 7) - 3) * 0.018;
-  shape.moveTo(-0.42, -0.62);
-  shape.bezierCurveTo(-0.52, -0.20, -0.38 + lean, 0.34, -0.18, 0.67);
-  shape.bezierCurveTo(0.02, 0.82, 0.31, 0.61, 0.39, 0.22);
-  shape.bezierCurveTo(0.47, -0.16, 0.31, -0.52, 0.08, -0.70);
-  shape.bezierCurveTo(-0.10, -0.77, -0.31, -0.72, -0.42, -0.62);
+  shape.moveTo(-1.18, -0.34);
+  shape.bezierCurveTo(-0.92, 0.02, -0.62 + lean, 0.40, -0.22, 0.31);
+  shape.bezierCurveTo(0.12, 0.24, 0.42, 0.56, 0.78, 0.34);
+  shape.bezierCurveTo(1.12, 0.12, 1.18, -0.16, 0.94, -0.32);
+  shape.bezierCurveTo(0.35, -0.47, -0.52, -0.45, -1.18, -0.34);
   const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.24, steps: 2, curveSegments: 10, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.06, bevelThickness: 0.06 });
   geometry.center();
   const position = geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -323,17 +323,17 @@ function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; 
   const width = 1.34 + seeded(seed, 65) * 0.72;
   const height = 0.72 + seeded(seed, 66) * 0.44;
   const lean = (seeded(seed, 67) - 0.5) * 0.48;
-  return <group name="life-map-v214-rooted-strata-memory" rotation={[0, turn, 0]} userData={{ presentation: "grounded-interlocking-authored-memory-strata" }}>
+  return <group name="life-map-v215-rooted-strata-memory" rotation={[0, turn, 0]} userData={{ presentation: "grounded-interlocking-authored-memory-strata" }}>
     <mesh geometry={site} position={[0, -0.12, 0]} scale={[2.35 + seeded(seed, 68) * 0.9, 0.72, 1.85 + seeded(seed, 69) * 0.8]} receiveShadow castShadow>
       <meshStandardMaterial color="#24473f" roughness={0.99} metalness={0} emissive={aura} emissiveIntensity={active ? 0.055 : 0.012} />
     </mesh>
-    <mesh geometry={ledger} position={[-0.48 + lean, 0.34, 0.18]} rotation={[-0.22, -0.28 + lean, -0.46]} scale={[width * 0.92, height * 0.76, 1.18]} castShadow receiveShadow>
+    <mesh geometry={ledger} position={[-0.38 + lean, 0.18, 0.12]} rotation={[-0.08, -0.18 + lean, -0.10]} scale={[width * 0.92, height * 0.68, 1.18]} castShadow receiveShadow>
       <meshStandardMaterial color="#486357" roughness={0.96} metalness={0} emissive={aura} emissiveIntensity={active ? 0.12 : 0.025} />
     </mesh>
-    <mesh geometry={ledger} position={[0.18, 0.44 + height * 0.10, -0.06]} rotation={[-0.08, 0.12 + lean, 0.18]} scale={[width * 1.12, height, 1.38 + seeded(seed, 72) * 0.32]} castShadow receiveShadow>
+    <mesh geometry={ledger} position={[0.10, 0.27 + height * 0.06, -0.06]} rotation={[-0.04, 0.10 + lean, 0.08]} scale={[width * 1.12, height * 0.76, 1.38 + seeded(seed, 72) * 0.32]} castShadow receiveShadow>
       <meshStandardMaterial color="#6b6a52" roughness={0.97} metalness={0} emissive={aura} emissiveIntensity={active ? 0.16 : 0.035} />
     </mesh>
-    <mesh geometry={ledger} position={[0.58 - lean, 0.26, -0.26]} rotation={[0.18, 0.38 - lean, 0.54]} scale={[width * 0.72, height * 0.62, 0.96]} castShadow receiveShadow>
+    <mesh geometry={ledger} position={[0.52 - lean, 0.12, -0.22]} rotation={[0.06, 0.30 - lean, 0.12]} scale={[width * 0.72, height * 0.54, 0.96]} castShadow receiveShadow>
       <meshStandardMaterial color="#334e48" roughness={0.99} metalness={0} emissive={aura} emissiveIntensity={active ? 0.09 : 0.018} />
     </mesh>
     <pointLight color={aura} intensity={active ? 1.0 : 0.12} distance={active ? 5.8 : 2.8} decay={2} position={[0.15, 0.32, 0.1]} />
@@ -364,7 +364,7 @@ function AuthoredLifeMapPlace() {
   }, [scene]);
   return <primitive
     object={place}
-    name="life-map-v214-blender-authored-memory-sanctuary"
+    name="life-map-v215-blender-authored-memory-sanctuary"
     position={[0, 0, 0]}
     rotation={[0, 0, 0]}
     scale={[1, 1, 1]}

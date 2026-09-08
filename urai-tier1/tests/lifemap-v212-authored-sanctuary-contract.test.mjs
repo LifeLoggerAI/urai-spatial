@@ -40,9 +40,9 @@ test('V212 delivers a complete optimized Blender-authored Life Map sanctuary', (
   assert.match(generator, /history = 6\.8 \* history_mask/)
 })
 
-test('V212 source authority is reproducible and camera-native without predecessor scaling', () => {
-  assert.match(source, /life-map-production\/authored-v212\/life-map-memory-sanctuary-v212\.glb/)
-  assert.match(source, /name="life-map-v212-blender-authored-memory-sanctuary"/)
+test('V212 source authority remains reproducible after the runtime successor advances', () => {
+  assert.match(source, /life-map-production\/authored-v215\/life-map-memory-sanctuary-v215\.glb/)
+  assert.match(source, /name="life-map-v215-blender-authored-memory-sanctuary"/)
   assert.match(source, /position=\{\[0, 0, 0\]\}/)
   assert.match(source, /scale=\{\[1, 1, 1\]\}/)
   assert.match(generator, /def blender_point\(x, y, z\)/)
