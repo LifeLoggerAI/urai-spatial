@@ -134,7 +134,12 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
     <group name="replay-v149-curved-memory-horizon" userData={{ visualRepair: 'no-flat-fog-card-or-portal-ring' }}>
       <mesh position={REPLAY_SCREEN_POSITION} geometry={surfaceGeometry}>
         {texture
-          ? <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
+          ? <shaderMaterial
+              uniforms={{ uMap: { value: texture }, uPlaying: { value: playing ? 1 : 0 } }}
+              vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.055+0.018*sin(vUv.y*31.0)+0.014*sin(vUv.x*43.0+vUv.y*17.0);float mask=smoothstep(erosion,erosion+0.08,min(edge.x,edge.y));vec4 memory=texture2D(uMap,vUv);vec3 mineral=mix(vec3(0.045,0.12,0.14),memory.rgb,0.58+uPlaying*0.12);float strata=0.88+0.12*sin((vUv.y+0.04*sin(vUv.x*11.0))*48.0);gl_FragColor=vec4(mineral*strata,mask*0.86);}`}
+              transparent depthWrite={false} toneMapped={false} side={THREE.DoubleSide}
+            />
           : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}
       </mesh>
     </group>
@@ -142,28 +147,7 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
 }
 
 function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; progress: number }) {
-  return (
-    <group name="replay-semantic-timeline" position={[0, -1.58, -1.18]}>
-      {memory.replayManifest.segments.map((segment, index) => {
-        const x = -3.2 + index * (6.4 / Math.max(1, memory.replayManifest.segments.length - 1))
-        const active = progress >= segment.startsAtMs / memory.replayManifest.durationMs
-        return (
-          <group key={segment.id} position={[x, 0, 0]} userData={{ replaySegment: segment.id }}>
-            <mesh>
-              <sphereGeometry args={[active ? 0.11 : 0.075, 18, 12]} />
-              <meshStandardMaterial color={active ? memory.visuals.light : '#405161'} emissive={active ? memory.visuals.accent : '#0d1922'} emissiveIntensity={active ? 1.6 : 0.12} roughness={0.3} />
-            </mesh>
-            {index < memory.replayManifest.segments.length - 1 ? (
-              <mesh position={[0.8, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                <cylinderGeometry args={[0.012, 0.012, 1.42, 8]} />
-                <meshBasicMaterial color={active ? memory.visuals.accent : '#243746'} transparent opacity={active ? 0.5 : 0.22} />
-              </mesh>
-            ) : null}
-          </group>
-        )
-      })}
-    </group>
-  )
+  return <group name="replay-semantic-timeline" visible={false} userData={{ segmentCount: memory.replayManifest.segments.length, progress, retiredVisualRole: 'v211-no-stick-and-ball-timeline' }} />
 }
 
 function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedMemory; playing: boolean; progressMs: number }) {

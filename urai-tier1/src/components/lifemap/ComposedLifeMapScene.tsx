@@ -230,7 +230,7 @@ export default function ComposedLifeMapScene() {
   const profile = useMemo(() => ({
     ...adaptiveProfile,
     tier: softwareRenderer === true ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
-    pixelRatioMax: softwareRenderer === true ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
+    pixelRatioMax: softwareRenderer !== false ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
     shadows: false,
     postprocessing: false,
     antialias: false,
@@ -381,7 +381,7 @@ export default function ComposedLifeMapScene() {
       onCreated={({ gl }) => {
         setSoftwareRenderer(isSoftwareWebGLRenderer(gl));
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15;
+        gl.toneMappingExposure = 0.92;
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.setClearColor("#02050b", 1);
       }}

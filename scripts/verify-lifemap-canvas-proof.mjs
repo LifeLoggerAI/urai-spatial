@@ -83,7 +83,7 @@ async function capture(spec) {
     const canvas = root.locator('canvas').first()
     await canvas.waitFor({ state: 'visible', timeout: 20_000 })
     const file = `${spec.id}-${exactHead.slice(0, 12)}.png`
-    const buffer = await canvas.screenshot({ path: path.join(outputDir, file), animations: 'disabled', caret: 'hide', scale: 'device', timeout: 60_000 })
+    const buffer = await canvas.screenshot({ path: path.join(outputDir, file), animations: 'disabled', caret: 'hide', scale: 'css', timeout: 60_000 })
     const signal = await signalFromCanvasPng(page, buffer)
     if (!signal || signal.sampleCount !== 3456) throw new Error(`${spec.id} missing exact canvas sampling`)
     if (signal.source !== 'retained-webgl-canvas-png') throw new Error(`${spec.id} did not sample the WebGL canvas PNG`)

@@ -26,7 +26,7 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
-const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v210/life-map-memory-sanctuary-v210.glb";
+const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v211/life-map-memory-sanctuary-v211.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -353,7 +353,7 @@ function AuthoredLifeMapPlace() {
   }, [scene]);
   return <primitive
     object={place}
-    name="life-map-v210-blender-authored-memory-sanctuary"
+    name="life-map-v211-blender-authored-memory-sanctuary"
     position={[0, 0, 0]}
     rotation={[0, 0, 0]}
     scale={[1, 1, 1]}
@@ -801,10 +801,10 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       <>
         <color attach="background" args={["#071525"]} />
         <fog attach="fog" args={["#071525", 14, 88]} />
-        <ambientLight intensity={0.48} color="#ccecff" />
-        <hemisphereLight args={["#dff8ff", "#02030a", 0.82]} />
-        <directionalLight position={[9, 14, 10]} intensity={2.85} color="#dff6ff" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
-        <directionalLight position={[-10, 8, -16]} intensity={1.6} color={VIOLET} />
+        <ambientLight intensity={0.20} color="#b6d7d6" />
+        <hemisphereLight args={["#c9e7df", "#06100e", 0.42]} />
+        <directionalLight position={[9, 14, 10]} intensity={1.12} color="#d7eee5" castShadow={profile.shadows} shadow-mapSize={[2048, 2048]} />
+        <directionalLight position={[-10, 8, -16]} intensity={0.52} color={VIOLET} />
         {webglRecovery}
         <RenderProofRepublisher />
         {cameraRig}
@@ -815,11 +815,10 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         <group name="life-map-temporal-horizon">
           <Current points={[[-28, 8, -42], [-12, 10, -48], [0, 7, -54], [13, 11, -48], [28, 8, -42]]} color={CYAN} opacity={0.08} width={0.18} />
         </group>
-        <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
         <MemoryLandscape selected={selected} />
         <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
           <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
-          <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
+          <group name="life-map-light-bridges" userData={{ retiredVisualRole: "v211-no-sky-arcs-or-diagram-paths" }} />
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">

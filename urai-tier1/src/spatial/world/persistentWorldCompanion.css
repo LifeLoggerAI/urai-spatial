@@ -15,10 +15,11 @@
   width: 64px;
   height: 64px;
   border: 1px solid rgba(207, 250, 254, .52);
-  border-radius: 999px;
+  border-radius: 43% 57% 64% 36% / 58% 38% 62% 42%;
   padding: 0;
   background:
-    radial-gradient(circle at 42% 34%, rgba(255,255,255,.98) 0 5%, rgba(174,249,255,.94) 12%, rgba(81,226,235,.7) 28%, rgba(17,71,91,.78) 52%, rgba(3,12,24,.96) 76%);
+    linear-gradient(132deg, transparent 0 28%, rgba(212,255,248,.56) 30% 33%, transparent 36% 100%),
+    radial-gradient(ellipse at 32% 28%, rgba(255,255,255,.9) 0 4%, rgba(116,226,212,.72) 11%, rgba(25,105,103,.76) 38%, rgba(5,27,31,.98) 76%);
   box-shadow:
     0 0 22px rgba(103,232,249,.48),
     0 0 70px rgba(103,232,249,.24),
@@ -33,21 +34,24 @@
 .urai-world-companion__orb span {
   content: '';
   position: absolute;
-  inset: -8px;
-  border: 1px solid rgba(134,239,255,.24);
-  border-radius: inherit;
+  inset: 12% 18% 46% 14%;
+  border: 0;
+  border-radius: 62% 38% 54% 46%;
+  background:linear-gradient(108deg,rgba(226,255,248,.74),rgba(65,176,170,.16));
+  transform:rotate(-17deg);
 }
 
 .urai-world-companion__orb::after {
-  inset: -17px;
-  border-color: rgba(167,139,250,.15);
+  inset: 48% 12% 12% 42%;
+  background:linear-gradient(145deg,rgba(74,192,181,.08),rgba(194,154,231,.46));
+  transform:rotate(22deg);
 }
 
 .urai-world-companion__orb span {
-  inset: 15px;
-  border: 0;
-  background: rgba(255,255,255,.68);
-  filter: blur(8px);
+  inset: 27% 31% 25% 28%;
+  background: rgba(198,255,244,.38);
+  filter: blur(6px);
+  transform:rotate(8deg);
 }
 
 .urai-world-companion__orb:hover,

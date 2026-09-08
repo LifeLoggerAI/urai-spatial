@@ -24,6 +24,21 @@ html.urai-route-life-map .life-map-thresholds { padding: 8px !important; border:
 html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'][data-life-map-phase='approach'] .life-map-thresholds,
 html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'][data-life-map-phase='arrival'] .life-map-thresholds { display: grid !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; min-height: 74px !important; z-index: 2147483600 !important; }
 html.urai-route-life-map [data-testid='urai-true-3d-life-map'][data-life-map-mode='selected'] .life-map-thresholds button { display: block !important; visibility: visible !important; min-height: 58px !important; pointer-events: auto !important; }
+html.urai-route-life-map [data-testid='urai-true-3d-life-map'] .life-map-recovery {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  display: grid !important;
+  place-content: center !important;
+  justify-items: center !important;
+  gap: 14px !important;
+  padding: 24px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: radial-gradient(circle at 50% 46%,rgba(33,73,76,.38),transparent 34%),linear-gradient(180deg,#07141b,#02070c) !important;
+}
 @media (max-width:700px) {
   html.urai-route-life-map .life-map-title { max-width: min(72vw,270px) !important; padding: 9px 10px !important; }
   html.urai-route-life-map .life-map-title strong { font-size: 23px !important; max-width: 12ch !important; }

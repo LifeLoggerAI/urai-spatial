@@ -241,15 +241,24 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const seedGeometry = useMemo(() => {
-    const geometry = new THREE.SphereGeometry(0.24, 32, 22)
+    const geometry = new THREE.IcosahedronGeometry(0.82, 4)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+    const colors: number[] = []
+    const dark = new THREE.Color('#071513')
+    const mineral = new THREE.Color(accent)
     for (let index = 0; index < positions.count; index += 1) {
       const x = positions.getX(index)
       const y = positions.getY(index)
       const z = positions.getZ(index)
-      const weathering = 1 + Math.sin(x * 5.1 + y * 3.7) * 0.08 + Math.cos(z * 4.6 - y * 2.8) * 0.055
-      positions.setXYZ(index, x * weathering * 0.88, y * weathering * 1.12, z * weathering * 0.78)
+      const weathering = 1 + Math.sin(x * 7.1 + y * 4.7) * 0.15 + Math.cos(z * 6.6 - y * 3.8) * 0.09
+      const lean = 0.18 * (y + 0.35) + 0.09 * Math.sin(y * 5.2)
+      const cleft = 1 - 0.18 * Math.exp(-Math.pow((x + 0.22) * 5.5, 2)) * Math.max(0, y + 0.3)
+      positions.setXYZ(index, (x * weathering * cleft * 0.82) + lean, y * weathering * 1.38, z * weathering * (0.64 + 0.12 * Math.sin(y * 4.1)))
+      const band = 0.18 + 0.62 * (0.5 + 0.5 * Math.sin((y + z * 0.34) * 17.0 + x * 3.2))
+      const color = dark.clone().lerp(mineral, band)
+      colors.push(color.r, color.g, color.b)
     }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
     positions.needsUpdate = true
     geometry.computeVertexNormals()
     return geometry
@@ -258,12 +267,12 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     const positions: number[] = []
     for (let index = 0; index < 520; index += 1) {
       const t = index / 519
-      const y = -0.48 + t * 0.96
-      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 0.52, 2)))
+      const y = -0.94 + t * 1.88
+      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.02, 2)))
       const sample = ((index * 103) % 521) / 520
-      const radius = envelope * Math.pow(sample, index % 5 === 0 ? 2.5 : 1.55) * 0.52
+      const radius = envelope * Math.pow(sample, index % 5 === 0 ? 2.5 : 1.55) * 0.86
       const angle = index * 2.399963 + Math.sin(index * 0.31) * 0.22
-      positions.push(Math.cos(angle) * radius, y, Math.sin(angle) * radius * 0.86)
+      positions.push(Math.cos(angle) * radius + y * 0.14, y, Math.sin(angle) * radius * 0.68)
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -292,7 +301,7 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       onPointerOut={(event) => pointer(event, false)}
       castShadow
     >
-      <meshStandardMaterial color="#061116" emissive={accent} emissiveIntensity={memory ? (hovered ? 0.42 : 0.18) : 0.08} roughness={0.96} metalness={0} />
+      <meshStandardMaterial vertexColors emissive={accent} emissiveIntensity={memory ? (hovered ? 0.30 : 0.12) : 0.05} roughness={0.82} metalness={0} flatShading />
     </mesh>
     <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
