@@ -71,8 +71,8 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     targetGoal.current.set(...goal.target);
     if (portrait) {
       if (phase === "overview") {
-        positionGoal.current.set(0, 2.15, 16.6);
-        targetGoal.current.set(0, -1.05, -11.8);
+        positionGoal.current.set(0, 3.6, 14.0);
+        targetGoal.current.set(0, -1.45, -8.2);
       } else {
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.48);
         positionGoal.current.copy(targetGoal.current).add(offset);
@@ -89,7 +89,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     lookTarget.current.copy(targetGoal.current);
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = portrait ? (phase === "overview" ? 61 : 57) : (phase === "arrival" ? 46 : 52);
+      camera.fov = portrait ? (phase === "overview" ? 50 : 54) : (phase === "arrival" ? 46 : 52);
       camera.updateProjectionMatrix();
     }
     initialized.current = true;
@@ -103,7 +103,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
       targetGoal.current.x += pointer.x * 0.34;
       targetGoal.current.y += pointer.y * 0.16;
     }
-    const fov = portrait ? (phase === "overview" ? 61 : 57) : (phase === "arrival" ? 46 : 52);
+    const fov = portrait ? (phase === "overview" ? 50 : 54) : (phase === "arrival" ? 46 : 52);
     if (reducedMotion) {
       camera.position.copy(positionGoal.current);
       lookTarget.current.copy(targetGoal.current);

@@ -167,7 +167,7 @@ test('Reduced motion portrait adaptive quality and high contrast retain equivale
   assert.match(world, /profile\.tier/)
   assert.match(world, /profile\.postprocessing/)
   assert.match(source, /size\.height > size\.width/)
-  assert.match(source, /positionGoal\.current\.set\(0, 2\.15, 16\.6\)/)
+  assert.match(source, /positionGoal\.current\.set\(0, 3\.6, 14\.0\)/)
   assert.match(source, /@media\(max-width:700px\)/)
   assert.match(source, /@media\(prefers-reduced-motion:reduce\)/)
   assert.match(source, /@media\(forced-colors:active\)/)

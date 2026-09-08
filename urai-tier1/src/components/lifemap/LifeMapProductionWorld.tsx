@@ -320,22 +320,17 @@ function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; 
   const ledger = useMemo(() => memoryLedgerGeometry(seed), [seed]);
   const site = useMemo(() => memorySiteGeometry(seed), [seed]);
   useEffect(() => () => { ledger.dispose(); site.dispose(); }, [ledger, site]);
-  const width = 1.05 + seeded(seed, 65) * 0.72;
-  const height = 0.78 + seeded(seed, 66) * 0.88;
+  const width = 1.55 + seeded(seed, 65) * 0.95;
+  const height = 0.62 + seeded(seed, 66) * 0.48;
   const lean = (seeded(seed, 67) - 0.5) * 0.48;
   return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]} userData={{ presentation: "grounded-authored-memory-form" }}>
-    <mesh geometry={site} position={[0, -0.05, 0]} scale={[1.45 + seeded(seed, 68) * 0.65, 0.34, 1.0 + seeded(seed, 69) * 0.55]} receiveShadow castShadow>
+    <mesh geometry={site} position={[0, -0.08, 0]} scale={[1.75 + seeded(seed, 68) * 0.8, 0.42, 1.25 + seeded(seed, 69) * 0.7]} receiveShadow castShadow>
       <meshStandardMaterial color="#183b38" roughness={0.98} metalness={0} emissive={aura} emissiveIntensity={active ? 0.12 : 0.025} />
     </mesh>
-    <mesh geometry={ledger} position={[lean * 0.35, 0.62 + height * 0.22, 0]} rotation={[0.08 + seeded(seed, 70) * 0.24, lean, (seeded(seed, 71) - 0.5) * 0.22]} scale={[width, height, 0.68 + seeded(seed, 72) * 0.54]} castShadow receiveShadow>
+    <mesh geometry={ledger} position={[lean * 0.35, 0.34 + height * 0.16, 0]} rotation={[-0.62 + seeded(seed, 70) * 0.24, lean, (seeded(seed, 71) - 0.5) * 0.38]} scale={[width, height, 0.92 + seeded(seed, 72) * 0.72]} castShadow receiveShadow>
       <meshStandardMaterial color={aura} roughness={0.88} metalness={0} emissive={aura} emissiveIntensity={active ? 0.34 : 0.10} />
     </mesh>
-    <Line points={[
-      [-0.72 * width, 0.72, 0.2],
-      [-0.18, 0.88 + height * 0.18, -0.12],
-      [0.38 * width, 0.78 + height * 0.34, 0.05],
-    ]} color="#e1f5e8" lineWidth={active ? 0.52 : 0.24} transparent opacity={active ? 0.58 : 0.22} />
-    <pointLight color={aura} intensity={active ? 1.4 : 0.18} distance={active ? 5.2 : 2.4} decay={2} position={[0, 0.7, 0]} />
+    <pointLight color={aura} intensity={active ? 1.25 : 0.14} distance={active ? 5.2 : 2.4} decay={2} position={[0, 0.45, 0]} />
   </group>;
 }
 
@@ -344,6 +339,11 @@ function AuthoredLifeMapPlace() {
   const place = useMemo(() => {
     const root = scene.clone(true);
     root.traverse((object) => {
+      if (object.name.startsWith("life-map-v212-localized-memory-emission-")) {
+        object.visible = false;
+        object.userData.uraiRetiredVisualRole = "v213-no-detached-ground-strokes";
+        return;
+      }
       if (!(object instanceof THREE.Mesh)) return;
       object.castShadow = true;
       object.receiveShadow = true;
@@ -411,7 +411,7 @@ function CanyonStrataAndAlcoves() {
     { p: [8.8, 3.5, -30.4] as Point3, color: ICE },
   ];
   return <group name="life-map-continuous-canyon-strata-and-inhabited-recesses">
-    {strata.map((layer, index) => <Line key={index} points={layer.points} color={layer.color} lineWidth={0.55 - index * 0.06} transparent opacity={0.32} />)}
+    {strata.map((layer, index) => <Line key={index} points={layer.points} color={layer.color} lineWidth={0.78 - index * 0.07} transparent opacity={0.46} />)}
     {alcoves.map((alcove, index) => <group key={index} position={alcove.p} name={`life-map-embedded-recess-${index}`}>
       <Line points={[[-1.35, 0.05, 0], [-0.7, 0.18, -0.22], [0, 0.1, -0.34], [0.72, 0.17, -0.2], [1.35, 0.04, 0]]} color={alcove.color} lineWidth={0.65} transparent opacity={0.48} />
       <pointLight color={alcove.color} intensity={0.5} distance={3.4} decay={2} />
@@ -423,11 +423,10 @@ function MemoryLandscapeArchitecture() {
   const ridges = useMemo(() => [
     { geometry: erodedRidgeGeometry(17, 18, 3.1, 4.8), position: [-10, -2.45, -7] as Point3, rotation: [0, 0.34, -0.03] as Point3 },
     { geometry: erodedRidgeGeometry(41, 13, 5.2, 4.2), position: [11.2, -2.2, -18] as Point3, rotation: [0, -0.42, 0.02] as Point3 },
-    { geometry: erodedRidgeGeometry(73, 24, 7.8, 5.5), position: [-2, -1.4, -37] as Point3, rotation: [0, 0.08, -0.015] as Point3 },
   ], []);
   return <group name="life-map-authored-geologic-history">
     {ridges.map((ridge, index) => <mesh key={index} geometry={ridge.geometry} position={ridge.position} rotation={ridge.rotation} castShadow receiveShadow>
-      <meshStandardMaterial color={index === 1 ? "#303344" : index === 2 ? "#35464a" : "#29403f"} roughness={0.94} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.032 : 0.045} flatShading />
+      <meshStandardMaterial color={index === 1 ? "#35433d" : "#294a43"} roughness={0.96} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={0.035} />
     </mesh>)}
     <AuthoredLifeMapPlace />
     <CanyonStrataAndAlcoves />
@@ -791,8 +790,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.72, 0.92, 0.76] : [1.02, 1.02, 1.02]) : portrait ? [0.54, 0.96, 0.78] : [0.94, 0.94, 0.94];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.14, 0.94] : [0, -0.18, 0.8]) : portrait ? [0, -0.18, 1.1] : [0, -0.18, 1.4];
+  const stageScale: Point3 = selected ? (portrait ? [0.82, 0.94, 0.84] : [1.02, 1.02, 1.02]) : portrait ? [0.72, 1.0, 0.86] : [0.94, 0.94, 0.94];
+  const stagePosition: Point3 = selected ? (portrait ? [0, -0.14, 0.72] : [0, -0.18, 0.8]) : portrait ? [0, -0.28, 0.72] : [0, -0.18, 1.4];
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {

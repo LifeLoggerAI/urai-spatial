@@ -13,7 +13,7 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 import { ReplayProductControls } from './ReplayProductControls'
 
 const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
-const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.58, -6.0]
+const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.42, -4.2]
 
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
 
@@ -39,13 +39,13 @@ function prepareReplayModel(source: THREE.Object3D) {
 }
 
 function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reducedMotion: boolean }) {
-  const target = useRef(new THREE.Vector3(0, 0.32, -5.9))
+  const target = useRef(new THREE.Vector3(0, 0.24, -4.15))
   const desired = useRef(new THREE.Vector3())
 
   useFrame(({ camera, clock }, delta) => {
     const breathe = reducedMotion ? 0 : Math.sin(clock.elapsedTime * 0.22) * 0.045
     const arc = reducedMotion ? 0 : (progress - 0.5) * 0.34
-    desired.current.set(arc, 0.42 + breathe, 8.4 - progress * 0.75)
+    desired.current.set(arc, 0.42 + breathe, 6.6 - progress * 0.65)
     camera.position.lerp(desired.current, Math.min(1, delta * (reducedMotion ? 8 : 2.4)))
     camera.lookAt(target.current)
   })
@@ -57,13 +57,13 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const surfaceGeometry = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(8.9, 5.05, 40, 12)
+    const geometry = new THREE.PlaneGeometry(15.8, 9.2, 72, 36)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
     for (let index = 0; index < positions.count; index += 1) {
       const x = positions.getX(index)
       const y = positions.getY(index)
-      const normalizedX = x / 4.45
-      const depth = -0.86 * normalizedX * normalizedX + Math.sin(y * 1.3) * 0.025
+      const normalizedX = x / 7.9
+      const depth = -1.18 * normalizedX * normalizedX + Math.sin(y * 1.3) * 0.06 + Math.sin(x * 1.7 + y * 0.8) * 0.035
       positions.setZ(index, depth)
     }
     positions.needsUpdate = true
@@ -136,8 +136,8 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
           ? <shaderMaterial
               uniforms={{ uMap: { value: texture }, uPlaying: { value: playing ? 1 : 0 } }}
               vertexShader={`varying vec2 vUv; varying float vFold; void main(){vUv=uv;vec3 p=position;p.z+=sin(uv.x*17.0+uv.y*5.0)*0.08+sin(uv.y*23.0)*0.035;vFold=p.z;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`}
-              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; varying float vFold; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.075+0.028*sin(vUv.y*23.0)+0.020*sin(vUv.x*37.0+vUv.y*13.0);float mask=smoothstep(erosion,erosion+0.12,min(edge.x,edge.y));float vein=0.5+0.5*sin((vUv.y+0.07*sin(vUv.x*8.0))*44.0);float current=pow(max(0.0,sin(vUv.x*11.0-vUv.y*7.0+uPlaying*2.0)),7.0);vec3 deep=vec3(0.025,0.085,0.095);vec3 mineral=vec3(0.18,0.46,0.45);vec3 ember=vec3(0.66,0.36,0.16);vec3 color=mix(deep,mineral,vein*0.46+vFold*0.3);color=mix(color,ember,current*0.38);gl_FragColor=vec4(color,mask*(0.72+vein*0.16));}`}
-              transparent depthWrite={false} toneMapped={false} side={THREE.DoubleSide}
+              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; varying float vFold; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.025+0.012*sin(vUv.y*31.0)+0.009*sin(vUv.x*53.0+vUv.y*17.0);float mask=smoothstep(erosion,erosion+0.035,min(edge.x,edge.y));float warp=vUv.y+0.055*sin(vUv.x*10.0)+0.018*sin(vUv.x*37.0);float vein=0.5+0.5*sin(warp*62.0);float fine=0.5+0.5*sin(vUv.x*117.0-vUv.y*83.0);float current=pow(max(0.0,sin(vUv.x*13.0-vUv.y*8.0+uPlaying*2.0)),8.0);vec3 deep=vec3(0.035,0.13,0.14);vec3 mineral=vec3(0.22,0.62,0.56);vec3 ember=vec3(0.86,0.48,0.18);vec3 violet=vec3(0.34,0.22,0.52);vec3 color=mix(deep,mineral,0.28+vein*0.46);color=mix(color,violet,fine*0.12);color=mix(color,ember,current*0.42);gl_FragColor=vec4(color*mask,1.0);}`}
+              depthWrite toneMapped={false} side={THREE.DoubleSide}
             />
           : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}
       </mesh>

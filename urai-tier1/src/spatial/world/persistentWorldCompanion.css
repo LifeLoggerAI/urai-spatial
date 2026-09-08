@@ -12,11 +12,10 @@
 
 .urai-world-companion__orb {
   position: relative;
-  width: 78px;
-  height: 58px;
+  width: 112px;
+  height: 82px;
   border: 1px solid rgba(207, 250, 254, .38);
-  border-radius: 18% 64% 28% 58% / 62% 24% 68% 34%;
-  clip-path: polygon(3% 48%,12% 18%,34% 5%,52% 20%,76% 12%,97% 39%,86% 61%,91% 84%,62% 95%,43% 78%,18% 92%,7% 70%);
+  border-radius: 63% 37% 58% 42% / 42% 67% 33% 58%;
   padding: 0;
   background:
     linear-gradient(132deg, transparent 0 28%, rgba(212,255,248,.56) 30% 33%, transparent 36% 100%),
@@ -27,7 +26,8 @@
     inset 0 0 28px rgba(255,255,255,.3);
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transform: rotate(-7deg) skewX(-5deg);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-radius 360ms ease;
 }
 
 .urai-world-companion__orb::before,
@@ -58,7 +58,7 @@
 .urai-world-companion__orb:hover,
 .urai-world-companion__orb:focus-visible,
 .urai-world-companion[data-open='true'] .urai-world-companion__orb {
-  transform: scale(1.08);
+  transform: rotate(4deg) skewX(3deg) scale(1.08, .96);
   box-shadow: 0 0 28px rgba(103,232,249,.7), 0 0 96px rgba(103,232,249,.34), inset 0 0 32px rgba(255,255,255,.4);
 }
 
@@ -229,6 +229,7 @@
 
 .urai-world-companion[data-phase]:not([data-phase='idle']) .urai-world-companion__orb {
   animation: urai-world-orb-travel 900ms ease-in-out infinite alternate;
+  border-radius: 42% 58% 34% 66% / 61% 36% 64% 39%;
 }
 
 /* PRODUCT routes keep the companion available as a constellation return path,
@@ -289,8 +290,8 @@
 }
 
 @keyframes urai-world-orb-travel {
-  from { transform: scale(.96); filter: brightness(.92); }
-  to { transform: scale(1.08); filter: brightness(1.18); }
+  from { transform: rotate(-9deg) skewX(-7deg) scale(.94,1.04); filter: brightness(.92); }
+  to { transform: rotate(6deg) skewX(4deg) scale(1.08,.94); filter: brightness(1.18); }
 }
 
 @media (max-width: 700px) {
@@ -324,7 +325,7 @@
 }
 
 @media (max-width: 560px) {
-  .urai-world-companion__orb { width: 56px; height: 56px; }
+  .urai-world-companion__orb { width: 82px; height: 62px; }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
   .urai-world-companion__estate ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
