@@ -15,13 +15,14 @@ test('V185 preserves the single opaque responsive Canvas owner', () => {
   assert.match(styles, /\.canvas/)
 })
 
-test('V191 replaces the rejected runtime heightfield with one baked authored landscape authority', () => {
+test('V193 replaces the rejected heightfield identity with composed authored geology', () => {
   assert.match(art, /governed-landscape-provenance-retained-nonrendered-single-ground-owner/)
   assert.match(art, /<primitive object=\{environment\} visible=\{false\} \/>/)
   assert.match(art, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
   assert.match(art, /continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase/)
   assert.match(art, /AUTHORED_LANDSCAPE_V191/)
-  assert.match(art, /home-v191-single-authored-landscape-authority/)
+  assert.match(art, /home-v193-single-authored-landscape-authority/)
+  assert.match(art, /composed-traversable-floor-with-separate-geological-shelves-walls-and-deep-overhang/)
   assert.match(art, /<primitive object=\{authoredLandscape\}/)
   assert.match(art, /name="home-v125-sculpted-canyon-ground" geometry=\{geometry\} visible=\{false\}/)
   assert.match(art, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
@@ -37,7 +38,7 @@ test('V185 uses a continuous world-space memory sky without dead-black zenith or
   assert.doesNotMatch(art, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
-test('V191 destinations use distinct authored organic place assets and suppress predecessor crystals and particles', () => {
+test('V193 destinations use distinct authored places and suppress predecessor crystals and particles', () => {
   assert.match(art, /terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring/)
   assert.match(art, /camera-safe-basin-wide-ground-level-signal-place-no-upright-gate/)
   assert.match(art, /position=\{\[x,isGround\?0\.70:0\.64,isGround\?-8\.72:-8\.78\]\}/)
@@ -49,11 +50,11 @@ test('V191 destinations use distinct authored organic place assets and suppress 
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone/)
   assert.match(art, /AUTHORED_GROUND_V191/)
   assert.match(art, /AUTHORED_LIFE_MAP_V191/)
-  assert.match(art, /home-v191-\$\{side\}-authored-memory-place/)
+  assert.match(art, /home-v193-\$\{side\}-authored-memory-place/)
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone[^>]*visible=\{false\}/)
 })
 
-test('V191 Orb uses one connected authored asymmetric heart and suppresses every predecessor point or lobe identity', () => {
+test('V193 Orb uses one connected layered asymmetric heart and suppresses every predecessor point or lobe identity', () => {
   assert.match(art, /for\(let index=0;index<1540;index\+=1\)/)
   assert.match(art, /large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain/)
   assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.72,1\.72,1\.72\]\}/)
@@ -61,7 +62,7 @@ test('V191 Orb uses one connected authored asymmetric heart and suppresses every
   assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
   assert.match(art, /AUTHORED_ORB_V191/)
-  assert.match(art, /home-v191-authored-single-connected-living-memory-heart/)
+  assert.match(art, /home-v193-authored-single-connected-layered-living-memory-heart/)
   assert.match(art, /home-v188-orb-heart-port-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-starboard-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-crown-lobe[^>]*visible=\{false\}/)
