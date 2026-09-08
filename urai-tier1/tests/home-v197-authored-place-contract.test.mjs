@@ -13,15 +13,15 @@ test('V197 replaces the rejected Ground prop pile with integrated environmental 
 
 test('V197 replaces the Life Map stick-and-ball diagram with a grounded observatory place', () => {
   assert.match(generator, /home-v197-life-map-integrated-memory-observatory-foundation/)
-  assert.match(generator, /home-v197-life-map-weathered-memory-ledger/)
+  assert.match(generator, /home-v200-life-map-integrated-weathered-memory-ledger/)
   assert.match(generator, /home-v197-life-map-ascending-observatory-path/)
   assert.doesNotMatch(generator, /home-v196-life-map-ascending-memory-branch|home-v196-life-map-suspended-memory-canopy/)
 })
 
 test('V197 gives the single connected Orb a scarred asymmetric silhouette', () => {
-  assert.match(generator, /portLobe/)
-  assert.match(generator, /starboardScar/)
-  assert.match(generator, /home-v197-single-connected-scarred-stratified-living-memory-heart/)
+  assert.match(generator, /new THREE\.ExtrudeGeometry\(shape/)
+  assert.match(generator, /const scar=/)
+  assert.match(generator, /home-v200-single-connected-scarred-stratified-living-memory-heart/)
 })
 
 test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
@@ -37,6 +37,6 @@ test('V199 runtime composes both places and the Orb inside the initial portrait-
   assert.match(runtime, /home-v199-\$\{side\}-authored-memory-place/)
   assert.match(runtime, /position=\{\[isGround\?1\.15:-1\.15,isGround\?-0\.82:-0\.84,0\]\}/)
   assert.match(runtime, /scale=\{isGround\?\[1\.34,1\.34,1\.34\]:\[0\.82,0\.82,0\.82\]\}/)
-  assert.match(runtime, /home-v199-authored-single-connected-scarred-living-memory-heart/)
-  assert.match(runtime, /scale=\{\[0\.34,0\.40,0\.32\]\}/)
+  assert.match(runtime, /home-v200-authored-single-connected-scarred-living-memory-heart/)
+  assert.match(runtime, /scale=\{\[0\.42,0\.42,0\.42\]\}/)
 })

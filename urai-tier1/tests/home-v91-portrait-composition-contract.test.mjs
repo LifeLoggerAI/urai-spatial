@@ -62,7 +62,7 @@ test('V193 Orb uses one connected layered asymmetric heart and suppresses every 
   assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
   assert.match(art, /AUTHORED_ORB_V191/)
-  assert.match(art, /home-v199-authored-single-connected-scarred-living-memory-heart/)
+  assert.match(art, /home-v200-authored-single-connected-scarred-living-memory-heart/)
   assert.match(art, /home-v188-orb-heart-port-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-starboard-lobe[^>]*visible=\{false\}/)
   assert.match(art, /home-v188-orb-heart-crown-lobe[^>]*visible=\{false\}/)
