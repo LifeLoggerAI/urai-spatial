@@ -31,8 +31,8 @@ assert.ok(
   'Life Map must suppress the rejected generic energy-core presentation node',
 );
 assert.ok(
-  source.includes('function MemorySeed(') && source.includes('name="life-map-sculpted-memory-seed"'),
-  'Life Map must replace rejected starburst geometry with the restrained sculpted memory seed',
+  source.includes('function MemorySeed(') && source.includes('name="life-map-weathered-memory-ledger"') && source.includes('function memoryLedgerGeometry('),
+  'Life Map must replace rejected starburst geometry with a weathered authored memory ledger',
 );
 
 console.log('Life Map memory-star presentation contract passed');
