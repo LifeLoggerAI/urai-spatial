@@ -31,3 +31,12 @@ test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
     assert.ok(size < 780_000, `${name} must remain below the connector-safe binary transport ceiling`)
   }
 })
+
+test('V199 runtime composes both places and the Orb inside the initial portrait-safe frame', () => {
+  const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
+  assert.match(runtime, /home-v199-\$\{side\}-authored-memory-place/)
+  assert.match(runtime, /position=\{\[isGround\?1\.15:-1\.15,isGround\?-0\.82:-0\.84,0\]\}/)
+  assert.match(runtime, /scale=\{isGround\?\[1\.34,1\.34,1\.34\]:\[0\.82,0\.82,0\.82\]\}/)
+  assert.match(runtime, /home-v199-authored-single-connected-scarred-living-memory-heart/)
+  assert.match(runtime, /scale=\{\[0\.34,0\.40,0\.32\]\}/)
+})

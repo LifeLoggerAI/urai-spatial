@@ -120,14 +120,15 @@ function terraceGeometry(width, depth, height, seed, backLift = 0) {
 
 function sanctuaryWallGeometry(width, height, depth, seed, lean = 0) {
   const columns=30, rows=24, positions=[], colors=[], indices=[]
-  const dark=color('#202f38'), memory=color('#5b5575'), light=color('#9b8eb5')
+  const dark=color('#202f38'), memory=color('#4d5368'), light=color('#8a879f')
   for(let ry=0;ry<=rows;ry++){
     const vy=ry/rows,y=vy*height
     for(let cx=0;cx<=columns;cx++){
       const vx=cx/columns,x=(vx-.5)*width
-      const crown=Math.pow(Math.abs(x)/(width*.5),2.4)
-      const z=Math.sin(x*1.45+seed)*.09+Math.sin(y*3.2-x*.7)*.035+lean*vy
-      positions.push(x,y-crown*.34,z)
+      const crown=Math.pow(Math.abs(x)/(width*.5),1.75)
+      const brokenTop=(.08+.14*Math.sin(x*2.7+seed)+.07*Math.sin(x*6.1-seed))*(.25+.75*vy)
+      const z=Math.sin(x*1.45+seed)*.15+Math.sin(y*3.2-x*.7)*.065+lean*vy
+      positions.push(x,y-crown*.62-brokenTop,z)
       const seam=.5+.5*Math.sin(y*10.5+x*2.2+seed)
       const c=dark.clone().lerp(memory,.38+.34*vy).lerp(light,seam*.12)
       colors.push(c.r,c.g,c.b)
@@ -143,10 +144,10 @@ function makePlace(kind) {
   const baseColor = isGround ? '#204b37' : '#3d315d', glow = isGround ? '#72d59a' : '#a99be0'
   const material = new THREE.MeshStandardMaterial({color:baseColor,emissive:glow,emissiveIntensity:0.055,roughness:0.89,metalness:0.002})
   if (isGround) {
-    const earthMaterial=new THREE.MeshStandardMaterial({color:'#526b5f',vertexColors:true,roughness:.98,metalness:0})
+    const earthMaterial=new THREE.MeshStandardMaterial({color:'#5d7667',vertexColors:true,roughness:.98,metalness:0})
     const terrace=new THREE.Mesh(terraceGeometry(4.8,3.2,.18,17,.12),earthMaterial)
     terrace.name='home-v197-ground-integrated-weathered-foundation';terrace.position.y=-.24;terrace.receiveShadow=true;scene.add(terrace)
-    const shelter=new THREE.Mesh(sanctuaryWallGeometry(4.2,2.05,.18,7,.16),earthMaterial)
+    const shelter=new THREE.Mesh(sanctuaryWallGeometry(3.7,1.62,.18,7,.12),earthMaterial)
     shelter.name='home-v197-ground-continuous-sheltering-memory-wall';shelter.position.set(0,-.10,-1.18);shelter.rotation.x=-.08;shelter.castShadow=true;shelter.receiveShadow=true;scene.add(shelter)
     const path=new THREE.Mesh(terraceGeometry(1.12,4.8,.07,29,.04),earthMaterial)
     path.name='home-v197-ground-grown-in-place-memory-path';path.position.set(0,-.13,1.28);path.receiveShadow=true;scene.add(path)
@@ -154,10 +155,10 @@ function makePlace(kind) {
     const hearth=new THREE.Mesh(deformGeometry(new THREE.SphereGeometry(.48,24,14),31,.44),hearthMaterial)
     hearth.name='home-v197-ground-embedded-memory-hearth';hearth.position.set(0,.02,-.18);hearth.scale.set(1.28,.46,1.0);hearth.receiveShadow=true;scene.add(hearth)
   } else {
-    const strataMaterial=new THREE.MeshStandardMaterial({color:'#4b4866',vertexColors:true,emissive:glow,emissiveIntensity:.035,roughness:.92,metalness:0,side:THREE.DoubleSide})
+    const strataMaterial=new THREE.MeshStandardMaterial({color:'#454b5d',vertexColors:true,emissive:glow,emissiveIntensity:.018,roughness:.96,metalness:0,side:THREE.DoubleSide})
     const foundation=new THREE.Mesh(terraceGeometry(4.9,3.6,.16,43,.18),strataMaterial)
     foundation.name='home-v197-life-map-integrated-memory-observatory-foundation';foundation.position.y=-.25;foundation.receiveShadow=true;scene.add(foundation)
-    const walls=[[-1.34,0,-.82,1.92,2.34,.12],[0,0,-1.14,2.45,2.84,0],[1.34,0,-.82,1.92,2.34,-.12]]
+    const walls=[[-1.02,0,-.76,1.42,1.34,.10],[0,0,-1.02,1.68,1.72,0],[1.02,0,-.76,1.42,1.34,-.10]]
     walls.forEach(([x,y,z,w,h,lean],i)=>{const wall=new THREE.Mesh(sanctuaryWallGeometry(w,h,.18,51+i,lean),strataMaterial);wall.name=`home-v197-life-map-weathered-memory-ledger-${i+1}`;wall.position.set(x,y-.10,z);wall.rotation.y=(i-1)*-.22;wall.castShadow=true;wall.receiveShadow=true;scene.add(wall)})
     const threshold=new THREE.Mesh(terraceGeometry(1.35,4.2,.08,67,.06),strataMaterial)
     threshold.name='home-v197-life-map-ascending-observatory-path';threshold.position.set(0,-.11,1.22);threshold.receiveShadow=true;scene.add(threshold)
@@ -177,11 +178,11 @@ function makeHeart() {
       const cleft = Math.exp(-Math.pow(x / 0.27, 2)) * Math.exp(-Math.pow((y - 0.72) / 0.34, 2)) * 0.34
       const taper = 0.42 + 0.58 * ((y + 1) * 0.5)
       const memoryLayer = Math.sin(theta * 7 + phi * 5.3) * 0.105 + Math.sin(theta * 13 - phi * 3.7) * 0.058 + Math.cos(theta*19+phi*8)*.025
-      const portLobe = 1 + .22*Math.exp(-Math.pow(theta-2.55,2)*3.4)*Math.exp(-Math.pow(phi-1.0,2)*2.2)
-      const starboardScar = 1-.16*Math.exp(-Math.pow(theta-5.48,2)*4.8)*Math.exp(-Math.pow(phi-1.48,2)*3.0)
+      const portLobe = 1 + .30*Math.exp(-Math.pow(theta-2.55,2)*3.4)*Math.exp(-Math.pow(phi-1.0,2)*2.2)
+      const starboardScar = 1-.24*Math.exp(-Math.pow(theta-5.48,2)*4.8)*Math.exp(-Math.pow(phi-1.48,2)*3.0)
       const living = (1 + Math.sin(theta * 3 + phi * 2.1) * 0.17 + Math.cos(theta * 5 - phi * 1.4) * 0.11 + memoryLayer)*portLobe*starboardScar
       x = x * taper * 0.78 * living * (1 + 0.14 * Math.sin(theta + 0.6))
-      z = z * taper * 0.50 * living * (1+.09*Math.cos(theta*2-phi))
+      z = z * taper * 0.43 * living * (1+.12*Math.cos(theta*2-phi))
       y = y * 0.98 - cleft + 0.095 * Math.sin(theta * 2 + phi) * ring-.08*Math.max(0,-sy)
       positions.push(x,y,z)
       const stratum = .5 + .5 * Math.sin(theta * 9 + phi * 11)
