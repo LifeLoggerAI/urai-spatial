@@ -318,7 +318,6 @@ function MemoryLandscape({ selected }: { selected: LifeMapNode | null }) {
     geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
   }, []);
   const landmarks = useMemo(() => [17, 29, 43, 61, 83].map(memoryLedgerGeometry), []);
-  if (selected) return null;
   return <group name="life-map-inhabitable-memory-landscape">
     <mesh geometry={terrain} receiveShadow><meshStandardMaterial vertexColors roughness={0.98} metalness={0} /></mesh>
     {landmarks.map((geometry, index) => <mesh key={index} geometry={geometry} position={[-11 + index * 5.4, -0.9 + index * 0.42, -11 - index * 5.1]} rotation={[0.05 * index, index * 0.29 - 0.5, index % 2 ? -0.12 : 0.09]} scale={[1.5 + index * 0.18, 2.8 + index * 0.42, 1.3]} castShadow receiveShadow>
@@ -508,15 +507,21 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const importance = artifactImportance(node);
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
+  const groundedPosition = useMemo<Point3>(() => {
+    const [x, , z] = node.position;
+    const depth = THREE.MathUtils.clamp((-z - 2) / 42, 0, 1);
+    const valley = -2.15 + Math.pow(Math.abs(x) / 19, 2.1) * (1.1 + depth * 2.2) + Math.pow(depth, 2.35) * 4.3;
+    return [x, valley + 0.52 + (index % 3) * 0.09, z];
+  }, [index, node.position]);
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return;
     root.current.rotation.y = Math.sin(clock.elapsedTime * 0.13 + index) * 0.08;
-    root.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.28 + index * 0.7) * 0.16;
+    root.current.position.y = groundedPosition[1] + Math.sin(clock.elapsedTime * 0.28 + index * 0.7) * 0.025;
   });
   return (
     <group
       ref={root}
-      position={node.position}
+      position={groundedPosition}
       visible={visible}
       scale={active ? 0.56 : 0.50 + importance * 0.16}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
@@ -704,9 +709,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         <EmotionalTerrain reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
         <MemoryLandscape selected={selected} />
         <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
-          <LifeCore hidden={Boolean(selected)} reducedMotion={profile.reducedMotion} tier={profile.tier} />
+          <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
           <group name="life-map-light-bridges"><LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} /></group>
-          <ChapterTerritories selected={selected} />
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">
