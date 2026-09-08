@@ -319,10 +319,17 @@ function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; 
   const stretch = 1.05 + seeded(seed, 51) * 0.75;
   const turn = seeded(seed, 52) * Math.PI;
   return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]}>
-    <mesh geometry={site} scale={[stretch, active ? 1.28 : 0.9, 1]} position={[0, -0.12, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#2e4442" emissive={aura} emissiveIntensity={active ? 0.36 : 0.065} roughness={0.96} metalness={0} flatShading />
+    <mesh geometry={site} scale={[stretch * 1.22, active ? 0.52 : 0.34, 1.18]} position={[0, -0.18, 0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#263936" emissive={aura} emissiveIntensity={active ? 0.16 : 0.018} roughness={0.98} metalness={0} flatShading />
     </mesh>
-    <pointLight color={aura} intensity={active ? 2.2 : 0.26} distance={active ? 5.8 : 2.5} decay={2} position={[0, 0.25, 0]} />
+    <Line points={[
+      [-1.25 - seeded(seed, 61) * 0.55, 0.08, 0.2],
+      [-0.52, 0.12, -0.16 - seeded(seed, 62) * 0.24],
+      [0.08, 0.1, 0.08],
+      [0.66, 0.13, -0.2 + seeded(seed, 63) * 0.28],
+      [1.18 + seeded(seed, 64) * 0.6, 0.06, 0.16],
+    ]} color={aura} lineWidth={active ? 0.72 : 0.34} transparent opacity={active ? 0.68 : 0.24} />
+    <pointLight color={aura} intensity={active ? 1.1 : 0.08} distance={active ? 4.8 : 1.8} decay={2} position={[0, 0.12, 0]} />
   </group>;
 }
 
@@ -353,82 +360,25 @@ function erodedRidgeGeometry(seed: number, width: number, height: number, depth:
   return geometry;
 }
 
-function weatheredOutcropGeometry(seed: number, radius: number, height: number) {
-  const sides = 9 + seed % 5;
-  const levels = 5;
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const indices: number[] = [];
-  const shadow = new THREE.Color("#182827");
-  const stone = new THREE.Color(seed % 3 === 0 ? "#52625a" : seed % 3 === 1 ? "#3f5551" : "#47495a");
-  for (let level = 0; level <= levels; level += 1) {
-    const v = level / levels;
-    const taper = 1 - Math.pow(v, 1.6) * (0.64 + seeded(seed, 90) * 0.2);
-    for (let side = 0; side < sides; side += 1) {
-      const angle = side / sides * Math.PI * 2;
-      const ledge = level === 1 || level === 3 ? 1.12 : 1;
-      const weather = 0.76 + seeded(seed * 17 + level * 41 + side, 91) * 0.42;
-      const x = Math.cos(angle) * radius * taper * ledge * weather;
-      const z = Math.sin(angle) * radius * taper * ledge * weather * (0.68 + seeded(seed, 92) * 0.5);
-      const y = v * height + Math.sin(angle * 3 + seed) * 0.07 * (1 - v);
-      positions.push(x, y, z);
-      const color = shadow.clone().lerp(stone, 0.24 + v * 0.7);
-      colors.push(color.r, color.g, color.b);
-    }
-  }
-  for (let level = 0; level < levels; level += 1) for (let side = 0; side < sides; side += 1) {
-    const a = level * sides + side;
-    const b = level * sides + (side + 1) % sides;
-    const c = (level + 1) * sides + side;
-    const d = (level + 1) * sides + (side + 1) % sides;
-    if ((side + level) % 2) indices.push(a, c, b, b, c, d); else indices.push(a, c, d, a, d, b);
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-function WeatheredOutcrops() {
-  const outcrops = useMemo(() => [
-    [-15.2, -2.25, 1.4, 1.8, 1.15, 11], [-11.8, -2.35, -1.7, 2.5, 1.7, 19],
-    [13.7, -2.30, 0.1, 2.1, 1.35, 27], [16.5, -2.0, -5.2, 3.2, 2.4, 31],
-    [-16.8, -1.8, -8.0, 3.8, 3.0, 43], [-12.4, -1.55, -13.6, 2.7, 2.7, 47],
-    [12.8, -1.75, -10.8, 3.5, 2.9, 59], [16.2, -1.2, -17.4, 3.6, 3.8, 67],
-    [-14.9, -0.9, -21.0, 4.2, 4.5, 71], [-10.4, -0.5, -27.2, 3.1, 4.1, 79],
-    [10.8, -0.3, -25.8, 3.4, 4.2, 83], [15.0, 0.15, -31.8, 4.6, 5.1, 97],
-  ].map(([x, y, z, radius, height, seed]) => ({
-    geometry: weatheredOutcropGeometry(seed, radius, height),
-    position: [x, y, z] as Point3,
-    rotation: [0, seeded(seed, 94) * Math.PI, (seeded(seed, 95) - 0.5) * 0.12] as Point3,
-  })), []);
-  return <group name="life-map-weathered-inhabited-outcrops">
-    {outcrops.map((outcrop, index) => <mesh key={index} geometry={outcrop.geometry} position={outcrop.position} rotation={outcrop.rotation} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.99} metalness={0} flatShading />
-    </mesh>)}
-  </group>;
-}
-
-function InhabitedMemoryAlcoves() {
-  const alcoves = [
-    { position: [-8.6, -1.45, -5.8] as Point3, turn: 0.32, color: CYAN, seed: 121 },
-    { position: [8.9, -1.18, -12.8] as Point3, turn: -0.46, color: GOLD, seed: 133 },
-    { position: [-7.3, -0.58, -20.2] as Point3, turn: 0.22, color: VIOLET, seed: 149 },
-    { position: [6.4, 0.25, -28.5] as Point3, turn: -0.18, color: ICE, seed: 163 },
+function CanyonStrataAndAlcoves() {
+  const strata = [
+    { points: [[-18, 1.6, 2], [-15, 1.9, -5], [-13, 2.7, -12], [-15, 4.0, -20], [-12, 5.6, -31]] as Point3[], color: "#729388" },
+    { points: [[18, 1.5, 1], [15, 2.1, -6], [13, 3.0, -13], [15, 4.4, -21], [12, 6.0, -32]] as Point3[], color: "#77758d" },
+    { points: [[-17, 3.0, -2], [-14, 3.4, -9], [-12, 4.1, -16], [-14, 5.2, -24], [-11, 7.0, -35]] as Point3[], color: "#4b6e69" },
+    { points: [[17, 2.8, -3], [14, 3.6, -10], [12, 4.4, -17], [14, 5.6, -25], [11, 7.2, -36]] as Point3[], color: "#5c5673" },
   ];
-  return <group name="life-map-inhabited-memory-alcoves">
-    {alcoves.map(({ position, turn, color, seed }, index) => {
-      const shelter = weatheredOutcropGeometry(seed, 2.1 + index * 0.22, 1.25 + index * 0.18);
-      return <group key={seed} position={position} rotation={[0, turn, 0]}>
-        <mesh geometry={shelter} scale={[1.5, 0.72, 0.62]} castShadow receiveShadow>
-          <meshStandardMaterial color={index % 2 ? "#37423e" : "#334b48"} roughness={1} flatShading />
-        </mesh>
-        <Line points={[[-1.45, 0.18, 0.72], [-0.72, 0.25, 0.82], [0.05, 0.2, 0.76], [0.82, 0.28, 0.58], [1.48, 0.16, 0.35]]} color={color} lineWidth={0.5} transparent opacity={0.42} />
-        <pointLight color={color} intensity={0.8} distance={4.2} decay={2} position={[0.15, 0.42, 0.55]} />
-      </group>;
-    })}
+  const alcoves = [
+    { p: [-10.2, 0.55, -6.8] as Point3, color: CYAN },
+    { p: [10.5, 1.25, -14.8] as Point3, color: GOLD },
+    { p: [-9.2, 2.2, -22.4] as Point3, color: VIOLET },
+    { p: [8.8, 3.5, -30.4] as Point3, color: ICE },
+  ];
+  return <group name="life-map-continuous-canyon-strata-and-inhabited-recesses">
+    {strata.map((layer, index) => <Line key={index} points={layer.points} color={layer.color} lineWidth={0.55 - index * 0.06} transparent opacity={0.32} />)}
+    {alcoves.map((alcove, index) => <group key={index} position={alcove.p} name={`life-map-embedded-recess-${index}`}>
+      <Line points={[[-1.35, 0.05, 0], [-0.7, 0.18, -0.22], [0, 0.1, -0.34], [0.72, 0.17, -0.2], [1.35, 0.04, 0]]} color={alcove.color} lineWidth={0.65} transparent opacity={0.48} />
+      <pointLight color={alcove.color} intensity={0.5} distance={3.4} decay={2} />
+    </group>)}
   </group>;
 }
 
@@ -442,8 +392,7 @@ function MemoryLandscapeArchitecture() {
     {ridges.map((ridge, index) => <mesh key={index} geometry={ridge.geometry} position={ridge.position} rotation={ridge.rotation} castShadow receiveShadow>
       <meshStandardMaterial color={index === 1 ? "#303344" : index === 2 ? "#35464a" : "#29403f"} roughness={0.94} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.032 : 0.045} flatShading />
     </mesh>)}
-    <WeatheredOutcrops />
-    <InhabitedMemoryAlcoves />
+    <CanyonStrataAndAlcoves />
     <group name="life-map-lineage-embankment" position={[0, -1.45, -29]}>
       <Line points={[[-9, -0.4, 1.8], [-5.2, 0.35, 0.1], [-1.5, 1.25, -1.4], [2.3, 2.4, -2.8], [7.8, 4.0, -4.2]]} color={GOLD} lineWidth={0.42} transparent opacity={0.22} />
       <Line points={[[-8.2, -0.8, 2.4], [-3.8, -0.05, 0.4], [0.4, 0.8, -1.2], [4.8, 2.05, -2.5], [9.5, 3.1, -3.5]]} color={CYAN} lineWidth={0.28} transparent opacity={0.16} />
