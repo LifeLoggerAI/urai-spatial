@@ -125,24 +125,35 @@ function EmbodiedReflection({ reducedMotion, demo }: { reducedMotion: boolean; d
 }
 
 function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: MirrorPattern | null; onSelect: (pattern: MirrorPattern | null) => void; reducedMotion: boolean }) {
-  const core = useRef<THREE.Mesh>(null)
+  const core = useRef<THREE.Group>(null)
+  const strata = useMemo(() => [0, 1, 2].map((layer) => {
+    const points = Array.from({ length: 18 }, (_, index) => {
+      const t = index / 17
+      return new THREE.Vector3((t - .5) * (2.5 - layer * .28), Math.sin(t * Math.PI) * (.62 + layer * .16) + layer * .12, Math.sin(t * Math.PI * 2.3 + layer) * .20)
+    })
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 90, .16 - layer * .025, 10, false)
+  }), [])
   useFrame(({ clock }) => {
     if (!core.current || reducedMotion) return
-    core.current.rotation.y = clock.elapsedTime * 0.18
-    core.current.rotation.x = Math.sin(clock.elapsedTime * 0.31) * 0.08
+    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .16
+    core.current.rotation.x = Math.sin(clock.elapsedTime * 0.31) * 0.06
   })
   return <group position={[0, 1.4, 0.85]} name="mirror-reflection-instrument" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
-    <mesh ref={core} castShadow>
-      <icosahedronGeometry args={[0.85, 4]} />
-      <meshPhysicalMaterial color={selected?.accent ?? '#c8fbff'} emissive={selected?.accent ?? '#63dbe5'} emissiveIntensity={selected ? 0.75 : 0.42} transmission={0.58} thickness={1.2} roughness={0.08} clearcoat={1} transparent opacity={0.94} />
-    </mesh>
-    {[1.35, 1.72, 2.05].map((radius, index) => <mesh key={radius} rotation={[Math.PI / 2, index * 0.6, index * 0.32]}><torusGeometry args={[radius, 0.025, 12, 80]} /><meshBasicMaterial color={selected?.accent ?? '#a8f4f8'} transparent opacity={0.22 - index * 0.035} /></mesh>)}
+    <group ref={core}>{strata.map((geometry, index) => <mesh key={index} geometry={geometry} position={[0, index * .06, index * -.16]} castShadow>
+      <meshStandardMaterial color={selected?.accent ?? (index === 1 ? '#79c2c3' : '#315d64')} emissive={selected?.accent ?? '#4aa5aa'} emissiveIntensity={selected ? .34 : .12} roughness={.76 + index * .06} metalness={.03} />
+    </mesh>)}</group>
     <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? 1.65 : 1.05} distance={8} decay={2} />
   </group>
 }
 
 function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern: MirrorPattern; selected: boolean; onSelect: (pattern: MirrorPattern) => void; reducedMotion: boolean }) {
   const group = useRef<THREE.Group>(null)
+  const geometry = useMemo(() => {
+    const shape = new THREE.Shape()
+    shape.moveTo(-.62, -.48); shape.bezierCurveTo(-.72, -.02, -.42, .62, -.10, .72); shape.bezierCurveTo(.34, .78, .66, .25, .54, -.30); shape.bezierCurveTo(.31, -.65, -.28, -.72, -.62, -.48)
+    const result = new THREE.ExtrudeGeometry(shape, { depth: .24, bevelEnabled: true, bevelSegments: 4, bevelSize: .07, bevelThickness: .06, curveSegments: 16 })
+    result.center(); return result
+  }, [])
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return
     group.current.position.y = pattern.position[1] + Math.sin(clock.elapsedTime * 0.62 + pattern.position[0]) * 0.08
@@ -150,20 +161,18 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   })
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
   return <group ref={group} position={pattern.position} data-testid="mirror-pattern-object" onClick={activate}>
-    <mesh castShadow scale={selected ? 1.18 : 1}>
-      {pattern.id === 'relationship-weather' ? <dodecahedronGeometry args={[0.72, 1]} /> : pattern.id === 'becoming' ? <octahedronGeometry args={[0.8, 2]} /> : <icosahedronGeometry args={[0.7, 2]} />}
-      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.72 : 0.22} transparent opacity={pattern.evidenceState === 'insufficient' ? 0.32 : 0.78} wireframe={pattern.evidenceState === 'conflicting' || pattern.evidenceState === 'insufficient'} metalness={0.3} roughness={0.25} />
+    <mesh geometry={geometry} castShadow scale={selected ? [1.32,1.12,1.22] : [1,1,1]} rotation={[.12, pattern.position[0] * .11, pattern.position[0] * .04]}>
+      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.42 : 0.12} transparent opacity={pattern.evidenceState === 'insufficient' ? 0.32 : 0.82} wireframe={pattern.evidenceState === 'conflicting'} metalness={0.04} roughness={0.82} />
     </mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.72, 0]}><ringGeometry args={[0.58, 0.67, 48]} /><meshBasicMaterial color={pattern.accent} transparent opacity={selected ? 0.44 : 0.2} /></mesh>
     {selected ? <pointLight color={pattern.accent} intensity={1.1} distance={6} /> : null}
   </group>
 }
 
 function FragmentObject({ fragment, accent, active, onSelect }: { fragment: MirrorFragment; accent: string; active: boolean; onSelect: (fragment: MirrorFragment) => void }) {
+  const geometry = useMemo(() => new THREE.BoxGeometry(.12, .76, .48, 2, 10, 6), [])
   return <group position={fragment.position} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
-    <mesh castShadow scale={active ? 1.22 : 1}>
-      <tetrahedronGeometry args={[0.33, 1]} />
-      <meshStandardMaterial color={accent} transparent opacity={fragment.certainty === 'uncertain' ? 0.25 : active ? 0.92 : 0.62} wireframe={fragment.certainty !== 'confirmed'} emissive={accent} emissiveIntensity={active ? 0.7 : 0.14} />
+    <mesh geometry={geometry} castShadow scale={active ? [1.15,1.25,1.15] : [1,1,1]} rotation={[.18, fragment.position[0] * .16, -.22]}>
+      <meshStandardMaterial color={accent} transparent opacity={fragment.certainty === 'uncertain' ? 0.25 : active ? 0.92 : 0.62} wireframe={false} emissive={accent} emissiveIntensity={active ? 0.46 : 0.10} roughness={.88} />
     </mesh>
   </group>
 }

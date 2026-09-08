@@ -6,7 +6,7 @@ const root = new URL('../public/assets/urai/home-production/authored-v191/', imp
 const assets = [
   ['home-continuous-landscape-v191.glb', 25, 3],
   ['home-ground-place-v191.glb', 4, 2],
-  ['home-life-map-place-v191.glb', 7, 1],
+  ['home-life-map-place-v191.glb', 7, 2],
   ['urai-living-memory-heart-v191.glb', 1, 1],
 ]
 
@@ -44,13 +44,14 @@ test('authored V191 GLBs are complete, loadable, and transport-safe', () => {
   }
 })
 
-test('V193 art uses composed place inventories instead of three-rock placeholders', () => {
+test('authored place GLBs retain continuous geology and integrated spatial traces', () => {
   const ground = inspectGlb('home-ground-place-v191.glb').json
   const lifeMap = inspectGlb('home-life-map-place-v191.glb').json
   const heart = inspectGlb('urai-living-memory-heart-v191.glb').json
   assert.ok(ground.nodes.some((node) => node.name === 'home-v197-ground-integrated-weathered-foundation'))
   assert.ok(ground.nodes.some((node) => node.name === 'home-v197-ground-continuous-sheltering-memory-wall'))
-  assert.ok(lifeMap.nodes.filter((node) => node.name?.includes('integrated-weathered-memory-ledger')).length >= 5)
+  assert.ok(lifeMap.nodes.some((node) => node.name === 'home-v200-life-map-integrated-weathered-memory-ledger-1'))
+  assert.equal(lifeMap.nodes.filter((node) => node.name?.includes('embedded-lineage-trace')).length, 4)
   assert.ok(lifeMap.nodes.some((node) => node.name === 'home-v197-life-map-ascending-observatory-path'))
   assert.ok(heart.nodes.some((node) => node.name === 'home-v201-single-connected-folded-living-memory-mantle'))
 })

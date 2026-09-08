@@ -62,13 +62,13 @@ function makeLandscape() {
   const material = new THREE.MeshStandardMaterial({ color:'#71847a', vertexColors:true, roughness:0.97, metalness:0.001 })
   const mesh = new THREE.Mesh(g, material); mesh.name = 'home-v191-continuous-authored-canyon'; mesh.receiveShadow = true
   const scene = new THREE.Scene(); scene.name = 'home-v191-authored-landscape'; scene.add(mesh)
-  const strataMaterial = new THREE.MeshStandardMaterial({color:'#30473d',roughness:0.98,metalness:0,flatShading:true})
+  const strataMaterial = new THREE.MeshStandardMaterial({color:'#30473d',roughness:0.98,metalness:0,flatShading:false})
   const shelves = [
     [-10.2,-0.42,-3.8,3.6,1.25,2.2,0.18],[-10.7,0.15,-9.0,4.2,1.75,2.8,-0.12],[-9.5,1.05,-15.2,5.2,2.5,3.3,0.22],
     [10.3,-0.46,-4.6,3.7,1.3,2.3,-0.16],[10.8,0.18,-10.0,4.3,1.8,2.7,0.14],[9.3,1.08,-15.8,5.1,2.6,3.4,-0.20],
   ]
   shelves.forEach(([x,y,z,sx,sy,sz,ry], index) => {
-    const geometry = deformGeometry(new THREE.DodecahedronGeometry(1, 1), 21 + index, 1.08)
+    const geometry = deformGeometry(new THREE.SphereGeometry(1, 20, 12), 21 + index, 1.08)
     const shelf = new THREE.Mesh(geometry, strataMaterial)
     shelf.name = `home-v193-geological-shelf-${index + 1}`
     shelf.position.set(x,y,z); shelf.scale.set(sx,sy,sz); shelf.rotation.set(0.08 * (index % 2 ? -1 : 1),ry,index % 2 ? 0.11 : -0.08)
@@ -77,7 +77,7 @@ function makeLandscape() {
   const outcropMaterial = new THREE.MeshStandardMaterial({color:'#263f38',roughness:1,metalness:0,flatShading:false})
   for(let i=0;i<18;i++){
     const side=i%2?-1:1, depth=i/17
-    const geometry=deformGeometry(new THREE.IcosahedronGeometry(1,1),90+i,0.72+depth*.34)
+    const geometry=deformGeometry(new THREE.SphereGeometry(1,14,10),90+i,0.72+depth*.34)
     const outcrop=new THREE.Mesh(geometry,outcropMaterial)
     outcrop.name=`home-v197-integrated-weathered-canyon-outcrop-${i+1}`
     outcrop.position.set(side*(8.35+Math.sin(i*1.7)*.42),-.42+depth*1.42,3.1-depth*20.2)
@@ -145,23 +145,29 @@ function makePlace(kind) {
   const material = new THREE.MeshStandardMaterial({color:baseColor,emissive:glow,emissiveIntensity:0.055,roughness:0.89,metalness:0.002})
   if (isGround) {
     const earthMaterial=new THREE.MeshStandardMaterial({color:'#668a78',vertexColors:true,emissive:'#315a49',emissiveIntensity:.045,roughness:.96,metalness:0})
-    const terrace=new THREE.Mesh(terraceGeometry(4.8,3.2,.18,17,.12),earthMaterial)
-    terrace.name='home-v197-ground-integrated-weathered-foundation';terrace.position.y=-.24;terrace.receiveShadow=true;scene.add(terrace)
-    const shelter=new THREE.Mesh(sanctuaryWallGeometry(3.7,2.10,.18,7,.12),earthMaterial)
-    shelter.name='home-v197-ground-continuous-sheltering-memory-wall';shelter.position.set(0,-.10,-1.18);shelter.rotation.x=-.08;shelter.castShadow=true;shelter.receiveShadow=true;scene.add(shelter)
-    const path=new THREE.Mesh(terraceGeometry(1.12,4.8,.07,29,.04),earthMaterial)
-    path.name='home-v197-ground-grown-in-place-memory-path';path.position.set(0,-.13,1.28);path.receiveShadow=true;scene.add(path)
+    const terrace=new THREE.Mesh(terraceGeometry(6.8,6.4,.14,17,.34),earthMaterial)
+    terrace.name='home-v197-ground-integrated-weathered-foundation';terrace.position.set(0,-.48,-.12);terrace.receiveShadow=true;scene.add(terrace)
+    const shelter=new THREE.Mesh(sanctuaryWallGeometry(5.8,2.45,.18,7,.34),earthMaterial)
+    shelter.name='home-v197-ground-continuous-sheltering-memory-wall';shelter.position.set(-.28,-.30,-2.05);shelter.rotation.set(-.18,.08,-.06);shelter.castShadow=true;shelter.receiveShadow=true;scene.add(shelter)
+    const path=new THREE.Mesh(terraceGeometry(1.6,6.9,.035,29,.42),earthMaterial)
+    path.name='home-v197-ground-grown-in-place-memory-path';path.position.set(.35,-.30,1.48);path.rotation.z=-.08;path.receiveShadow=true;scene.add(path)
     const hearthMaterial=new THREE.MeshStandardMaterial({color:'#765d43',emissive:'#c79c69',emissiveIntensity:.11,roughness:.98})
-    const hearth=new THREE.Mesh(deformGeometry(new THREE.SphereGeometry(.48,24,14),31,.44),hearthMaterial)
-    hearth.name='home-v200-ground-embedded-memory-hearth';hearth.position.set(0,.10,-.18);hearth.scale.set(.86,.58,.82);hearth.receiveShadow=true;scene.add(hearth)
+    const hearth=new THREE.Mesh(deformGeometry(new THREE.SphereGeometry(.48,48,28),31,.44),hearthMaterial)
+    hearth.name='home-v203-ground-embedded-weathered-hearth';hearth.position.set(-.45,-.08,-.58);hearth.scale.set(1.16,.28,1.58);hearth.receiveShadow=true;scene.add(hearth)
   } else {
     const strataMaterial=new THREE.MeshStandardMaterial({color:'#454b5d',vertexColors:true,emissive:glow,emissiveIntensity:.018,roughness:.96,metalness:0,side:THREE.DoubleSide})
-    const foundation=new THREE.Mesh(terraceGeometry(4.9,3.6,.16,43,.18),strataMaterial)
-    foundation.name='home-v197-life-map-integrated-memory-observatory-foundation';foundation.position.y=-.25;foundation.receiveShadow=true;scene.add(foundation)
-    const walls=[[-1.10,0,-.66,.56,1.12,.10],[-.56,0,-.88,.62,1.52,.06],[0,0,-1.02,.68,1.82,0],[.56,0,-.88,.62,1.48,-.06],[1.10,0,-.66,.56,1.08,-.10]]
-    walls.forEach(([x,y,z,w,h,lean],i)=>{const wall=new THREE.Mesh(sanctuaryWallGeometry(w,h,.18,51+i,lean),strataMaterial);wall.name=`home-v200-life-map-integrated-weathered-memory-ledger-${i+1}`;wall.position.set(x,y-.10,z);wall.rotation.y=(i-2)*-.10;wall.castShadow=true;wall.receiveShadow=true;scene.add(wall)})
-    const threshold=new THREE.Mesh(terraceGeometry(1.35,4.2,.08,67,.06),strataMaterial)
-    threshold.name='home-v197-life-map-ascending-observatory-path';threshold.position.set(0,-.11,1.22);threshold.receiveShadow=true;scene.add(threshold)
+    const foundation=new THREE.Mesh(terraceGeometry(7.2,6.1,.13,43,.46),strataMaterial)
+    foundation.name='home-v197-life-map-integrated-memory-observatory-foundation';foundation.position.set(0,-.48,-.2);foundation.rotation.z=.025;foundation.receiveShadow=true;scene.add(foundation)
+    const wall=new THREE.Mesh(sanctuaryWallGeometry(5.4,2.6,.18,53,.54),strataMaterial)
+    wall.name='home-v200-life-map-integrated-weathered-memory-ledger-1';wall.position.set(.25,-.28,-2.0);wall.rotation.set(-.15,-.08,.08);wall.castShadow=true;wall.receiveShadow=true;scene.add(wall)
+    const threshold=new THREE.Mesh(terraceGeometry(1.55,6.7,.035,67,.52),strataMaterial)
+    threshold.name='home-v197-life-map-ascending-observatory-path';threshold.position.set(-.25,-.31,1.42);threshold.rotation.z=.10;threshold.receiveShadow=true;scene.add(threshold)
+    const traceMaterial=new THREE.MeshStandardMaterial({color:'#77718d',emissive:glow,emissiveIntensity:.11,roughness:.88})
+    for(let i=0;i<4;i++){
+      const points=Array.from({length:7},(_,j)=>{const t=j/6;return new THREE.Vector3(-2.2+i*1.25+Math.sin(t*4+i)*.16,-.22+t*.42,-2.5+t*4.1+Math.sin(t*5+i)*.22)})
+      const trace=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),42,.035+i*.006,7,false),traceMaterial)
+      trace.name=`home-v203-life-map-embedded-lineage-trace-${i+1}`;trace.receiveShadow=true;scene.add(trace)
+    }
   }
   return scene
 }
