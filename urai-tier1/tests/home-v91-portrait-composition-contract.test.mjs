@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import test from 'node:test'
 
 const runtime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV70.tsx', import.meta.url), 'utf8')
@@ -15,25 +15,15 @@ test('V185 preserves the single opaque responsive Canvas owner', () => {
   assert.match(styles, /\.canvas/)
 })
 
-test('V189 keeps one road-free terrain authority with geometric breakup and no pasted diffuse masonry', () => {
+test('V191 replaces the rejected runtime heightfield with one baked authored landscape authority', () => {
   assert.match(art, /governed-landscape-provenance-retained-nonrendered-single-ground-owner/)
   assert.match(art, /<primitive object=\{environment\} visible=\{false\} \/>/)
   assert.match(art, /<primitive object=\{thresholds\} visible=\{false\} \/>/)
-  assert.match(art, /const xSegments = 72/)
-  assert.match(art, /const zSegments = 96/)
-  assert.match(art, /const groundCameraBasin = Math\.exp/)
-  assert.match(art, /const lifeCameraBasin = Math\.exp/)
-  assert.match(art, /const cameraSafeCarve = groundCameraBasin\*1\.42 \+ lifeCameraBasin\*1\.50/)
-  assert.match(art, /const terraceHeight = 0\.14/)
-  assert.match(art, /const ridgeMask = 0/)
   assert.match(art, /continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase/)
-  assert.match(art, /texture\.repeat\.set\(12\.5,15\.5\)/)
-  assert.match(art, /const chippedRelief=/)
-  assert.match(art, /const lateralWarp=/)
-  assert.match(art, /fine-scale-chipped-relief-warped-strata-and-human-scale-stone-texels-break-smooth-heightfield-read/)
-  assert.match(art, /actual-geometric-rock-breakup-without-diffuse-masonry-pasted-over-heightfield/)
-  assert.match(art, /no-terrace-blend-medium-density-flat-faceted-rock-surface-breaks-contour-heightfield/)
-  assert.doesNotMatch(art, /color="#647a70" map=\{stone\.color\}/)
+  assert.match(art, /AUTHORED_LANDSCAPE_V191/)
+  assert.match(art, /home-v191-single-authored-landscape-authority/)
+  assert.match(art, /<primitive object=\{authoredLandscape\}/)
+  assert.match(art, /name="home-v125-sculpted-canyon-ground" geometry=\{geometry\} visible=\{false\}/)
   assert.match(art, /name="home-v154-inlaid-stone-approach"[^>]*visible=\{false\}/)
   assert.match(art, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
 })
@@ -47,7 +37,7 @@ test('V185 uses a continuous world-space memory sky without dead-black zenith or
   assert.doesNotMatch(art, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
-test('V188 destinations are bounded solid terrain-seated memory stones, never particle planes, gates, or slabs', () => {
+test('V191 destinations use distinct authored organic place assets and suppress predecessor crystals and particles', () => {
   assert.match(art, /terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring/)
   assert.match(art, /camera-safe-basin-wide-ground-level-signal-place-no-upright-gate/)
   assert.match(art, /position=\{\[x,isGround\?0\.70:0\.64,isGround\?-8\.72:-8\.78\]\}/)
@@ -57,17 +47,24 @@ test('V188 destinations are bounded solid terrain-seated memory stones, never pa
   assert.match(art, /home-v153-\$\{side\}-retired-threshold-panel[^>]*visible=\{false\}/)
   assert.match(art, /home-v177-emotional-memory-weather" geometry=\{geometry\} visible=\{false\}/)
   assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone/)
-  assert.match(art, /position=\{\[0,-0\.98,0\]\}/)
-  assert.match(art, /scale=\{\[0\.58,0\.82,0\.62\]\}/)
+  assert.match(art, /AUTHORED_GROUND_V191/)
+  assert.match(art, /AUTHORED_LIFE_MAP_V191/)
+  assert.match(art, /home-v191-\$\{side\}-authored-memory-place/)
+  assert.match(art, /home-v188-\$\{side\}-terrain-seated-memory-stone[^>]*visible=\{false\}/)
 })
 
-test('V188 Orb has a coherent asymmetric three-lobe heart with only a tight supporting mote field', () => {
+test('V191 Orb uses one connected authored asymmetric heart and suppresses every predecessor point or lobe identity', () => {
   assert.match(art, /for\(let index=0;index<1540;index\+=1\)/)
   assert.match(art, /large-contained-point-memory-presence-dense-dark-heart-no-solid-ball-no-fountain/)
   assert.match(art, /name="home-v126-apse-integrated-orb"[^>]*scale=\{\[1\.72,1\.72,1\.72\]\}/)
   assert.match(art, /name="home-v188-orb-heart-port-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-starboard-lobe"/)
   assert.match(art, /name="home-v188-orb-heart-crown-lobe"/)
+  assert.match(art, /AUTHORED_ORB_V191/)
+  assert.match(art, /home-v191-authored-single-connected-living-memory-heart/)
+  assert.match(art, /home-v188-orb-heart-port-lobe[^>]*visible=\{false\}/)
+  assert.match(art, /home-v188-orb-heart-starboard-lobe[^>]*visible=\{false\}/)
+  assert.match(art, /home-v188-orb-heart-crown-lobe[^>]*visible=\{false\}/)
   assert.match(art, /new THREE\.IcosahedronGeometry\(0\.16,2\)/)
   assert.match(art, /name="home-v126-orb-memory-motes"[^>]*scale=\{\[0\.46,0\.36,0\.42\]\}[^>]*visible=\{false\}/)
   assert.match(art, /name="home-v174-orb-memory-nucleus-motes"[^>]*visible=\{false\}/)
@@ -77,6 +74,14 @@ test('V188 Orb has a coherent asymmetric three-lobe heart with only a tight supp
   assert.match(art, /name="home-v182-orb-faceted-mineral-seed"[^>]*visible=\{false\}/)
   assert.match(art, /object\.name === 'orb-aura'/)
   assert.match(art, /object\.name\.startsWith\('orb-orbit-'/)
+})
+
+test('V191 authored GLB pack is committed, non-empty, and reproducible from its generator', () => {
+  for (const name of ['home-continuous-landscape-v191.glb','home-ground-place-v191.glb','home-life-map-place-v191.glb','urai-living-memory-heart-v191.glb']) {
+    const asset = new URL(`../public/assets/urai/home-production/authored-v191/${name}`, import.meta.url)
+    assert.ok(statSync(asset).size > 90_000, `${name} must contain production geometry`)
+  }
+  assert.ok(statSync(new URL('../scripts/generate-home-authored-v191-assets.mjs', import.meta.url)).size > 1_000)
 })
 
 test('V185 preserves locked visual bans and remains uncertified pending literal exact-head pixels', () => {
