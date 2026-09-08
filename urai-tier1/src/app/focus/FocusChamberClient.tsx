@@ -204,11 +204,76 @@ function AuthoredFocusChamber() {
   return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL }}><primitive object={model} /></group>
 }
 
+function FocusSanctuaryGround({ accent }: { accent: string }) {
+  const geometry = useMemo(() => {
+    const columns = 96
+    const rows = 108
+    const positions: number[] = []
+    const uvs: number[] = []
+    const indices: number[] = []
+    for (let row = 0; row <= rows; row += 1) {
+      const v = row / rows
+      const z = 7 - v * 31
+      for (let column = 0; column <= columns; column += 1) {
+        const u = column / columns
+        const x = -15 + u * 30
+        const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
+        const weather = 0.24 * Math.sin(x * 0.64 + z * 0.23) + 0.11 * Math.sin(x * 1.73 - z * 0.82) + 0.055 * Math.cos(x * 4.1 + z * 2.7)
+        const threshold = 0.72 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
+        const archive = 1.15 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
+        positions.push(x, -1.5 + side + weather + threshold + archive, z)
+        uvs.push(u, v)
+      }
+    }
+    for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
+      const a = row * (columns + 1) + column
+      const b = a + 1
+      const c = a + columns + 1
+      const d = c + 1
+      indices.push(a, c, b, b, c, d)
+    }
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    result.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+    result.setIndex(indices)
+    result.computeVertexNormals()
+    return result
+  }, [])
+  const texture = useMemo(() => {
+    const size = 512
+    const data = new Uint8Array(size * size * 4)
+    const mineral = new THREE.Color(accent)
+    for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
+      const u = x / size
+      const v = y / size
+      const strata = 0.5 + 0.5 * Math.sin(v * 126 + Math.sin(u * 19) * 5 + Math.sin(v * 37) * 2)
+      const grain = 0.5 + 0.5 * Math.sin(u * 397 - v * 233) * Math.sin(u * 151 + v * 281)
+      const worn = Math.exp(-Math.pow((u - 0.5 - 0.08 * Math.sin(v * 15)) / 0.14, 4))
+      const lightness = 0.12 + strata * 0.10 + grain * 0.055 + worn * 0.12
+      const offset = (y * size + x) * 4
+      data[offset] = Math.round(255 * (0.045 + mineral.r * lightness))
+      data[offset + 1] = Math.round(255 * (0.10 + mineral.g * lightness))
+      data[offset + 2] = Math.round(255 * (0.095 + mineral.b * lightness))
+      data[offset + 3] = 255
+    }
+    const result = new THREE.DataTexture(data, size, size, THREE.RGBAFormat)
+    result.colorSpace = THREE.SRGBColorSpace
+    result.wrapS = result.wrapT = THREE.RepeatWrapping
+    result.needsUpdate = true
+    return result
+  }, [accent])
+  useEffect(() => () => { geometry.dispose(); texture.dispose() }, [geometry, texture])
+  return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
+    <meshStandardMaterial map={texture} color="#b7c9bc" roughness={0.98} metalness={0} />
+  </mesh>
+}
+
 function ChamberArchitecture({ accent, light }: { accent: string; light: string; reducedMotion: boolean }) {
   return <group
     name="focus-v153-authored-depth-observatory-light"
     userData={{ visualRepair: 'no-orbit-rings-no-cage-bands', composition: 'bounded-asymmetric-light-and-authored-floor' }}
   >
+    <FocusSanctuaryGround accent={accent} />
     <pointLight position={[-3.8, 1.6, -4.4]} color={accent} intensity={0.56} distance={7.5} decay={2} />
     <pointLight position={[4.6, 0.9, -5.4]} color={light} intensity={0.38} distance={8.5} decay={2} />
     <spotLight position={[-1.8, 6.4, 1.2]} target-position={[0, 0.2, -1.7]} angle={0.48} penumbra={0.86} intensity={0.50} color={light} distance={18} />
@@ -322,6 +387,12 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       castShadow
     >
       <meshStandardMaterial vertexColors emissive={accent} emissiveIntensity={memory ? (hovered ? 0.22 : 0.08) : 0.04} roughness={0.96} metalness={0} />
+    </mesh>
+    <mesh geometry={seedGeometry} position={[-0.58, -0.26, 0.08]} rotation={[0.18, -0.42, -0.72]} scale={[0.72, 0.58, 0.78]} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors color="#718178" emissive={accent} emissiveIntensity={memory ? 0.055 : 0.025} roughness={0.99} metalness={0} />
+    </mesh>
+    <mesh geometry={seedGeometry} position={[0.62, -0.38, -0.12]} rotation={[-0.16, 0.38, 0.84]} scale={[0.62, 0.48, 0.68]} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors color="#4e625a" emissive={accent} emissiveIntensity={memory ? 0.045 : 0.02} roughness={0.99} metalness={0} />
     </mesh>
     <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>

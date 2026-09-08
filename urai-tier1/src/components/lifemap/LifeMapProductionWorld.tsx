@@ -26,7 +26,7 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
-const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v212/life-map-memory-sanctuary-v212.glb";
+const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v214/life-map-memory-sanctuary-v214.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -320,17 +320,23 @@ function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; 
   const ledger = useMemo(() => memoryLedgerGeometry(seed), [seed]);
   const site = useMemo(() => memorySiteGeometry(seed), [seed]);
   useEffect(() => () => { ledger.dispose(); site.dispose(); }, [ledger, site]);
-  const width = 1.55 + seeded(seed, 65) * 0.95;
-  const height = 0.62 + seeded(seed, 66) * 0.48;
+  const width = 1.34 + seeded(seed, 65) * 0.72;
+  const height = 0.72 + seeded(seed, 66) * 0.44;
   const lean = (seeded(seed, 67) - 0.5) * 0.48;
-  return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]} userData={{ presentation: "grounded-authored-memory-form" }}>
-    <mesh geometry={site} position={[0, -0.08, 0]} scale={[1.75 + seeded(seed, 68) * 0.8, 0.42, 1.25 + seeded(seed, 69) * 0.7]} receiveShadow castShadow>
-      <meshStandardMaterial color="#183b38" roughness={0.98} metalness={0} emissive={aura} emissiveIntensity={active ? 0.12 : 0.025} />
+  return <group name="life-map-v214-rooted-strata-memory" rotation={[0, turn, 0]} userData={{ presentation: "grounded-interlocking-authored-memory-strata" }}>
+    <mesh geometry={site} position={[0, -0.12, 0]} scale={[2.35 + seeded(seed, 68) * 0.9, 0.72, 1.85 + seeded(seed, 69) * 0.8]} receiveShadow castShadow>
+      <meshStandardMaterial color="#24473f" roughness={0.99} metalness={0} emissive={aura} emissiveIntensity={active ? 0.055 : 0.012} />
     </mesh>
-    <mesh geometry={ledger} position={[lean * 0.35, 0.34 + height * 0.16, 0]} rotation={[-0.62 + seeded(seed, 70) * 0.24, lean, (seeded(seed, 71) - 0.5) * 0.38]} scale={[width, height, 0.92 + seeded(seed, 72) * 0.72]} castShadow receiveShadow>
-      <meshStandardMaterial color={aura} roughness={0.88} metalness={0} emissive={aura} emissiveIntensity={active ? 0.34 : 0.10} />
+    <mesh geometry={ledger} position={[-0.48 + lean, 0.34, 0.18]} rotation={[-0.22, -0.28 + lean, -0.46]} scale={[width * 0.92, height * 0.76, 1.18]} castShadow receiveShadow>
+      <meshStandardMaterial color="#486357" roughness={0.96} metalness={0} emissive={aura} emissiveIntensity={active ? 0.12 : 0.025} />
     </mesh>
-    <pointLight color={aura} intensity={active ? 1.25 : 0.14} distance={active ? 5.2 : 2.4} decay={2} position={[0, 0.45, 0]} />
+    <mesh geometry={ledger} position={[0.18, 0.44 + height * 0.10, -0.06]} rotation={[-0.08, 0.12 + lean, 0.18]} scale={[width * 1.12, height, 1.38 + seeded(seed, 72) * 0.32]} castShadow receiveShadow>
+      <meshStandardMaterial color="#6b6a52" roughness={0.97} metalness={0} emissive={aura} emissiveIntensity={active ? 0.16 : 0.035} />
+    </mesh>
+    <mesh geometry={ledger} position={[0.58 - lean, 0.26, -0.26]} rotation={[0.18, 0.38 - lean, 0.54]} scale={[width * 0.72, height * 0.62, 0.96]} castShadow receiveShadow>
+      <meshStandardMaterial color="#334e48" roughness={0.99} metalness={0} emissive={aura} emissiveIntensity={active ? 0.09 : 0.018} />
+    </mesh>
+    <pointLight color={aura} intensity={active ? 1.0 : 0.12} distance={active ? 5.8 : 2.8} decay={2} position={[0.15, 0.32, 0.1]} />
   </group>;
 }
 
@@ -339,11 +345,6 @@ function AuthoredLifeMapPlace() {
   const place = useMemo(() => {
     const root = scene.clone(true);
     root.traverse((object) => {
-      if (object.name.startsWith("life-map-v212-localized-memory-emission-")) {
-        object.visible = false;
-        object.userData.uraiRetiredVisualRole = "v213-no-detached-ground-strokes";
-        return;
-      }
       if (!(object instanceof THREE.Mesh)) return;
       object.castShadow = true;
       object.receiveShadow = true;
@@ -363,7 +364,7 @@ function AuthoredLifeMapPlace() {
   }, [scene]);
   return <primitive
     object={place}
-    name="life-map-v212-blender-authored-memory-sanctuary"
+    name="life-map-v214-blender-authored-memory-sanctuary"
     position={[0, 0, 0]}
     rotation={[0, 0, 0]}
     scale={[1, 1, 1]}
@@ -641,7 +642,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
       ref={root}
       position={groundedPosition}
       visible={visible}
-      scale={active ? 0.56 : 0.50 + importance * 0.16}
+      scale={active ? 0.96 : 0.88 + importance * 0.24}
       name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
       userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
       onClick={(event) => { event.stopPropagation(); onSelect(node); }}
@@ -790,8 +791,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.82, 0.94, 0.84] : [1.02, 1.02, 1.02]) : portrait ? [0.72, 1.0, 0.86] : [0.94, 0.94, 0.94];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.14, 0.72] : [0, -0.18, 0.8]) : portrait ? [0, -0.28, 0.72] : [0, -0.18, 1.4];
+  const stageScale: Point3 = selected ? (portrait ? [1.04, 1.02, 1.04] : [1.08, 1.08, 1.08]) : portrait ? [1.02, 1.02, 1.02] : [1.0, 1.0, 1.0];
+  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.58] : [0, -0.14, 0.72]) : portrait ? [0, -0.18, 0.54] : [0, -0.14, 1.15];
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {

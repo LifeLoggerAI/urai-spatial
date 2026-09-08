@@ -90,7 +90,7 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   }
   assert.doesNotMatch(world.slice(world.indexOf('function MemoryArtifact'), world.indexOf('function SemanticPath')), /sphereGeometry/)
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
-  assert.match(world, /scale={active \? 0\.56 : 0\.50 \+ importance \* 0\.16}/)
+  assert.match(world, /scale={active \? 0\.96 : 0\.88 \+ importance \* 0\.24}/)
   assert.match(world, /position=\{\[selected\.position\[0\], selected\.position\[1\] - 0\.28, selected\.position\[2\] - 2\.6\]\}/)
   assert.match(world, /scale=\{0\.34\}/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
@@ -167,7 +167,7 @@ test('Reduced motion portrait adaptive quality and high contrast retain equivale
   assert.match(world, /profile\.tier/)
   assert.match(world, /profile\.postprocessing/)
   assert.match(source, /size\.height > size\.width/)
-  assert.match(source, /positionGoal\.current\.set\(0, 3\.6, 14\.0\)/)
+  assert.match(source, /positionGoal\.current\.set\(0, 3\.0, 10\.2\)/)
   assert.match(source, /@media\(max-width:700px\)/)
   assert.match(source, /@media\(prefers-reduced-motion:reduce\)/)
   assert.match(source, /@media\(forced-colors:active\)/)

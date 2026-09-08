@@ -71,12 +71,12 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     targetGoal.current.set(...goal.target);
     if (portrait) {
       if (phase === "overview") {
-        positionGoal.current.set(0, 3.6, 14.0);
-        targetGoal.current.set(0, -1.45, -8.2);
+        positionGoal.current.set(0, 3.0, 10.2);
+        targetGoal.current.set(0, -1.2, -5.0);
       } else {
-        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.48);
+        const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.08);
         positionGoal.current.copy(targetGoal.current).add(offset);
-        positionGoal.current.y += 0.42;
+        positionGoal.current.y += 0.22;
       }
     }
     return portrait;
@@ -98,10 +98,10 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
   useFrame(({ pointer }, delta) => {
     const portrait = resolve();
     if (phase === "overview" && !reducedMotion) {
-      positionGoal.current.x += pointer.x * (portrait ? 0.45 : 1.05);
-      positionGoal.current.y += pointer.y * (portrait ? 0.24 : 0.42);
-      targetGoal.current.x += pointer.x * 0.34;
-      targetGoal.current.y += pointer.y * 0.16;
+      positionGoal.current.x += pointer.x * (portrait ? 1.25 : 4.2);
+      positionGoal.current.y += pointer.y * (portrait ? 0.62 : 1.1);
+      targetGoal.current.x += pointer.x * (portrait ? 0.55 : 1.45);
+      targetGoal.current.y += pointer.y * (portrait ? 0.28 : 0.44);
     }
     const fov = portrait ? (phase === "overview" ? 50 : 54) : (phase === "arrival" ? 46 : 52);
     if (reducedMotion) {

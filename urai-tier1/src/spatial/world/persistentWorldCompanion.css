@@ -12,21 +12,21 @@
 
 .urai-world-companion__orb {
   position: relative;
-  width: 112px;
-  height: 82px;
+  width: 142px;
+  height: 72px;
   border: 1px solid rgba(207, 250, 254, .38);
-  border-radius: 63% 37% 58% 42% / 42% 67% 33% 58%;
+  border-radius: 78% 22% 69% 31% / 35% 74% 26% 65%;
   padding: 0;
   background:
-    linear-gradient(132deg, transparent 0 28%, rgba(212,255,248,.56) 30% 33%, transparent 36% 100%),
-    radial-gradient(ellipse at 29% 36%, rgba(238,255,250,.72) 0 3%, rgba(76,170,157,.66) 10%, rgba(18,83,82,.84) 34%, rgba(4,22,27,.98) 78%);
+    linear-gradient(168deg,transparent 0 16%,rgba(214,255,244,.56) 18% 21%,transparent 24% 37%,rgba(91,186,164,.34) 39% 43%,transparent 46% 61%,rgba(178,143,211,.28) 63% 67%,transparent 70%),
+    radial-gradient(ellipse at 24% 46%,rgba(238,255,250,.62) 0 3%,rgba(55,138,125,.58) 11%,rgba(12,62,60,.9) 42%,rgba(3,19,24,.98) 82%);
   box-shadow:
     0 0 22px rgba(103,232,249,.48),
     0 0 70px rgba(103,232,249,.24),
     inset 0 0 28px rgba(255,255,255,.3);
   cursor: pointer;
   pointer-events: auto;
-  transform: rotate(-7deg) skewX(-5deg);
+  transform: rotate(-5deg) skewX(-9deg) scaleY(.9);
   transition: transform 180ms ease, box-shadow 180ms ease, border-radius 360ms ease;
 }
 
@@ -35,21 +35,21 @@
 .urai-world-companion__orb span {
   content: '';
   position: absolute;
-  inset: 13% 34% 48% 10%;
+  inset: 7% 43% 51% 8%;
   border: 0;
-  border-radius: 28% 72% 34% 66%;
+  border-radius: 78% 22% 66% 34%;
   background:linear-gradient(108deg,rgba(226,255,248,.74),rgba(65,176,170,.16));
   transform:rotate(-17deg);
 }
 
 .urai-world-companion__orb::after {
-  inset: 54% 8% 11% 47%;
+  inset: 57% 7% 6% 54%;
   background:linear-gradient(145deg,rgba(74,192,181,.08),rgba(194,154,231,.46));
   transform:rotate(22deg);
 }
 
 .urai-world-companion__orb span {
-  inset: 31% 42% 28% 21%;
+  inset: 34% 39% 25% 17%;
   background: rgba(198,255,244,.38);
   filter: blur(6px);
   transform:rotate(8deg);
@@ -58,7 +58,7 @@
 .urai-world-companion__orb:hover,
 .urai-world-companion__orb:focus-visible,
 .urai-world-companion[data-open='true'] .urai-world-companion__orb {
-  transform: rotate(4deg) skewX(3deg) scale(1.08, .96);
+  transform: rotate(3deg) skewX(4deg) scale(1.08, .88);
   box-shadow: 0 0 28px rgba(103,232,249,.7), 0 0 96px rgba(103,232,249,.34), inset 0 0 32px rgba(255,255,255,.4);
 }
 
@@ -229,7 +229,7 @@
 
 .urai-world-companion[data-phase]:not([data-phase='idle']) .urai-world-companion__orb {
   animation: urai-world-orb-travel 900ms ease-in-out infinite alternate;
-  border-radius: 42% 58% 34% 66% / 61% 36% 64% 39%;
+  border-radius: 31% 69% 24% 76% / 68% 24% 76% 32%;
 }
 
 /* PRODUCT routes keep the companion available as a constellation return path,
