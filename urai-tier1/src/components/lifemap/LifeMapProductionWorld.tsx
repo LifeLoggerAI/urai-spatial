@@ -282,33 +282,33 @@ function memoryLedgerGeometry(seed: number) {
 }
 
 function memorySiteGeometry(seed: number) {
-  const shape = new THREE.Shape();
-  const count = 11;
-  for (let index = 0; index < count; index += 1) {
-    const angle = (index / count) * Math.PI * 2;
-    const radius = 0.82 + seeded(index + seed, 33) * 0.52;
-    const x = Math.cos(angle) * radius * (1.05 + seeded(seed, 40) * 0.55);
-    const y = Math.sin(angle) * radius * (0.72 + seeded(seed, 41) * 0.38);
-    if (index === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+  const segments = 15, rings = 5, positions: number[] = [], indices: number[] = [];
+  const xStretch = 1.25 + seeded(seed, 40) * 0.9;
+  const zStretch = 0.72 + seeded(seed, 41) * 0.58;
+  const height = 0.42 + seeded(seed, 42) * 0.48;
+  positions.push((seeded(seed, 43) - 0.5) * 0.18, height, (seeded(seed, 44) - 0.5) * 0.18);
+  for (let ring = 1; ring <= rings; ring += 1) {
+    const radius = ring / rings;
+    for (let segment = 0; segment < segments; segment += 1) {
+      const angle = (segment / segments) * Math.PI * 2;
+      const weathering = 0.84 + seeded(seed + ring * 31 + segment, 45) * 0.28;
+      const x = Math.cos(angle) * radius * xStretch * weathering;
+      const z = Math.sin(angle) * radius * zStretch * weathering;
+      const y = Math.pow(1 - radius, 1.45) * height + Math.sin(angle * (2 + seed % 3) + radius * 7) * 0.045 * (1 - radius);
+      positions.push(x, y, z);
+    }
   }
-  shape.closePath();
-  const geometry = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.12 + seeded(seed, 42) * 0.12,
-    steps: 1,
-    curveSegments: 2,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    bevelSize: 0.08,
-    bevelThickness: 0.05,
-  });
-  geometry.center();
-  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
-  for (let index = 0; index < position.count; index += 1) {
-    const x = position.getX(index), y = position.getY(index), z = position.getZ(index);
-    const weathering = Math.sin(x * 5.3 + seed) * 0.035 + Math.cos(y * 7.1 - seed * 0.3) * 0.025;
-    position.setXYZ(index, x + weathering, y + weathering * 0.6, z * (0.78 + seeded(index + seed, 43) * 0.34));
+  for (let segment = 0; segment < segments; segment += 1) indices.push(0, 1 + segment, 1 + (segment + 1) % segments);
+  for (let ring = 1; ring < rings; ring += 1) for (let segment = 0; segment < segments; segment += 1) {
+    const a = 1 + (ring - 1) * segments + segment;
+    const b = 1 + (ring - 1) * segments + (segment + 1) % segments;
+    const c = 1 + ring * segments + segment;
+    const d = 1 + ring * segments + (segment + 1) % segments;
+    indices.push(a, c, b, b, c, d);
   }
-  position.needsUpdate = true;
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -316,42 +316,39 @@ function memorySiteGeometry(seed: number) {
 function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; siteKey: string }) {
   const seed = useMemo(() => siteKey.split("").reduce((sum, letter) => sum + letter.charCodeAt(0), 0), [siteKey]);
   const site = useMemo(() => memorySiteGeometry(seed), [seed]);
-  const ledger = useMemo(() => memoryLedgerGeometry(seed), [seed]);
   const stretch = 1.05 + seeded(seed, 51) * 0.75;
   const turn = seeded(seed, 52) * Math.PI;
   return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]}>
-    <mesh geometry={site} rotation={[-Math.PI / 2, 0, 0]} scale={[stretch, 1, active ? 0.32 : 0.22]} position={[0, -0.04, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#22383a" emissive={aura} emissiveIntensity={active ? 0.18 : 0.035} roughness={0.97} metalness={0} />
+    <mesh geometry={site} scale={[stretch, active ? 1.28 : 0.9, 1]} position={[0, -0.12, 0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#2e4442" emissive={aura} emissiveIntensity={active ? 0.36 : 0.065} roughness={0.96} metalness={0} flatShading />
     </mesh>
-    <mesh geometry={ledger} rotation={[-Math.PI / 2 + 0.14, seeded(seed, 53) * 0.24 - 0.12, 0]} scale={[0.72 + seeded(seed, 54) * 0.5, 0.34, 0.52]} position={[0.12, 0.10, -0.05]} castShadow receiveShadow>
-      <meshStandardMaterial color="#30484a" emissive={aura} emissiveIntensity={active ? 0.46 : 0.095} roughness={0.88} metalness={0.01} />
-    </mesh>
-    <pointLight color={aura} intensity={active ? 2.2 : 0.36} distance={active ? 5.8 : 2.8} decay={2} position={[0, 0.35, 0]} />
+    <pointLight color={aura} intensity={active ? 2.2 : 0.26} distance={active ? 5.8 : 2.5} decay={2} position={[0, 0.25, 0]} />
   </group>;
 }
 
 function erodedRidgeGeometry(seed: number, width: number, height: number, depth: number) {
-  const columns = 22, rows = 8, positions: number[] = [], colors: number[] = [], indices: number[] = [];
-  const shadow = new THREE.Color("#17282b"), mineral = new THREE.Color("#49605b"), memory = new THREE.Color(seed % 2 ? "#344b54" : "#403d52");
-  for (let row = 0; row <= rows; row += 1) for (let column = 0; column <= columns; column += 1) {
-    const u = column / columns, v = row / rows;
-    const x = (u - 0.5) * width;
-    const shoulder = Math.pow(Math.sin(u * Math.PI), 0.65);
-    const cut = Math.sin(u * 15.0 + seed) * 0.12 + Math.sin(u * 33.0 - seed) * 0.045;
-    const y = v * height * shoulder + cut * (0.35 + v);
-    const z = (v - 0.5) * depth + Math.sin(u * 7.0 + v * 3.0 + seed) * 0.34;
-    positions.push(x, y, z);
-    const color = shadow.clone().lerp(mineral, v * 0.72).lerp(memory, Math.max(0, shoulder - 0.55) * 0.5);
-    colors.push(color.r, color.g, color.b);
+  const shape = new THREE.Shape();
+  shape.moveTo(-width * 0.5, 0);
+  shape.lineTo(-width * 0.5, height * 0.12);
+  const crownPoints = 18;
+  for (let index = 0; index <= crownPoints; index += 1) {
+    const u = index / crownPoints;
+    const x = -width * 0.5 + u * width;
+    const shoulder = Math.pow(Math.sin(u * Math.PI), 0.55);
+    const broken = Math.sin(u * 17 + seed) * 0.11 + Math.sin(u * 41 - seed * 0.2) * 0.045;
+    shape.lineTo(x, Math.max(height * 0.08, height * (0.18 + shoulder * 0.78 + broken)));
   }
-  for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
-    const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
-    indices.push(a, b, d, a, d, c);
+  shape.lineTo(width * 0.5, 0);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth, steps: 2, curveSegments: 2, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.16, bevelThickness: 0.12 });
+  geometry.center();
+  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index), y = position.getY(index), z = position.getZ(index);
+    const strata = Math.sin(y * 5.8 + x * 0.9 + seed) * 0.055 + Math.sin(x * 2.7 - z * 3.1) * 0.035;
+    position.setXYZ(index, x + strata * 0.25, y + strata, z + strata * 0.7);
   }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
+  position.needsUpdate = true;
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -364,15 +361,11 @@ function MemoryLandscapeArchitecture() {
   ], []);
   return <group name="life-map-authored-geologic-history">
     {ridges.map((ridge, index) => <mesh key={index} geometry={ridge.geometry} position={ridge.position} rotation={ridge.rotation} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.96} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.018 : 0.026} />
+      <meshStandardMaterial color={index === 1 ? "#303344" : index === 2 ? "#35464a" : "#29403f"} roughness={0.94} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.032 : 0.045} flatShading />
     </mesh>)}
-    <mesh position={[0, -2.18, -12]} rotation={[-Math.PI / 2, 0, -0.08]} receiveShadow>
-      <planeGeometry args={[5.4, 29, 5, 28]} />
-      <meshStandardMaterial color="#273b3a" roughness={1} emissive={CYAN} emissiveIntensity={0.025} />
-    </mesh>
     <group name="life-map-lineage-embankment" position={[0, -1.45, -29]}>
-      <Current points={[[-9, -0.4, 1.8], [-5.2, 0.35, 0.1], [-1.5, 1.25, -1.4], [2.3, 2.4, -2.8], [7.8, 4.0, -4.2]]} color={GOLD} opacity={0.28} width={0.035} />
-      <Current points={[[-8.2, -0.8, 2.4], [-3.8, -0.05, 0.4], [0.4, 0.8, -1.2], [4.8, 2.05, -2.5], [9.5, 3.1, -3.5]]} color={CYAN} opacity={0.18} width={0.024} />
+      <Line points={[[-9, -0.4, 1.8], [-5.2, 0.35, 0.1], [-1.5, 1.25, -1.4], [2.3, 2.4, -2.8], [7.8, 4.0, -4.2]]} color={GOLD} lineWidth={0.42} transparent opacity={0.22} />
+      <Line points={[[-8.2, -0.8, 2.4], [-3.8, -0.05, 0.4], [0.4, 0.8, -1.2], [4.8, 2.05, -2.5], [9.5, 3.1, -3.5]]} color={CYAN} lineWidth={0.28} transparent opacity={0.16} />
     </group>
   </group>;
 }
