@@ -241,28 +241,48 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const seedGeometry = useMemo(() => {
-    const geometry = new THREE.IcosahedronGeometry(0.82, 4)
-    const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+    const sections = 19
+    const sides = 14
+    const positions: number[] = []
     const colors: number[] = []
     const dark = new THREE.Color('#071513')
     const mineral = new THREE.Color(accent)
-    for (let index = 0; index < positions.count; index += 1) {
-      const x = positions.getX(index)
-      const y = positions.getY(index)
-      const z = positions.getZ(index)
-      const weathering = 1 + Math.sin(x * 7.1 + y * 4.7) * 0.15 + Math.cos(z * 6.6 - y * 3.8) * 0.09
-      const lean = 0.18 * (y + 0.35) + 0.09 * Math.sin(y * 5.2)
-      const cleft = 1 - 0.18 * Math.exp(-Math.pow((x + 0.22) * 5.5, 2)) * Math.max(0, y + 0.3)
-      positions.setXYZ(index, (x * weathering * cleft * 0.82) + lean, y * weathering * 1.38, z * weathering * (0.64 + 0.12 * Math.sin(y * 4.1)))
-      const band = 0.18 + 0.62 * (0.5 + 0.5 * Math.sin((y + z * 0.34) * 17.0 + x * 3.2))
-      const color = dark.clone().lerp(mineral, band)
-      colors.push(color.r, color.g, color.b)
+    const indices: number[] = []
+    for (let section = 0; section <= sections; section += 1) {
+      const t = section / sections
+      const envelope = Math.pow(Math.sin(Math.PI * t), 0.42)
+      const centerX = -0.22 + t * 0.46 + Math.sin(t * 7.2) * 0.14
+      const centerY = -1.18 + t * 2.36
+      const centerZ = Math.sin(t * 5.3 + 0.8) * 0.16
+      for (let side = 0; side < sides; side += 1) {
+        const angle = side / sides * Math.PI * 2 + t * 1.35
+        const ridge = 0.82 + 0.17 * Math.sin(angle * 3 + t * 11) + 0.08 * Math.cos(angle * 5 - t * 7)
+        const rx = envelope * (0.50 + 0.13 * Math.sin(t * 9.0)) * ridge + 0.035
+        const rz = envelope * (0.29 + 0.08 * Math.cos(t * 8.0)) * ridge + 0.025
+        const x = centerX + Math.cos(angle) * rx + Math.sin(angle * 2) * 0.07 * envelope
+        const y = centerY + Math.sin(angle * 2 + t * 5) * 0.045 * envelope
+        const z = centerZ + Math.sin(angle) * rz
+        positions.push(x, y, z)
+        const band = 0.16 + 0.66 * (0.5 + 0.5 * Math.sin(centerY * 12.0 + angle * 1.4))
+        const color = dark.clone().lerp(mineral, band)
+        colors.push(color.r, color.g, color.b)
+      }
     }
+    for (let section = 0; section < sections; section += 1) for (let side = 0; side < sides; side += 1) {
+      const next = (side + 1) % sides
+      const a = section * sides + side
+      const b = section * sides + next
+      const c = (section + 1) * sides + side
+      const d = (section + 1) * sides + next
+      indices.push(a, c, b, b, c, d)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-    positions.needsUpdate = true
+    geometry.setIndex(indices)
     geometry.computeVertexNormals()
     return geometry
-  }, [])
+  }, [accent])
   const fieldGeometry = useMemo(() => {
     const positions: number[] = []
     for (let index = 0; index < 520; index += 1) {
@@ -301,7 +321,7 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       onPointerOut={(event) => pointer(event, false)}
       castShadow
     >
-      <meshStandardMaterial vertexColors emissive={accent} emissiveIntensity={memory ? (hovered ? 0.30 : 0.12) : 0.05} roughness={0.82} metalness={0} flatShading />
+      <meshStandardMaterial vertexColors emissive={accent} emissiveIntensity={memory ? (hovered ? 0.22 : 0.08) : 0.04} roughness={0.96} metalness={0} />
     </mesh>
     <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>

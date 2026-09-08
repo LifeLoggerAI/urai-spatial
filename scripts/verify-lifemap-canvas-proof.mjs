@@ -82,6 +82,12 @@ async function capture(spec) {
     }, { phase: spec.phase }, { timeout: 45_000, polling: 50 })
     const canvas = root.locator('canvas').first()
     await canvas.waitFor({ state: 'visible', timeout: 20_000 })
+    await canvas.evaluate((element) => {
+      element.style.setProperty('transform', 'none', 'important')
+      element.style.setProperty('inset', '0', 'important')
+      element.style.setProperty('width', '100%', 'important')
+      element.style.setProperty('height', '100%', 'important')
+    })
     const file = `${spec.id}-${exactHead.slice(0, 12)}.png`
     const buffer = await canvas.screenshot({ path: path.join(outputDir, file), animations: 'disabled', caret: 'hide', scale: 'css', timeout: 60_000 })
     const signal = await signalFromCanvasPng(page, buffer)

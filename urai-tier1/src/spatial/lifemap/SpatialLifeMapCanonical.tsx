@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
+import { lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
 import LifeMapRouteBoundary from "@/components/lifemap/LifeMapRouteBoundary";
 
@@ -12,6 +12,15 @@ type LifeMapAccessMode = "checking" | "signed-out" | "private" | "explicit-demo"
 
 function isEditableTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || target.matches('input,textarea,select,[role="textbox"]'));
+}
+
+function SanctuaryFallbackBackdrop() {
+  return <div aria-hidden="true" style={{ position:"absolute", inset:0, overflow:"hidden", background:"linear-gradient(180deg,#061522 0%,#0b2227 54%,#061315 100%)" }}>
+    <div style={{ position:"absolute", inset:"18% -8% 25%", opacity:.34, background:"linear-gradient(150deg,transparent 0 22%,#315052 23% 31%,transparent 32% 46%,#4a4034 47% 58%,transparent 59%),linear-gradient(210deg,transparent 0 29%,#243f42 30% 44%,transparent 45%)", filter:"blur(1px)" }} />
+    <div style={{ position:"absolute", left:"-8%", right:"-8%", bottom:"18%", height:"48%", clipPath:"polygon(0 44%,10% 30%,21% 39%,34% 18%,46% 34%,60% 16%,73% 36%,84% 24%,100% 42%,100% 100%,0 100%)", background:"linear-gradient(180deg,#183235,#0b2022 64%,#071517)", boxShadow:"0 -18px 70px rgba(82,161,156,.12)" }} />
+    <div style={{ position:"absolute", left:"-10%", right:"-10%", bottom:"-10%", height:"48%", clipPath:"polygon(0 28%,14% 18%,29% 34%,43% 14%,58% 27%,72% 9%,88% 30%,100% 17%,100% 100%,0 100%)", background:"linear-gradient(165deg,#123033,#071719 62%,#030b0d)" }} />
+    <div style={{ position:"absolute", left:"18%", right:"14%", bottom:"8%", height:"28%", transform:"skewX(-18deg)", background:"linear-gradient(100deg,transparent,rgba(115,220,201,.16) 42%,rgba(224,184,112,.14) 58%,transparent 76%)", filter:"blur(12px)" }} />
+  </div>;
 }
 
 function LifeMapLoading({ label = "Opening your memory universe" }: { label?: string }) {
@@ -25,7 +34,7 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, []);
   return <main aria-label="Life Map authored fallback" data-testid="urai-life-map-authored-fallback" data-life-map-fallback="authored-semantic" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"radial-gradient(circle at 30% 30%,rgba(103,232,249,.16),transparent 26%),radial-gradient(circle at 72% 54%,rgba(196,181,253,.14),transparent 28%),#01030a" }}>
-    <div aria-hidden="true" style={{ position:"absolute", inset:0, backgroundImage:assetCssStack(lifeMapAssets.primary), backgroundSize:"cover", backgroundPosition:"center", opacity:.12 }} />
+    <SanctuaryFallbackBackdrop />
     <section style={{ position:"absolute", left:"50%", top:"50%", transform:"translate(-50%,-50%)", width:"min(560px,calc(100% - 36px))", padding:28, border:"1px solid rgba(180,239,255,.2)", borderRadius:28, background:"rgba(2,7,18,.74)", backdropFilter:"blur(22px)", textAlign:"center" }}>
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".24em", textTransform:"uppercase", color:"#a5f3fc" }}>URAI · LIFE MAP</p>
       <h1 style={{ margin:"10px 0 0", fontSize:"clamp(34px,7vw,74px)", lineHeight:.9, letterSpacing:"-.06em" }}>Your life has depth.</h1>
@@ -42,7 +51,7 @@ function SignedOutLifeMap({ onOpenDemo, onReturnHome }: { onOpenDemo: () => void
   }, [onOpenDemo]);
 
   return <main aria-label="Signed-out Life Map threshold" data-testid="urai-life-map-signed-out-threshold" data-life-map-source="signed-out" data-private-memory-mounted="false" style={{ position:"relative", minHeight:"100svh", overflow:"hidden", color:"#f8fbff", background:"#01030a" }}>
-    <picture aria-hidden="true" style={{ position:"absolute", inset:0 }}><source media="(max-width:700px)" srcSet={lifeMapAssets.mobile.src} /><img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ width:"100%", height:"100%", objectFit:"cover", filter:"saturate(1.05) contrast(1.08) brightness(.62)" }} /></picture>
+    <SanctuaryFallbackBackdrop />
     <div aria-hidden="true" style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 42%,rgba(16,48,73,.04),rgba(1,3,10,.76) 88%)" }} />
     <section style={{ position:"absolute", left:"max(16px,env(safe-area-inset-left))", bottom:"max(18px,env(safe-area-inset-bottom))", width:"min(420px,calc(100% - 32px))", padding:18, border:"1px solid rgba(183,239,255,.2)", borderRadius:22, background:"rgba(2,7,17,.8)", backdropFilter:"blur(20px)" }}>
       <p style={{ margin:0, fontSize:10, fontWeight:900, letterSpacing:".22em", textTransform:"uppercase", color:"#b7efff" }}>DISCLOSED SAMPLE · NOT YOUR MEMORIES</p>

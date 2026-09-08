@@ -10,8 +10,8 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 
-const OVERVIEW_POSITION: [number, number, number] = [0, 1.55, 13.4];
-const OVERVIEW_TARGET: [number, number, number] = [0, 0.12, -4.5];
+const OVERVIEW_POSITION: [number, number, number] = [0, 6.2, 18.5];
+const OVERVIEW_TARGET: [number, number, number] = [0, -0.9, -18.0];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const SELECTED_MEMORY_STANDOFF = 7.4;
 const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as const;
@@ -72,7 +72,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     if (portrait) {
       if (phase === "overview") {
         positionGoal.current.set(0, 2.15, 16.6);
-        targetGoal.current.set(0, 0.2, -4.6);
+        targetGoal.current.set(0, -1.05, -11.8);
       } else {
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.48);
         positionGoal.current.copy(targetGoal.current).add(offset);
@@ -89,7 +89,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
     lookTarget.current.copy(targetGoal.current);
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
+      camera.fov = portrait ? (phase === "overview" ? 61 : 57) : (phase === "arrival" ? 46 : 52);
       camera.updateProjectionMatrix();
     }
     initialized.current = true;
@@ -103,7 +103,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
       targetGoal.current.x += pointer.x * 0.34;
       targetGoal.current.y += pointer.y * 0.16;
     }
-    const fov = portrait ? (phase === "overview" ? 55 : 57) : (phase === "arrival" ? 44 : 46);
+    const fov = portrait ? (phase === "overview" ? 61 : 57) : (phase === "arrival" ? 46 : 52);
     if (reducedMotion) {
       camera.position.copy(positionGoal.current);
       lookTarget.current.copy(targetGoal.current);
@@ -215,9 +215,9 @@ function truthLabel(sourceMode: LifeMapSourceMode) {
 }
 
 function phaseLabel(phase: JourneyPhase) {
-  if (phase === "overview") return "Cosmic overview";
-  if (phase === "departure") return "Leaving overview";
-  if (phase === "travel") return "Traveling the memory field";
+  if (phase === "overview") return "Sanctuary overview";
+  if (phase === "departure") return "Leaving the overlook";
+  if (phase === "travel") return "Following the memory valley";
   if (phase === "approach") return "Entering the chapter";
   return "Intimate memory chamber";
 }
@@ -373,7 +373,7 @@ export default function ComposedLifeMapScene() {
     <span className="life-map-depth-contract" data-depth-band="middle" aria-hidden="true" />
     <span className="life-map-depth-contract" data-depth-band="far" aria-hidden="true" />
     <Canvas
-      camera={{ position: OVERVIEW_POSITION, fov: 46, near: 0.08, far: 140 }}
+      camera={{ position: OVERVIEW_POSITION, fov: 52, near: 0.08, far: 160 }}
       dpr={[1, profile.pixelRatioMax]}
       shadows={profile.shadows}
       frameloop={profile.documentVisible ? "demand" : "never"}

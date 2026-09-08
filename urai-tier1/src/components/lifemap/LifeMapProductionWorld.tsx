@@ -26,7 +26,7 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
-const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v211/life-map-memory-sanctuary-v211.glb";
+const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v212/life-map-memory-sanctuary-v212.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -317,15 +317,25 @@ function memorySiteGeometry(seed: number) {
 function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; siteKey: string }) {
   const seed = useMemo(() => siteKey.split("").reduce((sum, letter) => sum + letter.charCodeAt(0), 0), [siteKey]);
   const turn = seeded(seed, 52) * Math.PI;
-  return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]}>
+  const ledger = useMemo(() => memoryLedgerGeometry(seed), [seed]);
+  const site = useMemo(() => memorySiteGeometry(seed), [seed]);
+  useEffect(() => () => { ledger.dispose(); site.dispose(); }, [ledger, site]);
+  const width = 1.05 + seeded(seed, 65) * 0.72;
+  const height = 0.78 + seeded(seed, 66) * 0.88;
+  const lean = (seeded(seed, 67) - 0.5) * 0.48;
+  return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]} userData={{ presentation: "grounded-authored-memory-form" }}>
+    <mesh geometry={site} position={[0, -0.05, 0]} scale={[1.45 + seeded(seed, 68) * 0.65, 0.34, 1.0 + seeded(seed, 69) * 0.55]} receiveShadow castShadow>
+      <meshStandardMaterial color="#183b38" roughness={0.98} metalness={0} emissive={aura} emissiveIntensity={active ? 0.12 : 0.025} />
+    </mesh>
+    <mesh geometry={ledger} position={[lean * 0.35, 0.62 + height * 0.22, 0]} rotation={[0.08 + seeded(seed, 70) * 0.24, lean, (seeded(seed, 71) - 0.5) * 0.22]} scale={[width, height, 0.68 + seeded(seed, 72) * 0.54]} castShadow receiveShadow>
+      <meshStandardMaterial color={aura} roughness={0.88} metalness={0} emissive={aura} emissiveIntensity={active ? 0.34 : 0.10} />
+    </mesh>
     <Line points={[
-      [-1.25 - seeded(seed, 61) * 0.55, 0.08, 0.2],
-      [-0.52, 0.12, -0.16 - seeded(seed, 62) * 0.24],
-      [0.08, 0.1, 0.08],
-      [0.66, 0.13, -0.2 + seeded(seed, 63) * 0.28],
-      [1.18 + seeded(seed, 64) * 0.6, 0.06, 0.16],
-    ]} color={aura} lineWidth={active ? 0.72 : 0.34} transparent opacity={active ? 0.68 : 0.24} />
-    <pointLight color={aura} intensity={active ? 1.1 : 0.08} distance={active ? 4.8 : 1.8} decay={2} position={[0, 0.12, 0]} />
+      [-0.72 * width, 0.72, 0.2],
+      [-0.18, 0.88 + height * 0.18, -0.12],
+      [0.38 * width, 0.78 + height * 0.34, 0.05],
+    ]} color="#e1f5e8" lineWidth={active ? 0.52 : 0.24} transparent opacity={active ? 0.58 : 0.22} />
+    <pointLight color={aura} intensity={active ? 1.4 : 0.18} distance={active ? 5.2 : 2.4} decay={2} position={[0, 0.7, 0]} />
   </group>;
 }
 
@@ -353,7 +363,7 @@ function AuthoredLifeMapPlace() {
   }, [scene]);
   return <primitive
     object={place}
-    name="life-map-v211-blender-authored-memory-sanctuary"
+    name="life-map-v212-blender-authored-memory-sanctuary"
     position={[0, 0, 0]}
     rotation={[0, 0, 0]}
     scale={[1, 1, 1]}
@@ -430,7 +440,7 @@ function MemoryLandscapeArchitecture() {
 
 function MemoryLandscape({ selected }: { selected: LifeMapNode | null }) {
   return <group name="life-map-inhabitable-memory-landscape">
-    <AuthoredLifeMapPlace />
+    <MemoryLandscapeArchitecture />
   </group>;
 }
 
@@ -781,8 +791,8 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [0.92, 0.96, 0.92] : [1.12, 1.12, 1.08]) : portrait ? [0.54, 0.96, 0.78] : [1.12, 1.18, 1.08];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.9] : [0, -0.16, 0.62]) : portrait ? [0, -0.18, 1.1] : [0, 0.05, 0.9];
+  const stageScale: Point3 = selected ? (portrait ? [0.72, 0.92, 0.76] : [1.02, 1.02, 1.02]) : portrait ? [0.54, 0.96, 0.78] : [0.94, 0.94, 0.94];
+  const stagePosition: Point3 = selected ? (portrait ? [0, -0.14, 0.94] : [0, -0.18, 0.8]) : portrait ? [0, -0.18, 1.1] : [0, -0.18, 1.4];
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {
@@ -818,7 +828,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         <MemoryLandscape selected={selected} />
         <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
           <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
-          <group name="life-map-light-bridges" userData={{ retiredVisualRole: "v211-no-sky-arcs-or-diagram-paths" }} />
+          <group name="life-map-light-bridges" userData={{ retiredVisualRole: "v212-no-sky-arcs-or-diagram-paths" }} />
           <ForegroundObservatory selected={selected} />
           <OverviewLandmarks selected={selected} />
           <group name="life-map-memory-artifact-families">

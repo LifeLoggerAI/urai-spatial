@@ -22,12 +22,11 @@ function prepareReplayModel(source: THREE.Object3D) {
   clone.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const growthMatch = object.name.match(/^replay-memory-growth(?:-(?:trunk|crown))?-(\d+)$/)
-    const retainedGrowth = growthMatch ? [3, 12, 24, 31].includes(Number(growthMatch[1])) : false
     const rejectedPresentation = object.name === 'replay-film-portal'
       || object.name === 'replay-film-veil'
       || object.name === 'replay-camera-track'
       || object.name.startsWith('replay-memory-panel-')
-      || (Boolean(growthMatch) && !retainedGrowth)
+      || Boolean(growthMatch)
     if (rejectedPresentation) {
       object.visible = false
       object.userData.uraiRetiredVisualRole = 'v149-no-flat-film-portal-panel-wall-or-repeated-growth-grid'
@@ -136,8 +135,8 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
         {texture
           ? <shaderMaterial
               uniforms={{ uMap: { value: texture }, uPlaying: { value: playing ? 1 : 0 } }}
-              vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
-              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.055+0.018*sin(vUv.y*31.0)+0.014*sin(vUv.x*43.0+vUv.y*17.0);float mask=smoothstep(erosion,erosion+0.08,min(edge.x,edge.y));vec4 memory=texture2D(uMap,vUv);vec3 mineral=mix(vec3(0.045,0.12,0.14),memory.rgb,0.58+uPlaying*0.12);float strata=0.88+0.12*sin((vUv.y+0.04*sin(vUv.x*11.0))*48.0);gl_FragColor=vec4(mineral*strata,mask*0.86);}`}
+              vertexShader={`varying vec2 vUv; varying float vFold; void main(){vUv=uv;vec3 p=position;p.z+=sin(uv.x*17.0+uv.y*5.0)*0.08+sin(uv.y*23.0)*0.035;vFold=p.z;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`}
+              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; varying float vFold; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.075+0.028*sin(vUv.y*23.0)+0.020*sin(vUv.x*37.0+vUv.y*13.0);float mask=smoothstep(erosion,erosion+0.12,min(edge.x,edge.y));float vein=0.5+0.5*sin((vUv.y+0.07*sin(vUv.x*8.0))*44.0);float current=pow(max(0.0,sin(vUv.x*11.0-vUv.y*7.0+uPlaying*2.0)),7.0);vec3 deep=vec3(0.025,0.085,0.095);vec3 mineral=vec3(0.18,0.46,0.45);vec3 ember=vec3(0.66,0.36,0.16);vec3 color=mix(deep,mineral,vein*0.46+vFold*0.3);color=mix(color,ember,current*0.38);gl_FragColor=vec4(color,mask*(0.72+vein*0.16));}`}
               transparent depthWrite={false} toneMapped={false} side={THREE.DoubleSide}
             />
           : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}
