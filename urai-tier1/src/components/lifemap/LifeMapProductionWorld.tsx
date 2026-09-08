@@ -26,6 +26,7 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
+const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/home-production/authored-v191/home-life-map-place-v191.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -315,13 +316,8 @@ function memorySiteGeometry(seed: number) {
 
 function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; siteKey: string }) {
   const seed = useMemo(() => siteKey.split("").reduce((sum, letter) => sum + letter.charCodeAt(0), 0), [siteKey]);
-  const site = useMemo(() => memorySiteGeometry(seed), [seed]);
-  const stretch = 1.05 + seeded(seed, 51) * 0.75;
   const turn = seeded(seed, 52) * Math.PI;
   return <group name="life-map-weathered-memory-ledger" rotation={[0, turn, 0]}>
-    <mesh geometry={site} scale={[stretch * 1.22, active ? 0.52 : 0.34, 1.18]} position={[0, -0.18, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#263936" emissive={aura} emissiveIntensity={active ? 0.16 : 0.018} roughness={0.98} metalness={0} flatShading />
-    </mesh>
     <Line points={[
       [-1.25 - seeded(seed, 61) * 0.55, 0.08, 0.2],
       [-0.52, 0.12, -0.16 - seeded(seed, 62) * 0.24],
@@ -331,6 +327,37 @@ function MemorySeed({ aura, active, siteKey }: { aura: string; active: boolean; 
     ]} color={aura} lineWidth={active ? 0.72 : 0.34} transparent opacity={active ? 0.68 : 0.24} />
     <pointLight color={aura} intensity={active ? 1.1 : 0.08} distance={active ? 4.8 : 1.8} decay={2} position={[0, 0.12, 0]} />
   </group>;
+}
+
+function AuthoredLifeMapPlace() {
+  const { scene } = useGLTF(AUTHORED_LIFE_MAP_PLACE);
+  const place = useMemo(() => {
+    const root = scene.clone(true);
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      const authored = materials.map((source) => {
+        const material = source.clone();
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.roughness = Math.max(0.84, material.roughness);
+          material.metalness = 0;
+          material.emissiveIntensity = Math.min(0.32, material.emissiveIntensity);
+        }
+        return material;
+      });
+      object.material = Array.isArray(object.material) ? authored : authored[0];
+    });
+    return root;
+  }, [scene]);
+  return <primitive
+    object={place}
+    name="life-map-authored-inhabited-observatory-place"
+    position={[0, -0.55, -21.5]}
+    rotation={[0, -0.08, 0]}
+    scale={[3.15, 2.35, 3.15]}
+  />;
 }
 
 function erodedRidgeGeometry(seed: number, width: number, height: number, depth: number) {
@@ -392,6 +419,7 @@ function MemoryLandscapeArchitecture() {
     {ridges.map((ridge, index) => <mesh key={index} geometry={ridge.geometry} position={ridge.position} rotation={ridge.rotation} castShadow receiveShadow>
       <meshStandardMaterial color={index === 1 ? "#303344" : index === 2 ? "#35464a" : "#29403f"} roughness={0.94} metalness={0} emissive={index === 1 ? VIOLET : CYAN} emissiveIntensity={index === 2 ? 0.032 : 0.045} flatShading />
     </mesh>)}
+    <AuthoredLifeMapPlace />
     <CanyonStrataAndAlcoves />
     <group name="life-map-lineage-embankment" position={[0, -1.45, -29]}>
       <Line points={[[-9, -0.4, 1.8], [-5.2, 0.35, 0.1], [-1.5, 1.25, -1.4], [2.3, 2.4, -2.8], [7.8, 4.0, -4.2]]} color={GOLD} lineWidth={0.42} transparent opacity={0.22} />
@@ -843,3 +871,4 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 
 useGLTF.preload(MEMORY_STAR_MODEL);
 useGLTF.preload(MEMORY_CHAMBER_MODEL);
+useGLTF.preload(AUTHORED_LIFE_MAP_PLACE);
