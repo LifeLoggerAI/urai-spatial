@@ -31,7 +31,12 @@ function terrainHeight(x, z) {
 }
 
 function makeLandscape() {
-  const xs = 128, zs = 168, positions = [], colors = [], indices = []
+  // Keep the authored landscape below the repository/API binary transport ceiling.
+  // The former 128 x 168 mesh exported a 1,044,464-byte GLB and was truncated
+  // while committed, leaving a valid header but an incomplete index buffer.
+  // This still supplies more than 11k authored vertices while producing a
+  // self-contained GLB small enough to survive every governed transport path.
+  const xs = 96, zs = 120, positions = [], colors = [], indices = []
   const shadow = color('#102722'), moss = color('#496d5c'), mineral = color('#7a6c5a'), cool = color('#405b60')
   for (let zi = 0; zi <= zs; zi++) {
     const tz = zi / zs, z = 6.2 - tz * 24.2
