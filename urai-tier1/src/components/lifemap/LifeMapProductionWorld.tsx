@@ -26,7 +26,7 @@ type ArtifactProps = { node: LifeMapNode; active: boolean };
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
 const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
-const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/home-production/authored-v191/home-life-map-place-v191.glb";
+const AUTHORED_LIFE_MAP_PLACE = "/assets/urai/life-map-production/authored-v210/life-map-memory-sanctuary-v210.glb";
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
@@ -353,10 +353,10 @@ function AuthoredLifeMapPlace() {
   }, [scene]);
   return <primitive
     object={place}
-    name="life-map-authored-inhabited-observatory-place"
-    position={[0, -0.55, -21.5]}
-    rotation={[0, -0.08, 0]}
-    scale={[3.15, 2.35, 3.15]}
+    name="life-map-v210-blender-authored-memory-sanctuary"
+    position={[0, 0, 0]}
+    rotation={[0, 0, 0]}
+    scale={[1, 1, 1]}
   />;
 }
 
@@ -429,37 +429,8 @@ function MemoryLandscapeArchitecture() {
 }
 
 function MemoryLandscape({ selected }: { selected: LifeMapNode | null }) {
-  const terrain = useMemo(() => {
-    const columns = 56, rows = 68, positions: number[] = [], colors: number[] = [], indices: number[] = [];
-    const deep = new THREE.Color("#102126"), mineral = new THREE.Color("#344844"), memory = new THREE.Color("#403d59");
-    for (let row = 0; row <= rows; row += 1) for (let column = 0; column <= columns; column += 1) {
-      const u = column / columns, v = row / rows, x = (u - 0.5) * 38, z = 5 - v * 52;
-      const pathCenter = Math.sin(v * 8.4) * 2.15 + Math.sin(v * 19.0) * 0.55;
-      const pathDistance = Math.abs(x - pathCenter);
-      const canyon = Math.pow(Math.max(0, (Math.abs(x) - 5.4) / 13.6), 1.65) * (3.8 + v * 8.4);
-      const terraces = Math.floor(canyon * 1.65) / 1.65;
-      const history = Math.sin(x * 0.36 + z * 0.18) * 0.42 + Math.sin(x * 1.16 - z * 0.31) * 0.18 + Math.sin(x * 2.7 + z * 0.8) * 0.055;
-      const carvedPath = pathDistance < 2.25 ? -0.46 * (1 - pathDistance / 2.25) : 0;
-      const ascent = Math.pow(v, 2.25) * 5.8 + Math.exp(-Math.pow((x - 6.8) / 4.5, 2) - Math.pow((z + 24) / 8, 2)) * 2.4;
-      const y = -2.48 + terraces + history * (0.5 + Math.abs(x) / 15) + carvedPath + ascent;
-      positions.push(x, y, z);
-      const strata = 0.5 + Math.sin(y * 7.6 + x * 0.42) * 0.5;
-      const c = deep.clone().lerp(mineral, Math.min(1, (y + 3) * 0.12 + strata * 0.22)).lerp(memory, Math.max(0, v - 0.42) * 0.38);
-      if (pathDistance < 2.0) c.lerp(new THREE.Color("#6b6250"), (1 - pathDistance / 2.0) * 0.34);
-      colors.push(c.r, c.g, c.b);
-    }
-    for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
-      const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
-      if ((row + column) % 2) indices.push(a, b, d, a, d, c); else indices.push(a, b, c, b, d, c);
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-    geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
-  }, []);
   return <group name="life-map-inhabitable-memory-landscape">
-    <mesh geometry={terrain} receiveShadow><meshStandardMaterial vertexColors roughness={0.98} metalness={0} /></mesh>
-    <MemoryLandscapeArchitecture />
+    <AuthoredLifeMapPlace />
   </group>;
 }
 
