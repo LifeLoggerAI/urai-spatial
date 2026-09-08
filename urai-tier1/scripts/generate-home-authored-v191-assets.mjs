@@ -36,7 +36,7 @@ function makeLandscape() {
   // while committed, leaving a valid header but an incomplete index buffer.
   // This still supplies more than 11k authored vertices while producing a
   // self-contained GLB small enough to survive every governed transport path.
-  const xs = 96, zs = 120, positions = [], colors = [], indices = []
+  const xs = 88, zs = 108, positions = [], colors = [], indices = []
   const shadow = color('#102722'), moss = color('#496d5c'), mineral = color('#7a6c5a'), cool = color('#405b60')
   for (let zi = 0; zi <= zs; zi++) {
     const tz = zi / zs, z = 6.2 - tz * 24.2
@@ -75,8 +75,8 @@ function makeLandscape() {
     shelf.castShadow = true; shelf.receiveShadow = true; scene.add(shelf)
   })
   const outcropMaterial = new THREE.MeshStandardMaterial({color:'#3d564b',roughness:1,metalness:0,flatShading:false})
-  for(let i=0;i<22;i++){
-    const side=i%2?-1:1, depth=i/21
+  for(let i=0;i<18;i++){
+    const side=i%2?-1:1, depth=i/17
     const geometry=deformGeometry(new THREE.IcosahedronGeometry(1,1),90+i,0.72+depth*.34)
     const outcrop=new THREE.Mesh(geometry,outcropMaterial)
     outcrop.name=`home-v197-integrated-weathered-canyon-outcrop-${i+1}`

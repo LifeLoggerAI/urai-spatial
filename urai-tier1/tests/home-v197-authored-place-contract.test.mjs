@@ -28,6 +28,6 @@ test('V197 authored GLBs are committed, nontrivial and transport-safe', () => {
   for (const name of ['home-continuous-landscape-v191.glb','home-ground-place-v191.glb','home-life-map-place-v191.glb','urai-living-memory-heart-v191.glb']) {
     const size = statSync(new URL(`../public/assets/urai/home-production/authored-v191/${name}`, import.meta.url)).size
     assert.ok(size > 90_000, `${name} must retain substantial authored geometry`)
-    assert.ok(size < 1_000_000, `${name} must remain below the governed binary transport ceiling`)
+    assert.ok(size < 780_000, `${name} must remain below the connector-safe binary transport ceiling`)
   }
 })
