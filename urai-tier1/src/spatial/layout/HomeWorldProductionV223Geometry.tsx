@@ -168,7 +168,7 @@ function orbGeometry(inner=false,cut=false){
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));g.computeVertexNormals();return g
 }
-type Posture={s:[number,number,number];r:[number,number];speed:number;inner:number}
+type Posture={s:[number,number,number];r:[number,number,number];speed:number;inner:number}
 const P:Record<OrbState,Posture>={
   dormant:{s:[.72,.64,.76],r:[.1,0,-.08],speed:.1,inner:-.2},idle:{s:[1.0,.86,.88],r:[-.08,0,-.06],speed:.36,inner:.08},attention:{s:[1.18,.92,.78],r:[-.18,.08,.16],speed:.72,inner:.52},listening:{s:[.86,1.12,.82],r:[.24,-.08,-.12],speed:.27,inner:-.58},thinking:{s:[1.2,.8,1.0],r:[-.28,.12,.2],speed:.22,inner:.9},speaking:{s:[1.24,.9,.74],r:[.1,-.06,-.22],speed:1.04,inner:1.1},guiding:{s:[.82,1.18,.78],r:[-.3,.04,.2],speed:.5,inner:-.78},reflecting:{s:[.88,.82,1.12],r:[.28,.1,-.18],speed:.16,inner:.4},calming:{s:[1.08,.76,.94],r:[-.03,-.05,.06],speed:.14,inner:-.3},privacy:{s:[.66,.7,.64],r:[.34,.12,.26],speed:.08,inner:1},warning:{s:[1.26,.9,.66],r:[-.34,-.08,-.28],speed:1.3,inner:-1.18},transition:{s:[.74,1.2,.7],r:[-.38,.08,.28],speed:.86,inner:.68}
 }
