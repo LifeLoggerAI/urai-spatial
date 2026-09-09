@@ -48,8 +48,11 @@ function ensureAuthoredUv(geometry: THREE.BufferGeometry) {
   if (!box) return clone
   const size = box.getSize(new THREE.Vector3())
   const axes: Array<{ axis: 'x' | 'y' | 'z'; span: number }> = [
-    { axis: 'x', span: size.x }, { axis: 'y', span: size.y }, { axis: 'z', span: size.z },
-  ].sort((left, right) => right.span - left.span)
+    { axis: 'x', span: size.x },
+    { axis: 'y', span: size.y },
+    { axis: 'z', span: size.z },
+  ]
+  axes.sort((left, right) => right.span - left.span)
   const [uAxis, vAxis] = axes
   const min = box.min
   const spanU = Math.max(.001, uAxis.span)
