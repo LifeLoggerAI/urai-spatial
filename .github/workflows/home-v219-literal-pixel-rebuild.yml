@@ -1,0 +1,98 @@
+name: Home V219 Literal Pixel Rebuild
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - 'urai-tier1/scripts/generate-home-authored-v219-assets.py'
+      - '.github/workflows/home-v219-literal-pixel-rebuild.yml'
+
+permissions:
+  contents: write
+
+env:
+  BRANCH_NAME: home-final-v24-certify-20260826
+
+jobs:
+  author-and-commit:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain)"
+
+      - name: Install isolated GLB authoring dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input numpy trimesh
+
+      - name: Author V219 production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 urai-tier1/scripts/generate-home-authored-v219-assets.py
+
+      - name: Patch runtime to V219 and retire rejected point fields
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx')
+          s=p.read_text()
+          s=s.replace("const AUTHORED_LANDSCAPE_V191 = '/assets/urai/home-production/authored-v191/home-continuous-landscape-v191.glb'", "const AUTHORED_LANDSCAPE_V191 = '/assets/urai/home-production/authored-v219/home-continuous-landscape-v219.glb'")
+          s=s.replace("const AUTHORED_GROUND_V191 = '/assets/urai/home-production/authored-v191/home-ground-place-v191.glb'", "const AUTHORED_GROUND_V191 = '/assets/urai/home-production/authored-v219/home-ground-place-v219.glb'")
+          s=s.replace("const AUTHORED_LIFE_MAP_V191 = '/assets/urai/home-production/authored-v191/home-life-map-place-v191.glb'", "const AUTHORED_LIFE_MAP_V191 = '/assets/urai/home-production/authored-v219/home-life-map-place-v219.glb'")
+          s=s.replace("const AUTHORED_ORB_V191 = '/assets/urai/home-production/authored-v191/urai-living-memory-heart-v191.glb'", "const AUTHORED_ORB_V191 = '/assets/urai/home-production/authored-v219/urai-living-memory-presence-v219.glb'")
+          s=s.replace('<MemorySediment reducedMotion={reducedMotion}/><MemoryConstellation reducedMotion={reducedMotion}/><MemoryWeather reducedMotion={reducedMotion}/><DistantMemoryRain reducedMotion={reducedMotion}/>', '')
+          s=s.replace('<LivingOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><AtmosphericDepth reducedMotion={reducedMotion}/>', '<LivingOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/>')
+          s=s.replace("activeArtRevision:'v185-camera-safe-living-memory-sanctuary'", "activeArtRevision:'v219-authored-inhabited-memory-sanctuary'")
+          s=s.replace("currentVisualRefinement:'v185-continuous-weathered-canyon-camera-safe-destination-basins-large-contained-memory-orb-no-runway'", "currentVisualRefinement:'v219-authored-continuous-geology-rooted-destinations-connected-asymmetric-living-memory-presence'")
+          p.write_text(s)
+          PY
+
+      - name: Validate V219 GLB structure and runtime binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import trimesh
+          root=Path('urai-tier1/public/assets/urai/home-production/authored-v219')
+          expected=['home-continuous-landscape-v219.glb','home-ground-place-v219.glb','home-life-map-place-v219.glb','urai-living-memory-presence-v219.glb']
+          for name in expected:
+            path=root/name
+            assert path.is_file() and path.stat().st_size > 50000, name
+            scene=trimesh.load(path, force='scene')
+            assert len(scene.geometry) >= 1, name
+            assert sum(len(g.vertices) for g in scene.geometry.values()) >= 2500, name
+          source=Path('urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx').read_text()
+          for name in expected: assert name in source, name
+          assert '<MemorySediment reducedMotion={reducedMotion}/>' not in source
+          assert '<MemoryConstellation reducedMotion={reducedMotion}/>' not in source
+          assert '<DistantMemoryRain reducedMotion={reducedMotion}/>' not in source
+          assert '<AtmosphericDepth reducedMotion={reducedMotion}/>' not in source
+          PY
+
+      - name: Commit exact V219 successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/home-production/authored-v219 \
+                  urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
+          git diff --cached --check
+          git commit -m 'Rebuild Home with V219 authored production art'
+          git push origin "HEAD:${BRANCH_NAME}"
