@@ -1,8 +1,9 @@
 'use client'
-import {useMemo} from 'react'
+import {useMemo,useRef} from 'react'
 import {useTexture} from '@react-three/drei'
-import type {ThreeEvent} from '@react-three/fiber'
+import {useFrame,type ThreeEvent} from '@react-three/fiber'
 import * as THREE from 'three'
+import type {OrbState} from '@/app/home/orbStateController'
 export const T=['/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp','/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp','/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp'] as const
 export const SPAWN=new THREE.Vector3(0,.04,4.6),ORB=new THREE.Vector3(-.58,1.2,-7.9),GROUND=new THREE.Vector3(-4.85,0,-8.25),LIFE_MAP=new THREE.Vector3(4.85,0,-8.25),BOUNDS={minX:-7.5,maxX:7.5,minZ:-14.4,maxZ:6.8}
 function maps(){const[c,n,a]=useTexture(T as unknown as string[]);return useMemo(()=>[c,n,a].map((s,i)=>{const q=s.clone();q.wrapS=q.wrapT=THREE.RepeatWrapping;q.repeat.set(8,12);q.anisotropy=8;q.colorSpace=i?THREE.NoColorSpace:THREE.SRGBColorSpace;q.needsUpdate=true;return q}),[a,c,n])}

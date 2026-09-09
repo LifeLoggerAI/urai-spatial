@@ -1,5 +1,6 @@
 'use client'
 import {Canvas,useFrame,useThree,type ThreeEvent} from '@react-three/fiber'
+import {useTexture} from '@react-three/drei'
 import {useCallback,useEffect,useRef,useState,type MutableRefObject} from 'react'
 import * as THREE from 'three'
 import {resolveOrbSensoryOutput,URAI_ORB_STATE_EVENT,type OrbState,type OrbStateEventDetail} from '@/app/home/orbStateController'
