@@ -6,12 +6,12 @@ const original = await readFile(target, 'utf8')
 const replacements = [
   [
     "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification', 'fresh-exact-head-pixels-required'\\)/)",
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification', 'superseded-rejected-pixels'\\)/)\n  assert.match(assetHome, /world\\.setAttribute\\('data-home-v224-certification', 'fresh-exact-head-pixels-required'\\)/)",
+    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification',\\s*'superseded-rejected-pixels'\\)/)\n  assert.match(assetHome, /world\\.setAttribute\\('data-home-v224-certification',\\s*'fresh-exact-head-pixels-required'\\)/)",
     'certification authority',
   ],
   [
     "assert.match(assetHome, /world\\.setAttribute\\('data-home-animation-owner', 'v223-open-cleft-living-memory-presence'\\)/)",
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-animation-owner', 'v224-asymmetric-living-memory-presence'\\)/)",
+    "assert.match(assetHome, /world\\.setAttribute\\('data-home-animation-owner',\\s*'v224-asymmetric-living-memory-presence'\\)/)",
     'Orb animation owner',
   ],
 ]
