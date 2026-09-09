@@ -10,7 +10,7 @@ type Props = {
 }
 
 const HOME_SPAWN = { x: 0, z: 4.6 } as const
-const HOME_ORB = { x: -0.58, z: -7.9 } as const
+const HOME_ORB = { x: -0.45, z: -7.45 } as const
 const HOME_GROUND = { x: -4.85, z: -8.25 } as const
 const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
