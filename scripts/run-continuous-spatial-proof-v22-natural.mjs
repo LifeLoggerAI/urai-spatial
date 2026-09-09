@@ -6,7 +6,7 @@ const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', imp
 const original = await readFile(captureUrl, 'utf8')
 
 const historicalOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const currentOwner = "result.animationOwner === 'v224-asymmetric-living-memory-presence'"
+const currentOwner = "result.animationOwner === 'v225-asymmetric-veined-living-memory-presence'"
 const historicalOrb = "orb: { x: -0.18, z: -6.90, radius: 2.35"
 const currentOrb = "orb: { x: -0.45, z: -7.45, radius: 2.35"
 

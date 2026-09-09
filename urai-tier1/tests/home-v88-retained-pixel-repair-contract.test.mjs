@@ -12,7 +12,7 @@ const finalizer = readFileSync(new URL('../../.github/workflows/home-finalizatio
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('V185 historical terrain regression remains preserved without current ownership', () => {
+test('historical V185 terrain regression remains preserved without current ownership', () => {
   for (const marker of ['function SculptedCanyonGround(','home-v125-sculpted-canyon-ground','continuous-weathered-canyon-camera-safe-destination-basins-soft-strata-no-contour-staircase','function SanctuaryTerraces(','home-v126-continuous-walkable-terrace-network']) has(historicalArt, marker)
   assert.match(historicalArt, /const groundCameraBasin = Math\.exp/)
   assert.match(historicalArt, /const lifeCameraBasin = Math\.exp/)
@@ -21,43 +21,44 @@ test('V185 historical terrain regression remains preserved without current owner
   assert.match(historicalArt, /name="home-v131-passive-signal-arrival-path"[^>]*visible=\{false\}/)
 })
 
-test('V185 historical destinations remain regression-covered and visibly retired', () => {
+test('historical V185 destinations remain regression-covered and visibly retired', () => {
   for (const marker of ['function FramedFissure(','home-v126-${side}-framed-fissure','terrain-flush-readable-destination-cut-clear-camera-corridor-no-door-no-ring','camera-safe-basin-wide-ground-level-signal-place-no-upright-gate','home-v175-${side}-terrain-signal-veins']) has(historicalArt, marker)
   assert.match(historicalArt, /home-v151-\$\{side\}-retained-stone-provenance[^>]*visible=\{false\}/)
   assert.match(historicalArt, /home-v153-\$\{side\}-retired-threshold-panel[^>]*visible=\{false\}/)
   assert.doesNotMatch(historicalArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
-test('V224 Orb proximity authority aligns runtime geometry, telemetry, and active proof translation', () => {
-  assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.02,\s*-7\.45\)/)
+test('V225 Orb proximity authority aligns runtime geometry, telemetry, and active proof translation', () => {
+  assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-7\.45\)/)
   assert.match(telemetry, /HOME_ORB=\{x:-\.45,z:-7\.45\}/)
   assert.match(naturalProof, /const historicalOrb = "orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35"/)
   assert.match(naturalProof, /const currentOrb = "orb: \{ x: -0\.45, z: -7\.45, radius: 2\.35"/)
   assert.match(naturalProof, /patched = replaceOnce\(patched, historicalOrb, currentOrb, 'Orb telemetry'\)/)
-  assert.match(naturalProof, /const currentOwner = "result\.animationOwner === 'v224-asymmetric-living-memory-presence'"/)
+  assert.match(naturalProof, /const currentOwner = "result\.animationOwner === 'v225-asymmetric-veined-living-memory-presence'"/)
   assert.match(proof, /orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35/)
 })
 
-test('V185 historical world-space atmosphere and reduced-motion regression remain preserved', () => {
+test('historical V185 world-space atmosphere and reduced-motion regression remain preserved', () => {
   has(historicalArt, 'home-v183-world-space-memory-sky')
   has(historicalArt, 'deep-teal-memory-sky-preserves-night-without-dead-black-field-or-flat-veil')
   has(historicalArt, 'four-low-bounded-world-space-memory-weather-fields-localize-ground-life-map-and-deep-basin-no-upright-gates')
   assert.doesNotMatch(historicalArt, /AncestralMemoryVeils|home-v183-ancestral-memory-weather-veils/)
 })
 
-test('V185 historical traversal gates remain regression-covered without claiming current authority', () => {
+test('historical V185 traversal gates remain regression-covered without claiming current authority', () => {
   assert.match(historicalRuntime, /\['orb', ORB, 2\.35\], \['ground', GROUND, 2\.65\], \['life-map', LIFE_MAP, 2\.65\]/)
   assert.match(historicalRuntime, /const inspectionClearance = nearby === 'orb'/)
   assert.match(historicalRuntime, /destination: 'infrastructure-hub'/)
   assert.match(historicalRuntime, /destination: 'life-map'/)
 })
 
-test('V224 remains explicitly uncertified until literal exact-head retained pixels pass', () => {
+test('V225 remains explicitly uncertified until literal exact-head retained pixels pass', () => {
   assert.match(finalizer, /home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /embodied-exploration-contract\.test\.mjs/)
-  has(telemetry, "'data-home-v126-certification', 'superseded-rejected-pixels'")
-  has(telemetry, "'data-home-v223-certification', 'superseded-rejected-pixels'")
-  has(telemetry, "'data-home-v224-certification', 'fresh-exact-head-pixels-required'")
-  has(telemetry, "'data-home-art-certification', 'fresh-exact-head-pixels-required'")
+  has(telemetry, "'data-home-v126-certification','superseded-rejected-pixels'")
+  has(telemetry, "'data-home-v223-certification','superseded-rejected-pixels'")
+  has(telemetry, "'data-home-v224-certification','superseded-rejected-pixels'")
+  has(telemetry, "'data-home-v225-certification','fresh-exact-head-pixels-required'")
+  has(telemetry, "'data-home-art-certification','fresh-exact-head-pixels-required'")
   assert.doesNotMatch(`${historicalRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
