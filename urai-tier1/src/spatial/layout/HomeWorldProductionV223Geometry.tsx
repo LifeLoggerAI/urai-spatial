@@ -18,7 +18,7 @@ export const T = [
 ] as const
 
 export const SPAWN = new THREE.Vector3(0, .04, 4.6)
-export const ORB = new THREE.Vector3(-.45,1.02,-7.45)
+export const ORB=new THREE.Vector3(-.45,1.02,-7.45)
 export const GROUND = new THREE.Vector3(-4.85, 0, -8.25)
 export const LIFE_MAP = new THREE.Vector3(4.85, 0, -8.25)
 export const BOUNDS = { minX: -7.5, maxX: 7.5, minZ: -14.4, maxZ: 6.8 }
@@ -110,7 +110,7 @@ function terrainGeometry() {
 }
 
 export function Terrain({ walk, onGround, onLifeMap }: { walk: (event: ThreeEvent<MouseEvent>) => void; onGround: () => void; onLifeMap: () => void }) {
-  const materialMaps = maps()
+  const m = maps()
   const collision = useMemo(terrainGeometry, [])
   const source = useGLTF(AUTHORED_LANDSCAPE).scene
   const landscape = useMemo(() => tuneAuthoredScene(source, '#52685c', .96), [source])
@@ -125,7 +125,7 @@ export function Terrain({ walk, onGround, onLifeMap }: { walk: (event: ThreeEven
   return <group name="home-v223-weathered-valley-floor" onClick={activate}>
     <primitive object={landscape} />
     <mesh name="home-v223-navigation-collision-surface" geometry={collision} receiveShadow onClick={activate}>
-      <meshStandardMaterial normalMap={materialMaps[1]} roughnessMap={materialMaps[2]} roughness={.98} metalness={0} transparent opacity={0} depthWrite={false} />
+      <meshStandardMaterial normalMap={m[1]} roughnessMap={m[2]} roughness={.98} metalness={0} transparent opacity={0} depthWrite={false} />
     </mesh>
   </group>
 }
