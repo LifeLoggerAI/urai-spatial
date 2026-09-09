@@ -1,5 +1,5 @@
-"use client";
+'use client'
 
-// Canonical Home export carries the V159 hairline-approach retained-pixel candidate.
+// Canonical Home export is the current literal-pixel candidate.
 // Certification still requires fresh exact-head CI, accessibility, literal pixels and independent approval.
-export { HomeWorldProductionV70 as HomeWorldProduction } from "./HomeWorldProductionV70";
+export { HomeWorldProductionV221 as HomeWorldProduction } from './HomeWorldProductionV221'

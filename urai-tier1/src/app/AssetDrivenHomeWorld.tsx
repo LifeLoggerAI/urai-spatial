@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
-import { HomeWorldProductionV220 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV220'
+import { HomeWorldProductionV221 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV221'
 
 type Props = {
   onOrbOpen: () => void
@@ -70,18 +70,20 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v176-certification', 'superseded-rejected-pixels')
       world.setAttribute('data-home-v219-art-layer', 'historical-unmounted-source-authority')
       world.setAttribute('data-home-v219-certification', 'superseded-rejected-pixels')
-      world.setAttribute('data-home-v220-art-layer', 'layered-eroded-canyon-rooted-destinations-connected-scarred-living-memory-presence')
-      world.setAttribute('data-home-v220-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v220-art-layer', 'historical-unmounted-source-authority')
+      world.setAttribute('data-home-v220-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v221-art-layer', 'low-terraced-geology-rooted-destinations-connected-folded-memory-mantle')
+      world.setAttribute('data-home-v221-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
-      world.setAttribute('data-home-visual-repair', 'v220-source-rebuild-after-literal-v219-rejection')
+      world.setAttribute('data-home-visual-repair', 'v221-source-rebuild-after-literal-v220-rejection')
       world.setAttribute('data-home-physical-base', 'continuous-eroded-geology-layered-strata-traversal')
-      world.setAttribute('data-home-visual-grade', 'v220-literal-pixel-candidate-not-certified')
-      world.setAttribute('data-home-final-art-revision', 'v220-retained-pixels-pending')
-      world.setAttribute('data-home-live-art-revision', 'v220-authored-inhabited-memory-sanctuary')
+      world.setAttribute('data-home-visual-grade', 'v221-literal-pixel-candidate-not-certified')
+      world.setAttribute('data-home-final-art-revision', 'v221-retained-pixels-pending')
+      world.setAttribute('data-home-live-art-revision', 'v221-authored-inhabited-memory-sanctuary')
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
-      world.setAttribute('data-home-scanned-composition', 'v220-layered-eroded-canyon-rooted-destinations')
-      world.setAttribute('data-home-visible-production-assets', 'v220-continuous-geology v220-ground-place v220-life-map-place v220-connected-scarred-living-memory-presence')
-      world.setAttribute('data-home-animation-owner', 'v220-connected-scarred-living-memory-presence')
+      world.setAttribute('data-home-scanned-composition', 'v221-low-terraced-geology-rooted-destinations')
+      world.setAttribute('data-home-visible-production-assets', 'v221-continuous-geology v221-ground-place v221-life-map-place v221-connected-folded-memory-mantle')
+      world.setAttribute('data-home-animation-owner', 'v221-connected-folded-memory-mantle')
       synchronizeCanonicalHomeTelemetry(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
@@ -118,8 +120,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-v126-retained-pixel-rebuild="superseded"
       data-home-v176-retained-pixel-rebuild="superseded"
       data-home-v219-retained-pixel-rebuild="superseded"
-      data-home-v220-retained-pixel-rebuild="active"
-      data-home-canvas-owner="home-world-production-v220-single-authority"
+      data-home-v220-retained-pixel-rebuild="superseded"
+      data-home-v221-retained-pixel-rebuild="active"
+      data-home-canvas-owner="home-world-production-v221-single-authority"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
