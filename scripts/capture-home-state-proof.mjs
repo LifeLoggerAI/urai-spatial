@@ -185,11 +185,12 @@ async function capture(state, options = {}) {
       && record.canvasReady === 'true'
       && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'v122-open-authored-canyon-contained-orb'
+      && record.visibleWorld === 'v223-authored-inhabited-memory-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
-      && record.runtimeAssets?.includes('home-entry-chamber-v1.glb')
-      && record.runtimeAssets?.includes('urai-orb-avatar-v1.glb')
-      && record.runtimeAssets?.includes('portal-ring-master-v1.glb')
+      && record.runtimeAssets?.includes('home-continuous-landscape-v191.glb')
+      && record.runtimeAssets?.includes('home-ground-place-v191.glb')
+      && record.runtimeAssets?.includes('home-life-map-place-v191.glb')
+      && record.runtimeAssets?.includes('urai-living-memory-heart-v191.glb')
       && record.pointerLock
       && record.accessibilityPassed
       && record.visualPassed
@@ -378,7 +379,7 @@ try {
     && transition.canvasReady === 'true'
     && transition.canvasCount === 1
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'v122-open-authored-canyon-contained-orb'
+    && transition.visibleWorld === 'v223-authored-inhabited-memory-sanctuary'
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {
