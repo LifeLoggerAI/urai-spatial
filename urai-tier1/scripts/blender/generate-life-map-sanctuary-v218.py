@@ -178,7 +178,12 @@ def preview():
     bpy.ops.object.light_add(type='AREA',location=p(-8,8,-5)); area=bpy.context.object; area.data.energy=1100; area.data.shape='DISK'; area.data.size=10; area.data.color=(1.0,.72,.48)
     bpy.ops.object.light_add(type='AREA',location=p(10,6,-30)); fill=bpy.context.object; fill.data.energy=800; fill.data.size=12; fill.data.color=(.35,.68,1.0)
     world=bpy.context.scene.world or bpy.data.worlds.new('V218 world'); bpy.context.scene.world=world; world.use_nodes=True; world.node_tree.nodes['Background'].inputs['Color'].default_value=(.012,.022,.026,1); world.node_tree.nodes['Background'].inputs['Strength'].default_value=.32
-    sc=bpy.context.scene; sc.render.engine='BLENDER_EEVEE_NEXT'; sc.render.resolution_x=1600; sc.render.resolution_y=1000; sc.render.resolution_percentage=100; sc.render.image_settings.file_format='PNG'; sc.render.filepath=str(PREVIEW_PATH)
+    sc=bpy.context.scene
+    try:
+        sc.render.engine='BLENDER_EEVEE_NEXT'
+    except TypeError:
+        sc.render.engine='BLENDER_EEVEE'
+    sc.render.resolution_x=1600; sc.render.resolution_y=1000; sc.render.resolution_percentage=100; sc.render.image_settings.file_format='PNG'; sc.render.filepath=str(PREVIEW_PATH)
     sc.view_settings.look='AgX - Medium High Contrast'; bpy.ops.render.render(write_still=True)
 
 def main():
