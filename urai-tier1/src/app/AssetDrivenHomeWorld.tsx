@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
-import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProduction'
+import { HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV219'
 
 type Props = {
   onOrbOpen: () => void
@@ -14,6 +14,7 @@ const HOME_ORB = { x: -0.18, z: -6.9 } as const
 const HOME_GROUND = { x: -4.85, z: -8.25 } as const
 const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
+const LEGACY_V176_AUTHORITY_MARKER = 'v176-recollection-sanctuary'
 const REVIEW_ORB_STATES = new Set<OrbState>([
   'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
   'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
@@ -59,24 +60,26 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
       world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
       world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
-      world.setAttribute('data-home-v76-art-layer', 'single-canvas-deep-apse-relic-machine-sanctuary')
-      world.setAttribute('data-home-v76-certification', 'retained-pixel-candidate-not-certified')
-      world.setAttribute('data-home-v125-art-layer', 'single-canvas-sculpted-canyon-natural-fissures-prismatic-orb')
-      world.setAttribute('data-home-v125-certification', 'retained-pixel-candidate-not-certified')
-      world.setAttribute('data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse')
-      world.setAttribute('data-home-v126-certification', 'retained-pixel-candidate-not-certified')
-      world.setAttribute('data-home-v176-art-layer', 'weathered-basin-recollection-constellation-faceted-orb-heart')
-      world.setAttribute('data-home-v176-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v76-art-layer', 'historical-unmounted-source-authority')
+      world.setAttribute('data-home-v76-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v125-art-layer', 'historical-unmounted-source-authority')
+      world.setAttribute('data-home-v125-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v126-art-layer', 'historical-unmounted-source-authority')
+      world.setAttribute('data-home-v126-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v176-art-layer', LEGACY_V176_AUTHORITY_MARKER)
+      world.setAttribute('data-home-v176-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v219-art-layer', 'continuous-weathered-geology-rooted-destinations-connected-asymmetric-living-memory-presence')
+      world.setAttribute('data-home-v219-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
-      world.setAttribute('data-home-visual-repair', 'v126-bounded-geology-continuous-ground-framed-fissures-integrated-orb')
-      world.setAttribute('data-home-physical-base', 'continuous-sculpted-ground-staggered-terraces-layered-apse')
-      world.setAttribute('data-home-visual-grade', 'cinematic-pbr-v126-ground-owned-depth-candidate')
-      world.setAttribute('data-home-final-art-revision', 'v176-retained-pixels-pending')
-      world.setAttribute('data-home-live-art-revision', 'v176-recollection-sanctuary')
-      world.setAttribute('data-home-art-certification', 'v126-retained-pixels-pending-not-certified')
-      world.setAttribute('data-home-scanned-composition', 'v126-bounded-lower-edge-geology')
-      world.setAttribute('data-home-visible-production-assets', 'rock_face_01 rock_face_02 sculpted-ground staggered-terraces framed-fissures governed-orb-petal-heart layered-apse')
-      world.setAttribute('data-home-animation-owner', 'v126-ground-owned-apse-sanctuary')
+      world.setAttribute('data-home-visual-repair', 'v219-source-rebuild-after-literal-v191-rejection')
+      world.setAttribute('data-home-physical-base', 'continuous-weathered-geology-camera-safe-traversal')
+      world.setAttribute('data-home-visual-grade', 'v219-literal-pixel-candidate-not-certified')
+      world.setAttribute('data-home-final-art-revision', 'v219-retained-pixels-pending')
+      world.setAttribute('data-home-live-art-revision', 'v219-authored-inhabited-memory-sanctuary')
+      world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-scanned-composition', 'v219-continuous-geology-rooted-destinations')
+      world.setAttribute('data-home-visible-production-assets', 'v219-continuous-geology v219-ground-place v219-life-map-place v219-connected-living-memory-presence')
+      world.setAttribute('data-home-animation-owner', 'v219-connected-living-memory-presence')
       synchronizeCanonicalHomeTelemetry(world)
 
       if (reviewOrbState !== appliedReviewOrbState) {
@@ -108,11 +111,12 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-route-owner="asset-driven-sacred-home"
       data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal"
       data-home-forge-scenery="suppressed"
-      data-home-v76-retained-pixel-rebuild="active"
-      data-home-v125-retained-pixel-rebuild="active"
-      data-home-v126-retained-pixel-rebuild="active"
-      data-home-v176-retained-pixel-rebuild="active"
-      data-home-canvas-owner="home-world-production-v70-single-authority"
+      data-home-v76-retained-pixel-rebuild="superseded"
+      data-home-v125-retained-pixel-rebuild="superseded"
+      data-home-v126-retained-pixel-rebuild="superseded"
+      data-home-v176-retained-pixel-rebuild="superseded"
+      data-home-v219-retained-pixel-rebuild="active"
+      data-home-canvas-owner="home-world-production-v219-single-authority"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
