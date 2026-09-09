@@ -38,11 +38,11 @@ const routes = [
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
     paths: ['/life-map', '/life-map/'],
-    markers: [/Inside your memory field\./i, /Thirty-four private stars/i, /Double click \/ Enter Focus/i],
+    markers: [/URAI(?: ·)? LIFE MAP/i, /Your life has depth\./i, /Checking the private threshold/i],
   },
   {
     paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
-    markers: [/Selected memory chamber/i, /The Quiet Reset/i, /Enter Replay/i],
+    markers: [/URAI Focus spatial memory observatory/i, /Explorable Focus chamber/i, /Selected memory|Neutral Focus observatory|Enter Replay/i],
   },
   {
     paths: [
@@ -58,16 +58,16 @@ const routes = [
   },
   {
     paths: ['/passport', '/passport/'],
-    markers: [/Your life stays yours\./i, /ownership vault/i, /private by default/i],
+    markers: [/UrAi Passport/i, /Your life remains in your possession\./i, /Ownership Vault/i],
   },
   {
     paths: ['/privacy-controls', '/privacy-controls/'],
-    markers: [/URAI Privacy Controls/i, /Choose what the world can hold\./i, /Human approval before real-world action/i],
+    markers: [/UrAi Consent Sanctuary/i, /Choose what the world may hold\./i, /Enforcement:/i],
     forbidden: [/Home threshold/i, /Ground route Real-life world/i],
   },
   {
     paths: ['/location-map', '/location-map/'],
-    markers: [/Emotional weather over private places\./i, /symbolic atlas/i, /Global emotional weather legend/i],
+    markers: [/premium-emotional-weather-atlas/i, /Optional supporting layer/i, /Open consent-gated geographic places/i],
   },
   {
     paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
@@ -75,7 +75,7 @@ const routes = [
   },
   {
     paths: ['/status', '/status/'],
-    markers: [/Routes implemented\. Production certification pending\./i, /Launch spine/i, /Certification boundary/i],
+    markers: [/URAI Status · Launch Truth Control Room/i, /Launch locked\. Proof before expansion\./i, /Certification boundary/i],
   },
   {
     paths: ['/api/system/deploy-proof'],
@@ -117,7 +117,7 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'user-agent': 'urai-live-smoke/4.1',
+          'user-agent': 'urai-live-smoke/4.2',
           accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
         },
         redirect: 'follow',
