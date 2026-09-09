@@ -1,0 +1,80 @@
+name: Home V224 Authored Topology Rebuild
+
+on:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - 'urai-tier1/scripts/generate-home-authored-v224-assets.py'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx'
+      - 'urai-tier1/tests/authored-v191-glb-integrity-contract.test.mjs'
+      - 'urai-tier1/public/assets/urai/home-production/authored-v191/SOURCE_MASTER_V224.md'
+      - '.github/workflows/home-v224-authored-topology-rebuild.yml'
+
+permissions:
+  contents: write
+
+env:
+  BRANCH_NAME: home-final-v24-certify-20260826
+
+jobs:
+  author-validate-commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Install isolated authored-asset dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input numpy trimesh
+
+      - name: Generate V224 topology into governed compatibility paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 urai-tier1/scripts/generate-home-authored-v224-assets.py
+
+      - name: Verify deterministic V224 artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c <<'SUMS'
+          7ad5f4dde2341a56b9a51e596538774bc53cb44db3171bf10771ef7f16835582  urai-tier1/public/assets/urai/home-production/authored-v191/home-continuous-landscape-v191.glb
+          8873092b1455abfb0df1ffa5ec56d803a2513644c5ad14d6d21ad074adb819e6  urai-tier1/public/assets/urai/home-production/authored-v191/home-ground-place-v191.glb
+          1990eca5e2bbf5b8fcab72fd2b4afeb5381c9b5db3484431b3209ce4f87521ca  urai-tier1/public/assets/urai/home-production/authored-v191/home-life-map-place-v191.glb
+          a2e5ad182a7a060f6d705fcb31bc38d3e667a1be2680362baef8b0ed3951da59  urai-tier1/public/assets/urai/home-production/authored-v191/urai-living-memory-heart-v191.glb
+          SUMS
+          node --test urai-tier1/tests/authored-v191-glb-integrity-contract.test.mjs
+
+      - name: Commit exact generated binary successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(git ls-remote origin "refs/heads/${BRANCH_NAME}" | cut -f1)"
+          test "$current" = "${GITHUB_SHA}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/public/assets/urai/home-production/authored-v191/home-continuous-landscape-v191.glb \
+                  urai-tier1/public/assets/urai/home-production/authored-v191/home-ground-place-v191.glb \
+                  urai-tier1/public/assets/urai/home-production/authored-v191/home-life-map-place-v191.glb \
+                  urai-tier1/public/assets/urai/home-production/authored-v191/urai-living-memory-heart-v191.glb
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'V224 binaries already match deterministic source; no successor required.'
+            exit 0
+          fi
+          git commit -m 'art(home): materialize V224 authored topology'
+          git push origin "HEAD:${BRANCH_NAME}"
