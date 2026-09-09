@@ -56,7 +56,7 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld|data-home-visual-owner="final-coherent-sanctuary"/)
   assert.match(assetHome, /HomeWorldProduction/)
   assert.doesNotMatch(assetHome, /HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV70 as HomeWorldProduction \} from "\.\/HomeWorldProductionV70"/)
+  assert.match(homeProductionEntry, /export \{ HomeWorldProductionV223 as HomeWorldProduction \} from ['"]\.\/HomeWorldProductionV223['"]/)
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeProduction, /<HomeV76Sanctuary/)
   assert.match(homeProduction, /data-testid="urai-home-webgl-orb"/)
