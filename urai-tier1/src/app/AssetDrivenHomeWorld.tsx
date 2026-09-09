@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
-import { HomeWorldProductionV222 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV222'
+import { HomeWorldProductionV223 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV223'
 
 type Props = {
   onOrbOpen: () => void
@@ -10,7 +10,7 @@ type Props = {
 }
 
 const HOME_SPAWN = { x: 0, z: 4.6 } as const
-const HOME_ORB = { x: -0.5, z: -7.6 } as const
+const HOME_ORB = { x: -0.58, z: -7.9 } as const
 const HOME_GROUND = { x: -4.85, z: -8.25 } as const
 const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
@@ -69,18 +69,20 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v220-certification', 'superseded-rejected-pixels')
       world.setAttribute('data-home-v221-art-layer', 'historical-unmounted-source-authority')
       world.setAttribute('data-home-v221-certification', 'superseded-rejected-pixels')
-      world.setAttribute('data-home-v222-art-layer', 'continuous-stratified-history-terrain-rooted-destinations-connected-cleft-living-memory-presence')
-      world.setAttribute('data-home-v222-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v222-art-layer', 'historical-unmounted-source-authority')
+      world.setAttribute('data-home-v222-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v223-art-layer', 'continuous-stratified-weathered-terrain-integrated-destinations-open-cleft-living-memory-presence')
+      world.setAttribute('data-home-v223-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
-      world.setAttribute('data-home-visual-repair', 'v222-source-rebuild-after-literal-v221-rejection')
-      world.setAttribute('data-home-physical-base', 'continuous-eroded-geology-layered-strata-traversal')
-      world.setAttribute('data-home-visual-grade', 'v222-literal-pixel-candidate-not-certified')
-      world.setAttribute('data-home-final-art-revision', 'v222-retained-pixels-pending')
-      world.setAttribute('data-home-live-art-revision', 'v222-authored-inhabited-memory-sanctuary')
+      world.setAttribute('data-home-visual-repair', 'v223-source-rebuild-after-literal-v222-rejection')
+      world.setAttribute('data-home-physical-base', 'continuous-stratified-weathered-terrain-integrated-destinations')
+      world.setAttribute('data-home-visual-grade', 'v223-literal-pixel-candidate-not-certified')
+      world.setAttribute('data-home-final-art-revision', 'v223-retained-pixels-pending')
+      world.setAttribute('data-home-live-art-revision', 'v223-authored-inhabited-memory-sanctuary')
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
-      world.setAttribute('data-home-scanned-composition', 'v222-continuous-stratified-history-terrain-rooted-destinations')
-      world.setAttribute('data-home-visible-production-assets', 'v222-continuous-geology v222-ground-place v222-life-map-place v222-connected-cleft-living-memory-presence')
-      world.setAttribute('data-home-animation-owner', 'v222-connected-cleft-living-memory-presence')
+      world.setAttribute('data-home-scanned-composition', 'v223-continuous-stratified-weathered-terrain-integrated-destinations')
+      world.setAttribute('data-home-visible-production-assets', 'v223-continuous-geology v223-integrated-ground-place v223-integrated-life-map-place v223-open-cleft-living-memory-presence')
+      world.setAttribute('data-home-animation-owner', 'v223-open-cleft-living-memory-presence')
       synchronizeCanonicalHomeTelemetry(world)
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
@@ -109,8 +111,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-v219-retained-pixel-rebuild="superseded"
       data-home-v220-retained-pixel-rebuild="superseded"
       data-home-v221-retained-pixel-rebuild="superseded"
-      data-home-v222-retained-pixel-rebuild="active"
-      data-home-canvas-owner="home-world-production-v222-single-authority"
+      data-home-v222-retained-pixel-rebuild="superseded"
+      data-home-v223-retained-pixel-rebuild="active"
+      data-home-canvas-owner="home-world-production-v223-single-authority"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
