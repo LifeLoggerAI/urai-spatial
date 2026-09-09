@@ -11,6 +11,7 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
+const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
@@ -21,12 +22,13 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   for (const marker of ['useMovementInput','stepEmbodiedMotion','MovementBounds','THREE.MathUtils.clamp']) has(travel, marker)
 })
 
-test('Home keeps one V70 Canvas owner while V185 owns the visible sanctuary art', () => {
-  has(homeRuntime, 'HomeWorldProductionV70 as HomeWorldProduction')
-  has(homeRuntime3d, 'HomeV76Sanctuary')
-  has(homeRuntime3d, 'URAI_ORB_STATE_EVENT')
-  has(homeRuntime3d, 'resolveOrbSensoryOutput')
-  assert.equal((homeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
+test('Home keeps one V223 Canvas owner while predecessor art remains historical provenance', () => {
+  has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
+  has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
+  has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
+  has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
+  has(activeHomeRuntime3d, 'data-home-visible-world="v223-authored-inhabited-memory-sanctuary"')
+  assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
@@ -63,7 +65,7 @@ test('V185 preserves embodied authority while repairing contour terrain, camera 
   assert.doesNotMatch(homeArt, /retained-pixel-pass|pixel-certified|PRODUCTION CERTIFIED/)
 })
 
-test('Home telemetry and destination authority remain aligned to V70', () => {
+test('Historical V70 telemetry and destination authority remain reproducible after successor advancement', () => {
   for (const marker of ['const ORB = new THREE.Vector3(','const GROUND = new THREE.Vector3(','const LIFE_MAP = new THREE.Vector3(','URAI_ORB_STATE_EVENT','resolveOrbSensoryOutput','requestUraiWorldTravel',"destination: 'infrastructure-hub'","destination: 'life-map'",'requestUraiWorldOrbOpen']) has(homeRuntime3d, marker)
 })
 
