@@ -385,7 +385,7 @@ export default function ComposedLifeMapScene() {
       onCreated={({ gl }) => {
         setSoftwareRenderer(isSoftwareWebGLRenderer(gl));
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.92;
+        gl.toneMappingExposure = 1.15;
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.setClearColor("#02050b", 1);
       }}
