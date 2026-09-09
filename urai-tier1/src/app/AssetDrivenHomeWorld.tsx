@@ -15,6 +15,15 @@ const HOME_GROUND = { x: -4.85, z: -8.25 } as const
 const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
 const LEGACY_V176_AUTHORITY_MARKER = 'v176-recollection-sanctuary'
+const V223_RUNTIME_ASSETS = [
+  'home-continuous-landscape-v191.glb',
+  'home-ground-place-v191.glb',
+  'home-life-map-place-v191.glb',
+  'urai-living-memory-heart-v191.glb',
+  'rock-tile-floor-diff-1k.webp',
+  'rock-tile-floor-normal-gl-1k.webp',
+  'rock-tile-floor-arm-1k.webp',
+].join(' ')
 const REVIEW_ORB_STATES = new Set<OrbState>([
   'dormant', 'idle', 'attention', 'listening', 'thinking', 'speaking',
   'guiding', 'reflecting', 'calming', 'privacy', 'warning', 'transition',
@@ -74,14 +83,16 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v223-art-layer', 'continuous-stratified-weathered-terrain-integrated-destinations-open-cleft-living-memory-presence')
       world.setAttribute('data-home-v223-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
-      world.setAttribute('data-home-visual-repair', 'v223-source-rebuild-after-literal-v222-rejection')
+      world.setAttribute('data-home-visual-repair', 'v223-authored-glb-remount-after-literal-fb23650-rejection')
       world.setAttribute('data-home-physical-base', 'continuous-stratified-weathered-terrain-integrated-destinations')
       world.setAttribute('data-home-visual-grade', 'v223-literal-pixel-candidate-not-certified')
       world.setAttribute('data-home-final-art-revision', 'v223-retained-pixels-pending')
       world.setAttribute('data-home-live-art-revision', 'v223-authored-inhabited-memory-sanctuary')
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-scanned-composition', 'v223-continuous-stratified-weathered-terrain-integrated-destinations')
-      world.setAttribute('data-home-visible-production-assets', 'v223-continuous-geology v223-integrated-ground-place v223-integrated-life-map-place v223-open-cleft-living-memory-presence')
+      world.setAttribute('data-home-runtime-assets', V223_RUNTIME_ASSETS)
+      world.setAttribute('data-home-governed-identity-assets', 'authored-v191-runtime-mounted-v223')
+      world.setAttribute('data-home-visible-production-assets', 'v223-authored-continuous-landscape v223-authored-ground-place v223-authored-life-map-place v223-authored-folded-living-memory-presence')
       world.setAttribute('data-home-animation-owner', 'v223-open-cleft-living-memory-presence')
       synchronizeCanonicalHomeTelemetry(world)
       if (reviewOrbState !== appliedReviewOrbState) {
