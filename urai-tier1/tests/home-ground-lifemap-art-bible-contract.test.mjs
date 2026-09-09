@@ -8,39 +8,57 @@ const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
+const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const currentHomeGeometry = read('src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeEntry}\n${homeProduction}\n${homeArt}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeEntry}\n${currentHome}\n${currentHomeGeometry}`
 const groundGraph = `${groundOwner}\n${groundModel}\n${atmosphereCss}`
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is one coherent Sacred-Tech 3D environment with V126 visible art and governed identity', () => {
+test('Home is one coherent Sacred-Tech 3D environment with V223 visible art and governed identity', () => {
   for (const marker of [
     'AssetDrivenHomeWorld','HomeWorldProduction','data-home-primary-owner="asset-driven"',
     'data-home-visual-ownership="single-canvas-three-dimensional-geometry"','data-home-desktop-mobile-world="same-scene"',
     'data-home-embodied-self="privacy-preserving-first-person"','data-home-movement="walk-keyboard-click-touch"',
     'data-home-pointer-lock="false"','data-testid="urai-home-webgl-orb"','data-testid="urai-home-embodied-avatar"',
-    'home-authored-terrain','home-sanctuary-pavilion','stepEmbodiedMotion','useMovementInput','MobileMovementPad',
+    'stepEmbodiedMotion','useMovementInput','MobileMovementPad',
   ]) has(homeGraph, marker)
-  has(assetHome, "data-home-v126-art-layer', 'single-canvas-ground-owned-sanctuary-framed-fissures-integrated-orb-apse")
-  has(assetHome, "data-home-physical-base', 'continuous-sculpted-ground-staggered-terraces-layered-apse")
+  has(assetHome, "data-home-v126-art-layer', 'historical-unmounted-source-authority")
+  has(assetHome, "data-home-v126-certification', 'superseded-rejected-pixels")
+  has(assetHome, "data-home-v223-art-layer', 'continuous-stratified-weathered-terrain-integrated-destinations-open-cleft-living-memory-presence")
+  has(assetHome, "data-home-v223-certification', 'fresh-exact-head-pixels-required")
+  has(assetHome, "data-home-physical-base', 'continuous-stratified-weathered-terrain-integrated-destinations")
+  has(assetHome, "data-home-animation-owner', 'v223-open-cleft-living-memory-presence")
   for (const marker of [
-    "const ROCK_FACE_A = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf'",
-    "const ROCK_FACE_B = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'",
-    "const GOVERNED_ORB = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'",
-    'function SculptedCanyonGround(','function GeologicalFrame(','function FramedFissure(','function LivingOrb(',
-    'home-v125-sculpted-canyon-ground','home-v126-bounded-geological-edge-masses','home-v126-orb-memory-motes','home-v126-layered-apse-orb-cradle',
-  ]) has(homeArt, marker)
-  assert.match(homeEntry, /HomeWorldProductionV70 as HomeWorldProduction/)
-  assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)
-  assert.doesNotMatch(homeArt, /<Canvas|TerracedGround|PortalRecess|PortalStoneFrame|function RelicMachine\(/)
+    'export function HomeWorldProductionV223',
+    'data-home-visible-world="v223-authored-inhabited-memory-sanctuary"',
+    'data-home-visual-grade="v223-literal-pixel-candidate-not-certified"',
+    'data-home-art-certification="fresh-exact-head-pixels-required"',
+    'data-home-scanned-composition="v223-continuous-stratified-weathered-terrain-integrated-destinations"',
+    '<Terrain walk={walk} onGround={p.onGround} onLifeMap={p.onLifeMap}/>',
+    '<Escarpment side={-1}/>', '<Escarpment side={1}/>', '<DestinationLights/>', '<Orb state={p.orbState}',
+  ]) has(currentHome, marker)
+  for (const marker of [
+    'home-v223-weathered-valley-floor',
+    'home-v223-ground-sheltered-memory-basin',
+    'home-v223-life-map-ascending-memory-terraces',
+  ]) has(currentHomeGeometry, marker)
+  assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
+  assert.equal((currentHome.match(/<Canvas/g) ?? []).length, 1)
+  assert.doesNotMatch(currentHomeGeometry, /RoundedBox|octahedronGeometry|torusGeometry|capsuleGeometry/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
+
+  // Historical source remains covered without being treated as current visual authority.
+  assert.match(homeProduction, /export function HomeWorldProductionV70/)
+  assert.match(homeArt, /export function HomeV76Sanctuary/)
+  assert.match(homeArt, /home-v126-orb-memory-motes/)
 })
 
 test('Home keeps governed Orb states, reduced motion, and real traversal semantics', () => {
