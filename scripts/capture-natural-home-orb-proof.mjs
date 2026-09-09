@@ -13,7 +13,7 @@ const runtimeSource = await readFile(runtimeSourcePath, 'utf8')
 const requiredSourceMarkers = [
   'home-v224-sculpted-sanctuary-floor',
   'home-v224-rooted-memory-rib',
-  'home-v224-distant-strata-buttress',
+  "home-v224-${x.side < 0 ? 'port' : 'starboard'}-weathered-strata-${x.i + 1}",
   'home-v197-ground-continuous-sheltering-memory-wall',
   'home-v200-life-map-integrated-weathered-memory-ledger-1',
   'home-v201-single-connected-folded-living-memory-mantle',
