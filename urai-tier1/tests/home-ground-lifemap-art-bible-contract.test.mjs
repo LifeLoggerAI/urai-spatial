@@ -21,7 +21,7 @@ const groundGraph = `${groundOwner}\n${groundModel}\n${atmosphereCss}`
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is one coherent Sacred-Tech 3D environment with V224 visible art and governed identity', () => {
+test('Home is one coherent Sacred-Tech 3D environment with V225 visible art and governed identity', () => {
   for (const marker of [
     'AssetDrivenHomeWorld','HomeWorldProduction','data-home-primary-owner="asset-driven"',
     'data-home-visual-ownership="single-canvas-three-dimensional-geometry"','data-home-desktop-mobile-world="same-scene"',
@@ -30,14 +30,17 @@ test('Home is one coherent Sacred-Tech 3D environment with V224 visible art and 
     'stepEmbodiedMotion','useMovementInput','MobileMovementPad',
   ]) has(homeGraph, marker)
   has(assetHome, "'data-home-v126-art-layer','historical-unmounted-source-authority'")
-  has(assetHome, "'data-home-v126-certification', 'superseded-rejected-pixels'")
+  has(assetHome, "'data-home-v126-certification','superseded-rejected-pixels'")
   has(assetHome, "'data-home-v223-art-layer','historical-unmounted-source-authority'")
-  has(assetHome, "'data-home-v223-certification', 'superseded-rejected-pixels'")
-  has(assetHome, "'data-home-v224-art-layer', 'direct-runtime-sculpted-sanctuary-overhanging-strata-rooted-memory-ribs-open-ground-sculptural-life-map-asymmetric-living-memory-presence'")
-  has(assetHome, "'data-home-v224-certification', 'fresh-exact-head-pixels-required'")
+  has(assetHome, "'data-home-v223-certification','superseded-rejected-pixels'")
+  has(assetHome, "'data-home-v224-art-layer','superseded-rejected-pixels'")
+  has(assetHome, "'data-home-v224-certification','superseded-rejected-pixels'")
+  has(assetHome, "'data-home-v225-art-layer','integrated-sculpted-sanctuary-organic-grove-sheltered-ground-braided-life-map-veined-living-memory-presence'")
+  has(assetHome, "'data-home-v225-certification','fresh-exact-head-pixels-required'")
   has(assetHome, "'data-home-physical-base','sculpted-sanctuary-floor-overhanging-strata-rooted-memory-ribs-integrated-destinations'")
-  has(assetHome, "'data-home-animation-owner','v224-asymmetric-living-memory-presence'")
-  has(assetHome, 'data-home-v224-retained-pixel-rebuild="active"')
+  has(assetHome, "'data-home-animation-owner','v225-asymmetric-veined-living-memory-presence'")
+  has(assetHome, 'data-home-v225-retained-pixel-rebuild="active"')
+  has(assetHome, 'data-home-v224-retained-pixel-rebuild="superseded"')
   has(assetHome, 'data-home-v223-retained-pixel-rebuild="superseded"')
   for (const marker of [
     'export function HomeWorldProductionV223',
@@ -47,16 +50,18 @@ test('Home is one coherent Sacred-Tech 3D environment with V224 visible art and 
     '<Escarpment side={-1}/>', '<Escarpment side={1}/>', '<DestinationLights/>', '<Orb state={p.orbState}',
   ]) has(currentHome, marker)
   for (const marker of [
-    'home-v224-weathered-valley-floor',
-    'home-v224-ground-sheltered-memory-basin',
-    'home-v224-life-map-ascending-memory-terraces',
-    'home-v224-sculpted-sanctuary-floor',
-    'home-v224-rooted-memory-rib',
-    'home-v201-single-connected-folded-living-memory-mantle',
+    'home-v225-authored-memory-valley',
+    'home-v225-ground-sheltered-memory-basin',
+    'home-v225-life-map-rooted-memory-observatory',
+    'home-v225-sculpted-sanctuary-floor',
+    'home-v225-rooted-memory-rib',
+    'home-v225-life-map-braided-lineage-vault',
+    'home-v225-single-connected-folded-living-memory-mantle',
+    'home-v225-embedded-memory-veins',
   ]) has(currentHomeGeometry, marker)
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
   assert.equal((currentHome.match(/<Canvas/g) ?? []).length, 1)
-  assert.doesNotMatch(currentHomeGeometry, /useGLTF\(|RoundedBox|octahedronGeometry|torusGeometry|capsuleGeometry/)
+  assert.doesNotMatch(currentHomeGeometry, /useGLTF\(|RoundedBox|octahedronGeometry|torusGeometry|capsuleGeometry|IcosahedronGeometry/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
 
