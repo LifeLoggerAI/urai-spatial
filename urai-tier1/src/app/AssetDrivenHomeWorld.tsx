@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { publishOrbState, type OrbState } from '@/app/home/orbStateController'
-import { HomeWorldProductionV221 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV221'
+import { HomeWorldProductionV222 as HomeWorldProduction } from '@/spatial/layout/HomeWorldProductionV222'
 
 type Props = {
   onOrbOpen: () => void
@@ -24,7 +24,6 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   const playerX = Number.parseFloat(world.dataset.homePlayerX ?? '')
   const playerZ = Number.parseFloat(world.dataset.homePlayerZ ?? '')
   if (!Number.isFinite(playerX) || !Number.isFinite(playerZ)) return
-
   const distance = (target: { x: number; z: number }) => Math.hypot(playerX - target.x, playerZ - target.z).toFixed(3)
   world.dataset.homeDistance = distance(HOME_SPAWN)
   world.dataset.homeDistanceOrb = distance(HOME_ORB)
@@ -34,19 +33,16 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
 
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
   const ownerRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     const owner = ownerRef.current
     if (!owner) return
     let appliedReviewOrbState: OrbState | null = null
-
     const hardenHomeOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
         canvas.setAttribute('aria-hidden', 'true')
         canvas.setAttribute('role', 'presentation')
         canvas.setAttribute('tabindex', '-1')
       })
-
       const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
       if (!world) return
       const query = new URLSearchParams(window.location.search)
@@ -56,7 +52,6 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       const reviewOrbState = reviewMode && privateFixture && requestedOrbState && REVIEW_ORB_STATES.has(requestedOrbState as OrbState)
         ? requestedOrbState as OrbState
         : null
-
       world.setAttribute('data-home-asset-mode', reviewMode ? 'disclosed-review-candidate' : 'ready')
       world.setAttribute('data-home-personalization-mode', privateFixture ? 'private-personalized' : 'standard')
       world.setAttribute('data-home-review-fixture', reviewMode && privateFixture ? 'safe-private' : 'none')
@@ -72,39 +67,31 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v219-certification', 'superseded-rejected-pixels')
       world.setAttribute('data-home-v220-art-layer', 'historical-unmounted-source-authority')
       world.setAttribute('data-home-v220-certification', 'superseded-rejected-pixels')
-      world.setAttribute('data-home-v221-art-layer', 'low-terraced-geology-rooted-destinations-connected-folded-memory-mantle')
-      world.setAttribute('data-home-v221-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v221-art-layer', 'historical-unmounted-source-authority')
+      world.setAttribute('data-home-v221-certification', 'superseded-rejected-pixels')
+      world.setAttribute('data-home-v222-art-layer', 'continuous-stratified-history-terrain-rooted-destinations-connected-cleft-living-memory-presence')
+      world.setAttribute('data-home-v222-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
-      world.setAttribute('data-home-visual-repair', 'v221-source-rebuild-after-literal-v220-rejection')
+      world.setAttribute('data-home-visual-repair', 'v222-source-rebuild-after-literal-v221-rejection')
       world.setAttribute('data-home-physical-base', 'continuous-eroded-geology-layered-strata-traversal')
-      world.setAttribute('data-home-visual-grade', 'v221-literal-pixel-candidate-not-certified')
-      world.setAttribute('data-home-final-art-revision', 'v221-retained-pixels-pending')
-      world.setAttribute('data-home-live-art-revision', 'v221-authored-inhabited-memory-sanctuary')
+      world.setAttribute('data-home-visual-grade', 'v222-literal-pixel-candidate-not-certified')
+      world.setAttribute('data-home-final-art-revision', 'v222-retained-pixels-pending')
+      world.setAttribute('data-home-live-art-revision', 'v222-authored-inhabited-memory-sanctuary')
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
-      world.setAttribute('data-home-scanned-composition', 'v221-low-terraced-geology-rooted-destinations')
-      world.setAttribute('data-home-visible-production-assets', 'v221-continuous-geology v221-ground-place v221-life-map-place v221-connected-folded-memory-mantle')
-      world.setAttribute('data-home-animation-owner', 'v221-connected-folded-memory-mantle')
+      world.setAttribute('data-home-scanned-composition', 'v222-continuous-stratified-history-terrain-rooted-destinations')
+      world.setAttribute('data-home-visible-production-assets', 'v222-continuous-geology v222-ground-place v222-life-map-place v222-connected-cleft-living-memory-presence')
+      world.setAttribute('data-home-animation-owner', 'v222-connected-cleft-living-memory-presence')
       synchronizeCanonicalHomeTelemetry(world)
-
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
         publishOrbState(reviewOrbState ?? 'idle', 'system')
       }
     }
-
     hardenHomeOwnership()
     const observer = new MutationObserver(hardenHomeOwnership)
-    observer.observe(owner, {
-      attributes: true,
-      attributeFilter: ['data-home-player-x', 'data-home-player-z'],
-      childList: true,
-      subtree: true,
-    })
+    observer.observe(owner, { attributes: true, attributeFilter: ['data-home-player-x', 'data-home-player-z'], childList: true, subtree: true })
     window.addEventListener('popstate', hardenHomeOwnership)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('popstate', hardenHomeOwnership)
-    }
+    return () => { observer.disconnect(); window.removeEventListener('popstate', hardenHomeOwnership) }
   }, [])
 
   return (
@@ -121,8 +108,9 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       data-home-v176-retained-pixel-rebuild="superseded"
       data-home-v219-retained-pixel-rebuild="superseded"
       data-home-v220-retained-pixel-rebuild="superseded"
-      data-home-v221-retained-pixel-rebuild="active"
-      data-home-canvas-owner="home-world-production-v221-single-authority"
+      data-home-v221-retained-pixel-rebuild="superseded"
+      data-home-v222-retained-pixel-rebuild="active"
+      data-home-canvas-owner="home-world-production-v222-single-authority"
       style={{ display: 'contents' }}
     >
       <HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable} />
