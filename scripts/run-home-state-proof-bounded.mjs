@@ -18,7 +18,7 @@ async function runAttempt(attempt) {
   await rm(attemptDir, { recursive: true, force: true })
   await mkdir(attemptDir, { recursive: true })
 
-  const child = spawn(process.execPath, ['scripts/capture-home-state-proof.mjs'], {
+  const child = spawn(process.execPath, ['scripts/run-home-state-proof-v224.mjs'], {
     cwd: process.cwd(),
     env: { ...process.env, URAI_PROOF_DIR: attemptDir },
     stdio: 'inherit',

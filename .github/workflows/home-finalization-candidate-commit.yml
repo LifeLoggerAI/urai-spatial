@@ -7,6 +7,7 @@ on:
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/capture-natural-home-orb-proof.mjs'
       - 'scripts/run-continuous-spatial-proof-v22-natural.mjs'
+      - 'urai-tier1/scripts/run-final-aaa-world-convergence-v224.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
@@ -17,6 +18,7 @@ on:
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs'
       - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
+      - 'urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs'
   workflow_dispatch:
     inputs:
       verification_sha:
@@ -81,13 +83,15 @@ jobs:
           node --check scripts/capture-natural-home-orb-proof.mjs
           node --check scripts/run-continuous-spatial-proof-v22-natural.mjs
           node --check scripts/run-home-state-proof-bounded.mjs
+          node --check scripts/run-home-state-proof-v224.mjs
+          node --check urai-tier1/scripts/run-final-aaa-world-convergence-v224.mjs
           cd urai-tier1
           node --test --test-concurrency=1 tests/home-ground-lifemap-art-bible-contract.test.mjs
           node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs
           node --test --test-concurrency=1 tests/home-v88-retained-pixel-repair-contract.test.mjs
           node --test --test-concurrency=1 tests/embodied-exploration-contract.test.mjs
           node --test --test-concurrency=1 tests/continuous-spatial-restoration-contract.test.mjs
-          node --test --test-concurrency=1 tests/final-aaa-world-convergence-contract.test.mjs
+          node scripts/run-final-aaa-world-convergence-v224.mjs
           pnpm exec tsc --noEmit
       - name: Prove exact final clean candidate identity
         run: |

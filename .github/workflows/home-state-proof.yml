@@ -6,12 +6,15 @@ on:
     paths:
       - 'scripts/capture-home-state-proof.mjs'
       - 'scripts/run-home-state-proof-bounded.mjs'
+      - 'scripts/run-home-state-proof-v224.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
       - '.github/workflows/home-state-proof.yml'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx'
       - 'urai-tier1/src/app/home/**'
   workflow_dispatch:
 
@@ -55,6 +58,7 @@ jobs:
         run: |
           (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
           node --check scripts/run-home-state-proof-bounded.mjs
+          node --check scripts/run-home-state-proof-v224.mjs
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof
@@ -70,6 +74,4 @@ jobs:
           name: home-state-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/home-state-proof
           if-no-files-found: error
-          # GitHub public repositories currently support at most 90 days here.
-          # Any longer-lived evidence claim requires a separately verified durable archive.
           retention-days: 90

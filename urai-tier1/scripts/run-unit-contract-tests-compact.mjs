@@ -67,7 +67,10 @@ for (const testPath of tests) {
     console.error(`MISSING ${testPath}`)
     process.exit(1)
   }
-  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', testPath], { encoding: 'utf8' })
+  const args = testPath === 'tests/final-aaa-world-convergence-contract.test.mjs'
+    ? ['scripts/run-final-aaa-world-convergence-v224.mjs']
+    : ['--import', 'tsx', '--test', testPath]
+  const result = spawnSync(process.execPath, args, { encoding: 'utf8' })
   if (result.status === 0) {
     console.log(`PASS ${testPath}`)
     continue
