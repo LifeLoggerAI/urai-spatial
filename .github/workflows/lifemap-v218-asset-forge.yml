@@ -1,6 +1,7 @@
 name: Life Map V218 Asset Forge
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - home-final-v24-certify-20260826
