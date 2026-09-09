@@ -23,7 +23,9 @@ export const GROUND = new THREE.Vector3(-4.85, 0, -8.25)
 export const LIFE_MAP = new THREE.Vector3(4.85, 0, -8.25)
 export const BOUNDS = { minX: -7.5, maxX: 7.5, minZ: -14.4, maxZ: 6.8 }
 
-function maps() {
+type PbrMaps = [THREE.Texture, THREE.Texture, THREE.Texture]
+
+function maps(): PbrMaps {
   const [c, n, a] = useTexture(T as unknown as string[])
   return useMemo(() => [c, n, a].map((source, index) => {
     const texture = source.clone()
@@ -33,13 +35,39 @@ function maps() {
     texture.colorSpace = index ? THREE.NoColorSpace : THREE.SRGBColorSpace
     texture.needsUpdate = true
     return texture
-  }), [a, c, n])
+  }) as PbrMaps, [a, c, n])
 }
 
-function tuneAuthoredScene(source: THREE.Object3D, tint?: string, roughness = .94) {
+function ensureAuthoredUv(geometry: THREE.BufferGeometry) {
+  const clone = geometry.clone()
+  if (clone.getAttribute('uv')) return clone
+  const position = clone.getAttribute('position') as THREE.BufferAttribute | undefined
+  if (!position) return clone
+  clone.computeBoundingBox()
+  const box = clone.boundingBox
+  if (!box) return clone
+  const size = box.getSize(new THREE.Vector3())
+  const axes: Array<{ axis: 'x' | 'y' | 'z'; span: number }> = [
+    { axis: 'x', span: size.x }, { axis: 'y', span: size.y }, { axis: 'z', span: size.z },
+  ].sort((left, right) => right.span - left.span)
+  const [uAxis, vAxis] = axes
+  const min = box.min
+  const spanU = Math.max(.001, uAxis.span)
+  const spanV = Math.max(.001, vAxis.span)
+  const uv: number[] = []
+  for (let index = 0; index < position.count; index += 1) {
+    const point = { x: position.getX(index), y: position.getY(index), z: position.getZ(index) }
+    uv.push(((point[uAxis.axis] - min[uAxis.axis]) / spanU) * 3.4, ((point[vAxis.axis] - min[vAxis.axis]) / spanV) * 3.4)
+  }
+  clone.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+  return clone
+}
+
+function tuneAuthoredScene(source: THREE.Object3D, materialMaps?: PbrMaps, tint?: string, roughness = .94, emissive?: string) {
   const root = source.clone(true)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
+    object.geometry = ensureAuthoredUv(object.geometry)
     object.castShadow = true
     object.receiveShadow = true
     const originals = Array.isArray(object.material) ? object.material : [object.material]
@@ -47,9 +75,20 @@ function tuneAuthoredScene(source: THREE.Object3D, tint?: string, roughness = .9
       const next = material.clone()
       if (next instanceof THREE.MeshStandardMaterial) {
         next.roughness = Math.max(next.roughness, roughness)
-        next.metalness = Math.min(next.metalness, .02)
-        next.envMapIntensity = .62
-        if (tint) next.color.lerp(new THREE.Color(tint), .09)
+        next.metalness = Math.min(next.metalness, .015)
+        next.envMapIntensity = .74
+        if (materialMaps) {
+          next.map = materialMaps[0]
+          next.normalMap = materialMaps[1]
+          next.normalScale = new THREE.Vector2(.48, .48)
+          next.roughnessMap = materialMaps[2]
+        }
+        if (tint) next.color.lerp(new THREE.Color(tint), .16)
+        if (emissive) {
+          next.emissive = new THREE.Color(emissive)
+          next.emissiveIntensity = Math.max(next.emissiveIntensity, .055)
+        }
+        next.needsUpdate = true
       }
       return next
     })
@@ -58,8 +97,8 @@ function tuneAuthoredScene(source: THREE.Object3D, tint?: string, roughness = .9
   return root
 }
 
-function normalizeAuthoredScene(source: THREE.Object3D, span: number, tint?: string, roughness = .94, anchor: 'bottom' | 'center' = 'bottom') {
-  const root = tuneAuthoredScene(source, tint, roughness)
+function normalizeAuthoredScene(source: THREE.Object3D, span: number, materialMaps?: PbrMaps, tint?: string, roughness = .94, anchor: 'bottom' | 'center' = 'bottom', emissive?: string) {
+  const root = tuneAuthoredScene(source, materialMaps, tint, roughness, emissive)
   const box = new THREE.Box3().setFromObject(root)
   const size = box.getSize(new THREE.Vector3())
   const center = box.getCenter(new THREE.Vector3())
@@ -113,7 +152,7 @@ export function Terrain({ walk, onGround, onLifeMap }: { walk: (event: ThreeEven
   const m = maps()
   const collision = useMemo(terrainGeometry, [])
   const source = useGLTF(AUTHORED_LANDSCAPE).scene
-  const landscape = useMemo(() => tuneAuthoredScene(source, '#52685c', .96), [source])
+  const landscape = useMemo(() => tuneAuthoredScene(source, m, '#4b6355', .95), [m, source])
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     const groundDistance = Math.hypot(event.point.x - GROUND.x, event.point.z - GROUND.z)
@@ -138,24 +177,28 @@ export function Escarpment({ side }: { side: -1 | 1 }) {
 }
 
 function GroundPlace() {
+  const m = maps()
   const source = useGLTF(AUTHORED_GROUND).scene
-  const place = useMemo(() => normalizeAuthoredScene(source, 5.85, '#516f5d', .96), [source])
-  const y = height(GROUND.x, GROUND.z) - .16
+  const place = useMemo(() => normalizeAuthoredScene(source, 6.15, m, '#536553', .94, 'bottom', '#17271d'), [m, source])
+  const y = height(GROUND.x, GROUND.z) - .2
   return <group name="home-v223-ground-sheltered-memory-basin" position={[GROUND.x, y, GROUND.z]}>
     <primitive object={place} />
-    <pointLight position={[-.45, .6, -.55]} color="#d49a61" intensity={1.75} distance={5.3} decay={2} />
-    <pointLight position={[1.15, 1.05, -1.55]} color="#8dbaa0" intensity={.55} distance={3.4} decay={2} />
+    <pointLight position={[-.6, .8, -.5]} color="#e0a168" intensity={2.8} distance={6.4} decay={2} />
+    <pointLight position={[1.15, 1.4, -1.65]} color="#a6c2a9" intensity={1.0} distance={4.2} decay={2} />
+    <pointLight position={[0, 2.5, 1.6]} color="#f1d4a2" intensity={.75} distance={5.5} decay={2} />
   </group>
 }
 
 function LifeMapPlace() {
+  const m = maps()
   const source = useGLTF(AUTHORED_LIFE_MAP).scene
-  const place = useMemo(() => normalizeAuthoredScene(source, 5.9, '#54566c', .95), [source])
-  const y = height(LIFE_MAP.x, LIFE_MAP.z) - .16
+  const place = useMemo(() => normalizeAuthoredScene(source, 6.25, m, '#5e6075', .92, 'bottom', '#27233b'), [m, source])
+  const y = height(LIFE_MAP.x, LIFE_MAP.z) - .2
   return <group name="home-v223-life-map-ascending-memory-terraces" position={[LIFE_MAP.x, y, LIFE_MAP.z]}>
     <primitive object={place} />
-    <pointLight position={[-.35, 1.2, -.85]} color="#8ecab4" intensity={1.5} distance={5.2} decay={2} />
-    <pointLight position={[1.05, 1.55, -1.55]} color="#a790c8" intensity={.9} distance={4.1} decay={2} />
+    <pointLight position={[-.45, 1.5, -.7]} color="#92d2ba" intensity={2.35} distance={6.2} decay={2} />
+    <pointLight position={[1.1, 1.9, -1.7]} color="#b59bd4" intensity={1.6} distance={5.0} decay={2} />
+    <pointLight position={[-1.15, 2.7, 1.25]} color="#e7d8b3" intensity={.7} distance={5.2} decay={2} />
   </group>
 }
 
@@ -200,25 +243,26 @@ const P: Record<OrbState, Posture> = {
 export function Orb({ state, reducedMotion, onOpen }: { state: OrbState; reducedMotion: boolean; onOpen: () => void }) {
   const group = useRef<THREE.Group>(null)
   const source = useGLTF(AUTHORED_ORB).scene
-  const presence = useMemo(() => normalizeAuthoredScene(source, .94, undefined, .91, 'center'), [source])
+  const presence = useMemo(() => normalizeAuthoredScene(source, 1.9, undefined, undefined, .88, 'center', '#164f40'), [source])
   const collision = useMemo(orbGeometry, [])
   const posture = P[state]
   useFrame(({ clock }) => {
     if (!group.current) return
     const t = clock.elapsedTime * posture.speed
-    const breath = reducedMotion ? 1 : 1 + Math.sin(t * .82) * .018
+    const breath = reducedMotion ? 1 : 1 + Math.sin(t * .82) * .022
     group.current.scale.set(posture.s[0] * breath, posture.s[1] * breath, posture.s[2] * breath)
-    group.current.rotation.set(posture.r[0], posture.r[1] + (reducedMotion ? 0 : Math.sin(t * .92) * .055), posture.r[2])
+    group.current.rotation.set(posture.r[0], posture.r[1] + (reducedMotion ? 0 : Math.sin(t * .92) * .075), posture.r[2])
   })
   const warning = state === 'warning'
   return <group ref={group} name="home-v223-open-cavity-living-memory-presence" position={ORB} onClick={(event) => { event.stopPropagation(); onOpen() }}>
-    <group position={[0, .42, 0]}>
+    <group position={[0, .72, 0]}>
       <primitive object={presence} />
     </group>
-    <mesh name="home-v223-orb-interaction-volume" geometry={collision} position={[0, .42, 0]} scale={[.92,1.0,.92]}>
+    <mesh name="home-v223-orb-interaction-volume" geometry={collision} position={[0, .72, 0]} scale={[1.65,1.8,1.55]}>
       <meshBasicMaterial transparent opacity={0} depthWrite={false} />
     </mesh>
-    <pointLight position={[0, .48, .28]} color={warning ? '#c76850' : '#73c7a9'} intensity={state === 'dormant' ? .22 : .92} distance={3.4} decay={2} />
+    <pointLight position={[0, .82, .45]} color={warning ? '#d56d54' : '#74d8b4'} intensity={state === 'dormant' ? .35 : 2.1} distance={5.4} decay={2} />
+    <pointLight position={[-.6, 1.2, -.35]} color="#d8b783" intensity={state === 'dormant' ? .12 : .48} distance={3.2} decay={2} />
   </group>
 }
 
