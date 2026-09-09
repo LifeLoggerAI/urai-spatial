@@ -327,7 +327,10 @@
 }
 
 @media (max-width: 560px) {
-  .urai-world-companion__orb { width: 82px; height: 62px; }
+  .urai-world-companion__orb {
+    width: 64px;
+    height: 64px;
+  }
   .urai-world-companion__menu { border-radius: 20px; }
   .urai-world-companion__menu nav { justify-content: flex-start; }
   .urai-world-companion__estate ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
