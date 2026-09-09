@@ -51,7 +51,7 @@ test('app template mounts the exact active V223 Home production owner without ce
   assert.match(activeHomeProduction, /export const HomeWorldProduction=HomeWorldProductionV223/)
   assert.match(activeHomeProduction, /data-home-primary-owner="asset-driven"/)
   assert.doesNotMatch(legacyHomeArt, /<Canvas/)
-  assert.match(homeProductionEntry, /HomeWorldProductionV70/)
+  assert.match(homeProductionEntry, /HomeWorldProductionV223/)
   assert.match(legacyHomeProduction, /export function HomeWorldProductionV70/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
