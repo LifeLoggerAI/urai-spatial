@@ -126,23 +126,29 @@ function EmbodiedReflection({ reducedMotion, demo }: { reducedMotion: boolean; d
 
 function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: MirrorPattern | null; onSelect: (pattern: MirrorPattern | null) => void; reducedMotion: boolean }) {
   const core = useRef<THREE.Group>(null)
-  const strata = useMemo(() => [0, 1, 2].map((layer) => {
-    const points = Array.from({ length: 18 }, (_, index) => {
-      const t = index / 17
-      return new THREE.Vector3((t - .5) * (2.5 - layer * .28), Math.sin(t * Math.PI) * (.62 + layer * .16) + layer * .12, Math.sin(t * Math.PI * 2.3 + layer) * .20)
-    })
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 90, .16 - layer * .025, 10, false)
-  }), [])
+  const branches = useMemo(() => [
+    [[-.08, -.82, .02], [-.16, -.20, -.02], [-.08, .46, .04], [-.28, 1.18, -.04]],
+    [[-.05, -.22, 0], [-.48, .08, -.02], [-.83, .42, .05], [-1.16, .88, -.06]],
+    [[.02, .02, 0], [.42, .30, .04], [.72, .68, -.03], [.94, 1.12, .02]],
+    [[-.12, .44, 0], [-.56, .78, .02], [-.72, 1.16, -.04]],
+    [[.08, .56, 0], [.35, .92, -.03], [.28, 1.34, .03]],
+  ].map((controlPoints, branch) => new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(controlPoints.map(([x, y, z]) => new THREE.Vector3(x, y, z))),
+    48,
+    branch === 0 ? .045 : .032,
+    8,
+    false,
+  )), [])
   useFrame(({ clock }) => {
     if (!core.current || reducedMotion) return
     core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .16
     core.current.rotation.x = Math.sin(clock.elapsedTime * 0.31) * 0.06
   })
-  return <group position={[0, 1.4, 0.85]} name="mirror-reflection-instrument" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
-    <group ref={core}>{strata.map((geometry, index) => <mesh key={index} geometry={geometry} position={[0, index * .06, index * -.16]} castShadow>
+  return <group position={[0, 1.28, -3.05]} scale={selected ? .82 : 1} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-v229-distant-branching-reflection-instrument' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
+    <group ref={core}>{branches.map((geometry, index) => <mesh key={index} geometry={geometry} position={[0, 0, index * -.035]} castShadow>
       <meshStandardMaterial color={selected?.accent ?? (index === 1 ? '#79c2c3' : '#315d64')} emissive={selected?.accent ?? '#4aa5aa'} emissiveIntensity={selected ? .34 : .12} roughness={.76 + index * .06} metalness={.03} />
     </mesh>)}</group>
-    <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? 1.65 : 1.05} distance={8} decay={2} />
+    <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? .72 : .48} distance={5} decay={2} />
   </group>
 }
 
@@ -203,7 +209,7 @@ function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSele
 function buildMemoryHref(memoryId: string, manifestId: string, node: string, demo: boolean, destination: 'replay' | 'mirror') {
   const params = new URLSearchParams({ memoryId, manifestId, node, from: destination === 'mirror' ? 'replay-mirror-threshold' : 'mirror-fragment' })
   if (demo) params.set('demo', '1')
-  return `/${destination}?${params.toString()}`
+  return `/${destination}/?${params.toString()}`
 }
 
 export default function MirrorSpatialClient() {

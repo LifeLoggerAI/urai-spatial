@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
+import { useTexture } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { OrbState } from '@/app/home/orbStateController'
-import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry'
+import { GROUND, LIFE_MAP, ORB, T, height } from './HomeWorldProductionV223Geometry'
 
 type WalkHandler = (event: ThreeEvent<MouseEvent>) => void
 type V3 = [number, number, number]
@@ -136,43 +137,66 @@ function RootedCanopy() {
   </group>
 }
 
-function HorizonCrown() {
-  const leaf = useMemo(() => bladeGeometry(7.1), [])
-  const architecture = useMemo(() => [
-    { base: new THREE.Vector3(-7.4, -.12, -17.8), crown: new THREE.Vector3(-2.8, 6.5, -17.0), sweep: 1 },
-    { base: new THREE.Vector3(7.2, -.08, -18.6), crown: new THREE.Vector3(2.5, 7.2, -17.4), sweep: -1 },
-    { base: new THREE.Vector3(-1.4, -.18, -20.2), crown: new THREE.Vector3(.5, 7.8, -19.0), sweep: 1 },
-  ].map((tree, index) => {
-    const trunk = tube([
-      tree.base,
-      tree.base.clone().lerp(tree.crown, .34).add(new THREE.Vector3(tree.sweep * .58, 0, .28)),
-      tree.base.clone().lerp(tree.crown, .68).add(new THREE.Vector3(-tree.sweep * .42, .2, -.18)),
-      tree.crown,
-    ], .34 - index * .035, 12)
-    const limbs = Array.from({ length: 5 }, (_, limb) => {
-      const side = limb % 2 ? -1 : 1
-      const reach = 2.0 + limb * .44
-      return tube([
-        tree.crown.clone().add(new THREE.Vector3(0, -.46 + limb * .12, 0)),
-        tree.crown.clone().add(new THREE.Vector3(side * reach * .48, .35 + limb * .18, .14 * limb)),
-        tree.crown.clone().add(new THREE.Vector3(side * reach, .15 - limb * .08, .48 + limb * .18)),
-      ], .15 - limb * .014, 9)
-    })
-    return { ...tree, trunk, limbs }
-  }), [])
-  return <group name="home-v228-deep-braided-horizon-crown">
-    {architecture.map((tree, index) => <group key={index}>
-      <mesh geometry={tree.trunk} castShadow><meshStandardMaterial color={index === 2 ? '#263b33' : '#21342d'} roughness={.98}/></mesh>
-      {tree.limbs.map((geometry, limb) => <group key={limb}>
-        <mesh geometry={geometry} castShadow><meshStandardMaterial color={limb % 2 ? '#324a3b' : '#2b4337'} roughness={.96}/></mesh>
-        {Array.from({ length: 4 }, (_, leafIndex) => {
-          const side = limb % 2 ? -1 : 1
-          return <mesh key={leafIndex} geometry={leaf} position={[tree.crown.x + side * (1.15 + limb * .43 + leafIndex * .38), tree.crown.y + .38 - leafIndex * .12 + limb * .09, tree.crown.z + .46 + limb * .18]} rotation={[-1.05,side*.42,side*(.18+leafIndex*.12)]} scale={[1.25 + leafIndex*.14,1.05 + limb*.08,1]} castShadow>
-            <meshStandardMaterial color={leafIndex % 2 ? '#506d56' : '#405d4a'} roughness={.92} side={THREE.DoubleSide}/>
-          </mesh>
-        })}
-      </group>)}
-    </group>)}
+function useMemoryStoneMaps() {
+  const source = useTexture(T as unknown as string[]) as THREE.Texture[]
+  return useMemo(() => source.map((texture, index) => {
+    const clone = texture.clone()
+    clone.wrapS = clone.wrapT = THREE.RepeatWrapping
+    clone.repeat.set(9.5, 15.5)
+    clone.anisotropy = 8
+    clone.colorSpace = index === 0 ? THREE.SRGBColorSpace : THREE.NoColorSpace
+    clone.needsUpdate = true
+    return clone
+  }) as [THREE.Texture, THREE.Texture, THREE.Texture], [source])
+}
+
+function inhabitedSurfaceGeometry() {
+  const nx=156,nz=210,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
+  const moss=new THREE.Color('#52614d'),loam=new THREE.Color('#75614b'),lichen=new THREE.Color('#7c866c')
+  for(let iz=0;iz<=nz;iz++){
+    const vz=iz/nz,z=6.4-vz*26.2
+    for(let ix=0;ix<=nx;ix++){
+      const vx=ix/nx,x=-9.4+vx*18.8
+      const relief=.052*Math.sin(x*1.72+z*.91)+.034*Math.cos(x*3.86-z*1.54)+.017*Math.sin(x*7.1+z*4.3)
+      const y=height(x,z)+relief*(.32+.68*Math.min(1,Math.abs(x)/7.5))+.032
+      positions.push(x,y,z);uvs.push(vx*9.5,vz*15.5)
+      const grain=.5+.5*Math.sin(x*.82-z*.57)*Math.cos(x*1.31+z*.94)
+      const c=moss.clone().lerp(loam,.18+.12*grain).lerp(lichen,.08*Math.max(0,-z/20))
+      colors.push(c.r,c.g,c.b)
+    }
+  }
+  const row=nx+1
+  for(let iz=0;iz<nz;iz++)for(let ix=0;ix<nx;ix++){const a=iz*row+ix,b=a+1,c=a+row,d=c+1;indices.push(a,b,c,b,d,c)}
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry
+}
+
+function distantRidgeGeometry() {
+  const nx=132,nz=34,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
+  const shadow=new THREE.Color('#182921'),stone=new THREE.Color('#4c5e4c'),warm=new THREE.Color('#66533f')
+  for(let iz=0;iz<=nz;iz++){
+    const v=iz/nz,z=-14.8-v*12.8
+    for(let ix=0;ix<=nx;ix++){
+      const u=ix/nx,x=-13.5+u*27
+      const peaks=4.8*Math.exp(-Math.pow((x+5.1)/4.2,2))+6.1*Math.exp(-Math.pow((x-3.7)/4.8,2))+2.2*Math.exp(-Math.pow((x-10.4)/2.8,2))
+      const rise=Math.sin(v*Math.PI*.88)*peaks+(1-v)*(.22+.18*Math.sin(x*.52))
+      const y=-.18+rise+.22*Math.sin(x*.81+v*5.2)+.11*Math.cos(x*1.73-v*7.1)
+      positions.push(x,y,z);uvs.push(u*7,v*5)
+      const c=shadow.clone().lerp(stone,.22+.42*v).lerp(warm,.07*(.5+.5*Math.sin(x*.7+v*8)))
+      colors.push(c.r,c.g,c.b)
+    }
+  }
+  const row=nx+1
+  for(let iz=0;iz<nz;iz++)for(let ix=0;ix<nx;ix++){const a=iz*row+ix,b=a+1,c=a+row,d=c+1;indices.push(a,b,c,b,d,c)}
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry
+}
+
+function TexturedMemoryTerrain() {
+  const maps=useMemoryStoneMaps()
+  const surface=useMemo(inhabitedSurfaceGeometry,[])
+  const ridge=useMemo(distantRidgeGeometry,[])
+  return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
+    <mesh geometry={surface} receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
+    <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
   </group>
 }
 
@@ -464,7 +488,7 @@ export function HomeV225PolishV3({ orbState, reducedMotion, onOrb, onGround, onL
     <RetireRejectedLayers/>
     <PortraitFraming/>
     <WeatheredMemoryBanks/>
-    <HorizonCrown/>
+    <TexturedMemoryTerrain/>
     <RootedCanopy/>
     <GroundSanctuary onGround={onGround}/>
     <LifeMapSanctuary onLifeMap={onLifeMap}/>

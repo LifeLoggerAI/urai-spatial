@@ -84,12 +84,12 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
   lastTravelFingerprint = fingerprint
   lastTravelAt = now
-  const startingLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
 
   const fallbackHref = buildFallbackHref(request)
   if (!fallbackHref) return
+  const targetPathname = new URL(fallbackHref, window.location.origin).pathname.replace(/\/+$/, '') || '/'
 
   let settled = false
   let observer = 0
@@ -97,13 +97,13 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     if (settled) return
     settled = true
     if (observer) window.clearInterval(observer)
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) commitHardFallback(fallbackHref)
+    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+    if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
   }, WORLD_TRAVEL_FALLBACK_MS)
 
   observer = window.setInterval(() => {
-    const currentLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`
-    if (currentLocation === startingLocation) return
+    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+    if (currentPathname !== targetPathname) return
     settled = true
     window.clearTimeout(fallback)
     window.clearInterval(observer)

@@ -13,6 +13,7 @@ const selectedMemory = read('src/spatial/memory/selectedMemoryContract.ts')
 const worldTypes = read('src/spatial/world/worldTypes.ts')
 const worldState = read('src/spatial/world/WorldStateProvider.tsx')
 const worldTransition = read('src/spatial/world/WorldTransitionController.tsx')
+const worldEvents = read('src/spatial/world/worldEvents.ts')
 
 test('continuous visual proof preserves portal lifecycle and attributed navigation diagnostics', () => {
   assert.match(visualWrapper, /routeEvidence\?\.lifecycleObserved/)
@@ -60,8 +61,20 @@ test('Mirror inspector removes competing help and mobile hit owners while pinnin
 test('Mirror selected evidence remains camera-safe and uses slender reflection threads', () => {
   assert.match(mirrorWorld, /selected\.position\[2\] \+ 5\.4/)
   assert.match(mirrorWorld, /new THREE\.TubeGeometry\(new THREE\.CatmullRomCurve3\(points\), 56, \.035, 8, false\)/)
+  assert.match(mirrorWorld, /mirror-v229-distant-branching-reflection-instrument/)
+  assert.match(mirrorWorld, /position=\{\[0, 1\.28, -3\.05\]\}/)
+  assert.match(mirrorWorld, /branch === 0 \? \.045 : \.032/)
+  assert.doesNotMatch(mirrorWorld, /Math\.sin\(t \* Math\.PI\) \* \(\.62/)
+  assert.match(mirrorWorld, /`\/\$\{destination\}\/\?\$\{params\.toString\(\)\}`/)
   assert.doesNotMatch(mirrorWorld, /new THREE\.BoxGeometry\(\.12, \.76, \.48/)
   assert.doesNotMatch(mirrorWorld, /selected \? \[1\.32,1\.12,1\.22\]/)
+})
+
+test('world travel watchdog only settles after the requested route pathname commits', () => {
+  assert.match(worldEvents, /const targetPathname = new URL\(fallbackHref, window\.location\.origin\)\.pathname/)
+  assert.match(worldEvents, /if \(currentPathname !== targetPathname\) commitHardFallback\(fallbackHref\)/)
+  assert.match(worldEvents, /if \(currentPathname !== targetPathname\) return/)
+  assert.doesNotMatch(worldEvents, /if \(currentLocation === startingLocation\) commitHardFallback/)
 })
 
 test('selected-memory replay fragments are canonicalized by timestamp and cover the final segment', () => {

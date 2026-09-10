@@ -31,31 +31,33 @@ function seeded(index: number, salt: number) {
 function memoryHeartGeometry(seed: number) {
   const points = Array.from({ length: 96 }, (_, index) => {
     const t = index / 95;
-    const angle = t * Math.PI * (4.2 + seed % 3 * .45) + seed * .17;
-    const pulse = 0.48 * (1 - t * .72) + 0.035 * Math.sin(t * Math.PI * 9 + seed);
     return new THREE.Vector3(
-      Math.cos(angle) * pulse,
-      (t - .5) * .62 + Math.sin(angle) * pulse * .28,
-      Math.sin(angle) * pulse * .62,
+      .13 * Math.sin(t * Math.PI * 1.6 + seed * .09) + .055 * Math.sin(t * Math.PI * 4.2 + seed),
+      (t - .5) * 1.18,
+      .10 * Math.cos(t * Math.PI * 1.25 + seed * .13),
     );
   });
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 160, 0.062, 10, false);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 160, 0.072, 10, false);
 }
 
 function memoryFilamentGeometry(seed: number, filament: number) {
-  const angle = filament / 9 * Math.PI * 2 + seed * 0.019;
-  const rise = (filament % 3 - 1) * (0.13 + seed % 4 * .018);
+  const originT = (filament + 1) / 10;
+  const side = filament % 2 ? -1 : 1;
+  const origin = new THREE.Vector3(
+    .13 * Math.sin(originT * Math.PI * 1.6 + seed * .09),
+    (originT - .5) * 1.18,
+    .10 * Math.cos(originT * Math.PI * 1.25 + seed * .13),
+  );
+  const reach = .54 + (filament % 4) * .12 + seed % 3 * .035;
   const points = Array.from({ length: 36 }, (_, index) => {
     const t = index / 35;
-    const curl = angle + t * (0.72 + (filament % 2) * 0.38 + seed % 5 * .04) * (filament % 2 ? -1 : 1);
-    const reach = 0.08 + t * (0.68 + (filament % 4) * 0.09 + seed % 3 * .035);
     return new THREE.Vector3(
-      Math.cos(curl) * reach,
-      rise * t + Math.sin(t * Math.PI * 1.35 + filament * 0.7) * (0.19 + 0.05 * (filament % 3)),
-      Math.sin(curl) * reach * 0.54 + 0.13 * Math.sin(t * Math.PI * 3 + seed),
-    );
+      origin.x + side * reach * t + side * .11 * Math.sin(t * Math.PI),
+      origin.y + ((filament % 3) - 1) * .30 * t + .15 * Math.sin(t * Math.PI),
+      origin.z + (.18 + (filament % 3) * .08) * Math.sin(t * Math.PI * .82 + seed * .04),
+    )
   });
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 72, 0.026 + (filament % 3) * 0.006, 8, false);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 72, 0.022 + (filament % 3) * 0.005, 8, false);
 }
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
@@ -341,7 +343,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
     ref={root}
     position={celestialPosition}
     visible={visible}
-    scale={active ? 0.96 : 0.88 + importance * 0.24}
+    scale={active ? 1.04 : 1.08 + importance * 0.30}
     name={`life-map-artifact-${resolveArtifactFamily(node)}-${node.id}`}
     userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
     onClick={(event) => { event.stopPropagation(); onSelect(node); }}
@@ -373,7 +375,7 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const kind = resolvePathKind(source, target);
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return <group>
-    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? .72 : .22} transparent opacity={kind === "protected" ? .02 : active ? .34 : .06} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? .34 : .16} transparent opacity={kind === "protected" ? .012 : active ? .14 : .035} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
     {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * .19) % 1} /> : null}
   </group>;
 }
@@ -405,15 +407,14 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
   const group = useRef<THREE.Group>(null);
   const chamber = useMemo(() => scene.clone(true), [scene]);
   const { actions } = useAnimations(animations, group);
-  const chamberThreads = useMemo(() => Array.from({ length: 9 }, (_, index) => {
-    const angle = index / 9 * Math.PI * 2;
+  const chamberThreads = useMemo(() => Array.from({ length: 7 }, (_, index) => {
+    const x = -2.28 + index * .76;
     const points = Array.from({ length: 48 }, (_, point) => {
       const t = point / 47;
-      const radius = .72 + Math.sin(t * Math.PI) * (1.18 + .14 * Math.sin(index * 1.7)) + .12 * Math.sin(t * Math.PI * 3 + index);
       return new THREE.Vector3(
-        Math.cos(angle + t * .58) * radius,
-        -1.25 + t * 3.1,
-        Math.sin(angle + t * .58) * radius * .68 - .8,
+        x + Math.sin(t * Math.PI) * ((index % 2 ? -1 : 1) * (.24 + index * .018)),
+        -1.25 + t * (2.75 + (index % 3) * .22),
+        -1.22 + .18 * Math.sin(index * 1.4) - t * (.36 + (index % 2) * .12),
       );
     });
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", .42), 96, .026 + index % 2 * .008, 8, false);
@@ -446,7 +447,7 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
     scale={0.28}
   >
     <primitive object={chamber} visible={false} />
-    <group scale={2.94} name="life-map-v227-open-braided-arrival-chamber">
+    <group scale={2.94} name="life-map-v229-open-branching-memory-grove">
       {chamberThreads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? ICE : selected.aura} emissive={selected.aura} emissiveIntensity={.54} roughness={.7} transparent opacity={.48} /></mesh>)}
       <Current points={[[-2.7,-1.4,.4],[-1.5,.8,-1],[0,1.8,-1.8],[1.6,.7,-1.1],[2.8,-1.2,.3]]} color={selected.aura} opacity={.32} width={.026} />
       <FieldParticles seed={997} count={120} radius={2.8} depth={4.2} height={3.4} color={ICE} opacity={.34} size={.032} />
