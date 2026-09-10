@@ -29,7 +29,7 @@ export const routeContracts = [
       'data-ground-destination',
       'URAI Ground embodied private infrastructure',
     ],
-    forbidden: ['Street-level city world'],
+    forbidden: ['Street-level city world', 'Your private workforce.', 'Six chambers active · private by default'],
   },
   {
     route: '/life-map',
