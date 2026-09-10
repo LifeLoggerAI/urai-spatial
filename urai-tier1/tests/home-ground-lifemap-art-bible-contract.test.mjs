@@ -93,6 +93,12 @@ test('Home keeps governed Orb states, reduced motion, and real traversal semanti
   assert.match(homeRuntime, /aria-label="Open Ground directly"/)
   assert.match(currentHomeVisual, /home-v227-split-asymmetric-memory-bloom/)
   assert.match(currentHomeVisual, /home-v227-branching-memory-nervature/)
+  assert.match(currentHomeVisual, /home-v228-deep-braided-horizon-crown/)
+  assert.match(currentHomeVisual, /home-v228-life-map-rooted-branching-threshold/)
+  assert.match(currentHomeVisual, /camera\.zoom = size\.height > size\.width \? \.94 : 1/)
+  assert.match(currentHome, /portrait \? \.62 : \.92/)
+  assert.doesNotMatch(currentHomeVisual, /<mesh geometry=\{shell\}/)
+  assert.doesNotMatch(currentHomeVisual, /memoryRings\[/)
   assert.doesNotMatch(currentHomeVisual, /scale=\{\[\.66,1\.12,\.76\]\}/)
 })
 

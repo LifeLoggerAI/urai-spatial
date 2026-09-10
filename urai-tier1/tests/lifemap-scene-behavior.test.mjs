@@ -104,6 +104,8 @@ test('Relationships use curved semantic path classes, living pulses, and privacy
   }
   assert.match(world, /QuadraticBezierCurve3/)
   assert.match(world, /life-map-curved-semantic-paths/)
+  assert.doesNotMatch(world.slice(world.indexOf('function LivingPaths'), world.indexOf('function ArrivalSanctuary')), /if \(!selected\) return null/)
+  assert.match(world, /active \? \.34 : \.06/)
   assert.match(world, /resolvePathKind\(source, target\)/)
   assert.match(world, /kind === "protected"/)
   assert.match(world, /dashed={kind === "inferred" \|\| kind === "corrected" \|\| kind === "protected"}/)

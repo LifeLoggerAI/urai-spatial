@@ -44,7 +44,7 @@ function PortraitFraming() {
   useEffect(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return
     const previous = camera.zoom
-    camera.zoom = size.height > size.width ? 1.18 : 1
+    camera.zoom = size.height > size.width ? .94 : 1
     camera.updateProjectionMatrix()
     return () => {
       camera.zoom = previous
@@ -85,8 +85,8 @@ function bladeGeometry(seed: number) {
 function RootedCanopy() {
   const architecture = useMemo(() => {
     const anchors = [
-      [-6.65, -6.8, 5.7, .12, -.70], [6.55, -7.8, 5.9, -.10, .74],
-      [-5.9, -13.2, 6.15, .06, -.90], [5.8, -14.1, 6.0, -.06, .94],
+      [-5.45, -4.8, 5.9, .24, -.92], [5.30, -6.1, 6.35, -.21, .96],
+      [-5.1, -11.9, 6.8, .16, -1.08], [4.9, -13.1, 7.15, -.13, 1.12],
     ] as const
     return anchors.map(([x, z, h, bend, sweep], index) => {
       const y = height(x, z)
@@ -95,22 +95,22 @@ function RootedCanopy() {
         new THREE.Vector3(x + bend * .35, y + h * .28, z + sweep * .10),
         new THREE.Vector3(x + bend, y + h * .62, z + sweep * .40),
         new THREE.Vector3(x + bend * 2.0, y + h * .88, z + sweep * .95),
-      ], .105 + (index % 3) * .012, 11)
+      ], .205 + (index % 3) * .018, 11)
       const crownA = tube([
         new THREE.Vector3(x + bend * 1.1, y + h * .66, z + sweep * .48),
         new THREE.Vector3(x + bend * 2.4 - sweep * .55, y + h * .91, z + sweep * 1.0),
         new THREE.Vector3(x + bend * 2.8 - sweep * 1.35, y + h * .98, z + sweep * 1.42),
-      ], .052, 9)
+      ], .105, 9)
       const crownB = tube([
         new THREE.Vector3(x + bend * 1.25, y + h * .70, z + sweep * .50),
         new THREE.Vector3(x + bend * 1.6 + sweep * .58, y + h * .92, z + sweep * .86),
         new THREE.Vector3(x + bend * 1.2 + sweep * 1.38, y + h * .95, z + sweep * 1.14),
-      ], .046, 9)
+      ], .092, 9)
       const crownC = tube([
         new THREE.Vector3(x + bend * 1.15, y + h * .72, z + sweep * .48),
         new THREE.Vector3(x + bend * 1.75, y + h * .88, z + sweep * .20),
         new THREE.Vector3(x + bend * 2.10, y + h * .94, z - sweep * .46),
-      ], .040, 9)
+      ], .078, 9)
       return { x, z, y, h, sweep, trunk, crownA, crownB, crownC }
     })
   }, [])
@@ -121,17 +121,57 @@ function RootedCanopy() {
       <mesh geometry={tree.crownA} castShadow><meshStandardMaterial color="#31483a" roughness={.96}/></mesh>
       <mesh geometry={tree.crownB} castShadow><meshStandardMaterial color="#334c3d" roughness={.96}/></mesh>
       <mesh geometry={tree.crownC} castShadow><meshStandardMaterial color="#2f493a" roughness={.96}/></mesh>
-      {Array.from({ length: 22 }, (_, leafIndex) => {
+      {Array.from({ length: 32 }, (_, leafIndex) => {
         const side = leafIndex % 2 ? -1 : 1
-        const t = (leafIndex + 1) / 23
+        const t = (leafIndex + 1) / 33
         const crown = leafIndex % 3 - 1
         const px = tree.x + tree.sweep * side * (.32 + t * .72) + crown * .26
         const py = tree.y + tree.h * (.72 + .21 * Math.sin(t * Math.PI)) + crown * .10
         const pz = tree.z + tree.sweep * (.42 + t * .82) - crown * tree.sweep * .32
-        return <mesh key={leafIndex} geometry={leaf} position={[px, py, pz]} rotation={[-1.18 + t * .34, tree.sweep * .34 + side * .32, side * (.22 + t * .44)]} scale={[.48 + t * .26, .58 + (leafIndex % 4) * .09, 1]} castShadow>
+        return <mesh key={leafIndex} geometry={leaf} position={[px, py, pz]} rotation={[-1.18 + t * .34, tree.sweep * .34 + side * .32, side * (.22 + t * .44)]} scale={[.74 + t * .42, .90 + (leafIndex % 4) * .13, 1]} castShadow>
           <meshStandardMaterial color={leafIndex % 3 === 0 ? '#638064' : leafIndex % 3 === 1 ? '#3e604d' : '#526f57'} roughness={.90} side={THREE.DoubleSide}/>
         </mesh>
       })}
+    </group>)}
+  </group>
+}
+
+function HorizonCrown() {
+  const leaf = useMemo(() => bladeGeometry(7.1), [])
+  const architecture = useMemo(() => [
+    { base: new THREE.Vector3(-7.4, -.12, -17.8), crown: new THREE.Vector3(-2.8, 6.5, -17.0), sweep: 1 },
+    { base: new THREE.Vector3(7.2, -.08, -18.6), crown: new THREE.Vector3(2.5, 7.2, -17.4), sweep: -1 },
+    { base: new THREE.Vector3(-1.4, -.18, -20.2), crown: new THREE.Vector3(.5, 7.8, -19.0), sweep: 1 },
+  ].map((tree, index) => {
+    const trunk = tube([
+      tree.base,
+      tree.base.clone().lerp(tree.crown, .34).add(new THREE.Vector3(tree.sweep * .58, 0, .28)),
+      tree.base.clone().lerp(tree.crown, .68).add(new THREE.Vector3(-tree.sweep * .42, .2, -.18)),
+      tree.crown,
+    ], .34 - index * .035, 12)
+    const limbs = Array.from({ length: 5 }, (_, limb) => {
+      const side = limb % 2 ? -1 : 1
+      const reach = 2.0 + limb * .44
+      return tube([
+        tree.crown.clone().add(new THREE.Vector3(0, -.46 + limb * .12, 0)),
+        tree.crown.clone().add(new THREE.Vector3(side * reach * .48, .35 + limb * .18, .14 * limb)),
+        tree.crown.clone().add(new THREE.Vector3(side * reach, .15 - limb * .08, .48 + limb * .18)),
+      ], .15 - limb * .014, 9)
+    })
+    return { ...tree, trunk, limbs }
+  }), [])
+  return <group name="home-v228-deep-braided-horizon-crown">
+    {architecture.map((tree, index) => <group key={index}>
+      <mesh geometry={tree.trunk} castShadow><meshStandardMaterial color={index === 2 ? '#263b33' : '#21342d'} roughness={.98}/></mesh>
+      {tree.limbs.map((geometry, limb) => <group key={limb}>
+        <mesh geometry={geometry} castShadow><meshStandardMaterial color={limb % 2 ? '#324a3b' : '#2b4337'} roughness={.96}/></mesh>
+        {Array.from({ length: 4 }, (_, leafIndex) => {
+          const side = limb % 2 ? -1 : 1
+          return <mesh key={leafIndex} geometry={leaf} position={[tree.crown.x + side * (1.15 + limb * .43 + leafIndex * .38), tree.crown.y + .38 - leafIndex * .12 + limb * .09, tree.crown.z + .46 + limb * .18]} rotation={[-1.05,side*.42,side*(.18+leafIndex*.12)]} scale={[1.25 + leafIndex*.14,1.05 + limb*.08,1]} castShadow>
+            <meshStandardMaterial color={leafIndex % 2 ? '#506d56' : '#405d4a'} roughness={.92} side={THREE.DoubleSide}/>
+          </mesh>
+        })}
+      </group>)}
     </group>)}
   </group>
 }
@@ -259,7 +299,17 @@ function observatoryShell() {
 
 function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const shell = useMemo(observatoryShell, [])
+  const portalRoots = useMemo(() => Array.from({ length: 7 }, (_, index) => {
+    const inset = index * .11
+    const depth = -.22 - index * .10
+    return tube([
+      new THREE.Vector3(-1.42 + inset, .02, depth + .18),
+      new THREE.Vector3(-1.05 + inset*.4, 1.12 + index*.045, depth),
+      new THREE.Vector3(-.26, 2.30 + index*.055, depth - .12),
+      new THREE.Vector3(.70 - inset*.25, 2.08 + index*.035, depth - .08),
+      new THREE.Vector3(1.38 - inset, .03, depth + .22),
+    ], .095 - index*.009, 9)
+  }), [])
   const threads = useMemo(() => Array.from({ length: 11 }, (_, index) => {
     const a = index * .67 - 1.1
     const end = new THREE.Vector3(Math.cos(a) * (.28 + index * .025), Math.sin(a * 1.5) * .22, -.12 - Math.sin(a) * .12)
@@ -276,15 +326,11 @@ function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [])
-  const memoryRings = useMemo(() => [
-    memoryLoop(1.05, .065, .24, .072),
-    memoryLoop(.84, .10, 1.18, .026),
-  ], [])
   return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v226-life-map-lineage-observatory" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>
-    <mesh geometry={shell} castShadow receiveShadow><meshStandardMaterial vertexColors roughness={.93} side={THREE.DoubleSide}/></mesh>
-    <group position={[0, 1.28, -.34]} name="home-v226-life-map-contained-memory-field">
-      <mesh geometry={memoryRings[0]}><meshStandardMaterial color="#789d91" emissive="#31594e" emissiveIntensity={.72} roughness={.58}/></mesh>
-      <mesh geometry={memoryRings[1]} rotation={[0,0,.22]}><meshStandardMaterial color="#c0a6c7" emissive="#6f5078" emissiveIntensity={1.05} roughness={.42}/></mesh>
+    <group name="home-v228-life-map-rooted-branching-threshold">
+      {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#597565':'#675d70'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.28} roughness={.84}/></mesh>)}
+    </group>
+    <group position={[0, 1.22, -.42]} scale={[.82,.88,.82]} name="home-v226-life-map-contained-memory-field">
       <points geometry={stars} position={[0,0,.04]}><pointsMaterial color="#d5eee5" size={.026} transparent opacity={.88} depthWrite={false} sizeAttenuation/></points>
       {threads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? '#91bdae' : '#b9a6c3'} emissive={index % 2 ? '#355d50' : '#55455e'} emissiveIntensity={.52}/></mesh>)}
       <pointLight color="#b8d8cc" intensity={2.2} distance={4.2}/>
@@ -380,12 +426,12 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
   useFrame(({ clock }) => {
     if (!root.current) return
     const t = clock.elapsedTime * pose.speed, breath = reducedMotion ? 1 : 1 + Math.sin(t * .78) * .006
-    root.current.scale.set(pose.s[0] * breath, pose.s[1] * breath, pose.s[2] * breath)
+    root.current.scale.set(pose.s[0] * breath * 1.34, pose.s[1] * breath * 1.34, pose.s[2] * breath * 1.34)
     root.current.rotation.set(pose.r[0], pose.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .014), pose.r[2])
   })
   const warning = state === 'warning'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
-  return <group ref={root} position={[ORB.x, y + 1.02, ORB.z]} rotation={[0,-.10,-.10]} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
+  return <group ref={root} position={[ORB.x, y + 1.05, ORB.z]} rotation={[0,-.10,-.10]} scale={1.34} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
     <group name="home-v227-split-asymmetric-memory-bloom">
       <mesh geometry={body} position={[-.18,.05,.01]} rotation={[.08,-.42,.18]} scale={[.38,.76,.38]} castShadow><meshPhysicalMaterial vertexColors roughness={.68} clearcoat={.04} clearcoatRoughness={.86} sheen={.16} sheenColor="#b49a9c" emissive="#2a2024" emissiveIntensity={.12}/></mesh>
       <mesh geometry={body} position={[.20,-.08,.05]} rotation={[-.12,.58,-.24]} scale={[.28,.58,.32]} castShadow><meshPhysicalMaterial vertexColors roughness={.72} clearcoat={.03} clearcoatRoughness={.88} sheen={.14} sheenColor="#96b8a8" emissive="#23312b" emissiveIntensity={.11}/></mesh>
@@ -418,6 +464,7 @@ export function HomeV225PolishV3({ orbState, reducedMotion, onOrb, onGround, onL
     <RetireRejectedLayers/>
     <PortraitFraming/>
     <WeatheredMemoryBanks/>
+    <HorizonCrown/>
     <RootedCanopy/>
     <GroundSanctuary onGround={onGround}/>
     <LifeMapSanctuary onLifeMap={onLifeMap}/>

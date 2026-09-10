@@ -60,8 +60,9 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
       const f=size.height>size.width?(near==='orb'?58:56):(near==='orb'?48:42)
       if(Math.abs(camera.fov-f)>.01){camera.fov=f;camera.updateProjectionMatrix()}
     }
-    const forward=new THREE.Vector3(-Math.sin(yaw.current)*10,1.1+pitch.current*.38,-Math.cos(yaw.current)*10)
-    let desired=pos.current.clone().add(new THREE.Vector3(Math.sin(yaw.current)*(near?1.32:.08),size.height>size.width?1.38:1.56,Math.cos(yaw.current)*(near?1.32:.08)))
+    const portrait=size.height>size.width
+    const forward=new THREE.Vector3(-Math.sin(yaw.current)*10,(portrait ? .62 : .92)+pitch.current*.38,-Math.cos(yaw.current)*10)
+    let desired=pos.current.clone().add(new THREE.Vector3(Math.sin(yaw.current)*(near?1.32:.08),portrait?1.18:1.48,Math.cos(yaw.current)*(near?1.32:.08)))
     let look=pos.current.clone().add(forward)
     if(near==='orb'){
       desired=pos.current.clone().add(new THREE.Vector3(.58,size.height>size.width?1.46:1.62,2.42))

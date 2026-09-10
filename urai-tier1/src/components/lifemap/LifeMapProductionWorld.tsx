@@ -30,27 +30,28 @@ function seeded(index: number, salt: number) {
 
 function memoryHeartGeometry(seed: number) {
   const points = Array.from({ length: 96 }, (_, index) => {
-    const angle = index / 96 * Math.PI * 2;
-    const pulse = 0.31 + 0.045 * Math.sin(angle * 5 + seed * 0.17) + 0.024 * Math.sin(angle * 9 - seed * 0.11);
+    const t = index / 95;
+    const angle = t * Math.PI * (4.2 + seed % 3 * .45) + seed * .17;
+    const pulse = 0.48 * (1 - t * .72) + 0.035 * Math.sin(t * Math.PI * 9 + seed);
     return new THREE.Vector3(
       Math.cos(angle) * pulse,
-      Math.sin(angle) * pulse * 0.82,
-      0.11 * Math.sin(angle * 3 + seed * 0.07),
+      (t - .5) * .62 + Math.sin(angle) * pulse * .28,
+      Math.sin(angle) * pulse * .62,
     );
   });
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, true, "centripetal", 0.42), 160, 0.075, 10, true);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 160, 0.062, 10, false);
 }
 
 function memoryFilamentGeometry(seed: number, filament: number) {
   const angle = filament / 9 * Math.PI * 2 + seed * 0.019;
-  const rise = (filament % 3 - 1) * 0.16;
+  const rise = (filament % 3 - 1) * (0.13 + seed % 4 * .018);
   const points = Array.from({ length: 36 }, (_, index) => {
     const t = index / 35;
-    const curl = angle + t * (0.55 + (filament % 2) * 0.28) * (filament % 2 ? -1 : 1);
-    const reach = 0.10 + Math.sin(t * Math.PI) * (0.72 + (filament % 4) * 0.08);
+    const curl = angle + t * (0.72 + (filament % 2) * 0.38 + seed % 5 * .04) * (filament % 2 ? -1 : 1);
+    const reach = 0.08 + t * (0.68 + (filament % 4) * 0.09 + seed % 3 * .035);
     return new THREE.Vector3(
       Math.cos(curl) * reach,
-      rise * t + Math.sin(t * Math.PI * 1.15 + filament * 0.7) * (0.32 + 0.06 * (filament % 3)),
+      rise * t + Math.sin(t * Math.PI * 1.35 + filament * 0.7) * (0.19 + 0.05 * (filament % 3)),
       Math.sin(curl) * reach * 0.54 + 0.13 * Math.sin(t * Math.PI * 3 + seed),
     );
   });
@@ -180,11 +181,19 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
       uniform float uSelected;
       uniform float uTime;
       varying vec3 vPosition;
+      float hash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+      float noise(vec3 x){
+        vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.-2.*f);
+        return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+      }
       void main(){
-        float bands=.5+.5*sin(vPosition.x*.14+vPosition.y*.18+uTime*.08);
-        float veil=.5+.5*sin(vPosition.z*.11-vPosition.x*.07-uTime*.05);
-        vec3 c=mix(vec3(.04,.17,.20),vec3(.23,.14,.34),veil);
-        gl_FragColor=vec4(c,(.025+.045*bands)*mix(1.0,1.35,uSelected));
+        vec3 p=vPosition*.22;
+        float n=noise(p)+.52*noise(p*2.07+4.1)+.24*noise(p*4.13-7.3);
+        float bands=.5+.5*sin(vPosition.x*.19+vPosition.y*.23+n*4.2+uTime*.05);
+        float veil=smoothstep(.55,1.12,n)*(.55+.45*bands);
+        vec3 c=mix(vec3(.025,.15,.19),vec3(.25,.10,.34),noise(p*.72+11.));
+        c=mix(c,vec3(.10,.30,.31),smoothstep(.72,1.2,n));
+        gl_FragColor=vec4(c,(.035+.16*veil)*mix(1.0,1.24,uSelected));
       }
     `,
   }), [selected]);
@@ -386,7 +395,6 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   }, [nodes]);
   return <group name="life-map-curved-semantic-paths">{links.map((link, index) => {
     const active = Boolean(selected && (selected.id === link.source.id || selected.id === link.target.id));
-    if (!selected) return null;
     if (selected && phase === "arrival" && !active) return null;
     return <SemanticPath key={`${link.source.id}:${link.target.id}`} source={link.source} target={link.target} active={active} reducedMotion={reducedMotion} index={index} />;
   })}</group>;
@@ -397,15 +405,15 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
   const group = useRef<THREE.Group>(null);
   const chamber = useMemo(() => scene.clone(true), [scene]);
   const { actions } = useAnimations(animations, group);
-  const chamberThreads = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const angle = index / 7 * Math.PI * 2;
+  const chamberThreads = useMemo(() => Array.from({ length: 9 }, (_, index) => {
+    const angle = index / 9 * Math.PI * 2;
     const points = Array.from({ length: 48 }, (_, point) => {
       const t = point / 47;
-      const radius = 2.15 + .16 * Math.sin(t * Math.PI * 3 + index);
+      const radius = .72 + Math.sin(t * Math.PI) * (1.18 + .14 * Math.sin(index * 1.7)) + .12 * Math.sin(t * Math.PI * 3 + index);
       return new THREE.Vector3(
-        Math.cos(angle + t * .72) * radius * Math.sin(t * Math.PI),
+        Math.cos(angle + t * .58) * radius,
         -1.25 + t * 3.1,
-        Math.sin(angle + t * .72) * radius * .62 * Math.sin(t * Math.PI) - .8,
+        Math.sin(angle + t * .58) * radius * .68 - .8,
       );
     });
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", .42), 96, .026 + index % 2 * .008, 8, false);
