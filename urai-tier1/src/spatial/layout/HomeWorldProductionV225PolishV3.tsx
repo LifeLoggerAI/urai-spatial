@@ -11,6 +11,7 @@ type V3 = [number, number, number]
 
 const retiredExact = new Set([
   'home-v225-v2-cathedral-memory-ribs',
+  'home-v225-v2-weathered-memory-walls',
   'home-v225-v2-ground-memory-hearth',
   'home-v225-v2-life-map-lineage-observatory',
   'home-v225-v2-intimate-veined-living-memory-orb',
