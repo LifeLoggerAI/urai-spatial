@@ -28,36 +28,50 @@ function seeded(index: number, salt: number) {
   return value - Math.floor(value);
 }
 
+// Open lamellar forms have actual surface depth and tapered edges, rather than
+// uniform-width tubes. The deterministic seed gives each memory its own contour.
+function memoryMembrane(seed: number, layer: number, core: boolean) {
+  const positions: number[] = [], colors: number[] = [], indices: number[] = [];
+  const rows = 56, cols = 18;
+  const phase = seeded(seed, layer + 3) * Math.PI * 2;
+  const azimuth = layer * 2.39996323 + phase * .17;
+  const pale = new THREE.Color("#d8eee5"), deep = new THREE.Color("#244d62");
+  for (let row = 0; row <= rows; row++) {
+    const t = row / rows;
+    const envelope = Math.pow(Math.sin(Math.PI * t), .74);
+    const lean = .19 * Math.sin(t * 4.5 + phase);
+    for (let col = 0; col <= cols; col++) {
+      const across = col / cols * 2 - 1;
+      const width = envelope * (core ? .29 : .34 + seeded(seed, layer) * .16);
+      const radius = (core ? .13 : .33) + envelope * (core ? .13 : .36) + .14 * across * across;
+      const twist = azimuth + t * (core ? 2.1 : 1.25) + across * .48;
+      const fluting = .018 * Math.cos(across * 22 + t * 6) * envelope;
+      const x = Math.cos(twist) * radius + Math.sin(twist) * across * width + lean;
+      const z = Math.sin(twist) * radius - Math.cos(twist) * across * width + fluting;
+      const y = (t - .5) * (core ? 1.5 : 1.8 + .24 * Math.sin(phase)) + .11 * across * envelope;
+      positions.push(x, y, z);
+      const c = deep.clone().lerp(pale, .22 + .62 * Math.pow(Math.abs(across), 2) + .10 * envelope);
+      colors.push(c.r, c.g, c.b);
+    }
+  }
+  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+    const a = row * (cols + 1) + col, b = a + 1, c = a + cols + 1, d = c + 1;
+    indices.push(a,b,c,b,d,c);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function memoryHeartGeometry(seed: number) {
-  const points = Array.from({ length: 96 }, (_, index) => {
-    const t = index / 95;
-    return new THREE.Vector3(
-      .13 * Math.sin(t * Math.PI * 1.6 + seed * .09) + .055 * Math.sin(t * Math.PI * 4.2 + seed),
-      (t - .5) * 1.18,
-      .10 * Math.cos(t * Math.PI * 1.25 + seed * .13),
-    );
-  });
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 160, 0.072, 10, false);
+  return memoryMembrane(seed, 0, true);
 }
 
 function memoryFilamentGeometry(seed: number, filament: number) {
-  const originT = (filament + 1) / 10;
-  const side = filament % 2 ? -1 : 1;
-  const origin = new THREE.Vector3(
-    .13 * Math.sin(originT * Math.PI * 1.6 + seed * .09),
-    (originT - .5) * 1.18,
-    .10 * Math.cos(originT * Math.PI * 1.25 + seed * .13),
-  );
-  const reach = .54 + (filament % 4) * .12 + seed % 3 * .035;
-  const points = Array.from({ length: 36 }, (_, index) => {
-    const t = index / 35;
-    return new THREE.Vector3(
-      origin.x + side * reach * t + side * .11 * Math.sin(t * Math.PI),
-      origin.y + ((filament % 3) - 1) * .30 * t + .15 * Math.sin(t * Math.PI),
-      origin.z + (.18 + (filament % 3) * .08) * Math.sin(t * Math.PI * .82 + seed * .04),
-    )
-  });
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 72, 0.022 + (filament % 3) * 0.005, 8, false);
+  return memoryMembrane(seed, filament + 1, false);
 }
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
@@ -195,7 +209,7 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
         float veil=smoothstep(.55,1.12,n)*(.55+.45*bands);
         vec3 c=mix(vec3(.025,.15,.19),vec3(.25,.10,.34),noise(p*.72+11.));
         c=mix(c,vec3(.10,.30,.31),smoothstep(.72,1.2,n));
-        gl_FragColor=vec4(c,(.035+.16*veil)*mix(1.0,1.24,uSelected));
+        gl_FragColor=vec4(c,(.055+.24*veil)*mix(1.0,1.24,uSelected));
       }
     `,
   }), [selected]);
@@ -215,7 +229,7 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   const { actions } = useAnimations(animations, group);
   const seed = useMemo(() => siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0), [siteKey]);
   const heart = useMemo(() => memoryHeartGeometry(seed), [seed]);
-  const filaments = useMemo(() => Array.from({ length: 9 }, (_, index) => memoryFilamentGeometry(seed, index)), [seed]);
+  const filaments = useMemo(() => Array.from({ length: 5 }, (_, index) => memoryFilamentGeometry(seed, index)), [seed]);
   useEffect(() => () => { heart.dispose(); filaments.forEach((geometry) => geometry.dispose()); }, [filaments, heart]);
   useEffect(() => {
     const chosen = Object.values(actions).find(Boolean);
@@ -234,9 +248,9 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   });
   return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`}>
     <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={heart} castShadow><meshPhysicalMaterial color={ICE} emissive={aura} emissiveIntensity={active ? 2.1 : .9} roughness={.34} clearcoat={.25} clearcoatRoughness={.58} /></mesh>
+    <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .75 : .38} roughness={.28} metalness={.18} clearcoat={.7} side={THREE.DoubleSide} /></mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
-      <meshStandardMaterial color={index % 3 === 0 ? ICE : aura} emissive={aura} emissiveIntensity={active ? .92 : .38} roughness={.66} transparent opacity={active ? .92 : .76} />
+      <meshPhysicalMaterial vertexColors color={index % 3 === 0 ? ICE : aura} emissive={aura} emissiveIntensity={active ? .24 : .12} roughness={.32} metalness={.24} clearcoat={.65} side={THREE.DoubleSide} />
     </mesh>)}
     <FieldParticles seed={seed} count={active ? 46 : 22} radius={1.0} depth={1.2} height={1.25} color={aura} opacity={active ? .62 : .32} size={active ? .038 : .028} />
     <pointLight color={aura} intensity={active ? 4.6 : 1.1} distance={active ? 10 : 5} decay={2} />
@@ -408,16 +422,16 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
   const chamber = useMemo(() => scene.clone(true), [scene]);
   const { actions } = useAnimations(animations, group);
   const chamberThreads = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const x = -2.28 + index * .76;
-    const points = Array.from({ length: 48 }, (_, point) => {
-      const t = point / 47;
+    const points = Array.from({ length: 64 }, (_, point) => {
+      const t = point / 63, angle = -.25 + t * Math.PI * 1.25 + index * .11;
+      const radius = 1.5 + index * .16;
       return new THREE.Vector3(
-        x + Math.sin(t * Math.PI) * ((index % 2 ? -1 : 1) * (.24 + index * .018)),
-        -1.25 + t * (2.75 + (index % 3) * .22),
-        -1.22 + .18 * Math.sin(index * 1.4) - t * (.36 + (index % 2) * .12),
+        Math.cos(angle) * radius,
+        -1.40 + Math.sin(t * Math.PI) * .18 + index * .025,
+        -1.7 + Math.sin(angle) * radius * .48,
       );
     });
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", .42), 96, .026 + index % 2 * .008, 8, false);
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", .42), 96, .009, 6, false);
   }), []);
   useEffect(() => () => chamberThreads.forEach((geometry) => geometry.dispose()), [chamberThreads]);
   useEffect(() => {
@@ -448,7 +462,7 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
   >
     <primitive object={chamber} visible={false} />
     <group scale={2.94} name="life-map-v229-open-branching-memory-grove">
-      {chamberThreads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? ICE : selected.aura} emissive={selected.aura} emissiveIntensity={.54} roughness={.7} transparent opacity={.48} /></mesh>)}
+      {chamberThreads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? ICE : selected.aura} emissive={selected.aura} emissiveIntensity={.24} roughness={.7} transparent opacity={.24} /></mesh>)}
       <Current points={[[-2.7,-1.4,.4],[-1.5,.8,-1],[0,1.8,-1.8],[1.6,.7,-1.1],[2.8,-1.2,.3]]} color={selected.aura} opacity={.32} width={.026} />
       <FieldParticles seed={997} count={120} radius={2.8} depth={4.2} height={3.4} color={ICE} opacity={.34} size={.032} />
       <pointLight color={selected.aura} intensity={6} distance={22} decay={2} />

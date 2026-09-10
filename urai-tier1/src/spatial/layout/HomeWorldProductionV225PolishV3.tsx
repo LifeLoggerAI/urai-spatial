@@ -11,6 +11,10 @@ type WalkHandler = (event: ThreeEvent<MouseEvent>) => void
 type V3 = [number, number, number]
 
 const retiredExact = new Set([
+  'home-v225-sculpted-sanctuary-floor',
+  'home-v225-grown-winding-memory-path',
+  'home-v225-v2-authored-valley-floor',
+  'home-v225-v2-grown-memory-walk',
   'home-v225-v2-cathedral-memory-ribs',
   'home-v225-v2-weathered-memory-walls',
   'home-v225-v2-ground-memory-hearth',
@@ -73,14 +77,49 @@ function memoryLoop(radius: number, depth: number, phase: number, thickness: num
 }
 
 function bladeGeometry(seed: number) {
-  const shape = new THREE.Shape()
-  const skew = Math.sin(seed * 1.73) * .08
-  shape.moveTo(0, -.06)
-  shape.bezierCurveTo(.30 + skew, -.02, .55 + skew, .22, .64, .52)
-  shape.bezierCurveTo(.42, .42, .16, .28, 0, .08)
-  shape.bezierCurveTo(-.12, .30, -.24 + skew, .44, -.35, .52)
-  shape.bezierCurveTo(-.30, .18, -.16, -.02, 0, -.06)
-  return new THREE.ShapeGeometry(shape, 18)
+  const positions: number[] = [], indices: number[] = [];
+  const rows=16, cols=6;
+  for(let row=0;row<=rows;row++){
+    const t=row/rows, width=.22*Math.pow(Math.sin(t*Math.PI),.8);
+    for(let col=0;col<=cols;col++){
+      const u=col/cols*2-1;
+      positions.push(u*width+.04*Math.sin(t*3+seed), t*.86, .13*Math.sin(t*Math.PI)+.055*u*u*Math.sin(t*Math.PI));
+    }
+  }
+  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+    const a=row*(cols+1)+col,b=a+1,c=a+cols+1,d=c+1;indices.push(a,b,c,b,d,c);
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+}
+
+function CanopyLeaves({ trees }: { trees: {x:number;y:number;z:number;h:number;sweep:number}[] }) {
+  const mesh=useRef<THREE.InstancedMesh>(null);
+  const leaf=useMemo(()=>bladeGeometry(2.4),[]);
+  useEffect(()=>{
+    if(!mesh.current)return;
+    const pose=new THREE.Object3D(), color=new THREE.Color();
+    trees.forEach((tree,index)=>{
+      for(let i=0;i<120;i++){
+        const angle=i*2.39996323+index*.8;
+        const radius=.28+1.55*Math.sqrt((i+.5)/120);
+        pose.position.set(tree.x+Math.cos(angle)*radius,tree.y+tree.h*(.76+.18*(1-radius/2))+.25*Math.sin(i*1.7),tree.z+Math.sin(angle)*radius*.85+tree.sweep*.7);
+        pose.rotation.set(-.4+Math.sin(i*2.7)*.8,angle,.3*Math.cos(i*.9));
+        const scale=.65+.45*(.5+.5*Math.sin(i*4.1));pose.scale.set(scale,scale,scale);
+        pose.updateMatrix();mesh.current!.setMatrixAt(index*120+i,pose.matrix);
+        color.setHSL(.28+.035*Math.sin(i*1.3),.22+.10*Math.sin(i*.7),.18+.10*(.5+.5*Math.cos(i*.8)));
+        mesh.current!.setColorAt(index*120+i,color);
+      }
+    });
+    mesh.current.instanceMatrix.needsUpdate=true;
+    if(mesh.current.instanceColor)mesh.current.instanceColor.needsUpdate=true;
+    mesh.current.computeBoundingSphere();
+    return ()=>leaf.dispose();
+  },[leaf,trees]);
+  return <instancedMesh ref={mesh} args={[leaf,undefined,trees.length*120]} castShadow receiveShadow>
+    <meshStandardMaterial roughness={.8} side={THREE.DoubleSide}/>
+  </instancedMesh>;
 }
 
 function RootedCanopy() {
@@ -115,24 +154,14 @@ function RootedCanopy() {
       return { x, z, y, h, sweep, trunk, crownA, crownB, crownC }
     })
   }, [])
-  const leaf = useMemo(() => bladeGeometry(2.4), [])
   return <group name="home-v226-rooted-inhabited-canopy">
+    <CanopyLeaves trees={architecture}/>
     {architecture.map((tree, index) => <group key={index}>
       <mesh geometry={tree.trunk} castShadow><meshStandardMaterial color={index % 2 ? '#26372f' : '#2d3a31'} roughness={.97}/></mesh>
       <mesh geometry={tree.crownA} castShadow><meshStandardMaterial color="#31483a" roughness={.96}/></mesh>
       <mesh geometry={tree.crownB} castShadow><meshStandardMaterial color="#334c3d" roughness={.96}/></mesh>
       <mesh geometry={tree.crownC} castShadow><meshStandardMaterial color="#2f493a" roughness={.96}/></mesh>
-      {Array.from({ length: 32 }, (_, leafIndex) => {
-        const side = leafIndex % 2 ? -1 : 1
-        const t = (leafIndex + 1) / 33
-        const crown = leafIndex % 3 - 1
-        const px = tree.x + tree.sweep * side * (.32 + t * .72) + crown * .26
-        const py = tree.y + tree.h * (.72 + .21 * Math.sin(t * Math.PI)) + crown * .10
-        const pz = tree.z + tree.sweep * (.42 + t * .82) - crown * tree.sweep * .32
-        return <mesh key={leafIndex} geometry={leaf} position={[px, py, pz]} rotation={[-1.18 + t * .34, tree.sweep * .34 + side * .32, side * (.22 + t * .44)]} scale={[.74 + t * .42, .90 + (leafIndex % 4) * .13, 1]} castShadow>
-          <meshStandardMaterial color={leafIndex % 3 === 0 ? '#638064' : leafIndex % 3 === 1 ? '#3e604d' : '#526f57'} roughness={.90} side={THREE.DoubleSide}/>
-        </mesh>
-      })}
+
     </group>)}
   </group>
 }
@@ -142,7 +171,7 @@ function useMemoryStoneMaps() {
   return useMemo(() => source.map((texture, index) => {
     const clone = texture.clone()
     clone.wrapS = clone.wrapT = THREE.RepeatWrapping
-    clone.repeat.set(9.5, 15.5)
+    clone.repeat.set(1, 1)
     clone.anisotropy = 8
     clone.colorSpace = index === 0 ? THREE.SRGBColorSpace : THREE.NoColorSpace
     clone.needsUpdate = true
@@ -161,7 +190,9 @@ function inhabitedSurfaceGeometry() {
       const y=height(x,z)+relief*(.32+.68*Math.min(1,Math.abs(x)/7.5))+.032
       positions.push(x,y,z);uvs.push(vx*9.5,vz*15.5)
       const grain=.5+.5*Math.sin(x*.82-z*.57)*Math.cos(x*1.31+z*.94)
-      const c=moss.clone().lerp(loam,.18+.12*grain).lerp(lichen,.08*Math.max(0,-z/20))
+      const center=.30*Math.sin((z+2.4)*.22)+.09*Math.sin((z-1)*.63)
+      const trail=1-THREE.MathUtils.smoothstep(Math.abs(x-center),.34,.78)
+      const c=moss.clone().lerp(loam,.18+.12*grain+.50*trail).lerp(lichen,.08*Math.max(0,-z/20))
       colors.push(c.r,c.g,c.b)
     }
   }
@@ -487,7 +518,7 @@ export function HomeV225PolishV3({ orbState, reducedMotion, onOrb, onGround, onL
   return <group name="home-v226-production-rooted-memory-sanctuary" onClick={onWalk}>
     <RetireRejectedLayers/>
     <PortraitFraming/>
-    <WeatheredMemoryBanks/>
+    {/* The continuous textured surface owns the ground; overlapping banks are retired. */}
     <TexturedMemoryTerrain/>
     <RootedCanopy/>
     <GroundSanctuary onGround={onGround}/>

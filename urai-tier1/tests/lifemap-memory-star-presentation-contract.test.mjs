@@ -8,10 +8,12 @@ assert.ok(source.includes('<primitive object={hiddenAsset} visible={false} />'),
 assert.ok(source.includes('function memoryHeartGeometry('), 'Life Map must render an authored open memory heart instead of a generic solid primitive');
 assert.ok(source.includes('function memoryFilamentGeometry('), 'Life Map must give each memory a branching spatial silhouette');
 assert.ok(source.includes('new THREE.CatmullRomCurve3(points, false'), 'memory hearts, branches, and chambers must remain open rather than closing into orbital glyphs');
-assert.ok(source.includes('const originT = (filament + 1) / 10'), 'memory filaments must begin at distinct points along the living backbone');
-assert.ok(source.includes('side * reach * t'), 'memory filaments must branch outward rather than return to an atom-like center');
+assert.ok(source.includes('function memoryMembrane('), 'memories must have authored open lamellar surfaces');
+assert.ok(source.includes('Math.pow(Math.sin(Math.PI * t), .74)'), 'memory surfaces must taper at both ends');
+assert.ok(source.includes('geometry.computeVertexNormals()'), 'memory surfaces must carry valid lighting normals');
+assert.ok(!source.includes('const originT = (filament + 1) / 10'), 'rejected uniform bare branch presentation must not return');
 assert.ok(source.includes('life-map-v229-open-branching-memory-grove'), 'selected arrival must remain an open branching place instead of an enclosing wire cage');
-assert.ok(source.includes('Array.from({ length: 7 }'), 'the arrival place must preserve its offset seven-trunk grove');
+assert.ok(source.includes('Array.from({ length: 7 }'), 'the arrival place must preserve seven offset open currents');
 assert.ok(!source.includes('radius * Math.sin(t * Math.PI)'), 'arrival threads must not converge into a wire-cage pole');
 assert.ok(source.includes('name={`life-map-smooth-memory-star-${siteKey}`}'), 'memories must remain individually addressable in the spatial scene');
 assert.ok(!source.includes('new THREE.SphereGeometry(1, 72, 54)'), 'the rejected smooth egg geometry must not return');
