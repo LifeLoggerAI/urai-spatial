@@ -22,7 +22,7 @@ const productionAudioFiles = [
   'ground-ambient-v1.opus',
   'life-map-ambient-v1.opus',
   'focus-ambient-v1.opus',
-  'replay-ambient-v1.opus',
+  'replay-memory-environment-v1.opus',
   'portal-transition-v1.opus',
   'orb-confirm-v1.opus',
   'ui-error-v1.opus',
@@ -102,7 +102,7 @@ test('production audio remains consent-controlled beside the live V223 Home owne
   const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
   assert.match(homeWorldEntry, /export \{ HomeWorldProductionV223 as HomeWorldProduction \} from '\.\/HomeWorldProductionV223'/)
-  assert.match(homeWorld, /data-home-visible-world="v223-authored-inhabited-memory-sanctuary"/)
+  assert.match(homeWorld, /data-home-visible-world="v225-v3-integrated-living-memory-sanctuary"/)
   assert.match(historicalHomeWorld, /export function HomeWorldProductionV70/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
