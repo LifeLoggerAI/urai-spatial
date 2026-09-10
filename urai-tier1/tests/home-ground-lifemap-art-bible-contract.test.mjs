@@ -89,7 +89,8 @@ test('Home is one coherent Sacred-Tech 3D environment with V225 V2 visible art a
 test('Home keeps governed Orb states, reduced motion, and real traversal semantics', () => {
   for (const state of ['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition']) has(homeArt, `${state}:`)
   assert.match(currentHomePolish, /const posture: Record<OrbState, Posture>/)
-  assert.match(currentHomePolish, /if \(reducedMotion\) return/)
+  assert.match(currentHomePolish, /const breath = reducedMotion \? 1 : 1 \+ Math\.sin\(t \* \.78\) \* \.007/)
+  assert.match(currentHomePolish, /p\.r\[1\] \+ \(reducedMotion \? 0 : Math\.sin\(t \* \.70\) \* \.016\)/)
   assert.match(homeProduction, /prefers-reduced-motion: reduce/)
   assert.match(homeProduction, /pointer: coarse/)
   assert.match(homeProduction, /cameraCheckpoint: 'home-ground-descent'/)
