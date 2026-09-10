@@ -92,7 +92,9 @@ test('Production artifacts are differentiated by meaning rather than generic bub
   assert.match(world, /name={`life-map-artifact-\${resolveArtifactFamily\(node\)}-\${node\.id}`}/)
   assert.match(world, /scale={active \? 0\.96 : 0\.88 \+ importance \* 0\.24}/)
   assert.match(world, /position=\{\[selected\.position\[0\], selected\.position\[1\] - 0\.28, selected\.position\[2\] - 2\.6\]\}/)
-  assert.match(world, /scale=\{0\.34\}/)
+  assert.match(world, /scale=\{0\.28\}/)
+  assert.match(world, /life-map-v227-open-braided-arrival-chamber/)
+  assert.doesNotMatch(world, /smoothMemoryGeometry/)
   assert.match(world, /artifactFamilyLabel\(node\)/)
 })
 

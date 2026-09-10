@@ -28,20 +28,33 @@ function seeded(index: number, salt: number) {
   return value - Math.floor(value);
 }
 
-function smoothMemoryGeometry(seed: number) {
-  const geometry = new THREE.SphereGeometry(1, 72, 54);
-  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
-  for (let index = 0; index < position.count; index += 1) {
-    const x = position.getX(index), y = position.getY(index), z = position.getZ(index);
-    const azimuth = Math.atan2(z, x);
-    const latitude = Math.atan2(y, Math.hypot(x, z));
-    const breath = 1 + Math.sin(azimuth * 3 + seed * 0.13) * 0.055 + Math.sin(latitude * 4 - seed * 0.07) * 0.035;
-    const asymmetry = 1 + (x < 0 ? 0.08 : -0.025) * Math.max(0, y + 0.25);
-    position.setXYZ(index, x * breath * asymmetry, y * breath * (1.03 + 0.025 * Math.sin(azimuth * 2)), z * breath * 0.88);
-  }
-  position.needsUpdate = true;
-  geometry.computeVertexNormals();
-  return geometry;
+function memoryHeartGeometry(seed: number) {
+  const points = Array.from({ length: 96 }, (_, index) => {
+    const angle = index / 96 * Math.PI * 2;
+    const pulse = 0.31 + 0.045 * Math.sin(angle * 5 + seed * 0.17) + 0.024 * Math.sin(angle * 9 - seed * 0.11);
+    return new THREE.Vector3(
+      Math.cos(angle) * pulse,
+      Math.sin(angle) * pulse * 0.82,
+      0.11 * Math.sin(angle * 3 + seed * 0.07),
+    );
+  });
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, true, "centripetal", 0.42), 160, 0.075, 10, true);
+}
+
+function memoryFilamentGeometry(seed: number, filament: number) {
+  const angle = filament / 9 * Math.PI * 2 + seed * 0.019;
+  const rise = (filament % 3 - 1) * 0.16;
+  const points = Array.from({ length: 36 }, (_, index) => {
+    const t = index / 35;
+    const curl = angle + t * (0.55 + (filament % 2) * 0.28) * (filament % 2 ? -1 : 1);
+    const reach = 0.10 + Math.sin(t * Math.PI) * (0.72 + (filament % 4) * 0.08);
+    return new THREE.Vector3(
+      Math.cos(curl) * reach,
+      rise * t + Math.sin(t * Math.PI * 1.15 + filament * 0.7) * (0.32 + 0.06 * (filament % 3)),
+      Math.sin(curl) * reach * 0.54 + 0.13 * Math.sin(t * Math.PI * 3 + seed),
+    );
+  });
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", 0.42), 72, 0.026 + (filament % 3) * 0.006, 8, false);
 }
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
@@ -189,8 +202,10 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   const hiddenAsset = useMemo(() => scene.clone(true), [scene]);
   const group = useRef<THREE.Group>(null);
   const { actions } = useAnimations(animations, group);
-  const geometry = useMemo(() => smoothMemoryGeometry(siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0)), [siteKey]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
+  const seed = useMemo(() => siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0), [siteKey]);
+  const heart = useMemo(() => memoryHeartGeometry(seed), [seed]);
+  const filaments = useMemo(() => Array.from({ length: 9 }, (_, index) => memoryFilamentGeometry(seed, index)), [seed]);
+  useEffect(() => () => { heart.dispose(); filaments.forEach((geometry) => geometry.dispose()); }, [filaments, heart]);
   useEffect(() => {
     const chosen = Object.values(actions).find(Boolean);
     if (!chosen) return;
@@ -208,7 +223,11 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   });
   return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`}>
     <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={geometry} castShadow><meshPhysicalMaterial color={aura} emissive={aura} emissiveIntensity={active ? 1.25 : .58} roughness={.28} clearcoat={.38} clearcoatRoughness={.42} transparent opacity={active ? .92 : .78} /></mesh>
+    <mesh geometry={heart} castShadow><meshPhysicalMaterial color={ICE} emissive={aura} emissiveIntensity={active ? 2.1 : .9} roughness={.34} clearcoat={.25} clearcoatRoughness={.58} /></mesh>
+    {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
+      <meshStandardMaterial color={index % 3 === 0 ? ICE : aura} emissive={aura} emissiveIntensity={active ? .92 : .38} roughness={.66} transparent opacity={active ? .92 : .76} />
+    </mesh>)}
+    <FieldParticles seed={seed} count={active ? 46 : 22} radius={1.0} depth={1.2} height={1.25} color={aura} opacity={active ? .62 : .32} size={active ? .038 : .028} />
     <pointLight color={aura} intensity={active ? 4.6 : 1.1} distance={active ? 10 : 5} decay={2} />
   </group>;
 }
@@ -378,8 +397,20 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
   const group = useRef<THREE.Group>(null);
   const chamber = useMemo(() => scene.clone(true), [scene]);
   const { actions } = useAnimations(animations, group);
-  const shell = useMemo(() => smoothMemoryGeometry(selected?.id.length ?? 3), [selected?.id]);
-  useEffect(() => () => shell.dispose(), [shell]);
+  const chamberThreads = useMemo(() => Array.from({ length: 7 }, (_, index) => {
+    const angle = index / 7 * Math.PI * 2;
+    const points = Array.from({ length: 48 }, (_, point) => {
+      const t = point / 47;
+      const radius = 2.15 + .16 * Math.sin(t * Math.PI * 3 + index);
+      return new THREE.Vector3(
+        Math.cos(angle + t * .72) * radius * Math.sin(t * Math.PI),
+        -1.25 + t * 3.1,
+        Math.sin(angle + t * .72) * radius * .62 * Math.sin(t * Math.PI) - .8,
+      );
+    });
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, "centripetal", .42), 96, .026 + index % 2 * .008, 8, false);
+  }), []);
+  useEffect(() => () => chamberThreads.forEach((geometry) => geometry.dispose()), [chamberThreads]);
   useEffect(() => {
     if (!selected || phase !== "arrival") return;
     const arrival = actions.Focus_Arrival;
@@ -404,12 +435,13 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
     name="life-map-selected-arrival-sanctuary"
     userData={{ scaleMode: "intimate", depthBand: "near", semanticOwner: "life-map-intimate-memory-chamber", runtimeAsset: MEMORY_CHAMBER_MODEL }}
     position={[selected.position[0], selected.position[1] - 0.28, selected.position[2] - 2.6]}
-    scale={0.34}
+    scale={0.28}
   >
     <primitive object={chamber} visible={false} />
-    <group scale={2.94}>
-      <mesh geometry={shell} scale={[2.2,2.7,1.5]}><meshPhysicalMaterial color={selected.aura} emissive={selected.aura} emissiveIntensity={.62} roughness={.38} transmission={.08} transparent opacity={.34} side={THREE.DoubleSide} /></mesh>
-      <Current points={[[-2.7,-1.4,.4],[-1.5,.8,-1],[0,1.8,-1.8],[1.6,.7,-1.1],[2.8,-1.2,.3]]} color={selected.aura} opacity={.14} width={.016} />
+    <group scale={2.94} name="life-map-v227-open-braided-arrival-chamber">
+      {chamberThreads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? ICE : selected.aura} emissive={selected.aura} emissiveIntensity={.54} roughness={.7} transparent opacity={.48} /></mesh>)}
+      <Current points={[[-2.7,-1.4,.4],[-1.5,.8,-1],[0,1.8,-1.8],[1.6,.7,-1.1],[2.8,-1.2,.3]]} color={selected.aura} opacity={.32} width={.026} />
+      <FieldParticles seed={997} count={120} radius={2.8} depth={4.2} height={3.4} color={ICE} opacity={.34} size={.032} />
       <pointLight color={selected.aura} intensity={6} distance={22} decay={2} />
     </group>
   </group>;

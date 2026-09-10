@@ -43,7 +43,7 @@ function MirrorCamera({ input, yaw, pitch, target, reducedMotion, selected, temp
   const velocity = useRef(new THREE.Vector3())
   const scratch = useRef(new THREE.Vector3())
   useFrame((_, delta) => {
-    const focusTarget = selected ? new THREE.Vector3(selected.position[0] * 0.42, 0, selected.position[2] + 2.3 + temporalIndex * 0.08) : target.current
+    const focusTarget = selected ? new THREE.Vector3(selected.position[0] * 0.28, 0, selected.position[2] + 5.4 + temporalIndex * 0.08) : target.current
     stepEmbodiedMotion({
       position: position.current,
       velocity: velocity.current,
@@ -161,15 +161,21 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   })
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
   return <group ref={group} position={pattern.position} data-testid="mirror-pattern-object" onClick={activate}>
-    <mesh geometry={geometry} castShadow scale={selected ? [1.32,1.12,1.22] : [1,1,1]} rotation={[.12, pattern.position[0] * .11, pattern.position[0] * .04]}>
-      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.42 : 0.12} transparent opacity={pattern.evidenceState === 'insufficient' ? 0.32 : 0.82} wireframe={pattern.evidenceState === 'conflicting'} metalness={0.04} roughness={0.82} />
+    <mesh geometry={geometry} castShadow scale={selected ? [.62,.68,.56] : [.78,.82,.68]} rotation={[.12, pattern.position[0] * .11, pattern.position[0] * .04]}>
+      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.34 : 0.12} transparent opacity={pattern.evidenceState === 'insufficient' ? 0.25 : selected ? .58 : .72} wireframe={pattern.evidenceState === 'conflicting'} metalness={0.04} roughness={0.86} />
     </mesh>
     {selected ? <pointLight color={pattern.accent} intensity={1.1} distance={6} /> : null}
   </group>
 }
 
 function FragmentObject({ fragment, accent, active, onSelect }: { fragment: MirrorFragment; accent: string; active: boolean; onSelect: (fragment: MirrorFragment) => void }) {
-  const geometry = useMemo(() => new THREE.BoxGeometry(.12, .76, .48, 2, 10, 6), [])
+  const geometry = useMemo(() => {
+    const points = Array.from({ length: 28 }, (_, index) => {
+      const t = index / 27
+      return new THREE.Vector3(Math.sin(t * Math.PI) * .22, (t - .5) * .9, Math.sin(t * Math.PI * 2 + fragment.position[0]) * .11)
+    })
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 56, .035, 8, false)
+  }, [fragment.position])
   return <group position={fragment.position} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
     <mesh geometry={geometry} castShadow scale={active ? [1.15,1.25,1.15] : [1,1,1]} rotation={[.18, fragment.position[0] * .16, -.22]}>
       <meshStandardMaterial color={accent} transparent opacity={fragment.certainty === 'uncertain' ? 0.25 : active ? 0.92 : 0.62} wireframe={false} emissive={accent} emissiveIntensity={active ? 0.46 : 0.10} roughness={.88} />

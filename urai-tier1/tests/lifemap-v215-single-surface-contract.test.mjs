@@ -20,8 +20,11 @@ test('historical V215 single-surface source remains reproducible but is not runt
   assert.doesNotMatch(world, /authored-v215\/life-map-memory-sanctuary-v215\.glb/)
 })
 
-test('V226 replaces retired V215 strata with suspended smooth organic memories', () => {
-  assert.match(world, /function smoothMemoryGeometry\(/)
+test('V226 runtime keeps retired V215 strata out while the V227 pixel repair uses open braided memories', () => {
+  assert.match(world, /function memoryHeartGeometry\(/)
+  assert.match(world, /function memoryFilamentGeometry\(/)
+  assert.match(world, /life-map-v227-open-braided-arrival-chamber/)
+  assert.doesNotMatch(world, /function smoothMemoryGeometry\(/)
   assert.match(world, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
   assert.match(world, /life-map-smooth-memory-star-/)
   assert.doesNotMatch(world, /function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/)

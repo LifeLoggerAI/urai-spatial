@@ -8,6 +8,7 @@ const canonicalVisualWrapper = read('../scripts/run-canonical-live-visual-audit-
 const mirrorReleaseProof = read('../tests/mirror-release-proof.mjs')
 const mirrorReleaseRunner = read('../tests/mirror-release-proof-runner.mjs')
 const mirrorMobile = read('src/app/mirror/mirror-mobile-inspection.css')
+const mirrorWorld = read('src/app/mirror/MirrorSpatialClient.tsx')
 const selectedMemory = read('src/spatial/memory/selectedMemoryContract.ts')
 const worldTypes = read('src/spatial/world/worldTypes.ts')
 const worldState = read('src/spatial/world/WorldStateProvider.tsx')
@@ -54,6 +55,13 @@ test('Mirror inspector removes competing help and mobile hit owners while pinnin
   assert.match(mirrorMobile, /\.mirrorThresholds button \{/)
   assert.match(mirrorMobile, /z-index: 101/)
   assert.match(mirrorMobile, /pointer-events: auto/)
+})
+
+test('Mirror selected evidence remains camera-safe and uses slender reflection threads', () => {
+  assert.match(mirrorWorld, /selected\.position\[2\] \+ 5\.4/)
+  assert.match(mirrorWorld, /new THREE\.TubeGeometry\(new THREE\.CatmullRomCurve3\(points\), 56, \.035, 8, false\)/)
+  assert.doesNotMatch(mirrorWorld, /new THREE\.BoxGeometry\(\.12, \.76, \.48/)
+  assert.doesNotMatch(mirrorWorld, /selected \? \[1\.32,1\.12,1\.22\]/)
 })
 
 test('selected-memory replay fragments are canonicalized by timestamp and cover the final segment', () => {

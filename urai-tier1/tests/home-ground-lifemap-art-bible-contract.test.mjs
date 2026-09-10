@@ -91,6 +91,9 @@ test('Home keeps governed Orb states, reduced motion, and real traversal semanti
   assert.match(homeProduction, /cameraCheckpoint: 'home-sky-ascent-complete'/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
   assert.match(homeRuntime, /aria-label="Open Ground directly"/)
+  assert.match(currentHomeVisual, /home-v227-split-asymmetric-memory-bloom/)
+  assert.match(currentHomeVisual, /home-v227-branching-memory-nervature/)
+  assert.doesNotMatch(currentHomeVisual, /scale=\{\[\.66,1\.12,\.76\]\}/)
 })
 
 test('Ground remains one embodied cinematic infrastructure world', () => {
