@@ -42,13 +42,13 @@ function memoryMembrane(seed: number, layer: number, core: boolean) {
     const lean = .19 * Math.sin(t * 4.5 + phase);
     for (let col = 0; col <= cols; col++) {
       const across = col / cols * 2 - 1;
-      const width = envelope * (core ? .29 : .34 + seeded(seed, layer) * .16);
-      const radius = (core ? .13 : .33) + envelope * (core ? .13 : .36) + .14 * across * across;
-      const twist = azimuth + t * (core ? 2.1 : 1.25) + across * .48;
+      const width = envelope * (core ? .46 : .42 + seeded(seed, layer) * .25);
+      const radius = .06 + t * (core ? .52 : .72 + seeded(seed, layer + 7) * .42) + .16 * across * across * envelope;
+      const twist = azimuth + t * (core ? .75 : .38) + across * .38;
       const fluting = .018 * Math.cos(across * 22 + t * 6) * envelope;
       const x = Math.cos(twist) * radius + Math.sin(twist) * across * width + lean;
       const z = Math.sin(twist) * radius - Math.cos(twist) * across * width + fluting;
-      const y = (t - .5) * (core ? 1.5 : 1.8 + .24 * Math.sin(phase)) + .11 * across * envelope;
+      const y = (t - .5) * (core ? 1.5 : 1.55 + .32 * Math.sin(phase)) - .18 * t * t + .18 * across * envelope;
       positions.push(x, y, z);
       const c = deep.clone().lerp(pale, .22 + .62 * Math.pow(Math.abs(across), 2) + .10 * envelope);
       colors.push(c.r, c.g, c.b);
@@ -75,7 +75,8 @@ function memoryFilamentGeometry(seed: number, filament: number) {
 }
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
-  return <Line points={points} color={color} lineWidth={Math.max(0.5, width * 22)} transparent opacity={opacity} />;
+  const curve = useMemo(() => new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p))).getPoints(48), [points]);
+  return <Line points={curve} color={color} lineWidth={Math.max(0.5, width * 22)} transparent opacity={opacity} />;
 }
 
 function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0.5, size = 0.055 }: { seed: number; count: number; radius: number; depth: number; height: number; color: string; opacity?: number; size?: number }) {
@@ -248,9 +249,9 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   });
   return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`}>
     <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .75 : .38} roughness={.28} metalness={.18} clearcoat={.7} side={THREE.DoubleSide} /></mesh>
+    <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .38 : .18} roughness={.28} metalness={.18} clearcoat={.7} side={THREE.DoubleSide} /></mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
-      <meshPhysicalMaterial vertexColors color={index % 3 === 0 ? ICE : aura} emissive={aura} emissiveIntensity={active ? .24 : .12} roughness={.32} metalness={.24} clearcoat={.65} side={THREE.DoubleSide} />
+      <meshPhysicalMaterial vertexColors color={index % 3 === 0 ? ICE : new THREE.Color(aura).lerp(new THREE.Color("#8eaaaa"), .48)} emissive={aura} emissiveIntensity={active ? .24 : .12} roughness={.32} metalness={.24} clearcoat={.65} side={THREE.DoubleSide} />
     </mesh>)}
     <FieldParticles seed={seed} count={active ? 46 : 22} radius={1.0} depth={1.2} height={1.25} color={aura} opacity={active ? .62 : .32} size={active ? .038 : .028} />
     <pointLight color={aura} intensity={active ? 4.6 : 1.1} distance={active ? 10 : 5} decay={2} />

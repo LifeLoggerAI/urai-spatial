@@ -14,6 +14,9 @@ import {
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
 
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import GroundVaultArchitecture from "./ground/GroundVaultArchitecture";
+
 const GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";
 const BOUNDS = { minX: -14, maxX: 14, minZ: -34, maxZ: 11 };
 const SPAWN = new THREE.Vector3(0, 0, 4);
@@ -154,7 +157,8 @@ function GroundWorld({ target, activeId, onSelect }: {
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            <primitive object={world} visible />
+            {/* Governed source identity; visible geometry is owned by GroundVaultArchitecture. */}
+            <primitive object={world} visible={false} />
           </group>
         </group>
       </group>
@@ -274,6 +278,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
   onNearby: (value: GroundDestination | null) => void;
   onSelect: (destination: GroundDestination) => void;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
     <>
       <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
@@ -286,10 +291,11 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <pointLight position={[0, 4.6, -2]} intensity={0.62} distance={20} decay={2} color="#d8aa79" />
       <pointLight position={[7.5, 3.4, -15]} intensity={0.32} distance={18} decay={2} color="#78b7c8" />
       <pointLight position={[-8.2, 3.8, -23]} intensity={0.28} distance={18} decay={2} color="#9d93bc" />
-      <Sparkles count={12} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
+      <Sparkles count={12} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={reducedMotion ? 0 : 0.025} opacity={0.045} color="#f9e7ba" />
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
+      <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} />
       <ArchitecturalRouteLighting activeId={activeId} />
       <group name="ground-v92-removed-procedural-postprocessing" userData={{
         nonRenderingCompatibilityMarkers: "EffectComposer Bloom Vignette",
@@ -347,7 +353,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-visual-revision="v150-cinematic-backdrop-with-quiet-walkable-terrain"
+      data-ground-visual-revision="walkable-stone-vault-and-enterable-chambers-candidate"
       data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"

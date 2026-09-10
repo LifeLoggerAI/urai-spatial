@@ -51,6 +51,7 @@ const tests = [
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
+  'tests/focus-ground-normal-geometry.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-production-audio-runtime-contract.test.mjs',

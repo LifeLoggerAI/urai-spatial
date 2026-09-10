@@ -11,10 +11,13 @@
 }
 
 .ground-spatial-root .ground-directory button {
-  width: 44px !important;
+  width: auto !important;
   min-width: 44px !important;
   min-height: 44px !important;
-  border-radius: 50% !important;
+  border-radius: 999px !important;
+  padding: 0 10px !important;
+  gap: 7px !important;
+  flex: 0 0 auto !important;
 }
 
 .ground-spatial-root .ground-directory button > span {
@@ -103,4 +106,10 @@
   .ground-spatial-root .ground-directory,
   .ground-spatial-root .urai-mobile-movement { border: 1px solid CanvasText; }
   .ground-spatial-root .urai-mobile-movement button::before { border-color: ButtonText; }
+}
+
+.ground-spatial-root .ground-directory strong {
+  max-width: 140px;
+  opacity: 1;
+  font-size: 11px;
 }

@@ -184,6 +184,7 @@ function cloneAuthoredFocusModel(source: THREE.Object3D) {
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     const rejectedPresentation = object.name.startsWith('focus-tunnel-ring-')
+      || object.name === 'focus-sculpted-floor'
       || object.name === 'focus-memory-cradle'
       || object.name === 'focus-cradle-core'
       || object.name.startsWith('focus-memory-rune-')
@@ -232,7 +233,7 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
       const b = a + 1
       const c = a + columns + 1
       const d = c + 1
-      indices.push(a, c, b, b, c, d)
+      indices.push(a, b, c, b, d, c)
     }
     const result = new THREE.BufferGeometry()
     result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -251,7 +252,7 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
       const strata = 0.5 + 0.5 * Math.sin(v * 126 + Math.sin(u * 19) * 5 + Math.sin(v * 37) * 2)
       const grain = 0.5 + 0.5 * Math.sin(u * 397 - v * 233) * Math.sin(u * 151 + v * 281)
       const worn = Math.exp(-Math.pow((u - 0.5 - 0.08 * Math.sin(v * 15)) / 0.14, 4))
-      const lightness = 0.12 + strata * 0.10 + grain * 0.055 + worn * 0.12
+      const lightness = 0.28 + strata * 0.13 + grain * 0.08 + worn * 0.18
       const offset = (y * size + x) * 4
       data[offset] = Math.round(255 * (0.045 + mineral.r * lightness))
       data[offset + 1] = Math.round(255 * (0.10 + mineral.g * lightness))
@@ -308,8 +309,8 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const seedGeometry = useMemo(() => {
-    const sections = 19
-    const sides = 14
+    const sections = 72
+    const sides = 32
     const positions: number[] = []
     const colors: number[] = []
     const dark = new THREE.Color('#071513')
@@ -409,9 +410,9 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
     <color attach="background" args={[memory?.visuals.sky ?? '#020712']} />
     <fog attach="fog" args={[memory?.visuals.sky ?? '#020712', 7.5, 31]} />
-    <ambientLight intensity={0.22} color="#d8efff" />
+    <ambientLight intensity={0.42} color="#d8efff" />
     <hemisphereLight args={[light, '#02030a', 0.52]} />
-    <directionalLight position={[5, 8, 7]} intensity={0.86} color={light} castShadow={profile.shadows} />
+    <directionalLight position={[5, 8, 7]} intensity={1.5} color={light} castShadow={profile.shadows} />
     <pointLight position={[0, 1, -1.5]} intensity={1.65} color={accent} distance={14} />
     <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
     <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
