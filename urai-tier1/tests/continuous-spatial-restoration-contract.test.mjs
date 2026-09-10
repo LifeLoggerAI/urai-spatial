@@ -216,6 +216,10 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
   for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  assert.equal((stateProof.match(/visibleWorld === 'v226-rooted-inhabited-memory-sanctuary'/g) || []).length, 2)
+  assert.doesNotMatch(stateProof, /v223-authored-inhabited-memory-sanctuary/)
+  for (const marker of ['HomeWorldProductionV223Geometry.tsx', 'rock-tile-floor-diff-1k.webp', 'rock-tile-floor-normal-gl-1k.webp', 'rock-tile-floor-arm-1k.webp']) assert.match(stateProof, new RegExp(marker.replaceAll('.', '\\.'), 'g'))
+  assert.doesNotMatch(stateProof, /home-(?:continuous-landscape|ground-place|life-map-place)-v191\.glb|urai-living-memory-heart-v191\.glb/)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)

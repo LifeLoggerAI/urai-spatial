@@ -13,13 +13,12 @@ const worldTypes = read('src/spatial/world/worldTypes.ts')
 const worldState = read('src/spatial/world/WorldStateProvider.tsx')
 const worldTransition = read('src/spatial/world/WorldTransitionController.tsx')
 
-test('continuous visual proof measures effective ancestor opacity', () => {
-  assert.match(visualWrapper, /let effectiveOpacity = 1/)
-  assert.match(visualWrapper, /current = current\.parentElement/)
-  assert.match(visualWrapper, /effectiveOpacity \*= Number\.parseFloat\(currentStyle\.opacity/)
-  assert.match(visualWrapper, /return effectiveOpacity > 0\.02/)
-  assert.match(visualWrapper, /visibilityCount !== 1/)
-  assert.match(visualWrapper, /ancestor-opacity visibility repair was not materialized/)
+test('continuous visual proof preserves portal lifecycle and attributed navigation diagnostics', () => {
+  assert.match(visualWrapper, /routeEvidence\?\.lifecycleObserved/)
+  assert.match(visualWrapper, /request\.resourceType === 'document'/)
+  assert.match(visualWrapper, /request\.isNavigationRequest === true/)
+  assert.match(visualWrapper, /Home failed-request resource metadata was not materialized/)
+  assert.match(visualWrapper, /Generated portal wrapper retained the retired discreet-controls contract/)
 })
 
 test('canonical visual proof materializes the current bare Mirror entry contract', () => {
@@ -31,11 +30,13 @@ test('canonical visual proof materializes the current bare Mirror entry contract
 })
 
 test('Mirror browser proof validates accepted mobile suppression without reconciliation', () => {
-  assert.match(mirrorReleaseProof, /if \(deviceName === 'desktop'\) \{\s*await orb\.click\(\)/s)
-  assert.match(mirrorReleaseProof, /else \{\s*await orb\.waitFor\(\{ state: 'hidden' \}\)/s)
+  assert.match(mirrorReleaseProof, /if \(deviceName === 'desktop'\) await orb\.click\(\)/)
+  assert.match(mirrorReleaseProof, /else await orb\.waitFor\(\{ state: 'hidden' \}\)/)
   assert.match(mirrorReleaseProof, /mobileOrbHiddenDuringInspection: deviceName === 'mobile'/)
   assert.match(mirrorReleaseProof, /timeout: 60000/)
   assert.match(mirrorReleaseProof, /requestAnimationFrame\(\(\) => requestAnimationFrame\(resolve\)\)/)
+  assert.match(mirrorReleaseProof, /waitForURL\([^;]+waitUntil: 'domcontentloaded'/s)
+  assert.match(mirrorReleaseProof, /page\.locator\('main'\)\.first\(\)\.waitFor/)
   assert.match(mirrorReleaseRunner, /failed without reconciliation/)
   assert.doesNotMatch(mirrorReleaseRunner, /reconciledCases|intentional mobile Orb suppression|Replay screenshot timeout/)
 })
