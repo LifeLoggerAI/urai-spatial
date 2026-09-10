@@ -20,9 +20,9 @@ async function transformFile(path, transform) {
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => replaceExact(
   input,
   "    await expect(home).toHaveAttribute('data-home-animation-owner', 'canonical-sanctuary-plus-cc0-fern-plus-living-orb')",
-  "    await expect(home).toHaveAttribute('data-home-animation-owner', 'v126-ground-owned-apse-sanctuary')",
+  "    await expect(home).toHaveAttribute('data-home-animation-owner', 'v226-rooted-living-memory-presence')",
   1,
-  'current V126 Home animation owner',
+  'current V226 Home animation owner',
 ))
 
 await transformFile('urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts', (input) => {

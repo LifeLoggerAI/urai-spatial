@@ -1,4 +1,4 @@
-import { cp, mkdir, rm } from 'node:fs/promises'
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 
@@ -11,6 +11,13 @@ async function stopProcessGroup(child) {
   try { process.kill(-child.pid, 'SIGTERM') } catch { try { child.kill('SIGTERM') } catch {} }
   await new Promise((resolve) => setTimeout(resolve, 4_000))
   try { process.kill(-child.pid, 'SIGKILL') } catch { try { child.kill('SIGKILL') } catch {} }
+}
+
+async function retainAttempt(attemptDir, status) {
+  await rm(finalDir, { recursive: true, force: true })
+  await mkdir(finalDir, { recursive: true })
+  await cp(attemptDir, finalDir, { recursive: true, force: true })
+  await writeFile(path.join(finalDir, 'bounded-attempt-status.json'), `${JSON.stringify(status, null, 2)}\n`)
 }
 
 async function runAttempt(attempt) {
@@ -39,13 +46,20 @@ async function runAttempt(attempt) {
   clearTimeout(timer)
 
   if (result.error) console.error(`Home state proof attempt ${attempt} failed to start: ${result.error}`)
+  const status = {
+    attempt,
+    exactHead: process.env.URAI_EXACT_HEAD || 'local',
+    code: result.code,
+    signal: result.signal ?? null,
+    timedOut,
+    passed: !timedOut && result.code === 0,
+  }
+  await retainAttempt(attemptDir, status)
   if (timedOut || result.code !== 0) {
-    console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}, timedOut=${timedOut}).`)
+    console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}, timedOut=${timedOut}); exact-head failure evidence retained at ${finalDir}.`)
     return false
   }
 
-  await mkdir(finalDir, { recursive: true })
-  await cp(attemptDir, finalDir, { recursive: true, force: true })
   console.log(`Home state proof attempt ${attempt} passed; exact-head evidence copied to ${finalDir}.`)
   return true
 }
