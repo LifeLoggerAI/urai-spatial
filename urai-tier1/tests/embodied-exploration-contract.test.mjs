@@ -27,7 +27,7 @@ test('Home keeps one V223 Canvas owner while predecessor art remains historical 
   has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
   has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
   has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
-  has(activeHomeRuntime3d, 'data-home-visible-world="v223-authored-inhabited-memory-sanctuary"')
+  has(activeHomeRuntime3d, 'data-home-visible-world="v225-v3-integrated-living-memory-sanctuary"')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
