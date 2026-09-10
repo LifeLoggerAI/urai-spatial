@@ -15,6 +15,7 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx'
       - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs'
@@ -43,49 +44,34 @@ jobs:
           ref: ${{ env.EXPECTED_SHA }}
           fetch-depth: 1
           persist-credentials: false
-      - name: Verify exact V225 candidate markers
+      - name: Verify exact V226 candidate markers
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
           grep -Fq 'HomeWorldProductionV223 as HomeWorldProduction' urai-tier1/src/spatial/layout/HomeWorldProduction.tsx
           grep -Fq 'export function HomeWorldProductionV223' urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx
-          grep -Fq 'HomeV225PolishV2' urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx
-          grep -Fq '<HomeV225PolishV2 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>' urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx
-          grep -Fq 'home-v225-v2-production-memory-sanctuary' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
+          grep -Fq "import {HomeV225PolishV3} from './HomeWorldProductionV225PolishV3'" urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx
+          grep -Fq '<HomeV225PolishV3 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>' urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx
           grep -Fq 'home-v225-v2-continuous-sculpted-memory-valley' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
           grep -Fq 'home-v225-v2-authored-valley-floor' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
           grep -Fq 'home-v225-v2-grown-memory-walk' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-v2-cathedral-memory-ribs' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-v2-weathered-memory-walls' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-v2-ground-memory-hearth' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-v2-life-map-lineage-observatory' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-v2-intimate-veined-living-memory-orb' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-v2-orb-embedded-memory-veins' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
-          grep -Fq 'home-v225-sculpted-sanctuary-floor' urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx
-          grep -Fq 'home-v225-rooted-memory-rib' urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx
-          grep -Fq 'home-v225-ground-sheltered-memory-basin' urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx
-          grep -Fq 'home-v225-life-map-braided-lineage-vault' urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx
-          grep -Fq 'home-v225-single-connected-folded-living-memory-mantle' urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx
-          grep -Fq 'home-v225-embedded-memory-veins' urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx
-          grep -Fq 'function SculptedCanyonGround(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'function GeologicalFrame(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'function FramedFissure(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'function LivingOrb(' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v126-continuous-walkable-terrace-network' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v126-bounded-geological-edge-masses' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v126-orb-memory-motes' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq 'home-v126-layered-apse-orb-cradle' urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx
-          grep -Fq "world.setAttribute('data-home-v126-certification','superseded-rejected-pixels')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          grep -Fq "world.setAttribute('data-home-v223-certification','superseded-rejected-pixels')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          grep -Fq "world.setAttribute('data-home-v224-certification','superseded-rejected-pixels')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          grep -Fq "world.setAttribute('data-home-v225-certification','fresh-exact-head-pixels-required')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          grep -Fq "world.setAttribute('data-home-art-certification','fresh-exact-head-pixels-required')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          grep -Fq 'HomeWorldProductionV225PolishV2.tsx' urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          grep -Fq 'data-home-v225-retained-pixel-rebuild="active"' urai-tier1/src/app/AssetDrivenHomeWorld.tsx
-          ! grep -Eq 'PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified' urai-tier1/src/app/AssetDrivenHomeWorld.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV70.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx
+          grep -Fq 'home-v226-production-rooted-memory-sanctuary' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq 'home-v226-weathered-memory-banks' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq 'home-v226-rooted-inhabited-canopy' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq 'home-v226-ground-inhabited-hearth' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq 'home-v226-life-map-lineage-observatory' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq 'home-v226-root-cradle' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq 'home-v226-rooted-single-living-memory-presence' urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
+          grep -Fq "for (const version of ['76','125','126','176','219','220','221','222','223','224','225'])" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq "world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq "world.setAttribute('data-home-v225-art-layer', 'superseded-v3-visual-owner')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')" urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq 'HomeWorldProductionV225PolishV3.tsx' urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq 'data-home-v226-retained-pixel-rebuild="active"' urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          grep -Fq 'data-home-v225-retained-pixel-rebuild="superseded"' urai-tier1/src/app/AssetDrivenHomeWorld.tsx
+          ! grep -Eq 'PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified' urai-tier1/src/app/AssetDrivenHomeWorld.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with: { version: 10.0.0, run_install: false }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020

@@ -28,13 +28,13 @@ test('historical V185 destinations remain regression-covered and visibly retired
   assert.doesNotMatch(historicalArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
-test('V225 Orb proximity authority aligns runtime geometry, telemetry, and active proof translation', () => {
+test('V226 Orb proximity authority aligns runtime geometry, telemetry, and active proof translation', () => {
   assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-7\.45\)/)
   assert.match(telemetry, /HOME_ORB=\{x:-\.45,z:-7\.45\}/)
   assert.match(naturalProof, /const historicalOrb = "orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35"/)
   assert.match(naturalProof, /const currentOrb = "orb: \{ x: -0\.45, z: -7\.45, radius: 2\.35"/)
   assert.match(naturalProof, /patched = replaceOnce\(patched, historicalOrb, currentOrb, 'Orb telemetry'\)/)
-  assert.match(naturalProof, /const currentOwner = "result\.animationOwner === 'v225-asymmetric-veined-living-memory-presence'"/)
+  assert.match(naturalProof, /const currentOwner = "result\.animationOwner === 'v226-rooted-living-memory-presence'"/)
   assert.match(proof, /orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35/)
 })
 
@@ -52,13 +52,14 @@ test('historical V185 traversal gates remain regression-covered without claiming
   assert.match(historicalRuntime, /destination: 'life-map'/)
 })
 
-test('V225 remains explicitly uncertified until literal exact-head retained pixels pass', () => {
+test('V226 remains explicitly uncertified until literal exact-head retained pixels pass', () => {
   assert.match(finalizer, /home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /embodied-exploration-contract\.test\.mjs/)
-  has(telemetry, "'data-home-v126-certification','superseded-rejected-pixels'")
-  has(telemetry, "'data-home-v223-certification','superseded-rejected-pixels'")
-  has(telemetry, "'data-home-v224-certification','superseded-rejected-pixels'")
-  has(telemetry, "'data-home-v225-certification','fresh-exact-head-pixels-required'")
-  has(telemetry, "'data-home-art-certification','fresh-exact-head-pixels-required'")
+  has(telemetry, "for (const version of ['76','125','126','176','219','220','221','222','223','224','225'])")
+  has(telemetry, "world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')")
+  has(telemetry, "world.setAttribute('data-home-v225-art-layer', 'superseded-v3-visual-owner')")
+  has(telemetry, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
+  has(telemetry, 'data-home-v226-retained-pixel-rebuild="active"')
+  has(telemetry, 'data-home-v225-retained-pixel-rebuild="superseded"')
   assert.doesNotMatch(`${historicalRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })

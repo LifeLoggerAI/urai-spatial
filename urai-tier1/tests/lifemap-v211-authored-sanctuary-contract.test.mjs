@@ -42,10 +42,10 @@ test('V211 delivers a complete optimized Blender-authored Life Map sanctuary', (
 })
 
 test('V211 source authority remains reproducible after the runtime successor advances', () => {
-  assert.match(source, /life-map-production\/authored-v215\/life-map-memory-sanctuary-v215\.glb/)
-  assert.match(source, /name="life-map-v215-blender-authored-memory-sanctuary"/)
-  assert.match(source, /position=\{\[0, 0, 0\]\}/)
-  assert.match(source, /scale=\{\[1, 1, 1\]\}/)
+  assert.match(source, /V226 literal-pixel authority: a suspended living memory galaxy/)
+  assert.match(source, /function smoothMemoryGeometry\(/)
+  assert.match(source, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
+  assert.doesNotMatch(source, /life-map-production\/authored-v211\/life-map-memory-sanctuary-v211\.glb/)
   assert.match(generator, /def blender_point\(x, y, z\)/)
   assert.match(generator, /apply_packed_strata_texture/)
   assert.match(generator, /camera-safe-traversal-collision-proxy/)

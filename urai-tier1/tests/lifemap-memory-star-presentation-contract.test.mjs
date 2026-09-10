@@ -1,38 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const source = fs.readFileSync(
-  new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url),
-  'utf8',
-);
+const source = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8');
 
-assert.ok(
-  source.includes('const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";'),
-  'Life Map must keep the governed authored memory-star GLB as its runtime asset authority',
-);
-assert.ok(
-  source.includes('name === "memory-star-heart"'),
-  'Life Map must suppress the rejected authored memory-star heart presentation node',
-);
-assert.ok(
-  source.includes('name.startsWith("memory-star-orbit-")'),
-  'Life Map must suppress the rejected authored memory-star orbit presentation family',
-);
-assert.ok(
-  source.includes('prepareAuthoredModel(scene, aura, hideRejectedMemoryStarPresentationNode)'),
-  'AuthoredMemoryStar must apply the rejected-presentation filter to its cloned governed asset',
-);
-assert.ok(
-  source.includes('name.startsWith("memory-star-shard-")'),
-  'Life Map must suppress the rejected repeated shard-star presentation family',
-);
-assert.ok(
-  source.includes('name === "memory-star-core"'),
-  'Life Map must suppress the rejected generic energy-core presentation node',
-);
-assert.ok(
-  source.includes('function MemorySeed(') && source.includes('name="life-map-v215-rooted-strata-memory"') && source.includes('function memoryLedgerGeometry('),
-  'Life Map must replace rejected starburst geometry with grounded interlocking authored memory strata',
-);
+assert.ok(source.includes('const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";'), 'Life Map must retain the governed memory-star GLB as hidden source and animation authority');
+assert.ok(source.includes('<primitive object={hiddenAsset} visible={false} />'), 'The rejected authored memory-star presentation must remain wholly hidden');
+assert.ok(source.includes('function smoothMemoryGeometry('), 'V226 must render suspended smooth organic memories instead of the rejected presentation');
+assert.ok(source.includes('name={`life-map-smooth-memory-star-${siteKey}`}'), 'V226 smooth memories must remain individually addressable in the spatial scene');
+assert.ok(source.includes('// V226 literal-pixel authority: a suspended living memory galaxy with no heightfield, slabs, shards, or mineral presentation.'), 'The active Life Map source must declare the V226 presentation boundary');
+assert.ok(!/function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/.test(source), 'Rejected grounded strata and shard-like memory presentations must not re-enter runtime');
 
 console.log('Life Map memory-star presentation contract passed');
