@@ -9,6 +9,16 @@ const historicalOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf
 const currentOwner = "result.animationOwner === 'v225-asymmetric-veined-living-memory-presence'"
 const historicalOrb = "orb: { x: -0.18, z: -6.90, radius: 2.35"
 const currentOrb = "orb: { x: -0.45, z: -7.45, radius: 2.35"
+const historicalModelClipLines = [
+  "  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',",
+  "  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',",
+  "  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',",
+]
+const currentModelClipLines = [
+  "  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',",
+  "  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',",
+  "  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',",
+]
 
 function replaceOnce(source, from, to, label) {
   if (source.split(from).length - 1 !== 1) throw new Error(`Continuous proof ${label} contract changed`)
@@ -29,6 +39,9 @@ for (const contract of stableTelemetryContracts) {
 
 let patched = replaceOnce(original, historicalOwner, currentOwner, 'animation-owner')
 patched = replaceOnce(patched, historicalOrb, currentOrb, 'Orb telemetry')
+for (let index = 0; index < historicalModelClipLines.length; index += 1) {
+  patched = replaceOnce(patched, historicalModelClipLines[index], currentModelClipLines[index], `Orb model clip line ${index + 1}`)
+}
 
 await writeFile(captureUrl, patched, 'utf8')
 try {
