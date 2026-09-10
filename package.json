@@ -21,7 +21,7 @@
     "install:check": "node scripts/check-install-disk-space.mjs",
     "bootstrap:check": "node scripts/check-workspace-install.mjs",
     "pnpm:local": "node scripts/run-pnpm.mjs",
-    "dev": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 dev",
+    "dev": "node scripts/check-workspace-install.mjs && node scripts/run-dev.mjs",
     "dev:3001": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --dir urai-tier1 exec next dev --hostname 0.0.0.0 --port 3001",
     "build": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && node scripts/run-pnpm.mjs --filter urai-tier1 build",
     "build:static": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && URAI_FIREBASE_STATIC_EXPORT=true node scripts/run-pnpm.mjs --dir urai-tier1 exec next build",
