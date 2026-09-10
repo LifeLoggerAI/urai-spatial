@@ -29,9 +29,11 @@ export default function PressPage() {
       <h2>Extended description</h2>
       <p>UrAi explores a navigable personal world built from disclosed or permissioned context. Its public experience connects Home, Ground, Life Map, Focus, Replay, Mirror, Passport, privacy controls, and release status. Public demonstrations use sample or clearly disclosed content.</p>
       <h2>Founder</h2>
-      <p>Adam Clamp is the founder and system architect behind URAI Labs and the UrAi product direction.</p>
+      <p>Adam Clamp is the Founder, Steward and System Architect behind URAI Labs and the UrAi product direction.</p>
       <h2>Founding Engineer</h2>
       <p>Chris Herrin is the Founding Engineer at URAI Labs and an engineering contributor to UrAi. The title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification. No external social profile is represented as canonical until the identity match is separately verified and approved.</p>
+      <h2>Foundation legal-status boundary</h2>
+      <p>URAI Foundation was filed in Texas as a Domestic Nonprofit Corporation on February 2, 2026 under filing number 806421687 and is currently recorded by the Texas Secretary of State as involuntarily terminated effective April 28, 2026. Do not describe it as currently active, in good standing, tax-exempt, a charity, donation-deductible, or authorized for current fundraising without new primary evidence.</p>
       <h2>Status language</h2>
       <p>Safe current wording: “The public UrAi web experience is reachable while the current coherent-3D Home release remains exact-head CI, visual acceptance, governance, protected deployment, and live-verification gated.”</p>
       <h2>Media assets</h2>

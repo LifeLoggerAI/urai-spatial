@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastVerified": "2026-09-07",
+  "lastVerified": "2026-09-09",
   "canonicalHost": "https://urai.app",
   "entities": {
     "product": {
@@ -28,11 +28,11 @@
     },
     "founder": {
       "name": "Adam Clamp",
-      "role": "Founder and system architect",
+      "role": "Founder, Steward and System Architect",
       "canonicalUrl": "https://urai.app/founder/",
       "relationship": [
-        "Founder of URAI Labs",
-        "Founder and system architect for UrAi"
+        "Founder and Steward of URAI Labs",
+        "Founder, Steward and System Architect for UrAi"
       ],
       "publicProfile": "https://urai.app/founder/",
       "githubAccountAuthority": "https://github.com/LifeLoggerAI"
@@ -53,17 +53,24 @@
     },
     "foundation": {
       "name": "URAI Foundation",
-      "type": "formation-stage public-interest standards and governance initiative",
+      "type": "Texas domestic nonprofit corporation; current legal status involuntarily terminated",
       "canonicalUrl": "https://github.com/LifeLoggerAI/urai-foundation",
       "publicDomainTarget": "https://uraifoundation.org/",
       "publicDomainStatus": "unverified; DNS and sitemap evidence required",
       "repository": "https://github.com/LifeLoggerAI/urai-foundation",
-      "status": "formation-stage",
+      "jurisdiction": "Texas",
+      "entityType": "Domestic Nonprofit Corporation",
+      "filingNumber": "806421687",
+      "originalFilingDate": "2026-02-02",
+      "status": "involuntarily-terminated",
+      "terminationEffectiveDate": "2026-04-28",
+      "legalStatusEvidence": "Texas Secretary of State Corporations Information response dated 2026-09-08",
       "notClaimed": [
-        "incorporation",
+        "current active status or good standing",
         "501(c)(3) status",
         "charity status",
         "tax deductibility",
+        "current fundraising authority",
         "active certification authority",
         "launched programs"
       ]

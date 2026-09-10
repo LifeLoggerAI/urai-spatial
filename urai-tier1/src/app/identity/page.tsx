@@ -35,7 +35,7 @@ const identityJsonLd = {
       '@id': 'https://urai.app/founder/#person',
       name: 'Adam Clamp',
       url: 'https://urai.app/founder/',
-      jobTitle: 'Founder and system architect',
+      jobTitle: 'Founder, Steward and System Architect',
       worksFor: { '@id': 'https://urai.app/#organization' },
     },
   ],
@@ -69,7 +69,7 @@ export default function IdentityPage() {
         <li><strong>Product:</strong> UrAi</li>
         <li><strong>Canonical website:</strong> <a href="https://urai.app/">https://urai.app/</a></li>
         <li><strong>Organization:</strong> URAI Labs</li>
-        <li><strong>Founder:</strong> Adam Clamp</li>
+        <li><strong>Founder:</strong> Adam Clamp — Founder, Steward and System Architect</li>
         <li><strong>Canonical public source:</strong> <a href="https://github.com/LifeLoggerAI/urai-spatial">LifeLoggerAI/urai-spatial</a></li>
       </ul>
       <h2>Unrelated entities with similar names</h2>

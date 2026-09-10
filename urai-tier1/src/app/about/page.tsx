@@ -29,7 +29,7 @@ export default function AboutPage() {
       <h2>What the status does not prove</h2>
       <p>A reachable route is not proof of authenticated persistence, active external providers, clinical validation, physical-device certification, or a fully certified production release. Those claims remain evidence-gated and are reported on the Status page.</p>
       <h2>The product relationship</h2>
-      <p>UrAi is the product. URAI Labs is the founder-led product organization. Adam Clamp is the founder and system architect. Chris Herrin is the Founding Engineer. The URAI Foundation is a separately described, formation-stage public-interest standards and governance initiative; no charitable or tax-exempt status is claimed.</p>
+      <p>UrAi is the product. URAI Labs is the founder-led product organization. Adam Clamp is the Founder, Steward and System Architect. Chris Herrin is the Founding Engineer. URAI Foundation was filed in Texas as a Domestic Nonprofit Corporation and is currently recorded by the Texas Secretary of State as involuntarily terminated; no current active, good-standing, charitable, tax-exempt, donation-deductible, or fundraising-authority status is claimed.</p>
       <p>The Founding Engineer title alone does not establish equity ownership, officer/director status, legal co-founder status, or employment classification.</p>
       <p><a href="https://github.com/LifeLoggerAI/urai-spatial">View the canonical public source authority on GitHub</a>.</p>
     </PublicAuthorityShell>

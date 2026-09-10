@@ -40,7 +40,7 @@ export default function EcosystemPage() {
   return (
     <PublicAuthorityShell eyebrow="Entity map" title="One product family. Clear boundaries." intro="URAI Labs builds UrAi. Supporting repositories and services have distinct roles, and none independently declare the whole ecosystem live.">
       <h2>URAI Foundation</h2>
-      <p>The URAI Foundation is described as a formation-stage public-interest standards and governance initiative related to accessibility, consent, safety, and risk review. It is organizationally distinct from the product. This site does not claim incorporation, charity status, tax exemption, donation deductibility, active certification authority, or launched programs.</p>
+      <p>URAI Foundation was filed in Texas as a Domestic Nonprofit Corporation on February 2, 2026 under filing number 806421687. The Texas Secretary of State currently records it as involuntarily terminated effective April 28, 2026. It is organizationally distinct from the product, and this site does not claim current active or good-standing status, 501(c)(3) recognition, charity status, donation deductibility, current fundraising authority, active certification authority, or launched programs.</p>
       <h2>Systems</h2>
       <dl>{systems.map(([name, kind, detail]) => <div key={name} style={{ borderTop: '1px solid rgba(140,231,238,.18)', padding: '20px 0' }}><dt><strong>{name}</strong> — {kind}</dt><dd style={{ margin: '8px 0 0', color: '#c9d9e5' }}>{detail}</dd></div>)}</dl>
       <p>The complete machine-readable registry is available at <a href="/urai-entity.json">/urai-entity.json</a>.</p>
