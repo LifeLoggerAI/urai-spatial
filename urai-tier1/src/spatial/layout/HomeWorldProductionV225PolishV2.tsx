@@ -39,462 +39,251 @@ function RetireRejectedPresentation() {
 function tube(points: THREE.Vector3[], radius: number, radial = 8) {
   return new THREE.TubeGeometry(
     new THREE.CatmullRomCurve3(points, false, 'centripetal', .35),
-    Math.max(48, points.length * 2),
-    radius,
-    radial,
-    false,
+    Math.max(48, points.length * 2), radius, radial, false,
   )
 }
 
-function sanctuaryFloorGeometry() {
-  const nx = 120, nz = 164
+function terrainGeometry() {
+  const nx = 128, nz = 176
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#10231f')
-  const moss = new THREE.Color('#285044')
-  const earth = new THREE.Color('#71563c')
-  const cool = new THREE.Color('#3d7165')
+  const deep = new THREE.Color('#0d211d')
+  const moss = new THREE.Color('#274d40')
+  const earth = new THREE.Color('#755a40')
+  const teal = new THREE.Color('#416f63')
   for (let iz = 0; iz <= nz; iz++) {
-    const z = 6.2 - iz / nz * 25.5
+    const z = 6.3 - iz / nz * 25.8
     for (let ix = 0; ix <= nx; ix++) {
-      const x = -8.8 + ix / nx * 17.6
-      const depth = THREE.MathUtils.clamp((5.0 - z) / 22.5, 0, 1)
-      const lane = Math.exp(-Math.pow(x / 2.45, 2))
-      const broad = .048 * Math.sin(x * .67 + z * .29) + .032 * Math.cos(x * 1.17 - z * .53)
-      const fine = .022 * Math.sin(x * 3.3 + z * 1.67) * Math.cos(z * 2.31 - x * .58)
-      const sideFold = Math.pow(THREE.MathUtils.clamp((Math.abs(x) - 2.2) / 6.4, 0, 1), 1.26)
-      const channel = -.045 * lane * Math.exp(-Math.pow((z + 6.0) / 9.8, 2))
-      const y = height(x, z) + broad * (1 - .64 * lane) + fine + .25 * sideFold * (.32 + depth) + channel + .025
-      positions.push(x, y, z)
-      const edge = THREE.MathUtils.clamp(Math.abs(x) / 8.8, 0, 1)
-      const mottled = .5 + .5 * Math.sin(x * 2.2 + z * 1.05) * Math.sin(z * .81 - x * .94)
-      const c = deep.clone().lerp(moss, .34 + .30 * (1 - edge)).lerp(earth, .19 * lane + .09 * mottled).lerp(cool, .13 * depth)
-      colors.push(c.r, c.g, c.b)
+      const x = -9.1 + ix / nx * 18.2
+      const depth = THREE.MathUtils.clamp((5.0-z)/23,0,1)
+      const lane = Math.exp(-Math.pow(x/2.55,2))
+      const micro = .030*Math.sin(x*2.8+z*1.7)*Math.cos(z*2.1-x*.72)
+      const folds = .070*Math.sin(x*.78+z*.29)+.040*Math.cos(x*1.31-z*.51)
+      const shoulder = Math.pow(THREE.MathUtils.clamp((Math.abs(x)-2.1)/6.8,0,1),1.22)
+      const y = height(x,z)+micro+folds*(1-.58*lane)+.32*shoulder*(.30+depth)+.025
+      positions.push(x,y,z)
+      const mottled=.5+.5*Math.sin(x*2.13+z*1.17)*Math.sin(z*.82-x*.93)
+      const c=deep.clone().lerp(moss,.34+.28*(1-Math.abs(x)/9.1)).lerp(earth,.17*lane+.08*mottled).lerp(teal,.12*depth)
+      colors.push(c.r,c.g,c.b)
     }
   }
-  const row = nx + 1
-  for (let iz = 0; iz < nz; iz++) for (let ix = 0; ix < nx; ix++) {
-    const a = iz * row + ix, b = a + 1, c = a + row, d = c + 1
-    if ((ix + iz) & 1) indices.push(a, b, d, a, d, c)
-    else indices.push(a, b, c, b, d, c)
+  const row=nx+1
+  for(let iz=0;iz<nz;iz++)for(let ix=0;ix<nx;ix++){
+    const a=iz*row+ix,b=a+1,c=a+row,d=c+1
+    if((ix+iz)&1)indices.push(a,b,d,a,d,c);else indices.push(a,b,c,b,d,c)
   }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
+  const g=new THREE.BufferGeometry()
+  g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
+  g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
+  g.setIndex(indices);g.computeVertexNormals();return g
 }
 
 function memoryPathGeometry() {
-  const segments = 128, across = 16
-  const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const ember = new THREE.Color('#b88f60')
-  const quiet = new THREE.Color('#326151')
-  const pale = new THREE.Color('#cab78e')
-  const centers = Array.from({ length: segments + 1 }, (_, i) => {
-    const t = i / segments
-    const z = 5.0 - t * 21.0
-    const x = .24 * Math.sin(t * Math.PI * 2.05) + .08 * Math.sin(t * Math.PI * 5.1)
-    return new THREE.Vector3(x, height(x, z) + .085, z)
-  })
-  for (let i = 0; i <= segments; i++) {
-    const tangent = centers[Math.min(segments, i + 1)].clone().sub(centers[Math.max(0, i - 1)]).normalize()
-    const side = new THREE.Vector3(tangent.z, 0, -tangent.x).normalize()
-    for (let j = 0; j < across; j++) {
-      const u = j / (across - 1) - .5
-      const width = 2.02 + .13 * Math.sin(i * .16)
-      const p = centers[i].clone().addScaledVector(side, u * width)
-      p.y += .034 * Math.cos(u * Math.PI * 2) + .012 * Math.sin(i * .27 + u * 5)
-      positions.push(p.x, p.y, p.z)
-      const c = quiet.clone().lerp(ember, .36 + .50 * (1 - Math.abs(u) * 2)).lerp(pale, .11 * Math.sin(i / segments * Math.PI))
-      colors.push(c.r, c.g, c.b)
+  const n=132,cross=16,positions:number[]=[],colors:number[]=[],indices:number[]=[]
+  const warm=new THREE.Color('#b69061'),green=new THREE.Color('#345e50'),pale=new THREE.Color('#c8b78f')
+  for(let i=0;i<=n;i++){
+    const t=i/n,z=5.15-t*21.2,cx=.22*Math.sin(t*Math.PI*2)+.07*Math.sin(t*Math.PI*5.2)
+    for(let j=0;j<cross;j++){
+      const u=j/(cross-1)-.5,x=cx+u*(2.05+.12*Math.sin(i*.18))
+      const y=height(x,z)+.09+.035*Math.cos(u*Math.PI*2)+.012*Math.sin(i*.31+u*5)
+      positions.push(x,y,z)
+      const col=green.clone().lerp(warm,.38+.50*(1-Math.abs(u)*2)).lerp(pale,.10*Math.sin(t*Math.PI))
+      colors.push(col.r,col.g,col.b)
     }
   }
-  for (let i = 0; i < segments; i++) for (let j = 0; j < across - 1; j++) {
-    const a = i * across + j, b = a + 1, c = a + across, d = c + 1
-    indices.push(a, b, c, b, d, c)
+  for(let i=0;i<n;i++)for(let j=0;j<cross-1;j++){
+    const a=i*cross+j,b=a+1,c=a+cross,d=c+1;indices.push(a,b,c,b,d,c)
   }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g
 }
 
-function escarpmentGeometry(side: -1 | 1, band: number) {
-  const nz = 78, nv = 34
-  const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const dark = new THREE.Color(side < 0 ? '#17362d' : '#153c34')
-  const stone = new THREE.Color(side < 0 ? '#53664f' : '#456a5d')
-  const warm = new THREE.Color('#866748')
-  const zStart = 5.5 - band * 7.0
-  const zEnd = zStart - 9.0
-  for (let iz = 0; iz <= nz; iz++) {
-    const u = iz / nz
-    const z = THREE.MathUtils.lerp(zStart, zEnd, u)
-    const depth = THREE.MathUtils.clamp((5.0 - z) / 23, 0, 1)
-    for (let iv = 0; iv <= nv; iv++) {
-      const v = iv / nv
-      const baseX = side * (5.82 + .32 * Math.sin(z * .27 + band * 1.8) + .16 * Math.sin(z * .83 - band))
-      const alcove = Math.pow(Math.sin(v * Math.PI), 1.18) * (1.12 + .18 * band)
-      const fracture = .25 * Math.sin(v * Math.PI * 4.4 + u * 5.8 + band) + .11 * Math.sin(v * 18 - u * 4.2)
-      const x = baseX - side * (alcove + fracture * .20)
-      const floor = height(x * .90, z)
-      const total = 2.05 + 1.58 * depth + .34 * band
-      const y = floor - .08 + v * total + .14 * Math.sin(v * Math.PI * 3.2 + u * 6.6 + band) + .052 * Math.sin(v * 19 + u * 11)
-      const zz = z - .23 * v + .12 * Math.sin(v * 6.4 + u * 4.4 + band)
-      positions.push(x, y, zz)
-      const strata = .5 + .5 * Math.sin(v * 31 + u * 8 + band)
-      const c = dark.clone().lerp(stone, .28 + .46 * v).lerp(warm, .11 * strata)
-      colors.push(c.r, c.g, c.b)
+function escarpmentGeometry(side:-1|1,band:number){
+  const ns=82,nv=36,positions:number[]=[],colors:number[]=[],indices:number[]=[]
+  const dark=new THREE.Color(side<0?'#173129':'#14372f'),stone=new THREE.Color(side<0?'#59664e':'#48695c'),warm=new THREE.Color('#876547')
+  const z0=5.4-band*7.2,z1=z0-9.2
+  for(let i=0;i<=ns;i++){
+    const u=i/ns,z=THREE.MathUtils.lerp(z0,z1,u),depth=THREE.MathUtils.clamp((5-z)/23,0,1)
+    for(let j=0;j<=nv;j++){
+      const v=j/nv
+      const baseX=side*(6.05+.34*Math.sin(z*.27+band*1.7)+.14*Math.sin(z*.91-band))
+      const alcove=Math.pow(Math.sin(v*Math.PI),1.16)*(1.22+.18*band)
+      const fracture=.30*Math.sin(v*Math.PI*4.6+u*5.8+band)+.13*Math.sin(v*18-u*4)
+      const x=baseX-side*(alcove+fracture*.22)
+      const floor=height(x*.9,z)
+      const total=2.25+1.75*depth+.34*band
+      const y=floor-.08+v*total+.16*Math.sin(v*Math.PI*3.3+u*6.4+band)+.058*Math.sin(v*19+u*11)
+      positions.push(x,y,z-.24*v+.12*Math.sin(v*6.4+u*4.2+band))
+      const strata=.5+.5*Math.sin(v*32+u*8+band)
+      const col=dark.clone().lerp(stone,.28+.46*v).lerp(warm,.13*strata)
+      colors.push(col.r,col.g,col.b)
     }
   }
-  const row = nv + 1
-  for (let iz = 0; iz < nz; iz++) for (let iv = 0; iv < nv; iv++) {
-    const a = iz * row + iv, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, b, c, b, d, c)
+  const row=nv+1
+  for(let i=0;i<ns;i++)for(let j=0;j<nv;j++){const a=i*row+j,b=a+1,c=a+row,d=c+1;indices.push(a,b,c,b,d,c)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g
+}
+
+function memoryRibbon(side:-1|1,index:number){
+  const n=42,positions:number[]=[],colors:number[]=[],indices:number[]=[]
+  const baseZ=3.7-index*4.15
+  for(let i=0;i<=n;i++){
+    const t=i/n,z=baseZ-t*3.3,x0=side*(5.15-.78*Math.sin(t*Math.PI)),floor=height(x0,z)
+    const width=.32+.18*Math.sin(t*Math.PI),lift=.24+.86*Math.sin(t*Math.PI)+.12*Math.sin(t*7+index)
+    for(let k=0;k<2;k++){
+      positions.push(x0+side*(k?width:0),floor+(k?.05:lift),z+(k?.12:-.08))
+      const c=new THREE.Color(k?'#6e765d':'#8b7654');colors.push(c.r,c.g,c.b)
+    }
   }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
+  for(let i=0;i<n;i++){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,b,c,b,d,c)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g
 }
 
-function sanctuaryFold(side: -1 | 1, index: number) {
-  const points = Array.from({ length: 38 }, (_, i) => {
-    const t = i / 37
-    const z = 3.5 - index * 4.2 - 3.1 * t
-    const x = side * (4.92 - .82 * Math.sin(t * Math.PI))
-    return new THREE.Vector3(
-      x,
-      height(x, z) + .20 + .78 * Math.sin(t * Math.PI) + .11 * Math.sin(t * 7 + index),
-      z,
-    )
-  })
-  return tube(points, .052, 9)
-}
-
-function MemoryValley({ onWalk }: { onWalk: WalkHandler }) {
-  const floor = useMemo(sanctuaryFloorGeometry, [])
-  const path = useMemo(memoryPathGeometry, [])
-  const walls = useMemo(() => ([-1, 1] as const).flatMap((side) => Array.from({ length: 3 }, (_, band) => ({ side, band, geometry: escarpmentGeometry(side, band) }))), [])
-  const folds = useMemo(() => ([-1, 1] as const).flatMap((side) => Array.from({ length: 5 }, (_, index) => ({ side, index, geometry: sanctuaryFold(side, index) }))), [])
+function MemoryValley({onWalk}:{onWalk:WalkHandler}){
+  const floor=useMemo(terrainGeometry,[]),path=useMemo(memoryPathGeometry,[])
+  const walls=useMemo(()=>([-1,1] as const).flatMap(side=>Array.from({length:3},(_,band)=>({side,band,g:escarpmentGeometry(side,band)}))),[])
+  const ribbons=useMemo(()=>([-1,1] as const).flatMap(side=>Array.from({length:5},(_,index)=>({side,index,g:memoryRibbon(side,index)}))),[])
   return <group name="home-v225-v2-continuous-sculpted-memory-valley">
-    <mesh geometry={floor} receiveShadow onClick={onWalk} name="home-v225-v2-authored-valley-floor">
-      <meshStandardMaterial vertexColors roughness={.98} metalness={0}/>
-    </mesh>
-    <mesh geometry={path} receiveShadow onClick={onWalk} name="home-v225-v2-grown-memory-walk">
-      <meshStandardMaterial vertexColors roughness={.90} emissive="#543820" emissiveIntensity={.18}/>
-    </mesh>
-    <group name="home-v225-v2-weathered-memory-walls">
-      {walls.map(({ side, band, geometry }) => <mesh key={`${side}-${band}`} geometry={geometry} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={.97}/>
-      </mesh>)}
-    </group>
-    <group name="home-v225-v2-cathedral-memory-ribs">
-      {folds.map(({ side, index, geometry }) => <mesh key={`${side}-${index}`} geometry={geometry} castShadow>
-        <meshStandardMaterial color={side < 0 ? '#718066' : '#55786a'} emissive={index % 2 ? '#493921' : '#21493e'} emissiveIntensity={.15} roughness={.84}/>
-      </mesh>)}
-    </group>
+    <mesh geometry={floor} receiveShadow onClick={onWalk} name="home-v225-v2-authored-valley-floor"><meshStandardMaterial vertexColors roughness={.98}/></mesh>
+    <mesh geometry={path} receiveShadow onClick={onWalk} name="home-v225-v2-grown-memory-walk"><meshStandardMaterial vertexColors roughness={.89} emissive="#57391f" emissiveIntensity={.19}/></mesh>
+    <group name="home-v225-v2-weathered-memory-walls">{walls.map(({side,band,g})=><mesh key={`${side}-${band}`} geometry={g} castShadow receiveShadow><meshStandardMaterial vertexColors roughness={.97}/></mesh>)}</group>
+    <group name="home-v225-v2-cathedral-memory-ribs">{ribbons.map(({side,index,g})=><mesh key={`${side}-${index}`} geometry={g} castShadow receiveShadow><meshStandardMaterial vertexColors roughness={.90}/></mesh>)}</group>
   </group>
 }
 
-function groundCoveGeometry() {
-  const nu = 54, nv = 36
-  const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#493326')
-  const amber = new THREE.Color('#a9683c')
-  const moss = new THREE.Color('#536c54')
-  for (let iu = 0; iu <= nu; iu++) {
-    const u = iu / nu
-    const theta = -.96 + u * 1.92
-    for (let iv = 0; iv <= nv; iv++) {
-      const v = iv / nv
-      const radius = 2.25 - .32 * v + .12 * Math.sin(u * Math.PI * 4 + v * 5)
-      const inward = .52 + 2.25 * u
-      const x = inward + Math.cos(theta) * radius * (.42 + .58 * v)
-      const z = Math.sin(theta) * radius * .82
-      const arch = Math.sin(v * Math.PI)
-      const y = .02 + v * 1.82 + .50 * arch + .10 * Math.sin(u * 8 + v * 5)
-      positions.push(x, y, z)
-      const c = deep.clone().lerp(amber, .34 + .42 * arch).lerp(moss, .18 * (1 - u))
-      colors.push(c.r, c.g, c.b)
+function coveShellGeometry(layer:number){
+  const nu=56,nv=40,positions:number[]=[],colors:number[]=[],indices:number[]=[]
+  const deep=new THREE.Color('#39291f'),warm=new THREE.Color('#b16b3e'),moss=new THREE.Color('#596b4d')
+  for(let iu=0;iu<=nu;iu++){
+    const u=iu/nu,theta=-1.16+u*2.32
+    for(let iv=0;iv<=nv;iv++){
+      const v=iv/nv,arch=Math.sin(v*Math.PI)
+      const r=2.38-layer*.24+.15*Math.sin(u*7+v*5+layer)
+      const x=.42+2.62*u+Math.cos(theta)*r*(.24+.48*v)
+      const z=Math.sin(theta)*r*(.72-.06*layer)
+      const y=.02+v*(1.92-layer*.08)+.62*arch+.12*Math.sin(u*8+v*5+layer)
+      positions.push(x,y,z)
+      const c=deep.clone().lerp(warm,.30+.48*arch).lerp(moss,.14*(1-u));colors.push(c.r,c.g,c.b)
     }
   }
-  const row = nv + 1
-  for (let iu = 0; iu < nu; iu++) for (let iv = 0; iv < nv; iv++) {
-    const a = iu * row + iv, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, c, b, b, c, d)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
+  const row=nv+1
+  for(let iu=0;iu<nu;iu++)for(let iv=0;iv<nv;iv++){const a=iu*row+iv,b=a+1,c=a+row,d=c+1;indices.push(a,c,b,b,c,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g
 }
 
-function hearthBasinGeometry() {
-  const g = new THREE.SphereGeometry(1, 64, 34, 0, Math.PI * 2, Math.PI * .50, Math.PI * .50)
-  g.scale(1.38, .30, 1.10)
-  return g
-}
-
-function GroundHearth({ onGround }: { onGround: () => void }) {
-  const y = height(GROUND.x, GROUND.z)
-  const cove = useMemo(groundCoveGeometry, [])
-  const basin = useMemo(hearthBasinGeometry, [])
-  return <group position={[GROUND.x, y + .02, GROUND.z]} name="home-v225-v2-ground-memory-hearth" onClick={(e) => { e.stopPropagation(); onGround() }}>
-    <mesh geometry={cove} position={[.05,-.06,.05]} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors roughness={.91} side={THREE.DoubleSide}/>
-    </mesh>
-    <mesh geometry={basin} position={[2.72,.16,-.06]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8c5235" emissive="#8d3b22" emissiveIntensity={.72} roughness={.84}/>
-    </mesh>
-    <mesh position={[2.72,.46,-.06]} scale={[.82,.20,.68]}>
-      <sphereGeometry args={[1,32,22]}/>
-      <meshPhysicalMaterial color="#f0a56f" emissive="#df693d" emissiveIntensity={1.65} transparent opacity={.82} roughness={.42}/>
-    </mesh>
-    {Array.from({ length: 7 }, (_, i) => {
-      const a = -.90 + i * .30
-      return <mesh key={i} position={[2.72 + Math.cos(a)*1.56,.32 + .05*(i%2),-.06 + Math.sin(a)*1.05]} scale={[.26,.12,.48]} rotation={[0,-a,0]} castShadow>
-        <sphereGeometry args={[1,26,18]}/>
-        <meshStandardMaterial color={i%2 ? '#8f7656' : '#6c684f'} roughness={.94}/>
-      </mesh>
-    })}
-    <pointLight position={[2.72,1.08,-.03]} color="#ffac76" intensity={9.0} distance={9.5}/>
-    <pointLight position={[1.18,1.82,-.72]} color="#9ac7ad" intensity={1.7} distance={7.2}/>
+function GroundHearth({onGround}:{onGround:()=>void}){
+  const y=height(GROUND.x,GROUND.z)
+  const shells=useMemo(()=>Array.from({length:3},(_,i)=>coveShellGeometry(i)),[])
+  return <group position={[GROUND.x,y+.02,GROUND.z]} name="home-v225-v2-ground-memory-hearth" onClick={e=>{e.stopPropagation();onGround()}}>
+    {shells.map((g,i)=><mesh key={i} geometry={g} position={[i*.10,i*.04,-i*.12]} castShadow receiveShadow><meshPhysicalMaterial vertexColors roughness={.88} side={THREE.DoubleSide} clearcoat={.03}/></mesh>)}
+    <mesh position={[2.72,.18,-.08]} scale={[1.52,.31,1.18]} castShadow receiveShadow><sphereGeometry args={[1,64,36,0,Math.PI*2,Math.PI*.50,Math.PI*.50]}/><meshStandardMaterial color="#8f5536" emissive="#7b341e" emissiveIntensity={.68} roughness={.84}/></mesh>
+    <mesh position={[2.72,.48,-.08]} scale={[.90,.23,.72]}><sphereGeometry args={[1,36,24]}/><meshPhysicalMaterial color="#ffd0a0" emissive="#df6a3d" emissiveIntensity={2.0} transparent opacity={.88} roughness={.32}/></mesh>
+    {Array.from({length:9},(_,i)=>{const a=-1.02+i*.255;return <mesh key={i} position={[2.72+Math.cos(a)*1.72,.30+.06*(i%2),-.08+Math.sin(a)*1.12]} scale={[.32,.13,.52]} rotation={[0,-a,0]} castShadow><sphereGeometry args={[1,28,18]}/><meshStandardMaterial color={i%2?'#9a7b58':'#68705a'} roughness={.92}/></mesh>})}
+    <pointLight position={[2.72,1.06,-.04]} color="#ffad76" intensity={10.5} distance={10.5}/>
+    <pointLight position={[1.20,1.90,-.72]} color="#a1cfb4" intensity={1.8} distance={7.5}/>
   </group>
 }
 
-function lifeVaultGeometry() {
-  const nu = 64, nv = 46
-  const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#183a35')
-  const teal = new THREE.Color('#4b887b')
-  const violet = new THREE.Color('#736884')
-  const gold = new THREE.Color('#b7a16e')
-  for (let iu = 0; iu <= nu; iu++) {
-    const u = iu / nu
-    const x = -3.10 + u * 4.65
-    for (let iv = 0; iv <= nv; iv++) {
-      const v = iv / nv
-      const y = .12 + v * 3.35
-      const arch = Math.sin(v * Math.PI)
-      const fold = .44 * Math.sin(u * Math.PI * 2.3 + v * 4.2) + .18 * Math.sin(u * 9 - v * 6)
-      const z = -.58 - 1.05 * arch + .22 * fold + .18 * Math.sin(u * Math.PI)
-      const xx = x + .28 * arch * Math.sin(u * Math.PI * 2) + .10 * Math.sin(v * 8 + u * 4)
-      positions.push(xx, y + .14 * Math.sin(u * 6 + v * 3) * arch, z)
-      const c = deep.clone().lerp(teal, .34 + .30 * arch).lerp(violet, .24 * u).lerp(gold, .12 * (1 - Math.abs(u - .5) * 2))
-      colors.push(c.r, c.g, c.b)
-    }
+function galaxyPositions(seed:number,count:number,scale:number){
+  const p:number[]=[]
+  for(let i=0;i<count;i++){
+    const t=i/count,arm=i%4,angle=t*Math.PI*9+arm*Math.PI*.5+seed
+    const r=.18+Math.pow(t,.72)*scale
+    const x=-2.10+Math.cos(angle)*r*(.78+.12*Math.sin(i*.37))
+    const y=1.52+Math.sin(angle)*r*.42+(.5-t)*.74+.12*Math.sin(i*.91)
+    const z=-.52+Math.sin(angle*.47+i*.03)*r*.35-.38*t
+    p.push(x,y,z)
   }
-  const row = nv + 1
-  for (let iu = 0; iu < nu; iu++) for (let iv = 0; iv < nv; iv++) {
-    const a = iu * row + iv, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, b, c, b, d, c)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));return g
 }
 
-function lifeRootGeometry(index: number) {
-  const side = index % 2 ? -1 : 1
-  const points = Array.from({ length: 28 }, (_, i) => {
-    const t = i / 27
-    return new THREE.Vector3(
-      -1.25 + side * t * (1.10 + index * .08),
-      .06 + .08 * Math.sin(t * Math.PI),
-      -.05 + t * (.68 + .06 * index) + .08 * Math.sin(t * 5 + index),
-    )
-  })
-  return tube(points, .040, 8)
+function nebulaGeometry(layer:number){
+  const g=new THREE.SphereGeometry(1,56,36)
+  const p=g.getAttribute('position') as THREE.BufferAttribute
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i),a=Math.atan2(z,x)
+    const f=1+.10*Math.sin(a*3+y*5+layer)+.045*Math.sin(a*7-y*9)
+    p.setXYZ(i,x*(1.75-layer*.18)*f,y*(1.05-layer*.10)*f,z*(.56+layer*.07)*f)
+  }
+  g.computeVertexNormals();return g
 }
 
-function LifeMapObservatory({ onLifeMap }: { onLifeMap: () => void }) {
-  const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const vault = useMemo(lifeVaultGeometry, [])
-  const roots = useMemo(() => Array.from({ length: 7 }, (_, i) => lifeRootGeometry(i)), [])
-  const nodes = useMemo(() => Array.from({ length: 26 }, (_, i) => {
-    const u = ((i * 37) % 101) / 100
-    const v = .12 + ((i * 53) % 83) / 100 * .76
-    const x = -3.00 + u * 4.45
-    const y = .20 + v * 3.05
-    const arch = Math.sin(v * Math.PI)
-    const z = -.52 - 1.06 * arch + .14 * Math.sin(u * 8 + v * 5)
-    return { p: [x,y,z] as V3, s: .052 + (i%4)*.010, warm: i%5===0 }
-  }), [])
-  return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} name="home-v225-v2-life-map-lineage-observatory" onClick={(e) => { e.stopPropagation(); onLifeMap() }}>
-    <mesh geometry={vault} castShadow receiveShadow>
-      <meshPhysicalMaterial vertexColors roughness={.58} metalness={0} clearcoat={.05} side={THREE.DoubleSide}/>
-    </mesh>
-    {roots.map((geometry, i) => <mesh key={`root-${i}`} geometry={geometry} castShadow>
-      <meshStandardMaterial color={i%2 ? '#53786b' : '#7d6758'} emissive="#254d41" emissiveIntensity={.18} roughness={.80}/>
-    </mesh>)}
-    {nodes.map((node, i) => <mesh key={i} position={node.p} scale={node.s}>
-      <sphereGeometry args={[1,18,14]}/>
-      <meshPhysicalMaterial color={node.warm ? '#e1ba7c' : i%2 ? '#a9ddca' : '#c9b6dc'} emissive={node.warm ? '#a26731' : i%2 ? '#4c9e84' : '#7c5c96'} emissiveIntensity={1.25} roughness={.30}/>
-    </mesh>)}
-    <pointLight position={[-1.0,1.90,-.70]} color="#7fd0b4" intensity={3.1} distance={7.0}/>
-    <pointLight position={[-2.3,2.65,-1.0]} color="#bda1ce" intensity={1.65} distance={6.0}/>
+function LifeMapObservatory({onLifeMap}:{onLifeMap:()=>void}){
+  const y=height(LIFE_MAP.x,LIFE_MAP.z)
+  const starsA=useMemo(()=>galaxyPositions(.2,420,2.05),[]),starsB=useMemo(()=>galaxyPositions(1.1,260,1.55),[])
+  const nebulae=useMemo(()=>Array.from({length:3},(_,i)=>nebulaGeometry(i)),[])
+  return <group position={[LIFE_MAP.x,y+.02,LIFE_MAP.z]} name="home-v225-v2-life-map-lineage-observatory" onClick={e=>{e.stopPropagation();onLifeMap()}}>
+    <group position={[-.25,.10,0]}>
+      {nebulae.map((g,i)=><mesh key={i} geometry={g} position={[-2.08,1.45,-.58-i*.10]} rotation={[.12+i*.06,-.10,.18-i*.11]} scale={[1,1,1]}><meshPhysicalMaterial color={i===0?'#3c7d70':i===1?'#66547b':'#8a724f'} emissive={i===0?'#174b40':i===1?'#3e2d50':'#5e4627'} emissiveIntensity={.22} transparent opacity={.10+i*.025} depthWrite={false} side={THREE.DoubleSide} roughness={.52}/></mesh>)}
+      <points geometry={starsA}><pointsMaterial color="#b8ead8" size={.045} transparent opacity={.88} depthWrite={false} sizeAttenuation/></points>
+      <points geometry={starsB}><pointsMaterial color="#d8b9eb" size={.034} transparent opacity={.76} depthWrite={false} sizeAttenuation/></points>
+      <mesh position={[-2.08,1.52,-.52]} scale={[.22,.22,.22]}><sphereGeometry args={[1,32,22]}/><meshPhysicalMaterial color="#fff0bc" emissive="#e8b85f" emissiveIntensity={2.4} roughness={.24}/></mesh>
+      {Array.from({length:14},(_,i)=>{const a=i*.83,r=.52+(i%5)*.23;return <mesh key={i} position={[-2.08+Math.cos(a)*r,1.52+Math.sin(a*1.3)*r*.42,-.52+Math.sin(a)*r*.24]} scale={[.045+(i%3)*.012,.045+(i%3)*.012,.045+(i%3)*.012]}><sphereGeometry args={[1,18,12]}/><meshStandardMaterial color={i%3===0?'#efd99a':i%2?'#9edac5':'#c5a8d6'} emissive={i%3===0?'#9b6e2f':i%2?'#3c846d':'#6d4e80'} emissiveIntensity={1.3}/></mesh>})}
+    </group>
+    <pointLight position={[-2.35,1.65,-.32]} color="#94dfc3" intensity={3.8} distance={7.8}/>
+    <pointLight position={[-1.30,2.35,-.80]} color="#c3a0d4" intensity={1.9} distance={6.6}/>
   </group>
 }
 
-function orbGeometry() {
-  const geometry = new THREE.SphereGeometry(1, 152, 112)
-  const p = geometry.getAttribute('position') as THREE.BufferAttribute
-  const colors = new Float32Array(p.count * 3)
-  const deep = new THREE.Color('#0a2d26')
-  const green = new THREE.Color('#3e8f75')
-  const pale = new THREE.Color('#acd5c2')
-  const warm = new THREE.Color('#c98065')
-  for (let i = 0; i < p.count; i++) {
-    const bx = p.getX(i), by = p.getY(i), bz = p.getZ(i)
-    const angle = Math.atan2(bz, bx)
-    const upper = Math.max(0, by)
-    const lower = Math.max(0, -by)
-    const topCleft = Math.exp(-Math.pow(bx / .17, 2) - Math.pow((by - .77) / .15, 2))
-    const lobeBias = bx < 0 ? 1.12 : .96
-    const lowerTaper = Math.max(.10, 1 - .88 * Math.pow(lower, 1.08))
-    const shoulder = 1 + .38 * upper
-    const surfaceFold = 1 + .060 * Math.sin(angle * 3.2 + by * 7.8) + .026 * Math.sin(angle * 8.2 - by * 10.1)
-    let x = bx * .90 * shoulder * lowerTaper * lobeBias * surfaceFold
-    let z = bz * (.60 + .10 * upper) * lowerTaper * (1 + .035 * Math.sin(angle * 4.5 - by * 5.2))
-    let y = by * .82 - .52 * topCleft - .48 * Math.pow(lower, 1.12)
-    x += .085 * (1 - by * by) + .030 * bz
-    y += .032 * Math.sin(angle * 3.7 + by * 8.5) * (1 - Math.abs(by))
-    z += .028 * Math.sin(angle * 2.9 - by * 5.9) * (1 - Math.abs(by))
-    p.setXYZ(i, x, y, z)
-    const sideLight = Math.max(0, Math.cos(angle - .32)) * (1 - Math.abs(by))
-    const band = .5 + .5 * Math.sin(angle * 3.8 + by * 7.2)
-    const c = deep.clone().lerp(green, .32 + .34 * band).lerp(pale, .18 * sideLight).lerp(warm, .22 * Math.max(0, Math.cos(angle + 1.08)) * (1 - Math.abs(by)))
-    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b
+function livingHeartGeometry(){
+  const shape=new THREE.Shape()
+  shape.moveTo(0,-1.18)
+  shape.bezierCurveTo(-.34,-.82,-1.22,-.36,-1.18,.44)
+  shape.bezierCurveTo(-1.14,1.04,-.52,1.22,-.08,.75)
+  shape.bezierCurveTo(.02,.64,.06,.54,.08,.43)
+  shape.bezierCurveTo(.18,.66,.30,.82,.50,.94)
+  shape.bezierCurveTo(.94,1.18,1.27,.78,1.19,.30)
+  shape.bezierCurveTo(1.08,-.38,.44,-.88,0,-1.18)
+  const g=new THREE.ExtrudeGeometry(shape,{depth:.58,bevelEnabled:true,bevelSegments:6,steps:3,bevelSize:.13,bevelThickness:.16,curveSegments:40})
+  g.center()
+  const p=g.getAttribute('position') as THREE.BufferAttribute
+  const colors=new Float32Array(p.count*3)
+  const deep=new THREE.Color('#0c3027'),green=new THREE.Color('#388b70'),warm=new THREE.Color('#c17b61'),pale=new THREE.Color('#acd6c1')
+  for(let i=0;i<p.count;i++){
+    let x=p.getX(i),y=p.getY(i),z=p.getZ(i)
+    const fold=1+.045*Math.sin(y*5.8+x*4.1)+.020*Math.sin(y*11-z*7)
+    x=(x*.86+.07*y+.035*Math.sin(y*6))*fold
+    y=y*.82+.045*Math.sin(x*5+z*8)
+    z=(z-.03)*(.92+.10*Math.cos(y*4))+ .045*Math.sin(x*5+y*3)
+    p.setXYZ(i,x,y,z)
+    const band=.5+.5*Math.sin(y*6+x*3.5),side=Math.max(0,x*.55+.5)
+    const c=deep.clone().lerp(green,.35+.30*band).lerp(warm,.18*Math.max(0,-x+.3)).lerp(pale,.10*side)
+    colors[i*3]=c.r;colors[i*3+1]=c.g;colors[i*3+2]=c.b
   }
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-  geometry.computeVertexNormals()
-  return geometry
+  g.setAttribute('color',new THREE.BufferAttribute(colors,3));g.computeVertexNormals();return g
 }
 
-function orbVein(index: number) {
-  const side = index % 2 ? -1 : 1
-  const points = Array.from({ length: 40 }, (_, i) => {
-    const t = i / 39
-    const y = .56 - index * .048 - t * (.72 + index * .012)
-    const width = .46 * (1 - .63 * Math.max(0, -y))
-    return new THREE.Vector3(
-      side * width * (.56 + .25 * Math.sin(t * Math.PI + index * .42)) + .035,
-      y,
-      .34 * Math.sin(t * Math.PI * 1.12 + index * .49) * (1 - .32 * t) + .03,
-    )
-  })
-  return tube(points, .009 + index * .00034, 7)
+function orbVein(index:number){
+  const side=index%2?-1:1
+  const points=Array.from({length:34},(_,i)=>{const t=i/33;return new THREE.Vector3(side*(.08+t*.42+.08*Math.sin(t*Math.PI*2+index)),.58-t*1.12+.05*Math.sin(t*7+index),.34+.05*Math.sin(t*5+index))})
+  return tube(points,.0075+index*.00025,7)
 }
 
-function groundingFilament(index: number) {
-  const side = index - 2
-  const points = Array.from({ length: 32 }, (_, i) => {
-    const t = i / 31
-    return new THREE.Vector3(
-      side * .09 * (1 + .72 * t) + .024 * Math.sin(t * 7 + index),
-      -.49 - .62 * t,
-      .05 + .27 * t + .034 * Math.sin(t * 5 + index),
-    )
-  })
-  return tube(points, .0085, 7)
+type Posture={s:V3;r:V3;speed:number}
+const posture:Record<OrbState,Posture>={
+  dormant:{s:[.92,.89,.91],r:[.04,-.06,-.03],speed:.10},idle:{s:[1,.99,.98],r:[-.04,.05,-.02],speed:.30},
+  attention:{s:[1.035,1.05,.96],r:[-.10,.12,.05],speed:.62},listening:{s:[.98,1.04,.97],r:[.08,-.06,-.04],speed:.22},
+  thinking:{s:[1.02,.99,1.01],r:[-.11,.14,.07],speed:.18},speaking:{s:[1.045,1.03,.97],r:[.03,-.02,-.08],speed:.80},
+  guiding:{s:[.99,1.055,.96],r:[-.12,.02,.08],speed:.42},reflecting:{s:[.99,.98,1.025],r:[.10,.08,-.06],speed:.14},
+  calming:{s:[1.01,.97,.99],r:[-.02,-.04,.02],speed:.12},privacy:{s:[.91,.91,.90],r:[.12,.08,.10],speed:.08},
+  warning:{s:[1.04,1.045,.95],r:[-.14,-.06,-.10],speed:.95},transition:{s:[.95,1.06,.93],r:[-.14,.04,.10],speed:.65},
 }
 
-type Posture = { s: V3; r: V3; speed: number }
-const posture: Record<OrbState, Posture> = {
-  dormant:{s:[.92,.89,.91],r:[.04,-.06,-.03],speed:.10}, idle:{s:[1,.99,.98],r:[-.04,.05,-.02],speed:.30},
-  attention:{s:[1.035,1.05,.96],r:[-.10,.12,.05],speed:.62}, listening:{s:[.98,1.04,.97],r:[.08,-.06,-.04],speed:.22},
-  thinking:{s:[1.02,.99,1.01],r:[-.11,.14,.07],speed:.18}, speaking:{s:[1.045,1.03,.97],r:[.03,-.02,-.08],speed:.80},
-  guiding:{s:[.99,1.055,.96],r:[-.12,.02,.08],speed:.42}, reflecting:{s:[.99,.98,1.025],r:[.10,.08,-.06],speed:.14},
-  calming:{s:[1.01,.97,.99],r:[-.02,-.04,.02],speed:.12}, privacy:{s:[.91,.91,.90],r:[.12,.08,.10],speed:.08},
-  warning:{s:[1.04,1.045,.95],r:[-.14,-.06,-.10],speed:.95}, transition:{s:[.95,1.06,.93],r:[-.14,.04,.10],speed:.65},
-}
-
-function LivingMemoryOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
-  const group = useRef<THREE.Group>(null)
-  const geometry = useMemo(orbGeometry, [])
-  const veins = useMemo(() => Array.from({ length: 14 }, (_, i) => orbVein(i)), [])
-  const filaments = useMemo(() => Array.from({ length: 5 }, (_, i) => groundingFilament(i)), [])
-  const p = posture[state]
-  useFrame(({ clock }) => {
-    if (!group.current) return
-    const t = clock.elapsedTime * p.speed
-    const breath = reducedMotion ? 1 : 1 + Math.sin(t * .78) * .007
-    group.current.scale.set(p.s[0] * breath, p.s[1] * breath, p.s[2] * breath)
-    group.current.rotation.set(p.r[0], p.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .016), p.r[2])
-  })
-  const warning = state === 'warning'
-  const activate = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onOrb() }
+function LivingMemoryOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boolean;onOrb:()=>void}){
+  const group=useRef<THREE.Group>(null),geometry=useMemo(livingHeartGeometry,[]),veins=useMemo(()=>Array.from({length:9},(_,i)=>orbVein(i)),[]),p=posture[state]
+  useFrame(({clock})=>{if(!group.current)return;const t=clock.elapsedTime*p.speed;const breath=reducedMotion?1:1+Math.sin(t*.78)*.007;group.current.scale.set(p.s[0]*breath,p.s[1]*breath,p.s[2]*breath);group.current.rotation.set(p.r[0],p.r[1]+(reducedMotion?0:Math.sin(t*.70)*.016),p.r[2])})
+  const warning=state==='warning',activate=(e:ThreeEvent<MouseEvent>)=>{e.stopPropagation();onOrb()}
   return <group ref={group} position={ORB} name="home-v225-v2-intimate-veined-living-memory-orb" onClick={activate}>
-    <mesh geometry={geometry} position={[0,-.28,0]} scale={[.82,.94,.72]} castShadow>
-      <meshPhysicalMaterial vertexColors color="#d4e5dd" roughness={.56} clearcoat={.04} clearcoatRoughness={.88} sheen={.16} sheenColor="#659b86" emissive="#103b30" emissiveIntensity={.18}/>
-    </mesh>
-    <group position={[0,-.28,0]} scale={[.82,.94,.72]} name="home-v225-v2-orb-embedded-memory-veins">
-      {veins.map((g,i) => <mesh key={i} geometry={g}>
-        <meshStandardMaterial color={warning ? '#d77a68' : i%2 ? '#9ad0b8' : '#d39b80'} emissive={warning ? '#8a392f' : i%2 ? '#3b7863' : '#875039'} emissiveIntensity={.64} roughness={.54}/>
-      </mesh>)}
-    </group>
-    <group position={[0,-.28,0]} scale={[.82,.94,.72]}>
-      {filaments.map((g,i) => <mesh key={i} geometry={g}><meshStandardMaterial color="#608672" emissive="#2c5b4a" emissiveIntensity={.30} roughness={.76}/></mesh>)}
-    </group>
-    <mesh position={[0,-.28,0]} scale={[.91,1.06,.82]} onClick={activate}>
-      <sphereGeometry args={[1,28,20]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/>
-    </mesh>
-    <pointLight position={[.05,-.06,.28]} color={warning ? '#d56d5d' : '#80d8b7'} intensity={state === 'dormant' ? .16 : .86} distance={3.8}/>
+    <mesh geometry={geometry} position={[0,-.18,0]} scale={[.62,.72,.72]} castShadow><meshPhysicalMaterial vertexColors roughness={.50} clearcoat={.05} clearcoatRoughness={.85} sheen={.18} sheenColor="#6ba58e" emissive="#123a30" emissiveIntensity={.17}/></mesh>
+    <group position={[0,-.18,0]} scale={[.62,.72,.72]} name="home-v225-v2-orb-embedded-memory-veins">{veins.map((g,i)=><mesh key={i} geometry={g}><meshStandardMaterial color={warning?'#dc7765':i%2?'#a6d6bf':'#d39a80'} emissive={warning?'#8b352d':i%2?'#3a785f':'#875039'} emissiveIntensity={.66} roughness={.52}/></mesh>)}</group>
+    <mesh position={[0,-.18,0]} scale={[.82,.92,.72]} onClick={activate}><sphereGeometry args={[1,24,18]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+    <pointLight position={[.02,-.02,.35]} color={warning?'#d76b5a':'#87ddbb'} intensity={state==='dormant'?.16:.92} distance={3.8}/>
   </group>
 }
 
-function AtmosphericDepth() {
-  const field = useMemo(() => {
-    const pts: number[] = []
-    for (let i = 0; i < 250; i++) {
-      const a = i * 2.39996323
-      const r = 2.2 + ((i * 37) % 100) / 100 * 9.2
-      pts.push(Math.cos(a) * r, .42 + ((i * 29) % 100) / 100 * 4.2, 3.5 - ((i * 53) % 100) / 100 * 19.4)
-    }
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3))
-    return g
-  }, [])
-  return <group name="home-v225-v2-bounded-atmospheric-depth">
-    <points geometry={field}><pointsMaterial color="#bad8c8" size={.018} transparent opacity={.24} depthWrite={false}/></points>
-    <pointLight position={[0,3.8,-12]} color="#79aa97" intensity={.90} distance={15}/>
-    <pointLight position={[-2.9,2.0,-8]} color="#de9a67" intensity={1.28} distance={10}/>
-    <pointLight position={[3.0,2.4,-9]} color="#93b8ad" intensity={.78} distance={10}/>
-  </group>
+function AtmosphericDepth(){
+  const field=useMemo(()=>{const pts:number[]=[];for(let i=0;i<240;i++){const a=i*2.39996323,r=2.2+((i*37)%100)/100*9.2;pts.push(Math.cos(a)*r,.42+((i*29)%100)/100*4.2,3.5-((i*53)%100)/100*19.4)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));return g},[])
+  return <group name="home-v225-v2-bounded-atmospheric-depth"><points geometry={field}><pointsMaterial color="#bad8c8" size={.017} transparent opacity={.22} depthWrite={false}/></points><pointLight position={[0,3.8,-12]} color="#79aa97" intensity={.9} distance={15}/><pointLight position={[-3.0,2.0,-8]} color="#de9a67" intensity={1.3} distance={10}/><pointLight position={[3.0,2.4,-9]} color="#93b8ad" intensity={.8} distance={10}/></group>
 }
 
-export function HomeV225PolishV2({
-  orbState,
-  reducedMotion,
-  onOrb,
-  onGround,
-  onLifeMap,
-  onWalk,
-}: {
-  orbState: OrbState
-  reducedMotion: boolean
-  onOrb: () => void
-  onGround: () => void
-  onLifeMap: () => void
-  onWalk: WalkHandler
-}) {
-  return <group name="home-v225-v2-production-memory-sanctuary">
-    <RetireRejectedPresentation/>
-    <MemoryValley onWalk={onWalk}/>
-    <GroundHearth onGround={onGround}/>
-    <LifeMapObservatory onLifeMap={onLifeMap}/>
-    <LivingMemoryOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/>
-    <AtmosphericDepth/>
-  </group>
+export function HomeV225PolishV2({orbState,reducedMotion,onOrb,onGround,onLifeMap,onWalk}:{orbState:OrbState;reducedMotion:boolean;onOrb:()=>void;onGround:()=>void;onLifeMap:()=>void;onWalk:WalkHandler}){
+  return <group name="home-v225-v2-production-memory-sanctuary"><RetireRejectedPresentation/><MemoryValley onWalk={onWalk}/><GroundHearth onGround={onGround}/><LifeMapObservatory onLifeMap={onLifeMap}/><LivingMemoryOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><AtmosphericDepth/></group>
 }
