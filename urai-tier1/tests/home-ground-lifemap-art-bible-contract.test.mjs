@@ -84,7 +84,7 @@ test('Home is one coherent authored Sacred-Tech 3D environment with final physic
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
   assert.match(homeProduction, /href:'\/life-map\/\?from=home-sky'/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
-  assert.match(homeRuntime, /href: '\/life-map\/'/)
+  assert.match(homeRuntime, /requestUraiWorldTravel\(\{ destination: 'life-map', href: '\/life-map\/\?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent-complete' \}\)/)
   assert.match(homeProduction, /data-home-runtime-assets="home-entry-chamber-v1\.glb home-human-makehuman-v4\.glb urai-orb-avatar-v1\.glb portal-ring-master-v1\.glb authored-sacred-tech-composite"/)
   assert.match(homeProduction, /data-home-orb-model-clip=/)
   assert.doesNotMatch(homeRuntime, /EmbodiedHomeSpatialCanvas|HomeSanctuaryWorld/)
