@@ -8,7 +8,7 @@ type Props = { onOrbOpen: () => void; webglAvailable: true }
 const HOME_SPAWN={x:0,z:4.6} as const, HOME_ORB={x:-.45,z:-7.45} as const, HOME_GROUND={x:-4.85,z:-8.25} as const, HOME_LIFE_MAP={x:4.85,z:-8.25} as const
 const LEGACY_V126_FINAL_ART_MARKER=['data-home-final-art-revision','v126-retained-pixels-pending'] as const
 const LEGACY_V176_AUTHORITY_MARKER='v176-recollection-sanctuary'
-const V225_RUNTIME_ASSETS=['HomeWorldProductionV223Geometry.tsx','rock-tile-floor-diff-1k.webp','rock-tile-floor-normal-gl-1k.webp','rock-tile-floor-arm-1k.webp'].join(' ')
+const V225_RUNTIME_ASSETS=['HomeWorldProductionV223Geometry.tsx','HomeWorldProductionV225Polish.tsx','rock-tile-floor-diff-1k.webp','rock-tile-floor-normal-gl-1k.webp','rock-tile-floor-arm-1k.webp'].join(' ')
 const REVIEW_ORB_STATES=new Set<OrbState>(['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition'])
 
 function synchronizeCanonicalHomeTelemetry(world:HTMLElement){const playerX=Number.parseFloat(world.dataset.homePlayerX??''),playerZ=Number.parseFloat(world.dataset.homePlayerZ??'');if(!Number.isFinite(playerX)||!Number.isFinite(playerZ))return;const distance=(target:{x:number;z:number})=>Math.hypot(playerX-target.x,playerZ-target.z).toFixed(3);world.dataset.homeDistance=distance(HOME_SPAWN);world.dataset.homeDistanceOrb=distance(HOME_ORB);world.dataset.homeDistanceGround=distance(HOME_GROUND);world.dataset.homeDistanceLifeMap=distance(HOME_LIFE_MAP)}
