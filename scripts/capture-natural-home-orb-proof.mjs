@@ -25,7 +25,7 @@ for (const marker of [
   'home-v225-v2-production-memory-sanctuary',
   'home-v225-v2-continuous-sculpted-memory-valley',
   'home-v225-v2-cathedral-memory-ribs',
-  'home-v225-v2-ground-inhabited-hearth',
+  'home-v225-v2-ground-memory-hearth',
   'home-v225-v2-life-map-lineage-observatory',
   'home-v225-v2-intimate-veined-living-memory-orb',
   'home-v225-v2-orb-embedded-memory-veins',
