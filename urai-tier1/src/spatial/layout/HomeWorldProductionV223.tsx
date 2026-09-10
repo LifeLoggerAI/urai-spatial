@@ -7,7 +7,7 @@ import {resolveOrbSensoryOutput,URAI_ORB_STATE_EVENT,type OrbState,type OrbState
 import {MobileMovementPad,stepEmbodiedMotion,useDragLook,useMovementInput,type MovementInput} from '@/spatial/navigation/EmbodiedNavigation'
 import {requestUraiWorldOrbOpen,requestUraiWorldTravel} from '@/spatial/world/worldEvents'
 import {T,SPAWN,ORB,GROUND,LIFE_MAP,BOUNDS,Terrain,Escarpment,DestinationLights,Orb} from './HomeWorldProductionV223Geometry'
-import {HomeV225PolishLayer} from './HomeWorldProductionV225Polish'
+import {HomeV225PolishV2} from './HomeWorldProductionV225PolishV2'
 import styles from './HomeWorldProduction.module.css'
 
 type Nearby='orb'|'ground'|'life-map'|null
@@ -94,7 +94,7 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
     <directionalLight position={[-7,10,5]} intensity={2.35} color="#f5d6a0" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
     <directionalLight position={[8,7,-10]} intensity={.88} color="#9bc5b0"/>
     <Terrain walk={walk} onGround={p.onGround} onLifeMap={p.onLifeMap}/><Escarpment side={-1}/><Escarpment side={1}/><DestinationLights/><Orb state={p.orbState} reducedMotion={p.reducedMotion} onOpen={p.onOrb}/>
-    <HomeV225PolishLayer orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb}/>
+    <HomeV225PolishV2 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>
     <Rig input={p.input} yaw={p.yaw} pitch={p.pitch} target={p.target} onNearby={p.onNearby} transition={p.transition} owner={p.owner}/>
   </>
 }
