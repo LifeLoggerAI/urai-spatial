@@ -30,7 +30,7 @@ for (const marker of [
   'home-v225-v2-intimate-veined-living-memory-orb',
   'home-v225-v2-orb-embedded-memory-veins',
 ]) if (!polish.includes(marker)) throw new Error(`V225 V2 polish source missing ${marker}`)
-if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V225 direct runtime must not mount predecessor GLBs')
+if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V226 direct runtime composition must not mount predecessor GLBs')
 
 const runtimeSource = `${geometry}\n${polish}`
 const runtimeIdentity = {
@@ -50,8 +50,8 @@ const cases = [
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-13', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
-  visualPolicy: 'V225 V2 Home requires one continuous inhabited navigable memory sanctuary, readable Ground and Life Map destinations, one intimate asymmetric veined living-memory Orb, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
+  schemaVersion: 'urai-natural-home-orb-proof-14', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
+  visualPolicy: 'V226 Home requires one continuous inhabited navigable memory sanctuary, readable Ground and Life Map destinations, one rooted living-memory presence, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
   cases: [], errors: [],
 }
 
@@ -99,7 +99,7 @@ for (const spec of cases) {
     record.worldCharacter = await attr('data-home-world-character'); record.visualOwnership = await attr('data-home-visual-ownership')
     record.desktopMobileWorld = await attr('data-home-desktop-mobile-world'); record.movement = await attr('data-home-movement')
     record.visualGrade = await attr('data-home-visual-grade'); record.artRevision = await attr('data-home-final-art-revision')
-    record.artCertification = await attr('data-home-art-certification'); record.v225Certification = await attr('data-home-v225-certification')
+    record.artCertification = await attr('data-home-art-certification'); record.v226Certification = await attr('data-home-v226-certification'); record.v225Certification = await attr('data-home-v225-certification')
     record.v224Certification = await attr('data-home-v224-certification'); record.v223Certification = await attr('data-home-v223-certification')
     record.runtimeAssets = await attr('data-home-runtime-assets'); record.governedIdentityAssets = await attr('data-home-governed-identity-assets')
     record.visibleProductionAssets = await attr('data-home-visible-production-assets'); record.authoredRegions = await attr('data-home-authored-regions')
@@ -118,16 +118,16 @@ for (const spec of cases) {
       && record.worldCharacter === 'production-cinematic-sacred-tech'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
       && record.desktopMobileWorld === 'same-scene' && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'v225-literal-pixel-candidate-not-certified'
-      && record.artRevision === 'v225-retained-pixels-pending'
-      && record.artCertification === 'fresh-exact-head-pixels-required' && record.v225Certification === 'fresh-exact-head-pixels-required'
+      && record.visualGrade === 'v226-literal-pixel-candidate-not-certified'
+      && record.artRevision === 'v226-retained-pixels-pending'
+      && record.artCertification === 'fresh-exact-head-pixels-required' && record.v226Certification === 'fresh-exact-head-pixels-required' && record.v225Certification === 'superseded-rejected-pixels'
       && record.v224Certification === 'superseded-rejected-pixels' && record.v223Certification === 'superseded-rejected-pixels'
       && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx') && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
-      && record.governedIdentityAssets === 'v225-v2-direct-runtime-topology historical-v191-glbs-unmounted'
-      && record.visibleProductionAssets?.includes('v225-v2-authored-valley-floor')
-      && record.visibleProductionAssets?.includes('v225-v2-ground-inhabited-hearth')
-      && record.visibleProductionAssets?.includes('v225-v2-life-map-lineage-observatory')
-      && record.visibleProductionAssets?.includes('v225-v2-intimate-veined-living-memory-orb')
+      && record.governedIdentityAssets === 'v226-direct-runtime-topology historical-v191-glbs-unmounted'
+      && record.visibleProductionAssets?.includes('v226-weathered-memory-banks')
+      && record.visibleProductionAssets?.includes('v226-ground-inhabited-hearth')
+      && record.visibleProductionAssets?.includes('v226-life-map-lineage-observatory')
+      && record.visibleProductionAssets?.includes('v226-rooted-single-living-memory-presence')
       && record.authoredRegions?.includes('home-sanctuary-pavilion') && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null && record.orbState !== null
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
