@@ -14,6 +14,7 @@ const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
 const homeProduction = read('src/spatial/layout/HomeWorldProductionV219.tsx')
 const activeHomeProduction = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const activeHomeGeometry = read('src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
+const activeHomeV225V2 = read('src/spatial/layout/HomeWorldProductionV225PolishV2.tsx')
 const legacyHomeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const legacyHomeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
@@ -40,17 +41,31 @@ test('app template mounts the exact active V225 Home production owner without ce
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProductionV223/)
+  assert.match(assetHome, /HomeWorldProductionV225PolishV2\.tsx/)
   assert.match(assetHome, /data-home-v225-retained-pixel-rebuild="active"/)
   assert.match(assetHome, /data-home-v224-retained-pixel-rebuild="superseded"/)
   assert.match(assetHome, /data-home-v223-retained-pixel-rebuild="superseded"/)
   assert.match(assetHome, /data-home-v219-retained-pixel-rebuild="superseded"/)
   assert.match(assetHome, /data-home-v126-retained-pixel-rebuild="superseded"/)
   assert.match(assetHome, /data-home-v176-retained-pixel-rebuild="superseded"/)
-  assert.match(assetHome, /world\.setAttribute\('data-home-v225-art-layer','integrated-sculpted-sanctuary-organic-grove-sheltered-ground-braided-life-map-veined-living-memory-presence'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v225-art-layer','v2-continuous-sculpted-memory-valley-cathedral-ribs-inhabited-ground-lineage-observatory-veined-living-memory-orb'\)/)
   assert.match(assetHome, /world\.setAttribute\('data-home-v225-certification','fresh-exact-head-pixels-required'\)/)
   assert.match(assetHome, /world\.setAttribute\('data-home-v224-certification','superseded-rejected-pixels'\)/)
   assert.match(assetHome, /world\.setAttribute\('data-home-v223-certification','superseded-rejected-pixels'\)/)
   assert.match(assetHome, /world\.setAttribute\('data-home-art-certification','fresh-exact-head-pixels-required'\)/)
+  for (const marker of [
+    'home-v225-v2-production-memory-sanctuary',
+    'home-v225-v2-continuous-sculpted-memory-valley',
+    'home-v225-v2-authored-valley-floor',
+    'home-v225-v2-grown-memory-walk',
+    'home-v225-v2-cathedral-memory-ribs',
+    'home-v225-v2-weathered-memory-walls',
+    'home-v225-v2-ground-memory-hearth',
+    'home-v225-v2-life-map-lineage-observatory',
+    'home-v225-v2-intimate-veined-living-memory-orb',
+    'home-v225-v2-orb-embedded-memory-veins',
+  ]) assert.match(activeHomeV225V2, new RegExp(marker))
+  assert.doesNotMatch(activeHomeV225V2, /useGLTF\(/)
   assert.match(activeHomeGeometry, /home-v225-sculpted-sanctuary-floor/)
   assert.match(activeHomeGeometry, /home-v225-rooted-memory-rib/)
   assert.match(activeHomeGeometry, /home-v225-ground-sheltered-memory-basin/)
@@ -62,12 +77,14 @@ test('app template mounts the exact active V225 Home production owner without ce
   assert.match(activeHomeProduction, /export function HomeWorldProductionV223/)
   assert.match(activeHomeProduction, /export const HomeWorldProduction=HomeWorldProductionV223/)
   assert.match(activeHomeProduction, /data-home-primary-owner="asset-driven"/)
+  assert.match(activeHomeProduction, /HomeV225PolishV2/)
   assert.doesNotMatch(legacyHomeArt, /<Canvas/)
   assert.match(homeProductionEntry, /HomeWorldProductionV223/)
   assert.match(legacyHomeProduction, /export function HomeWorldProductionV70/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
+  assert.doesNotMatch(`${assetHome}\n${activeHomeProduction}\n${activeHomeV225V2}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
 test('V219 is one continuous single-Canvas sanctuary with authored geology, rooted destinations, and one connected living-memory presence', () => {
