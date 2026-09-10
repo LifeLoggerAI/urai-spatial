@@ -9,12 +9,13 @@ import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
+import { resolvePromotedUraiSpatialAssetPath } from '@/spatial/assets/promotedAssetResolver'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 const DEFAULT_CAMERA: [number, number, number] = [0, 1.45, 8.2]
 const DEFAULT_TARGET: [number, number, number] = [0, 0.45, -1.3]
 const CAMERA_LIMIT = 8.8
-const FOCUS_CHAMBER_MODEL = '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
+const FOCUS_CHAMBER_MODEL = resolvePromotedUraiSpatialAssetPath('focus-memory-chamber-glb-v1')!
 
 type ChamberState = 'neutral' | 'loading' | 'ready' | 'unavailable' | 'unauthorized' | 'corrupt' | 'deleted'
 type WebGLState = 'ready' | 'lost' | 'restoring' | 'failed'

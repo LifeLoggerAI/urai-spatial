@@ -6,6 +6,10 @@ export const URAI_WORLD_RETURN_EVENT = 'urai:world-return'
 export const URAI_WORLD_ORB_OPEN_EVENT = 'urai:world-orb-open'
 export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 
+export type UraiWorldOrbOpenDetail = {
+  returnFocusTo?: HTMLElement
+}
+
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
 const WORLD_TRAVEL_OBSERVE_MS = 50
@@ -112,17 +116,17 @@ export function requestUraiWorldReturn() {
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }
 
-export function requestUraiWorldOrbOpen() {
+export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) {
   if (typeof window === 'undefined') return
   dispatchSpatialAudioCue('orb-confirm')
-  window.dispatchEvent(new Event(URAI_WORLD_ORB_OPEN_EVENT))
+  window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail: { returnFocusTo } }))
 }
 
 declare global {
   interface WindowEventMap {
     [URAI_WORLD_TRAVEL_EVENT]: CustomEvent<UraiWorldTravelRequest>
     [URAI_WORLD_RETURN_EVENT]: Event
-    [URAI_WORLD_ORB_OPEN_EVENT]: Event
+    [URAI_WORLD_ORB_OPEN_EVENT]: CustomEvent<UraiWorldOrbOpenDetail>
     [URAI_HOME_ASCENT_EVENT]: CustomEvent<UraiWorldTravelRequest>
   }
 }

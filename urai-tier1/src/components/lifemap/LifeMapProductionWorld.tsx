@@ -4,6 +4,7 @@ import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei
 import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
+import { resolvePromotedUraiSpatialAssetPath } from "@/spatial/assets/promotedAssetResolver";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import type { LifeMapNode } from "./lifeMapData";
@@ -24,8 +25,8 @@ type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
 
 const LifeMapReducedMotionContext = createContext(false);
-const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
-const MEMORY_CHAMBER_MODEL = "/assets/urai/generated/models/focus-memory-chamber-v1.glb";
+const MEMORY_STAR_MODEL = resolvePromotedUraiSpatialAssetPath('life-map-memory-star-glb-v1')!;
+const MEMORY_CHAMBER_MODEL = resolvePromotedUraiSpatialAssetPath('focus-memory-chamber-glb-v1')!;
 const DEEP = "#01030a";
 const GOLD = "#ffd98a";
 const ICE = "#dff8ff";

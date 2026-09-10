@@ -5,7 +5,7 @@
   "bytes": 1786808,
   "sha256": "73f2a49ed2cfd6cd7ae9baed7b3908d53e0cac75b9f36ff1b8be9654e3d3e2f2",
   "measured": {
-    "triangleCount": 12934,
+    "triangleCount": 57352,
     "boundsMeters": {
       "min": [
         -9.345,
@@ -24,8 +24,8 @@
       ]
     },
     "repairedEulerRotations": 2,
-    "nodeCount": 160,
-    "materialCount": 13,
+    "nodeCount": 322,
+    "materialCount": 8,
     "animationClips": [
       "Home_Breathing",
       "Presence_Idle",

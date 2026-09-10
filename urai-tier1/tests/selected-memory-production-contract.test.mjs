@@ -45,7 +45,9 @@ test('Focus is an explorable authored living memory chamber rather than a static
 
   assert.match(focus, /from '@react-three\/fiber'/)
   assert.match(focus, /import \* as THREE from 'three'/)
-  assert.match(focus, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
+  assert.match(focus, /import \{ resolvePromotedUraiSpatialAssetPath \} from '@\/spatial\/assets\/promotedAssetResolver'/)
+  assert.match(focus, /FOCUS_CHAMBER_MODEL = resolvePromotedUraiSpatialAssetPath\('focus-memory-chamber-glb-v1'\)!/)
+  assert.doesNotMatch(focus, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/, 'Focus must not bypass governed asset authority with a hard-coded model path')
   assert.match(focus, /function cloneAuthoredFocusModel/)
   assert.match(focus, /function AuthoredFocusChamber/)
   assert.match(focus, /useGLTF\(FOCUS_CHAMBER_MODEL\)/)

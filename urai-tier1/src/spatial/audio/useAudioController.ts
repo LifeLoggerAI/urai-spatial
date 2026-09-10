@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { resolveReadyUraiSensoryAssetPath } from "@/spatial/assets/sensoryAssetManifest";
 import type {
   AmbientTrack,
   NarratorAudioLine,
@@ -10,6 +11,7 @@ import type {
 } from "./audioTypes";
 
 const DEFAULT_ENGINE: VoiceEngine = "elevenlabs";
+const PRODUCTION_AUDIO_READY = resolveReadyUraiSensoryAssetPath("ambientAudio") !== null;
 
 const PHASE_TO_AMBIENT: Record<SpatialAudioPhase, AmbientTrack> = {
   HOME: "home",
@@ -21,17 +23,17 @@ const PHASE_TO_AMBIENT: Record<SpatialAudioPhase, AmbientTrack> = {
 };
 
 const AMBIENT_SRC: Record<AmbientTrack, string> = {
-  home: "/assets/urai/generated/audio/home-ambient-v1.opus",
-  ground: "/assets/urai/generated/audio/ground-ambient-v1.opus",
-  lifemap: "/assets/urai/generated/audio/life-map-ambient-v1.opus",
-  focus: "/assets/urai/generated/audio/focus-ambient-v1.opus",
-  replay: "/assets/urai/generated/audio/replay-ambient-v1.opus",
+  home: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/home-ambient-v1.opus" : "",
+  ground: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/ground-ambient-v1.opus" : "",
+  lifemap: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/life-map-ambient-v1.opus" : "",
+  focus: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/focus-ambient-v1.opus" : "",
+  replay: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/replay-ambient-v1.opus" : "",
 };
 
 const CUE_SRC: Record<SpatialAudioCue, string> = {
-  transition: "/assets/urai/generated/audio/portal-transition-v1.opus",
-  "orb-confirm": "/assets/urai/generated/audio/orb-confirm-v1.opus",
-  error: "/assets/urai/generated/audio/ui-error-v1.opus",
+  transition: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/portal-transition-v1.opus" : "",
+  "orb-confirm": PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/orb-confirm-v1.opus" : "",
+  error: PRODUCTION_AUDIO_READY ? "/assets/urai/generated/audio/ui-error-v1.opus" : "",
 };
 
 function hasWindow() {
@@ -127,6 +129,7 @@ export function useAudioController() {
       const nextTrack = PHASE_TO_AMBIENT[phase];
       if (ambientTrackRef.current === nextTrack) return;
       const nextSrc = AMBIENT_SRC[nextTrack];
+      if (!nextSrc) { stopAmbient(); return; }
       const current = activeAmbientRef.current === "A" ? ambientARef.current : ambientBRef.current;
       const nextKey = activeAmbientRef.current === "A" ? "B" : "A";
       const next = nextKey === "A" ? ambientARef.current : ambientBRef.current;
@@ -165,8 +168,10 @@ export function useAudioController() {
 
   const playCue = useCallback((cue: SpatialAudioCue) => {
     if (!hasWindow()) return;
+    const src = CUE_SRC[cue];
+    if (!src) return;
     stopCue();
-    const audio = new Audio(CUE_SRC[cue]);
+    const audio = new Audio(src);
     audio.preload = "auto";
     audio.volume = cue === "error" ? 0.42 : 0.5;
     cueAudioRef.current = audio;

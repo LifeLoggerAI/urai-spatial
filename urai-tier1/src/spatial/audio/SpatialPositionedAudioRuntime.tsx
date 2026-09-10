@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { resolveReadyUraiSensoryAssetPath } from '../assets/sensoryAssetManifest'
 import type { SpatialAudioCue } from './audioTypes'
 
 const SESSION_KEY = 'urai:spatial-audio-consent-v1'
 const MUTE_KEY = 'urai:spatial-audio-muted-v1'
+const PRODUCTION_AUDIO_READY = resolveReadyUraiSensoryAssetPath('ambientAudio') !== null
 
 const CUES: Record<SpatialAudioCue, { src: string; position: [number, number, number]; gain: number }> = {
   transition: { src: '/assets/urai/generated/audio/portal-transition-v1.opus', position: [0, 1.2, -3.4], gain: 0.48 },
@@ -39,6 +41,7 @@ async function bufferFor(state: AudioState, src: string) {
 }
 
 async function playPositioned(state: AudioState, cue: SpatialAudioCue) {
+  if (!PRODUCTION_AUDIO_READY) return
   const spec = CUES[cue]
   if (!spec) return
   if (state.context.state === 'suspended') await state.context.resume()

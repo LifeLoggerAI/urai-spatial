@@ -12,6 +12,15 @@ on:
       - 'scripts/repair-home-glb-pole-normals.mjs'
       - 'scripts/repair-focus-glb-accessor-bounds.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
+      - 'scripts/verify-asset-authority-consistency.mjs'
+      - 'tests/asset-authority-consistency.test.mjs'
+      - 'urai-tier1/src/spatial/assets/assetManifest.ts'
+      - 'urai-tier1/src/spatial/assets/assetPromotionState.ts'
+      - 'urai-tier1/src/spatial/**'
+      - 'urai-tier1/src/app/**'
+      - 'urai-tier1/tests/sensory-asset-resolution-contract.test.mjs'
+      - 'docs/release-evidence/SPATIAL_ASSET_COMPLETION_LEDGER_2026-08-01.json'
+      - 'operations/assets/production-sensory-asset-receipt.json'
       - 'scripts/verify-governed-asset-promotion.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
       - 'scripts/audit-launch-critical-candidate-bundle.mjs'
@@ -58,9 +67,12 @@ jobs:
           : > "$changed_files"
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             git diff --name-only "$BASE_SHA" "$URAI_EXACT_HEAD" > "$changed_files"
-            if grep -Eq '^operations/assets/promotion-decisions/.+\.json$' "$changed_files"; then
-              promotion=true
-            fi
+            mapfile -t changed_decisions < <(grep -E '^operations/assets/promotion-decisions/.+\.json$' "$changed_files" || true)
+            for decision in "${changed_decisions[@]}"; do
+              if node -e "const fs=require('node:fs');const d=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));process.exit(d.mode==='promotion'&&d.promote===true&&d.currentAuthority!==false?0:1)" "$decision"; then
+                promotion=true
+              fi
+            done
             if (grep -E '^(urai-tier1/public/assets/urai/generated/|operations/assets/(launch-critical-assets\.json|generated-receipts/|promotion-rehearsal/))' "$changed_files" | grep -Ev '^urai-tier1/public/assets/urai/generated/audio/' | grep -q .); then
               replacement=true
             fi
@@ -72,6 +84,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test asset authority consistency
+        run: node --test tests/asset-authority-consistency.test.mjs
+      - name: Verify asset authority consistency
+        run: node scripts/verify-asset-authority-consistency.mjs
 
       - name: Repair exact Home GLB pole normals and emit successor when required
         id: home_repair
