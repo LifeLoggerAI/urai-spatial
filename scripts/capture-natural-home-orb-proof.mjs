@@ -9,7 +9,7 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
 const geometryPath = path.resolve('urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
-const polishPath = path.resolve('urai-tier1/src/spatial/layout/HomeWorldProductionV225Polish.tsx')
+const polishPath = path.resolve('urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx')
 const geometry = await readFile(geometryPath, 'utf8')
 const polish = await readFile(polishPath, 'utf8')
 
@@ -22,20 +22,21 @@ for (const marker of [
   'home-v225-embedded-memory-veins',
 ]) if (!geometry.includes(marker)) throw new Error(`V225 geometry source missing ${marker}`)
 for (const marker of [
-  'home-v225-polish-production-composition',
-  'home-v225-polish-layered-living-strata',
-  'home-v225-polish-ground-inhabited-hearth-grove',
-  'home-v225-polish-life-map-living-lineage-observatory',
-  'home-v225-polish-intimate-asymmetric-living-memory-orb',
-  'home-v225-polish-orb-surface-memory-veins',
-]) if (!polish.includes(marker)) throw new Error(`V225 polish source missing ${marker}`)
+  'home-v225-v2-production-memory-sanctuary',
+  'home-v225-v2-continuous-sculpted-memory-valley',
+  'home-v225-v2-cathedral-memory-ribs',
+  'home-v225-v2-ground-inhabited-hearth',
+  'home-v225-v2-life-map-lineage-observatory',
+  'home-v225-v2-intimate-veined-living-memory-orb',
+  'home-v225-v2-orb-embedded-memory-veins',
+]) if (!polish.includes(marker)) throw new Error(`V225 V2 polish source missing ${marker}`)
 if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V225 direct runtime must not mount predecessor GLBs')
 
 const runtimeSource = `${geometry}\n${polish}`
 const runtimeIdentity = {
   paths: [
     'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
-    'urai-tier1/src/spatial/layout/HomeWorldProductionV225Polish.tsx',
+    'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx',
   ],
   bytes: Buffer.byteLength(runtimeSource),
   sha256: createHash('sha256').update(runtimeSource).digest('hex'),
@@ -49,8 +50,8 @@ const cases = [
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-12', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
-  visualPolicy: 'V225 Home requires one continuous inhabited navigable place, readable Ground and Life Map destinations, one intimate asymmetric living-memory Orb, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
+  schemaVersion: 'urai-natural-home-orb-proof-13', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
+  visualPolicy: 'V225 V2 Home requires one continuous inhabited navigable memory sanctuary, readable Ground and Life Map destinations, one intimate asymmetric veined living-memory Orb, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
   cases: [], errors: [],
 }
 
@@ -121,12 +122,12 @@ for (const spec of cases) {
       && record.artRevision === 'v225-retained-pixels-pending'
       && record.artCertification === 'fresh-exact-head-pixels-required' && record.v225Certification === 'fresh-exact-head-pixels-required'
       && record.v224Certification === 'superseded-rejected-pixels' && record.v223Certification === 'superseded-rejected-pixels'
-      && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx') && record.runtimeAssets?.includes('HomeWorldProductionV225Polish.tsx')
-      && record.governedIdentityAssets === 'v225-direct-runtime-topology historical-v191-glbs-unmounted'
-      && record.visibleProductionAssets?.includes('v225-sculpted-sanctuary-floor')
-      && record.visibleProductionAssets?.includes('v225-ground-shelter')
-      && record.visibleProductionAssets?.includes('v225-life-map-lineage-vault')
-      && record.visibleProductionAssets?.includes('v225-asymmetric-veined-living-memory-presence')
+      && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx') && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
+      && record.governedIdentityAssets === 'v225-v2-direct-runtime-topology historical-v191-glbs-unmounted'
+      && record.visibleProductionAssets?.includes('v225-v2-authored-valley-floor')
+      && record.visibleProductionAssets?.includes('v225-v2-ground-inhabited-hearth')
+      && record.visibleProductionAssets?.includes('v225-v2-life-map-lineage-observatory')
+      && record.visibleProductionAssets?.includes('v225-v2-intimate-veined-living-memory-orb')
       && record.authoredRegions?.includes('home-sanctuary-pavilion') && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null && record.orbState !== null
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
