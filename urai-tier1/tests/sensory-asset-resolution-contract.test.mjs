@@ -22,7 +22,7 @@ const productionAudioFiles = [
   'ground-ambient-v1.opus',
   'life-map-ambient-v1.opus',
   'focus-ambient-v1.opus',
-  'replay-memory-environment-v1.opus',
+  'replay-ambient-v1.opus',
   'portal-transition-v1.opus',
   'orb-confirm-v1.opus',
   'ui-error-v1.opus',
