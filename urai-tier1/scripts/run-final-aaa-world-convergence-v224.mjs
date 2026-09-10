@@ -1,40 +1,28 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 
 const target = new URL('../tests/final-aaa-world-convergence-contract.test.mjs', import.meta.url)
-const original = await readFile(target, 'utf8')
-const replacements = [
-  [
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v126-certification', 'superseded-rejected-pixels'\\)/)",
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v126-certification',\\s*'superseded-rejected-pixels'\\)/)",
-    'historical V126 rejection formatting',
-  ],
-  [
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification', 'fresh-exact-head-pixels-required'\\)/)",
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification',\\s*'superseded-rejected-pixels'\\)/)\n  assert.match(assetHome, /world\\.setAttribute\\('data-home-v224-certification',\\s*'superseded-rejected-pixels'\\)/)\n  assert.match(assetHome, /world\\.setAttribute\\('data-home-v225-certification',\\s*'fresh-exact-head-pixels-required'\\)/)",
-    'certification authority',
-  ],
-  [
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-animation-owner', 'v223-open-cleft-living-memory-presence'\\)/)",
-    "assert.match(assetHome, /world\\.setAttribute\\('data-home-animation-owner',\\s*'v225-asymmetric-veined-living-memory-presence'\\)/)",
-    'Orb animation owner',
-  ],
-]
+const source = await readFile(target, 'utf8')
 
-let patched = original
-for (const [from, to, label] of replacements) {
-  const count = patched.split(from).length - 1
-  if (count !== 1) throw new Error(`V225 convergence ${label} predecessor contract changed: expected one exact match, found ${count}`)
-  patched = patched.replace(from, to)
+for (const marker of [
+  "const activeHomeProduction = read('src/spatial/layout/HomeWorldProductionV223.tsx')",
+  "const activeHomeVisual = read('src/spatial/layout/HomeWorldProductionV225PolishV3.tsx')",
+  "world\\.setAttribute\\('data-home-v226-certification', 'fresh-exact-head-pixels-required'\\)",
+  "world\\.setAttribute\\('data-home-animation-owner', 'v226-rooted-living-memory-presence'\\)",
+]) {
+  if (!source.includes(marker)) throw new Error(`V226 convergence marker missing: ${marker}`)
 }
 
-await writeFile(target, patched, 'utf8')
-try {
-  const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', 'tests/final-aaa-world-convergence-contract.test.mjs'], {
-    cwd: new URL('..', import.meta.url),
-    stdio: 'inherit',
-  })
-  if (result.status !== 0) process.exitCode = result.status ?? 1
-} finally {
-  await writeFile(target, original, 'utf8')
+for (const obsolete of [
+  "'data-home-v223-certification', 'fresh-exact-head-pixels-required'",
+  "'data-home-v225-certification', 'fresh-exact-head-pixels-required'",
+  "'data-home-animation-owner', 'v225-asymmetric-veined-living-memory-presence'",
+]) {
+  if (source.includes(obsolete)) throw new Error(`Obsolete convergence authority re-entered: ${obsolete}`)
 }
+
+const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', 'tests/final-aaa-world-convergence-contract.test.mjs'], {
+  cwd: new URL('..', import.meta.url),
+  stdio: 'inherit',
+})
+if (result.status !== 0) process.exitCode = result.status ?? 1
