@@ -30,7 +30,7 @@ test('historical V185 destinations remain regression-covered and visibly retired
 
 test('V226 Orb proximity authority aligns runtime geometry, telemetry, and active proof translation', () => {
   assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-7\.45\)/)
-  assert.match(telemetry, /HOME_ORB=\{x:-\.45,z:-7\.45\}/)
+  assert.match(telemetry, /const HOME_ORB = \{ x: -\.45, z: -7\.45 \} as const/)
   assert.match(naturalProof, /const historicalOrb = "orb: \{ x: -0\.18, z: -6\.90, radius: 2\.35"/)
   assert.match(naturalProof, /const currentOrb = "orb: \{ x: -0\.45, z: -7\.45, radius: 2\.35"/)
   assert.match(naturalProof, /patched = replaceOnce\(patched, historicalOrb, currentOrb, 'Orb telemetry'\)/)
