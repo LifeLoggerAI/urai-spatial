@@ -81,7 +81,7 @@ test('post-deploy Ground smoke remains tied to the live embodied destination wor
     assert.ok(groundContract.required.includes(marker), `shared /ground contract is missing live marker: ${marker}`)
   }
 
-  assert.deepEqual(groundContract.forbidden, [obsoleteTitle])
+  assert.deepEqual(groundContract.forbidden, [obsoleteTitle, ...retiredSmokeCopy])
 })
 
 test('Ground screenshot audit requires current visible world copy', () => {
@@ -97,7 +97,7 @@ test('obsolete Ground copy, provider wallpaper ownership and opaque blockouts ar
   assert.doesNotMatch(groundGraph, new RegExp(obsoleteTitle))
   for (const copy of retiredSmokeCopy) {
     assert.ok(!groundGraph.includes(copy), `retired Ground copy returned to the source graph: ${copy}`)
-    assert.ok(!groundContract.required.includes(copy), `shared /ground contract still requires retired Ground copy: ${copy}`)
+    assert.ok(groundContract.forbidden.includes(copy), `shared /ground contract does not reject retired Ground copy: ${copy}`)
   }
   assert.match(canonicalGround, /DESTINATIONS\.map/)
   assert.match(canonicalGround, /ground-enterable-threshold-/)
