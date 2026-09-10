@@ -17,6 +17,7 @@ const retiredExact = new Set([
   'home-v225-ground-sheltered-memory-basin',
   'home-v225-life-map-rooted-memory-observatory',
   'home-v225-single-asymmetric-living-memory-presence',
+  'home-v225-living-memory-grove',
 ])
 
 function RetireRejectedLayers() {
@@ -24,7 +25,9 @@ function RetireRejectedLayers() {
   useEffect(() => {
     const changed: THREE.Object3D[] = []
     scene.traverse(object => {
-      const retired = retiredExact.has(object.name) || /^home-v225-rooted-memory-rib-/.test(object.name)
+      const retired = retiredExact.has(object.name)
+        || /^home-v225-rooted-memory-rib-/.test(object.name)
+        || /^home-v225-(?:port|starboard)-overhanging-strata-/.test(object.name)
       if (retired && object.visible) {
         object.visible = false
         changed.push(object)
@@ -35,14 +38,30 @@ function RetireRejectedLayers() {
   return null
 }
 
+function PortraitFraming() {
+  const { camera, size } = useThree()
+  useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return
+    const previous = camera.zoom
+    camera.zoom = size.height > size.width ? 1.24 : 1
+    camera.updateProjectionMatrix()
+    return () => {
+      camera.zoom = previous
+      camera.updateProjectionMatrix()
+    }
+  }, [camera, size.height, size.width])
+  return null
+}
+
 function tube(points: THREE.Vector3[], radius: number, radial = 8) {
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, 'centripetal', .34), Math.max(48, points.length * 3), radius, radial, false)
 }
 
 function groveSpec() {
   return [
-    [-3.4,-3.0,1.65,.80,0.4],[3.2,-3.8,1.85,.88,1.2],[-3.1,-6.0,2.0,.92,2.0],[3.4,-6.7,2.2,.96,2.8],
-    [-2.8,-9.5,2.15,.96,3.6],[2.7,-10.2,2.3,1.02,4.4],[-2.1,-12.4,2.45,1.08,5.2],[2.2,-13.2,2.25,1.00,6.0],
+    [-4.0,-2.2,2.05,.70,.4],[3.9,-2.9,2.18,.74,1.2],[-3.35,-4.8,2.25,.76,2.0],[3.25,-5.4,2.42,.82,2.8],
+    [-3.45,-7.6,2.55,.84,3.6],[3.55,-8.4,2.65,.88,4.4],[-2.8,-10.6,2.62,.90,5.2],[2.85,-11.4,2.72,.92,6.0],
+    [-2.25,-13.0,2.78,.94,6.8],[2.15,-13.8,2.66,.91,7.6],
   ] as const
 }
 
@@ -50,17 +69,30 @@ function SanctuaryGrove() {
   const trees = useMemo(() => groveSpec().map(([x,z,h,s,seed]) => {
     const pts = Array.from({ length: 14 }, (_, i) => {
       const t = i / 13
-      return new THREE.Vector3(x + Math.sin(seed + t * 4.2) * .045, height(x,z) + .03 + h * t, z + Math.cos(seed * 1.7 + t * 3.6) * .04)
+      return new THREE.Vector3(x + Math.sin(seed + t * 4.2) * .055, height(x,z) + .03 + h * t, z + Math.cos(seed * 1.7 + t * 3.6) * .05)
     })
-    return { x,z,h,s,seed,trunk:tube(pts,.032,7) }
+    const branchA = tube([
+      new THREE.Vector3(x, height(x,z)+h*.58, z),
+      new THREE.Vector3(x-.20*s, height(x,z)+h*.79, z+.04),
+      new THREE.Vector3(x-.42*s, height(x,z)+h*.94, z-.08),
+    ], .018, 6)
+    const branchB = tube([
+      new THREE.Vector3(x, height(x,z)+h*.64, z),
+      new THREE.Vector3(x+.18*s, height(x,z)+h*.82, z-.05),
+      new THREE.Vector3(x+.38*s, height(x,z)+h*.96, z+.05),
+    ], .016, 6)
+    return { x,z,h,s,seed,trunk:tube(pts,.032,7),branchA,branchB }
   }), [])
   return <group name="home-v225-v3-integrated-memory-architecture">
     {trees.map((tree,i) => <group key={i}>
-      <mesh geometry={tree.trunk} castShadow><meshStandardMaterial color="#2d3832" roughness={.98}/></mesh>
-      <group position={[tree.x,height(tree.x,tree.z)+tree.h+.22,tree.z]} scale={tree.s}>
-        <mesh position={[-.18,.04,.02]} scale={[.54,.32,.48]} castShadow><sphereGeometry args={[1,28,18]}/><meshStandardMaterial color="#344d40" roughness={.96}/></mesh>
-        <mesh position={[.22,.10,-.05]} scale={[.62,.38,.52]} castShadow><sphereGeometry args={[1,28,18]}/><meshStandardMaterial color="#405949" roughness={.95}/></mesh>
-        <mesh position={[.02,.33,.04]} scale={[.50,.34,.46]} castShadow><sphereGeometry args={[1,28,18]}/><meshStandardMaterial color="#4b6250" roughness={.94}/></mesh>
+      <mesh geometry={tree.trunk} castShadow><meshStandardMaterial color="#2a3630" roughness={.98}/></mesh>
+      <mesh geometry={tree.branchA} castShadow><meshStandardMaterial color="#2f3c34" roughness={.98}/></mesh>
+      <mesh geometry={tree.branchB} castShadow><meshStandardMaterial color="#303f36" roughness={.98}/></mesh>
+      <group position={[tree.x,height(tree.x,tree.z)+tree.h+.18,tree.z]} scale={tree.s} rotation={[0,tree.seed*.13,0]}>
+        <mesh position={[-.34,.00,.04]} scale={[.43,.24,.38]} castShadow><sphereGeometry args={[1,32,22]}/><meshStandardMaterial color="#304a3d" roughness={.97}/></mesh>
+        <mesh position={[.31,.07,-.07]} scale={[.51,.27,.42]} castShadow><sphereGeometry args={[1,32,22]}/><meshStandardMaterial color="#3b5746" roughness={.96}/></mesh>
+        <mesh position={[-.02,.30,-.02]} scale={[.42,.26,.37]} castShadow><sphereGeometry args={[1,32,22]}/><meshStandardMaterial color="#48604d" roughness={.95}/></mesh>
+        <mesh position={[.08,-.15,.08]} scale={[.36,.22,.33]} castShadow><sphereGeometry args={[1,30,20]}/><meshStandardMaterial color="#2e463a" roughness={.97}/></mesh>
       </group>
     </group>)}
   </group>
@@ -186,13 +218,14 @@ function LivingMemoryPresence({state,reducedMotion,onOrb}:{state:OrbState;reduce
 }
 
 function MemoryWisps(){
-  const geometry=useMemo(()=>{const pts:number[]=[];for(let i=0;i<150;i++){const a=i*2.39996323,r=2.4+((i*47)%100)/100*6.8;pts.push(Math.cos(a)*r,.55+((i*31)%100)/100*2.7,2.2-((i*61)%100)/100*16.2)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));return g},[])
-  return <points geometry={geometry}><pointsMaterial color="#bdc9c0" size={.010} transparent opacity={.12} depthWrite={false}/></points>
+  const geometry=useMemo(()=>{const pts:number[]=[];for(let i=0;i<220;i++){const a=i*2.39996323,r=2.4+((i*47)%100)/100*7.2;pts.push(Math.cos(a)*r,.48+((i*31)%100)/100*3.3,2.0-((i*61)%100)/100*16.8)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));return g},[])
+  return <points geometry={geometry}><pointsMaterial color="#d1d7cd" size={.012} transparent opacity={.16} depthWrite={false}/></points>
 }
 
 export function HomeV225PolishV3({orbState,reducedMotion,onOrb,onGround,onLifeMap,onWalk}:{orbState:OrbState;reducedMotion:boolean;onOrb:()=>void;onGround:()=>void;onLifeMap:()=>void;onWalk:WalkHandler}){
   return <group name="home-v225-v3-production-living-sanctuary" onClick={onWalk}>
     <RetireRejectedLayers/>
+    <PortraitFraming/>
     <SanctuaryGrove/>
     <GroundSanctuary onGround={onGround}/>
     <LifeMapSanctuary onLifeMap={onLifeMap}/>
