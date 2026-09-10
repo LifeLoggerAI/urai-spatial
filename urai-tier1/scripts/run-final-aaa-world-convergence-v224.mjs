@@ -5,6 +5,11 @@ const target = new URL('../tests/final-aaa-world-convergence-contract.test.mjs',
 const original = await readFile(target, 'utf8')
 const replacements = [
   [
+    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v126-certification', 'superseded-rejected-pixels'\\)/)",
+    "assert.match(assetHome, /world\\.setAttribute\\('data-home-v126-certification',\\s*'superseded-rejected-pixels'\\)/)",
+    'historical V126 rejection formatting',
+  ],
+  [
     "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification', 'fresh-exact-head-pixels-required'\\)/)",
     "assert.match(assetHome, /world\\.setAttribute\\('data-home-v223-certification',\\s*'superseded-rejected-pixels'\\)/)\n  assert.match(assetHome, /world\\.setAttribute\\('data-home-v224-certification',\\s*'superseded-rejected-pixels'\\)/)\n  assert.match(assetHome, /world\\.setAttribute\\('data-home-v225-certification',\\s*'fresh-exact-head-pixels-required'\\)/)",
     'certification authority',
