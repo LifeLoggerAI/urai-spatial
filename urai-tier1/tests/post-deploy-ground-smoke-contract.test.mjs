@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
+import { routeContracts } from '../../scripts/urai-live-route-contract.mjs'
+
 const smoke = fs.readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
 const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mjs', 'utf8')
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
@@ -9,6 +11,7 @@ const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
 const groundModel = fs.readFileSync('src/app/ground/GroundWorldModel.ts', 'utf8')
 const groundGraph = `${ground}\n${groundModel}`
 const canonicalGround = ground.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ').trim()
+const groundContract = routeContracts.find(({ route }) => route === '/ground')
 
 const obsoleteTitle = 'Street-level city world'
 const retiredSmokeCopy = [
@@ -71,13 +74,14 @@ test('post-deploy Ground smoke remains tied to the live embodied destination wor
     assert.ok(groundGraph.includes(marker), `missing embodied Ground marker: ${marker}`)
   }
 
+  assert.ok(groundContract, 'shared live route contract is missing /ground')
+  assert.ok(smoke.includes("from './urai-live-route-contract.mjs'"), 'post-deploy smoke must import the shared live route contract')
   for (const [marker, sourceOwner] of liveGroundMarkers) {
     assert.ok(sourceOwner.includes(marker), `Ground source owner is missing live marker: ${marker}`)
-    assert.ok(smoke.includes(`'${marker}'`), `post-deploy smoke is missing live Ground marker: ${marker}`)
+    assert.ok(groundContract.required.includes(marker), `shared /ground contract is missing live marker: ${marker}`)
   }
 
-  assert.match(smoke, /\['\/ground', \['walkable-first-person-ground-layer'/)
-  assert.match(smoke, /\['Street-level city world'\]/)
+  assert.deepEqual(groundContract.forbidden, [obsoleteTitle])
 })
 
 test('Ground screenshot audit requires current visible world copy', () => {
@@ -93,7 +97,7 @@ test('obsolete Ground copy, provider wallpaper ownership and opaque blockouts ar
   assert.doesNotMatch(groundGraph, new RegExp(obsoleteTitle))
   for (const copy of retiredSmokeCopy) {
     assert.ok(!groundGraph.includes(copy), `retired Ground copy returned to the source graph: ${copy}`)
-    assert.ok(!smoke.includes(`'${copy}'`), `post-deploy smoke still requires retired Ground copy: ${copy}`)
+    assert.ok(!groundContract.required.includes(copy), `shared /ground contract still requires retired Ground copy: ${copy}`)
   }
   assert.match(canonicalGround, /DESTINATIONS\.map/)
   assert.match(canonicalGround, /ground-enterable-threshold-/)
