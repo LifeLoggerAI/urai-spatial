@@ -9,6 +9,17 @@ import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry
 type V3 = [number, number, number]
 type WalkHandler = (event: ThreeEvent<MouseEvent>) => void
 
+type MassSpec = {
+  x: number
+  z: number
+  w: number
+  d: number
+  h: number
+  lean: number
+  crown: number
+  tone: string
+}
+
 const rejectedNames = new Set([
   'home-v225-living-memory-grove',
   'home-v225-grown-winding-memory-path',
@@ -36,42 +47,35 @@ function RetireRejectedPresentation() {
   return null
 }
 
-function tube(points: THREE.Vector3[], radius: number, radial = 8) {
-  return new THREE.TubeGeometry(
-    new THREE.CatmullRomCurve3(points, false, 'centripetal', .35),
-    Math.max(56, points.length * 5),
-    radius,
-    radial,
-    false,
-  )
-}
-
 function sanctuaryFloorGeometry() {
-  const nx = 96, nz = 128
+  const nx = 92, nz = 126
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#172a27')
-  const moss = new THREE.Color('#35463b')
-  const warm = new THREE.Color('#655742')
-  const teal = new THREE.Color('#31544d')
+  const deep = new THREE.Color('#14241f')
+  const moss = new THREE.Color('#31483b')
+  const earth = new THREE.Color('#675944')
+  const pale = new THREE.Color('#718476')
   for (let iz = 0; iz <= nz; iz++) {
     const z = 6.2 - iz / nz * 25.5
     for (let ix = 0; ix <= nx; ix++) {
       const x = -8.8 + ix / nx * 17.6
-      const base = height(x, z)
-      const centralWear = Math.exp(-Math.pow(x / 2.9, 2))
-      const basin = -.055 * centralWear + .025 * Math.sin(x * .52 + z * .18)
-      positions.push(x, base + basin + .018, z)
-      const edge = Math.min(1, Math.abs(x) / 8.8)
-      const distance = Math.min(1, Math.max(0, (-z - 1) / 19))
-      const c = deep.clone().lerp(moss, .30 + .24 * (1 - edge)).lerp(teal, .16 * distance)
-      if (centralWear > .72) c.lerp(warm, .18 * centralWear)
+      const depth = THREE.MathUtils.clamp((4.7 - z) / 22.0, 0, 1)
+      const centerWear = Math.exp(-Math.pow(x / 2.65, 2))
+      const terrace = Math.abs(x) > 2.6
+        ? .075 * Math.floor((Math.abs(x) - 2.6) * 1.8) * (.32 + depth)
+        : 0
+      const seam = .030 * Math.sin(x * 1.7 + z * .48) + .018 * Math.sin(z * 1.21 - x * .73)
+      const y = height(x, z) + terrace + seam * (1 - .65 * centerWear) + .022
+      positions.push(x, y, z)
+      const edge = THREE.MathUtils.clamp(Math.abs(x) / 8.8, 0, 1)
+      const c = deep.clone().lerp(moss, .30 + .28 * (1 - edge)).lerp(earth, .15 * centerWear).lerp(pale, .08 * depth)
       colors.push(c.r, c.g, c.b)
     }
   }
   const row = nx + 1
   for (let iz = 0; iz < nz; iz++) for (let ix = 0; ix < nx; ix++) {
     const a = iz * row + ix, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, b, c, b, d, c)
+    if ((ix + iz) & 1) indices.push(a, b, d, a, d, c)
+    else indices.push(a, b, c, b, d, c)
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
@@ -82,25 +86,25 @@ function sanctuaryFloorGeometry() {
 }
 
 function memoryPathGeometry() {
-  const segments = 110, across = 10
+  const segments = 108, across = 12
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const ember = new THREE.Color('#8a7457'), quiet = new THREE.Color('#4e6658')
+  const ember = new THREE.Color('#9b8060'), quiet = new THREE.Color('#40594c'), pale = new THREE.Color('#b3a88d')
   const centers = Array.from({ length: segments + 1 }, (_, i) => {
     const t = i / segments
-    const z = 4.7 - t * 20.8
-    const x = .38 * Math.sin(t * Math.PI * 2.05) + .16 * Math.sin(t * Math.PI * 5.2)
-    return new THREE.Vector3(x, height(x, z) + .048, z)
+    const z = 4.9 - t * 20.7
+    const x = .28 * Math.sin(t * Math.PI * 2.1) + .11 * Math.sin(t * Math.PI * 5.4)
+    return new THREE.Vector3(x, height(x, z) + .075, z)
   })
   for (let i = 0; i <= segments; i++) {
     const tangent = centers[Math.min(segments, i + 1)].clone().sub(centers[Math.max(0, i - 1)]).normalize()
     const side = new THREE.Vector3(tangent.z, 0, -tangent.x).normalize()
     for (let j = 0; j < across; j++) {
       const u = j / (across - 1) - .5
-      const width = 1.34 + .10 * Math.sin(i * .21)
+      const width = 1.55 + .13 * Math.sin(i * .17)
       const p = centers[i].clone().addScaledVector(side, u * width)
-      p.y += .018 * Math.cos(u * Math.PI * 2)
+      p.y += .035 * Math.cos(u * Math.PI * 2)
       positions.push(p.x, p.y, p.z)
-      const c = quiet.clone().lerp(ember, .30 + .46 * (1 - Math.abs(u) * 2))
+      const c = quiet.clone().lerp(ember, .32 + .50 * (1 - Math.abs(u) * 2)).lerp(pale, .08 * Math.sin(i / segments * Math.PI))
       colors.push(c.r, c.g, c.b)
     }
   }
@@ -116,236 +120,206 @@ function memoryPathGeometry() {
   return geometry
 }
 
-function MemoryValley({ onWalk }: { onWalk: WalkHandler }) {
-  const floor = useMemo(sanctuaryFloorGeometry, [])
-  const path = useMemo(memoryPathGeometry, [])
-  return <group name="home-v225-v2-continuous-sculpted-memory-valley">
-    <mesh geometry={floor} receiveShadow onClick={onWalk} name="home-v225-v2-authored-valley-floor">
-      <meshStandardMaterial vertexColors roughness={.98} metalness={0}/>
-    </mesh>
-    <mesh geometry={path} receiveShadow onClick={onWalk} name="home-v225-v2-grown-memory-walk">
-      <meshStandardMaterial vertexColors roughness={.92} emissive="#322d24" emissiveIntensity={.10}/>
-    </mesh>
-  </group>
-}
-
-function sideRib(side: -1 | 1, row: number) {
-  const z = 3.2 - row * 3.55
-  const reach = 2.35 + row * .12
-  const points = Array.from({ length: 30 }, (_, i) => {
-    const t = i / 29
-    const x = side * (7.25 - reach * Math.sin(t * Math.PI * .58))
-    const zz = z - .72 * t + .12 * Math.sin(t * 5 + row)
-    const y0 = height(x, zz)
-    return new THREE.Vector3(
-      x,
-      y0 + .06 + (1.38 + row * .11) * Math.sin(t * Math.PI) + .28 * t,
-      zz,
-    )
-  })
-  return tube(points, .065 + row * .003, 10)
-}
-
-function branchRib(side: -1 | 1, row: number) {
-  const z = 1.5 - row * 3.75
-  const points = Array.from({ length: 26 }, (_, i) => {
-    const t = i / 25
-    const x = side * (6.75 - 2.15 * t)
-    const zz = z - 1.20 * t
-    return new THREE.Vector3(
-      x,
-      height(x, zz) + .08 + .38 * Math.sin(t * Math.PI) + .14 * t,
-      zz,
-    )
-  })
-  return tube(points, .032, 8)
-}
-
-function SanctuaryRibs() {
-  const ribs = useMemo(() => ([-1, 1] as const).flatMap((side) => Array.from({ length: 6 }, (_, row) => ({
-    side, row, main: sideRib(side, row), branch: branchRib(side, row),
-  }))), [])
-  return <group name="home-v225-v2-cathedral-memory-ribs">
-    {ribs.map(({ side, row, main, branch }) => <group key={`${side}-${row}`}>
-      <mesh geometry={main} castShadow receiveShadow>
-        <meshStandardMaterial color={side < 0 ? '#526654' : '#485f55'} roughness={.90}/>
-      </mesh>
-      <mesh geometry={branch} castShadow>
-        <meshStandardMaterial color={row % 2 ? '#6c624e' : '#41665a'} roughness={.88}/>
-      </mesh>
-    </group>)}
-  </group>
-}
-
-function veilGeometry(side: -1 | 1, index: number) {
-  const w = 4.4, h = 3.0, nx = 24, ny = 18
-  const positions: number[] = [], indices: number[] = []
-  for (let iy = 0; iy <= ny; iy++) for (let ix = 0; ix <= nx; ix++) {
-    const u = ix / nx, v = iy / ny
-    const x = side * (7.9 - .46 * Math.sin(v * Math.PI)) + side * .08 * Math.sin(u * 7 + index)
-    const z = 2.3 - index * 6.0 - u * w + .13 * Math.sin(v * 5 + u * 3)
-    const y = -.16 + v * h + .10 * Math.sin(u * Math.PI) * Math.sin(v * Math.PI)
-    positions.push(x, y, z)
-  }
-  const row = nx + 1
-  for (let iy = 0; iy < ny; iy++) for (let ix = 0; ix < nx; ix++) {
-    const a = iy * row + ix, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, b, c, b, d, c)
-  }
+function massGeometry(spec: MassSpec) {
+  const { w, d, h, lean, crown } = spec
+  const x0 = -w / 2, x1 = w / 2, z0 = -d / 2, z1 = d / 2
+  const topY = h
+  const vertices = new Float32Array([
+    x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1,
+    x0 + lean, topY * .76, z0 + .12, x1 + lean * .62, topY * .90, z0 - .08,
+    x1 - lean * .25, topY * (.76 + crown), z1 + .05, x0 + lean * .28, topY, z1 - .10,
+    -w * .22 + lean * .55, topY * (1.06 + crown * .32), -d * .05,
+  ])
+  const indices = [
+    0,1,4, 1,5,4, 1,2,5, 2,6,5, 2,3,6, 3,7,6, 3,0,7, 0,4,7,
+    4,5,8, 5,6,8, 6,7,8, 7,4,8, 0,3,2, 0,2,1,
+  ]
   const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  g.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
   g.setIndex(indices)
   g.computeVertexNormals()
   return g
 }
 
-function LayeredMemoryWalls() {
-  const veils = useMemo(() => ([-1, 1] as const).flatMap((side) => Array.from({ length: 3 }, (_, index) => ({
-    side, index, geometry: veilGeometry(side, index),
-  }))), [])
-  return <group name="home-v225-v2-weathered-memory-walls">
-    {veils.map(({ side, index, geometry }) => <mesh key={`${side}-${index}`} geometry={geometry} receiveShadow castShadow>
-      <meshPhysicalMaterial
-        color={side < 0 ? '#233a32' : '#263a38'}
-        roughness={.94}
-        metalness={0}
-        transparent
-        opacity={.74}
-        side={THREE.DoubleSide}
-      />
-    </mesh>)}
+const valleyMasses: MassSpec[] = [
+  {x:-5.75,z:1.6,w:2.8,d:3.1,h:1.9,lean:.36,crown:.08,tone:'#34483d'},
+  {x:5.55,z:.8,w:3.0,d:3.6,h:2.4,lean:-.30,crown:.14,tone:'#30443c'},
+  {x:-5.25,z:-3.0,w:3.7,d:4.2,h:3.4,lean:.48,crown:.18,tone:'#3f5042'},
+  {x:5.15,z:-3.9,w:3.9,d:4.4,h:3.8,lean:-.44,crown:.12,tone:'#384b43'},
+  {x:-5.65,z:-8.7,w:4.4,d:4.9,h:4.2,lean:.52,crown:.12,tone:'#445343'},
+  {x:5.60,z:-9.8,w:4.4,d:5.1,h:4.7,lean:-.50,crown:.15,tone:'#3a5148'},
+  {x:-4.85,z:-14.3,w:4.6,d:4.5,h:4.9,lean:.36,crown:.18,tone:'#485747'},
+  {x:4.75,z:-15.2,w:4.5,d:4.4,h:5.3,lean:-.34,crown:.12,tone:'#40564e'},
+]
+
+function MemoryValley({ onWalk }: { onWalk: WalkHandler }) {
+  const floor = useMemo(sanctuaryFloorGeometry, [])
+  const path = useMemo(memoryPathGeometry, [])
+  const masses = useMemo(() => valleyMasses.map((spec) => ({ spec, geometry: massGeometry(spec) })), [])
+  return <group name="home-v225-v2-continuous-sculpted-memory-valley">
+    <mesh geometry={floor} receiveShadow onClick={onWalk} name="home-v225-v2-authored-valley-floor">
+      <meshStandardMaterial vertexColors roughness={.98} metalness={0}/>
+    </mesh>
+    <mesh geometry={path} receiveShadow onClick={onWalk} name="home-v225-v2-grown-memory-walk">
+      <meshStandardMaterial vertexColors roughness={.91} emissive="#392f25" emissiveIntensity={.12}/>
+    </mesh>
+    <group name="home-v225-v2-cathedral-memory-ribs">
+      {masses.map(({ spec, geometry }, i) => <mesh
+        key={i}
+        geometry={geometry}
+        position={[spec.x, height(spec.x, spec.z) - .10, spec.z]}
+        rotation={[0, (i % 2 ? -.08 : .07), 0]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial color={spec.tone} roughness={.96}/>
+      </mesh>)}
+    </group>
   </group>
 }
 
-function hearthRib(index: number) {
-  const angle0 = -1.20 + index * .47
-  const points = Array.from({ length: 28 }, (_, i) => {
-    const t = i / 27
-    const a = angle0 + t * 1.34
-    const r = 1.12 + .09 * Math.sin(t * Math.PI * 2 + index)
-    return new THREE.Vector3(
-      Math.cos(a) * r,
-      .08 + .86 * Math.sin(t * Math.PI),
-      Math.sin(a) * .78 - .22,
-    )
-  })
-  return tube(points, .028 + (index % 2) * .005, 8)
+function wallGeometry(side: -1 | 1, index: number) {
+  const w = 4.6 + index * .55, h = 2.7 + index * .65
+  const spec: MassSpec = { x:0,z:0,w,d:1.15,h,lean:side * .35,crown:.12,tone:'#2c443b' }
+  return massGeometry(spec)
+}
+
+function LayeredMemoryWalls() {
+  const walls = useMemo(() => ([-1, 1] as const).flatMap((side) => Array.from({ length: 3 }, (_, index) => ({ side, index, geometry: wallGeometry(side, index) }))), [])
+  return <group name="home-v225-v2-weathered-memory-walls">
+    {walls.map(({ side, index, geometry }) => {
+      const z = 1.7 - index * 6.2
+      const x = side * (7.0 - index * .18)
+      return <mesh key={`${side}-${index}`} geometry={geometry} position={[x,height(x,z)-.06,z]} rotation={[0,side * (.06 + index*.015),0]} receiveShadow castShadow>
+        <meshStandardMaterial color={side < 0 ? '#263c33' : '#29413c'} roughness={.97}/>
+      </mesh>
+    })}
+  </group>
+}
+
+function shelterGeometry(side: -1 | 1) {
+  const spec: MassSpec = {x:0,z:0,w:4.9,d:3.2,h:2.15,lean:side * .55,crown:.12,tone:'#4b5f4c'}
+  return massGeometry(spec)
+}
+
+function benchGeometry(width: number) {
+  const g = new THREE.BoxGeometry(width,.18,.46,5,1,2)
+  const p = g.getAttribute('position') as THREE.BufferAttribute
+  for (let i=0;i<p.count;i++) p.setY(i,p.getY(i)+.035*Math.sin(p.getX(i)*3.1+p.getZ(i)*4.4))
+  g.computeVertexNormals()
+  return g
 }
 
 function GroundHearth({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
-  const ribs = useMemo(() => Array.from({ length: 6 }, (_, i) => hearthRib(i)), [])
-  const basin = useMemo(() => {
-    const g = new THREE.SphereGeometry(1, 48, 28, 0, Math.PI * 2, Math.PI * .53, Math.PI * .47)
-    g.scale(.78, .22, .64)
-    return g
-  }, [])
-  return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0,.10,0]} name="home-v225-v2-ground-memory-hearth" onClick={(e) => { e.stopPropagation(); onGround() }}>
-    {ribs.map((geometry, i) => <mesh geometry={geometry} key={i} castShadow>
-      <meshStandardMaterial color={i % 2 ? '#74644c' : '#4f6656'} roughness={.87}/>
-    </mesh>)}
-    <mesh geometry={basin} position={[0,.02,-.18]} castShadow receiveShadow>
-      <meshStandardMaterial color="#6d4d3a" emissive="#5b2e20" emissiveIntensity={.32} roughness={.91}/>
+  const shelter = useMemo(() => shelterGeometry(1), [])
+  const inward = useMemo(() => massGeometry({x:0,z:0,w:4.2,d:2.8,h:1.15,lean:.52,crown:.08,tone:'#56614b'}), [])
+  const bench = useMemo(() => benchGeometry(1.8), [])
+  return <group position={[GROUND.x, y + .02, GROUND.z]} name="home-v225-v2-ground-memory-hearth" onClick={(e) => { e.stopPropagation(); onGround() }}>
+    <mesh geometry={shelter} position={[.35,-.08,.20]} rotation={[0,.14,0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#465847" roughness={.95}/>
     </mesh>
-    {Array.from({ length: 7 }, (_, i) => {
+    <mesh geometry={inward} position={[2.55,-.18,.55]} rotation={[0,-.20,0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#5b5f49" roughness={.94}/>
+    </mesh>
+    <mesh position={[1.35,.35,-.18]} scale={[1.28,.24,1.0]} castShadow receiveShadow>
+      <sphereGeometry args={[1,48,24,0,Math.PI*2,Math.PI*.54,Math.PI*.46]}/>
+      <meshStandardMaterial color="#74533c" emissive="#6a3322" emissiveIntensity={.34} roughness={.88}/>
+    </mesh>
+    <mesh geometry={bench} position={[.20,.44,1.02]} rotation={[0,.18,0]} castShadow><meshStandardMaterial color="#7c6b50" roughness={.90}/></mesh>
+    <mesh geometry={bench} position={[1.88,.42,.88]} rotation={[0,-.28,0]} castShadow><meshStandardMaterial color="#675d49" roughness={.93}/></mesh>
+    {Array.from({ length: 11 }, (_, i) => {
       const a = i * 2.399
-      const r = .22 + .04 * (i % 3)
-      return <mesh key={i} position={[Math.cos(a)*r,.16 + .05*(i%2),-.18 + Math.sin(a)*r*.72]} scale={[.035,.11,.035]}>
-        <sphereGeometry args={[1,14,10]}/>
-        <meshStandardMaterial color="#d29a72" emissive="#b65e3b" emissiveIntensity={1.3} roughness={.72}/>
+      const r = .28 + .055 * (i % 3)
+      return <mesh key={i} position={[1.35+Math.cos(a)*r,.72 + .09*(i%2),-.18 + Math.sin(a)*r*.76]} scale={[.05,.17,.05]}>
+        <sphereGeometry args={[1,16,12]}/>
+        <meshStandardMaterial color="#e2a177" emissive="#c5653f" emissiveIntensity={1.45} roughness={.68}/>
       </mesh>
     })}
-    <pointLight position={[0,.62,-.15]} color="#ef9b6e" intensity={4.2} distance={5.2}/>
-    <pointLight position={[-.45,1.35,-.72]} color="#83b69d" intensity={.72} distance={4.0}/>
+    <pointLight position={[1.35,1.05,-.10]} color="#f0a176" intensity={6.0} distance={7.5}/>
+    <pointLight position={[2.55,1.85,-.55]} color="#86bea3" intensity={1.15} distance={6.0}/>
   </group>
 }
 
-function lineageBranch(index: number) {
+function lineageSlab(index: number) {
   const side = index % 2 ? -1 : 1
   const tier = Math.floor(index / 2)
-  const points = Array.from({ length: 32 }, (_, i) => {
-    const t = i / 31
-    const span = .82 + tier * .22
-    return new THREE.Vector3(
-      side * span * Math.pow(t,.76) + .06 * Math.sin(index + t * 6),
-      .20 + t * (1.10 + tier * .24) + .22 * Math.sin(t * Math.PI),
-      -.25 - t * (.58 + tier * .08) + .08 * Math.sin(t * 4 + index),
-    )
-  })
-  return { geometry: tube(points, .015 + tier * .002, 7), end: points[points.length - 1] }
+  const spec: MassSpec = {x:0,z:0,w:.68+tier*.16,d:.72,h:1.05+tier*.28,lean:side*(.20+tier*.04),crown:.12,tone:'#55786d'}
+  return { side, tier, geometry: massGeometry(spec) }
 }
 
 function LifeMapObservatory({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const spine = useMemo(() => tube(Array.from({ length: 38 }, (_, i) => {
-    const t = i / 37
-    return new THREE.Vector3(.04 * Math.sin(t * 8), .12 + t * 2.44, -.08 - .28*t + .05*Math.sin(t*5))
-  }), .038, 9), [])
-  const branches = useMemo(() => Array.from({ length: 10 }, (_, i) => lineageBranch(i)), [])
-  return <group position={[LIFE_MAP.x, y, LIFE_MAP.z]} rotation={[0,-.08,0]} name="home-v225-v2-life-map-lineage-observatory" onClick={(e) => { e.stopPropagation(); onLifeMap() }}>
-    <mesh geometry={spine} castShadow>
-      <meshPhysicalMaterial color="#668e80" emissive="#315f53" emissiveIntensity={.45} roughness={.54} clearcoat={.12}/>
+  const inward = useMemo(() => massGeometry({x:0,z:0,w:4.3,d:3.1,h:1.35,lean:-.48,crown:.10,tone:'#425f57'}), [])
+  const crown = useMemo(() => massGeometry({x:0,z:0,w:3.7,d:2.2,h:2.8,lean:-.24,crown:.18,tone:'#405e58'}), [])
+  const slabs = useMemo(() => Array.from({ length: 10 }, (_, i) => lineageSlab(i)), [])
+  return <group position={[LIFE_MAP.x, y, LIFE_MAP.z]} name="home-v225-v2-life-map-lineage-observatory" onClick={(e) => { e.stopPropagation(); onLifeMap() }}>
+    <mesh geometry={inward} position={[-2.50,-.15,.52]} rotation={[0,.18,0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#3d5a52" roughness={.92} emissive="#183b33" emissiveIntensity={.10}/>
     </mesh>
-    {branches.map(({ geometry, end }, i) => <group key={i}>
-      <mesh geometry={geometry} castShadow>
-        <meshPhysicalMaterial color={i % 2 ? '#83bbaa' : '#a08db2'} emissive={i % 2 ? '#316f5b' : '#5e4774'} emissiveIntensity={.58} roughness={.48}/>
-      </mesh>
-      <mesh position={end} scale={[.085,.085,.085]}>
-        <sphereGeometry args={[1,22,16]}/>
-        <meshPhysicalMaterial color={i % 2 ? '#c2ddd1' : '#d2c1dd'} emissive={i % 2 ? '#5a9f87' : '#886ba0'} emissiveIntensity={1.25} roughness={.32}/>
-      </mesh>
-    </group>)}
-    <pointLight position={[0,1.35,-.32]} color="#79cbb0" intensity={2.45} distance={5.1}/>
-    <pointLight position={[.72,2.05,-.70]} color="#bea3d0" intensity={1.75} distance={4.7}/>
+    <mesh geometry={crown} position={[-.15,-.08,-.12]} rotation={[0,-.10,0]} castShadow receiveShadow>
+      <meshStandardMaterial color="#486860" roughness={.88} emissive="#1f463d" emissiveIntensity={.14}/>
+    </mesh>
+    {slabs.map(({ side, tier, geometry }, i) => {
+      const x = -1.25 + side * (.65 + tier*.34)
+      const z = -.45 - tier*.34
+      return <group key={i}>
+        <mesh geometry={geometry} position={[x,.16,z]} rotation={[0,side*.16,side*.035]} castShadow>
+          <meshPhysicalMaterial color={i%2 ? '#719b8d' : '#7e7391'} emissive={i%2 ? '#2b6354' : '#554264'} emissiveIntensity={.50} roughness={.48} clearcoat={.08}/>
+        </mesh>
+        <mesh position={[x + side*.17,1.45+tier*.32,z-.10]} scale={[.12,.12,.12]}>
+          <sphereGeometry args={[1,24,18]}/>
+          <meshPhysicalMaterial color={i%2 ? '#c8e1d6' : '#d8c9df'} emissive={i%2 ? '#66b89c' : '#956fa9'} emissiveIntensity={1.35} roughness={.28}/>
+        </mesh>
+      </group>
+    })}
+    <pointLight position={[-1.20,2.15,-.6]} color="#79ceb0" intensity={3.9} distance={7.2}/>
+    <pointLight position={[-2.45,1.25,.30]} color="#b69ac9" intensity={2.1} distance={6.0}/>
   </group>
 }
 
 function orbGeometry() {
-  const geometry = new THREE.SphereGeometry(1, 128, 96)
+  const geometry = new THREE.SphereGeometry(1,128,96)
   const p = geometry.getAttribute('position') as THREE.BufferAttribute
-  const colors = new Float32Array(p.count * 3)
-  const deep = new THREE.Color('#102f2a'), mid = new THREE.Color('#4f9682'), pale = new THREE.Color('#c8ded4'), warm = new THREE.Color('#bd8a70')
-  for (let i = 0; i < p.count; i++) {
-    const bx = p.getX(i), by = p.getY(i), bz = p.getZ(i)
-    const upper = Math.max(0, by), lower = Math.max(0, -by), angle = Math.atan2(bz, bx)
-    const cleft = Math.exp(-Math.pow(bx / .20, 2) - Math.pow((by - .74) / .21, 2))
-    const taper = 1 - .56 * Math.pow(lower, 1.40)
-    const organic = 1 + .025 * Math.sin(angle * 3.2 + by * 7.4) + .012 * Math.sin(angle * 8 - by * 11)
-    let x = bx * (.69 + .19 * upper) * taper * organic
-    let z = bz * (.50 + .075 * upper) * taper
-    let y = by * 1.04 - .32 * cleft - .21 * Math.pow(lower, 1.75) + .07 * upper * Math.abs(bx)
-    x += .06 * (1 - by * by) + .024 * bz
-    y += .018 * Math.sin(angle * 3 + by * 9) * (1 - Math.abs(by))
-    z += .018 * Math.sin(angle * 2 + by * 5) * (1 - Math.abs(by))
-    p.setXYZ(i, x, y, z)
-    const side = Math.max(0, Math.cos(angle - .42)) * (1 - Math.abs(by))
-    const band = .5 + .5 * Math.sin(angle * 3.1 + by * 6.6)
-    const c = deep.clone().lerp(mid, .34 + .30 * band).lerp(pale, .20 * side).lerp(warm, .12 * Math.max(0, Math.cos(angle + 1.0)) * (1 - Math.abs(by)))
-    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b
+  const colors = new Float32Array(p.count*3)
+  const deep = new THREE.Color('#12342d'), mid = new THREE.Color('#4e9a82'), pale = new THREE.Color('#d5e5dc'), warm = new THREE.Color('#c79073')
+  for (let i=0;i<p.count;i++) {
+    const bx=p.getX(i), by=p.getY(i), bz=p.getZ(i)
+    const a=Math.atan2(bz,bx), upper=Math.max(0,by), lower=Math.max(0,-by)
+    const cleft=Math.exp(-Math.pow(bx/.24,2)-Math.pow((by-.77)/.20,2))
+    const shoulder=1+.30*upper
+    const taper=Math.max(.34,1-.58*Math.pow(lower,1.24))
+    const fold=1+.055*Math.sin(a*3.2+by*7.1)+.026*Math.sin(a*7.6-by*9.4)
+    let x=bx*(.88*shoulder)*taper*fold + .085*(1-by*by) + .035*bz
+    let z=bz*(.66+.08*upper)*taper*(1+.035*Math.sin(a*4-by*6))
+    let y=by*1.04-.39*cleft-.27*Math.pow(lower,1.42)+.075*upper*Math.abs(bx)
+    x += .045*Math.sin(a*2.1+by*5.2)*(1-Math.abs(by))
+    y += .032*Math.sin(a*3.3+by*8.0)*(1-Math.abs(by))
+    z += .030*Math.sin(a*2.6-by*5.6)*(1-Math.abs(by))
+    p.setXYZ(i,x,y,z)
+    const side=Math.max(0,Math.cos(a-.45))*(1-Math.abs(by))
+    const band=.5+.5*Math.sin(a*3.3+by*6.8)
+    const c=deep.clone().lerp(mid,.32+.34*band).lerp(pale,.24*side).lerp(warm,.15*Math.max(0,Math.cos(a+1.0))*(1-Math.abs(by)))
+    colors[i*3]=c.r; colors[i*3+1]=c.g; colors[i*3+2]=c.b
   }
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3))
   geometry.computeVertexNormals()
   return geometry
 }
 
-function orbVein(index: number) {
-  const side = index % 2 ? -1 : 1
-  const startY = .62 - index * .085
-  const points = Array.from({ length: 30 }, (_, i) => {
-    const t = i / 29
-    const y = startY - t * (.78 + index * .022)
-    const width = .44 * (1 - .38 * Math.max(0, -y))
-    return new THREE.Vector3(
-      side * width * (.54 + .22 * Math.sin(t * Math.PI + index * .45)) + .035,
-      y + .32,
-      .40 * Math.sin(t * Math.PI * 1.12 + index * .54) * (1 - .30 * t) + .03,
-    )
+function orbVein(index:number) {
+  const side=index%2?-1:1
+  const points=Array.from({length:34},(_,i)=>{
+    const t=i/33
+    const y=.82-index*.075-t*(.98+index*.018)
+    const width=.62*(1-.34*Math.max(0,-y))
+    return new THREE.Vector3(side*width*(.52+.25*Math.sin(t*Math.PI+index*.41))+.05,y+.30,.52*Math.sin(t*Math.PI*1.08+index*.48)*(1-.24*t)+.04)
   })
-  return tube(points, .0058 + index * .00028, 6)
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points,false,'centripetal',.36),64,.010+index*.00045,7,false)
 }
 
-type Posture = { s: V3; r: V3; speed: number }
-const posture: Record<OrbState, Posture> = {
+type Posture={s:V3;r:V3;speed:number}
+const posture:Record<OrbState,Posture>={
   dormant:{s:[.92,.89,.91],r:[.04,-.06,-.03],speed:.10}, idle:{s:[1,.99,.98],r:[-.04,.05,-.02],speed:.30},
   attention:{s:[1.035,1.05,.96],r:[-.10,.12,.05],speed:.62}, listening:{s:[.98,1.04,.97],r:[.08,-.06,-.04],speed:.22},
   thinking:{s:[1.02,.99,1.01],r:[-.11,.14,.07],speed:.18}, speaking:{s:[1.045,1.03,.97],r:[.03,-.02,-.08],speed:.80},
@@ -354,73 +328,55 @@ const posture: Record<OrbState, Posture> = {
   warning:{s:[1.04,1.045,.95],r:[-.14,-.06,-.10],speed:.95}, transition:{s:[.95,1.06,.93],r:[-.14,.04,.10],speed:.65},
 }
 
-function LivingMemoryOrb({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
-  const group = useRef<THREE.Group>(null)
-  const geometry = useMemo(orbGeometry, [])
-  const veins = useMemo(() => Array.from({ length: 10 }, (_, i) => orbVein(i)), [])
-  const p = posture[state]
-  useFrame(({ clock }) => {
-    if (!group.current) return
-    const t = clock.elapsedTime * p.speed
+function LivingMemoryOrb({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boolean;onOrb:()=>void}) {
+  const group=useRef<THREE.Group>(null)
+  const geometry=useMemo(orbGeometry,[])
+  const veins=useMemo(()=>Array.from({length:12},(_,i)=>orbVein(i)),[])
+  const p=posture[state]
+  useFrame(({clock})=>{
+    if(!group.current)return
+    const t=clock.elapsedTime*p.speed
     const breath = reducedMotion ? 1 : 1 + Math.sin(t * .78) * .007
-    group.current.scale.set(p.s[0] * breath, p.s[1] * breath, p.s[2] * breath)
-    group.current.rotation.set(p.r[0], p.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .016), p.r[2])
+    group.current.scale.set(p.s[0]*breath,p.s[1]*breath,p.s[2]*breath)
+    group.current.rotation.set(p.r[0],p.r[1]+(reducedMotion ? 0 : Math.sin(t*.70)*.016),p.r[2])
   })
-  const warning = state === 'warning'
-  const activate = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); onOrb() }
+  const warning=state==='warning'
+  const activate=(e:ThreeEvent<MouseEvent>)=>{e.stopPropagation();onOrb()}
   return <group ref={group} position={ORB} name="home-v225-v2-intimate-veined-living-memory-orb" onClick={activate}>
-    <mesh geometry={geometry} position={[0,.25,0]} scale={[.50,.50,.50]} castShadow>
-      <meshPhysicalMaterial vertexColors color="#dce9e3" roughness={.60} clearcoat={.10} clearcoatRoughness={.80} sheen={.16} sheenColor="#6ca18f" emissive="#123a31" emissiveIntensity={.10}/>
+    <mesh geometry={geometry} position={[0,.34,0]} scale={[.96,.96,.96]} castShadow>
+      <meshPhysicalMaterial vertexColors color="#dce9e3" roughness={.54} clearcoat={.13} clearcoatRoughness={.72} sheen={.22} sheenColor="#70a692" emissive="#123a31" emissiveIntensity={.13}/>
     </mesh>
-    <group position={[0,.245,0]} scale={[.50,.50,.50]} name="home-v225-v2-orb-embedded-memory-veins">
-      {veins.map((g,i) => <mesh key={i} geometry={g}>
-        <meshStandardMaterial color={warning ? '#d77a68' : i % 2 ? '#8bc5b0' : '#c79b82'} emissive={warning ? '#8a392f' : i % 2 ? '#326e5c' : '#754c36'} emissiveIntensity={.44} roughness={.64}/>
-      </mesh>)}
+    <group position={[0,.335,0]} scale={[.96,.96,.96]} name="home-v225-v2-orb-embedded-memory-veins">
+      {veins.map((g,i)=><mesh key={i} geometry={g}><meshStandardMaterial color={warning?'#db7b68':i%2?'#99d0bb':'#d0a087'} emissive={warning?'#8a392f':i%2?'#397965':'#7d513a'} emissiveIntensity={.58} roughness={.58}/></mesh>)}
     </group>
-    <mesh position={[0,.25,0]} scale={[.56,.68,.52]} onClick={activate}>
-      <sphereGeometry args={[1,24,18]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/>
-    </mesh>
-    <pointLight position={[.08,.36,.28]} color={warning ? '#d56d5d' : '#72c8ab'} intensity={state === 'dormant' ? .12 : .48} distance={2.35}/>
+    <mesh position={[0,.34,0]} scale={[1.02,1.16,.84]} onClick={activate}><sphereGeometry args={[1,28,20]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
+    <pointLight position={[.12,.54,.42]} color={warning?'#d56d5d':'#78d1b1'} intensity={state==='dormant'?.18:.92} distance={3.8}/>
   </group>
 }
 
 function AtmosphericDepth() {
-  const near = useMemo(() => {
-    const pts: number[] = []
-    for (let i = 0; i < 130; i++) {
-      const a = i * 2.39996323
-      const r = 2.4 + ((i * 37) % 100) / 100 * 8.6
-      pts.push(Math.cos(a) * r, .55 + ((i * 29) % 100) / 100 * 3.9, 3.4 - ((i * 53) % 100) / 100 * 18.0)
+  const field=useMemo(()=>{
+    const pts:number[]=[]
+    for(let i=0;i<260;i++){
+      const a=i*2.39996323
+      const r=1.8+((i*37)%100)/100*9.8
+      pts.push(Math.cos(a)*r,.45+((i*29)%100)/100*4.8,3.6-((i*53)%100)/100*20.0)
     }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); return g
-  }, [])
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));return g
+  },[])
   return <group name="home-v225-v2-bounded-atmospheric-depth">
-    <points geometry={near}><pointsMaterial color="#a8cdbb" size={.014} transparent opacity={.20} depthWrite={false}/></points>
-    <pointLight position={[0,4,-14]} color="#6c9e8d" intensity={.58} distance={12}/>
-    <pointLight position={[-5.5,2.2,-10]} color="#bb875f" intensity={.36} distance={8}/>
+    <points geometry={field}><pointsMaterial color="#bad7c8" size={.020} transparent opacity={.28} depthWrite={false}/></points>
+    <pointLight position={[0,4,-12]} color="#79aa97" intensity={1.0} distance={16}/>
+    <pointLight position={[-5.2,2.4,-8]} color="#ca8e67" intensity={.72} distance={10}/>
+    <pointLight position={[5.0,2.8,-10]} color="#8899c5" intensity={.58} distance={10}/>
   </group>
 }
 
-export function HomeV225PolishV2({
-  orbState,
-  reducedMotion,
-  onOrb,
-  onGround,
-  onLifeMap,
-  onWalk,
-}: {
-  orbState: OrbState
-  reducedMotion: boolean
-  onOrb: () => void
-  onGround: () => void
-  onLifeMap: () => void
-  onWalk: WalkHandler
-}) {
+export function HomeV225PolishV2({orbState,reducedMotion,onOrb,onGround,onLifeMap,onWalk}:{orbState:OrbState;reducedMotion:boolean;onOrb:()=>void;onGround:()=>void;onLifeMap:()=>void;onWalk:WalkHandler}) {
   return <group name="home-v225-v2-production-memory-sanctuary">
     <RetireRejectedPresentation/>
     <MemoryValley onWalk={onWalk}/>
     <LayeredMemoryWalls/>
-    <SanctuaryRibs/>
     <GroundHearth onGround={onGround}/>
     <LifeMapObservatory onLifeMap={onLifeMap}/>
     <LivingMemoryOrb state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/>
