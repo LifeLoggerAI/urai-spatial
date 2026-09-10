@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
+import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { OrbState } from '@/app/home/orbStateController'
@@ -8,6 +9,8 @@ import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry
 
 type WalkHandler = (event: ThreeEvent<MouseEvent>) => void
 type V3 = [number, number, number]
+
+const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
 
 const retiredExact = new Set([
   'home-v225-sculpted-sanctuary-floor',
@@ -75,93 +78,37 @@ function memoryLoop(radius: number, depth: number, phase: number, thickness: num
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, true, 'centripetal', .42), 144, thickness, 10, true)
 }
 
-function bladeGeometry(seed: number) {
-  const positions: number[] = [], indices: number[] = [];
-  const rows=16, cols=6;
-  for(let row=0;row<=rows;row++){
-    const t=row/rows, width=.22*Math.pow(Math.sin(t*Math.PI),.8);
-    for(let col=0;col<=cols;col++){
-      const u=col/cols*2-1;
-      positions.push(u*width+.04*Math.sin(t*3+seed), t*.86, .13*Math.sin(t*Math.PI)+.055*u*u*Math.sin(t*Math.PI));
-    }
-  }
-  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
-    const a=row*(cols+1)+col,b=a+1,c=a+cols+1,d=c+1;indices.push(a,b,c,b,d,c);
-  }
-  const geometry=new THREE.BufferGeometry();
-  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-  geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
-}
-
-function CanopyLeaves({ trees }: { trees: {x:number;y:number;z:number;h:number;sweep:number}[] }) {
-  const mesh=useRef<THREE.InstancedMesh>(null);
-  const leaf=useMemo(()=>bladeGeometry(2.4),[]);
-  useEffect(()=>{
-    if(!mesh.current)return;
-    const pose=new THREE.Object3D(), color=new THREE.Color();
-    trees.forEach((tree,index)=>{
-      for(let i=0;i<120;i++){
-        const angle=i*2.39996323+index*.8;
-        const radius=.28+1.55*Math.sqrt((i+.5)/120);
-        pose.position.set(tree.x+Math.cos(angle)*radius,tree.y+tree.h*(.76+.18*(1-radius/2))+.25*Math.sin(i*1.7),tree.z+Math.sin(angle)*radius*.85+tree.sweep*.7);
-        pose.rotation.set(-.4+Math.sin(i*2.7)*.8,angle,.3*Math.cos(i*.9));
-        const scale=.65+.45*(.5+.5*Math.sin(i*4.1));pose.scale.set(scale,scale,scale);
-        pose.updateMatrix();mesh.current!.setMatrixAt(index*120+i,pose.matrix);
-        color.setHSL(.28+.025*Math.sin(i*1.3),.32+.10*Math.sin(i*.7),.085+.055*(.5+.5*Math.cos(i*.8)));
-        mesh.current!.setColorAt(index*120+i,color);
-      }
-    });
-    mesh.current.instanceMatrix.needsUpdate=true;
-    if(mesh.current.instanceColor)mesh.current.instanceColor.needsUpdate=true;
-    mesh.current.computeBoundingSphere();
-    return ()=>leaf.dispose();
-  },[leaf,trees]);
-  return <instancedMesh ref={mesh} args={[leaf,undefined,trees.length*120]} castShadow receiveShadow>
-    <meshStandardMaterial roughness={.8} side={THREE.DoubleSide}/>
-  </instancedMesh>;
-}
-
 function RootedCanopy() {
-  const architecture = useMemo(() => {
-    const anchors = [
-      [-5.45, -4.8, 5.9, .24, -.92], [5.30, -6.1, 6.35, -.21, .96],
-      [-5.1, -11.9, 6.8, .16, -1.08], [4.9, -13.1, 7.15, -.13, 1.12],
-    ] as const
-    return anchors.map(([x, z, h, bend, sweep], index) => {
-      const y = height(x, z)
-      const trunk = tube([
-        new THREE.Vector3(x, y + .02, z),
-        new THREE.Vector3(x + bend * .35, y + h * .28, z + sweep * .10),
-        new THREE.Vector3(x + bend, y + h * .62, z + sweep * .40),
-        new THREE.Vector3(x + bend * 2.0, y + h * .88, z + sweep * .95),
-      ], .205 + (index % 3) * .018, 11)
-      const crownA = tube([
-        new THREE.Vector3(x + bend * 1.1, y + h * .66, z + sweep * .48),
-        new THREE.Vector3(x + bend * 2.4 - sweep * .55, y + h * .91, z + sweep * 1.0),
-        new THREE.Vector3(x + bend * 2.8 - sweep * 1.35, y + h * .98, z + sweep * 1.42),
-      ], .105, 9)
-      const crownB = tube([
-        new THREE.Vector3(x + bend * 1.25, y + h * .70, z + sweep * .50),
-        new THREE.Vector3(x + bend * 1.6 + sweep * .58, y + h * .92, z + sweep * .86),
-        new THREE.Vector3(x + bend * 1.2 + sweep * 1.38, y + h * .95, z + sweep * 1.14),
-      ], .092, 9)
-      const crownC = tube([
-        new THREE.Vector3(x + bend * 1.15, y + h * .72, z + sweep * .48),
-        new THREE.Vector3(x + bend * 1.75, y + h * .88, z + sweep * .20),
-        new THREE.Vector3(x + bend * 2.10, y + h * .94, z - sweep * .46),
-      ], .078, 9)
-      return { x, z, y, h, sweep, trunk, crownA, crownB, crownC }
+  const fern = useGLTF(FERN_MODEL)
+  const materials = useMemo(() => [
+    new THREE.MeshStandardMaterial({ color:'#60745b', roughness:.96, side:THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color:'#405a45', roughness:.98, side:THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color:'#748369', roughness:.94, side:THREE.DoubleSide }),
+  ], [])
+  useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
+  const plants = useMemo(() => Array.from({ length: 64 }, (_, index) => {
+    const side = index % 2 ? -1 : 1
+    const row = Math.floor(index / 2)
+    const z = 3.4 - row * .64 + Math.sin(index * 1.73) * .38
+    const edge = 3.55 + (index % 6) * .61 + .28 * Math.sin(index * .91)
+    const x = side * edge
+    const object = fern.scene.clone(true)
+    object.name = `home-scanned-fern-${index + 1}`
+    object.position.set(x, height(x,z) + .025, z)
+    object.rotation.y = index * 1.41
+    const scale = .30 + (index % 7) * .038
+    object.scale.set(scale * (.88 + (index % 3) * .09), scale * (1.04 + (index % 4) * .08), scale)
+    object.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = materials[index % materials.length]
+        child.castShadow = index < 28
+        child.receiveShadow = true
+      }
     })
-  }, [])
-  return <group name="home-v226-rooted-inhabited-canopy">
-    <CanopyLeaves trees={architecture}/>
-    {architecture.map((tree, index) => <group key={index}>
-      <mesh geometry={tree.trunk} castShadow><meshStandardMaterial color={index % 2 ? '#26372f' : '#2d3a31'} roughness={.97}/></mesh>
-      <mesh geometry={tree.crownA} castShadow><meshStandardMaterial color="#31483a" roughness={.96}/></mesh>
-      <mesh geometry={tree.crownB} castShadow><meshStandardMaterial color="#334c3d" roughness={.96}/></mesh>
-      <mesh geometry={tree.crownC} castShadow><meshStandardMaterial color="#2f493a" roughness={.96}/></mesh>
-
-    </group>)}
+    return object
+  }), [fern.scene, materials])
+  return <group name="home-v226-rooted-inhabited-canopy" userData={{ artRevision:'home-v230-scanned-grounded-fern-grove', source:'Poly Haven fern_02 CC0', composition:'grounded-no-pole-canopy' }}>
+    {plants.map((plant) => <primitive key={plant.name} object={plant}/>)}
   </group>
 }
 
@@ -217,7 +164,7 @@ function inhabitedSurfaceGeometry() {
       const vx=ix/nx,x=-9.4+vx*18.8
       const relief=.052*Math.sin(x*1.72+z*.91)+.034*Math.cos(x*3.86-z*1.54)+.017*Math.sin(x*7.1+z*4.3)
       const y=height(x,z)+relief*(.32+.68*Math.min(1,Math.abs(x)/7.5))+.032
-      positions.push(x,y,z);uvs.push(vx*9.5,vz*15.5)
+      positions.push(x,y,z);uvs.push(vx*1.25,vz*1.85)
       const grain=.5+.5*Math.sin(x*.82-z*.57)*Math.cos(x*1.31+z*.94)
       const center=.30*Math.sin((z+2.4)*.22)+.09*Math.sin((z-1)*.63)
       const trail=1-THREE.MathUtils.smoothstep(Math.abs(x-center),.34,.78)
@@ -237,9 +184,10 @@ function distantRidgeGeometry() {
     const v=iz/nz,z=-14.8-v*12.8
     for(let ix=0;ix<=nx;ix++){
       const u=ix/nx,x=-13.5+u*27
-      const peaks=4.8*Math.exp(-Math.pow((x+5.1)/4.2,2))+6.1*Math.exp(-Math.pow((x-3.7)/4.8,2))+2.2*Math.exp(-Math.pow((x-10.4)/2.8,2))
-      const rise=Math.sin(v*Math.PI*.88)*peaks+(1-v)*(.22+.18*Math.sin(x*.52))
-      const y=height(x,z)+rise-.035+Math.sin(v*Math.PI)*(.26*Math.sin(x*.81+v*5.2)+.15*Math.cos(x*1.73-v*7.1))
+      const peaks=2.25*Math.exp(-Math.pow((x+6.2)/3.0,2))+3.05*Math.exp(-Math.pow((x-2.4)/3.5,2))+1.55*Math.exp(-Math.pow((x-9.6)/2.0,2))
+      const crags=.28*Math.sin(x*1.34)+.17*Math.sin(x*2.91+.8)+.09*Math.cos(x*5.2)
+      const rise=Math.sin(v*Math.PI*.82)*(peaks+crags)+(1-v)*(.14+.12*Math.sin(x*.67))
+      const y=-.52+rise+.14*Math.sin(x*.81+v*5.2)+.07*Math.cos(x*1.73-v*7.1)
       positions.push(x,y,z);uvs.push(u*7,v*5)
       const c=shadow.clone().lerp(stone,.22+.42*v).lerp(warm,.07*(.5+.5*Math.sin(x*.7+v*8)))
       colors.push(c.r,c.g,c.b)
@@ -345,11 +293,9 @@ function grownThresholdGeometry() {
 function GroundSanctuary({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
   const basin = useMemo(basinGeometry, [])
-  const shelter = useMemo(grownThresholdGeometry, [])
-  const maps = useMemoryStoneMaps()
   return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0, -.08, 0]} name="home-v226-ground-inhabited-hearth" onClick={(event) => { event.stopPropagation(); onGround() }}>
     <mesh geometry={basin} receiveShadow castShadow><meshStandardMaterial vertexColors roughness={.98}/></mesh>
-    <mesh geometry={shelter} position={[0,0,-1.2]} scale={[1.08,.68,1]} castShadow receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#71816a" roughness={.92}/></mesh>
+    {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><dodecahedronGeometry args={[1,2]}/><meshStandardMaterial color={index%2?'#4f574a':'#3c4d43'} roughness={.98}/></mesh>)}
     <mesh position={[0, .18, -1.38]} scale={[1.42, .72, .30]} castShadow receiveShadow><sphereGeometry args={[1, 48, 28, 0, Math.PI * 2, 0, Math.PI * .52]}/><meshStandardMaterial color="#303b34" roughness={.99} side={THREE.DoubleSide}/></mesh>
     <mesh position={[-.16, .035, -.32]} scale={[.44, .055, .34]} castShadow><capsuleGeometry args={[.65, .5, 12, 28]}/><meshStandardMaterial color="#a9684f" emissive="#633326" emissiveIntensity={.45} roughness={.78}/></mesh>
     <mesh position={[-.16, .28, -.34]} scale={[.17, .32, .14]}><sphereGeometry args={[1, 28, 20]}/><meshPhysicalMaterial color="#e3a079" emissive="#b65338" emissiveIntensity={1.35} roughness={.42}/></mesh>
@@ -387,8 +333,16 @@ function observatoryShell() {
 
 function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const portal = useMemo(grownThresholdGeometry, [])
-  const maps = useMemoryStoneMaps()
+  const portalRoots = useMemo(() => Array.from({ length: 9 }, (_, index) => {
+    const side = index % 2 ? -1 : 1
+    const depth = -.24 - index * .07
+    return tube([
+      new THREE.Vector3(side*.14, .02, depth + .14),
+      new THREE.Vector3(side*(.30+index*.035), .56+index*.055, depth),
+      new THREE.Vector3(side*(.56+index*.070), 1.10+index*.065, depth-.12),
+      new THREE.Vector3(side*(.82+index*.085), 1.42+(index%3)*.16, depth-.18),
+    ], .064 - index*.0042, 8)
+  }), [])
   const threads = useMemo(() => Array.from({ length: 11 }, (_, index) => {
     const a = index * .67 - 1.1
     const end = new THREE.Vector3(Math.cos(a) * (.28 + index * .025), Math.sin(a * 1.5) * .22, -.12 - Math.sin(a) * .12)
@@ -406,8 +360,8 @@ function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
     return geometry
   }, [])
   return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v226-life-map-lineage-observatory" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>
-    <group name="home-v228-life-map-rooted-branching-threshold">
-      <mesh geometry={portal} position={[0,0,-.48]} castShadow receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#748d7d" roughness={.84} metalness={.08}/></mesh>
+    <group name="home-v228-life-map-rooted-branching-threshold" userData={{ artRevision:'home-v230-life-map-asymmetric-root-threshold' }}>
+      {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#597565':'#675d70'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.28} roughness={.84}/></mesh>)}
     </group>
     <group position={[0, 1.22, -.42]} scale={[.82,.88,.82]} name="home-v226-life-map-contained-memory-field">
       <points geometry={stars} position={[0,0,.04]}><pointsMaterial color="#d5eee5" size={.026} transparent opacity={.88} depthWrite={false} sizeAttenuation/></points>
@@ -552,3 +506,5 @@ export function HomeV225PolishV3({ orbState, reducedMotion, onOrb, onGround, onL
     <MemoryWisps/>
   </group>
 }
+
+useGLTF.preload(FERN_MODEL)

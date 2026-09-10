@@ -14,6 +14,7 @@ import { LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapter
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
+type MemoryForm = "petal" | "fan" | "wave" | "branch" | "shell";
 
 const LifeMapReducedMotionContext = createContext(false);
 const MEMORY_STAR_MODEL = "/assets/urai/generated/models/life-map-memory-star-v1.glb";
@@ -30,7 +31,7 @@ function seeded(index: number, salt: number) {
 
 // Open lamellar forms have actual surface depth and tapered edges, rather than
 // uniform-width tubes. The deterministic seed gives each memory its own contour.
-function memoryMembrane(seed: number, layer: number, core: boolean) {
+function memoryMembrane(seed: number, layer: number, core: boolean, form: MemoryForm = "petal") {
   const positions: number[] = [], colors: number[] = [], indices: number[] = [];
   const rows = 56, cols = 18;
   const phase = seeded(seed, layer + 3) * Math.PI * 2;
@@ -42,13 +43,40 @@ function memoryMembrane(seed: number, layer: number, core: boolean) {
     const lean = .19 * Math.sin(t * 4.5 + phase);
     for (let col = 0; col <= cols; col++) {
       const across = col / cols * 2 - 1;
-      const width = envelope * (core ? .46 : .42 + seeded(seed, layer) * .25);
-      const radius = .06 + t * (core ? .52 : .72 + seeded(seed, layer + 7) * .42) + .16 * across * across * envelope;
-      const twist = azimuth + t * (core ? .75 : .38) + across * .38;
-      const fluting = .018 * Math.cos(across * 22 + t * 6) * envelope;
-      const x = Math.cos(twist) * radius + Math.sin(twist) * across * width + lean;
-      const z = Math.sin(twist) * radius - Math.cos(twist) * across * width + fluting;
-      const y = (t - .5) * (core ? 1.5 : 1.55 + .32 * Math.sin(phase)) - .18 * t * t + .18 * across * envelope;
+      const lane = layer - 2.5;
+      let x: number, y: number, z: number;
+      if (form === "fan") {
+        const width = (core ? .05 : .04 + .30 * Math.pow(t, .72)) * (core ? 1 : .82 + seeded(seed, layer) * .35);
+        x = lane * .17 * t + across * width + .10 * Math.sin(t * 4.2 + phase);
+        y = -.76 + 1.58 * t + .08 * across * t;
+        z = lane * .075 + .18 * Math.sin(t * 2.4 + phase * .22) + .05 * across;
+      } else if (form === "wave") {
+        const width = (core ? .08 : .15) * envelope;
+        x = -.86 + 1.72 * t + .10 * Math.sin(t * 5.1 + phase);
+        y = lane * .12 + .34 * Math.sin(t * Math.PI * 1.25 + phase * .18) + across * width;
+        z = lane * .10 + .23 * Math.sin(t * Math.PI * 2 + phase) + .06 * across;
+      } else if (form === "branch") {
+        const side = layer % 2 ? -1 : 1;
+        const width = (core ? .05 : .14) * envelope;
+        x = side * (.06 + .68 * t) + .12 * Math.sin(t * 4.4 + phase) + across * width;
+        y = -.80 + 1.62 * t + .05 * Math.sin(t * 5.2 + phase);
+        z = lane * .11 + .16 * Math.sin(t * 3.2 + phase * .35) + .06 * across;
+      } else if (form === "shell") {
+        const angle = phase * .12 - 1.15 + t * 3.7;
+        const radius = .10 + .64 * t;
+        const width = (core ? .04 : .13) * envelope;
+        x = Math.cos(angle) * radius + Math.cos(angle + Math.PI / 2) * across * width;
+        z = Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * across * width + lane * .045;
+        y = -.50 + 1.05 * t + lane * .055 + .04 * across;
+      } else {
+        const width = envelope * (core ? .46 : .42 + seeded(seed, layer) * .25);
+        const radius = .06 + t * (core ? .52 : .72 + seeded(seed, layer + 7) * .42) + .16 * across * across * envelope;
+        const twist = azimuth + t * (core ? .75 : .38) + across * .38;
+        const fluting = .018 * Math.cos(across * 22 + t * 6) * envelope;
+        x = Math.cos(twist) * radius + Math.sin(twist) * across * width + lean;
+        z = Math.sin(twist) * radius - Math.cos(twist) * across * width + fluting;
+        y = (t - .5) * (core ? 1.5 : 1.55 + .32 * Math.sin(phase)) - .18 * t * t + .18 * across * envelope;
+      }
       positions.push(x, y, z);
       const c = deep.clone().lerp(pale, .22 + .62 * Math.pow(Math.abs(across), 2) + .10 * envelope);
       colors.push(c.r, c.g, c.b);
@@ -66,12 +94,12 @@ function memoryMembrane(seed: number, layer: number, core: boolean) {
   return geometry;
 }
 
-function memoryHeartGeometry(seed: number) {
-  return memoryMembrane(seed, 0, true);
+function memoryHeartGeometry(seed: number, form: MemoryForm) {
+  return memoryMembrane(seed, 0, true, form);
 }
 
-function memoryFilamentGeometry(seed: number, filament: number) {
-  return memoryMembrane(seed, filament + 1, false);
+function memoryFilamentGeometry(seed: number, filament: number, form: MemoryForm) {
+  return memoryMembrane(seed, filament + 1, false, form);
 }
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
@@ -222,15 +250,16 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
   return <mesh name="life-map-v226-nebula-volume" scale={[1.0, .56, 1.12]}><sphereGeometry args={[46, 48, 36]} /><primitive object={material} attach="material" /></mesh>;
 }
 
-function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,0] }: { aura: string; active: boolean; siteKey: string; scale?: number; rotation?: Point3 }) {
+function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,0], form }: { aura: string; active: boolean; siteKey: string; scale?: number; rotation?: Point3; form?: MemoryForm }) {
   const reducedMotion = useContext(LifeMapReducedMotionContext);
   const { scene, animations } = useGLTF(MEMORY_STAR_MODEL);
   const hiddenAsset = useMemo(() => scene.clone(true), [scene]);
   const group = useRef<THREE.Group>(null);
   const { actions } = useAnimations(animations, group);
   const seed = useMemo(() => siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0), [siteKey]);
-  const heart = useMemo(() => memoryHeartGeometry(seed), [seed]);
-  const filaments = useMemo(() => Array.from({ length: 5 }, (_, index) => memoryFilamentGeometry(seed, index)), [seed]);
+  const resolvedForm = form ?? (["petal", "fan", "wave", "branch", "shell"] as MemoryForm[])[seed % 5];
+  const heart = useMemo(() => memoryHeartGeometry(seed, resolvedForm), [resolvedForm, seed]);
+  const filaments = useMemo(() => Array.from({ length: 5 }, (_, index) => memoryFilamentGeometry(seed, index, resolvedForm)), [resolvedForm, seed]);
   useEffect(() => () => { heart.dispose(); filaments.forEach((geometry) => geometry.dispose()); }, [filaments, heart]);
   useEffect(() => {
     const chosen = Object.values(actions).find(Boolean);
@@ -247,7 +276,7 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .025;
     group.current.scale.setScalar(scale * breath);
   });
-  return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`}>
+  return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`} userData={{ artRevision:'v230-semantic-memory-forms', form:resolvedForm }}>
     <primitive object={hiddenAsset} visible={false} />
     <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .38 : .18} roughness={.28} metalness={.18} clearcoat={.7} side={THREE.DoubleSide} /></mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
@@ -308,18 +337,18 @@ function MemoryWeather({ reducedMotion }: { reducedMotion: boolean }) {
   return <group ref={root} name="life-map-emotional-weather" position={[0,6.4,-22]}><FieldParticles seed={340} count={130} radius={22} depth={8} height={6} color={VIOLET} opacity={.17} size={.07} /></group>;
 }
 
-function VisualArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.18 : 0.92} rotation={[0.02, 0.55, 0.01]} />; }
-function AudioArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78,0,z],[-0.3,index*.2,z],[0.18,-index*.14,z],[0.82,.04,z]]} color={index === 1 ? ICE : node.aura} opacity={active ? .72 : .26} width={.025} />)}</group>; }
-function RelationshipArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.1 : 0.82} />; }
-function PlaceArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.2 : 0.9} rotation={[0,0.18,0]} />; }
-function EmotionArtifact({ node, active }: ArtifactProps) { const reducedMotion = useContext(LifeMapReducedMotionContext); return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2,1.1,2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={.42} color={node.aura} /></group>; }
-function PatternArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.12 : 0.82} />{!active ? [-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85,y,0],[-0.35,y+.24,-.25],[0.28,y-.18,-.32],[0.88,y,0]]} color={index === 1 ? ICE : node.aura} opacity={.20} width={.014} />) : null}</group>; }
-function AchievementArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={GOLD} active={active} siteKey={node.id} scale={active ? 1.24 : 0.9} rotation={[0,0.72,0]} />; }
-function GoalArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={active ? GOLD : node.aura} active={active} siteKey={node.id} scale={active ? 1.16 : 0.86} />; }
-function FutureArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.18 : 0.84} rotation={[0,-0.4,0]} />; }
-function EverydayArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.02 : 0.76} />; }
-function ArchiveArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.08 : 0.78} rotation={[0,0.2,0]} /><FieldParticles seed={77} count={active ? 34 : 18} radius={1.4} depth={2.2} height={0.55} color={ICE} opacity={active ? .42 : .22} size={.042} /></group>; }
-function ProtectedArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} scale={active ? 1.0 : 0.7} rotation={[0,0.7,0]} /><FieldParticles seed={91} count={24} radius={1.65} depth={2.4} height={.48} color={node.aura} opacity={.24} size={.045} /></group>; }
+function VisualArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="fan" scale={active ? 1.18 : 0.92} rotation={[0.02, 0.55, 0.01]} />; }
+function AudioArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="wave" scale={active ? 1.08 : 0.82} />{[-0.34, 0, 0.34].map((z, index) => <Current key={z} points={[[-0.78,0,z],[-0.3,index*.2,z],[0.18,-index*.14,z],[0.82,.04,z]]} color={index === 1 ? ICE : node.aura} opacity={active ? .72 : .26} width={.025} />)}</group>; }
+function RelationshipArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="petal" scale={active ? 1.1 : 0.82} />; }
+function PlaceArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="shell" scale={active ? 1.2 : 0.9} rotation={[0,0.18,0]} />; }
+function EmotionArtifact({ node, active }: ArtifactProps) { const reducedMotion = useContext(LifeMapReducedMotionContext); return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="branch" scale={active ? 1.28 : 0.96} /><Sparkles count={active ? 34 : 14} scale={[2.2,1.1,2.2]} size={2.1} speed={reducedMotion ? 0 : 0.08} opacity={.42} color={node.aura} /></group>; }
+function PatternArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="wave" scale={active ? 1.12 : 0.82} />{!active ? [-0.22, 0, 0.22].map((y, index) => <Current key={y} points={[[-0.85,y,0],[-0.35,y+.24,-.25],[0.28,y-.18,-.32],[0.88,y,0]]} color={index === 1 ? ICE : node.aura} opacity={.20} width={.014} />) : null}</group>; }
+function AchievementArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={GOLD} active={active} siteKey={node.id} form="fan" scale={active ? 1.24 : 0.9} rotation={[0,0.72,0]} />; }
+function GoalArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={active ? GOLD : node.aura} active={active} siteKey={node.id} form="branch" scale={active ? 1.16 : 0.86} />; }
+function FutureArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="shell" scale={active ? 1.18 : 0.84} rotation={[0,-0.4,0]} />; }
+function EverydayArtifact({ node, active }: ArtifactProps) { return <AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="fan" scale={active ? 1.02 : 0.76} />; }
+function ArchiveArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="shell" scale={active ? 1.08 : 0.78} rotation={[0,0.2,0]} /><FieldParticles seed={77} count={active ? 34 : 18} radius={1.4} depth={2.2} height={0.55} color={ICE} opacity={active ? .42 : .22} size={.042} /></group>; }
+function ProtectedArtifact({ node, active }: ArtifactProps) { return <group><AuthoredMemoryStar aura={node.aura} active={active} siteKey={node.id} form="petal" scale={active ? 1.0 : 0.7} rotation={[0,0.7,0]} /><FieldParticles seed={91} count={24} radius={1.65} depth={2.4} height={.48} color={node.aura} opacity={.24} size={.045} /></group>; }
 
 function ArtifactShape(props: ArtifactProps) {
   const family = resolveArtifactFamily(props.node);

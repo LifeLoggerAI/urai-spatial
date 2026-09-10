@@ -9,6 +9,10 @@ assert.ok(source.includes('function memoryHeartGeometry('), 'Life Map must rende
 assert.ok(source.includes('function memoryFilamentGeometry('), 'Life Map must give each memory a branching spatial silhouette');
 assert.ok(source.includes('new THREE.CatmullRomCurve3(points, false'), 'memory hearts, branches, and chambers must remain open rather than closing into orbital glyphs');
 assert.ok(source.includes('function memoryMembrane('), 'memories must have authored open lamellar surfaces');
+for (const form of ['petal', 'fan', 'wave', 'branch', 'shell']) {
+  assert.ok(source.includes(`form=\"${form}\"`) || source.includes(`form === \"${form}\"`), `semantic memory form ${form} must remain authored`);
+}
+assert.ok(source.includes("v230-semantic-memory-forms"), 'the literal-pixel repair must identify the varied semantic form authority');
 assert.ok(source.includes('Math.pow(Math.sin(Math.PI * t), .74)'), 'memory surfaces must taper at both ends');
 assert.ok(source.includes('geometry.computeVertexNormals()'), 'memory surfaces must carry valid lighting normals');
 assert.ok(!source.includes('const originT = (filament + 1) / 10'), 'rejected uniform bare branch presentation must not return');

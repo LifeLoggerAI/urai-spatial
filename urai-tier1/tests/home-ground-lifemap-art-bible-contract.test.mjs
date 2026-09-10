@@ -64,10 +64,12 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
   for (const marker of [
     'home-v226-production-rooted-memory-sanctuary','home-v226-weathered-memory-banks','home-v226-rooted-inhabited-canopy',
     'home-v226-ground-inhabited-hearth','home-v226-life-map-lineage-observatory','home-v226-root-cradle','home-v226-rooted-single-living-memory-presence',
+    'home-v230-scanned-grounded-fern-grove','polyhaven-fern-02-geometry-v1.glb','home-v230-life-map-asymmetric-root-threshold',
   ]) has(currentHomeVisual, marker)
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
   assert.equal((currentHome.match(/<Canvas/g) ?? []).length, 1)
-  assert.doesNotMatch(currentHomeVisual, /useGLTF\(|RoundedBox|octahedronGeometry|torusGeometry|IcosahedronGeometry/)
+  assert.match(currentHomeVisual, /useGLTF\(FERN_MODEL\)/)
+  assert.doesNotMatch(currentHomeVisual, /RoundedBox|octahedronGeometry|torusGeometry|IcosahedronGeometry/)
   assert.doesNotMatch(`${currentHomeGeometry}\n${historicalV225}\n${currentHomeVisual}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
 
