@@ -18,6 +18,7 @@ const workflow = readRepo('.github/workflows/spatial-live-deploy.yml')
 const bundleBuilder = readRepo('scripts/create-static-release-bundle.mjs')
 const credentialBoundary = readRepo('scripts/verify-release-credential-boundary.mjs')
 const verifier = readRepo('scripts/urai-post-deploy-smoke.mjs')
+const routeContract = readRepo('scripts/urai-live-route-contract.mjs')
 const legacyBootstrapVerifier = readRepo('scripts/verify-legacy-live-bootstrap.mjs')
 
 function hasAll(source, markers, label) {
@@ -82,10 +83,12 @@ test('live verification binds canonical routes, origin, SHA, authority, and fing
 })
 
 test('Focus live verification requires the real static chamber and rejects the obsolete loading shell', () => {
-  const expected = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']]"
-  const obsolete = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['Focus loading'], []]"
-  assert.ok(verifier.includes(expected))
-  assert.ok(!verifier.includes(obsolete))
+  hasAll(routeContract, [
+    "route: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset'",
+    "required: ['urai-final-focus-chamber', 'Selected memory chamber.']",
+    "forbidden: ['Focus loading']",
+  ], 'Focus live route contract')
+  assert.ok(verifier.includes("from './urai-live-route-contract.mjs'"))
 })
 
 test('legacy bootstrap verifier remains dormant and bounded while quarantined workflow cannot invoke it', () => {

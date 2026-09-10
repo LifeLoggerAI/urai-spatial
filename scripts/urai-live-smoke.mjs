@@ -1,161 +1,173 @@
 #!/usr/bin/env node
-const baseUrl = process.env.URAI_DEPLOY_URL
+
+import {
+  deployedSha,
+  inspectRouteContent,
+  normalizePath,
+  routeContracts,
+  routeVariants,
+} from './urai-live-route-contract.mjs'
+
+const baseUrl = (process.env.URAI_DEPLOY_URL || '').trim().replace(/\/$/, '')
 const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 const requireCustomDomain = process.env.REQUIRE_CUSTOM_DOMAIN === 'true'
+const expectedDeployedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim().toLowerCase()
+const exactSha = /^[0-9a-f]{40}$/
 
 if (!baseUrl) {
   console.error('URAI_DEPLOY_URL is required, for example https://urai.app')
   process.exit(1)
 }
 
-const normalizedBase = baseUrl.replace(/\/$/, '')
-const parsedBase = new URL(normalizedBase)
+const parsedBase = new URL(baseUrl)
+const canonicalOrigin = parsedBase.origin
 
-if (requireCustomDomain && !['urai.app', 'www.urai.app'].includes(parsedBase.hostname)) {
-  console.error(`REQUIRE_CUSTOM_DOMAIN=true requires urai.app or www.urai.app, received ${parsedBase.hostname}`)
+if (requireCustomDomain && canonicalOrigin !== 'https://urai.app') {
+  console.error(`REQUIRE_CUSTOM_DOMAIN=true requires the canonical https://urai.app origin, received ${canonicalOrigin}`)
   process.exit(1)
 }
 
-const routes = [
-  {
-    paths: ['/'],
-    markers: [/Own your life\./i, /Step inside yourself\./i, /Ground below · memory above/i],
-  },
-  {
-    paths: ['/home', '/home/'],
-    markers: [/Home threshold|Own your life|Step inside yourself|URAI/i, /Sky route|Orb companion|memory|life/i],
-  },
-  {
-    paths: ['/ground', '/ground/'],
-    markers: [/Ground|private|operations|consent|URAI/i],
-  },
-  { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
-  {
-    paths: ['/life-map', '/life-map/'],
-    markers: [/Inside your memory field\./i, /Thirty-four private stars/i, /Double click \/ Enter Focus/i],
-  },
-  {
-    paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
-    markers: [/Selected memory chamber/i, /The Quiet Reset/i, /Enter Replay/i],
-  },
-  {
-    paths: [
-      '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
-      '/replay/?memoryId=quiet-reset&manifestId=replay-recovery-thread',
-    ],
-    markers: [/Replay|memory|thread|film|URAI/i],
-  },
-  { paths: ['/unwind', '/unwind/'], markers: [/Unwind|return/i, /URAI|Life Map/i] },
-  {
-    paths: ['/mirror', '/mirror/'],
-    markers: [/See the pattern clearly\./i, /Mirror is the reflection realm/i, /Orb reflection/i],
-  },
-  {
-    paths: ['/passport', '/passport/'],
-    markers: [/Your life stays yours\./i, /ownership vault/i, /private by default/i],
-  },
-  {
-    paths: ['/privacy-controls', '/privacy-controls/'],
-    markers: [/URAI Privacy Controls/i, /Choose what the world can hold\./i, /Human approval before real-world action/i],
-    forbidden: [/Home threshold/i, /Ground route Real-life world/i],
-  },
-  {
-    paths: ['/location-map', '/location-map/'],
-    markers: [/Emotional weather over private places\./i, /symbolic atlas/i, /Global emotional weather legend/i],
-  },
-  {
-    paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
-    markers: [/AR|VR|XR|Quest|spatial/i, /Life Map|device|browser|fallback/i],
-  },
-  {
-    paths: ['/status', '/status/'],
-    markers: [/Routes implemented\. Production certification pending\./i, /Launch spine/i, /Certification boundary/i],
-  },
-  {
-    paths: ['/api/system/deploy-proof'],
-    markers: [
-      /urai-spatial-deploy-proof/i,
-      /urai-spatial-public-surface-2026-06-29-homeworldproduction/i,
-      /urai-spatial-deploy-proof-v2-2026-06-30/i,
-      /commitShaKnown/i,
-    ],
-  },
-]
-
-const staleFallbackPatterns = [
-  /Full app deployment is being finalized/i,
-  /Opening your spatial field/i,
-  /Preparing the scene/i,
-]
-
-const legacyRuntimePatterns = [
-  /Loading URAI/i,
-  /Help us tune the Life Movie/i,
-  /Feedback capture is paused because Firebase (?:isn['’]t|is not) configured/i,
-]
+if (requireLiveCommitSha && !exactSha.test(expectedDeployedSha)) {
+  console.error('REQUIRE_LIVE_COMMIT_SHA=true requires URAI_EXPECTED_DEPLOYED_SHA as an exact 40-character lowercase commit SHA')
+  process.exit(1)
+}
 
 const failures = []
 let checkCount = 0
 
-const normalizePath = (pathname) => {
-  const value = pathname.replace(/\/+$/, '')
-  return value || '/'
+async function fetchText(url, redirect = 'follow') {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'cache-control': 'no-cache',
+      'user-agent': 'urai-live-smoke/5.0',
+      accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
+    },
+    cache: 'no-store',
+    redirect,
+    signal: AbortSignal.timeout(20_000),
+  })
+  return { response, body: await response.text() }
 }
 
-for (const { paths, markers, forbidden = [] } of routes) {
-  for (const path of paths) {
+for (const contract of routeContracts) {
+  for (const requestedUrl of routeVariants(baseUrl, contract.route)) {
     checkCount += 1
-    const url = `${normalizedBase}${path}`
     try {
-      const requestedUrl = new URL(url)
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'user-agent': 'urai-live-smoke/4.1',
-          accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
-        },
-        redirect: 'follow',
-      })
-
-      const body = await response.text()
+      const { response, body } = await fetchText(requestedUrl)
       const finalUrl = new URL(response.url)
-      const hasExpectedContent = /<html|<body|__next|URAI|Urai|urai-spatial-deploy-proof/i.test(body)
-      const stale = staleFallbackPatterns.find((pattern) => pattern.test(body))
-      const legacyRuntime = legacyRuntimePatterns.find((pattern) => pattern.test(body))
-      const missingMarker = markers.find((pattern) => !pattern.test(body))
-      const forbiddenMarker = forbidden.find((pattern) => pattern.test(body))
+      const contentType = response.headers.get('content-type')?.toLowerCase() || ''
+      const findings = inspectRouteContent(contract, body)
+      const observedSha = deployedSha(response, body)
+      const shaMismatch = requireLiveCommitSha && observedSha !== expectedDeployedSha
       const pathMismatch = normalizePath(finalUrl.pathname) !== normalizePath(requestedUrl.pathname)
-      const missingQuery = [...requestedUrl.searchParams.entries()].find(
-        ([key, value]) => finalUrl.searchParams.get(key) !== value,
-      )
-      const liveCommitShaMissing =
-        requestedUrl.pathname.replace(/\/$/, '') === '/api/system/deploy-proof' &&
-        requireLiveCommitSha &&
-        /"commitSha"\s*:\s*"unknown"/i.test(body)
+      const queryMismatch = finalUrl.search !== requestedUrl.search
+      const originMismatch = finalUrl.origin !== canonicalOrigin
 
       if (
         !response.ok ||
-        !hasExpectedContent ||
-        stale ||
-        legacyRuntime ||
-        missingMarker ||
-        forbiddenMarker ||
+        !contentType.includes('text/html') ||
+        !findings.passed ||
         pathMismatch ||
-        missingQuery ||
-        liveCommitShaMissing
+        queryMismatch ||
+        originMismatch ||
+        shaMismatch
       ) {
         failures.push(
-          `${url} returned ${response.status} finalUrl=${response.url} expectedContent=${hasExpectedContent} ` +
-            `stale=${stale?.source ?? 'no'} legacyRuntime=${legacyRuntime?.source ?? 'no'} ` +
-            `missing=${missingMarker?.source ?? 'none'} forbidden=${forbiddenMarker?.source ?? 'none'} ` +
-            `pathMismatch=${pathMismatch} missingQuery=${missingQuery ? missingQuery.join('=') : 'none'} ` +
-            `liveCommitShaMissing=${liveCommitShaMissing}`,
+          `${requestedUrl} returned ${response.status} finalUrl=${response.url} contentType=${contentType || 'missing'} ` +
+            `missing=${findings.missingMarkers.join('|') || 'none'} forbidden=${findings.forbiddenMarkers.join('|') || 'none'} ` +
+            `originMismatch=${originMismatch} pathMismatch=${pathMismatch} queryMismatch=${queryMismatch} ` +
+            `expectedDeployedSha=${expectedDeployedSha || 'not-required'} observedDeployedSha=${observedSha || 'none'}`,
         )
       } else {
-        console.log(`OK ${response.status} ${url} -> ${response.url}`)
+        console.log(`OK ${response.status} ${requestedUrl} -> ${response.url}`)
       }
     } catch (error) {
-      failures.push(`${url} failed: ${error instanceof Error ? error.message : String(error)}`)
+      failures.push(`${requestedUrl} failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+}
+
+if (requireLiveCommitSha) {
+  checkCount += 2
+  try {
+    const fingerprintUrl = new URL('/release-fingerprint.json', `${baseUrl}/`)
+    const { response, body } = await fetchText(fingerprintUrl, 'manual')
+    let fingerprint = null
+    try { fingerprint = JSON.parse(body) } catch {}
+    const finalUrl = new URL(response.url)
+    const fingerprintFailures = [
+      !response.ok && `http-${response.status}`,
+      !response.headers.get('content-type')?.toLowerCase().includes('application/json') && 'content-type',
+      finalUrl.origin !== canonicalOrigin && 'origin',
+      normalizePath(finalUrl.pathname) !== '/release-fingerprint.json' && 'path',
+      finalUrl.search !== '' && 'query',
+      fingerprint?.schemaVersion !== 'urai-release-fingerprint-1' && 'schema',
+      fingerprint?.repository !== 'LifeLoggerAI/urai-spatial' && 'repository',
+      fingerprint?.releaseSha !== expectedDeployedSha && 'release-sha',
+      !exactSha.test(fingerprint?.rollbackSha || '') && 'rollback-sha',
+      !exactSha.test(fingerprint?.authoritySha || '') && 'authority-sha',
+      fingerprint?.rollbackSha === fingerprint?.releaseSha && 'rollback-distinctness',
+      fingerprint?.firebaseProject !== 'urai-4dc1d' && 'firebase-project',
+      fingerprint?.liveUrl !== 'https://urai.app' && 'live-url',
+      fingerprint?.deploymentScope !== 'hosting-only' && 'deployment-scope',
+      !/^\d+$/.test(String(fingerprint?.workflowRunId || '')) && 'workflow-run-id',
+    ].filter(Boolean)
+    if (fingerprintFailures.length > 0) {
+      failures.push(`${fingerprintUrl} failed fingerprint authority: ${fingerprintFailures.join('|')}`)
+    } else {
+      console.log(`OK release fingerprint ${fingerprint.releaseSha} workflowRunId=${fingerprint.workflowRunId}`)
+    }
+  } catch (error) {
+    failures.push(`release fingerprint failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  try {
+    const proofUrl = new URL('/api/system/deploy-proof', `${baseUrl}/`)
+    const { response, body } = await fetchText(proofUrl, 'manual')
+    let proof = null
+    try { proof = JSON.parse(body) } catch {}
+    const finalUrl = new URL(response.url)
+    const proofFailures = [
+      !response.ok && `http-${response.status}`,
+      finalUrl.origin !== canonicalOrigin && 'origin',
+      normalizePath(finalUrl.pathname) !== '/api/system/deploy-proof' && 'path',
+      proof?.service !== 'urai-spatial-deploy-proof' && 'service',
+      proof?.repository !== 'LifeLoggerAI/urai-spatial' && 'repository',
+      proof?.proofSchemaVersion !== 'urai-spatial-deploy-proof-v2-2026-06-30' && 'schema',
+      proof?.deploymentFreshness?.commitShaKnown !== true && 'commit-sha-known',
+      proof?.deploymentFreshness?.commitSha !== expectedDeployedSha && 'freshness-sha',
+      proof?.environment?.commitSha !== expectedDeployedSha && 'environment-sha',
+    ].filter(Boolean)
+    if (proofFailures.length > 0) {
+      failures.push(`${proofUrl} failed deploy-proof consistency: ${proofFailures.join('|')}`)
+    } else {
+      console.log(`OK static deploy proof agrees with release fingerprint ${expectedDeployedSha}`)
+    }
+  } catch (error) {
+    failures.push(`deploy proof failed: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+if (requireCustomDomain) {
+  const redirectCases = [
+    ['http://urai.app/status/?urai_redirect_probe=1', 'https://urai.app/status/?urai_redirect_probe=1'],
+    ['https://www.urai.app/status/?urai_redirect_probe=1', 'https://urai.app/status/?urai_redirect_probe=1'],
+    ['http://www.urai.app/status/?urai_redirect_probe=1', 'https://urai.app/status/?urai_redirect_probe=1'],
+  ]
+  for (const [source, expected] of redirectCases) {
+    checkCount += 1
+    try {
+      const { response } = await fetchText(source, 'manual')
+      const location = response.headers.get('location')
+      const destination = location ? new URL(location, source).toString() : ''
+      if (![301, 308].includes(response.status) || destination !== expected) {
+        failures.push(`${source} must permanently redirect in one hop to ${expected}; status=${response.status} location=${location || 'missing'}`)
+      } else {
+        console.log(`OK ${response.status} ${source} -> ${destination}`)
+      }
+    } catch (error) {
+      failures.push(`${source} redirect check failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 }
@@ -167,5 +179,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `URAI live smoke passed ${checkCount} custom-route checks with slash parity, route-specific fingerprints, legacy-runtime rejection, and deploy proof. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain}`,
+  `URAI live smoke passed ${checkCount} checks using the shared current route contract, exact origin/path/query/SHA authority, stale and legacy rejection, fingerprint/deploy-proof consistency, and canonical redirects. requireLiveCommitSha=${requireLiveCommitSha} requireCustomDomain=${requireCustomDomain} expectedDeployedSha=${expectedDeployedSha || 'not-required'}`,
 )

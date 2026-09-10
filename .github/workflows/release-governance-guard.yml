@@ -233,7 +233,7 @@ jobs:
                 test -f "$path" || continue
                 if printf '%s\n' "$path" | grep -Eqi 'deploy|production|release|preview' \
                   || grep -Eqi 'actions:[[:space:]]*write|environment:[[:space:]]*production|firebase[[:space:]]+deploy|gcloud[[:space:]]+run[[:space:]]+deploy' "$path"; then
-                  grep -Eq 'github\.event\.pull_request\.head\.sha|github\.sha|inputs\.(candidate_sha|verification_sha|release_sha)' "$path"
+                  grep -Eq 'github\.event\.pull_request\.head\.sha|github\.sha|inputs\.(candidate_sha|verification_sha|release_sha|expected_deployed_sha)' "$path"
                   grep -Eq 'persist-credentials:[[:space:]]*false' "$path"
                   grep -Eq 'git rev-parse HEAD' "$path"
                   grep -Eq 'git status --porcelain' "$path"
