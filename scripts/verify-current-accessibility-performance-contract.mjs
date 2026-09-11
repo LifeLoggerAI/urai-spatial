@@ -21,8 +21,8 @@ requireMatch(evidence, /data-home-navigation-owner', 'runtime-boundary'/, 'runti
 requireMatch(evidence, /Open URAI Orb companion/, 'canonical semantic Orb name')
 requireMatch(evidence, /Orb menu enters focus, closes on Escape, and returns focus/, 'Orb focus lifecycle proof')
 requireMatch(evidence, /firstDestination\)\.toBeFocused\(\)/, 'Orb first-control focus assertion')
-requireMatch(evidence, /await page\.keyboard\.press\('Escape'\)/, 'Orb Escape close assertion')
-requireMatch(evidence, /await expect\(orb\)\.toBeFocused\(\)/, 'exact Orb activator focus return assertion')
+requireMatch(evidence, /page\.keyboard\.press\(['\"]Escape['\"]\)/, 'Orb Escape close assertion')
+requireMatch(evidence, /expect\(orb\)\.toBeFocused\(\)/, 'exact Orb activator focus return assertion')
 requireMatch(evidence, /WebGL context loss recovery is bounded and preserves the route/, 'bounded WebGL recovery proof')
 requireMatch(evidence, /data-webgl-recovery-attempts', '1'/, 'single recovery attempt assertion')
 
