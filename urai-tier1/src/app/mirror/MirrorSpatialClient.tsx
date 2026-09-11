@@ -131,32 +131,31 @@ function mirrorSeed(value: string) {
 }
 
 function reflectionPresenceGeometry() {
-  const geometry = new THREE.SphereGeometry(1, 58, 42)
+  const geometry = new THREE.IcosahedronGeometry(1, 5)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors: number[] = []
-  const root = new THREE.Color('#1e3632'), mineral = new THREE.Color('#667d74'), scarColor = new THREE.Color('#a4b3a7')
+  const root = new THREE.Color('#1c302c'), mineral = new THREE.Color('#596b61'), scarColor = new THREE.Color('#9ea79a')
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
     const angle = Math.atan2(nz, nx), crown = Math.max(0, ny), lower = Math.max(0, -ny)
-    const coarse = .17 * Math.sin(angle * 3.15 + ny * 2.7) + .08 * Math.cos(angle * 5.8 - ny * 4.5)
-    const middle = .065 * Math.sin(nx * 8.7 + nz * 6.1 + ny * 5.6)
-    const fine = .028 * Math.cos(angle * 13.2 + ny * 10.1)
-    const cleft = Math.exp(-((nx * .90 + nz * .26 - .025) ** 2) / .032) * Math.pow(crown, 1.42)
-    const cavityA = Math.exp(-(((nx + .34) * .84) ** 2 + ((nz - .16) * 1.05) ** 2) / .115) * (.3 + .7 * crown)
-    const cavityB = Math.exp(-(((nx - .42) * .92) ** 2 + ((nz + .20) * .98) ** 2) / .14) * Math.max(0, .68 + ny)
-    const shoulder = Math.exp(-(((nx - .18) * .72) ** 2 + ((nz - .48) * .82) ** 2) / .18) * Math.max(0, .62 + ny)
-    const radial = 1 + coarse * .7 + middle + fine - .27 * cleft - .17 * cavityA - .10 * cavityB + .11 * shoulder
-    let x = nx * radial * 1.10 + ny * .19 - .08
-    let z = nz * radial * .74 + .055 * Math.sin(ny * 5.6 + angle * 2.1)
-    const twist = (ny + .18) * .30 + .04 * Math.sin(ny * 5)
+    const coarse = .20 * Math.sin(angle * 3.35 + ny * 3.1) + .09 * Math.cos(angle * 6.2 - ny * 4.9)
+    const stratum = .08 * Math.sin(ny * 15.5 + angle * 2.2)
+    const fine = .025 * Math.cos(angle * 12.7 + ny * 9.6)
+    const cleft = Math.exp(-((nx * .88 + nz * .31 - .02) ** 2) / .027) * Math.pow(crown, 1.28)
+    const cavityA = Math.exp(-(((nx + .32) * .86) ** 2 + ((nz - .17) * 1.08) ** 2) / .105) * (.28 + .72 * crown)
+    const cavityB = Math.exp(-(((nx - .44) * .94) ** 2 + ((nz + .22) * 1.02) ** 2) / .125) * Math.max(0, .66 + ny)
+    const radial = 1 + coarse * .78 + stratum * .52 + fine - .33 * cleft - .21 * cavityA - .14 * cavityB
+    let x = nx * radial * 1.36 + ny * .20 - .09
+    let z = nz * radial * .78 + .045 * Math.sin(ny * 5.2 + angle * 2.4)
+    const twist = (ny + .16) * .20
     const cos = Math.cos(twist), sin = Math.sin(twist), tx = x * cos - z * sin, tz = x * sin + z * cos
     x = tx; z = tz
-    let y = ny * .92 - .17 - .23 * cleft - .11 * cavityA + .07 * Math.sin(angle * 4.4 + ny * 5.2) * crown
-    y -= lower * (.08 + .07 * lower)
+    let y = ny * .52 - .33 - .26 * cleft - .13 * cavityA
+    y -= lower * (.36 + .22 * lower)
     position.setXYZ(index, x, y, z)
-    const height = THREE.MathUtils.clamp((y + 1.05) / 1.95, 0, 1)
-    const scar = THREE.MathUtils.clamp(cleft + cavityA * .55 + cavityB * .35 + Math.abs(middle) * 3.0, 0, 1)
-    const color = root.clone().lerp(mineral, .25 + .42 * height).lerp(scarColor, .025 + .16 * scar)
+    const height = THREE.MathUtils.clamp((y + .96) / 1.35, 0, 1)
+    const scar = THREE.MathUtils.clamp(cleft + cavityA * .58 + cavityB * .40 + Math.abs(stratum) * 2.7, 0, 1)
+    const color = root.clone().lerp(mineral, .18 + .46 * height).lerp(scarColor, .018 + .12 * scar)
     colors.push(color.r, color.g, color.b)
   }
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
@@ -183,17 +182,9 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
   }, [])
   useEffect(() => () => { wall.dispose(); floor.dispose(); pool.dispose(); maps.forEach(map => map.dispose()) }, [floor, maps, pool, wall])
   return <group name="mirror-v230-weathered-introspection-chamber" userData={{ motion: reducedMotion ? 'still' : 'still-architecture', visualIntent: 'continuous-reflective-geology-not-floating-ui-stage' }}>
-    <mesh geometry={floor} receiveShadow castShadow name="mirror-v230-continuous-worn-sanctuary-floor">
-      <meshPhysicalMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} vertexColors color="#86958a" emissive="#10221f" emissiveIntensity={.24} roughness={.84} metalness={.02} clearcoat={.08} side={THREE.DoubleSide} />
-    </mesh>
-    <mesh geometry={wall} position={[0, 6.8, -2]} receiveShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#768b82" emissive="#122622" emissiveIntensity={.18} roughness={.9} side={THREE.BackSide} />
-    </mesh>
-    <group name="mirror-reflection-basin" position={[0, .02, -3.2]}>
-      <mesh geometry={pool} position={[0, .02, 0]}>
-        <meshPhysicalMaterial color="#15383d" emissive="#0b4c55" emissiveIntensity={.14} transparent opacity={.78} roughness={.18} metalness={.08} clearcoat={.64} clearcoatRoughness={.22} />
-      </mesh>
-    </group>
+    <mesh geometry={floor} receiveShadow castShadow name="mirror-v230-continuous-worn-sanctuary-floor"><meshPhysicalMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} vertexColors color="#86958a" emissive="#10221f" emissiveIntensity={.24} roughness={.84} metalness={.02} clearcoat={.08} side={THREE.DoubleSide} /></mesh>
+    <mesh geometry={wall} position={[0, 6.8, -2]} receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#768b82" emissive="#122622" emissiveIntensity={.18} roughness={.9} side={THREE.BackSide} /></mesh>
+    <group name="mirror-reflection-basin" position={[0, .02, -3.2]}><mesh geometry={pool} position={[0, .02, 0]}><meshPhysicalMaterial color="#15383d" emissive="#0b4c55" emissiveIntensity={.14} transparent opacity={.78} roughness={.18} metalness={.08} clearcoat={.64} clearcoatRoughness={.22} /></mesh></group>
     <pointLight position={[-4.8, 3.8, -3.2]} color="#d9ddc5" intensity={18} distance={17} decay={2} />
     <pointLight position={[4.2, 2.8, -4]} color="#9bc9cc" intensity={16} distance={15} decay={2} />
     <spotLight position={[0, 8.5, 2.5]} target-position={[0, .2, -3.2]} color="#d9f7ed" intensity={28} distance={24} angle={.38} penumbra={.92} castShadow />
@@ -210,11 +201,7 @@ function EmbodiedReflection({ reducedMotion, demo }: { reducedMotion: boolean; d
     group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, -camera.rotation.y * 0.18, 3.2, 1 / 60)
     if (!reducedMotion) group.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 0.42) * 0.008)
   })
-  return <group ref={group} position={[0, 0, -6.25]} name="privacy-safe-user-reflection">
-    <mesh geometry={reflection} position={[0, .24, 0]} scale={[.82, .48, .92]} rotation={[.12, -.28, .08]} receiveShadow>
-      <meshPhysicalMaterial vertexColors color={demo ? '#bac4d3' : '#c3e9dd'} transparent opacity={.34} roughness={.62} side={THREE.DoubleSide} depthWrite={false} />
-    </mesh>
-  </group>
+  return <group ref={group} position={[0, 0, -6.25]} name="privacy-safe-user-reflection"><mesh geometry={reflection} position={[0, .24, 0]} scale={[.82, .48, .92]} rotation={[.12, -.28, .08]} receiveShadow><meshPhysicalMaterial vertexColors color={demo ? '#bac4d3' : '#c3e9dd'} transparent opacity={.34} roughness={.62} side={THREE.DoubleSide} depthWrite={false} /></mesh></group>
 }
 
 function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: MirrorPattern | null; onSelect: (pattern: MirrorPattern | null) => void; reducedMotion: boolean }) {
@@ -223,17 +210,15 @@ function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: Mi
   useEffect(() => () => presence.dispose(), [presence])
   useFrame(({ clock }) => {
     if (!core.current || reducedMotion) return
-    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .035
-    core.current.rotation.z = Math.sin(clock.elapsedTime * 0.25) * .008
-    core.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * .36) * .004)
+    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.15) * .018
+    core.current.rotation.z = Math.sin(clock.elapsedTime * 0.22) * .004
+    core.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * .30) * .002)
   })
-  return <group position={[0, .44, -3.12]} scale={selected ? .86 : .92} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-v232-scarred-connected-reflection-presence' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
+  return <group position={[0, .30, -3.18]} scale={selected ? .72 : .78} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-v232-scarred-connected-reflection-presence' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
     <group ref={core} name="mirror-v231-connected-reflection-presence">
-      <mesh geometry={presence} position={[0,.04,.02]} scale={[.72,.68,.66]} castShadow receiveShadow>
-        <meshPhysicalMaterial vertexColors color={selected?.accent ?? '#667d74'} emissive={selected?.accent ?? '#1d4542'} emissiveIntensity={selected ? .035 : .018} roughness={.94} metalness={0} clearcoat={.025} clearcoatRoughness={.92} />
-      </mesh>
+      <mesh geometry={presence} position={[0,-.10,.02]} scale={[.64,.54,.58]} castShadow receiveShadow><meshPhysicalMaterial vertexColors color="#627168" emissive={selected?.accent ?? '#1b3b37'} emissiveIntensity={selected ? .010 : .006} roughness={.98} metalness={0} clearcoat={.01} clearcoatRoughness={.96} /></mesh>
     </group>
-    <pointLight position={[0,.46,.2]} color={selected?.accent ?? '#9dd8d4'} intensity={selected ? .22 : .12} distance={3.4} decay={2} />
+    <pointLight position={[0,.24,.2]} color={selected?.accent ?? '#91c5bf'} intensity={selected ? .09 : .06} distance={2.7} decay={2} />
   </group>
 }
 
@@ -241,27 +226,15 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   const group = useRef<THREE.Group>(null)
   const geometry = useMemo(() => memoryFoldGeometry(mirrorSeed(pattern.id)), [pattern.id])
   useEffect(() => () => geometry.dispose(), [geometry])
-  useFrame(({ clock }) => {
-    if (!group.current || reducedMotion) return
-    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.2 + pattern.position[0]) * 0.025
-  })
+  useFrame(({ clock }) => { if (group.current && !reducedMotion) group.current.rotation.y = Math.sin(clock.elapsedTime * 0.2 + pattern.position[0]) * 0.025 })
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
-  return <group ref={group} position={[pattern.position[0], .3, pattern.position[2]]} data-testid="mirror-pattern-object" onClick={activate}>
-    <mesh geometry={geometry} castShadow receiveShadow scale={selected ? [.58,.64,.54] : [.64,.54,.58]} rotation={[.08, pattern.position[0] * .11, pattern.position[0] * .035]}>
-      <MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : .86} reducedMotion={reducedMotion} />
-    </mesh>
-    {selected ? <pointLight color={pattern.accent} intensity={.42} distance={4} /> : null}
-  </group>
+  return <group ref={group} position={[pattern.position[0], .3, pattern.position[2]]} data-testid="mirror-pattern-object" onClick={activate}><mesh geometry={geometry} castShadow receiveShadow scale={selected ? [.58,.64,.54] : [.64,.54,.58]} rotation={[.08, pattern.position[0] * .11, pattern.position[0] * .035]}><MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : .86} reducedMotion={reducedMotion} /></mesh>{selected ? <pointLight color={pattern.accent} intensity={.42} distance={4} /> : null}</group>
 }
 
 function FragmentObject({ fragment, accent, active, onSelect, reducedMotion }: { reducedMotion: boolean; fragment: MirrorFragment; accent: string; active: boolean; onSelect: (fragment: MirrorFragment) => void }) {
   const geometry = useMemo(() => memoryFoldGeometry(mirrorSeed(fragment.id)), [fragment.id])
   useEffect(() => () => geometry.dispose(), [geometry])
-  return <group position={[fragment.position[0], .34, fragment.position[2]]} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
-    <mesh geometry={geometry} castShadow receiveShadow scale={active ? [.34,.40,.36] : [.27,.32,.29]} rotation={[.1, fragment.position[0] * .16, -.08]}>
-      <MemorySurfaceMaterial color={accent} opacity={fragment.certainty === 'uncertain' ? .25 : .82} reducedMotion={reducedMotion} />
-    </mesh>
-  </group>
+  return <group position={[fragment.position[0], .34, fragment.position[2]]} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}><mesh geometry={geometry} castShadow receiveShadow scale={active ? [.34,.40,.36] : [.27,.32,.29]} rotation={[.1, fragment.position[0] * .16, -.08]}><MemorySurfaceMaterial color={accent} opacity={fragment.certainty === 'uncertain' ? .25 : .82} reducedMotion={reducedMotion} /></mesh></group>
 }
 
 function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSelect, onFragment, ...cameraProps }: CameraProps & { patterns: MirrorPattern[]; activeFragment: MirrorFragment | null; onSelect: (pattern: MirrorPattern | null) => void; onFragment: (fragment: MirrorFragment | null) => void }) {
@@ -302,135 +275,38 @@ export default function MirrorSpatialClient() {
   const [temporalIndex, setTemporalIndex] = useState(0)
   const [online, setOnline] = useState(true)
   const [fixture, setFixture] = useState<string | null>(null)
-useEffect(() => {
-  const requestedFixture = new URLSearchParams(window.location.search).get('mirrorFixture')
-  setFixture(ACCEPTANCE_FIXTURES_ENABLED ? requestedFixture : null)
-}, [])
-
-  useEffect(() => {
-    if (!activeFragment) return
-    const frame = window.requestAnimationFrame(() => fragmentStatusRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }))
-    return () => window.cancelAnimationFrame(frame)
-  }, [activeFragment])
+  useEffect(() => { const requestedFixture = new URLSearchParams(window.location.search).get('mirrorFixture'); setFixture(ACCEPTANCE_FIXTURES_ENABLED ? requestedFixture : null) }, [])
+  useEffect(() => { if (!activeFragment) return; const frame = window.requestAnimationFrame(() => fragmentStatusRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })); return () => window.cancelAnimationFrame(frame) }, [activeFragment])
   const patterns = useMemo(() => memory ? applyMirrorFixture(buildMirrorPatterns(memory), fixture) : [], [fixture, memory])
-
-  useEffect(() => {
-    const update = () => setOnline(navigator.onLine)
-    update()
-    window.addEventListener('online', update)
-    window.addEventListener('offline', update)
-    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update) }
-  }, [])
-
-  useEffect(() => {
-    const onPop = () => { setSelected(null); setActiveFragment(null); setTemporalIndex(0) }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [])
+  useEffect(() => { const update = () => setOnline(navigator.onLine); update(); window.addEventListener('online', update); window.addEventListener('offline', update); return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update) } }, [])
+  useEffect(() => { const onPop = () => { setSelected(null); setActiveFragment(null); setTemporalIndex(0) }; window.addEventListener('popstate', onPop); return () => window.removeEventListener('popstate', onPop) }, [])
 
   const selectPattern = useCallback((pattern: MirrorPattern | null) => {
-    setSelected(pattern)
-    setActiveFragment(null)
-    setTemporalIndex(0)
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (pattern) params.set('pattern', pattern.id)
-      else params.delete('pattern')
-      window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`)
-    }
+    setSelected(pattern); setActiveFragment(null); setTemporalIndex(0)
+    if (typeof window !== 'undefined') { const params = new URLSearchParams(window.location.search); if (pattern) params.set('pattern', pattern.id); else params.delete('pattern'); window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`) }
   }, [])
-
-  useEffect(() => {
-    if (!patterns.length || typeof window === 'undefined') return
-    const requested = new URLSearchParams(window.location.search).get('pattern')
-    const match = patterns.find((pattern) => pattern.id === requested)
-    if (match) setSelected(match)
-  }, [patterns])
-
-  const unwind = useCallback(() => {
-    if (selected) { selectPattern(null); return }
-    requestUraiWorldReturn()
-  }, [selectPattern, selected])
-
-  const input = useMovementInput({
-    enabled: Boolean(memory && webglAvailable),
-    onEscape: unwind,
-    onInteract: () => { if (selected) selectPattern(selected) },
-    onReset: () => { target.current = new THREE.Vector3(0, 0, 6.8); selectPattern(null) },
-  })
+  useEffect(() => { if (!patterns.length || typeof window === 'undefined') return; const requested = new URLSearchParams(window.location.search).get('pattern'); const match = patterns.find((pattern) => pattern.id === requested); if (match) setSelected(match) }, [patterns])
+  const unwind = useCallback(() => { if (selected) { selectPattern(null); return }; requestUraiWorldReturn() }, [selectPattern, selected])
+  const input = useMovementInput({ enabled: Boolean(memory && webglAvailable), onEscape: unwind, onInteract: () => { if (selected) selectPattern(selected) }, onReset: () => { target.current = new THREE.Vector3(0, 0, 6.8); selectPattern(null) } })
   const look = useDragLook({ yaw, pitch, enabled: Boolean(memory && webglAvailable), sensitivity: reducedMotion ? 0.002 : 0.0034 })
-
-  const goReplay = useCallback(() => {
-    if (!memory) return
-    const href = buildMemoryHref(memory.id, memory.replayManifest.id, memory.star.id, memory.demo, 'replay')
-    requestUraiWorldTravel({ destination: 'replay', href, entryPortal: 'mirror-reflection-fragment', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
-  }, [memory, selected])
-
-  const goPassport = useCallback(() => {
-    requestUraiWorldTravel({ destination: 'passport', href: '/passport', entryPortal: 'mirror-ownership-threshold', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}` })
-  }, [selected])
+  const goReplay = useCallback(() => { if (!memory) return; const href = buildMemoryHref(memory.id, memory.replayManifest.id, memory.star.id, memory.demo, 'replay'); requestUraiWorldTravel({ destination: 'replay', href, entryPortal: 'mirror-reflection-fragment', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } }) }, [memory, selected])
+  const goPassport = useCallback(() => { requestUraiWorldTravel({ destination: 'passport', href: '/passport', entryPortal: 'mirror-ownership-threshold', cameraCheckpoint: `mirror:${selected?.id ?? 'overview'}` }) }, [selected])
 
   if (!memory) {
     const title = fixture === 'permission-denied' ? 'Mirror permission is not available.' : fixture === 'failed' ? 'Mirror could not load the permitted sources.' : result.message
-    return <main className="mirrorState" data-testid="mirror-spatial-state" data-memory-status={fixture ?? result.status}>
-      <section role={result.status === 'loading' ? 'status' : 'alert'}>
-        <p>{result.status === 'loading' ? 'Preparing the reflection chamber' : 'Mirror boundary'}</p>
-        <h1>{title}</h1>
-        <span>{fixture === 'permission-denied' ? 'No reflection was derived. Review permissions in Passport.' : 'Mirror never substitutes demo content for unavailable private data.'}</span>
-        <div><button type="button" onClick={() => requestUraiWorldReturn()}>Return</button><button type="button" onClick={goPassport}>Open Passport</button></div>
-      </section>
-      <style>{stateCss}</style>
-    </main>
+    return <main className="mirrorState" data-testid="mirror-spatial-state" data-memory-status={fixture ?? result.status}><section role={result.status === 'loading' ? 'status' : 'alert'}><p>{result.status === 'loading' ? 'Preparing the reflection chamber' : 'Mirror boundary'}</p><h1>{title}</h1><span>{fixture === 'permission-denied' ? 'No reflection was derived. Review permissions in Passport.' : 'Mirror never substitutes demo content for unavailable private data.'}</span><div><button type="button" onClick={() => requestUraiWorldReturn()}>Return</button><button type="button" onClick={goPassport}>Open Passport</button></div></section><style>{stateCss}</style></main>
   }
-
   if (webglAvailable === null) return <main className="mirrorState" role="status"><section><h1>Preparing the reflection chamber…</h1></section><style>{stateCss}</style></main>
-  if (!webglAvailable) return <main className="mirrorFallback" data-testid="mirror-webgl-fallback"><section>
-    <p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} reflection`}</p>
-    <h1>{memory.title}</h1>
-    <p>Spatial rendering is unavailable. The source-backed reflection remains available through semantic controls.</p>
-    <div className="fallbackPatterns">{patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}>{pattern.label} · {pattern.confidenceLabel}</button>)}</div>
-    {selected ? <article className="fallbackInspection" aria-label={`${selected.label} evidence`}>
-      <button type="button" onClick={() => selectPattern(null)}>Close {selected.label}</button>
-      <p>{selected.evidenceState.replace('-', ' ')}</p>
-      <h2>{selected.label}</h2>
-      <strong>{selected.explanation}</strong>
-      <dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl>
-      {selected.fragments.length ? <ul>{selected.fragments.map((fragment) => <li key={fragment.id}><strong>{fragment.label}</strong><span>{fragment.certainty}</span></li>)}</ul> : <p>No source fragments are available for this pattern.</p>}
-    </article> : null}
-    <nav aria-label="Mirror fallback transitions"><button type="button" onClick={goReplay}>Return to Replay</button><button type="button" onClick={goPassport}>Open Passport</button></nav>
-  </section><style>{fallbackCss}</style></main>
+  if (!webglAvailable) return <main className="mirrorFallback" data-testid="mirror-webgl-fallback"><section><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} reflection`}</p><h1>{memory.title}</h1><p>Spatial rendering is unavailable. The source-backed reflection remains available through semantic controls.</p><div className="fallbackPatterns">{patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}>{pattern.label} · {pattern.confidenceLabel}</button>)}</div>{selected ? <article className="fallbackInspection" aria-label={`${selected.label} evidence`}><button type="button" onClick={() => selectPattern(null)}>Close {selected.label}</button><p>{selected.evidenceState.replace('-', ' ')}</p><h2>{selected.label}</h2><strong>{selected.explanation}</strong><dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl>{selected.fragments.length ? <ul>{selected.fragments.map((fragment) => <li key={fragment.id}><strong>{fragment.label}</strong><span>{fragment.certainty}</span></li>)}</ul> : <p>No source fragments are available for this pattern.</p>}</article> : null}<nav aria-label="Mirror fallback transitions"><button type="button" onClick={goReplay}>Return to Replay</button><button type="button" onClick={goPassport}>Open Passport</button></nav></section><style>{fallbackCss}</style></main>
 
   const offline = !online || fixture === 'offline'
   const empty = fixture === 'empty' || patterns.length === 0
   return <main ref={shellRef} className="mirrorWorld" data-testid="mirror-spatial-world" data-mirror-renderer="webgl-r3f" data-memory-status={result.status} data-memory-id={memory.id} data-manifest-id={memory.replayManifest.id} data-demo={memory.demo ? 'true' : 'false'} data-online={offline ? 'false' : 'true'} data-selected-pattern={selected?.id ?? 'overview'} {...look}>
-    <Canvas camera={{ position: [0, CAMERA_HEIGHT, 6.8], fov: 51, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.08 }}>
-      <Suspense fallback={null}><MirrorScene input={input} yaw={yaw} pitch={pitch} target={target} reducedMotion={reducedMotion} selected={selected} temporalIndex={temporalIndex} shellRef={shellRef} patterns={patterns} activeFragment={activeFragment} onSelect={selectPattern} onFragment={setActiveFragment} /></Suspense>
-    </Canvas>
-
-    <header className="mirrorIdentity">
-      <p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} reflection`}</p>
-      <h1>{selected?.label ?? 'Mirror'}</h1>
-      <span>{offline ? 'Offline · existing permitted evidence only' : selected?.summary ?? 'A private chamber for inspecting evidence without turning life into a score.'}</span>
-    </header>
-
+    <Canvas camera={{ position: [0, CAMERA_HEIGHT, 6.8], fov: 51, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.08 }}><Suspense fallback={null}><MirrorScene input={input} yaw={yaw} pitch={pitch} target={target} reducedMotion={reducedMotion} selected={selected} temporalIndex={temporalIndex} shellRef={shellRef} patterns={patterns} activeFragment={activeFragment} onSelect={selectPattern} onFragment={setActiveFragment} /></Suspense></Canvas>
+    <header className={`mirrorIdentity${selected ? ' mirrorIdentitySelected' : ''}`}><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} reflection`}</p><h1>{selected?.label ?? 'Mirror'}</h1><span>{offline ? 'Offline · existing permitted evidence only' : selected?.summary ?? 'A private chamber for inspecting evidence without turning life into a score.'}</span></header>
     {empty ? <section className="mirrorEmpty" role="status"><h2>No reflection is available yet.</h2><p>Mirror will not invent a pattern. Return after more permitted memories exist, or review permissions in Passport.</p></section> : null}
-
-    <section className="mirrorPatternRail" aria-label="Reflection patterns">
-      {patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}><strong>{pattern.shortLabel}</strong><span>{pattern.confidenceLabel}</span></button>)}
-    </section>
-
-    {selected ? <aside className="mirrorInspection" data-movement-ui="true" aria-live="polite" aria-label={`${selected.label} evidence`}>
-      <header className="mirrorInspectionHeader">
-        <button className="close" type="button" onClick={() => selectPattern(null)} aria-label="Return to Mirror overview">×</button>
-        <p>{selected.evidenceState.replace('-', ' ')}</p><h2>{selected.label}</h2>
-      </header>
-      <strong>{selected.explanation}</strong>
-      <dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl>
-      <label htmlFor="mirror-time">Inspect reflection depth</label><input id="mirror-time" type="range" min={0} max={Math.max(0, selected.fragments.length - 1)} value={Math.min(temporalIndex, Math.max(0, selected.fragments.length - 1))} onChange={(event) => { setTemporalIndex(Number(event.currentTarget.value)); setActiveFragment(null) }} />
-      <div className="fragmentList">{selected.fragments.map((fragment, index) => <button key={fragment.id} type="button" disabled={index > temporalIndex} aria-pressed={activeFragment?.id === fragment.id} onClick={() => setActiveFragment(fragment)}>{fragment.label}<span>{fragment.certainty}</span></button>)}</div>
-      {activeFragment ? <p ref={fragmentStatusRef} className="fragmentStatus">Selected source fragment: {activeFragment.label}. Evidence status: {activeFragment.certainty}.</p> : null}
-    </aside> : null}
-
+    <section className="mirrorPatternRail" aria-label="Reflection patterns">{patterns.map((pattern) => <button key={pattern.id} type="button" aria-pressed={selected?.id === pattern.id} onClick={() => selectPattern(pattern)}><strong>{pattern.shortLabel}</strong><span>{pattern.confidenceLabel}</span></button>)}</section>
+    {selected ? <aside className="mirrorInspection" data-movement-ui="true" aria-live="polite" aria-label={`${selected.label} evidence`}><header className="mirrorInspectionHeader"><button className="close" type="button" onClick={() => selectPattern(null)} aria-label="Return to Mirror overview">×</button><p>{selected.evidenceState.replace('-', ' ')}</p><h2>{selected.label}</h2></header><strong>{selected.explanation}</strong><dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl><label htmlFor="mirror-time">Inspect reflection depth</label><input id="mirror-time" type="range" min={0} max={Math.max(0, selected.fragments.length - 1)} value={Math.min(temporalIndex, Math.max(0, selected.fragments.length - 1))} onChange={(event) => { setTemporalIndex(Number(event.currentTarget.value)); setActiveFragment(null) }} /><div className="fragmentList">{selected.fragments.map((fragment, index) => <button key={fragment.id} type="button" disabled={index > temporalIndex} aria-pressed={activeFragment?.id === fragment.id} onClick={() => setActiveFragment(fragment)}>{fragment.label}<span>{fragment.certainty}</span></button>)}</div>{activeFragment ? <p ref={fragmentStatusRef} className="fragmentStatus">Selected source fragment: {activeFragment.label}. Evidence status: {activeFragment.certainty}.</p> : null}</aside> : null}
     <nav className="mirrorThresholds" aria-label="Mirror world transitions"><button type="button" onClick={goReplay}>Replay threshold</button><button type="button" onClick={goPassport}>Passport threshold</button><button type="button" onClick={unwind}>{selected ? 'Overview' : 'Previous realm'}</button></nav>
     <button className="mirrorOrb" type="button" onClick={() => { if (selected) setActiveFragment(selected.fragments[0] ?? null); else selectPattern(patterns[0] ?? null) }} aria-label={selected ? `Ask the Orb to explain ${selected.label}` : 'Ask the Orb to guide this reflection'}><span aria-hidden="true" /></button>
     <p className="mirrorAnnouncement" role="status" aria-live="polite">{activeFragment ? `${activeFragment.label}, ${activeFragment.certainty} evidence.` : selected ? `${selected.label} selected. ${selected.confidenceLabel}.` : 'Mirror overview.'}</p>
@@ -442,4 +318,4 @@ useEffect(() => {
 
 const stateCss = `.mirrorState{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 28%,#12303d,#02070d 58%,#010307);color:#fff}.mirrorState section{max-width:620px;text-align:center}.mirrorState p{font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:#a8eef4}.mirrorState h1{font:500 clamp(2.2rem,6vw,5rem)/.95 Georgia,serif}.mirrorState span{display:block;color:#bdccd7;line-height:1.6}.mirrorState div{display:flex;justify-content:center;gap:10px;margin-top:22px}.mirrorState button{min-width:48px;min-height:48px;padding:0 18px;border:1px solid #c7f7fb;border-radius:999px;background:#dffcff;color:#041018;font-weight:900}.mirrorState button:focus-visible{outline:3px solid #fff;outline-offset:4px}`
 const fallbackCss = `.mirrorFallback{position:fixed;inset:0;overflow:auto;padding:28px;background:#02070d;color:#fff}.mirrorFallback section{max-width:760px;margin:auto}.mirrorFallback p:first-child{font-size:10px;font-weight:900;letter-spacing:.2em;color:#9ceef4}.mirrorFallback h1{font:500 clamp(2.5rem,7vw,5rem)/.95 Georgia,serif}.mirrorFallback section>div{display:grid;gap:8px;margin:20px 0}.mirrorFallback button{min-height:48px;padding:0 16px;border:1px solid #bdeff3;border-radius:14px;background:#071722;color:#fff;text-align:left}.mirrorFallback button:focus-visible{outline:3px solid #fff;outline-offset:3px}.fallbackPatterns{display:grid;gap:8px;margin:20px 0}.fallbackInspection{margin:18px 0;padding:18px;border:1px solid #bdeff333;border-radius:18px;background:#071722}.fallbackInspection h2{font:500 2rem/1 Georgia,serif}.fallbackInspection dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fallbackInspection dl div,.fallbackInspection li{padding:10px;border:1px solid #bdeff322;border-radius:12px}.fallbackInspection dt{font-size:10px;text-transform:uppercase;letter-spacing:.12em}.fallbackInspection dd{margin:4px 0 0}.fallbackInspection ul{display:grid;gap:8px;padding:0;list-style:none}.fallbackInspection li strong,.fallbackInspection li span{display:block}.fallbackInspection nav{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:620px){.fallbackInspection dl{grid-template-columns:1fr}}`
-const worldCss = `.mirrorWorld{position:fixed;inset:0;overflow:hidden;background:#02070c;color:#fff;touch-action:none}.mirrorWorld canvas{position:absolute!important;inset:0}.mirrorIdentity{position:absolute;z-index:12;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(470px,calc(100vw - 36px));text-shadow:0 3px 28px #000}.mirrorIdentity p{margin:0;color:#9ceef4;font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.mirrorIdentity h1{margin:8px 0 5px;font:500 clamp(2.2rem,5.5vw,5.4rem)/.88 Georgia,serif}.mirrorIdentity span{display:block;max-width:520px;color:#c8d7df;font-size:12px;line-height:1.55}.mirrorPatternRail{position:absolute;z-index:18;left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));display:flex;gap:8px;max-width:calc(100vw - 36px);overflow:auto;padding:6px;border:1px solid #d9f8ff22;border-radius:22px;background:#03101bd9;backdrop-filter:blur(16px)}.mirrorPatternRail button{min-width:148px;min-height:56px;padding:8px 13px;border:1px solid #dffaff24;border-radius:16px;background:#0a1b25;color:#fff;text-align:left}.mirrorPatternRail button[aria-pressed=true]{background:#dffcff;color:#031018}.mirrorPatternRail strong,.mirrorPatternRail span{display:block}.mirrorPatternRail span{margin-top:3px;font-size:10px;opacity:.72}.mirrorPatternRail button:focus-visible,.mirrorThresholds button:focus-visible,.mirrorOrb:focus-visible,.mirrorInspection button:focus-visible,.mirrorInspection input:focus-visible{outline:3px solid #fff;outline-offset:3px}.mirrorInspection{touch-action:pan-y;overscroll-behavior:contain;position:absolute;z-index:20;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));box-sizing:border-box;width:min(430px,calc(100vw - 36px));max-height:calc(100svh - 160px);overflow:auto;padding:20px;border:1px solid #dffaff28;border-radius:24px;background:#03101beb;box-shadow:0 28px 100px #0009;backdrop-filter:blur(18px)}.mirrorInspection .close{position:absolute;right:12px;top:12px;min-width:48px;min-height:48px;border:0;border-radius:50%;background:#102733;color:#fff;font-size:24px}.mirrorInspection>p:first-of-type{margin:0;color:#9ceef4;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.mirrorInspection h2{margin:7px 54px 8px 0;font:500 2.1rem/1 Georgia,serif}.mirrorInspection>strong{display:block;color:#dcebf0;line-height:1.55}.mirrorInspection dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.mirrorInspection dl div{padding:10px;border:1px solid #dffaff17;border-radius:14px;background:#ffffff08}.mirrorInspection dt{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:#9ceef4}.mirrorInspection dd{margin:5px 0 0;color:#c5d4dd;font-size:11px;line-height:1.45}.mirrorInspection label{display:block;margin-top:10px;font-size:11px;font-weight:800}.mirrorInspection input[type=range]{width:100%;min-height:48px}.fragmentList{display:grid;gap:7px}.fragmentList button{min-height:48px;padding:8px 12px;border:1px solid #dffaff20;border-radius:13px;background:#0a1b25;color:#fff;text-align:left}.fragmentList button span{display:block;margin-top:3px;font-size:9px;opacity:.65}.fragmentList button[aria-pressed=true]{background:#dffcff;color:#031018}.fragmentList button:disabled{opacity:.35}.fragmentStatus{color:#bfe8ed;font-size:11px}.mirrorThresholds{position:absolute;z-index:17;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));display:flex;gap:7px}.mirrorThresholds button{min-height:48px;padding:0 15px;border:1px solid #dffaff2c;border-radius:999px;background:#03101bdc;color:#fff;font-weight:850}.mirrorOrb{position:absolute;z-index:22;left:50%;bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px));width:64px;height:64px;transform:translateX(-50%);border:1px solid #dffcff66;border-radius:50%;background:#03101bd9;box-shadow:0 0 40px #63dbe577;display:grid;place-items:center}.mirrorOrb span{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff 0 12%,#9ef4f8 28%,#4dcbd5 58%,transparent 76%);box-shadow:0 0 24px #9ef4f8}.mirrorAnnouncement{position:absolute;z-index:12;left:50%;bottom:max(164px,calc(env(safe-area-inset-bottom) + 158px));transform:translateX(-50%);margin:0;padding:6px 12px;border-radius:999px;background:#02070dbd;color:#c9e5e8;font-size:11px}.mirrorEmpty{position:absolute;z-index:16;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100vw - 32px));padding:20px;border:1px solid #dffaff22;border-radius:22px;background:#03101be8;text-align:center}.mirrorEmpty h2{font:500 2rem/1 Georgia,serif}.mirrorEmpty p{color:#c4d3dc;line-height:1.55}@media(max-width:760px){.mirrorIdentity{top:max(70px,calc(env(safe-area-inset-top) + 58px));max-width:calc(100vw - 32px)}.mirrorIdentity h1{font-size:2.4rem}.mirrorIdentity span{max-width:78vw}.mirrorPatternRail{left:12px;right:12px;bottom:max(90px,calc(env(safe-area-inset-bottom) + 84px));max-width:none}.mirrorPatternRail button{min-width:128px}.mirrorThresholds{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}.mirrorThresholds button{flex:1;padding:0 8px;font-size:10px}.mirrorOrb{bottom:max(164px,calc(env(safe-area-inset-bottom) + 158px));width:56px;height:56px}.mirrorAnnouncement{bottom:max(222px,calc(env(safe-area-inset-bottom) + 216px));max-width:82vw;text-align:center}.mirrorInspection{left:12px;right:12px;top:max(72px,calc(env(safe-area-inset-top) + 62px));bottom:max(238px,calc(env(safe-area-inset-bottom) + 232px));width:auto;max-height:none}.mirrorInspection dl{grid-template-columns:1fr}.urai-mobile-movement{bottom:max(250px,calc(env(safe-area-inset-bottom) + 244px))!important}}@media(prefers-reduced-motion:reduce){.mirrorWorld *{scroll-behavior:auto!important;animation:none!important;transition-duration:0s!important}}@media(forced-colors:active){.mirrorPatternRail,.mirrorInspection,.mirrorThresholds button,.mirrorOrb{border:2px solid CanvasText}}`
+const worldCss = `.mirrorWorld{position:fixed;inset:0;overflow:hidden;background:#02070c;color:#fff;touch-action:none}.mirrorWorld canvas{position:absolute!important;inset:0}.mirrorIdentity{position:absolute;z-index:12;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(470px,calc(100vw - 36px));text-shadow:0 3px 28px #000}.mirrorIdentity p{margin:0;color:#9ceef4;font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.mirrorIdentity h1{margin:8px 0 5px;font:500 clamp(2.2rem,5.5vw,5.4rem)/.88 Georgia,serif}.mirrorIdentity span{display:block;max-width:520px;color:#c8d7df;font-size:12px;line-height:1.55}.mirrorPatternRail{position:absolute;z-index:18;left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));display:flex;gap:8px;max-width:calc(100vw - 36px);overflow:auto;padding:6px;border:1px solid #d9f8ff22;border-radius:22px;background:#03101bd9;backdrop-filter:blur(16px)}.mirrorPatternRail button{min-width:148px;min-height:56px;padding:8px 13px;border:1px solid #dffaff24;border-radius:16px;background:#0a1b25;color:#fff;text-align:left}.mirrorPatternRail button[aria-pressed=true]{background:#dffcff;color:#031018}.mirrorPatternRail strong,.mirrorPatternRail span{display:block}.mirrorPatternRail span{margin-top:3px;font-size:10px;opacity:.72}.mirrorPatternRail button:focus-visible,.mirrorThresholds button:focus-visible,.mirrorOrb:focus-visible,.mirrorInspection button:focus-visible,.mirrorInspection input:focus-visible{outline:3px solid #fff;outline-offset:3px}.mirrorInspection{touch-action:pan-y;overscroll-behavior:contain;position:absolute;z-index:20;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));box-sizing:border-box;width:min(430px,calc(100vw - 36px));max-height:calc(100svh - 160px);overflow:auto;padding:20px;border:1px solid #dffaff28;border-radius:24px;background:#03101beb;box-shadow:0 28px 100px #0009;backdrop-filter:blur(18px)}.mirrorInspection .close{position:absolute;right:12px;top:12px;min-width:48px;min-height:48px;border:0;border-radius:50%;background:#102733;color:#fff;font-size:24px}.mirrorInspection>p:first-of-type{margin:0;color:#9ceef4;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.mirrorInspection h2{margin:7px 54px 8px 0;font:500 2.1rem/1 Georgia,serif}.mirrorInspection>strong{display:block;color:#dcebf0;line-height:1.55}.mirrorInspection dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.mirrorInspection dl div{padding:10px;border:1px solid #dffaff17;border-radius:14px;background:#ffffff08}.mirrorInspection dt{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:#9ceef4}.mirrorInspection dd{margin:5px 0 0;color:#c5d4dd;font-size:11px;line-height:1.45}.mirrorInspection label{display:block;margin-top:10px;font-size:11px;font-weight:800}.mirrorInspection input[type=range]{width:100%;min-height:48px}.fragmentList{display:grid;gap:7px}.fragmentList button{min-height:48px;padding:8px 12px;border:1px solid #dffaff20;border-radius:13px;background:#0a1b25;color:#fff;text-align:left}.fragmentList button span{display:block;margin-top:3px;font-size:9px;opacity:.65}.fragmentList button[aria-pressed=true]{background:#dffcff;color:#031018}.fragmentList button:disabled{opacity:.35}.fragmentStatus{color:#bfe8ed;font-size:11px}.mirrorThresholds{position:absolute;z-index:17;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));display:flex;gap:7px}.mirrorThresholds button{min-height:48px;padding:0 15px;border:1px solid #dffaff2c;border-radius:999px;background:#03101bdc;color:#fff;font-weight:850}.mirrorOrb{position:absolute;z-index:22;left:50%;bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px));width:64px;height:64px;transform:translateX(-50%);border:1px solid #dffcff66;border-radius:50%;background:#03101bd9;box-shadow:0 0 40px #63dbe577;display:grid;place-items:center}.mirrorOrb span{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff 0 12%,#9ef4f8 28%,#4dcbd5 58%,transparent 76%);box-shadow:0 0 24px #9ef4f8}.mirrorAnnouncement{position:absolute;z-index:12;left:50%;bottom:max(164px,calc(env(safe-area-inset-bottom) + 158px));transform:translateX(-50%);margin:0;padding:6px 12px;border-radius:999px;background:#02070dbd;color:#c9e5e8;font-size:11px}.mirrorEmpty{position:absolute;z-index:16;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100vw - 32px));padding:20px;border:1px solid #dffaff22;border-radius:22px;background:#03101be8;text-align:center}.mirrorEmpty h2{font:500 2rem/1 Georgia,serif}.mirrorEmpty p{color:#c4d3dc;line-height:1.55}@media(max-width:760px){.mirrorIdentity{top:max(70px,calc(env(safe-area-inset-top) + 58px));max-width:calc(100vw - 32px)}.mirrorIdentitySelected{display:none}.mirrorIdentity h1{font-size:2.4rem}.mirrorIdentity span{max-width:78vw}.mirrorPatternRail{left:12px;right:12px;bottom:max(90px,calc(env(safe-area-inset-bottom) + 84px));max-width:none}.mirrorPatternRail button{min-width:128px}.mirrorThresholds{left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:center}.mirrorThresholds button{flex:1;padding:0 8px;font-size:10px}.mirrorOrb{bottom:max(164px,calc(env(safe-area-inset-bottom) + 158px));width:56px;height:56px}.mirrorAnnouncement{bottom:max(222px,calc(env(safe-area-inset-bottom) + 216px));max-width:82vw;text-align:center}.mirrorInspection{left:12px;right:12px;top:max(72px,calc(env(safe-area-inset-top) + 62px));bottom:max(238px,calc(env(safe-area-inset-bottom) + 232px));width:auto;max-height:none}.mirrorInspection dl{grid-template-columns:1fr}.urai-mobile-movement{bottom:max(250px,calc(env(safe-area-inset-bottom) + 244px))!important}}@media(prefers-reduced-motion:reduce){.mirrorWorld *{scroll-behavior:auto!important;animation:none!important;transition-duration:0s!important}}@media(forced-colors:active){.mirrorPatternRail,.mirrorInspection,.mirrorThresholds button,.mirrorOrb{border:2px solid CanvasText}}`
