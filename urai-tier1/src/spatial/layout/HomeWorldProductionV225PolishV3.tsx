@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useMemo, useRef } from 'react'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useTexture } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { createLivingMemoryMaterial } from '@/spatial/assets/livingMemoryMaterial'
@@ -13,7 +13,7 @@ import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry
 type WalkHandler = (event: ThreeEvent<MouseEvent>) => void
 type V3 = [number, number, number]
 
-const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
+const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-v48/fern_02/asset.gltf'
 
 const retiredExact = new Set([
   'home-v225-sculpted-sanctuary-floor',
@@ -96,23 +96,36 @@ function memoryLoop(radius: number, depth: number, phase: number, thickness: num
 
 function RootedCanopy() {
   const fern = useGLTF(FERN_MODEL)
-  const materials = useMemo(() => [
-    new THREE.MeshStandardMaterial({ color:'#60745b', roughness:.96, side:THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ color:'#405a45', roughness:.98, side:THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ color:'#748369', roughness:.94, side:THREE.DoubleSide }),
-  ], [])
-  useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
+  const sourceAlpha = useTexture('/assets/urai/home-production/cc0/polyhaven-v48/fern_02/textures/fern_02_alpha_1k.png')
+  const alpha = useMemo(() => { const map = sourceAlpha.clone(); map.flipY = false; map.colorSpace = THREE.NoColorSpace; map.needsUpdate = true; return map }, [sourceAlpha])
+  useEffect(() => () => alpha.dispose(), [alpha])
+  const materials = useMemo(() => {
+    let source: THREE.MeshStandardMaterial | null = null
+    fern.scene.traverse(child => { if (child instanceof THREE.Mesh && !source) source = child.material as THREE.MeshStandardMaterial })
+    if (!source) throw new Error('Governed fern material is missing')
+    return ['#d4d9c0','#b9cbb6','#e0dcc6'].map(color => {
+      const material = (source as THREE.MeshStandardMaterial).clone()
+      material.color.set(color)
+      material.roughness = .88
+      material.alphaMap = alpha
+      material.alphaTest = .45
+      return material
+    })
+  }, [fern.scene,alpha])
+  useEffect(() => () => materials.forEach(material => material.dispose()), [materials])
   const plants = useMemo(() => Array.from({ length: 64 }, (_, index) => {
     const patches = [[-4.3,1.4],[5.9,-1.5],[-6.2,-5.4],[7.2,-8.9],[-5.8,-12.7],[5.6,-15.3],[-8.6,-18.0],[8.8,-18.8]]
     const [cx, cz] = patches[Math.floor(index / 8)]
     const angle = index * 2.39996323, radius = Math.sqrt((index % 8) + .35) * .49
     const x = cx + Math.cos(angle) * radius
     const z = cz + Math.sin(angle) * radius * .8
-    const object = fern.scene.clone(true)
+    const variant = fern.scene.getObjectByName(['fern_02_a','fern_02_b','fern_02_c','fern_02_d'][index % 4])
+    if (!variant) throw new Error('Governed fern variant is missing')
+    const object = variant.clone(true)
     object.name = `home-scanned-fern-${index + 1}`
     object.position.set(x, height(x,z) + .025, z)
     object.rotation.y = index * 1.41
-    const scale = .30 + (index % 7) * .038
+    const scale = .60 + (index % 7) * .042
     object.scale.set(scale * (.88 + (index % 3) * .09), scale * (1.04 + (index % 4) * .08), scale)
     object.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -129,7 +142,9 @@ function RootedCanopy() {
 }
 
 function useMemoryStoneMaps() {
-  return useMemo(createMineralMaps, [])
+  const maps = useMemo(createMineralMaps, [])
+  useEffect(() => () => maps.forEach(texture => texture.dispose()), [maps])
+  return maps
 }
 
 function inhabitedSurfaceGeometry() {
@@ -179,9 +194,37 @@ function ScannedRockFace({ variant, x, z, turn, scale }: { variant: '01' | '02';
   const asset = useGLTF(`/assets/urai/home-production/cc0/polyhaven-v48/rock_face_${variant}/asset.gltf`)
   const model = useMemo(() => {
     const copy = asset.scene.clone(true)
-    copy.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true } })
+    copy.updateMatrixWorld(true)
+    const placement = new THREE.Matrix4().compose(new THREE.Vector3(x, height(x,z)-.45,z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),turn), new THREE.Vector3(scale,scale,scale))
+    copy.traverse(object => {
+      if (!(object instanceof THREE.Mesh)) return
+      const geometry = object.geometry.clone()
+      geometry.computeBoundingBox()
+      const bounds = geometry.boundingBox!
+      const span = bounds.getSize(new THREE.Vector3())
+      const world = placement.clone().multiply(object.matrixWorld)
+      const inverse = world.clone().invert()
+      const positions = geometry.getAttribute('position')
+      const point = new THREE.Vector3()
+      // Seat the scan's cropped perimeter into the terrain while retaining its
+      // interior relief and authored UV atlas. No floating rectangular cut edge.
+      for (let i=0;i<positions.count;i++) {
+        point.fromBufferAttribute(positions,i)
+        const edge = Math.min((point.x-bounds.min.x)/span.x,(bounds.max.x-point.x)/span.x,(point.y-bounds.min.y)/span.y,(bounds.max.y-point.y)/span.y)
+        const retain = THREE.MathUtils.smoothstep(edge,0,.17)
+        point.applyMatrix4(world)
+        point.y = THREE.MathUtils.lerp(height(point.x,point.z)-.07,point.y,retain)
+        point.applyMatrix4(inverse)
+        positions.setXYZ(i,point.x,point.y,point.z)
+      }
+      geometry.computeVertexNormals()
+      object.geometry = geometry
+      object.castShadow = true
+      object.receiveShadow = true
+    })
     return copy
-  }, [asset.scene])
+  }, [asset.scene,scale,turn,x,z])
+  useEffect(() => () => model.traverse(object => { if(object instanceof THREE.Mesh) object.geometry.dispose() }),[model])
   return <primitive object={model} position={[x, height(x, z) - .45, z]} rotation={[0,turn,0]} scale={scale}/>
 }
 
@@ -251,7 +294,7 @@ function grownThresholdGeometry() {
 }
 
 function hearthStoneGeometry(seed: number) {
-  const geometry = new THREE.DodecahedronGeometry(1, 3)
+  const geometry = new THREE.SphereGeometry(1, 48, 28)
   const p = geometry.getAttribute('position')
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i)
@@ -266,9 +309,11 @@ function GroundSanctuary({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
   const stones = useMemo(() => Array.from({length:4}, (_, index) => hearthStoneGeometry(index)), [])
   const maps = useMemoryStoneMaps()
+  const albedo = useSanctuarySoilTexture()
+  useEffect(() => () => stones.forEach(geometry => geometry.dispose()), [stones])
   return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0, -.08, 0]} name="home-v226-ground-inhabited-hearth" onClick={(event) => { event.stopPropagation(); onGround() }}>
-    {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} geometry={stones[index]} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={index%2?'#a5a990':'#7a9384'} roughness={.98}/></mesh>)}
-    {stones.slice(0,3).map((geometry,index)=><mesh key={index} geometry={geometry} position={[-.16+(index-1)*.20,.08,-.34+(index%2)*.13]} scale={[.19,.08,.15]}><meshStandardMaterial color="#865b3d" map={maps[0]} normalMap={maps[1]} emissive="#b85b30" emissiveIntensity={.72} roughness={.76}/></mesh>)}
+    {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} geometry={stones[index]} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} color={index%2?'#989b8c':'#87918b'} roughness={.98}/></mesh>)}
+    {stones.slice(0,3).map((geometry,index)=><mesh key={index} geometry={geometry} position={[-.16+(index-1)*.20,.08,-.34+(index%2)*.13]} scale={[.19,.08,.15]}><meshStandardMaterial color="#302b28" map={albedo} normalMap={maps[1]} emissive="#a8441b" emissiveIntensity={.12} roughness={.76}/></mesh>)}
     <pointLight position={[-.16, .70, -.32]} color="#e59a6c" intensity={4.2} distance={6.2}/>
   </group>
 }
@@ -303,38 +348,43 @@ function observatoryShell() {
 
 function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const portalRoots = useMemo(() => Array.from({ length: 9 }, (_, index) => {
+  const portalRoots = useMemo(() => Array.from({ length: 3 }, (_, index) => {
     const side = index % 2 ? -1 : 1
-    const depth = -.24 - index * .07
+    const depth = -.24 - index * .13
     return tube([
-      new THREE.Vector3(side*.14, .02, depth + .14),
-      new THREE.Vector3(side*(.30+index*.035), .56+index*.055, depth),
-      new THREE.Vector3(side*(.56+index*.070), 1.10+index*.065, depth-.12),
-      new THREE.Vector3(side*(.82+index*.085), 1.42+(index%3)*.16, depth-.18),
-    ], .064 - index*.0042, 8)
+      new THREE.Vector3(side*(1.02 + index*.09), -.14, depth + .25),
+      new THREE.Vector3(side*(.96 + index*.07), .64, depth),
+      new THREE.Vector3(side*(.65 + index*.03), 1.52 + index*.06, depth-.13),
+      new THREE.Vector3(side*.18, 1.98 + index*.05, depth-.22),
+      new THREE.Vector3(-side*.12, 2.05 + index*.04, depth-.28),
+    ], .19 - index*.026, 16)
   }), [])
   const threads = useMemo(() => Array.from({ length: 11 }, (_, index) => {
     const a = index * .67 - 1.1
     const end = new THREE.Vector3(Math.cos(a) * (.28 + index * .025), Math.sin(a * 1.5) * .22, -.12 - Math.sin(a) * .12)
     return tube([new THREE.Vector3(0, 0, 0), end.clone().multiplyScalar(.48).add(new THREE.Vector3(0, .08, -.02)), end], .005, 6)
   }), [])
+  const portalMaps = useMemoryStoneMaps()
   const stars = useMemo(() => {
     const positions: number[] = []
     for (let index = 0; index < 420; index++) {
-      const arm = index % 5, t = index / 420, angle = t * Math.PI * 11 + arm * 1.256
-      const radius = .08 + Math.pow(t, .66) * 1.02
-      positions.push(Math.cos(angle) * radius, Math.sin(angle) * radius * .62, .04 * Math.sin(index * .37))
+      const t = (index + .5) / 420, angle = index * 2.39996323 + .23 * Math.sin(index * 1.73)
+      const radius = .06 + Math.sqrt(t) * .92
+      positions.push(Math.cos(angle) * radius, Math.sin(angle) * radius * .68, .22 * Math.sin(index * .37))
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [])
+  useEffect(() => () => { portalRoots.forEach(geometry => geometry.dispose()); threads.forEach(geometry => geometry.dispose()); stars.dispose() }, [portalRoots,threads,stars])
   return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v226-life-map-lineage-observatory" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>
     <group name="home-v228-life-map-rooted-branching-threshold" userData={{ artRevision:'home-v230-life-map-asymmetric-root-threshold' }}>
-      {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#718878':'#867b79'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.06} roughness={.84}/></mesh>)}
+      {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial map={portalMaps[0]} normalMap={portalMaps[1]} normalScale={new THREE.Vector2(.7,.7)} color={index%2?'#718878':'#867b79'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.06} roughness={.84}/></mesh>)}
     </group>
     <group position={[0, 1.22, -.42]} scale={[.82,.88,.82]} name="home-v226-life-map-contained-memory-field">
-      <points geometry={stars} position={[0,0,.04]}><pointsMaterial color="#d5eee5" size={.026} transparent opacity={.88} depthWrite={false} sizeAttenuation/></points>
+      <points geometry={stars} position={[0,0,.04]}><shaderMaterial transparent depthWrite={false} uniforms={{uColor:{value:new THREE.Color('#b7d8cd')}}} vertexShader={`void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); gl_Position=projectionMatrix*mv; gl_PointSize=clamp(8.0/max(1.0,-mv.z),1.2,3.5); }`} fragmentShader={`uniform vec3 uColor; void main(){ float r=length(gl_PointCoord-.5)*2.0; if(r>1.0) discard; gl_FragColor=vec4(uColor,pow(1.0-r,1.7)*.68);
+ #include <colorspace_fragment>
+ }`}/></points>
       {threads.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={index % 2 ? '#91bdae' : '#b9a6c3'} emissive={index % 2 ? '#355d50' : '#55455e'} emissiveIntensity={.52}/></mesh>)}
       <pointLight color="#b8d8cc" intensity={2.2} distance={4.2}/>
     </group>

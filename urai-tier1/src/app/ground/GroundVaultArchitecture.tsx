@@ -60,6 +60,28 @@ function GroundSconce({ index }: { index: number }) {
   </group>
 }
 
+function ChamberFurnishing({ form, maps }: { form: GroundDestination['chamberForm']; maps: THREE.Texture[] }) {
+  const desk = useMemo(() => {
+    const shape = new THREE.Shape()
+    shape.moveTo(-1.15, -.30)
+    shape.bezierCurveTo(-.62, -.68, .62, -.68, 1.15, -.30)
+    shape.lineTo(1.15, .18)
+    shape.bezierCurveTo(.62, -.10, -.62, -.10, -1.15, .18)
+    shape.closePath()
+    return new THREE.ExtrudeGeometry(shape, { depth: .14, bevelEnabled: true, bevelSegments: 3, bevelSize: .055, bevelThickness: .035, steps: 1, curveSegments: 36 })
+  }, [])
+  const base = useMemo(() => new THREE.LatheGeometry([[.22,0],[.26,.05],[.18,.12],[.12,.66],[.22,.72]].map(([x,y])=>new THREE.Vector2(x,y)),32),[])
+  useEffect(() => () => { desk.dispose(); base.dispose() },[desk,base])
+  return <group position={[0,0,-4.25]} name={`ground-authored-${form}-interior`}>
+    <mesh geometry={desk} position={[0,.85,0]} rotation={[-Math.PI/2,0,0]} scale={form==='council'?[1.04,1.65,1]:[1,1,1]} castShadow receiveShadow>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={form==='sanctuary'?'#6f8579':'#9c8c70'} roughness={.64} />
+    </mesh>
+    {[-.76,.76].map(x=><mesh key={x} geometry={base} position={[x,.06,-.05]} castShadow receiveShadow><meshStandardMaterial color="#344f4b" metalness={.4} roughness={.46}/></mesh>)}
+    {form==='sanctuary' ? Array.from({length:9},(_,i)=><mesh key={i} position={[-1.1+i*.275,1.2,-.65]} rotation={[0,0,.025*Math.sin(i)]} castShadow><cylinderGeometry args={[.025,.04,1.9,12]}/><meshStandardMaterial color="#849b89" metalness={.25} roughness={.6}/></mesh>) : null}
+    {form==='council' ? [-1,1].map(side=><group key={side}><mesh geometry={base} position={[side*1.05,.02,.6]} scale={[.75,.56,.75]} castShadow><meshStandardMaterial color="#344f4b" metalness={.4} roughness={.46}/></mesh><mesh geometry={desk} position={[side*1.05,.46,.6]} rotation={[-Math.PI/2,0,side*.7]} scale={[.43,.55,.7]} castShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#8a8974" roughness={.84}/></mesh></group>) : null}
+  </group>
+}
+
 export default function GroundVaultArchitecture({ activeId, onSelect, onReady }: {
   activeId: string | null
   onReady: () => void
@@ -119,6 +141,7 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
           <div style={{ whiteSpace: 'nowrap', color: '#edf6ed', font: '600 15px/1.3 system-ui', letterSpacing: '.035em', textShadow: '0 2px 6px #071210', padding: '5px 9px', background: 'rgba(8,23,23,.82)', borderRadius: 4 }}>{destination.label}</div>
         </Html>}
         <GroundSconce index={index} />
+        {index < 3 ? <ChamberFurnishing form={destination.chamberForm} maps={maps} /> : null}
         <mesh geometry={arches[index]} position={[0, 0, -2.9]} receiveShadow castShadow>
           <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={index % 3 === 0 ? '#a3997d' : '#839991'} roughness={.8} normalScale={new THREE.Vector2(.25, .25)} />
         </mesh>

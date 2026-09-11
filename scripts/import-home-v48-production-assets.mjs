@@ -5,8 +5,9 @@ import path from 'node:path'
 const USER_AGENT = 'URAI-Home-V48-Production-Asset-Importer/1.0 (LifeLoggerAI/urai-spatial; PR-1177)'
 const API_ROOT = 'https://api.polyhaven.com/files'
 const OUT_ROOT = 'urai-tier1/public/assets/urai/home-production/cc0/polyhaven-v48'
-const PROVENANCE = 'operations/assets/home-v48-production-asset-provenance.json'
-const ASSETS = [
+const fernOnly = process.argv.includes('--fern')
+const PROVENANCE = fernOnly ? 'operations/assets/home-fern-material-provenance.json' : 'operations/assets/home-v48-production-asset-provenance.json'
+const ASSETS = fernOnly ? [{ id: 'fern_02', role: 'grounded-sanctuary-fern-with-authored-materials' }] : [
   { id: 'rock_face_01', role: 'sanctuary-architectural-rock-face' },
   { id: 'rock_face_02', role: 'sanctuary-secondary-rock-face' },
   { id: 'modular_industrial_pipes_01', role: 'reliquary-mechanical-load-and-service-system' },
@@ -123,6 +124,16 @@ async function importAsset(asset) {
     files.push({ path: destination, sourceUrl: resolved.sourceUrl, resolution: resolved.resolution, bytes: buffer.length, sha256: sha256(buffer) })
   }
 
+  if (asset.id === 'fern_02') {
+    // Poly Haven's JPG glTF references no alpha image although its material is MASK.
+    // Retain the separately published cutout map so fronds do not become opaque cards.
+    const alpha = records.find(entry => entry.keyPath === 'Alpha/1k/png')
+    if (!alpha) throw new Error('Fern 1K alpha source is missing')
+    const buffer = await fetchChecked(alpha.url, true)
+    const destination = path.join(outputDir, 'textures/fern_02_alpha_1k.png')
+    await writeFile(destination, buffer)
+    files.push({path:destination,sourceUrl:alpha.url,resolution:'Poly Haven Alpha/1k/png',bytes:buffer.length,sha256:sha256(buffer)})
+  }
   const totalBytes = files.reduce((sum, file) => sum + file.bytes, 0)
   return {
     id: asset.id,
@@ -158,7 +169,7 @@ for (const asset of ASSETS) {
 await mkdir(path.dirname(PROVENANCE), { recursive: true })
 await writeFile(PROVENANCE, `${JSON.stringify({
   schema: 'urai.home.v48-production-assets.v1',
-  purpose: 'PR #1177 production sanctuary replacement for rejected procedural V47 art',
+  purpose: fernOnly ? 'PR #1177 restore authored fern materials rejected in close runtime pixels' : 'PR #1177 production sanctuary replacement for rejected procedural V47 art',
   importedAt: stableImportedAt ?? new Date().toISOString(),
   runtimeFetchesPolyHavenApi: false,
   apiUse: 'materialization-time only; assets are committed into the canonical repository',

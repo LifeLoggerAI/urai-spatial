@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
+import { MemorySurfaceMaterial } from '@/spatial/assets/MemorySurfaceMaterial'
 import { useSanctuarySoilTexture } from '@/spatial/assets/useSanctuarySoilTexture'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
@@ -394,13 +395,13 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       onPointerOut={(event) => pointer(event, false)}
       castShadow
     >
-      <meshStandardMaterial vertexColors emissive={accent} emissiveIntensity={memory ? (hovered ? 0.22 : 0.08) : 0.04} roughness={0.96} metalness={0} />
+      <MemorySurfaceMaterial color={hovered ? light : accent} reducedMotion={reducedMotion} />
     </mesh>
     <mesh geometry={seedGeometry} position={[-0.36, -0.22, 0.10]} rotation={[0.12, -0.32, -0.10]} scale={[0.76, 0.62, 0.82]} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors color="#718178" emissive={accent} emissiveIntensity={memory ? 0.055 : 0.025} roughness={0.99} metalness={0} />
+      <MemorySurfaceMaterial color="#a9b6ad" reducedMotion={reducedMotion} />
     </mesh>
     <mesh geometry={seedGeometry} position={[0.44, -0.30, -0.16]} rotation={[-0.10, 0.34, 0.14]} scale={[0.66, 0.52, 0.72]} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors color="#4e625a" emissive={accent} emissiveIntensity={memory ? 0.045 : 0.02} roughness={0.99} metalness={0} />
+      <MemorySurfaceMaterial color="#829e92" reducedMotion={reducedMotion} />
     </mesh>
     <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>

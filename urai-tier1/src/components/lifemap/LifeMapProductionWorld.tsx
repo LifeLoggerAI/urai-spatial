@@ -1,5 +1,6 @@
 "use client";
 
+import { MemorySurfaceMaterial } from "@/spatial/assets/MemorySurfaceMaterial";
 import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
@@ -105,7 +106,7 @@ function memoryFilamentGeometry(seed: number, filament: number, form: MemoryForm
 
 function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Point3[]; color: string; opacity?: number; width?: number }) {
   const curve = useMemo(() => new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p))).getPoints(48), [points]);
-  return <Line points={curve} color={color} lineWidth={Math.max(0.5, width * 22)} transparent opacity={opacity} />;
+  return <Line points={curve} color={color} lineWidth={Math.max(1, width * 28)} transparent depthWrite={false} opacity={opacity} />;
 }
 
 function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0.5, size = 0.055 }: { seed: number; count: number; radius: number; depth: number; height: number; color: string; opacity?: number; size?: number }) {
@@ -293,9 +294,9 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   });
   return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`} userData={{ artRevision:'v230-semantic-memory-forms', form:resolvedForm }}>
     <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .38 : .18} roughness={.52} metalness={.03} clearcoat={.16} sheen={.35} side={THREE.DoubleSide} /></mesh>
+    <mesh geometry={heart} castShadow><MemorySurfaceMaterial color={aura} reducedMotion={reducedMotion} /></mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
-      <meshPhysicalMaterial vertexColors color={index % 3 === 0 ? ICE : new THREE.Color(aura).lerp(new THREE.Color("#8eaaaa"), .48)} emissive={aura} emissiveIntensity={active ? .24 : .12} roughness={.55} metalness={.03} clearcoat={.16} sheen={.35} side={THREE.DoubleSide} />
+      <MemorySurfaceMaterial color={index % 3 === 0 ? ICE : aura} reducedMotion={reducedMotion} />
     </mesh>)}
     <FieldParticles seed={seed} count={active ? 46 : 22} radius={1.0} depth={1.2} height={1.25} color={aura} opacity={active ? .62 : .32} size={active ? .038 : .028} />
     <pointLight color={aura} intensity={active ? 4.6 : 1.1} distance={active ? 10 : 5} decay={2} />
@@ -327,7 +328,6 @@ function ChapterTerritories() {
 function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return <group name="life-map-foreground-observatory" position={[0,-1.0,3.2]}>
-    <Current points={[[-10,.1,.4],[-5.2,.72,-1.3],[0,.2,-2.6],[5.1,.78,-1.2],[10.2,.08,.3]]} color={CYAN} opacity={.18} width={.038} />
     <FieldParticles seed={730} count={90} radius={9.5} depth={3} height={1.9} color={ICE} opacity={.20} size={.04} />
   </group>;
 }
@@ -431,7 +431,7 @@ function SemanticPath({ source, target, active, reducedMotion, index, sourceInde
   const kind = resolvePathKind(source, target);
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return <group>
-    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? .8 : .55} transparent opacity={kind === "protected" ? .012 : active ? .28 : .13} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 1.25 : 1} transparent depthWrite={false} opacity={kind === "protected" ? .012 : active ? .28 : .13} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
     {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * .19) % 1} /> : null}
   </group>;
 }
@@ -595,7 +595,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       <NebulaBreath reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
       <FieldParticles seed={1220} count={profile.tier === "low" ? 150 : 360} radius={38} depth={72} height={30} color={VIOLET} opacity={.18} size={.06} />
     </group>
-    <group name="life-map-temporal-horizon"><Current points={[[-28,8,-42],[-12,10,-48],[0,7,-54],[13,11,-48],[28,8,-42]]} color={CYAN} opacity={.06} width={.18} /></group>
+    <group name="life-map-temporal-horizon" position={[0,7,-38]}><FieldParticles seed={964} count={130} radius={22} depth={12} height={6} color={CYAN} opacity={.25} size={.045} /></group>
     <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
       <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
       <ChapterTerritories />

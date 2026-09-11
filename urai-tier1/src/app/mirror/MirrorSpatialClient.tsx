@@ -172,7 +172,7 @@ function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSele
     <fog attach="fog" args={[selected ? '#07131c' : '#041019', 5.5, 25]} />
     <ambientLight intensity={0.46} />
     <hemisphereLight intensity={0.74} color="#e8fbff" groundColor="#06131b" />
-    <directionalLight position={[4.5, 9, 5]} intensity={1.5} color="#f6fbff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+    <directionalLight position={[4.5, 9, 5]} intensity={1.15} color="#f6fbff" castShadow shadow-radius={4} shadow-bias={-.0002} shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
     <Stars radius={56} depth={28} count={cameraProps.reducedMotion ? 160 : 520} factor={1.8} fade speed={cameraProps.reducedMotion ? 0 : 0.018} />
     <MirrorCamera selected={selected} temporalIndex={temporalIndex} {...cameraProps} />
     <ChamberArchitecture reducedMotion={cameraProps.reducedMotion} />

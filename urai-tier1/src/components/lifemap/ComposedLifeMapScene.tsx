@@ -232,7 +232,8 @@ export default function ComposedLifeMapScene() {
     pixelRatioMax: softwareRenderer !== false ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
     shadows: false,
     postprocessing: false,
-    antialias: false,
+    // Preserve smooth membrane silhouettes at the bounded native pixel ratio.
+    antialias: true,
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
   const overviewRequested = params.get("overview") === "1";

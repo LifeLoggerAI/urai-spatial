@@ -200,7 +200,9 @@ async function run() {
 
   try {
     await waitForServer(server.baseUrl);
-    browser = await chromium.launch();
+    // Match the repository's supported software-WebGL renderer on GitHub runners.
+    // Capability checks and recovery UI remain active; no forced clicks or skips.
+    browser = await chromium.launch({ args: process.env.GITHUB_ACTIONS === 'true' ? ['--enable-unsafe-swiftshader'] : [] });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('console', (message) => {
       const entry = { type: message.type(), text: message.text() };
