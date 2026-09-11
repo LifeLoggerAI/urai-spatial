@@ -70,7 +70,7 @@ test('Focus is an explorable authored living memory chamber rather than a static
   assert.match(focus, /focus-v216-memory-root-cradle/)
   assert.match(focus, /geometry\.setAttribute\('position', new THREE\.Float32BufferAttribute\(positions, 3\)\)/)
   assert.doesNotMatch(focus, /SphereGeometry/, 'Focus memory manifestation must not regress to a spherical seed')
-  assert.match(focus, /data-focus-visual-revision="v216-weathered-vault-rooted-memory-formation"/)
+  assert.match(focus, /data-focus-visual-revision="v217-weathered-vault-single-rooted-memory-formation"/)
   assert.match(focus, /alpha: false/)
   assert.match(focus, /<color attach="background"/)
   assert.match(focus, /\.focusBackdrop\{display:none\}/)
