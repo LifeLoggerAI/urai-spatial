@@ -51,7 +51,9 @@ function weatheredOutcropGeometry(seed:number,accent:string,active:boolean){
     position.setXYZ(index,x,y,z)
     const height=THREE.MathUtils.clamp((y+.90)/1.30,0,1)
     const scar=THREE.MathUtils.clamp(cleft*.92+cavityA*.36+Math.abs(stratum)*2.0,0,1)
-    const color=deep.clone().lerp(mineral,.16+.46*height).lerp(lichen,.10+.16*(1-height)).lerp(memory,(active?.035:.008)+scar*(active?.070:.018))
+    const memoryBase=active ? .035 : .008
+    const memoryScar=active ? .070 : .018
+    const color=deep.clone().lerp(mineral,.16+.46*height).lerp(lichen,.10+.16*(1-height)).lerp(memory,memoryBase+scar*memoryScar)
     colors.push(color.r,color.g,color.b)
   }
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
@@ -87,15 +89,18 @@ function MemoryOutcrop({node,index,active,reducedMotion,onSelect,arrival}:{node:
   useEffect(()=>()=>geometry.dispose(),[geometry])
   useFrame(({clock})=>{if(!root.current||reducedMotion||!active)return;root.current.rotation.y=Math.sin(clock.elapsedTime*.12+seed)*.006})
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onSelect(node)}
-  const yOffset=arrival&&active?-.34:0
-  const scale=arrival&&active?.62:1
-  return <group ref={root} position={[point[0],point[1]+yOffset,point[2]]} scale={scale} rotation={[0,seeded(seed,22)*Math.PI*2,0]} name={`life-map-v240-memory-site-${node.id}`} userData={{artRevision:'v240-rooted-scarred-asymmetric-memory-site',semanticNode:node.id}} onClick={activate}><mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial vertexColors color="#788479" emissive={node.aura} emissiveIntensity={active?.014:.002} roughness={.99} metalness={0}/></mesh><pointLight position={[0,.06,0]} color={node.aura} intensity={active?.18:.025} distance={active?2.8:1.3} decay={2}/></group>
+  const yOffset=arrival&&active ? -.34 : 0
+  const scale=arrival&&active ? .62 : 1
+  const emissiveIntensity=active ? .014 : .002
+  const lightIntensity=active ? .18 : .025
+  return <group ref={root} position={[point[0],point[1]+yOffset,point[2]]} scale={scale} rotation={[0,seeded(seed,22)*Math.PI*2,0]} name={`life-map-v240-memory-site-${node.id}`} userData={{artRevision:'v240-rooted-scarred-asymmetric-memory-site',semanticNode:node.id}} onClick={activate}><mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial vertexColors color="#788479" emissive={node.aura} emissiveIntensity={emissiveIntensity} roughness={.99} metalness={0}/></mesh><pointLight position={[0,.06,0]} color={node.aura} intensity={lightIntensity} distance={active?2.8:1.3} decay={2}/></group>
 }
 
 function SelectedSanctuary({node,index,reducedMotion}:{node:LifeMapNode;index:number;reducedMotion:boolean}){
   const point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node]),particles=useMemo(()=>sanctuaryParticles(nodeSeed(node,index)),[index,node])
   useEffect(()=>()=>particles.dispose(),[particles])
-  return <group position={[point[0],point[1]-.08,point[2]]} name="life-map-v240-intimate-memory-sanctuary" userData={{scaleMode:'intimate',visualIntent:'existing-terrain-remains-authority-no-platform-no-ring'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.018} transparent opacity={reducedMotion?.14:.22} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.1,.72,.6]} color={node.aura} intensity={.34} distance={4.2} decay={2}/><pointLight position={[1.4,.42,-.9]} color="#d6d0b7" intensity={.18} distance={3.8} decay={2}/></group>
+  const opacity=reducedMotion ? .14 : .22
+  return <group position={[point[0],point[1]-.08,point[2]]} name="life-map-v240-intimate-memory-sanctuary" userData={{scaleMode:'intimate',visualIntent:'existing-terrain-remains-authority-no-platform-no-ring'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.018} transparent opacity={opacity} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.1,.72,.6]} color={node.aura} intensity={.34} distance={4.2} decay={2}/><pointLight position={[1.4,.42,-.9]} color="#d6d0b7" intensity={.18} distance={3.8} decay={2}/></group>
 }
 
 export function LifeMapGoldMasterOverlay({nodes,selected,phase,reducedMotion,onSelect}:Props){
