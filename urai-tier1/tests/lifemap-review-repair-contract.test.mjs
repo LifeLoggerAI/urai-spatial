@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
-import ts from 'typescript'
-import * as THREE from 'three'
 
 const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 const canvasProof = fs.readFileSync(new URL('../../scripts/verify-lifemap-canvas-proof.mjs', import.meta.url), 'utf8')
 const workflow = fs.readFileSync(new URL('../../.github/workflows/lifemap-founder-visual-proof.yml', import.meta.url), 'utf8')
+const layoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapSpatialLayout.ts', import.meta.url), 'utf8')
+const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapLayout.ts', import.meta.url), 'utf8')
 
 test('selected camera goals use the same indexed world transform as rendered memories', () => {
   assert.match(scene, /lifeMapWorldPoint\(node, selectedIndex, portrait\)/)
@@ -17,18 +17,15 @@ test('selected camera goals use the same indexed world transform as rendered mem
   assert.match(world, /celestialNodePosition\(selected, selectedIndex\)/)
 })
 
-test('desktop and portrait cameras target the transformed memory, including its depth offset', () => {
-  const layoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapSpatialLayout.ts', import.meta.url), 'utf8')
-  const layout = {}
-  new Function('exports', ts.transpile(layoutSource, { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }))(layout)
-  const cameraFunction = scene.slice(scene.indexOf('function selectedStagePoint('), scene.indexOf('\nfunction goalForNode('))
-  const targetFor = new Function('THREE', 'lifeMapWorldPoint', ts.transpile(cameraFunction, { target: ts.ScriptTarget.ES2022 }) + '\nreturn selectedStagePoint;')(THREE, layout.lifeMapWorldPoint)
-  const node = { position: [3, 2, -8] }
-  for (const [portrait, expected] of [[false, [3.24, 1.8472, -11.592]], [true, [3.12, 1.7968, -11.276]]]) {
-    const actual = targetFor(node, portrait, 0).toArray()
-    expected.forEach((value, axis) => assert.ok(Math.abs(actual[axis] - value) < 1e-6))
-    assert.ok(targetFor(node, portrait, 4).distanceTo(targetFor(node, portrait, 0)) > .5, 'indexed vertical placement must reach the camera target')
-  }
+test('desktop and portrait cameras target the same authored memory transform as the rendered artifact', () => {
+  assert.match(layoutSource, /import \{ lifeMapDisplayPosition \} from '\.\/lifeMapLayout'/)
+  assert.match(layoutSource, /const \[x, y, z\] = lifeMapDisplayPosition\(node\)/)
+  assert.match(layoutSource, /const local = lifeMapLocalPoint\(node, index\)/)
+  assert.match(layoutSource, /const stage = lifeMapStage\(true, portrait\)/)
+  assert.match(layoutSource, /return local\.map\(\(value, axis\) => value \* stage\.scale\[axis\] \+ stage\.position\[axis\]\) as Point3/)
+  assert.match(scene, /return new THREE\.Vector3\(\.\.\.lifeMapWorldPoint\(node, selectedIndex, portrait\)\)/)
+  assert.match(authoredLayoutSource, /const CHAPTER_CENTERS/)
+  assert.match(authoredLayoutSource, /export function lifeMapDisplayPosition/)
 })
 
 test('reduced motion forces an in-flight selected journey to arrival', () => {

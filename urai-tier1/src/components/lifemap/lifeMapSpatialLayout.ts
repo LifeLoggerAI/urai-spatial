@@ -4,10 +4,10 @@ import { lifeMapDisplayPosition } from './lifeMapLayout'
 type Point3 = [number, number, number]
 
 export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
-  // The semantic memory graph already has an authored five-band geography.
-  // Use that authority directly instead of re-projecting the legacy shallow
-  // node.position values into a ribbon. The -3.4 offset keeps the authored
-  // chapter centers aligned with the production territory landmarks.
+  // The semantic memory graph already owns an authored five-band geography.
+  // Use that authority directly instead of re-projecting the retired shallow
+  // coordinate field into a ribbon. The -3.4 offset keeps authored chapter
+  // centers aligned with the production territory landmarks.
   const [x, y, z] = lifeMapDisplayPosition(node)
   return [x, y, z - 3.4]
 }
