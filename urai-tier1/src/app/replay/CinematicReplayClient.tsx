@@ -5,6 +5,8 @@ import { useGLTF } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
+import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
+import { useSanctuarySoilTexture } from '@/spatial/assets/useSanctuarySoilTexture'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
@@ -151,9 +153,13 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
                 uniform sampler2D uMap;
                 varying vec2 vUv;
                 void main() {
-                  vec2 edge = min(vUv, 1.0-vUv);
-                  float mask = smoothstep(0.0, 0.028, min(edge.x, edge.y));
-                  gl_FragColor = vec4(texture2D(uMap,vUv).rgb, mask);
+                  vec2 p=(vUv-.5)*2.0;
+                  float boundary=pow(abs(p.x),4.0)+pow(abs(p.y*1.08),4.0);
+                  float weather=.022*sin(p.x*17.0+p.y*8.0)+.014*sin(p.x*31.0-p.y*13.0);
+                  float mask=1.0-smoothstep(.87,.99,boundary+weather);
+                  vec3 mediaColor=texture2D(uMap,vUv).rgb;
+                  float innerShade=1.0-.13*smoothstep(.52,.96,boundary);
+                  gl_FragColor = vec4(mediaColor*innerShade, mask);
                   #include <colorspace_fragment>
                 }
               `}
@@ -163,6 +169,92 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
       </mesh>
     </group>
   )
+}
+
+function replayBasinGeometry() {
+  const columns = 84
+  const rows = 76
+  const positions: number[] = []
+  const uvs: number[] = []
+  const colors: number[] = []
+  const indices: number[] = []
+  const stone = new THREE.Color('#253630')
+  const warm = new THREE.Color('#594d43')
+  for (let row = 0; row <= rows; row += 1) {
+    const v = row / rows
+    const z = 8.2 - v * 28
+    for (let column = 0; column <= columns; column += 1) {
+      const u = column / columns
+      const x = -14 + u * 28
+      const side = Math.pow(Math.max(0,(Math.abs(x)-4.6)/9.4),1.55) * 6.2
+      const hollow = -.34 * Math.exp(-(x*x/18 + (z+3.8)*(z+3.8)/34))
+      const weather = .16*Math.sin(x*.58+z*.31)+.07*Math.sin(x*1.9-z*.77)+.035*Math.cos(x*4.1+z*2.4)
+      positions.push(x,-2.34+side+hollow+weather,z)
+      uvs.push(u*6,v*6)
+      const path=1-THREE.MathUtils.smoothstep(Math.abs(x-.16*Math.sin(z*.32)),.7,2.2)
+      const color=stone.clone().lerp(warm,.18+.36*path)
+      colors.push(color.r,color.g,color.b)
+    }
+  }
+  const stride=columns+1
+  for(let row=0;row<rows;row+=1)for(let column=0;column<columns;column+=1){const a=row*stride+column,b=a+1,c=a+stride,d=c+1;indices.push(a,b,c,b,d,c)}
+  const geometry=new THREE.BufferGeometry()
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2))
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function replayMemoryWallGeometry() {
+  const columns=92
+  const rows=24
+  const positions:number[]=[]
+  const colors:number[]=[]
+  const indices:number[]=[]
+  const shadow=new THREE.Color('#14231f')
+  const moss=new THREE.Color('#3f534a')
+  const plum=new THREE.Color('#514754')
+  for(let row=0;row<=rows;row+=1){
+    const v=row/rows
+    const y=-3.0+v*11.0
+    for(let column=0;column<=columns;column+=1){
+      const u=column/columns
+      const x=-14+u*28
+      const recess=2.2*Math.exp(-Math.pow(x/7.1,4))
+      const z=-5.1-recess+.32*Math.sin(x*.72+v*6.1)+.15*Math.sin(x*2.4-v*10.2)
+      positions.push(x,y+.22*Math.sin(u*15+v*8),z)
+      const color=shadow.clone().lerp(moss,.16+.52*v).lerp(plum,.12*(.5+.5*Math.sin(x*.36)))
+      colors.push(color.r,color.g,color.b)
+    }
+  }
+  const stride=columns+1
+  for(let row=0;row<rows;row+=1)for(let column=0;column<columns;column+=1){const a=row*stride+column,b=a+1,c=a+stride,d=c+1;indices.push(a,c,b,b,c,d)}
+  const geometry=new THREE.BufferGeometry()
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function ReplayMemoryGeography({ accent }: { accent: string }) {
+  const basin=useMemo(replayBasinGeometry,[])
+  const wall=useMemo(replayMemoryWallGeometry,[])
+  const maps=useMemo(createMineralMaps,[])
+  const albedo=useSanctuarySoilTexture()
+  useEffect(()=>()=>{basin.dispose();wall.dispose();maps.forEach((texture)=>texture.dispose())},[basin,maps,wall])
+  return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
+    <mesh geometry={basin} receiveShadow castShadow>
+      <meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#4a5149" vertexColors roughness={.94}/>
+    </mesh>
+    <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#33443d" vertexColors roughness={.97} side={THREE.DoubleSide}/>
+    </mesh>
+    <pointLight position={[-5.8,.4,-3.8]} color="#b28a68" intensity={.58} distance={9} decay={2}/>
+    <pointLight position={[5.2,1.1,-4.2]} color={accent} intensity={.46} distance={8} decay={2}/>
+  </group>
 }
 
 function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; progress: number }) {
@@ -188,6 +280,7 @@ function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedM
       <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
       <pointLight position={[0, 1.4, -4.6]} intensity={3.4} distance={14} color={memory.visuals.accent} />
       <primitive object={model} name="replay-memory-environment-v1" />
+      <ReplayMemoryGeography accent={memory.visuals.accent}/>
       <MemoryMediaSurface media={media} playing={playing} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
@@ -265,7 +358,7 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="curved-memory-horizon-no-flat-portal-panels">
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v216-weathered-memory-cove-with-organic-media-manifestation">
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
       <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
     </Canvas>
