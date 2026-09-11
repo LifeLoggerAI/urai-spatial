@@ -13,7 +13,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// V216 literal-pixel authority: the selected manifestation rises from a continuous mineral cradle inside a weathered vault.
+// V217 literal-pixel authority: one connected selected manifestation rises from a continuous mineral cradle inside a weathered vault.
 
 const DEFAULT_CAMERA: [number, number, number] = [0, 1.45, 8.2]
 const DEFAULT_TARGET: [number, number, number] = [0, 0.45, -1.3]
@@ -484,8 +484,6 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       }
     }
     const stride = columns + 1
-    // Rows advance toward negative Z: wind the cradle upward so it remains a
-    // visible geological seat beneath the selected manifestation.
     for(let row=0;row<rows;row+=1)for(let column=0;column<columns;column+=1){const a=row*stride+column,b=a+1,c=a+stride,d=c+1;indices.push(a,b,c,b,d,c)}
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
@@ -498,42 +496,38 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
   useEffect(() => () => { cradleGeometry.dispose(); cradleMaps.forEach((texture) => texture.dispose()) }, [cradleGeometry, cradleMaps])
   useFrame(({ clock }, delta) => {
     if (!group.current) return
-    const wanted = hovered ? 1.055 : reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 1.1) * 0.018
+    const wanted = hovered ? 1.035 : reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 1.1) * 0.010
     const nextScale = THREE.MathUtils.lerp(group.current.scale.x, wanted, 1 - Math.exp(-5.5 * delta))
     group.current.scale.setScalar(nextScale)
-    if (!reducedMotion) group.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * 0.055
+    if (!reducedMotion) group.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * 0.032
   })
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
     event.stopPropagation()
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
-  return <group ref={group} position={[0, 0, -1.72]} name="focus-memory-aperture">
+  return <group ref={group} position={[0, 0, -1.72]} name="focus-memory-aperture" userData={{ artRevision: 'v217-single-rooted-manifestation-no-clone-cluster' }}>
     <mesh geometry={cradleGeometry} receiveShadow castShadow name="focus-v216-memory-root-cradle">
       <meshStandardMaterial map={cradleMaps[0]} normalMap={cradleMaps[1]} roughnessMap={cradleMaps[2]} normalScale={new THREE.Vector2(.42,.42)} color="#3d5048" vertexColors roughness={.94}/>
     </mesh>
     <points geometry={fieldGeometry}>
-      <pointsMaterial color={light} size={0.018} transparent opacity={memory ? 0.58 : 0.22} depthWrite={false} sizeAttenuation />
+      <pointsMaterial color={light} size={0.018} transparent opacity={memory ? 0.42 : 0.18} depthWrite={false} sizeAttenuation />
     </points>
     <mesh
       geometry={seedGeometry}
-      position={[-.04,-.04,.02]}
+      position={[-.04,-.34,.02]}
       rotation={[.03,-.16,-.05]}
-      scale={[1.02,.96,1.04]}
+      scale={[.92,.78,.94]}
       onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }}
       onPointerOver={(event) => pointer(event, true)}
       onPointerOut={(event) => pointer(event, false)}
       castShadow
+      receiveShadow
+      name="focus-v217-single-connected-memory-manifestation"
     >
       <MemorySurfaceMaterial color={hovered ? light : accent} reducedMotion={reducedMotion} />
     </mesh>
-    <mesh geometry={seedGeometry} position={[-0.46, -0.38, -0.02]} rotation={[0.16, -0.34, -0.12]} scale={[0.70, 0.58, 0.76]} castShadow receiveShadow>
-      <MemorySurfaceMaterial color="#a9b6ad" reducedMotion={reducedMotion} />
-    </mesh>
-    <mesh geometry={seedGeometry} position={[0.52, -0.42, -0.12]} rotation={[-0.12, 0.38, 0.10]} scale={[0.64, 0.54, 0.72]} castShadow receiveShadow>
-      <MemorySurfaceMaterial color="#829e92" reducedMotion={reducedMotion} />
-    </mesh>
-    <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />
+    <pointLight color={accent} intensity={memory ? 0.44 : 0.18} distance={4.2} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
   </group>
 }
@@ -652,10 +646,9 @@ export default function FocusChamberClient() {
   const description = memory?.narrator.focus ?? (directEntry ? 'Choose a star in Life Map to inhabit the place where that memory is held.' : result.message)
   const style = { '--memory-accent': memory?.visuals.accent ?? '#79dfff', '--memory-light': memory?.visuals.light ?? '#e7fbff', '--memory-sky': memory?.visuals.sky ?? '#020712', '--memory-ground': memory?.visuals.ground ?? '#07121c', '--focus-asset': assetCssStack(focusAssets.primary) } as CSSProperties
   const webglUsable = webglAvailable === true && webglState !== 'failed'
-
   const boundedCadence = !rendererClassified || softwareRenderer || profile.reducedMotion
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-filled-memory-field-no-ring-cage" data-focus-visual-revision="v216-weathered-vault-rooted-memory-formation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? "detecting" : softwareRenderer ? "true" : "false"} data-render-cadence={boundedCadence ? "bounded-demand-4fps" : "continuous"} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-filled-memory-field-no-ring-cage" data-focus-visual-revision="v217-weathered-vault-single-rooted-memory-formation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? "detecting" : softwareRenderer ? "true" : "false"} data-render-cadence={boundedCadence ? "bounded-demand-4fps" : "continuous"} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
