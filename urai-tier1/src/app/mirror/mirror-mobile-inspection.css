@@ -88,6 +88,10 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
     pointer-events: none !important;
   }
 
+  /* The inspector owns selected-pattern identity on portrait. Keeping the
+     underlying world title visible duplicated the selected name and made the
+     evidence sheet read like a dashboard stacked over another dashboard. */
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity,
   .mirrorWorld:has(.mirrorInspection) .urai-mobile-movement,
   .mirrorWorld:has(.mirrorInspection) .mirrorOrb {
     display: none !important;
@@ -115,7 +119,7 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   .mirrorWorld .mirrorInspection {
     left: 12px;
     right: 12px;
-    top: max(112px, calc(env(safe-area-inset-top) + 96px));
+    top: max(24px, calc(env(safe-area-inset-top) + 16px));
     bottom: max(204px, calc(env(safe-area-inset-bottom) + 198px));
     width: auto;
     max-height: none;
@@ -123,7 +127,7 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
     scrollbar-gutter: stable;
     mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
     border-radius: 24px 24px 12px 12px;
-    background: linear-gradient(180deg, rgba(4, 20, 28, .82), rgba(3, 13, 23, .66));
+    background: linear-gradient(180deg, rgba(4, 20, 28, .86), rgba(3, 13, 23, .68));
   }
 
   .mirrorWorld .mirrorInspection::after {
