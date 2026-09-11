@@ -25,7 +25,8 @@ test('overview uses compact desktop and portrait projection without changing sel
 
 test('overview camera preserves the artifact envelope and authored depth target', () => {
   assert.match(layout, /2\.2 \* stage\.scale\[0\]/)
-  assert.match(layout, /return \{ position: \[target\[0\], target\[1\], target\[2\] \+ distance\], target \}/)
+  assert.match(layout, /const overlook = portrait \? 5\.2 : 7\.1/)
+  assert.match(layout, /target: \[target\[0\], target\[1\] - \.65, target\[2\] - 1\.2\]/)
 })
 
 test('selected world-point authority remains tied to selected staging', () => {

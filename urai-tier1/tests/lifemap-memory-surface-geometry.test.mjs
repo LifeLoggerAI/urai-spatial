@@ -17,7 +17,7 @@ test('memory surfaces retain finite normals, real depth, open boundaries, and a 
     }
     geometry.computeBoundingBox();
     const size = geometry.boundingBox.getSize(new THREE.Vector3());
-    assert.ok(size.x > .25 && size.y > 1 && size.z > .25, 'surface must have spatial depth');
+    assert.ok(size.x > .75 && size.y > .22 && size.z > .25, 'grounded surface must retain horizontal extent, relief, and spatial depth');
     assert.ok(Math.max(size.x, size.y, size.z) < 3, 'surface must remain within the memory interaction envelope');
     assert.ok(geometry.index.count / 3 <= 2200, 'per-layer triangle budget must remain bounded');
     const edges = new Map();

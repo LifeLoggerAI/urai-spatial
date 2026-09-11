@@ -15,7 +15,7 @@ const OVERVIEW_POSITION: [number, number, number] = [0, 6.2, 18.5];
 const OVERVIEW_TARGET: [number, number, number] = [0, -0.9, -18.0];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const SELECTED_MEMORY_STANDOFF = 7.4;
-const PHASE_DURATION_MS = { departure: 280, travel: 720, approach: 820 } as const;
+const PHASE_DURATION_MS = { departure: 420, travel: 980, approach: 1480 } as const;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";

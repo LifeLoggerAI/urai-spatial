@@ -88,7 +88,8 @@ test('overview composition is opaque, authored, and independently framed for por
   const chapterTerritories = sliceBetween(world, 'function ChapterTerritories', 'function ForegroundObservatory')
   assert.match(chapterAnchor, /<AuthoredMemoryStar aura=\{aura\}/)
   assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} form=\{chapter\.form\}/)
-  assert.match(chapterTerritories, /composition: "five-asymmetric-depth-bands"/)
+  assert.match(chapterTerritories, /composition: "five-asymmetric-grounded-depth-bands"/)
+  assert.match(chapterTerritories, /memoryValleyHeight\(chapter\.x, chapter\.z\)/)
   assert.match(chapterTerritories, /life-map-depth-territory-/)
 })
 

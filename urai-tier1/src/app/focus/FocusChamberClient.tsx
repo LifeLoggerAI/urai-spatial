@@ -8,7 +8,6 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { MemorySurfaceMaterial } from '@/spatial/assets/MemorySurfaceMaterial'
-import { useSanctuarySoilTexture } from '@/spatial/assets/useSanctuarySoilTexture'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -263,10 +262,9 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
     return result
   }, [])
   const maps = useMemo(createMineralMaps, [])
-  const albedo = useSanctuarySoilTexture()
   useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
   return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
-    <meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} color="#a3b4ad" roughness={0.88} metalness={0} />
+    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.34,.34)} color="#84938b" roughness={0.92} metalness={0} />
   </mesh>
 }
 
@@ -413,15 +411,15 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     const indices: number[] = []
     for (let section = 0; section <= sections; section += 1) {
       const t = section / sections
-      const envelope = Math.pow(Math.sin(Math.PI * t), 0.36)
-      const centerX = -.44 + t * .86 + Math.sin(t * 5.8) * .18
-      const centerY = -0.88 + t * 1.76 + Math.sin(t * Math.PI) * .18 + Math.sin(t * 7.2) * 0.07
-      const centerZ = Math.sin(t * 4.3 + 0.8) * 0.30 - Math.sin(t * Math.PI) * .12
+      const envelope = Math.pow(Math.sin(Math.PI * t), 0.42)
+      const centerX = -1.32 + t * 2.64
+      const centerY = -0.66 + Math.sin(t * Math.PI) * 0.72 + Math.sin(t * 7.2) * 0.08
+      const centerZ = Math.sin(t * 5.3 + 0.8) * 0.24
       for (let side = 0; side < sides; side += 1) {
         const angle = side / sides * Math.PI * 2 + t * 1.35
         const ridge = 0.82 + 0.17 * Math.sin(angle * 3 + t * 11) + 0.08 * Math.cos(angle * 5 - t * 7)
-        const rx = envelope * (0.34 + 0.09 * Math.sin(t * 9.0)) * ridge + 0.04
-        const rz = envelope * (0.26 + 0.08 * Math.cos(t * 8.0)) * ridge + 0.03
+        const rx = envelope * (0.29 + 0.08 * Math.sin(t * 9.0)) * ridge + 0.035
+        const rz = envelope * (0.42 + 0.10 * Math.cos(t * 8.0)) * ridge + 0.025
         const x = centerX + Math.cos(angle) * rx + Math.sin(angle * 2) * 0.07 * envelope
         const y = centerY + Math.sin(angle * 2 + t * 5) * 0.045 * envelope
         const z = centerZ + Math.sin(angle) * rz
@@ -486,7 +484,9 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
       }
     }
     const stride = columns + 1
-    for(let row=0;row<rows;row+=1)for(let column=0;column<columns;column+=1){const a=row*stride+column,b=a+1,c=a+stride,d=c+1;indices.push(a,c,b,b,c,d)}
+    // Rows advance toward negative Z: wind the cradle upward so it remains a
+    // visible geological seat beneath the selected manifestation.
+    for(let row=0;row<rows;row+=1)for(let column=0;column<columns;column+=1){const a=row*stride+column,b=a+1,c=a+stride,d=c+1;indices.push(a,b,c,b,d,c)}
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
@@ -517,9 +517,9 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     </points>
     <mesh
       geometry={seedGeometry}
-      position={[-.08,-.13,.02]}
-      rotation={[.04,-.28,-.13]}
-      scale={[1.04,1.16,.96]}
+      position={[-.04,-.04,.02]}
+      rotation={[.03,-.16,-.05]}
+      scale={[1.02,.96,1.04]}
       onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }}
       onPointerOver={(event) => pointer(event, true)}
       onPointerOut={(event) => pointer(event, false)}
@@ -527,10 +527,10 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     >
       <MemorySurfaceMaterial color={hovered ? light : accent} reducedMotion={reducedMotion} />
     </mesh>
-    <mesh geometry={seedGeometry} position={[-0.46, -0.44, -0.02]} rotation={[0.28, -0.52, -0.62]} scale={[0.72, 0.68, 0.78]} castShadow receiveShadow>
+    <mesh geometry={seedGeometry} position={[-0.46, -0.38, -0.02]} rotation={[0.16, -0.34, -0.12]} scale={[0.70, 0.58, 0.76]} castShadow receiveShadow>
       <MemorySurfaceMaterial color="#a9b6ad" reducedMotion={reducedMotion} />
     </mesh>
-    <mesh geometry={seedGeometry} position={[0.48, -0.48, -0.12]} rotation={[-0.20, 0.58, 0.54]} scale={[0.62, 0.58, 0.70]} castShadow receiveShadow>
+    <mesh geometry={seedGeometry} position={[0.52, -0.42, -0.12]} rotation={[-0.12, 0.38, 0.10]} scale={[0.64, 0.54, 0.72]} castShadow receiveShadow>
       <MemorySurfaceMaterial color="#829e92" reducedMotion={reducedMotion} />
     </mesh>
     <pointLight color={accent} intensity={memory ? 0.72 : 0.28} distance={4.8} decay={2} />

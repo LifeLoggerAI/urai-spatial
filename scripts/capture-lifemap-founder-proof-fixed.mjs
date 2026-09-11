@@ -545,8 +545,13 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  // A destination owner can mount a frame before Next's route-level loading
+  // boundary finishes leaving. Give that boundary one scheduling turn, then
+  // require it to be absent before retaining destination pixels.
+  await page.waitForTimeout(600)
   const loadingSurface = page.locator('main[aria-busy="true"]')
   if (await loadingSurface.count()) await loadingSurface.first().waitFor({ state: 'hidden', timeout: 45_000 })
+  await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
 }
 

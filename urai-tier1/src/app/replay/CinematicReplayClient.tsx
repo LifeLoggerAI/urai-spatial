@@ -6,7 +6,6 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
-import { useSanctuarySoilTexture } from '@/spatial/assets/useSanctuarySoilTexture'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
@@ -243,11 +242,10 @@ function ReplayMemoryGeography({ accent }: { accent: string }) {
   const basin=useMemo(replayBasinGeometry,[])
   const wall=useMemo(replayMemoryWallGeometry,[])
   const maps=useMemo(createMineralMaps,[])
-  const albedo=useSanctuarySoilTexture()
   useEffect(()=>()=>{basin.dispose();wall.dispose();maps.forEach((texture)=>texture.dispose())},[basin,maps,wall])
   return <group name="replay-v216-embedded-memory-cove" userData={{ visualIntent:'media-manifested-inside-continuous-weathered-place' }}>
     <mesh geometry={basin} receiveShadow castShadow>
-      <meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#4a5149" vertexColors roughness={.94}/>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.40,.40)} color="#657068" vertexColors roughness={.94}/>
     </mesh>
     <mesh geometry={wall} position={[0,0,-.18]} receiveShadow castShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.52,.52)} color="#33443d" vertexColors roughness={.97} side={THREE.DoubleSide}/>
