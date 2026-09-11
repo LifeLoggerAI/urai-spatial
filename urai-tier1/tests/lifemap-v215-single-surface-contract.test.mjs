@@ -16,17 +16,19 @@ test('historical V215 single-surface source remains reproducible but is not runt
   assert.match(generator, /def sanctuary_height/)
   assert.match(generator, /one continuous camera-safe sanctuary/)
   assert.doesNotMatch(generator, /braided_channel|integrated_relief|def scarp/)
-  assert.match(world, /V226 literal-pixel authority: a suspended living memory galaxy/)
+  assert.match(world, /V236 literal-pixel authority: a continuous eroded memory valley/)
   assert.doesNotMatch(world, /authored-v215\/life-map-memory-sanctuary-v215\.glb/)
 })
 
-test('V226 runtime keeps retired V215 strata out while the V227 pixel repair uses open braided memories', () => {
+test('V236 runtime keeps retired V215 strata out while the current world roots open memories into new authored geography', () => {
   assert.match(world, /function memoryHeartGeometry\(/)
   assert.match(world, /function memoryFilamentGeometry\(/)
   assert.match(world, /life-map-v229-open-branching-memory-grove/)
   assert.doesNotMatch(world, /function smoothMemoryGeometry\(/)
   assert.match(world, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
   assert.match(world, /life-map-smooth-memory-star-/)
+  assert.match(world, /life-map-v236-continuous-eroded-memory-geography/)
+  assert.match(world, /life-map-v236-root-system-/)
   assert.doesNotMatch(world, /function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/)
 })
 

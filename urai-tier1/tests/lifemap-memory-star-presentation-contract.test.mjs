@@ -21,7 +21,9 @@ assert.ok(source.includes('Array.from({ length: 7 }'), 'the arrival place must p
 assert.ok(!source.includes('radius * Math.sin(t * Math.PI)'), 'arrival threads must not converge into a wire-cage pole');
 assert.ok(source.includes('name={`life-map-smooth-memory-star-${siteKey}`}'), 'memories must remain individually addressable in the spatial scene');
 assert.ok(!source.includes('new THREE.SphereGeometry(1, 72, 54)'), 'the rejected smooth egg geometry must not return');
-assert.ok(source.includes('// V226 literal-pixel authority: a suspended living memory galaxy with no heightfield, slabs, shards, or mineral presentation.'), 'The active Life Map source must declare the V226 presentation boundary');
+assert.ok(source.includes('// V236 literal-pixel authority: a continuous eroded memory valley whose'), 'The active Life Map source must declare the rooted V236 presentation boundary');
+assert.ok(source.includes('function LivingMemoryGeography()'), 'Life Map must render a continuous authored geography beneath memory manifestations');
+assert.ok(source.includes('function MemoryRoots('), 'memory manifestations must visibly grow from the environment');
 assert.ok(!/function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/.test(source), 'Rejected grounded strata and shard-like memory presentations must not re-enter runtime');
 
 console.log('Life Map memory-star presentation contract passed');

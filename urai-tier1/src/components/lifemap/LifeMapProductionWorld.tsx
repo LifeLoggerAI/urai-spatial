@@ -1,7 +1,7 @@
 "use client";
 
 import { MemorySurfaceMaterial } from "@/spatial/assets/MemorySurfaceMaterial";
-import { Line, Sparkles, Stars, useAnimations, useGLTF } from "@react-three/drei";
+import { Line, Sparkles, Stars, useAnimations, useGLTF, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
@@ -12,7 +12,8 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 import { LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapterForNode, resolveArtifactFamily, resolvePathKind } from "./lifeMapVisualSystem";
 
-// V226 literal-pixel authority: a suspended living memory galaxy with no heightfield, slabs, shards, or mineral presentation.
+// V236 literal-pixel authority: a continuous eroded memory valley whose
+// manifestations grow from authored geography instead of floating as a graph.
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
@@ -25,6 +26,11 @@ const GOLD = "#ffd98a";
 const ICE = "#dff8ff";
 const CYAN = "#78e7ff";
 const VIOLET = "#b18cff";
+const MEMORY_STONE_MAPS = [
+  "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp",
+  "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-normal-gl-1k.webp",
+  "/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-arm-1k.webp",
+] as const;
 
 function seeded(index: number, salt: number) {
   const value = Math.sin(index * 91.317 + salt * 13.77) * 43758.5453;
@@ -137,6 +143,148 @@ function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0
   }, [count, depth, height, radius, seed]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <points geometry={geometry}><pointsMaterial map={texture} alphaTest={.005} color={color} size={size} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></points>;
+}
+
+function memoryValleyHeight(x: number, z: number) {
+  const distanceFromPath = Math.abs(x - (.58 * Math.sin((z + 5.5) * .17) + .18 * Math.sin(z * .51)));
+  const shoulder = Math.max(0, distanceFromPath - 2.7);
+  const deepTime = THREE.MathUtils.clamp((-z - 2) / 39, 0, 1);
+  const weathering = .34 * Math.sin(x * .52 + z * .29) * Math.cos(z * .23 - x * .31)
+    + .13 * Math.sin(x * 1.67 - z * .83)
+    + .08 * Math.cos(x * 3.1 + z * 1.94);
+  const terraces = .24 * Math.tanh(Math.sin(z * .43 + x * .11) * 2.4);
+  return -4.15 + shoulder * (.36 + deepTime * .22) + weathering + terraces + deepTime * .58;
+}
+
+function memoryValleyGeometry() {
+  const cols = 104, rows = 148;
+  const positions: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = [];
+  const shadow = new THREE.Color("#101d25"), earth = new THREE.Color("#39423f"), lichen = new THREE.Color("#647269"), history = new THREE.Color("#786a62");
+  for (let row = 0; row <= rows; row += 1) {
+    const v = row / rows, z = 7 - v * 47;
+    for (let col = 0; col <= cols; col += 1) {
+      const u = col / cols, x = -15 + u * 30, y = memoryValleyHeight(x, z);
+      positions.push(x, y, z);
+      uvs.push(u * 5.2, v * 9.4);
+      const shoulder = THREE.MathUtils.clamp((Math.abs(x) - 1.8) / 11, 0, 1);
+      const age = THREE.MathUtils.clamp((-z + 5) / 46, 0, 1);
+      const stain = .5 + .5 * Math.sin(x * 1.17 + z * .71) * Math.cos(z * .37 - x * .91);
+      const color = shadow.clone().lerp(earth, .34 + shoulder * .32).lerp(lichen, .10 + stain * .16).lerp(history, age * .12);
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+  const stride = cols + 1;
+  for (let row = 0; row < rows; row += 1) for (let col = 0; col < cols; col += 1) {
+    const a = row * stride + col, b = a + 1, c = a + stride, d = c + 1;
+    if ((row + col) % 2) indices.push(a, c, b, b, c, d);
+    else indices.push(a, c, d, a, d, b);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function memoryPathGeometry() {
+  const rows = 132, cols = 8;
+  const positions: number[] = [], colors: number[] = [], indices: number[] = [];
+  const umber = new THREE.Color("#584c42"), warm = new THREE.Color("#9b8065"), pearl = new THREE.Color("#b9b39e");
+  for (let row = 0; row <= rows; row += 1) {
+    const t = row / rows, z = 6.1 - t * 44.8;
+    const center = .58 * Math.sin((z + 5.5) * .17) + .18 * Math.sin(z * .51);
+    const width = .78 - .18 * t + .08 * Math.sin(t * Math.PI * 5);
+    for (let col = 0; col <= cols; col += 1) {
+      const across = col / cols * 2 - 1, x = center + across * width;
+      positions.push(x, memoryValleyHeight(x, z) + .045 + .025 * Math.cos(across * Math.PI), z);
+      const color = umber.clone().lerp(warm, .32 + .3 * (1 - Math.abs(across))).lerp(pearl, .09 * Math.sin(t * Math.PI));
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+  const stride = cols + 1;
+  for (let row = 0; row < rows; row += 1) for (let col = 0; col < cols; col += 1) {
+    const a = row * stride + col, b = a + 1, c = a + stride, d = c + 1;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function ridgeWallGeometry(side: -1 | 1, distance: number, seed: number) {
+  const samples = 72, positions: number[] = [], colors: number[] = [], indices: number[] = [];
+  const lower = new THREE.Color("#192728"), upper = new THREE.Color(side < 0 ? "#4c5650" : "#4a3e4f");
+  for (let sample = 0; sample <= samples; sample += 1) {
+    const t = sample / samples, z = 5 - t * 45;
+    const x = side * (distance + 1.1 * Math.sin(t * 8.3 + seed) + .38 * Math.sin(t * 23.1 - seed));
+    const floor = memoryValleyHeight(x, z) - .25;
+    const crest = floor + 3.2 + 2.8 * Math.pow(.5 + .5 * Math.sin(t * 7.1 + seed), 1.35) + 1.1 * Math.sin(t * 17.7 + seed * .4);
+    for (let layer = 0; layer <= 4; layer += 1) {
+      const u = layer / 4, inset = Math.sin(u * Math.PI) * (.42 + .16 * Math.sin(t * 12 + seed));
+      positions.push(x - side * inset, THREE.MathUtils.lerp(floor, crest, u), z + .12 * Math.sin(u * 5 + t * 9));
+      const color = lower.clone().lerp(upper, u * (.72 + .18 * Math.sin(t * 11 + seed)));
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+  const stride = 5;
+  for (let sample = 0; sample < samples; sample += 1) for (let layer = 0; layer < 4; layer += 1) {
+    const a = sample * stride + layer, b = a + 1, c = a + stride, d = c + 1;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function LivingMemoryGeography() {
+  const maps = useTexture(MEMORY_STONE_MAPS as unknown as string[]) as THREE.Texture[];
+  const terrain = useMemo(memoryValleyGeometry, []), path = useMemo(memoryPathGeometry, []);
+  const ridges = useMemo(() => [ridgeWallGeometry(-1, 9.2, .7), ridgeWallGeometry(1, 8.4, 2.1), ridgeWallGeometry(-1, 13.1, 4.3), ridgeWallGeometry(1, 12.6, 5.7)], []);
+  const preparedMaps = useMemo(() => maps.map((source, index) => {
+    const texture = source.clone();
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(5.2, 9.4);
+    texture.anisotropy = 8;
+    texture.colorSpace = index === 0 ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+  }), [maps]);
+  useEffect(() => () => { terrain.dispose(); path.dispose(); ridges.forEach((ridge) => ridge.dispose()); preparedMaps.forEach((map) => map.dispose()); }, [path, preparedMaps, ridges, terrain]);
+  return <group name="life-map-v236-continuous-eroded-memory-geography" userData={{ visualIntent: "rooted-life-history-valley", topology: "one-continuous-traversable-world" }}>
+    <mesh geometry={terrain} receiveShadow castShadow name="life-map-v236-weathered-valley-floor">
+      <meshStandardMaterial map={preparedMaps[0]} normalMap={preparedMaps[1]} roughnessMap={preparedMaps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors color="#718078" roughness={.94} metalness={0} />
+    </mesh>
+    <mesh geometry={path} receiveShadow name="life-map-v236-worn-lineage-path"><meshStandardMaterial vertexColors color="#9b8b75" roughness={.98} /></mesh>
+    {ridges.map((ridge, index) => <mesh key={index} geometry={ridge} receiveShadow castShadow name={`life-map-v236-stratified-history-ridge-${index}`}>
+      <meshStandardMaterial map={preparedMaps[0]} normalMap={preparedMaps[1]} normalScale={new THREE.Vector2(.62,.62)} vertexColors color={index % 2 ? "#5f5964" : "#5a6861"} roughness={.96} side={THREE.DoubleSide} />
+    </mesh>)}
+    <pointLight position={[-4,1,-10]} color="#82c6b4" intensity={1.25} distance={15} decay={2} />
+    <pointLight position={[4,2,-23]} color="#b79ac2" intensity={.95} distance={18} decay={2} />
+  </group>;
+}
+
+function MemoryRoots({ node, index, active }: { node: LifeMapNode; index: number; active: boolean }) {
+  const position = useMemo<Point3>(() => celestialNodePosition(node, index), [index, node]);
+  const geometries = useMemo(() => Array.from({ length: 4 }, (_, branch) => {
+    const angle = branch * 1.83 + seeded(index + 11, branch + 4) * .7;
+    const baseY = memoryValleyHeight(position[0] + Math.cos(angle) * .45, position[2] + Math.sin(angle) * .45) - position[1];
+    const start = new THREE.Vector3(Math.cos(angle) * (.46 + branch * .05), baseY, Math.sin(angle) * (.46 + branch * .05));
+    const middle = new THREE.Vector3(Math.cos(angle) * (.28 + branch * .03), baseY * .52 - .12, Math.sin(angle) * (.28 + branch * .03));
+    const end = new THREE.Vector3(Math.cos(angle + .4) * .11, -.58 + branch * .035, Math.sin(angle + .4) * .11);
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3([start, middle, end], false, "centripetal", .38), 32, .055 - branch * .006, 7, false);
+  }), [index, position]);
+  useEffect(() => () => geometries.forEach((geometry) => geometry.dispose()), [geometries]);
+  return <group name={`life-map-v236-root-system-${node.id}`}>{geometries.map((geometry, branch) => <mesh key={branch} geometry={geometry} castShadow receiveShadow>
+    <meshStandardMaterial color={branch % 2 ? "#526a65" : "#64596b"} emissive={node.aura} emissiveIntensity={active ? .22 : .055} roughness={.89} metalness={.01} />
+  </mesh>)}</group>;
 }
 
 function RenderProofRepublisher() {
@@ -414,6 +562,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
     userData={{ artifactFamily: resolveArtifactFamily(node), importance: importance.toFixed(2), semanticLabel, chapterId: chapter.id, runtimeAsset: MEMORY_STAR_MODEL }}
     onClick={(event) => { event.stopPropagation(); onSelect(node); }}
   >
+    <MemoryRoots node={node} index={index} active={active} />
     <ArtifactShape node={node} active={active} />
     <Sparkles count={active ? 18 : 5} scale={active ? [2.6,2.8,2.6] : [1.4,1.6,1.4]} size={active ? 1.7 : 1.0} speed={reducedMotion ? 0 : 0.08} opacity={active ? .36 : .18} color={node.aura} />
   </group>;
@@ -629,11 +778,12 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   }, [nodes, onSelect]);
 
   return <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
-    <color attach="background" args={["#030815"]} />
-    <fog attach="fog" args={["#071525", 18, 94]} />
-    <ambientLight intensity={.18} color="#b6d7d6" />
-    <hemisphereLight args={["#c9e7df", "#030709", .38]} />
-    <directionalLight position={[9,14,10]} intensity={1.05} color="#d7eee5" castShadow={profile.shadows} />
+    <color attach="background" args={["#07131c"]} />
+    <fog attach="fog" args={["#122a31", 20, 88]} />
+    <ambientLight intensity={.26} color="#b6d7d6" />
+    <hemisphereLight args={["#c9e7df", "#07110f", .52]} />
+    <directionalLight position={[9,14,10]} intensity={1.42} color="#ead9be" castShadow={profile.shadows} />
+    <directionalLight position={[-12,7,-24]} intensity={.62} color="#6fa9a5" />
     {webglRecovery}
     <RenderProofRepublisher />
     {cameraRig}
@@ -644,6 +794,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     </group>
     <group name="life-map-temporal-horizon" position={[0,7,-42]}><FieldParticles seed={964} count={130} radius={22} depth={12} height={6} color={CYAN} opacity={.25} size={.045} /></group>
     <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
+      <LivingMemoryGeography />
       <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
       <ChapterTerritories />
       <group name="life-map-light-bridges" userData={{ presentation: "curved-living-memory-connections" }} />
