@@ -26,7 +26,6 @@ async function settleRenderedDestination(page, doorway) {
 }
 
 async function stableBrowserBox(target) {
-  await target.scrollIntoViewIfNeeded({ timeout: 45000 })
   const before = await target.boundingBox()
   if (!before) throw new Error('semantic target has no browser hit box')
   await target.page().waitForTimeout(250)
@@ -69,7 +68,7 @@ async function activate(page, target, method) {
     await target.focus()
     const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
     if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not receive focus')
-    await target.press('Enter')
+    await page.keyboard.press('Enter')
     return { hitPoint: null }
   }
 
