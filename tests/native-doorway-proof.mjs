@@ -26,10 +26,22 @@ async function settleRenderedDestination(page, doorway) {
 }
 
 async function stableBrowserBox(target) {
-  await target.scrollIntoViewIfNeeded({ timeout: 45000 })
-  const before = await target.boundingBox()
-  if (!before) throw new Error('semantic target has no browser hit box')
-  await target.page().waitForTimeout(250)
+  const page = target.page()
+  const viewport = page.viewportSize()
+  let initial = await target.boundingBox()
+  if (!initial) throw new Error('semantic target has no browser hit box')
+  const fullyInsideViewport = viewport
+    && initial.x >= 0
+    && initial.y >= 0
+    && initial.x + initial.width <= viewport.width
+    && initial.y + initial.height <= viewport.height
+  if (!fullyInsideViewport) {
+    await target.scrollIntoViewIfNeeded({ timeout: 45000 })
+    initial = await target.boundingBox()
+    if (!initial) throw new Error('semantic target lost its browser hit box after scroll')
+  }
+  const before = initial
+  await page.waitForTimeout(250)
   const after = await target.boundingBox()
   if (!after) throw new Error('semantic target lost its browser hit box')
   const drift = Math.max(
@@ -69,7 +81,7 @@ async function activate(page, target, method) {
     await target.focus()
     const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
     if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not receive focus')
-    await target.press('Enter')
+    await target.press('Enter', { noWaitAfter: true })
     return { hitPoint: null }
   }
 
