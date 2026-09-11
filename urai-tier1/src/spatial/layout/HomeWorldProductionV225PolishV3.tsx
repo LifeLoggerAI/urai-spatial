@@ -147,20 +147,40 @@ function useMemoryStoneMaps() {
   return maps
 }
 
+function soilVariation(x: number, z: number) {
+  const ix = Math.floor(x), iz = Math.floor(z)
+  const hash = (a: number, b: number) => {
+    const n = Math.sin(a * 127.1 + b * 311.7 + 19.19) * 43758.5453
+    return n - Math.floor(n)
+  }
+  const smooth = (t: number) => t * t * (3 - 2 * t)
+  const u = smooth(x - ix), v = smooth(z - iz)
+  return THREE.MathUtils.lerp(
+    THREE.MathUtils.lerp(hash(ix, iz), hash(ix + 1, iz), u),
+    THREE.MathUtils.lerp(hash(ix, iz + 1), hash(ix + 1, iz + 1), u), v,
+  )
+}
+
 function inhabitedSurfaceGeometry() {
   const nx=156,nz=210,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
-  const moss=new THREE.Color('#85957b'),loam=new THREE.Color('#a3957c'),lichen=new THREE.Color('#9fac92')
+  const moss=new THREE.Color('#658273'),loam=new THREE.Color('#b5a184'),lichen=new THREE.Color('#adae96')
   for(let iz=0;iz<=nz;iz++){
     const vz=iz/nz,z=6.4-vz*26.2
     for(let ix=0;ix<=nx;ix++){
       const vx=ix/nx,x=-13.5+vx*27
       const relief=.052*Math.sin(x*1.72+z*.91)+.034*Math.cos(x*3.86-z*1.54)+.017*Math.sin(x*7.1+z*4.3)
       const y=height(x,z)+relief*(.32+.68*Math.min(1,Math.abs(x)/7.5))+.032
-      positions.push(x,y,z);uvs.push(vx*6.75,vz*6.55)
-      const grain=.5+.5*Math.sin(x*.82-z*.57)*Math.cos(x*1.31+z*.94)
+      positions.push(x,y,z)
+      // Smooth, bounded domain variation breaks identical tile alignment without
+      // discontinuities, extra texture fetches, or animated shader work.
+      const macro = soilVariation(x * .19, z * .19)
+      const cross = soilVariation(x * .17 + 23.7, z * .17 - 11.4)
+      uvs.push(vx*6.75 + .22*(macro-.5),vz*6.55 + .22*(cross-.5))
+      const grain = .72 * macro + .28 * soilVariation(x * .73, z * .73)
       const center=.30*Math.sin((z+2.4)*.22)+.09*Math.sin((z-1)*.63)
-      const trail=1-THREE.MathUtils.smoothstep(Math.abs(x-center),.34,.78)
-      const c=moss.clone().lerp(loam,.18+.12*grain+.50*trail).lerp(lichen,.08*Math.max(0,-z/20))
+      const trail=1-THREE.MathUtils.smoothstep(Math.abs(x-center + .16*(cross-.5)),.30,.88)
+      const dry = THREE.MathUtils.smoothstep(grain,.36,.76)
+      const c=moss.clone().lerp(lichen,.62*dry).lerp(loam,.82*trail)
       colors.push(c.r,c.g,c.b)
     }
   }
