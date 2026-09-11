@@ -69,6 +69,10 @@ for (const token of [
   'object.raycast = () => {}',
   'object.raycast = raycast',
   '!isTransparentInteractionSurface(object)',
+  'const setSubtreeOff = (object: THREE.Object3D) => {',
+  'object.traverse((child) => disableRaycast(child))',
+  "if (object.name === 'home-v226-root-cradle') {",
+  'setSubtreeOff(object)',
 ]) {
   if (!visualAuthority.includes(token)) fail(`visual ownership guard missing fail-closed interaction token: ${token}`)
 }
