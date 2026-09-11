@@ -83,13 +83,24 @@ async function proveGroundMobileControls(page, viewport) {
   return { railBox, padBox, promptBox, minimumMovementTarget: 44, endpointDestinationsFullyVisible: true }
 }
 
+async function focusTargetWithNativeKeyboard(page, target, maxSteps = 64) {
+  const expectedTestId = await target.getAttribute('data-testid')
+  if (!expectedTestId) throw new Error('semantic keyboard target has no test id')
+  for (let step = 1; step <= maxSteps; step++) {
+    await page.keyboard.press('Tab')
+    const focusedTestId = await page.locator(':focus').getAttribute('data-testid').catch(() => null)
+    if (focusedTestId === expectedTestId) return { focusSteps: step }
+  }
+  throw new Error(`semantic target did not receive browser-native Tab focus within ${maxSteps} steps`)
+}
+
 async function activate(page, target, method) {
   if (method === 'keyboard') {
-    await target.focus()
+    const keyboard = await focusTargetWithNativeKeyboard(page, target)
     const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
-    if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not receive focus')
+    if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not retain browser-native focus')
     await page.keyboard.press('Enter')
-    return { hitPoint: null }
+    return { hitPoint: null, focusSteps: keyboard.focusSteps }
   }
 
   const box = await stableBrowserBox(target)
@@ -97,7 +108,7 @@ async function activate(page, target, method) {
   const hitPoint = { center: { x: box.x + box.width / 2, y: box.y + box.height / 2 } }
   if (method === 'semantic-touch') await page.touchscreen.tap(hitPoint.center.x, hitPoint.center.y)
   else await page.mouse.click(hitPoint.center.x, hitPoint.center.y)
-  return { hitPoint }
+  return { hitPoint, focusSteps: null }
 }
 
 async function resolveTarget(page, doorway) {
@@ -122,7 +133,7 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, destinationRendered: false, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'browser-tab-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, targetHref: doorway.href, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, focusSteps: null, destinationRendered: false, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
@@ -146,6 +157,7 @@ async function prove(browser, doorway, testCase) {
     if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became spatially dominant')
     const activation = await activate(page, target, testCase.method)
     record.hitPoint = activation.hitPoint
+    record.focusSteps = activation.focusSteps
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.targetOwnsHitPoint = true
     await settleRenderedDestination(page, doorway)
@@ -172,7 +184,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 14, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 15, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
