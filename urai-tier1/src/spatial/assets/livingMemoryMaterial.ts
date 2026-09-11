@@ -6,10 +6,10 @@ export function createLivingMemoryMaterial(solid = false) {
   const time = { value: 0 }
   const material = new THREE.MeshPhysicalMaterial({
     vertexColors: true, side: THREE.DoubleSide, transparent: !solid,
-    depthWrite: solid, opacity: solid ? 1 : .82, roughness: .46, metalness: .08,
-    clearcoat: .16, clearcoatRoughness: .48, sheen: .42,
-    sheenColor: new THREE.Color('#c8a6a0'), emissive: new THREE.Color('#347a78'),
-    emissiveIntensity: .12,
+    depthWrite: solid, opacity: solid ? 1 : .9, roughness: .38, metalness: .05,
+    clearcoat: .26, clearcoatRoughness: .36, sheen: .56,
+    sheenColor: new THREE.Color('#bca49e'), emissive: new THREE.Color('#245d59'),
+    emissiveIntensity: .09,
   })
   material.onBeforeCompile = shader => {
     shader.uniforms.uMemoryTime = time
@@ -29,21 +29,22 @@ export function createLivingMemoryMaterial(solid = false) {
       vec3 mp = vMemoryPosition*4.2;
       float grain = memoryNoise(mp)+.5*memoryNoise(mp*2.03)+.25*memoryNoise(mp*4.07);
       float flow = sin(mp.y*4.5+mp.x*2.2+grain*7.0-uMemoryTime*.12);
-      float nerve = pow(max(0.,1.-abs(flow)),28.)*smoothstep(.62,.98,grain);
-      float edge = pow(1.-abs(dot(normalize(vNormal),normalize(vViewPosition))),1.5);
-      diffuseColor.rgb *= mix(vec3(.55,.70,.69),vec3(1.1,.92,.80),smoothstep(.4,1.15,grain));
-      diffuseColor.rgb += nerve*vec3(.055,.09,.075);
-      diffuseColor.a *= clamp(.48+.30*edge+.10*grain+.12*nerve,.45,.94);
+      float nerve = pow(max(0.,1.-abs(flow)),24.)*smoothstep(.56,.98,grain);
+      float edge = pow(1.-abs(dot(normalize(vNormal),normalize(vViewPosition))),1.35);
+      float inner = smoothstep(.30,1.18,grain);
+      diffuseColor.rgb *= mix(vec3(.40,.56,.55),vec3(.93,.80,.70),inner);
+      diffuseColor.rgb += nerve*vec3(.10,.15,.13) + edge*vec3(.025,.055,.048);
+      diffuseColor.a *= clamp(.62+.22*edge+.08*grain+.10*nerve,.58,.97);
     `)
     shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `
       #include <normal_fragment_maps>
-      float microRelief = memoryNoise(vMemoryPosition*54.0)*.0035 + memoryNoise(vMemoryPosition*112.0)*.001;
+      float microRelief = memoryNoise(vMemoryPosition*54.0)*.0042 + memoryNoise(vMemoryPosition*112.0)*.0014;
       vec3 sigmaX=dFdx(vViewPosition), sigmaY=dFdy(vViewPosition);
       vec3 rx=cross(sigmaY,normal), ry=cross(normal,sigmaX);
       float determinant=dot(sigmaX,rx);
       normal=normalize(abs(determinant)*normal-sign(determinant)*(dFdx(microRelief)*rx+dFdy(microRelief)*ry));
     `)
   }
-  material.customProgramCacheKey = () => 'urai-living-memory-lamella-v2'
+  material.customProgramCacheKey = () => 'urai-living-memory-lamella-v3'
   return { material, time }
 }

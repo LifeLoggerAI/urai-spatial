@@ -10,6 +10,12 @@ export function useSanctuarySoilTexture() {
     const copy = source.clone()
     copy.colorSpace = THREE.SRGBColorSpace
     copy.wrapS = copy.wrapT = THREE.RepeatWrapping
+    // The authored Home geometry already carries multi-repeat UVs. A sub-unit
+    // texture transform prevents the soil scan from reading as a repeated tile
+    // while retaining enough frequency for close-range ground definition.
+    copy.repeat.set(.68, .72)
+    copy.center.set(.5, .5)
+    copy.rotation = .08
     copy.anisotropy = 8
     copy.needsUpdate = true
     return copy
