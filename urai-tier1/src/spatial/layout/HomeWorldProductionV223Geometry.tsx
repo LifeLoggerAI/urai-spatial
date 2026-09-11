@@ -13,7 +13,7 @@ export const T = [
 ] as const
 
 export const SPAWN = new THREE.Vector3(0, .04, 4.6)
-export const ORB = new THREE.Vector3(-.45, 1.03, -7.45)
+export const ORB = new THREE.Vector3(-.45, 1.03, -5.35)
 export const GROUND = new THREE.Vector3(-4.85, 0, -8.25)
 export const LIFE_MAP = new THREE.Vector3(4.85, 0, -8.25)
 export const BOUNDS = { minX: -7.5, maxX: 7.5, minZ: -14.4, maxZ: 6.8 }
