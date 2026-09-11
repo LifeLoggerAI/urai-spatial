@@ -131,36 +131,37 @@ function mirrorSeed(value: string) {
 }
 
 function reflectionPresenceGeometry() {
-  const geometry = new THREE.SphereGeometry(1, 52, 38)
+  const geometry = new THREE.SphereGeometry(1, 58, 42)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors: number[] = []
-  const root = new THREE.Color('#294a43'), mineral = new THREE.Color('#719189'), light = new THREE.Color('#a3cbc1')
+  const root = new THREE.Color('#1e3632'), mineral = new THREE.Color('#667d74'), scarColor = new THREE.Color('#a4b3a7')
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
-    const angle = Math.atan2(nz, nx)
-    const crown = Math.max(0, ny)
-    const lower = Math.max(0, -ny)
-    const cleft = Math.exp(-((nx * .92 + nz * .2 - .03) ** 2) / .05) * Math.pow(crown, 1.6)
-    const lobes = .15 * Math.sin(angle * 3 + ny * 2.2) + .065 * Math.cos(angle * 7 - ny * 4.1)
-    const scars = .045 * Math.sin(nx * 10.8 + nz * 6.7 + ny * 5.2)
-    const radial = 1 + lobes * (.35 + crown * .65) + scars - .17 * cleft
-    let x = nx * radial * 1.04
-    let z = nz * radial * .82
-    const twist = (ny + .25) * .23
+    const angle = Math.atan2(nz, nx), crown = Math.max(0, ny), lower = Math.max(0, -ny)
+    const coarse = .17 * Math.sin(angle * 3.15 + ny * 2.7) + .08 * Math.cos(angle * 5.8 - ny * 4.5)
+    const middle = .065 * Math.sin(nx * 8.7 + nz * 6.1 + ny * 5.6)
+    const fine = .028 * Math.cos(angle * 13.2 + ny * 10.1)
+    const cleft = Math.exp(-((nx * .90 + nz * .26 - .025) ** 2) / .032) * Math.pow(crown, 1.42)
+    const cavityA = Math.exp(-(((nx + .34) * .84) ** 2 + ((nz - .16) * 1.05) ** 2) / .115) * (.3 + .7 * crown)
+    const cavityB = Math.exp(-(((nx - .42) * .92) ** 2 + ((nz + .20) * .98) ** 2) / .14) * Math.max(0, .68 + ny)
+    const shoulder = Math.exp(-(((nx - .18) * .72) ** 2 + ((nz - .48) * .82) ** 2) / .18) * Math.max(0, .62 + ny)
+    const radial = 1 + coarse * .7 + middle + fine - .27 * cleft - .17 * cavityA - .10 * cavityB + .11 * shoulder
+    let x = nx * radial * 1.10 + ny * .19 - .08
+    let z = nz * radial * .74 + .055 * Math.sin(ny * 5.6 + angle * 2.1)
+    const twist = (ny + .18) * .30 + .04 * Math.sin(ny * 5)
     const cos = Math.cos(twist), sin = Math.sin(twist), tx = x * cos - z * sin, tz = x * sin + z * cos
-    x = tx + ny * .18
-    z = tz
-    let y = ny * 1.34 + .08 * Math.sin(angle * 4.2) * crown
-    y -= lower * (.22 + lower * .16)
-    y -= .22
+    x = tx; z = tz
+    let y = ny * .92 - .17 - .23 * cleft - .11 * cavityA + .07 * Math.sin(angle * 4.4 + ny * 5.2) * crown
+    y -= lower * (.08 + .07 * lower)
     position.setXYZ(index, x, y, z)
-    const height = THREE.MathUtils.clamp((y + 1.2) / 2.5, 0, 1)
-    const scar = THREE.MathUtils.clamp(cleft * .75 + Math.abs(scars) * 5, 0, 1)
-    const color = root.clone().lerp(mineral, .28 + .45 * height).lerp(light, .06 + .18 * scar)
+    const height = THREE.MathUtils.clamp((y + 1.05) / 1.95, 0, 1)
+    const scar = THREE.MathUtils.clamp(cleft + cavityA * .55 + cavityB * .35 + Math.abs(middle) * 3.0, 0, 1)
+    const color = root.clone().lerp(mineral, .25 + .42 * height).lerp(scarColor, .025 + .16 * scar)
     colors.push(color.r, color.g, color.b)
   }
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
   geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
   return geometry
 }
 
@@ -222,17 +223,17 @@ function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: Mi
   useEffect(() => () => presence.dispose(), [presence])
   useFrame(({ clock }) => {
     if (!core.current || reducedMotion) return
-    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .055
-    core.current.rotation.z = Math.sin(clock.elapsedTime * 0.25) * .012
-    core.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * .36) * .006)
+    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .035
+    core.current.rotation.z = Math.sin(clock.elapsedTime * 0.25) * .008
+    core.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * .36) * .004)
   })
-  return <group position={[0, .72, -3.05]} scale={selected ? .93 : 1} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-v231-connected-reflection-presence' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
+  return <group position={[0, .44, -3.12]} scale={selected ? .86 : .92} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-v232-scarred-connected-reflection-presence' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
     <group ref={core} name="mirror-v231-connected-reflection-presence">
-      <mesh geometry={presence} position={[0,.18,.02]} scale={[1.12,1.18,.96]} castShadow receiveShadow>
-        <meshPhysicalMaterial vertexColors color={selected?.accent ?? '#789a91'} emissive={selected?.accent ?? '#245b59'} emissiveIntensity={selected ? .08 : .035} roughness={.88} metalness={.01} clearcoat={.06} clearcoatRoughness={.82} />
+      <mesh geometry={presence} position={[0,.04,.02]} scale={[.72,.68,.66]} castShadow receiveShadow>
+        <meshPhysicalMaterial vertexColors color={selected?.accent ?? '#667d74'} emissive={selected?.accent ?? '#1d4542'} emissiveIntensity={selected ? .035 : .018} roughness={.94} metalness={0} clearcoat={.025} clearcoatRoughness={.92} />
       </mesh>
     </group>
-    <pointLight position={[0,.72,.2]} color={selected?.accent ?? '#9df3f8'} intensity={selected ? .48 : .28} distance={4.4} decay={2} />
+    <pointLight position={[0,.46,.2]} color={selected?.accent ?? '#9dd8d4'} intensity={selected ? .22 : .12} distance={3.4} decay={2} />
   </group>
 }
 
@@ -246,10 +247,10 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   })
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
   return <group ref={group} position={[pattern.position[0], .3, pattern.position[2]]} data-testid="mirror-pattern-object" onClick={activate}>
-    <mesh geometry={geometry} castShadow receiveShadow scale={selected ? [.66,.72,.62] : [.74,.62,.68]} rotation={[.08, pattern.position[0] * .11, pattern.position[0] * .035]}>
-      <MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : 1} reducedMotion={reducedMotion} />
+    <mesh geometry={geometry} castShadow receiveShadow scale={selected ? [.58,.64,.54] : [.64,.54,.58]} rotation={[.08, pattern.position[0] * .11, pattern.position[0] * .035]}>
+      <MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : .86} reducedMotion={reducedMotion} />
     </mesh>
-    {selected ? <pointLight color={pattern.accent} intensity={.72} distance={5} /> : null}
+    {selected ? <pointLight color={pattern.accent} intensity={.42} distance={4} /> : null}
   </group>
 }
 
@@ -257,8 +258,8 @@ function FragmentObject({ fragment, accent, active, onSelect, reducedMotion }: {
   const geometry = useMemo(() => memoryFoldGeometry(mirrorSeed(fragment.id)), [fragment.id])
   useEffect(() => () => geometry.dispose(), [geometry])
   return <group position={[fragment.position[0], .34, fragment.position[2]]} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
-    <mesh geometry={geometry} castShadow receiveShadow scale={active ? [.38,.46,.40] : [.31,.38,.34]} rotation={[.1, fragment.position[0] * .16, -.08]}>
-      <MemorySurfaceMaterial color={accent} opacity={fragment.certainty === 'uncertain' ? .25 : 1} reducedMotion={reducedMotion} />
+    <mesh geometry={geometry} castShadow receiveShadow scale={active ? [.34,.40,.36] : [.27,.32,.29]} rotation={[.1, fragment.position[0] * .16, -.08]}>
+      <MemorySurfaceMaterial color={accent} opacity={fragment.certainty === 'uncertain' ? .25 : .82} reducedMotion={reducedMotion} />
     </mesh>
   </group>
 }
