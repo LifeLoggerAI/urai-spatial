@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const auth = fs.readFileSync('src/app/login/LoginClient.tsx', 'utf8')
+const signup = fs.readFileSync('src/app/signup/page.tsx', 'utf8')
 const settings = fs.readFileSync('src/app/settings/DeviceSettingsClient.tsx', 'utf8')
 const xr = fs.readFileSync('src/spatial/xr/xrReleaseAuthority.ts', 'utf8')
 
@@ -13,6 +14,14 @@ test('canonical auth entry uses Firebase provider authority and never collects p
   assert.match(auth, /firebasePublicEnvReady/)
   assert.match(auth, /Private routes remain fail-closed/)
   assert.doesNotMatch(auth, /type="password"/)
+})
+
+test('signup is a real provider-backed account entry route', () => {
+  assert.match(signup, /LoginClient mode="signup"/)
+  assert.match(signup, /Create Your Private World/)
+  assert.match(auth, /mode === 'signup'/)
+  assert.match(auth, /A new URAI account is created only after provider consent/)
+  assert.doesNotMatch(signup, /Return to Home|Pages Router shim/)
 })
 
 test('device settings exposes the governed persistent haptic hard-off control', () => {
