@@ -12,7 +12,7 @@ const HOME_GROUND = { x: -4.85, z: -8.25 } as const
 const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
 const LEGACY_V176_AUTHORITY_MARKER = 'v176-recollection-sanctuary'
-const V226_RUNTIME_ASSETS = ['HomeWorldProductionV223Geometry.tsx', 'HomeWorldProductionV225PolishV2.tsx', 'HomeWorldProductionV225PolishV3.tsx', 'rock-tile-floor-diff-1k.webp', 'rock-tile-floor-normal-gl-1k.webp', 'rock-tile-floor-arm-1k.webp'].join(' ')
+const V226_RUNTIME_ASSETS = ['HomeWorldProductionV223.tsx', 'HomeWorldProductionV223Geometry.tsx', 'HomeWorldProductionV225PolishV3.tsx', 'sanctuary-slate-soil-albedo-v1.webp', 'polyhaven-v48/fern_02/asset.gltf', 'polyhaven-v48/rock_face_01/asset.gltf', 'polyhaven-v48/rock_face_02/asset.gltf'].join(' ')
 const REVIEW_ORB_STATES = new Set<OrbState>(['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition'])
 
 function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {

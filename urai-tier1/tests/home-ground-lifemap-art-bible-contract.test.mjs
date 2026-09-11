@@ -51,6 +51,10 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
   ]) has(currentHome, marker)
   assert.doesNotMatch(currentHome, /<Terrain\b|<Escarpment\b|<DestinationLights\b|<Orb\b|<HomeV225PolishV2\b/)
   assert.doesNotMatch(currentHome, /visible=\{false\}|import.*HomeV225PolishV2/)
+  const runtimeAssetList = assetHome.match(/const V226_RUNTIME_ASSETS = (.+)/)?.[1] ?? ''
+  assert.match(runtimeAssetList, /HomeWorldProductionV225PolishV3/)
+  assert.match(runtimeAssetList, /sanctuary-slate-soil-albedo-v1/)
+  assert.doesNotMatch(runtimeAssetList, /HomeWorldProductionV225PolishV2/)
   for (const marker of [
     'home-v225-authored-memory-valley','home-v225-ground-sheltered-memory-basin','home-v225-life-map-rooted-memory-observatory',
     'home-v225-sculpted-sanctuary-floor','home-v225-rooted-memory-rib','home-v225-life-map-braided-lineage-vault',

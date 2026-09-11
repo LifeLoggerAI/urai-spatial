@@ -333,14 +333,22 @@ function WeatheredMemoryBanks() {
 
 function grownThresholdGeometry() {
   const outline = new THREE.Shape()
-  outline.moveTo(-1.58, -.10)
-  outline.bezierCurveTo(-1.55, 1.3, -.85, 2.9, -.16, 2.74)
-  outline.bezierCurveTo(.84, 2.77, 1.47, 1.54, 1.56, -.1)
+  outline.moveTo(-2.12, -.18)
+  outline.bezierCurveTo(-2.03, 1.42, -1.24, 3.12, -.32, 2.96)
+  outline.bezierCurveTo(.76, 3.10, 1.86, 1.62, 1.94, -.18)
   outline.lineTo(1.24, -.1)
   outline.bezierCurveTo(1.18, 1.38, .65, 2.37, -.14, 2.4)
   outline.bezierCurveTo(-.64, 2.48, -1.25, 1.2, -1.25, -.1)
   outline.closePath()
-  return new THREE.ExtrudeGeometry(outline, { depth: .58, bevelEnabled: true, bevelSegments: 4, bevelThickness: .08, bevelSize: .07, steps: 1, curveSegments: 48 })
+  const geometry = new THREE.ExtrudeGeometry(outline, { depth: 1.8, bevelEnabled: true, bevelSegments: 4, bevelThickness: .08, bevelSize: .07, steps: 5, curveSegments: 48 })
+  const positions = geometry.getAttribute('position')
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i)
+    const weather = .035 * Math.sin(x * 5.3 + y * 3.7 + z * 2.1) + .018 * Math.sin(x * 11.2 - y * 7.8)
+    positions.setXYZ(i, x + weather, y + weather * .7, z)
+  }
+  geometry.computeVertexNormals()
+  return geometry
 }
 
 function hearthStoneGeometry(seed: number) {
@@ -363,8 +371,8 @@ function GroundSanctuary({ onGround }: { onGround: () => void }) {
   const albedo = useSanctuarySoilTexture()
   useEffect(() => () => { threshold.dispose(); stones.forEach(geometry => geometry.dispose()) }, [stones,threshold])
   return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0, -.08, 0]} name="home-v226-ground-inhabited-hearth" onClick={(event) => { event.stopPropagation(); onGround() }}>
-    <mesh geometry={threshold} position={[0,-.02,-.74]} rotation={[0,.16,0]} scale={[.82,.78,.82]} castShadow receiveShadow name="home-v231-ground-weathered-threshold">
-      <meshStandardMaterial map={albedo} normalMap={maps[1]} normalScale={new THREE.Vector2(.64,.64)} color="#62594b" emissive="#2f211b" emissiveIntensity={.10} roughness={.95}/>
+    <mesh geometry={threshold} position={[0,-.02,-1.74]} rotation={[0,.16,0]} scale={[.82,.78,.82]} castShadow receiveShadow name="home-v231-ground-weathered-threshold">
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} normalScale={new THREE.Vector2(.64,.64)} color="#797b6d" emissive="#2f211b" emissiveIntensity={.06} roughness={.95}/>
     </mesh>
     {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} geometry={stones[index]} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} color={index%2?'#989b8c':'#87918b'} roughness={.98}/></mesh>)}
     {stones.slice(0,3).map((geometry,index)=><mesh key={index} geometry={geometry} position={[-.16+(index-1)*.20,.08,-.34+(index%2)*.13]} scale={[.19,.08,.15]}><meshStandardMaterial color="#302b28" map={albedo} normalMap={maps[1]} emissive="#a8441b" emissiveIntensity={.12} roughness={.76}/></mesh>)}
@@ -495,6 +503,7 @@ function RootCradle() {
 
 function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
+  const initialPose = useRef(posture[state]).current
   const body = useMemo(organicOrbGeometry, [])
   useEffect(() => () => body.dispose(), [body])
   const coreMaterial = useMemo(() => {
@@ -521,16 +530,25 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
   useEffect(() => () => branches.forEach(geometry => geometry.dispose()), [branches])
   const pose = posture[state]
   const y = height(ORB.x, ORB.z)
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     if (!root.current) return
     const t = clock.elapsedTime * pose.speed, breath = reducedMotion ? 1 : 1 + Math.sin(t * .78) * .006
-    root.current.scale.set(pose.s[0] * breath * 1.72, pose.s[1] * breath * 1.72, pose.s[2] * breath * 1.72)
-    root.current.rotation.set(pose.r[0], pose.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .014), pose.r[2])
+    const blend = reducedMotion ? 1 : 1 - Math.exp(-6 * Math.min(Math.max(delta, 0), .1))
+    root.current.scale.set(
+      THREE.MathUtils.lerp(root.current.scale.x, pose.s[0] * breath * 1.72, blend),
+      THREE.MathUtils.lerp(root.current.scale.y, pose.s[1] * breath * 1.72, blend),
+      THREE.MathUtils.lerp(root.current.scale.z, pose.s[2] * breath * 1.72, blend),
+    )
+    root.current.rotation.set(
+      THREE.MathUtils.lerp(root.current.rotation.x, pose.r[0], blend),
+      THREE.MathUtils.lerp(root.current.rotation.y, pose.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .014), blend),
+      THREE.MathUtils.lerp(root.current.rotation.z, pose.r[2], blend),
+    )
   })
   useFrame(({ clock }) => { coreMaterial.time.value = reducedMotion ? 0 : clock.elapsedTime })
   const warning = state === 'warning'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
-  return <group ref={root} position={[ORB.x, y + 1.08, ORB.z]} rotation={[0,-.10,-.10]} scale={1.28} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
+  return <group ref={root} position={[ORB.x, y + 1.08, ORB.z]} rotation={initialPose.r} scale={[initialPose.s[0] * 1.72, initialPose.s[1] * 1.72, initialPose.s[2] * 1.72]} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
     <group name="home-v227-branching-memory-nervature">
       <group name="home-v229-matter-anchored-branching-nervature" userData={{ artRevision:'home-v230-surface-bound-memory-nervature', silhouette:'anchored-not-jellyfish-tendril-halo' }}>
         {branches.map((geometry, index) => <mesh key={index} geometry={geometry} position={[index % 2 ? -.10 : .08, -.03 + (index % 3) * .025, -.09 + (index % 4) * .018]} rotation={[.10 - index * .012, index % 2 ? -.32 : .28, index % 3 ? .08 : -.10]} scale={[.58 + (index % 3) * .035, .46 + (index % 2) * .03, .50]} castShadow receiveShadow>

@@ -35,6 +35,8 @@ if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V226 direct 
 // Historical marker checks above are not the identity of the rendered scene.
 // Include the active camera, art, and material owners in every retained receipt.
 const runtimePaths = [
+  'urai-tier1/src/app/AssetDrivenHomeWorld.tsx',
+  'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx',

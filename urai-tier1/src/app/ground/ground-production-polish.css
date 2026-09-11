@@ -130,19 +130,19 @@
     background: rgba(5, 20, 24, .9);
   }
   .ground-spatial-root .ground-prompt {
-    bottom: max(202px, calc(env(safe-area-inset-bottom) + 192px));
+    bottom: max(202px, calc(env(safe-area-inset-bottom) + 192px)) !important;
     box-sizing: border-box;
     max-width: calc(100vw - 28px);
-    white-space: normal;
+    white-space: normal !important;
     text-align: center;
-    font-size: 12px;
-    line-height: 1.4;
-    letter-spacing: .02em;
-    text-transform: none;
-    color: #eef7f4;
-    background: rgba(5, 20, 24, .9);
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    letter-spacing: .02em !important;
+    text-transform: none !important;
+    color: #eef7f4 !important;
+    background: rgba(5, 20, 24, .9) !important;
   }
-  .ground-spatial-root .ground-brand strong { white-space: normal; }
+  .ground-spatial-root .ground-brand strong { white-space: normal !important; }
   .ground-spatial-root .urai-mobile-movement {
     grid-template-columns: repeat(3, 44px) !important;
     grid-template-rows: repeat(2, 44px) !important;

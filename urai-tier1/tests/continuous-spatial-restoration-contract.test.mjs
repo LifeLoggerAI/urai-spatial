@@ -42,7 +42,7 @@ test('app template mounts the exact active V226 Home production owner without ce
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
   assert.match(assetHome, /HomeWorldProductionV223/)
-  assert.match(assetHome, /HomeWorldProductionV225PolishV2\.tsx/)
+  assert.doesNotMatch(assetHome, /HomeWorldProductionV225PolishV2\.tsx/)
   assert.match(assetHome, /HomeWorldProductionV225PolishV3\.tsx/)
   assert.match(assetHome, /data-home-v226-retained-pixel-rebuild="active"/)
   assert.match(assetHome, /data-home-v225-retained-pixel-rebuild="superseded"/)
@@ -215,10 +215,10 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  for (const marker of ["schemaVersion: 'urai-home-state-proof-6'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
   assert.equal((stateProof.match(/visibleWorld === 'v226-rooted-inhabited-memory-sanctuary'/g) || []).length, 2)
   assert.doesNotMatch(stateProof, /v223-authored-inhabited-memory-sanctuary/)
-  for (const marker of ['HomeWorldProductionV223Geometry.tsx', 'rock-tile-floor-diff-1k.webp', 'rock-tile-floor-normal-gl-1k.webp', 'rock-tile-floor-arm-1k.webp']) assert.match(stateProof, new RegExp(marker.replaceAll('.', '\\.'), 'g'))
+  for (const marker of ['HomeWorldProductionV223Geometry.tsx', 'HomeWorldProductionV225PolishV3.tsx', 'sanctuary-slate-soil-albedo-v1.webp', 'polyhaven-v48/fern_02/asset.gltf']) assert.match(stateProof, new RegExp(marker.replaceAll('.', '\\.'), 'g'))
   assert.doesNotMatch(stateProof, /home-(?:continuous-landscape|ground-place|life-map-place)-v191\.glb|urai-living-memory-heart-v191\.glb/)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)

@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
-import { lifeMapWorldPoint } from "./lifeMapSpatialLayout";
+import { lifeMapOverviewCamera, lifeMapWorldPoint } from "./lifeMapSpatialLayout";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
@@ -56,30 +56,28 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, 
   return { position: tuple(arrival), target: tuple(target) };
 }
 
-function CameraRig({ selected, selectedIndex, phase, reducedMotion }: { selectedIndex: number; selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
+function CameraRig({ nodes, selected, selectedIndex, phase, reducedMotion }: { nodes: LifeMapNode[]; selectedIndex: number; selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
   const targetGoal = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3(...OVERVIEW_TARGET));
+  const overviewGoal = useMemo(() => lifeMapOverviewCamera(nodes, size.height > size.width, size.width / Math.max(size.height, 1)), [nodes, size.height, size.width]);
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait, selectedIndex) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, selectedIndex) : overviewGoal;
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
-      if (phase === "overview") {
-        positionGoal.current.set(0, 3.0, 10.2);
-        targetGoal.current.set(0, -1.2, -5.0);
-      } else {
+      if (phase !== "overview") {
         const offset = positionGoal.current.clone().sub(targetGoal.current).multiplyScalar(1.08);
         positionGoal.current.copy(targetGoal.current).add(offset);
         positionGoal.current.y += 0.22;
       }
     }
     return portrait;
-  }, [phase, selected, selectedIndex, size.height, size.width]);
+  }, [overviewGoal, phase, selected, selectedIndex, size.height, size.width]);
 
   useLayoutEffect(() => {
     if (initialized.current) return;
@@ -399,7 +397,7 @@ export default function ComposedLifeMapScene() {
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
         />
       </Suspense>

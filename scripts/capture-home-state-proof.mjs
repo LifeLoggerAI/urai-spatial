@@ -17,7 +17,7 @@ const states = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-home-state-proof-5',
+  schemaVersion: 'urai-home-state-proof-6',
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeContract: 'sacred-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
@@ -188,9 +188,10 @@ async function capture(state, options = {}) {
       && record.visibleWorld === 'v226-rooted-inhabited-memory-sanctuary'
       && record.movement === 'walk-keyboard-click-touch'
       && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx')
-      && record.runtimeAssets?.includes('rock-tile-floor-diff-1k.webp')
-      && record.runtimeAssets?.includes('rock-tile-floor-normal-gl-1k.webp')
-      && record.runtimeAssets?.includes('rock-tile-floor-arm-1k.webp')
+      && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV3.tsx')
+      && record.runtimeAssets?.includes('sanctuary-slate-soil-albedo-v1.webp')
+      && record.runtimeAssets?.includes('polyhaven-v48/fern_02/asset.gltf')
+      && !record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
       && record.pointerLock
       && record.accessibilityPassed
       && record.visualPassed
