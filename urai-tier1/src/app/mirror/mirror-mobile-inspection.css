@@ -115,15 +115,15 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   .mirrorWorld .mirrorInspection {
     left: 12px;
     right: 12px;
-    top: max(72px, calc(env(safe-area-inset-top) + 62px));
-    bottom: max(184px, calc(env(safe-area-inset-bottom) + 178px));
+    top: max(112px, calc(env(safe-area-inset-top) + 96px));
+    bottom: max(204px, calc(env(safe-area-inset-bottom) + 198px));
     width: auto;
     max-height: none;
     padding-bottom: 34px;
     scrollbar-gutter: stable;
     mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 28px), transparent 100%);
     border-radius: 24px 24px 12px 12px;
-    background: linear-gradient(180deg, rgba(4, 20, 28, .88), rgba(3, 13, 23, .72));
+    background: linear-gradient(180deg, rgba(4, 20, 28, .82), rgba(3, 13, 23, .66));
   }
 
   .mirrorWorld .mirrorInspection::after {

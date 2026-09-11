@@ -58,12 +58,14 @@ test('Mirror inspector removes competing help and mobile hit owners while pinnin
   assert.match(mirrorMobile, /pointer-events: auto/)
 })
 
-test('Mirror selected evidence remains camera-safe and uses slender reflection threads', () => {
+test('Mirror selected evidence remains camera-safe inside grounded reflection geology', () => {
   assert.match(mirrorWorld, /selected\.position\[2\] \+ 5\.4/)
   assert.match(mirrorWorld, /new THREE\.TubeGeometry\(new THREE\.CatmullRomCurve3\(points\), 56, \.035, 8, false\)/)
-  assert.match(mirrorWorld, /mirror-v229-distant-branching-reflection-instrument/)
-  assert.match(mirrorWorld, /position=\{\[0, 1\.28, -3\.05\]\}/)
-  assert.match(mirrorWorld, /branch === 0 \? \.045 : \.032/)
+  assert.match(mirrorWorld, /mirror-v230-rooted-branching-reflection-instrument/)
+  assert.match(mirrorWorld, /position=\{\[0, \.78, -3\.05\]\}/)
+  assert.match(mirrorWorld, /mirror-v230-continuous-worn-sanctuary-floor/)
+  assert.match(mirrorWorld, /position=\{\[pattern\.position\[0\], \.22, pattern\.position\[2\]\]\}/)
+  assert.doesNotMatch(mirrorWorld, /dodecahedronGeometry|ringGeometry/)
   assert.doesNotMatch(mirrorWorld, /Math\.sin\(t \* Math\.PI\) \* \(\.62/)
   assert.match(mirrorWorld, /`\/\$\{destination\}\/\?\$\{params\.toString\(\)\}`/)
   assert.doesNotMatch(mirrorWorld, /new THREE\.BoxGeometry\(\.12, \.76, \.48/)

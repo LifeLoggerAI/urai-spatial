@@ -78,8 +78,70 @@ function MirrorCamera({ input, yaw, pitch, target, reducedMotion, selected, temp
   return null
 }
 
+function mirrorSanctuaryGeometry() {
+  const columns = 88, rows = 88
+  const positions: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = []
+  const slate = new THREE.Color('#263b39'), mineral = new THREE.Color('#55706a'), warm = new THREE.Color('#695f55')
+  for (let row = 0; row <= rows; row++) {
+    const v = row / rows, z = 9 - v * 28
+    for (let column = 0; column <= columns; column++) {
+      const u = column / columns, x = -14 + u * 28
+      const bank = Math.pow(Math.max(0, (Math.abs(x) - 5.1) / 8.9), 1.55) * 4.8
+      const basin = -.34 * Math.exp(-(x * x / 18 + (z + 3.25) * (z + 3.25) / 18))
+      const path = Math.exp(-Math.pow((x - .22 * Math.sin(z * .35)) / 1.5, 4))
+      const weather = .17 * Math.sin(x * .55 + z * .31) + .07 * Math.sin(x * 1.8 - z * .74) + .035 * Math.cos(x * 4 + z * 2.2)
+      positions.push(x, -.16 + bank + basin + weather, z)
+      uvs.push(u * 6.2, v * 7.4)
+      const color = slate.clone().lerp(mineral, .24 + .34 * Math.min(1, bank / 3)).lerp(warm, path * .22)
+      colors.push(color.r, color.g, color.b)
+    }
+  }
+  const stride = columns + 1
+  for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
+    const a = row * stride + column, b = a + 1, c = a + stride, d = c + 1
+    indices.push(a, c, b, b, c, d)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function mirrorPoolGeometry() {
+  const positions = [0, 0, 0], indices: number[] = []
+  const segments = 96
+  for (let index = 0; index <= segments; index++) {
+    const angle = index / segments * Math.PI * 2
+    const radius = 2.75 * (1 + .055 * Math.sin(angle * 3 + .7) + .028 * Math.sin(angle * 7 - .4))
+    positions.push(Math.cos(angle) * radius, 0, Math.sin(angle) * radius * .76)
+    if (index < segments) indices.push(0, index + 1, index + 2)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function reflectionThreadGeometry(branch: number) {
+  const side = branch % 2 ? -1 : 1
+  const reach = .58 + branch * .22
+  const points = [
+    new THREE.Vector3(side * .04, -.72, .02),
+    new THREE.Vector3(side * (.12 + branch * .025), -.18, -.04 - branch * .035),
+    new THREE.Vector3(side * reach * .52, .32 + branch * .13, -.12 - branch * .08),
+    new THREE.Vector3(side * reach, .68 + branch * .18, -.22 - branch * .14),
+  ]
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 56, .035, 8, false)
+}
+
 function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
   const maps = useMemo(createMineralMaps, [])
+  const floor = useMemo(mirrorSanctuaryGeometry, [])
+  const pool = useMemo(mirrorPoolGeometry, [])
   const wall = useMemo(() => {
     const geometry = new THREE.CylinderGeometry(16, 16, 14, 96, 40, true)
     const positions = geometry.getAttribute('position')
@@ -92,37 +154,19 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
     geometry.computeVertexNormals()
     return geometry
   }, [])
-  useEffect(() => () => { wall.dispose(); maps.forEach(map => map.dispose()) }, [wall, maps])
-  return <group name="mirror-chamber-architecture" userData={{ motion: reducedMotion ? 'still' : 'still-architecture' }}>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.08, 1.1]} receiveShadow>
-      <planeGeometry args={[48, 48]} />
-      <meshPhysicalMaterial map={maps[0]} normalMap={maps[1]} color="#58716b" roughness={.64} metalness={.08} clearcoat={.12} />
+  useEffect(() => () => { wall.dispose(); floor.dispose(); pool.dispose(); maps.forEach(map => map.dispose()) }, [floor, maps, pool, wall])
+  return <group name="mirror-v230-weathered-introspection-chamber" userData={{ motion: reducedMotion ? 'still' : 'still-architecture', visualIntent: 'continuous-reflective-geology-not-floating-ui-stage' }}>
+    <mesh geometry={floor} receiveShadow castShadow name="mirror-v230-continuous-worn-sanctuary-floor">
+      <meshPhysicalMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} vertexColors color="#86958a" emissive="#10221f" emissiveIntensity={.24} roughness={.84} metalness={.02} clearcoat={.08} side={THREE.DoubleSide} />
     </mesh>
     <mesh geometry={wall} position={[0, 6.8, -2]} receiveShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#6d8581" roughness={.86} side={THREE.BackSide} />
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#768b82" emissive="#122622" emissiveIntensity={.18} roughness={.9} side={THREE.BackSide} />
     </mesh>
     <group name="mirror-reflection-basin" position={[0, .02, -3.2]}>
-      <mesh receiveShadow>
-        <cylinderGeometry args={[3.15, 3.65, .24, 96, 2]} />
-        <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#334f4d" roughness={.74} metalness={.08} />
-      </mesh>
-      <mesh position={[0, .135, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[2.86, 96]} />
+      <mesh geometry={pool} position={[0, .02, 0]}>
         <meshPhysicalMaterial color="#15383d" emissive="#0b4c55" emissiveIntensity={.14} transparent opacity={.78} roughness={.18} metalness={.08} clearcoat={.64} clearcoatRoughness={.22} />
       </mesh>
-      <mesh position={[0, .17, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[2.72, 2.88, 96]} />
-        <meshBasicMaterial color="#a5edf0" transparent opacity={.16} depthWrite={false} />
-      </mesh>
     </group>
-    {[-1, 1].flatMap(side => [0, 1, 2].map((level) => {
-      const x = side * (5.3 + level * 1.55)
-      const z = -4.4 - level * 1.7
-      return <mesh key={`${side}-${level}`} position={[x, .75 + level * .22, z]} scale={[.64 + level * .12, 1.55 + level * .34, .52 + level * .09]} rotation={[.08 * side, -.24 * side + level * .08, .05 * side]} castShadow receiveShadow>
-        <dodecahedronGeometry args={[1, 1]} />
-        <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={level % 2 ? '#526b66' : '#667d74'} roughness={.9} />
-      </mesh>
-    }))}
     <pointLight position={[-4.8, 3.8, -3.2]} color="#d9ddc5" intensity={18} distance={17} decay={2} />
     <pointLight position={[4.2, 2.8, -4]} color="#9bc9cc" intensity={16} distance={15} decay={2} />
     <spotLight position={[0, 8.5, 2.5]} target-position={[0, .2, -3.2]} color="#d9f7ed" intensity={28} distance={24} angle={.38} penumbra={.92} castShadow />
@@ -137,10 +181,10 @@ function EmbodiedReflection({ reducedMotion, demo }: { reducedMotion: boolean; d
     if (!group.current) return
     group.current.position.x = THREE.MathUtils.damp(group.current.position.x, camera.position.x * 0.28, 3.2, 1 / 60)
     group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, -camera.rotation.y * 0.18, 3.2, 1 / 60)
-    if (!reducedMotion) group.current.scale.y = 1 + Math.sin(clock.elapsedTime * 0.7) * 0.012
+    if (!reducedMotion) group.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 0.42) * 0.008)
   })
   return <group ref={group} position={[0, 0, -6.25]} name="privacy-safe-user-reflection">
-    <mesh geometry={reflection} position={[0, 1.25, 0]} scale={[.7, 1.0, .65]} rotation={[0, -.4, .12]}>
+    <mesh geometry={reflection} position={[0, .24, 0]} scale={[.82, .24, .92]} rotation={[Math.PI / 2, -.28, .08]} receiveShadow>
       <meshPhysicalMaterial vertexColors color={demo ? '#bac4d3' : '#c3e9dd'} transparent opacity={.4} roughness={.5} side={THREE.DoubleSide} depthWrite={false} />
     </mesh>
   </group>
@@ -148,17 +192,23 @@ function EmbodiedReflection({ reducedMotion, demo }: { reducedMotion: boolean; d
 
 function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: MirrorPattern | null; onSelect: (pattern: MirrorPattern | null) => void; reducedMotion: boolean }) {
   const core = useRef<THREE.Group>(null)
-  const branches = useMemo(() => [2, 7, 13].map(memoryFoldGeometry), [])
-  useEffect(() => () => branches.forEach(geometry => geometry.dispose()), [branches])
+  const mantle = useMemo(() => memoryFoldGeometry(23), [])
+  const branches = useMemo(() => Array.from({ length: 5 }, (_, branch) => reflectionThreadGeometry(branch)), [])
+  useEffect(() => () => { mantle.dispose(); branches.forEach(geometry => geometry.dispose()) }, [branches, mantle])
   useFrame(({ clock }) => {
     if (!core.current || reducedMotion) return
-    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .16
-    core.current.rotation.x = Math.sin(clock.elapsedTime * 0.31) * 0.06
+    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * .08
+    core.current.rotation.z = Math.sin(clock.elapsedTime * 0.25) * 0.025
   })
-  return <group position={[0, 1.28, -3.05]} scale={selected ? .82 : 1} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-layered-reflection-lamellae' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
-    <group ref={core}>{branches.map((geometry, index) => <mesh key={index} geometry={geometry} position={[(index - 1) * .14, index * .06, index * -.18]} rotation={[.04, (index - 1) * .8, (index - 1) * .24]} castShadow>
-      <MemorySurfaceMaterial color={selected?.accent ?? (index === 1 ? '#79c2c3' : '#73948d')} reducedMotion={reducedMotion} />
-    </mesh>)}</group>
+  return <group position={[0, .78, -3.05]} scale={selected ? .88 : 1} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-v230-rooted-branching-reflection-presence' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
+    <group ref={core} name="mirror-v230-rooted-branching-reflection-instrument">
+      <mesh geometry={mantle} position={[0,-.28,.04]} scale={[.72,.34,.68]} rotation={[Math.PI / 2,-.3,.08]} castShadow receiveShadow>
+        <MemorySurfaceMaterial color={selected?.accent ?? '#73948d'} reducedMotion={reducedMotion} />
+      </mesh>
+      {branches.map((geometry, branch) => <mesh key={branch} geometry={geometry} rotation={[0,(branch - 2) * .38,(branch - 2) * .08]} castShadow>
+        <meshStandardMaterial color={branch === 0 ? '#9ed2c8' : selected?.accent ?? '#668f87'} emissive={selected?.accent ?? '#245b59'} emissiveIntensity={selected ? .22 : .08} roughness={.78} />
+      </mesh>)}
+    </group>
     <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? .72 : .48} distance={5} decay={2} />
   </group>
 }
@@ -169,17 +219,12 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   useEffect(() => () => geometry.dispose(), [geometry])
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return
-    group.current.position.y = pattern.position[1] + Math.sin(clock.elapsedTime * 0.62 + pattern.position[0]) * 0.08
-    group.current.rotation.y = clock.elapsedTime * 0.12
+    group.current.rotation.z = Math.sin(clock.elapsedTime * 0.28 + pattern.position[0]) * 0.018
   })
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
-  return <group ref={group} position={pattern.position} data-testid="mirror-pattern-object" onClick={activate}>
-    <mesh geometry={geometry} castShadow scale={selected ? [.62,.68,.56] : [.78,.82,.68]} rotation={[.12, pattern.position[0] * .11, pattern.position[0] * .04]}>
+  return <group ref={group} position={[pattern.position[0], .22, pattern.position[2]]} data-testid="mirror-pattern-object" onClick={activate}>
+    <mesh geometry={geometry} castShadow receiveShadow scale={selected ? [.68,.24,.72] : [.82,.28,.78]} rotation={[Math.PI / 2, pattern.position[0] * .11, pattern.position[0] * .04]}>
       <MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : 1} reducedMotion={reducedMotion} />
-    </mesh>
-    <mesh position={[0, -pattern.position[1] + .035, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <circleGeometry args={[selected ? .8 : .56, 40]} />
-      <meshBasicMaterial color={pattern.accent} transparent opacity={selected ? .16 : .075} depthWrite={false} />
     </mesh>
     {selected ? <pointLight color={pattern.accent} intensity={1.1} distance={6} /> : null}
   </group>
@@ -188,8 +233,8 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
 function FragmentObject({ fragment, accent, active, onSelect, reducedMotion }: { reducedMotion: boolean; fragment: MirrorFragment; accent: string; active: boolean; onSelect: (fragment: MirrorFragment) => void }) {
   const geometry = useMemo(() => memoryFoldGeometry(fragment.id.length), [fragment.id])
   useEffect(() => () => geometry.dispose(), [geometry])
-  return <group position={fragment.position} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
-    <mesh geometry={geometry} castShadow scale={active ? [.28,.48,.35] : [.24,.42,.3]} rotation={[.18, fragment.position[0] * .16, -.22]}>
+  return <group position={[fragment.position[0], .3, fragment.position[2]]} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
+    <mesh geometry={geometry} castShadow receiveShadow scale={active ? [.38,.18,.42] : [.31,.14,.36]} rotation={[Math.PI / 2, fragment.position[0] * .16, -.12]}>
       <MemorySurfaceMaterial color={accent} opacity={fragment.certainty === 'uncertain' ? .25 : 1} reducedMotion={reducedMotion} />
     </mesh>
   </group>
@@ -197,11 +242,11 @@ function FragmentObject({ fragment, accent, active, onSelect, reducedMotion }: {
 
 function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSelect, onFragment, ...cameraProps }: CameraProps & { patterns: MirrorPattern[]; activeFragment: MirrorFragment | null; onSelect: (pattern: MirrorPattern | null) => void; onFragment: (fragment: MirrorFragment | null) => void }) {
   return <>
-    <color attach="background" args={['#02070c']} />
-    <fog attach="fog" args={[selected ? '#07131c' : '#041019', 5.5, 25]} />
-    <ambientLight intensity={0.25} />
-    <hemisphereLight intensity={0.42} color="#e8fbff" groundColor="#06131b" />
-    <directionalLight position={[4.5, 9, 5]} intensity={1.05} color="#f6fbff" castShadow shadow-radius={4} shadow-bias={-.0002} shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+    <color attach="background" args={['#061219']} />
+    <fog attach="fog" args={[selected ? '#0b1c22' : '#0a1a20', 7.5, 31]} />
+    <ambientLight intensity={0.42} />
+    <hemisphereLight intensity={0.7} color="#e8fbef" groundColor="#0b1918" />
+    <directionalLight position={[4.5, 9, 5]} intensity={1.42} color="#f3ead4" castShadow shadow-radius={4} shadow-bias={-.0002} shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
     <Stars radius={56} depth={28} count={cameraProps.reducedMotion ? 160 : 520} factor={1.8} fade speed={cameraProps.reducedMotion ? 0 : 0.018} />
     <MirrorCamera selected={selected} temporalIndex={temporalIndex} {...cameraProps} />
     <ChamberArchitecture reducedMotion={cameraProps.reducedMotion} />
@@ -334,7 +379,7 @@ useEffect(() => {
   const offline = !online || fixture === 'offline'
   const empty = fixture === 'empty' || patterns.length === 0
   return <main ref={shellRef} className="mirrorWorld" data-testid="mirror-spatial-world" data-mirror-renderer="webgl-r3f" data-memory-status={result.status} data-memory-id={memory.id} data-manifest-id={memory.replayManifest.id} data-demo={memory.demo ? 'true' : 'false'} data-online={offline ? 'false' : 'true'} data-selected-pattern={selected?.id ?? 'overview'} {...look}>
-    <Canvas camera={{ position: [0, CAMERA_HEIGHT, 6.8], fov: 51, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .82 }}>
+    <Canvas camera={{ position: [0, CAMERA_HEIGHT, 6.8], fov: 51, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.08 }}>
       <Suspense fallback={null}><MirrorScene input={input} yaw={yaw} pitch={pitch} target={target} reducedMotion={reducedMotion} selected={selected} temporalIndex={temporalIndex} shellRef={shellRef} patterns={patterns} activeFragment={activeFragment} onSelect={selectPattern} onFragment={setActiveFragment} /></Suspense>
     </Canvas>
 
