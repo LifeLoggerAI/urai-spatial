@@ -12,10 +12,15 @@ test('semantic destinations are browser-native anchors', () => {
   assert.match(proof, /semantic target must own native href/)
 })
 
-test('keyboard doorway activation proves focused target with browser-native keyboard input', () => {
-  assert.match(proof, /await target\.focus\(\)/)
+test('keyboard doorway activation proves native Tab focus followed by native Enter', () => {
+  assert.match(proof, /async function focusTargetWithNativeKeyboard/)
+  assert.match(proof, /await page\.keyboard\.press\('Tab'\)/)
   assert.match(proof, /page\.locator\(':focus'\)\.getAttribute\('data-testid'\)/)
-  assert.match(proof, /page\.keyboard\.press\('Enter'\)/)
+  assert.match(proof, /browser-native Tab focus/)
+  assert.match(proof, /await page\.keyboard\.press\('Enter'\)/)
+  assert.match(proof, /inputDispatch: testCase\.method === 'keyboard' \? 'browser-tab-enter'/)
+  assert.match(proof, /keyboardNavigationCoveredByBrowserTabAndEnter: true/)
+  assert.doesNotMatch(proof, /await target\.focus\(\)/)
   assert.match(proof, /await page\.waitForURL/)
 })
 
