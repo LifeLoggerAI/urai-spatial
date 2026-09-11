@@ -2,11 +2,11 @@ import * as THREE from 'three'
 
 // Thin, locally shaded lamellae reveal the memory nervature behind them.
 // The field lives in object space, so orbiting the presence reveals real layers.
-export function createLivingMemoryMaterial() {
+export function createLivingMemoryMaterial(solid = false) {
   const time = { value: 0 }
   const material = new THREE.MeshPhysicalMaterial({
-    vertexColors: true, side: THREE.DoubleSide, transparent: true,
-    depthWrite: false, opacity: .82, roughness: .46, metalness: .08,
+    vertexColors: true, side: THREE.DoubleSide, transparent: !solid,
+    depthWrite: solid, opacity: solid ? 1 : .82, roughness: .46, metalness: .08,
     clearcoat: .16, clearcoatRoughness: .48, sheen: .42,
     sheenColor: new THREE.Color('#c8a6a0'), emissive: new THREE.Color('#347a78'),
     emissiveIntensity: .12,

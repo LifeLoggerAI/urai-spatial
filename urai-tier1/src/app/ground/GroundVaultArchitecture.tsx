@@ -1,16 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
-import { Html, useTexture } from '@react-three/drei'
+import { Html, useGLTF, useTexture } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { T } from '@/spatial/layout/HomeWorldProductionV223Geometry'
 import { DESTINATIONS, type GroundDestination } from './GroundWorldModel'
 
 // The vault is a continuous surface, not a backdrop or a row of freestanding pipes.
-function vaultSurface(width: number, rise: number, length: number) {
+function vaultSurface(width: number, rise: number, length: number, columns = 80, bays = 40) {
   const positions: number[] = [], uv: number[] = [], indices: number[] = []
-  const columns = 80, bays = 40
   for (let j = 0; j <= bays; j++) for (let i = 0; i <= columns; i++) {
     const a = i / columns * Math.PI, z = j / bays * length
     const ripple = .055 * Math.sin(a * 11 + z * .16) * Math.sin(a)
@@ -46,6 +45,21 @@ function chamberArch(index: number) {
   return new THREE.ExtrudeGeometry(shape, { depth: 2.6 + (index % 3) * .3, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .08, bevelThickness: .08, curveSegments: 32 })
 }
 
+function GroundSconce({ index }: { index: number }) {
+  const asset = useGLTF('/assets/urai/home-production/cc0/polyhaven-v48/industrial_caged_sconce/asset.gltf')
+  const fixture = useMemo(() => {
+    const source = asset.scene.getObjectByName('industrial_caged_sconce_a')
+    if (!source) throw new Error('Governed Ground sconce mesh is missing')
+    const copy = source.clone(true)
+    copy.position.set(0, 0, 0)
+    return copy
+  }, [asset.scene])
+  return <group position={[-1.84 - (index % 3) * .12, 1.35, -.20]} scale={1.35} name="ground-governed-caged-wall-sconce">
+    <primitive object={fixture} />
+    <mesh position={[0, .075, .11]}><cylinderGeometry args={[.025,.025,.19,12]} /><meshStandardMaterial color="#f7e7c2" emissive="#f2d2a0" emissiveIntensity={1.1} /></mesh>
+  </group>
+}
+
 export default function GroundVaultArchitecture({ activeId, onSelect, onReady }: {
   activeId: string | null
   onReady: () => void
@@ -78,7 +92,7 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
     return new THREE.ShapeGeometry(outline, 80)
   }, [])
   const arches = useMemo(() => DESTINATIONS.map((_, index) => chamberArch(index)), [])
-  const chamberRoofs = useMemo(() => DESTINATIONS.map((_, index) => vaultSurface(1.98 + (index % 3) * .12, 2.72 + (index % 4) * .17, 5.7)), [])
+  const chamberRoofs = useMemo(() => DESTINATIONS.map((_, index) => vaultSurface(1.98 + (index % 3) * .12, 2.72 + (index % 4) * .17, 5.7, 48, 12)), [])
   const floor = useMemo(() => {
     const g = new THREE.PlaneGeometry(32, 54, 1, 1)
     const uv = g.getAttribute('uv')
@@ -104,6 +118,7 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
         {(index < 3 || active) && <Html center position={[0, 3.7 + (index % 4) * .17, -1.3]} distanceFactor={20} style={{ pointerEvents: 'none' }}>
           <div style={{ whiteSpace: 'nowrap', color: '#edf6ed', font: '600 15px/1.3 system-ui', letterSpacing: '.035em', textShadow: '0 2px 6px #071210', padding: '5px 9px', background: 'rgba(8,23,23,.82)', borderRadius: 4 }}>{destination.label}</div>
         </Html>}
+        <GroundSconce index={index} />
         <mesh geometry={arches[index]} position={[0, 0, -2.9]} receiveShadow castShadow>
           <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={index % 3 === 0 ? '#a3997d' : '#839991'} roughness={.8} normalScale={new THREE.Vector2(.25, .25)} />
         </mesh>
@@ -120,7 +135,7 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
         <mesh position={[0, .03, -1.1]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[1.34, 1.36, 80]} /><meshBasicMaterial color={destination.color} transparent opacity={active ? .7 : .3} />
         </mesh>
-        <pointLight position={[0, 2.2, -1]} color={index % 3 ? '#c5e1d5' : '#efd5a3'} intensity={active ? 14 : 8} distance={7} decay={2} />
+        <pointLight position={[-1.84 - (index % 3) * .12, 1.45, .12]} color={index % 3 ? '#c5e1d5' : '#efd5a3'} intensity={active ? 14 : 8} distance={7} decay={2} />
       </group>
     })}
     <hemisphereLight args={['#e0e8d6', '#465c51', .8]} />

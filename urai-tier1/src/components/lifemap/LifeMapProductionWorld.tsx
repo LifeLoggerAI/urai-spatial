@@ -252,7 +252,8 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
         float veil=smoothstep(.55,1.12,n)*(.55+.45*bands)*lane;
         vec3 c=mix(vec3(.025,.15,.19),vec3(.25,.10,.34),noise(p*.72+11.));
         c=mix(c,vec3(.10,.30,.31),smoothstep(.72,1.2,n));
-        gl_FragColor=vec4(c,(.018+.32*veil)*mix(1.0,1.24,uSelected));
+        gl_FragColor=vec4(c,(.04+.42*veil)*mix(1.0,1.12,uSelected));
+        #include <colorspace_fragment>
       }
     `,
   }), [selected]);
@@ -517,6 +518,7 @@ function IntimateMemoryChamber(props: { selectedIndex: number; selected: LifeMap
 }
 
 function PersonalStarField({ count }: { count: number }) {
+  const { gl } = useThree();
   const geometry = useMemo(() => {
     const positions: number[] = [], sizes: number[] = [], colors: number[] = [];
     const warm = new THREE.Color('#e7c899'), cool = new THREE.Color('#a4c8dd');
@@ -538,13 +540,15 @@ function PersonalStarField({ count }: { count: number }) {
   }, [count]);
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, vertexColors: true,
-    vertexShader: `attribute float aSize; varying vec3 vColor; void main() { vColor=color; vec4 p=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*p; gl_PointSize=clamp(aSize*90./max(8.,-p.z),1.,4.5); }`,
+    uniforms: { uDpr: { value: gl.getPixelRatio() } },
+    vertexShader: `uniform float uDpr; attribute float aSize; varying vec3 vColor; void main() { vColor=color; vec4 p=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*p; gl_PointSize=clamp(aSize*90./max(8.,-p.z),1.,4.5)*uDpr; }`,
     fragmentShader: `varying vec3 vColor; void main() { float r=length(gl_PointCoord-.5)*2.; float a=exp(-r*r*3.)*(1.-smoothstep(.65,1.,r)); gl_FragColor=vec4(vColor,a*.85);
 #include <colorspace_fragment>
  }`,
   }), []);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => material.dispose(), [material]);
+  useFrame(() => { material.uniforms.uDpr.value = gl.getPixelRatio(); });
   return <points name="life-map-personal-galaxy-star-depth" geometry={geometry} material={material} />;
 }
 

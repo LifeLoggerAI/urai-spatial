@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
+import { useSanctuarySoilTexture } from '@/spatial/assets/useSanctuarySoilTexture'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -237,7 +238,8 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
         const weather = 0.24 * Math.sin(x * 0.64 + z * 0.23) + 0.11 * Math.sin(x * 1.73 - z * 0.82) + 0.055 * Math.cos(x * 4.1 + z * 2.7)
         const threshold = 0.72 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
         const archive = 1.15 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
-        positions.push(x, -1.5 + side + weather + threshold + archive, z)
+        const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.8 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
+        positions.push(x, -1.5 + side + weather + threshold + archive + bank, z)
         uvs.push(u * 6, v * 6)
       }
     }
@@ -256,9 +258,10 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
     return result
   }, [])
   const maps = useMemo(createMineralMaps, [])
+  const albedo = useSanctuarySoilTexture()
   useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
   return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
-    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} color="#a3b4ad" roughness={0.88} metalness={0} />
+    <meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} color="#a3b4ad" roughness={0.88} metalness={0} />
   </mesh>
 }
 

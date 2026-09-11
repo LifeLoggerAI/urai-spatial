@@ -1,4 +1,6 @@
 'use client'
+
+import { HomeAtmosphericSky } from '@/spatial/assets/HomeAtmosphericSky'
 import {Canvas,useFrame,useThree,type ThreeEvent} from '@react-three/fiber'
 import {useTexture} from '@react-three/drei'
 import {useCallback,useEffect,useRef,useState,type MutableRefObject} from 'react'
@@ -90,7 +92,8 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
   return <>
     <Cadence active={p.reducedMotion}/>
     <color attach="background" args={['#10272a']}/>
-    <fogExp2 attach="fog" args={['#607a6d',.0095]}/>
+    <fogExp2 attach="fog" args={['#607a6d',.018]}/>
+    <HomeAtmosphericSky reducedMotion={p.reducedMotion}/>
     <ambientLight intensity={.92} color="#e2e4d8"/>
     <hemisphereLight args={['#dfe8df','#526057',.94]}/>
     <directionalLight position={[-7,10,5]} intensity={1.9} color="#f3e5cb" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>

@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
+import { MemorySurfaceMaterial } from '@/spatial/assets/MemorySurfaceMaterial'
 import { memoryFoldGeometry } from '@/spatial/assets/memoryFoldGeometry'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
@@ -98,12 +99,8 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
     <mesh geometry={wall} position={[0, 3.65, -7.4]} receiveShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#6d8581" roughness={.86} />
     </mesh>
-    <mesh position={[0, 2.3, -6.68]}>
-      <planeGeometry args={[7.8, 4.1]} />
-      <meshPhysicalMaterial color="#284c56" metalness={.35} roughness={.32} clearcoat={.6} />
-    </mesh>
-    <pointLight position={[-4.8, 3.8, -3.2]} color="#d9ddc5" intensity={28} distance={17} decay={2} />
-    <pointLight position={[4.2, 2.8, -4]} color="#9bc9cc" intensity={22} distance={15} decay={2} />
+    <pointLight position={[-4.8, 3.8, -3.2]} color="#d9ddc5" intensity={18} distance={17} decay={2} />
+    <pointLight position={[4.2, 2.8, -4]} color="#9bc9cc" intensity={16} distance={15} decay={2} />
   </group>
 }
 
@@ -135,7 +132,7 @@ function PatternInstrument({ selected, onSelect, reducedMotion }: { selected: Mi
   })
   return <group position={[0, 1.28, -3.05]} scale={selected ? .82 : 1} name="mirror-reflection-instrument" userData={{ artRevision: 'mirror-layered-reflection-lamellae' }} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); if (selected) onSelect(null) }}>
     <group ref={core}>{branches.map((geometry, index) => <mesh key={index} geometry={geometry} position={[(index - 1) * .14, index * .06, index * -.18]} rotation={[.04, (index - 1) * .8, (index - 1) * .24]} castShadow>
-      <meshStandardMaterial color={selected?.accent ?? (index === 1 ? '#79c2c3' : '#315d64')} emissive={selected?.accent ?? '#4aa5aa'} vertexColors emissiveIntensity={selected ? .12 : .06} roughness={.54} metalness={.03} side={THREE.DoubleSide} />
+      <MemorySurfaceMaterial color={selected?.accent ?? (index === 1 ? '#79c2c3' : '#73948d')} reducedMotion={reducedMotion} />
     </mesh>)}</group>
     <pointLight color={selected?.accent ?? '#9df3f8'} intensity={selected ? .72 : .48} distance={5} decay={2} />
   </group>
@@ -153,18 +150,18 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(pattern) }
   return <group ref={group} position={pattern.position} data-testid="mirror-pattern-object" onClick={activate}>
     <mesh geometry={geometry} castShadow scale={selected ? [.62,.68,.56] : [.78,.82,.68]} rotation={[.12, pattern.position[0] * .11, pattern.position[0] * .04]}>
-      <meshStandardMaterial color={pattern.accent} emissive={pattern.accent} emissiveIntensity={selected ? 0.34 : 0.12} transparent opacity={pattern.evidenceState === 'insufficient' ? 0.25 : selected ? .58 : .72} vertexColors side={THREE.DoubleSide} metalness={0.04} roughness={0.58} />
+      <MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : 1} reducedMotion={reducedMotion} />
     </mesh>
     {selected ? <pointLight color={pattern.accent} intensity={1.1} distance={6} /> : null}
   </group>
 }
 
-function FragmentObject({ fragment, accent, active, onSelect }: { fragment: MirrorFragment; accent: string; active: boolean; onSelect: (fragment: MirrorFragment) => void }) {
+function FragmentObject({ fragment, accent, active, onSelect, reducedMotion }: { reducedMotion: boolean; fragment: MirrorFragment; accent: string; active: boolean; onSelect: (fragment: MirrorFragment) => void }) {
   const geometry = useMemo(() => memoryFoldGeometry(fragment.id.length), [fragment.id])
   useEffect(() => () => geometry.dispose(), [geometry])
   return <group position={fragment.position} data-testid="mirror-reflection-fragment" onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(fragment) }}>
     <mesh geometry={geometry} castShadow scale={active ? [.28,.48,.35] : [.24,.42,.3]} rotation={[.18, fragment.position[0] * .16, -.22]}>
-      <meshStandardMaterial color={accent} transparent opacity={fragment.certainty === 'uncertain' ? 0.25 : active ? 0.92 : 0.62} wireframe={false} emissive={accent} emissiveIntensity={active ? 0.46 : 0.10} vertexColors side={THREE.DoubleSide} roughness={.58} />
+      <MemorySurfaceMaterial color={accent} opacity={fragment.certainty === 'uncertain' ? .25 : 1} reducedMotion={reducedMotion} />
     </mesh>
   </group>
 }
@@ -182,7 +179,7 @@ function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSele
     <EmbodiedReflection reducedMotion={cameraProps.reducedMotion} demo={patterns.some((pattern) => pattern.provenance.includes('demonstration'))} />
     <PatternInstrument selected={selected} onSelect={onSelect} reducedMotion={cameraProps.reducedMotion} />
     {patterns.map((pattern) => <PatternObject key={pattern.id} pattern={pattern} selected={selected?.id === pattern.id} onSelect={onSelect} reducedMotion={cameraProps.reducedMotion} />)}
-    {selected?.fragments.map((fragment, index) => index <= temporalIndex ? <FragmentObject key={fragment.id} fragment={fragment} accent={selected.accent} active={activeFragment?.id === fragment.id} onSelect={onFragment} /> : null)}
+    {selected?.fragments.map((fragment, index) => index <= temporalIndex ? <FragmentObject key={fragment.id} reducedMotion={cameraProps.reducedMotion} fragment={fragment} accent={selected.accent} active={activeFragment?.id === fragment.id} onSelect={onFragment} /> : null)}
   </>
 }
 

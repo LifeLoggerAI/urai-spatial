@@ -72,6 +72,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: home-state-proof-${{ env.URAI_EXACT_HEAD }}
-          path: artifacts/home-state-proof
+          # Preserve captured frames even if a successor cancels the bounded runner.
+          # Partial attempts remain diagnostic evidence, never a passing receipt.
+          path: |
+            artifacts/home-state-proof
+            artifacts/home-state-proof-attempt-*
           if-no-files-found: error
           retention-days: 90
