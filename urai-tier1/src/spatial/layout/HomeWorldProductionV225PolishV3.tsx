@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import { createLivingMemoryMaterial } from '@/spatial/assets/livingMemoryMaterial'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import type { OrbState } from '@/app/home/orbStateController'
 import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry'
@@ -119,14 +120,14 @@ function useMemoryStoneMaps() {
 
 function inhabitedSurfaceGeometry() {
   const nx=156,nz=210,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
-  const moss=new THREE.Color('#52614d'),loam=new THREE.Color('#75614b'),lichen=new THREE.Color('#7c866c')
+  const moss=new THREE.Color('#85957b'),loam=new THREE.Color('#a3957c'),lichen=new THREE.Color('#9fac92')
   for(let iz=0;iz<=nz;iz++){
     const vz=iz/nz,z=6.4-vz*26.2
     for(let ix=0;ix<=nx;ix++){
-      const vx=ix/nx,x=-9.4+vx*18.8
+      const vx=ix/nx,x=-13.5+vx*27
       const relief=.052*Math.sin(x*1.72+z*.91)+.034*Math.cos(x*3.86-z*1.54)+.017*Math.sin(x*7.1+z*4.3)
       const y=height(x,z)+relief*(.32+.68*Math.min(1,Math.abs(x)/7.5))+.032
-      positions.push(x,y,z);uvs.push(vx*1.25,vz*1.85)
+      positions.push(x,y,z);uvs.push(vx*6.75,vz*6.55)
       const grain=.5+.5*Math.sin(x*.82-z*.57)*Math.cos(x*1.31+z*.94)
       const center=.30*Math.sin((z+2.4)*.22)+.09*Math.sin((z-1)*.63)
       const trail=1-THREE.MathUtils.smoothstep(Math.abs(x-center),.34,.78)
@@ -167,7 +168,7 @@ function ScannedRockFace({ variant, x, z, turn, scale }: { variant: '01' | '02';
     copy.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true } })
     return copy
   }, [asset.scene])
-  return <primitive object={model} position={[x, height(x, z) - .18, z]} rotation={[0,turn,0]} scale={scale}/>
+  return <primitive object={model} position={[x, height(x, z) - .45, z]} rotation={[0,turn,0]} scale={scale}/>
 }
 
 function TexturedMemoryTerrain() {
@@ -175,7 +176,7 @@ function TexturedMemoryTerrain() {
   const surface=useMemo(inhabitedSurfaceGeometry,[])
   const ridge=useMemo(distantRidgeGeometry,[])
   return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
-    <Suspense fallback={null}><ScannedRockFace variant="01" x={-5.8} z={-17.3} turn={.26} scale={1.35}/><ScannedRockFace variant="02" x={5.1} z={-19.3} turn={-.24} scale={1.3}/></Suspense>
+    <Suspense fallback={null}><ScannedRockFace variant="01" x={-7.2} z={-18.8} turn={.26} scale={.82}/><ScannedRockFace variant="02" x={7.1} z={-19.3} turn={-.24} scale={.95}/></Suspense>
     <mesh geometry={surface} receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
     <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
   </group>
@@ -222,35 +223,6 @@ function WeatheredMemoryBanks() {
   </group>
 }
 
-function basinGeometry() {
-  const nx = 52, nz = 40, positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const earth = new THREE.Color('#342f29'), warm = new THREE.Color('#66513f'), moss = new THREE.Color('#475444')
-  for (let iz = 0; iz <= nz; iz++) {
-    const vz = iz / nz, z = -1.55 + vz * 3.1
-    for (let ix = 0; ix <= nx; ix++) {
-      const vx = ix / nx, x = -2.05 + vx * 4.1
-      const r = Math.min(1, Math.sqrt((x / 2.05) ** 2 + (z / 1.55) ** 2))
-      const rim = .28 * Math.pow(r, 2.2)
-      const shelter = .34 * Math.exp(-((x / .95) ** 2 + ((z + 1.10) / .52) ** 2))
-      const y = -.16 + rim + shelter + .035 * Math.sin(x * 2.8 + z * 3.2)
-      positions.push(x, y, z)
-      const color = earth.clone().lerp(warm, .20 + .28 * (1 - r)).lerp(moss, .15 * r)
-      colors.push(color.r, color.g, color.b)
-    }
-  }
-  const row = nx + 1
-  for (let iz = 0; iz < nz; iz++) for (let ix = 0; ix < nx; ix++) {
-    const a = iz * row + ix, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, b, c, b, d, c)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
 function grownThresholdGeometry() {
   const outline = new THREE.Shape()
   outline.moveTo(-1.58, -.10)
@@ -265,9 +237,7 @@ function grownThresholdGeometry() {
 
 function GroundSanctuary({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
-  const basin = useMemo(basinGeometry, [])
   return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0, -.08, 0]} name="home-v226-ground-inhabited-hearth" onClick={(event) => { event.stopPropagation(); onGround() }}>
-    <mesh geometry={basin} receiveShadow castShadow><meshStandardMaterial vertexColors roughness={.98}/></mesh>
     {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><dodecahedronGeometry args={[1,2]}/><meshStandardMaterial color={index%2?'#4f574a':'#3c4d43'} roughness={.98}/></mesh>)}
     <mesh position={[0, .18, -1.38]} scale={[1.42, .72, .30]} castShadow receiveShadow><sphereGeometry args={[1, 48, 28, 0, Math.PI * 2, 0, Math.PI * .52]}/><meshStandardMaterial color="#303b34" roughness={.99} side={THREE.DoubleSide}/></mesh>
     <mesh position={[-.16, .035, -.32]} scale={[.44, .055, .34]} castShadow><capsuleGeometry args={[.65, .5, 12, 28]}/><meshStandardMaterial color="#a9684f" emissive="#633326" emissiveIntensity={.45} roughness={.78}/></mesh>
@@ -416,6 +386,8 @@ function RootCradle() {
 function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useMemo(organicOrbGeometry, [])
+  const living = useMemo(createLivingMemoryMaterial, [])
+  useEffect(() => () => living.material.dispose(), [living])
   const veins = useMemo(() => Array.from({ length: 8 }, (_, index) => vein(index)), [])
   const branches = useMemo(() => Array.from({ length: 9 }, (_, index) => presenceBranch(index)), [])
   const roots = useMemo(() => Array.from({ length: 5 }, (_, index) => {
@@ -435,13 +407,14 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
     root.current.scale.set(pose.s[0] * breath * 1.34, pose.s[1] * breath * 1.34, pose.s[2] * breath * 1.34)
     root.current.rotation.set(pose.r[0], pose.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .014), pose.r[2])
   })
+  useFrame(({ clock }) => { living.time.value = reducedMotion ? 0 : clock.elapsedTime })
   const warning = state === 'warning'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
   return <group ref={root} position={[ORB.x, y + 1.05, ORB.z]} rotation={[0,-.10,-.10]} scale={1.34} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
     <group name="home-v227-split-asymmetric-memory-bloom">
-      <mesh geometry={body} position={[-.18,.05,.01]} rotation={[.08,-.42,.18]} scale={[.38,.76,.38]} castShadow><meshPhysicalMaterial vertexColors side={THREE.DoubleSide} roughness={.28} clearcoat={.55} clearcoatRoughness={.3} sheen={.35} sheenColor="#b49a9c" emissive="#4b8991" emissiveIntensity={.24}/></mesh>
-      <mesh geometry={body} position={[.20,-.08,.05]} rotation={[-.12,.58,-.24]} scale={[.28,.58,.32]} castShadow><meshPhysicalMaterial vertexColors side={THREE.DoubleSide} roughness={.32} clearcoat={.5} clearcoatRoughness={.34} sheen={.3} sheenColor="#96b8a8" emissive="#518f79" emissiveIntensity={.22}/></mesh>
-      <mesh geometry={body} position={[.01,.12,-.08]} rotation={[.2,.12,.06]} scale={[.19,.82,.24]} castShadow><meshPhysicalMaterial vertexColors side={THREE.DoubleSide} roughness={.25} clearcoat={.6} clearcoatRoughness={.28} sheen={.4} sheenColor="#c3a69b" emissive="#73999d" emissiveIntensity={.3}/></mesh>
+      <mesh geometry={body} position={[-.18,.05,.01]} rotation={[.08,-.42,.18]} scale={[.38,.76,.38]} castShadow><primitive object={living.material} attach="material"/></mesh>
+      <mesh geometry={body} position={[.20,-.08,.05]} rotation={[-.12,.58,-.24]} scale={[.28,.58,.32]} castShadow><primitive object={living.material} attach="material"/></mesh>
+      <mesh geometry={body} position={[.01,.12,-.08]} rotation={[.2,.12,.06]} scale={[.19,.82,.24]} castShadow><primitive object={living.material} attach="material"/></mesh>
     </group>
     <group name="home-v227-branching-memory-nervature">{branches.map((geometry,index)=><mesh key={index} geometry={geometry}><meshStandardMaterial color={warning?'#d57467':index%2?'#9bc9b5':'#d19a83'} emissive={warning?'#7d342d':index%2?'#3c7561':'#7d4d3e'} emissiveIntensity={.74} roughness={.58}/></mesh>)}</group>
     <group scale={[.46,.82,.52]}>{veins.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={warning ? '#d57467' : index % 2 ? '#9bc9b5' : '#d19a83'} emissive={warning ? '#7d342d' : index % 2 ? '#3c7561' : '#7d4d3e'} emissiveIntensity={.72} roughness={.60}/></mesh>)}</group>

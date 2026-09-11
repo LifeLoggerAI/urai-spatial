@@ -226,7 +226,7 @@ const repairedPortal = `async function capturePortalSequence(browser) {
       try {
         await page.waitForSelector(destination === 'ground'
           ? '[data-ground-ready="true"] canvas'
-          : '[data-life-map-render-ready="true"] canvas, [data-testid="urai-life-map-signed-out-threshold"]', { state: 'visible', timeout: 45000 })
+          : '[data-life-map-render-ready="true"] canvas', { state: 'visible', timeout: 45000 })
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
         routeEvidence.renderKind = await page.evaluate(() => document.querySelector('[data-testid="urai-life-map-signed-out-threshold"]') ? 'signed-out-private-threshold' : 'runtime-3d')
         routeEvidence.destinationReady = true

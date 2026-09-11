@@ -111,7 +111,9 @@ test('Home keeps governed Orb states, reduced motion, and real traversal semanti
 test('Ground remains one embodied cinematic infrastructure world', () => {
   for (const marker of ['data-ground-exploration="walkable"','data-ground-pointer-lock="false"','ground-walkable-navigation-surface','ground-walkable-path-network','ground-central-nexus','ground-enterable-threshold-','stepEmbodiedMotion','useMovementInput','MobileMovementPad']) has(groundGraph, marker)
   for (const form of ['pavilion','sanctuary','council','transit','restorative','archive','reflection','vault','observatory','aperture','theater']) assert.ok(groundModel.includes(`"${form}"`) || groundModel.includes(`'${form}'`), `missing Ground chamber form: ${form}`)
-  assert.match(groundOwner, /scene\.background = null/)
+  assert.match(groundOwner, /scene\.background = new THREE\.Color/)
+  assert.match(groundOwner, /alpha: false/)
+  assert.doesNotMatch(groundOwner, /<picture/)
   assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
 })
 

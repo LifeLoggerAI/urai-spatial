@@ -275,7 +275,11 @@ export function PersistentWorldCompanion() {
           toggleCompanion()
         }}
       >
-        <span aria-hidden="true" />
+        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+          <path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" />
+          <path d="M23 40C35 34 42 19 35 12C25 15 22 27 23 40Z" fill="#aa929e" fillOpacity=".48" stroke="#e0bbc2" strokeWidth="1.2" />
+          <path d="M23 39C25 27 16 24 17 14M24 35C28 27 33 24 33 18" fill="none" stroke="#e9e4ca" strokeWidth="1.1" strokeLinecap="round" />
+        </svg>
       </button>
     </aside>
   )

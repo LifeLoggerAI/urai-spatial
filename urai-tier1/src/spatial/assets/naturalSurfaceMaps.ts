@@ -16,11 +16,12 @@ export function createMineralMaps(): [THREE.Texture, THREE.Texture, THREE.Textur
     for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
       let value = 0
       for (let octave = 0; octave < 6; octave++) { const cells = 4 * 2 ** octave; value += noise(x / size * cells, y / size * cells, cells) * .5 ** (octave + 1) }
-      heights[y * size + x] = value
+      const grit = hash(x, y) > .79 ? .07 + hash(y, x) * .08 : 0
+      heights[y * size + x] = value + grit
       const i = (y * size + x) * 4, grain = hash(x, y), lichen = noise(x / size * 8, y / size * 8, 8)
-      diffuse[i] = 98 + value * 92 + grain * 12
-      diffuse[i + 1] = 100 + value * 82 + lichen * 15
-      diffuse[i + 2] = 82 + value * 70
+      diffuse[i] = 98 + value * 92 + grain * 12 + grit * 160
+      diffuse[i + 1] = 100 + value * 82 + lichen * 15 + grit * 148
+      diffuse[i + 2] = 82 + value * 70 + grit * 134
       diffuse[i + 3] = 255
       arm[i] = 245; arm[i + 1] = 190 + value * 55; arm[i + 2] = 0; arm[i + 3] = 255
     }

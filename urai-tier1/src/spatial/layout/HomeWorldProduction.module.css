@@ -73,15 +73,15 @@
 .world :global(.urai-mobile-movement) {
   display: none;
   z-index: 14;
-  opacity: .34;
+  opacity: 1;
   transition: opacity .2s ease;
 }
 
 .world :global(.urai-mobile-movement button) {
   position: relative;
-  border-color: transparent !important;
+  border-color: rgba(222, 242, 231, .62) !important;
   border-radius: 50% !important;
-  background: rgba(10, 26, 20, .18) !important;
+  background: rgba(10, 26, 20, .90) !important;
   color: transparent !important;
   font-size: 0 !important;
   box-shadow: none !important;
@@ -95,8 +95,8 @@
   top: 50%;
   width: 8px;
   height: 8px;
-  border-top: 1.5px solid rgba(232, 248, 241, .72);
-  border-right: 1.5px solid rgba(232, 248, 241, .72);
+  border-top: 1.5px solid #e8f8f1;
+  border-right: 1.5px solid #e8f8f1;
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
@@ -106,7 +106,7 @@
 
 .world :global(.urai-mobile-movement:focus-within),
 .world :global(.urai-mobile-movement:hover) {
-  opacity: .86;
+  opacity: 1;
 }
 
 .world :global(.urai-mobile-movement button:focus-visible),
@@ -139,7 +139,7 @@
     font-size: .54rem;
   }
   .world :global(.urai-mobile-movement) {
-    opacity: .38;
+    opacity: 1;
   }
 }
 

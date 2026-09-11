@@ -107,7 +107,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(ground, 'padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right))')
   requireText(ground, 'scroll-padding-inline-start:max(14px,env(safe-area-inset-left))')
   requireText(ground, 'scroll-padding-inline-end:max(14px,env(safe-area-inset-right))')
-  requireText(ground, 'font-size:9px;transition:none')
+  requireText(ground, 'font-size:12px;transition:none')
   requireText(ground, '.ground-destination-compass :is(a,button) strong{transition:none}')
   assert.equal(ground.includes('padding-inline:12px 210px'), false, 'Ground must not reserve a hard-coded mobile right gutter')
   assert.doesNotMatch(routeOwnerCss, /ground-spatial-root canvas[\s\S]{0,220}transform:\s*scale\(/, 'Ground canvas must not exceed the mobile viewport through CSS scaling')

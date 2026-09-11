@@ -363,18 +363,14 @@ export default function GroundSpatialWorldClean() {
       data-ground-enterable-thresholds={DESTINATIONS.map((destination) => `ground-enterable-threshold-${destination.id}`).join(" ")}
       {...look}
     >
-      <picture className="ground-production-backdrop" aria-hidden="true">
-        <source media="(max-width: 760px)" srcSet="/assets/urai/v5/operations-world-mobile.webp" />
-        <img src="/assets/urai/v5/operations-world-main.webp" alt="" />
-      </picture>
       <Canvas
         shadows
         dpr={[1, 1.3]}
         camera={{ position: [0, 7.2, 22], fov: 56, near: 0.08, far: 180 }}
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
         onCreated={({ gl, scene }) => {
-          gl.setClearColor(0x000000, 0);
-          scene.background = null;
+          gl.setClearColor(0x101d20, 1);
+          scene.background = new THREE.Color("#101d20");
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 0.82;
@@ -434,16 +430,16 @@ export default function GroundSpatialWorldClean() {
         .ground-prompt{position:absolute;z-index:10;left:50%;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px));transform:translateX(-50%);padding:8px 13px;border:1px solid rgba(235,250,245,.12);border-radius:999px;background:rgba(5,19,24,.32);backdrop-filter:blur(12px);font:720 9px/1 system-ui;letter-spacing:.11em;text-transform:uppercase;color:rgba(239,249,247,.68);pointer-events:none;white-space:nowrap}
         .ground-directory{position:absolute;z-index:12;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;max-width:min(720px,calc(100vw - 140px));overflow-x:auto;padding:4px 6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}
         .ground-directory::-webkit-scrollbar{display:none}
-        .ground-directory button{display:flex;align-items:center;justify-content:center;gap:0;min-width:48px;min-height:48px;width:48px;max-width:180px;padding:0;border:1px solid transparent;border-radius:999px;background:transparent;color:#f3fbff;cursor:pointer;transition:background .2s ease,border-color .2s ease,width .24s ease,gap .24s ease,padding .24s ease}
+        .ground-directory button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:48px;min-height:48px;width:auto;max-width:200px;padding:0 12px;border:1px solid rgba(221,242,230,.2);border-radius:999px;background:rgba(4,18,24,.86);color:#f3fbff;cursor:pointer;transition:background .2s ease,border-color .2s ease,width .24s ease,gap .24s ease,padding .24s ease}
         .ground-directory button>span{width:7px;height:7px;border-radius:50%;box-shadow:0 0 18px currentColor;flex:0 0 auto}
-        .ground-directory strong{max-width:0;overflow:hidden;opacity:0;white-space:nowrap;font:700 9px/1 system-ui;letter-spacing:.04em;transition:max-width .2s ease,opacity .2s ease}
+        .ground-directory strong{max-width:180px;overflow:hidden;opacity:1;white-space:nowrap;font:600 12px/1.3 system-ui;letter-spacing:.04em;transition:max-width .2s ease,opacity .2s ease}
         .ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){width:auto;gap:8px;padding:0 12px;border-color:rgba(201,246,255,.24);background:rgba(4,18,24,.48);backdrop-filter:blur(12px)}
         .ground-directory button:is(:hover,:focus-visible,[aria-current="location"]) strong{max-width:122px;opacity:.82}
         .ground-destination-compass :is(a,button) strong{transition:max-width .2s ease,opacity .2s ease}
-        @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 48px}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
+        @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 auto}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
         :global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__horizon),:global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__threshold){opacity:0!important;box-shadow:none!important}
         :global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__depth){box-shadow:inset 0 0 90px rgba(0,0,0,.16),inset 0 -10vh 80px rgba(0,0,0,.12)!important}
-        @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
+        @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:12px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
       `}</style>
     </main>
   );

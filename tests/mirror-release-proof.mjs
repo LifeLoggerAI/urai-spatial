@@ -231,6 +231,9 @@ async function proveTransition(browser, destination, buttonName) {
     await page.getByRole('button', { name: buttonName, exact: true }).click()
     await page.waitForURL((url) => pathname(url.toString()) === `/${destination}`, { timeout: 30000, waitUntil: 'domcontentloaded' })
     await page.locator('main').first().waitFor({ state: 'visible', timeout: 30000 })
+    if (destination === 'replay') {
+      await page.locator('[data-replay-render-ready="true"] canvas').waitFor({ state: 'visible', timeout: 45000 })
+    }
     const shot = await screenshot(page, `desktop-${name}`)
     const unattributedConsoleErrors = assertCleanEvidence(consoleErrors, failedRequests, httpErrors)
     pushCase(name, 'desktop', 'passed', { screenshot: shot, finalUrl: page.url(), ...diagnostics(consoleErrors, failedRequests, httpErrors, unattributedConsoleErrors) })

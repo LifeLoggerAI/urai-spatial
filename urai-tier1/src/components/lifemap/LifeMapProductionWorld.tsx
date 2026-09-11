@@ -48,26 +48,26 @@ function memoryMembrane(seed: number, layer: number, core: boolean, form: Memory
       if (form === "fan") {
         const width = (core ? .05 : .04 + .30 * Math.pow(t, .72)) * (core ? 1 : .82 + seeded(seed, layer) * .35);
         x = lane * .17 * t + across * width + .10 * Math.sin(t * 4.2 + phase);
-        y = -.76 + 1.58 * t + .08 * across * t;
-        z = lane * .075 + .18 * Math.sin(t * 2.4 + phase * .22) + .05 * across;
+        y = -.76 + 1.58 * t + .08 * across * t - .13 * across * across * Math.pow(t, 4);
+        z = lane * .075 + .18 * Math.sin(t * 2.4 + phase * .22) + .12 * across * across * envelope;
       } else if (form === "wave") {
         const width = (core ? .08 : .15) * envelope;
         x = -.86 + 1.72 * t + .10 * Math.sin(t * 5.1 + phase);
         y = lane * .12 + .34 * Math.sin(t * Math.PI * 1.25 + phase * .18) + across * width;
-        z = lane * .10 + .23 * Math.sin(t * Math.PI * 2 + phase) + .06 * across;
+        z = lane * .10 + .23 * Math.sin(t * Math.PI * 2 + phase) + .06 * across * envelope + .10 * across * across * envelope;
       } else if (form === "branch") {
         const side = layer % 2 ? -1 : 1;
         const width = (core ? .05 : .14) * envelope;
         x = side * (.06 + .68 * t) + .12 * Math.sin(t * 4.4 + phase) + across * width;
         y = -.80 + 1.62 * t + .05 * Math.sin(t * 5.2 + phase);
-        z = lane * .11 + .16 * Math.sin(t * 3.2 + phase * .35) + .06 * across;
+        z = lane * .11 + .16 * Math.sin(t * 3.2 + phase * .35) + .06 * across * envelope + .10 * across * across * envelope;
       } else if (form === "shell") {
         const angle = phase * .12 - 1.15 + t * 3.7;
         const radius = .10 + .64 * t;
         const width = (core ? .04 : .13) * envelope;
         x = Math.cos(angle) * radius + Math.cos(angle + Math.PI / 2) * across * width;
         z = Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * across * width + lane * .045;
-        y = -.50 + 1.05 * t + lane * .055 + .04 * across;
+        y = -.50 + 1.05 * t + lane * .055 + .04 * across * envelope;
       } else {
         const width = envelope * (core ? .46 : .42 + seeded(seed, layer) * .25);
         const radius = .06 + t * (core ? .52 : .72 + seeded(seed, layer + 7) * .42) + .16 * across * across * envelope;
@@ -578,7 +578,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <MemoryWeather reducedMotion={profile.reducedMotion} />
     <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
     <group name="life-map-far-future-horizon">
-      <Stars radius={120} depth={84} count={starCount} factor={2.25} saturation={.32} fade speed={profile.reducedMotion ? 0 : .018} />
+      <Stars radius={60} depth={68} count={starCount} factor={3.5} saturation={.32} fade speed={profile.reducedMotion ? 0 : .018} />
       <Sparkles count={profile.tier === "low" ? 70 : 160} scale={[48,26,72]} position={[0,3,-18]} size={1.35} speed={profile.reducedMotion ? 0 : .08} opacity={.28} color="#d9f7ff" />
     </group>
     <CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} />

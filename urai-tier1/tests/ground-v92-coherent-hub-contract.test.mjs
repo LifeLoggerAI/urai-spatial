@@ -4,12 +4,10 @@ import test from 'node:test'
 
 const ground = readFileSync(new URL('../src/app/GroundSpatialWorldClean.tsx', import.meta.url), 'utf8')
 
-test('V92 replaces the rejected primitive Ground pixels with committed desktop and portrait hub art', () => {
-  assert.match(ground, /data-ground-visual-revision="v92-coherent-operations-hub"/)
-  assert.match(ground, /operations-world-main\.webp/)
-  assert.match(ground, /operations-world-mobile\.webp/)
-  assert.match(ground, /object-fit:cover/)
-  assert.match(ground, /object-position:center/)
+test('Ground renders an authored spatial vault instead of an image-backed hub', () => {
+  assert.match(ground, /data-ground-visual-revision="walkable-stone-vault-and-enterable-chambers-candidate"/)
+  assert.match(ground, /<GroundVaultArchitecture/)
+  assert.doesNotMatch(ground, /<picture|operations-world-main\.webp|operations-world-mobile\.webp/)
 })
 
 test('V92 keeps the governed GLB bound but non-rendering and preserves navigation semantics', () => {
@@ -20,10 +18,10 @@ test('V92 keeps the governed GLB bound but non-rendering and preserves navigatio
   assert.match(ground, /useGLTF\.preload\(GROUND_MODEL\)/)
 })
 
-test('V92 composites interaction in a transparent single Canvas without the rejected stage', () => {
-  assert.match(ground, /alpha: true/)
-  assert.match(ground, /gl\.setClearColor\(0x000000, 0\)/)
-  assert.match(ground, /scene\.background = null/)
+test('Ground has one opaque Canvas with physical background ownership', () => {
+  assert.match(ground, /alpha: false/)
+  assert.match(ground, /gl\.setClearColor\(0x101d20, 1\)/)
+  assert.match(ground, /scene\.background = new THREE\.Color/)
   assert.match(ground, /ground-v92-retired-solid-background/)
   assert.match(ground, /<mesh visible=\{false\}[^>]*ground-v41-continuous-architectural-underfloor/)
   assert.match(ground, /ground-authored-architectural-route-lighting" visible=\{false\}/)

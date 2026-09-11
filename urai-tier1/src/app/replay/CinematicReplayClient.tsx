@@ -56,6 +56,17 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
 function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const renderedMediaFrames = useRef(0)
+  useEffect(() => { renderedMediaFrames.current = 0 }, [texture])
+  useFrame(({ gl }) => {
+    const owner = gl.domElement.closest('[data-testid="cinematic-replay-client"]')
+    if (!texture || gl.info.render.calls === 0) {
+      owner?.setAttribute('data-replay-render-ready', 'false')
+      return
+    }
+    renderedMediaFrames.current++
+    if (renderedMediaFrames.current >= 2) owner?.setAttribute('data-replay-render-ready', 'true')
+  })
   const surfaceGeometry = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(13.8, 7.4, 72, 36)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute

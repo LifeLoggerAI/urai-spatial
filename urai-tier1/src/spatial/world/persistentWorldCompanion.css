@@ -12,56 +12,24 @@
 
 .urai-world-companion__orb {
   position: relative;
-  width: 154px;
-  height: 78px;
-  border: 1px solid rgba(207, 250, 254, .38);
-  border-radius: 18px 42px 14px 36px;
-  clip-path: polygon(2% 48%,14% 27%,31% 31%,44% 8%,58% 25%,78% 16%,98% 42%,83% 57%,91% 78%,68% 73%,52% 94%,37% 72%,16% 81%,22% 60%);
-  padding: 0;
-  background:
-    linear-gradient(168deg,transparent 0 16%,rgba(214,255,244,.56) 18% 21%,transparent 24% 37%,rgba(91,186,164,.34) 39% 43%,transparent 46% 61%,rgba(178,143,211,.28) 63% 67%,transparent 70%),
-    radial-gradient(ellipse at 24% 46%,rgba(238,255,250,.62) 0 3%,rgba(55,138,125,.58) 11%,rgba(12,62,60,.9) 42%,rgba(3,19,24,.98) 82%);
-  box-shadow:
-    0 0 22px rgba(103,232,249,.48),
-    0 0 70px rgba(103,232,249,.24),
-    inset 0 0 28px rgba(255,255,255,.3);
+  width: 64px;
+  height: 64px;
+  padding: 8px;
+  border: 1px solid rgba(207, 238, 225, .6);
+  border-radius: 24px 29px 23px 27px;
+  background: #0b2225;
+  color: #dceee4;
+  box-shadow: 0 5px 18px rgba(0,0,0,.28);
   cursor: pointer;
   pointer-events: auto;
-  transform: rotate(-4deg) skewX(-6deg) scaleY(.94);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-radius 360ms ease;
+  transition: transform 180ms ease, background 180ms ease;
 }
-
-.urai-world-companion__orb::before,
-.urai-world-companion__orb::after,
-.urai-world-companion__orb span {
-  content: '';
-  position: absolute;
-  inset: 7% 43% 51% 8%;
-  border: 0;
-  border-radius: 8px 28px 7px 22px;
-  clip-path: polygon(0 45%,22% 10%,55% 24%,100% 0,78% 57%,94% 100%,47% 72%,16% 94%);
-  background:linear-gradient(108deg,rgba(226,255,248,.74),rgba(65,176,170,.16));
-  transform:rotate(-17deg);
-}
-
-.urai-world-companion__orb::after {
-  inset: 57% 7% 6% 54%;
-  background:linear-gradient(145deg,rgba(74,192,181,.08),rgba(194,154,231,.46));
-  transform:rotate(22deg);
-}
-
-.urai-world-companion__orb span {
-  inset: 34% 39% 25% 17%;
-  background: rgba(198,255,244,.38);
-  filter: blur(6px);
-  transform:rotate(8deg);
-}
-
+.urai-world-companion__orb svg { display:block; width:100%; height:100%; }
 .urai-world-companion__orb:hover,
 .urai-world-companion__orb:focus-visible,
 .urai-world-companion[data-open='true'] .urai-world-companion__orb {
-  transform: rotate(3deg) skewX(4deg) scale(1.08, .88);
-  box-shadow: 0 0 28px rgba(103,232,249,.7), 0 0 96px rgba(103,232,249,.34), inset 0 0 32px rgba(255,255,255,.4);
+  background: #163a3b;
+  transform: translateY(-2px);
 }
 
 .urai-world-companion__orb:focus-visible {
