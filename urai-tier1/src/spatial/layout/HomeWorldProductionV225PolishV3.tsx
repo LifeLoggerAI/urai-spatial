@@ -64,7 +64,20 @@ function PortraitFraming() {
 }
 
 function tube(points: THREE.Vector3[], radius: number, radial = 9) {
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points, false, 'centripetal', .42), Math.max(56, points.length * 5), radius, radial, false)
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal', .42)
+  const segments = Math.max(56, points.length * 5)
+  const geometry = new THREE.TubeGeometry(curve, segments, radius, radial, false)
+  const vertices = geometry.getAttribute('position')
+  for (let ring = 0; ring <= segments; ring++) {
+    const t = ring / segments, center = curve.getPointAt(t)
+    const taper = .10 + .90 * Math.pow(1 - t, .62)
+    for (let side = 0; side <= radial; side++) {
+      const index = ring * (radial + 1) + side
+      vertices.setXYZ(index, center.x + (vertices.getX(index) - center.x) * taper, center.y + (vertices.getY(index) - center.y) * taper, center.z + (vertices.getZ(index) - center.z) * taper)
+    }
+  }
+  geometry.computeVertexNormals()
+  return geometry
 }
 
 function memoryLoop(radius: number, depth: number, phase: number, thickness: number) {
@@ -89,11 +102,11 @@ function RootedCanopy() {
   ], [])
   useEffect(() => () => materials.forEach((material) => material.dispose()), [materials])
   const plants = useMemo(() => Array.from({ length: 64 }, (_, index) => {
-    const side = index % 2 ? -1 : 1
-    const row = Math.floor(index / 2)
-    const z = 3.4 - row * .64 + Math.sin(index * 1.73) * .38
-    const edge = 3.55 + (index % 6) * .61 + .28 * Math.sin(index * .91)
-    const x = side * edge
+    const patches = [[-4.3,1.4],[5.9,-1.5],[-6.2,-5.4],[7.2,-8.9],[-5.8,-12.7],[5.6,-15.3],[-8.6,-18.0],[8.8,-18.8]]
+    const [cx, cz] = patches[Math.floor(index / 8)]
+    const angle = index * 2.39996323, radius = Math.sqrt((index % 8) + .35) * .49
+    const x = cx + Math.cos(angle) * radius
+    const z = cz + Math.sin(angle) * radius * .8
     const object = fern.scene.clone(true)
     object.name = `home-scanned-fern-${index + 1}`
     object.position.set(x, height(x,z) + .025, z)
@@ -142,7 +155,7 @@ function inhabitedSurfaceGeometry() {
 
 function distantRidgeGeometry() {
   const nx=132,nz=34,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
-  const shadow=new THREE.Color('#182921'),stone=new THREE.Color('#4c5e4c'),warm=new THREE.Color('#66533f')
+  const shadow=new THREE.Color('#58674f'),stone=new THREE.Color('#8a977d'),warm=new THREE.Color('#908568')
   for(let iz=0;iz<=nz;iz++){
     const v=iz/nz,z=-14.8-v*12.8
     for(let ix=0;ix<=nx;ix++){
@@ -235,13 +248,25 @@ function grownThresholdGeometry() {
   return new THREE.ExtrudeGeometry(outline, { depth: .58, bevelEnabled: true, bevelSegments: 4, bevelThickness: .08, bevelSize: .07, steps: 1, curveSegments: 48 })
 }
 
+function hearthStoneGeometry(seed: number) {
+  const geometry = new THREE.DodecahedronGeometry(1, 3)
+  const p = geometry.getAttribute('position')
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i)
+    const contour = 1 + .10 * Math.sin(x * 4.8 + seed) * Math.cos(z * 3.4 - seed) + .045 * Math.sin(y * 8.1 + x * 6.3)
+    p.setXYZ(i, x * contour, y * contour, z * contour)
+  }
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 function GroundSanctuary({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
+  const stones = useMemo(() => Array.from({length:4}, (_, index) => hearthStoneGeometry(index)), [])
+  const maps = useMemoryStoneMaps()
   return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0, -.08, 0]} name="home-v226-ground-inhabited-hearth" onClick={(event) => { event.stopPropagation(); onGround() }}>
-    {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><dodecahedronGeometry args={[1,2]}/><meshStandardMaterial color={index%2?'#4f574a':'#3c4d43'} roughness={.98}/></mesh>)}
-    <mesh position={[0, .18, -1.38]} scale={[1.42, .72, .30]} castShadow receiveShadow><sphereGeometry args={[1, 48, 28, 0, Math.PI * 2, 0, Math.PI * .52]}/><meshStandardMaterial color="#303b34" roughness={.99} side={THREE.DoubleSide}/></mesh>
-    <mesh position={[-.16, .035, -.32]} scale={[.44, .055, .34]} castShadow><capsuleGeometry args={[.65, .5, 12, 28]}/><meshStandardMaterial color="#a9684f" emissive="#633326" emissiveIntensity={.45} roughness={.78}/></mesh>
-    <mesh position={[-.16, .28, -.34]} scale={[.17, .32, .14]}><sphereGeometry args={[1, 28, 20]}/><meshPhysicalMaterial color="#e3a079" emissive="#b65338" emissiveIntensity={1.35} roughness={.42}/></mesh>
+    {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} geometry={stones[index]} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={index%2?'#a5a990':'#7a9384'} roughness={.98}/></mesh>)}
+    {stones.slice(0,3).map((geometry,index)=><mesh key={index} geometry={geometry} position={[-.16+(index-1)*.20,.08,-.34+(index%2)*.13]} scale={[.19,.08,.15]}><meshStandardMaterial color="#865b3d" map={maps[0]} normalMap={maps[1]} emissive="#b85b30" emissiveIntensity={.72} roughness={.76}/></mesh>)}
     <pointLight position={[-.16, .70, -.32]} color="#e59a6c" intensity={4.2} distance={6.2}/>
   </group>
 }
@@ -304,7 +329,7 @@ function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
   }, [])
   return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v226-life-map-lineage-observatory" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>
     <group name="home-v228-life-map-rooted-branching-threshold" userData={{ artRevision:'home-v230-life-map-asymmetric-root-threshold' }}>
-      {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#597565':'#675d70'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.28} roughness={.84}/></mesh>)}
+      {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#718878':'#867b79'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.06} roughness={.84}/></mesh>)}
     </group>
     <group position={[0, 1.22, -.42]} scale={[.82,.88,.82]} name="home-v226-life-map-contained-memory-field">
       <points geometry={stars} position={[0,0,.04]}><pointsMaterial color="#d5eee5" size={.026} transparent opacity={.88} depthWrite={false} sizeAttenuation/></points>

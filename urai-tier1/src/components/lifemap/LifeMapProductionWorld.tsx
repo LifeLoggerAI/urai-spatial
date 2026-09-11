@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, typ
 import * as THREE from "three";
 import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing";
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
+import { lifeMapLocalPoint as celestialNodePosition, lifeMapStage } from "./lifeMapSpatialLayout";
 import type { LifeMapNode } from "./lifeMapData";
 import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 import { LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapterForNode, resolveArtifactFamily, resolvePathKind } from "./lifeMapVisualSystem";
@@ -378,11 +379,6 @@ function ArtifactShape(props: ArtifactProps) {
   return <EverydayArtifact {...props} />;
 }
 
-function celestialNodePosition(node: LifeMapNode, index: number): Point3 {
-  const [x, y, z] = node.position;
-  return [x * .92, y * .72 + Math.sin(index * .91) * 1.25, z * 1.06 - 5.5];
-}
-
 function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
@@ -460,7 +456,7 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   })}</group>;
 }
 
-function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
+function ArrivalSanctuary({ selected, selectedIndex, phase, reducedMotion }: { selectedIndex: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
   const { scene, animations } = useGLTF(MEMORY_CHAMBER_MODEL);
   const group = useRef<THREE.Group>(null);
   const chamber = useMemo(() => scene.clone(true), [scene]);
@@ -497,11 +493,12 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
     return () => { arrival?.stop(); breathing?.stop(); };
   }, [actions, phase, reducedMotion, selected]);
   if (!selected || phase !== "arrival") return null;
+  const [memoryX, memoryY, memoryZ] = celestialNodePosition(selected, selectedIndex);
   return <group
     ref={group}
     name="life-map-selected-arrival-sanctuary"
     userData={{ scaleMode: "intimate", depthBand: "near", semanticOwner: "life-map-intimate-memory-chamber", runtimeAsset: MEMORY_CHAMBER_MODEL }}
-    position={[selected.position[0], selected.position[1] - 0.28, selected.position[2] - 2.6]}
+    position={[memoryX, memoryY - .28, memoryZ - .6]}
     scale={0.28}
   >
     <primitive object={chamber} visible={false} />
@@ -514,7 +511,7 @@ function ArrivalSanctuary({ selected, phase, reducedMotion }: { selected: LifeMa
   </group>;
 }
 
-function IntimateMemoryChamber(props: { selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
+function IntimateMemoryChamber(props: { selectedIndex: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean }) {
   return <ArrivalSanctuary {...props} />;
 }
 
@@ -533,8 +530,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 }) {
   const { size } = useThree();
   const portrait = size.height > size.width;
-  const stageScale: Point3 = selected ? (portrait ? [1.04, 1.02, 1.04] : [1.08, 1.08, 1.08]) : portrait ? [1.02, 1.02, 1.02] : [1.0, 1.0, 1.0];
-  const stagePosition: Point3 = selected ? (portrait ? [0, -0.08, 0.58] : [0, -0.14, 0.72]) : portrait ? [0, -0.18, 0.54] : [0, -0.14, 1.15];
+  const { scale: stageScale, position: stagePosition } = lifeMapStage(Boolean(selected), portrait);
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
 
   useEffect(() => {
@@ -573,7 +569,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
         {nodes.map((node, index) => <MemoryArtifact key={node.id} node={node} index={index} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} onSelect={onSelect} />)}
       </group>
       <LivingPaths nodes={nodes} selected={selected} reducedMotion={profile.reducedMotion} phase={phase} />
-      <IntimateMemoryChamber selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
+      <IntimateMemoryChamber selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />
     </group>
     <MemoryWeather reducedMotion={profile.reducedMotion} />
     <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />

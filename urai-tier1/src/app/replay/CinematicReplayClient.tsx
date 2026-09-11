@@ -147,8 +147,17 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
           ? <shaderMaterial
               uniforms={{ uMap: { value: texture }, uPlaying: { value: playing ? 1 : 0 } }}
               vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
-              fragmentShader={`uniform sampler2D uMap; uniform float uPlaying; varying vec2 vUv; void main(){vec2 edge=min(vUv,1.0-vUv);float erosion=0.018+0.008*sin(vUv.y*19.0)+0.006*sin(vUv.x*31.0+vUv.y*11.0);float mask=smoothstep(erosion,erosion+0.028,min(edge.x,edge.y));vec3 source=texture2D(uMap,vUv).rgb;float grain=0.5+0.5*sin(vUv.x*173.0-vUv.y*127.0);float fissure=pow(abs(sin(vUv.x*67.0+sin(vUv.y*17.0)*2.0-vUv.y*41.0)),28.0);float current=pow(max(0.0,sin(vUv.x*11.0-vUv.y*7.0+uPlaying*2.0)),14.0);vec3 mineral=vec3(0.12,0.34,0.30);vec3 ember=vec3(0.68,0.31,0.10);vec3 color=mix(source,mineral,0.08);color+=grain*0.018;color*=1.0-fissure*0.12;color=mix(color,ember,current*0.10);gl_FragColor=vec4(color*mask,1.0);}`}
-              depthWrite toneMapped={false} side={THREE.DoubleSide}
+              fragmentShader={`
+                uniform sampler2D uMap;
+                varying vec2 vUv;
+                void main() {
+                  vec2 edge = min(vUv, 1.0-vUv);
+                  float mask = smoothstep(0.0, 0.028, min(edge.x, edge.y));
+                  gl_FragColor = vec4(texture2D(uMap,vUv).rgb, mask);
+                  #include <colorspace_fragment>
+                }
+              `}
+              transparent depthWrite={false} toneMapped={false} side={THREE.DoubleSide}
             />
           : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}
       </mesh>

@@ -33,7 +33,7 @@ export function createLivingMemoryMaterial() {
       float edge = pow(1.-abs(dot(normalize(vNormal),normalize(vViewPosition))),1.5);
       diffuseColor.rgb *= mix(vec3(.55,.70,.69),vec3(1.1,.92,.80),smoothstep(.4,1.15,grain));
       diffuseColor.rgb += nerve*vec3(.10,.16,.13);
-      diffuseColor.a *= clamp(.24+.44*edge+.16*grain+.16*nerve,.25,.88);
+      diffuseColor.a *= clamp(.48+.30*edge+.10*grain+.12*nerve,.45,.94);
     `)
   }
   material.customProgramCacheKey = () => 'urai-living-memory-lamella-v1'

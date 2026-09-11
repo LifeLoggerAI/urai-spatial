@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import * as THREE from "three";
 import { useAdaptiveSpatialQuality } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
+import { lifeMapWorldPoint } from "./lifeMapSpatialLayout";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
@@ -28,14 +29,12 @@ function tuple(vector: THREE.Vector3): [number, number, number] {
   return [vector.x, vector.y, vector.z];
 }
 
-function selectedStagePoint(node: LifeMapNode, portrait: boolean) {
-  const scale = portrait ? new THREE.Vector3(0.92, 0.96, 0.92) : new THREE.Vector3(1.12, 1.12, 1.08);
-  const position = portrait ? new THREE.Vector3(0, -0.08, 0.9) : new THREE.Vector3(0, -0.16, 0.62);
-  return new THREE.Vector3(...node.position).multiply(scale).add(position);
+function selectedStagePoint(node: LifeMapNode, portrait: boolean, selectedIndex: number) {
+  return new THREE.Vector3(...lifeMapWorldPoint(node, selectedIndex, portrait));
 }
 
-function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean): CameraGoal {
-  const target = selectedStagePoint(node, portrait);
+function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, selectedIndex: number): CameraGoal {
+  const target = selectedStagePoint(node, portrait, selectedIndex);
   const overview = new THREE.Vector3(...OVERVIEW_POSITION);
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
@@ -57,7 +56,7 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean):
   return { position: tuple(arrival), target: tuple(target) };
 }
 
-function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
+function CameraRig({ selected, selectedIndex, phase, reducedMotion }: { selectedIndex: number; selected: LifeMapNode | null; phase: JourneyPhase; reducedMotion: boolean }) {
   const { camera, size } = useThree();
   const initialized = useRef(false);
   const positionGoal = useRef(new THREE.Vector3());
@@ -66,7 +65,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
 
   const resolve = useCallback(() => {
     const portrait = size.height > size.width;
-    const goal = selected ? goalForNode(selected, phase, portrait) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
+    const goal = selected ? goalForNode(selected, phase, portrait, selectedIndex) : { position: OVERVIEW_POSITION, target: OVERVIEW_TARGET };
     positionGoal.current.set(...goal.position);
     targetGoal.current.set(...goal.target);
     if (portrait) {
@@ -80,7 +79,7 @@ function CameraRig({ selected, phase, reducedMotion }: { selected: LifeMapNode |
       }
     }
     return portrait;
-  }, [phase, selected, size.height, size.width]);
+  }, [phase, selected, selectedIndex, size.height, size.width]);
 
   useLayoutEffect(() => {
     if (initialized.current) return;
@@ -399,7 +398,7 @@ export default function ComposedLifeMapScene() {
           phase={phase as LifeMapJourneyPhase}
           profile={profile}
           onSelect={selectNode}
-          cameraRig={<CameraRig selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
+          cameraRig={<CameraRig selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
         />
       </Suspense>

@@ -44,8 +44,12 @@ test('Focus formation runs horizontally and Replay preserves readable media', ()
   assert.doesNotMatch(replay, /sampleUv|p\.z\+=sin/)
 })
 
-test('the companion remains a connected branching silhouette, not a smooth capsule', () => {
-  assert.match(companion, /width: 154px/)
-  assert.match(companion, /height: 78px/)
-  assert.match(companion, /clip-path: polygon/)
+test('the companion has an authored memory glyph and an unclipped accessible control', () => {
+  assert.match(companion, /width: 64px/)
+  assert.match(companion, /height: 64px/)
+  assert.doesNotMatch(companion, /clip-path/)
+  assert.match(companion, /outline: 3px/)
+  const markup = read('src/spatial/world/PersistentWorldCompanion.tsx')
+  assert.match(markup, /<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">/)
+  assert.match(markup, /strokeLinecap="round"/)
 })

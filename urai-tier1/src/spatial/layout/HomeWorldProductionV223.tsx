@@ -57,7 +57,7 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
       if(d<r&&d<best){near=n;best=d}
     }
     if(camera instanceof THREE.PerspectiveCamera){
-      const f=size.height>size.width?(near==='orb'?58:56):(near==='orb'?48:42)
+      const f=size.height>size.width?(near==='orb'?58:76):(near==='orb'?48:42)
       if(Math.abs(camera.fov-f)>.01){camera.fov=f;camera.updateProjectionMatrix()}
     }
     const portrait=size.height>size.width

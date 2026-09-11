@@ -38,15 +38,15 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
   includesAll(scene, [
     'selectedId, setSelectedId',
     'setSelectedId(node.id)',
-    'function selectedStagePoint(node: LifeMapNode, portrait: boolean)',
-    'goalForNode(selected, phase, portrait)',
+    'function selectedStagePoint(node: LifeMapNode, portrait: boolean, selectedIndex: number)',
+    'goalForNode(selected, phase, portrait, selectedIndex)',
     'destinationHref("focus")',
     'destinationHref("replay")',
     'Enter Focus',
     'Replay',
     'Overview',
   ])
-  assert.match(scene, /const target = selectedStagePoint\(node, portrait\)/)
+  assert.match(scene, /const target = selectedStagePoint\(node, portrait, selectedIndex\)/)
   assert.match(scene, /const destinationHref = useCallback/)
   assert.match(scene, /next\.set\("memoryId", selected\.id\)/)
   assert.match(scene, /next\.set\("manifestId", manifestId\)/)
