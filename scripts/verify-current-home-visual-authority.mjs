@@ -48,10 +48,18 @@ if (/PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/.test(runtime)) fa
 
 const renderer = await readFile(path.join(layoutRoot, authority.rendererOwner), 'utf8')
 for (const token of [
-  "import { HomeVisualAuthority } from './HomeVisualAuthority'",
-  '<HomeVisualAuthority/>',
+  "import { HomeAtmosphericSky } from '@/spatial/assets/HomeAtmosphericSky'",
+  '<HomeAtmosphericSky reducedMotion={p.reducedMotion}/>',
 ]) {
-  if (!renderer.includes(token)) fail(`renderer does not mount visual authority token: ${token}`)
+  if (!renderer.includes(token)) fail(`renderer does not preserve atmospheric visual-authority chain token: ${token}`)
+}
+
+const atmosphere = await readFile(path.join(repoRoot, 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'), 'utf8')
+for (const token of [
+  "import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'",
+  '<HomeVisualAuthority />',
+]) {
+  if (!atmosphere.includes(token)) fail(`atmosphere does not mount final visual authority token: ${token}`)
 }
 
 const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
