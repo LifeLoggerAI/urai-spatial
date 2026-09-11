@@ -234,7 +234,6 @@ function TexturedMemoryTerrain() {
   const surface=useMemo(inhabitedSurfaceGeometry,[])
   const ridge=useMemo(distantRidgeGeometry,[])
   return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
-    <Suspense fallback={null}><ScannedRockFace variant="01" x={-6.9} z={-13.8} turn={.34} scale={.72}/><ScannedRockFace variant="02" x={7.6} z={-14.1} turn={-.48} scale={.82}/></Suspense>
     <mesh geometry={surface} receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
     <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
   </group>
@@ -463,41 +462,24 @@ function RootCradle() {
 function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useMemo(organicOrbGeometry, [])
-  const living = useMemo(createLivingMemoryMaterial, [])
   const coreMaterial = useMemo(() => createLivingMemoryMaterial(true), [])
   useEffect(() => () => coreMaterial.material.dispose(), [coreMaterial])
-  useEffect(() => () => living.material.dispose(), [living])
-  const veins = useMemo(() => Array.from({ length: 8 }, (_, index) => vein(index)), [])
-  const branches = useMemo(() => Array.from({ length: 9 }, (_, index) => presenceBranch(index)), [])
-  const roots = useMemo(() => Array.from({ length: 5 }, (_, index) => {
-    const side = index % 2 ? -1 : 1
-    const x = side * (.10 + index * .035)
-    return tube([
-      new THREE.Vector3(x, -.28 + index * .015, .02),
-      new THREE.Vector3(x * 1.7, -.62, .03 + (index % 3) * .06),
-      new THREE.Vector3(side * (.30 + index * .035), -.76 - (index % 2) * .04, .10 + (index % 3) * .08),
-    ], .018 + index * .002, 8)
-  }), [])
   const pose = posture[state]
   const y = height(ORB.x, ORB.z)
   useFrame(({ clock }) => {
     if (!root.current) return
     const t = clock.elapsedTime * pose.speed, breath = reducedMotion ? 1 : 1 + Math.sin(t * .78) * .006
-    root.current.scale.set(pose.s[0] * breath * 1.34, pose.s[1] * breath * 1.34, pose.s[2] * breath * 1.34)
+    root.current.scale.set(pose.s[0] * breath * 1.72, pose.s[1] * breath * 1.72, pose.s[2] * breath * 1.72)
     root.current.rotation.set(pose.r[0], pose.r[1] + (reducedMotion ? 0 : Math.sin(t * .70) * .014), pose.r[2])
   })
-  useFrame(({ clock }) => { living.time.value = coreMaterial.time.value = reducedMotion ? 0 : clock.elapsedTime })
+  useFrame(({ clock }) => { coreMaterial.time.value = reducedMotion ? 0 : clock.elapsedTime })
   const warning = state === 'warning'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
   return <group ref={root} position={[ORB.x, y + 1.05, ORB.z]} rotation={[0,-.10,-.10]} scale={1.34} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
     <group name="home-v227-split-asymmetric-memory-bloom">
-      <mesh geometry={body} position={[-.18,.05,.01]} rotation={[.08,-.42,.18]} scale={[.54,.76,.48]} castShadow><primitive object={coreMaterial.material} attach="material"/></mesh>
-      <mesh geometry={body} position={[.20,-.08,.05]} rotation={[-.12,.58,-.24]} scale={[.28,.58,.32]} castShadow><primitive object={living.material} attach="material"/></mesh>
-      <mesh geometry={body} position={[.01,.12,-.08]} rotation={[.2,.12,.06]} scale={[.19,.82,.24]} castShadow><primitive object={living.material} attach="material"/></mesh>
+      <mesh geometry={body} position={[-.03,.08,.01]} rotation={[.08,-.42,.18]} scale={[.76,1.02,.72]} castShadow receiveShadow><primitive object={coreMaterial.material} attach="material"/></mesh>
+      <mesh geometry={body} position={[.12,.16,-.22]} rotation={[-.12,.58,-.24]} scale={[.30,.42,.26]} castShadow><meshStandardMaterial color={warning?'#9d5149':'#d7e4d5'} emissive={warning?'#712d29':'#3e6a5d'} emissiveIntensity={.32} roughness={.62}/></mesh>
     </group>
-    <group name="home-v227-branching-memory-nervature" scale={[.62,.78,.70]}>{branches.map((geometry,index)=><mesh key={index} geometry={geometry}><meshStandardMaterial color={warning?'#d57467':index%2?'#9bc9b5':'#d19a83'} emissive={warning?'#7d342d':index%2?'#3c7561':'#7d4d3e'} emissiveIntensity={.30} roughness={.58}/></mesh>)}</group>
-    <group scale={[.46,.82,.52]}>{veins.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={warning ? '#d57467' : index % 2 ? '#9bc9b5' : '#d19a83'} emissive={warning ? '#7d342d' : index % 2 ? '#3c7561' : '#7d4d3e'} emissiveIntensity={.72} roughness={.60}/></mesh>)}</group>
-    <group name="home-v226-living-memory-root-tendrils">{roots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#668b78':'#8b6658'} emissive={index%2?'#294d40':'#59382f'} emissiveIntensity={.32} roughness={.78}/></mesh>)}</group>
     <mesh scale={[.72,1.14,.76]} onClick={activate}><sphereGeometry args={[1,20,16]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
     <pointLight position={[.08,.04,.34]} color={warning ? '#d36d60' : '#d3a18b'} intensity={state === 'dormant' ? .12 : .72} distance={3.8}/>
   </group>
