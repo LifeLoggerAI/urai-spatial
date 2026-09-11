@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import AssetDrivenHomeWorld from './AssetDrivenHomeWorld'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
@@ -53,7 +53,10 @@ export default function HomeSpatialRuntimeLayer() {
     }
   }, [homeRuntimeActive, rendererState])
 
-  useEffect(() => {
+  // Attach before the browser can paint a newly mounted canvas. The recovery
+  // contract deliberately dispatches a context-loss event immediately after a
+  // canvas becomes visible; a passive effect leaves a real race there.
+  useLayoutEffect(() => {
     if (!homeRuntimeActive || rendererState === 'failed') {
       setAssetsReady(false)
       return
