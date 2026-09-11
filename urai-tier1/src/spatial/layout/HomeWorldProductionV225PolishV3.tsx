@@ -321,37 +321,8 @@ function GroundSanctuary({ onGround }: { onGround: () => void }) {
   </group>
 }
 
-function observatoryShell() {
-  const nu = 64, nv = 28, positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#273633'), jade = new THREE.Color('#4a675e'), dusk = new THREE.Color('#665b72')
-  for (let iu = 0; iu <= nu; iu++) {
-    const u = iu / nu, theta = THREE.MathUtils.lerp(-1.18, 1.18, u)
-    for (let iv = 0; iv <= nv; iv++) {
-      const v = iv / nv, crown = Math.sin(v * Math.PI), radius = 1.55 + .10 * Math.sin(u * 7)
-      const x = Math.sin(theta) * radius * (.72 + .12 * v)
-      const z = -.52 - Math.cos(theta) * radius * .56 - .16 * v
-      const y = .02 + v * 1.72 + .42 * crown + .05 * Math.sin(u * 9 + v * 8)
-      positions.push(x, y, z)
-      const color = deep.clone().lerp(jade, .22 + .38 * v).lerp(dusk, .13 * crown)
-      colors.push(color.r, color.g, color.b)
-    }
-  }
-  const row = nv + 1
-  for (let iu = 0; iu < nu; iu++) for (let iv = 0; iv < nv; iv++) {
-    const a = iu * row + iv, b = a + 1, c = a + row, d = c + 1
-    indices.push(a, c, b, b, c, d)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
 function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const shell = useMemo(observatoryShell, [])
   const portalRoots = useMemo(() => Array.from({ length: 3 }, (_, index) => {
     const side = index % 2 ? -1 : 1
     const depth = -.24 - index * .13
@@ -380,11 +351,8 @@ function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [])
-  useEffect(() => () => { shell.dispose(); portalRoots.forEach(geometry => geometry.dispose()); threads.forEach(geometry => geometry.dispose()); stars.dispose() }, [shell,portalRoots,threads,stars])
+  useEffect(() => () => { portalRoots.forEach(geometry => geometry.dispose()); threads.forEach(geometry => geometry.dispose()); stars.dispose() }, [portalRoots,threads,stars])
   return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v226-life-map-lineage-observatory" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>
-    <mesh geometry={shell} position={[0,-.02,.22]} rotation={[0,.04,0]} castShadow receiveShadow name="home-v231-life-map-sheltered-observatory-mass">
-      <meshStandardMaterial vertexColors color="#526760" emissive="#172c2b" emissiveIntensity={.12} roughness={.94} side={THREE.DoubleSide}/>
-    </mesh>
     <group name="home-v228-life-map-rooted-branching-threshold" userData={{ artRevision:'home-v230-life-map-asymmetric-root-threshold' }}>
       {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial map={portalMaps[0]} normalMap={portalMaps[1]} normalScale={new THREE.Vector2(.7,.7)} color={index%2?'#718878':'#867b79'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.06} roughness={.84}/></mesh>)}
     </group>
