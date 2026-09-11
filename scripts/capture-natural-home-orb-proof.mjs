@@ -32,12 +32,25 @@ for (const marker of [
 ]) if (!polish.includes(marker)) throw new Error(`V225 V2 polish source missing ${marker}`)
 if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V226 direct runtime composition must not mount predecessor GLBs')
 
-const runtimeSource = `${geometry}\n${polish}`
+// Historical marker checks above are not the identity of the rendered scene.
+// Include the active camera, art, and material owners in every retained receipt.
+const runtimePaths = [
+  'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
+  'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx',
+  'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx',
+  'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx',
+  'urai-tier1/src/spatial/assets/livingMemoryMaterial.ts',
+  'urai-tier1/src/spatial/assets/naturalSurfaceMaps.ts',
+  'urai-tier1/src/spatial/assets/useSanctuarySoilTexture.ts',
+]
+const runtimeFiles = await Promise.all(runtimePaths.map(async (file) => {
+  const source = await readFile(path.resolve(file), 'utf8')
+  return { path: file, source, bytes: Buffer.byteLength(source), sha256: createHash('sha256').update(source).digest('hex') }
+}))
+const runtimeSource = runtimeFiles.map(file => `${file.path}\n${file.source}`).join('\n')
 const runtimeIdentity = {
-  paths: [
-    'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
-    'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx',
-  ],
+  paths: runtimePaths,
+  files: runtimeFiles.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })),
   bytes: Buffer.byteLength(runtimeSource),
   sha256: createHash('sha256').update(runtimeSource).digest('hex'),
   exactHead,
@@ -45,12 +58,14 @@ const runtimeIdentity = {
 }
 const cases = [
   { id: 'desktop', viewport: { width: 1440, height: 900 } },
+  { id: 'laptop', viewport: { width: 1280, height: 800 } },
   { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+  { id: 'mobile-narrow', viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-14', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
+  schemaVersion: 'urai-natural-home-orb-proof-15', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
   visualPolicy: 'V226 Home requires one continuous inhabited navigable memory sanctuary, readable Ground and Life Map destinations, one rooted living-memory presence, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
   cases: [], errors: [],
 }
