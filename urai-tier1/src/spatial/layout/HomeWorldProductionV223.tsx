@@ -98,8 +98,12 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
     <hemisphereLight args={['#dfe8df','#526057',.94]}/>
     <directionalLight position={[-7,10,5]} intensity={1.9} color="#f3e5cb" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
     <directionalLight position={[8,7,-10]} intensity={.88} color="#9bc5b0"/>
-    <Terrain walk={walk} onGround={p.onGround} onLifeMap={p.onLifeMap}/><Escarpment side={-1}/><Escarpment side={1}/><DestinationLights/><Orb state={p.orbState} reducedMotion={p.reducedMotion} onOpen={p.onOrb}/>
-    <HomeV225PolishV2 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>
+    {/* V223/V225-V2 remain only as non-rendered historical topology. The V3
+        sanctuary owns all visible terrain, destinations, and Orb pixels. */}
+    <group visible={false} name="home-retired-overlapping-v223-v225-visual-topology">
+      <Terrain walk={walk} onGround={p.onGround} onLifeMap={p.onLifeMap}/><Escarpment side={-1}/><Escarpment side={1}/><DestinationLights/><Orb state={p.orbState} reducedMotion={p.reducedMotion} onOpen={p.onOrb}/>
+      <HomeV225PolishV2 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>
+    </group>
     <HomeV225PolishV3 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>
     <Rig input={p.input} yaw={p.yaw} pitch={p.pitch} target={p.target} onNearby={p.onNearby} transition={p.transition} owner={p.owner}/>
   </>
