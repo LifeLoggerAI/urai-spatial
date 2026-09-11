@@ -424,11 +424,16 @@ function RootCradle() {
   const roots = useMemo(() => Array.from({ length: 7 }, (_, index) => {
     const angle = -1.42 + index * .46
     const radius = 1.02 + (index % 2) * .22
-    const start = new THREE.Vector3(Math.cos(angle) * radius, -.02, Math.sin(angle) * radius)
-    const middle = new THREE.Vector3(Math.cos(angle) * .46, .18 + (index % 3) * .05, Math.sin(angle) * .42)
-    const end = new THREE.Vector3(Math.cos(angle) * .14, .38, Math.sin(angle) * .12)
-    return tube([start, middle, end], .072 + (index % 2) * .014, 11)
+    // tube() narrows toward its last point: grow from the mass into the soil,
+    // not from a blunt exposed outer end back toward the mass.
+    const start = new THREE.Vector3(Math.cos(angle) * .14, .34, Math.sin(angle) * .12)
+    const mx = Math.cos(angle) * .46, mz = Math.sin(angle) * .42
+    const middle = new THREE.Vector3(mx, height(ORB.x + mx, ORB.z + mz) - y + .08, mz)
+    const ex = Math.cos(angle) * radius, ez = Math.sin(angle) * radius
+    const end = new THREE.Vector3(ex, height(ORB.x + ex, ORB.z + ez) - y - .09, ez)
+    return tube([start, middle, end], .09 + (index % 2) * .014, 11)
   }), [])
+  useEffect(() => () => roots.forEach(geometry => geometry.dispose()), [roots])
   return <group position={[ORB.x, y + .015, ORB.z]} name="home-v226-root-cradle">
     {roots.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow><meshStandardMaterial color={index % 2 ? '#375148' : '#584c42'} emissive={index % 2 ? '#142a24' : '#2d211d'} emissiveIntensity={.08} roughness={.96}/></mesh>)}
     <pointLight position={[.02,.32,.06]} color="#b88672" intensity={.42} distance={2.8}/>
