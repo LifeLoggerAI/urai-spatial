@@ -59,7 +59,11 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
       if(d<r&&d<best){near=n;best=d}
     }
     if(camera instanceof THREE.PerspectiveCamera){
-      const f=size.height>size.width?(near==='orb'?58:76):(near==='orb'?48:42)
+      // Preserve the doorway-to-doorway horizontal composition on tall screens.
+      // A fixed vertical FOV cropped the outer supports at narrow aspect ratios.
+      // Close approaches retain their separate intimate camera treatment.
+      const portraitFov=THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(54)/2)/(size.width/size.height))),76,110)
+      const f=size.height>size.width?(near==='orb'?58:near?76:portraitFov):(near==='orb'?48:42)
       if(Math.abs(camera.fov-f)>.01){camera.fov=f;camera.updateProjectionMatrix()}
     }
     const portrait=size.height>size.width
