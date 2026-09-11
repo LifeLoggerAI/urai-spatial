@@ -6,7 +6,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: #16251f;
+  background: #0d1d1f;
   cursor: grab;
   touch-action: none;
 }
@@ -17,11 +17,22 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: transparent;
 }
 
-.world::before { z-index: 3; }
-.world::after { z-index: 5; }
+.world::before {
+  z-index: 3;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(235, 216, 183, .035) 0%, rgba(7, 18, 20, 0) 38%, rgba(4, 12, 14, .12) 70%, rgba(2, 8, 10, .46) 100%),
+    linear-gradient(180deg, rgba(1, 7, 9, .12) 0%, rgba(3, 10, 11, 0) 24%, rgba(3, 10, 11, 0) 70%, rgba(1, 7, 8, .28) 100%);
+}
+
+.world::after {
+  z-index: 5;
+  background:
+    radial-gradient(circle at 50% 43%, rgba(204, 170, 124, .045) 0%, rgba(204, 170, 124, 0) 34%),
+    linear-gradient(90deg, rgba(2, 8, 9, .16) 0%, rgba(2, 8, 9, 0) 12%, rgba(2, 8, 9, 0) 88%, rgba(2, 8, 9, .16) 100%);
+}
+
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
 
 .canvas {
@@ -31,7 +42,7 @@
   width: 100% !important;
   height: 100% !important;
   background: transparent;
-  filter: none;
+  filter: saturate(1.035) contrast(1.025);
 }
 
 .brand,
@@ -39,7 +50,7 @@
   position: absolute;
   z-index: 10;
   pointer-events: none;
-  text-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+  text-shadow: 0 8px 28px rgba(0, 0, 0, .34);
 }
 
 .brand {
@@ -58,12 +69,13 @@
   left: 50%;
   bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  padding: .46rem .74rem;
-  border: 1px solid rgba(232, 240, 234, .1);
+  padding: .50rem .82rem;
+  border: 1px solid rgba(229, 239, 233, .14);
   border-radius: 999px;
-  background: rgba(9, 21, 17, .88);
+  background: linear-gradient(180deg, rgba(14, 31, 29, .78), rgba(7, 18, 18, .90));
   color: #eef5ee;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .025);
+  backdrop-filter: blur(14px) saturate(1.08);
   font-size: .875rem;
   font-weight: 650;
   letter-spacing: .07em;
@@ -84,8 +96,8 @@
   background: rgba(10, 26, 20, .90) !important;
   color: transparent !important;
   font-size: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .16) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .world :global(.urai-mobile-movement button::before) {
@@ -111,7 +123,7 @@
 
 .world :global(.urai-mobile-movement button:focus-visible),
 .world :global(.urai-mobile-movement button[data-active='true']) {
-  background: rgba(31, 78, 68, .7) !important;
+  background: rgba(31, 78, 68, .78) !important;
   color: transparent !important;
   outline: 2px solid rgba(245,255,251,.94) !important;
   outline-offset: 2px !important;
@@ -123,6 +135,11 @@
 
 @media (max-width: 700px), (pointer: coarse) {
   .world :global(.urai-mobile-movement) { display: grid; }
+  .world::before {
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(235, 216, 183, .028) 0%, rgba(7, 18, 20, 0) 42%, rgba(3, 10, 12, .10) 72%, rgba(2, 8, 10, .32) 100%),
+      linear-gradient(180deg, rgba(1, 7, 9, .10) 0%, transparent 26%, transparent 72%, rgba(1, 7, 8, .22) 100%);
+  }
 }
 
 @media (max-width: 700px) {
@@ -150,6 +167,9 @@
 }
 
 @media (forced-colors: active) {
+  .world::before,
+  .world::after { display: none; }
+  .canvas { filter: none; }
   .world :global(.urai-mobile-movement) { opacity: 1; }
   .world :global(.urai-mobile-movement button) {
     border: 1px solid ButtonText !important;
