@@ -102,8 +102,9 @@ async function createPage(browser, deviceName, options = {}) {
 
 async function screenshot(page, name) {
   const relative = path.join('screenshots', `${name}.png`)
+  await page.addStyleTag({ content: '*,*::before,*::after{animation-play-state:paused!important;transition:none!important;caret-color:transparent!important}' })
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 60000 })
+  await page.screenshot({ path: path.join(outDir, relative), fullPage: false, animations: 'allow', caret: 'hide', timeout: 60000 })
   return relative
 }
 
