@@ -398,10 +398,12 @@ function organicOrbGeometry() {
     const shoulder = 1 + .52 * upper * (bx < 0 ? 1.16 : .90) * (.36 + .64 * Math.abs(bx))
     const taper = 1 - .56 * Math.pow(lower, 1.08)
     const fold = 1 + .055 * Math.sin(angle * 3 + by * 7) + .024 * Math.sin(angle * 7 - by * 9)
-    const cleft = Math.exp(-Math.pow(bx / .16, 2) - Math.pow((by - .76) / .14, 2))
+    // Carry the cleft through the crown. A Gaussian centered below the pole
+    // only dents the face and leaves an unbroken egg-shaped silhouette.
+    const cleft = Math.exp(-Math.pow((bx + .035) / .25, 2)) * THREE.MathUtils.smoothstep(by, .48, .96)
     const x = bx * .88 * shoulder * taper * fold + .075 * (1 - by * by) + .045 * bz
     const z = bz * .48 * (1 + .08 * upper) * taper + .022 * Math.sin(angle * 3 + by * 6)
-    const y = by * .91 - .28 * cleft - .24 * Math.pow(lower, 1.20) + .11 * Math.abs(bx) * upper
+    const y = by * .91 - .38 * cleft - .24 * Math.pow(lower, 1.20) + .11 * Math.abs(bx) * upper
     position.setXYZ(index, x, y, z)
     const edge = Math.min(1, Math.abs(bx) * 1.2), side = Math.max(0, Math.cos(angle - .45)) * (1 - Math.abs(by)), band = .5 + .5 * Math.sin(angle * 3.2 + by * 6.2)
     const color = shadow.clone().lerp(plum, .26 + .22 * band).lerp(jade, .24 * side).lerp(warm, .25 * Math.max(0, -Math.cos(angle + .2)) * (1 - Math.abs(by))).lerp(pale, .12 * edge * upper)
@@ -463,6 +465,7 @@ function RootCradle() {
 function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useMemo(organicOrbGeometry, [])
+  useEffect(() => () => body.dispose(), [body])
   const coreMaterial = useMemo(() => {
     const created = createLivingMemoryMaterial(true)
     created.material.color.set('#456860')
