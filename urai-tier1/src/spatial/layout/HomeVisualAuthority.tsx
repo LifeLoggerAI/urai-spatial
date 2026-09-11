@@ -38,19 +38,28 @@ export function HomeVisualAuthority() {
   useEffect(() => {
     const changed = new Set<THREE.Object3D>()
     const previousRaycast = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
+
+    const disableRaycast = (object: THREE.Object3D) => {
+      if (!(object instanceof THREE.Mesh) || isTransparentInteractionSurface(object) || previousRaycast.has(object)) return
+      previousRaycast.set(object, object.raycast)
+      object.raycast = () => {}
+    }
+
     const setOff = (object: THREE.Object3D) => {
       if (!object.visible) return
       object.visible = false
-      if (object instanceof THREE.Mesh && !isTransparentInteractionSurface(object)) {
-        previousRaycast.set(object, object.raycast)
-        object.raycast = () => {}
-      }
+      disableRaycast(object)
       changed.add(object)
+    }
+
+    const setSubtreeOff = (object: THREE.Object3D) => {
+      setOff(object)
+      object.traverse((child) => disableRaycast(child))
     }
 
     const apply = () => scene.traverse((object) => {
       if (object.name === 'home-v226-root-cradle') {
-        setOff(object)
+        setSubtreeOff(object)
         return
       }
 
