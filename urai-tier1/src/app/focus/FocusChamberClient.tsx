@@ -142,7 +142,7 @@ function FocusCameraRig({ controls, recenterSignal, shellRef }: { controls: RefO
         if (keys.current.has('KeyD') || keys.current.has('ArrowRight')) movementVector.add(rightVector)
         if (keys.current.has('KeyA') || keys.current.has('ArrowLeft')) movementVector.sub(rightVector)
         if (movementVector.lengthSq()) {
-          movementVector.normalize().multiplyScalar(2.15 * Math.min(delta, 0.05))
+          movementVector.normalize().multiplyScalar(4.2 * Math.min(delta, 0.05))
           camera.position.add(movementVector)
           camera.position.x = THREE.MathUtils.clamp(camera.position.x, -CAMERA_LIMIT, CAMERA_LIMIT)
           camera.position.y = THREE.MathUtils.clamp(camera.position.y, -1.2, 5.5)
