@@ -42,11 +42,16 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
     const clone = asset.scene.clone(true)
     clone.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return
-      object.castShadow = true; object.receiveShadow = true
+      object.castShadow = true
+      object.receiveShadow = true
       const sources = Array.isArray(object.material) ? object.material : [object.material]
       const materials = sources.map((source) => {
         const material = source.clone()
-        if (material instanceof THREE.MeshStandardMaterial) { material.roughness = Math.max(.9, material.roughness); material.metalness = 0; material.color.multiplyScalar(.62) }
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.roughness = Math.max(.94, material.roughness)
+          material.metalness = 0
+          material.color.multiplyScalar(.72)
+        }
         return material
       })
       object.material = Array.isArray(object.material) ? materials : materials[0]
@@ -58,181 +63,229 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
     const materials = Array.isArray(object.material) ? object.material : [object.material]
     materials.forEach((material) => material.dispose())
   }), [model])
-  return <primitive object={model} position={position} rotation={rotation} scale={scale}/>
+  return <primitive object={model} position={position} rotation={rotation} scale={scale} />
 }
 
-function erodedArchGeometry(seed: number) {
-  const segments = 112, depthSteps = 7
-  const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#252b27'), stone = new THREE.Color('#62675a'), warm = new THREE.Color('#725845')
-  for (let depth = 0; depth <= depthSteps; depth++) {
-    const d = depth / depthSteps
-    for (let i = 0; i <= segments; i++) {
-      const t = i / segments
-      const angle = t * Math.PI
-      const innerX = Math.cos(angle) * 1.12
-      const innerY = Math.sin(angle) * 1.34 - .08
-      const radial = .48 + .16 * Math.sin(angle * 2.7 + seed) + .10 * Math.sin(angle * 6.3 - seed * .31)
-      const outward = radial * (1 - .25 * d)
-      const x = innerX + Math.cos(angle) * outward + .08 * Math.sin(angle * 9 + seed)
-      const y = innerY + Math.sin(angle) * outward + .05 * Math.sin(angle * 13 - seed)
-      const z = -.42 - d * 1.18 + .09 * Math.sin(angle * 4 + d * 7 + seed)
-      positions.push(x, y, z)
-      const color = deep.clone().lerp(stone, .32 + .42 * Math.sin(angle)).lerp(warm, .10 + .07 * Math.sin(angle * 5 + seed))
+function apertureGeometry(width: number, heightValue: number, seed: number) {
+  const segments = 96
+  const positions = [0, 0, 0]
+  const indices: number[] = []
+  for (let index = 0; index < segments; index++) {
+    const angle = index / segments * Math.PI * 2
+    const weather = 1 + .055 * Math.sin(angle * 5 + seed) + .028 * Math.sin(angle * 11 - seed * .4)
+    positions.push(Math.cos(angle) * width * weather, Math.sin(angle) * heightValue * weather, 0)
+  }
+  for (let index = 0; index < segments; index++) indices.push(0, index + 1, 1 + ((index + 1) % segments))
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function wornPathGeometry(length = 3.4, startWidth = .46, endWidth = .22) {
+  const segments = 36
+  const positions: number[] = []
+  const colors: number[] = []
+  const indices: number[] = []
+  const soil = new THREE.Color('#3a3229')
+  const worn = new THREE.Color('#74604d')
+  for (let index = 0; index <= segments; index++) {
+    const t = index / segments
+    const z = -.4 + t * length
+    const center = .08 * Math.sin(t * 7.1) + .035 * Math.sin(t * 17)
+    const width = THREE.MathUtils.lerp(startWidth, endWidth, t) * (1 + .08 * Math.sin(index * 1.51))
+    for (const side of [-1, 1] as const) {
+      positions.push(center + side * width, -.02 + .008 * Math.sin(index * 1.3), z)
+      const color = soil.clone().lerp(worn, .38 + .16 * Math.sin(t * 9 + side))
       colors.push(color.r, color.g, color.b)
     }
-  }
-  const stride = segments + 1
-  for (let d = 0; d < depthSteps; d++) for (let i = 0; i < segments; i++) {
-    const a = d * stride + i, b = a + 1, c = a + stride, e = c + 1
-    indices.push(a,c,b,b,c,e)
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions,3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors,3))
-  geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry
-}
-
-function cavernBankGeometry(seed: number, side: -1 | 1) {
-  const columns = 34, rows = 26
-  const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const dark = new THREE.Color('#252b27'), lichen = new THREE.Color('#555d4f'), earth = new THREE.Color('#59483b')
-  for (let c=0;c<=columns;c++) {
-    const u=c/columns
-    for (let r=0;r<=rows;r++) {
-      const v=r/rows
-      const x = side * (1.05 + u*3.7 + .16*Math.sin(u*9 + seed) + .09*Math.sin(v*11))
-      const y = -1.2 + v*(3.35-u*.48) + .12*Math.sin(v*9+u*6+seed)
-      const z = -.56 - u*.72 - .42*Math.sin(v*Math.PI) + .08*Math.cos(u*13-v*8+seed)
-      positions.push(x,y,z)
-      const color=dark.clone().lerp(lichen,.26+v*.42).lerp(earth,.08+.06*Math.sin(u*8+v*6))
-      colors.push(color.r,color.g,color.b)
+    if (index < segments) {
+      const a = index * 2, b = a + 1, c = a + 2, d = a + 3
+      indices.push(a, c, b, b, c, d)
     }
   }
-  const stride=rows+1
-  for(let c=0;c<columns;c++)for(let r=0;r<rows;r++){const a=c*stride+r,b=a+stride,d=a+1,e=b+1;indices.push(a,b,d,b,e,d)}
-  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
 }
 
-function apertureFill(width:number,heightValue:number) {
-  const segments=96, positions=[0,0,0], indices:number[]=[]
-  for(let i=0;i<segments;i++){const a=i/segments*Math.PI*2;const wobble=1+.035*Math.sin(a*5)+.018*Math.sin(a*11);positions.push(Math.cos(a)*width*wobble,Math.sin(a)*heightValue*wobble,0)}
-  for(let i=0;i<segments;i++)indices.push(0,i+1,1+((i+1)%segments))
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g
-}
-
-function wornPathGeometry(length=4.2,startWidth=.7,endWidth=.34) {
-  const segments=34, positions:number[]=[], colors:number[]=[], indices:number[]=[]
-  const soil=new THREE.Color('#3a3229'), worn=new THREE.Color('#655143')
-  for(let i=0;i<=segments;i++){
-    const t=i/segments,z=-.55+t*length,center=.11*Math.sin(t*6.2)+.05*Math.sin(t*15),width=THREE.MathUtils.lerp(startWidth,endWidth,t)*(1+.09*Math.sin(i*1.63)),y=-.02+.012*Math.sin(i*1.4)
-    for(const side of [-1,1] as const){positions.push(center+side*width,y,z);const c=soil.clone().lerp(worn,.35+.18*Math.sin(t*11+side));colors.push(c.r,c.g,c.b)}
-    if(i<segments){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d)}
-  }
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g
-}
-
-function GroundThresholdV234({ onGround }: { onGround:()=>void }) {
-  const y=height(GROUND.x,GROUND.z)
-  const arch=useMemo(()=>erodedArchGeometry(41),[]), dark=useMemo(()=>apertureFill(1.04,1.24),[]), inner=useMemo(()=>apertureFill(.82,1.03),[]), path=useMemo(()=>wornPathGeometry(),[])
-  useEffect(()=>()=>{arch.dispose();dark.dispose();inner.dispose();path.dispose()},[arch,dark,inner,path])
-  const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onGround()}
-  return <group position={[GROUND.x,y+1.12,GROUND.z]} rotation={[0,-.05,0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{artRevision:'v241-scanned-rock-cavern-no-sheet-banks',visualIntent:'continuous-rock-mouth-with-depth',semanticOwner:'home-current-ground-geological-descent',morphology:'weathered-world-emergent-descent'}}>
-    <mesh geometry={arch} position={[0,.02,-1.12]} castShadow receiveShadow><meshStandardMaterial vertexColors color="#66675d" roughness={.98} metalness={0} side={THREE.DoubleSide}/></mesh>
+function GroundThresholdV234({ onGround }: { onGround: () => void }) {
+  const y = height(GROUND.x, GROUND.z)
+  const outer = useMemo(() => apertureGeometry(.82, .96, 2.1), [])
+  const inner = useMemo(() => apertureGeometry(.66, .79, 5.2), [])
+  const path = useMemo(() => wornPathGeometry(3.1, .48, .22), [])
+  useEffect(() => () => { outer.dispose(); inner.dispose(); path.dispose() }, [inner, outer, path])
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
+  return <group position={[GROUND.x, y + .78, GROUND.z]} rotation={[0, -.06, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v242-terrain-seated-ground-cleft', visualIntent: 'small-eroded-cavern-mouth-inside-existing-geology', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="01" position={[-1.95,-.78,-1.20]} rotation={[.11,.54,-.12]} scale={[1.32,1.02,1.18]}/>
-      <ScannedRock variant="02" position={[2.02,-.80,-1.30]} rotation={[-.08,-.76,.09]} scale={[1.38,1.05,1.20]}/>
-      <ScannedRock variant="02" position={[-1.45,.84,-1.40]} rotation={[.28,.30,.42]} scale={[.82,.72,.78]}/>
-      <ScannedRock variant="01" position={[1.33,1.00,-1.48]} rotation={[-.24,-.22,-.34]} scale={[.76,.68,.74]}/>
-      <ScannedRock variant="01" position={[-2.65,-.54,-.72]} rotation={[.05,1.06,-.20]} scale={[.88,.72,.96]}/>
-      <ScannedRock variant="02" position={[2.72,-.58,-.82]} rotation={[-.06,-1.12,.16]} scale={[.92,.76,.98]}/>
+      <ScannedRock variant="01" position={[-.92, -.38, -.88]} rotation={[.18, .62, -.16]} scale={[.72, .58, .70]} />
+      <ScannedRock variant="02" position={[
+        .96, -.40, -.94,
+      ]} rotation={[-.12, -.78, .12]} scale={[.74, .60, .72]} />
+      <ScannedRock variant="02" position={[-.58, .49, -1.00]} rotation={[.30, .36, .32]} scale={[.46, .42, .48]} />
+      <ScannedRock variant="01" position={[
+        .52, .57, -1.04,
+      ]} rotation={[-.24, -.30, -.28]} scale={[.44, .40, .46]} />
     </Suspense>
-    <mesh geometry={dark} position={[0,-.04,-1.66]}><meshStandardMaterial color="#090b09" emissive="#32170f" emissiveIntensity={.11} roughness={1}/></mesh>
-    <mesh geometry={inner} position={[0,-.10,-1.92]}><meshStandardMaterial color="#010202" roughness={1}/></mesh>
-    <mesh geometry={path} position={[0,-1.13,-.12]} receiveShadow><meshStandardMaterial vertexColors color="#5a4b3e" roughness={1}/></mesh>
-    <pointLight position={[.08,-.18,-1.52]} color="#d78354" intensity={.86} distance={4.2} decay={2}/>
-    <spotLight position={[-.8,2.8,.4]} target-position={[0,.05,-1.25]} color="#cfb393" intensity={.40} distance={8} angle={.42} penumbra={.98} decay={2}/>
+    <mesh geometry={outer} position={[0, -.03, -1.16]}><meshStandardMaterial color="#171815" emissive="#4c2418" emissiveIntensity={.065} roughness={1} /></mesh>
+    <mesh geometry={inner} position={[0, -.08, -1.23]}><meshStandardMaterial color="#020302" roughness={1} /></mesh>
+    <mesh geometry={path} position={[0, -.79, -.05]} receiveShadow><meshStandardMaterial vertexColors color="#625243" roughness={1} /></mesh>
+    <pointLight position={[.04, -.18, -1.04]} color="#c97b54" intensity={.45} distance={2.7} decay={2} />
   </group>
 }
 
-function lineageBankGeometry(side:-1|1,seed:number){
-  const columns=34,rows=34,positions:number[]=[],colors:number[]=[],indices:number[]=[]
-  const deep=new THREE.Color('#28302c'),stone=new THREE.Color('#687268'),cool=new THREE.Color('#3f6460')
-  for(let c=0;c<=columns;c++){const u=c/columns;for(let r=0;r<=rows;r++){const v=r/rows;const y=-1.15+v*4.65;const inward=1.02+.52*Math.pow(Math.abs(v-.48)*2,1.4);const x=side*(inward+u*(2.3+.6*v)+.13*Math.sin(v*12+u*7+seed));const z=-.42-u*.9-.22*Math.sin(v*Math.PI)+.08*Math.cos(v*9-u*12+seed);positions.push(x,y,z);const color=deep.clone().lerp(stone,.28+v*.40).lerp(cool,.08+.12*(1-u));colors.push(color.r,color.g,color.b)}}
-  const stride=rows+1;for(let c=0;c<columns;c++)for(let r=0;r<rows;r++){const a=c*stride+r,b=a+stride,d=a+1,e=b+1;indices.push(a,b,d,b,e,d)}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g
-}
-
-function LifeMapThresholdV234({onLifeMap}:{onLifeMap:()=>void}){
-  const y=height(LIFE_MAP.x,LIFE_MAP.z), trail=useMemo(()=>wornPathGeometry(3.5,.62,.28),[])
-  const stars=useMemo(()=>{const count=180,positions=new Float32Array(count*3),colors=new Float32Array(count*3),warm=new THREE.Color('#cfb997'),cool=new THREE.Color('#8bc7bc');for(let i=0;i<count;i++){const a=i*2.39996323,r=.18+Math.sqrt((i+.5)/count)*1.08,depth=(i%17)*.13;positions.set([Math.cos(a)*r,1.1+Math.sin(a)*r*1.45,-1.1-depth],i*3);const c=warm.clone().lerp(cool,(i%9)/8);colors.set([c.r,c.g,c.b],i*3)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setAttribute('color',new THREE.BufferAttribute(colors,3));return g},[])
-  useEffect(()=>()=>{trail.dispose();stars.dispose()},[trail,stars])
-  const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onLifeMap()}
-  return <group position={[LIFE_MAP.x,y,LIFE_MAP.z]} rotation={[0,.045,0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{artRevision:'v241-scanned-rock-lineage-cleft-no-sheet-banks',visualIntent:'deep-asymmetric-rock-cleft',semanticOwner:'home-current-life-map-rooted-ascent',morphology:'rooted-ascent-not-tube-portal'}}>
+function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
+  const y = height(LIFE_MAP.x, LIFE_MAP.z)
+  const outer = useMemo(() => apertureGeometry(.70, 1.02, 7.8), [])
+  const inner = useMemo(() => apertureGeometry(.54, .84, 4.6), [])
+  const path = useMemo(() => wornPathGeometry(2.8, .40, .18), [])
+  const stars = useMemo(() => {
+    const count = 120
+    const positions = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 3)
+    const warm = new THREE.Color('#ccb894')
+    const cool = new THREE.Color('#79a99f')
+    for (let index = 0; index < count; index++) {
+      const angle = index * 2.39996323
+      const radius = .15 + Math.sqrt((index + .5) / count) * .70
+      const depth = (index % 15) * .10
+      positions.set([Math.cos(angle) * radius, .74 + Math.sin(angle) * radius * 1.35, -1.10 - depth], index * 3)
+      const color = warm.clone().lerp(cool, (index % 8) / 7)
+      colors.set([color.r, color.g, color.b], index * 3)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    return geometry
+  }, [])
+  useEffect(() => () => { outer.dispose(); inner.dispose(); path.dispose(); stars.dispose() }, [inner, outer, path, stars])
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
+  return <group position={[LIFE_MAP.x, y + .18, LIFE_MAP.z]} rotation={[0, .04, 0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{ artRevision: 'v242-terrain-seated-lineage-cleft', visualIntent: 'small-asymmetric-rock-rift-with-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'rooted-ascent-not-tube-portal' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="02" position={[-1.58,-.72,-.32]} rotation={[.08,.78,-.12]} scale={[1.02,.62,.92]}/>
-      <ScannedRock variant="01" position={[1.70,-.70,-.38]} rotation={[.04,-.86,.09]} scale={[.98,.60,.88]}/>
-      <ScannedRock variant="01" position={[-1.02,.66,-.80]} rotation={[.34,.52,.46]} scale={[.62,.72,.64]}/>
-      <ScannedRock variant="02" position={[.92,.94,-.94]} rotation={[-.28,-.40,-.38]} scale={[.58,.78,.62]}/>
-      <ScannedRock variant="02" position={[-2.16,-.36,-.08]} rotation={[.12,1.16,-.16]} scale={[.68,.54,.76]}/>
-      <ScannedRock variant="01" position={[2.24,-.42,-.16]} rotation={[-.10,-1.22,.14]} scale={[.72,.56,.78]}/>
+      <ScannedRock variant="02" position={[-.78, -.25, -.62]} rotation={[.10, .82, -.15]} scale={[.62, .45, .58]} />
+      <ScannedRock variant="01" position={[
+        .82, -.27, -.68,
+      ]} rotation={[.06, -.88, .10]} scale={[.60, .44, .56]} />
+      <ScannedRock variant="01" position={[-.46, .66, -.78]} rotation={[.32, .46, .36]} scale={[.38, .44, .40]} />
+      <ScannedRock variant="02" position={[
+        .40, .76, -.84,
+      ]} rotation={[-.28, -.38, -.30]} scale={[.36, .46, .38]} />
     </Suspense>
-    <mesh geometry={trail} position={[0,-.98,.7]} rotation={[.18,0,0]} receiveShadow><meshStandardMaterial vertexColors color="#6c6250" roughness={1}/></mesh>
-    <points geometry={stars}><pointsMaterial vertexColors size={.035} sizeAttenuation transparent opacity={.88} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    <pointLight position={[0,1.35,-1.35]} color="#7fb4a8" intensity={.58} distance={5.6} decay={2}/><spotLight position={[.5,4.1,1.2]} target-position={[0,1.2,-1.0]} color="#d3ddd2" intensity={.34} distance={9} angle={.36} penumbra={.98} decay={2}/>
+    <mesh geometry={outer} position={[0, .12, -.92]}><meshStandardMaterial color="#111715" emissive="#183b34" emissiveIntensity={.055} roughness={1} /></mesh>
+    <mesh geometry={inner} position={[0, .10, -1.00]}><meshStandardMaterial color="#020504" roughness={1} /></mesh>
+    <mesh geometry={path} position={[0, -.18, .12]} rotation={[.10, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#665d4e" roughness={1} /></mesh>
+    <points geometry={stars}><pointsMaterial vertexColors size={.024} sizeAttenuation transparent opacity={.62} depthWrite={false} blending={THREE.AdditiveBlending} /></points>
+    <pointLight position={[0, .72, -1.00]} color="#739f96" intensity={.28} distance={3.0} decay={2} />
   </group>
 }
 
-function livingMemoryGeometry(){
-  const g=new THREE.SphereGeometry(1,88,64),p=g.getAttribute('position') as THREE.BufferAttribute
-  for(let i=0;i<p.count;i++){
-    const sx=p.getX(i),sy=p.getY(i),sz=p.getZ(i),a=Math.atan2(sz,sx),ny=(sy+1)*.5
-    const crown=Math.max(0,sy), lower=Math.max(0,-sy)
-    const coarse=.15*Math.sin(a*3.1+sy*2.7)+.08*Math.cos(a*5.7-sy*4.8)
-    const scar=.06*Math.sin(sx*10.4+sz*7.3+sy*6.2)+.035*Math.cos(a*11.1)
-    const cleft=Math.exp(-((sx*.90+sz*.18-.04)**2)/.038)*Math.pow(crown,1.45)
-    const dent=Math.exp(-(((sx+.30)*.82)**2+(sz-.16)**2)/.12)*(.35+.65*crown)
-    const shoulder=Math.exp(-(((sx-.36)*.76)**2+(sz+.22)**2)/.18)*Math.max(0,.65+sy)
-    const radial=1+coarse*.55+scar-.22*cleft-.13*dent+.10*shoulder
-    let x=sx*radial*1.04+.16*sy-.07
-    let z=sz*radial*.80+.05*Math.sin(sy*5.1+a*2)
-    const twist=.24*sy+.06*Math.sin(sy*3.2),c=Math.cos(twist),s=Math.sin(twist),tx=x*c-z*s,tz=x*s+z*c
-    x=tx;z=tz
-    let y=sy*.78-.12-.17*cleft-.08*dent+.075*Math.sin(a*4.2+sy*5.4)*crown
-    y-=lower*(.05+.05*lower)
-    p.setXYZ(i,x,y,z)
+function livingMemoryGeometry() {
+  const geometry = new THREE.IcosahedronGeometry(1, 5)
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute
+  const colors: number[] = []
+  const deep = new THREE.Color('#1b2923')
+  const tissue = new THREE.Color('#53665a')
+  const scarColor = new THREE.Color('#91a393')
+  for (let index = 0; index < position.count; index++) {
+    const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
+    const angle = Math.atan2(nz, nx), crown = Math.max(0, ny), lower = Math.max(0, -ny)
+    const coarse = .13 * Math.sin(angle * 3.1 + ny * 3.0) + .07 * Math.cos(angle * 5.7 - ny * 4.6)
+    const scar = .050 * Math.sin(nx * 10.5 + nz * 7.2 + ny * 6.4)
+    const cleft = Math.exp(-((nx * .86 + nz * .30 - .025) ** 2) / .035) * Math.pow(crown, 1.45)
+    const cavity = Math.exp(-(((nx + .34) * .86) ** 2 + ((nz - .10) * 1.04) ** 2) / .12) * (.28 + .72 * crown)
+    const radial = 1 + coarse + scar - .28 * cleft - .15 * cavity
+    let x = nx * radial * .90 + ny * .16 - .06
+    let z = nz * radial * .64 + .04 * Math.sin(ny * 5.2 + angle * 2)
+    const twist = (ny + .18) * .24
+    const cos = Math.cos(twist), sin = Math.sin(twist), tx = x * cos - z * sin, tz = x * sin + z * cos
+    x = tx; z = tz
+    let y = ny * .78 - .18 - .22 * cleft - .08 * cavity
+    y -= lower * (.16 + .12 * lower)
+    position.setXYZ(index, x, y, z)
+    const h = THREE.MathUtils.clamp((y + .98) / 1.65, 0, 1)
+    const scarWeight = THREE.MathUtils.clamp(cleft + cavity * .45 + Math.abs(scar) * 4, 0, 1)
+    const color = deep.clone().lerp(tissue, .30 + .44 * h).lerp(scarColor, .025 + .14 * scarWeight)
+    colors.push(color.r, color.g, color.b)
   }
-  g.computeVertexNormals();return g
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
+  return geometry
 }
 
-function memoryVeinGeometry(index:number){
-  const side=index%2?-1:1,lane=Math.floor(index/2),points:THREE.Vector3[]=[]
-  for(let i=0;i<=48;i++){const t=i/48,y=-.52+t*(1.02-lane*.03),env=Math.pow(Math.sin(Math.PI*t),.7),x=side*(.07+lane*.105)*env+.024*Math.sin(t*7+index),z=.40*env+.025+lane*.008-.06*t;points.push(new THREE.Vector3(x,y,z))}
-  const curve=new THREE.CatmullRomCurve3(points,false,'centripetal',.4),samples=72,positions:number[]=[],indices:number[]=[],tangent=new THREE.Vector3(),sideVec=new THREE.Vector3(),up=new THREE.Vector3(0,1,0)
-  for(let i=0;i<=samples;i++){const t=i/samples,point=curve.getPoint(t);curve.getTangent(t,tangent).normalize();sideVec.crossVectors(tangent,up);if(sideVec.lengthSq()<.001)sideVec.set(1,0,0);sideVec.normalize();const width=THREE.MathUtils.lerp(.014,.005,t)*(1+.10*Math.sin(t*Math.PI*3));const l=point.clone().addScaledVector(sideVec,width),r=point.clone().addScaledVector(sideVec,-width);positions.push(l.x,l.y,l.z,r.x,r.y,r.z);if(i<samples){const a=i*2,b=a+1,c=a+2,d=a+3;indices.push(a,b,c,b,d,c)}}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g
+function memoryInteriorGeometry() {
+  const count = 72
+  const positions = new Float32Array(count * 3)
+  for (let index = 0; index < count; index++) {
+    const t = (index + .5) / count
+    const angle = index * 2.39996323
+    const radius = Math.pow(t, .62) * .43
+    const y = -.38 + (index % 17) / 16 * .70
+    positions.set([Math.cos(angle) * radius * (1 - .32 * Math.abs(y)), y, Math.sin(angle) * radius * .54], index * 3)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  return geometry
 }
 
-function memoryInteriorGeometry(){const count=120,positions=new Float32Array(count*3);for(let i=0;i<count;i++){const t=(i+.5)/count,a=i*2.39996323,r=Math.pow(t,.56)*.54,y=-.40+(i%19)/18*.84;positions.set([Math.cos(a)*r*(1-.30*Math.abs(y)),y,Math.sin(a)*r*.44],i*3)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));return g}
+const stateIntensity: Record<OrbState, number> = { dormant:.03, idle:.09, attention:.18, listening:.14, thinking:.16, speaking:.22, guiding:.15, reflecting:.12, calming:.08, privacy:.13, warning:.24, transition:.16 }
 
-const stateIntensity:Record<OrbState,number>={dormant:.05,idle:.14,attention:.28,listening:.22,thinking:.25,speaking:.32,guiding:.23,reflecting:.18,calming:.12,privacy:.20,warning:.35,transition:.24}
-
-function LivingMemoryHeartV234({state,reducedMotion,onOrb}:{state:OrbState;reducedMotion:boolean;onOrb:()=>void}){
-  const root=useRef<THREE.Group>(null),y=height(ORB.x,ORB.z),outer=useMemo(livingMemoryGeometry,[]),veins=useMemo(()=>Array.from({length:7},(_,i)=>memoryVeinGeometry(i)),[]),interior=useMemo(memoryInteriorGeometry,[])
-  useEffect(()=>()=>{outer.dispose();veins.forEach(g=>g.dispose());interior.dispose()},[outer,veins,interior])
-  useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.56)*.006;root.current.position.y=y+1.34+Math.sin(t*.43)*.008;root.current.rotation.y=-.26+Math.sin(t*.18)*.026;root.current.rotation.z=-.08+Math.sin(t*.29)*.009;root.current.scale.setScalar(1.0*breath)})
-  const e=(reducedMotion?.82:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#a95440':privacy?'#4a8791':'#4f8d77',skin=warning?'#574641':privacy?'#486066':'#43534a'
-  const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
-  return <group ref={root} position={[ORB.x,y+1.34,ORB.z]} rotation={[.05,-.26,-.08]} scale={1.0} name="home-v234-living-memory-heart" onClick={activate} userData={{artRevision:'v241-single-scarred-matte-memory-presence',visualIntent:'one-connected-asymmetric-history-bearing-presence',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'matte-stratified-memory-tissue'}}>
-    <mesh geometry={outer} castShadow receiveShadow><meshPhysicalMaterial color={skin} emissive={glow} emissiveIntensity={.025+e*.14} roughness={.80} metalness={0} clearcoat={.025} clearcoatRoughness={.88} transparent opacity={.92} transmission={.035} thickness={.30} depthWrite/></mesh>
-    <points geometry={interior}><pointsMaterial color={glow} size={.020} transparent opacity={.28+e*.22} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    {veins.map((g,i)=><mesh key={i} geometry={g} position={[0,-.04,.025]}><meshStandardMaterial color={i%3===0?'#a2b0a5':'#668979'} emissive={glow} emissiveIntensity={.08+e*.32} roughness={.84} transparent opacity={.30} depthWrite={false} side={THREE.DoubleSide}/></mesh>)}
-    <pointLight color={warning?'#c96c55':privacy?'#72a9b1':'#75ad96'} intensity={.18+e*.58} distance={3.8} decay={2}/>
+function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
+  const root = useRef<THREE.Group>(null)
+  const y = height(ORB.x, ORB.z)
+  const outer = useMemo(livingMemoryGeometry, [])
+  const interior = useMemo(memoryInteriorGeometry, [])
+  useEffect(() => () => { outer.dispose(); interior.dispose() }, [interior, outer])
+  useFrame(({ clock }) => {
+    if (!root.current || reducedMotion) return
+    const t = clock.elapsedTime
+    const breath = 1 + Math.sin(t * .48) * .006
+    root.current.position.y = y + .86 + Math.sin(t * .32) * .008
+    root.current.rotation.y = -.22 + Math.sin(t * .16) * .024
+    root.current.rotation.z = -.08 + Math.sin(t * .23) * .008
+    root.current.scale.setScalar(breath)
+  })
+  const e = (reducedMotion ? .72 : 1) * stateIntensity[state]
+  const warning = state === 'warning', privacy = state === 'privacy'
+  const glow = warning ? '#a25c49' : privacy ? '#4e7d83' : '#5d8a76'
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
+  return <group ref={root} position={[ORB.x, y + .86, ORB.z]} rotation={[.04, -.22, -.08]} name="home-v234-living-memory-heart" onClick={activate} userData={{ artRevision: 'v242-low-scarred-living-memory-presence', visualIntent: 'one-connected-history-bearing-presence', semanticOwner: 'home-current-orb-surface-memory', materialLanguage: 'matte-stratified-memory-tissue' }}>
+    <mesh geometry={outer} scale={[.62, .68, .60]} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors color="#687568" emissive={glow} emissiveIntensity={.018 + e * .12} roughness={.92} metalness={0} />
+    </mesh>
+    <points geometry={interior} scale={[.62,.68,.60]}><pointsMaterial color={glow} size={.018} transparent opacity={.20 + e * .20} depthWrite={false} blending={THREE.AdditiveBlending} /></points>
+    <pointLight color={glow} intensity={.10 + e * .32} distance={2.8} decay={2} />
   </group>
 }
 
-function SubtleAtmosphereV234({reducedMotion}:{reducedMotion:boolean}){const root=useRef<THREE.Points>(null),geometry=useMemo(()=>{const count=144,positions=new Float32Array(count*3),colors=new Float32Array(count*3),warm=new THREE.Color('#b99973'),cool=new THREE.Color('#7ca8a0');for(let i=0;i<count;i++){const t=i/count,a=i*2.39996323,r=2.6+Math.sqrt(t)*11,x=Math.cos(a)*r,z=2.8-t*22+Math.sin(i*.71)*.72,y=height(x,z)+.52+(i%13)*.15;positions.set([x,y,z],i*3);const c=warm.clone().lerp(cool,.35+.48*((i%9)/8));colors.set([c.r,c.g,c.b],i*3)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setAttribute('color',new THREE.BufferAttribute(colors,3));return g},[]);useEffect(()=>()=>geometry.dispose(),[geometry]);useFrame(({clock})=>{if(root.current&&!reducedMotion)root.current.position.y=Math.sin(clock.elapsedTime*.12)*.022});return <points ref={root} geometry={geometry} frustumCulled={false} name="home-v234-subtle-atmospheric-depth"><pointsMaterial size={.020} sizeAttenuation transparent opacity={.24} vertexColors depthWrite={false} blending={THREE.AdditiveBlending}/></points>}
+function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
+  const root = useRef<THREE.Points>(null)
+  const geometry = useMemo(() => {
+    const count = 120
+    const positions = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 3)
+    const warm = new THREE.Color('#b99973'), cool = new THREE.Color('#7ca8a0')
+    for (let index = 0; index < count; index++) {
+      const t = index / count, angle = index * 2.39996323, radius = 2.8 + Math.sqrt(t) * 10
+      const x = Math.cos(angle) * radius, z = 2.2 - t * 20 + Math.sin(index * .71) * .62, y = height(x, z) + .46 + (index % 11) * .13
+      positions.set([x, y, z], index * 3)
+      const color = warm.clone().lerp(cool, .35 + .48 * ((index % 9) / 8))
+      colors.set([color.r, color.g, color.b], index * 3)
+    }
+    const result = new THREE.BufferGeometry()
+    result.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    result.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    return result
+  }, [])
+  useEffect(() => () => geometry.dispose(), [geometry])
+  useFrame(({ clock }) => { if (root.current && !reducedMotion) root.current.position.y = Math.sin(clock.elapsedTime * .10) * .014 })
+  return <points ref={root} geometry={geometry} frustumCulled={false} name="home-v234-subtle-atmospheric-depth"><pointsMaterial size={.017} sizeAttenuation transparent opacity={.20} vertexColors depthWrite={false} blending={THREE.AdditiveBlending} /></points>
+}
 
-export function HomeCurrentArtRepair({orbState,reducedMotion,onOrb,onGround,onLifeMap}:{orbState:OrbState;reducedMotion:boolean;onOrb:()=>void;onGround:()=>void;onLifeMap:()=>void}){
-  return <group name="home-current-authority-art-repair" userData={{artRevision:'v241-no-sheet-thresholds-matte-memory-presence'}}><RetireSupersededShapes/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
+export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
+  return <group name="home-current-authority-art-repair" userData={{ artRevision: 'v242-terrain-seated-thresholds-low-scarred-orb' }}><RetireSupersededShapes /><GroundThresholdV234 onGround={onGround} /><LifeMapThresholdV234 onLifeMap={onLifeMap} /><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} /><SubtleAtmosphereV234 reducedMotion={reducedMotion} /></group>
 }
