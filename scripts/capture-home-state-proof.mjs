@@ -48,9 +48,19 @@ async function settleAnimationFrames(page, frameCount) {
 }
 
 async function readVisualEvidence(page) {
-  const canvas = page.locator('.urai-asset-home-world canvas').first()
-  await canvas.waitFor({ state: 'visible', timeout: 45_000 })
-  const bounds = await canvas.boundingBox()
+  const canvasSelector = '.urai-asset-home-world canvas'
+  await page.waitForFunction((selector) => {
+    const canvas = document.querySelector(selector)
+    if (!(canvas instanceof HTMLCanvasElement)) return false
+    const bounds = canvas.getBoundingClientRect()
+    return bounds.width > 0 && bounds.height > 0
+  }, canvasSelector, { timeout: 45_000 })
+  const bounds = await page.evaluate((selector) => {
+    const canvas = document.querySelector(selector)
+    if (!(canvas instanceof HTMLCanvasElement)) return null
+    const rect = canvas.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  }, canvasSelector)
   const viewport = page.viewportSize()
   if (!bounds || !viewport) return { available: false, reason: 'missing-canvas-bounds' }
   const clipX = Math.max(0, bounds.x)
@@ -393,5 +403,6 @@ try {
   if (!transition.passed) receipt.errors.push(transition)
 }
 
-await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\
+`)
 if (receipt.errors.length) process.exit(1)
