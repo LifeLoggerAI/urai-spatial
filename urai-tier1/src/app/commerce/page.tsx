@@ -6,6 +6,7 @@ export const metadata = {
 }
 
 const policyLinks = [
+  { href: '/pricing', label: 'Pricing status' },
   { href: '/support', label: 'Customer support' },
   { href: '/legal/privacy', label: 'Commerce privacy notice' },
   { href: '/legal/terms', label: 'Terms status' },
