@@ -6,7 +6,7 @@
   overflow: hidden;
   isolation: isolate;
   color: #f7f4ee;
-  background: #0d1d1f;
+  background: #09191b;
   cursor: grab;
   touch-action: none;
 }
@@ -22,15 +22,15 @@
 .world::before {
   z-index: 3;
   background:
-    radial-gradient(ellipse at 50% 46%, rgba(235, 216, 183, .035) 0%, rgba(7, 18, 20, 0) 38%, rgba(4, 12, 14, .12) 70%, rgba(2, 8, 10, .46) 100%),
-    linear-gradient(180deg, rgba(1, 7, 9, .12) 0%, rgba(3, 10, 11, 0) 24%, rgba(3, 10, 11, 0) 70%, rgba(1, 7, 8, .28) 100%);
+    radial-gradient(ellipse at 50% 44%, rgba(234, 202, 156, .075) 0%, rgba(63, 96, 86, .025) 22%, rgba(5, 15, 17, 0) 42%, rgba(2, 9, 11, .28) 72%, rgba(1, 6, 8, .68) 100%),
+    linear-gradient(180deg, rgba(1, 6, 8, .20) 0%, rgba(3, 10, 11, 0) 27%, rgba(3, 10, 11, 0) 66%, rgba(1, 6, 7, .38) 100%);
 }
 
 .world::after {
   z-index: 5;
   background:
-    radial-gradient(circle at 50% 43%, rgba(204, 170, 124, .045) 0%, rgba(204, 170, 124, 0) 34%),
-    linear-gradient(90deg, rgba(2, 8, 9, .16) 0%, rgba(2, 8, 9, 0) 12%, rgba(2, 8, 9, 0) 88%, rgba(2, 8, 9, .16) 100%);
+    radial-gradient(ellipse at 50% 42%, rgba(208, 166, 112, .09) 0%, rgba(208, 166, 112, 0) 28%),
+    linear-gradient(90deg, rgba(1, 7, 8, .38) 0%, rgba(2, 8, 9, .10) 16%, rgba(2, 8, 9, 0) 31%, rgba(2, 8, 9, 0) 69%, rgba(2, 8, 9, .10) 84%, rgba(1, 7, 8, .38) 100%);
 }
 
 .world[data-home-camera-mode='look'] { cursor: grabbing; }
@@ -42,7 +42,7 @@
   width: 100% !important;
   height: 100% !important;
   background: transparent;
-  filter: saturate(1.035) contrast(1.025);
+  filter: saturate(1.06) contrast(1.055) brightness(.96);
 }
 
 .brand,
@@ -56,7 +56,7 @@
 .brand {
   left: clamp(18px, 3vw, 44px);
   top: clamp(18px, 3vw, 40px);
-  opacity: .26;
+  opacity: .24;
 }
 
 .brand strong {
@@ -70,12 +70,12 @@
   bottom: max(22px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   padding: .50rem .82rem;
-  border: 1px solid rgba(229, 239, 233, .14);
+  border: 1px solid rgba(229, 239, 233, .16);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(14, 31, 29, .78), rgba(7, 18, 18, .90));
-  color: #eef5ee;
-  box-shadow: 0 14px 42px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .025);
-  backdrop-filter: blur(14px) saturate(1.08);
+  background: linear-gradient(180deg, rgba(13, 30, 28, .76), rgba(5, 15, 16, .92));
+  color: #f0f6ef;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .30), inset 0 1px 0 rgba(255, 255, 255, .035);
+  backdrop-filter: blur(16px) saturate(1.08);
   font-size: .875rem;
   font-weight: 650;
   letter-spacing: .07em;
@@ -93,11 +93,11 @@
   position: relative;
   border-color: rgba(222, 242, 231, .62) !important;
   border-radius: 50% !important;
-  background: rgba(10, 26, 20, .90) !important;
+  background: rgba(8, 23, 19, .92) !important;
   color: transparent !important;
   font-size: 0 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .16) !important;
-  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .22) !important;
+  backdrop-filter: blur(12px) !important;
 }
 
 .world :global(.urai-mobile-movement button::before) {
@@ -117,9 +117,7 @@
 .world :global(.urai-mobile-movement button:nth-child(4)::before) { transform: translate(-50%, -50%) rotate(45deg); }
 
 .world :global(.urai-mobile-movement:focus-within),
-.world :global(.urai-mobile-movement:hover) {
-  opacity: 1;
-}
+.world :global(.urai-mobile-movement:hover) { opacity: 1; }
 
 .world :global(.urai-mobile-movement button:focus-visible),
 .world :global(.urai-mobile-movement button[data-active='true']) {
@@ -137,8 +135,11 @@
   .world :global(.urai-mobile-movement) { display: grid; }
   .world::before {
     background:
-      radial-gradient(ellipse at 50% 42%, rgba(235, 216, 183, .028) 0%, rgba(7, 18, 20, 0) 42%, rgba(3, 10, 12, .10) 72%, rgba(2, 8, 10, .32) 100%),
-      linear-gradient(180deg, rgba(1, 7, 9, .10) 0%, transparent 26%, transparent 72%, rgba(1, 7, 8, .22) 100%);
+      radial-gradient(ellipse at 50% 40%, rgba(235, 205, 164, .055) 0%, rgba(7, 18, 20, 0) 40%, rgba(3, 10, 12, .16) 70%, rgba(1, 7, 9, .46) 100%),
+      linear-gradient(180deg, rgba(1, 7, 9, .14) 0%, transparent 28%, transparent 70%, rgba(1, 7, 8, .28) 100%);
+  }
+  .world::after {
+    background: linear-gradient(90deg, rgba(1,7,8,.20), transparent 18%, transparent 82%, rgba(1,7,8,.20));
   }
 }
 
@@ -156,9 +157,7 @@
     text-align: center;
     font-size: .875rem;
   }
-  .world :global(.urai-mobile-movement) {
-    opacity: 1;
-  }
+  .world :global(.urai-mobile-movement) { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
