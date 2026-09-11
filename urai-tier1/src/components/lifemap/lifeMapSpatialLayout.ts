@@ -70,5 +70,9 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
     const verticalFit = (Math.abs(point[1] - target[1]) + 2.2 * stage.scale[1]) / (verticalTan * .72)
     distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
-  return { position: [target[0], target[1], target[2] + distance], target }
+  // A level camera turned the terrain into edge-on black ribbons. The elevated
+  // overlook keeps the authored route, contact points, and depth bands legible
+  // without flattening the world into an infographic.
+  const overlook = portrait ? 5.2 : 7.1
+  return { position: [target[0], target[1] + overlook, target[2] + distance * 1.14], target: [target[0], target[1] - .65, target[2] - 1.2] }
 }

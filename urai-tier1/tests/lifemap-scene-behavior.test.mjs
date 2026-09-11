@@ -107,7 +107,7 @@ test('Relationships use curved semantic path classes, living pulses, and privacy
   assert.doesNotMatch(world.slice(world.indexOf('function LivingPaths'), world.indexOf('function ArrivalSanctuary')), /if \(!selected\) return null/)
   assert.match(world, /function LineageRibbon/)
   assert.match(world, /name="life-map-lineage-ribbon"/)
-  assert.match(world, /active \? \.28 : \.075/)
+  assert.match(world, /active \? \.18 : \.022/)
   assert.match(world, /resolvePathKind\(source, target\)/)
   assert.match(world, /kind === "protected"/)
   assert.match(world, /dashed={kind === "inferred" \|\| kind === "corrected"}/)

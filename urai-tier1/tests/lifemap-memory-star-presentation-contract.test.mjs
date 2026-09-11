@@ -12,18 +12,20 @@ assert.ok(source.includes('function memoryMembrane('), 'memories must have autho
 for (const form of ['petal', 'fan', 'wave', 'branch', 'shell']) {
   assert.ok(source.includes(`form=\"${form}\"`) || source.includes(`form === \"${form}\"`), `semantic memory form ${form} must remain authored`);
 }
-assert.ok(source.includes("v230-semantic-memory-forms"), 'the literal-pixel repair must identify the varied semantic form authority');
+assert.ok(source.includes("v237-grounded-semantic-outcrops"), 'the literal-pixel repair must identify the grounded varied semantic form authority');
 assert.ok(source.includes('Math.pow(Math.sin(Math.PI * t), .74)'), 'memory surfaces must taper at both ends');
 assert.ok(source.includes('geometry.computeVertexNormals()'), 'memory surfaces must carry valid lighting normals');
 assert.ok(!source.includes('const originT = (filament + 1) / 10'), 'rejected uniform bare branch presentation must not return');
 assert.ok(source.includes('life-map-v229-open-branching-memory-grove'), 'selected arrival must remain an open branching place instead of an enclosing wire cage');
 assert.ok(source.includes('Array.from({ length: 7 }'), 'the arrival place must preserve seven offset open currents');
 assert.ok(!source.includes('radius * Math.sin(t * Math.PI)'), 'arrival threads must not converge into a wire-cage pole');
-assert.ok(source.includes('name={`life-map-smooth-memory-star-${siteKey}`}'), 'memories must remain individually addressable in the spatial scene');
+assert.ok(source.includes('name={`life-map-weathered-memory-outcrop-${siteKey}`}'), 'memories must remain individually addressable in the spatial scene');
 assert.ok(!source.includes('new THREE.SphereGeometry(1, 72, 54)'), 'the rejected smooth egg geometry must not return');
-assert.ok(source.includes('// V236 literal-pixel authority: a continuous eroded memory valley whose'), 'The active Life Map source must declare the rooted V236 presentation boundary');
+assert.ok(source.includes('// V237 literal-pixel authority: a continuous illuminated memory valley whose'), 'The active Life Map source must declare the grounded V237 presentation boundary');
 assert.ok(source.includes('function LivingMemoryGeography()'), 'Life Map must render a continuous authored geography beneath memory manifestations');
 assert.ok(source.includes('function MemoryRoots('), 'memory manifestations must visibly grow from the environment');
+assert.ok(source.includes('Array.from({ length: 2 }'), 'memory outcrops must use restrained material strata rather than cloned flower whorls');
+assert.ok(source.includes('emissiveIntensity={.32}'), 'continuous terrain must remain materially readable instead of collapsing to black cut planes');
 assert.ok(!/function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/.test(source), 'Rejected grounded strata and shard-like memory presentations must not re-enter runtime');
 
 console.log('Life Map memory-star presentation contract passed');

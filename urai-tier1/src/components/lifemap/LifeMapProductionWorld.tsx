@@ -12,8 +12,9 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 import { LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapterForNode, resolveArtifactFamily, resolvePathKind } from "./lifeMapVisualSystem";
 
-// V236 literal-pixel authority: a continuous eroded memory valley whose
-// manifestations grow from authored geography instead of floating as a graph.
+// V237 literal-pixel authority: a continuous illuminated memory valley whose
+// low weathered manifestations emerge from the geology instead of floating as
+// flowers, nodes, or a diagram.
 export type LifeMapJourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type Point3 = [number, number, number];
 type ArtifactProps = { node: LifeMapNode; active: boolean };
@@ -37,56 +38,51 @@ function seeded(index: number, salt: number) {
   return value - Math.floor(value);
 }
 
-// Open lamellar forms have actual surface depth and tapered edges, rather than
-// uniform-width tubes. The deterministic seed gives each memory its own contour.
+// These lamellae are low geological folds. Their shared buried baseline and
+// compact relief keep every family materially attached to the valley; the
+// deterministic seed gives each memory its own eroded contour.
 function memoryMembrane(seed: number, layer: number, core: boolean, form: MemoryForm = "petal") {
   const positions: number[] = [], colors: number[] = [], indices: number[] = [];
-  const rows = 56, cols = 18;
+  const rows = 42, cols = 14;
   const phase = seeded(seed, layer + 3) * Math.PI * 2;
-  const azimuth = layer * 2.39996323 + phase * .17;
-  const pale = new THREE.Color("#d8eee5"), deep = new THREE.Color("#244d62");
+  const pale = new THREE.Color("#9fb8ac"), deep = new THREE.Color("#182d32"), scar = new THREE.Color("#786878");
   for (let row = 0; row <= rows; row++) {
     const t = row / rows;
+    // Contract compatibility retains the authored double taper while the
+    // resulting shape is now a crouched outcrop, not an upright petal.
     const envelope = Math.pow(Math.sin(Math.PI * t), .74);
-    const lean = .19 * Math.sin(t * 4.5 + phase);
     for (let col = 0; col <= cols; col++) {
       const across = col / cols * 2 - 1;
-      const lane = layer - 2.5;
+      const lane = layer - 1;
+      const width = (core ? .44 : .13) * envelope * (1 - .16 * Math.abs(across));
+      const relief = (core ? .76 : .34) * envelope * (1 - .5 * Math.abs(across));
       let x: number, y: number, z: number;
       if (form === "fan") {
-        const width = (core ? .05 : .04 + .30 * Math.pow(t, .72)) * (core ? 1 : .82 + seeded(seed, layer) * .35);
-        x = lane * .17 * t + across * width + .10 * Math.sin(t * 4.2 + phase);
-        y = -.76 + 1.58 * t + .08 * across * t - .13 * across * across * Math.pow(t, 4);
-        z = lane * .075 + .18 * Math.sin(t * 2.4 + phase * .22) + .12 * across * across * envelope;
+        x = (t - .5) * 1.58 + .11 * Math.sin(t * 7.2 + phase) + across * width;
+        z = lane * .12 + .25 * Math.sin(t * 2.5 + phase * .18) + .18 * across * envelope;
+        y = -.58 + relief + .12 * Math.sin(t * 5.1 + phase) - .16 * across * across * envelope;
       } else if (form === "wave") {
-        const width = (core ? .08 : .15) * envelope;
-        x = -.86 + 1.72 * t + .10 * Math.sin(t * 5.1 + phase);
-        y = lane * .12 + .34 * Math.sin(t * Math.PI * 1.25 + phase * .18) + across * width;
-        z = lane * .10 + .23 * Math.sin(t * Math.PI * 2 + phase) + .06 * across * envelope + .10 * across * across * envelope;
+        x = -.84 + 1.68 * t + .12 * Math.sin(t * 5.1 + phase) + across * width * .56;
+        z = lane * .16 + .34 * Math.sin(t * Math.PI * 1.45 + phase * .18) + across * width;
+        y = -.60 + relief * .72 + .18 * Math.sin(t * Math.PI * 2.1 + phase) * envelope - .12 * across * across;
       } else if (form === "branch") {
         const side = layer % 2 ? -1 : 1;
-        const width = (core ? .05 : .14) * envelope;
-        x = side * (.06 + .68 * t) + .12 * Math.sin(t * 4.4 + phase) + across * width;
-        y = -.80 + 1.62 * t + .05 * Math.sin(t * 5.2 + phase);
-        z = lane * .11 + .16 * Math.sin(t * 3.2 + phase * .35) + .06 * across * envelope + .10 * across * across * envelope;
+        x = side * (-.58 + 1.16 * t) + .18 * Math.sin(t * 4.4 + phase) + across * width;
+        z = lane * .18 + side * .30 * Math.sin(t * 2.7 + phase * .22) + across * width * .72;
+        y = -.60 + relief * (.72 + .22 * t) + .08 * Math.sin(t * 8.2 + phase) - .10 * Math.abs(across);
       } else if (form === "shell") {
-        const angle = phase * .12 - 1.15 + t * 3.7;
-        const radius = .10 + .64 * t;
-        const width = (core ? .04 : .13) * envelope;
+        const angle = phase * .08 - 1.1 + t * 4.7;
+        const radius = .12 + .62 * t;
         x = Math.cos(angle) * radius + Math.cos(angle + Math.PI / 2) * across * width;
-        z = Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * across * width + lane * .045;
-        y = -.50 + 1.05 * t + lane * .055 + .04 * across * envelope;
+        z = Math.sin(angle) * radius + Math.sin(angle + Math.PI / 2) * across * width + lane * .12;
+        y = -.59 + relief * (.56 + .35 * t) + lane * .025 - .10 * across * across;
       } else {
-        const width = envelope * (core ? .46 : .42 + seeded(seed, layer) * .25);
-        const radius = .06 + t * (core ? .52 : .72 + seeded(seed, layer + 7) * .42) + .16 * across * across * envelope;
-        const twist = azimuth + t * (core ? .75 : .38) + across * .38 * envelope;
-        const fluting = .018 * Math.cos(across * 22 + t * 6) * envelope;
-        x = Math.cos(twist) * radius + Math.sin(twist) * across * width + lean;
-        z = Math.sin(twist) * radius - Math.cos(twist) * across * width + fluting;
-        y = (t - .5) * (core ? 1.5 : 1.55 + .32 * Math.sin(phase)) - .18 * t * t + .18 * across * envelope;
+        x = -.76 + 1.52 * t + .13 * Math.sin(t * 6.1 + phase) + across * width;
+        z = lane * .14 + .28 * Math.sin(t * 3.4 + phase * .21) + across * width * .82;
+        y = -.60 + relief * (.82 + .12 * Math.sin(t * 4.8 + phase)) - .15 * across * across * envelope;
       }
       positions.push(x, y, z);
-      const c = deep.clone().lerp(pale, .22 + .62 * Math.pow(Math.abs(across), 2) + .10 * envelope);
+      const c = deep.clone().lerp(pale, .18 + .42 * envelope + .14 * Math.pow(Math.abs(across), 2)).lerp(scar, core ? 0 : .20);
       colors.push(c.r, c.g, c.b);
     }
   }
@@ -216,38 +212,9 @@ function memoryPathGeometry() {
   return geometry;
 }
 
-function ridgeWallGeometry(side: -1 | 1, distance: number, seed: number) {
-  const samples = 72, positions: number[] = [], colors: number[] = [], indices: number[] = [];
-  const lower = new THREE.Color("#192728"), upper = new THREE.Color(side < 0 ? "#4c5650" : "#4a3e4f");
-  for (let sample = 0; sample <= samples; sample += 1) {
-    const t = sample / samples, z = 5 - t * 45;
-    const x = side * (distance + 1.1 * Math.sin(t * 8.3 + seed) + .38 * Math.sin(t * 23.1 - seed));
-    const floor = memoryValleyHeight(x, z) - .25;
-    const crest = floor + 3.2 + 2.8 * Math.pow(.5 + .5 * Math.sin(t * 7.1 + seed), 1.35) + 1.1 * Math.sin(t * 17.7 + seed * .4);
-    for (let layer = 0; layer <= 4; layer += 1) {
-      const u = layer / 4, inset = Math.sin(u * Math.PI) * (.42 + .16 * Math.sin(t * 12 + seed));
-      positions.push(x - side * inset, THREE.MathUtils.lerp(floor, crest, u), z + .12 * Math.sin(u * 5 + t * 9));
-      const color = lower.clone().lerp(upper, u * (.72 + .18 * Math.sin(t * 11 + seed)));
-      colors.push(color.r, color.g, color.b);
-    }
-  }
-  const stride = 5;
-  for (let sample = 0; sample < samples; sample += 1) for (let layer = 0; layer < 4; layer += 1) {
-    const a = sample * stride + layer, b = a + 1, c = a + stride, d = c + 1;
-    indices.push(a, c, b, b, c, d);
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
 function LivingMemoryGeography() {
   const maps = useTexture(MEMORY_STONE_MAPS as unknown as string[]) as THREE.Texture[];
   const terrain = useMemo(memoryValleyGeometry, []), path = useMemo(memoryPathGeometry, []);
-  const ridges = useMemo(() => [ridgeWallGeometry(-1, 9.2, .7), ridgeWallGeometry(1, 8.4, 2.1), ridgeWallGeometry(-1, 13.1, 4.3), ridgeWallGeometry(1, 12.6, 5.7)], []);
   const preparedMaps = useMemo(() => maps.map((source, index) => {
     const texture = source.clone();
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -257,17 +224,15 @@ function LivingMemoryGeography() {
     texture.needsUpdate = true;
     return texture;
   }), [maps]);
-  useEffect(() => () => { terrain.dispose(); path.dispose(); ridges.forEach((ridge) => ridge.dispose()); preparedMaps.forEach((map) => map.dispose()); }, [path, preparedMaps, ridges, terrain]);
-  return <group name="life-map-v236-continuous-eroded-memory-geography" userData={{ visualIntent: "rooted-life-history-valley", topology: "one-continuous-traversable-world" }}>
-    <mesh geometry={terrain} receiveShadow castShadow name="life-map-v236-weathered-valley-floor">
-      <meshStandardMaterial map={preparedMaps[0]} normalMap={preparedMaps[1]} roughnessMap={preparedMaps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors color="#718078" roughness={.94} metalness={0} />
+  useEffect(() => () => { terrain.dispose(); path.dispose(); preparedMaps.forEach((map) => map.dispose()); }, [path, preparedMaps, terrain]);
+  return <group name="life-map-v237-continuous-illuminated-memory-geography" userData={{ visualIntent: "rooted-life-history-valley", topology: "one-continuous-traversable-world" }}>
+    <mesh geometry={terrain} receiveShadow castShadow name="life-map-v237-weathered-valley-floor">
+      <meshStandardMaterial map={preparedMaps[0]} normalMap={preparedMaps[1]} roughnessMap={preparedMaps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors color="#a7aa98" emissive="#162722" emissiveIntensity={.32} roughness={.94} metalness={0} side={THREE.DoubleSide} />
     </mesh>
-    <mesh geometry={path} receiveShadow name="life-map-v236-worn-lineage-path"><meshStandardMaterial vertexColors color="#9b8b75" roughness={.98} /></mesh>
-    {ridges.map((ridge, index) => <mesh key={index} geometry={ridge} receiveShadow castShadow name={`life-map-v236-stratified-history-ridge-${index}`}>
-      <meshStandardMaterial map={preparedMaps[0]} normalMap={preparedMaps[1]} normalScale={new THREE.Vector2(.62,.62)} vertexColors color={index % 2 ? "#5f5964" : "#5a6861"} roughness={.96} side={THREE.DoubleSide} />
-    </mesh>)}
-    <pointLight position={[-4,1,-10]} color="#82c6b4" intensity={1.25} distance={15} decay={2} />
-    <pointLight position={[4,2,-23]} color="#b79ac2" intensity={.95} distance={18} decay={2} />
+    <mesh geometry={path} receiveShadow name="life-map-v237-worn-lineage-path"><meshStandardMaterial vertexColors color="#b6a48b" emissive="#332b22" emissiveIntensity={.14} roughness={.98} side={THREE.DoubleSide} /></mesh>
+    <pointLight position={[-4,2,-10]} color="#82c6b4" intensity={2.15} distance={18} decay={2} />
+    <pointLight position={[4,2,-23]} color="#b79ac2" intensity={1.65} distance={21} decay={2} />
+    <pointLight position={[0,1,-34]} color="#d1b985" intensity={1.2} distance={20} decay={2} />
   </group>;
 }
 
@@ -282,7 +247,7 @@ function MemoryRoots({ node, index, active }: { node: LifeMapNode; index: number
     return new THREE.TubeGeometry(new THREE.CatmullRomCurve3([start, middle, end], false, "centripetal", .38), 32, .055 - branch * .006, 7, false);
   }), [index, position]);
   useEffect(() => () => geometries.forEach((geometry) => geometry.dispose()), [geometries]);
-  return <group name={`life-map-v236-root-system-${node.id}`}>{geometries.map((geometry, branch) => <mesh key={branch} geometry={geometry} castShadow receiveShadow>
+  return <group name={`life-map-v237-root-system-${node.id}`}>{geometries.map((geometry, branch) => <mesh key={branch} geometry={geometry} castShadow receiveShadow>
     <meshStandardMaterial color={branch % 2 ? "#526a65" : "#64596b"} emissive={node.aura} emissiveIntensity={active ? .22 : .055} roughness={.89} metalness={.01} />
   </mesh>)}</group>;
 }
@@ -423,7 +388,7 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   const seed = useMemo(() => siteKey.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0), [siteKey]);
   const resolvedForm = form ?? (["petal", "fan", "wave", "branch", "shell"] as MemoryForm[])[seed % 5];
   const heart = useMemo(() => memoryHeartGeometry(seed, resolvedForm), [resolvedForm, seed]);
-  const filaments = useMemo(() => Array.from({ length: 5 }, (_, index) => memoryFilamentGeometry(seed, index, resolvedForm)), [resolvedForm, seed]);
+  const filaments = useMemo(() => Array.from({ length: 2 }, (_, index) => memoryFilamentGeometry(seed, index, resolvedForm)), [resolvedForm, seed]);
   useEffect(() => () => { heart.dispose(); filaments.forEach((geometry) => geometry.dispose()); }, [filaments, heart]);
   useEffect(() => {
     const chosen = Object.values(actions).find(Boolean);
@@ -440,14 +405,14 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
     const breath = 1 + Math.sin(clock.elapsedTime * .42 + siteKey.length) * .025;
     group.current.scale.setScalar(scale * breath);
   });
-  return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`} userData={{ artRevision:'v230-semantic-memory-forms', form:resolvedForm }}>
+  return <group ref={group} scale={scale} rotation={rotation} name={`life-map-weathered-memory-outcrop-${siteKey}`} userData={{ artRevision:'v237-grounded-semantic-outcrops', form:resolvedForm }}>
     <primitive object={hiddenAsset} visible={false} />
     <mesh geometry={heart} castShadow><MemorySurfaceMaterial color={aura} reducedMotion={reducedMotion} /></mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
       <MemorySurfaceMaterial color={index % 3 === 0 ? ICE : aura} reducedMotion={reducedMotion} />
     </mesh>)}
-    <FieldParticles seed={seed} count={active ? 46 : 22} radius={1.0} depth={1.2} height={1.25} color={aura} opacity={active ? .62 : .32} size={active ? .038 : .028} />
-    <pointLight color={aura} intensity={active ? 4.6 : 1.1} distance={active ? 10 : 5} decay={2} />
+    <FieldParticles seed={seed} count={active ? 38 : 12} radius={1.05} depth={1.2} height={.72} color={aura} opacity={active ? .48 : .20} size={active ? .034 : .024} />
+    <pointLight position={[0,.25,0]} color={aura} intensity={active ? 3.6 : .72} distance={active ? 9 : 4} decay={2} />
   </group>;
 }
 
@@ -466,14 +431,14 @@ function ChapterAnchor({ aura, index, form, scale = 1 }: { aura: string; index: 
 
 function ChapterTerritories() {
   const chapters = [
-    { p: [-5.8,2.1,-7.2] as Point3, aura: "#8adfff", form: "fan" as MemoryForm, satellite: [-1.45,-.65,-.9] as Point3 },
-    { p: [-1.5,-2.15,-12.3] as Point3, aura: "#df8ccc", form: "branch" as MemoryForm, satellite: [1.3,.95,-1.1] as Point3 },
-    { p: [5.45,.75,-16.2] as Point3, aura: "#d9efff", form: "petal" as MemoryForm, satellite: [-1.35,1.05,-1.5] as Point3 },
-    { p: [1.35,4.5,-22.6] as Point3, aura: "#efd098", form: "shell" as MemoryForm, satellite: [1.55,-.9,-1.7] as Point3 },
-    { p: [-4.15,-1.35,-28] as Point3, aura: "#987eb5", form: "wave" as MemoryForm, satellite: [1.2,1.25,-1.25] as Point3 },
+    { x: -5.8, z: -7.2, aura: "#8adfff", form: "fan" as MemoryForm, satellite: [-1.2,.06,-.8] as Point3 },
+    { x: -1.5, z: -12.3, aura: "#df8ccc", form: "branch" as MemoryForm, satellite: [1.1,.08,-1] as Point3 },
+    { x: 5.45, z: -16.2, aura: "#d9efff", form: "petal" as MemoryForm, satellite: [-1.15,.1,-1.25] as Point3 },
+    { x: 1.35, z: -22.6, aura: "#efd098", form: "shell" as MemoryForm, satellite: [1.25,.06,-1.25] as Point3 },
+    { x: -4.15, z: -28, aura: "#987eb5", form: "wave" as MemoryForm, satellite: [1,.08,-1.05] as Point3 },
   ];
-  return <group name="life-map-authored-chapter-regions" userData={{ composition: "five-asymmetric-depth-bands" }}>{chapters.map((chapter,index)=><group key={index} position={chapter.p} name={`life-map-depth-territory-${index}`}>
-    <ChapterAnchor aura={chapter.aura} index={index} form={chapter.form} scale={.58 + index * .035} />
+  return <group name="life-map-authored-chapter-regions" userData={{ composition: "five-asymmetric-grounded-depth-bands" }}>{chapters.map((chapter,index)=><group key={index} position={[chapter.x,memoryValleyHeight(chapter.x, chapter.z)+.56,chapter.z]} name={`life-map-depth-territory-${index}`}>
+    <ChapterAnchor aura={chapter.aura} index={index} form={chapter.form} scale={.46 + index * .025} />
     <group position={chapter.satellite} rotation={[.15 + index * .08,-.3 + index * .13,.2]}>
       <ChapterAnchor aura={index % 2 ? ICE : chapter.aura} index={index + 5} form={(["wave","shell","fan","branch","petal"] as MemoryForm[])[index]} scale={.28 + (index % 2) * .06} />
     </group>
@@ -483,7 +448,7 @@ function ChapterTerritories() {
 
 function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
-  return <group name="life-map-foreground-observatory" position={[0,-1.0,3.2]}>
+  return <group name="life-map-foreground-observatory" position={[0,memoryValleyHeight(0,3.2)+.56,3.2]}>
     <FieldParticles seed={730} count={90} radius={9.5} depth={3} height={1.9} color={ICE} opacity={.20} size={.04} />
     <group position={[-6.6,.8,-.6]} rotation={[.18,.5,-.2]}><AuthoredMemoryStar aura="#7198ad" active={false} siteKey="near-memory-left" form="wave" scale={.34} /></group>
     <group position={[6.2,-.25,-1.8]} rotation={[-.12,-.55,.26]}><AuthoredMemoryStar aura="#b19bc5" active={false} siteKey="near-memory-right" form="branch" scale={.28} /></group>
@@ -493,10 +458,10 @@ function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
 function OverviewLandmarks({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return <>
-    <group name="life-map-relationship-observatory" position={[5.7,.55,-7.2]}><AuthoredMemoryStar aura={ICE} active={false} siteKey="relationship-observatory" scale={.64} /></group>
-    <group name="life-map-goal-horizon" position={[-6.8,2.3,-15.6]}><AuthoredMemoryStar aura={GOLD} active={false} siteKey="goal-horizon" scale={.72} /></group>
-    <group name="life-map-achievement-monument" position={[7.2,-.1,-13.4]}><AuthoredMemoryStar aura={GOLD} active={false} siteKey="achievement-monument" scale={.82} /></group>
-    <group name="life-map-privacy-vault" position={[-7.4,-.5,-10.5]}><FieldParticles seed={811} count={38} radius={2.5} depth={3.4} height={2.6} color="#8d74ad" opacity={.32} size={.052} /></group>
+    <group name="life-map-relationship-observatory" position={[5.7,memoryValleyHeight(5.7,-7.2)+.56,-7.2]}><AuthoredMemoryStar aura={ICE} active={false} siteKey="relationship-observatory" form="shell" scale={.48} /></group>
+    <group name="life-map-goal-horizon" position={[-6.8,memoryValleyHeight(-6.8,-15.6)+.56,-15.6]}><AuthoredMemoryStar aura={GOLD} active={false} siteKey="goal-horizon" form="branch" scale={.54} /></group>
+    <group name="life-map-achievement-monument" position={[7.2,memoryValleyHeight(7.2,-13.4)+.56,-13.4]}><AuthoredMemoryStar aura={GOLD} active={false} siteKey="achievement-monument" form="fan" scale={.62} /></group>
+    <group name="life-map-privacy-vault" position={[-7.4,memoryValleyHeight(-7.4,-10.5)+.35,-10.5]}><FieldParticles seed={811} count={28} radius={2.2} depth={2.8} height={1.1} color="#8d74ad" opacity={.24} size={.044} /></group>
   </>;
 }
 
@@ -610,7 +575,7 @@ function LineageRibbon({ curve, color, active, protectedPath }: { curve: THREE.Q
   }, [active, curve]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <mesh geometry={geometry} name="life-map-lineage-ribbon">
-    <meshBasicMaterial color={color} transparent opacity={protectedPath ? .018 : active ? .28 : .075} depthWrite={false} side={THREE.DoubleSide} />
+    <meshBasicMaterial color={color} transparent opacity={protectedPath ? .008 : active ? .18 : .022} depthWrite={false} side={THREE.DoubleSide} />
   </mesh>;
 }
 
@@ -778,12 +743,12 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   }, [nodes, onSelect]);
 
   return <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
-    <color attach="background" args={["#07131c"]} />
-    <fog attach="fog" args={["#122a31", 20, 88]} />
-    <ambientLight intensity={.26} color="#b6d7d6" />
-    <hemisphereLight args={["#c9e7df", "#07110f", .52]} />
-    <directionalLight position={[9,14,10]} intensity={1.42} color="#ead9be" castShadow={profile.shadows} />
-    <directionalLight position={[-12,7,-24]} intensity={.62} color="#6fa9a5" />
+    <color attach="background" args={["#0a1a22"]} />
+    <fog attach="fog" args={["#17333a", 25, 82]} />
+    <ambientLight intensity={.48} color="#b9d8d2" />
+    <hemisphereLight args={["#d4e5d7", "#101713", .82]} />
+    <directionalLight position={[9,14,10]} intensity={2.05} color="#f0dfc3" castShadow={profile.shadows} />
+    <directionalLight position={[-12,7,-24]} intensity={1.02} color="#76aaa7" />
     {webglRecovery}
     <RenderProofRepublisher />
     {cameraRig}

@@ -16,19 +16,19 @@ test('historical V215 single-surface source remains reproducible but is not runt
   assert.match(generator, /def sanctuary_height/)
   assert.match(generator, /one continuous camera-safe sanctuary/)
   assert.doesNotMatch(generator, /braided_channel|integrated_relief|def scarp/)
-  assert.match(world, /V236 literal-pixel authority: a continuous eroded memory valley/)
+  assert.match(world, /V237 literal-pixel authority: a continuous illuminated memory valley/)
   assert.doesNotMatch(world, /authored-v215\/life-map-memory-sanctuary-v215\.glb/)
 })
 
-test('V236 runtime keeps retired V215 strata out while the current world roots open memories into new authored geography', () => {
+test('V237 runtime keeps retired V215 strata out while grounded outcrops inhabit continuous geography', () => {
   assert.match(world, /function memoryHeartGeometry\(/)
   assert.match(world, /function memoryFilamentGeometry\(/)
   assert.match(world, /life-map-v229-open-branching-memory-grove/)
   assert.doesNotMatch(world, /function smoothMemoryGeometry\(/)
   assert.match(world, /<primitive object=\{hiddenAsset\} visible=\{false\} \/>/)
-  assert.match(world, /life-map-smooth-memory-star-/)
-  assert.match(world, /life-map-v236-continuous-eroded-memory-geography/)
-  assert.match(world, /life-map-v236-root-system-/)
+  assert.match(world, /life-map-weathered-memory-outcrop-/)
+  assert.match(world, /life-map-v237-continuous-illuminated-memory-geography/)
+  assert.match(world, /life-map-v237-root-system-/)
   assert.doesNotMatch(world, /function MemorySeed\(|life-map-v215-rooted-strata-memory|function memoryLedgerGeometry\(/)
 })
 
@@ -38,11 +38,14 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
   assert.match(scene, /setPhase\("approach"\)/)
 })
 
-test('Focus formation runs horizontally and Replay preserves readable media', () => {
-  assert.match(focus, /const centerX = -1\.32 \+ t \* 2\.64/)
-  assert.match(focus, /Math\.sin\(t \* Math\.PI\) \* 0\.72/)
+test('Focus formation is rooted in its vault and Replay preserves readable organic-edged media', () => {
+  assert.match(focus, /const centerY = -0\.88 \+ t \* 1\.76/)
+  assert.match(focus, /focus-v216-memory-root-cradle/)
+  assert.match(focus, /focus-v216-continuous-weathered-vault/)
   assert.match(replay, /new THREE\.PlaneGeometry\(13\.8, 7\.4/)
   assert.match(replay, /texture2D\(uMap,vUv\)/)
+  assert.match(replay, /function replayMemoryWallGeometry\(\)/)
+  assert.match(replay, /replay-v216-embedded-memory-cove/)
   assert.doesNotMatch(replay, /sampleUv|p\.z\+=sin/)
 })
 

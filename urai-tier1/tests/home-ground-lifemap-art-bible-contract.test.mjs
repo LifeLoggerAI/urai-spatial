@@ -125,7 +125,7 @@ test('Ground remains one embodied cinematic infrastructure world', () => {
 
 test('Life Map remains layered, semantic, private by default, and mounts a connected inhabited sanctuary without retired slab presentation', () => {
   for (const marker of ['life-map-white-gold-life-core','life-map-authored-chapter-regions','life-map-light-bridges','life-map-privacy-vault','life-map-emotional-weather','life-map-far-future-horizon','life-map-v226-nebula-volume','CinematicPostProcessing']) assert.match(lifeMapWorld, new RegExp(marker))
-  assert.match(lifeMapWorld, /life-map-v236-continuous-eroded-memory-geography/)
+  assert.match(lifeMapWorld, /life-map-v237-continuous-illuminated-memory-geography/)
   assert.match(lifeMapWorld, /memoryValleyGeometry/)
   assert.doesNotMatch(lifeMapWorld, /planeGeometry|memoryLedgerGeometry|memorySiteGeometry|life-map-v215-rooted-strata-memory/)
   assert.match(lifeMap, /data-testid="urai-life-map-authored-fallback"/)
