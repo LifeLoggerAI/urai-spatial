@@ -189,7 +189,7 @@ function TexturedMemoryTerrain() {
   const surface=useMemo(inhabitedSurfaceGeometry,[])
   const ridge=useMemo(distantRidgeGeometry,[])
   return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
-    <Suspense fallback={null}><ScannedRockFace variant="01" x={-7.2} z={-18.8} turn={.26} scale={.82}/><ScannedRockFace variant="02" x={7.1} z={-19.3} turn={-.24} scale={.95}/></Suspense>
+    <Suspense fallback={null}><ScannedRockFace variant="01" x={-6.9} z={-13.8} turn={.34} scale={.72}/><ScannedRockFace variant="02" x={7.6} z={-14.1} turn={-.48} scale={.82}/></Suspense>
     <mesh geometry={surface} receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
     <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
   </group>
@@ -421,7 +421,7 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
     return tube([
       new THREE.Vector3(x, -.28 + index * .015, .02),
       new THREE.Vector3(x * 1.7, -.62, .03 + (index % 3) * .06),
-      new THREE.Vector3(side * (.42 + index * .055), -.96 - (index % 2) * .08, .10 + (index % 3) * .12),
+      new THREE.Vector3(side * (.30 + index * .035), -.76 - (index % 2) * .04, .10 + (index % 3) * .08),
     ], .018 + index * .002, 8)
   }), [])
   const pose = posture[state]
@@ -437,11 +437,11 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
   return <group ref={root} position={[ORB.x, y + 1.05, ORB.z]} rotation={[0,-.10,-.10]} scale={1.34} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
     <group name="home-v227-split-asymmetric-memory-bloom">
-      <mesh geometry={body} position={[-.18,.05,.01]} rotation={[.08,-.42,.18]} scale={[.38,.76,.38]} castShadow><primitive object={living.material} attach="material"/></mesh>
+      <mesh geometry={body} position={[-.18,.05,.01]} rotation={[.08,-.42,.18]} scale={[.54,.76,.48]} castShadow><meshPhysicalMaterial vertexColors color="#b6d6cf" roughness={.46} metalness={.04} clearcoat={.24} sheen={.3} side={THREE.DoubleSide} emissive="#426e68" emissiveIntensity={.12}/></mesh>
       <mesh geometry={body} position={[.20,-.08,.05]} rotation={[-.12,.58,-.24]} scale={[.28,.58,.32]} castShadow><primitive object={living.material} attach="material"/></mesh>
       <mesh geometry={body} position={[.01,.12,-.08]} rotation={[.2,.12,.06]} scale={[.19,.82,.24]} castShadow><primitive object={living.material} attach="material"/></mesh>
     </group>
-    <group name="home-v227-branching-memory-nervature">{branches.map((geometry,index)=><mesh key={index} geometry={geometry}><meshStandardMaterial color={warning?'#d57467':index%2?'#9bc9b5':'#d19a83'} emissive={warning?'#7d342d':index%2?'#3c7561':'#7d4d3e'} emissiveIntensity={.74} roughness={.58}/></mesh>)}</group>
+    <group name="home-v227-branching-memory-nervature" scale={[.62,.78,.70]}>{branches.map((geometry,index)=><mesh key={index} geometry={geometry}><meshStandardMaterial color={warning?'#d57467':index%2?'#9bc9b5':'#d19a83'} emissive={warning?'#7d342d':index%2?'#3c7561':'#7d4d3e'} emissiveIntensity={.30} roughness={.58}/></mesh>)}</group>
     <group scale={[.46,.82,.52]}>{veins.map((geometry, index) => <mesh key={index} geometry={geometry}><meshStandardMaterial color={warning ? '#d57467' : index % 2 ? '#9bc9b5' : '#d19a83'} emissive={warning ? '#7d342d' : index % 2 ? '#3c7561' : '#7d4d3e'} emissiveIntensity={.72} roughness={.60}/></mesh>)}</group>
     <group name="home-v226-living-memory-root-tendrils">{roots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial color={index%2?'#668b78':'#8b6658'} emissive={index%2?'#294d40':'#59382f'} emissiveIntensity={.32} roughness={.78}/></mesh>)}</group>
     <mesh scale={[.72,1.14,.76]} onClick={activate}><sphereGeometry args={[1,20,16]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>

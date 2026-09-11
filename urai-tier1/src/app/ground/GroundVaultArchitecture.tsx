@@ -78,13 +78,14 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
     return new THREE.ShapeGeometry(outline, 80)
   }, [])
   const arches = useMemo(() => DESTINATIONS.map((_, index) => chamberArch(index)), [])
+  const chamberRoofs = useMemo(() => DESTINATIONS.map((_, index) => vaultSurface(1.98 + (index % 3) * .12, 2.72 + (index % 4) * .17, 5.7)), [])
   const floor = useMemo(() => {
     const g = new THREE.PlaneGeometry(32, 54, 1, 1)
     const uv = g.getAttribute('uv')
     for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 8, uv.getY(i) * 13.5)
     return g
   }, [])
-  useEffect(() => () => { shell.dispose(); endWall.dispose(); floor.dispose(); arches.forEach(g => g.dispose()); maps.forEach(t => t.dispose()) }, [shell, endWall, floor, arches, maps])
+  useEffect(() => () => { shell.dispose(); endWall.dispose(); floor.dispose(); arches.forEach(g => g.dispose()); chamberRoofs.forEach(g => g.dispose()); maps.forEach(t => t.dispose()) }, [shell, endWall, floor, arches, chamberRoofs, maps])
   return <group name="ground-authored-walkable-vault-and-chambers">
     <mesh geometry={shell} position={[0, 0, 13]} receiveShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.35, .35)} color="#79867b" roughness={.88} side={THREE.DoubleSide} />
@@ -100,12 +101,19 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
       const facing = x < -4 ? .4 : x > 4 ? -.4 : 0
       const active = activeId === destination.id
       return <group key={destination.id} position={[x, 0, z]} rotation={[0, facing, 0]} name={`ground-enterable-threshold-${destination.id}`} userData={{ destinationHref: destination.href }} onClick={event => { event.stopPropagation(); onSelect(destination) }}>
-        {(index < 6 || active) && <Html center position={[0, 3.7 + (index % 4) * .17, -1.3]} distanceFactor={20} style={{ pointerEvents: 'none' }}>
+        {(index < 3 || active) && <Html center position={[0, 3.7 + (index % 4) * .17, -1.3]} distanceFactor={20} style={{ pointerEvents: 'none' }}>
           <div style={{ whiteSpace: 'nowrap', color: '#edf6ed', font: '600 15px/1.3 system-ui', letterSpacing: '.035em', textShadow: '0 2px 6px #071210', padding: '5px 9px', background: 'rgba(8,23,23,.82)', borderRadius: 4 }}>{destination.label}</div>
         </Html>}
         <mesh geometry={arches[index]} position={[0, 0, -2.9]} receiveShadow castShadow>
           <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={index % 3 === 0 ? '#a3997d' : '#839991'} roughness={.8} normalScale={new THREE.Vector2(.25, .25)} />
         </mesh>
+        <mesh geometry={chamberRoofs[index]} position={[0, .81, -.3]} receiveShadow castShadow>
+          <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={index % 3 === 0 ? '#9d957f' : '#81928b'} roughness={.87} side={THREE.DoubleSide} />
+        </mesh>
+        {[-1, 1].map(side => <mesh key={side} position={[side * (1.84 + (index % 3) * .12), .32, -3.15]} receiveShadow castShadow>
+          <boxGeometry args={[.28, .82, 5.7]} />
+          <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#7c897f" roughness={.88} />
+        </mesh>)}
         <mesh position={[0, .015, -1.1]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <circleGeometry args={[1.5, 64]} /><meshStandardMaterial color="#435751" metalness={.18} roughness={.5} />
         </mesh>

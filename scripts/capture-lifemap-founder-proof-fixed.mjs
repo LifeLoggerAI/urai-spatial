@@ -694,6 +694,7 @@ async function desktopActionsAndKeyboard() {
     await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
+    await page.locator('[data-focus-render-ready="true"] canvas').waitFor({ state: 'visible', timeout: 45000 })
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)

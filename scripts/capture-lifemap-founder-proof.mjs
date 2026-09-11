@@ -185,6 +185,7 @@ async function waitForFocusRendered(page, timeout = 30_000) {
     const renderer = root.getAttribute('data-software-renderer')
     return root.getAttribute('data-chamber-state') === 'ready'
       && root.getAttribute('data-webgl-state') === 'ready'
+      && root.getAttribute('data-focus-render-ready') === 'true'
       && renderer !== 'detecting'
       && Boolean(canvas)
       && fallback === null

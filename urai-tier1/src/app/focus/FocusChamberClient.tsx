@@ -53,6 +53,18 @@ function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
   return null
 }
 
+function FocusAssetsReady({ shellRef }: { shellRef: RefObject<HTMLElement | null> }) {
+  useGLTF([FOCUS_CHAMBER_MODEL, '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/asset.gltf', '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_02/asset.gltf'])
+  const frames = useRef(0)
+  useFrame(({ gl }) => {
+    if (frames.current >= 2 || !gl.info.render.calls) return
+    frames.current++
+    if (frames.current === 2 && shellRef.current) shellRef.current.dataset.focusRenderReady = 'true'
+  })
+  useEffect(() => () => { if (shellRef.current) delete shellRef.current.dataset.focusRenderReady }, [shellRef])
+  return null
+}
+
 function WebGLRecoveryBridge({ onStateChange }: { onStateChange: (state: WebGLState) => void }) {
   const { gl } = useThree()
   const lossCount = useRef(0)
@@ -250,12 +262,23 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
   </mesh>
 }
 
+function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 }) {
+  const asset = useGLTF(`/assets/urai/home-production/cc0/polyhaven-v48/rock_face_${variant}/asset.gltf`)
+  const model = useMemo(() => {
+    const copy = asset.scene.clone(true)
+    copy.traverse(child => { if (child instanceof THREE.Mesh) { child.castShadow = true; child.receiveShadow = true } })
+    return copy
+  }, [asset.scene])
+  return <primitive object={model} name={`focus-scanned-stone-bank-${variant}`} position={[side * 5.8, -1.65, side < 0 ? -6.8 : -8.5]} rotation={[0, side < 0 ? .4 : -.6, 0]} scale={side < 0 ? 1.18 : 1.3} />
+}
+
 function ChamberArchitecture({ accent, light }: { accent: string; light: string; reducedMotion: boolean }) {
   return <group
     name="focus-v153-authored-depth-observatory-light"
     userData={{ visualRepair: 'no-orbit-rings-no-cage-bands', composition: 'bounded-asymmetric-light-and-authored-floor' }}
   >
     <FocusSanctuaryGround accent={accent} />
+    <Suspense fallback={null}><FocusStoneBank variant="01" side={-1} /><FocusStoneBank variant="02" side={1} /></Suspense>
     <pointLight position={[-3.8, 1.6, -4.4]} color={accent} intensity={0.56} distance={7.5} decay={2} />
     <pointLight position={[4.6, 0.9, -5.4]} color={light} intensity={0.38} distance={8.5} decay={2} />
     <spotLight position={[-1.8, 6.4, 1.2]} target-position={[0, 0.2, -1.7]} angle={0.48} penumbra={0.86} intensity={0.50} color={light} distance={18} />
@@ -386,6 +409,7 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
   const light = memory?.visuals.light ?? '#e7fbff'
   return <>
     <FirstFrame profile={profile} />
+    <Suspense fallback={null}><FocusAssetsReady shellRef={shellRef} /></Suspense>
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
     <color attach="background" args={[memory?.visuals.sky ?? '#020712']} />
     <fog attach="fog" args={[memory?.visuals.sky ?? '#020712', 7.5, 31]} />

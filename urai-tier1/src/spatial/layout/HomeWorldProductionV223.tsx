@@ -92,8 +92,8 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
     <color attach="background" args={['#10272a']}/>
     <fogExp2 attach="fog" args={['#607a6d',.0095]}/>
     <ambientLight intensity={.92} color="#e2e4d8"/>
-    <hemisphereLight args={['#dfe8df','#594631',1.12]}/>
-    <directionalLight position={[-7,10,5]} intensity={2.35} color="#f5d6a0" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
+    <hemisphereLight args={['#dfe8df','#526057',.94]}/>
+    <directionalLight position={[-7,10,5]} intensity={1.9} color="#f3e5cb" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
     <directionalLight position={[8,7,-10]} intensity={.88} color="#9bc5b0"/>
     <Terrain walk={walk} onGround={p.onGround} onLifeMap={p.onLifeMap}/><Escarpment side={-1}/><Escarpment side={1}/><DestinationLights/><Orb state={p.orbState} reducedMotion={p.reducedMotion} onOpen={p.onOrb}/>
     <HomeV225PolishV2 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>

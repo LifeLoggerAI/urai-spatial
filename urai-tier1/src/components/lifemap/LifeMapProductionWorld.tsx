@@ -245,13 +245,14 @@ function NebulaBreath({ reducedMotion, selected }: { reducedMotion: boolean; sel
         return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);
       }
       void main(){
-        vec3 p=vPosition*.22;
+        vec3 p=vPosition*.055;
         float n=noise(p)+.52*noise(p*2.07+4.1)+.24*noise(p*4.13-7.3);
         float bands=.5+.5*sin(vPosition.x*.19+vPosition.y*.23+n*4.2+uTime*.05);
-        float veil=smoothstep(.55,1.12,n)*(.55+.45*bands);
+        float lane=exp(-pow((vPosition.y-vPosition.x*.17-3.*sin(vPosition.x*.08))/9.,2.));
+        float veil=smoothstep(.55,1.12,n)*(.55+.45*bands)*lane;
         vec3 c=mix(vec3(.025,.15,.19),vec3(.25,.10,.34),noise(p*.72+11.));
         c=mix(c,vec3(.10,.30,.31),smoothstep(.72,1.2,n));
-        gl_FragColor=vec4(c,(.055+.24*veil)*mix(1.0,1.24,uSelected));
+        gl_FragColor=vec4(c,(.018+.32*veil)*mix(1.0,1.24,uSelected));
       }
     `,
   }), [selected]);
@@ -291,9 +292,9 @@ function AuthoredMemoryStar({ aura, active, siteKey, scale = 1, rotation = [0,0,
   });
   return <group ref={group} scale={scale} rotation={rotation} name={`life-map-smooth-memory-star-${siteKey}`} userData={{ artRevision:'v230-semantic-memory-forms', form:resolvedForm }}>
     <primitive object={hiddenAsset} visible={false} />
-    <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .38 : .18} roughness={.28} metalness={.18} clearcoat={.7} side={THREE.DoubleSide} /></mesh>
+    <mesh geometry={heart} castShadow><meshPhysicalMaterial vertexColors emissive={aura} emissiveIntensity={active ? .38 : .18} roughness={.52} metalness={.03} clearcoat={.16} sheen={.35} side={THREE.DoubleSide} /></mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow>
-      <meshPhysicalMaterial vertexColors color={index % 3 === 0 ? ICE : new THREE.Color(aura).lerp(new THREE.Color("#8eaaaa"), .48)} emissive={aura} emissiveIntensity={active ? .24 : .12} roughness={.32} metalness={.24} clearcoat={.65} side={THREE.DoubleSide} />
+      <meshPhysicalMaterial vertexColors color={index % 3 === 0 ? ICE : new THREE.Color(aura).lerp(new THREE.Color("#8eaaaa"), .48)} emissive={aura} emissiveIntensity={active ? .24 : .12} roughness={.55} metalness={.03} clearcoat={.16} sheen={.35} side={THREE.DoubleSide} />
     </mesh>)}
     <FieldParticles seed={seed} count={active ? 46 : 22} radius={1.0} depth={1.2} height={1.25} color={aura} opacity={active ? .62 : .32} size={active ? .038 : .028} />
     <pointLight color={aura} intensity={active ? 4.6 : 1.1} distance={active ? 10 : 5} decay={2} />
@@ -515,6 +516,38 @@ function IntimateMemoryChamber(props: { selectedIndex: number; selected: LifeMap
   return <ArrivalSanctuary {...props} />;
 }
 
+function PersonalStarField({ count }: { count: number }) {
+  const geometry = useMemo(() => {
+    const positions: number[] = [], sizes: number[] = [], colors: number[] = [];
+    const warm = new THREE.Color('#e7c899'), cool = new THREE.Color('#a4c8dd');
+    for (let i = 0; i < count; i++) {
+      const x = (seeded(i, 31) - .5) * 96;
+      const spread = Math.pow(seeded(i, 32), 1.6) * (seeded(i, 33) > .5 ? 1 : -1);
+      const y = x * .16 + spread * 20 + 4 * Math.sin(x * .07);
+      const z = -28 - seeded(i, 34) * 54;
+      positions.push(x, y, z);
+      sizes.push(.6 + Math.pow(seeded(i, 35), 5) * 2.4);
+      const color = cool.clone().lerp(warm, seeded(i, 36));
+      colors.push(color.r, color.g, color.b);
+    }
+    const result = new THREE.BufferGeometry();
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    result.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1));
+    result.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    return result;
+  }, [count]);
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, vertexColors: true,
+    vertexShader: `attribute float aSize; varying vec3 vColor; void main() { vColor=color; vec4 p=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*p; gl_PointSize=clamp(aSize*90./max(8.,-p.z),1.,4.5); }`,
+    fragmentShader: `varying vec3 vColor; void main() { float r=length(gl_PointCoord-.5)*2.; float a=exp(-r*r*3.)*(1.-smoothstep(.65,1.,r)); gl_FragColor=vec4(vColor,a*.85);
+#include <colorspace_fragment>
+ }`,
+  }), []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
+  return <points name="life-map-personal-galaxy-star-depth" geometry={geometry} material={material} />;
+}
+
 function ArchiveParticles({ qualityTier, reducedMotion }: { qualityTier: SpatialQualityProfile["tier"]; reducedMotion: boolean }) {
   return <group name="life-map-archive-particles"><Stars radius={58} depth={38} count={qualityTier === "low" ? 80 : qualityTier === "medium" ? 150 : 240} factor={1.45} saturation={.34} fade speed={reducedMotion ? 0 : .012} /></group>;
 }
@@ -574,7 +607,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <MemoryWeather reducedMotion={profile.reducedMotion} />
     <ArchiveParticles qualityTier={profile.tier} reducedMotion={profile.reducedMotion} />
     <group name="life-map-far-future-horizon">
-      <Stars radius={60} depth={68} count={starCount} factor={3.5} saturation={.32} fade speed={profile.reducedMotion ? 0 : .018} />
+      <PersonalStarField count={starCount} />
       <Sparkles count={profile.tier === "low" ? 70 : 160} scale={[48,26,72]} position={[0,3,-18]} size={1.35} speed={profile.reducedMotion ? 0 : .08} opacity={.28} color="#d9f7ff" />
     </group>
     <CinematicPostProcessing active={profile.postprocessing} reducedMotion={profile.reducedMotion} />
