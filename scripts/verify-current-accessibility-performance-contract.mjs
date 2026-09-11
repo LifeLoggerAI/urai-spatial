@@ -39,7 +39,10 @@ requireMatch(events, /export function takePendingUraiWorldOrbOpen/, 'atomic pend
 requireMatch(companion, /useLayoutEffect\(\(\) => \{/, 'pre-paint Orb event subscription')
 requireMatch(companion, /takePendingUraiWorldOrbOpen\(\)/, 'pending Orb request consumption')
 requireMatch(companion, /flushSync\(\(\) => setOpen\(true\)\)/, 'deterministic companion opening')
-requireMatch(companion, /externalActivatorRef\.current\?\.focus/, 'exact activating-control focus return')
+requireMatch(companion, /const activator = externalActivatorRef\.current/, 'exact activating-control snapshot')
+requireMatch(companion, /if \(activator\?\.isConnected\) activator\.focus\(\)/, 'connected exact-activator focus return')
+requireMatch(companion, /else orbRef\.current\?\.focus\(\)/, 'fallback Orb focus return')
+requireMatch(companion, /const focusTarget = activator\?\.isConnected \? activator : orbRef\.current/, 'post-focus exact target verification')
 
 process.stdout.write(`${JSON.stringify({
   ok: true,
