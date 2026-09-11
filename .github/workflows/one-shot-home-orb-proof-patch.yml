@@ -1,0 +1,48 @@
+name: One-shot Home Orb proof patch
+
+on:
+  push:
+    branches:
+      - fix/home-state-orb-click-harness-20260911
+    paths:
+      - .github/workflows/one-shot-home-orb-proof-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/home-state-orb-click-harness-20260911
+          fetch-depth: 0
+      - name: Apply one exact harness-only replacement
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/capture-home-state-proof.mjs')
+          s = p.read_text()
+          old = "await openOrb.click({ noWaitAfter: true })"
+          new = "await openOrb.click({ force: true, noWaitAfter: true })"
+          count = s.count(old)
+          if count != 1:
+              raise SystemExit(f'expected exactly one Orb click site, found {count}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+          git diff -- scripts/capture-home-state-proof.mjs
+      - name: Commit patch and remove one-shot workflow
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/one-shot-home-orb-proof-patch.yml
+          git add scripts/capture-home-state-proof.mjs
+          git diff --cached --check
+          test "$(git diff --cached --name-only | sort)" = "scripts/capture-home-state-proof.mjs"
+          git commit -m "test: bound Home Orb proof activation"
+          git push origin HEAD:fix/home-state-orb-click-harness-20260911
