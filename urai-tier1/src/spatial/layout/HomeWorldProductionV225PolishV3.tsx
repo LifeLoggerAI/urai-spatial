@@ -463,7 +463,9 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
   const root = useRef<THREE.Group>(null)
   const body = useMemo(organicOrbGeometry, [])
   const coreMaterial = useMemo(() => createLivingMemoryMaterial(true), [])
+  const branches = useMemo(() => Array.from({ length: 9 }, (_, index) => presenceBranch(index)), [])
   useEffect(() => () => coreMaterial.material.dispose(), [coreMaterial])
+  useEffect(() => () => branches.forEach(geometry => geometry.dispose()), [branches])
   const pose = posture[state]
   const y = height(ORB.x, ORB.z)
   useFrame(({ clock }) => {
@@ -476,6 +478,13 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
   const warning = state === 'warning'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
   return <group ref={root} position={[ORB.x, y + 1.05, ORB.z]} rotation={[0,-.10,-.10]} scale={1.34} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
+    <group name="home-v227-branching-memory-nervature">
+      <group name="home-v229-matter-anchored-branching-nervature" userData={{ artRevision:'home-v230-surface-bound-memory-nervature', silhouette:'anchored-not-jellyfish-tendril-halo' }}>
+        {branches.map((geometry, index) => <mesh key={index} geometry={geometry} position={[index % 2 ? -.10 : .08, -.03 + (index % 3) * .025, -.09 + (index % 4) * .018]} rotation={[.10 - index * .012, index % 2 ? -.32 : .28, index % 3 ? .08 : -.10]} scale={[.58 + (index % 3) * .035, .46 + (index % 2) * .03, .50]} castShadow receiveShadow>
+          <meshStandardMaterial color={warning ? '#7f3f39' : index % 2 ? '#546454' : '#6b5b50'} emissive={warning ? '#5b2421' : '#253a34'} emissiveIntensity={warning ? .16 : .10} roughness={.82} metalness={0}/>
+        </mesh>)}
+      </group>
+    </group>
     <group name="home-v227-split-asymmetric-memory-bloom">
       <mesh geometry={body} position={[-.03,.08,.01]} rotation={[.08,-.42,.18]} scale={[.76,1.02,.72]} castShadow receiveShadow><primitive object={coreMaterial.material} attach="material"/></mesh>
       <mesh geometry={body} position={[.12,.16,-.22]} rotation={[-.12,.58,-.24]} scale={[.30,.42,.26]} castShadow><meshStandardMaterial color={warning?'#9d5149':'#d7e4d5'} emissive={warning?'#712d29':'#3e6a5d'} emissiveIntensity={.32} roughness={.62}/></mesh>
