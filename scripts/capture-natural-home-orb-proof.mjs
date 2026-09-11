@@ -62,6 +62,8 @@ const cases = [
   { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { id: 'mobile-narrow', viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
+  { id: 'mobile-warning', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, orbState: 'warning' },
+  { id: 'reduced-motion-privacy', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', orbState: 'privacy' },
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
@@ -104,10 +106,12 @@ for (const spec of cases) {
   page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
   const record = { id: spec.id, viewport: spec.viewport, pageErrors, failedRequests, passed: false }
   try {
-    const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    const stateQuery = spec.orbState ? `&homeOrbState=${encodeURIComponent(spec.orbState)}` : ''
+    const response = await page.goto(`${base}/home/?homeAssetReview=1&homePrivateFixture=1${stateQuery}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    if (spec.orbState) await page.waitForFunction(state => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-orb-state') === state, spec.orbState, { timeout: 15_000 })
     await settle(page, spec.reducedMotion === 'reduce' ? 4 : 12)
     const attr = (name) => owner.getAttribute(name)
     record.status = response?.status(); record.canvasCount = await owner.locator('canvas').count()
@@ -145,6 +149,7 @@ for (const spec of cases) {
       && record.visibleProductionAssets?.includes('v226-rooted-single-living-memory-presence')
       && record.authoredRegions?.includes('home-sanctuary-pavilion') && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null && record.orbState !== null
+      && (!spec.orbState || record.orbState === spec.orbState)
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1 && record.embodimentMarkers === 1
       && record.semanticButtons === 1 && record.semanticLinks === 2

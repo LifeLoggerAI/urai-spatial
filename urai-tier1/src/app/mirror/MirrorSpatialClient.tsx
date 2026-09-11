@@ -315,8 +315,11 @@ useEffect(() => {
     </section>
 
     {selected ? <aside className="mirrorInspection" data-movement-ui="true" aria-live="polite" aria-label={`${selected.label} evidence`}>
-      <button className="close" type="button" onClick={() => selectPattern(null)} aria-label="Return to Mirror overview">×</button>
-      <p>{selected.evidenceState.replace('-', ' ')}</p><h2>{selected.label}</h2><strong>{selected.explanation}</strong>
+      <header className="mirrorInspectionHeader">
+        <button className="close" type="button" onClick={() => selectPattern(null)} aria-label="Return to Mirror overview">×</button>
+        <p>{selected.evidenceState.replace('-', ' ')}</p><h2>{selected.label}</h2>
+      </header>
+      <strong>{selected.explanation}</strong>
       <dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl>
       <label htmlFor="mirror-time">Inspect reflection depth</label><input id="mirror-time" type="range" min={0} max={Math.max(0, selected.fragments.length - 1)} value={Math.min(temporalIndex, Math.max(0, selected.fragments.length - 1))} onChange={(event) => { setTemporalIndex(Number(event.currentTarget.value)); setActiveFragment(null) }} />
       <div className="fragmentList">{selected.fragments.map((fragment, index) => <button key={fragment.id} type="button" disabled={index > temporalIndex} aria-pressed={activeFragment?.id === fragment.id} onClick={() => setActiveFragment(fragment)}>{fragment.label}<span>{fragment.certainty}</span></button>)}</div>

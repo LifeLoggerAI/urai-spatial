@@ -248,14 +248,42 @@ function ScannedRockFace({ variant, x, z, turn, scale }: { variant: '01' | '02';
   return <primitive object={model} position={[x, height(x, z) - .45, z]} rotation={[0,turn,0]} scale={scale}/>
 }
 
+function breakSoilRepetition(shader: Parameters<THREE.MeshStandardMaterial['onBeforeCompile']>[0]) {
+  // Blend four deterministically offset samples across cell boundaries. UV
+  // warping alone still repeats the same recognisable gravel patches.
+  shader.fragmentShader = shader.fragmentShader.replace('#include <map_pars_fragment>', `
+    #include <map_pars_fragment>
+    #ifdef USE_MAP
+    vec2 sanctuarySoilOffset(vec2 cell) {
+      return fract(sin(vec2(dot(cell,vec2(127.1,311.7)),dot(cell,vec2(269.5,183.3))))*43758.5453);
+    }
+    vec4 sanctuarySoilSample(vec2 uv) {
+      vec2 cell=floor(uv), blend=fract(uv);
+      blend=blend*blend*(3.0-2.0*blend);
+      vec4 a=texture2D(map,uv+sanctuarySoilOffset(cell));
+      vec4 b=texture2D(map,uv+sanctuarySoilOffset(cell+vec2(1.0,0.0)));
+      vec4 c=texture2D(map,uv+sanctuarySoilOffset(cell+vec2(0.0,1.0)));
+      vec4 d=texture2D(map,uv+sanctuarySoilOffset(cell+vec2(1.0,1.0)));
+      return mix(mix(a,b,blend.x),mix(c,d,blend.x),blend.y);
+    }
+    #endif
+  `)
+  shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `
+    #ifdef USE_MAP
+      diffuseColor *= sanctuarySoilSample(vMapUv);
+    #endif
+  `)
+}
+
 function TexturedMemoryTerrain() {
   const albedo = useSanctuarySoilTexture()
   const maps=useMemoryStoneMaps()
   const surface=useMemo(inhabitedSurfaceGeometry,[])
   const ridge=useMemo(distantRidgeGeometry,[])
+  useEffect(() => () => { surface.dispose(); ridge.dispose() }, [surface, ridge])
   return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
-    <mesh geometry={surface} receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
-    <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
+    <mesh geometry={surface} receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} onBeforeCompile={breakSoilRepetition} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
+    <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} roughnessMap={maps[2]} onBeforeCompile={breakSoilRepetition} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
   </group>
 }
 
