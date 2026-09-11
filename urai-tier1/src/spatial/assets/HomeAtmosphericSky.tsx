@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'
 
-/** Distant authored atmosphere only; terrain, paths and destinations remain real geometry. */
+/** Distant authored atmosphere plus the final Home scene visual-ownership guard. */
 export function HomeAtmosphericSky({ reducedMotion }: { reducedMotion: boolean }) {
   const mesh = useRef<THREE.Mesh>(null)
   const material = useMemo(() => new THREE.ShaderMaterial({
@@ -76,7 +77,10 @@ export function HomeAtmosphericSky({ reducedMotion }: { reducedMotion: boolean }
     material.uniforms.uTime.value = reducedMotion ? 0 : clock.elapsedTime
   })
 
-  return <mesh ref={mesh} name="home-authored-distant-atmosphere" renderOrder={-100} material={material}>
-    <sphereGeometry args={[74, 48, 32]} />
-  </mesh>
+  return <>
+    <HomeVisualAuthority />
+    <mesh ref={mesh} name="home-authored-distant-atmosphere" renderOrder={-100} material={material}>
+      <sphereGeometry args={[74, 48, 32]} />
+    </mesh>
+  </>
 }
