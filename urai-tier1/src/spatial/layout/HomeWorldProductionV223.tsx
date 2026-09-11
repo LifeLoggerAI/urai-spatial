@@ -115,7 +115,7 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
     <directionalLight position={[9,6,-11]} intensity={.72} color="#79a99f"/>
     <directionalLight position={[-2,3,-14]} intensity={.32} color="#a995c4"/>
     <HomeV225PolishV3 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>
-    <HomeCurrentArtRepair orbState={p.orbState} reducedMotion={p.reducedMotion}/>
+    <HomeCurrentArtRepair orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap}/>
     <Rig input={p.input} yaw={p.yaw} pitch={p.pitch} target={p.target} onNearby={p.onNearby} transition={p.transition} owner={p.owner}/>
   </>
 }

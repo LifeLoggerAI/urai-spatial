@@ -10,7 +10,8 @@ test('overview consumes the authored five-band memory geography instead of legac
   const localPoint = layout.match(/export function lifeMapLocalPoint[\s\S]*?\n\}/)?.[0] || ''
   assert.match(localPoint, /lifeMapDisplayPosition\(node\)/)
   assert.doesNotMatch(localPoint, /node\.position/)
-  assert.match(localPoint, /return \[x, y, z - 3\.4\]/)
+  assert.match(localPoint, /const worldZ = z - 3\.4/)
+  assert.match(localPoint, /lifeMapTerrainHeight\(x, worldZ\) \+ \.58 \+ narrativeLift/)
   for (const depth of ['-3.8', '-8.9', '-12.8', '-19.2', '-24.6']) assert.match(authoredLayout, new RegExp(depth.replace('.', '\\.')))
 })
 

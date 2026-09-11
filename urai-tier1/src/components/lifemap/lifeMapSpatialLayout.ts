@@ -3,13 +3,29 @@ import { lifeMapDisplayPosition } from './lifeMapLayout'
 
 type Point3 = [number, number, number]
 
+export function lifeMapTerrainHeight(x: number, z: number): number {
+  // Keep interaction, camera framing, and the visible geography on one height
+  // authority. This is deliberately identical to memoryValleyHeight in the
+  // rendered world rather than a second approximation that can float nodes.
+  const distanceFromPath = Math.abs(x - (.58 * Math.sin((z + 5.5) * .17) + .18 * Math.sin(z * .51)))
+  const shoulder = Math.max(0, distanceFromPath - 2.7)
+  const deepTime = Math.max(0, Math.min(1, (-z - 2) / 39))
+  const weathering = .34 * Math.sin(x * .52 + z * .29) * Math.cos(z * .23 - x * .31)
+    + .13 * Math.sin(x * 1.67 - z * .83)
+    + .08 * Math.cos(x * 3.1 + z * 1.94)
+  const terraces = .24 * Math.tanh(Math.sin(z * .43 + x * .11) * 2.4)
+  return -4.15 + shoulder * (.36 + deepTime * .22) + weathering + terraces + deepTime * .58
+}
+
 export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
   // The semantic memory graph already owns an authored five-band geography.
   // Use that authority directly instead of re-projecting the retired shallow
   // coordinate field into a ribbon. The -3.4 offset keeps authored chapter
   // centers aligned with the production territory landmarks.
   const [x, y, z] = lifeMapDisplayPosition(node)
-  return [x, y, z - 3.4]
+  const worldZ = z - 3.4
+  const narrativeLift = Math.max(-.12, Math.min(.34, y * .08))
+  return [x, lifeMapTerrainHeight(x, worldZ) + .58 + narrativeLift, worldZ]
 }
 
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {

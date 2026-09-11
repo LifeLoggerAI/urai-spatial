@@ -229,6 +229,7 @@ export default function MirrorSpatialClient() {
   const target = useRef<THREE.Vector3 | null>(null)
   const [selected, setSelected] = useState<MirrorPattern | null>(null)
   const [activeFragment, setActiveFragment] = useState<MirrorFragment | null>(null)
+  const fragmentStatusRef = useRef<HTMLParagraphElement | null>(null)
   const [temporalIndex, setTemporalIndex] = useState(0)
   const [online, setOnline] = useState(true)
   const [fixture, setFixture] = useState<string | null>(null)
@@ -236,6 +237,12 @@ useEffect(() => {
   const requestedFixture = new URLSearchParams(window.location.search).get('mirrorFixture')
   setFixture(ACCEPTANCE_FIXTURES_ENABLED ? requestedFixture : null)
 }, [])
+
+  useEffect(() => {
+    if (!activeFragment) return
+    const frame = window.requestAnimationFrame(() => fragmentStatusRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }))
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeFragment])
   const patterns = useMemo(() => memory ? applyMirrorFixture(buildMirrorPatterns(memory), fixture) : [], [fixture, memory])
 
   useEffect(() => {
@@ -352,7 +359,7 @@ useEffect(() => {
       <dl><div><dt>Confidence</dt><dd>{selected.confidence === null ? 'Not calculated' : `${Math.round(selected.confidence * 100)}% · ${selected.confidenceLabel}`}</dd></div><div><dt>Evidence</dt><dd>{selected.evidenceCount} permitted source{selected.evidenceCount === 1 ? '' : 's'}</dd></div><div><dt>Uncertainty</dt><dd>{selected.uncertainty}</dd></div><div><dt>Provenance</dt><dd>{selected.provenance}</dd></div></dl>
       <label htmlFor="mirror-time">Inspect reflection depth</label><input id="mirror-time" type="range" min={0} max={Math.max(0, selected.fragments.length - 1)} value={Math.min(temporalIndex, Math.max(0, selected.fragments.length - 1))} onChange={(event) => { setTemporalIndex(Number(event.currentTarget.value)); setActiveFragment(null) }} />
       <div className="fragmentList">{selected.fragments.map((fragment, index) => <button key={fragment.id} type="button" disabled={index > temporalIndex} aria-pressed={activeFragment?.id === fragment.id} onClick={() => setActiveFragment(fragment)}>{fragment.label}<span>{fragment.certainty}</span></button>)}</div>
-      {activeFragment ? <p className="fragmentStatus">Selected source fragment: {activeFragment.label}. Evidence status: {activeFragment.certainty}.</p> : null}
+      {activeFragment ? <p ref={fragmentStatusRef} className="fragmentStatus">Selected source fragment: {activeFragment.label}. Evidence status: {activeFragment.certainty}.</p> : null}
     </aside> : null}
 
     <nav className="mirrorThresholds" aria-label="Mirror world transitions"><button type="button" onClick={goReplay}>Replay threshold</button><button type="button" onClick={goPassport}>Passport threshold</button><button type="button" onClick={unwind}>{selected ? 'Overview' : 'Previous realm'}</button></nav>

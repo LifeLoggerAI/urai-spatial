@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { OrbState } from '@/app/home/orbStateController'
 import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry'
@@ -23,6 +23,9 @@ function RetireSupersededShapes() {
       'home-current-orb-surface-memory',
       'home-current-foreground-geological-breakup',
       'home-current-atmospheric-depth-field',
+      'home-v226-ground-inhabited-hearth',
+      'home-v226-life-map-lineage-observatory',
+      'home-v226-rooted-single-living-memory-presence',
     ])
     const changed: THREE.Object3D[] = []
     scene.traverse((object) => {
@@ -158,24 +161,67 @@ function wornPathGeometry() {
   return geometry
 }
 
-function GroundThresholdV234() {
+function thresholdBankGeometry(seed: number, side: -1 | 1) {
+  const columns = 28
+  const rows = 18
+  const positions: number[] = []
+  const colors: number[] = []
+  const indices: number[] = []
+  const deep = new THREE.Color('#242b27')
+  const lichen = new THREE.Color('#525a48')
+  const warm = new THREE.Color('#695646')
+  for (let column = 0; column <= columns; column++) {
+    const u = column / columns
+    for (let row = 0; row <= rows; row++) {
+      const v = row / rows
+      const x = side * (1.02 + u * 3.45 + .18 * Math.sin(u * 8.1 + seed))
+      const y = -1.18 + v * (2.95 - u * .58) + .12 * Math.sin(v * 13 + u * 5 + seed)
+      const z = -2.03 - .55 * u - .28 * Math.sin(v * Math.PI) + .09 * Math.cos(u * 15 - v * 7)
+      positions.push(x, y, z)
+      const color = deep.clone().lerp(lichen, .22 + v * .34).lerp(warm, .09 * (1 + Math.sin(u * 12 + v * 8)))
+      colors.push(color.r, color.g, color.b)
+    }
+  }
+  const stride = rows + 1
+  for (let column = 0; column < columns; column++) for (let row = 0; row < rows; row++) {
+    const a = column * stride + row, b = a + stride, c = a + 1, d = b + 1
+    indices.push(a, b, c, b, d, c)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
   const shell = useMemo(() => cavernShellGeometry(47), [])
-  const darkness = useMemo(() => apertureFillGeometry(58, .96, 1.16), [])
+  const banks = useMemo(() => [thresholdBankGeometry(31, -1), thresholdBankGeometry(59, 1)], [])
+  const darkness = useMemo(() => apertureFillGeometry(58, 1.18, 1.28), [])
+  const innerDarkness = useMemo(() => apertureFillGeometry(71, .82, 1.02), [])
   const wornPath = useMemo(wornPathGeometry, [])
-  useEffect(() => () => { shell.dispose(); darkness.dispose(); wornPath.dispose() }, [darkness, shell, wornPath])
+  useEffect(() => () => { shell.dispose(); banks.forEach((bank) => bank.dispose()); darkness.dispose(); innerDarkness.dispose(); wornPath.dispose() }, [banks, darkness, innerDarkness, shell, wornPath])
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
 
-  return <group position={[GROUND.x, y + 1.13, GROUND.z]} rotation={[0, -.055, 0]} name="home-v234-ground-scanned-stone-threshold" userData={{ artRevision:'v235-continuous-eroded-cavern-threshold', visualIntent:'continuous-cliff-mouth-not-rock-ring', semanticOwner:'home-current-ground-geological-descent', morphology:'weathered-world-emergent-descent' }}>
-    <mesh geometry={shell} position={[0, -.04, -1.78]} castShadow receiveShadow>
-      <meshPhysicalMaterial color="#343933" roughness={.98} metalness={0} clearcoat={.01} clearcoatRoughness={1}/>
+  return <group position={[GROUND.x, y + 1.13, GROUND.z]} rotation={[0, -.055, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision:'v236-embedded-eroded-cavern-threshold', visualIntent:'continuous-cliff-mouth-not-rock-ring', semanticOwner:'home-current-ground-geological-descent', morphology:'weathered-world-emergent-descent' }}>
+    {banks.map((bank, index) => <mesh key={index} geometry={bank} castShadow receiveShadow>
+      <meshStandardMaterial vertexColors color={index ? '#7a7667' : '#686c5d'} roughness={.99} side={THREE.DoubleSide}/>
+    </mesh>)}
+    <mesh geometry={shell} position={[0, -.04, -2.02]} scale={[1.26,1.08,1.22]} castShadow receiveShadow>
+      <meshPhysicalMaterial color="#41453c" roughness={.98} metalness={0} clearcoat={.01} clearcoatRoughness={1}/>
     </mesh>
     <Suspense fallback={null}>
-      <ScannedRock variant="01" position={[-1.48, -.74, -1.92]} rotation={[.18, .48, -.16]} scale={[1.28, 1.05, 1.22]}/>
-      <ScannedRock variant="02" position={[1.58, -.70, -2.02]} rotation={[-.10, -.72, .12]} scale={[1.36, 1.08, 1.18]}/>
-      <ScannedRock variant="02" position={[-.48, 1.32, -2.03]} rotation={[.44, .12, -.30]} scale={[1.05, .72, .92]}/>
+      <ScannedRock variant="01" position={[-1.88, -.78, -2.22]} rotation={[.18, .48, -.16]} scale={[1.52, 1.22, 1.42]}/>
+      <ScannedRock variant="02" position={[2.02, -.72, -2.34]} rotation={[-.10, -.72, .12]} scale={[1.66, 1.25, 1.42]}/>
+      <ScannedRock variant="02" position={[-.62, 1.46, -2.31]} rotation={[.44, .12, -.30]} scale={[1.28, .82, 1.08]}/>
     </Suspense>
-    <mesh geometry={darkness} position={[0, -.02, -2.34]} scale={[1, 1.02, 1]}>
-      <meshStandardMaterial color="#050706" emissive="#2d1510" emissiveIntensity={.22} roughness={1}/>
+    <mesh geometry={darkness} position={[0, -.05, -2.51]} scale={[1.04, 1.04, 1]}>
+      <meshStandardMaterial color="#070b09" emissive="#452117" emissiveIntensity={.18} roughness={1}/>
+    </mesh>
+    <mesh geometry={innerDarkness} position={[0, -.14, -2.73]} scale={[1, 1, 1]}>
+      <meshStandardMaterial color="#010202" roughness={1}/>
     </mesh>
     <mesh geometry={wornPath} position={[0, -1.13, -1.16]} receiveShadow>
       <meshStandardMaterial color="#4c392d" emissive="#31150e" emissiveIntensity={.07} roughness={1}/>
@@ -219,15 +265,52 @@ function membrane(points: THREE.Vector3[], widths: number[], thickness = .025) {
   return geometry
 }
 
-function LifeMapThresholdV234() {
+function ascentButtressGeometry(side: -1 | 1, seed: number) {
+  const profile = side < 0
+    ? [[-2.28,-.22],[-2.08,.54],[-1.70,1.28],[-1.38,2.22],[-.88,3.12],[-.50,3.44],[-.72,2.24],[-.84,1.10],[-.92,-.18]]
+    : [[.84,-.20],[.92,.92],[.86,1.78],[.60,2.58],[.82,3.12],[1.36,2.46],[1.76,1.56],[2.26,.52],[2.42,-.20]]
+  const shape = new THREE.Shape()
+  profile.forEach(([x, y], index) => index ? shape.lineTo(x, y) : shape.moveTo(x, y))
+  shape.closePath()
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: .54, steps: 2, bevelEnabled: true, bevelSegments: 3, bevelSize: .10, bevelThickness: .12, curveSegments: 12 })
+  geometry.translate(0, 0, -.27)
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute
+  for (let index = 0; index < position.count; index++) {
+    const x = position.getX(index), y = position.getY(index), z = position.getZ(index)
+    const weather = .045 * Math.sin(x * 4.6 + y * 3.8 + seed) + .022 * Math.cos(y * 9.1 - z * 6.4)
+    position.setXYZ(index, x + side * weather * .26, y + weather * .38, z + weather)
+  }
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function ascendingTrailGeometry() {
+  const positions: number[] = []
+  const indices: number[] = []
+  const segments = 24
+  for (let index = 0; index <= segments; index++) {
+    const t = index / segments
+    const z = .95 - t * 3.1
+    const center = .10 * Math.sin(t * 5.4) - .06 * t
+    const width = THREE.MathUtils.lerp(.88, .45, t)
+    const y = -.98 + t * .92 + .035 * Math.sin(index * 1.4)
+    positions.push(center - width, y, z, center + width, y + .008, z)
+    if (index < segments) {
+      const a = index * 2, b = a + 1, c = a + 2, d = a + 3
+      indices.push(a, c, b, b, c, d)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const membranes = useMemo(() => [
-    membrane([new THREE.Vector3(-1.72,-.18,.22),new THREE.Vector3(-1.46,.58,-.08),new THREE.Vector3(-1.00,1.52,-.38),new THREE.Vector3(-.38,2.34,-.62)], [.28,.12], .035),
-    membrane([new THREE.Vector3(-1.12,-.12,.12),new THREE.Vector3(-.96,.72,-.20),new THREE.Vector3(-.64,1.62,-.48),new THREE.Vector3(-.12,2.62,-.72)], [.22,.09], .03),
-    membrane([new THREE.Vector3(1.58,-.16,.18),new THREE.Vector3(1.38,.66,-.12),new THREE.Vector3(.98,1.54,-.42),new THREE.Vector3(.42,2.48,-.66)], [.26,.11], .034),
-    membrane([new THREE.Vector3(.92,-.08,.10),new THREE.Vector3(.84,.82,-.26),new THREE.Vector3(.54,1.66,-.52),new THREE.Vector3(.04,2.70,-.74)], [.20,.075], .028),
-    membrane([new THREE.Vector3(-1.42,.16,-.06),new THREE.Vector3(-.78,.34,-.46),new THREE.Vector3(.12,.48,-.78),new THREE.Vector3(1.24,.20,-.98)], [.16,.08], .022),
-  ], [])
+  const buttresses = useMemo(() => [ascentButtressGeometry(-1, 19), ascentButtressGeometry(1, 47)], [])
+  const trail = useMemo(ascendingTrailGeometry, [])
   const aperture = useMemo(() => apertureFillGeometry(83, .90, 1.24), [])
   const starField = useMemo(() => {
     const count = 130
@@ -244,18 +327,22 @@ function LifeMapThresholdV234() {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     return geometry
   }, [])
-  useEffect(() => () => { membranes.forEach((geometry) => geometry.dispose()); aperture.dispose(); starField.dispose() }, [aperture, membranes, starField])
+  useEffect(() => () => { buttresses.forEach((geometry) => geometry.dispose()); trail.dispose(); aperture.dispose(); starField.dispose() }, [aperture, buttresses, starField, trail])
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
 
-  return <group position={[LIFE_MAP.x, y, LIFE_MAP.z]} rotation={[0, .055, 0]} name="home-v234-life-map-rooted-observatory" userData={{ artRevision:'v235-folded-lineage-rift', visualIntent:'asymmetric-rooted-membrane-threshold-not-pipes', semanticOwner:'home-current-life-map-rooted-ascent', morphology:'rooted-ascent-not-tube-portal' }}>
+  return <group position={[LIFE_MAP.x, y, LIFE_MAP.z]} rotation={[0, .055, 0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{ artRevision:'v236-weathered-lineage-cleft', visualIntent:'asymmetric-rooted-stone-threshold-not-pipes', semanticOwner:'home-current-life-map-rooted-ascent', morphology:'rooted-ascent-not-tube-portal' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="02" position={[-1.42,-.62,.08]} rotation={[0,.68,-.10]} scale={[1.02,.58,.90]}/>
       <ScannedRock variant="01" position={[1.36,-.58,.04]} rotation={[0,-.78,.08]} scale={[.96,.55,.84]}/>
     </Suspense>
-    {membranes.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
-      <meshPhysicalMaterial color={index % 2 ? '#39483f' : '#4b3f47'} emissive={index % 2 ? '#112b25' : '#2b1c29'} emissiveIntensity={.055} roughness={.88} metalness={.005} clearcoat={.03} clearcoatRoughness={.86} side={THREE.DoubleSide}/>
+    {buttresses.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow>
+      <meshPhysicalMaterial color={index ? '#596052' : '#494b43'} emissive={index ? '#17251f' : '#211923'} emissiveIntensity={.055} roughness={.95} metalness={.005} clearcoat={.02} clearcoatRoughness={.92}/>
     </mesh>)}
-    <mesh geometry={aperture} position={[0, 1.28, -.82]} scale={[1, 1.10, 1]}>
-      <meshPhysicalMaterial color="#071315" emissive="#1d5a5b" emissiveIntensity={.24} roughness={.46} transparent opacity={.66} transmission={.035} depthWrite={false} side={THREE.DoubleSide}/>
+    <mesh geometry={trail} receiveShadow castShadow>
+      <meshStandardMaterial color="#615846" emissive="#26382e" emissiveIntensity={.06} roughness={.98}/>
+    </mesh>
+    <mesh geometry={aperture} position={[0, 1.28, -.82]} scale={[.72, 1.28, 1]}>
+      <meshPhysicalMaterial color="#071315" emissive="#1d5a5b" emissiveIntensity={.24} roughness={.46} transparent opacity={.58} transmission={.06} depthWrite={false} side={THREE.DoubleSide}/>
     </mesh>
     <points geometry={starField}>
       <pointsMaterial color="#b5e4d7" size={.032} sizeAttenuation transparent opacity={.86} depthWrite={false} blending={THREE.AdditiveBlending}/>
@@ -274,23 +361,24 @@ function livingMemoryGeometry() {
     const sz = position.getZ(index)
     const azimuth = Math.atan2(sz, sx)
     const normalizedY = THREE.MathUtils.clamp((sy + 1) * .5, 0, 1)
-    const crown = THREE.MathUtils.smoothstep(sy, .18, .98)
-    const taper = THREE.MathUtils.lerp(.48, 1, THREE.MathUtils.smoothstep(sy, -.94, .24))
-    const shoulder = .80 + .26 * Math.sin(Math.PI * normalizedY)
+    const crown = THREE.MathUtils.smoothstep(sy, .12, .98)
+    const taper = THREE.MathUtils.lerp(.72, 1, THREE.MathUtils.smoothstep(sy, -.94, .18))
+    const shoulder = .88 + .30 * Math.sin(Math.PI * normalizedY)
     const asymmetry = 1
       + .11 * Math.sin(azimuth + .45) * (.35 + .65 * normalizedY)
       + .065 * Math.sin(azimuth * 3 - .8) * Math.sin(Math.PI * normalizedY)
     const folded = 1 + .045 * Math.sin(azimuth * 5 + sy * 7.1) + .026 * Math.sin(azimuth * 9 - sy * 4.3)
-    const front = Math.max(0, Math.sin(azimuth))
-    const crownCleft = crown * crown * Math.pow(front, 3)
-    const sidePull = crown * .13 * Math.sin(azimuth * 2 + .35)
-    const twist = .10 * sy + .045 * Math.sin(sy * 3.2)
+    const crownCleft = crown * crown * Math.exp(-Math.pow((sx + .16) / .28, 2))
+    const sidePull = crown * .16 * Math.sin(azimuth * 2 + .35)
+    const twist = .14 * sy + .055 * Math.sin(sy * 3.2)
     const cos = Math.cos(twist), sin = Math.sin(twist)
-    const x0 = sx * .72 * shoulder * taper * asymmetry * folded + sidePull
-    const z0 = sz * .58 * shoulder * taper * (1 + .05 * Math.cos(azimuth * 2 - .4))
+    const leftLobe = .20 * Math.exp(-Math.pow((sy - .26) / .36, 2)) * Math.max(0, -sx)
+    const rightLobe = .12 * Math.exp(-Math.pow((sy - .04) / .42, 2)) * Math.max(0, sx)
+    const x0 = sx * .96 * shoulder * taper * asymmetry * folded + sidePull - leftLobe + rightLobe
+    const z0 = sz * .46 * shoulder * taper * (1 + .09 * Math.cos(azimuth * 2 - .4))
     const x = x0 * cos - z0 * sin
     const z = x0 * sin + z0 * cos
-    const y = sy * 1.12 - .20 - crownCleft * .26 + .035 * Math.sin(azimuth * 4 + sy * 5.4)
+    const y = sy * .90 - .10 - crownCleft * .31 + .055 * Math.sin(azimuth * 4 + sy * 5.4) + .05 * sx
     position.setXYZ(index, x, y, z)
   }
   geometry.computeVertexNormals()
@@ -304,10 +392,10 @@ function memoryVeinGeometry(index: number) {
   const segments = 38
   for (let step = 0; step <= segments; step++) {
     const t = step / segments
-    const y = -.76 + t * 1.54
-    const envelope = Math.sin(Math.PI * t)
-    const x = side * (.055 + lane * .055) * envelope + Math.sin(t * 5.1 + index) * .018
-    const z = .50 * envelope + .03 + lane * .018 - .08 * t
+    const y = -.66 + t * (1.30 - lane * .06)
+    const envelope = Math.pow(Math.sin(Math.PI * t), .62)
+    const x = side * (.10 + lane * .16) * envelope + Math.sin(t * 5.1 + index) * .028
+    const z = .43 * envelope + .05 + lane * .012 - .05 * t
     points.push(new THREE.Vector3(x, y, z))
   }
   return membrane(points, [.020, .008], .008)
@@ -317,20 +405,20 @@ const stateIntensity: Record<OrbState, number> = {
   dormant:.05,idle:.14,attention:.28,listening:.22,thinking:.25,speaking:.32,guiding:.23,reflecting:.18,calming:.12,privacy:.20,warning:.35,transition:.24,
 }
 
-function LivingMemoryHeartV234({ state, reducedMotion }: { state: OrbState; reducedMotion: boolean }) {
+function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
   const y = height(ORB.x, ORB.z)
   const outer = useMemo(livingMemoryGeometry, [])
-  const veins = useMemo(() => Array.from({ length: 8 }, (_, index) => memoryVeinGeometry(index)), [])
+  const veins = useMemo(() => Array.from({ length: 12 }, (_, index) => memoryVeinGeometry(index)), [])
   useEffect(() => () => { outer.dispose(); veins.forEach((geometry) => geometry.dispose()) }, [outer, veins])
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return
     const t = clock.elapsedTime
-    const breath = 1 + Math.sin(t * .62) * .018
-    root.current.position.y = y + 1.23 + Math.sin(t * .51) * .018
-    root.current.rotation.y = -.22 + Math.sin(t * .21) * .045
-    root.current.rotation.z = .045 + Math.sin(t * .31) * .014
-    root.current.scale.setScalar(1.18 * breath)
+    const breath = 1 + Math.sin(t * .62) * .014
+    root.current.position.y = y + 1.38 + Math.sin(t * .51) * .014
+    root.current.rotation.y = -.22 + Math.sin(t * .21) * .032
+    root.current.rotation.z = -.08 + Math.sin(t * .31) * .012
+    root.current.scale.setScalar(1.12 * breath)
   })
   const e = reducedMotion ? stateIntensity[state] * .82 : stateIntensity[state]
   const warning = state === 'warning'
@@ -339,12 +427,13 @@ function LivingMemoryHeartV234({ state, reducedMotion }: { state: OrbState; redu
   const skin = warning ? '#8a665c' : privacy ? '#6f8588' : '#6f7669'
   const inner = warning ? '#472922' : privacy ? '#24444a' : '#263f36'
 
-  return <group ref={root} position={[ORB.x, y + 1.23, ORB.z]} rotation={[.055,-.22,.045]} scale={1.18} name="home-v234-living-memory-heart" userData={{ artRevision:'v235-single-folded-memory-organism', visualIntent:'one-connected-asymmetric-layered-presence', semanticOwner:'home-current-orb-surface-memory', materialLanguage:'surface-bound-nervature' }}>
-    <mesh geometry={outer} scale={[.82,.88,.80]}>
+  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
+  return <group ref={root} position={[ORB.x, y + 1.38, ORB.z]} rotation={[.055,-.22,-.08]} scale={1.12} name="home-v234-living-memory-heart" onClick={activate} userData={{ artRevision:'v236-asymmetric-folded-memory-mantle', visualIntent:'one-connected-asymmetric-layered-presence', semanticOwner:'home-current-orb-surface-memory', materialLanguage:'surface-bound-nervature' }}>
+    <mesh geometry={outer} scale={[.76,.78,.74]}>
       <meshPhysicalMaterial color={inner} emissive={glow} emissiveIntensity={.12 + e * .72} roughness={.58} metalness={.01} clearcoat={.06} clearcoatRoughness={.72}/>
     </mesh>
     <mesh geometry={outer} castShadow receiveShadow>
-      <meshPhysicalMaterial color={skin} emissive={glow} emissiveIntensity={.045 + e * .34} roughness={.44} metalness={.01} clearcoat={.14} clearcoatRoughness={.48} transparent opacity={.76} transmission={.035} thickness={.22} depthWrite/>
+      <meshPhysicalMaterial color={skin} emissive={glow} emissiveIntensity={.045 + e * .34} roughness={.39} metalness={.01} clearcoat={.12} clearcoatRoughness={.55} transparent opacity={.70} transmission={.075} thickness={.34} depthWrite/>
     </mesh>
     {veins.map((geometry, index) => <mesh key={index} geometry={geometry} position={[0,-.10,.025]}>
       <meshStandardMaterial color={index % 3 === 0 ? '#bdc7ad' : '#86aa9b'} emissive={glow} emissiveIntensity={.28 + e * .82} roughness={.62} transparent opacity={.50} depthWrite={false} side={THREE.DoubleSide}/>
@@ -386,12 +475,12 @@ function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
   </points>
 }
 
-export function HomeCurrentArtRepair({ orbState, reducedMotion }: { orbState: OrbState; reducedMotion: boolean }) {
-  return <group name="home-current-authority-art-repair" userData={{ artRevision:'v235-continuous-cavern-lineage-rift-single-folded-memory-organism' }}>
+export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
+  return <group name="home-current-authority-art-repair" userData={{ artRevision:'v236-embedded-cavern-weathered-lineage-cleft-memory-mantle' }}>
     <RetireSupersededShapes/>
-    <GroundThresholdV234/>
-    <LifeMapThresholdV234/>
-    <LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion}/>
+    <GroundThresholdV234 onGround={onGround}/>
+    <LifeMapThresholdV234 onLifeMap={onLifeMap}/>
+    <LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/>
     <SubtleAtmosphereV234 reducedMotion={reducedMotion}/>
   </group>
 }
