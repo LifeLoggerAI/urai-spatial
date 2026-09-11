@@ -23,7 +23,7 @@ const destinations = [
     params: {
       from: 'home-sky',
       entryPortal: 'home-sky',
-      cameraCheckpoint: 'home-sky-ascent',
+      cameraCheckpoint: 'home-sky-ascent-complete',
     },
   },
 ] as const
@@ -124,10 +124,12 @@ async function waitForAuthorizedSettledIdentity(page: Page, destination: Destina
 }
 
 async function activate(page: Page, destination: Destination, activation: Activation) {
-  const navigation = page.getByRole('navigation', { name: 'Direct Home destinations' })
-  await expect(navigation).toBeVisible({ timeout: 30_000 })
-  const target = navigation.getByRole('button', { name: destination.label, exact: true })
-  await expect(target).toBeVisible()
+  const navigation = page.locator('.home-semantic-navigation[data-home-navigation-owner="runtime-boundary"]').first()
+  await expect(navigation).toHaveCount(1)
+  await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
+  const target = navigation.getByTestId(`home-semantic-${destination.id}`)
+  await expect(target).toHaveCount(1)
+  await expect(target).toHaveAccessibleName(destination.label)
   await expect(target).toBeEnabled()
   await target.scrollIntoViewIfNeeded()
 

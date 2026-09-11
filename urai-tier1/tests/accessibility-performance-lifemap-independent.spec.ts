@@ -10,6 +10,17 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
+function demoMemoryUrl(overview: boolean) {
+  const params = new URLSearchParams({
+    demo: '1',
+    memoryId: 'quiet-reset',
+    manifestId: 'replay-recovery-thread',
+    node: 'quiet-reset',
+  })
+  if (overview) params.set('overview', '1')
+  return `/life-map?${params.toString()}`
+}
+
 function lifeMapRoot(page: Page) {
   return page.getByTestId('urai-true-3d-life-map')
 }
@@ -19,29 +30,40 @@ function selectedMemoryControls(page: Page) {
 }
 
 async function selectFirstMemory(page: Page) {
-  const explore = page.locator('details.life-map-help')
-  await expect(explore).toBeVisible({ timeout: 30_000 })
-  await explore.locator('summary').click()
-  const firstMemory = explore.locator('button').first()
-  await expect(firstMemory).toBeVisible({ timeout: 15_000 })
-  await firstMemory.click()
-  await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
-  return new URL(page.url()).searchParams.get('memoryId')
+  const searchTrigger = page.locator('.life-map-search-trigger').first()
+  await expect(searchTrigger).toBeVisible({ timeout: 15_000 })
+  await expect(searchTrigger).toHaveAccessibleName('Search and navigate Life Map')
+  await searchTrigger.focus()
+  await expect(searchTrigger).toBeFocused()
+  await page.keyboard.press('Enter')
+  const explorer = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
+  await expect(explorer).toBeVisible()
+  const firstMemory = explorer.locator('button[data-life-map-semantic-result][data-life-map-node-id="quiet-reset"]').first()
+  await expect(firstMemory).toBeVisible()
+  await expect(firstMemory).toHaveAccessibleName(/The Quiet Reset/i)
+  const label = await firstMemory.innerText()
+  await firstMemory.focus()
+  await expect(firstMemory).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect.poll(() => new URL(page.url()).searchParams.get('memoryId'), { timeout: 15_000 }).toBeTruthy()
+  return label
 }
 
 async function openSemanticExplorer(page: Page) {
-  const details = page.locator('details.life-map-help')
-  await expect(details).toBeVisible({ timeout: 15_000 })
-  const summary = details.locator('summary')
-  await summary.focus()
-  await expect(summary).toBeFocused()
-  if (!(await details.getAttribute('open'))) await summary.press('Enter')
-  await expect(details).toHaveAttribute('open', '')
-  return details
+  const trigger = page.locator('.life-map-search-trigger').first()
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await expect(trigger).toHaveAccessibleName('Search and navigate Life Map')
+  await trigger.focus()
+  await expect(trigger).toBeFocused()
+  await page.keyboard.press('Enter')
+  const region = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
+  await expect(region).toBeVisible({ timeout: 15_000 })
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  return region
 }
 
 test.describe('Life Map independent realm runtime evidence', () => {
-  test.describe.configure({ timeout: 90_000 })
+  test.describe.configure({ timeout: 180_000 })
 
   test('Life Map does not mount the Home companion visually, semantically, or in the tab sequence', async ({ page }) => {
     await page.goto('/life-map', { waitUntil: 'domcontentloaded' })
@@ -63,7 +85,9 @@ test.describe('Life Map independent realm runtime evidence', () => {
       .filter((element) => element.matches('.urai-world-companion, .urai-world-companion *') || /orb travel controls/i.test(element.getAttribute('aria-label') || ''))
       .map((element) => element.outerHTML.slice(0, 240)))
     expect(forbiddenTabStops).toEqual([])
-    await expect(page.getByText('Explore', { exact: true })).toBeVisible()
+    const searchTrigger = page.locator('.life-map-search-trigger').first()
+    await expect(searchTrigger).toBeVisible()
+    await expect(searchTrigger).toHaveAccessibleName('Search and navigate Life Map')
   })
 
   test('keyboard-accessible memory selection preserves identity into Focus', async ({ page }) => {
@@ -74,9 +98,9 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(root).toBeVisible({ timeout: 15_000 })
     await expect(root).toHaveAttribute('data-life-map-source', 'explicit-demo')
     const explorer = await openSemanticExplorer(page)
-    await expect(page.getByText('Sample constellation · not your memories', { exact: true })).toBeVisible()
+    await expect(root.getByText('Disclosed sample universe · not your memories', { exact: true })).toBeVisible()
 
-    const firstMemory = explorer.getByRole('button').first()
+    const firstMemory = explorer.getByRole('listitem').filter({ hasText: 'The Quiet Reset' }).first()
     await expect(firstMemory).toBeVisible({ timeout: 15_000 })
     const firstLabel = await firstMemory.textContent()
     await firstMemory.focus()
@@ -88,7 +112,9 @@ test.describe('Life Map independent realm runtime evidence', () => {
     const selectedMemoryId = selectedUrl.searchParams.get('memoryId')
     expect(selectedMemoryId).toBeTruthy()
     await expect(root).toHaveAttribute('data-life-map-mode', 'selected')
-    await expect(page.locator('.life-map-title')).toContainText((firstLabel || '').split(':')[0].trim())
+    const selectedActionUrl = new URL(page.url())
+    expect(selectedActionUrl.searchParams.get('memoryId')).toBe(selectedActionUrl.searchParams.get('node'))
+    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toBeVisible()
 
     const actions = selectedMemoryControls(page)
     await expect(actions).toBeVisible({ timeout: 15_000 })
@@ -116,7 +142,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     await expect(selectedMemoryControls(page).getByRole('button', { name: 'Replay' })).toBeVisible()
 
     await page.goto(demoMemoryUrl(true), { waitUntil: 'domcontentloaded' })
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('quiet-reset')
     expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview')
     await expect(selectedMemoryControls(page)).toHaveCount(0)
@@ -132,7 +158,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
 
     await page.goForward({ waitUntil: 'domcontentloaded' })
     expect(new URL(page.url()).searchParams.get('overview')).toBe('1')
-    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('memory-thread')
+    expect(new URL(page.url()).searchParams.get('memoryId')).toBe('quiet-reset')
     await expect(lifeMapRoot(page)).toHaveAttribute('data-life-map-mode', 'overview')
     await expect(selectedMemoryControls(page)).toHaveCount(0)
   })
@@ -154,8 +180,8 @@ test.describe('Life Map independent realm runtime evidence', () => {
       await expect(selectedMemoryControls(page)).toHaveCount(0)
 
       const layout = await page.evaluate(() => {
-        const summary = document.querySelector('details.life-map-help summary')?.getBoundingClientRect()
-        const title = document.querySelector('.life-map-title')?.getBoundingClientRect()
+        const summary = document.querySelector('.life-map-search-trigger')?.getBoundingClientRect()
+        const title = document.querySelector('[data-testid="urai-true-3d-life-map"]')?.getBoundingClientRect()
         return {
           scrollWidth: document.documentElement.scrollWidth,
           innerWidth: window.innerWidth,

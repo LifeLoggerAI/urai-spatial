@@ -38,8 +38,9 @@ function teardropCore() {
     const ny = (y + 1) * .5
     const upper = .82 + .22 * Math.sin(Math.PI * THREE.MathUtils.clamp(ny, 0, 1))
     const lowerTaper = THREE.MathUtils.lerp(.48, 1, THREE.MathUtils.smoothstep(y, -.92, .18))
+    const crownTaper = THREE.MathUtils.lerp(1, .42, THREE.MathUtils.smoothstep(y, .28, .98))
     const asym = 1 + .035 * Math.sin(x * 4.8 + z * 3.1)
-    p.setXYZ(i, x * .72 * lowerTaper * asym, y * .96 - .08, z * .58 * upper * asym)
+    p.setXYZ(i, x * .68 * lowerTaper * crownTaper * asym, y * 1.04 - .24, z * .54 * upper * asym)
   }
   g.computeVertexNormals()
   return g
@@ -102,7 +103,7 @@ function ScannedRock({ variant, position, rotation, scale }: {
 
 function GroundThresholdV234() {
   const y = height(GROUND.x, GROUND.z)
-  const support = useMemo(() => Array.from({ length: 5 }, (_, i) => weatheredStone(41 + i * 9, 3)), [])
+  const support = useMemo(() => Array.from({ length: 11 }, (_, i) => weatheredStone(41 + i * 9, 3)), [])
   useEffect(() => () => support.forEach((g) => g.dispose()), [support])
   const supportPlacement = [
     { p: [-1.52,.22,-1.60] as [number,number,number], s: [.62,.48,.82] as [number,number,number], r: [0,.15,.06] as [number,number,number] },
@@ -110,6 +111,12 @@ function GroundThresholdV234() {
     { p: [-.78,2.18,-1.95] as [number,number,number], s: [.58,.32,.64] as [number,number,number], r: [.08,.28,-.1] as [number,number,number] },
     { p: [.12,2.38,-2.08] as [number,number,number], s: [.66,.28,.62] as [number,number,number], r: [-.04,.12,.05] as [number,number,number] },
     { p: [.84,2.08,-1.92] as [number,number,number], s: [.54,.34,.60] as [number,number,number], r: [.06,-.22,.08] as [number,number,number] },
+    { p: [-1.60,.92,-1.82] as [number,number,number], s: [.56,.72,.72] as [number,number,number], r: [.04,.28,-.12] as [number,number,number] },
+    { p: [1.56,.88,-1.86] as [number,number,number], s: [.52,.68,.70] as [number,number,number], r: [-.02,-.32,.10] as [number,number,number] },
+    { p: [-1.34,1.58,-1.92] as [number,number,number], s: [.58,.60,.68] as [number,number,number], r: [.10,.14,-.16] as [number,number,number] },
+    { p: [1.30,1.54,-1.96] as [number,number,number], s: [.54,.58,.66] as [number,number,number], r: [-.08,-.18,.14] as [number,number,number] },
+    { p: [-.38,2.46,-2.10] as [number,number,number], s: [.54,.27,.58] as [number,number,number], r: [.04,.32,-.04] as [number,number,number] },
+    { p: [.48,2.42,-2.12] as [number,number,number], s: [.56,.28,.60] as [number,number,number], r: [-.03,-.24,.06] as [number,number,number] },
   ]
   return <group position={[GROUND.x,y,GROUND.z]} name="home-v234-ground-scanned-stone-threshold" userData={{ artRevision:'v234-scanned-stone-cavern-mouth', visualIntent:'irregular-natural-cave-not-rock-ring' }}>
     <Suspense fallback={null}>
@@ -121,15 +128,20 @@ function GroundThresholdV234() {
     {support.map((g,i)=><mesh key={i} geometry={g} position={supportPlacement[i].p} rotation={supportPlacement[i].r} scale={supportPlacement[i].s} receiveShadow>
       <meshPhysicalMaterial color={i%2?'#3b403a':'#49483f'} roughness={.96} metalness={0} clearcoat={.015} clearcoatRoughness={.96}/>
     </mesh>)}
-    <mesh position={[0,.78,-2.46]} scale={[1.02,1.34,.18]}>
+    <mesh position={[0,.78,-2.54]} scale={[1.02,1.34,.52]}>
       <sphereGeometry args={[1,40,28]}/>
-      <meshStandardMaterial color="#05090a" emissive="#2b1510" emissiveIntensity={.22} roughness={1}/>
+      <meshStandardMaterial color="#070908" emissive="#24100b" emissiveIntensity={.16} roughness={1}/>
     </mesh>
-    <mesh position={[0,-.02,-1.22]} rotation={[-Math.PI/2,0,0]}>
-      <ringGeometry args={[.45,1.34,64]}/>
-      <meshStandardMaterial color="#4b4135" emissive="#4d2619" emissiveIntensity={.08} roughness={.98} transparent opacity={.72}/>
+    <mesh position={[0,.72,-2.68]} rotation={[Math.PI/2,0,0]} scale={[1,1.28,1]}>
+      <cylinderGeometry args={[.76,.92,2.35,48,1,true]}/>
+      <meshStandardMaterial color="#171714" emissive="#32170f" emissiveIntensity={.18} roughness={1} side={THREE.BackSide}/>
     </mesh>
-    <pointLight position={[-.12,.54,-2.12]} color="#d48760" intensity={1.35} distance={4.6} decay={2}/>
+    <mesh position={[0,-.03,-1.28]} rotation={[-Math.PI/2,0,0]}>
+      <planeGeometry args={[1.42,3.40,1,5]}/>
+      <meshStandardMaterial color="#49382d" emissive="#3b1b12" emissiveIntensity={.12} roughness={1}/>
+    </mesh>
+    <pointLight position={[-.12,.54,-2.12]} color="#d48760" intensity={1.05} distance={4.6} decay={2}/>
+    <pointLight position={[.10,.48,-3.05]} color="#9b452d" intensity={.48} distance={3.2} decay={2}/>
     <spotLight position={[.15,3.05,-.65]} target-position={[0,.55,-2.1]} color="#f0c49c" intensity={.42} distance={7.4} angle={.34} penumbra={.96} decay={2}/>
   </group>
 }
@@ -150,28 +162,42 @@ function LifeMapThresholdV234() {
       new THREE.Vector3(s[3],s[4],-.18 - i*.035),
       new THREE.Vector3(s[5],s[6],-.50 - i*.03),
       new THREE.Vector3(s[7],s[8],-.70 - i*.025),
-    ], .095 - (i%3)*.012, 10))
+    ], .054 - (i%3)*.007, 8))
   }, [])
   const innerLoops = useMemo(() => [
-    new THREE.TorusGeometry(.64,.025,8,72),
-    new THREE.TorusGeometry(.83,.018,8,72),
+    new THREE.TorusGeometry(.64,.010,6,72),
+    new THREE.TorusGeometry(.83,.007,6,72),
   ], [])
-  useEffect(() => () => { roots.forEach(g=>g.dispose()); innerLoops.forEach(g=>g.dispose()) }, [roots,innerLoops])
+  const field = useMemo(() => {
+    const positions = new Float32Array(90 * 3)
+    for (let i=0;i<90;i++) {
+      const t=(i+.5)/90, a=i*2.39996323
+      const r=.10+Math.sqrt(t)*.72
+      positions.set([Math.cos(a)*r,1.30+Math.sin(a)*r*1.02,-.92-(i%7)*.035],i*3)
+    }
+    const geometry=new THREE.BufferGeometry()
+    geometry.setAttribute('position',new THREE.BufferAttribute(positions,3))
+    return geometry
+  }, [])
+  useEffect(() => () => { roots.forEach(g=>g.dispose()); innerLoops.forEach(g=>g.dispose()); field.dispose() }, [roots,innerLoops,field])
   return <group position={[LIFE_MAP.x,y,LIFE_MAP.z]} rotation={[0,.06,0]} name="home-v234-life-map-rooted-observatory" userData={{ artRevision:'v234-thin-rooted-lineage-observatory', visualIntent:'weathered-branches-not-candy-bands' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="02" position={[-1.28,-.58,.06]} rotation={[0,.58,-.08]} scale={[.94,.56,.82]}/>
       <ScannedRock variant="01" position={[1.26,-.55,.04]} rotation={[0,-.72,.08]} scale={[.92,.54,.80]}/>
     </Suspense>
     {roots.map((g,i)=><mesh key={i} geometry={g} castShadow receiveShadow>
-      <meshPhysicalMaterial color={i%2?'#536159':'#655e64'} emissive={i%2?'#153029':'#2c2530'} emissiveIntensity={.055} roughness={.88} metalness={.015} clearcoat={.03} clearcoatRoughness={.9}/>
+      <meshPhysicalMaterial color={i%2?'#303d37':'#443b40'} emissive={i%2?'#0c1d18':'#21171d'} emissiveIntensity={.035} roughness={.94} metalness={.005} clearcoat={.01} clearcoatRoughness={.96}/>
     </mesh>)}
     {innerLoops.map((g,i)=><mesh key={`loop-${i}`} geometry={g} position={[.02,1.32,-.73-i*.035]} scale={[1,1.12,1]}>
-      <meshStandardMaterial color={i?'#8da8a0':'#b19da9'} emissive={i?'#315c55':'#5a3d52'} emissiveIntensity={.22} roughness={.52} transparent opacity={.46} depthWrite={false}/>
+      <meshStandardMaterial color={i?'#617b73':'#756672'} emissive={i?'#24483f':'#402d3b'} emissiveIntensity={.12} roughness={.68} transparent opacity={.24} depthWrite={false}/>
     </mesh>)}
-    <mesh position={[0,1.30,-.82]} scale={[.82,1.16,.13]}>
+    <mesh position={[0,1.30,-.92]} scale={[.82,1.16,.34]}>
       <sphereGeometry args={[1,48,32]}/>
-      <meshPhysicalMaterial color="#071012" emissive="#24545b" emissiveIntensity={.18} roughness={.4} transparent opacity={.64} transmission={.04} depthWrite={false}/>
+      <meshPhysicalMaterial color="#050c0d" emissive="#173d43" emissiveIntensity={.16} roughness={.52} transparent opacity={.72} transmission={.02} depthWrite={false}/>
     </mesh>
+    <points geometry={field}>
+      <pointsMaterial color="#a9d8cb" size={.026} sizeAttenuation transparent opacity={.72} depthWrite={false} blending={THREE.AdditiveBlending}/>
+    </points>
     <pointLight position={[0,1.38,-.62]} color="#8fc8bb" intensity={.68} distance={4.9} decay={2}/>
     <spotLight position={[-.25,3.35,.65]} target-position={[0,1.3,-.7]} color="#a5bfc3" intensity={.38} distance={7.4} angle={.30} penumbra={.96} decay={2}/>
   </group>
@@ -208,16 +234,20 @@ function LivingMemoryHeartV234({ state, reducedMotion }: { state: OrbState; redu
   const glow=warning?'#7f3929':privacy?'#315f68':'#315b4e'
   const skin=warning?'#9a6556':privacy?'#72919a':'#827e6e'
   return <group ref={root} position={[ORB.x,y+1.18,ORB.z]} rotation={[.04,-.16,.035]} scale={1.12} name="home-v234-living-memory-heart" userData={{ artRevision:'v234-sculptural-living-memory-seed-heart', visualIntent:'single-asymmetric-presence-not-clover' }}>
-    <mesh geometry={core} castShadow receiveShadow>
+    <mesh geometry={core} position={[0,-.10,-.02]} scale={[.88,1.02,.92]} castShadow receiveShadow>
       <meshPhysicalMaterial color={skin} emissive={glow} emissiveIntensity={e*.58} roughness={.39} metalness={.02} clearcoat={.22} clearcoatRoughness={.38}/>
     </mesh>
-    <mesh position={[-.24,.43,.08]} scale={[.52,.48,.44]}>
-      <sphereGeometry args={[.66,36,26]}/>
+    <mesh position={[-.31,.40,.06]} rotation={[.02,-.10,-.12]} scale={[.62,.56,.50]} castShadow receiveShadow>
+      <sphereGeometry args={[1,40,30]}/>
       <meshPhysicalMaterial color="#706a61" emissive={glow} emissiveIntensity={e*.32} roughness={.44} clearcoat={.12}/>
     </mesh>
-    <mesh position={[.19,.48,-.01]} scale={[.46,.44,.40]}>
-      <sphereGeometry args={[.64,36,26]}/>
+    <mesh position={[.27,.43,-.01]} rotation={[-.04,.12,.09]} scale={[.54,.52,.46]} castShadow receiveShadow>
+      <sphereGeometry args={[1,40,30]}/>
       <meshPhysicalMaterial color="#8b8371" emissive={glow} emissiveIntensity={e*.40} roughness={.40} clearcoat={.16}/>
+    </mesh>
+    <mesh position={[-.02,.56,.43]} rotation={[0,0,.04]} scale={[.10,.33,.08]}>
+      <sphereGeometry args={[1,20,16]}/>
+      <meshStandardMaterial color="#1b2522" emissive={glow} emissiveIntensity={e*.34} roughness={.82}/>
     </mesh>
     {ribs.map((g,i)=><mesh key={i} geometry={g}>
       <meshStandardMaterial color={i%2?'#aa9b86':'#9aafa2'} emissive={glow} emissiveIntensity={e*.92} roughness={.46} metalness={.04}/>

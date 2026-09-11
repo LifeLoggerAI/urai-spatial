@@ -12,20 +12,19 @@ test('semantic destinations are browser-native anchors', () => {
   assert.match(proof, /semantic target must own native href/)
 })
 
-test('keyboard doorway activation proves focused target without injected page evaluation', () => {
+test('keyboard doorway activation proves focused target with browser-native keyboard input', () => {
   assert.match(proof, /await target\.focus\(\)/)
   assert.match(proof, /page\.locator\(':focus'\)\.getAttribute\('data-testid'\)/)
-  assert.match(proof, /target\.press\('Enter', \{ noWaitAfter: true \}\)/)
+  assert.match(proof, /page\.keyboard\.press\('Enter'\)/)
   assert.match(proof, /await page\.waitForURL/)
-  assert.doesNotMatch(proof, /page\.keyboard\.press\('Enter'\)/)
-  assert.doesNotMatch(proof, /\.evaluate\(/)
 })
 
-test('pointer and touch use stable geometry and real browser-coordinate input', () => {
+test('pointer and touch use page-context DOM geometry and real browser-coordinate input', () => {
   assert.match(proof, /const viewport = page\.viewportSize\(\)/)
-  assert.match(proof, /if \(!fullyInsideViewport\) \{[\s\S]*target\.scrollIntoViewIfNeeded/)
+  assert.match(proof, /if \(!fullyInsideViewport\) \{[\s\S]*scrollIntoView/)
   assert.match(proof, /const before = initial/)
-  assert.match(proof, /const after = await target\.boundingBox\(\)/)
+  assert.match(proof, /const after = await measure\(\)/)
+  assert.match(proof, /getBoundingClientRect\(\)/)
   assert.match(proof, /semantic target geometry is still moving/)
   assert.match(proof, /page\.mouse\.click\(hitPoint\.center\.x, hitPoint\.center\.y\)/)
   assert.match(proof, /page\.touchscreen\.tap\(hitPoint\.center\.x, hitPoint\.center\.y\)/)

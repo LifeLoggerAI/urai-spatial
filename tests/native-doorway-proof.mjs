@@ -28,7 +28,14 @@ async function settleRenderedDestination(page, doorway) {
 async function stableBrowserBox(target) {
   const page = target.page()
   const viewport = page.viewportSize()
-  let initial = await target.boundingBox()
+  const testId = await target.getAttribute('data-testid')
+  const measure = () => page.evaluate((id) => {
+    const element = document.querySelector(`[data-testid="${id}"]`)
+    if (!(element instanceof HTMLElement)) return null
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  }, testId)
+  let initial = await measure()
   if (!initial) throw new Error('semantic target has no browser hit box')
   const fullyInsideViewport = viewport
     && initial.x >= 0
@@ -36,13 +43,13 @@ async function stableBrowserBox(target) {
     && initial.x + initial.width <= viewport.width
     && initial.y + initial.height <= viewport.height
   if (!fullyInsideViewport) {
-    await target.scrollIntoViewIfNeeded({ timeout: 45000 })
-    initial = await target.boundingBox()
+    await page.evaluate((id) => document.querySelector(`[data-testid="${id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }), testId)
+    initial = await measure()
     if (!initial) throw new Error('semantic target lost its browser hit box after scroll')
   }
   const before = initial
   await page.waitForTimeout(250)
-  const after = await target.boundingBox()
+  const after = await measure()
   if (!after) throw new Error('semantic target lost its browser hit box')
   const drift = Math.max(
     Math.abs(before.x - after.x),
@@ -81,7 +88,7 @@ async function activate(page, target, method) {
     await target.focus()
     const focusedTestId = await page.locator(':focus').getAttribute('data-testid')
     if (focusedTestId !== await target.getAttribute('data-testid')) throw new Error('semantic target did not receive focus')
-    await target.press('Enter', { noWaitAfter: true })
+    await page.keyboard.press('Enter')
     return { hitPoint: null }
   }
 
@@ -125,7 +132,12 @@ async function prove(browser, doorway, testCase) {
     if (testCase.method === 'keyboard') {
       record.semanticNavigationNonDominant = declaredNonDominant
     } else {
-      const navBox = await nav.boundingBox()
+      const navBox = await page.evaluate(() => {
+        const element = document.querySelector('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
+        if (!(element instanceof HTMLElement)) return null
+        const rect = element.getBoundingClientRect()
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+      })
       if (!navBox) throw new Error('semantic navigation has no browser footprint')
       const viewportArea = Math.max(1, testCase.viewport.width * testCase.viewport.height)
       const navAreaRatio = Math.max(0, navBox.width * navBox.height) / viewportArea
@@ -160,7 +172,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 13, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, injectedPageEvaluationRequired: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 14, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))

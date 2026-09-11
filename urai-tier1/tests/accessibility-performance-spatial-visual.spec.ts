@@ -5,140 +5,111 @@ const baseURL = 'http://127.0.0.1:3000'
 test.use({ baseURL })
 
 test.describe('URAI visual ownership and containment evidence', () => {
+  test.describe.configure({ timeout: 90_000 })
   test('Home direct destination controls remain non-dominant and accessible', async ({ page }) => {
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const navigation = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     await expect(navigation).toBeVisible({ timeout: 30_000 })
     await expect(navigation).toHaveAttribute('data-home-navigation-non-dominant', 'true')
-    await expect(navigation.getByRole('button', { name: 'Open Ground directly', exact: true })).toBeVisible()
-    await expect(navigation.getByRole('button', { name: 'Open Life Map directly', exact: true })).toBeVisible()
+    await expect(navigation.getByRole('link', { name: 'Open Ground directly', exact: true })).toBeVisible()
+    await expect(navigation.getByRole('link', { name: 'Open Life Map directly', exact: true })).toBeVisible()
   })
 
-  test('Life Map movement help is keyboard-operable', async ({ page }) => {
+  test('Life Map semantic search is keyboard-operable', async ({ page }) => {
     await page.goto('/life-map?demo=1&overview=1&manifestId=replay-recovery-thread', { waitUntil: 'domcontentloaded' })
-    const controls = page.locator('details.life-map-help')
-    const body = controls.locator('.life-map-help__body')
-    await expect(controls).not.toHaveAttribute('open', '')
-    await expect(body).toBeHidden()
-
-    const summary = controls.locator('summary')
-    await summary.focus()
-    await expect(summary).toBeFocused()
-    await summary.press('Enter')
-    await expect(controls).toHaveAttribute('open', '')
-    await expect(body).toBeVisible()
-    await expect(body.getByRole('button').first()).toBeVisible()
+    const trigger = page.locator('.life-map-search-trigger').first()
+    await expect(trigger).toBeVisible()
+    await expect(trigger).toHaveAccessibleName('Search and navigate Life Map')
+    await trigger.focus()
+    await expect(trigger).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    const navigator = page.locator('section.life-map-navigator[aria-label="Search and filter Life Map"]').first()
+    await expect(navigator).toBeVisible()
+    await expect(navigator.locator('button[data-life-map-semantic-result]').first()).toBeVisible()
   })
 
-  test('selected Life Map journey rail is painted, topmost, contained, and directly operable on portrait mobile', async ({ page }) => {
+  test('selected Life Map journey controls preserve identity and remain operable on portrait mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/life-map?demo=1&memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', { waitUntil: 'domcontentloaded' })
 
     const lifeMap = page.getByTestId('urai-true-3d-life-map')
     await expect(lifeMap).toBeVisible({ timeout: 15_000 })
     await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'selected')
-    await expect(page.getByRole('button', { name: 'Enter Focus', exact: true })).toBeVisible()
 
-    const rail = page.getByTestId('life-map-journey-rail')
-    const previous = rail.getByRole('button', { name: 'Previous visible life object' })
-    const next = rail.getByRole('button', { name: 'Next visible life object' })
-    const overview = rail.getByRole('button', { name: 'Overview', exact: true })
-    await expect(rail).toBeVisible()
-    await expect(rail).toHaveAttribute('data-selected', 'true')
-    await expect(previous).toBeVisible()
-    await expect(next).toBeVisible()
-    await expect(overview).toBeVisible()
+    const actions = page.getByRole('navigation', { name: 'Selected memory actions' })
+    await expect(actions).toBeVisible()
 
-    const evidence = await rail.evaluate((element) => {
-      const rect = element.getBoundingClientRect()
+    const evidence = await page.evaluate(() => {
+      const actionNav = document.querySelector<HTMLElement>('nav[aria-label="Selected memory actions"]')
       const viewport = window.visualViewport
-      const style = getComputedStyle(element)
-      const buttons = [...element.querySelectorAll<HTMLButtonElement>('button')].map((button) => {
-        const buttonRect = button.getBoundingClientRect()
-        const centerX = buttonRect.left + buttonRect.width / 2
-        const centerY = buttonRect.top + buttonRect.height / 2
-        const topmost = document.elementFromPoint(centerX, centerY)
-        const buttonStyle = getComputedStyle(button)
+      const describe = (element: HTMLElement | null) => {
+        if (!element) return null
+        const rect = element.getBoundingClientRect()
+        return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
+      }
+      const buttons = actionNav ? [...actionNav.querySelectorAll<HTMLButtonElement>('button')].map((button) => {
+        const rect = button.getBoundingClientRect()
+        const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
         return {
-          label: button.textContent?.trim() || '',
-          width: buttonRect.width,
-          height: buttonRect.height,
-          left: buttonRect.left,
-          right: buttonRect.right,
-          top: buttonRect.top,
-          bottom: buttonRect.bottom,
+          label: button.querySelector('strong')?.textContent?.trim() || button.textContent?.trim() || '',
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
           topmostOwned: topmost === button || Boolean(topmost && button.contains(topmost)),
-          pointerEvents: buttonStyle.pointerEvents,
-          visibility: buttonStyle.visibility,
-          opacity: Number.parseFloat(buttonStyle.opacity || '1'),
+          pointerEvents: getComputedStyle(button).pointerEvents,
         }
-      })
+      }) : []
       return {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
         viewportWidth: viewport?.width ?? window.innerWidth,
         viewportHeight: viewport?.height ?? window.innerHeight,
-        visibility: style.visibility,
-        opacity: Number.parseFloat(style.opacity || '1'),
-        pointerEvents: style.pointerEvents,
-        backgroundColor: style.backgroundColor,
-        borderTopWidth: style.borderTopWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        action: describe(actionNav),
         buttons,
       }
     })
 
-    await test.info().attach('life-map-selected-mobile-journey-rail.json', {
+    await test.info().attach('life-map-selected-mobile-current-journey-controls.json', {
       body: JSON.stringify(evidence, null, 2),
       contentType: 'application/json',
     })
 
-    expect(evidence.height).toBeGreaterThanOrEqual(60)
-    expect(evidence.height).toBeLessThanOrEqual(66)
-    expect(evidence.height / evidence.viewportHeight).toBeLessThan(0.1)
-    expect(evidence.width).toBeLessThanOrEqual(evidence.viewportWidth - 20)
-    expect(evidence.left).toBeGreaterThanOrEqual(0)
-    expect(evidence.right).toBeLessThanOrEqual(evidence.viewportWidth + 1)
-    expect(evidence.top).toBeGreaterThanOrEqual(0)
-    expect(evidence.bottom).toBeLessThanOrEqual(evidence.viewportHeight + 1)
-    expect(evidence.visibility).toBe('visible')
-    expect(evidence.opacity).toBeGreaterThan(0.9)
-    expect(evidence.pointerEvents).not.toBe('none')
-    expect(evidence.backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
-    expect(Number.parseFloat(evidence.borderTopWidth)).toBeGreaterThanOrEqual(1)
-    expect(evidence.buttons.map((button) => button.label)).toEqual(['Previous', 'Next', 'Overview'])
+    expect(evidence.action).not.toBeNull()
+    expect(evidence.documentWidth).toBeLessThanOrEqual(evidence.viewportWidth + 1)
+    for (const rect of [evidence.action!]) {
+      expect(rect.left).toBeGreaterThanOrEqual(0)
+      expect(rect.right).toBeLessThanOrEqual(evidence.viewportWidth + 1)
+      expect(rect.top).toBeGreaterThanOrEqual(0)
+      expect(rect.bottom).toBeLessThanOrEqual(evidence.viewportHeight + 1)
+    }
+    expect(evidence.buttons.map((button) => button.label)).toEqual(['Enter Focus', 'Replay', 'Overview'])
     for (const button of evidence.buttons) {
       expect(button.width).toBeGreaterThanOrEqual(48)
       expect(button.height).toBeGreaterThanOrEqual(48)
-      expect(button.top).toBeGreaterThanOrEqual(evidence.top)
-      expect(button.bottom).toBeLessThanOrEqual(evidence.bottom + 1)
       expect(button.topmostOwned).toBe(true)
       expect(button.pointerEvents).not.toBe('none')
-      expect(button.visibility).toBe('visible')
-      expect(button.opacity).toBeGreaterThan(0.9)
     }
 
-    await next.click()
+    await page.keyboard.press('ArrowRight')
     await expect.poll(() => {
       const url = new URL(page.url())
       return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
-    }).not.toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
-    const advancedUrl = new URL(page.url())
-    expect(advancedUrl.searchParams.get('memoryId')).toBe(advancedUrl.searchParams.get('node'))
+    }, { timeout: 15_000 }).not.toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
+    const advanced = new URL(page.url())
+    expect(advanced.searchParams.get('memoryId')).toBe(advanced.searchParams.get('node'))
 
-    await previous.click()
+    await page.keyboard.press('ArrowLeft')
     await expect.poll(() => {
       const url = new URL(page.url())
       return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
-    }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
+    }, { timeout: 15_000 }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
 
-    await expect(overview).toBeVisible()
-    await overview.click()
+    await page.keyboard.press('o')
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
-    await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toHaveCount(0)
+    await expect(actions).toHaveCount(0)
   })
 
   test('selected Life Map action owner is topmost, contained, and directly operable on portrait mobile', async ({ page }) => {

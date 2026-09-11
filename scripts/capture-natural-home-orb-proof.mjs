@@ -39,6 +39,7 @@ const runtimePaths = [
   'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx',
+  'urai-tier1/src/spatial/layout/HomeCurrentArtRepair.tsx',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx',
   'urai-tier1/src/spatial/assets/livingMemoryMaterial.ts',
   'urai-tier1/src/spatial/assets/naturalSurfaceMaps.ts',
@@ -142,7 +143,10 @@ for (const spec of cases) {
     record.semanticButtons = await nav.getByRole('button').count(); record.semanticLinks = await nav.getByRole('link').count()
     record.semanticGroundHref = await nav.getByTestId('home-semantic-ground').getAttribute('href'); record.semanticLifeMapHref = await nav.getByTestId('home-semantic-life-map').getAttribute('href')
     record.semanticOwner = await nav.getAttribute('data-home-navigation-owner'); record.semanticNonDominant = await nav.getAttribute('data-home-navigation-non-dominant')
-    record.semanticOpacity = await nav.evaluate((node) => Number.parseFloat(getComputedStyle(node).opacity || '1'))
+    record.semanticOpacity = await page.evaluate(() => {
+      const node = document.querySelector('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
+      return node instanceof HTMLElement ? Number.parseFloat(getComputedStyle(node).opacity || '1') : Number.NaN
+    })
     const visual = await imageEvidence(page)
     record.screenshot = `${spec.id}-${exactHead.slice(0,12)}.png`; await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
     record.screenshotBytes = visual.buffer.length; record.screenshotSha256 = createHash('sha256').update(visual.buffer).digest('hex')
