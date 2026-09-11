@@ -101,8 +101,31 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
     <mesh geometry={wall} position={[0, 6.8, -2]} receiveShadow>
       <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#6d8581" roughness={.86} side={THREE.BackSide} />
     </mesh>
+    <group name="mirror-reflection-basin" position={[0, .02, -3.2]}>
+      <mesh receiveShadow>
+        <cylinderGeometry args={[3.15, 3.65, .24, 96, 2]} />
+        <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#334f4d" roughness={.74} metalness={.08} />
+      </mesh>
+      <mesh position={[0, .135, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.86, 96]} />
+        <meshPhysicalMaterial color="#15383d" emissive="#0b4c55" emissiveIntensity={.14} transparent opacity={.78} roughness={.18} metalness={.08} clearcoat={.64} clearcoatRoughness={.22} />
+      </mesh>
+      <mesh position={[0, .17, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.72, 2.88, 96]} />
+        <meshBasicMaterial color="#a5edf0" transparent opacity={.16} depthWrite={false} />
+      </mesh>
+    </group>
+    {[-1, 1].flatMap(side => [0, 1, 2].map((level) => {
+      const x = side * (5.3 + level * 1.55)
+      const z = -4.4 - level * 1.7
+      return <mesh key={`${side}-${level}`} position={[x, .75 + level * .22, z]} scale={[.64 + level * .12, 1.55 + level * .34, .52 + level * .09]} rotation={[.08 * side, -.24 * side + level * .08, .05 * side]} castShadow receiveShadow>
+        <dodecahedronGeometry args={[1, 1]} />
+        <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color={level % 2 ? '#526b66' : '#667d74'} roughness={.9} />
+      </mesh>
+    }))}
     <pointLight position={[-4.8, 3.8, -3.2]} color="#d9ddc5" intensity={18} distance={17} decay={2} />
     <pointLight position={[4.2, 2.8, -4]} color="#9bc9cc" intensity={16} distance={15} decay={2} />
+    <spotLight position={[0, 8.5, 2.5]} target-position={[0, .2, -3.2]} color="#d9f7ed" intensity={28} distance={24} angle={.38} penumbra={.92} castShadow />
   </group>
 }
 
@@ -154,6 +177,10 @@ function PatternObject({ pattern, selected, onSelect, reducedMotion }: { pattern
     <mesh geometry={geometry} castShadow scale={selected ? [.62,.68,.56] : [.78,.82,.68]} rotation={[.12, pattern.position[0] * .11, pattern.position[0] * .04]}>
       <MemorySurfaceMaterial color={pattern.accent} opacity={pattern.evidenceState === 'insufficient' ? .25 : 1} reducedMotion={reducedMotion} />
     </mesh>
+    <mesh position={[0, -pattern.position[1] + .035, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <circleGeometry args={[selected ? .8 : .56, 40]} />
+      <meshBasicMaterial color={pattern.accent} transparent opacity={selected ? .16 : .075} depthWrite={false} />
+    </mesh>
     {selected ? <pointLight color={pattern.accent} intensity={1.1} distance={6} /> : null}
   </group>
 }
@@ -172,9 +199,9 @@ function MirrorScene({ patterns, selected, activeFragment, temporalIndex, onSele
   return <>
     <color attach="background" args={['#02070c']} />
     <fog attach="fog" args={[selected ? '#07131c' : '#041019', 5.5, 25]} />
-    <ambientLight intensity={0.46} />
-    <hemisphereLight intensity={0.74} color="#e8fbff" groundColor="#06131b" />
-    <directionalLight position={[4.5, 9, 5]} intensity={1.15} color="#f6fbff" castShadow shadow-radius={4} shadow-bias={-.0002} shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+    <ambientLight intensity={0.25} />
+    <hemisphereLight intensity={0.42} color="#e8fbff" groundColor="#06131b" />
+    <directionalLight position={[4.5, 9, 5]} intensity={1.05} color="#f6fbff" castShadow shadow-radius={4} shadow-bias={-.0002} shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
     <Stars radius={56} depth={28} count={cameraProps.reducedMotion ? 160 : 520} factor={1.8} fade speed={cameraProps.reducedMotion ? 0 : 0.018} />
     <MirrorCamera selected={selected} temporalIndex={temporalIndex} {...cameraProps} />
     <ChamberArchitecture reducedMotion={cameraProps.reducedMotion} />
@@ -300,7 +327,7 @@ useEffect(() => {
   const offline = !online || fixture === 'offline'
   const empty = fixture === 'empty' || patterns.length === 0
   return <main ref={shellRef} className="mirrorWorld" data-testid="mirror-spatial-world" data-mirror-renderer="webgl-r3f" data-memory-status={result.status} data-memory-id={memory.id} data-manifest-id={memory.replayManifest.id} data-demo={memory.demo ? 'true' : 'false'} data-online={offline ? 'false' : 'true'} data-selected-pattern={selected?.id ?? 'overview'} {...look}>
-    <Canvas camera={{ position: [0, CAMERA_HEIGHT, 6.8], fov: 54, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows>
+    <Canvas camera={{ position: [0, CAMERA_HEIGHT, 6.8], fov: 51, near: 0.08, far: 100 }} dpr={[1, 1.5]} shadows onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .82 }}>
       <Suspense fallback={null}><MirrorScene input={input} yaw={yaw} pitch={pitch} target={target} reducedMotion={reducedMotion} selected={selected} temporalIndex={temporalIndex} shellRef={shellRef} patterns={patterns} activeFragment={activeFragment} onSelect={selectPattern} onFragment={setActiveFragment} /></Suspense>
     </Canvas>
 

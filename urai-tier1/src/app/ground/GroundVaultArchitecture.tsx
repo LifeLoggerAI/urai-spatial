@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { Html, useGLTF, useTexture } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { T } from '@/spatial/layout/HomeWorldProductionV223Geometry'
 import { DESTINATIONS, type GroundDestination } from './GroundWorldModel'
@@ -28,21 +28,41 @@ function vaultSurface(width: number, rise: number, length: number, columns = 80,
   return geometry
 }
 
-function chamberArch(index: number) {
-  const width = 1.7 + (index % 3) * .12, rise = 2.5 + (index % 4) * .17
+const CHAMBER_PROFILE: Record<GroundDestination['chamberForm'], { width: number; rise: number; shoulder: number; crown: number; depth: number }> = {
+  pavilion: { width: 2.02, rise: 2.22, shoulder: .82, crown: .92, depth: 3.4 },
+  sanctuary: { width: 1.48, rise: 3.15, shoulder: .58, crown: 1.15, depth: 4.1 },
+  council: { width: 2.34, rise: 2.12, shoulder: .92, crown: .78, depth: 3.8 },
+  transit: { width: 1.34, rise: 3.42, shoulder: .48, crown: 1.28, depth: 4.5 },
+  restorative: { width: 2.16, rise: 1.96, shoulder: .96, crown: .68, depth: 3.25 },
+  archive: { width: 1.55, rise: 3.02, shoulder: .62, crown: 1.02, depth: 4.3 },
+  reflection: { width: 2.12, rise: 2.38, shoulder: .86, crown: .82, depth: 3.45 },
+  vault: { width: 1.72, rise: 2.78, shoulder: .68, crown: 1.06, depth: 4.6 },
+  observatory: { width: 2.26, rise: 2.54, shoulder: .9, crown: .96, depth: 3.55 },
+  aperture: { width: 1.26, rise: 3.55, shoulder: .44, crown: 1.34, depth: 4.8 },
+  theater: { width: 2.48, rise: 2.0, shoulder: 1, crown: .72, depth: 3.7 },
+}
+
+function chamberArch(destination: GroundDestination, index: number) {
+  const profile = CHAMBER_PROFILE[destination.chamberForm]
+  const width = profile.width, rise = profile.rise
   const shape = new THREE.Shape()
-  shape.moveTo(-width - .28, 0)
+  shape.moveTo(-width - .34, 0)
   for (let i = 0; i <= 64; i++) {
     const a = Math.PI - i / 64 * Math.PI
-    shape.lineTo(Math.cos(a) * (width + .28), .72 + Math.sin(a) * (rise + .22))
+    const shoulder = Math.sign(Math.cos(a)) * Math.pow(Math.abs(Math.cos(a)), profile.shoulder)
+    const crown = Math.pow(Math.sin(a), profile.crown)
+    const strata = Math.sin(a * (5 + index % 4)) * .045 * Math.sin(a)
+    shape.lineTo(shoulder * (width + .34 + strata), .62 + crown * (rise + .3))
   }
   shape.lineTo(width + .28, 0); shape.lineTo(width, 0)
   for (let i = 0; i <= 64; i++) {
     const a = i / 64 * Math.PI
-    shape.lineTo(Math.cos(a) * width, .72 + Math.sin(a) * rise)
+    const shoulder = Math.sign(Math.cos(a)) * Math.pow(Math.abs(Math.cos(a)), profile.shoulder)
+    const crown = Math.pow(Math.sin(a), profile.crown)
+    shape.lineTo(shoulder * width, .62 + crown * rise)
   }
   shape.lineTo(-width, 0); shape.closePath()
-  return new THREE.ExtrudeGeometry(shape, { depth: 2.6 + (index % 3) * .3, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .08, bevelThickness: .08, curveSegments: 32 })
+  return new THREE.ExtrudeGeometry(shape, { depth: profile.depth, bevelEnabled: true, bevelSegments: 4, steps: 1, bevelSize: .11, bevelThickness: .1, curveSegments: 32 })
 }
 
 function GroundSconce({ index }: { index: number }) {
@@ -87,6 +107,8 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
   onReady: () => void
   onSelect: (destination: GroundDestination) => void
 }) {
+  const { size } = useThree()
+  const portrait = size.height > size.width * 1.08
   const renderedFrames = useRef(0)
   useFrame(({ gl }) => {
     if (renderedFrames.current < 2 && gl.info.render.calls > 0) {
@@ -113,12 +135,15 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
     outline.closePath()
     return new THREE.ShapeGeometry(outline, 80)
   }, [])
-  const arches = useMemo(() => DESTINATIONS.map((_, index) => chamberArch(index)), [])
-  const chamberRoofs = useMemo(() => DESTINATIONS.map((_, index) => vaultSurface(1.98 + (index % 3) * .12, 2.72 + (index % 4) * .17, 5.7, 48, 12)), [])
+  const arches = useMemo(() => DESTINATIONS.map((destination, index) => chamberArch(destination, index)), [])
+  const chamberRoofs = useMemo(() => DESTINATIONS.map((destination) => {
+    const profile = CHAMBER_PROFILE[destination.chamberForm]
+    return vaultSurface(profile.width + .28, profile.rise + .34, profile.depth + 3.1, 48, 12)
+  }), [])
   const floor = useMemo(() => {
     const g = new THREE.PlaneGeometry(32, 54, 1, 1)
     const uv = g.getAttribute('uv')
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 8, uv.getY(i) * 13.5)
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 5.3, uv.getY(i) * 9.7)
     return g
   }, [])
   useEffect(() => () => { shell.dispose(); endWall.dispose(); floor.dispose(); arches.forEach(g => g.dispose()); chamberRoofs.forEach(g => g.dispose()); maps.forEach(t => t.dispose()) }, [shell, endWall, floor, arches, chamberRoofs, maps])
@@ -137,8 +162,8 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
       const facing = x < -4 ? .4 : x > 4 ? -.4 : 0
       const active = activeId === destination.id
       return <group key={destination.id} position={[x, 0, z]} rotation={[0, facing, 0]} name={`ground-enterable-threshold-${destination.id}`} userData={{ destinationHref: destination.href }} onClick={event => { event.stopPropagation(); onSelect(destination) }}>
-        {(index < 3 || active) && <Html center position={[0, 3.7 + (index % 4) * .17, -1.3]} distanceFactor={20} style={{ pointerEvents: 'none' }}>
-          <div style={{ whiteSpace: 'nowrap', color: '#edf6ed', font: '600 15px/1.3 system-ui', letterSpacing: '.035em', textShadow: '0 2px 6px #071210', padding: '5px 9px', background: 'rgba(8,23,23,.82)', borderRadius: 4 }}>{destination.label}</div>
+        {(active || (!portrait && index < 3)) && <Html center position={[0, CHAMBER_PROFILE[destination.chamberForm].rise + 1.18, -1.5]} distanceFactor={portrait ? 28 : 24} style={{ pointerEvents: 'none' }}>
+          <div style={{ whiteSpace: 'nowrap', color: '#e9f4ed', font: '650 12px/1.3 system-ui', letterSpacing: '.055em', textShadow: '0 2px 9px #071210', padding: '4px 8px', background: 'linear-gradient(135deg,rgba(8,23,23,.72),rgba(8,23,23,.36))', border: '1px solid rgba(222,244,235,.12)', borderRadius: 999 }}>{destination.label}</div>
         </Html>}
         <GroundSconce index={index} />
         {index < 3 ? <ChamberFurnishing form={destination.chamberForm} maps={maps} /> : null}
@@ -158,11 +183,11 @@ export default function GroundVaultArchitecture({ activeId, onSelect, onReady }:
         <mesh position={[0, .03, -1.1]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[1.34, 1.36, 80]} /><meshBasicMaterial color={destination.color} transparent opacity={active ? .7 : .3} />
         </mesh>
-        <pointLight position={[-1.84 - (index % 3) * .12, 1.45, .12]} color={index % 3 ? '#c5e1d5' : '#efd5a3'} intensity={active ? 14 : 8} distance={7} decay={2} />
+        <pointLight position={[-1.84 - (index % 3) * .12, 1.45, .12]} color={index % 3 ? '#b7d6cb' : '#efd5a3'} intensity={active ? 8.5 : 2.4} distance={active ? 7 : 4.8} decay={2} />
       </group>
     })}
-    <hemisphereLight args={['#e0e8d6', '#465c51', .8]} />
-    <pointLight position={[0, 7.5, 1]} intensity={70} distance={32} decay={2} color="#f1dabb" />
-    <pointLight position={[0, 7.5, -17]} intensity={55} distance={28} decay={2} color="#accbd0" />
+    <hemisphereLight args={['#c9d8cb', '#263b34', .42]} />
+    <pointLight position={[-3.5, 6.8, 1]} intensity={36} distance={27} decay={2} color="#efd1a4" />
+    <pointLight position={[5.5, 6.2, -19]} intensity={22} distance={22} decay={2} color="#8eb6b4" />
   </group>
 }

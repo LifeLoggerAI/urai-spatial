@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
@@ -9,6 +9,8 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
 const ownerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
+const authorityPath = new URL('../urai-tier1/src/app/currentHomeVisualAuthority.json', import.meta.url)
+const visualAuthority = JSON.parse(await readFile(authorityPath, 'utf8'))
 const states = [
   { id: 'permission-limited', query: 'homeState=permission-limited' },
   { id: 'unavailable', query: 'homeState=unavailable' },
@@ -17,7 +19,7 @@ const states = [
 
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-home-state-proof-6',
+  schemaVersion: visualAuthority.proofSchema,
   exactHead,
   capturedAt: new Date().toISOString(),
   runtimeContract: 'sacred-home-live-owner-orb-lifecycle-stability-accessibility-and-retained-canvas-evidence',
@@ -30,6 +32,7 @@ const receipt = {
   },
   captures: [],
   errors: [],
+  visualAuthority,
 }
 
 async function settleAnimationFrames(page, frameCount) {
@@ -185,12 +188,9 @@ async function capture(state, options = {}) {
       && record.canvasReady === 'true'
       && record.canvasCount === 1
       && record.primaryOwner === 'asset-driven'
-      && record.visibleWorld === 'v226-rooted-inhabited-memory-sanctuary'
+      && record.visibleWorld === visualAuthority.worldIdentifier
       && record.movement === 'walk-keyboard-click-touch'
-      && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx')
-      && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV3.tsx')
-      && record.runtimeAssets?.includes('sanctuary-slate-soil-albedo-v1.webp')
-      && record.runtimeAssets?.includes('polyhaven-v48/fern_02/asset.gltf')
+      && visualAuthority.runtimeAssets.every((asset) => record.runtimeAssets?.includes(asset))
       && !record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
       && record.pointerLock
       && record.accessibilityPassed
@@ -380,7 +380,7 @@ try {
     && transition.canvasReady === 'true'
     && transition.canvasCount === 1
     && transition.primaryOwner === 'asset-driven'
-    && transition.visibleWorld === 'v226-rooted-inhabited-memory-sanctuary'
+    && transition.visibleWorld === visualAuthority.worldIdentifier
     && transition.pointerLock
     && transitionErrors.length === 0
 } catch (error) {

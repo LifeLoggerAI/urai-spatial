@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
+const scene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
 
@@ -86,7 +87,9 @@ test('overview composition is opaque, authored, and independently framed for por
   const chapterAnchor = sliceBetween(world, 'function ChapterAnchor', 'function ChapterTerritories')
   const chapterTerritories = sliceBetween(world, 'function ChapterTerritories', 'function ForegroundObservatory')
   assert.match(chapterAnchor, /<AuthoredMemoryStar aura=\{aura\}/)
-  assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} \/>/)
+  assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} form=\{chapter\.form\}/)
+  assert.match(chapterTerritories, /composition: "five-asymmetric-depth-bands"/)
+  assert.match(chapterTerritories, /life-map-depth-territory-/)
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
@@ -100,4 +103,11 @@ test('visual repair preserves adaptive performance and evidence budgets', () => 
   assert.match(world, /useGLTF\.preload\(MEMORY_CHAMBER_MODEL\)/)
   assert.doesNotMatch(world, /<torusGeometry|<ringGeometry|<icosahedronGeometry|<octahedronGeometry|<tetrahedronGeometry/)
   for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-selected-arrival-sanctuary']) assert.match(world, new RegExp(marker))
+})
+
+test('capable hardware receives a bounded high-fidelity Life Map path', () => {
+  assert.match(scene, /tier: softwareRenderer === true \? "low" as const : adaptiveProfile\.tier/)
+  assert.match(scene, /adaptiveProfile\.tier === "high" \? 1\.5 : 1\.25/)
+  assert.match(scene, /postprocessing: softwareRenderer === false && adaptiveProfile\.tier === "high" && !adaptiveProfile\.reducedMotion/)
+  assert.match(scene, /shadows: softwareRenderer === false && adaptiveProfile\.tier === "high" && !adaptiveProfile\.reducedMotion/)
 })

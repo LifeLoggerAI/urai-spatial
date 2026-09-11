@@ -226,11 +226,12 @@ export default function ComposedLifeMapScene() {
   const [softwareRenderer, setSoftwareRenderer] = useState<boolean | null>(null);
   const profile = useMemo(() => ({
     ...adaptiveProfile,
-    tier: softwareRenderer === true ? "low" as const : adaptiveProfile.tier === "high" ? "medium" as const : adaptiveProfile.tier,
-    pixelRatioMax: softwareRenderer !== false ? 1 : Math.min(adaptiveProfile.pixelRatioMax, 1.25),
-    shadows: false,
-    postprocessing: false,
-    // Preserve smooth membrane silhouettes at the bounded native pixel ratio.
+    tier: softwareRenderer === true ? "low" as const : adaptiveProfile.tier,
+    pixelRatioMax: softwareRenderer !== false ? 1 : Math.min(adaptiveProfile.pixelRatioMax, adaptiveProfile.tier === "high" ? 1.5 : 1.25),
+    shadows: softwareRenderer === false && adaptiveProfile.tier === "high" && !adaptiveProfile.reducedMotion,
+    postprocessing: softwareRenderer === false && adaptiveProfile.tier === "high" && !adaptiveProfile.reducedMotion,
+    // Preserve smooth membrane silhouettes while keeping the high tier below
+    // unrestricted device DPR on dense desktop displays.
     antialias: true,
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";

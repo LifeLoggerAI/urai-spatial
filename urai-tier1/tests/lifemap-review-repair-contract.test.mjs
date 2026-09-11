@@ -24,7 +24,7 @@ test('desktop and portrait cameras target the transformed memory, including its 
   const cameraFunction = scene.slice(scene.indexOf('function selectedStagePoint('), scene.indexOf('\nfunction goalForNode('))
   const targetFor = new Function('THREE', 'lifeMapWorldPoint', ts.transpile(cameraFunction, { target: ts.ScriptTarget.ES2022 }) + '\nreturn selectedStagePoint;')(THREE, layout.lifeMapWorldPoint)
   const node = { position: [3, 2, -8] }
-  for (const [portrait, expected] of [[false, [2.9808, 1.4152, -14.3784]], [true, [2.8704, 1.3888, -13.9592]]]) {
+  for (const [portrait, expected] of [[false, [3.24, 1.8472, -11.592]], [true, [3.12, 1.7968, -11.276]]]) {
     const actual = targetFor(node, portrait, 0).toArray()
     expected.forEach((value, axis) => assert.ok(Math.abs(actual[axis] - value) < 1e-6))
     assert.ok(targetFor(node, portrait, 4).distanceTo(targetFor(node, portrait, 0)) > .5, 'indexed vertical placement must reach the camera target')

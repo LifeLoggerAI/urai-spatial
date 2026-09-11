@@ -457,10 +457,11 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
     <color attach="background" args={[memory?.visuals.sky ?? '#020712']} />
     <fog attach="fog" args={[memory?.visuals.sky ?? '#020712', 7.5, 31]} />
-    <ambientLight intensity={0.42} color="#d8efff" />
-    <hemisphereLight args={[light, '#02030a', 0.52]} />
-    <directionalLight position={[5, 8, 7]} intensity={1.5} color={light} castShadow={profile.shadows} />
-    <pointLight position={[0, 1, -1.5]} intensity={1.65} color={accent} distance={14} />
+    <ambientLight intensity={0.24} color="#d8efff" />
+    <hemisphereLight args={[light, '#02030a', 0.34]} />
+    <directionalLight position={[5, 8, 7]} intensity={1.28} color={light} castShadow={profile.shadows} />
+    <pointLight position={[0, .35, -1.7]} intensity={1.12} color={accent} distance={9} decay={2} />
+    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={1.35} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
     <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
     <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
     <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} />
@@ -569,7 +570,7 @@ export default function FocusChamberClient() {
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
     <div className="focusCanvas" aria-label="Explorable Focus chamber. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
-      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .9; setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS OBSERVATORY'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Chamber threshold'}</small><strong>{description}</strong></div></header>
     <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral Focus observatory'}><span className="apertureOrbit apertureOrbitOuter" aria-hidden="true" /><span className="apertureOrbit apertureOrbitInner" aria-hidden="true" /></section>

@@ -312,23 +312,33 @@ function LifeCore({ hidden, reducedMotion, tier }: { hidden?: boolean; reducedMo
   return <group ref={root} visible={!hidden} name="life-map-white-gold-life-core" position={[0,1.4,-18]}><AuthoredMemoryStar aura={GOLD} active siteKey={`core-${tier}`} scale={1.5} /></group>;
 }
 
-function ChapterAnchor({ aura, index }: { aura: string; index: number }) {
-  return <group name={`life-map-chapter-anchor-${index}`}><AuthoredMemoryStar aura={aura} active={false} siteKey={`chapter-${index}`} scale={.72 + (index % 3) * .08} /></group>;
+function ChapterAnchor({ aura, index, form, scale = 1 }: { aura: string; index: number; form: MemoryForm; scale?: number }) {
+  return <group name={`life-map-chapter-anchor-${index}`}><AuthoredMemoryStar aura={aura} active={false} siteKey={`chapter-${index}-${form}`} form={form} scale={scale} /></group>;
 }
 
 function ChapterTerritories() {
   const chapters = [
-    { p: [-7.4,2.2,-7.2] as Point3, aura: "#8adfff" }, { p: [6.8,3.1,-9.6] as Point3, aura: "#b18cff" },
-    { p: [-4.8,-.2,-16.4] as Point3, aura: "#ffd98a" }, { p: [7.2,.8,-20.8] as Point3, aura: "#8fd7bc" },
-    { p: [0,4.7,-27.5] as Point3, aura: "#d4a6dd" },
+    { p: [-5.8,2.1,-7.2] as Point3, aura: "#8adfff", form: "fan" as MemoryForm, satellite: [-1.45,-.65,-.9] as Point3 },
+    { p: [-1.5,-2.15,-12.3] as Point3, aura: "#df8ccc", form: "branch" as MemoryForm, satellite: [1.3,.95,-1.1] as Point3 },
+    { p: [5.45,.75,-16.2] as Point3, aura: "#d9efff", form: "petal" as MemoryForm, satellite: [-1.35,1.05,-1.5] as Point3 },
+    { p: [1.35,4.5,-22.6] as Point3, aura: "#efd098", form: "shell" as MemoryForm, satellite: [1.55,-.9,-1.7] as Point3 },
+    { p: [-4.15,-1.35,-28] as Point3, aura: "#987eb5", form: "wave" as MemoryForm, satellite: [1.2,1.25,-1.25] as Point3 },
   ];
-  return <group name="life-map-authored-chapter-regions">{chapters.map((chapter,index)=><group key={index} position={chapter.p}><ChapterAnchor aura={chapter.aura} index={index} /></group>)}</group>;
+  return <group name="life-map-authored-chapter-regions" userData={{ composition: "five-asymmetric-depth-bands" }}>{chapters.map((chapter,index)=><group key={index} position={chapter.p} name={`life-map-depth-territory-${index}`}>
+    <ChapterAnchor aura={chapter.aura} index={index} form={chapter.form} scale={.58 + index * .035} />
+    <group position={chapter.satellite} rotation={[.15 + index * .08,-.3 + index * .13,.2]}>
+      <ChapterAnchor aura={index % 2 ? ICE : chapter.aura} index={index + 5} form={(["wave","shell","fan","branch","petal"] as MemoryForm[])[index]} scale={.28 + (index % 2) * .06} />
+    </group>
+    <FieldParticles seed={510 + index * 61} count={44} radius={2.8 + index * .3} depth={4.2} height={2.8} color={chapter.aura} opacity={.18} size={.036} />
+  </group>)}</group>;
 }
 
 function ForegroundObservatory({ selected }: { selected: LifeMapNode | null }) {
   if (selected) return null;
   return <group name="life-map-foreground-observatory" position={[0,-1.0,3.2]}>
     <FieldParticles seed={730} count={90} radius={9.5} depth={3} height={1.9} color={ICE} opacity={.20} size={.04} />
+    <group position={[-6.6,.8,-.6]} rotation={[.18,.5,-.2]}><AuthoredMemoryStar aura="#7198ad" active={false} siteKey="near-memory-left" form="wave" scale={.34} /></group>
+    <group position={[6.2,-.25,-1.8]} rotation={[-.12,-.55,.26]}><AuthoredMemoryStar aura="#b19bc5" active={false} siteKey="near-memory-right" form="branch" scale={.28} /></group>
   </group>;
 }
 
@@ -419,6 +429,42 @@ function PathPulse({ curve, color, reducedMotion, offset }: { curve: THREE.Quadr
   return <group ref={pulse} position={curve.getPoint(offset % 1)} name="life-map-living-pulse"><Sparkles count={3} scale={0.16} size={3} speed={0} opacity={0.9} color={color} /></group>;
 }
 
+function LineageRibbon({ curve, color, active, protectedPath }: { curve: THREE.QuadraticBezierCurve3; color: string; active: boolean; protectedPath: boolean }) {
+  const geometry = useMemo(() => {
+    const samples = curve.getPoints(40);
+    const positions: number[] = [];
+    const indices: number[] = [];
+    const up = new THREE.Vector3(0, 1, 0);
+    const side = new THREE.Vector3();
+    const tangent = new THREE.Vector3();
+    samples.forEach((point, index) => {
+      tangent.copy(curve.getTangent(index / (samples.length - 1))).normalize();
+      side.crossVectors(tangent, up);
+      if (side.lengthSq() < .001) side.set(1, 0, 0);
+      side.normalize();
+      const taper = Math.pow(Math.sin(Math.PI * index / (samples.length - 1)), .42);
+      const width = (active ? .105 : .052) * (.28 + .72 * taper);
+      positions.push(
+        point.x + side.x * width, point.y + side.y * width, point.z + side.z * width,
+        point.x - side.x * width, point.y - side.y * width, point.z - side.z * width,
+      );
+      if (index < samples.length - 1) {
+        const a = index * 2, b = a + 1, c = a + 2, d = a + 3;
+        indices.push(a, b, c, b, d, c);
+      }
+    });
+    const next = new THREE.BufferGeometry();
+    next.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    next.setIndex(indices);
+    next.computeVertexNormals();
+    return next;
+  }, [active, curve]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh geometry={geometry} name="life-map-lineage-ribbon">
+    <meshBasicMaterial color={color} transparent opacity={protectedPath ? .018 : active ? .28 : .075} depthWrite={false} side={THREE.DoubleSide} />
+  </mesh>;
+}
+
 function SemanticPath({ source, target, active, reducedMotion, index, sourceIndex, targetIndex }: { source: LifeMapNode; target: LifeMapNode; active: boolean; reducedMotion: boolean; index: number; sourceIndex: number; targetIndex: number }) {
   const start = useMemo(() => new THREE.Vector3(...celestialNodePosition(source, sourceIndex)), [sourceIndex, source]);
   const end = useMemo(() => new THREE.Vector3(...celestialNodePosition(target, targetIndex)), [targetIndex, target]);
@@ -431,7 +477,8 @@ function SemanticPath({ source, target, active, reducedMotion, index, sourceInde
   const kind = resolvePathKind(source, target);
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return <group>
-    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? 1.25 : 1} transparent depthWrite={false} opacity={kind === "protected" ? .012 : active ? .28 : .13} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+    <LineageRibbon curve={curve} color={color} active={active} protectedPath={kind === "protected"} />
+    {active ? <Line points={curve.getPoints(48)} color={color} lineWidth={1} transparent depthWrite={false} opacity={.34} dashed={kind === "inferred" || kind === "corrected"} /> : null}
     {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * .19) % 1} /> : null}
   </group>;
 }
@@ -583,7 +630,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
 
   return <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
     <color attach="background" args={["#030815"]} />
-    <fog attach="fog" args={["#071525", 14, 88]} />
+    <fog attach="fog" args={["#071525", 18, 94]} />
     <ambientLight intensity={.18} color="#b6d7d6" />
     <hemisphereLight args={["#c9e7df", "#030709", .38]} />
     <directionalLight position={[9,14,10]} intensity={1.05} color="#d7eee5" castShadow={profile.shadows} />
@@ -595,7 +642,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
       <NebulaBreath reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
       <FieldParticles seed={1220} count={profile.tier === "low" ? 150 : 360} radius={38} depth={72} height={30} color={VIOLET} opacity={.18} size={.06} />
     </group>
-    <group name="life-map-temporal-horizon" position={[0,7,-38]}><FieldParticles seed={964} count={130} radius={22} depth={12} height={6} color={CYAN} opacity={.25} size={.045} /></group>
+    <group name="life-map-temporal-horizon" position={[0,7,-42]}><FieldParticles seed={964} count={130} radius={22} depth={12} height={6} color={CYAN} opacity={.25} size={.045} /></group>
     <group name="life-map-world-stage" scale={stageScale} position={stagePosition}>
       <LifeCore hidden reducedMotion={profile.reducedMotion} tier={profile.tier} />
       <ChapterTerritories />

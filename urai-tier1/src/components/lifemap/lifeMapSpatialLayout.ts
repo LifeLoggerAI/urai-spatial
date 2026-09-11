@@ -4,7 +4,7 @@ type Point3 = [number, number, number]
 
 export function lifeMapLocalPoint(node: LifeMapNode, index: number): Point3 {
   const [x, y, z] = node.position
-  return [x * .92, y * .72 + Math.sin(index * .91) * 1.25, z * 1.06 - 5.5]
+  return [x, y * .92 + Math.sin(index * .91) * 1.12, z - 3.4]
 }
 
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {
@@ -15,14 +15,12 @@ export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Poi
     }
   }
 
-  // V231 overview composition: the camera looks deep into the life universe, so the
-  // overview stage must occupy that full authored depth instead of collapsing the
-  // meaningful memories into a narrow ribbon near the front of the frustum.
-  // Desktop opens the chapter geography laterally; portrait prioritizes vertical
-  // depth while keeping edge landmarks inside the narrow safe frame.
+  // Overview geography is already authored in five depth bands. Projection only
+  // applies a gentle portrait compression; it must not manufacture composition by
+  // stretching the memories into a wide ribbon.
   return portrait
-    ? { scale: [.58, 1.65, 1.2], position: [0, -2, -1.5] }
-    : { scale: [2.4, 1.8, 1.45], position: [0, -2.3, -3] }
+    ? { scale: [.46, .82, .92], position: [0, -.42, .3] }
+    : { scale: [1.18, 1.12, 1], position: [0, -.55, 0] }
 }
 
 export function lifeMapWorldPoint(node: LifeMapNode, index: number, portrait: boolean): Point3 {

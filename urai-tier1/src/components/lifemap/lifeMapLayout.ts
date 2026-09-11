@@ -2,14 +2,16 @@ import type { LifeMapNode } from "./lifeMapData";
 
 export type LifeMapDisplayPosition = [number, number, number];
 
-// Keep chapter systems visibly separated in all camera profiles. The portrait
-// runtime compresses horizontal scale by design, so the authored field needs
-// meaningful world-space separation before that projection is applied.
+// The Life Map is a volume, not a diagram. Chapters deliberately occupy
+// different height and depth bands so overview framing never collapses the
+// person's history into a horizontal row. Keep these centers compact enough
+// for an intimate camera while preserving a clear near-to-deep-time journey.
 const CHAPTER_CENTERS: Record<string, LifeMapDisplayPosition> = {
-  "spring-becoming": [-10.8, 1.2, -6.4],
-  "threshold-return": [-2.7, -0.35, -10.2],
-  "relationship-orbit": [8.9, 1.35, -8.1],
-  "forward-weather": [1.6, 3.15, -16.4],
+  "spring-becoming": [-5.8, 2.1, -3.8],
+  "threshold-return": [-1.5, -2.15, -8.9],
+  "relationship-orbit": [5.45, 0.75, -12.8],
+  "forward-weather": [1.35, 4.5, -19.2],
+  "legacy-deep-time": [-4.15, -1.35, -24.6],
 };
 
 function hashUnit(value: string, salt: number) {
@@ -22,15 +24,15 @@ function hashUnit(value: string, salt: number) {
 }
 
 export function lifeMapChapterCenter(eraId?: string): LifeMapDisplayPosition {
-  return CHAPTER_CENTERS[eraId || ""] || [-4.2, 0.45, -12.4];
+  return CHAPTER_CENTERS[eraId || ""] || [-3.8, -0.8, -23.2];
 }
 
 export function lifeMapDisplayPosition(node: LifeMapNode): LifeMapDisplayPosition {
   const center = lifeMapChapterCenter(node.eraId);
   const angle = hashUnit(node.id, 17) * Math.PI * 2;
-  const radius = 1.8 + hashUnit(node.id, 31) * 2.4;
-  const lift = (hashUnit(node.id, 47) - 0.5) * 2.15;
-  const depth = (hashUnit(node.id, 71) - 0.5) * 2.3;
+  const radius = 1.15 + hashUnit(node.id, 31) * 1.75;
+  const lift = (hashUnit(node.id, 47) - 0.5) * 2.65;
+  const depth = (hashUnit(node.id, 71) - 0.5) * 3.4;
   return [
     center[0] + Math.cos(angle) * radius,
     center[1] + lift,

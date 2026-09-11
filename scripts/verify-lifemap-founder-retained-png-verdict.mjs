@@ -6,19 +6,6 @@ const receiptPath = path.join(outputDir, 'receipt.json')
 const verdictPath = path.join(outputDir, 'retained-png-verdict.json')
 const receipt = JSON.parse(await (await import('node:fs/promises')).readFile(receiptPath, 'utf8'))
 
-const MIN_BYTES = 32_000
-const MAX_LEGACY_BYTES = 120_000
-const BYTES_PER_CSS_PIXEL = 0.20
-
-function viewportByteFloor(capture) {
-  const width = Number(capture?.signal?.width || capture?.viewport?.width || 0)
-  const height = Number(capture?.signal?.height || capture?.viewport?.height || 0)
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    throw new Error(`capture lacks trustworthy dimensions: ${capture?.id || 'unknown'}`)
-  }
-  return Math.max(MIN_BYTES, Math.min(MAX_LEGACY_BYTES, Math.round(width * height * BYTES_PER_CSS_PIXEL)))
-}
-
 function isExpectedNavigationFontAbort(event) {
   return event?.kind === 'requestfailed'
     && /GET https:\/\/fonts\.gstatic\.com\/.*\.woff2 net::ERR_ABORTED$/.test(String(event?.text || ''))
@@ -37,8 +24,13 @@ if (!highResolution) throw new Error('missing dedicated high-resolution Founder 
 if (!highResolution.signal || highResolution.signal.width < 4320 || highResolution.signal.height < 2700) {
   throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
 }
-if (!highResolution.screenshot || highResolution.screenshot.bytes < 1_000_000) {
-  throw new Error('high-resolution Founder capture is suspiciously small')
+if (!highResolution.screenshot) throw new Error('high-resolution Founder capture did not retain a PNG')
+if (highResolution.signal.variance < 8
+  || highResolution.signal.luminanceRange < 20
+  || highResolution.signal.entropy < 1.2
+  || highResolution.signal.edgeDensity < 0.03
+  || highResolution.signal.occupiedQuadrants < 3) {
+  throw new Error(`high-resolution Founder capture lacks distributed retained-pixel detail: ${JSON.stringify(highResolution.signal)}`)
 }
 
 const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
@@ -52,16 +44,16 @@ for (const id of required) {
   if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
   if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
   if (!capture.screenshot) throw new Error(`${id} did not retain a screenshot receipt`)
-  const byteFloor = viewportByteFloor(capture)
-  if (capture.screenshot.bytes < byteFloor) {
-    throw new Error(`${id} retained PNG is below viewport-normalized byte floor: ${capture.screenshot.bytes} < ${byteFloor}`)
-  }
   if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
   if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
   if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
   if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
   if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
-  normalized.push({ id, bytes: capture.screenshot.bytes, byteFloor, width: capture.signal.width, height: capture.signal.height })
+  if (capture.signal.luminanceRange < 20) throw new Error(`${id} retained pixels lack meaningful dynamic range`)
+  if (capture.signal.entropy < 1.2) throw new Error(`${id} retained pixels lack meaningful luminance entropy`)
+  if (capture.signal.edgeDensity < 0.03) throw new Error(`${id} retained pixels lack distributed spatial detail`)
+  if (capture.signal.occupiedQuadrants < 3) throw new Error(`${id} rendered world lacks distributed viewport occupancy`)
+  normalized.push({ id, width: capture.signal.width, height: capture.signal.height, signal: capture.signal })
 }
 
 const observedPhases = new Map([
@@ -95,20 +87,9 @@ if (blockingEvents.length) {
 if ((receipt.captures || []).length < 28) throw new Error(`Founder proof retained fewer than 28 captures: ${(receipt.captures || []).length}`)
 
 const originalError = String(receipt.error || '')
-const normalizedLegacyByteFailure = !receipt.passed && / screenshot is suspiciously empty$/.test(originalError)
-if (!receipt.passed && !normalizedLegacyByteFailure) {
+const normalizedLegacyByteFailure = false
+if (!receipt.passed) {
   throw new Error(`Founder runner failed for a non-normalizable reason: ${originalError || 'unknown failure'}`)
-}
-
-if (normalizedLegacyByteFailure) {
-  const failedId = originalError.match(/^Error: (.+?) screenshot is suspiciously empty$/)?.[1]
-  const failedCapture = failedId ? byId.get(failedId) : null
-  if (!failedCapture) throw new Error(`legacy byte-floor failure does not identify a retained capture: ${originalError}`)
-  if (failedCapture.screenshot.bytes >= MAX_LEGACY_BYTES) throw new Error('legacy byte-floor normalization invoked for a capture that already meets the legacy floor')
-  const normalizedFloor = viewportByteFloor(failedCapture)
-  if (failedCapture.screenshot.bytes < normalizedFloor) {
-    throw new Error(`failed capture does not meet normalized floor: ${failedCapture.screenshot.bytes} < ${normalizedFloor}`)
-  }
 }
 
 const verdict = {
@@ -118,12 +99,7 @@ const verdict = {
   normalizedLegacyByteFailure,
   originalError: originalError || null,
   acceptance: 'pass',
-  method: 'viewport-normalized-byte-floor-plus-distributed-retained-png-signal',
-  byteFloor: {
-    minimumBytes: MIN_BYTES,
-    maximumLegacyBytes: MAX_LEGACY_BYTES,
-    bytesPerCssPixel: BYTES_PER_CSS_PIXEL,
-  },
+  method: 'dimensions-plus-distributed-variance-dynamic-range-entropy-edge-density-and-occupancy',
   requiredCaptures: normalized,
 }
 

@@ -9,6 +9,7 @@ import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinati
 import {
   requestUraiWorldReturn,
   requestUraiWorldTravel,
+  takePendingUraiWorldOrbOpen,
   URAI_WORLD_ORB_OPEN_EVENT,
   type UraiWorldOrbOpenDetail,
 } from './worldEvents'
@@ -114,9 +115,10 @@ export function PersistentWorldCompanion() {
     window.dispatchEvent(new CustomEvent('urai:audio-mute', { detail: { muted: !enabled } }))
   }, [audioEnabled])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
-      externalActivatorRef.current = event.detail.returnFocusTo ?? null
+      const request = takePendingUraiWorldOrbOpen() ?? event.detail
+      externalActivatorRef.current = request.returnFocusTo ?? null
       // External semantic Home controls dispatch a native window event. Commit the
       // accessibility state synchronously so heavy spatial formation work cannot
       // leave the visible companion stale/aria-hidden after an intentional click.
@@ -124,6 +126,12 @@ export function PersistentWorldCompanion() {
       publishCompanionAttention()
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
+    const pending = takePendingUraiWorldOrbOpen()
+    if (pending) {
+      externalActivatorRef.current = pending.returnFocusTo ?? null
+      setOpen(true)
+      publishCompanionAttention()
+    }
     return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
   }, [publishCompanionAttention])
 
@@ -268,12 +276,6 @@ export function PersistentWorldCompanion() {
         data-urai-audit-action="orb-controls"
         disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return
-          event.preventDefault()
-          event.stopPropagation()
-          toggleCompanion()
-        }}
       >
         <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
           <path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" />

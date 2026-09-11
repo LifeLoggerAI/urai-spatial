@@ -166,7 +166,9 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
 }
 
 function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; progress: number }) {
-  return <group name="replay-semantic-timeline" visible={false} userData={{ segmentCount: memory.replayManifest.segments.length, progress, retiredVisualRole: 'v211-no-stick-and-ball-timeline' }} />
+  return <group name="replay-semantic-timeline" visible={false} userData={{ segmentCount: memory.replayManifest.segments.length, progress, retiredVisualRole: 'v211-no-stick-and-ball-timeline' }}>
+    {memory.replayManifest.segments.map((segment) => <group key={segment.id} userData={{ replaySegment: segment.id }} />)}
+  </group>
 }
 
 function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedMemory; playing: boolean; progressMs: number }) {

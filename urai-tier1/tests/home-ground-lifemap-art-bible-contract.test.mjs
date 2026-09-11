@@ -12,6 +12,7 @@ const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const currentHomeGeometry = read('src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
 const historicalV225 = read('src/spatial/layout/HomeWorldProductionV225PolishV2.tsx')
 const currentHomeVisual = read('src/spatial/layout/HomeWorldProductionV225PolishV3.tsx')
+const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
@@ -37,7 +38,7 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
     "world.setAttribute('data-home-v225-art-layer', 'superseded-v3-visual-owner')",
     "world.setAttribute('data-home-v226-art-layer', 'rooted-canopy-weathered-banks-inhabited-ground-lineage-observatory-rooted-living-memory-presence')",
     "world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')",
-    "world.setAttribute('data-home-visible-world', 'v226-rooted-inhabited-memory-sanctuary')",
+    "world.setAttribute('data-home-visible-world', currentHomeVisualAuthority.worldIdentifier)",
     "world.setAttribute('data-home-animation-owner', 'v226-rooted-living-memory-presence')",
     "world.setAttribute('data-home-audio', 'production-opus-consent-controlled')",
     'data-home-v226-retained-pixel-rebuild="active"',
@@ -51,10 +52,10 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
   ]) has(currentHome, marker)
   assert.doesNotMatch(currentHome, /<Terrain\b|<Escarpment\b|<DestinationLights\b|<Orb\b|<HomeV225PolishV2\b/)
   assert.doesNotMatch(currentHome, /visible=\{false\}|import.*HomeV225PolishV2/)
-  const runtimeAssetList = assetHome.match(/const V226_RUNTIME_ASSETS = (.+)/)?.[1] ?? ''
-  assert.match(runtimeAssetList, /HomeWorldProductionV225PolishV3/)
-  assert.match(runtimeAssetList, /sanctuary-slate-soil-albedo-v1/)
-  assert.doesNotMatch(runtimeAssetList, /HomeWorldProductionV225PolishV2/)
+  assert.match(assetHome, /const V226_RUNTIME_ASSETS = currentHomeVisualAuthority\.runtimeAssets\.join\(' '\)/)
+  assert.ok(currentHomeVisualAuthority.runtimeAssets.includes('HomeWorldProductionV225PolishV3.tsx'))
+  assert.ok(currentHomeVisualAuthority.runtimeAssets.includes('rock-tile-floor/rock-tile-floor-diff-1k.webp'))
+  assert.ok(!currentHomeVisualAuthority.runtimeAssets.includes('HomeWorldProductionV225PolishV2.tsx'))
   for (const marker of [
     'home-v225-authored-memory-valley','home-v225-ground-sheltered-memory-basin','home-v225-life-map-rooted-memory-observatory',
     'home-v225-sculpted-sanctuary-floor','home-v225-rooted-memory-rib','home-v225-life-map-braided-lineage-vault',

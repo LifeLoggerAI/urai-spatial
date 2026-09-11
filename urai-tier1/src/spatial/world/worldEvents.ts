@@ -10,6 +10,8 @@ export type UraiWorldOrbOpenDetail = {
   returnFocusTo?: HTMLElement
 }
 
+let pendingOrbOpenDetail: UraiWorldOrbOpenDetail | null = null
+
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
 const WORLD_TRAVEL_OBSERVE_MS = 50
@@ -118,8 +120,20 @@ export function requestUraiWorldReturn() {
 
 export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) {
   if (typeof window === 'undefined') return
+  pendingOrbOpenDetail = { returnFocusTo }
   dispatchSpatialAudioCue('orb-confirm')
-  window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail: { returnFocusTo } }))
+  window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail: pendingOrbOpenDetail }))
+}
+
+/**
+ * Atomically consumes an Orb-open request made before the companion hydrated.
+ * Keeping this at the event boundary makes activation lossless without adding a
+ * second document click owner or dispatching the request twice.
+ */
+export function takePendingUraiWorldOrbOpen() {
+  const detail = pendingOrbOpenDetail
+  pendingOrbOpenDetail = null
+  return detail
 }
 
 declare global {

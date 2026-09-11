@@ -283,16 +283,16 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect, 
   return (
     <>
       <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
-      <fogExp2 attach="fog" args={["#263937", 0.026]} />
+      <fogExp2 attach="fog" args={["#172825", 0.018]} />
       <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.44} />
-      <ambientLight intensity={0.34} color="#d8ebe5" />
-      <hemisphereLight args={["#dcefe9", "#17231f", 0.68]} />
-      <directionalLight position={[9, 18, 12]} intensity={1.45} color="#efd8b8" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-11, 9, -8]} intensity={0.34} color="#91bfd0" />
-      <pointLight position={[0, 4.6, -2]} intensity={0.62} distance={20} decay={2} color="#d8aa79" />
-      <pointLight position={[7.5, 3.4, -15]} intensity={0.32} distance={18} decay={2} color="#78b7c8" />
-      <pointLight position={[-8.2, 3.8, -23]} intensity={0.28} distance={18} decay={2} color="#9d93bc" />
-      <Sparkles count={12} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={reducedMotion ? 0 : 0.025} opacity={0.045} color="#f9e7ba" />
+      <ambientLight intensity={0.2} color="#c9ddd4" />
+      <hemisphereLight args={["#dce5d5", "#101c18", 0.38]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.25} color="#efd2aa" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[-11, 9, -8]} intensity={0.2} color="#82aab1" />
+      <pointLight position={[-2.8, 4.6, -2]} intensity={0.56} distance={16} decay={2} color="#d8aa79" />
+      <pointLight position={[7.5, 3.4, -15]} intensity={0.22} distance={13} decay={2} color="#78aeb2" />
+      <pointLight position={[-8.2, 3.8, -23]} intensity={0.18} distance={13} decay={2} color="#9187a5" />
+      <Sparkles count={8} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.42} speed={reducedMotion ? 0 : 0.018} opacity={0.032} color="#f9e7ba" />
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
@@ -373,7 +373,7 @@ export default function GroundSpatialWorldClean() {
           scene.background = new THREE.Color("#101d20");
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 0.82;
+          gl.toneMappingExposure = 0.76;
         }}
       >
         <GroundScene
@@ -427,7 +427,7 @@ export default function GroundSpatialWorldClean() {
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
         .ground-brand strong{font:650 12px/1.25 system-ui;letter-spacing:.01em;color:rgba(244,251,252,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ground-home-return{position:absolute;z-index:14;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.16);border-radius:999px;background:rgba(5,20,24,.38);color:rgba(241,251,249,.82);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
-        .ground-prompt{position:absolute;z-index:10;left:50%;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px));transform:translateX(-50%);padding:8px 13px;border:1px solid rgba(235,250,245,.12);border-radius:999px;background:rgba(5,19,24,.32);backdrop-filter:blur(12px);font:720 9px/1 system-ui;letter-spacing:.11em;text-transform:uppercase;color:rgba(239,249,247,.68);pointer-events:none;white-space:nowrap}
+        .ground-prompt{position:absolute;z-index:10;left:50%;bottom:max(80px,calc(env(safe-area-inset-bottom) + 70px));transform:translateX(-50%);padding:7px 12px;border:1px solid rgba(235,250,245,.1);border-radius:999px;background:rgba(5,19,24,.24);backdrop-filter:blur(10px);font:700 9px/1 system-ui;letter-spacing:.1em;text-transform:uppercase;color:rgba(239,249,247,.68);pointer-events:none;white-space:nowrap}
         .ground-directory{position:absolute;z-index:12;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;max-width:min(720px,calc(100vw - 140px));overflow-x:auto;padding:4px 6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}
         .ground-directory::-webkit-scrollbar{display:none}
         .ground-directory button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:48px;min-height:48px;width:auto;max-width:200px;padding:0 12px;border:1px solid rgba(221,242,230,.2);border-radius:999px;background:rgba(4,18,24,.86);color:#f3fbff;cursor:pointer;transition:background .2s ease,border-color .2s ease,width .24s ease,gap .24s ease,padding .24s ease}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "urai-home-visual-authority-1",
+  "rendererOwner": "HomeWorldProductionV223.tsx",
+  "artRevision": "v226-rooted-inhabited-memory-sanctuary",
+  "worldIdentifier": "v226-rooted-inhabited-memory-sanctuary",
+  "proofSchema": "urai-home-state-proof-7",
+  "runtimeAssets": [
+    "HomeWorldProductionV223.tsx",
+    "HomeWorldProductionV223Geometry.tsx",
+    "HomeWorldProductionV225PolishV3.tsx",
+    "rock-tile-floor/rock-tile-floor-diff-1k.webp",
+    "polyhaven-v48/fern_02/asset.gltf",
+    "polyhaven-v48/rock_face_01/asset.gltf",
+    "polyhaven-v48/rock_face_02/asset.gltf"
+  ]
+}

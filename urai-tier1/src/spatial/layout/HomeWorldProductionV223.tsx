@@ -7,7 +7,7 @@ import * as THREE from 'three'
 import {resolveOrbSensoryOutput,URAI_ORB_STATE_EVENT,type OrbState,type OrbStateEventDetail} from '@/app/home/orbStateController'
 import {MobileMovementPad,stepEmbodiedMotion,useDragLook,useMovementInput,type MovementInput} from '@/spatial/navigation/EmbodiedNavigation'
 import {requestUraiWorldOrbOpen,requestUraiWorldTravel} from '@/spatial/world/worldEvents'
-import {SPAWN,ORB,GROUND,LIFE_MAP,BOUNDS} from './HomeWorldProductionV223Geometry'
+import {SPAWN,ORB,GROUND,LIFE_MAP,BOUNDS,height} from './HomeWorldProductionV223Geometry'
 import {HomeV225PolishV3} from './HomeWorldProductionV225PolishV3'
 import styles from './HomeWorldProduction.module.css'
 
@@ -25,6 +25,21 @@ function Cadence({active}:{active:boolean}){
     return()=>window.clearInterval(id)
   },[active,invalidate,setFrameloop])
   return null
+}
+
+function fittedDistance(camera: THREE.PerspectiveCamera, aspect: number, halfWidth: number, halfHeight: number, margin: number) {
+  const verticalHalf = THREE.MathUtils.degToRad(camera.fov * .5)
+  const horizontalHalf = Math.atan(Math.tan(verticalHalf) * Math.max(.28, aspect))
+  return Math.max(halfWidth / Math.tan(horizontalHalf), halfHeight / Math.tan(verticalHalf)) * margin
+}
+
+function framedApproach(camera: THREE.PerspectiveCamera, size: { width: number; height: number }, player: THREE.Vector3, focus: THREE.Vector3, halfWidth: number, halfHeight: number, margin: number) {
+  const away = player.clone().sub(focus).setY(0)
+  if (away.lengthSq() < .01) away.set(0, 0, 1)
+  away.normalize()
+  const right = new THREE.Vector3(away.z, 0, -away.x)
+  const distance = fittedDistance(camera, size.width / size.height, halfWidth, halfHeight, margin)
+  return focus.clone().addScaledVector(away, distance).addScaledVector(right, .16).add(new THREE.Vector3(0, .18, 0))
 }
 
 function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementInput;yaw:MutableRefObject<number>;pitch:MutableRefObject<number>;target:MutableRefObject<THREE.Vector3|null>;onNearby:(n:Nearby)=>void;transition:Transition;owner:MutableRefObject<HTMLElement|null>}){
@@ -60,23 +75,23 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
       // Preserve the doorway-to-doorway horizontal composition on tall screens.
       // A fixed vertical FOV cropped the outer supports at narrow aspect ratios.
       // Close approaches retain their separate intimate camera treatment.
-      const portraitFov=THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(54)/2)/(size.width/size.height))),76,110)
-      const f=size.height>size.width?(near==='orb'?58:near?76:portraitFov):(near==='orb'?48:42)
+      const portraitFov=THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(54)/2)/(size.width/size.height))),76,104)
+      const f=size.height>size.width?(near?72:portraitFov):(near==='orb'?46:42)
       if(Math.abs(camera.fov-f)>.01){camera.fov=f;camera.updateProjectionMatrix()}
     }
     const portrait=size.height>size.width
     const forward=new THREE.Vector3(-Math.sin(yaw.current)*10,(portrait ? .62 : .92)+pitch.current*.38,-Math.cos(yaw.current)*10)
     let desired=pos.current.clone().add(new THREE.Vector3(Math.sin(yaw.current)*(near?1.32:.08),portrait?1.18:1.48,Math.cos(yaw.current)*(near?1.32:.08)))
     let look=pos.current.clone().add(forward)
-    if(near==='orb'){
-      desired=pos.current.clone().add(new THREE.Vector3(.58,size.height>size.width?1.46:1.62,2.42))
-      look=destinationFocus.current.copy(ORB).add(new THREE.Vector3(0,.18,0))
+    if(near==='orb' && camera instanceof THREE.PerspectiveCamera){
+      look=destinationFocus.current.set(ORB.x,height(ORB.x,ORB.z)+1.06,ORB.z)
+      desired=framedApproach(camera,size,pos.current,look,1.62,1.86,size.height>size.width?1.34:1.22)
     }else if(near==='ground'){
-      desired=pos.current.clone().add(new THREE.Vector3(.78,size.height>size.width?1.42:1.58,1.72))
       look=destinationFocus.current.copy(GROUND).add(new THREE.Vector3(0,.44,0))
+      if(camera instanceof THREE.PerspectiveCamera) desired=framedApproach(camera,size,pos.current,look,2.30,1.72,size.height>size.width?1.24:1.14)
     }else if(near==='life-map'){
-      desired=pos.current.clone().add(new THREE.Vector3(-.78,size.height>size.width?1.45:1.62,1.72))
       look=destinationFocus.current.copy(LIFE_MAP).add(new THREE.Vector3(0,.78,0))
+      if(camera instanceof THREE.PerspectiveCamera) desired=framedApproach(camera,size,pos.current,look,2.42,1.92,size.height>size.width?1.25:1.14)
     }
     camera.position.lerp(desired,1-Math.pow(.0008,delta))
     camera.lookAt(look)
@@ -94,12 +109,13 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
   return <>
     <Cadence active={p.reducedMotion}/>
     <color attach="background" args={['#10272a']}/>
-    <fogExp2 attach="fog" args={['#607a6d',.018]}/>
+    <fogExp2 attach="fog" args={['#294946',.0145]}/>
     <HomeAtmosphericSky reducedMotion={p.reducedMotion}/>
-    <ambientLight intensity={.92} color="#e2e4d8"/>
-    <hemisphereLight args={['#dfe8df','#526057',.94]}/>
-    <directionalLight position={[-7,10,5]} intensity={1.9} color="#f3e5cb" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
-    <directionalLight position={[8,7,-10]} intensity={.88} color="#9bc5b0"/>
+    <ambientLight intensity={.28} color="#b8c9c0"/>
+    <hemisphereLight args={['#b9d1ca','#182d2a',.48]}/>
+    <directionalLight position={[-8,11,6]} intensity={2.55} color="#f2d9b7" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} shadow-bias={-.00018}/>
+    <directionalLight position={[9,6,-11]} intensity={.72} color="#79a99f"/>
+    <directionalLight position={[-2,3,-14]} intensity={.32} color="#a995c4"/>
     {/* Retired scenes remain in source history, not in the live scene graph.
         V3 exclusively owns terrain, destinations, Orb pixels and ray hits. */}
     <HomeV225PolishV3 orbState={p.orbState} reducedMotion={p.reducedMotion} onOrb={p.onOrb} onGround={p.onGround} onLifeMap={p.onLifeMap} onWalk={walk}/>
@@ -131,6 +147,6 @@ export function HomeWorldProductionV223({onOrbOpen=requestUraiWorldOrbOpen,webgl
   },[transition])
   if(!webglAvailable)return null
   const ready=canvasReady&&sceneReady,context=transition==='life-map'?'Ascending into your Life Map':transition==='ground'?'Descending into Ground':orbState==='warning'?'UrAi needs your attention':orbState==='privacy'?'Privacy controls are available':nearby==='orb'?'The Orb is here':nearby==='ground'?'The path descends':nearby==='life-map'?'The path rises into your Life Map':null
-  return <main ref={worldRef} className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v226-rooted-inhabited-memory-sanctuary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="continuous-stratified-weathered-terrain-integrated-destinations" data-home-visual-ownership="single-canvas-three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-assets-ready={ready?'true':'false'} data-home-ready={ready?'true':'warming'} data-home-input-ready={ready?'true':'false'} data-home-interaction-ready={ready?'true':'false'} data-home-player-x="0.000" data-home-player-z="4.600" data-home-distance="0.000" data-home-distance-orb={Math.hypot(SPAWN.x-ORB.x,SPAWN.z-ORB.z).toFixed(3)} data-home-distance-ground={Math.hypot(SPAWN.x-GROUND.x,SPAWN.z-GROUND.z).toFixed(3)} data-home-distance-life-map={Math.hypot(SPAWN.x-LIFE_MAP.x,SPAWN.z-LIFE_MAP.z).toFixed(3)} data-home-moving="false" data-home-rendered-frames="0" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-first-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-portal-sequence={transition==='none'?'idle':`${transition}:traversal`} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-visual-grade="v226-literal-pixel-candidate-not-certified" data-home-final-art-revision="v226-retained-pixels-pending" data-home-live-art-revision="v226-rooted-inhabited-memory-sanctuary" data-home-art-certification="fresh-exact-head-pixels-required" data-home-v226-certification="fresh-exact-head-pixels-required" data-home-v225-certification="superseded-rejected-pixels" data-home-v224-certification="superseded-rejected-pixels" data-home-v223-certification="superseded-rejected-pixels" data-home-scanned-composition="v226-dimensional-rooted-sanctuary-ground-observatory-integrated-living-memory-presence" data-home-runtime-assets="HomeWorldProductionV223.tsx HomeWorldProductionV223Geometry.tsx HomeWorldProductionV225PolishV3.tsx sanctuary-slate-soil-albedo-v1.webp polyhaven-v48/fern_02/asset.gltf" data-home-governed-identity-assets="v226-direct-runtime-topology historical-v191-glbs-unmounted" data-home-visible-production-assets="v226-weathered-memory-banks v226-rooted-inhabited-canopy v226-ground-inhabited-hearth v226-life-map-lineage-observatory v226-rooted-single-living-memory-presence" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-sanctuary-pavilion home-life-map-physical-portal" data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',backgroundColor:'#10272a'}} {...look}><Canvas className={styles.canvas} dpr={1} shadows frameloop={reducedMotion?'demand':'always'} camera={{position:[0,1.58,4.6],fov:42,near:.1,far:125}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.65;gl.shadowMap.type=THREE.PCFSoftShadowMap;gl.setClearColor(0x10272a,1);setCanvasReady(true)}}><Scene input={input} yaw={yaw} pitch={pitch} target={target} onNearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markReady} owner={worldRef}/></Canvas>{context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}{transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls"/>:null}<span className="sr-only" data-testid="urai-home-webgl-orb">The open-cleft layered living-memory presence is integrated into your private sanctuary.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied Home presence remains active.</span></main>
+  return <main ref={worldRef} className={`${styles.world} urai-asset-home-world`} data-urai-home-production data-urai-true-3d="true" data-home-primary-owner="asset-driven" data-home-visible-world="v226-rooted-inhabited-memory-sanctuary" data-home-world-character="production-cinematic-sacred-tech" data-home-physical-base="continuous-stratified-weathered-terrain-integrated-destinations" data-home-visual-ownership="single-canvas-three-dimensional-geometry" data-home-desktop-mobile-world="same-scene" data-home-embodied-self="privacy-preserving-first-person" data-home-movement="walk-keyboard-click-touch" data-home-pointer-lock="false" data-home-assets-ready={ready?'true':'false'} data-home-ready={ready?'true':'warming'} data-home-input-ready={ready?'true':'false'} data-home-interaction-ready={ready?'true':'false'} data-home-player-x="0.000" data-home-player-z="4.600" data-home-distance="0.000" data-home-distance-orb={Math.hypot(SPAWN.x-ORB.x,SPAWN.z-ORB.z).toFixed(3)} data-home-distance-ground={Math.hypot(SPAWN.x-GROUND.x,SPAWN.z-GROUND.z).toFixed(3)} data-home-distance-life-map={Math.hypot(SPAWN.x-LIFE_MAP.x,SPAWN.z-LIFE_MAP.z).toFixed(3)} data-home-moving="false" data-home-rendered-frames="0" data-home-nearby={nearby??'none'} data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-first-person'} data-home-scene-phase={transition==='none'?'HOME':transition.toUpperCase()} data-home-portal-sequence={transition==='none'?'idle':`${transition}:traversal`} data-home-portal-lifecycle="environmental-approach-traversal-arrival" data-home-input-locked={transition!=='none'?'true':'false'} data-home-orb-state={orbState} data-home-orb-clip={resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-orb-model-clip={reducedMotion?'stopped-reduced-motion':resolveOrbSensoryOutput(orbState,reducedMotion,true).animation} data-home-visual-grade="v226-literal-pixel-candidate-not-certified" data-home-final-art-revision="v226-retained-pixels-pending" data-home-live-art-revision="v226-rooted-inhabited-memory-sanctuary" data-home-art-certification="fresh-exact-head-pixels-required" data-home-v226-certification="fresh-exact-head-pixels-required" data-home-v225-certification="superseded-rejected-pixels" data-home-v224-certification="superseded-rejected-pixels" data-home-v223-certification="superseded-rejected-pixels" data-home-scanned-composition="v226-dimensional-rooted-sanctuary-ground-observatory-integrated-living-memory-presence" data-home-runtime-assets="HomeWorldProductionV223.tsx HomeWorldProductionV223Geometry.tsx HomeWorldProductionV225PolishV3.tsx rock-tile-floor/rock-tile-floor-diff-1k.webp polyhaven-v48/fern_02/asset.gltf" data-home-governed-identity-assets="v226-direct-runtime-topology historical-v191-glbs-unmounted" data-home-visible-production-assets="v226-weathered-memory-banks v226-rooted-inhabited-canopy v226-ground-inhabited-hearth v226-life-map-lineage-observatory v226-rooted-single-living-memory-presence" data-home-authored-regions="home-authored-terrain home-mountain-horizon home-sanctuary-pavilion home-life-map-physical-portal" data-testid="home-visible-navigable-sanctuary-world" style={{position:'relative',overflow:'hidden',backgroundColor:'#10272a'}} {...look}><Canvas className={styles.canvas} dpr={1} shadows frameloop={reducedMotion?'demand':'always'} camera={{position:[0,1.58,4.6],fov:42,near:.1,far:125}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.outputColorSpace=THREE.SRGBColorSpace;gl.toneMapping=THREE.ACESFilmicToneMapping;gl.toneMappingExposure=1.65;gl.shadowMap.type=THREE.PCFSoftShadowMap;gl.setClearColor(0x10272a,1);setCanvasReady(true)}}><Scene input={input} yaw={yaw} pitch={pitch} target={target} onNearby={setNearby} transition={transition} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markReady} owner={worldRef}/></Canvas>{context?<div className={`${styles.worldHint} home-world-context`} role="status" aria-live="polite">{context}</div>:null}{transition==='none'&&mobile?<MobileMovementPad input={input} label="Home movement controls"/>:null}<span className="sr-only" data-testid="urai-home-webgl-orb">The open-cleft layered living-memory presence is integrated into your private sanctuary.</span><span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving embodied Home presence remains active.</span></main>
 }
 export const HomeWorldProduction=HomeWorldProductionV223

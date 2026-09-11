@@ -5,6 +5,8 @@ import ts from 'typescript'
 import * as THREE from 'three'
 
 const source = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV225PolishV3.tsx', import.meta.url), 'utf8')
+const orbBaseScale = Number(source.match(/const ORB_BASE_SCALE = ([\d.]+)/)?.[1])
+assert.ok(Number.isFinite(orbBaseScale))
 const thresholdSource = source.slice(source.indexOf('function grownThresholdGeometry('), source.indexOf('function hearthStoneGeometry('))
 const makeThreshold = new Function('THREE', `${ts.transpile(thresholdSource)}; return grownThresholdGeometry;`)(THREE)
 
@@ -31,12 +33,12 @@ function simulate(fps, reducedMotion = false) {
   const root = { current: new THREE.Group() }
   const pose = { s: [1.1, .9, 1], r: [.2, -.3, .1], speed: 1 }
   let update
-  new Function('THREE', 'root', 'pose', 'reducedMotion', 'useFrame', frameSource)(THREE, root, pose, reducedMotion, fn => { update = fn })
+  new Function('THREE', 'root', 'pose', 'reducedMotion', 'useFrame', 'ORB_BASE_SCALE', frameSource)(THREE, root, pose, reducedMotion, fn => { update = fn }, orbBaseScale)
   const clock = { elapsedTime: 0 }
   update({ clock }, 1 / fps)
   const first = root.current.scale.x
   for (let i = 1; i < fps; i++) update({ clock }, 1 / fps)
-  return { first, scale: root.current.scale.x, rotation: root.current.rotation.y, target: 1.1 * 1.72 }
+  return { first, scale: root.current.scale.x, rotation: root.current.rotation.y, target: 1.1 * orbBaseScale }
 }
 test('Orb pose transitions ease consistently across frame rates', () => {
   const a = simulate(30), b = simulate(60)

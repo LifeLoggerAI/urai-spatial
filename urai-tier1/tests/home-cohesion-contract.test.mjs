@@ -64,5 +64,6 @@ test('Home runtime handles WebGL loss and one recovery attempt before semantic f
   assert.match(runtime, /webglcontextlost/)
   assert.match(runtime, /webglcontextrestored/)
   assert.match(runtime, /recoveryAttemptsRef\.current >= 1/)
-  assert.match(runtime, /setRendererState\('failed'\)/)
+  assert.match(runtime, /commitRendererState\('failed'\)/)
+  assert.match(runtime, /data-webgl-recovery-attempts=/)
 })

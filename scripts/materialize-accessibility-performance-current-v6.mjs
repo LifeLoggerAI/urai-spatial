@@ -87,10 +87,9 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
     "    const orb = page.getByRole('button', { name: /open orb travel controls/i })",
     `    const companionRuntimeOrb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(companionRuntimeOrb).toBeEnabled({ timeout: 15_000 })
-    await expect(page.locator('html')).toHaveAttribute('data-home-semantic-orb-bridge', 'ready', { timeout: 15_000 })
     const orb = page.getByRole('button', { name: 'Open URAI Orb companion', exact: true })`,
     1,
-    'current visible Home Orb activator after companion and semantic bridge hydration for target sizing',
+    'current visible Home Orb activator after companion hydration for target sizing',
   )
   source = replaceExact(
     source,
@@ -117,7 +116,6 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')`,
     `    const companionRuntimeOrb = page.locator('[data-urai-audit-action="orb-controls"]')
     await expect(companionRuntimeOrb).toBeEnabled({ timeout: 15_000 })
-    await expect(page.locator('html')).toHaveAttribute('data-home-semantic-orb-bridge', 'ready', { timeout: 15_000 })
     const orb = page.getByRole('button', { name: 'Open URAI Orb companion', exact: true })
     await expect(orb).toBeVisible()
     await expect(orb).toBeEnabled()
@@ -130,7 +128,7 @@ await transformFile('urai-tier1/tests/accessibility-performance-evidence.spec.ts
     await expect(orb).toBeFocused()
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')`,
     1,
-    'current Home semantic Orb activation after companion and semantic bridge hydration with focus-return lifecycle',
+    'current Home semantic Orb activation after companion hydration with focus-return lifecycle',
   )
   return source
 })

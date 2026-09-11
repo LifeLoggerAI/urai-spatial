@@ -37,6 +37,51 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   pointer-events: none !important;
 }
 
+/* Let the reflection chamber remain visible around its source record. The
+   evidence panel is an instrument in the world, not a full-height dashboard. */
+.mirrorWorld::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 57%, transparent 0 24%, rgba(1, 5, 9, .1) 50%, rgba(1, 4, 8, .68) 100%),
+    linear-gradient(90deg, rgba(1, 6, 10, .42), transparent 27% 73%, rgba(1, 6, 10, .34));
+}
+
+.mirrorWorld .mirrorInspection {
+  right: max(28px, env(safe-area-inset-right));
+  top: max(72px, calc(env(safe-area-inset-top) + 54px));
+  width: min(380px, 32vw);
+  max-height: calc(100svh - 190px);
+  border-radius: 28px 28px 28px 10px;
+  background: linear-gradient(150deg, rgba(5, 24, 30, .78), rgba(3, 13, 23, .58));
+  box-shadow:
+    0 34px 120px rgba(0, 0, 0, .52),
+    -22px 18px 80px rgba(71, 204, 210, .08),
+    inset 0 1px rgba(235, 255, 255, .08);
+  backdrop-filter: blur(22px) saturate(1.08);
+}
+
+.mirrorWorld .mirrorPatternRail {
+  gap: 6px;
+  padding: 5px;
+  background: rgba(3, 16, 27, .72);
+  backdrop-filter: blur(14px);
+}
+
+.mirrorWorld .mirrorPatternRail button {
+  min-width: 138px;
+  min-height: 52px;
+  padding: 7px 12px;
+  background: rgba(10, 27, 37, .72);
+}
+
+.mirrorWorld .mirrorPatternRail button[aria-pressed='true'] {
+  background: linear-gradient(135deg, #dffcff, #a8e6e8);
+}
+
 @media (max-width: 760px) {
   body:has(.mirrorWorld .mirrorInspection) .urai-world-companion {
     display: none !important;
@@ -65,5 +110,21 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
     position: relative;
     z-index: 101;
     pointer-events: auto;
+  }
+
+  .mirrorWorld .mirrorInspection {
+    left: 12px;
+    right: 12px;
+    top: max(72px, calc(env(safe-area-inset-top) + 62px));
+    bottom: max(184px, calc(env(safe-area-inset-bottom) + 178px));
+    width: auto;
+    max-height: none;
+    border-radius: 24px 24px 12px 12px;
+    background: linear-gradient(180deg, rgba(4, 20, 28, .88), rgba(3, 13, 23, .72));
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorPatternRail,
+  .mirrorWorld:has(.mirrorInspection) .mirrorAnnouncement {
+    display: none;
   }
 }

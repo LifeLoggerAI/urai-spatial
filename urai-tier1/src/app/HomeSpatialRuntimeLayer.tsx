@@ -34,6 +34,7 @@ export default function HomeSpatialRuntimeLayer() {
   const homeRuntimeActive = homeRouteActive && webglAvailable === true
   const runtimeRef = useRef<HTMLElement>(null)
   const recoveryAttemptsRef = useRef(0)
+  const rendererStateRef = useRef<RendererState>('ready')
   const [rendererState, setRendererState] = useState<RendererState>('ready')
   const [recoveryKey, setRecoveryKey] = useState(0)
   const [assetsReady, setAssetsReady] = useState(false)
@@ -53,11 +54,16 @@ export default function HomeSpatialRuntimeLayer() {
     }
   }, [homeRuntimeActive, rendererState])
 
+  const commitRendererState = (state: RendererState) => {
+    rendererStateRef.current = state
+    setRendererState(state)
+  }
+
   // Attach before the browser can paint a newly mounted canvas. The recovery
   // contract deliberately dispatches a context-loss event immediately after a
   // canvas becomes visible; a passive effect leaves a real race there.
   useLayoutEffect(() => {
-    if (!homeRuntimeActive || rendererState === 'failed') {
+    if (!homeRuntimeActive) {
       setAssetsReady(false)
       return
     }
@@ -70,18 +76,22 @@ export default function HomeSpatialRuntimeLayer() {
     const onContextLost = (event: Event) => {
       event.preventDefault()
       if (recoveryAttemptsRef.current >= 1) {
-        setRendererState('failed')
+        commitRendererState('failed')
         return
       }
       recoveryAttemptsRef.current += 1
-      setRendererState('recovering')
+      commitRendererState('recovering')
+      setAssetsReady(false)
       recoveryTimer = setTimeout(() => {
         setRecoveryKey((value) => value + 1)
-        setRendererState('ready')
       }, 250)
     }
 
-    const onContextRestored = () => setRendererState('ready')
+    const onContextRestored = () => {
+      if (recoveryTimer) clearTimeout(recoveryTimer)
+      recoveryTimer = null
+      commitRendererState('ready')
+    }
 
     const attach = () => {
       const canvas = root.querySelector('canvas')
@@ -93,7 +103,9 @@ export default function HomeSpatialRuntimeLayer() {
         attachedCanvas.addEventListener('webglcontextrestored', onContextRestored)
       }
       const owner = root.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-      setAssetsReady(owner?.getAttribute('data-home-assets-ready') === 'true')
+      const ready = owner?.getAttribute('data-home-assets-ready') === 'true'
+      setAssetsReady(ready)
+      if (ready && rendererStateRef.current === 'recovering') commitRendererState('ready')
     }
 
     setAssetsReady(false)
@@ -107,7 +119,7 @@ export default function HomeSpatialRuntimeLayer() {
       attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
       attachedCanvas?.removeEventListener('webglcontextrestored', onContextRestored)
     }
-  }, [homeRuntimeActive, recoveryKey, rendererState])
+  }, [homeRuntimeActive, recoveryKey])
 
   useEffect(() => {
     if (!homeRuntimeActive || rendererState === 'failed') return
@@ -220,6 +232,8 @@ export default function HomeSpatialRuntimeLayer() {
       data-home-ground-affordance="home-ground-environmental-threshold"
       data-home-life-map-affordance="home-life-map-sky-lookout"
       data-home-context-owner="world-local-context-only"
+      data-webgl-state={rendererState}
+      data-webgl-recovery-attempts={recoveryAttemptsRef.current}
       data-webgl-ready={rendererState === 'ready' ? 'true' : 'recovering'}
       aria-label="URAI living spatial Home"
     >
