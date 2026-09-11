@@ -15,14 +15,16 @@ test('semantic destinations are browser-native anchors', () => {
 test('keyboard doorway activation proves focused target without injected page evaluation', () => {
   assert.match(proof, /await target\.focus\(\)/)
   assert.match(proof, /page\.locator\(':focus'\)\.getAttribute\('data-testid'\)/)
-  assert.match(proof, /target\.press\('Enter'\)/)
+  assert.match(proof, /target\.press\('Enter', \{ noWaitAfter: true \}\)/)
+  assert.match(proof, /await page\.waitForURL/)
   assert.doesNotMatch(proof, /page\.keyboard\.press\('Enter'\)/)
   assert.doesNotMatch(proof, /\.evaluate\(/)
 })
 
 test('pointer and touch use stable geometry and real browser-coordinate input', () => {
-  assert.match(proof, /target\.scrollIntoViewIfNeeded/)
-  assert.match(proof, /const before = await target\.boundingBox\(\)/)
+  assert.match(proof, /const viewport = page\.viewportSize\(\)/)
+  assert.match(proof, /if \(!fullyInsideViewport\) \{[\s\S]*target\.scrollIntoViewIfNeeded/)
+  assert.match(proof, /const before = initial/)
   assert.match(proof, /const after = await target\.boundingBox\(\)/)
   assert.match(proof, /semantic target geometry is still moving/)
   assert.match(proof, /page\.mouse\.click\(hitPoint\.center\.x, hitPoint\.center\.y\)/)
