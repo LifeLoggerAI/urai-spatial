@@ -34,7 +34,7 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
   const destinationFocus=useRef(new THREE.Vector3())
   useEffect(()=>{
     camera.position.set(0,1.58,4.6)
-    camera.lookAt(0,1.05,-9.2)
+    camera.lookAt(-.32,1.18,-5.5)
     camera.near=.1
     camera.far=125
     camera.updateProjectionMatrix()
