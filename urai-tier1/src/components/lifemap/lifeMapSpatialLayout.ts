@@ -1,10 +1,15 @@
 import type { LifeMapNode } from './lifeMapData'
+import { lifeMapDisplayPosition } from './lifeMapLayout'
 
 type Point3 = [number, number, number]
 
-export function lifeMapLocalPoint(node: LifeMapNode, index: number): Point3 {
-  const [x, y, z] = node.position
-  return [x, y * .92 + Math.sin(index * .91) * 1.12, z - 3.4]
+export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
+  // The semantic memory graph already has an authored five-band geography.
+  // Use that authority directly instead of re-projecting the legacy shallow
+  // node.position values into a ribbon. The -3.4 offset keeps the authored
+  // chapter centers aligned with the production territory landmarks.
+  const [x, y, z] = lifeMapDisplayPosition(node)
+  return [x, y, z - 3.4]
 }
 
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {
@@ -15,9 +20,9 @@ export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Poi
     }
   }
 
-  // Overview geography is already authored in five depth bands. Projection only
-  // applies a gentle portrait compression; it must not manufacture composition by
-  // stretching the memories into a wide ribbon.
+  // Overview geography is authored in five depth bands. Projection only
+  // applies a gentle portrait compression; it must not manufacture composition
+  // by stretching memories into a wide ribbon.
   return portrait
     ? { scale: [.46, .82, .92], position: [0, -.42, .3] }
     : { scale: [1.18, 1.12, 1], position: [0, -.55, 0] }
@@ -41,8 +46,8 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const target = min.map((value, axis) => (value + max[axis]) / 2) as Point3
   const verticalTan = Math.tan((portrait ? 50 : 52) * Math.PI / 360)
   const horizontalTan = verticalTan * Math.max(aspect, .2)
-  // Include the artifact envelope, not just its center. The previous fixed
-  // portrait camera cut off an entire chapter to the left of the viewport.
+  // Include the artifact envelope, not just its center, so portrait fitting
+  // retains every chapter while preserving the authored near/deep ordering.
   let distance = 8
   for (const point of points) {
     const horizontalFit = (Math.abs(point[0] - target[0]) + 2.2 * stage.scale[0]) / (horizontalTan * .88)

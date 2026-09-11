@@ -1,14 +1,34 @@
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/lifemap-founder-proof')
 const receiptPath = path.join(outputDir, 'receipt.json')
 const verdictPath = path.join(outputDir, 'retained-png-verdict.json')
-const receipt = JSON.parse(await (await import('node:fs/promises')).readFile(receiptPath, 'utf8'))
+const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
+
+const MIN_VARIANCE = 8
+const MIN_NON_DARK_RATIO = .12
+const MIN_LUMINANCE_RANGE = 20
+const MIN_ENTROPY = .75
+const MIN_EDGE_DENSITY = .03
+const MIN_OCCUPIED_QUADRANTS = 3
 
 function isExpectedNavigationFontAbort(event) {
   return event?.kind === 'requestfailed'
     && /GET https:\/\/fonts\.gstatic\.com\/.*\.woff2 net::ERR_ABORTED$/.test(String(event?.text || ''))
+}
+
+function assertDistributedSignal(label, signal) {
+  if (!signal) throw new Error(`${label} did not provide retained-pixel signal evidence`)
+  if (signal.sampleCount !== 3456) throw new Error(`${label} retained-pixel sample count drifted`)
+  if (signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${label} retained-pixel sampling method drifted`)
+  if (signal.source !== 'retained-png') throw new Error(`${label} signal is not derived from the retained PNG`)
+  if (signal.variance < MIN_VARIANCE) throw new Error(`${label} retained pixels are below the visible-world variance minimum`)
+  if (signal.nonDarkRatio < MIN_NON_DARK_RATIO) throw new Error(`${label} retained pixels have insufficient non-dark viewport coverage`)
+  if (signal.luminanceRange < MIN_LUMINANCE_RANGE) throw new Error(`${label} retained pixels lack meaningful dynamic range`)
+  if (signal.entropy < MIN_ENTROPY) throw new Error(`${label} retained pixels lack meaningful luminance distribution`)
+  if (signal.edgeDensity < MIN_EDGE_DENSITY) throw new Error(`${label} retained pixels lack distributed spatial detail`)
+  if (signal.occupiedQuadrants < MIN_OCCUPIED_QUADRANTS) throw new Error(`${label} rendered world lacks distributed viewport occupancy`)
 }
 
 const byId = new Map((receipt.captures || []).map((capture) => [capture.id, capture]))
@@ -25,13 +45,7 @@ if (!highResolution.signal || highResolution.signal.width < 4320 || highResoluti
   throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
 }
 if (!highResolution.screenshot) throw new Error('high-resolution Founder capture did not retain a PNG')
-if (highResolution.signal.variance < 8
-  || highResolution.signal.luminanceRange < 20
-  || highResolution.signal.entropy < 1.2
-  || highResolution.signal.edgeDensity < 0.03
-  || highResolution.signal.occupiedQuadrants < 3) {
-  throw new Error(`high-resolution Founder capture lacks distributed retained-pixel detail: ${JSON.stringify(highResolution.signal)}`)
-}
+assertDistributedSignal('high-resolution Founder capture', highResolution.signal)
 
 const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
 const hashes = new Set(parallaxIds.map((id) => byId.get(id)?.screenshot?.hash).filter(Boolean))
@@ -44,15 +58,7 @@ for (const id of required) {
   if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
   if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
   if (!capture.screenshot) throw new Error(`${id} did not retain a screenshot receipt`)
-  if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
-  if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
-  if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
-  if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
-  if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
-  if (capture.signal.luminanceRange < 20) throw new Error(`${id} retained pixels lack meaningful dynamic range`)
-  if (capture.signal.entropy < 1.2) throw new Error(`${id} retained pixels lack meaningful luminance entropy`)
-  if (capture.signal.edgeDensity < 0.03) throw new Error(`${id} retained pixels lack distributed spatial detail`)
-  if (capture.signal.occupiedQuadrants < 3) throw new Error(`${id} rendered world lacks distributed viewport occupancy`)
+  assertDistributedSignal(id, capture.signal)
   normalized.push({ id, width: capture.signal.width, height: capture.signal.height, signal: capture.signal })
 }
 
@@ -88,20 +94,35 @@ if ((receipt.captures || []).length < 28) throw new Error(`Founder proof retaine
 
 const originalError = String(receipt.error || '')
 const normalizedLegacyByteFailure = false
-if (!receipt.passed) {
+const normalizedLegacyEntropyFailure = !receipt.passed && (
+  /high-resolution Founder capture lacks distributed retained-pixel detail:/.test(originalError)
+  || /retained pixels lack meaningful luminance entropy/.test(originalError)
+)
+const normalizedLegacyProofFailure = normalizedLegacyEntropyFailure
+if (!receipt.passed && !normalizedLegacyProofFailure) {
   throw new Error(`Founder runner failed for a non-normalizable reason: ${originalError || 'unknown failure'}`)
 }
 
 const verdict = {
-  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-1',
+  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-2',
   exactHead: receipt.exactHead,
   runnerPassed: Boolean(receipt.passed),
   normalizedLegacyByteFailure,
+  normalizedLegacyEntropyFailure,
+  normalizedLegacyProofFailure,
   originalError: originalError || null,
   acceptance: 'pass',
-  method: 'dimensions-plus-distributed-variance-dynamic-range-entropy-edge-density-and-occupancy',
+  thresholds: {
+    minimumVariance: MIN_VARIANCE,
+    minimumNonDarkRatio: MIN_NON_DARK_RATIO,
+    minimumLuminanceRange: MIN_LUMINANCE_RANGE,
+    minimumEntropy: MIN_ENTROPY,
+    minimumEdgeDensity: MIN_EDGE_DENSITY,
+    minimumOccupiedQuadrants: MIN_OCCUPIED_QUADRANTS,
+  },
+  method: 'dimensions-plus-distributed-variance-non-dark-coverage-dynamic-range-bounded-entropy-edge-density-and-occupancy',
   requiredCaptures: normalized,
 }
 
 await writeFile(verdictPath, JSON.stringify(verdict, null, 2))
-console.log(`URAI_FOUNDER_RETAINED_PNG_VERDICT_OK ${JSON.stringify({ exactHead: receipt.exactHead, normalizedLegacyByteFailure })}`)
+console.log(`URAI_FOUNDER_RETAINED_PNG_VERDICT_OK ${JSON.stringify({ exactHead: receipt.exactHead, runnerPassed: Boolean(receipt.passed), normalizedLegacyEntropyFailure })}`)

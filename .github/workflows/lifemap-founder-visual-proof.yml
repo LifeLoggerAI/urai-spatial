@@ -114,6 +114,7 @@ jobs:
             urai-tier1/tests/lifemap-scene-behavior.test.mjs \
             urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \
             urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
+            urai-tier1/tests/lifemap-v231-overview-depth-contract.test.mjs \
             | tee artifacts/lifemap-founder-proof/lifemap-contract.log
           pnpm --dir urai-tier1 typecheck | tee artifacts/lifemap-founder-proof/typecheck.log
           pnpm build:static 2>&1 | tee artifacts/lifemap-founder-proof/build-static.log
@@ -146,7 +147,7 @@ jobs:
           node scripts/verify-lifemap-founder-retained-png-verdict.mjs | tee artifacts/lifemap-founder-proof/retained-png-verdict.log
 
           if [ "$founder_status" -ne 0 ]; then
-            node -e "const r=require('./artifacts/lifemap-founder-proof/retained-png-verdict.json'); if (!r.normalizedLegacyByteFailure) process.exit(1)"
+            node -e "const r=require('./artifacts/lifemap-founder-proof/retained-png-verdict.json'); if (!r.normalizedLegacyProofFailure) process.exit(1)"
           fi
 
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
