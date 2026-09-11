@@ -307,10 +307,14 @@ function hearthStoneGeometry(seed: number) {
 function GroundSanctuary({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
   const stones = useMemo(() => Array.from({length:4}, (_, index) => hearthStoneGeometry(index)), [])
+  const threshold = useMemo(grownThresholdGeometry, [])
   const maps = useMemoryStoneMaps()
   const albedo = useSanctuarySoilTexture()
-  useEffect(() => () => stones.forEach(geometry => geometry.dispose()), [stones])
+  useEffect(() => () => { threshold.dispose(); stones.forEach(geometry => geometry.dispose()) }, [stones,threshold])
   return <group position={[GROUND.x, y + .02, GROUND.z]} rotation={[0, -.08, 0]} name="home-v226-ground-inhabited-hearth" onClick={(event) => { event.stopPropagation(); onGround() }}>
+    <mesh geometry={threshold} position={[0,-.02,-.74]} rotation={[0,.16,0]} scale={[.82,.78,.82]} castShadow receiveShadow name="home-v231-ground-weathered-threshold">
+      <meshStandardMaterial map={albedo} normalMap={maps[1]} normalScale={new THREE.Vector2(.64,.64)} color="#62594b" emissive="#2f211b" emissiveIntensity={.10} roughness={.95}/>
+    </mesh>
     {[[-1.35,.34,-1.1,.52],[1.18,.24,-1.28,.42],[-.86,.15,-1.72,.34],[.62,.18,-1.84,.38]].map(([x,stoneY,z,scale],index)=><mesh key={index} geometry={stones[index]} position={[x,stoneY,z]} rotation={[index*.17,index*.71,index*.11]} scale={[scale*1.25,scale*.72,scale]} castShadow receiveShadow><meshStandardMaterial map={albedo} normalMap={maps[1]} color={index%2?'#989b8c':'#87918b'} roughness={.98}/></mesh>)}
     {stones.slice(0,3).map((geometry,index)=><mesh key={index} geometry={geometry} position={[-.16+(index-1)*.20,.08,-.34+(index%2)*.13]} scale={[.19,.08,.15]}><meshStandardMaterial color="#302b28" map={albedo} normalMap={maps[1]} emissive="#a8441b" emissiveIntensity={.12} roughness={.76}/></mesh>)}
     <pointLight position={[-.16, .70, -.32]} color="#e59a6c" intensity={4.2} distance={6.2}/>
@@ -347,6 +351,7 @@ function observatoryShell() {
 
 function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
+  const shell = useMemo(observatoryShell, [])
   const portalRoots = useMemo(() => Array.from({ length: 3 }, (_, index) => {
     const side = index % 2 ? -1 : 1
     const depth = -.24 - index * .13
@@ -375,8 +380,11 @@ function LifeMapSanctuary({ onLifeMap }: { onLifeMap: () => void }) {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return geometry
   }, [])
-  useEffect(() => () => { portalRoots.forEach(geometry => geometry.dispose()); threads.forEach(geometry => geometry.dispose()); stars.dispose() }, [portalRoots,threads,stars])
+  useEffect(() => () => { shell.dispose(); portalRoots.forEach(geometry => geometry.dispose()); threads.forEach(geometry => geometry.dispose()); stars.dispose() }, [shell,portalRoots,threads,stars])
   return <group position={[LIFE_MAP.x, y + .02, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v226-life-map-lineage-observatory" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>
+    <mesh geometry={shell} position={[0,-.02,.22]} rotation={[0,.04,0]} castShadow receiveShadow name="home-v231-life-map-sheltered-observatory-mass">
+      <meshStandardMaterial vertexColors color="#526760" emissive="#172c2b" emissiveIntensity={.12} roughness={.94} side={THREE.DoubleSide}/>
+    </mesh>
     <group name="home-v228-life-map-rooted-branching-threshold" userData={{ artRevision:'home-v230-life-map-asymmetric-root-threshold' }}>
       {portalRoots.map((geometry,index)=><mesh key={index} geometry={geometry} castShadow><meshStandardMaterial map={portalMaps[0]} normalMap={portalMaps[1]} normalScale={new THREE.Vector2(.7,.7)} color={index%2?'#718878':'#867b79'} emissive={index%2?'#233f35':'#382b43'} emissiveIntensity={.06} roughness={.84}/></mesh>)}
     </group>
@@ -399,13 +407,13 @@ function organicOrbGeometry() {
   for (let index = 0; index < position.count; index++) {
     const bx = position.getX(index), by = position.getY(index), bz = position.getZ(index), angle = Math.atan2(bz, bx)
     const upper = Math.max(0, by), lower = Math.max(0, -by)
-    const shoulder = 1 + .34 * upper * (bx < 0 ? 1.18 : .88) * (.45 + .55 * Math.abs(bx))
-    const taper = 1 - .38 * Math.pow(lower, 1.16)
+    const shoulder = 1 + .52 * upper * (bx < 0 ? 1.16 : .90) * (.36 + .64 * Math.abs(bx))
+    const taper = 1 - .56 * Math.pow(lower, 1.08)
     const fold = 1 + .055 * Math.sin(angle * 3 + by * 7) + .024 * Math.sin(angle * 7 - by * 9)
-    const cleft = Math.exp(-Math.pow(bx / .17, 2) - Math.pow((by - .70) / .17, 2)) * Math.max(0, .76 + bz)
-    const x = bx * .95 * shoulder * taper * fold + .10 * (1 - by * by) + .06 * bz
-    const z = bz * .58 * (1 + .12 * upper) * taper + .026 * Math.sin(angle * 3 + by * 6)
-    const y = by * .74 - .10 * cleft - .16 * Math.pow(lower, 1.34) + .07 * Math.abs(bx) * upper
+    const cleft = Math.exp(-Math.pow(bx / .16, 2) - Math.pow((by - .76) / .14, 2))
+    const x = bx * .88 * shoulder * taper * fold + .075 * (1 - by * by) + .045 * bz
+    const z = bz * .48 * (1 + .08 * upper) * taper + .022 * Math.sin(angle * 3 + by * 6)
+    const y = by * .91 - .28 * cleft - .24 * Math.pow(lower, 1.20) + .11 * Math.abs(bx) * upper
     position.setXYZ(index, x, y, z)
     const edge = Math.min(1, Math.abs(bx) * 1.2), side = Math.max(0, Math.cos(angle - .45)) * (1 - Math.abs(by)), band = .5 + .5 * Math.sin(angle * 3.2 + by * 6.2)
     const color = shadow.clone().lerp(plum, .26 + .22 * band).lerp(jade, .24 * side).lerp(warm, .25 * Math.max(0, -Math.cos(angle + .2)) * (1 - Math.abs(by))).lerp(pale, .12 * edge * upper)
@@ -451,10 +459,10 @@ function RootCradle() {
     const start = new THREE.Vector3(Math.cos(angle) * radius, -.02, Math.sin(angle) * radius)
     const middle = new THREE.Vector3(Math.cos(angle) * .46, .18 + (index % 3) * .05, Math.sin(angle) * .42)
     const end = new THREE.Vector3(Math.cos(angle) * .14, .38, Math.sin(angle) * .12)
-    return tube([start, middle, end], .040 + (index % 2) * .009, 9)
+    return tube([start, middle, end], .072 + (index % 2) * .014, 11)
   }), [])
   return <group position={[ORB.x, y + .015, ORB.z]} name="home-v226-root-cradle">
-    {roots.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow><meshStandardMaterial color={index % 2 ? '#3d4b3f' : '#51463e'} roughness={.98}/></mesh>)}
+    {roots.map((geometry, index) => <mesh key={index} geometry={geometry} castShadow receiveShadow><meshStandardMaterial color={index % 2 ? '#375148' : '#584c42'} emissive={index % 2 ? '#142a24' : '#2d211d'} emissiveIntensity={.08} roughness={.96}/></mesh>)}
     <pointLight position={[.02,.32,.06]} color="#b88672" intensity={.42} distance={2.8}/>
   </group>
 }
@@ -462,7 +470,18 @@ function RootCradle() {
 function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useMemo(organicOrbGeometry, [])
-  const coreMaterial = useMemo(() => createLivingMemoryMaterial(true), [])
+  const coreMaterial = useMemo(() => {
+    const created = createLivingMemoryMaterial(true)
+    created.material.color.set('#456860')
+    created.material.roughness = .68
+    created.material.metalness = 0
+    created.material.clearcoat = .08
+    created.material.clearcoatRoughness = .76
+    created.material.sheen = .22
+    created.material.emissive.set('#173b35')
+    created.material.emissiveIntensity = .055
+    return created
+  }, [])
   const branches = useMemo(() => Array.from({ length: 9 }, (_, index) => presenceBranch(index)), [])
   useEffect(() => () => coreMaterial.material.dispose(), [coreMaterial])
   useEffect(() => () => branches.forEach(geometry => geometry.dispose()), [branches])
@@ -477,7 +496,7 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
   useFrame(({ clock }) => { coreMaterial.time.value = reducedMotion ? 0 : clock.elapsedTime })
   const warning = state === 'warning'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
-  return <group ref={root} position={[ORB.x, y + 1.05, ORB.z]} rotation={[0,-.10,-.10]} scale={1.34} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
+  return <group ref={root} position={[ORB.x, y + 1.08, ORB.z]} rotation={[0,-.10,-.10]} scale={1.28} name="home-v226-rooted-single-living-memory-presence" onClick={activate}>
     <group name="home-v227-branching-memory-nervature">
       <group name="home-v229-matter-anchored-branching-nervature" userData={{ artRevision:'home-v230-surface-bound-memory-nervature', silhouette:'anchored-not-jellyfish-tendril-halo' }}>
         {branches.map((geometry, index) => <mesh key={index} geometry={geometry} position={[index % 2 ? -.10 : .08, -.03 + (index % 3) * .025, -.09 + (index % 4) * .018]} rotation={[.10 - index * .012, index % 2 ? -.32 : .28, index % 3 ? .08 : -.10]} scale={[.58 + (index % 3) * .035, .46 + (index % 2) * .03, .50]} castShadow receiveShadow>
@@ -486,8 +505,8 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
       </group>
     </group>
     <group name="home-v227-split-asymmetric-memory-bloom">
-      <mesh geometry={body} position={[-.03,.08,.01]} rotation={[.08,-.42,.18]} scale={[.76,1.02,.72]} castShadow receiveShadow><primitive object={coreMaterial.material} attach="material"/></mesh>
-      <mesh geometry={body} position={[.12,.16,-.22]} rotation={[-.12,.58,-.24]} scale={[.30,.42,.26]} castShadow><meshStandardMaterial color={warning?'#9d5149':'#d7e4d5'} emissive={warning?'#712d29':'#3e6a5d'} emissiveIntensity={.32} roughness={.62}/></mesh>
+      <mesh geometry={body} position={[-.03,.08,.01]} rotation={[.08,-.42,.18]} scale={[.84,1.08,.78]} castShadow receiveShadow><primitive object={coreMaterial.material} attach="material"/></mesh>
+      <mesh geometry={body} position={[.12,.14,-.20]} rotation={[-.12,.58,-.24]} scale={[.24,.34,.22]} castShadow><meshStandardMaterial color={warning?'#9d5149':'#9cb7a8'} emissive={warning?'#712d29':'#2b5148'} emissiveIntensity={.20} roughness={.78}/></mesh>
     </group>
     <mesh scale={[.72,1.14,.76]} onClick={activate}><sphereGeometry args={[1,20,16]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
     <pointLight position={[.08,.04,.34]} color={warning ? '#d36d60' : '#d3a18b'} intensity={state === 'dormant' ? .12 : .72} distance={3.8}/>
