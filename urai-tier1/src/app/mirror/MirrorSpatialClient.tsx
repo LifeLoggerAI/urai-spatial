@@ -81,11 +81,13 @@ function MirrorCamera({ input, yaw, pitch, target, reducedMotion, selected, temp
 function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
   const maps = useMemo(createMineralMaps, [])
   const wall = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(18, 7.5, 96, 40)
+    const geometry = new THREE.CylinderGeometry(16, 16, 14, 96, 40, true)
     const positions = geometry.getAttribute('position')
     for (let i = 0; i < positions.count; i++) {
-      const x = positions.getX(i), y = positions.getY(i)
-      positions.setZ(i, .6 * Math.cos(x * .26) + .08 * Math.sin(x * 2.4 + y * .7))
+      const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i)
+      const angle = Math.atan2(z, x)
+      const relief = 1 + .014 * Math.sin(angle * 3 + y * .7) + .006 * Math.sin(angle * 7 - y * 1.2)
+      positions.setXYZ(i, x * relief, y, z * relief)
     }
     geometry.computeVertexNormals()
     return geometry
@@ -93,11 +95,11 @@ function ChamberArchitecture({ reducedMotion }: { reducedMotion: boolean }) {
   useEffect(() => () => { wall.dispose(); maps.forEach(map => map.dispose()) }, [wall, maps])
   return <group name="mirror-chamber-architecture" userData={{ motion: reducedMotion ? 'still' : 'still-architecture' }}>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.08, 1.1]} receiveShadow>
-      <planeGeometry args={[24, 28]} />
+      <planeGeometry args={[48, 48]} />
       <meshPhysicalMaterial map={maps[0]} normalMap={maps[1]} color="#58716b" roughness={.64} metalness={.08} clearcoat={.12} />
     </mesh>
-    <mesh geometry={wall} position={[0, 3.65, -7.4]} receiveShadow>
-      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#6d8581" roughness={.86} />
+    <mesh geometry={wall} position={[0, 6.8, -2]} receiveShadow>
+      <meshStandardMaterial map={maps[0]} normalMap={maps[1]} color="#6d8581" roughness={.86} side={THREE.BackSide} />
     </mesh>
     <pointLight position={[-4.8, 3.8, -3.2]} color="#d9ddc5" intensity={18} distance={17} decay={2} />
     <pointLight position={[4.2, 2.8, -4]} color="#9bc9cc" intensity={16} distance={15} decay={2} />

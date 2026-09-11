@@ -90,7 +90,7 @@ test('app template mounts the exact active V226 Home production owner without ce
   assert.match(activeHomeProduction, /export function HomeWorldProductionV223/)
   assert.match(activeHomeProduction, /export const HomeWorldProduction=HomeWorldProductionV223/)
   assert.match(activeHomeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(activeHomeProduction, /HomeV225PolishV2/)
+  assert.doesNotMatch(activeHomeProduction, /<HomeV225PolishV2\b|import.*HomeV225PolishV2/)
   assert.match(activeHomeProduction, /HomeV225PolishV3/)
   assert.doesNotMatch(legacyHomeArt, /<Canvas/)
   assert.match(homeProductionEntry, /HomeWorldProductionV223/)

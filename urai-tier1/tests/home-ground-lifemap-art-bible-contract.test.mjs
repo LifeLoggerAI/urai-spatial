@@ -47,10 +47,10 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
     'export function HomeWorldProductionV223',
     'data-home-primary-owner="asset-driven"',
     'data-home-art-certification="fresh-exact-head-pixels-required"',
-    '<Terrain walk={walk} onGround={p.onGround} onLifeMap={p.onLifeMap}/>',
-    '<Escarpment side={-1}/>', '<Escarpment side={1}/>', '<DestinationLights/>', '<Orb state={p.orbState}',
-    'HomeV225PolishV2', 'HomeV225PolishV3',
+    '<HomeV225PolishV3 orbState={p.orbState}',
   ]) has(currentHome, marker)
+  assert.doesNotMatch(currentHome, /<Terrain\b|<Escarpment\b|<DestinationLights\b|<Orb\b|<HomeV225PolishV2\b/)
+  assert.doesNotMatch(currentHome, /visible=\{false\}|import.*HomeV225PolishV2/)
   for (const marker of [
     'home-v225-authored-memory-valley','home-v225-ground-sheltered-memory-basin','home-v225-life-map-rooted-memory-observatory',
     'home-v225-sculpted-sanctuary-floor','home-v225-rooted-memory-rib','home-v225-life-map-braided-lineage-vault',

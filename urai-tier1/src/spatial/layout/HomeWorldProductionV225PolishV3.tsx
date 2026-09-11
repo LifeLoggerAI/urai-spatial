@@ -472,7 +472,7 @@ const posture: Record<OrbState, Posture> = {
 function RootCradle() {
   const y = height(ORB.x, ORB.z)
   const roots = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const angle = -1.42 + index * .46
+    const angle = .38 + index * 2.39996323
     const radius = 1.02 + (index % 2) * .22
     // tube() narrows toward its last point: grow from the mass into the soil,
     // not from a blunt exposed outer end back toward the mass.
@@ -507,6 +507,13 @@ function LivingMemoryPresence({ state, reducedMotion, onOrb }: { state: OrbState
     return created
   }, [])
   const branches = useMemo(() => Array.from({ length: 9 }, (_, index) => presenceBranch(index)), [])
+  useEffect(() => {
+    const material = coreMaterial.material
+    // Important states must remain legible when breathing is reduced or stopped.
+    material.color.set(state === 'warning' ? '#b68a62' : state === 'privacy' ? '#9bbac7' : state === 'dormant' ? '#3a514c' : '#638879')
+    material.emissive.set(state === 'warning' ? '#9b5020' : state === 'privacy' ? '#32667a' : '#173b35')
+    material.emissiveIntensity = state === 'warning' ? .24 : state === 'privacy' ? .18 : state === 'dormant' ? .015 : .055
+  }, [coreMaterial, state])
   useEffect(() => () => coreMaterial.material.dispose(), [coreMaterial])
   useEffect(() => () => branches.forEach(geometry => geometry.dispose()), [branches])
   const pose = posture[state]
@@ -557,6 +564,10 @@ export function HomeV225PolishV3({ orbState, reducedMotion, onOrb, onGround, onL
     <PortraitFraming/>
     {/* The continuous textured surface owns the ground; overlapping banks are retired. */}
     <TexturedMemoryTerrain/>
+    {/* Distinct scan silhouettes sit beyond the walkable valley boundary.
+        Their cropped perimeters are seated by ScannedRockFace, not exposed. */}
+    <ScannedRockFace variant="01" x={-6.9} z={-17.0} turn={.24} scale={1.12}/>
+    <ScannedRockFace variant="02" x={6.5} z={-17.5} turn={-.40} scale={1.28}/>
     <RootedCanopy/>
     <GroundSanctuary onGround={onGround}/>
     <LifeMapSanctuary onLifeMap={onLifeMap}/>

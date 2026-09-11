@@ -36,7 +36,6 @@ if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V226 direct 
 // Include the active camera, art, and material owners in every retained receipt.
 const runtimePaths = [
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
-  'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx',
   'urai-tier1/src/spatial/assets/livingMemoryMaterial.ts',
@@ -62,12 +61,12 @@ const cases = [
   { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { id: 'mobile-narrow', viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
-  { id: 'mobile-warning', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, orbState: 'warning' },
-  { id: 'reduced-motion-privacy', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', orbState: 'privacy' },
+  { id: 'mobile-warning', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, orbState: 'warning', stateMessage: 'UrAi needs your attention' },
+  { id: 'reduced-motion-privacy', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', orbState: 'privacy', stateMessage: 'Privacy controls are available' },
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-15', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
+  schemaVersion: 'urai-natural-home-orb-proof-16', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
   visualPolicy: 'V226 Home requires one continuous inhabited navigable memory sanctuary, readable Ground and Life Map destinations, one rooted living-memory presence, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
   cases: [], errors: [],
 }
@@ -123,6 +122,7 @@ for (const spec of cases) {
     record.runtimeAssets = await attr('data-home-runtime-assets'); record.governedIdentityAssets = await attr('data-home-governed-identity-assets')
     record.visibleProductionAssets = await attr('data-home-visible-production-assets'); record.authoredRegions = await attr('data-home-authored-regions')
     record.cameraMode = await attr('data-home-camera-mode'); record.orbState = await attr('data-home-orb-state'); record.orbModelClip = await attr('data-home-orb-model-clip')
+    record.stateMessages = await owner.locator('.home-world-context').allTextContents()
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count(); record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const nav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await nav.getByRole('button').count(); record.semanticLinks = await nav.getByRole('link').count()
@@ -141,7 +141,8 @@ for (const spec of cases) {
       && record.artRevision === 'v226-retained-pixels-pending'
       && record.artCertification === 'fresh-exact-head-pixels-required' && record.v226Certification === 'fresh-exact-head-pixels-required' && record.v225Certification === 'superseded-rejected-pixels'
       && record.v224Certification === 'superseded-rejected-pixels' && record.v223Certification === 'superseded-rejected-pixels'
-      && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx') && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
+      && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx') && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV3.tsx')
+      && !record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
       && record.governedIdentityAssets === 'v226-direct-runtime-topology historical-v191-glbs-unmounted'
       && record.visibleProductionAssets?.includes('v226-weathered-memory-banks')
       && record.visibleProductionAssets?.includes('v226-ground-inhabited-hearth')
@@ -150,6 +151,7 @@ for (const spec of cases) {
       && record.authoredRegions?.includes('home-sanctuary-pavilion') && record.authoredRegions?.includes('home-life-map-physical-portal')
       && record.cameraMode !== null && record.orbState !== null
       && (!spec.orbState || record.orbState === spec.orbState)
+      && (!spec.stateMessage || record.stateMessages.includes(spec.stateMessage))
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1 && record.embodimentMarkers === 1
       && record.semanticButtons === 1 && record.semanticLinks === 2

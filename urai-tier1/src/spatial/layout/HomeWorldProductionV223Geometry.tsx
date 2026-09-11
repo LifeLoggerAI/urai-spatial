@@ -452,4 +452,5 @@ export function Escarpment({ side }: { side:-1|1 }) {
   return <group name={side < 0 ? 'home-v225-port-authored-strata' : 'home-v225-starboard-authored-strata'} userData={{visualSource:'authored-v225-integrated-topology',side}}/>
 }
 
-useTexture.preload(T as unknown as string[])
+// Historical components load their maps on demand. Importing the shared
+// navigation constants must not preload retired scene textures.
