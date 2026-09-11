@@ -47,7 +47,7 @@ test('V225 base geometry remains covered beneath the V226 rooted sanctuary succe
 test('V226 Orb is one integrated asymmetric living-memory presence with governed states and embedded veins', () => {
   for (const marker of ['function organicOrbGeometry(', 'function LivingMemoryPresence(', 'home-v226-rooted-single-living-memory-presence', 'function vein(']) has(currentVisual, marker)
   for (const state of ['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition']) has(currentVisual, `${state}:`)
-  assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-7\.45\)/)
+  assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-5\.35\)/)
   assert.match(owner, /const HOME_ORB = \{ x: -\.45, z: -7\.45 \} as const/)
   assert.match(currentRuntime, /data-home-orb-state=\{orbState\}/)
   assert.match(currentRuntime, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState,reducedMotion,true\)\.animation\}/)
