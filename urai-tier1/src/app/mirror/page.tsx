@@ -1,6 +1,16 @@
 import './mirror-mobile-inspection.css'
 import MirrorBareEntryGuard from './MirrorBareEntryGuard'
 import MirrorSpatialClient from './MirrorSpatialClient'
+import { publicIndexing } from '../public-indexing'
+
+export const metadata = {
+  robots: publicIndexing,
+  title: 'UrAi Mirror',
+  description: 'Explore evidence-aware reflection patterns in UrAi’s spatial Mirror experience.',
+  alternates: { canonical: 'https://urai.app/mirror/' },
+  openGraph: { url: 'https://urai.app/mirror/', title: 'UrAi Mirror', description: 'Explore evidence-aware reflection patterns in UrAi’s spatial Mirror experience.' },
+  twitter: { card: 'summary', title: 'UrAi Mirror', description: 'Explore evidence-aware reflection patterns in UrAi’s spatial Mirror experience.' },
+}
 
 const routeFingerprintStyle = {
   position: 'absolute',

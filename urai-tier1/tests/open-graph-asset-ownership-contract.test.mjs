@@ -33,7 +33,7 @@ test('launch Open Graph asset is owned by canonical root metadata', () => {
     canonicalPath: 'assets/urai/social/open-graph-launch.webp',
     source: rootPage,
     routeUrl: 'https://urai.app/',
-    alt: 'URAI Spatial — open your private world',
+    alt: 'UrAi — personal intelligence, made spatial',
   })
 })
 

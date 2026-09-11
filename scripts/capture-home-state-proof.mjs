@@ -44,6 +44,36 @@ async function settleAnimationFrames(page, frameCount) {
   }), frameCount)
 }
 
+async function captureViewportPng(page, { clip, timeoutMs = 90_000 } = {}) {
+  const motionFreeze = await page.addStyleTag({
+    content: '*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;caret-color:transparent!important}',
+  })
+  const cdp = await page.context().newCDPSession(page)
+  let timeoutHandle
+  try {
+    await settleAnimationFrames(page, 2)
+    const captured = await Promise.race([
+      cdp.send('Page.captureScreenshot', {
+        format: 'png',
+        fromSurface: true,
+        captureBeyondViewport: false,
+        ...(clip ? { clip: { ...clip, scale: 1 } } : {}),
+      }),
+      new Promise((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error(`Home proof CDP screenshot timed out after ${timeoutMs}ms`)), timeoutMs)
+      }),
+    ])
+    if (!captured || typeof captured !== 'object' || !('data' in captured) || typeof captured.data !== 'string' || captured.data.length === 0) {
+      throw new Error('Home proof CDP screenshot returned no PNG data')
+    }
+    return Buffer.from(captured.data, 'base64')
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle)
+    await cdp.detach().catch(() => {})
+    await motionFreeze.evaluate((node) => node.remove()).catch(() => {})
+  }
+}
+
 async function readVisualEvidence(page) {
   const canvas = page.locator('.urai-asset-home-world canvas').first()
   await canvas.waitFor({ state: 'visible', timeout: 45_000 })
@@ -56,10 +86,7 @@ async function readVisualEvidence(page) {
   const visibleHeight = Math.max(0, Math.min(bounds.y + bounds.height, viewport.height) - clipY)
   const viewportCoverage = visibleWidth * visibleHeight / Math.max(1, viewport.width * viewport.height)
   if (visibleWidth < 1 || visibleHeight < 1) return { available: false, reason: 'canvas-outside-viewport', viewportCoverage }
-  const png = await page.screenshot({
-    animations: 'disabled',
-    caret: 'hide',
-    timeout: 90_000,
+  const png = await captureViewportPng(page, {
     clip: { x: clipX, y: clipY, width: visibleWidth, height: visibleHeight },
   })
   const dataUrl = `data:image/png;base64,${png.toString('base64')}`
@@ -175,7 +202,8 @@ async function capture(state, options = {}) {
     )
 
     record.screenshot = `${state.id}-${exactHead.slice(0, 12)}.png`
-    const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    const screenshot = await captureViewportPng(page)
+    await writeFile(path.join(outputDir, record.screenshot), screenshot)
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
 
@@ -236,7 +264,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     if (reducedMotion === 'reduce') {
       record.visual = await waitForVisualEvidence(page)
       record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
-      const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+      const screenshot = await captureViewportPng(page)
+      await writeFile(path.join(outputDir, record.screenshot), screenshot)
       record.screenshotBytes = screenshot.length
       record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
       record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
@@ -271,7 +300,8 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
 
     record.visual = await waitForVisualEvidence(page)
     record.screenshot = `${id}-${exactHead.slice(0, 12)}.png`
-    const screenshot = await page.screenshot({ path: path.join(outputDir, record.screenshot), fullPage: false, animations: 'disabled', caret: 'hide', timeout: 90_000 })
+    const screenshot = await captureViewportPng(page)
+    await writeFile(path.join(outputDir, record.screenshot), screenshot)
     record.screenshotBytes = screenshot.length
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
 

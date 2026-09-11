@@ -1,14 +1,30 @@
 import PreviewBuildIdentity from './PreviewBuildIdentity'
 import StatusReleaseAuthority from './StatusReleaseAuthority'
 import { assetCssStack, statusAssets } from '@/spatial/assets/uraiAssets'
+import { publicIndexing } from '../public-indexing'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const embeddedBuildSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
 const shortBuildSha = embeddedBuildSha === 'unverified' ? embeddedBuildSha : embeddedBuildSha.slice(0, 12)
+const title = 'URAI Status'
+const description = 'URAI Spatial fingerprint-gated release authority and bounded certification matrix.'
 
 export const metadata = {
-  title: 'URAI Status',
-  description: 'URAI Spatial fingerprint-gated release authority and bounded certification matrix.',
+  robots: publicIndexing,
+  alternates: { canonical: 'https://urai.app/status/' },
+  openGraph: {
+    url: 'https://urai.app/status/',
+    title,
+    description,
+    siteName: 'UrAi',
+  },
+  twitter: {
+    card: 'summary',
+    title,
+    description,
+  },
+  title,
+  description,
 }
 
 export default function StatusRoutePage() {

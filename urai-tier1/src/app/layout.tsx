@@ -64,8 +64,35 @@ const previewChannel = process.env.NEXT_PUBLIC_URAI_PREVIEW_CHANNEL?.trim() || '
 const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307111c'/%3E%3Cpath d='M6 44c9-8 43-8 52 0v14H6z' fill='%23152f28'/%3E%3Ccircle cx='32' cy='27' r='14' fill='%238ce7ee'/%3E%3Ccircle cx='32' cy='27' r='19' fill='none' stroke='%238ce7ee' stroke-opacity='.22' stroke-width='2'/%3E%3C/svg%3E"
 
 export const metadata: Metadata = {
-  title: previewMode ? 'PREVIEW — URAI Spatial' : 'URAI Spatial',
-  description: 'A private spatial world for memory, reflection, relationships, and personal intelligence.',
+  metadataBase: new URL('https://urai.app'),
+  applicationName: 'UrAi',
+  title: previewMode
+    ? 'PREVIEW — UrAi'
+    : {
+        default: 'UrAi — Personal intelligence, made spatial',
+        template: '%s | UrAi',
+      },
+  description: 'UrAi by URAI Labs is a privacy-first personal intelligence platform that makes memory, reflection, relationships, and direction spatial.',
+  creator: 'URAI Labs',
+  publisher: 'URAI Labs',
+  category: 'personal intelligence software',
+  robots: {
+    index: false,
+    follow: false,
+    ...(previewMode ? { noarchive: true } : {}),
+  },
+  openGraph: {
+    type: 'website',
+    title: 'UrAi — Personal intelligence, made spatial',
+    description: 'A privacy-first personal intelligence platform by URAI Labs.',
+    siteName: 'UrAi',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'UrAi — Personal intelligence, made spatial',
+    description: 'A privacy-first personal intelligence platform by URAI Labs.',
+  },
   icons: {
     icon: embeddedIcon,
   },
@@ -92,6 +119,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-urai-preview={previewMode ? 'true' : 'false'}
       data-urai-preview-channel={previewMode ? previewChannel : undefined}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"Organization\",\"@id\":\"https://urai.app/#organization\",\"name\":\"URAI Labs\",\"url\":\"https://urai.app/about/labs/\",\"description\":\"The founder-led product organization building UrAi.\",\"founder\":{\"@id\":\"https://urai.app/founder/#person\"}},{\"@type\":\"Person\",\"@id\":\"https://urai.app/founder/#person\",\"name\":\"Adam Clamp\",\"url\":\"https://urai.app/founder/\",\"jobTitle\":\"Founder and system architect\",\"worksFor\":{\"@id\":\"https://urai.app/#organization\"}},{\"@type\":\"SoftwareApplication\",\"@id\":\"https://urai.app/#product\",\"name\":\"UrAi\",\"url\":\"https://urai.app/\",\"applicationCategory\":\"LifestyleApplication\",\"operatingSystem\":\"Web\",\"description\":\"A privacy-first personal intelligence platform that makes memory, reflection, relationships, and direction spatial.\",\"creator\":{\"@id\":\"https://urai.app/founder/#person\"},\"publisher\":{\"@id\":\"https://urai.app/#organization\"},\"sameAs\":[\"https://github.com/LifeLoggerAI/urai-spatial\"],\"subjectOf\":{\"@id\":\"https://github.com/LifeLoggerAI/urai-spatial\"}},{\"@type\":\"WebSite\",\"@id\":\"https://urai.app/#website\",\"name\":\"UrAi\",\"url\":\"https://urai.app/\",\"publisher\":{\"@id\":\"https://urai.app/#organization\"},\"about\":{\"@id\":\"https://urai.app/#product\"}}]}" }}
+        />
+      </head>
       <body
         data-urai-home-spatial-shell="true"
         data-urai-living-state-layer="v2"
