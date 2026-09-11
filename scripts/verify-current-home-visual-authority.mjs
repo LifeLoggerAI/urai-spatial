@@ -17,6 +17,7 @@ for (const field of ['rendererOwner', 'artRevision', 'worldIdentifier', 'proofSc
 if (!Array.isArray(authority.runtimeAssets) || authority.runtimeAssets.length < 4) fail('runtimeAssets must contain the current renderer/art inventory')
 if (new Set(authority.runtimeAssets).size !== authority.runtimeAssets.length) fail('runtimeAssets contains duplicate entries')
 if (!authority.runtimeAssets.includes(authority.rendererOwner)) fail('runtimeAssets does not include rendererOwner')
+if (!authority.runtimeAssets.includes('HomeVisualAuthority.tsx')) fail('runtimeAssets does not include HomeVisualAuthority.tsx')
 if (authority.runtimeAssets.includes('HomeWorldProductionV225PolishV2.tsx')) fail('superseded V225PolishV2 cannot be a current runtime asset')
 
 const layoutRoot = path.join(repoRoot, 'urai-tier1/src/spatial/layout')
@@ -44,6 +45,25 @@ for (const token of [
   if (!runtime.includes(token)) fail(`runtime does not consume structured authority token: ${token}`)
 }
 if (/PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/.test(runtime)) fail('runtime contains an unearned visual certification marker')
+
+const renderer = await readFile(path.join(layoutRoot, authority.rendererOwner), 'utf8')
+for (const token of [
+  "import { HomeVisualAuthority } from './HomeVisualAuthority'",
+  '<HomeVisualAuthority/>',
+]) {
+  if (!renderer.includes(token)) fail(`renderer does not mount visual authority token: ${token}`)
+}
+
+const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
+for (const token of [
+  'object.visible = false',
+  'previousRaycast.set(object, object.raycast)',
+  'object.raycast = () => {}',
+  'object.raycast = raycast',
+  '!isTransparentInteractionSurface(object)',
+]) {
+  if (!visualAuthority.includes(token)) fail(`visual ownership guard missing fail-closed interaction token: ${token}`)
+}
 
 process.stdout.write(`${JSON.stringify({
   ok: true,
