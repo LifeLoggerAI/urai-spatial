@@ -9,13 +9,14 @@ import { useLifeMapEvents, type LifeMapSourceMode } from "./useLifeMapEvents";
 import { lifeMapOverviewCamera, lifeMapWorldPoint } from "./lifeMapSpatialLayout";
 import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
+import { LifeMapGoldMasterOverlay } from "./LifeMapGoldMasterOverlay";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 6.2, 18.5];
 const OVERVIEW_TARGET: [number, number, number] = [0, -0.9, -18.0];
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const SELECTED_MEMORY_STANDOFF = 7.4;
-const PHASE_DURATION_MS = { departure: 420, travel: 980, approach: 1480 } as const;
+const PHASE_DURATION_MS = { departure: 900, travel: 1500, approach: 2200 } as const;
 
 type JourneyPhase = "overview" | "departure" | "travel" | "approach" | "arrival";
 type WebGLState = "ready" | "lost" | "recovering" | "failed";
@@ -39,18 +40,28 @@ function goalForNode(node: LifeMapNode, phase: JourneyPhase, portrait: boolean, 
   const direction = overview.clone().sub(target);
   if (direction.lengthSq() < 0.01) direction.set(0, 0.1, 1);
   direction.normalize();
+  const lateral = new THREE.Vector3(direction.z, 0, -direction.x).normalize();
+  const side = Math.sign(target.x) || 1;
   const arrival = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF);
   arrival.y += 0.34;
-  if (phase === "departure") return { position: OVERVIEW_POSITION, target: tuple(target) };
+  if (phase === "departure") {
+    const departure = overview.clone().addScaledVector(lateral, -side * 2.4);
+    departure.y += 1.7;
+    departure.z += 1.4;
+    const departureTarget = overview.clone().lerp(target, .32);
+    departureTarget.y -= 1.1;
+    return { position: tuple(departure), target: tuple(departureTarget) };
+  }
   if (phase === "travel") {
-    const travel = overview.clone().lerp(arrival, 0.5);
-    travel.x += (Math.sign(target.x) || 1) * 1.25;
-    travel.y += 1.2;
-    return { position: tuple(travel), target: tuple(target) };
+    const travel = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 12.4).addScaledVector(lateral, side * 3.4);
+    travel.y += 3.4;
+    const travelTarget = target.clone().addScaledVector(direction, -2.2);
+    travelTarget.y -= .42;
+    return { position: tuple(travel), target: tuple(travelTarget) };
   }
   if (phase === "approach") {
-    const approach = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 2.1);
-    approach.y += 0.7;
+    const approach = target.clone().addScaledVector(direction, SELECTED_MEMORY_STANDOFF + 4.4).addScaledVector(lateral, side * 1.25);
+    approach.y += 1.45;
     return { position: tuple(approach), target: tuple(target) };
   }
   return { position: tuple(arrival), target: tuple(target) };
@@ -86,7 +97,7 @@ function CameraRig({ nodes, selected, selectedIndex, phase, reducedMotion }: { n
     lookTarget.current.copy(targetGoal.current);
     camera.lookAt(lookTarget.current);
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = portrait ? (phase === "overview" ? 50 : 54) : (phase === "arrival" ? 46 : 52);
+      camera.fov = portrait ? (phase === "overview" ? 50 : 54) : phase === "departure" ? 56 : phase === "travel" ? 51 : phase === "approach" ? 48 : 46;
       camera.updateProjectionMatrix();
     }
     initialized.current = true;
@@ -100,12 +111,12 @@ function CameraRig({ nodes, selected, selectedIndex, phase, reducedMotion }: { n
       targetGoal.current.x += pointer.x * (portrait ? 0.55 : 1.45);
       targetGoal.current.y += pointer.y * (portrait ? 0.28 : 0.44);
     }
-    const fov = portrait ? (phase === "overview" ? 50 : 54) : (phase === "arrival" ? 46 : 52);
+    const fov = portrait ? (phase === "overview" ? 50 : 54) : phase === "departure" ? 56 : phase === "travel" ? 51 : phase === "approach" ? 48 : 46;
     if (reducedMotion) {
       camera.position.copy(positionGoal.current);
       lookTarget.current.copy(targetGoal.current);
     } else {
-      const rate = phase === "travel" ? 1.9 : phase === "approach" ? 2.9 : phase === "arrival" ? 5.2 : 4.1;
+      const rate = phase === "departure" ? 2.4 : phase === "travel" ? 2.15 : phase === "approach" ? 3.1 : phase === "arrival" ? 5.2 : 4.1;
       camera.position.x = THREE.MathUtils.damp(camera.position.x, positionGoal.current.x, rate, delta);
       camera.position.y = THREE.MathUtils.damp(camera.position.y, positionGoal.current.y, rate, delta);
       camera.position.z = THREE.MathUtils.damp(camera.position.z, positionGoal.current.z, rate, delta);
@@ -178,9 +189,6 @@ function SoftwareRendererCadence({ active, documentVisible }: { active: boolean;
       return;
     }
 
-    // SwiftShader/software WebGL and reduced-motion sessions must remain truly 3D
-    // without monopolizing the main thread that owns semantic navigation.
-    // Bootstrap enough real frames for render proof, then sustain a bounded cadence.
     setFrameloop("demand");
     let disposed = false;
     const bootstrap = [0, 40, 80, 120, 180, 260].map((delay) => window.setTimeout(() => {
@@ -230,8 +238,6 @@ export default function ComposedLifeMapScene() {
     pixelRatioMax: softwareRenderer !== false ? 1 : Math.min(adaptiveProfile.pixelRatioMax, adaptiveProfile.tier === "high" ? 1.5 : 1.25),
     shadows: softwareRenderer === false && adaptiveProfile.tier === "high" && !adaptiveProfile.reducedMotion,
     postprocessing: softwareRenderer === false && adaptiveProfile.tier === "high" && !adaptiveProfile.reducedMotion,
-    // Preserve smooth membrane silhouettes while keeping the high tier below
-    // unrestricted device DPR on dense desktop displays.
     antialias: true,
   }), [adaptiveProfile, softwareRenderer]);
   const explicitDemoRequested = params.get("demo") === "1";
@@ -355,7 +361,7 @@ export default function ComposedLifeMapScene() {
   useEffect(() => () => { document.body.style.cursor = ""; }, []);
 
   const recovery = webglState !== "ready";
-  const thresholdsVisible = Boolean(selected);
+  const thresholdsVisible = Boolean(selected && phase === "arrival");
   return <main
     className="life-map-root"
     style={{ position: "fixed", inset: 0, width: "100vw", height: "100svh", minWidth: "100vw", minHeight: "100svh", overflow: "hidden", opacity: 1, visibility: "visible", background: "#02050b" }}
@@ -401,6 +407,7 @@ export default function ComposedLifeMapScene() {
           cameraRig={<CameraRig nodes={nodes} selectedIndex={Math.max(0, nodes.findIndex(node => node.id === selected?.id))} selected={selected} phase={phase} reducedMotion={profile.reducedMotion} />}
           webglRecovery={null}
         />
+        <LifeMapGoldMasterOverlay nodes={nodes} selected={selected} phase={phase as LifeMapJourneyPhase} reducedMotion={profile.reducedMotion} onSelect={selectNode} />
       </Suspense>
     </Canvas>
 
