@@ -45,7 +45,7 @@ test('Mirror spatial runtime owns chamber, embodied reflection, interaction, res
     'mirror-reflection-instrument',
     'mirror-v230-weathered-introspection-chamber',
     'mirror-v230-continuous-worn-sanctuary-floor',
-    'mirror-v230-rooted-branching-reflection-instrument',
+    'mirror-v231-connected-reflection-presence',
     'mirror-pattern-object',
     'mirror-reflection-fragment',
     'useSelectedMemory',
