@@ -2,8 +2,8 @@ import { useEffect, useMemo } from 'react'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 
-// Existing Poly Haven CC0 floor source. Home applies deterministic blended
-// sampling and vertex macro-colour so the approved source never reads as a tile.
+// Governed Poly Haven CC0 source. Home deliberately samples it above paving
+// scale so the source contributes mineral grain rather than readable blocks.
 export const SANCTUARY_SOIL_ALBEDO = '/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp'
 
 export function useSanctuarySoilTexture() {
@@ -12,12 +12,12 @@ export function useSanctuarySoilTexture() {
     const copy = source.clone()
     copy.colorSpace = THREE.SRGBColorSpace
     copy.wrapS = copy.wrapT = THREE.RepeatWrapping
-    // The authored Home geometry already carries multi-repeat UVs. A sub-unit
-    // texture transform prevents the soil scan from reading as a repeated tile
-    // while retaining enough frequency for close-range ground definition.
-    copy.repeat.set(.58, .64)
+    // The terrain shader already cross-blends deterministic offsets. Raising the
+    // source frequency prevents individual scan blocks from becoming landscape
+    // scale pavers while retaining authored close-range mineral definition.
+    copy.repeat.set(1.42, 1.56)
     copy.center.set(.5, .5)
-    copy.rotation = .17
+    copy.rotation = .31
     copy.anisotropy = 8
     copy.needsUpdate = true
     return copy
