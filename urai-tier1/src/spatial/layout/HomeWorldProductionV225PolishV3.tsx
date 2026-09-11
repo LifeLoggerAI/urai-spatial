@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import type { OrbState } from '@/app/home/orbStateController'
 import { GROUND, LIFE_MAP, ORB, height } from './HomeWorldProductionV223Geometry'
 
@@ -113,46 +114,7 @@ function RootedCanopy() {
 }
 
 function useMemoryStoneMaps() {
-  // Authored seamless mineral/lichen field; no atlas is tiled outside its UV islands.
-  return useMemo(() => {
-    const size = 256, heights = new Float32Array(size * size)
-    const hash = (x: number, y: number) => {
-      const v = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
-      return v - Math.floor(v)
-    }
-    const noise = (x: number, y: number, cells: number) => {
-      const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy
-      const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy)
-      return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(ix % cells, iy % cells), hash((ix + 1) % cells, iy % cells), u), THREE.MathUtils.lerp(hash(ix % cells, (iy + 1) % cells), hash((ix + 1) % cells, (iy + 1) % cells), u), v)
-    }
-    const diffuse = new Uint8Array(size * size * 4), normal = new Uint8Array(diffuse.length), arm = new Uint8Array(diffuse.length)
-    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-      let value = 0
-      for (let octave = 0; octave < 6; octave++) { const cells = 4 * 2 ** octave; value += noise(x / size * cells, y / size * cells, cells) * .5 ** (octave + 1) }
-      heights[y * size + x] = value
-      const i = (y * size + x) * 4, grain = hash(x, y), lichen = noise(x / size * 8, y / size * 8, 8)
-      diffuse[i] = 98 + value * 92 + grain * 12
-      diffuse[i + 1] = 100 + value * 82 + lichen * 15
-      diffuse[i + 2] = 82 + value * 70
-      diffuse[i + 3] = 255
-      arm[i] = 245; arm[i + 1] = 190 + value * 55; arm[i + 2] = 0; arm[i + 3] = 255
-    }
-    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-      const dx = (heights[y * size + (x + 1) % size] - heights[y * size + (x + size - 1) % size]) * 4
-      const dy = (heights[((y + 1) % size) * size + x] - heights[((y + size - 1) % size) * size + x]) * 4
-      const n = new THREE.Vector3(-dx, -dy, 1).normalize(), i = (y * size + x) * 4
-      normal[i] = (n.x * .5 + .5) * 255; normal[i + 1] = (n.y * .5 + .5) * 255; normal[i + 2] = (n.z * .5 + .5) * 255; normal[i + 3] = 255
-    }
-    const textures = [diffuse, normal, arm].map((data, index) => {
-      const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat)
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.generateMipmaps = true
-      texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter
-      texture.colorSpace = index === 0 ? THREE.SRGBColorSpace : THREE.NoColorSpace
-      texture.anisotropy = 4; texture.needsUpdate = true
-      return texture
-    })
-    return [textures[0], textures[1], textures[2]] as [THREE.Texture, THREE.Texture, THREE.Texture]
-  }, [])
+  return useMemo(createMineralMaps, [])
 }
 
 function inhabitedSurfaceGeometry() {
@@ -186,8 +148,8 @@ function distantRidgeGeometry() {
       const u=ix/nx,x=-13.5+u*27
       const peaks=2.25*Math.exp(-Math.pow((x+6.2)/3.0,2))+3.05*Math.exp(-Math.pow((x-2.4)/3.5,2))+1.55*Math.exp(-Math.pow((x-9.6)/2.0,2))
       const crags=.28*Math.sin(x*1.34)+.17*Math.sin(x*2.91+.8)+.09*Math.cos(x*5.2)
-      const rise=Math.sin(v*Math.PI*.82)*(peaks+crags)+(1-v)*(.14+.12*Math.sin(x*.67))
-      const y=-.52+rise+.14*Math.sin(x*.81+v*5.2)+.07*Math.cos(x*1.73-v*7.1)
+      const rise=Math.sin(v*Math.PI*.82)*(peaks+crags)+v*(1-v)*(.14+.12*Math.sin(x*.67))
+      const y=height(x,z)+rise-.035+Math.sin(v*Math.PI)*(.14*Math.sin(x*.81+v*5.2)+.07*Math.cos(x*1.73-v*7.1))
       positions.push(x,y,z);uvs.push(u*7,v*5)
       const c=shadow.clone().lerp(stone,.22+.42*v).lerp(warm,.07*(.5+.5*Math.sin(x*.7+v*8)))
       colors.push(c.r,c.g,c.b)
@@ -198,11 +160,22 @@ function distantRidgeGeometry() {
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry
 }
 
+function ScannedRockFace({ variant, x, z, turn, scale }: { variant: '01' | '02'; x: number; z: number; turn: number; scale: number }) {
+  const asset = useGLTF(`/assets/urai/home-production/cc0/polyhaven-v48/rock_face_${variant}/asset.gltf`)
+  const model = useMemo(() => {
+    const copy = asset.scene.clone(true)
+    copy.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true } })
+    return copy
+  }, [asset.scene])
+  return <primitive object={model} position={[x, height(x, z) - .18, z]} rotation={[0,turn,0]} scale={scale}/>
+}
+
 function TexturedMemoryTerrain() {
   const maps=useMemoryStoneMaps()
   const surface=useMemo(inhabitedSurfaceGeometry,[])
   const ridge=useMemo(distantRidgeGeometry,[])
   return <group name="home-v229-textured-inhabited-valley-and-distant-ridge">
+    <Suspense fallback={null}><ScannedRockFace variant="01" x={-5.8} z={-17.3} turn={.26} scale={1.35}/><ScannedRockFace variant="02" x={5.1} z={-19.3} turn={-.24} scale={1.3}/></Suspense>
     <mesh geometry={surface} receiveShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.48,.48)} vertexColors roughness={.94}/></mesh>
     <mesh geometry={ridge} receiveShadow castShadow><meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.38,.38)} vertexColors roughness={.97} side={THREE.DoubleSide}/></mesh>
   </group>

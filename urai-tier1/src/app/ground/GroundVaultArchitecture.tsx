@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useTexture } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { T } from '@/spatial/layout/HomeWorldProductionV223Geometry'
 import { DESTINATIONS, type GroundDestination } from './GroundWorldModel'
@@ -45,10 +46,18 @@ function chamberArch(index: number) {
   return new THREE.ExtrudeGeometry(shape, { depth: 2.6 + (index % 3) * .3, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .08, bevelThickness: .08, curveSegments: 32 })
 }
 
-export default function GroundVaultArchitecture({ activeId, onSelect }: {
+export default function GroundVaultArchitecture({ activeId, onSelect, onReady }: {
   activeId: string | null
+  onReady: () => void
   onSelect: (destination: GroundDestination) => void
 }) {
+  const renderedFrames = useRef(0)
+  useFrame(({ gl }) => {
+    if (renderedFrames.current < 2 && gl.info.render.calls > 0) {
+      renderedFrames.current++
+      if (renderedFrames.current === 2) onReady()
+    }
+  })
   const originals = useTexture(T as unknown as string[]) as THREE.Texture[]
   const maps = useMemo(() => originals.map((source, index) => {
     const texture = source.clone()

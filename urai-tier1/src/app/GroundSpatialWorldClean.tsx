@@ -269,7 +269,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
   return null;
 }
 
-function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }: {
+function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect, onReady }: {
+  onReady: () => void;
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
@@ -295,7 +296,7 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
-      <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} />
+      <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} onReady={onReady} />
       <ArchitecturalRouteLighting activeId={activeId} />
       <group name="ground-v92-removed-procedural-postprocessing" userData={{
         nonRenderingCompatibilityMarkers: "EffectComposer Bloom Vignette",
@@ -377,10 +378,10 @@ export default function GroundSpatialWorldClean() {
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 0.82;
-          setReady(true);
         }}
       >
         <GroundScene
+          onReady={() => setReady(true)}
           input={input}
           yaw={yaw}
           pitch={pitch}

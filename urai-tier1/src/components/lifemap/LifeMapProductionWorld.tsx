@@ -71,7 +71,7 @@ function memoryMembrane(seed: number, layer: number, core: boolean, form: Memory
       } else {
         const width = envelope * (core ? .46 : .42 + seeded(seed, layer) * .25);
         const radius = .06 + t * (core ? .52 : .72 + seeded(seed, layer + 7) * .42) + .16 * across * across * envelope;
-        const twist = azimuth + t * (core ? .75 : .38) + across * .38;
+        const twist = azimuth + t * (core ? .75 : .38) + across * .38 * envelope;
         const fluting = .018 * Math.cos(across * 22 + t * 6) * envelope;
         x = Math.cos(twist) * radius + Math.sin(twist) * across * width + lean;
         z = Math.sin(twist) * radius - Math.cos(twist) * across * width + fluting;
@@ -108,6 +108,18 @@ function Current({ points, color, opacity = 0.4, width = 0.014 }: { points: Poin
 }
 
 function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0.5, size = 0.055 }: { seed: number; count: number; radius: number; depth: number; height: number; color: string; opacity?: number; size?: number }) {
+  const texture = useMemo(() => {
+    const data = new Uint8Array(32 * 32 * 4);
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+      const r = Math.hypot((x - 15.5) / 15.5, (y - 15.5) / 15.5), i = (y * 32 + x) * 4;
+      data[i] = data[i + 1] = data[i + 2] = 255;
+      data[i + 3] = Math.round(255 * Math.exp(-r * r * 6) * (1 - THREE.MathUtils.smoothstep(r, .65, 1)));
+    }
+    const map = new THREE.DataTexture(data, 32, 32, THREE.RGBAFormat);
+    map.magFilter = map.minFilter = THREE.LinearFilter; map.needsUpdate = true;
+    return map;
+  }, []);
+  useEffect(() => () => texture.dispose(), [texture]);
   const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3);
     for (let index = 0; index < count; index += 1) {
@@ -122,7 +134,7 @@ function FieldParticles({ seed, count, radius, depth, height, color, opacity = 0
     return next;
   }, [count, depth, height, radius, seed]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  return <points geometry={geometry}><pointsMaterial color={color} size={size} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></points>;
+  return <points geometry={geometry}><pointsMaterial map={texture} alphaTest={.005} color={color} size={size} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></points>;
 }
 
 function RenderProofRepublisher() {
@@ -366,6 +378,11 @@ function ArtifactShape(props: ArtifactProps) {
   return <EverydayArtifact {...props} />;
 }
 
+function celestialNodePosition(node: LifeMapNode, index: number): Point3 {
+  const [x, y, z] = node.position;
+  return [x * .92, y * .72 + Math.sin(index * .91) * 1.25, z * 1.06 - 5.5];
+}
+
 function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect }: { node: LifeMapNode; index: number; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }) {
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
@@ -374,10 +391,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const importance = artifactImportance(node);
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
-  const celestialPosition = useMemo<Point3>(() => {
-    const [x, y, z] = node.position;
-    return [x * .92, y * .72 + Math.sin(index * .91) * 1.25, z * 1.06 - 5.5];
-  }, [index, node.position]);
+  const celestialPosition = useMemo<Point3>(() => celestialNodePosition(node, index), [index, node]);
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return;
     root.current.rotation.y = Math.sin(clock.elapsedTime * .13 + index) * .08;
@@ -407,9 +421,9 @@ function PathPulse({ curve, color, reducedMotion, offset }: { curve: THREE.Quadr
   return <group ref={pulse} position={curve.getPoint(offset % 1)} name="life-map-living-pulse"><Sparkles count={3} scale={0.16} size={3} speed={0} opacity={0.9} color={color} /></group>;
 }
 
-function SemanticPath({ source, target, active, reducedMotion, index }: { source: LifeMapNode; target: LifeMapNode; active: boolean; reducedMotion: boolean; index: number }) {
-  const start = useMemo(() => new THREE.Vector3(source.position[0] * .92, source.position[1] * .72 + Math.sin(index * .91) * 1.25, source.position[2] * 1.06 - 5.5), [index, source.position]);
-  const end = useMemo(() => new THREE.Vector3(target.position[0] * .92, target.position[1] * .72 + Math.sin((index + 1) * .91) * 1.25, target.position[2] * 1.06 - 5.5), [index, target.position]);
+function SemanticPath({ source, target, active, reducedMotion, index, sourceIndex, targetIndex }: { source: LifeMapNode; target: LifeMapNode; active: boolean; reducedMotion: boolean; index: number; sourceIndex: number; targetIndex: number }) {
+  const start = useMemo(() => new THREE.Vector3(...celestialNodePosition(source, sourceIndex)), [sourceIndex, source]);
+  const end = useMemo(() => new THREE.Vector3(...celestialNodePosition(target, targetIndex)), [targetIndex, target]);
   const curve = useMemo(() => {
     const middle = start.clone().lerp(end, 0.5);
     middle.y += 1.25 + start.distanceTo(end) * 0.075;
@@ -419,7 +433,7 @@ function SemanticPath({ source, target, active, reducedMotion, index }: { source
   const kind = resolvePathKind(source, target);
   const color = LIFE_MAP_PATH_PALETTE[kind];
   return <group>
-    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? .34 : .16} transparent opacity={kind === "protected" ? .012 : active ? .14 : .035} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
+    <Line points={curve.getPoints(48)} color={color} lineWidth={active ? .8 : .55} transparent opacity={kind === "protected" ? .012 : active ? .28 : .13} dashed={kind === "inferred" || kind === "corrected" || kind === "protected"} />
     {active && kind !== "protected" ? <PathPulse curve={curve} color={color} reducedMotion={reducedMotion} offset={(index * .19) % 1} /> : null}
   </group>;
 }
@@ -442,7 +456,7 @@ function LivingPaths({ nodes, selected, reducedMotion, phase }: { nodes: LifeMap
   return <group name="life-map-curved-semantic-paths">{links.map((link, index) => {
     const active = Boolean(selected && (selected.id === link.source.id || selected.id === link.target.id));
     if (selected && phase === "arrival" && !active) return null;
-    return <SemanticPath key={`${link.source.id}:${link.target.id}`} source={link.source} target={link.target} active={active} reducedMotion={reducedMotion} index={index} />;
+    return <SemanticPath key={`${link.source.id}:${link.target.id}`} source={link.source} target={link.target} active={active} reducedMotion={reducedMotion} index={index} sourceIndex={nodes.indexOf(link.source)} targetIndex={nodes.indexOf(link.target)} />;
   })}</group>;
 }
 
@@ -544,7 +558,7 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
     <RenderProofRepublisher />
     {cameraRig}
     <group name="life-map-authored-environment">
-      <mesh><sphereGeometry args={[86, 48, 36]} /><meshBasicMaterial color="#030815" side={THREE.BackSide} /></mesh>
+      {/* Scene background supplies the sky; an opaque sphere here occludes the far star field. */}
       <NebulaBreath reducedMotion={profile.reducedMotion} selected={Boolean(selected)} />
       <FieldParticles seed={1220} count={profile.tier === "low" ? 150 : 360} radius={38} depth={72} height={30} color={VIOLET} opacity={.18} size={.06} />
     </group>

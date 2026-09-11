@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSPr
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
+import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { markFirstSpatialFrame, useAdaptiveSpatialQuality, type SpatialQualityProfile } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
@@ -225,7 +226,7 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
         const threshold = 0.72 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
         const archive = 1.15 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
         positions.push(x, -1.5 + side + weather + threshold + archive, z)
-        uvs.push(u, v)
+        uvs.push(u * 6, v * 6)
       }
     }
     for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) {
@@ -242,32 +243,10 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
     result.computeVertexNormals()
     return result
   }, [])
-  const texture = useMemo(() => {
-    const size = 512
-    const data = new Uint8Array(size * size * 4)
-    const mineral = new THREE.Color(accent)
-    for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
-      const u = x / size
-      const v = y / size
-      const strata = 0.5 + 0.5 * Math.sin(v * 126 + Math.sin(u * 19) * 5 + Math.sin(v * 37) * 2)
-      const grain = 0.5 + 0.5 * Math.sin(u * 397 - v * 233) * Math.sin(u * 151 + v * 281)
-      const worn = Math.exp(-Math.pow((u - 0.5 - 0.08 * Math.sin(v * 15)) / 0.14, 4))
-      const lightness = 0.28 + strata * 0.13 + grain * 0.08 + worn * 0.18
-      const offset = (y * size + x) * 4
-      data[offset] = Math.round(255 * (0.045 + mineral.r * lightness))
-      data[offset + 1] = Math.round(255 * (0.10 + mineral.g * lightness))
-      data[offset + 2] = Math.round(255 * (0.095 + mineral.b * lightness))
-      data[offset + 3] = 255
-    }
-    const result = new THREE.DataTexture(data, size, size, THREE.RGBAFormat)
-    result.colorSpace = THREE.SRGBColorSpace
-    result.wrapS = result.wrapT = THREE.RepeatWrapping
-    result.needsUpdate = true
-    return result
-  }, [accent])
-  useEffect(() => () => { geometry.dispose(); texture.dispose() }, [geometry, texture])
+  const maps = useMemo(createMineralMaps, [])
+  useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
   return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
-    <meshStandardMaterial map={texture} color="#b7c9bc" roughness={0.98} metalness={0} />
+    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} color="#a3b4ad" roughness={0.88} metalness={0} />
   </mesh>
 }
 

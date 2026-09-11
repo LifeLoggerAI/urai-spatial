@@ -66,6 +66,9 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
     'home-v226-ground-inhabited-hearth','home-v226-life-map-lineage-observatory','home-v226-root-cradle','home-v226-rooted-single-living-memory-presence',
     'home-v230-scanned-grounded-fern-grove','polyhaven-fern-02-geometry-v1.glb','home-v230-life-map-asymmetric-root-threshold',
   ]) has(currentHomeVisual, marker)
+  // Only the provenance-recorded rock scans may augment the authored terrain.
+  assert.equal((currentHomeVisual.match(/useGLTF\(/g) ?? []).length, 2)
+  assert.ok(currentHomeVisual.includes('polyhaven-v48/rock_face_${variant}/asset.gltf'))
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
   assert.equal((currentHome.match(/<Canvas/g) ?? []).length, 1)
   assert.match(currentHomeVisual, /useGLTF\(FERN_MODEL\)/)

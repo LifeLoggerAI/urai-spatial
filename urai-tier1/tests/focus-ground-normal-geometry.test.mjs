@@ -6,7 +6,7 @@ import * as THREE from 'three'
 
 const source = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const start = source.indexOf('function FocusSanctuaryGround(')
-const end = source.indexOf('  const texture =', start)
+const end = source.indexOf('  const maps =', start)
 const body = source.slice(start, end) + '\nreturn geometry; }'
 const compile = ts.transpile(body, { target: ts.ScriptTarget.ES2022 })
 const geometry = new Function('THREE', 'useMemo', `${compile}; return FocusSanctuaryGround({accent:'#abc'});`)(THREE, fn => fn())
