@@ -42,6 +42,28 @@ async function stableBrowserBox(target) {
   return after
 }
 
+async function proveGroundMobileControls(page, viewport) {
+  const rail = page.getByRole('navigation', { name: 'Ground destinations' })
+  const movement = page.getByRole('group', { name: 'Ground movement controls' })
+  const prompt = page.locator('.ground-prompt')
+  const railBox = await rail.boundingBox(), padBox = await movement.boundingBox(), promptBox = await prompt.boundingBox()
+  const inside = box => box && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width + 1 && box.y + box.height <= viewport.height + 1
+  if (![railBox, padBox, promptBox].every(inside)) throw new Error('Ground mobile controls extend outside the viewport')
+  if (railBox.y + railBox.height > padBox.y || promptBox.y + promptBox.height > railBox.y) throw new Error('Ground mobile control rows overlap')
+  for (const button of await movement.getByRole('button').all()) {
+    const box = await button.boundingBox()
+    if (!box || box.width < 44 || box.height < 44) throw new Error('Ground movement target is below 44px')
+  }
+  const buttons = rail.getByRole('button')
+  for (const button of [buttons.first(), buttons.last(), buttons.first()]) {
+    await button.focus()
+    await page.waitForTimeout(250)
+    const box = await button.boundingBox()
+    if (!box || box.x < railBox.x - 1 || box.x + box.width > railBox.x + railBox.width + 1) throw new Error('Focused Ground destination is clipped by its rail')
+  }
+  return { railBox, padBox, promptBox, minimumMovementTarget: 44, endpointDestinationsFullyVisible: true }
+}
+
 async function activate(page, target, method) {
   if (method === 'keyboard') {
     await target.focus()
@@ -104,6 +126,7 @@ async function prove(browser, doorway, testCase) {
     record.targetOwnsHitPoint = true
     await settleRenderedDestination(page, doorway)
     record.destinationRendered = true
+    if (testCase.isMobile && doorway.id === 'ground') record.mobileControls = await proveGroundMobileControls(page, testCase.viewport)
     record.resultingUrl = page.url()
     record.success = normalize(record.resultingUrl) === doorway.destination && record.destinationRendered
   } catch (error) {

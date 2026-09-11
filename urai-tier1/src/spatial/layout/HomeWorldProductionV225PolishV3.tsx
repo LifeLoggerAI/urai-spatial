@@ -222,16 +222,19 @@ function ScannedRockFace({ variant, x, z, turn, scale }: { variant: '01' | '02';
       geometry.computeBoundingBox()
       const bounds = geometry.boundingBox!
       const span = bounds.getSize(new THREE.Vector3())
+      const center = bounds.getCenter(new THREE.Vector3())
       const world = placement.clone().multiply(object.matrixWorld)
       const inverse = world.clone().invert()
       const positions = geometry.getAttribute('position')
       const point = new THREE.Vector3()
-      // Seat the scan's cropped perimeter into the terrain while retaining its
-      // interior relief and authored UV atlas. No floating rectangular cut edge.
+      // An elliptical shoulder avoids preserving a smaller rectangular plateau
+      // inside the crop. Keep the central relief and the authored UV atlas.
       for (let i=0;i<positions.count;i++) {
         point.fromBufferAttribute(positions,i)
-        const edge = Math.min((point.x-bounds.min.x)/span.x,(bounds.max.x-point.x)/span.x,(point.y-bounds.min.y)/span.y,(bounds.max.y-point.y)/span.y)
-        const retain = THREE.MathUtils.smoothstep(edge,0,.17)
+        const nx = 2*(point.x-center.x)/Math.max(span.x,.0001)
+        const ny = 2*(point.y-center.y)/Math.max(span.y,.0001)
+        const radius = Math.hypot(nx,ny)
+        const retain = 1-THREE.MathUtils.smoothstep(radius,.48,.94)
         point.applyMatrix4(world)
         point.y = THREE.MathUtils.lerp(height(point.x,point.z)-.07,point.y,retain)
         point.applyMatrix4(inverse)

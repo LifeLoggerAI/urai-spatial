@@ -113,3 +113,42 @@
   opacity: 1;
   font-size: 11px;
 }
+
+/* Portrait has separate rows for destinations and movement. A narrow rail
+   beside the pad also collided with the persistent companion button. */
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root .ground-directory {
+    left: max(14px, env(safe-area-inset-left)) !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+    bottom: max(134px, calc(env(safe-area-inset-bottom) + 124px)) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    padding: 6px 10px !important;
+    scroll-padding-inline: 10px !important;
+    mask-image: none !important;
+    background: rgba(5, 20, 24, .9);
+  }
+  .ground-spatial-root .ground-prompt {
+    bottom: max(202px, calc(env(safe-area-inset-bottom) + 192px));
+    box-sizing: border-box;
+    max-width: calc(100vw - 28px);
+    white-space: normal;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: .02em;
+    text-transform: none;
+    color: #eef7f4;
+    background: rgba(5, 20, 24, .9);
+  }
+  .ground-spatial-root .ground-brand strong { white-space: normal; }
+  .ground-spatial-root .urai-mobile-movement {
+    grid-template-columns: repeat(3, 44px) !important;
+    grid-template-rows: repeat(2, 44px) !important;
+  }
+  .ground-spatial-root .urai-mobile-movement button {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}

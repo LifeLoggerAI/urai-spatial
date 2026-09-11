@@ -61,13 +61,13 @@
   padding: .46rem .74rem;
   border: 1px solid rgba(232, 240, 234, .1);
   border-radius: 999px;
-  background: rgba(9, 21, 17, .2);
-  color: rgba(246, 249, 247, .76);
+  background: rgba(9, 21, 17, .88);
+  color: #eef5ee;
   backdrop-filter: blur(10px);
-  font-size: .58rem;
+  font-size: .875rem;
   font-weight: 650;
   letter-spacing: .07em;
-  opacity: .74;
+  opacity: 1;
 }
 
 .world :global(.urai-mobile-movement) {
@@ -131,12 +131,13 @@
     left: max(16px, env(safe-area-inset-left));
   }
   .worldHint {
-    bottom: max(16px, env(safe-area-inset-bottom));
-    max-width: calc(100vw - 184px);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: .54rem;
+    top: max(16px, env(safe-area-inset-top));
+    bottom: auto;
+    box-sizing: border-box;
+    max-width: calc(100vw - 32px);
+    white-space: normal;
+    text-align: center;
+    font-size: .875rem;
   }
   .world :global(.urai-mobile-movement) {
     opacity: 1;

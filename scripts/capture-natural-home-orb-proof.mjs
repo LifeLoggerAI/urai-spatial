@@ -123,6 +123,18 @@ for (const spec of cases) {
     record.visibleProductionAssets = await attr('data-home-visible-production-assets'); record.authoredRegions = await attr('data-home-authored-regions')
     record.cameraMode = await attr('data-home-camera-mode'); record.orbState = await attr('data-home-orb-state'); record.orbModelClip = await attr('data-home-orb-model-clip')
     record.stateMessages = await owner.locator('.home-world-context').allTextContents()
+    if (spec.stateMessage) {
+      const hint = owner.locator('.home-world-context').first()
+      record.stateMessageVisible = await hint.isVisible()
+      record.stateMessageLayout = await hint.evaluate(element => {
+        const rect = element.getBoundingClientRect(), style = getComputedStyle(element)
+        return {
+          withinViewport: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
+          unclipped: element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight,
+          fontSize: Number.parseFloat(style.fontSize), opacity: Number.parseFloat(style.opacity),
+        }
+      })
+    }
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count(); record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const nav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await nav.getByRole('button').count(); record.semanticLinks = await nav.getByRole('link').count()
@@ -152,6 +164,7 @@ for (const spec of cases) {
       && record.cameraMode !== null && record.orbState !== null
       && (!spec.orbState || record.orbState === spec.orbState)
       && (!spec.stateMessage || record.stateMessages.includes(spec.stateMessage))
+      && (!spec.stateMessage || (record.stateMessageVisible && record.stateMessageLayout.withinViewport && record.stateMessageLayout.unclipped && record.stateMessageLayout.fontSize >= 14 && record.stateMessageLayout.opacity >= .95))
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1 && record.embodimentMarkers === 1
       && record.semanticButtons === 1 && record.semanticLinks === 2

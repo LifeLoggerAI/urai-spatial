@@ -222,6 +222,15 @@ function AuthoredFocusChamber() {
   return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL }}><primitive object={model} /></group>
 }
 
+function focusGroundHeight(x: number, z: number) {
+  const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
+  const weather = 0.24 * Math.sin(x * 0.64 + z * 0.23) + 0.11 * Math.sin(x * 1.73 - z * 0.82) + 0.055 * Math.cos(x * 4.1 + z * 2.7)
+  const threshold = 0.72 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
+  const archive = 1.15 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
+  const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.8 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
+  return -1.5 + side + weather + threshold + archive + bank
+}
+
 function FocusSanctuaryGround({ accent }: { accent: string }) {
   const geometry = useMemo(() => {
     const columns = 96
@@ -235,12 +244,7 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
       for (let column = 0; column <= columns; column += 1) {
         const u = column / columns
         const x = -15 + u * 30
-        const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
-        const weather = 0.24 * Math.sin(x * 0.64 + z * 0.23) + 0.11 * Math.sin(x * 1.73 - z * 0.82) + 0.055 * Math.cos(x * 4.1 + z * 2.7)
-        const threshold = 0.72 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
-        const archive = 1.15 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
-        const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.8 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
-        positions.push(x, -1.5 + side + weather + threshold + archive + bank, z)
+        positions.push(x, focusGroundHeight(x, z), z)
         uvs.push(u * 6, v * 6)
       }
     }
@@ -266,13 +270,49 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
   </mesh>
 }
 
+function seatFocusStoneGeometry(source: THREE.BufferGeometry, world: THREE.Matrix4) {
+  const geometry = source.clone()
+  geometry.computeBoundingBox()
+  const bounds = geometry.boundingBox!
+  const span = bounds.getSize(new THREE.Vector3())
+  const center = bounds.getCenter(new THREE.Vector3())
+  const inverse = world.clone().invert()
+  const positions = geometry.getAttribute('position')
+  const point = new THREE.Vector3()
+  for (let i = 0; i < positions.count; i++) {
+    point.fromBufferAttribute(positions, i)
+    const nx = 2 * (point.x - center.x) / Math.max(span.x, .0001)
+    const ny = 2 * (point.y - center.y) / Math.max(span.y, .0001)
+    const retain = 1 - THREE.MathUtils.smoothstep(Math.hypot(nx, ny), .48, .94)
+    point.applyMatrix4(world)
+    point.y = THREE.MathUtils.lerp(focusGroundHeight(point.x, point.z) - .08, point.y, retain)
+    point.applyMatrix4(inverse)
+    positions.setXYZ(i, point.x, point.y, point.z)
+  }
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 }) {
   const asset = useGLTF(`/assets/urai/home-production/cc0/polyhaven-v48/rock_face_${variant}/asset.gltf`)
   const model = useMemo(() => {
     const copy = asset.scene.clone(true)
-    copy.traverse(child => { if (child instanceof THREE.Mesh) { child.castShadow = true; child.receiveShadow = true } })
+    copy.updateMatrixWorld(true)
+    const scale = side < 0 ? 1.18 : 1.3
+    const placement = new THREE.Matrix4().compose(
+      new THREE.Vector3(side * 5.8, -1.65, side < 0 ? -6.8 : -8.5),
+      new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), side < 0 ? .4 : -.6),
+      new THREE.Vector3(scale, scale, scale),
+    )
+    copy.traverse(child => {
+      if (!(child instanceof THREE.Mesh)) return
+      child.geometry = seatFocusStoneGeometry(child.geometry, placement.clone().multiply(child.matrixWorld))
+      child.castShadow = true
+      child.receiveShadow = true
+    })
     return copy
-  }, [asset.scene])
+  }, [asset.scene, side])
+  useEffect(() => () => model.traverse(child => { if (child instanceof THREE.Mesh) child.geometry.dispose() }), [model])
   return <primitive object={model} name={`focus-scanned-stone-bank-${variant}`} position={[side * 5.8, -1.65, side < 0 ? -6.8 : -8.5]} rotation={[0, side < 0 ? .4 : -.6, 0]} scale={side < 0 ? 1.18 : 1.3} />
 }
 
