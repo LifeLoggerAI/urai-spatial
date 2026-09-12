@@ -270,7 +270,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-    await talk.click()
+    await talk.click({ noWaitAfter: true })
     const message = page.getByLabel('Message for Orb').first()
     await message.focus()
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
