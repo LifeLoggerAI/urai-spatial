@@ -183,7 +183,7 @@ function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbStat
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
   return <group ref={root} position={[ORB.x,y+.91,ORB.z]} rotation={[.04,-.26,-.08]} name="home-v234-living-memory-heart" onClick={activate} userData={{artRevision:'v243-tapered-scarred-living-memory-presence',visualIntent:'one-connected-asymmetric-history-bearing-presence',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'matte-scarred-memory-tissue'}}>
     <mesh geometry={outer} scale={[.64,.82,.64]} castShadow receiveShadow><meshStandardMaterial vertexColors color="#849086" emissive={glow} emissiveIntensity={.028+e*.12} roughness={.94} metalness={0}/></mesh>
-    <line geometry={scar} position={[0,0,.31]}><lineBasicMaterial color={glow} transparent opacity={.46+e*.40} toneMapped={false}/></line>
+    <primitive object={new THREE.Line(scar)} position={[0,0,.31]}><lineBasicMaterial color={glow} transparent opacity={.46+e*.40} toneMapped={false}/></primitive>
     <points geometry={interior} scale={[.64,.82,.64]}><pointsMaterial color={glow} size={.018} transparent opacity={.26+e*.24} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
     <pointLight color={glow} intensity={.14+e*.34} distance={3.0} decay={2}/>
   </group>
