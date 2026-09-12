@@ -288,8 +288,12 @@ export default function OrbConversationPanel() {
               checked={aiConsent}
               disabled={busy}
               onChange={(event) => {
-                setAiConsent(event.target.checked)
-                publishConversationState(event.target.checked ? 'attention' : 'privacy')
+                const checked = event.target.checked
+                setAiConsent(checked)
+                // Consent state is the interactive authority. Spatial telemetry is
+                // observational and must not make this privacy control unresponsive
+                // when a heavy WebGL listener is rendering on software fallbacks.
+                window.setTimeout(() => publishConversationState(checked ? 'attention' : 'privacy'), 0)
               }}
             />
             Allow this message and bounded recent context to be processed by OpenAI.
