@@ -23,3 +23,10 @@ test('pointer and touch retain real browser-coordinate hit ownership', () => {
   assert.match(proof, /targetOwnsHitPoint/)
   assert.match(proof, /box\.width < 44 \|\| box\.height < 44/)
 })
+
+
+test('doorway activation waits for the React click handler to hydrate', () => {
+  assert.match(proof, /page\.waitForFunction/)
+  assert.match(proof, /key\.startsWith\('__reactProps\\\$'\)/)
+  assert.match(proof, /typeof node\[key\]\?\.onClick === 'function'/)
+})
