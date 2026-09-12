@@ -94,7 +94,6 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
       <ScannedRock variant="02" position={[.64, -.02, -.80]} rotation={[-.05, -1.12, .07]} scale={[.72, 1.08, .66]} />
     </Suspense>
     <mesh geometry={inner} position={[.02, .02, -.88]} scale={[.70, 1.04, .60]}><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh>
-    <mesh position={[.02, .04, -1.28]} scale={[.42, .72, 1]}><planeGeometry args={[1, 1, 1, 1]} /><meshStandardMaterial color="#030302" emissive="#5b291c" emissiveIntensity={.035} roughness={1} /></mesh>
     <mesh geometry={path} position={[0, -.58, -.04]} receiveShadow><meshStandardMaterial vertexColors color="#74604d" roughness={1} /></mesh>
     <pointLight position={[.02, .08, -1.12]} color="#d18a61" intensity={.42} distance={2.4} decay={2} />
   </group>
@@ -121,7 +120,6 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
       <ScannedRock variant="02" position={[-.54, .08, -.74]} rotation={[.06,1.02,-.06]} scale={[.60,.94,.58]} />
     </Suspense>
     <mesh geometry={inner} position={[0, .12, -.78]} scale={[.66, 1.04, .56]}><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh>
-    <mesh position={[0, .15, -1.18]} scale={[.36, .78, 1]}><planeGeometry args={[1, 1, 1, 1]} /><meshStandardMaterial color="#020403" emissive="#214b46" emissiveIntensity={.030} roughness={1} /></mesh>
     <mesh geometry={path} position={[0, -.08, .10]} rotation={[.08, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#6f6756" roughness={1} /></mesh>
     <points geometry={stars}><pointsMaterial vertexColors size={.024} sizeAttenuation transparent opacity={.82} depthWrite={false} blending={THREE.AdditiveBlending} /></points>
     <pointLight position={[0, .72, -1.06]} color="#83b8ad" intensity={.38} distance={2.5} decay={2} />
