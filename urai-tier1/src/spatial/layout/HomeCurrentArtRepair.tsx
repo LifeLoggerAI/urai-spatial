@@ -69,10 +69,12 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
       const materials = sources.map((source) => {
         const material = source.clone()
         if (material instanceof THREE.MeshStandardMaterial) {
-          material.roughness = Math.max(.92, material.roughness)
+          material.roughness = Math.max(.9, material.roughness)
           material.metalness = 0
-          material.color.multiplyScalar(.98)
-          material.envMapIntensity = .82
+          material.color.offsetHSL(0, -.04, .10)
+          material.emissive = new THREE.Color('#202723')
+          material.emissiveIntensity = .10
+          material.envMapIntensity = .9
         }
         return material
       })
@@ -81,7 +83,7 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
     return clone
   }, [asset.scene])
   useEffect(() => () => model.traverse((object) => { if (!(object instanceof THREE.Mesh)) return; const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach((material) => material.dispose()) }), [model])
-  return <group position={position} rotation={rotation} scale={scale}><primitive object={model} /></group>
+  return <group position={position} rotation={rotation} scale={[scale[0] * .78, scale[1] * .78, scale[2] * .78]}><primitive object={model} /></group>
 }
 
 function apertureGeometry(width: number, heightValue: number, seed: number) {
@@ -108,7 +110,7 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const path = useMemo(() => wornPathGeometry(2.7, .28, .11), [])
   useEffect(() => () => { inner.dispose(); path.dispose() }, [inner, path])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
-  return <group position={[GROUND.x, y + .58, GROUND.z]} rotation={[0, -.08, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v245-ground-cleft-shadow-slab-safe', visualIntent: 'eroded-cavern-cleft-owned-by-real-rock', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
+  return <group position={[GROUND.x, y + .58, GROUND.z]} rotation={[0, -.08, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v246-recessed-readable-ground-cleft', visualIntent: 'eroded-cavern-cleft-owned-by-real-rock-without-slab-silhouette', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="01" position={[-.43, -.34, -.88]} rotation={[.20, .78, -.18]} scale={[1.30, 1.94, .86]} />
       <ScannedRock variant="02" position={[.43, -.35, -.90]} rotation={[-.16, -.88, .16]} scale={[1.28, 1.90, .84]} />
@@ -119,7 +121,7 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
     </Suspense>
     <mesh geometry={inner} position={[.02, .02, -.88]} scale={[.70, 1.04, .60]}><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh>
     <mesh geometry={path} position={[0, -.58, -.04]} receiveShadow><meshStandardMaterial vertexColors color="#74604d" roughness={1} /></mesh>
-    <pointLight position={[.02, .08, -1.12]} color="#d18a61" intensity={.42} distance={2.4} decay={2} />
+    <pointLight position={[.02, .08, -1.12]} color="#d18a61" intensity={.52} distance={2.7} decay={2} />
   </group>
 }
 
@@ -135,7 +137,7 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   }, [])
   useEffect(() => () => { inner.dispose(); path.dispose(); stars.dispose() }, [inner, path, stars])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
-  return <group position={[LIFE_MAP.x, y + .08, LIFE_MAP.z]} rotation={[0, .06, 0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{ artRevision: 'v245-lineage-rift-shadow-slab-safe', visualIntent: 'narrow-asymmetric-lineage-cleft-with-celestial-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'rooted-ascent-not-tube-portal' }}>
+  return <group position={[LIFE_MAP.x, y + .08, LIFE_MAP.z]} rotation={[0, .06, 0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{ artRevision: 'v246-recessed-readable-lineage-rift', visualIntent: 'narrow-asymmetric-lineage-cleft-with-celestial-depth-without-slab-silhouette', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'rooted-ascent-not-tube-portal' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="02" position={[-.38, -.22, -.74]} rotation={[.12, .94, -.16]} scale={[1.18, 1.72, .80]} />
       <ScannedRock variant="01" position={[.38, -.24, -.76]} rotation={[.08, -1.00, .14]} scale={[1.16, 1.68, .78]} />
@@ -145,16 +147,16 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
     </Suspense>
     <mesh geometry={inner} position={[0, .12, -.78]} scale={[.66, 1.04, .56]}><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} /></mesh>
     <mesh geometry={path} position={[0, -.08, .10]} rotation={[.08, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#6f6756" roughness={1} /></mesh>
-    <points geometry={stars}><pointsMaterial vertexColors size={.024} sizeAttenuation transparent opacity={.82} depthWrite={false} blending={THREE.AdditiveBlending} /></points>
-    <pointLight position={[0, .72, -1.06]} color="#83b8ad" intensity={.38} distance={2.5} decay={2} />
+    <points geometry={stars}><pointsMaterial vertexColors size={.024} sizeAttenuation transparent opacity={.88} depthWrite={false} blending={THREE.AdditiveBlending} /></points>
+    <pointLight position={[0, .72, -1.06]} color="#83b8ad" intensity={.48} distance={2.8} decay={2} />
   </group>
 }
 
 function livingMemoryGeometry() {
-  const geometry = new THREE.IcosahedronGeometry(1, 4)
+  const geometry = new THREE.SphereGeometry(1, 96, 64)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors: number[] = []
-  const deep = new THREE.Color('#262821'), tissue = new THREE.Color('#8d8872'), scarColor = new THREE.Color('#c8c0a3')
+  const deep = new THREE.Color('#4b3030'), tissue = new THREE.Color('#9d7066'), scarColor = new THREE.Color('#d1b49a')
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
     const angle = Math.atan2(nz, nx)
@@ -164,8 +166,8 @@ function livingMemoryGeometry() {
     const leftLobe = Math.exp(-(((nx + .43) / .47) ** 2 + ((nz - .03) / .78) ** 2)) * crown
     const rightLobe = Math.exp(-(((nx - .34) / .44) ** 2 + ((nz + .10) / .74) ** 2)) * crown
     const side = Math.tanh(nx * 7.2)
-    const weather = .10 * Math.sin(angle * 3.2 + ny * 5.2) + .045 * Math.sin(angle * 11 - ny * 7.8)
-    const strata = .036 * Math.sin(ny * 18.0 + angle * 2.4)
+    const weather = .045 * Math.sin(angle * 3.2 + ny * 5.2) + .020 * Math.sin(angle * 11 - ny * 7.8)
+    const strata = .018 * Math.sin(ny * 18.0 + angle * 2.4)
     const rootTaper = THREE.MathUtils.lerp(.32, 1, THREE.MathUtils.smoothstep(ny, -.86, -.02))
     const radial = 1 + weather + strata + .22 * leftLobe + .15 * rightLobe
     let x = nx * radial * .68 * rootTaper + side * crown * .16 + ny * .07 - .035
@@ -179,9 +181,10 @@ function livingMemoryGeometry() {
     position.setXYZ(index, x, y, z)
     const h = THREE.MathUtils.clamp((y + 1.30) / 2.45, 0, 1)
     const scarWeight = THREE.MathUtils.clamp(centerCleft + Math.abs(strata) * 4.0, 0, 1)
-    const color = deep.clone().lerp(tissue, .25 + .48 * h).lerp(scarColor, .04 + .22 * scarWeight)
+    const color = deep.clone().lerp(tissue, .28 + .50 * h).lerp(scarColor, .05 + .18 * scarWeight)
     colors.push(color.r, color.g, color.b)
   }
+  position.needsUpdate = true
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geometry.computeVertexNormals(); geometry.computeBoundingSphere(); return geometry
 }
 
@@ -205,14 +208,14 @@ const stateIntensity: Record<OrbState, number> = { dormant:.03, idle:.09, attent
 function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
   const root=useRef<THREE.Group>(null), y=height(ORB.x,ORB.z), outer=useMemo(livingMemoryGeometry,[]), interior=useMemo(memoryInteriorGeometry,[]), scar=useMemo(memoryScarGeometry,[]), scarLine=useMemo(()=>new THREE.Line(scar),[scar])
   useEffect(()=>()=>{outer.dispose();interior.dispose();scar.dispose()},[interior,outer,scar])
-  useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.44)*.0025;root.current.position.y=y+.84+Math.sin(t*.30)*.004;root.current.rotation.y=-.10+Math.sin(t*.14)*.010;root.current.rotation.z=-.06+Math.sin(t*.21)*.003;root.current.scale.setScalar(breath)})
-  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#c7765e':privacy?'#6f9ea0':'#b3a985'
+  useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.44)*.0035;root.current.position.y=y+.90+Math.sin(t*.30)*.006;root.current.rotation.y=-.10+Math.sin(t*.14)*.014;root.current.rotation.z=-.06+Math.sin(t*.21)*.004;root.current.scale.setScalar(breath)})
+  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#d5846d':privacy?'#78acaa':'#c59c86'
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
-  return <group ref={root} position={[ORB.x,y+.84,ORB.z]} rotation={[.03,-.10,-.06]} name="home-v234-living-memory-heart" onClick={activate} userData={{artRevision:'v245-broader-scarred-living-memory-shadow-safe',visualIntent:'one-connected-asymmetric-history-bearing-presence',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'matte-scarred-memory-tissue'}}>
-    <mesh geometry={outer} scale={[.92,.90,.88]} receiveShadow><meshStandardMaterial vertexColors color="#b8ad91" emissive={glow} emissiveIntensity={.018+e*.075} roughness={.94} metalness={0}/></mesh>
-    <primitive object={scarLine} position={[0,0,.31]}><lineBasicMaterial color={glow} transparent opacity={.38+e*.38} toneMapped={false}/></primitive>
-    <points geometry={interior} scale={[.92,.90,.88]}><pointsMaterial color={glow} size={.016} transparent opacity={.23+e*.22} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    <pointLight color={glow} intensity={.10+e*.22} distance={2.4} decay={2}/>
+  return <group ref={root} position={[ORB.x,y+.90,ORB.z]} rotation={[.03,-.10,-.06]} name="home-v246-living-memory-heart" onClick={activate} userData={{artRevision:'v246-smooth-living-memory-heart',visualIntent:'one-connected-asymmetric-history-bearing-living-presence-not-rock',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'soft-matte-scarred-memory-tissue'}}>
+    <mesh geometry={outer} scale={[1.18,1.16,1.12]} receiveShadow><meshStandardMaterial vertexColors color="#c28f82" emissive={glow} emissiveIntensity={.035+e*.12} roughness={.78} metalness={0}/></mesh>
+    <primitive object={scarLine} position={[0,0,.39]}><lineBasicMaterial color={glow} transparent opacity={.44+e*.36} toneMapped={false}/></primitive>
+    <points geometry={interior} scale={[1.18,1.16,1.12]}><pointsMaterial color={glow} size={.018} transparent opacity={.26+e*.24} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
+    <pointLight color={glow} intensity={.16+e*.30} distance={2.8} decay={2}/>
   </group>
 }
 
@@ -224,5 +227,5 @@ function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
-  return <group name="home-current-authority-art-repair" userData={{artRevision:'v245-shadow-slab-suppression'}}><RetireSupersededShapes/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
+  return <group name="home-current-authority-art-repair" userData={{artRevision:'v246-smooth-orb-recessed-thresholds'}}><RetireSupersededShapes/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
 }
