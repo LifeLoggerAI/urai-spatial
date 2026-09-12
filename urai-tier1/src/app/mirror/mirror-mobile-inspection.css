@@ -161,6 +161,7 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
     letter-spacing: .14em;
     text-align: center;
     text-transform: uppercase;
+    pointer-events: none;
   }
 
   .mirrorWorld:has(.mirrorInspection) .mirrorPatternRail,
