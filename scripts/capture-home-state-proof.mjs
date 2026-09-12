@@ -263,16 +263,22 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       })
     })
     const response = await page.goto(`${base}/home/?homeAssetReview=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    record.phase = 'home-ready'
     const owner = await waitForHomeReady(page)
     const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
+    record.phase = 'orb-open'
     await openOrb.click({ noWaitAfter: true })
+    record.phase = 'orb-menu-visible'
     await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
+    record.phase = 'orb-attention-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
     const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
+    record.phase = 'conversation-open'
     await talk.click({ noWaitAfter: true })
     const message = page.getByLabel('Message for Orb').first()
     await message.focus()
+    record.phase = 'orb-listening-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
 
     record.listeningState = await owner.getAttribute('data-home-orb-state')
@@ -298,17 +304,21 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }
 
     const consent = page.getByLabel('Allow this message and bounded recent context to be processed by OpenAI.').first()
+    record.phase = 'consent-enable'
     await consent.focus()
     await consent.press('Space')
     if (!(await consent.isChecked())) throw new Error('Orb consent keyboard activation did not check the native control')
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
     const send = page.getByRole('button', { name: 'Send' }).first()
+    record.phase = 'send-visible'
     await send.waitFor({ state: 'visible', timeout: 20_000 })
+    record.phase = 'send-enabled'
     await page.waitForFunction(() => {
       const candidate = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Send')
       return candidate instanceof HTMLButtonElement && !candidate.disabled
     }, null, { timeout: 20_000 })
+    record.phase = 'orb-speaking-rendered'
     await Promise.all([
       page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
         && sample.renderedState === 'speaking'
@@ -321,6 +331,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.respondingState = respondingSample?.renderedState ?? null
     record.respondingClip = respondingSample?.renderedClip ?? null
     const responsePanel = page.locator('section[aria-label="Orb response"]')
+    record.phase = 'response-visible'
     await responsePanel.waitFor({ state: 'visible', timeout: 20_000 })
     record.responseText = (await responsePanel.textContent()) || ''
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
@@ -328,6 +339,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
 
     await consent.focus()
     await consent.press('Space')
+    record.phase = 'orb-privacy-rendered'
     if (await consent.isChecked()) throw new Error('Orb consent keyboard activation did not uncheck the native control')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
@@ -340,6 +352,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.screenshotSha256 = createHash('sha256').update(screenshot).digest('hex')
 
     await page.keyboard.press('Escape')
+    record.phase = 'orb-idle-rendered'
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'idle', ownerSelector)
     record.closedState = await owner.getAttribute('data-home-orb-state')
     record.closedClip = await owner.getAttribute('data-home-orb-clip')
@@ -362,6 +375,7 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       && record.visual.visibleSamples >= receipt.visualGate.minimumVisibleSamples
       && record.screenshotBytes > 12_000
       && pageErrors.length === 0
+    record.phase = record.passed ? 'complete' : 'predicate-failed'
   } catch (error) {
     record.error = String(error)
   } finally {
