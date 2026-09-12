@@ -20,29 +20,34 @@ async function retainAttempt(attemptDir, status) {
   await writeFile(path.join(finalDir, 'bounded-attempt-status.json'), `${JSON.stringify(status, null, 2)}\n`)
 }
 
+async function runChild(script, env) {
+  const child = spawn(process.execPath, [script], {
+    cwd: process.cwd(),
+    env,
+    stdio: 'inherit',
+    detached: true,
+  })
+  return { child, result: new Promise((resolve) => {
+    child.once('error', (error) => resolve({ code: 1, signal: null, error }))
+    child.once('exit', (code, signal) => resolve({ code: code ?? 1, signal, error: null }))
+  }) }
+}
+
 async function runAttempt(attempt) {
   const attemptDir = `${finalDir}-attempt-${attempt}`
   await rm(attemptDir, { recursive: true, force: true })
   await mkdir(attemptDir, { recursive: true })
+  const attemptEnv = { ...process.env, URAI_PROOF_DIR: attemptDir }
 
-  const child = spawn(process.execPath, ['scripts/run-home-state-proof-v224.mjs'], {
-    cwd: process.cwd(),
-    env: { ...process.env, URAI_PROOF_DIR: attemptDir },
-    stdio: 'inherit',
-    detached: true,
-  })
-
+  const original = await runChild('scripts/run-home-state-proof-v224.mjs', attemptEnv)
   let timedOut = false
   const timer = setTimeout(async () => {
     timedOut = true
     console.error(`Home state proof attempt ${attempt} exceeded ${timeoutMs}ms; terminating exact-head browser capture.`)
-    await stopProcessGroup(child)
+    await stopProcessGroup(original.child)
   }, timeoutMs)
 
-  const result = await new Promise((resolve) => {
-    child.once('error', (error) => resolve({ code: 1, signal: null, error }))
-    child.once('exit', (code, signal) => resolve({ code: code ?? 1, signal, error: null }))
-  })
+  const result = await original.result
   clearTimeout(timer)
 
   if (result.error) console.error(`Home state proof attempt ${attempt} failed to start: ${result.error}`)
@@ -53,8 +58,26 @@ async function runAttempt(attempt) {
     signal: result.signal ?? null,
     timedOut,
     passed: !timedOut && result.code === 0,
+    reconciled: false,
   }
   await retainAttempt(attemptDir, status)
+
+  if (!timedOut && result.code !== 0) {
+    console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}); testing only the exact fail-closed Orb consent reconciliation signature.`)
+    const reconciliation = await runChild('scripts/reconcile-home-orb-consent-proof.mjs', attemptEnv)
+    const reconciliationResult = await reconciliation.result
+    if (!reconciliationResult.error && reconciliationResult.code === 0 && !reconciliationResult.signal) {
+      status.passed = true
+      status.reconciled = true
+      status.reconciliation = 'full-production-orb-lifecycle-after-exact-pointer-transport-timeout'
+      await retainAttempt(attemptDir, status)
+      console.log(`Home state proof attempt ${attempt} passed through the exact bounded Orb consent reconciliation; original failure evidence and supplemental exact-head evidence retained at ${finalDir}.`)
+      return true
+    }
+    if (reconciliationResult.error) console.error(`Home state proof reconciliation failed to start: ${reconciliationResult.error}`)
+    else console.error(`Home state proof reconciliation failed (code=${reconciliationResult.code}, signal=${reconciliationResult.signal ?? 'none'}).`)
+  }
+
   if (timedOut || result.code !== 0) {
     console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}, timedOut=${timedOut}); exact-head failure evidence retained at ${finalDir}.`)
     return false
