@@ -132,10 +132,10 @@ function MemoryOutcrop({node,index,active,reducedMotion,onSelect,arrival}:{node:
   useEffect(()=>()=>{geometry.dispose();scarGeometry.dispose()},[geometry,scarGeometry])
   useFrame(({clock})=>{if(!root.current||reducedMotion||!active)return;root.current.rotation.y=Math.sin(clock.elapsedTime*.12+seed)*.006})
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onSelect(node)}
-  const horizontalScale=arrival&&active ? .36 : .32
-  const verticalScale=arrival&&active ? .88 : .76
-  const depthScale=arrival&&active ? .34 : .30
-  const yOffset=arrival&&active ? -.28 : -.31
+  const horizontalScale=arrival&&active ? .62 : .50
+  const verticalScale=arrival&&active ? 1.28 : 1.08
+  const depthScale=arrival&&active ? .56 : .46
+  const yOffset=arrival&&active ? -.20 : -.25
   return <group position={point} name={`life-map-v242-memory-site-${node.id}`} userData={{artRevision:'v242-terrain-scar-memory-manifestation',visualRepair:'inactive-sites-are-geography-selected-site-rises-as-rooted-fold',semanticNode:node.id}} onClick={activate}>
     <mesh geometry={scarGeometry} receiveShadow name={`life-map-v242-terrain-scar-${node.id}`}><meshStandardMaterial vertexColors color="#89978e" roughness={1} metalness={0}/></mesh>
     {active?<group ref={root} position={[0,yOffset,0]} scale={[horizontalScale,verticalScale,depthScale]} rotation={[0,seeded(seed,22)*Math.PI*2,0]}>

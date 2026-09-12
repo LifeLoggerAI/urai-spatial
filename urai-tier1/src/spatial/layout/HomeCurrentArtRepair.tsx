@@ -83,7 +83,7 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
     return clone
   }, [asset.scene])
   useEffect(() => () => model.traverse((object) => { if (!(object instanceof THREE.Mesh)) return; const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach((material) => material.dispose()) }), [model])
-  return <group position={position} rotation={rotation} scale={[scale[0] * .50, scale[1] * .50, scale[2] * .50]}><primitive object={model} /></group>
+  return <group position={position} rotation={rotation} scale={[scale[0] * .50 * .66, scale[1] * .50 * .66, scale[2] * .50 * .66]}><primitive object={model} /></group>
 }
 
 function apertureGeometry(width: number, heightValue: number, seed: number) {
@@ -156,34 +156,35 @@ function livingMemoryGeometry() {
   const geometry = new THREE.SphereGeometry(1, 112, 72)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors: number[] = []
-  const deep = new THREE.Color('#2c2427'), tissue = new THREE.Color('#73534f'), scarColor = new THREE.Color('#b99682')
+  const deep = new THREE.Color('#202b2a'), tissue = new THREE.Color('#55645f'), scarColor = new THREE.Color('#aaa694')
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
     const angle = Math.atan2(nz, nx)
     const crown = THREE.MathUtils.smoothstep(ny, -.02, .95)
     const lower = THREE.MathUtils.smoothstep(-ny, .10, .98)
-    const centerCleft = Math.exp(-(nx * nx) / .030) * crown * (1.0 - .24 * Math.max(0, -nz))
-    const leftLobe = Math.exp(-(((nx + .45) / .44) ** 2 + ((nz - .08) / .62) ** 2)) * crown
-    const rightLobe = Math.exp(-(((nx - .31) / .39) ** 2 + ((nz + .13) / .58) ** 2)) * crown
-    const forwardFold = Math.exp(-(((nz - .54) / .24) ** 2 + (nx / .60) ** 2)) * (.35 + .65 * crown)
-    const rearFold = Math.exp(-(((nz + .48) / .30) ** 2 + ((nx + .10) / .66) ** 2)) * (.20 + .55 * crown)
-    const side = Math.tanh(nx * 6.8)
-    const weather = .055 * Math.sin(angle * 3.1 + ny * 5.4) + .025 * Math.sin(angle * 9.0 - ny * 7.4)
-    const strata = .026 * Math.sin(ny * 16.0 + angle * 2.8)
-    const rootTaper = THREE.MathUtils.lerp(.27, 1, THREE.MathUtils.smoothstep(ny, -.88, -.02))
-    const radial = 1 + weather + strata + .30 * leftLobe + .17 * rightLobe + .13 * forwardFold - .08 * rearFold
-    let x = nx * radial * .74 * rootTaper + side * crown * .19 + ny * .075 - .055
-    let z = nz * radial * .50 * rootTaper + .055 * forwardFold - .035 * rearFold + .026 * Math.sin(ny * 6.3 + angle * 2.1)
-    const twist = (ny + .12) * .34
+    const seamAxis = (nx + .16) * .88 + (nz - .05) * .46
+    const centerCleft = Math.exp(-(seamAxis * seamAxis) / .038) * crown * (1.0 - .20 * Math.max(0, -nz))
+    const leftLobe = Math.exp(-(((nx + .28) / .58) ** 2 + ((nz - .18) / .74) ** 2)) * crown
+    const rightLobe = Math.exp(-(((nx - .38) / .78) ** 2 + ((nz + .30) / .56) ** 2)) * (.22 + .48 * crown)
+    const forwardFold = Math.exp(-(((nz - .48) / .28) ** 2 + ((nx + .08) / .70) ** 2)) * (.30 + .70 * crown)
+    const rearFold = Math.exp(-(((nz + .52) / .34) ** 2 + ((nx - .12) / .72) ** 2)) * (.18 + .50 * crown)
+    const side = Math.tanh((nx + .10) * 5.2)
+    const weather = .050 * Math.sin(angle * 3.1 + ny * 5.4) + .022 * Math.sin(angle * 9.0 - ny * 7.4)
+    const strata = .024 * Math.sin(ny * 16.0 + angle * 2.8)
+    const rootTaper = THREE.MathUtils.lerp(.30, 1, THREE.MathUtils.smoothstep(ny, -.88, -.02))
+    const radial = 1 + weather + strata + .16 * leftLobe + .08 * rightLobe + .17 * forwardFold - .05 * rearFold
+    let x = nx * radial * .62 * rootTaper + side * crown * .07 + ny * .11 - .09
+    let z = nz * radial * .70 * rootTaper + .11 * forwardFold - .055 * rearFold + .030 * Math.sin(ny * 6.3 + angle * 2.1)
+    const twist = (ny + .10) * .42 + .06 * Math.sin(ny * 3.1)
     const cos = Math.cos(twist), sin = Math.sin(twist), tx = x * cos - z * sin, tz = x * sin + z * cos
     x = tx; z = tz
-    let y = ny * 1.14 - .62 * centerCleft + .20 * leftLobe + .08 * rightLobe + .08 * forwardFold
-    y -= lower * (.22 + .20 * lower)
-    x += lower * -.09
+    let y = ny * 1.22 - .20 * centerCleft + .10 * leftLobe - .04 * rightLobe + .12 * forwardFold
+    y -= lower * (.20 + .18 * lower)
+    x += lower * -.10
     position.setXYZ(index, x, y, z)
-    const h = THREE.MathUtils.clamp((y + 1.35) / 2.50, 0, 1)
-    const scarWeight = THREE.MathUtils.clamp(centerCleft + Math.abs(strata) * 5.2 + forwardFold * .18, 0, 1)
-    const color = deep.clone().lerp(tissue, .20 + .52 * h).lerp(scarColor, .025 + .23 * scarWeight)
+    const h = THREE.MathUtils.clamp((y + 1.35) / 2.60, 0, 1)
+    const scarWeight = THREE.MathUtils.clamp(centerCleft + Math.abs(strata) * 5.0 + forwardFold * .20, 0, 1)
+    const color = deep.clone().lerp(tissue, .18 + .56 * h).lerp(scarColor, .020 + .25 * scarWeight)
     colors.push(color.r, color.g, color.b)
   }
   position.needsUpdate = true
@@ -212,13 +213,13 @@ function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbStat
   const root=useRef<THREE.Group>(null), y=height(ORB.x,ORB.z), outer=useMemo(livingMemoryGeometry,[]), interior=useMemo(memoryInteriorGeometry,[]), scar=useMemo(memoryScarGeometry,[]), scarLine=useMemo(()=>new THREE.Line(scar),[scar])
   useEffect(()=>()=>{outer.dispose();interior.dispose();scar.dispose()},[interior,outer,scar])
   useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.44)*.0045;root.current.position.y=y+.94+Math.sin(t*.30)*.007;root.current.rotation.y=-.22+Math.sin(t*.14)*.022;root.current.rotation.z=-.08+Math.sin(t*.21)*.006;root.current.scale.setScalar(breath)})
-  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#c87866':privacy?'#78a5a1':'#b68d79'
+  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#c87866':privacy?'#78a5a1':'#93b8ad'
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
   return <group ref={root} position={[ORB.x,y+.94,ORB.z]} rotation={[.04,-.22,-.08]} name="home-v247-living-memory-heart" onClick={activate} userData={{artRevision:'v247-folded-living-memory-mantle',visualIntent:'one-connected-asymmetric-folded-history-bearing-presence-not-clay-heart-not-rock',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'dark-matte-scarred-memory-mantle'}}>
-    <mesh geometry={outer} scale={[1.24,1.20,1.18]} receiveShadow><meshStandardMaterial vertexColors color="#88706a" emissive={glow} emissiveIntensity={.018+e*.085} roughness={.91} metalness={0}/></mesh>
-    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.40+e*.34} toneMapped={false}/></primitive>
-    <points geometry={interior} scale={[1.24,1.20,1.18]}><pointsMaterial color={glow} size={.016} transparent opacity={.22+e*.24} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    <pointLight color={glow} intensity={.09+e*.20} distance={2.7} decay={2}/>
+    <mesh geometry={outer} scale={[1.12,1.18,1.14]} receiveShadow><meshStandardMaterial vertexColors color="#74807a" emissive={glow} emissiveIntensity={.016+e*.078} roughness={.93} metalness={0}/></mesh>
+    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.36+e*.30} toneMapped={false}/></primitive>
+    <points geometry={interior} scale={[1.12,1.18,1.14]}><pointsMaterial color={glow} size={.015} transparent opacity={.20+e*.22} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
+    <pointLight color={glow} intensity={.08+e*.18} distance={2.7} decay={2}/>
   </group>
 }
 
