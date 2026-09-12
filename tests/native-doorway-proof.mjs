@@ -59,76 +59,7 @@ async function resolveTarget(page, doorway) {
   await page.waitForFunction((testId) => {
     const node = document.querySelector(`[data-testid="${testId}"]`)
     if (!node) return false
-    return Object.keys(node).some((key) => key.startsWith('__reactProps  const ownership = await target.evaluate((node) => {
-    const nav = node.closest('nav.home-semantic-navigation')
-    return {
-      owner: nav?.getAttribute('data-home-navigation-owner') || '',
-      nonDominant: nav?.getAttribute('data-home-navigation-non-dominant') || '',
-    }
-  })
-  if (ownership.owner !== 'runtime-boundary') throw new Error(`semantic target has unexpected owner ${ownership.owner || 'none'}`)
-  if (ownership.nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
-  const accessibleName = await target.getAttribute('aria-label')
-  if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
-  const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-  if (visibleLegacyDoorways !== 0) throw new Error(`legacy visible doorway bars remain: ${visibleLegacyDoorways}`)
-  return target
-}
-
-async function prove(browser, doorway, testCase) {
-  const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
-  const page = await context.newPage()
-  const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
-  try {
-    await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
-    const target = await resolveTarget(page, doorway)
-    record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
-    record.semanticNavigationNonDominant = await target.evaluate((node) => {
-      const nav = node.closest('nav')
-      if (!nav) return false
-      const style = getComputedStyle(nav)
-      const rect = nav.getBoundingClientRect()
-      const viewportArea = Math.max(1, window.innerWidth * window.innerHeight)
-      const navAreaRatio = Math.max(0, rect.width * rect.height) / viewportArea
-      const declaredNonDominant = nav.getAttribute('data-home-navigation-non-dominant') === 'true'
-      const visuallyQuiet = Number.parseFloat(style.opacity || '1') <= 0.05
-      const spatiallyBounded = rect.width <= 64 && navAreaRatio <= 0.03
-      return declaredNonDominant && visuallyQuiet && spatiallyBounded
-    })
-    if (!record.semanticNavigationNonDominant) throw new Error('semantic navigation became visually dominant')
-    const activation = await activate(page, target, testCase.method)
-    record.targetOwnsHitPoint = activation.targetOwnsHitPoint
-    record.hitPoint = activation.hitPoint
-    await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
-    record.resultingUrl = page.url()
-    record.success = normalize(record.resultingUrl) === doorway.destination
-  } catch (error) {
-    record.resultingUrl = page.url()
-    record.failureReason = String(error?.message || error)
-  } finally {
-    await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' }).catch(() => {})
-    await context.close()
-  }
-  return record
-}
-
-await fs.mkdir(path.join(outDir, 'screenshots'), { recursive: true })
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
-const interactions = []
-try {
-  for (const doorway of doorways) for (const testCase of cases) interactions.push(await prove(browser, doorway, testCase))
-} finally {
-  await browser.close()
-}
-const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 10, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
-await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
-console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
-console.log(JSON.stringify(receipt, null, 2))
-if (errors.length) process.exitCode = 1
-) && typeof node[key]?.onClick === 'function')
+    return Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
   }, doorway.testId, { timeout: 45000 })
   const ownership = await target.evaluate((node) => {
     const nav = node.closest('nav.home-semantic-navigation')
