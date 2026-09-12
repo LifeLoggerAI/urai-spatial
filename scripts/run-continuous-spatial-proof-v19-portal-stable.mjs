@@ -43,10 +43,21 @@ const constructionReplacement = [
   'if (diagnosticsCount !== 1) {',
   '  throw new Error(`Home failed-request diagnostics expected one audited occurrence; found ${diagnosticsCount}`)',
   '}',
-  'const patched = portalPatched.replace(diagnosticsTarget, diagnosticsReplacement)',
-  'if (!patched.includes("resourceType: request.resourceType()")) {',
+  'const readinessTarget = `        await page.waitForSelector(destination === \'ground\'\n          ? \'[data-ground-ready="true"] canvas\'\n          : \'[data-life-map-render-ready="true"] canvas\', { state: \'visible\', timeout: 45000 })`',
+  'const readinessReplacement = `        await page.waitForFunction((destination) => {\n          const selector = destination === \'ground\'\n            ? \'[data-ground-ready="true"] canvas\'\n            : \'[data-life-map-render-ready="true"] canvas\'\n          const canvas = document.querySelector(selector)\n          if (!(canvas instanceof HTMLCanvasElement)) return false\n          const style = getComputedStyle(canvas)\n          const rect = canvas.getBoundingClientRect()\n          return style.display !== \'none\'\n            && style.visibility !== \'hidden\'\n            && Number.parseFloat(style.opacity || \'1\') > 0.02\n            && rect.width > 4 && rect.height > 4\n            && rect.bottom > 0 && rect.right > 0\n            && rect.top < innerHeight && rect.left < innerWidth\n        }, destination, { timeout: 45_000, polling: 50 })`',
+  'const readinessCount = portalPatched.split(readinessTarget).length - 1',
+  'if (readinessCount !== 1) {',
+  '  throw new Error(`Portal destination readiness wait expected one audited occurrence; found ${readinessCount}`)',
+  '}',
+  'const readinessPatched = portalPatched.replace(readinessTarget, readinessReplacement)',
+  'const diagnosticsPatched = readinessPatched.replace(diagnosticsTarget, diagnosticsReplacement)',
+  'if (!diagnosticsPatched.includes("resourceType: request.resourceType()")) {',
   "  throw new Error('Home failed-request resource metadata was not materialized')",
   '}',
+  'if (!diagnosticsPatched.includes("rect.width > 4 && rect.height > 4")) {',
+  "  throw new Error('Portal destination visible-canvas readiness guard was not materialized')",
+  '}',
+  'const patched = diagnosticsPatched',
 ].join('\n')
 const constructionCount = original.split(constructionTarget).length - 1
 if (constructionCount !== 1) {
@@ -70,6 +81,7 @@ for (const marker of [
   "requestUrl.pathname.startsWith('/_next/static/chunks/')",
   "requestUrl.pathname.startsWith('/_next/static/css/')",
   'Home failed-request resource metadata was not materialized',
+  'Portal destination visible-canvas readiness guard was not materialized',
 ]) {
   if (!patched.includes(marker)) throw new Error(`Generated portal wrapper lost required guard: ${marker}`)
 }
