@@ -31,12 +31,14 @@ function SuppressLegacyShadowArtifacts() {
   const { scene } = useThree()
   const changed = useRef(new Map<THREE.Mesh, boolean>())
   useFrame(() => {
-    const ridge = scene.getObjectByName('home-v229-textured-inhabited-valley-and-distant-ridge')
-    ridge?.traverse((object) => {
-      if (!(object instanceof THREE.Mesh) || !object.castShadow) return
-      if (!changed.current.has(object)) changed.current.set(object, object.castShadow)
-      object.castShadow = false
-    })
+    for (const groupName of ['home-v229-textured-inhabited-valley-and-distant-ridge', 'home-v226-weathered-memory-banks']) {
+      const group = scene.getObjectByName(groupName)
+      group?.traverse((object) => {
+        if (!(object instanceof THREE.Mesh) || !object.castShadow) return
+        if (!changed.current.has(object)) changed.current.set(object, object.castShadow)
+        object.castShadow = false
+      })
+    }
     scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh) || !object.castShadow) return
       if (object.name !== 'rock_face_01' && object.name !== 'rock_face_02') return
@@ -216,10 +218,10 @@ function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbStat
   const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#c87866':privacy?'#78a5a1':'#93b8ad'
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
   return <group ref={root} position={[ORB.x,y+.94,ORB.z]} rotation={[.04,-.22,-.08]} name="home-v247-living-memory-heart" onClick={activate} userData={{artRevision:'v247-folded-living-memory-mantle',visualIntent:'one-connected-asymmetric-folded-history-bearing-presence-not-clay-heart-not-rock',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'dark-matte-scarred-memory-mantle'}}>
-    <mesh geometry={outer} scale={[1.12,1.18,1.14]} receiveShadow><meshStandardMaterial vertexColors color="#74807a" emissive={glow} emissiveIntensity={.016+e*.078} roughness={.93} metalness={0}/></mesh>
-    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.36+e*.30} toneMapped={false}/></primitive>
-    <points geometry={interior} scale={[1.12,1.18,1.14]}><pointsMaterial color={glow} size={.015} transparent opacity={.20+e*.22} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    <pointLight color={glow} intensity={.08+e*.18} distance={2.7} decay={2}/>
+    <mesh geometry={outer} scale={[1.12,1.18,1.14]} receiveShadow={false}><meshStandardMaterial vertexColors color="#74807a" emissive={glow} emissiveIntensity={.032+e*.10} roughness={.93} metalness={0}/></mesh>
+    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.52+e*.30} toneMapped={false}/></primitive>
+    <points geometry={interior} scale={[1.12,1.18,1.14]} renderOrder={2}><pointsMaterial color={glow} size={.023} transparent opacity={.38+e*.30} depthTest={false} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
+    <pointLight color={glow} intensity={.12+e*.20} distance={2.7} decay={2}/>
   </group>
 }
 
