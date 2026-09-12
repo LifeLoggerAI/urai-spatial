@@ -130,7 +130,6 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   return <group position={[GROUND.x, y + .58, GROUND.z]} rotation={[0, -.08, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v247-recessed-ground-cleft', visualIntent: 'eroded-cavern-cleft-owned-by-small-recessed-real-rock-without-foreground-slab', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="01" position={[-.43, -.34, -.96]} rotation={[.20, .78, -.18]} scale={[1.30, 1.94, .86]} />
-      <ScannedRock variant="02" position={[.43, -.35, -.98]} rotation={[-.16, -.88, .16]} scale={[1.28, 1.90, .84]} />
       <ScannedRock variant="02" position={[-.28, .48, -1.02]} rotation={[.36, .44, .36]} scale={[.98, .80, .68]} />
       <ScannedRock variant="01" position={[.25, .53, -1.06]} rotation={[-.30, -.40, -.32]} scale={[.96, .78, .66]} />
       <ScannedRock variant="01" position={[-.63, -.04, -.90]} rotation={[.06, 1.08, -.08]} scale={[.70, 1.10, .66]} />
@@ -249,20 +248,37 @@ function memoryFilamentGeometry() {
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
+function memoryHaloGeometry() {
+  const count=240, positions=new Float32Array(count*3), colors=new Float32Array(count*3)
+  const cool=new THREE.Color('#8fc8c5'), warm=new THREE.Color('#d9c7a3')
+  for(let index=0;index<count;index++){
+    const t=(index+.5)/count, y=-1.02+t*2.04, angle=index*2.39996323+Math.sin(index*.31)*.08
+    const envelope=.70+.12*Math.sin(index*.73)+.06*Math.cos(index*.17), waist=.88-.20*Math.abs(y)
+    const x=Math.cos(angle)*envelope*waist, z=Math.sin(angle)*envelope*.82
+    positions.set([x,y,z],index*3)
+    const color=cool.clone().lerp(warm,.18+.42*((index%17)/16)); colors.set([color.r,color.g,color.b],index*3)
+  }
+  const geometry=new THREE.BufferGeometry(); geometry.setAttribute('position',new THREE.BufferAttribute(positions,3)); geometry.setAttribute('color',new THREE.BufferAttribute(colors,3)); return geometry
+}
+
 const stateIntensity: Record<OrbState, number> = { dormant:.03, idle:.09, attention:.18, listening:.14, thinking:.16, speaking:.22, guiding:.15, reflecting:.12, calming:.08, privacy:.13, warning:.24, transition:.16 }
 
 function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
-  const root=useRef<THREE.Group>(null), y=height(ORB.x,ORB.z), outer=useMemo(livingMemoryGeometry,[]), interior=useMemo(memoryInteriorGeometry,[]), scar=useMemo(memoryScarGeometry,[]), filaments=useMemo(memoryFilamentGeometry,[]), scarLine=useMemo(()=>new THREE.Line(scar),[scar])
-  useEffect(()=>()=>{outer.dispose();interior.dispose();scar.dispose();filaments.dispose()},[filaments,interior,outer,scar])
-  useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.44)*.0045;root.current.position.y=y+.94+Math.sin(t*.30)*.007;root.current.rotation.y=-.22+Math.sin(t*.14)*.022;root.current.rotation.z=-.08+Math.sin(t*.21)*.006;root.current.scale.setScalar(breath)})
-  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#d17d70':privacy?'#78a5a1':'#9fc7c5'
+  const root=useRef<THREE.Group>(null), haloRef=useRef<THREE.Points>(null), y=height(ORB.x,ORB.z), outer=useMemo(livingMemoryGeometry,[]), interior=useMemo(memoryInteriorGeometry,[]), scar=useMemo(memoryScarGeometry,[]), filaments=useMemo(memoryFilamentGeometry,[]), halo=useMemo(memoryHaloGeometry,[]), scarLine=useMemo(()=>new THREE.Line(scar),[scar])
+  useEffect(()=>()=>{outer.dispose();interior.dispose();scar.dispose();filaments.dispose();halo.dispose()},[filaments,halo,interior,outer,scar])
+  useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.58)*.014;root.current.position.y=y+.94+Math.sin(t*.36)*.026;root.current.rotation.y=-.22+Math.sin(t*.17)*.055;root.current.rotation.z=-.08+Math.sin(t*.23)*.014;root.current.scale.setScalar(breath);if(haloRef.current){haloRef.current.rotation.y=t*.10;haloRef.current.rotation.z=Math.sin(t*.16)*.08}})
+  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#d17d70':privacy?'#78a5a1':'#9fc7c5',shellOpacity=(reducedMotion?.25:.20)+e*.18
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
-  return <group ref={root} position={[ORB.x,y+.94,ORB.z]} rotation={[.04,-.22,-.08]} name="home-v247-living-memory-heart" onClick={activate} userData={{artRevision:'v247-folded-living-memory-mantle',visualIntent:'one-connected-asymmetric-folded-history-bearing-presence-not-clay-heart-not-rock',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'dark-matte-scarred-memory-mantle'}}>
-    <mesh geometry={outer} scale={[1.20,1.24,1.22]} receiveShadow={false}><meshStandardMaterial vertexColors color="#76717b" emissive={glow} emissiveIntensity={.044+e*.11} roughness={.84} metalness={0}/></mesh>
-    <lineSegments geometry={filaments} scale={[1.20,1.24,1.22]} renderOrder={3}><lineBasicMaterial color={glow} transparent opacity={.28+e*.26} depthTest={false} toneMapped={false}/></lineSegments>
-    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.62+e*.26} toneMapped={false}/></primitive>
-    <points geometry={interior} scale={[1.20,1.24,1.22]} renderOrder={2}><pointsMaterial color={glow} size={.034} transparent opacity={.48+e*.28} depthTest={false} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    <pointLight color={glow} intensity={.14+e*.22} distance={2.8} decay={2}/>
+  return <group ref={root} position={[ORB.x,y+.94,ORB.z]} rotation={[.04,-.22,-.08]} name="home-v248-living-memory-heart" onClick={activate} userData={{artRevision:'v248-translucent-living-memory-field',visualIntent:'one-connected-asymmetric-history-bearing-presence-with-visible-memory-energy-not-rock',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'translucent-memory-mantle-interior-filaments-halo'}}>
+    <mesh geometry={outer} scale={[1.02,1.10,1.04]} receiveShadow={false} renderOrder={1}><meshStandardMaterial vertexColors color="#789292" emissive={glow} emissiveIntensity={.16+e*.34} roughness={.42} metalness={0} transparent opacity={shellOpacity} depthWrite={false} side={THREE.DoubleSide}/></mesh>
+    <mesh geometry={outer} scale={[1.035,1.115,1.055]} renderOrder={2}><meshBasicMaterial color={glow} wireframe transparent opacity={.055+e*.12} depthWrite={false} toneMapped={false}/></mesh>
+    <lineSegments geometry={filaments} scale={[1.06,1.15,1.08]} renderOrder={4}><lineBasicMaterial color={glow} transparent opacity={.50+e*.34} depthTest={false} depthWrite={false} toneMapped={false}/></lineSegments>
+    <primitive object={scarLine} position={[0,0,.45]} scale={[1.04,1.12,1.04]}><lineBasicMaterial color="#d9e9e6" transparent opacity={.72+e*.20} depthTest={false} toneMapped={false}/></primitive>
+    <points geometry={interior} scale={[1.02,1.10,1.04]} renderOrder={3}><pointsMaterial color={glow} size={.046} transparent opacity={.68+e*.22} depthTest={false} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
+    <points ref={haloRef} geometry={halo} scale={[1.08,1.13,1.08]} renderOrder={3}><pointsMaterial vertexColors size={.021} transparent opacity={.40+e*.18} depthTest={false} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
+    <mesh position={[-.08,.06,.12]} renderOrder={4}><sphereGeometry args={[.105,24,24]}/><meshBasicMaterial color="#d9e9e6" transparent opacity={.52+e*.26} depthTest={false} depthWrite={false} toneMapped={false}/></mesh>
+    <pointLight color={glow} intensity={.34+e*.54} distance={3.4} decay={2}/>
+    <pointLight position={[-.10,.10,.24]} color="#d9c7a3" intensity={.16+e*.16} distance={1.8} decay={2}/>
   </group>
 }
 
@@ -274,5 +290,5 @@ function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
-  return <group name="home-current-authority-art-repair" userData={{artRevision:'v247-folded-orb-deeper-recessed-thresholds'}}><RetireSupersededShapes/><RetireNearMemoryBankSlabs/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
+  return <group name="home-current-authority-art-repair" userData={{artRevision:'v248-translucent-living-memory-orb'}}><RetireSupersededShapes/><RetireNearMemoryBankSlabs/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
 }
