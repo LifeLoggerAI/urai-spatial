@@ -78,7 +78,7 @@ test('canonical compatibility redirects settle before route teardown', () => {
 })
 
 test('actionable findings fail and remain in a schema-bound artifact', () => {
-  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-6/)
+  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-7/)
   assert.match(diagnosticSource, /missing-resources\.json/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)

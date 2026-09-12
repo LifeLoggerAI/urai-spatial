@@ -38,15 +38,15 @@ test('memory lenses select in place before Focus or Replay navigation', () => {
   includesAll(scene, [
     'selectedId, setSelectedId',
     'setSelectedId(node.id)',
-    'function selectedStagePoint(node: LifeMapNode, portrait: boolean)',
-    'goalForNode(selected, phase, portrait)',
+    'function selectedStagePoint(node: LifeMapNode, portrait: boolean, selectedIndex: number)',
+    'goalForNode(selected, phase, portrait, selectedIndex)',
     'destinationHref("focus")',
     'destinationHref("replay")',
     'Enter Focus',
     'Replay',
     'Overview',
   ])
-  assert.match(scene, /const target = selectedStagePoint\(node, portrait\)/)
+  assert.match(scene, /const target = selectedStagePoint\(node, portrait, selectedIndex\)/)
   assert.match(scene, /const destinationHref = useCallback/)
   assert.match(scene, /next\.set\("memoryId", selected\.id\)/)
   assert.match(scene, /next\.set\("manifestId", manifestId\)/)
@@ -75,15 +75,14 @@ test('Life Map adapts expensive rendering for software GPUs without weakening pr
   includesAll(scene, [
     'function isSoftwareWebGLRenderer',
     'swiftshader|llvmpipe|lavapipe|software',
-    'softwareRenderer ? "low" as const',
-    'frameloop={profile.documentVisible ? "always" : "never"}',
-    'data-software-renderer={softwareRenderer ? "true" : "false"}',
+    'softwareRenderer === true ? "low" as const',
+    'frameloop={profile.documentVisible ? "demand" : "never"}',
+    'data-software-renderer={softwareRenderer === null ? "detecting" : softwareRenderer ? "true" : "false"}',
     'function SoftwareRendererCadence',
     'setFrameloop("demand")',
-    'window.setInterval(() =>',
-    '}, 100)',
-    'data-software-render-cadence={softwareRenderer ? "bounded-demand-10fps" : "continuous"}',
-    '<SoftwareRendererCadence active={softwareRenderer} documentVisible={profile.documentVisible} />',
+    'cadenceTimer = window.setTimeout(renderNext, 250)',
+    'data-software-render-cadence={softwareRenderer !== false || profile.reducedMotion ? "bounded-demand-4fps" : "continuous"}',
+    '<SoftwareRendererCadence active={softwareRenderer !== false || profile.reducedMotion} documentVisible={profile.documentVisible} />',
   ])
   includesAll(canonical, [
     'context?.getExtension("WEBGL_lose_context")?.loseContext()',

@@ -77,6 +77,7 @@ test('Founder transient probes do not compete with a retained production WebGL c
   assert.match(desktopArrival, /await arrivalPage\?\.context\.close\(\)\s+await arrivalBrowser\.close\(\)/)
   assert.match(desktopActions, /const actionBrowser = await chromium\.launch\(\{ headless: true \}\)/)
   assert.match(desktopActions, /await clickRouteAction\(page, 'Enter Focus'/)
+  assert.match(desktopActions, /\[data-testid="cinematic-replay-client"\]\[data-memory-id\]/)
   assert.match(desktopActions, /await actionPage\?\.context\.close\(\)\s+await actionBrowser\.close\(\)/)
   assert.match(runner, /await desktopJourney\(\)\s+await desktopArrivalEvidence\(\)\s+await desktopActionsAndKeyboard\(\)\s+await isolatedJourneyPhases\(\)\s+await mobileAndReduced\(\)/)
   assert.match(runner, /await isolated\?\.context\.close\(\)\s+await isolatedBrowser\.close\(\)/)
@@ -89,7 +90,11 @@ test('Founder runner retains one explicit 3x high-resolution proof while the int
   assert.match(runner, /desktop-overview-high-resolution/)
   assert.match(runner, /highResolution\.signal\.width < 4320/)
   assert.match(runner, /highResolution\.signal\.height < 2700/)
-  assert.match(runner, /highResolution\.screenshot\.bytes < 1_000_000/)
+  assert.match(runner, /highResolution\.signal\.luminanceRange < 20/)
+  assert.match(runner, /highResolution\.signal\.entropy < 1\.2/)
+  assert.match(runner, /highResolution\.signal\.edgeDensity < 0\.03/)
+  assert.match(runner, /highResolution\.signal\.occupiedQuadrants < 3/)
+  assert.doesNotMatch(runner, /highResolution\.screenshot\.bytes/)
 })
 
 test('Founder runner validates retained PNG evidence with the distributed acceptance method', () => {
@@ -103,7 +108,11 @@ test('Founder runner validates retained PNG evidence with the distributed accept
   assert.match(runner, /sampleCount !== 3456/)
   assert.match(runner, /variance < 8/)
   assert.match(runner, /nonDarkRatio <= 0/)
-  assert.match(runner, /screenshot\.bytes < 120_000/)
+  assert.match(runner, /luminanceRange < 20/)
+  assert.match(runner, /entropy < 1\.2/)
+  assert.match(runner, /edgeDensity < 0\.03/)
+  assert.match(runner, /occupiedQuadrants < 3/)
+  assert.doesNotMatch(runner, /screenshot\.bytes < /)
   assert.match(runner, /distributed-grid-24x16-3x3/)
 })
 
@@ -120,9 +129,9 @@ test('Founder proof observes the real production state machine without a product
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
 })
 
-test('restored Life Map route preserves URL identity but commits arrival only after that id resolves to a real node', () => {
+test('restored Life Map route preserves URL identity, initializes selected routes in arrival, and retains real-node reconciliation', () => {
   assert.match(scene, /const \[selectedId, setSelectedId\] = useState<string \| null>\(overviewRequested \? null : queryNode \|\| null\)/)
-  assert.match(scene, /const \[phase, setPhase\] = useState<JourneyPhase>\("overview"\)/)
+  assert.match(scene, /const \[phase, setPhase\] = useState<JourneyPhase>\(\(\) => !overviewRequested && queryNode \? "arrival" : "overview"\)/)
   assert.match(scene, /const restoredRoutePending = useRef\(Boolean\(!overviewRequested && queryNode\)\)/)
   assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
   assert.match(scene, /setSelectedId\(node\.id\);\s*setPhase\("arrival"\)/)

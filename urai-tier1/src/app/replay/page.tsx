@@ -1,4 +1,5 @@
 import CinematicReplayClient from './CinematicReplayClient'
+import './replay-production-polish.css'
 
 const FinalReplayFilm = CinematicReplayClient
 

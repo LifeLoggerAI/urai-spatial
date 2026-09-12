@@ -127,4 +127,6 @@ jobs:
           name: urai-production-host-parity-${{ env.URAI_EXPECTED_LIVE_SHA }}
           path: production-host-parity
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
+          retention-days: 90

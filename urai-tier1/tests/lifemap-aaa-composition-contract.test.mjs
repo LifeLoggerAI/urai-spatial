@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
+const scene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
 
@@ -29,7 +30,7 @@ test('semantic result requests the authoritative world owner without hidden-labe
   assert.match(selectionBroker, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
 })
 
-test('pattern memories retain authored settling geometry inside the selected arrival sanctuary', () => {
+test('pattern memories retain governed asset authority inside the restrained selected arrival sanctuary', () => {
   assert.match(world, /const MEMORY_STAR_MODEL = "\/assets\/urai\/generated\/models\/life-map-memory-star-v1\.glb"/)
   assert.match(world, /const MEMORY_CHAMBER_MODEL = "\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb"/)
   assert.match(world, /function PatternArtifact/)
@@ -46,8 +47,11 @@ test('pattern memories retain authored settling geometry inside the selected arr
   assert.match(arrival, /useAnimations\(animations, group\)/)
   assert.match(arrival, /if \(!selected \|\| phase !== "arrival"\) return null/)
   assert.match(arrival, /runtimeAsset: MEMORY_CHAMBER_MODEL/)
-  assert.match(arrival, /<primitive object=\{chamber\} \/>/)
-  assert.match(arrival, /<pointLight color=\{selected\.aura\} intensity=\{16\}/)
+  assert.match(arrival, /<primitive object=\{chamber\} visible=\{false\} \/>/)
+  assert.match(arrival, /<group scale=\{2\.94\} name="life-map-v229-open-branching-memory-grove">/)
+  assert.match(arrival, /chamberThreads\.map/)
+  assert.match(arrival, /<Current points=/)
+  assert.match(arrival, /<pointLight color=\{selected\.aura\} intensity=\{6\}/)
   assert.doesNotMatch(arrival, /ringGeometry|torusGeometry|icosahedronGeometry|octahedronGeometry|tetrahedronGeometry/)
 })
 
@@ -76,17 +80,21 @@ test('overview composition is opaque, authored, and independently framed for por
   assert.match(world, /function ForegroundObservatory/)
   assert.match(world, /life-map-authored-chapter-regions/)
   assert.match(world, /life-map-foreground-observatory/)
-  assert.match(world, /name="life-map-authored-environment"[\s\S]*<sphereGeometry args=\{\[86, 48, 36\]\}[\s\S]*side=\{THREE\.BackSide\}/)
+  assert.match(world, /<color attach="background"/)
+  assert.doesNotMatch(world, /sphereGeometry args=\{\[86, 48, 36\]\}/, 'opaque sky geometry must not occlude the farther star field')
   assert.match(world, /const portrait = size\.height > size\.width/)
-  assert.match(world, /portrait \? \[0\.54, 0\.96, 0\.78\]/)
-  assert.match(world, /portrait \? \[0, -0\.18, 1\.1\]/)
+  assert.match(world, /lifeMapStage\(Boolean\(selected\), portrait\)/)
   const chapterAnchor = sliceBetween(world, 'function ChapterAnchor', 'function ChapterTerritories')
   const chapterTerritories = sliceBetween(world, 'function ChapterTerritories', 'function ForegroundObservatory')
   assert.match(chapterAnchor, /<AuthoredMemoryStar aura=\{aura\}/)
-  assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} \/>/)
+  assert.match(chapterTerritories, /<ChapterAnchor aura=\{chapter\.aura\} index=\{index\} form=\{chapter\.form\}/)
+  assert.match(chapterTerritories, /composition: "five-asymmetric-grounded-depth-bands"/)
+  assert.match(chapterTerritories, /memoryValleyHeight\(chapter\.x, chapter\.z\)/)
+  assert.match(chapterTerritories, /life-map-depth-territory-/)
 })
 
 test('visual repair preserves adaptive performance and evidence budgets', () => {
+  assert.match(world, /fragmentShader: `\s+uniform float uSelected;/)
   assert.match(world, /qualityTier === "low" \? 80 : qualityTier === "medium" \? 150 : 240/)
   assert.match(world, /profile\.tier === "low" \? 420 : profile\.tier === "medium" \? 760 : 1160/)
   assert.match(world, /profile\.tier === "low" \? 70 : 160/)
@@ -96,4 +104,11 @@ test('visual repair preserves adaptive performance and evidence budgets', () => 
   assert.match(world, /useGLTF\.preload\(MEMORY_CHAMBER_MODEL\)/)
   assert.doesNotMatch(world, /<torusGeometry|<ringGeometry|<icosahedronGeometry|<octahedronGeometry|<tetrahedronGeometry/)
   for (const marker of ['life-map-white-gold-life-core', 'life-map-curved-semantic-paths', 'life-map-memory-artifact-families', 'life-map-selected-arrival-sanctuary']) assert.match(world, new RegExp(marker))
+})
+
+test('capable hardware receives a bounded high-fidelity Life Map path', () => {
+  assert.match(scene, /tier: softwareRenderer === true \? "low" as const : adaptiveProfile\.tier/)
+  assert.match(scene, /adaptiveProfile\.tier === "high" \? 1\.5 : 1\.25/)
+  assert.match(scene, /postprocessing: softwareRenderer === false && adaptiveProfile\.tier === "high" && !adaptiveProfile\.reducedMotion/)
+  assert.match(scene, /shadows: softwareRenderer === false && adaptiveProfile\.tier === "high" && !adaptiveProfile\.reducedMotion/)
 })

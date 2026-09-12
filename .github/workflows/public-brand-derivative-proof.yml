@@ -75,4 +75,6 @@ jobs:
             urai-tier1/brand/exports/public
             urai-tier1/brand/evidence
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
+          retention-days: 90

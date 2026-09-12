@@ -1,14 +1,17 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
   requestUraiWorldReturn,
   requestUraiWorldTravel,
+  takePendingUraiWorldOrbOpen,
   URAI_WORLD_ORB_OPEN_EVENT,
+  type UraiWorldOrbOpenDetail,
 } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
@@ -69,6 +72,7 @@ export function PersistentWorldCompanion() {
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
+  const externalActivatorRef = useRef<HTMLElement | null>(null)
   const restoreFocusRef = useRef(false)
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
@@ -88,14 +92,21 @@ export function PersistentWorldCompanion() {
     }
   }, [])
 
+  const publishCompanionAttention = useCallback(() => {
+    window.queueMicrotask(() => {
+      publishOrbState('attention', 'companion')
+      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+    })
+  }, [])
+
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
     else {
+      externalActivatorRef.current = null
       setOpen(true)
-      publishOrbState('attention', 'companion')
-      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+      publishCompanionAttention()
     }
-  }, [closeCompanion, open])
+  }, [closeCompanion, open, publishCompanionAttention])
 
   const toggleAudio = useCallback(() => {
     const enabled = !audioEnabled
@@ -104,31 +115,50 @@ export function PersistentWorldCompanion() {
     window.dispatchEvent(new CustomEvent('urai:audio-mute', { detail: { muted: !enabled } }))
   }, [audioEnabled])
 
-  useEffect(() => {
-    const openCompanion = () => {
-      setOpen(true)
-      publishOrbState('attention', 'companion')
+  useLayoutEffect(() => {
+    const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
+      const request = takePendingUraiWorldOrbOpen() ?? event.detail
+      externalActivatorRef.current = request.returnFocusTo ?? null
+      // External semantic Home controls dispatch a native window event. Commit the
+      // accessibility state synchronously so heavy spatial formation work cannot
+      // leave the visible companion stale/aria-hidden after an intentional click.
+      flushSync(() => setOpen(true))
+      publishCompanionAttention()
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
+    const pending = takePendingUraiWorldOrbOpen()
+    if (pending) {
+      externalActivatorRef.current = pending.returnFocusTo ?? null
+      setOpen(true)
+      publishCompanionAttention()
+    }
     return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
-  }, [])
+  }, [publishCompanionAttention])
 
   useEffect(() => {
     if (phase !== 'idle') closeCompanion(false)
   }, [closeCompanion, phase])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (open) {
       restoreFocusRef.current = false
       const firstControl = menuRef.current?.querySelector<HTMLElement>('button:not([disabled])')
-      firstControl?.focus()
+      if (firstControl) {
+        firstControl?.focus()
+        if (document.activeElement !== firstControl) window.requestAnimationFrame(() => firstControl.focus({ preventScroll: true }))
+      }
       return
     }
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
-      orbRef.current?.focus()
+      const activator = externalActivatorRef.current
+      externalActivatorRef.current = null
+      if (activator?.isConnected) activator.focus()
+      else orbRef.current?.focus()
+      const focusTarget = activator?.isConnected ? activator : orbRef.current
+      if (focusTarget && document.activeElement !== focusTarget) window.requestAnimationFrame(() => focusTarget.focus({ preventScroll: true }))
     }
-  }, [open])
+  }, [hydrated, open, phase])
 
   useEffect(() => {
     if (!open) return
@@ -137,8 +167,8 @@ export function PersistentWorldCompanion() {
       event.preventDefault()
       closeCompanion(true)
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [closeCompanion, open])
 
   const travel = useCallback((destination: UraiDestination) => {
@@ -194,7 +224,7 @@ export function PersistentWorldCompanion() {
 
   return (
     <aside className="urai-world-companion" data-open={open ? 'true' : 'false'} data-phase={phase} data-destination={world.destination} data-spatial-audio={audioEnabled ? 'on' : 'off'}>
-      <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={!open} inert={!open ? true : undefined}>
+      <div ref={menuRef} id="urai-world-companion-menu" className="urai-world-companion__menu" aria-hidden={open ? 'false' : 'true'} inert={!open ? true : undefined}>
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">{destinationButtons(primaryDestinations)}</nav>
         <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">{destinationButtons(secondaryDestinations)}</nav>
@@ -246,14 +276,12 @@ export function PersistentWorldCompanion() {
         data-urai-audit-action="orb-controls"
         disabled={!hydrated || phase !== 'idle'}
         onClick={toggleCompanion}
-        onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== ' ') return
-          event.preventDefault()
-          event.stopPropagation()
-          toggleCompanion()
-        }}
       >
-        <span aria-hidden="true" />
+        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+          <path d="M23 40C8 33 7 16 15 8C24 11 28 24 23 40Z" fill="#82b4a3" fillOpacity=".5" stroke="#c8e5d6" strokeWidth="1.2" />
+          <path d="M23 40C35 34 42 19 35 12C25 15 22 27 23 40Z" fill="#aa929e" fillOpacity=".48" stroke="#e0bbc2" strokeWidth="1.2" />
+          <path d="M23 39C25 27 16 24 17 14M24 35C28 27 33 24 33 18" fill="none" stroke="#e9e4ca" strokeWidth="1.1" strokeLinecap="round" />
+        </svg>
       </button>
     </aside>
   )

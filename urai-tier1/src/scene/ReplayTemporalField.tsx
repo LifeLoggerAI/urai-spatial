@@ -3,7 +3,7 @@
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
-import { AAA_MOONLIT_PALETTE, MistLightMaterial } from '../spatial/visual/aaaMaterials'
+import { AAA_MOONLIT_PALETTE } from '../spatial/visual/aaaMaterials'
 
 export type ReplayTemporalFieldProps = {
   active?: boolean
@@ -32,6 +32,24 @@ export default function ReplayTemporalField({ active = true, reducedMotion = fal
     const curve = new THREE.CatmullRomCurve3(WAYPOINTS.map((point) => new THREE.Vector3(...point)))
     return new THREE.BufferGeometry().setFromPoints(curve.getPoints(96))
   }, [])
+  const memoryFieldGeometry = useMemo(() => {
+    const curve = new THREE.CatmullRomCurve3(WAYPOINTS.map((point) => new THREE.Vector3(...point)))
+    const positions = new Float32Array(180 * 3)
+
+    for (let index = 0; index < 180; index += 1) {
+      const t = index / 179
+      const point = curve.getPoint(t)
+      const phase = index * 2.399963
+      const radius = 0.08 + ((index * 37) % 29) / 70
+      positions[index * 3] = point.x + Math.cos(phase) * radius
+      positions[index * 3 + 1] = point.y + Math.sin(phase * 1.37) * radius * 0.62
+      positions[index * 3 + 2] = point.z + Math.sin(phase) * radius * 0.48
+    }
+
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    return geometry
+  }, [])
 
   useFrame(({ clock }) => {
     if (!groupRef.current || !active || reducedMotion) return
@@ -47,8 +65,20 @@ export default function ReplayTemporalField({ active = true, reducedMotion = fal
   return (
     <group ref={groupRef} name="urai-replay-temporal-field" data-testid="urai-replay-temporal-field" userData={{ replayProgress: progress, replaySegmentId: segmentId ?? 'unknown' }}>
       <primitive object={new THREE.Line(trailGeometry)} frustumCulled={false}>
-        <lineBasicMaterial color={AAA_MOONLIT_PALETTE.paleCyan} transparent opacity={reducedMotion ? 0.16 : 0.34} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <lineBasicMaterial color={AAA_MOONLIT_PALETTE.paleCyan} transparent opacity={reducedMotion ? 0.13 : 0.24} depthWrite={false} blending={THREE.AdditiveBlending} />
       </primitive>
+
+      <points geometry={memoryFieldGeometry} frustumCulled={false}>
+        <pointsMaterial
+          color={AAA_MOONLIT_PALETTE.moonSilver}
+          size={0.026}
+          sizeAttenuation
+          transparent
+          opacity={reducedMotion ? 0.24 : 0.42}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
 
       {WAYPOINTS.map((position, index) => {
         const revealed = index < visibleWaypoints
@@ -58,21 +88,12 @@ export default function ReplayTemporalField({ active = true, reducedMotion = fal
         return (
           <group key={index} position={position} scale={scale}>
             <mesh>
-              <sphereGeometry args={[1, 32, 16]} />
-              <meshBasicMaterial color={index % 2 === 0 ? AAA_MOONLIT_PALETTE.sacredGold : AAA_MOONLIT_PALETTE.paleCyan} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
-            </mesh>
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[1.18, 0.015, 8, 96]} />
-              <meshBasicMaterial color={AAA_MOONLIT_PALETTE.moonSilver} transparent opacity={opacity * 0.72} depthWrite={false} blending={THREE.AdditiveBlending} />
+              <icosahedronGeometry args={[0.42, 2]} />
+              <meshBasicMaterial color={index % 2 === 0 ? AAA_MOONLIT_PALETTE.sacredGold : AAA_MOONLIT_PALETTE.paleCyan} transparent opacity={opacity * 0.74} depthWrite={false} blending={THREE.AdditiveBlending} wireframe />
             </mesh>
           </group>
         )
       })}
-
-      <mesh position={[0, 0.26, -3.25]} rotation={[-0.08, 0, 0]}>
-        <planeGeometry args={[7.8, 2.8]} />
-        <MistLightMaterial color={AAA_MOONLIT_PALETTE.sacredGold} opacity={reducedMotion ? 0.025 : 0.055} />
-      </mesh>
     </group>
   )
 }

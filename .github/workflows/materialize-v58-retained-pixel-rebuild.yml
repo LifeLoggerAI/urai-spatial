@@ -1,0 +1,44 @@
+name: Materialize V58 retained-pixel rebuild
+
+# Historical materializer retained for explicit forensic/manual replay only.
+# V59+ superseded this automatic branch mutator; it must not race current exact-head certification.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact requested head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply historical V58 integrated reliquary rebuild
+        run: python3 scripts/apply-home-v58-integrated-reliquary-vault.py
+
+      - name: Validate transformed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          grep -q 'v58-integrated-reliquary-vault-candidate' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+          grep -q 'v58-integrated-reliquary-vault-candidate' scripts/capture-natural-home-orb-proof.mjs
+          grep -q 'v58-retained-pixel-rebuild-no-cutout-cave-no-pipe-kitbash' urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx
+
+      - name: Commit historical V58 successor only on explicit dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$(git status --porcelain -- urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs)"
+          git config user.name 'LifeLoggerAI Release Materializer'
+          git config user.email 'actions@users.noreply.github.com'
+          git add urai-tier1/src/spatial/layout/HomeWorldProductionFinal.tsx scripts/capture-natural-home-orb-proof.mjs
+          git commit -m 'Home: materialize historical V58 retained-pixel vault'
+          git push origin HEAD:home-final-v24-certify-20260826

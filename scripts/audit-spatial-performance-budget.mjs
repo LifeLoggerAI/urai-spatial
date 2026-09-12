@@ -64,7 +64,7 @@ requireMatch('Active Life Map imports production world', lifeMap, /import \{ Lif
 requireMatch('Active Life Map mounts production world', lifeMap, /<LifeMapProductionWorld/)
 requireMatch('Active Life Map single Canvas', lifeMap, /<Canvas/)
 requireMatch('Active Life Map bounded DPR', lifeMap, /dpr=\{\[1, profile\.pixelRatioMax\]\}/)
-requireMatch('Active Life Map visibility-aware frameloop', lifeMap, /frameloop=\{profile\.documentVisible \? "always" : "never"\}/)
+requireMatch('Active Life Map visibility-aware demand-first frameloop', lifeMap, /frameloop=\{profile\.documentVisible \? "demand" : "never"\}/)
 requireMatch('Active Life Map high-performance preference', lifeMap, /powerPreference: "high-performance"/)
 requireMatch('Active Life Map reduced motion', lifeMap, /profile\.reducedMotion/)
 requireMatch('Active Life Map explicit demo identity', lifeMap, /params\.get\("demo"\) === "1"/)

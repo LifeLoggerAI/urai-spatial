@@ -89,7 +89,9 @@ jobs:
           name: urai-spatial-unit-tests-${{ env.URAI_EXACT_HEAD }}
           path: /tmp/urai-tier1-unit-tests.log
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Any longer-lived evidence claim requires a separately verified durable archive.
+          retention-days: 90
 
       - name: Enforce unit-test result
         shell: bash

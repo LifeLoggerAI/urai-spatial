@@ -10,6 +10,7 @@ on:
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css'
       - 'urai-tier1/src/spatial/assets/**'
       - 'urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb'
@@ -81,4 +82,6 @@ jobs:
           name: portal-orb-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/portal-orb-proof
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
+          retention-days: 90

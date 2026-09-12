@@ -1,0 +1,58 @@
+/* Replay is a memory theater first. Keep the complete product controls but
+   lower their visual weight so the curved memory horizon owns the frame. */
+.replayWorld .controls {
+  padding: 9px 12px;
+  border-color: rgba(235, 251, 255, .15);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(2, 7, 14, .66), rgba(7, 18, 26, .48));
+  box-shadow: 0 20px 70px rgba(0, 0, 0, .25), inset 0 1px rgba(255, 255, 255, .045);
+  backdrop-filter: blur(14px) saturate(1.04);
+}
+
+.replayWorld .replayProduct {
+  border-color: rgba(235, 251, 255, .14);
+  background: linear-gradient(90deg, rgba(2, 7, 14, .72), rgba(7, 18, 26, .56));
+  box-shadow: 0 18px 64px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .045);
+  backdrop-filter: blur(14px) saturate(1.04);
+}
+
+.replayWorld .replayProduct > button {
+  border-color: rgba(235, 251, 255, .14);
+  background: linear-gradient(145deg, rgba(16, 39, 53, .76), rgba(7, 19, 30, .6));
+}
+
+.replayWorld .caption {
+  bottom: clamp(272px, 31svh, 338px);
+}
+
+.replayWorld .transcript {
+  border-color: rgba(235, 251, 255, .13);
+  background: rgba(2, 7, 14, .52);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 700px) {
+  .replayWorld .caption {
+    bottom: 32svh;
+  }
+
+  .replayWorld .controls,
+  .replayWorld .replayProduct {
+    left: 14px;
+    right: 14px;
+    width: auto;
+    transform: none;
+  }
+
+  .replayWorld .transcript {
+    max-width: 156px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replayWorld .controls,
+  .replayWorld .replayProduct,
+  .replayWorld .transcript {
+    backdrop-filter: none;
+  }
+}

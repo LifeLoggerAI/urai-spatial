@@ -10,8 +10,15 @@ const includesCanonical = (source, marker) => canonical(source).includes(canonic
 const template = read('src/app/template.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
+const homeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const homeProductionEntry = read('src/spatial/layout/HomeWorldProduction.tsx')
-const homeProduction = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const homeProduction = read('src/spatial/layout/HomeWorldProductionV219.tsx')
+const activeHomeProduction = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const activeHomeGeometry = read('src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
+const historicalHomeV225V2 = read('src/spatial/layout/HomeWorldProductionV225PolishV2.tsx')
+const activeHomeVisual = read('src/spatial/layout/HomeWorldProductionV225PolishV3.tsx')
+const legacyHomeProduction = read('src/spatial/layout/HomeWorldProductionV70.tsx')
+const legacyHomeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const homeCss = read('src/spatial/layout/HomeWorldProduction.module.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const sceneStore = read('src/spatial/store/useSceneStore.ts')
@@ -28,66 +35,122 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const groundModel = read('src/app/ground/GroundWorldModel.ts')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
-const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProductionEntry}\n${homeProduction}\n${homeCss}`
+const homeGraph = `${homeRuntime}\n${assetHome}\n${homeProduction}\n${homeCss}`
 const groundGraph = `${ground}\n${groundModel}`
 const groundCanonical = canonical(ground)
 
-test('app template mounts current WebGL owners without certified-route redirects', () => {
+test('app template mounts the exact active V226 Home production owner without certified-route redirects', () => {
   for (const marker of ['HomeSpatialRuntimeLayer', 'spatial-runtime-restoration.css', 'continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   for (const marker of ['asset-driven-primary-with-procedural-degraded-fallback', 'asset-driven-personalized-sanctuary', 'data-home-exploration="walkable"', 'AssetDrivenHomeWorld']) assert.ok(homeRuntime.includes(marker))
-  assert.match(assetHome, /HomeWorldProduction/)
-  assert.match(homeProductionEntry, /export \{ HomeWorldProductionSacred as HomeWorldProduction \} from "\.\/HomeWorldProductionSacred"/)
-  assert.match(homeProduction, /data-home-primary-owner="asset-driven"/)
-  assert.match(homeProduction, /data-home-visible-world="moonlit-sacred-tech-sanctuary"/)
+  assert.match(assetHome, /HomeWorldProductionV223/)
+  assert.doesNotMatch(assetHome, /HomeWorldProductionV225PolishV2\.tsx/)
+  assert.ok(homeVisualAuthority.runtimeAssets.includes('HomeWorldProductionV225PolishV3.tsx'))
+  assert.match(assetHome, /data-home-v226-retained-pixel-rebuild="active"/)
+  assert.match(assetHome, /data-home-v225-retained-pixel-rebuild="superseded"/)
+  assert.match(assetHome, /data-home-v224-retained-pixel-rebuild="superseded"/)
+  assert.match(assetHome, /data-home-v223-retained-pixel-rebuild="superseded"/)
+  assert.match(assetHome, /data-home-v219-retained-pixel-rebuild="superseded"/)
+  assert.match(assetHome, /data-home-v126-retained-pixel-rebuild="superseded"/)
+  assert.match(assetHome, /data-home-v176-retained-pixel-rebuild="superseded"/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v226-art-layer', 'rooted-canopy-weathered-banks-inhabited-ground-lineage-observatory-rooted-living-memory-presence'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v226-certification', 'fresh-exact-head-pixels-required'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v225-art-layer', 'superseded-v3-visual-owner'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v225-certification`, 'superseded-rejected-pixels'\)|for \(const version of \['76','125','126','176','219','220','221','222','223','224','225'\]\) world\.setAttribute\(`data-home-v\$\{version\}-certification`, 'superseded-rejected-pixels'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-v224-certification`, 'superseded-rejected-pixels'\)|for \(const version of \['76','125','126','176','219','220','221','222','223','224','225'\]\) world\.setAttribute\(`data-home-v\$\{version\}-certification`, 'superseded-rejected-pixels'\)/)
+  assert.match(assetHome, /world\.setAttribute\('data-home-art-certification', 'fresh-exact-head-pixels-required'\)/)
+  for (const marker of [
+    'home-v225-v2-production-memory-sanctuary',
+    'home-v225-v2-continuous-sculpted-memory-valley',
+    'home-v225-v2-authored-valley-floor',
+    'home-v225-v2-grown-memory-walk',
+    'home-v225-v2-cathedral-memory-ribs',
+    'home-v225-v2-weathered-memory-walls',
+    'home-v225-v2-ground-memory-hearth',
+    'home-v225-v2-life-map-lineage-observatory',
+    'home-v225-v2-intimate-veined-living-memory-orb',
+    'home-v225-v2-orb-embedded-memory-veins',
+  ]) assert.match(historicalHomeV225V2, new RegExp(marker))
+  assert.doesNotMatch(historicalHomeV225V2, /useGLTF\(/)
+  for (const marker of [
+    'home-v226-production-rooted-memory-sanctuary',
+    'home-v226-weathered-memory-banks',
+    'home-v226-rooted-inhabited-canopy',
+    'home-v226-ground-inhabited-hearth',
+    'home-v226-life-map-lineage-observatory',
+    'home-v226-root-cradle',
+    'home-v226-rooted-single-living-memory-presence',
+  ]) assert.match(activeHomeVisual, new RegExp(marker))
+  assert.match(activeHomeGeometry, /home-v225-sculpted-sanctuary-floor/)
+  assert.match(activeHomeGeometry, /home-v225-rooted-memory-rib/)
+  assert.match(activeHomeGeometry, /home-v225-ground-sheltered-memory-basin/)
+  assert.match(activeHomeGeometry, /home-v225-life-map-braided-lineage-vault/)
+  assert.match(activeHomeGeometry, /home-v225-single-connected-folded-living-memory-mantle/)
+  assert.match(activeHomeGeometry, /home-v225-embedded-memory-veins/)
+  assert.doesNotMatch(activeHomeGeometry, /useGLTF\(/)
+  assert.doesNotMatch(assetHome, /HomeWorldProductionV70|HomeWorldProductionV76|HomeV75RetainedPixelWorld|HomeWorldProductionV75/)
+  assert.match(activeHomeProduction, /export function HomeWorldProductionV223/)
+  assert.match(activeHomeProduction, /export const HomeWorldProduction=HomeWorldProductionV223/)
+  assert.match(activeHomeProduction, /data-home-primary-owner="asset-driven"/)
+  assert.doesNotMatch(activeHomeProduction, /<HomeV225PolishV2\b|import.*HomeV225PolishV2/)
+  assert.match(activeHomeProduction, /HomeV225PolishV3/)
+  assert.doesNotMatch(legacyHomeArt, /<Canvas/)
+  assert.match(homeProductionEntry, /HomeWorldProductionV223/)
+  assert.match(legacyHomeProduction, /export function HomeWorldProductionV70/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
   assert.doesNotMatch(template, /focus|replay/i)
+  assert.doesNotMatch(`${assetHome}\n${activeHomeProduction}\n${historicalHomeV225V2}\n${activeHomeVisual}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('Home remains one embodied authored sacred-tech 3D environment with accessible thresholds and recovery', () => {
+test('V219 is one continuous single-Canvas sanctuary with authored geology, rooted destinations, and one connected living-memory presence', () => {
   for (const marker of [
-    'HomeWorldProductionSacred',
-    'Stars',
-    'home-entry-chamber-v1.glb',
-    'home-human-makehuman-v4.glb',
-    'urai-orb-avatar-v1.glb',
-    'portal-ring-master-v1.glb',
+    'HomeWorldProductionV219',
     'data-home-primary-owner="asset-driven"',
-    'data-home-visible-world="moonlit-sacred-tech-sanctuary"',
-    'data-home-world-character="premium-cinematic-sacred-tech"',
-    'data-home-physical-base="authored-obsidian-ritual-platform"',
-    'data-home-visual-ownership="three-dimensional-geometry"',
+    'data-home-visual-ownership="single-canvas-three-dimensional-geometry"',
     'data-home-desktop-mobile-world="same-scene"',
-    'data-home-embodied-self="makehuman-v4"',
     'data-home-movement="walk-keyboard-click-touch"',
     'data-testid="urai-home-webgl-orb"',
     'data-testid="urai-home-embodied-avatar"',
-    'home-authored-terrain',
-    'home-mountain-horizon',
-    'home-living-vegetation',
-    'home-sanctuary-pavilion',
-    'home-orb-sanctuary',
-    'home-ground-environmental-threshold',
-    'home-life-map-sky-lookout',
-    'home-life-map-physical-portal',
+    'data-home-final-art-revision="v219-retained-pixels-pending"',
+    'data-home-visible-production-assets="v219-continuous-geology v219-ground-place v219-life-map-place v219-connected-living-memory-presence"',
+    'function Terrain(',
+    'home-v219-continuous-weathered-sanctuary',
+    'function EnvironmentMasses(',
+    'home-v219-port-near-ridge',
+    'function GroundPlace(',
+    'home-v219-ground-place',
+    'ground-v219-rooted-shelf',
+    'function LifeMapPlace(',
+    'home-v219-life-map-place',
+    'lifemap-v219-rooted-foundation',
+    'function OrbPresence(',
+    'home-v219-connected-asymmetric-living-memory-presence',
     'stepEmbodiedMotion',
     'useMovementInput',
     'MobileMovementPad',
     'URAI_ORB_STATE_EVENT',
     'resolveOrbSensoryOutput',
     'data-home-orb-state={orbState}',
+    'function Cadence(',
+    "frameloop={reducedMotion?'demand':'always'}",
     '<Canvas',
-  ]) assert.ok(homeGraph.includes(marker), `missing Home marker: ${marker}`)
-  assert.doesNotMatch(homeCss, /replay-memory-film-mobile\.webp/)
-  assert.match(homeProduction, /function RitualFloor\(/)
-  assert.match(homeProduction, /function MoonAndMist\(/)
-  assert.match(homeProduction, /function SacredOrb\(/)
-  assert.match(homeProduction, /function OrbPlatform\(/)
-  assert.match(homeProduction, /function HumanPresence\(/)
-  assert.match(homeProduction, /function LifeMapPortal\(/)
-  assert.match(homeProduction, /function Thresholds\(/)
-  assert.match(homeProduction, /function PlayerRig\(/)
+  ]) assert.ok(homeGraph.includes(marker), `missing V219 Home marker: ${marker}`)
+
+  for (const state of ['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition']) {
+    assert.ok(homeProduction.includes(`${state}:`), `missing Orb posture state: ${state}`)
+  }
+  assert.equal((homeProduction.match(/<Canvas/g) ?? []).length, 1)
+  assert.match(homeProduction, /new THREE\.BufferGeometry\(\)/)
+  assert.match(homeProduction, /new THREE\.CatmullRomCurve3/)
   assert.match(homeProduction, /requestUraiWorldTravel/)
+  assert.match(homeProduction, /dpr=\{1\}/)
+  assert.match(homeProduction, /shadow-mapSize-width=\{1024\}/)
+  assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
+  assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
+  assert.match(homeProduction, /data-home-portal-lifecycle="environmental-approach-traversal-arrival"/)
+  assert.doesNotMatch(homeProduction, /MemorySediment|MemoryConstellation|MemoryWeather|DistantMemoryRain|AtmosphericDepth/)
+  assert.doesNotMatch(homeProduction, /requestPointerLock|OrbitControls|torusGeometry|ringGeometry|octahedronGeometry|capsuleGeometry/)
+  assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
   assert.match(groundGateway, /Open the ground and descend into Hidden Infrastructure/)
   assert.match(homeRuntime, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /webglcontextlost/)
@@ -95,13 +158,9 @@ test('Home remains one embodied authored sacred-tech 3D environment with accessi
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /publishOrbState\('attention', 'companion'\)/)
   assert.match(companion, /publishOrbState\('transition', 'companion'\)/)
-  assert.match(homeProduction, /const PORTAL_MODEL = '\/assets\/urai\/generated\/models\/portal-ring-master-v1\.glb'/)
-  assert.match(homeProduction, /useGLTF\(PORTAL_MODEL\)/)
-  assert.doesNotMatch(homeProduction, /WorldPortal|home-ground-portal-world-owned|home-life-map-portal-world-owned|destinationNames|dodecahedronGeometry/)
-  assert.doesNotMatch(homeGraph, /requestPointerLock|OrbitControls/)
 })
 
-test('Home Life Map entry is one canonical sky ascent transaction with one camera authority and a closing handoff', () => {
+test('Home Life Map entry preserves one canonical ascent transaction and a closing handoff', () => {
   assert.match(sceneStore, /enterLifeMap: \(\) => set\(\{ mode: "ASCENT", sceneMode: "ASCENT", phase: "ASCENT", isTransitioning: true, inputLocked: true, progress: 0 \}\)/)
   assert.match(worldEvents, /function shouldBeginHomeAscent/)
   assert.match(worldEvents, /function markHomeAscentClosing/)
@@ -111,23 +170,19 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(worldEvents, /owner\.setAttribute\('data-home-portal-sequence', 'life-map:closing'\)/)
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
-  assert.match(worldEvents, /return\s*\n\s*}/)
   assert.match(homeProduction, /transition==='life-map'/)
-  assert.match(homeProduction, /setProgress\(t\)/)
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
-  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-third-person'\}/)
-  assert.match(homeProduction, /data-home-input-locked=\{transition!=='none'\?'true':'false'\}/)
-  assert.match(homeProduction, /store\.setPhase\('HOME'\)/)
-  assert.match(homeProduction, /store\.unlock\(\)/)
+  assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'/)
+  assert.match(homeProduction, /data-home-input-locked=\{transition!=='none'/)
   assert.doesNotMatch(homeProduction, /<CinematicCameraRig|<SpatialSceneClient/)
 })
 
-test('Home Ground entry is a physical environmental descent rather than a floating menu portal', () => {
+test('Home Ground entry is an environmental descent rather than a floating menu portal', () => {
   assert.match(homeProduction, /transition==='ground'/)
-  assert.match(homeProduction, /home-ground-environmental-threshold/)
+  assert.match(homeProduction, /home-v219-ground-place/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
-  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"|dodecahedronGeometry/)
+  assert.doesNotMatch(homeProduction, /<WorldPortal type="ground"/)
 })
 
 test('visual overrides cannot veil active spatial owners', () => {
@@ -161,7 +216,11 @@ test('Ground keeps embodied infrastructure ownership and contained navigation', 
 
 test('browser proof and supplemental state proof cover required exact-head evidence', () => {
   for (const marker of ["schemaVersion: 'urai-continuous-spatial-visual-proof-18'", "id: 'home-normal-root'", "id: 'home-normal-home'", 'portrait-mobile', 'landscape-mobile', 'homeOrbState', 'Orb_Resting', 'Orb_Transition', 'recordVideo', 'home-pointer-look-desktop', 'capturePortal', 'home-no-webgl-fallback', 'receipt.json']) assert.ok(proof.includes(marker), `missing primary proof marker: ${marker}`)
-  for (const marker of ["schemaVersion: 'urai-home-state-proof-5'", 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  for (const marker of ['visualAuthority.proofSchema', 'retained-canvas-png', 'page.screenshot', 'clip:', 'homeState=permission-limited', 'homeState=unavailable', 'homeState=offline', 'reducedMotion', 'forcedColors', 'home-real-offline-transition', 'orb-lifecycle-production-ui', 'orb-lifecycle-reduced-motion', '__uraiObservedOrbStates', "'thinking'", "'speaking'", 'orb-state-static', 'settleAnimationFrames', 'minimumLuminanceRange', '--enable-unsafe-swiftshader']) assert.ok(stateProof.includes(marker), `missing supplemental state proof marker: ${marker}`)
+  assert.equal(homeVisualAuthority.worldIdentifier, 'v226-rooted-inhabited-memory-sanctuary')
+  assert.doesNotMatch(stateProof, /v223-authored-inhabited-memory-sanctuary/)
+  for (const marker of ['HomeWorldProductionV223Geometry.tsx', 'HomeWorldProductionV225PolishV3.tsx', 'rock-tile-floor/rock-tile-floor-diff-1k.webp', 'polyhaven-v48/fern_02/asset.gltf']) assert.ok(homeVisualAuthority.runtimeAssets.includes(marker))
+  assert.doesNotMatch(stateProof, /home-(?:continuous-landscape|ground-place|life-map-place)-v191\.glb|urai-living-memory-heart-v191\.glb/)
   assert.doesNotMatch(`${proof}\n${stateProof}`, /waitForTimeout/)
   assert.doesNotMatch(stateProof, /gl\.readPixels/)
   assert.match(proofWorkflow, /run-continuous-spatial-proof-v22-natural\.mjs/)
@@ -176,12 +235,11 @@ test('Life Map owner and legacy veil suppression remain full viewport', () => {
   assert.match(css, /prefers-reduced-motion: reduce/)
 })
 
-test('Home environmental thresholds and generated manifest filter remain observable on a saturated host', () => {
-  assert.match(homeProduction, /home-ground-environmental-threshold/)
-  assert.match(homeProduction, /home-life-map-sky-lookout/)
+test('Home V219 destinations and host-stable generated identity filter remain observable', () => {
+  assert.match(homeProduction, /home-v219-ground-place/)
+  assert.match(homeProduction, /home-v219-life-map-place/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /destination:'life-map'/)
-  assert.match(homeProduction, /Look to the sky/)
   assert.ok(hostStableProof.includes('const manifestRegexSource = String.raw`&& /^\\/assets\\/urai'))
   assert.ok(hostStableProof.includes('const escapedManifestRegexSource = String.raw`&& /^\\\\/assets\\\\/urai'))
   assert.ok(hostStableProof.includes('.replace(manifestRegexSource, escapedManifestRegexSource)'))

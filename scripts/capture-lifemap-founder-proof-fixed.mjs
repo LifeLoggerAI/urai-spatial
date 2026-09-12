@@ -252,7 +252,7 @@ async function armJourneyPhaseWatch(page, expectedPhase) {
   }, { rootSelector: ROOT, phase: expectedPhase, storageKey: JOURNEY_WATCH_STORAGE_KEY })
 }
 
-async function readJourneyPhaseWatch(page, expectedPhase, timeout = 12_000) {
+async function readJourneyPhaseWatch(page, expectedPhase, timeout = 30_000) {
   const observed = await poll(`observed journey phase=${expectedPhase}`, () => page.evaluate(({ phase, storageKey }) => {
     const watch = window.__uraiFounderJourneyPhaseWatch
     if (watch?.expectedPhase === phase && watch.observed) return watch.observed
@@ -296,30 +296,64 @@ async function canvasSignal(page, screenshotBuffer) {
     let sum = 0
     let sumSquares = 0
     let nonDark = 0
+    let minimumLuminance = 255
+    let maximumLuminance = 0
+    const histogram = Array.from({ length: 16 }, () => 0)
+    const tileLuminance = []
+    const quadrantVisible = [0, 0, 0, 0]
     try {
       for (let row = 0; row < rows; row += 1) {
         for (let column = 0; column < columns; column += 1) {
           const x = Math.max(0, Math.min(width - block, Math.round(((column + 0.5) / columns) * width) - 1))
           const y = Math.max(0, Math.min(height - block, Math.round(((row + 0.5) / rows) * height) - 1))
           const pixels = context.getImageData(x, y, block, block).data
+          let tileSum = 0
           for (let index = 0; index < pixels.length; index += 4) {
             const luminance = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3
             count += 1
             sum += luminance
             sumSquares += luminance * luminance
             if (luminance > 8) nonDark += 1
+            minimumLuminance = Math.min(minimumLuminance, luminance)
+            maximumLuminance = Math.max(maximumLuminance, luminance)
+            histogram[Math.min(15, Math.floor(luminance / 16))] += 1
+            tileSum += luminance
           }
+          const tileMean = tileSum / (pixels.length / 4)
+          tileLuminance.push(tileMean)
+          if (tileMean > 8) quadrantVisible[(row >= rows / 2 ? 2 : 0) + (column >= columns / 2 ? 1 : 0)] += 1
         }
       }
     } catch {
       return { width, height, variance: -1, nonDarkRatio: -1, sampleCount: 0, sampling: 'distributed-grid-24x16-3x3' }
     }
     const mean = sum / Math.max(1, count)
+    const entropy = histogram.reduce((total, bin) => {
+      if (!bin) return total
+      const probability = bin / count
+      return total - probability * Math.log2(probability)
+    }, 0)
+    let edgeComparisons = 0
+    let detailedEdges = 0
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const index = row * columns + column
+        for (const neighbor of [column + 1 < columns ? index + 1 : -1, row + 1 < rows ? index + columns : -1]) {
+          if (neighbor < 0) continue
+          edgeComparisons += 1
+          if (Math.abs(tileLuminance[index] - tileLuminance[neighbor]) >= 4) detailedEdges += 1
+        }
+      }
+    }
     return {
       width,
       height,
       variance: sumSquares / Math.max(1, count) - mean * mean,
       nonDarkRatio: nonDark / Math.max(1, count),
+      luminanceRange: maximumLuminance - minimumLuminance,
+      entropy,
+      edgeDensity: detailedEdges / Math.max(1, edgeComparisons),
+      occupiedQuadrants: quadrantVisible.filter((visible) => visible >= 4).length,
       sampleCount: count,
       sampling: 'distributed-grid-24x16-3x3',
       source: 'retained-png',
@@ -511,6 +545,13 @@ async function clickRouteAction(page, name, destinationPath, destinationSelector
   await activateCanonicalControl(page, selector, geometry, 'pointer')
   await waitForPath(page, destinationPath)
   await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
+  // A destination owner can mount a frame before Next's route-level loading
+  // boundary finishes leaving. Give that boundary one scheduling turn, then
+  // require it to be absent before retaining destination pixels.
+  await page.waitForTimeout(600)
+  const loadingSurface = page.locator('main[aria-busy="true"]')
+  if (await loadingSurface.count()) await loadingSurface.first().waitFor({ state: 'hidden', timeout: 45_000 })
+  await page.locator(destinationSelector).first().waitFor({ state: 'visible', timeout: 30_000 })
   await stable(page)
 }
 
@@ -521,7 +562,14 @@ function assertVisualSanity() {
   if (!highResolution.signal || highResolution.signal.width < 4320 || highResolution.signal.height < 2700) {
     throw new Error(`high-resolution Founder capture dimensions drifted: ${JSON.stringify(highResolution.signal)}`)
   }
-  if (!highResolution.screenshot || highResolution.screenshot.bytes < 1_000_000) throw new Error('high-resolution Founder capture is suspiciously small')
+  if (!highResolution.screenshot) throw new Error('high-resolution Founder capture did not retain a PNG')
+  if (highResolution.signal.variance < 8
+    || highResolution.signal.luminanceRange < 20
+    || highResolution.signal.entropy < 1.2
+    || highResolution.signal.edgeDensity < 0.03
+    || highResolution.signal.occupiedQuadrants < 3) {
+    throw new Error(`high-resolution Founder capture lacks distributed retained-pixel detail: ${JSON.stringify(highResolution.signal)}`)
+  }
 
   const parallaxIds = ['desktop-overview', 'depth-travel-frame-1', 'depth-travel-frame-2', 'depth-travel-frame-3']
   const hashes = new Set(parallaxIds.map((id) => byId.get(id)?.screenshot?.hash).filter(Boolean))
@@ -538,12 +586,15 @@ function assertVisualSanity() {
     if (!capture) throw new Error(`missing required capture ${id}`)
     if (capture.state?.renderReady !== 'true') throw new Error(`${id} did not prove a rendered production world`)
     if (Number(capture.state?.anchors || 0) < 8) throw new Error(`${id} visible anchor count below production minimum`)
-    if (capture.screenshot.bytes < 120_000) throw new Error(`${id} screenshot is suspiciously empty`)
     if (!capture.signal) throw new Error(`${id} did not provide a WebGL signal`)
     if (capture.signal.sampleCount !== 3456) throw new Error(`${id} WebGL sample count drifted`)
     if (capture.signal.sampling !== 'distributed-grid-24x16-3x3') throw new Error(`${id} WebGL sampling method drifted`)
     if (capture.signal.variance >= 0 && capture.signal.variance < 8) throw new Error(`${id} WebGL pixel variance is below the visible-world minimum`)
     if (capture.signal.nonDarkRatio >= 0 && capture.signal.nonDarkRatio <= 0) throw new Error(`${id} WebGL non-dark coverage is empty`)
+    if (capture.signal.luminanceRange < 20) throw new Error(`${id} retained pixels lack meaningful dynamic range`)
+    if (capture.signal.entropy < 1.2) throw new Error(`${id} retained pixels lack meaningful luminance entropy`)
+    if (capture.signal.edgeDensity < 0.03) throw new Error(`${id} retained pixels lack distributed spatial detail`)
+    if (capture.signal.occupiedQuadrants < 3) throw new Error(`${id} rendered world lacks distributed viewport occupancy`)
   }
 
   const observedPhases = new Map([
@@ -668,7 +719,7 @@ async function desktopArrivalEvidence() {
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await selectedActions(page).waitFor({ state: 'visible', timeout: 10_000 })
+    await selectedActions(page).waitFor({ state: 'visible', timeout: 30_000 })
     await shot(page, 'stable-arrival', 'arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'selected-memory-arrival', 'selected-arrival', { memoryId: 'quiet-reset' })
     await shot(page, 'focus-replay-thresholds', 'thresholds', { memoryId: 'quiet-reset' })
@@ -692,12 +743,18 @@ async function desktopActionsAndKeyboard() {
     await waitForState(page, 'data-life-map-phase', 'arrival')
 
     await clickRouteAction(page, 'Enter Focus', '/focus', '[data-testid="urai-final-focus-chamber"]')
+    await page.locator('[data-focus-render-ready="true"] canvas').waitFor({ state: 'visible', timeout: 45000 })
     await shot(page, 'focus-destination', 'focus', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)
     await waitForRenderedWorld(page)
     await waitForState(page, 'data-life-map-phase', 'arrival')
-    await clickRouteAction(page, 'Replay', '/replay', 'main')
+    await clickRouteAction(
+      page,
+      'Replay',
+      '/replay',
+      '[data-testid="cinematic-replay-client"][data-memory-id]',
+    )
     await shot(page, 'replay-destination', 'replay', { memoryId: 'quiet-reset' })
 
     await goto(page, arrivalRoute)

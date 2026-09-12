@@ -1,0 +1,54 @@
+name: Launch Forge Dedicated Carry
+
+on:
+  push:
+    branches:
+      - home-final-relic-machine-realism-20260826
+    paths:
+      - '.github/workflows/launch-forge-dedicated-carry.yml'
+      - 'scripts/apply-launch-forge-dedicated-carry.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: launch-forge-dedicated-carry
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Patch generic forge ownership boundary
+        run: python3 scripts/apply-launch-forge-dedicated-carry.py
+
+      - name: Syntax check forge
+        run: node --check scripts/forge-launch-critical-assets.mjs
+
+      - name: Commit exact successor only when patch changed forge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- scripts/forge-launch-critical-assets.mjs; then
+            echo 'Dedicated-carry boundary is already patched; no successor commit required.'
+            exit 0
+          fi
+          current="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/home-final-relic-machine-realism-20260826" --jq .object.sha)"
+          test "$current" = "${GITHUB_SHA}"
+          git config user.name 'urai-release-bot'
+          git config user.email 'urai-release-bot@users.noreply.github.com'
+          git add scripts/forge-launch-critical-assets.mjs
+          git commit -m 'Respect dedicated-pipeline launch assets in generic forge'
+          gh auth setup-git
+          git push origin HEAD:home-final-relic-machine-realism-20260826

@@ -1,3 +1,5 @@
-"use client";
+'use client'
 
-export { HomeWorldProductionSacred as HomeWorldProduction } from "./HomeWorldProductionSacred";
+// Canonical Home export is the current literal-pixel candidate.
+// Certification still requires fresh exact-head CI, accessibility, literal pixels and independent approval.
+export { HomeWorldProductionV223 as HomeWorldProduction } from './HomeWorldProductionV223'

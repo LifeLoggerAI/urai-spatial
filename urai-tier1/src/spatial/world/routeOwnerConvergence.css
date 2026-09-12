@@ -69,6 +69,19 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   outline-offset: 8px !important;
 }
 
+/* Home keeps the living sanctuary visible while the conversation surface is open.
+ * The menu remains fully keyboard-operable and scrollable without becoming a
+ * full-scene modal or obscuring the governed Orb and both natural thresholds. */
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__menu {
+  width: min(460px, calc(100vw - 32px));
+  max-height: min(50svh, 400px);
+  padding: 10px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(2, 8, 20, .82), rgba(13, 18, 28, .68));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
 /* Focus owns one memory core and one Replay threshold. The generic travel Orb is
  * deliberately absent here so it cannot become a second unexplained focal object.
  * Route return and Replay travel remain available through native chamber controls. */

@@ -37,8 +37,12 @@ const fileNeedles = {
     "normalizedPathname === '/' || normalizedPathname === '/home'",
     'data-urai-home-runtime=',
     'data-testid="urai-home-accessible-fallback"',
+    'aria-label="Open Ground directly"',
     'aria-label="Open Life Map directly"',
-    "href: '/life-map/'",
+    "ground: { travelHref: '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent' }",
+    "lifeMap: { travelHref: '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete' }",
+    'href={HOME_SEMANTIC_DESTINATIONS.ground.travelHref}',
+    'href={HOME_SEMANTIC_DESTINATIONS.lifeMap.travelHref}',
   ],
   'src/spatial/lifemap/SpatialLifeMapCanonical.tsx': [
     'data-testid="urai-r3f-canonical-lifemap"',

@@ -32,11 +32,11 @@ const routes = [
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
     paths: ['/life-map', '/life-map/'],
-    markers: [/Inside your memory field\./i, /Thirty-four private stars/i, /Double click \/ Enter Focus/i],
+    markers: [/DISCLOSED SAMPLE · NOT YOUR MEMORIES/i, /No private memory data is mounted/i, /Open disclosed sample/i],
   },
   {
     paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
-    markers: [/Selected memory chamber/i, /The Quiet Reset/i, /Enter Replay/i],
+    markers: [/Selected memory chamber/i, /Opening selected memory|Memory unavailable|Neutral observatory/i, /Return to Life Map/i],
   },
   {
     paths: [
@@ -52,16 +52,16 @@ const routes = [
   },
   {
     paths: ['/passport', '/passport/'],
-    markers: [/Your life stays yours\./i, /ownership vault/i, /private by default/i],
+    markers: [/URAI PASSPORT/i, /Your life remains in your possession\./i, /Ownership services are not configured|Sign in to open your private Ownership Vault|Owner-scoped records loaded/i],
   },
   {
     paths: ['/privacy-controls', '/privacy-controls/'],
-    markers: [/URAI Privacy Controls/i, /Choose what the world can hold\./i, /Human approval before real-world action/i],
+    markers: [/URAI CONSENT SANCTUARY/i, /Choose what the world may hold\./i, /permission service is not configured|Sign in to inspect or change private consent state|Enforcement/i],
     forbidden: [/Home threshold/i, /Ground route Real-life world/i],
   },
   {
     paths: ['/location-map', '/location-map/'],
-    markers: [/Emotional weather over private places\./i, /symbolic atlas/i, /Global emotional weather legend/i],
+    markers: [/URAI · Private emotional geography/i, /Your places stay closed until you open them\./i, /disclosed sample atlas/i],
   },
   {
     paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
@@ -69,7 +69,7 @@ const routes = [
   },
   {
     paths: ['/status', '/status/'],
-    markers: [/Routes implemented\. Production certification pending\./i, /Launch spine/i, /Certification boundary/i],
+    markers: [/Production certification remains hidden until the protected fingerprint is validated\./i, /Launch spine/i, /Certification boundary/i],
   },
   {
     paths: ['/api/system/deploy-proof'],

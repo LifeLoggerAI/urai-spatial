@@ -115,7 +115,9 @@ jobs:
           name: spatial-release-readiness-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
           path: artifacts/release-readiness
           if-no-files-found: error
-          retention-days: 365
+          # Public-repository GitHub artifact retention is capped at 90 days.
+          # Longer-lived evidence requires a separately verified durable archive.
+          retention-days: 90
 
       - name: Enforce static Firebase export
         shell: bash

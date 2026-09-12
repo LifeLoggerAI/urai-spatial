@@ -13,8 +13,8 @@ test('deep-travel fallback cannot preempt the canonical transition controller', 
 })
 
 test('overview mode clears semantic selection without discarding route identity', () => {
-  assert.match(semanticNavigator, /const overviewRequested = params\.get\("overview"\) === "1"/)
-  assert.match(semanticNavigator, /const selectedId = overviewRequested \? null : params\.get\("node"\) \|\| params\.get\("memoryId"\)/)
+  assert.match(semanticNavigator, /const overviewRequested = params\.get\(['"]overview['"]\) === ['"]1['"]/)
+  assert.match(semanticNavigator, /const selectedId = overviewRequested \? null : params\.get\(['"]node['"]\) \|\| params\.get\(['"]memoryId['"]\)/)
 })
 
 test('home telemetry synchronizes from mutations and input without perpetual document polling', () => {

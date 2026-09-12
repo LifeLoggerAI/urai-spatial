@@ -83,18 +83,12 @@ html.urai-v5-assets-ready .urai-world-runtime[data-world-destination='home']::af
 }
 
 html.urai-v5-assets-ready [data-testid='urai-true-3d-life-map'] {
-  background-image: linear-gradient(180deg, rgba(2,3,10,.08), rgba(2,3,10,.42)), url('/assets/urai/v5/memory-universe.webp');
-  background-size: cover;
-  background-position: center;
+  background-image: none;
+  background-color: #071525;
 }
 html.urai-v5-assets-ready [data-testid='urai-true-3d-life-map']::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: url('/assets/urai/v5/cross-device-continuum.webp') center/cover no-repeat;
-  opacity: .045;
-  mix-blend-mode: screen;
+  content: none;
+  display: none;
 }
 
 html.urai-v5-assets-ready .uraiAutoPassport {

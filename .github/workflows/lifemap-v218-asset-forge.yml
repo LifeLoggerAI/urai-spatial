@@ -1,0 +1,88 @@
+name: Life Map V218 Asset Forge
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - home-final-v24-certify-20260826
+    paths:
+      - '.github/workflows/lifemap-v218-asset-forge.yml'
+      - 'urai-tier1/scripts/blender/generate-life-map-sanctuary-v218.py'
+
+permissions:
+  contents: read
+
+jobs:
+  forge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Install Blender authoring runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends blender
+          blender --version | tee blender-version.txt
+
+      - name: Generate editable master preview and optimized runtime GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup --python urai-tier1/scripts/blender/generate-life-map-sanctuary-v218.py 2>&1 | tee blender-forge.log
+          test -s urai-tier1/public/assets/urai/life-map-production/authored-v218/life-map-memory-sanctuary-v218.glb
+          test -s source-masters/07_3D_SOURCE_MODELS/PR-1177/life-map-v218/life-map-memory-sanctuary-v218.blend
+          test -s source-masters/07_3D_SOURCE_MODELS/PR-1177/life-map-v218/life-map-memory-sanctuary-v218-preview.png
+
+      - name: Validate runtime binary and seal provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/lifemap-v218-forge
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, os, struct
+          glb=Path('urai-tier1/public/assets/urai/life-map-production/authored-v218/life-map-memory-sanctuary-v218.glb')
+          data=glb.read_bytes()
+          magic,version,length=struct.unpack_from('<4sII',data,0)
+          assert magic==b'glTF' and version==2 and length==len(data)
+          record={
+            'version':'V218',
+            'exact_head':os.environ['GITHUB_SHA'],
+            'generator':'urai-tier1/scripts/blender/generate-life-map-sanctuary-v218.py',
+            'external_assets':[],
+            'license':'Original URAI-authored deterministic geometry; no third-party assets',
+            'runtime_glb_sha256':hashlib.sha256(data).hexdigest(),
+            'runtime_glb_bytes':len(data),
+          }
+          Path('artifacts/lifemap-v218-forge/provenance.json').write_text(json.dumps(record,indent=2)+'\n')
+          print(json.dumps(record,indent=2))
+          PY
+          cp blender-version.txt blender-forge.log artifacts/lifemap-v218-forge/
+          cp urai-tier1/scripts/blender/generate-life-map-sanctuary-v218.py artifacts/lifemap-v218-forge/
+          cp urai-tier1/public/assets/urai/life-map-production/authored-v218/life-map-memory-sanctuary-v218.glb artifacts/lifemap-v218-forge/
+          cp source-masters/07_3D_SOURCE_MODELS/PR-1177/life-map-v218/life-map-memory-sanctuary-v218.blend artifacts/lifemap-v218-forge/
+          cp source-masters/07_3D_SOURCE_MODELS/PR-1177/life-map-v218/life-map-memory-sanctuary-v218-preview.png artifacts/lifemap-v218-forge/
+          sha256sum artifacts/lifemap-v218-forge/* | tee artifacts/lifemap-v218-forge/SHA256SUMS.txt
+
+      - name: Upload exact-head V218 forge
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-v218-forge-${{ github.sha }}
+          path: artifacts/lifemap-v218-forge
+          if-no-files-found: error
+          retention-days: 90

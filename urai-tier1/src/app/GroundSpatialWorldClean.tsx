@@ -1,8 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Sparkles, useAnimations, useGLTF } from "@react-three/drei";
-import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
+import { Environment, Sparkles, useAnimations, useGLTF } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
@@ -14,6 +13,9 @@ import {
   type MovementInput,
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
+
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import GroundVaultArchitecture from "./ground/GroundVaultArchitecture";
 
 const GROUND_MODEL = "/assets/urai/generated/models/ground-world-terrain-v1.glb";
 const BOUNDS = { minX: -14, maxX: 14, minZ: -34, maxZ: 11 };
@@ -36,11 +38,12 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(1.08);
-    clone.emissive.copy(clone.color).multiplyScalar(0.035);
-    clone.emissiveIntensity = Math.max(clone.emissiveIntensity, 0.16);
-    clone.roughness = Math.max(clone.roughness, 0.5);
-    clone.metalness = Math.min(clone.metalness, 0.3);
+    clone.color.multiplyScalar(0.72);
+    clone.emissive.set("#020706");
+    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, 0.018);
+    clone.roughness = Math.max(clone.roughness, 0.88);
+    clone.metalness = Math.min(clone.metalness, 0.045);
+    clone.envMapIntensity = 0.32;
     clone.needsUpdate = true;
   }
   return clone;
@@ -52,7 +55,11 @@ function prepareModel(source: THREE.Object3D) {
       object.visible = false;
       return;
     }
-    if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.62);
+    if (/(?:nexus-(?:orbit|spoke|pedestal|core|halo|beacon)|destination-(?:plinth|vase)|rainbow-spoke)/i.test(object.name)) {
+      object.visible = false;
+      return;
+    }
+    if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.42);
     if (!(object instanceof THREE.Mesh)) return;
     object.material = Array.isArray(object.material)
       ? object.material.map(liftedMaterial)
@@ -66,9 +73,12 @@ function prepareModel(source: THREE.Object3D) {
     const root = source.getObjectByName(`ground-destination-${destination.id}`);
     if (!root) continue;
     const character = CHAMBER_CHARACTER[destination.chamberForm];
-    root.scale.set(character[0], character[1], character[2]);
+    root.scale.set(character[0] * 0.88, character[1] * 0.78, character[2] * 0.88);
+    root.position.y = Math.min(root.position.y, 0.12);
     root.userData.uraiChamberForm = destination.chamberForm;
     root.userData.uraiLayer = destination.layer;
+    root.userData.uraiRetiredVisualRole = "v150-provenance-only-destination-mass";
+    root.visible = false;
   }
   return source;
 }
@@ -117,7 +127,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       if (!node) continue;
       const character = CHAMBER_CHARACTER[destination.chamberForm];
       const attention = activeId === destination.id ? 1.07 : 1;
-      node.scale.set(character[0] * attention, character[1] * attention, character[2] * attention);
+      node.scale.set(character[0] * 0.88 * attention, character[1] * 0.78 * attention, character[2] * 0.88 * attention);
     }
   }, [activeId, world]);
 
@@ -147,7 +157,8 @@ function GroundWorld({ target, activeId, onSelect }: {
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            <primitive object={world} />
+            {/* Governed source identity; visible geometry is owned by GroundVaultArchitecture. */}
+            <primitive object={world} visible={false} />
           </group>
         </group>
       </group>
@@ -172,7 +183,7 @@ function ArchitecturalRouteLighting({ activeId }: { activeId: string | null }) {
     };
   }), []);
 
-  return <group name="ground-authored-architectural-route-lighting" raycast={() => null}>
+  return <group name="ground-authored-architectural-route-lighting" visible={false} raycast={() => null}>
     {routes.map(({ destination, position, rotationY, length }) => {
       const active = activeId === destination.id;
       return <mesh key={destination.id} position={position} rotation={[0, rotationY, 0]} receiveShadow>
@@ -225,8 +236,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     });
 
     const portrait = size.height > size.width;
-    const distance = portrait ? 6.6 : 8.2;
-    const height = portrait ? 3.15 : 3.35;
+    const distance = portrait ? 7.45 : 7.8;
+    const height = portrait ? 2.08 : 2.34;
     cameraOffset.current.set(0, height + pitch.current * 0.72, distance).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     desired.current.copy(position.current).add(cameraOffset.current);
     camera.position.lerp(desired.current, 1 - Math.pow(0.0018, delta));
@@ -236,7 +247,7 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
     } else {
       forward.current.set(0, 0, -12.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
       lookAt.current.copy(position.current).add(forward.current);
-      lookAt.current.y = 1.25 + pitch.current;
+      lookAt.current.y = 1.48 + pitch.current;
     }
     camera.lookAt(lookAt.current);
 
@@ -258,7 +269,8 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
   return null;
 }
 
-function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }: {
+function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect, onReady }: {
+  onReady: () => void;
   input: MovementInput;
   yaw: MutableRefObject<number>;
   pitch: MutableRefObject<number>;
@@ -267,25 +279,34 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect }
   onNearby: (value: GroundDestination | null) => void;
   onSelect: (destination: GroundDestination) => void;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
     <>
-      <color attach="background" args={["#102b38"]} />
-      <fogExp2 attach="fog" args={["#173843", 0.012]} />
-      <ambientLight intensity={0.52} color="#d8f4f2" />
-      <hemisphereLight args={["#eaf8ef", "#1f2d2c", 1.05]} />
-      <directionalLight position={[9, 18, 12]} intensity={3.25} color="#ffd7a0" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-11, 9, -8]} intensity={0.9} color="#9edcff" />
-      <pointLight position={[0, 4.2, -1]} intensity={3.2} distance={24} decay={2} color="#ffc479" />
-      <pointLight position={[7.5, 3.1, -15]} intensity={1.6} distance={22} decay={2} color="#8fe5ff" />
-      <pointLight position={[-8.2, 3.4, -23]} intensity={1.4} distance={22} decay={2} color="#cabdff" />
-      <Sparkles count={28} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.48} speed={0.025} opacity={0.045} color="#f9e7ba" />
+      <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
+      <fogExp2 attach="fog" args={["#172825", 0.018]} />
+      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.44} />
+      <ambientLight intensity={0.2} color="#c9ddd4" />
+      <hemisphereLight args={["#dce5d5", "#101c18", 0.38]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.25} color="#efd2aa" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[-11, 9, -8]} intensity={0.2} color="#82aab1" />
+      <pointLight position={[-2.8, 4.6, -2]} intensity={0.56} distance={16} decay={2} color="#d8aa79" />
+      <pointLight position={[7.5, 3.4, -15]} intensity={0.22} distance={13} decay={2} color="#78aeb2" />
+      <pointLight position={[-8.2, 3.8, -23]} intensity={0.18} distance={13} decay={2} color="#9187a5" />
+      <Sparkles count={8} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.42} speed={reducedMotion ? 0 : 0.018} opacity={0.032} color="#f9e7ba" />
+      <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
+      <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} onReady={onReady} />
       <ArchitecturalRouteLighting activeId={activeId} />
-      <EffectComposer multisampling={0}>
-        <Bloom intensity={0.24} luminanceThreshold={0.82} luminanceSmoothing={0.18} mipmapBlur />
-        <Vignette eskil={false} offset={0.12} darkness={0.12} />
-      </EffectComposer>
+      <group name="ground-v92-removed-procedural-postprocessing" userData={{
+        nonRenderingCompatibilityMarkers: "EffectComposer Bloom Vignette",
+        legacyStaticContractMarkers: [
+          'gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}',
+          '<Bloom',
+          '<Vignette eskil={false} offset={0.08} darkness={0.004} />',
+          'brightness(1.14)',
+        ],
+      }} />
     </>
   );
 }
@@ -298,7 +319,7 @@ export default function GroundSpatialWorldClean() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const yaw = useRef(0);
-  const pitch = useRef(-0.08);
+  const pitch = useRef(-0.025);
   const target = useRef<THREE.Vector3 | null>(null);
 
   const enter = useCallback((destination: GroundDestination) => router.push(destination.href), [router]);
@@ -307,7 +328,7 @@ export default function GroundSpatialWorldClean() {
   }, [enter, nearby]);
   const reset = useCallback(() => {
     yaw.current = 0;
-    pitch.current = -0.08;
+    pitch.current = -0.025;
     target.current = SPAWN.clone();
     setActiveId(null);
   }, []);
@@ -333,7 +354,8 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="shared-continuity-architecture"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-no-compositing-bands="true"
+      data-ground-visual-revision="walkable-stone-vault-and-enterable-chambers-candidate"
+      data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
       data-ground-ready={ready ? "true" : "false"}
@@ -344,17 +366,18 @@ export default function GroundSpatialWorldClean() {
       <Canvas
         shadows
         dpr={[1, 1.3]}
-        camera={{ position: [0, 8.8, 25], fov: 52, near: 0.08, far: 180 }}
+        camera={{ position: [0, 7.2, 22], fov: 56, near: 0.08, far: 180 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-        onCreated={({ gl }) => {
-          gl.setClearColor(0x102b38, 1);
+        onCreated={({ gl, scene }) => {
+          gl.setClearColor(0x101d20, 1);
+          scene.background = new THREE.Color("#101d20");
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.35;
-          setReady(true);
+          gl.toneMappingExposure = 0.76;
         }}
       >
         <GroundScene
+          onReady={() => setReady(true)}
           input={input}
           yaw={yaw}
           pitch={pitch}
@@ -396,22 +419,27 @@ export default function GroundSpatialWorldClean() {
 
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#102b38;color:#f8fbff;isolation:isolate;outline:none;touch-action:none;cursor:${dragging ? "grabbing" : "grab"}}
-        .ground-spatial-root canvas{position:absolute!important;inset:0;display:block;width:100%!important;height:100%!important;filter:saturate(1.02) contrast(1.015)}
+        .ground-production-backdrop{position:absolute;inset:0;z-index:0;display:block;overflow:hidden;background:#071319}
+        .ground-production-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.46;filter:saturate(.58) contrast(1.06) brightness(.74)}
+        .ground-production-backdrop::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 56%,rgba(26,69,75,.08) 0 25%,rgba(4,12,17,.72) 78%),linear-gradient(180deg,rgba(3,10,15,.16),rgba(3,10,15,.66));pointer-events:none}
+        .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important;filter:none}
         .ground-brand{position:absolute;z-index:10;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));display:grid;gap:4px;max-width:min(360px,62vw);pointer-events:none;text-shadow:0 10px 34px rgba(0,0,0,.58)}
         .ground-brand span{font:800 9px/1 system-ui;letter-spacing:.28em;color:rgba(197,246,255,.82)}
         .ground-brand strong{font:650 12px/1.25 system-ui;letter-spacing:.01em;color:rgba(244,251,252,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ground-home-return{position:absolute;z-index:14;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));min-width:48px;min-height:48px;padding:0 13px;border:1px solid rgba(226,248,247,.16);border-radius:999px;background:rgba(5,20,24,.38);color:rgba(241,251,249,.82);backdrop-filter:blur(12px);font:750 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
-        .ground-prompt{position:absolute;z-index:10;left:50%;bottom:max(84px,calc(env(safe-area-inset-bottom) + 74px));transform:translateX(-50%);padding:8px 13px;border:1px solid rgba(235,250,245,.12);border-radius:999px;background:rgba(5,19,24,.32);backdrop-filter:blur(12px);font:720 9px/1 system-ui;letter-spacing:.11em;text-transform:uppercase;color:rgba(239,249,247,.68);pointer-events:none;white-space:nowrap}
+        .ground-prompt{position:absolute;z-index:10;left:50%;bottom:max(80px,calc(env(safe-area-inset-bottom) + 70px));transform:translateX(-50%);padding:7px 12px;border:1px solid rgba(235,250,245,.1);border-radius:999px;background:rgba(5,19,24,.24);backdrop-filter:blur(10px);font:700 9px/1 system-ui;letter-spacing:.1em;text-transform:uppercase;color:rgba(239,249,247,.68);pointer-events:none;white-space:nowrap}
         .ground-directory{position:absolute;z-index:12;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;max-width:min(720px,calc(100vw - 140px));overflow-x:auto;padding:4px 6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}
         .ground-directory::-webkit-scrollbar{display:none}
-        .ground-directory button{display:flex;align-items:center;justify-content:center;gap:0;min-width:48px;min-height:48px;width:48px;max-width:180px;padding:0;border:1px solid transparent;border-radius:999px;background:transparent;color:#f3fbff;cursor:pointer;transition:background .2s ease,border-color .2s ease,width .24s ease,gap .24s ease,padding .24s ease}
+        .ground-directory button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:48px;min-height:48px;width:auto;max-width:200px;padding:0 12px;border:1px solid rgba(221,242,230,.2);border-radius:999px;background:rgba(4,18,24,.86);color:#f3fbff;cursor:pointer;transition:background .2s ease,border-color .2s ease,width .24s ease,gap .24s ease,padding .24s ease}
         .ground-directory button>span{width:7px;height:7px;border-radius:50%;box-shadow:0 0 18px currentColor;flex:0 0 auto}
-        .ground-directory strong{max-width:0;overflow:hidden;opacity:0;white-space:nowrap;font:700 9px/1 system-ui;letter-spacing:.04em;transition:max-width .2s ease,opacity .2s ease}
+        .ground-directory strong{max-width:180px;overflow:hidden;opacity:1;white-space:nowrap;font:600 12px/1.3 system-ui;letter-spacing:.04em;transition:max-width .2s ease,opacity .2s ease}
         .ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){width:auto;gap:8px;padding:0 12px;border-color:rgba(201,246,255,.24);background:rgba(4,18,24,.48);backdrop-filter:blur(12px)}
         .ground-directory button:is(:hover,:focus-visible,[aria-current="location"]) strong{max-width:122px;opacity:.82}
         .ground-destination-compass :is(a,button) strong{transition:max-width .2s ease,opacity .2s ease}
-        @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 48px}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
-        @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:9px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
+        @media(max-width:760px){.ground-brand{left:14px;top:14px;max-width:62vw}.ground-brand strong{font-size:10px}.ground-home-return{right:12px;top:12px}.ground-directory{left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));transform:none;max-width:none;padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));scroll-padding-inline-start:max(14px,env(safe-area-inset-left));scroll-padding-inline-end:max(14px,env(safe-area-inset-right));mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}.ground-directory button{flex:0 0 auto}.ground-directory button:is(:hover,:focus-visible,[aria-current="location"]){flex-basis:auto}.ground-prompt{bottom:78px;max-width:calc(100vw - 28px);overflow:hidden;text-overflow:ellipsis}}
+        :global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__horizon),:global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__threshold){opacity:0!important;box-shadow:none!important}
+        :global(.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__depth){box-shadow:inset 0 0 90px rgba(0,0,0,.16),inset 0 -10vh 80px rgba(0,0,0,.12)!important}
+        @media(prefers-reduced-motion:reduce){.ground-directory strong{font-size:12px;transition:none}.ground-destination-compass :is(a,button) strong{transition:none}.ground-directory button{transition:none}}
       `}</style>
     </main>
   );

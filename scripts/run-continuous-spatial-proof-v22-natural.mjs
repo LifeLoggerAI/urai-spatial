@@ -1,35 +1,47 @@
+// Current exact-head authority: run the grouped proof against production telemetry.
 import { readFile, writeFile } from 'node:fs/promises'
 
 const captureUrl = new URL('./capture-continuous-spatial-proof-v18.mjs', import.meta.url)
 const groupedUrl = new URL('./run-continuous-spatial-proof-v21-grouped.mjs', import.meta.url)
 const original = await readFile(captureUrl, 'utf8')
-const oldOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
-const newOwner = "result.animationOwner === 'canonical-sanctuary-plus-cc0-fern-plus-living-orb'"
-if (original.split(oldOwner).length - 1 !== 1) throw new Error('Continuous proof animation-owner contract changed')
 
-const staleEnvironmentalRadius = 'radius: 2.2'
-const runtimeEnvironmentalRadius = 'radius: 2.8'
-const staleEnvironmentalCount = original.split(staleEnvironmentalRadius).length - 1
-if (staleEnvironmentalCount !== 2) {
-  throw new Error(`Continuous proof environmental-threshold proximity contract changed: expected 2, found ${staleEnvironmentalCount}`)
+const historicalOwner = "result.animationOwner === 'authored-sanctuary-plus-gltf-interactions'"
+const currentOwner = "result.animationOwner === 'v226-rooted-living-memory-presence'"
+const historicalOrb = "orb: { x: -0.18, z: -6.90, radius: 2.35"
+const currentOrb = "orb: { x: -0.45, z: -7.45, radius: 2.35"
+const historicalModelClipLines = [
+  "  dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',",
+  "  thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',",
+  "  calming: 'Orb_Calming', privacy: 'Orb_Privacy', warning: 'Orb_Degraded', transition: 'Orb_Transition',",
+]
+const currentModelClipLines = [
+  "  dormant: 'orb-rest', idle: 'orb-breathe', attention: 'orb-attention', listening: 'orb-listening',",
+  "  thinking: 'orb-thinking', speaking: 'orb-speaking', guiding: 'orb-guide', reflecting: 'orb-reflect',",
+  "  calming: 'orb-calm', privacy: 'orb-privacy', warning: 'orb-warning', transition: 'orb-transition',",
+]
+
+function replaceOnce(source, from, to, label) {
+  if (source.split(from).length - 1 !== 1) throw new Error(`Continuous proof ${label} contract changed`)
+  return source.replace(from, to)
 }
 
-const staleOrbRadius = "orb: { x: 0, z: -0.65, radius: 1.8"
-const runtimeOrbRadius = "orb: { x: 0, z: -2.65, radius: 2.5"
-const staleGroundTarget = "ground: { x: -4.55, z: -6.55"
-const runtimeGroundTarget = "ground: { x: -5.2, z: -8.4"
-const staleLifeMapTarget = "'life-map': { x: 4.55, z: -6.65"
-const runtimeLifeMapTarget = "'life-map': { x: 5.2, z: -8.4"
-if (original.split(staleOrbRadius).length - 1 !== 1) throw new Error('Continuous proof Orb interaction-zone contract changed')
-if (original.split(staleGroundTarget).length - 1 !== 1) throw new Error('Continuous proof Ground target contract changed')
-if (original.split(staleLifeMapTarget).length - 1 !== 1) throw new Error('Continuous proof Life Map target contract changed')
+const stableTelemetryContracts = [
+  "ground: { x: -4.85, z: -8.25, radius: 2.65",
+  "'life-map': { x: 4.85, z: -8.25, radius: 2.65",
+  "owner.getAttribute('data-home-assets-ready') === 'true'",
+  "owner.getAttribute('data-home-input-ready') === 'true'",
+  "owner.getAttribute('data-home-interaction-ready') === 'true'",
+  "owner.getAttribute('data-home-ready') === 'true'",
+]
+for (const contract of stableTelemetryContracts) {
+  if (original.split(contract).length - 1 !== 1) throw new Error(`Continuous proof current runtime contract changed: ${contract}`)
+}
 
-const patched = original
-  .replace(oldOwner, newOwner)
-  .replaceAll(staleEnvironmentalRadius, runtimeEnvironmentalRadius)
-  .replace(staleOrbRadius, runtimeOrbRadius)
-  .replace(staleGroundTarget, runtimeGroundTarget)
-  .replace(staleLifeMapTarget, runtimeLifeMapTarget)
+let patched = replaceOnce(original, historicalOwner, currentOwner, 'animation-owner')
+patched = replaceOnce(patched, historicalOrb, currentOrb, 'Orb telemetry')
+for (let index = 0; index < historicalModelClipLines.length; index += 1) {
+  patched = replaceOnce(patched, historicalModelClipLines[index], currentModelClipLines[index], `Orb model clip line ${index + 1}`)
+}
 
 await writeFile(captureUrl, patched, 'utf8')
 try {

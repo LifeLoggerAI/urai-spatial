@@ -147,6 +147,7 @@ export default function HomeSpatialWorldFinal() {
       data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"
       data-transition-target={transitionTarget ?? 'idle'}
       data-home-avatar-orb="anchored-at-home"
+      data-home-fallback-art-revision="v86-coherent-sanctuary"
       onPointerMove={handlePointerMove}
       onPointerLeave={resetPointer}
     >

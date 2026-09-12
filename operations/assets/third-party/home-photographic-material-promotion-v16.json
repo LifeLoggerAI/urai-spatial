@@ -1,0 +1,10 @@
+{
+  "promotionId": "home-photographic-material-promotion-v16",
+  "sourceReceipt": "operations/assets/third-party/home-photographic-pbr-v1.json",
+  "runtimeOwner": "urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx",
+  "target": "Replace generated hero stone textures and synthetic Lightformer-only reflections with locally vendored CC0 photographic rock PBR maps and a locally vendored CC0 HDR environment.",
+  "sourceHead": "01bcde3db69dca5f97ae932afd6f2da7d53ff81c",
+  "runtimeExternalRequests": false,
+  "acceptance": "Exact-head typecheck, unit contracts, retained desktop/mobile/reduced-motion pixel review, and no transfer of visual approval from older SHAs.",
+  "status": "PROMOTION_PENDING_EXACT_HEAD_WORKFLOW"
+}
