@@ -41,7 +41,7 @@ test.describe('Embodied exploration runtime evidence', () => {
   // but software-rendered Actions hosts spent 3-11 seconds on individual DOM,
   // keyboard and attribute operations. Preserve every assertion while allowing
   // the complete interaction sequence to finish on that proven host envelope.
-  test.describe.configure({ timeout: 180_000 })
+  test.describe.configure({ timeout: 300_000 })
 
   test('Home is a visible world with meaningful keyboard displacement and no pointer lock', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
@@ -135,6 +135,7 @@ test.describe('Embodied exploration runtime evidence', () => {
 
     await expect.poll(() => new URL(page.url()).searchParams.get('memoryId')).toBeTruthy()
     await expect(lifeMap).toHaveAttribute('data-life-map-mode', 'selected')
+    await expect(lifeMap).toHaveAttribute('data-life-map-phase', 'arrival', { timeout: 15_000 })
     const actions = page.getByRole('navigation', { name: 'Selected memory actions' })
     await expect(actions.getByRole('button', { name: 'Enter Focus' })).toBeVisible()
     await expect(actions.getByRole('button', { name: 'Replay' })).toBeVisible()

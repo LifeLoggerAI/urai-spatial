@@ -18,7 +18,7 @@ test.describe('Home sensory consent boundary evidence', () => {
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
 
     const home = page.locator(homeOwnerSelector)
-    const audioRuntime = page.locator('[data-urai-spatial-audio-runtime="production-opus-v1"]')
+    const audioRuntime = page.locator('[data-urai-spatial-audio-runtime="production-opus-v2"]')
     await expect(home).toBeVisible({ timeout: 30_000 })
     await expect(home.locator('canvas')).toBeVisible({ timeout: 30_000 })
     await expect(home).toHaveAttribute('data-home-assets-ready', 'true', { timeout: 45_000 })

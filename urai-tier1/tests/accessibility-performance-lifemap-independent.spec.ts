@@ -112,6 +112,7 @@ test.describe('Life Map independent realm runtime evidence', () => {
     const selectedMemoryId = selectedUrl.searchParams.get('memoryId')
     expect(selectedMemoryId).toBeTruthy()
     await expect(root).toHaveAttribute('data-life-map-mode', 'selected')
+    await expect(root).toHaveAttribute('data-life-map-phase', 'arrival', { timeout: 15_000 })
     const selectedActionUrl = new URL(page.url())
     expect(selectedActionUrl.searchParams.get('memoryId')).toBe(selectedActionUrl.searchParams.get('node'))
     await expect(page.getByRole('navigation', { name: 'Selected memory actions' })).toBeVisible()

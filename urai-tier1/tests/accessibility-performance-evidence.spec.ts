@@ -208,6 +208,7 @@ test.describe('URAI accessibility and performance evidence', () => {
   })
 
   test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const before = page.url()
     const runtime = page.locator('.urai-home-spatial-runtime-layer')
