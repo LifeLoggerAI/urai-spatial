@@ -301,11 +301,17 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     await consent.check({ noWaitAfter: true })
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
+    const send = page.getByRole('button', { name: 'Send' }).first()
+    await send.waitFor({ state: 'visible', timeout: 20_000 })
+    await page.waitForFunction(() => {
+      const candidate = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Send')
+      return candidate instanceof HTMLButtonElement && !candidate.disabled
+    }, null, { timeout: 20_000 })
     await Promise.all([
       page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
         && sample.renderedState === 'speaking'
         && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
-      page.getByRole('button', { name: 'Send' }).click({ noWaitAfter: true }),
+      send.click({ noWaitAfter: true }),
     ])
     const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
       && sample.renderedState === 'speaking'
