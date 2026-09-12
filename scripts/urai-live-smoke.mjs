@@ -32,7 +32,7 @@ const routes = [
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
     paths: ['/life-map', '/life-map/'],
-    markers: [/URAI Life Map/i, /step inside your private constellation/i],
+    markers: [/URAI Life Map/i, /step inside your private constellation/i, /urai-r3f-canonical-lifemap/i],
   },
   {
     paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
