@@ -298,7 +298,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }
 
     const consent = page.getByLabel('Allow this message and bounded recent context to be processed by OpenAI.').first()
-    await consent.check({ noWaitAfter: true })
+    await consent.focus()
+    if (!(await consent.isChecked())) await page.keyboard.press('Space')
+    if (!(await consent.isChecked())) throw new Error('OpenAI consent checkbox did not activate through keyboard semantics')
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
     const send = page.getByRole('button', { name: 'Send' }).first()
@@ -307,11 +309,12 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
       const candidate = Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Send')
       return candidate instanceof HTMLButtonElement && !candidate.disabled
     }, null, { timeout: 20_000 })
+    await send.focus()
     await Promise.all([
       page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
         && sample.renderedState === 'speaking'
         && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
-      send.click({ noWaitAfter: true }),
+      page.keyboard.press('Enter'),
     ])
     const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
       && sample.renderedState === 'speaking'
@@ -324,7 +327,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
-    await consent.uncheck({ noWaitAfter: true })
+    await consent.focus()
+    if (await consent.isChecked()) await page.keyboard.press('Space')
+    if (await consent.isChecked()) throw new Error('OpenAI consent checkbox did not clear through keyboard semantics')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
@@ -409,6 +414,5 @@ try {
   if (!transition.passed) receipt.errors.push(transition)
 }
 
-await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\
-`)
+await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 if (receipt.errors.length) process.exit(1)
