@@ -27,6 +27,30 @@ function RetireSupersededShapes() {
   return null
 }
 
+function SuppressLegacyShadowArtifacts() {
+  const { scene } = useThree()
+  const changed = useRef(new Map<THREE.Mesh, boolean>())
+  useFrame(() => {
+    const ridge = scene.getObjectByName('home-v229-textured-inhabited-valley-and-distant-ridge')
+    ridge?.traverse((object) => {
+      if (!(object instanceof THREE.Mesh) || !object.castShadow) return
+      if (!changed.current.has(object)) changed.current.set(object, object.castShadow)
+      object.castShadow = false
+    })
+    scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh) || !object.castShadow) return
+      if (object.name !== 'rock_face_01' && object.name !== 'rock_face_02') return
+      if (!changed.current.has(object)) changed.current.set(object, object.castShadow)
+      object.castShadow = false
+    })
+  })
+  useEffect(() => () => {
+    changed.current.forEach((castShadow, object) => { object.castShadow = castShadow })
+    changed.current.clear()
+  }, [])
+  return null
+}
+
 function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '02'; position: [number,number,number]; rotation: [number,number,number]; scale: [number,number,number] }) {
   const asset = useGLTF(ROCK_FACE[variant])
   const model = useMemo(() => {
@@ -84,7 +108,7 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const path = useMemo(() => wornPathGeometry(2.7, .28, .11), [])
   useEffect(() => () => { inner.dispose(); path.dispose() }, [inner, path])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
-  return <group position={[GROUND.x, y + .58, GROUND.z]} rotation={[0, -.08, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v244-rock-framed-ground-cleft-shadow-safe', visualIntent: 'eroded-cavern-cleft-owned-by-real-rock', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
+  return <group position={[GROUND.x, y + .58, GROUND.z]} rotation={[0, -.08, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v245-ground-cleft-shadow-slab-safe', visualIntent: 'eroded-cavern-cleft-owned-by-real-rock', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="01" position={[-.43, -.34, -.88]} rotation={[.20, .78, -.18]} scale={[1.30, 1.94, .86]} />
       <ScannedRock variant="02" position={[.43, -.35, -.90]} rotation={[-.16, -.88, .16]} scale={[1.28, 1.90, .84]} />
@@ -111,7 +135,7 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   }, [])
   useEffect(() => () => { inner.dispose(); path.dispose(); stars.dispose() }, [inner, path, stars])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
-  return <group position={[LIFE_MAP.x, y + .08, LIFE_MAP.z]} rotation={[0, .06, 0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{ artRevision: 'v244-rock-framed-lineage-rift-shadow-safe', visualIntent: 'narrow-asymmetric-lineage-cleft-with-celestial-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'rooted-ascent-not-tube-portal' }}>
+  return <group position={[LIFE_MAP.x, y + .08, LIFE_MAP.z]} rotation={[0, .06, 0]} name="home-v234-life-map-rooted-observatory" onClick={activate} userData={{ artRevision: 'v245-lineage-rift-shadow-slab-safe', visualIntent: 'narrow-asymmetric-lineage-cleft-with-celestial-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'rooted-ascent-not-tube-portal' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="02" position={[-.38, -.22, -.74]} rotation={[.12, .94, -.16]} scale={[1.18, 1.72, .80]} />
       <ScannedRock variant="01" position={[.38, -.24, -.76]} rotation={[.08, -1.00, .14]} scale={[1.16, 1.68, .78]} />
@@ -184,8 +208,8 @@ function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbStat
   useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.44)*.0025;root.current.position.y=y+.84+Math.sin(t*.30)*.004;root.current.rotation.y=-.10+Math.sin(t*.14)*.010;root.current.rotation.z=-.06+Math.sin(t*.21)*.003;root.current.scale.setScalar(breath)})
   const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#c7765e':privacy?'#6f9ea0':'#b3a985'
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
-  return <group ref={root} position={[ORB.x,y+.84,ORB.z]} rotation={[.03,-.10,-.06]} name="home-v234-living-memory-heart" onClick={activate} userData={{artRevision:'v244-broader-scarred-living-memory-presence',visualIntent:'one-connected-asymmetric-history-bearing-presence',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'matte-scarred-memory-tissue'}}>
-    <mesh geometry={outer} scale={[.92,.90,.88]} castShadow receiveShadow><meshStandardMaterial vertexColors color="#b8ad91" emissive={glow} emissiveIntensity={.018+e*.075} roughness={.94} metalness={0}/></mesh>
+  return <group ref={root} position={[ORB.x,y+.84,ORB.z]} rotation={[.03,-.10,-.06]} name="home-v234-living-memory-heart" onClick={activate} userData={{artRevision:'v245-broader-scarred-living-memory-shadow-safe',visualIntent:'one-connected-asymmetric-history-bearing-presence',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'matte-scarred-memory-tissue'}}>
+    <mesh geometry={outer} scale={[.92,.90,.88]} receiveShadow><meshStandardMaterial vertexColors color="#b8ad91" emissive={glow} emissiveIntensity={.018+e*.075} roughness={.94} metalness={0}/></mesh>
     <primitive object={scarLine} position={[0,0,.31]}><lineBasicMaterial color={glow} transparent opacity={.38+e*.38} toneMapped={false}/></primitive>
     <points geometry={interior} scale={[.92,.90,.88]}><pointsMaterial color={glow} size={.016} transparent opacity={.23+e*.22} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
     <pointLight color={glow} intensity={.10+e*.22} distance={2.4} decay={2}/>
@@ -200,5 +224,5 @@ function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
-  return <group name="home-current-authority-art-repair" userData={{artRevision:'v244-shadow-safe-thresholds-broader-living-memory'}}><RetireSupersededShapes/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
+  return <group name="home-current-authority-art-repair" userData={{artRevision:'v245-shadow-slab-suppression'}}><RetireSupersededShapes/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
 }
