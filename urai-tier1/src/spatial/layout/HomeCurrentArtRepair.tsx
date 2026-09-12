@@ -158,7 +158,7 @@ function livingMemoryGeometry() {
   const geometry = new THREE.SphereGeometry(1, 112, 72)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors: number[] = []
-  const deep = new THREE.Color('#202b2a'), tissue = new THREE.Color('#55645f'), scarColor = new THREE.Color('#aaa694')
+  const deep = new THREE.Color('#25262d'), tissue = new THREE.Color('#5e5964'), scarColor = new THREE.Color('#b2a5aa')
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
     const angle = Math.atan2(nz, nx)
@@ -194,8 +194,11 @@ function livingMemoryGeometry() {
 }
 
 function memoryInteriorGeometry() {
-  const count = 96, positions = new Float32Array(count * 3)
-  for (let index = 0; index < count; index++) { const t=(index+.5)/count, angle=index*2.39996323, radius=Math.pow(t,.70)*.20, y=-.60+(index%23)/22*1.08; positions.set([Math.cos(angle)*radius*(1-.30*Math.abs(y)),y,Math.sin(angle)*radius*.42],index*3) }
+  const count = 360, positions = new Float32Array(count * 3)
+  for (let index = 0; index < count; index++) {
+    const t=(index+.5)/count, angle=index*2.39996323+.18*Math.sin(index*.37), radius=.11+Math.pow(t,.72)*.40, y=-.78+(index%37)/36*1.56
+    positions.set([Math.cos(angle)*radius*(.84-.20*Math.abs(y)),y,Math.sin(angle)*radius*.62],index*3)
+  }
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); return geometry
 }
 
@@ -209,19 +212,36 @@ function memoryScarGeometry() {
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
+function memoryFilamentGeometry() {
+  const points: THREE.Vector3[] = []
+  for (let trace=0; trace<7; trace++) {
+    let previous: THREE.Vector3 | null = null
+    for (let step=0; step<=24; step++) {
+      const t=step/24, y=-.72+t*1.48
+      const angle=-1.06+trace*.31+t*(.72+trace*.035)+.11*Math.sin(t*8.2+trace*.8)
+      const envelope=.23+.23*Math.sin(t*Math.PI)
+      const current=new THREE.Vector3(Math.cos(angle)*envelope+(trace-3)*.014,y,.43+Math.sin(angle)*.15+.025*Math.sin(t*11+trace))
+      if (previous) points.push(previous,current)
+      previous=current
+    }
+  }
+  return new THREE.BufferGeometry().setFromPoints(points)
+}
+
 const stateIntensity: Record<OrbState, number> = { dormant:.03, idle:.09, attention:.18, listening:.14, thinking:.16, speaking:.22, guiding:.15, reflecting:.12, calming:.08, privacy:.13, warning:.24, transition:.16 }
 
 function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
-  const root=useRef<THREE.Group>(null), y=height(ORB.x,ORB.z), outer=useMemo(livingMemoryGeometry,[]), interior=useMemo(memoryInteriorGeometry,[]), scar=useMemo(memoryScarGeometry,[]), scarLine=useMemo(()=>new THREE.Line(scar),[scar])
-  useEffect(()=>()=>{outer.dispose();interior.dispose();scar.dispose()},[interior,outer,scar])
+  const root=useRef<THREE.Group>(null), y=height(ORB.x,ORB.z), outer=useMemo(livingMemoryGeometry,[]), interior=useMemo(memoryInteriorGeometry,[]), scar=useMemo(memoryScarGeometry,[]), filaments=useMemo(memoryFilamentGeometry,[]), scarLine=useMemo(()=>new THREE.Line(scar),[scar])
+  useEffect(()=>()=>{outer.dispose();interior.dispose();scar.dispose();filaments.dispose()},[filaments,interior,outer,scar])
   useFrame(({clock})=>{if(!root.current||reducedMotion)return;const t=clock.elapsedTime,breath=1+Math.sin(t*.44)*.0045;root.current.position.y=y+.94+Math.sin(t*.30)*.007;root.current.rotation.y=-.22+Math.sin(t*.14)*.022;root.current.rotation.z=-.08+Math.sin(t*.21)*.006;root.current.scale.setScalar(breath)})
-  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#c87866':privacy?'#78a5a1':'#93b8ad'
+  const e=(reducedMotion?.72:1)*stateIntensity[state],warning=state==='warning',privacy=state==='privacy',glow=warning?'#d17d70':privacy?'#78a5a1':'#9fc7c5'
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onOrb()}
   return <group ref={root} position={[ORB.x,y+.94,ORB.z]} rotation={[.04,-.22,-.08]} name="home-v247-living-memory-heart" onClick={activate} userData={{artRevision:'v247-folded-living-memory-mantle',visualIntent:'one-connected-asymmetric-folded-history-bearing-presence-not-clay-heart-not-rock',semanticOwner:'home-current-orb-surface-memory',materialLanguage:'dark-matte-scarred-memory-mantle'}}>
-    <mesh geometry={outer} scale={[1.12,1.18,1.14]} receiveShadow={false}><meshStandardMaterial vertexColors color="#74807a" emissive={glow} emissiveIntensity={.032+e*.10} roughness={.93} metalness={0}/></mesh>
-    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.52+e*.30} toneMapped={false}/></primitive>
-    <points geometry={interior} scale={[1.12,1.18,1.14]} renderOrder={2}><pointsMaterial color={glow} size={.023} transparent opacity={.38+e*.30} depthTest={false} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
-    <pointLight color={glow} intensity={.12+e*.20} distance={2.7} decay={2}/>
+    <mesh geometry={outer} scale={[1.20,1.24,1.22]} receiveShadow={false}><meshStandardMaterial vertexColors color="#76717b" emissive={glow} emissiveIntensity={.044+e*.11} roughness={.84} metalness={0}/></mesh>
+    <lineSegments geometry={filaments} scale={[1.20,1.24,1.22]} renderOrder={3}><lineBasicMaterial color={glow} transparent opacity={.28+e*.26} depthTest={false} toneMapped={false}/></lineSegments>
+    <primitive object={scarLine} position={[0,0,.48]}><lineBasicMaterial color={glow} transparent opacity={.62+e*.26} toneMapped={false}/></primitive>
+    <points geometry={interior} scale={[1.20,1.24,1.22]} renderOrder={2}><pointsMaterial color={glow} size={.034} transparent opacity={.48+e*.28} depthTest={false} depthWrite={false} blending={THREE.AdditiveBlending}/></points>
+    <pointLight color={glow} intensity={.14+e*.22} distance={2.8} decay={2}/>
   </group>
 }
 

@@ -40,20 +40,22 @@ function weatheredOutcropGeometry(seed:number,accent:string,active:boolean){
     const cavityA=Math.exp(-(((nx-bias)*.86)**2+(nz+.22)**2)/.12)*(.28+.72*crown)
     const cavityB=Math.exp(-(((nx+bias*.6)*.72)**2+(nz-.38)**2)/.16)*Math.max(0,.58+ny)
     const radial=1+coarse+stratum*.45+fine-.34*cleft-.14*cavityA-.09*cavityB
-    let x=nx*radial*profiles.x + profiles.lean*ny + bias*.14
-    let z=nz*radial*profiles.z + .04*Math.sin(ny*5.4+seed)
+    const rootBlend=active?THREE.MathUtils.lerp(1.26,.72,THREE.MathUtils.smoothstep(ny,-.78,.88)):1
+    let x=nx*radial*profiles.x*rootBlend + profiles.lean*ny + bias*.14
+    let z=nz*radial*profiles.z*rootBlend + .04*Math.sin(ny*5.4+seed)
     const twist=(ny+.2)*(.16+(seeded(seed,12)-.5)*.12)
     const cos=Math.cos(twist),sin=Math.sin(twist),tx=x*cos-z*sin,tz=x*sin+z*cos
     x=tx;z=tz
     let y=ny*profiles.y + shelf*.16 + .04*Math.sin(nx*5+nz*4+seed*.07)*crown
     y-=lower*(.42+.26*lower)
     y-=.58
+    if(active)y+=(ny+1)*.46+.06*crown
     position.setXYZ(index,x,y,z)
-    const height=THREE.MathUtils.clamp((y+.90)/1.30,0,1)
+    const height=THREE.MathUtils.clamp((y+.90)/1.65,0,1)
     const scar=THREE.MathUtils.clamp(cleft*.92+cavityA*.36+Math.abs(stratum)*2.0,0,1)
-    const memoryBase=active ? .055 : .005
-    const memoryScar=active ? .095 : .012
-    const color=deep.clone().lerp(mineral,.20+.48*height).lerp(lichen,.08+.14*(1-height)).lerp(memory,memoryBase+scar*memoryScar)
+    const memoryBase=active ? .034 : .005
+    const memoryScar=active ? .064 : .012
+    const color=deep.clone().lerp(mineral,.20+.50*height).lerp(lichen,.08+.14*(1-height)).lerp(memory,memoryBase+scar*memoryScar)
     colors.push(color.r,color.g,color.b)
   }
   position.needsUpdate=true
@@ -86,7 +88,7 @@ function memorySiteScarGeometry(point:Point3,seed:number,accent:string,active:bo
         const localY=lifeMapTerrainHeight(worldX,worldZ)-point[1]+.038+.006*Math.sin(step*1.41+side+branch)
         positions.push(localX,localY,localZ)
         const age=.42+.42*(1-t)+.10*Math.sin(step*.67+branch)
-        const accentWeight=(active?.085:.026)*(1-t*.62)
+        const accentWeight=(active?.070:.026)*(1-t*.62)
         const color=earth.clone().lerp(mineral,age).lerp(memory,accentWeight)
         colors.push(color.r,color.g,color.b)
       }
@@ -132,24 +134,24 @@ function MemoryOutcrop({node,index,active,reducedMotion,onSelect,arrival}:{node:
   useEffect(()=>()=>{geometry.dispose();scarGeometry.dispose()},[geometry,scarGeometry])
   useFrame(({clock})=>{if(!root.current||reducedMotion||!active)return;root.current.rotation.y=Math.sin(clock.elapsedTime*.12+seed)*.006})
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onSelect(node)}
-  const horizontalScale=arrival&&active ? .62 : .50
-  const verticalScale=arrival&&active ? 1.28 : 1.08
-  const depthScale=arrival&&active ? .56 : .46
-  const yOffset=arrival&&active ? -.20 : -.25
+  const horizontalScale=arrival&&active ? .60 : .50
+  const verticalScale=arrival&&active ? 1.22 : 1.08
+  const depthScale=arrival&&active ? .54 : .46
+  const yOffset=arrival&&active ? -.12 : -.25
   return <group position={point} name={`life-map-v242-memory-site-${node.id}`} userData={{artRevision:'v242-terrain-scar-memory-manifestation',visualRepair:'inactive-sites-are-geography-selected-site-rises-as-rooted-fold',semanticNode:node.id}} onClick={activate}>
     <mesh geometry={scarGeometry} receiveShadow name={`life-map-v242-terrain-scar-${node.id}`}><meshStandardMaterial vertexColors color="#89978e" roughness={1} metalness={0}/></mesh>
     {active?<group ref={root} position={[0,yOffset,0]} scale={[horizontalScale,verticalScale,depthScale]} rotation={[0,seeded(seed,22)*Math.PI*2,0]}>
-      <mesh geometry={geometry} receiveShadow><meshStandardMaterial vertexColors color="#839087" emissive={node.aura} emissiveIntensity={.050} roughness={.96} metalness={0}/></mesh>
+      <mesh geometry={geometry} receiveShadow><meshStandardMaterial vertexColors color="#7b837c" emissive={node.aura} emissiveIntensity={.018} roughness={.97} metalness={0}/></mesh>
     </group>:null}
-    <pointLight position={[0,active?.28:.05,0]} color={node.aura} intensity={active?.25:.020} distance={active?2.8:1.15} decay={2}/>
+    <pointLight position={[0,active?.44:.05,0]} color={node.aura} intensity={active?.10:.020} distance={active?2.4:1.15} decay={2}/>
   </group>
 }
 
 function SelectedSanctuary({node,index,reducedMotion}:{node:LifeMapNode;index:number;reducedMotion:boolean}){
   const point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node]),particles=useMemo(()=>sanctuaryParticles(nodeSeed(node,index)),[index,node])
   useEffect(()=>()=>particles.dispose(),[particles])
-  const opacity=reducedMotion ? .16 : .24
-  return <group position={[point[0],point[1]-.04,point[2]]} name="life-map-v242-intimate-memory-sanctuary" userData={{scaleMode:'intimate',visualIntent:'terrain-remains-authority-selected-memory-rises-from-scar-no-platform-no-ring'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.022} transparent opacity={opacity} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.0,.82,.6]} color={node.aura} intensity={.36} distance={4.0} decay={2}/><pointLight position={[1.25,.48,-.8]} color="#d6d0b7" intensity={.18} distance={3.6} decay={2}/></group>
+  const opacity=reducedMotion ? .14 : .20
+  return <group position={[point[0],point[1]-.04,point[2]]} name="life-map-v242-intimate-memory-sanctuary" userData={{scaleMode:'intimate',visualIntent:'terrain-remains-authority-selected-memory-rises-from-scar-no-platform-no-ring'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.020} transparent opacity={opacity} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.0,.82,.6]} color={node.aura} intensity={.22} distance={3.6} decay={2}/><pointLight position={[1.25,.48,-.8]} color="#d6d0b7" intensity={.14} distance={3.4} decay={2}/></group>
 }
 
 export function LifeMapGoldMasterOverlay({nodes,selected,phase,reducedMotion,onSelect}:Props){
