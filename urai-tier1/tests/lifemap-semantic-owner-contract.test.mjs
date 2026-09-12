@@ -20,11 +20,19 @@ test('semantic navigator invokes the authoritative world selection transaction w
   assert.match(scene, /onSelect=\{selectNode\}/)
 })
 
-test('selection delivery is one synchronous authoritative request with no duplicate broker retries', () => {
+test('selection delivery keeps immediate authority with one bounded render-ready redelivery', () => {
   assert.match(selection, /const detail = \{ nodeId, source \}/)
-  assert.match(selection, /window\.dispatchEvent\(new CustomEvent<LifeMapSelectionDetail>/)
-  assert.doesNotMatch(selection, /SELECTION_RETRY_DELAYS_MS|selectionWasAcknowledged|setTimeout|dispatchLifeMapSelection/)
-  assert.doesNotMatch(selection, /route\.searchParams|synthetic-selected|test-only-selected|forceSelected/)
+  assert.match(selection, /function dispatchLifeMapSelection\(detail: LifeMapSelectionDetail\)/)
+  assert.match(selection, /dispatchLifeMapSelection\(detail\)/)
+  assert.match(selection, /window\.requestAnimationFrame\(redeliverIfMissed\)/)
+  assert.match(selection, /route\.get\('overview'\) === '1' \|\| routeNode !== nodeId/)
+  assert.match(selection, /root\?\.dataset\.lifeMapMode === 'selected'/)
+  assert.match(selection, /root\?\.dataset\.lifeMapRenderReady === 'true'/)
+  assert.match(selection, /root\?\.dataset\.lifeMapPhase === 'overview'/)
+  assert.match(selection, /visibleAnchors >= 8/)
+  assert.match(selection, /frame >= 180/)
+  assert.doesNotMatch(selection, /setTimeout|synthetic-selected|test-only-selected|forceSelected/)
+  assert.doesNotMatch(selection, /setSelectedId|setPhase|router\.(?:push|replace)/)
 })
 
 test('semantic selection emits one authoritative event and synchronizes route identity without fallback retries', () => {
