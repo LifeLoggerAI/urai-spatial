@@ -27,6 +27,21 @@ function RetireSupersededShapes() {
   return null
 }
 
+function RetireNearMemoryBankSlabs() {
+  const { scene } = useThree()
+  const hidden = useRef(new Set<THREE.Object3D>())
+  useFrame(() => {
+    const group = scene.getObjectByName('home-v226-weathered-memory-banks')
+    group?.children.slice(0, 2).forEach((object) => {
+      if (!object.visible) return
+      object.visible = false
+      hidden.current.add(object)
+    })
+  })
+  useEffect(() => () => { hidden.current.forEach((object) => { object.visible = true }); hidden.current.clear() }, [])
+  return null
+}
+
 function SuppressLegacyShadowArtifacts() {
   const { scene } = useThree()
   const changed = useRef(new Map<THREE.Mesh, boolean>())
@@ -259,5 +274,5 @@ function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
 }
 
 export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
-  return <group name="home-current-authority-art-repair" userData={{artRevision:'v247-folded-orb-deeper-recessed-thresholds'}}><RetireSupersededShapes/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
+  return <group name="home-current-authority-art-repair" userData={{artRevision:'v247-folded-orb-deeper-recessed-thresholds'}}><RetireSupersededShapes/><RetireNearMemoryBankSlabs/><SuppressLegacyShadowArtifacts/><GroundThresholdV234 onGround={onGround}/><LifeMapThresholdV234 onLifeMap={onLifeMap}/><LivingMemoryHeartV234 state={orbState} reducedMotion={reducedMotion} onOrb={onOrb}/><SubtleAtmosphereV234 reducedMotion={reducedMotion}/></group>
 }
