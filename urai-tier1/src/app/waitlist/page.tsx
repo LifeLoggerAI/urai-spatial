@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation'
 
-export const metadata = { title: 'UrAi Early Access', description: 'Open the canonical UrAi early-access entry.' }
+export const metadata = {
+  title: 'UrAi Waitlist Status',
+  description: 'Open UrAi system status while durable early-access intake is unavailable.',
+}
 
 export default function WaitlistCompatibilityPage() {
-  redirect('/early-access?from=waitlist')
+  redirect('/status?from=waitlist')
 }
