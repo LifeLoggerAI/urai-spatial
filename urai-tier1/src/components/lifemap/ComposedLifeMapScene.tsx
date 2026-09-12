@@ -11,6 +11,7 @@ import type { LifeMapNode } from "./lifeMapData";
 import { LifeMapProductionWorld, type LifeMapJourneyPhase } from "./LifeMapProductionWorld";
 import { LifeMapGoldMasterOverlay } from "./LifeMapGoldMasterOverlay";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
+import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 
 const OVERVIEW_POSITION: [number, number, number] = [0, 6.2, 18.5];
 const OVERVIEW_TARGET: [number, number, number] = [0, -0.9, -18.0];
@@ -291,6 +292,20 @@ export default function ComposedLifeMapScene() {
     if (node.eraId) next.set("era", node.eraId);
     router.replace(`/life-map?${next.toString()}`, { scroll: false });
   }, [profile.reducedMotion, router, withIdentity]);
+
+  // Own semantic selection outside the suspended WebGL subtree. Keyboard and
+  // assistive-technology activation must update the selected memory even while
+  // software WebGL is still loading assets or has not published render-ready.
+  useEffect(() => {
+    const handleSelectionRequest = (event: Event) => {
+      const detail = readLifeMapSelection(event);
+      if (!detail) return;
+      const node = nodes.find((candidate) => candidate.id === detail.nodeId);
+      if (node) selectNode(node);
+    };
+    window.addEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
+    return () => window.removeEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
+  }, [nodes, selectNode]);
 
   const overview = useCallback(() => {
     const retainedId = selectedId || queryNode;

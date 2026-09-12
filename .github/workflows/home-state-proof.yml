@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'scripts/capture-home-state-proof.mjs'
+      - 'scripts/reconcile-home-orb-consent-proof.mjs'
+      - 'scripts/lib/home-orb-reconciliation-signature.mjs'
+      - 'scripts/test-home-orb-reconciliation-signature.mjs'
       - 'scripts/run-home-state-proof-bounded.mjs'
       - 'scripts/run-home-state-proof-v224.mjs'
       - 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
@@ -59,6 +62,9 @@ jobs:
           (cd urai-tier1 && node tests/continuous-spatial-restoration-contract.test.mjs)
           node --check scripts/run-home-state-proof-bounded.mjs
           node --check scripts/run-home-state-proof-v224.mjs
+          node --check scripts/reconcile-home-orb-consent-proof.mjs
+          node --check scripts/lib/home-orb-reconciliation-signature.mjs
+          node --test scripts/test-home-orb-reconciliation-signature.mjs
           pnpm build:static
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
       - name: Capture exact Home state proof

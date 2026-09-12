@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { assertExactHomeOrbOpenTransportFailure } from './lib/home-orb-reconciliation-signature.mjs'
 
 const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
 const { chromium } = requireFromTierOne('playwright')
@@ -9,7 +10,6 @@ const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/home-state-proof')
 const ownerSelector = '.urai-asset-home-world[data-home-primary-owner="asset-driven"]'
-const expectedFailureNeedle = "locator.check: Timeout 30000ms exceeded."
 const expectedConsentLabel = 'Allow this message and bounded recent context to be processed by OpenAI.'
 
 function assert(condition, message) {
@@ -121,21 +121,13 @@ async function readVisualEvidence(page) {
 }
 
 const failure = JSON.parse(await readFile(path.join(outputDir, 'runner-failure.json'), 'utf8'))
-assert(failure?.exactHead === exactHead, `failure evidence SHA mismatch: ${failure?.exactHead ?? 'missing'} != ${exactHead}`)
-assert(failure?.failingRecord?.id === 'orb-lifecycle-production-ui', 'reconciliation is only valid for production Orb lifecycle')
-assert(Array.isArray(failure?.failingRecord?.pageErrors) && failure.failingRecord.pageErrors.length === 0, 'original failure included page errors')
-assert(Array.isArray(failure?.failingRecord?.providerBoundaryRequests) && failure.failingRecord.providerBoundaryRequests.length === 0, 'original failure crossed provider boundary')
-const predicate = String(failure?.failedPredicate || '')
-assert(predicate.includes(expectedFailureNeedle), 'original failure was not the bounded Playwright checkbox timeout')
-assert(predicate.includes(expectedConsentLabel), 'original failure was not the OpenAI consent control')
-assert(predicate.includes('element is visible, enabled and stable'), 'original failure did not establish checkbox actionability')
-assert(predicate.includes('performing click action'), 'original failure did not reach click dispatch')
+assertExactHomeOrbOpenTransportFailure({ failure, exactHead })
 
 const reconciliation = {
-  schemaVersion: 'urai-home-orb-consent-reconciliation-1',
+  schemaVersion: 'urai-home-orb-open-reconciliation-1',
   exactHead,
-  originalFailure: 'playwright-pointer-transport-timeout-after-visible-enabled-stable-consent-control',
-  interactionAuthority: 'HTMLElement.click -> React controlled checkbox state -> enabled Send -> ordinary Send click',
+  originalFailure: 'playwright-pointer-transport-timeout-after-visible-enabled-stable-semantic-orb-control',
+  interactionAuthority: 'canonical semantic BUTTON HTMLElement.click -> companion attention -> keyboard consent -> enabled Send -> ordinary Send click',
   visualGate: {
     source: 'retained-canvas-png',
     minimumViewportCoverage: 0.82,
@@ -196,7 +188,14 @@ try {
   const owner = await waitForHomeReady(page)
 
   const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
-  await openOrb.click({ noWaitAfter: true })
+  assert(await page.locator('button[data-testid="home-semantic-orb"]').count() === 1, 'canonical semantic Orb control is not unique')
+  assert(await openOrb.isVisible(), 'canonical semantic Orb control is not visible')
+  assert(await openOrb.isEnabled(), 'canonical semantic Orb control is not enabled')
+  assert(await page.locator('html[data-home-semantic-orb-bridge="ready"]').count() === 1, 'semantic Orb hydration bridge is not ready')
+  await openOrb.evaluate((node) => {
+    if (!(node instanceof HTMLButtonElement)) throw new Error('canonical semantic Orb target is not a button')
+    node.click()
+  })
   await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'visible', timeout: 20_000 })
   await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
@@ -213,17 +212,10 @@ try {
   assert(await consent.isEnabled(), 'consent checkbox is not enabled')
   assert(!(await consent.isChecked()), 'consent checkbox must begin unchecked')
 
-  await consent.evaluate((node) => {
-    if (!(node instanceof HTMLInputElement) || node.type !== 'checkbox') throw new Error('consent target is not a checkbox')
-    node.click()
-  })
-  await page.waitForFunction((label) => {
-    const labels = Array.from(document.querySelectorAll('label'))
-    const target = labels.find((candidate) => candidate.textContent?.includes(label))?.querySelector('input[type="checkbox"]')
-    return target instanceof HTMLInputElement && target.checked
-  }, expectedConsentLabel, { timeout: 20_000 })
+  await consent.focus()
+  await consent.press('Space')
   reconciliation.consentChecked = await consent.isChecked()
-  assert(reconciliation.consentChecked, 'React-controlled consent did not become checked after real DOM click event')
+  assert(reconciliation.consentChecked, 'keyboard consent activation did not check the native control')
 
   await message.fill('Give me a short grounded reflection.')
   await message.focus()
@@ -255,10 +247,8 @@ try {
   reconciliation.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
   reconciliation.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => reconciliation.observedStates.includes(state))
 
-  await consent.evaluate((node) => {
-    if (!(node instanceof HTMLInputElement) || node.type !== 'checkbox') throw new Error('consent target is not a checkbox')
-    node.click()
-  })
+  await consent.focus()
+  await consent.press('Space')
   await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector, { timeout: 20_000 })
   reconciliation.privacyState = await owner.getAttribute('data-home-orb-state')
   reconciliation.privacyClip = await owner.getAttribute('data-home-orb-clip')

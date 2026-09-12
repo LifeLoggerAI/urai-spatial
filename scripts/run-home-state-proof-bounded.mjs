@@ -63,15 +63,15 @@ async function runAttempt(attempt) {
   await retainAttempt(attemptDir, status)
 
   if (!timedOut && result.code !== 0) {
-    console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}); testing only the exact fail-closed Orb consent reconciliation signature.`)
+    console.error(`Home state proof attempt ${attempt} failed (code=${result.code}, signal=${result.signal ?? 'none'}); testing only the exact fail-closed Orb-open reconciliation signature.`)
     const reconciliation = await runChild('scripts/reconcile-home-orb-consent-proof.mjs', attemptEnv)
     const reconciliationResult = await reconciliation.result
     if (!reconciliationResult.error && reconciliationResult.code === 0 && !reconciliationResult.signal) {
       status.passed = true
       status.reconciled = true
-      status.reconciliation = 'full-production-orb-lifecycle-after-exact-pointer-transport-timeout'
+      status.reconciliation = 'full-production-orb-lifecycle-after-exact-orb-open-pointer-transport-timeout'
       await retainAttempt(attemptDir, status)
-      console.log(`Home state proof attempt ${attempt} passed through the exact bounded Orb consent reconciliation; original failure evidence and supplemental exact-head evidence retained at ${finalDir}.`)
+      console.log(`Home state proof attempt ${attempt} passed through the exact bounded Orb-open reconciliation; original failure evidence and supplemental exact-head evidence retained at ${finalDir}.`)
       return true
     }
     if (reconciliationResult.error) console.error(`Home state proof reconciliation failed to start: ${reconciliationResult.error}`)

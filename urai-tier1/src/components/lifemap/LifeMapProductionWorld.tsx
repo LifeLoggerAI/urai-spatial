@@ -9,7 +9,6 @@ import CinematicPostProcessing from "@/spatial/cinematic/CinematicPostProcessing
 import type { SpatialQualityProfile } from "@/spatial/performance/useAdaptiveSpatialQuality";
 import { lifeMapLocalPoint as celestialNodePosition, lifeMapStage } from "./lifeMapSpatialLayout";
 import type { LifeMapNode } from "./lifeMapData";
-import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 import { LIFE_MAP_PATH_PALETTE, artifactFamilyLabel, artifactImportance, chapterForNode, resolveArtifactFamily, resolvePathKind } from "./lifeMapVisualSystem";
 
 // V237 literal-pixel authority: a continuous illuminated memory valley whose
@@ -730,17 +729,6 @@ export function LifeMapProductionWorld({ nodes, selected, phase, profile, onSele
   const portrait = size.height > size.width;
   const { scale: stageScale, position: stagePosition } = lifeMapStage(Boolean(selected), portrait);
   const starCount = profile.tier === "low" ? 420 : profile.tier === "medium" ? 760 : 1160;
-
-  useEffect(() => {
-    const handleSelectionRequest = (event: Event) => {
-      const detail = readLifeMapSelection(event);
-      if (!detail) return;
-      const node = nodes.find((candidate) => candidate.id === detail.nodeId);
-      if (node) onSelect(node);
-    };
-    window.addEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
-    return () => window.removeEventListener(LIFE_MAP_SELECTION_EVENT, handleSelectionRequest);
-  }, [nodes, onSelect]);
 
   return <LifeMapReducedMotionContext.Provider value={profile.reducedMotion}>
     <color attach="background" args={["#0a1a22"]} />
