@@ -39,8 +39,8 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
 })
 
 test('Focus formation is rooted in its vault and Replay preserves readable organic-edged media', () => {
-  assert.match(focus, /const centerX = -1\.32 \+ t \* 2\.64/)
-  assert.match(focus, /const centerY = -0\.66 \+ Math\.sin\(t \* Math\.PI\) \* 0\.72/)
+  assert.match(focus, /V217 literal-pixel authority: one connected selected manifestation rises from a continuous mineral cradle inside a weathered vault/)
+  assert.match(focus, /focus-v217-single-connected-memory-manifestation/)
   assert.match(focus, /focus-v216-memory-root-cradle/)
   assert.match(focus, /focus-v216-continuous-weathered-vault/)
   assert.match(replay, /new THREE\.PlaneGeometry\(13\.8, 7\.4/)
