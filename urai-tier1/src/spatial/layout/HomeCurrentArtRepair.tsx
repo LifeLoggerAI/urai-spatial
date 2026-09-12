@@ -164,28 +164,34 @@ function livingMemoryGeometry() {
     const angle = Math.atan2(nz, nx)
     const crown = THREE.MathUtils.smoothstep(ny, -.02, .95)
     const lower = THREE.MathUtils.smoothstep(-ny, .10, .98)
+    const upper = THREE.MathUtils.smoothstep(ny, .10, .92)
     const seamAxis = (nx + .16) * .88 + (nz - .05) * .46
     const centerCleft = Math.exp(-(seamAxis * seamAxis) / .038) * crown * (1.0 - .20 * Math.max(0, -nz))
     const leftLobe = Math.exp(-(((nx + .28) / .58) ** 2 + ((nz - .18) / .74) ** 2)) * crown
     const rightLobe = Math.exp(-(((nx - .38) / .78) ** 2 + ((nz + .30) / .56) ** 2)) * (.22 + .48 * crown)
     const forwardFold = Math.exp(-(((nz - .48) / .28) ** 2 + ((nx + .08) / .70) ** 2)) * (.30 + .70 * crown)
     const rearFold = Math.exp(-(((nz + .52) / .34) ** 2 + ((nx - .12) / .72) ** 2)) * (.18 + .50 * crown)
+    const leftShoulder = Math.exp(-(((ny - .28) / .30) ** 2 + ((nx + .74) / .30) ** 2)) * (.48 + .52 * Math.max(0, nz + .25))
+    const rightRecess = Math.exp(-(((ny - .38) / .27) ** 2 + ((nx - .72) / .27) ** 2)) * (.46 + .54 * Math.max(0, nz + .18))
     const side = Math.tanh((nx + .10) * 5.2)
     const weather = .050 * Math.sin(angle * 3.1 + ny * 5.4) + .022 * Math.sin(angle * 9.0 - ny * 7.4)
     const strata = .024 * Math.sin(ny * 16.0 + angle * 2.8)
     const rootTaper = THREE.MathUtils.lerp(.30, 1, THREE.MathUtils.smoothstep(ny, -.88, -.02))
-    const radial = 1 + weather + strata + .16 * leftLobe + .08 * rightLobe + .17 * forwardFold - .05 * rearFold
-    let x = nx * radial * .62 * rootTaper + side * crown * .07 + ny * .11 - .09
+    const silhouette = 1 + .20 * leftShoulder - .22 * rightRecess + .055 * Math.sin(ny * 5.1 + angle * 1.4) * (.25 + .75 * upper)
+    const radial = (1 + weather + strata + .16 * leftLobe + .08 * rightLobe + .17 * forwardFold - .05 * rearFold) * silhouette
+    let x = nx * radial * .62 * rootTaper + side * crown * .07 + ny * .11 - .09 - upper * .055
     let z = nz * radial * .70 * rootTaper + .11 * forwardFold - .055 * rearFold + .030 * Math.sin(ny * 6.3 + angle * 2.1)
     const twist = (ny + .10) * .42 + .06 * Math.sin(ny * 3.1)
     const cos = Math.cos(twist), sin = Math.sin(twist), tx = x * cos - z * sin, tz = x * sin + z * cos
     x = tx; z = tz
     let y = ny * 1.22 - .20 * centerCleft + .10 * leftLobe - .04 * rightLobe + .12 * forwardFold
+    y += upper * (.13 * Math.max(0, -nx) - .055 * Math.max(0, nx))
+    y += .08 * leftShoulder - .045 * rightRecess
     y -= lower * (.20 + .18 * lower)
     x += lower * -.10
     position.setXYZ(index, x, y, z)
     const h = THREE.MathUtils.clamp((y + 1.35) / 2.60, 0, 1)
-    const scarWeight = THREE.MathUtils.clamp(centerCleft + Math.abs(strata) * 5.0 + forwardFold * .20, 0, 1)
+    const scarWeight = THREE.MathUtils.clamp(centerCleft + Math.abs(strata) * 5.0 + forwardFold * .20 + rightRecess * .18, 0, 1)
     const color = deep.clone().lerp(tissue, .18 + .56 * h).lerp(scarColor, .020 + .25 * scarWeight)
     colors.push(color.r, color.g, color.b)
   }
