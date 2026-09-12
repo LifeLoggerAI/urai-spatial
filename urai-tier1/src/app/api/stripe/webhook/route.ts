@@ -2,18 +2,24 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import type { InsightPlanId } from '@/lib/entitlementStore';
 import {
-  defaultEntitlement,
+  applyStripeEntitlementEvent,
   findEntitlementByStripeCustomer,
   mapStripeStatus,
   type SubscriptionStatus,
-  upsertEntitlement,
 } from '@/lib/entitlementStore';
+import {
+  parseStripeRuntimeMode,
+  stripeLivemodeMatchesRuntime,
+  stripeRuntimeMatchesSecret,
+} from '@/lib/server/stripe-runtime-config';
 
 const WEBHOOK_EVENTS = new Set([
   'checkout.session.completed',
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'invoice.paid',
+  'invoice.payment_failed',
 ]);
 
 function isPlanId(value: unknown): value is InsightPlanId {
@@ -31,10 +37,22 @@ function customerIdFrom(value: string | Stripe.Customer | Stripe.DeletedCustomer
   return value.id ?? null;
 }
 
-function subscriptionIdFrom(value: string | Stripe.Subscription | null | undefined): string | null {
+function subscriptionIdFromUnknown(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === 'string') return value;
-  return value.id ?? null;
+  if (typeof value === 'object' && 'id' in value) {
+    const id = (value as { id?: unknown }).id;
+    return typeof id === 'string' ? id : null;
+  }
+  return null;
+}
+
+function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const legacy = subscriptionIdFromUnknown((invoice as unknown as { subscription?: unknown }).subscription);
+  if (legacy) return legacy;
+  return subscriptionIdFromUnknown(
+    (invoice as unknown as { parent?: { subscription_details?: { subscription?: unknown } } }).parent?.subscription_details?.subscription,
+  );
 }
 
 async function resolveSubscription(
@@ -57,7 +75,7 @@ async function resolveSubscription(
     const session = payload as Stripe.Checkout.Session;
     metadata = session.metadata ?? undefined;
     customerId = customerIdFrom(session.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
-    subscriptionId = subscriptionIdFrom(session.subscription as string | Stripe.Subscription | null);
+    subscriptionId = subscriptionIdFromUnknown(session.subscription);
 
     if (subscriptionId) {
       try {
@@ -67,6 +85,23 @@ async function resolveSubscription(
         stripeStatus = subscription.status;
       } catch (error) {
         console.warn('Stripe webhook could not fetch checkout subscription', { subscriptionId, error });
+      }
+    } else if (metadata?.planId === 'founder') {
+      stripeStatus = session.payment_status === 'paid' ? 'active' : 'none';
+    }
+  } else if (eventType === 'invoice.paid' || eventType === 'invoice.payment_failed') {
+    const invoice = payload as Stripe.Invoice;
+    customerId = customerIdFrom(invoice.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
+    subscriptionId = invoiceSubscriptionId(invoice);
+
+    if (subscriptionId) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        metadata = subscription.metadata ?? undefined;
+        customerId = customerId ?? customerIdFrom(subscription.customer as string | Stripe.Customer | Stripe.DeletedCustomer);
+        stripeStatus = eventType === 'invoice.payment_failed' ? 'past_due' : subscription.status;
+      } catch (error) {
+        console.warn('Stripe webhook could not fetch invoice subscription', { subscriptionId, error });
       }
     }
   } else {
@@ -104,15 +139,19 @@ export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const secretKey = process.env.STRIPE_SECRET_KEY;
+  const stripeMode = parseStripeRuntimeMode(process.env.URAI_STRIPE_MODE);
 
-  if (!signature || !webhookSecret || !secretKey) {
+  if (!signature || !webhookSecret || !secretKey || !stripeMode) {
     return NextResponse.json({ error: 'Missing Stripe webhook configuration' }, { status: 400 });
+  }
+
+  if (!stripeRuntimeMatchesSecret(stripeMode, secretKey)) {
+    return NextResponse.json({ error: 'Stripe credential mode mismatch' }, { status: 500 });
   }
 
   const stripeModule = await import('stripe');
   const StripeClient = stripeModule.default;
   const stripe = new StripeClient(secretKey);
-
   const rawBody = await request.text();
 
   let event: Stripe.Event;
@@ -123,6 +162,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
+  if (!stripeLivemodeMatchesRuntime(event.livemode, stripeMode)) {
+    console.warn('Stripe webhook rejected cross-mode event', { eventId: event.id, type: event.type });
+    return NextResponse.json({ error: 'Stripe event mode mismatch' }, { status: 400 });
+  }
+
   if (!WEBHOOK_EVENTS.has(event.type)) {
     return NextResponse.json({ received: true, ignored: true });
   }
@@ -131,6 +175,7 @@ export async function POST(request: Request) {
 
   if (!resolved.userId) {
     console.warn('Stripe webhook skipped event without resolvable userId', {
+      eventId: event.id,
       type: event.type,
       customerId: resolved.customerId,
       subscriptionId: resolved.subscriptionId,
@@ -140,6 +185,7 @@ export async function POST(request: Request) {
 
   if (!resolved.planId) {
     console.warn('Stripe webhook skipped event without supported planId metadata', {
+      eventId: event.id,
       type: event.type,
       userId: resolved.userId,
       customerId: resolved.customerId,
@@ -148,15 +194,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: 'missing-plan' });
   }
 
-  await upsertEntitlement({
-    ...defaultEntitlement(resolved.userId),
+  const result = await applyStripeEntitlementEvent({
+    eventId: event.id,
+    eventType: event.type,
+    eventCreated: event.created,
     userId: resolved.userId,
     planId: resolved.planId,
     stripeCustomerId: resolved.customerId,
     stripeSubscriptionId: resolved.subscriptionId,
     subscriptionStatus: resolved.subscriptionStatus,
-    updatedAt: Date.now(),
   });
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true, result });
 }

@@ -76,10 +76,12 @@ async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, inputDispatch: testCase.method === 'keyboard' ? 'focused-enter' : 'browser-coordinate-hit', viewport: testCase.viewport, targetAccessibleName: doorway.name, targetTestId: doorway.testId, resultingUrl: '', screenshot, semanticNavigationOwner: 'runtime-boundary', semanticNavigationNonDominant: false, homeRuntimeHydrated: false, legacyVisibleDoorways: 0, targetOwnsHitPoint: false, hitPoint: null, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
+    await page.waitForFunction(() => document.body.classList.contains('urai-home-webgl-active'), null, { timeout: 45000 })
+    record.homeRuntimeHydrated = true
     const target = await resolveTarget(page, doorway)
     record.legacyVisibleDoorways = await page.locator('.urai-final-home-doorways:visible').count()
     record.semanticNavigationNonDominant = await target.evaluate((node) => {
@@ -120,7 +122,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 10, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 11, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', hydratedRuntimeRequiredBeforeActivation: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))

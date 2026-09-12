@@ -149,7 +149,7 @@ jobs:
           name: urai-receipt-ledger-${{ env.TARGET_SHA }}-${{ github.run_attempt }}
           path: receipt-ledger/
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
 
       - name: Summary
         shell: bash
@@ -161,6 +161,7 @@ jobs:
             echo "- SHA: \`${TARGET_SHA}\`"
             echo "- Event: \`${GITHUB_EVENT_NAME}\`"
             echo '- Mode: read-only, non-deploying, no credentials, no live production contact'
-            echo '- Artifact retention: 365 days'
+            echo '- GitHub artifact retention: 90 days'
+            echo '- Longer-lived evidence requires a separately verified durable archive'
             echo '- Download verification: `sha256sum -c bundle.sha256` from the extracted artifact root'
           } >> "$GITHUB_STEP_SUMMARY"
