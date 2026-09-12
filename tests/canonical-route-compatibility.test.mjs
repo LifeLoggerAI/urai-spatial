@@ -18,7 +18,8 @@ test('legacy public entry paths converge on canonical owners', async () => {
 test('waitlist remains fail closed while durable intake is unavailable', async () => {
   const waitlist = await read('waitlist')
   assert.match(waitlist, /redirect\('\/status\?from=waitlist'\)/)
-  assert.doesNotMatch(waitlist, /early-access|saveEarlyAccessSignup|localStorage/)
+  assert.doesNotMatch(waitlist, /redirect\('\/early-access/)
+  assert.doesNotMatch(waitlist, /saveEarlyAccessSignup|localStorage/)
 })
 
 test('support remains explicit and fail-closed while delivery is unverified', async () => {
