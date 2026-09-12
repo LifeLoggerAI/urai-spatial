@@ -149,14 +149,12 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
 
   .mirrorWorld .mirrorInspection::after {
     content: 'Scroll for complete evidence';
-    position: sticky;
+    position: static;
     display: block;
-    left: 0;
-    bottom: -18px;
-    margin-top: 14px;
+    margin-top: 18px;
     padding: 8px 0 2px;
     color: #9ceef4;
-    background: linear-gradient(transparent, rgba(3, 13, 23, .88) 44%);
+    background: linear-gradient(90deg, transparent, rgba(3, 13, 23, .72) 18% 82%, transparent);
     font: 800 9px/1.2 system-ui;
     letter-spacing: .14em;
     text-align: center;
