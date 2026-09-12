@@ -17,8 +17,10 @@ test('legacy public entry paths converge on canonical owners', async () => {
 
 test('waitlist remains fail closed while durable intake is unavailable', async () => {
   const waitlist = await read('waitlist')
+  const unsafeEarlyAccessRedirect = /redirect\s*\(\s*['"`]\/early-access/
   assert.match(waitlist, /redirect\('\/status\?from=waitlist'\)/)
-  assert.doesNotMatch(waitlist, /redirect\('\/early-access/)
+  assert.doesNotMatch(waitlist, unsafeEarlyAccessRedirect)
+  for (const quote of ["'", '"', '`']) assert.match(`redirect(${quote}/early-access${quote})`, unsafeEarlyAccessRedirect)
   assert.doesNotMatch(waitlist, /saveEarlyAccessSignup|localStorage/)
 })
 
