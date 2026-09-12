@@ -129,9 +129,9 @@ test('Founder proof observes the real production state machine without a product
   assert.doesNotMatch(runner, /setPhase\(|PHASE_DURATION_MS\s*=|window\.setTimeout\s*=/)
 })
 
-test('restored Life Map route preserves URL identity but commits arrival only after that id resolves to a real node', () => {
+test('restored Life Map route preserves URL identity, initializes selected routes in arrival, and retains real-node reconciliation', () => {
   assert.match(scene, /const \[selectedId, setSelectedId\] = useState<string \| null>\(overviewRequested \? null : queryNode \|\| null\)/)
-  assert.match(scene, /const \[phase, setPhase\] = useState<JourneyPhase>\("overview"\)/)
+  assert.match(scene, /const \[phase, setPhase\] = useState<JourneyPhase>\(\(\) => !overviewRequested && queryNode \? "arrival" : "overview"\)/)
   assert.match(scene, /const restoredRoutePending = useRef\(Boolean\(!overviewRequested && queryNode\)\)/)
   assert.match(scene, /const node = nodes\.find\(\(candidate\) => candidate\.id === queryNode\)/)
   assert.match(scene, /setSelectedId\(node\.id\);\s*setPhase\("arrival"\)/)
