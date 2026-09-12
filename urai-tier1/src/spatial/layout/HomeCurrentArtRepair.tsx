@@ -130,6 +130,7 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   return <group position={[GROUND.x, y + .58, GROUND.z]} rotation={[0, -.08, 0]} name="home-v234-ground-scanned-stone-threshold" onClick={activate} userData={{ artRevision: 'v247-recessed-ground-cleft', visualIntent: 'eroded-cavern-cleft-owned-by-small-recessed-real-rock-without-foreground-slab', semanticOwner: 'home-current-ground-geological-descent', morphology: 'weathered-world-emergent-descent' }}>
     <Suspense fallback={null}>
       <ScannedRock variant="01" position={[-.43, -.34, -.96]} rotation={[.20, .78, -.18]} scale={[1.30, 1.94, .86]} />
+      <ScannedRock variant="02" position={[.43, -.35, -.98]} rotation={[-.16, -.88, .16]} scale={[1.28, 1.90, .84]} />
       <ScannedRock variant="02" position={[-.28, .48, -1.02]} rotation={[.36, .44, .36]} scale={[.98, .80, .68]} />
       <ScannedRock variant="01" position={[.25, .53, -1.06]} rotation={[-.30, -.40, -.32]} scale={[.96, .78, .66]} />
       <ScannedRock variant="01" position={[-.63, -.04, -.90]} rotation={[.06, 1.08, -.08]} scale={[.70, 1.10, .66]} />
