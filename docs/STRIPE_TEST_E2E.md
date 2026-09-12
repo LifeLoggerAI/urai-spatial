@@ -4,26 +4,37 @@ This document records TEST-MODE evidence only. It does not authorize or claim pr
 
 ## Stripe authority
 
-- Account context: `acct_1Rpewk5ab9DrqB5j`
+- Current connected TEST account context: `acct_1Rpewx8HkbHala8x`
 - Required runtime mode for this evidence: `URAI_STRIPE_MODE=test`
-- All catalog objects below were created/read with `livemode=false`.
+- All current catalog objects below were created/read with `livemode=false`.
+- Earlier TEST account `acct_1Rpewk5ab9DrqB5j` and its objects are predecessor evidence only and must not be mixed with the current connected sandbox.
 
 ## Current test catalog
 
-| Plan | Billing mode | Test product | Test price |
-| --- | --- | --- | --- |
-| `pro` | recurring monthly | `prod_VCjCRG7hVcM3Uk` | `price_1UCJjd5ab9DrqB5jpiNbPjJg` |
-| `therapist` | recurring monthly | `prod_VCjdJizEN281Xe` | `price_1UCKAf5ab9DrqB5jkiWVNTNw` |
-| `founder` | one-time | `prod_VCjeE6gWoGOyLD` | `price_1UCKAk5ab9DrqB5jg2IkXHcC` |
+| Plan | Billing mode | Test product | Test price | Amount |
+| --- | --- | --- | --- | ---: |
+| `pro` | recurring monthly | `prod_VFOw6qUl8BmFSz` | `price_1UEu938HkbHala8xOETEzsP9` | `$10.00/mo` |
+| `therapist` | recurring monthly | `prod_VFOw6qUl8BmFSz` | `price_1UEu9D8HkbHala8xaoW95vYg` | `$29.99/mo` |
+| `founder` | one-time | `prod_VFOzlRr9uiGTAl` | `price_1UEuBr8HkbHala8xugI8Jdlp` | `$1.00 TEST smoke` |
 
-The nominal test prices are provider-smoke values and are not production pricing.
+The Pro and Therapist amounts reflect the current test integration target. The Founder amount is deliberately a provider-smoke value only because production Founder pricing is not source-authorized. None of these TEST objects are production billing authority.
 
-## Retained synthetic lifecycle evidence
+Stable TEST lookup keys:
+
+- `urai_monthly_10`
+- `urai_monthly_2999`
+- `urai_founder_test_smoke`
+
+## Historical synthetic lifecycle evidence
+
+The following synthetic lifecycle objects belong to predecessor TEST account `acct_1Rpewk5ab9DrqB5j` and remain historical diagnostics only:
 
 - Synthetic customer: `cus_VCjCi3Z7JX2tUL`
 - Synthetic Pro subscription: `sub_1UCJkN5ab9DrqB5jsSZSoaC0`
 - Lifecycle exercised: `trialing -> canceled`
 - Test invoice: `in_1UCJkN5ab9DrqB5jIUWX3l6i` (zero-dollar trial invoice)
+
+They do not certify the current connected account. Fresh lifecycle evidence must be earned after an exact reviewed non-production deployment is bound to the current account.
 
 No real customer identity or cardholder data is required for these receipts.
 
@@ -35,10 +46,10 @@ Never commit secret values. A non-production deployment must bind all of the fol
 URAI_STRIPE_MODE=test
 STRIPE_SECRET_KEY=<test secret, provider secret store only>
 STRIPE_WEBHOOK_SECRET=<test endpoint signing secret, provider secret store only>
-NEXT_PUBLIC_STRIPE_PRICE_PRO=price_1UCJjd5ab9DrqB5jpiNbPjJg
-NEXT_PUBLIC_STRIPE_PRICE_THERAPIST=price_1UCKAf5ab9DrqB5jkiWVNTNw
-NEXT_PUBLIC_STRIPE_PRICE_FOUNDER=price_1UCKAk5ab9DrqB5jg2IkXHcC
-STRIPE_BILLING_PORTAL_CONFIGURATION=<optional test portal configuration>
+NEXT_PUBLIC_STRIPE_PRICE_PRO=price_1UEu938HkbHala8xOETEzsP9
+NEXT_PUBLIC_STRIPE_PRICE_THERAPIST=price_1UEu9D8HkbHala8xaoW95vYg
+NEXT_PUBLIC_STRIPE_PRICE_FOUNDER=price_1UEuBr8HkbHala8xugI8Jdlp
+STRIPE_BILLING_PORTAL_CONFIGURATION=<test portal configuration once provider-side configuration exists>
 ```
 
 `URAI_STRIPE_MODE` fails closed unless it is exactly `test` or `production`. Test evidence must never be copied into a production deployment receipt.
@@ -86,12 +97,12 @@ Relevant states are `none`, `trialing`, `active`, `past_due`, `incomplete`, and 
 
 `/api/stripe/create-portal-session` is server-authenticated. It resolves the Stripe customer from the authenticated user's server-owned entitlement record; callers cannot provide an arbitrary Stripe customer ID. Return URLs use the same origin allowlist as Checkout.
 
-A provider-side test Billing Portal configuration may still be required before this route can be exercised, depending on Stripe account settings.
+The current connected Stripe API surface lists no Billing Portal configuration and does not expose a create-configuration mutation. A provider-side TEST Billing Portal configuration remains required before this route can be exercised with an explicit `STRIPE_BILLING_PORTAL_CONFIGURATION` binding.
 
 ## Exact test procedure once a verified non-production endpoint exists
 
 1. Deploy an exact reviewed source SHA to a non-production environment.
-2. Verify `URAI_STRIPE_MODE=test` and test Price IDs are bound there.
+2. Verify `URAI_STRIPE_MODE=test` and the current account's test Price IDs are bound there.
 3. Create a TEST webhook endpoint only for the verified HTTPS staging webhook URL.
 4. Store its signing secret only in the approved provider secret mechanism.
 5. Complete authenticated test Checkout with synthetic data.
@@ -105,4 +116,4 @@ A provider-side test Billing Portal configuration may still be required before t
 
 ## Current provider boundary
 
-As of this receipt, no verified non-production HTTPS Stripe webhook deployment with exact deployed SHA and test-secret binding has been established in the available evidence. Do not create a Stripe webhook endpoint by guessing a staging URL, and do not route test Stripe events to production `urai.app` without explicit deployment/governance authority.
+The current connected TEST account now has a complete three-plan catalog, but no verified non-production HTTPS Stripe webhook deployment with exact deployed SHA and current-account test-secret binding has been established in the available evidence. No webhook endpoint was created by guessing a staging URL. No TEST event is routed to production `urai.app`, and live billing remains unauthorized.
