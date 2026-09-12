@@ -298,7 +298,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     }
 
     const consent = page.getByLabel('Allow this message and bounded recent context to be processed by OpenAI.').first()
-    await consent.check({ noWaitAfter: true })
+    await consent.focus()
+    await consent.press('Space')
+    if (!(await consent.isChecked())) throw new Error('Orb consent keyboard activation did not check the native control')
     await message.fill('Give me a short grounded reflection.')
     await message.focus()
     const send = page.getByRole('button', { name: 'Send' }).first()
@@ -324,7 +326,9 @@ async function captureOrbLifecycle({ reducedMotion = 'no-preference' } = {}) {
     record.observedStates = await page.evaluate(() => window.__uraiObservedOrbStates || [])
     record.lifecyclePassed = ['attention', 'listening', 'thinking', 'speaking'].every((state) => record.observedStates.includes(state))
 
-    await consent.uncheck({ noWaitAfter: true })
+    await consent.focus()
+    await consent.press('Space')
+    if (await consent.isChecked()) throw new Error('Orb consent keyboard activation did not uncheck the native control')
     await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'privacy', ownerSelector)
     record.privacyState = await owner.getAttribute('data-home-orb-state')
     record.privacyClip = await owner.getAttribute('data-home-orb-clip')
