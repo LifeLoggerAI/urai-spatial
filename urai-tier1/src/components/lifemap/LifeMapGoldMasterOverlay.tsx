@@ -131,18 +131,18 @@ function MemoryOutcrop({node,index,active,reducedMotion,onSelect,arrival}:{node:
   useEffect(()=>()=>{geometry.dispose();scarGeometry.dispose()},[geometry,scarGeometry])
   useFrame(({clock})=>{if(!root.current||reducedMotion||!active)return;root.current.rotation.y=Math.sin(clock.elapsedTime*.12+seed)*.006})
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onSelect(node)}
-  const inactiveScale=.50+seeded(seed,73)*.16
-  const horizontalScale=arrival&&active ? .90 : active ? .88 : inactiveScale
-  const verticalScale=active ? .18 : .12
-  const depthScale=active ? .76 : inactiveScale*.82
-  const yOffset=active ? -.44 : -.48
-  const emissiveIntensity=active ? .024 : .001
-  const lightIntensity=active ? .18 : .004
-  return <group position={point} name={`life-map-v240-memory-site-${node.id}`} userData={{artRevision:'v240-rooted-scarred-asymmetric-memory-site',visualRepair:'terrain-coupled-mineral-scar-field',semanticNode:node.id}} onClick={activate}>
-    <mesh geometry={scarGeometry} receiveShadow name={`life-map-v240-terrain-scar-${node.id}`}><meshStandardMaterial vertexColors color="#8b958d" roughness={1} metalness={0}/></mesh>
+  const inactiveScale=.25+seeded(seed,73)*.07
+  const horizontalScale=arrival&&active ? .46 : active ? .42 : inactiveScale
+  const verticalScale=arrival&&active ? .72 : active ? .62 : .36
+  const depthScale=arrival&&active ? .42 : active ? .38 : inactiveScale*.82
+  const yOffset=active ? -.24 : -.36
+  const emissiveIntensity=active ? .020 : .001
+  const lightIntensity=active ? .16 : .003
+  return <group position={point} name={`life-map-v241-memory-site-${node.id}`} userData={{artRevision:'v241-rooted-folded-memory-crest',visualRepair:'terrain-scar-plus-embedded-mineral-crest',semanticNode:node.id}} onClick={activate}>
+    <mesh geometry={scarGeometry} receiveShadow name={`life-map-v241-terrain-scar-${node.id}`}><meshStandardMaterial vertexColors color="#78847c" roughness={1} metalness={0}/></mesh>
     <group ref={root} position={[0,yOffset,0]} scale={[horizontalScale,verticalScale,depthScale]} rotation={[0,seeded(seed,22)*Math.PI*2,0]}>
-      <mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial vertexColors color="#909a91" emissive={node.aura} emissiveIntensity={emissiveIntensity} roughness={.99} metalness={0}/></mesh>
-      <pointLight position={[0,.08,0]} color={node.aura} intensity={lightIntensity} distance={active?2.8:.8} decay={2}/>
+      <mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial vertexColors color="#69756e" emissive={node.aura} emissiveIntensity={emissiveIntensity} roughness={.99} metalness={0}/></mesh>
+      <pointLight position={[0,.10,0]} color={node.aura} intensity={lightIntensity} distance={active?2.4:.7} decay={2}/>
     </group>
   </group>
 }
@@ -150,8 +150,8 @@ function MemoryOutcrop({node,index,active,reducedMotion,onSelect,arrival}:{node:
 function SelectedSanctuary({node,index,reducedMotion}:{node:LifeMapNode;index:number;reducedMotion:boolean}){
   const point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node]),particles=useMemo(()=>sanctuaryParticles(nodeSeed(node,index)),[index,node])
   useEffect(()=>()=>particles.dispose(),[particles])
-  const opacity=reducedMotion ? .14 : .21
-  return <group position={[point[0],point[1]-.08,point[2]]} name="life-map-v240-intimate-memory-sanctuary" userData={{scaleMode:'intimate',visualIntent:'existing-terrain-remains-authority-no-platform-no-ring'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.022} transparent opacity={opacity} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.1,.72,.6]} color={node.aura} intensity={.32} distance={4.0} decay={2}/><pointLight position={[1.4,.42,-.9]} color="#d6d0b7" intensity={.18} distance={3.6} decay={2}/></group>
+  const opacity=reducedMotion ? .13 : .19
+  return <group position={[point[0],point[1]-.08,point[2]]} name="life-map-v241-intimate-memory-sanctuary" userData={{scaleMode:'intimate',visualIntent:'existing-terrain-remains-authority-no-platform-no-ring'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.020} transparent opacity={opacity} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.1,.72,.6]} color={node.aura} intensity={.28} distance={3.6} decay={2}/><pointLight position={[1.4,.42,-.9]} color="#d6d0b7" intensity={.16} distance={3.4} decay={2}/></group>
 }
 
 export function LifeMapGoldMasterOverlay({nodes,selected,phase,reducedMotion,onSelect}:Props){
@@ -159,5 +159,5 @@ export function LifeMapGoldMasterOverlay({nodes,selected,phase,reducedMotion,onS
   useEffect(()=>()=>trail.dispose(),[trail])
   const selectedIndex=selected?Math.max(0,nodes.findIndex((node)=>node.id===selected.id)):-1,arrival=Boolean(selected&&phase==='arrival')
   const visibleNodes=arrival&&selected?[selected]:nodes
-  return <><RetireRejectedLifeMapVisuals/><group name="life-map-v240-gold-master-world" scale={stage.scale} position={stage.position} userData={{artRevision:'v240-scarred-memory-geography-no-arrival-platform',visualRepair:'terrain-coupled-memory-scar-field'}}><mesh geometry={trail} receiveShadow name="life-map-v240-eroded-lineage-footpath"><meshStandardMaterial vertexColors color="#8d806b" roughness={1} metalness={0}/></mesh><group name="life-map-v240-grounded-memory-sites">{visibleNodes.map((node)=>{const index=Math.max(0,nodes.findIndex((candidate)=>candidate.id===node.id));return <MemoryOutcrop key={node.id} node={node} index={index} active={selected?.id===node.id} arrival={arrival} reducedMotion={reducedMotion} onSelect={onSelect}/>})}</group>{arrival&&selected?<SelectedSanctuary node={selected} index={selectedIndex} reducedMotion={reducedMotion}/>:null}</group></>
+  return <><RetireRejectedLifeMapVisuals/><group name="life-map-v241-gold-master-world" scale={stage.scale} position={stage.position} userData={{artRevision:'v241-rooted-folded-memory-crests',visualRepair:'terrain-scar-plus-embedded-memory-crests'}}><mesh geometry={trail} receiveShadow name="life-map-v241-eroded-lineage-footpath"><meshStandardMaterial vertexColors color="#8d806b" roughness={1} metalness={0}/></mesh><group name="life-map-v241-grounded-memory-sites">{visibleNodes.map((node)=>{const index=Math.max(0,nodes.findIndex((candidate)=>candidate.id===node.id));return <MemoryOutcrop key={node.id} node={node} index={index} active={selected?.id===node.id} arrival={arrival} reducedMotion={reducedMotion} onSelect={onSelect}/>})}</group>{arrival&&selected?<SelectedSanctuary node={selected} index={selectedIndex} reducedMotion={reducedMotion}/>:null}</group></>
 }
