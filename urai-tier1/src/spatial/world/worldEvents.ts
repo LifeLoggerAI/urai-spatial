@@ -121,8 +121,15 @@ export function requestUraiWorldReturn() {
 export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) {
   if (typeof window === 'undefined') return
   pendingOrbOpenDetail = { returnFocusTo }
-  dispatchSpatialAudioCue('orb-confirm')
-  window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail: pendingOrbOpenDetail }))
+  // Keep the native semantic button as the single activation owner. Dispatch on
+  // the next task so React/flushSync companion work cannot hold the browser's
+  // native pointer transport open, while the pending detail keeps pre-hydration
+  // activation lossless for the companion's existing pending-request consumer.
+  window.setTimeout(() => {
+    const detail = pendingOrbOpenDetail ?? { returnFocusTo }
+    dispatchSpatialAudioCue('orb-confirm')
+    window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail }))
+  }, 0)
 }
 
 /**

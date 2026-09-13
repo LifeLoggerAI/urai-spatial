@@ -89,13 +89,15 @@ test('relationship language is sparse, contextual, and selected-memory aware', (
   assert.match(overlay, /opacity=\{selected \? \.11 : \.055\}/)
 })
 
-test('portrait overview is a composed world view rather than tiny geography under dead sky', () => {
-  assert.match(layoutSource, /scale: \[1\.16, 1\.34, 1\.08\], position: \[0, -\.94, 2\.10\]/)
-  assert.match(layoutSource, /2\.35 \* stage\.scale\[0\]/)
-  assert.match(layoutSource, /const forward = Math\.max\(22, halfWidth \/ \(horizontalTan \* \.88\)\)/)
-  assert.match(layoutSource, /target\[1\] \+ 10\.8/)
-  assert.match(layoutSource, /target\[1\] - 1\.02/)
-  assert.match(layoutSource, /target\[2\] - 3\.10/)
+test('portrait overview composes the full celestial memory volume without dead-sky collapse', () => {
+  assert.match(layoutSource, /const jitterY = .* \* 5\.4/)
+  assert.match(layoutSource, /z \* 1\.82 - 8\.0 \+ jitterZ/)
+  assert.match(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
+  assert.match(layoutSource, /const widthDistance = halfWidth \/ Math\.max\(horizontalTan \* \.88, \.08\)/)
+  assert.match(layoutSource, /const heightDistance = halfHeight \/ Math\.max\(verticalTan \* \.86, \.08\)/)
+  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 34 : 24, widthDistance, heightDistance\)/)
+  assert.match(layoutSource, /nearestZ \+ distance/)
+  assert.doesNotMatch(layoutSource, /lifeMapTerrainHeight\(x, worldZ\) \+ \.62 \+ narrativeLift/)
   assert.doesNotMatch(layoutSource, /scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\]/)
   assert.doesNotMatch(layoutSource, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
