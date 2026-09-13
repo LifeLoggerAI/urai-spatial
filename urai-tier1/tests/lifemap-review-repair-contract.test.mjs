@@ -55,9 +55,7 @@ test('retired hidden Life Map visual owners lose pointer authority and restore i
 
 test('V256 semantic memory families cannot collapse back to one repeated manifestation', () => {
   assert.match(legacyOverlay, /function semanticFamilyParts\(/)
-  for (const family of ['memory', 'season', 'ritual', 'forecast', 'threshold', 'relationship', 'recovery']) {
-    assert.match(legacyOverlay, new RegExp(`node\\.type === '${family}'`))
-  }
+  for (const family of ['memory', 'season', 'ritual', 'forecast', 'threshold', 'relationship', 'recovery']) assert.match(legacyOverlay, new RegExp(`node\\.type === '${family}'`))
   assert.match(legacyOverlay, /const spiralPoints/)
   assert.match(legacyOverlay, /semanticFamilies: 'memory-season-ritual-forecast-threshold-relationship-recovery-legacy'/)
   assert.match(legacyOverlay, /semanticFamily: node\.type/)
@@ -68,25 +66,20 @@ test('visible terrain authority rejects repeated procedural banding in source an
   assert.match(legacyOverlay, /life-map-v256-authored-memory-terrain/)
   assert.match(legacyOverlay, /visualAuthority: 'authored-chapter-geography'/)
   assert.match(legacyOverlay, /life-map-v256-authored-chapter-territories/)
-  assert.match(layoutSource, /const chapterMasses/)
-  assert.match(layoutSource, /const outcrops/)
-  assert.match(layoutSource, /const livedCuts/)
-  assert.match(layoutSource, /const authoredScars/)
-  assert.match(layoutSource, /const lateralBanks/)
-  assert.match(layoutSource, /const chapterShelves/)
-  assert.match(layoutSource, /const ravines/)
-  assert.match(layoutSource, /function valueNoise2D/)
+  for (const marker of ['const chapterMasses','const outcrops','const livedCuts','const authoredScars','const lateralBanks','const chapterShelves','const ravines','function valueNoise2D']) assert.match(layoutSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.doesNotMatch(layoutSource, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
   assert.doesNotMatch(layoutSource, /weathering\s*=\s*\n\s*\.16 \* Math\.sin/)
 })
 
-test('relationship language is sparse, contextual, and selected-memory aware', () => {
+test('relationship language stays contextual and never becomes the overview visual grammar', () => {
   assert.match(overlay, /const contextualTypes = new Set<LifeMapNode\['type'\]>/)
   assert.match(overlay, /const incident = Boolean\(selected &&/)
   assert.match(overlay, /const overviewContext = !selected && source\.eraId !== target\.node\.eraId/)
-  assert.match(overlay, /candidates\.slice\(0, selected \? 3 : 4\)/)
-  assert.match(overlay, /relationshipPolicy: selected \? 'selected-memory-only-max-three' : 'cross-chapter-context-max-four'/)
-  assert.match(overlay, /opacity=\{selected \? \.11 : \.055\}/)
+  assert.match(overlay, /const visible = selected \? candidates\.slice\(0, 1\) : \[\]/)
+  assert.match(overlay, /overview-no-explicit-graph-edges/)
+  assert.match(overlay, /selected-memory-only-max-one-subtle/)
+  assert.match(overlay, /opacity=\{selected \? \.025 : 0\}/)
+  assert.doesNotMatch(overlay, /selected \? 3 : 4/)
 })
 
 test('portrait overview composes the full celestial memory volume without dead-sky collapse', () => {
