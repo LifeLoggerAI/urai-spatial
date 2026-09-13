@@ -198,23 +198,31 @@ function lineageGeometry() {
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
+function groundTerrainLocalY(x: number, z: number) {
+  const yaw = -.10
+  const cos = Math.cos(yaw), sin = Math.sin(yaw)
+  const worldX = GROUND.x + x * cos + z * sin
+  const worldZ = GROUND.z - x * sin + z * cos
+  return height(worldX, worldZ) - (height(GROUND.x, GROUND.z) + .12)
+}
+
 function groundShoulderGeometry(side: -1 | 1) {
-  const rows = 12, columns = 5
+  const rows = 14, columns = 6
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#26251f'), weathered = new THREE.Color('#5a5040')
+  const deep = new THREE.Color('#25251f'), weathered = new THREE.Color('#625844')
   for (let row = 0; row <= rows; row++) {
     const t = row / rows
-    const z = -1.18 + t * 2.74
-    const inner = .18 + .035 * Math.sin(t * 8.1 + (side < 0 ? .8 : 2.3))
-    const outer = .96 + .10 * Math.sin(t * 4.7 + (side < 0 ? 1.2 : .35))
-    const ridge = (side < 0 ? .44 : .34) * (.64 + .36 * Math.sin(Math.PI * t))
+    const z = -1.10 + t * 2.82
+    const inner = .28 + .04 * Math.sin(t * 8.1 + (side < 0 ? .8 : 2.3))
+    const outer = 1.02 + .11 * Math.sin(t * 4.7 + (side < 0 ? 1.2 : .35))
+    const rimLift = (side < 0 ? .34 : .29) * (.82 + .18 * Math.sin(Math.PI * t))
     for (let column = 0; column <= columns; column++) {
       const u = column / columns
       const x = side * THREE.MathUtils.lerp(inner, outer, u)
-      const erosion = .035 * Math.sin(row * 1.71 + column * 2.27 + (side < 0 ? .4 : 1.8))
-      const y = -.18 + (1 - u) * ridge + erosion - .045 * t
+      const erosion = .028 * Math.sin(row * 1.71 + column * 2.27 + (side < 0 ? .4 : 1.8))
+      const y = groundTerrainLocalY(x, z) + .035 + THREE.MathUtils.lerp(rimLift, .035, u) + erosion
       positions.push(x, y, z)
-      const color = deep.clone().lerp(weathered, .22 + .34 * (1 - u) + .09 * Math.sin(row * .9 + column))
+      const color = deep.clone().lerp(weathered, .20 + .42 * (1 - u) + .08 * Math.sin(row * .9 + column))
       colors.push(color.r, color.g, color.b)
     }
   }
@@ -237,21 +245,32 @@ function groundShoulderGeometry(side: -1 | 1) {
 }
 
 function groundCleftGeometry() {
-  const segments = 30, positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#171b18'), warm = new THREE.Color('#594435')
-  for (let index = 0; index <= segments; index++) {
-    const t = index / segments
-    const z = -1.14 + t * 2.72
-    const center = .025 * Math.sin(t * 9.2) - .018 * Math.sin(t * 3.6)
-    const width = .16 + .035 * Math.sin(Math.PI * t) + .018 * Math.sin(index * 1.27)
-    const descent = -.31 - .12 * t - .07 * Math.sin(Math.PI * t)
-    for (const side of [-1, 1] as const) {
-      positions.push(center + side * width, descent + .012 * side * Math.sin(index * .83), z)
-      const color = deep.clone().lerp(warm, .16 + .18 * t + .05 * Math.sin(index * .61 + side))
+  const segments = 34, columns = 6
+  const positions: number[] = [], colors: number[] = [], indices: number[] = []
+  const deep = new THREE.Color('#171916'), warm = new THREE.Color('#65503c')
+  for (let row = 0; row <= segments; row++) {
+    const t = row / segments
+    const z = -1.08 + t * 2.78
+    const center = .035 * Math.sin(t * 8.4) - .022 * Math.sin(t * 3.2)
+    const width = .30 + .075 * Math.sin(Math.PI * t) + .018 * Math.sin(row * 1.11)
+    for (let column = 0; column <= columns; column++) {
+      const cross = column / columns * 2 - 1
+      const x = center + cross * width
+      const rim = Math.pow(Math.abs(cross), 1.55)
+      const terrain = groundTerrainLocalY(x, z)
+      const irregular = .012 * Math.sin(row * 1.43 + column * 1.87)
+      const y = terrain + .028 + rim * (.17 + .055 * Math.sin(Math.PI * t)) + irregular
+      positions.push(x, y, z)
+      const color = deep.clone().lerp(warm, .10 + .48 * rim + .06 * (1 - t))
       colors.push(color.r, color.g, color.b)
     }
-    if (index < segments) {
-      const a = index * 2, b = a + 1, c = a + 2, d = a + 3
+  }
+  for (let row = 0; row < segments; row++) {
+    for (let column = 0; column < columns; column++) {
+      const a = row * (columns + 1) + column
+      const b = a + 1
+      const c = a + columns + 1
+      const d = c + 1
       indices.push(a, c, b, b, c, d)
     }
   }
@@ -285,11 +304,10 @@ function rootedBaseGeometry() {
 
 function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
-  const path = useMemo(() => wornPathGeometry(2.75, .34, .12), [])
   const leftShoulder = useMemo(() => groundShoulderGeometry(-1), [])
   const rightShoulder = useMemo(() => groundShoulderGeometry(1), [])
   const cleft = useMemo(groundCleftGeometry, [])
-  useEffect(() => () => { path.dispose(); leftShoulder.dispose(); rightShoulder.dispose(); cleft.dispose() }, [cleft, leftShoulder, path, rightShoulder])
+  useEffect(() => () => { leftShoulder.dispose(); rightShoulder.dispose(); cleft.dispose() }, [cleft, leftShoulder, rightShoulder])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
   return <group position={[GROUND.x, y + .12, GROUND.z]} rotation={[0, -.10, 0]} name="home-v249-ground-geological-descent" onClick={activate} userData={{ artRevision: 'v249-integrated-ground-descent', visualIntent: 'low-lateral-eroded-cleft-descending-into-terrain', semanticOwner: 'home-current-ground-geological-descent', morphology: 'low-geological-descent-cleft' }}>
     <mesh geometry={leftShoulder} receiveShadow><meshStandardMaterial vertexColors roughness={1} metalness={0} /></mesh>
@@ -299,9 +317,8 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
       <ScannedRock variant="01" position={[-.88, -.43, -.76]} rotation={[1.32, .36, -.62]} scale={[.58, .20, .66]} />
       <ScannedRock variant="02" position={[.82, -.48, -.58]} rotation={[1.38, -.42, .54]} scale={[.46, .18, .52]} />
     </Suspense>
-    <mesh geometry={path} position={[0, -.22, .14]} rotation={[.18, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#514538" roughness={1} /></mesh>
-    <pointLight position={[-.10, -.22, -.84]} color="#b76d4f" intensity={.34} distance={2.0} decay={2} />
-    <pointLight position={[.28, -.34, -1.20]} color="#655040" intensity={.14} distance={1.5} decay={2} />
+    <pointLight position={[-.12, .10, -.62]} color="#b76d4f" intensity={.24} distance={2.1} decay={2} />
+    <pointLight position={[.34, .06, .44]} color="#655040" intensity={.11} distance={1.6} decay={2} />
   </group>
 }
 
