@@ -6,41 +6,58 @@ const owner = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProduction
 const art = fs.readFileSync(new URL('../src/spatial/layout/HomeCurrentArtRepair.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('current Home mounts one explicit art repair layer and declares it in visual authority', () => {
+test('current Home mounts one explicit unified visual authority and declares the exact revision', () => {
   assert.match(owner, /import \{HomeCurrentArtRepair\} from '\.\/HomeCurrentArtRepair'/)
   assert.match(owner, /<HomeCurrentArtRepair orbState=\{p\.orbState\} reducedMotion=\{p\.reducedMotion\}/)
-  assert.equal(authority.artRevision, 'current-folded-living-memory-and-deep-recessed-threshold-repair')
+  assert.match(art, /home-current-unified-visual-authority/)
+  assert.match(art, /v249-systemic-organic-convergence/)
+  assert.equal(authority.artRevision, 'v249-systemic-organic-convergence')
   assert.ok(authority.runtimeAssets.includes('HomeCurrentArtRepair.tsx'))
 })
 
-test('Ground replacement is a deeply recessed scanned-rock geological cleft without foreground slab authority', () => {
-  assert.match(art, /home-current-ground-geological-descent/)
-  assert.match(art, /weathered-world-emergent-descent/)
-  assert.match(art, /home-v234-ground-scanned-stone-threshold/)
-  assert.match(art, /v247-recessed-ground-cleft/)
-  assert.match(art, /scale\[0\] \* \.50/)
-  assert.match(art, /ScannedRock/)
-  assert.match(art, /apertureGeometry/)
-  assert.doesNotMatch(art, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry|TubeGeometry/)
+test('retired hidden Home visual owners cannot keep invisible pointer authority', () => {
+  assert.match(art, /function suppressRaycast\(/)
+  assert.match(art, /object\.raycast = \(\) => undefined/)
+  assert.match(art, /object\.traverse\(\(child\) => suppressRaycast\(child, raycasts\.current\)\)/)
+  assert.match(art, /raycasts\.current\.forEach\(\(raycast, object\) => \{ object\.raycast = raycast \}\)/)
 })
 
-test('Life Map replacement is a deeply recessed lineage rift rather than tube, membrane, or slab architecture', () => {
-  assert.match(art, /home-current-life-map-rooted-ascent/)
-  assert.match(art, /rooted-ascent-not-tube-portal/)
-  assert.match(art, /v247-recessed-lineage-rift/)
+test('Ground is a low geological descent rather than an arch, ring, membrane, or slab portal', () => {
+  assert.match(art, /home-v249-ground-geological-descent/)
+  assert.match(art, /low-geological-descent-cleft/)
+  assert.match(art, /low-lateral-eroded-cleft-descending-into-terrain/)
   assert.match(art, /ScannedRock/)
+  assert.doesNotMatch(art, /apertureGeometry/)
+  assert.doesNotMatch(art, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry|TubeGeometry|function membrane\(/)
+})
+
+test('Life Map threshold is a distinct rooted celestial ascent, not a copy of Ground morphology', () => {
+  assert.match(art, /home-v249-life-map-rooted-celestial-ascent/)
+  assert.match(art, /vertical-rooted-celestial-ascent/)
+  assert.match(art, /rooted-ascent-opening-upward-into-lineage-and-constellation-depth/)
+  assert.match(art, /function lineageGeometry\(/)
   assert.match(art, /points geometry=\{stars\}/)
-  assert.doesNotMatch(art, /TubeGeometry|function membrane\(/)
+  assert.doesNotMatch(art, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry|TubeGeometry|function membrane\(/)
+  const groundMorphology = art.match(/morphology: '([^']*ground[^']*|low-geological-descent-cleft)'/)?.[1]
+  const lifeMapMorphology = art.match(/morphology: '(vertical-rooted-celestial-ascent)'/)?.[1]
+  assert.ok(groundMorphology && lifeMapMorphology)
+  assert.notEqual(groundMorphology, lifeMapMorphology)
 })
 
-test('Orb repair is one smooth folded scarred state-aware connected living-memory mantle', () => {
-  assert.match(art, /home-current-orb-surface-memory/)
-  assert.match(art, /v247-folded-living-memory-mantle/)
-  assert.match(art, /one-connected-asymmetric-folded-history-bearing-presence-not-clay-heart-not-rock/)
-  assert.match(art, /new THREE\.SphereGeometry\(1, 112, 72\)/)
+test('Orb is one matte organic asymmetric state-aware living-memory presence with readable interior life', () => {
+  assert.match(art, /home-v249-organic-living-memory-presence/)
+  assert.match(art, /single-matte-asymmetric-folded-history-bearing-presence-with-readable-interior-life/)
+  assert.match(art, /new THREE\.SphereGeometry\(1, 96, 64\)/)
+  assert.match(art, /function memoryFieldGeometry\(/)
+  assert.match(art, /function memoryFilamentGeometry\(/)
+  assert.match(art, /function memoryScarGeometry\(/)
   assert.match(art, /const stateIntensity: Record<OrbState, number>/)
-  assert.match(art, /stateIntensity\[state\]/)
-  assert.match(art, /reducedMotion\?\.72:1/)
-  assert.doesNotMatch(art, /new THREE\.IcosahedronGeometry\(1, 4\)/)
-  assert.doesNotMatch(art, /v246-smooth-living-memory-heart/)
+  assert.match(art, /reducedMotion\) return/)
+  assert.doesNotMatch(art, /wireframe/)
+  assert.doesNotMatch(art, /THREE\.DoubleSide/)
+  assert.doesNotMatch(art, /<sphereGeometry/)
+  assert.doesNotMatch(art, /renderOrder=/)
+  assert.doesNotMatch(art, /depthTest=\{false\}/)
+  assert.doesNotMatch(art, /new THREE\.IcosahedronGeometry/)
+  assert.doesNotMatch(art, /v248-translucent-living-memory-field/)
 })
