@@ -84,8 +84,11 @@ test('relationship language is sparse, contextual, and selected-memory aware', (
 
 test('portrait overview is a composed world view rather than tiny geography under dead sky', () => {
   assert.match(layoutSource, /scale: \[\.78, \.90, \.88\]/)
-  assert.match(layoutSource, /const distance = Math\.min\(25, Math\.max\(17\.5,/)
-  assert.match(layoutSource, /target\[2\] - 2\.8/)
+  assert.match(layoutSource, /2\.2 \* stage\.scale\[0\]/)
+  assert.match(layoutSource, /2\.2 \* stage\.scale\[1\]/)
+  assert.match(layoutSource, /2\.2 \* stage\.scale\[2\]/)
+  assert.match(layoutSource, /const overlook = portrait \? 5\.35 : 7\.1/)
+  assert.match(layoutSource, /const depthAim = portrait \? 1\.75 : 1\.2/)
   assert.doesNotMatch(layoutSource, /scale: \[\.46, \.82, \.92\]/)
 })
 
@@ -107,6 +110,7 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /scripts\/verify-lifemap-canvas-proof\.mjs/)
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
+
 
 test('Focus final composition keeps the live chamber dominant and rejects the obsolete dark obstruction path', () => {
   assert.match(focusSource, /focus-v249-grounded-living-memory-manifestation/)
