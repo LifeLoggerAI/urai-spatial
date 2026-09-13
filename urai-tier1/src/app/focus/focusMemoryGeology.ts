@@ -1,55 +1,56 @@
 import * as THREE from 'three'
 
 // Original URAI geometry and material source. No downloaded imagery or scan UVs.
-// V261 keeps the V251 Focus authority but lays the selected memory down into a
-// low mineral-memory bloom: broad radial shells, real negative space, and
-// embedded history veins without spheres, cages, spikes, or upright fins.
+// V262 broadens the selected-memory bloom and deepens its layered geology so it
+// reads as an authored memory formation at arrival scale instead of a small flower.
 const PETALS = [
-  [-2.62, 1.02, .64, .34, .10, -.10, -.02],
-  [-2.00, 1.16, .72, .42, .16, -.08, -.08],
-  [-1.34, 1.08, .68, .38, .12, .02, -.12],
-  [-.68, .98, .62, .32, .15, .12, -.04],
-  [.04, 1.12, .70, .40, .10, .10, .06],
-  [.72, .96, .58, .30, .14, .02, .12],
-  [1.48, .90, .54, .28, .09, -.08, .10],
-  [2.22, .98, .60, .34, .15, -.12, .04],
+  [-2.76, 1.42, .82, .40, .14, -.16, -.08],
+  [-2.18, 1.56, .90, .48, .20, -.12, -.12],
+  [-1.54, 1.44, .84, .44, .16, -.02, -.16],
+  [-.88, 1.30, .78, .36, .18, .08, -.06],
+  [-.18, 1.50, .88, .46, .14, .14, .04],
+  [.52, 1.34, .76, .34, .18, .08, .14],
+  [1.24, 1.26, .70, .32, .13, -.02, .16],
+  [1.92, 1.38, .78, .38, .19, -.10, .10],
+  [2.52, 1.24, .68, .30, .12, -.14, -.02],
 ]
 
 export function createFocusStrata() {
   return PETALS.map(([angle, length, width, arc, tipRise, offsetX, offsetZ], plate) => {
     const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
-    const rows = 42, columns = 24
+    const rows = 46, columns = 26
     const radialX = Math.cos(angle), radialZ = Math.sin(angle)
     const lateralX = -radialZ, lateralZ = radialX
 
     for (let face = 0; face < 2; face++) for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
       const t = row / rows, s = column / columns, across = s * 2 - 1
-      const open = Math.pow(Math.sin(Math.PI * Math.min(.999, Math.max(.001, t))), .58)
-      const tipTaper = 1 - .46 * Math.pow(t, 2.1)
-      const breadth = width * (.14 + .86 * open) * tipTaper
+      const open = Math.pow(Math.sin(Math.PI * Math.min(.999, Math.max(.001, t))), .54)
+      const tipTaper = 1 - .38 * Math.pow(t, 2.15)
+      const breadth = width * (.12 + .88 * open) * tipTaper
       const lateral = across * breadth
-      const radial = .10 + length * t
-      const cup = .12 * Math.sin(Math.PI * t) * (1 - across * across)
-      const edgeCurl = .055 * across * across * Math.sin(Math.PI * t)
-      const sweep = .075 * Math.sin(Math.PI * t + plate * .52)
-      const grain = .008 * Math.sin(s * 49 + t * 9 + plate) + .005 * Math.sin(s * 119 - t * 13)
+      const radial = .08 + length * t
+      const cup = .14 * Math.sin(Math.PI * t) * (1 - across * across)
+      const edgeCurl = .072 * across * across * Math.sin(Math.PI * t)
+      const sweep = .10 * Math.sin(Math.PI * t + plate * .49)
+      const grain = .010 * Math.sin(s * 47 + t * 9 + plate) + .006 * Math.sin(s * 113 - t * 13)
       const veinWave = Math.sin(t * 18 + s * 6 + plate * .65) * Math.sin(s * 10 - t * 2.4 + plate)
-      const veinRelief = .010 * veinWave
-      const thickness = .024 + .018 * (1 - t)
+      const veinRelief = .013 * veinWave
+      const fracture = .018 * Math.sin(t * 31 + plate * 1.9) * (1 - Math.abs(across))
+      const thickness = .030 + .020 * (1 - t)
 
       const x = offsetX + radialX * (radial + sweep) + lateralX * lateral
       const z = offsetZ + radialZ * (radial + sweep) + lateralZ * lateral + grain
-      const y = -1.31 + arc * Math.sin(Math.PI * t) + tipRise * t * t + cup + edgeCurl + veinRelief + (face ? -thickness : thickness)
+      const y = -1.22 + arc * Math.sin(Math.PI * t) + tipRise * t * t + cup + edgeCurl + veinRelief + fracture + (face ? -thickness : thickness)
       positions.push(x, y, z)
-      uvs.push(s * 1.45, t * 2.35)
+      uvs.push(s * 1.55, t * 2.55)
 
       const vein = Math.pow(Math.max(0, 1 - Math.abs(veinWave)), 12)
       const edgeShade = Math.pow(Math.abs(across), 1.7)
-      const base = new THREE.Color(plate % 3 === 0 ? '#8fa9a5' : plate % 3 === 1 ? '#b5b39f' : '#78969a')
-      const history = new THREE.Color(plate % 2 ? '#f0cd91' : '#d5eee7')
-      const shadow = new THREE.Color('#32494a')
-      const c = base.clone().lerp(history, Math.min(.80, vein * .74 + t * .08)).lerp(shadow, edgeShade * .14)
-      c.multiplyScalar(.91 + .07 * s)
+      const base = new THREE.Color(plate % 3 === 0 ? '#88a39f' : plate % 3 === 1 ? '#b7b29d' : '#748f94')
+      const history = new THREE.Color(plate % 2 ? '#f1ca8c' : '#d8eee5')
+      const shadow = new THREE.Color('#2b4042')
+      const c = base.clone().lerp(history, Math.min(.78, vein * .70 + t * .10)).lerp(shadow, edgeShade * .18)
+      c.multiplyScalar(.90 + .08 * s)
       colors.push(c.r, c.g, c.b)
     }
 

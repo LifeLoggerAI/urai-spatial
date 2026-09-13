@@ -74,7 +74,7 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
     }
     if(camera instanceof THREE.PerspectiveCamera){
       const portraitFov=THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(54)/2)/(size.width/size.height))),76,104)
-      const f=size.height>size.width?(near?72:portraitFov):(near==='orb'?46:42)
+      const f=size.height>size.width?(near?(near==='orb'?70:66):portraitFov):(near==='orb'?46:42)
       if(Math.abs(camera.fov-f)>.01){camera.fov=f;camera.updateProjectionMatrix()}
     }
     const portrait=size.height>size.width
@@ -83,13 +83,13 @@ function Rig({input,yaw,pitch,target,onNearby,transition,owner}:{input:MovementI
     let look=pos.current.clone().add(forward)
     if(near==='orb' && camera instanceof THREE.PerspectiveCamera){
       look=destinationFocus.current.set(ORB.x,height(ORB.x,ORB.z)+1.06,ORB.z)
-      desired=framedApproach(camera,size,pos.current,look,1.62,1.86,size.height>size.width?1.34:1.22)
+      desired=framedApproach(camera,size,pos.current,look,1.62,1.86,size.height>size.width?1.30:1.20)
     }else if(near==='ground'){
-      look=destinationFocus.current.copy(GROUND).add(new THREE.Vector3(0,.44,0))
-      if(camera instanceof THREE.PerspectiveCamera) desired=framedApproach(camera,size,pos.current,look,2.30,1.72,size.height>size.width?1.24:1.14)
+      look=destinationFocus.current.copy(GROUND).add(new THREE.Vector3(0,.24,0))
+      if(camera instanceof THREE.PerspectiveCamera) desired=framedApproach(camera,size,pos.current,look,1.65,1.20,size.height>size.width?1.08:1.04)
     }else if(near==='life-map'){
-      look=destinationFocus.current.copy(LIFE_MAP).add(new THREE.Vector3(0,.78,0))
-      if(camera instanceof THREE.PerspectiveCamera) desired=framedApproach(camera,size,pos.current,look,2.42,1.92,size.height>size.width?1.25:1.14)
+      look=destinationFocus.current.copy(LIFE_MAP).add(new THREE.Vector3(0,.96,0))
+      if(camera instanceof THREE.PerspectiveCamera) desired=framedApproach(camera,size,pos.current,look,1.72,1.72,size.height>size.width?1.10:1.04)
     }
     camera.position.lerp(desired,1-Math.pow(.0008,delta))
     camera.lookAt(look)

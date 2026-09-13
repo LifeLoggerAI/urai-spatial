@@ -29,6 +29,7 @@ function RetireSupersededShapes() {
     'home-current-orb-surface-memory', 'home-current-foreground-geological-breakup',
     'home-current-atmospheric-depth-field', 'home-v226-ground-inhabited-hearth',
     'home-v226-life-map-lineage-observatory', 'home-v226-rooted-single-living-memory-presence',
+    'home-v226-root-cradle',
   ]), [])
   const retainedFernIds = useMemo(() => new Set([1, 4, 9, 13, 18, 22, 27, 31, 34, 39, 42, 47, 51, 55, 59, 64]), [])
 
@@ -190,22 +191,24 @@ function wornPathGeometry(length = 3.4, startWidth = .46, endWidth = .22) {
 
 function lineageGeometry() {
   const points: THREE.Vector3[] = []
-  for (let branch = 0; branch < 7; branch++) {
+  for (let branch = 0; branch < 9; branch++) {
     let previous: THREE.Vector3 | null = null
-    for (let step = 0; step <= 18; step++) {
-      const t = step / 18
-      const spread = (branch - 3) * (.045 + t * .075)
+    const lane = branch - 4
+    for (let step = 0; step <= 26; step++) {
+      const t = step / 26
+      const spread = lane * (.025 + t * t * .105)
       const current = new THREE.Vector3(
-        spread + Math.sin(t * 6.2 + branch * .77) * (.018 + t * .034),
-        -.18 + t * 1.72,
-        -.78 - t * .46 + Math.cos(t * 4.8 + branch * .63) * (.025 + t * .022),
+        spread + Math.sin(t * 5.35 + branch * .87) * (.022 + t * .072) + Math.sign(lane) * t * .025,
+        -.14 + t * 2.22 + .055 * Math.sin(t * Math.PI * 2 + branch * .61),
+        -.76 - t * .76 + Math.cos(t * 4.65 + branch * .73) * (.038 + t * .058) - Math.abs(lane) * t * .012,
       )
       if (previous) points.push(previous, current)
-      if (step === 8 || step === 12 || step === 15) {
+      if (step === 11 || step === 17 || step === 22) {
+        const direction = ((branch + step) % 2 ? 1 : -1)
         const fork = new THREE.Vector3(
-          current.x + (branch % 2 ? 1 : -1) * (.08 + t * .10),
-          current.y + .10 + t * .05,
-          current.z - .04 - t * .04,
+          current.x + direction * (.10 + t * .17),
+          current.y + .08 + t * .12,
+          current.z - .055 - t * .07,
         )
         points.push(current, fork)
       }
@@ -224,22 +227,22 @@ function groundTerrainLocalY(x: number, z: number) {
 }
 
 function groundShoulderGeometry(side: -1 | 1) {
-  const rows = 14, columns = 6
+  const rows = 16, columns = 7
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#25251f'), weathered = new THREE.Color('#625844')
+  const deep = new THREE.Color('#28261f'), weathered = new THREE.Color('#7a644b')
   for (let row = 0; row <= rows; row++) {
     const t = row / rows
-    const z = -1.10 + t * 2.82
-    const inner = .28 + .04 * Math.sin(t * 8.1 + (side < 0 ? .8 : 2.3))
-    const outer = 1.02 + .11 * Math.sin(t * 4.7 + (side < 0 ? 1.2 : .35))
-    const rimLift = (side < 0 ? .34 : .29) * (.82 + .18 * Math.sin(Math.PI * t))
+    const z = -1.34 + t * 3.18
+    const inner = .43 + .055 * Math.sin(t * 8.1 + (side < 0 ? .8 : 2.3))
+    const outer = 1.42 + .14 * Math.sin(t * 4.7 + (side < 0 ? 1.2 : .35))
+    const rimLift = (side < 0 ? .64 : .54) * (.72 + .28 * Math.sin(Math.PI * t))
     for (let column = 0; column <= columns; column++) {
       const u = column / columns
       const x = side * THREE.MathUtils.lerp(inner, outer, u)
-      const erosion = .028 * Math.sin(row * 1.71 + column * 2.27 + (side < 0 ? .4 : 1.8))
-      const y = groundTerrainLocalY(x, z) + .035 + THREE.MathUtils.lerp(rimLift, .035, u) + erosion
+      const erosion = .034 * Math.sin(row * 1.71 + column * 2.27 + (side < 0 ? .4 : 1.8))
+      const y = groundTerrainLocalY(x, z) + .035 + THREE.MathUtils.lerp(rimLift, .025, u) + erosion
       positions.push(x, y, z)
-      const color = deep.clone().lerp(weathered, .20 + .42 * (1 - u) + .08 * Math.sin(row * .9 + column))
+      const color = deep.clone().lerp(weathered, .24 + .46 * (1 - u) + .08 * Math.sin(row * .9 + column))
       colors.push(color.r, color.g, color.b)
     }
   }
@@ -262,23 +265,23 @@ function groundShoulderGeometry(side: -1 | 1) {
 }
 
 function groundCleftGeometry() {
-  const segments = 34, columns = 6
+  const segments = 38, columns = 8
   const positions: number[] = [], colors: number[] = [], indices: number[] = []
-  const deep = new THREE.Color('#171916'), warm = new THREE.Color('#65503c')
+  const deep = new THREE.Color('#211d18'), warm = new THREE.Color('#80583f')
   for (let row = 0; row <= segments; row++) {
     const t = row / segments
-    const z = -1.08 + t * 2.78
-    const center = .035 * Math.sin(t * 8.4) - .022 * Math.sin(t * 3.2)
-    const width = .30 + .075 * Math.sin(Math.PI * t) + .018 * Math.sin(row * 1.11)
+    const z = -1.28 + t * 3.08
+    const center = .045 * Math.sin(t * 8.4) - .026 * Math.sin(t * 3.2)
+    const width = .52 + .12 * Math.sin(Math.PI * t) + .024 * Math.sin(row * 1.11)
     for (let column = 0; column <= columns; column++) {
       const cross = column / columns * 2 - 1
       const x = center + cross * width
-      const rim = Math.pow(Math.abs(cross), 1.55)
+      const rim = Math.pow(Math.abs(cross), 1.45)
       const terrain = groundTerrainLocalY(x, z)
-      const irregular = .012 * Math.sin(row * 1.43 + column * 1.87)
-      const y = terrain + .028 + rim * (.17 + .055 * Math.sin(Math.PI * t)) + irregular
+      const irregular = .014 * Math.sin(row * 1.43 + column * 1.87)
+      const y = terrain + .018 + rim * (.31 + .09 * Math.sin(Math.PI * t)) + irregular
       positions.push(x, y, z)
-      const color = deep.clone().lerp(warm, .10 + .48 * rim + .06 * (1 - t))
+      const color = deep.clone().lerp(warm, .08 + .58 * rim + .08 * (1 - t))
       colors.push(color.r, color.g, color.b)
     }
   }
@@ -301,16 +304,16 @@ function groundCleftGeometry() {
 
 function rootedBaseGeometry() {
   const points: THREE.Vector3[] = []
-  for (let root = 0; root < 11; root++) {
-    const angle = -.25 + root * .58
-    let previous = new THREE.Vector3(0, -.13, -.72)
-    for (let step = 1; step <= 10; step++) {
-      const t = step / 10
-      const radius = t * (.52 + .12 * Math.sin(root * 1.37))
+  for (let root = 0; root < 13; root++) {
+    const angle = -.34 + root * .50
+    let previous = new THREE.Vector3(0, -.13, -.70)
+    for (let step = 1; step <= 11; step++) {
+      const t = step / 11
+      const radius = t * (.58 + .13 * Math.sin(root * 1.37))
       const current = new THREE.Vector3(
         Math.cos(angle + .17 * Math.sin(t * 4 + root)) * radius,
-        -.15 + .025 * Math.sin(step * 1.23 + root) + .035 * t,
-        -.72 + Math.sin(angle + .12 * Math.cos(t * 5 + root)) * radius * .58 + t * .12,
+        -.15 + .025 * Math.sin(step * 1.23 + root) + .040 * t,
+        -.70 + Math.sin(angle + .12 * Math.cos(t * 5 + root)) * radius * .58 + t * .14,
       )
       points.push(previous, current)
       previous = current
@@ -331,29 +334,33 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
     <mesh geometry={rightShoulder} receiveShadow><meshStandardMaterial vertexColors roughness={1} metalness={0} /></mesh>
     <mesh geometry={cleft} receiveShadow><meshStandardMaterial vertexColors roughness={1} metalness={0} /></mesh>
     <Suspense fallback={null}>
-      <ScannedRock variant="01" position={[-.88, -.43, -.76]} rotation={[1.32, .36, -.62]} scale={[.58, .20, .66]} />
-      <ScannedRock variant="02" position={[.82, -.48, -.58]} rotation={[1.38, -.42, .54]} scale={[.46, .18, .52]} />
+      <ScannedRock variant="01" position={[-1.18, -.50, -.88]} rotation={[1.39, .42, -.74]} scale={[.48, .16, .56]} />
+      <ScannedRock variant="02" position={[1.06, -.52, -.46]} rotation={[1.44, -.47, .64]} scale={[.40, .15, .46]} />
     </Suspense>
-    <pointLight position={[-.12, .10, -.62]} color="#b76d4f" intensity={.24} distance={2.1} decay={2} />
-    <pointLight position={[.34, .06, .44]} color="#655040" intensity={.11} distance={1.6} decay={2} />
+    <pointLight position={[-.10, .12, -.70]} color="#bd7858" intensity={.48} distance={2.8} decay={2} />
+    <pointLight position={[.36, .08, .40]} color="#735745" intensity={.18} distance={2.1} decay={2} />
   </group>
 }
 
 function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
-  const path = useMemo(() => wornPathGeometry(2.45, .22, .08), [])
+  const path = useMemo(() => wornPathGeometry(2.70, .30, .08), [])
   const roots = useMemo(rootedBaseGeometry, [])
   const lineage = useMemo(lineageGeometry, [])
   const stars = useMemo(() => {
-    const count = 150, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
-    const warm = new THREE.Color('#cbb98f'), cool = new THREE.Color('#83b9b2')
+    const count = 240, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
+    const warm = new THREE.Color('#d2c59b'), cool = new THREE.Color('#79aaa4')
     for (let index = 0; index < count; index++) {
       const t = (index + .5) / count
       const angle = index * 2.39996323
-      const radius = .08 + Math.sqrt(t) * .70
-      const yy = .12 + t * 1.92
-      positions.set([Math.cos(angle) * radius, yy, -.90 - Math.sin(angle) * radius * .44], index * 3)
-      const color = warm.clone().lerp(cool, .20 + .60 * ((index % 13) / 12))
+      const radius = .10 + Math.sqrt(t) * .98
+      const yy = .10 + t * 2.54
+      positions.set([
+        Math.cos(angle) * radius * (.72 + .16 * Math.sin(index * .37)),
+        yy,
+        -1.00 - Math.sin(angle) * radius * .56 - t * .42,
+      ], index * 3)
+      const color = warm.clone().lerp(cool, .16 + .70 * ((index % 17) / 16))
       colors.set([color.r, color.g, color.b], index * 3)
     }
     const geometry = new THREE.BufferGeometry()
@@ -364,11 +371,12 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   useEffect(() => () => { path.dispose(); roots.dispose(); lineage.dispose(); stars.dispose() }, [lineage, path, roots, stars])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
   return <group position={[LIFE_MAP.x, y + .10, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v249-life-map-rooted-celestial-ascent" onClick={activate} userData={{ artRevision: 'v249-rooted-celestial-ascent', visualIntent: 'asymmetric-rooted-ascent-opening-upward-into-lineage-and-constellation-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'vertical-rooted-celestial-ascent' }}>
-    <mesh geometry={path} position={[0, -.12, .12]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#4a5147" roughness={1} /></mesh>
-    <lineSegments geometry={roots}><lineBasicMaterial color="#667a6d" transparent opacity={.54} /></lineSegments>
-    <lineSegments geometry={lineage} position={[0, .05, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.72} /></lineSegments>
-    <points geometry={stars}><pointsMaterial vertexColors size={.024} sizeAttenuation transparent opacity={.78} depthWrite={false} /></points>
-    <pointLight position={[0, .92, -1.16]} color="#8fc9c0" intensity={.42} distance={3.2} decay={2} />
+    <mesh geometry={path} position={[0, -.12, .12]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#3e4a40" roughness={1} /></mesh>
+    <lineSegments geometry={roots}><lineBasicMaterial color="#4b6257" transparent opacity={.34} /></lineSegments>
+    <lineSegments geometry={lineage} position={[0, .05, 0]}><lineBasicMaterial color="#769d95" transparent opacity={.20} /></lineSegments>
+    <points geometry={lineage} position={[0, .05, 0]}><pointsMaterial color="#d7cfaa" size={.015} sizeAttenuation transparent opacity={.46} depthWrite={false} /></points>
+    <points geometry={stars}><pointsMaterial vertexColors size={.026} sizeAttenuation transparent opacity={.80} depthWrite={false} /></points>
+    <pointLight position={[0, 1.28, -1.34]} color="#83b5ae" intensity={.38} distance={3.8} decay={2} />
   </group>
 }
 
@@ -376,33 +384,34 @@ function livingMemoryGeometry() {
   const geometry = new THREE.SphereGeometry(1, 96, 64)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors: number[] = []
-  const deep = new THREE.Color('#26302f'), tissue = new THREE.Color('#617a76'), scarColor = new THREE.Color('#c0b4aa')
+  const deep = new THREE.Color('#273432'), tissue = new THREE.Color('#789089'), scarColor = new THREE.Color('#c9bcab')
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
     const angle = Math.atan2(nz, nx)
     const upper = THREE.MathUtils.smoothstep(ny, -.08, .92)
     const lower = THREE.MathUtils.smoothstep(-ny, .10, .98)
     const cleftAxis = (nx + .13) * .92 + (nz - .05) * .40
-    const cleft = Math.exp(-(cleftAxis * cleftAxis) / .030) * upper
+    const cleft = Math.exp(-(cleftAxis * cleftAxis) / .021) * upper
     const leftLobe = Math.exp(-(((nx + .33) / .54) ** 2 + ((nz - .18) / .70) ** 2)) * upper
     const rightRecess = Math.exp(-(((nx - .54) / .38) ** 2 + ((nz + .12) / .48) ** 2)) * (.35 + .65 * upper)
     const forwardFold = Math.exp(-(((nz - .48) / .26) ** 2 + ((nx + .07) / .62) ** 2)) * (.26 + .74 * upper)
-    const skin = .030 * Math.sin(angle * 3.2 + ny * 6.3) + .012 * Math.sin(angle * 8.2 - ny * 9.1)
-    const taper = THREE.MathUtils.lerp(.28, 1, THREE.MathUtils.smoothstep(ny, -.90, -.03))
-    const radial = 1 + skin + .19 * leftLobe - .11 * rightRecess + .13 * forwardFold
-    let x = nx * radial * .64 * taper + ny * .12 - .11 - upper * .045
-    let z = nz * radial * .70 * taper + .10 * forwardFold - .035 * rightRecess
-    const twist = (ny + .08) * .38
+    const skin = .038 * Math.sin(angle * 3.2 + ny * 6.3) + .016 * Math.sin(angle * 8.2 - ny * 9.1)
+    const taper = THREE.MathUtils.lerp(.22, 1, THREE.MathUtils.smoothstep(ny, -.90, -.03))
+    const radial = 1 + skin + .24 * leftLobe - .14 * rightRecess + .16 * forwardFold
+    let x = nx * radial * .66 * taper + ny * .13 - .12 - upper * .052
+    let z = nz * radial * .72 * taper + .12 * forwardFold - .045 * rightRecess
+    const twist = (ny + .08) * .42
     const cos = Math.cos(twist), sin = Math.sin(twist)
     const tx = x * cos - z * sin, tz = x * sin + z * cos
-    x = tx - lower * .08
+    x = tx - lower * .09
     z = tz
-    let yy = ny * 1.20 - .24 * cleft + .12 * leftLobe - .055 * rightRecess + .08 * forwardFold
-    yy -= lower * (.18 + .16 * lower)
+    let yy = ny * 1.22 - .31 * cleft + .15 * leftLobe - .07 * rightRecess + .10 * forwardFold
+    yy -= lower * (.20 + .17 * lower)
     position.setXYZ(index, x, yy, z)
     const h = THREE.MathUtils.clamp((yy + 1.3) / 2.55, 0, 1)
     const scar = THREE.MathUtils.clamp(cleft + forwardFold * .16 + rightRecess * .12, 0, 1)
-    const color = deep.clone().lerp(tissue, .28 + .48 * h).lerp(scarColor, .018 + .22 * scar)
+    const striation = .5 + .5 * Math.sin(angle * 5.1 + yy * 8.3)
+    const color = deep.clone().lerp(tissue, .26 + .50 * h + .05 * striation).lerp(scarColor, .014 + .18 * scar)
     colors.push(color.r, color.g, color.b)
   }
   position.needsUpdate = true
@@ -413,17 +422,17 @@ function livingMemoryGeometry() {
 }
 
 function memoryFieldGeometry() {
-  const count = 180, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
-  const cool = new THREE.Color('#8fc7be'), warm = new THREE.Color('#d6c39e')
+  const count = 200, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
+  const cool = new THREE.Color('#7fb5ad'), warm = new THREE.Color('#d2bf9a')
   for (let index = 0; index < count; index++) {
     const t = (index + .5) / count
-    const y = -.72 + ((index * 23) % count) / (count - 1) * 1.45
+    const y = -.74 + ((index * 23) % count) / (count - 1) * 1.50
     const angle = index * 2.39996323 + .15 * Math.sin(index * .37)
-    const radius = .13 + Math.pow(t, .72) * .38
+    const radius = .11 + Math.pow(t, .72) * .34
     const x = Math.cos(angle) * radius * (.78 - .15 * Math.abs(y)) - .04
-    const z = .34 + Math.sin(angle) * radius * .34 + .03 * Math.sin(index * .51)
+    const z = .24 + Math.sin(angle) * radius * .28 + .025 * Math.sin(index * .51)
     positions.set([x, y, z], index * 3)
-    const color = cool.clone().lerp(warm, .12 + .48 * ((index % 17) / 16))
+    const color = cool.clone().lerp(warm, .10 + .50 * ((index % 17) / 16))
     colors.set([color.r, color.g, color.b], index * 3)
   }
   const geometry = new THREE.BufferGeometry()
@@ -434,27 +443,34 @@ function memoryFieldGeometry() {
 
 function memoryScarGeometry() {
   return new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-.07, .72, .48), new THREE.Vector3(-.15, .50, .49),
-    new THREE.Vector3(-.04, .27, .48), new THREE.Vector3(-.12, .04, .46),
-    new THREE.Vector3(-.03, -.18, .42), new THREE.Vector3(-.08, -.40, .36),
-    new THREE.Vector3(-.04, -.60, .28),
+    new THREE.Vector3(-.07, .72, .39), new THREE.Vector3(-.15, .50, .40),
+    new THREE.Vector3(-.04, .27, .39), new THREE.Vector3(-.12, .04, .37),
+    new THREE.Vector3(-.03, -.18, .34), new THREE.Vector3(-.08, -.40, .29),
+    new THREE.Vector3(-.04, -.60, .22),
   ])
 }
 
 function memoryFilamentGeometry() {
-  const points: THREE.Vector3[] = []
-  for (let trace = 0; trace < 7; trace++) {
+  const points: THREE.Vector3[] = [], colors: number[] = []
+  const cool = new THREE.Color('#83b8af'), warm = new THREE.Color('#d7c49e')
+  for (let trace = 0; trace < 9; trace++) {
     let previous: THREE.Vector3 | null = null
-    for (let step = 0; step <= 24; step++) {
-      const t = step / 24, y = -.68 + t * 1.36
-      const angle = -1.0 + trace * .30 + t * (.70 + trace * .035) + .10 * Math.sin(t * 8 + trace)
-      const envelope = .20 + .20 * Math.sin(t * Math.PI)
-      const current = new THREE.Vector3(Math.cos(angle) * envelope + (trace - 3) * .013 - .04, y, .45 + Math.sin(angle) * .12)
-      if (previous) points.push(previous, current)
+    for (let step = 0; step <= 26; step++) {
+      const t = step / 26, y = -.70 + t * 1.40
+      const angle = -1.05 + trace * .25 + t * (.62 + trace * .025) + .085 * Math.sin(t * 8 + trace)
+      const envelope = .12 + .17 * Math.sin(t * Math.PI)
+      const current = new THREE.Vector3(Math.cos(angle) * envelope + (trace - 4) * .010 - .04, y, .20 + Math.sin(angle) * .09)
+      if (previous) {
+        points.push(previous, current)
+        const color = cool.clone().lerp(warm, .16 + .56 * ((trace + step) % 9) / 8)
+        colors.push(color.r, color.g, color.b, color.r, color.g, color.b)
+      }
       previous = current
     }
   }
-  return new THREE.BufferGeometry().setFromPoints(points)
+  const geometry = new THREE.BufferGeometry().setFromPoints(points)
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  return geometry
 }
 
 const stateIntensity: Record<OrbState, number> = { dormant: .03, idle: .09, attention: .18, listening: .14, thinking: .16, speaking: .22, guiding: .15, reflecting: .12, calming: .08, privacy: .13, warning: .24, transition: .16 }
@@ -472,31 +488,31 @@ function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbStat
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return
     const t = clock.elapsedTime
-    const breath = 1 + Math.sin(t * .58) * .012
-    root.current.position.y = y + .94 + Math.sin(t * .34) * .022
-    root.current.rotation.y = -.25 + Math.sin(t * .16) * .045
-    root.current.rotation.z = -.075 + Math.sin(t * .22) * .012
+    const breath = 1 + Math.sin(t * .58) * .010
+    root.current.position.y = y + .94 + Math.sin(t * .34) * .018
+    root.current.rotation.y = -.25 + Math.sin(t * .16) * .040
+    root.current.rotation.z = -.075 + Math.sin(t * .22) * .010
     root.current.scale.setScalar(breath)
-    if (fieldRef.current) fieldRef.current.rotation.y = Math.sin(t * .18) * .055
+    if (fieldRef.current) fieldRef.current.rotation.y = Math.sin(t * .18) * .045
   })
   const e = (reducedMotion ? .72 : 1) * stateIntensity[state]
   const warning = state === 'warning', privacy = state === 'privacy'
-  const glow = warning ? '#d77d70' : privacy ? '#78a9a2' : '#93c2b9'
+  const glow = warning ? '#d77d70' : privacy ? '#78a9a2' : '#8db8af'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
   return <group ref={root} position={[ORB.x, y + .94, ORB.z]} rotation={[.04, -.25, -.075]} name="home-v249-organic-living-memory-presence" onClick={activate} userData={{ artRevision: 'v249-organic-living-memory-presence', visualIntent: 'single-matte-asymmetric-folded-history-bearing-presence-with-readable-interior-life', semanticOwner: 'home-current-orb-surface-memory', materialLanguage: 'matte-memory-tissue-scar-filaments-localized-field' }}>
-    <mesh geometry={outer} scale={[1.04, 1.10, 1.02]} receiveShadow><meshStandardMaterial vertexColors color="#718d86" emissive={glow} emissiveIntensity={.06 + e * .18} roughness={.76} metalness={0} /></mesh>
-    <lineSegments geometry={filaments} scale={[1.04, 1.10, 1.02]}><lineBasicMaterial color={glow} transparent opacity={.20 + e * .15} /></lineSegments>
-    <primitive object={scarLine} scale={[1.04, 1.10, 1.02]}><lineBasicMaterial color="#d7e2d7" transparent opacity={.42 + e * .12} /></primitive>
-    <points ref={fieldRef} geometry={field} scale={[1.04, 1.10, 1.02]}><pointsMaterial vertexColors size={.028} transparent opacity={.34 + e * .12} depthWrite={false} /></points>
-    <pointLight color={glow} intensity={.18 + e * .28} distance={2.6} decay={2} />
-    <pointLight position={[-.10, .10, .34]} color="#d8c6a2" intensity={.08 + e * .08} distance={1.5} decay={2} />
+    <mesh geometry={outer} scale={[1.10, 1.16, 1.08]} receiveShadow><meshStandardMaterial vertexColors color="#a5b8b1" emissive={glow} emissiveIntensity={.035 + e * .12} roughness={.76} metalness={0} /></mesh>
+    <lineSegments geometry={filaments} scale={[1.10, 1.16, 1.08]}><lineBasicMaterial vertexColors transparent opacity={.14 + e * .10} /></lineSegments>
+    <primitive object={scarLine} scale={[1.10, 1.16, 1.08]}><lineBasicMaterial color="#d3c7b2" transparent opacity={.26 + e * .10} /></primitive>
+    <points ref={fieldRef} geometry={field} scale={[1.10, 1.16, 1.08]}><pointsMaterial vertexColors size={.026} transparent opacity={.28 + e * .10} depthWrite={false} /></points>
+    <pointLight color={glow} intensity={.14 + e * .22} distance={2.5} decay={2} />
+    <pointLight position={[-.10, .10, .30]} color="#d2c09f" intensity={.06 + e * .06} distance={1.4} decay={2} />
   </group>
 }
 
 function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
   const root = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
-    const count = 120, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
+    const count = 140, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
     const warm = new THREE.Color('#b99973'), cool = new THREE.Color('#7ca8a0')
     for (let index = 0; index < count; index++) {
       const t = index / count, angle = index * 2.39996323, radius = 2.8 + Math.sqrt(t) * 10
@@ -512,8 +528,8 @@ function SubtleAtmosphereV234({ reducedMotion }: { reducedMotion: boolean }) {
     return result
   }, [])
   useEffect(() => () => geometry.dispose(), [geometry])
-  useFrame(({ clock }) => { if (root.current && !reducedMotion) root.current.position.y = Math.sin(clock.elapsedTime * .10) * .014 })
-  return <points ref={root} geometry={geometry} frustumCulled={false} name="home-v249-subtle-atmospheric-depth"><pointsMaterial size={.017} sizeAttenuation transparent opacity={.20} vertexColors depthWrite={false} /></points>
+  useFrame(({ clock }) => { if (root.current && !reducedMotion) root.current.position.y = Math.sin(clock.elapsedTime * .10) * .012 })
+  return <points ref={root} geometry={geometry} frustumCulled={false} name="home-v249-subtle-atmospheric-depth"><pointsMaterial size={.016} sizeAttenuation transparent opacity={.18} vertexColors depthWrite={false} /></points>
 }
 
 export function HomeCurrentArtRepair({ orbState, reducedMotion, onOrb, onGround, onLifeMap }: { orbState: OrbState; reducedMotion: boolean; onOrb: () => void; onGround: () => void; onLifeMap: () => void }) {
