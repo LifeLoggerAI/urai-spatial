@@ -7,11 +7,11 @@ import type { LifeMapNode } from './lifeMapData'
 import { lifeMapLocalPoint, lifeMapStage, lifeMapTerrainHeight } from './lifeMapSpatialLayout'
 import type { LifeMapJourneyPhase } from './LifeMapProductionWorld'
 
-type Point3 = [number, number, number]
-type Props = { nodes: LifeMapNode[]; selected: LifeMapNode | null; phase: LifeMapJourneyPhase; reducedMotion: boolean; onSelect: (node: LifeMapNode) => void }
-type RaycastFn = THREE.Object3D['raycast']
+type Props={nodes:LifeMapNode[];selected:LifeMapNode|null;phase:LifeMapJourneyPhase;reducedMotion:boolean;onSelect:(node:LifeMapNode)=>void}
+type Point3=[number,number,number]
+type RaycastFn=THREE.Object3D['raycast']
 
-const RETIRED_VISUAL_GROUPS = new Set([
+const RETIRED_VISUAL_GROUPS=new Set([
   'life-map-v237-worn-lineage-path','life-map-memory-artifact-families','life-map-curved-semantic-paths','life-map-authored-chapter-regions','life-map-selected-arrival-sanctuary',
   'life-map-foreground-observatory','life-map-relationship-observatory','life-map-goal-horizon','life-map-achievement-monument',
 ])
@@ -19,118 +19,68 @@ const RETIRED_VISUAL_GROUPS = new Set([
 function seeded(seed:number,salt:number){const value=Math.sin(seed*91.317+salt*17.731)*43758.5453123;return value-Math.floor(value)}
 function nodeSeed(node:LifeMapNode,index:number){return node.id.split('').reduce((sum,character)=>sum+character.charCodeAt(0),0)+index*37}
 
-function weatheredOutcropGeometry(seed:number,accent:string,active:boolean){
-  const geometry=new THREE.SphereGeometry(1,48,32)
+function memoryBody(seed:number,aura:string,active:boolean){
+  const geometry=new THREE.SphereGeometry(1,48,36)
   const position=geometry.getAttribute('position') as THREE.BufferAttribute
-  const colors:number[]=[]
-  const deep=new THREE.Color('#24332d'),mineral=new THREE.Color('#6d786f'),lichen=new THREE.Color('#536358'),memory=new THREE.Color(accent)
-  const family=seed%5
-  const profiles=[
-    {x:1.62,y:.36,z:.80,lean:.18},
-    {x:1.02,y:.58,z:1.28,lean:-.12},
-    {x:1.38,y:.44,z:.96,lean:.08},
-    {x:1.78,y:.30,z:.66,lean:-.18},
-    {x:1.18,y:.50,z:1.38,lean:.14},
-  ][family]
-  const bias=(seeded(seed,31)-.5)*.34
+  const colors=new Float32Array(position.count*3)
+  const deep=new THREE.Color('#203331'),mid=new THREE.Color('#6f8d83'),warm=new THREE.Color('#d8b28a'),accent=new THREE.Color(aura)
   for(let index=0;index<position.count;index++){
-    const nx=position.getX(index),ny=position.getY(index),nz=position.getZ(index)
-    const azimuth=Math.atan2(nz,nx), crown=Math.max(0,ny), lower=Math.max(0,-ny)
-    const shelf=Math.round((ny+1)*5)/5-(ny+1)
-    const coarse=.13*Math.sin(azimuth*(2+(family%3))+ny*3.6+seed*.071)
-    const stratum=.075*Math.sin(ny*15+azimuth*1.8+seed*.041)
-    const fine=.022*Math.sin(nx*13+nz*9+ny*11+seed*.019)
-    const cleft=Math.exp(-((nx*.82+nz*.36-.04)**2)/.032)*Math.pow(crown,1.25)
-    const cavityA=Math.exp(-(((nx-bias)*.86)**2+(nz+.22)**2)/.12)*(.28+.72*crown)
-    const cavityB=Math.exp(-(((nx+bias*.6)*.72)**2+(nz-.38)**2)/.16)*Math.max(0,.58+ny)
-    const activeCleft=active?Math.exp(-(((nx+.20)*.96)**2+((nz-.08)*.58)**2)/.075)*Math.max(0,.22+ny):0
-    const activeShoulder=active?Math.exp(-(((nx-.48)/.38)**2+((ny-.24)/.42)**2))*(.36+.64*Math.max(0,nz+.35)):0
-    const activeRecess=active?Math.exp(-(((nx+.58)/.34)**2+((ny-.34)/.36)**2))*(.38+.62*Math.max(0,nz+.20)):0
-    const radial=(1+coarse+stratum*.45+fine-.34*cleft-.14*cavityA-.09*cavityB)*(active?1+.18*activeShoulder-.24*activeRecess-.14*activeCleft:1)
-    const rootBlend=active?THREE.MathUtils.lerp(1.42,.52,THREE.MathUtils.smoothstep(ny,-.82,.92)):1
-    let x=nx*radial*profiles.x*rootBlend + profiles.lean*ny + bias*.14
-    let z=nz*radial*profiles.z*rootBlend + .04*Math.sin(ny*5.4+seed)
-    const twist=(ny+.2)*(.16+(seeded(seed,12)-.5)*.12)+(active?.18*ny:0)
-    const cos=Math.cos(twist),sin=Math.sin(twist),tx=x*cos-z*sin,tz=x*sin+z*cos
-    x=tx;z=tz
-    let y=ny*profiles.y + shelf*.16 + .04*Math.sin(nx*5+nz*4+seed*.07)*crown
-    y-=lower*(.42+.26*lower)
-    y-=.58
-    if(active){
-      y+=(ny+1)*.62+.10*crown+.14*activeShoulder-.12*activeRecess-.10*activeCleft
-      x+=crown*.12-activeRecess*.10
-    }
-    position.setXYZ(index,x,y,z)
-    const height=THREE.MathUtils.clamp((y+.90)/1.90,0,1)
-    const scar=THREE.MathUtils.clamp(cleft*.92+cavityA*.36+Math.abs(stratum)*2.0+activeCleft*.85+activeRecess*.28,0,1)
-    const memoryBase=active ? .026 : .004
-    const memoryScar=active ? .052 : .010
-    const color=deep.clone().lerp(mineral,.18+.52*height).lerp(lichen,.09+.15*(1-height)).lerp(memory,memoryBase+scar*memoryScar)
-    colors.push(color.r,color.g,color.b)
+    const nx=position.getX(index),ny=position.getY(index),nz=position.getZ(index),angle=Math.atan2(nz,nx)
+    const upper=THREE.MathUtils.smoothstep(ny,-.05,.92),lower=THREE.MathUtils.smoothstep(-ny,.10,.98)
+    const cleft=Math.exp(-((nx/.23)**2))*THREE.MathUtils.smoothstep(ny,.18,.96)
+    const lobeA=Math.exp(-(((nx+.32)/.40)**2+((ny-.40)/.48)**2)),lobeB=Math.exp(-(((nx-.30)/.42)**2+((ny-.36)/.50)**2))
+    const skin=.032*Math.sin(angle*5.2+ny*8.0+seed*.017)+.014*Math.sin(angle*10.1-ny*12.2)
+    const taper=THREE.MathUtils.lerp(.40,1,THREE.MathUtils.smoothstep(ny,-.96,.12))
+    let x=nx*(.68+.05*(seed%4))*taper*(1+skin+.10*lobeA+.07*lobeB)
+    let z=nz*(.55+.03*((seed+2)%4))*taper*(1+skin*.65)
+    let y=ny*(active?.96:.82)+.10*lobeA+.06*lobeB-.22*cleft-lower*.16
+    x+=upper*.045
+    const twist=(ny+.12)*(.08+(seeded(seed,12)-.5)*.13),cos=Math.cos(twist),sin=Math.sin(twist)
+    const tx=x*cos-z*sin,tz=x*sin+z*cos
+    position.setXYZ(index,tx,y,tz)
+    const altitude=THREE.MathUtils.clamp((y+1.05)/2.1,0,1),fissure=THREE.MathUtils.clamp(cleft*.78+Math.abs(skin)*5.4,0,1)
+    const color=deep.clone().lerp(mid,.28+.42*altitude).lerp(warm,.08+.18*upper).lerp(accent,(active?.16:.07)+fissure*(active?.30:.16))
+    colors.set([color.r,color.g,color.b],index*3)
   }
   position.needsUpdate=true
-  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
-  geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry
+  geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry
 }
 
-function memorySiteScarGeometry(point:Point3,seed:number,accent:string,active:boolean){
-  const positions:number[]=[],colors:number[]=[],indices:number[]=[]
-  const earth=new THREE.Color('#344039'),mineral=new THREE.Color('#69766c'),memory=new THREE.Color(accent)
-  const branches=2+(seed%3)
-  let vertexBase=0
-  for(let branch=0;branch<branches;branch++){
-    const segments=18
-    const angle=seeded(seed,61+branch)*Math.PI*2
-    const normalX=-Math.sin(angle),normalZ=Math.cos(angle)
-    const length=1.35+seeded(seed,71+branch)*1.55
-    const widthBase=.046+seeded(seed,81+branch)*.040
-    const bend=(seeded(seed,91+branch)-.5)*.48
-    for(let step=0;step<=segments;step++){
-      const t=step/segments
-      const drift=Math.sin(t*Math.PI)*bend
-      const centerX=Math.cos(angle)*length*t+normalX*drift
-      const centerZ=Math.sin(angle)*length*t+normalZ*drift
-      const width=widthBase*(1-.50*t)*(.86+.18*Math.sin(step*1.73+branch))
-      for(const side of [-1,1] as const){
-        const localX=centerX+normalX*width*side
-        const localZ=centerZ+normalZ*width*side
-        const worldX=point[0]+localX,worldZ=point[2]+localZ
-        const localY=lifeMapTerrainHeight(worldX,worldZ)-point[1]+.038+.006*Math.sin(step*1.41+side+branch)
-        positions.push(localX,localY,localZ)
-        const age=.42+.42*(1-t)+.10*Math.sin(step*.67+branch)
-        const accentWeight=(active?.060:.026)*(1-t*.62)
-        const color=earth.clone().lerp(mineral,age).lerp(memory,accentWeight)
-        colors.push(color.r,color.g,color.b)
-      }
-    }
-    for(let step=0;step<segments;step++){
-      const a=vertexBase+step*2,b=a+1,c=a+2,d=a+3
-      indices.push(a,c,b,b,c,d)
-    }
-    vertexBase+=(segments+1)*2
+function rootTubes(seed:number,active:boolean){
+  return Array.from({length:active?7:4},(_,index)=>{
+    const angle=(Math.PI*2*index)/(active?7:4)+seeded(seed,60+index)*.34,length=(active?1.25:.72)+seeded(seed,70+index)*(active?.46:.24)
+    const points=[new THREE.Vector3(0,-.44,0),new THREE.Vector3(Math.cos(angle)*length*.35,-.55,Math.sin(angle)*length*.35),new THREE.Vector3(Math.cos(angle+.12)*length*.72,-.60,Math.sin(angle+.12)*length*.72),new THREE.Vector3(Math.cos(angle-.08)*length,-.62,Math.sin(angle-.08)*length)]
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,active?.020:.011,6,false)
+  })
+}
+
+function motesGeometry(seed:number,active:boolean){
+  const count=active?86:28,positions=new Float32Array(count*3)
+  for(let index=0;index<count;index++){
+    const angle=index*2.39996323+seeded(seed,index)*.5,radius=.38+Math.sqrt((index+.5)/count)*(active?1.35:.78)
+    positions.set([Math.cos(angle)*radius,-.18+seeded(seed+index,17)*(active?1.55:.82),Math.sin(angle)*radius*.70],index*3)
   }
-  const geometry=new THREE.BufferGeometry()
-  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
-  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
-  geometry.setIndex(indices);geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));return geometry
 }
 
-function wornLineageTrailGeometry(){
-  const rows=150,positions:number[]=[],colors:number[]=[],indices:number[]=[]
-  const earth=new THREE.Color('#45473d'),worn=new THREE.Color('#9a8367'),lichen=new THREE.Color('#718176')
+function overviewSkyGeometry(){
+  const count=260,positions=new Float32Array(count*3),colors=new Float32Array(count*3),cool=new THREE.Color('#8fc6c0'),warm=new THREE.Color('#e2b88a')
+  for(let index=0;index<count;index++){
+    const depth=index/(count-1),band=index%6,z=5-depth*47+(band-3)*.42,x=(seeded(index,31)-.5)*(18-band*.7),y=lifeMapTerrainHeight(x,z)+.8+seeded(index,32)*5.8
+    positions.set([x,y,z],index*3);const color=cool.clone().lerp(warm,seeded(index,33));colors.set([color.r,color.g,color.b],index*3)
+  }
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));return geometry
+}
+
+function trailGeometry(){
+  const rows=130,positions:number[]=[],colors:number[]=[],indices:number[]=[],earth=new THREE.Color('#45493f'),worn=new THREE.Color('#a98b68')
   for(let row=0;row<=rows;row++){
-    const t=row/rows,z=6.2-t*44.9,center=.58*Math.sin((z+5.5)*.17)+.18*Math.sin(z*.51),irregular=.035*Math.sin(row*1.91)+.025*Math.sin(row*.47),width=.27+.10*(1-t)+.055*Math.sin(t*Math.PI*7.2)+irregular
-    for(const side of [-1,1] as const){
-      const edgeNoise=.045*Math.sin(row*2.37+side*1.4),x=center+side*Math.max(.17,width+edgeNoise),y=lifeMapTerrainHeight(x,z)+.055+.012*Math.sin(row*1.7+side)
-      positions.push(x,y,z)
-      const age=.5+.5*Math.sin(t*17.3+side*.8),color=earth.clone().lerp(worn,.48+age*.22).lerp(lichen,.08+.12*(1-t));colors.push(color.r,color.g,color.b)
-    }
+    const t=row/rows,z=6-t*44,center=.52*Math.sin((z+4)*.17),width=.30+.08*Math.sin(t*Math.PI*6)
+    for(const side of [-1,1] as const){const x=center+side*width,y=lifeMapTerrainHeight(x,z)+.055;positions.push(x,y,z);const color=earth.clone().lerp(worn,.48+.24*(1-t));colors.push(color.r,color.g,color.b)}
   }
   for(let row=0;row<rows;row++){const a=row*2,b=a+1,c=a+2,d=a+3;indices.push(a,c,b,b,c,d)}
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry
 }
-
-function sanctuaryParticles(seed:number){const count=112,positions=new Float32Array(count*3);for(let index=0;index<count;index++){const angle=index*2.39996323+seeded(seed,index)*.42,radius=.55+Math.sqrt((index+.5)/count)*1.8;positions.set([Math.cos(angle)*radius,-.18+seeded(seed+index,18)*1.45,Math.sin(angle)*radius*.68],index*3)}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));return geometry}
 
 function RetireRejectedLifeMapVisuals(){
   const {scene}=useThree()
@@ -152,34 +102,41 @@ function RetireRejectedLifeMapVisuals(){
   return null
 }
 
-function MemoryOutcrop({node,index,active,reducedMotion,onSelect,arrival}:{node:LifeMapNode;index:number;active:boolean;reducedMotion:boolean;onSelect:(node:LifeMapNode)=>void;arrival:boolean}){
-  const root=useRef<THREE.Group>(null),seed=nodeSeed(node,index),point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node]),geometry=useMemo(()=>weatheredOutcropGeometry(seed,node.aura,active),[active,node.aura,seed]),scarGeometry=useMemo(()=>memorySiteScarGeometry(point,seed,node.aura,active),[active,node.aura,point,seed])
-  useEffect(()=>()=>{geometry.dispose();scarGeometry.dispose()},[geometry,scarGeometry])
-  useFrame(({clock})=>{if(!root.current||reducedMotion||!active)return;root.current.rotation.y=Math.sin(clock.elapsedTime*.12+seed)*.006})
+function MemoryPlace({node,index,active,reducedMotion,onSelect,arrival}:{node:LifeMapNode;index:number;active:boolean;reducedMotion:boolean;onSelect:(node:LifeMapNode)=>void;arrival:boolean}){
+  const root=useRef<THREE.Group>(null),seed=nodeSeed(node,index),point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node])
+  const body=useMemo(()=>memoryBody(seed,node.aura,active),[active,node.aura,seed]),roots=useMemo(()=>rootTubes(seed,active),[active,seed]),motes=useMemo(()=>motesGeometry(seed,active),[active,seed])
+  useEffect(()=>()=>{body.dispose();roots.forEach((geometry)=>geometry.dispose());motes.dispose()},[body,motes,roots])
+  useFrame(({clock})=>{if(!root.current||reducedMotion)return;root.current.rotation.y=(seeded(seed,22)-.5)*.45+Math.sin(clock.elapsedTime*.16+seed)*.028})
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onSelect(node)}
-  const horizontalScale=active ? (arrival?.56:.50) : (arrival?.20:.29)
-  const verticalScale=active ? (arrival?1.34:1.08) : (arrival?.26:.39)
-  const depthScale=active ? (arrival?.48:.46) : (arrival?.20:.27)
-  const yOffset=active ? (arrival?-.16:-.25) : (arrival?-.55:-.48)
-  return <group position={point} name={`life-map-v249-memory-place-${node.id}`} userData={{artRevision:'v249-context-preserving-memory-geography',visualRepair:'all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context',semanticNode:node.id}} onClick={activate}>
-    <mesh geometry={scarGeometry} receiveShadow name={`life-map-v249-terrain-scar-${node.id}`}><meshStandardMaterial vertexColors color="#89978e" roughness={1} metalness={0}/></mesh>
-    <group ref={root} position={[0,yOffset,0]} scale={[horizontalScale,verticalScale,depthScale]} rotation={[0,seeded(seed,22)*Math.PI*2,0]}>
-      <mesh geometry={geometry} receiveShadow><meshStandardMaterial vertexColors color={active?'#7d8982':'#596760'} emissive={node.aura} emissiveIntensity={active?.018:.002} roughness={.98} metalness={0}/></mesh>
+  const scale=active?(arrival?.82:.74):(arrival?.46:.54),lift=active?(arrival?.72:.60):(arrival?.18:.26)
+  return <group position={point} name={`life-map-v254-memory-place-${node.id}`} userData={{artRevision:'v254-luminous-memory-geography',visualRepair:'all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context',semanticNode:node.id}} onClick={activate}>
+    <group ref={root} position={[0,lift,0]} scale={scale}>
+      <mesh geometry={body} castShadow receiveShadow><meshStandardMaterial vertexColors color="#ffffff" emissive={node.aura} emissiveIntensity={active?.32:.12} roughness={.58} metalness={0}/></mesh>
+      {roots.map((geometry,rootIndex)=><mesh key={rootIndex} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={rootIndex%2?'#ddb184':node.aura} emissive={node.aura} emissiveIntensity={active?.28:.10} roughness={.72} transparent opacity={active?.68:.40}/></mesh>)}
+      <points geometry={motes} raycast={()=>null}><pointsMaterial color={node.aura} size={active?.050:.032} transparent opacity={active?.72:.44} depthWrite={false} sizeAttenuation/></points>
+      <pointLight position={[0,.42,.32]} color={node.aura} intensity={active?1.35:.32} distance={active?5.8:3.2} decay={2}/>
     </group>
-    <pointLight position={[0,active?.48:.05,0]} color={node.aura} intensity={active?.075:.012} distance={active?2.4:.9} decay={2}/>
   </group>
 }
 
 function SelectedSanctuary({node,index,reducedMotion}:{node:LifeMapNode;index:number;reducedMotion:boolean}){
-  const point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node]),particles=useMemo(()=>sanctuaryParticles(nodeSeed(node,index)),[index,node])
-  useEffect(()=>()=>particles.dispose(),[particles])
-  const opacity=reducedMotion ? .12 : .17
-  return <group position={[point[0],point[1]-.04,point[2]]} name="life-map-v249-contextual-memory-sanctuary" userData={{scaleMode:'intimate-with-context',visualIntent:'selected-memory-rises-while-surrounding-personal-geography-remains-readable'}}><points geometry={particles}><pointsMaterial color={node.aura} size={.019} transparent opacity={opacity} depthWrite={false} sizeAttenuation/></points><pointLight position={[-1.0,.82,.6]} color={node.aura} intensity={.18} distance={3.4} decay={2}/><pointLight position={[1.25,.48,-.8]} color="#d6d0b7" intensity={.12} distance={3.2} decay={2}/></group>
+  const point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node])
+  const branches=useMemo(()=>Array.from({length:10},(_,branch)=>{const side=branch%2?-1:1,offset=Math.floor(branch/2),points=[new THREE.Vector3(side*1.6,-.30,-1.0),new THREE.Vector3(side*(1.18-offset*.06),.18+offset*.10,-.62),new THREE.Vector3(side*(.70-offset*.035),.88+offset*.11,-.08),new THREE.Vector3(side*(.34-offset*.018),1.52+offset*.08,.40)];return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),38,.015+(branch%3)*.003,6,false)}),[])
+  useEffect(()=>()=>branches.forEach((geometry)=>geometry.dispose()),[branches])
+  return <group position={[point[0],point[1]+.04,point[2]]} name="life-map-v254-contextual-memory-sanctuary" userData={{visualOnly:true,interactionOwner:false,scaleMode:'intimate-with-context'}}>
+    {branches.map((geometry,branch)=><mesh key={branch} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={branch%2?node.aura:'#e5d3ad'} emissive={node.aura} emissiveIntensity={.34} roughness={.62} transparent opacity={reducedMotion?.42:.60}/></mesh>)}
+    <pointLight position={[-1,1,.7]} color={node.aura} intensity={1.0} distance={6.6} decay={2}/><pointLight position={[1.2,.7,-.7]} color="#ddb184" intensity={.62} distance={5.8} decay={2}/>
+  </group>
 }
 
 export function LifeMapGoldMasterOverlay({nodes,selected,phase,reducedMotion,onSelect}:Props){
-  const {size}=useThree(),portrait=size.height>size.width,stage=lifeMapStage(Boolean(selected),portrait),trail=useMemo(wornLineageTrailGeometry,[])
-  useEffect(()=>()=>trail.dispose(),[trail])
+  const {size}=useThree(),portrait=size.height>size.width,stage=lifeMapStage(Boolean(selected),portrait),trail=useMemo(trailGeometry,[]),sky=useMemo(overviewSkyGeometry,[])
+  useEffect(()=>()=>{trail.dispose();sky.dispose()},[sky,trail])
   const selectedIndex=selected?Math.max(0,nodes.findIndex((node)=>node.id===selected.id)):-1,arrival=Boolean(selected&&phase==='arrival')
-  return <><RetireRejectedLifeMapVisuals/><group name="life-map-v249-personal-universe-geography" scale={stage.scale} position={stage.position} userData={{artRevision:'v249-context-preserving-personal-universe',visualRepair:'surrounding-geography-remains-visible-through-selection-and-arrival'}}><mesh geometry={trail} receiveShadow name="life-map-v249-eroded-lineage-footpath"><meshStandardMaterial vertexColors color="#8d806b" roughness={1} metalness={0}/></mesh><group name="life-map-v249-grounded-memory-places">{nodes.map((node)=>{const index=Math.max(0,nodes.findIndex((candidate)=>candidate.id===node.id));return <MemoryOutcrop key={node.id} node={node} index={index} active={selected?.id===node.id} arrival={arrival} reducedMotion={reducedMotion} onSelect={onSelect}/>})}</group>{arrival&&selected?<SelectedSanctuary node={selected} index={selectedIndex} reducedMotion={reducedMotion}/>:null}</group></>
+  return <><RetireRejectedLifeMapVisuals/><group name="life-map-v249-personal-universe-geography" scale={stage.scale} position={stage.position} userData={{artRevision:'v254-luminous-personal-universe',visualRepair:'surrounding-geography-remains-visible-through-selection-and-arrival'}}>
+    <mesh geometry={trail} receiveShadow name="life-map-v254-lineage-footpath"><meshStandardMaterial vertexColors color="#b6a489" emissive="#62513f" emissiveIntensity={.07} roughness={.93}/></mesh>
+    <points geometry={sky} raycast={()=>null} name="life-map-v254-personal-memory-sky"><pointsMaterial vertexColors size={.046} transparent opacity={.62} depthWrite={false} sizeAttenuation/></points>
+    <group name="life-map-v249-grounded-memory-places" userData={{visualRepair:'all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context'}}>{nodes.map((node)=>{const index=Math.max(0,nodes.findIndex((candidate)=>candidate.id===node.id));return <MemoryPlace key={node.id} node={node} index={index} active={selected?.id===node.id} arrival={arrival} reducedMotion={reducedMotion} onSelect={onSelect}/>})}</group>
+    {arrival&&selected?<SelectedSanctuary node={selected} index={selectedIndex} reducedMotion={reducedMotion}/>:null}
+  </group></>
 }
