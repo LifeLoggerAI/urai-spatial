@@ -33,13 +33,13 @@ function memoryBody(seed:number,aura:string,active:boolean){
     const taper=THREE.MathUtils.lerp(.40,1,THREE.MathUtils.smoothstep(ny,-.96,.12))
     let x=nx*(.68+.05*(seed%4))*taper*(1+skin+.10*lobeA+.07*lobeB)
     let z=nz*(.55+.03*((seed+2)%4))*taper*(1+skin*.65)
-    let y=ny*(active?.96:.82)+.10*lobeA+.06*lobeB-.22*cleft-lower*.16
+    let y=ny*(active?.88:.82)+.08*lobeA+.05*lobeB-.20*cleft-lower*.16
     x+=upper*.045
     const twist=(ny+.12)*(.08+(seeded(seed,12)-.5)*.13),cos=Math.cos(twist),sin=Math.sin(twist)
     const tx=x*cos-z*sin,tz=x*sin+z*cos
     position.setXYZ(index,tx,y,tz)
     const altitude=THREE.MathUtils.clamp((y+1.05)/2.1,0,1),fissure=THREE.MathUtils.clamp(cleft*.78+Math.abs(skin)*5.4,0,1)
-    const color=deep.clone().lerp(mid,.28+.42*altitude).lerp(warm,.08+.18*upper).lerp(accent,(active?.16:.07)+fissure*(active?.30:.16))
+    const color=deep.clone().lerp(mid,.28+.42*altitude).lerp(warm,.08+.18*upper).lerp(accent,(active?.11:.07)+fissure*(active?.20:.16))
     colors.set([color.r,color.g,color.b],index*3)
   }
   position.needsUpdate=true
@@ -47,18 +47,19 @@ function memoryBody(seed:number,aura:string,active:boolean){
 }
 
 function rootTubes(seed:number,active:boolean){
-  return Array.from({length:active?7:4},(_,index)=>{
-    const angle=(Math.PI*2*index)/(active?7:4)+seeded(seed,60+index)*.34,length=(active?1.25:.72)+seeded(seed,70+index)*(active?.46:.24)
+  const count=active?4:4
+  return Array.from({length:count},(_,index)=>{
+    const angle=(Math.PI*2*index)/count+seeded(seed,60+index)*.42,length=(active?1.0:.72)+seeded(seed,70+index)*(active?.30:.24)
     const points=[new THREE.Vector3(0,-.44,0),new THREE.Vector3(Math.cos(angle)*length*.35,-.55,Math.sin(angle)*length*.35),new THREE.Vector3(Math.cos(angle+.12)*length*.72,-.60,Math.sin(angle+.12)*length*.72),new THREE.Vector3(Math.cos(angle-.08)*length,-.62,Math.sin(angle-.08)*length)]
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,active?.020:.011,6,false)
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),20,active?.014:.011,6,false)
   })
 }
 
 function motesGeometry(seed:number,active:boolean){
-  const count=active?86:28,positions=new Float32Array(count*3)
+  const count=active?44:24,positions=new Float32Array(count*3)
   for(let index=0;index<count;index++){
-    const angle=index*2.39996323+seeded(seed,index)*.5,radius=.38+Math.sqrt((index+.5)/count)*(active?1.35:.78)
-    positions.set([Math.cos(angle)*radius,-.18+seeded(seed+index,17)*(active?1.55:.82),Math.sin(angle)*radius*.70],index*3)
+    const angle=index*2.39996323+seeded(seed,index)*.5,radius=.38+Math.sqrt((index+.5)/count)*(active?1.12:.76)
+    positions.set([Math.cos(angle)*radius,-.18+seeded(seed+index,17)*(active?1.30:.80),Math.sin(angle)*radius*.70],index*3)
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));return geometry
 }
@@ -106,26 +107,26 @@ function MemoryPlace({node,index,active,reducedMotion,onSelect,arrival}:{node:Li
   const root=useRef<THREE.Group>(null),seed=nodeSeed(node,index),point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node])
   const body=useMemo(()=>memoryBody(seed,node.aura,active),[active,node.aura,seed]),roots=useMemo(()=>rootTubes(seed,active),[active,seed]),motes=useMemo(()=>motesGeometry(seed,active),[active,seed])
   useEffect(()=>()=>{body.dispose();roots.forEach((geometry)=>geometry.dispose());motes.dispose()},[body,motes,roots])
-  useFrame(({clock})=>{if(!root.current||reducedMotion)return;root.current.rotation.y=(seeded(seed,22)-.5)*.45+Math.sin(clock.elapsedTime*.16+seed)*.028})
+  useFrame(({clock})=>{if(!root.current||reducedMotion)return;root.current.rotation.y=(seeded(seed,22)-.5)*.45+Math.sin(clock.elapsedTime*.16+seed)*.022})
   const activate=(event:ThreeEvent<MouseEvent>)=>{event.stopPropagation();onSelect(node)}
-  const scale=active?(arrival?.82:.74):(arrival?.46:.54),lift=active?(arrival?.72:.60):(arrival?.18:.26)
+  const scale=active?(arrival?.64:.66):(arrival?.46:.54),lift=active?(arrival?.58:.54):(arrival?.18:.26)
   return <group position={point} name={`life-map-v254-memory-place-${node.id}`} userData={{artRevision:'v254-luminous-memory-geography',visualRepair:'all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context',semanticNode:node.id}} onClick={activate}>
     <group ref={root} position={[0,lift,0]} scale={scale}>
-      <mesh geometry={body} castShadow receiveShadow><meshStandardMaterial vertexColors color="#ffffff" emissive={node.aura} emissiveIntensity={active?.32:.12} roughness={.58} metalness={0}/></mesh>
-      {roots.map((geometry,rootIndex)=><mesh key={rootIndex} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={rootIndex%2?'#ddb184':node.aura} emissive={node.aura} emissiveIntensity={active?.28:.10} roughness={.72} transparent opacity={active?.68:.40}/></mesh>)}
-      <points geometry={motes} raycast={()=>null}><pointsMaterial color={node.aura} size={active?.050:.032} transparent opacity={active?.72:.44} depthWrite={false} sizeAttenuation/></points>
-      <pointLight position={[0,.42,.32]} color={node.aura} intensity={active?1.35:.32} distance={active?5.8:3.2} decay={2}/>
+      <mesh geometry={body} castShadow receiveShadow><meshStandardMaterial vertexColors color="#ffffff" emissive={node.aura} emissiveIntensity={active?.15:.10} roughness={.66} metalness={0}/></mesh>
+      {roots.map((geometry,rootIndex)=><mesh key={rootIndex} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={rootIndex%2?'#b99f7d':node.aura} emissive={node.aura} emissiveIntensity={active?.12:.08} roughness={.80} transparent opacity={active?.42:.34}/></mesh>)}
+      <points geometry={motes} raycast={()=>null}><pointsMaterial color={node.aura} size={active?.040:.030} transparent opacity={active?.44:.36} depthWrite={false} sizeAttenuation/></points>
+      <pointLight position={[0,.42,.32]} color={node.aura} intensity={active?.68:.26} distance={active?4.8:3.0} decay={2}/>
     </group>
   </group>
 }
 
 function SelectedSanctuary({node,index,reducedMotion}:{node:LifeMapNode;index:number;reducedMotion:boolean}){
   const point=useMemo<Point3>(()=>lifeMapLocalPoint(node,index),[index,node])
-  const branches=useMemo(()=>Array.from({length:10},(_,branch)=>{const side=branch%2?-1:1,offset=Math.floor(branch/2),points=[new THREE.Vector3(side*1.6,-.30,-1.0),new THREE.Vector3(side*(1.18-offset*.06),.18+offset*.10,-.62),new THREE.Vector3(side*(.70-offset*.035),.88+offset*.11,-.08),new THREE.Vector3(side*(.34-offset*.018),1.52+offset*.08,.40)];return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),38,.015+(branch%3)*.003,6,false)}),[])
+  const branches=useMemo(()=>Array.from({length:4},(_,branch)=>{const side=branch%2?-1:1,offset=Math.floor(branch/2),points=[new THREE.Vector3(side*(1.75+offset*.22),-.34,-1.24-offset*.20),new THREE.Vector3(side*(1.38+offset*.12),-.12,-.82),new THREE.Vector3(side*(.98+offset*.08),.34,-.34),new THREE.Vector3(side*(.70+offset*.05),.82,.12)];return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),30,.012+(branch%2)*.002,6,false)}),[])
   useEffect(()=>()=>branches.forEach((geometry)=>geometry.dispose()),[branches])
-  return <group position={[point[0],point[1]+.04,point[2]]} name="life-map-v254-contextual-memory-sanctuary" userData={{visualOnly:true,interactionOwner:false,scaleMode:'intimate-with-context'}}>
-    {branches.map((geometry,branch)=><mesh key={branch} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={branch%2?node.aura:'#e5d3ad'} emissive={node.aura} emissiveIntensity={.34} roughness={.62} transparent opacity={reducedMotion?.42:.60}/></mesh>)}
-    <pointLight position={[-1,1,.7]} color={node.aura} intensity={1.0} distance={6.6} decay={2}/><pointLight position={[1.2,.7,-.7]} color="#ddb184" intensity={.62} distance={5.8} decay={2}/>
+  return <group position={[point[0],point[1]-.02,point[2]]} name="life-map-v254-contextual-memory-sanctuary" userData={{visualOnly:true,interactionOwner:false,scaleMode:'intimate-with-context',morphology:'low-asymmetric-root-shoulders'}}>
+    {branches.map((geometry,branch)=><mesh key={branch} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={branch%2?node.aura:'#bca987'} emissive={node.aura} emissiveIntensity={.10} roughness={.78} transparent opacity={reducedMotion?.26:.34}/></mesh>)}
+    <pointLight position={[-1.2,.72,.7]} color={node.aura} intensity={.44} distance={5.4} decay={2}/><pointLight position={[1.3,.48,-.8]} color="#ddb184" intensity={.24} distance={4.8} decay={2}/>
   </group>
 }
 

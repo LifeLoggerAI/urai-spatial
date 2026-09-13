@@ -48,10 +48,10 @@ function normalizeClone(scene: THREE.Object3D, tint: string, visualOnly = true) 
     const copies = materials.map((source) => {
       const material = source.clone()
       if (material instanceof THREE.MeshStandardMaterial) {
-        material.color.multiply(new THREE.Color(tint))
-        material.roughness = Math.max(.92, material.roughness)
+        material.color.lerp(new THREE.Color(tint), .14)
+        material.roughness = THREE.MathUtils.clamp(material.roughness, .68, .94)
         material.metalness = 0
-        material.envMapIntensity = .68
+        material.envMapIntensity = 1.08
       }
       return material
     })
@@ -71,81 +71,44 @@ function ScannedFormation({ variant, position, rotation, scale, tint = '#a29b89'
   return <group position={position} rotation={rotation} scale={scale} userData={{ visualOnly: true, interactionOwner: false }}><primitive object={model} /></group>
 }
 
-function FernCluster({ position, rotation = 0, scale = 1 }: { position: V3; rotation?: number; scale?: number }) {
+function FernCluster({ position, rotation = 0, scale = 1, spread = 1 }: { position: V3; rotation?: number; scale?: number; spread?: number }) {
   const gltf = useGLTF(FERN)
   const plants = useMemo(() => {
     const names = ['fern_02_a', 'fern_02_b', 'fern_02_c', 'fern_02_d']
-    return Array.from({ length: 7 }, (_, index) => {
+    return Array.from({ length: 9 }, (_, index) => {
       const source = gltf.scene.getObjectByName(names[index % names.length])
       if (!source) return null
       const clone = source.clone(true)
-      const angle = index * 2.39996323
-      const radius = .16 + (index % 4) * .11
-      clone.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius * .74)
-      clone.rotation.y = angle + index * .21
-      const s = .72 + (index % 5) * .11
-      clone.scale.set(s, s * (1.08 + (index % 3) * .09), s)
+      const angle = index * 2.39996323 + rotation * .18
+      const radius = (.14 + (index % 5) * .12) * spread
+      clone.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius * .78)
+      clone.rotation.y = angle + index * .17
+      const s = .68 + (index % 6) * .10
+      clone.scale.set(s * (.92 + (index % 3) * .06), s * (1.06 + (index % 4) * .08), s)
       clone.traverse((object) => {
         object.raycast = () => undefined
-        if (object instanceof THREE.Mesh) { object.castShadow = index < 2; object.receiveShadow = true }
+        if (object instanceof THREE.Mesh) { object.castShadow = index < 3; object.receiveShadow = true }
       })
       return clone
     }).filter((plant): plant is THREE.Object3D => Boolean(plant))
-  }, [gltf.scene])
+  }, [gltf.scene, rotation, spread])
   return <group position={position} rotation={[0, rotation, 0]} scale={scale} userData={{ visualOnly: true, interactionOwner: false }}>{plants.map((plant, index) => <primitive key={index} object={plant} />)}</group>
 }
 
-function ribGeometry(side: -1 | 1, zBand: number, lift: number, seed: number) {
-  const segments = 34
-  const positions: number[] = []
-  const indices: number[] = []
-  for (let step = 0; step <= segments; step++) {
-    const t = step / segments
-    const x = side * THREE.MathUtils.lerp(8.9, 2.7, t)
-    const z = zBand - t * 1.05 + Math.sin(t * Math.PI * 2 + seed) * .12
-    const y = height(x, z) + .16 + Math.sin(t * Math.PI) * lift + t * .10
-    const width = THREE.MathUtils.lerp(.42, .18, t)
-    const thick = THREE.MathUtils.lerp(.22, .10, t)
-    positions.push(x, y - thick, z - width, x, y - thick, z + width, x, y + thick, z - width, x, y + thick, z + width)
-    if (step < segments) {
-      const a = step * 4, b = a + 1, c = a + 2, d = a + 3, e = a + 4, f = a + 5, g = a + 6, h = a + 7
-      indices.push(a,e,c,c,e,g, b,d,f,d,h,f, c,g,d,d,g,h, a,b,e,b,f,e)
-    }
-  }
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  return geometry
-}
-
-function GrownStoneRibs() {
-  const ribs = useMemo(() => [-5.8,-13.6].flatMap((z, index) => [
-    ribGeometry(-1, z, 2.2 + index * .12, index + .2),
-    ribGeometry(1, z-.44, 1.95 + index * .14, index + 1.7),
-  ]), [])
-  useEffect(() => () => ribs.forEach((geometry) => geometry.dispose()), [ribs])
-  return <group name="home-v254-grown-stone-rib-architecture" userData={{ visualOnly: true, interactionOwner: false }}>
-    {ribs.map((geometry, index) => <mesh key={index} geometry={geometry} raycast={() => null} receiveShadow>
-      <meshStandardMaterial color={index % 2 ? '#62695f' : '#67665c'} emissive="#1d211d" emissiveIntensity={.045} roughness={.98} metalness={0} />
-    </mesh>)}
-  </group>
-}
-
 function memoryLightsGeometry() {
-  const count = 300
+  const count = 148
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const ember = new THREE.Color('#d39a6f'), moss = new THREE.Color('#7ca393'), pearl = new THREE.Color('#d8c7a1')
   for (let index = 0; index < count; index++) {
     const depth = index / (count - 1)
     const side = index % 2 ? -1 : 1
-    const lane = 2.7 + (index % 13) * .36
-    const x = side * lane + Math.sin(index * 1.71) * .36
-    const z = 3.4 - depth * 19.5 + Math.cos(index * .63) * .45
-    const y = height(x,z) + .28 + (index % 11) * .10
+    const lane = 3.2 + (index % 11) * .34
+    const x = side * lane + Math.sin(index * 1.71) * .28
+    const z = 3.2 - depth * 20.4 + Math.cos(index * .63) * .38
+    const y = height(x,z) + .22 + (index % 9) * .075
     positions.set([x,y,z], index * 3)
-    const color = ember.clone().lerp(moss, .18 + .58 * ((index % 17) / 16)).lerp(pearl, index % 23 === 0 ? .34 : 0)
+    const color = ember.clone().lerp(moss, .22 + .50 * ((index % 17) / 16)).lerp(pearl, index % 19 === 0 ? .30 : 0)
     colors.set([color.r,color.g,color.b], index * 3)
   }
   const geometry = new THREE.BufferGeometry()
@@ -158,56 +121,52 @@ function LocalHistoryField({ reducedMotion }: { reducedMotion: boolean }) {
   const points = useRef<THREE.Points>(null)
   const geometry = useMemo(memoryLightsGeometry, [])
   useEffect(() => () => geometry.dispose(), [geometry])
-  useFrame(({ clock }) => { if (points.current && !reducedMotion) points.current.position.y = Math.sin(clock.elapsedTime * .13) * .022 })
-  return <points ref={points} geometry={geometry} raycast={() => null} frustumCulled={false} name="home-v254-localized-history-light-field"><pointsMaterial vertexColors size={.030} transparent opacity={.48} depthWrite={false} sizeAttenuation /></points>
+  useFrame(({ clock }) => { if (points.current && !reducedMotion) points.current.position.y = Math.sin(clock.elapsedTime * .11) * .014 })
+  return <points ref={points} geometry={geometry} raycast={() => null} frustumCulled={false} name="home-v254-localized-history-light-field"><pointsMaterial vertexColors size={.024} transparent opacity={.34} depthWrite={false} sizeAttenuation /></points>
 }
 
 function FramingFormations() {
-  const specs: Array<{ variant:keyof typeof ROCKS; x:number; z:number; sx:number; sy:number; sz:number; ry:number }> = [
-    {variant:'a',x:-7.2,z:4.2,sx:3.3,sy:2.2,sz:2.6,ry:.72},{variant:'b',x:7.1,z:3.6,sx:3.6,sy:2.3,sz:2.8,ry:-.86},
-    {variant:'b',x:-7.7,z:.2,sx:4.2,sy:2.8,sz:3.2,ry:1.20},{variant:'a',x:7.8,z:-.5,sx:4.1,sy:2.7,sz:3.1,ry:-1.10},
-    {variant:'a',x:-8.1,z:-5.0,sx:5.0,sy:3.2,sz:3.8,ry:.43},{variant:'b',x:8.2,z:-5.8,sx:4.8,sy:3.2,sz:3.7,ry:-.54},
-    {variant:'b',x:-7.4,z:-10.2,sx:4.5,sy:3.0,sz:3.4,ry:1.02},{variant:'a',x:7.5,z:-10.7,sx:4.6,sy:3.1,sz:3.5,ry:-.91},
-    {variant:'a',x:-5.8,z:-15.0,sx:5.2,sy:3.6,sz:4.0,ry:.64},{variant:'b',x:5.9,z:-15.4,sx:5.0,sy:3.5,sz:4.1,ry:-.70},
+  const specs: Array<{ variant:keyof typeof ROCKS; x:number; z:number; sx:number; sy:number; sz:number; ry:number; sink:number }> = [
+    {variant:'a',x:-7.8,z:4.6,sx:2.55,sy:1.65,sz:2.15,ry:.72,sink:.74},{variant:'b',x:7.5,z:3.9,sx:2.75,sy:1.72,sz:2.22,ry:-.86,sink:.78},
+    {variant:'b',x:-8.6,z:-.4,sx:3.05,sy:1.92,sz:2.42,ry:1.20,sink:.88},{variant:'a',x:8.5,z:-1.2,sx:2.95,sy:1.86,sz:2.35,ry:-1.10,sink:.84},
+    {variant:'a',x:-9.1,z:-6.3,sx:3.35,sy:2.08,sz:2.68,ry:.43,sink:.98},{variant:'b',x:9.0,z:-7.1,sx:3.20,sy:2.02,sz:2.62,ry:-.54,sink:.98},
+    {variant:'b',x:-8.7,z:-12.2,sx:3.05,sy:1.96,sz:2.52,ry:1.02,sink:1.06},{variant:'a',x:8.7,z:-12.8,sx:3.16,sy:2.02,sz:2.58,ry:-.91,sink:1.08},
+    {variant:'a',x:-7.2,z:-17.3,sx:3.40,sy:2.20,sz:2.82,ry:.64,sink:1.14},{variant:'b',x:7.4,z:-17.8,sx:3.30,sy:2.12,sz:2.86,ry:-.70,sink:1.16},
   ]
-  return <Suspense fallback={null}><group name="home-v254-scanned-foreground-midground-depth" userData={{ visualOnly:true, interactionOwner:false }}>{specs.map((spec,index) => {
-    const y = height(spec.x,spec.z)-.48
-    return <ScannedFormation key={index} variant={spec.variant} position={[spec.x,y,spec.z]} rotation={[index%2?.08:-.06,spec.ry,index%3?.03:-.04]} scale={[spec.sx,spec.sy,spec.sz]} tint={index%3===0?'#a9a28f':index%3===1?'#929b87':'#a69a88'} />
+  return <Suspense fallback={null}><group name="home-v254-scanned-foreground-midground-depth" userData={{ visualOnly:true, interactionOwner:false, morphology:'buried-irregular-geological-banks-no-ribs' }}>{specs.map((spec,index) => {
+    const y = height(spec.x,spec.z)-spec.sink
+    return <ScannedFormation key={index} variant={spec.variant} position={[spec.x,y,spec.z]} rotation={[index%2?.10:-.07,spec.ry,index%3?.04:-.05]} scale={[spec.sx,spec.sy,spec.sz]} tint={index%3===0?'#a49e8d':index%3===1?'#929988':'#a19787'} />
   })}</group></Suspense>
 }
 
 function VegetationDepth() {
-  const anchors: Array<[number,number,number,number]> = [
-    [-4.0,3.0,.1,1.25],[4.2,2.6,-.2,1.15],[-5.1,1.0,.7,1.1],[5.4,.5,-.8,1.22],[-5.7,-2.5,.4,1.30],[5.9,-3.0,-.5,1.18],
-    [-5.5,-6.0,.9,1.36],[5.7,-6.6,-.9,1.28],[-5.0,-9.4,.2,1.22],[5.1,-9.9,-.3,1.34],[-4.4,-13.1,.7,1.46],[4.6,-13.4,-.8,1.38],
+  const anchors: Array<[number,number,number,number,number]> = [
+    [-4.3,3.0,.1,1.18,1.15],[4.5,2.6,-.2,1.10,1.08],[-5.5,.7,.7,1.05,1.22],[5.8,.1,-.8,1.14,1.20],[-6.1,-3.2,.4,1.20,1.28],[6.3,-3.8,-.5,1.12,1.18],
+    [-6.2,-7.1,.9,1.26,1.30],[6.4,-7.5,-.9,1.18,1.28],[-5.8,-10.6,.2,1.16,1.20],[5.9,-11.2,-.3,1.24,1.24],[-5.2,-14.7,.7,1.30,1.34],[5.4,-15.0,-.8,1.24,1.30],
+    [-7.0,-17.5,.25,1.16,1.18],[7.1,-18.0,-.35,1.12,1.16],[-3.6,-17.8,.55,.92,1.12],[3.8,-18.2,-.6,.96,1.10],
   ]
-  return <Suspense fallback={null}><group name="home-v254-authored-understory" userData={{ visualOnly:true, interactionOwner:false }}>{anchors.map(([x,z,r,s],index)=><FernCluster key={index} position={[x,height(x,z)+.02,z]} rotation={r} scale={s}/>)}</group></Suspense>
+  return <Suspense fallback={null}><group name="home-v254-authored-understory" userData={{ visualOnly:true, interactionOwner:false }}>{anchors.map(([x,z,r,s,spread],index)=><FernCluster key={index} position={[x,height(x,z)+.015,z]} rotation={r} scale={s} spread={spread}/>)}</group></Suspense>
 }
 
-function HorizonMarkers() {
-  const pillar = useMemo(() => new THREE.CylinderGeometry(.18,.42,3.8,9), [])
-  const cap = useMemo(() => new THREE.DodecahedronGeometry(.42,1), [])
-  useEffect(() => () => { pillar.dispose(); cap.dispose() }, [cap,pillar])
-  const markers: Array<[number,number,number]> = [[-9.6,-12.0,1],[9.5,-12.8,.92],[-8.2,-17.2,.78],[8.4,-17.7,.82],[-4.2,-19.2,.66],[4.5,-19.5,.70]]
-  return <group name="home-v254-horizon-landmarks" userData={{visualOnly:true,interactionOwner:false}}>{markers.map(([x,z,s],index)=>{
-    const y=height(x,z)
-    return <group key={index} position={[x,y,z]} scale={s}>
-      <mesh geometry={pillar} position={[0,1.55,0]} rotation={[index%2?.08:-.05,0,index%2?.08:-.07]} raycast={()=>null} receiveShadow><meshStandardMaterial color="#55554b" roughness={.98}/></mesh>
-      <mesh geometry={cap} position={[0,3.45,0]} scale={[.72,1.45,.68]} raycast={()=>null}><meshStandardMaterial color={index%2?'#707761':'#766b58'} emissive={index%2?'#23322a':'#2d241b'} emissiveIntensity={.07} roughness={.94}/></mesh>
-    </group>
-  })}</group>
+function DistantOutcrops() {
+  const specs: Array<{variant:keyof typeof ROCKS;x:number;z:number;s:number;ry:number}> = [
+    {variant:'b',x:-10.8,z:-20.2,s:2.6,ry:.9},{variant:'a',x:10.3,z:-21.1,s:2.8,ry:-.8},
+    {variant:'a',x:-5.4,z:-22.7,s:2.15,ry:.45},{variant:'b',x:5.9,z:-23.2,s:2.25,ry:-.5},
+  ]
+  return <Suspense fallback={null}><group name="home-v254-horizon-landmarks" userData={{visualOnly:true,interactionOwner:false,morphology:'scanned-distant-outcrops'}}>{specs.map((spec,index)=><ScannedFormation key={index} variant={spec.variant} position={[spec.x,height(spec.x,spec.z)-1.15,spec.z]} rotation={[index%2?.06:-.04,spec.ry,0]} scale={[spec.s,spec.s*.72,spec.s*.92]} tint={index%2?'#858b79':'#8c8574'} />)}</group></Suspense>
 }
 
 export function HomeLaunchSanctuaryV254({ reducedMotion }: { reducedMotion: boolean }) {
-  return <group name="home-v254-launch-sanctuary-depth" userData={{ presentationRevision:'v254-launch-sanctuary-depth', visualOnly:true, interactionOwner:false, composition:'scanned-stone-foreground-grown-ribs-understory-history-field-horizon-landmarks' }}>
+  return <group name="home-v254-launch-sanctuary-depth" userData={{ presentationRevision:'v254-launch-sanctuary-depth', visualOnly:true, interactionOwner:false, composition:'scanned-buried-geology-understory-history-field-distant-outcrops' }}>
     <RetireV253Dressing />
     <FramingFormations />
-    <GrownStoneRibs />
     <VegetationDepth />
-    <HorizonMarkers />
+    <DistantOutcrops />
     <LocalHistoryField reducedMotion={reducedMotion} />
-    <pointLight position={[-5.0,1.6,-6.8]} color="#c78a66" intensity={.78} distance={9.5} decay={2}/>
-    <pointLight position={[5.1,1.9,-7.4]} color="#78a99b" intensity={.68} distance={9.5} decay={2}/>
-    <pointLight position={[0,3.0,-13.5]} color="#c7b18d" intensity={.52} distance={13.5} decay={2}/>
+    <hemisphereLight args={['#d8d1ba','#101815',.24]} />
+    <directionalLight position={[-6.5,9.4,5.2]} color="#dbc8a7" intensity={.34} />
+    <pointLight position={[-5.4,1.2,-7.8]} color="#c78a66" intensity={.48} distance={8.5} decay={2}/>
+    <pointLight position={[5.6,1.4,-8.4]} color="#78a99b" intensity={.42} distance={8.8} decay={2}/>
+    <pointLight position={[0,2.7,-14.8]} color="#c7b18d" intensity={.36} distance={13.5} decay={2}/>
   </group>
 }
