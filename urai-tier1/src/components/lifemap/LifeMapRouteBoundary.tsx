@@ -11,6 +11,7 @@ import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMap
 
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const MIN_DIRECT_ROUTE_RENDER_ANCHORS = 8
+const MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS = 4
 
 export default function LifeMapRouteBoundary() {
   const router = useRouter()
@@ -93,17 +94,18 @@ export default function LifeMapRouteBoundary() {
 
     let cancelled = false
     let frame = 0
-    let repaired = false
+    let repairAttempts = 0
 
     const requestCanonicalSelection = () => {
-      if (repaired) return
-      repaired = true
+      if (repairAttempts >= MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS) return false
+      repairAttempts += 1
       const detail: LifeMapSelectionDetail = { nodeId, source: 'semantic' }
       window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
+      return true
     }
 
     const verifyDirectRouteInvariant = () => {
-      if (cancelled || repaired) return
+      if (cancelled) return
       const root = document.querySelector<HTMLElement>('[data-testid="urai-true-3d-life-map"]')
       if (!root) {
         frame = window.requestAnimationFrame(verifyDirectRouteInvariant)
@@ -114,19 +116,20 @@ export default function LifeMapRouteBoundary() {
       if (phase === 'arrival') {
         if (root.querySelector('.life-map-thresholds')) return
         requestCanonicalSelection()
+        frame = window.requestAnimationFrame(verifyDirectRouteInvariant)
         return
       }
 
       // A direct browser entry can hydrate its URL identity after the scene's first render.
-      // If the real authored world is already healthy but still in overview, issue exactly
-      // one canonical selection transaction. This does not run for ordinary in-app journeys:
-      // the effect only arms when a node identity exists in the URL at initial mount.
+      // If the real authored world is already healthy but still in overview, issue a bounded
+      // canonical selection retry until the semantic action surface proves that the selection
+      // transaction was observed. The bound prevents event storms while closing the mount-order
+      // race where a one-shot request can precede the production world's selection listener.
       if (phase === 'overview') {
         const renderReady = root.dataset.lifeMapRenderReady === 'true'
         const visibleAnchors = Number(root.dataset.lifeMapVisibleAnchors || '0')
         if (renderReady && Number.isFinite(visibleAnchors) && visibleAnchors >= MIN_DIRECT_ROUTE_RENDER_ANCHORS) {
           requestCanonicalSelection()
-          return
         }
       }
 
