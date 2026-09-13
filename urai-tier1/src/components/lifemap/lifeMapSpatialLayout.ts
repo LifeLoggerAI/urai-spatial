@@ -96,29 +96,34 @@ export function lifeMapTerrainHeight(x: number, z: number): number {
     + deepTime * .44
 }
 
-export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
+// Memory identity is celestial. The authored terrain remains a lower historical
+// stratum, but memory stars are no longer projected onto that terrain. Each
+// chapter occupies genuine x/y/z volume with deterministic irregularity so the
+// overview reads as an explorable personal cosmos rather than a node graph laid
+// across a valley.
+export function lifeMapLocalPoint(node: LifeMapNode, index: number): Point3 {
   const [x, y, z] = lifeMapDisplayPosition(node)
-  const worldZ = z - 3.4
-  const narrativeLift = Math.max(-.12, Math.min(.34, y * .08))
-  return [x, lifeMapTerrainHeight(x, worldZ) + .62 + narrativeLift, worldZ]
+  const jitterX = (hash2(index + x * .37, z * .19 + 3.1) - .5) * 3.8
+  const jitterY = (hash2(index * .73 + y * .29, x * .41 - 1.7) - .5) * 5.4
+  const jitterZ = (hash2(index * 1.13 + z * .17, y * .53 + 7.9) - .5) * 9.0
+  return [
+    x * 1.72 + jitterX,
+    y * 1.34 + jitterY + 1.8,
+    z * 1.82 - 8.0 + jitterZ,
+  ]
 }
 
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {
   if (selected) {
-    // Keep the selected memory intimate without turning it into a giant prop;
-    // retain surrounding geography as the spatial context for Focus/Replay.
     return {
-      scale: portrait ? [.96, 1.02, .98] : [1.08, 1.10, 1.08],
-      position: portrait ? [0, -.72, 1.18] : [0, -.54, .62],
+      scale: portrait ? [.92, .92, .92] : [1, 1, 1],
+      position: portrait ? [0, -.15, .55] : [0, 0, .25],
     }
   }
 
-  // V251 literal-pixel repair: preserve horizontal and chronological breadth in
-  // portrait instead of compressing the world into a miniature runway. Relief
-  // stays natural while a lower camera makes geography, not dead sky, own frame.
   return portrait
-    ? { scale: [1.16, 1.34, 1.08], position: [0, -.94, 2.10] }
-    : { scale: [1.42, 1.18, 1.02], position: [0, -.82, .74] }
+    ? { scale: [.92, .92, .92], position: [0, -.2, 1.0] }
+    : { scale: [1, 1, 1], position: [0, 0, .4] }
 }
 
 export function lifeMapWorldPoint(node: LifeMapNode, index: number, portrait: boolean): Point3 {
@@ -132,8 +137,8 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const points = nodes.map((node, index) => lifeMapLocalPoint(node, index).map((value, axis) => value * stage.scale[axis] + stage.position[axis]) as Point3)
     .filter(point => point.every(Number.isFinite))
   if (!points.length) return portrait
-    ? { position: [0, 10.8, 24.0], target: [0, -4.1, -17.8] }
-    : { position: [0, 5.5, 13.6], target: [0, -1.4, -19.2] }
+    ? { position: [0, 4.8, 31], target: [0, 0, -31] }
+    : { position: [0, 3.2, 24], target: [0, 0, -34] }
 
   const min: Point3 = [Infinity, Infinity, Infinity]
   const max: Point3 = [-Infinity, -Infinity, -Infinity]
@@ -142,30 +147,18 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
     max[axis] = Math.max(max[axis], point[axis])
   }
   const target = min.map((value, axis) => (value + max[axis]) / 2) as Point3
+  const halfWidth = Math.max(Math.abs(min[0] - target[0]), Math.abs(max[0] - target[0])) + 4.5
+  const halfHeight = Math.max(Math.abs(min[1] - target[1]), Math.abs(max[1] - target[1])) + 3.6
+  const verticalFov = portrait ? 50 : 46
+  const verticalTan = Math.tan(verticalFov * Math.PI / 360)
+  const horizontalTan = verticalTan * Math.max(aspect, .24)
+  const widthDistance = halfWidth / Math.max(horizontalTan * .88, .08)
+  const heightDistance = halfHeight / Math.max(verticalTan * .86, .08)
+  const nearestZ = max[2]
+  const distance = Math.max(portrait ? 34 : 24, widthDistance, heightDistance)
 
-  if (portrait) {
-    const horizontalTan = Math.tan(50 * Math.PI / 360) * Math.max(aspect, .2)
-    const halfWidth = Math.max(
-      Math.abs(min[0] - target[0]) + 2.35 * stage.scale[0],
-      Math.abs(max[0] - target[0]) + 2.35 * stage.scale[0],
-    )
-    const forward = Math.max(22, halfWidth / (horizontalTan * .88))
-    return {
-      position: [target[0], target[1] + 10.8, target[2] + forward],
-      target: [target[0], target[1] - 1.02, target[2] - 3.10],
-    }
-  }
-
-  const verticalTan = Math.tan(52 * Math.PI / 360)
-  const horizontalTan = verticalTan * Math.max(aspect, .2)
-  let distance = 8
-  for (const point of points) {
-    const horizontalFit = (Math.abs(point[0] - target[0]) + 2.35 * stage.scale[0]) / (horizontalTan * .82)
-    const verticalFit = (Math.abs(point[1] - target[1]) + 2.35 * stage.scale[1]) / (verticalTan * .80)
-    distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
-  }
   return {
-    position: [target[0], target[1] + 5.6, target[2] + distance],
-    target: [target[0], target[1] - .88, target[2] - 3.10],
+    position: [target[0], target[1] + (portrait ? 2.4 : 1.8), nearestZ + distance],
+    target: [target[0], target[1], target[2] - 4.0],
   }
 }
