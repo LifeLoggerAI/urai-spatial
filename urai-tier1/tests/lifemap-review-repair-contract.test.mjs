@@ -64,14 +64,17 @@ test('V256 semantic memory families cannot collapse back to one repeated manifes
   assert.doesNotMatch(legacyOverlay, /nodes\.map\([^)]*=>\s*<mesh[^>]*<sphereGeometry/s)
 })
 
-test('V256 visible terrain authority rejects repeated procedural terrace banding', () => {
+test('visible terrain authority rejects repeated procedural banding in source and pixels', () => {
   assert.match(legacyOverlay, /life-map-v256-authored-memory-terrain/)
   assert.match(legacyOverlay, /visualAuthority: 'authored-chapter-geography'/)
   assert.match(legacyOverlay, /life-map-v256-authored-chapter-territories/)
   assert.match(layoutSource, /const chapterMasses/)
   assert.match(layoutSource, /const outcrops/)
   assert.match(layoutSource, /const livedCuts/)
+  assert.match(layoutSource, /const authoredScars/)
+  assert.match(layoutSource, /function valueNoise2D/)
   assert.doesNotMatch(layoutSource, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
+  assert.doesNotMatch(layoutSource, /weathering\s*=\s*\n\s*\.16 \* Math\.sin/)
 })
 
 test('relationship language is sparse, contextual, and selected-memory aware', () => {
@@ -86,9 +89,10 @@ test('relationship language is sparse, contextual, and selected-memory aware', (
 test('portrait overview is a composed world view rather than tiny geography under dead sky', () => {
   assert.match(layoutSource, /scale: \[\.58, 1\.02, 1\.18\]/)
   assert.match(layoutSource, /2\.2 \* stage\.scale\[0\]/)
-  assert.match(layoutSource, /const forward = Math\.max\(55, halfWidth \/ \(horizontalTan \* \.78\)\)/)
-  assert.match(layoutSource, /target\[1\] \+ 30/)
-  assert.match(layoutSource, /target\[2\] - 5\.5/)
+  assert.match(layoutSource, /const forward = Math\.max\(39, halfWidth \/ \(horizontalTan \* \.78\)\)/)
+  assert.match(layoutSource, /target\[1\] \+ 31/)
+  assert.match(layoutSource, /target\[1\] - 1\.10/)
+  assert.match(layoutSource, /target\[2\] - 2\.2/)
   assert.doesNotMatch(layoutSource, /scale: \[\.46, \.82, \.92\]/)
 })
 
