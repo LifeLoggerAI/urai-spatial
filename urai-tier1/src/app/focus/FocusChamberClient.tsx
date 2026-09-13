@@ -13,7 +13,7 @@ import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
 import type { SelectedMemory } from '@/spatial/memory/selectedMemoryContract'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
-// V217 literal-pixel authority: one connected selected manifestation rises from a continuous mineral cradle inside a weathered vault.
+// V249 convergence authority: a grounded mineral-light living-memory manifestation inhabits a continuous weathered chamber.
 
 const DEFAULT_CAMERA: [number, number, number] = [0, 1.45, 8.2]
 const DEFAULT_TARGET: [number, number, number] = [0, 0.45, -1.3]
@@ -204,7 +204,8 @@ function cloneAuthoredFocusModel(source: THREE.Object3D) {
       || object.name.startsWith('focus-memory-rune-')
     if (rejectedPresentation) {
       object.visible = false
-      object.userData.uraiRetiredVisualRole = 'v149-no-focus-ring-cage-or-repeated-runes'
+      object.raycast = () => undefined
+      object.userData.uraiRetiredVisualRole = 'v249-no-focus-ring-cage-or-repeated-runes'
     }
     object.material = Array.isArray(object.material)
       ? object.material.map((material) => material.clone())
@@ -363,7 +364,7 @@ function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 
 }
 
 function ChamberArchitecture({ accent, light }: { accent: string; light: string; reducedMotion: boolean }) {
-  return <group name="focus-v153-authored-depth-observatory-light" userData={{ visualRepair: 'no-orbit-rings-no-cage-bands', composition: 'bounded-asymmetric-light-and-authored-floor' }}>
+  return <group name="focus-v249-authored-depth-observatory-light" userData={{ visualRepair: 'no-orbit-rings-no-cage-bands', composition: 'bounded-asymmetric-light-and-authored-floor' }}>
     <FocusSanctuaryGround accent={accent} />
     <FocusVault />
     <Suspense fallback={null}><FocusStoneBank variant="01" side={-1} /><FocusStoneBank variant="02" side={1} /></Suspense>
@@ -390,59 +391,91 @@ function MemoryTraces({ memory, accent }: { memory: SelectedMemory | null; accen
     result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return result
   }, [count])
-  return <points name="focus-grounded-memory-traces" geometry={geometry} visible={false} userData={{ retiredVisualRole: 'v153-no-focus-arc-cage-traces' }}><pointsMaterial color={accent} size={0.035} transparent opacity={0.34} depthWrite={false} sizeAttenuation /></points>
+  return <points name="focus-grounded-memory-traces" geometry={geometry} visible={false} userData={{ retiredVisualRole: 'v249-no-focus-arc-cage-traces' }}><pointsMaterial color={accent} size={0.035} transparent opacity={0.34} depthWrite={false} sizeAttenuation /></points>
+}
+
+function focusManifestationGeometry(accent: string) {
+  const geometry = new THREE.SphereGeometry(1, 72, 48)
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute
+  const colors: number[] = []
+  const root = new THREE.Color('#263b34')
+  const mineral = new THREE.Color('#789083')
+  const warm = new THREE.Color('#a69b82')
+  const memory = new THREE.Color(accent)
+  for (let index = 0; index < position.count; index += 1) {
+    const nx = position.getX(index), ny = position.getY(index), nz = position.getZ(index)
+    const angle = Math.atan2(nz, nx)
+    const upper = THREE.MathUtils.smoothstep(ny, -.12, .92)
+    const lower = THREE.MathUtils.smoothstep(-ny, .08, .98)
+    const cleftAxis = (nx + .13) * .90 + (nz - .06) * .43
+    const cleft = Math.exp(-(cleftAxis * cleftAxis) / .035) * upper
+    const leftFold = Math.exp(-(((nx + .36) / .56) ** 2 + ((nz - .16) / .72) ** 2)) * upper
+    const rightRecess = Math.exp(-(((nx - .50) / .42) ** 2 + ((nz + .10) / .50) ** 2)) * (.34 + .66 * upper)
+    const forwardFold = Math.exp(-(((nz - .46) / .28) ** 2 + ((nx + .05) / .68) ** 2)) * (.30 + .70 * upper)
+    const texture = .027 * Math.sin(angle * 3.2 + ny * 6.4) + .012 * Math.sin(angle * 8.6 - ny * 8.8)
+    const taper = THREE.MathUtils.lerp(.34, 1, THREE.MathUtils.smoothstep(ny, -.88, -.03))
+    const radial = 1 + texture + .18 * leftFold - .13 * rightRecess + .12 * forwardFold
+    let x = nx * radial * .88 * taper + ny * .11 - .10
+    let z = nz * radial * .72 * taper + .08 * forwardFold
+    const twist = (ny + .08) * .33
+    const cos = Math.cos(twist), sin = Math.sin(twist)
+    const tx = x * cos - z * sin, tz = x * sin + z * cos
+    x = tx - lower * .06
+    z = tz
+    let y = ny * .82 - .18 * cleft + .09 * leftFold - .05 * rightRecess + .06 * forwardFold
+    y -= lower * (.24 + .15 * lower)
+    position.setXYZ(index, x, y, z)
+    const height = THREE.MathUtils.clamp((y + 1.0) / 1.9, 0, 1)
+    const scar = THREE.MathUtils.clamp(cleft + forwardFold * .20 + rightRecess * .14, 0, 1)
+    const color = root.clone().lerp(mineral, .28 + .48 * height).lerp(warm, .08 * (1 - height)).lerp(memory, .018 + .09 * scar)
+    colors.push(color.r, color.g, color.b)
+  }
+  position.needsUpdate = true
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
+function focusManifestationFilaments() {
+  const points: THREE.Vector3[] = []
+  for (let trace = 0; trace < 6; trace += 1) {
+    let previous: THREE.Vector3 | null = null
+    for (let step = 0; step <= 22; step += 1) {
+      const t = step / 22
+      const y = -.48 + t * .92
+      const angle = -1.0 + trace * .34 + t * (.72 + trace * .03) + .08 * Math.sin(t * 8 + trace)
+      const envelope = .15 + .18 * Math.sin(t * Math.PI)
+      const current = new THREE.Vector3(Math.cos(angle) * envelope - .05, y, .45 + Math.sin(angle) * .10)
+      if (previous) points.push(previous, current)
+      previous = current
+    }
+  }
+  return new THREE.BufferGeometry().setFromPoints(points)
+}
+
+function focusMemoryFieldGeometry() {
+  const count = 260
+  const positions = new Float32Array(count * 3)
+  for (let index = 0; index < count; index += 1) {
+    const t = (index + .5) / count
+    const y = -.62 + ((index * 47) % count) / (count - 1) * 1.22
+    const angle = index * 2.39996323 + .12 * Math.sin(index * .37)
+    const radius = .10 + Math.pow(t, .72) * .42
+    positions.set([Math.cos(angle) * radius - .04, y, .36 + Math.sin(angle) * radius * .30], index * 3)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  return geometry
 }
 
 function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { memory: SelectedMemory | null; accent: string; light: string; reducedMotion: boolean; onActivate: () => void }) {
   const group = useRef<THREE.Group>(null)
+  const field = useRef<THREE.Points>(null)
   const [hovered, setHovered] = useState(false)
-  const seedGeometry = useMemo(() => {
-    const geometry = new THREE.IcosahedronGeometry(1, 5)
-    const positions = geometry.getAttribute('position') as THREE.BufferAttribute
-    const colors: number[] = []
-    const dark = new THREE.Color('#15231f')
-    const mineral = new THREE.Color('#68766b')
-    const memory = new THREE.Color(accent)
-    for (let index = 0; index < positions.count; index += 1) {
-      const nx = positions.getX(index), ny = positions.getY(index), nz = positions.getZ(index)
-      const angle = Math.atan2(nz, nx), crown = Math.max(0, ny), lower = Math.max(0, -ny)
-      const coarse = .18 * Math.sin(angle * 3.2 + ny * 3.1) + .08 * Math.cos(angle * 6.4 - ny * 4.7)
-      const strata = .07 * Math.sin(ny * 14.5 + angle * 2.1)
-      const cleft = Math.exp(-((nx * .86 + nz * .28 - .04) ** 2) / .035) * Math.pow(crown, 1.35)
-      const cavity = Math.exp(-(((nx + .32) * .82) ** 2 + ((nz - .18) * 1.05) ** 2) / .14) * (.35 + .65 * crown)
-      const radial = 1 + coarse + strata * .55 - .28 * cleft - .15 * cavity
-      let x = nx * radial * 1.38 + ny * .16 - .08
-      let z = nz * radial * .92 + .05 * Math.sin(ny * 5.1 + angle * 2)
-      const twist = (ny + .2) * .16
-      const cos = Math.cos(twist), sin = Math.sin(twist), tx = x * cos - z * sin, tz = x * sin + z * cos
-      x = tx; z = tz
-      let y = ny * .56 - .24 - .18 * cleft - .08 * cavity
-      y -= lower * (.38 + .22 * lower)
-      positions.setXYZ(index, x, y, z)
-      const height = THREE.MathUtils.clamp((y + .92) / 1.38, 0, 1)
-      const scar = THREE.MathUtils.clamp(cleft + cavity * .4 + Math.abs(strata) * 2.4, 0, 1)
-      const color = dark.clone().lerp(mineral, .20 + .46 * height).lerp(memory, .018 + .075 * scar)
-      colors.push(color.r, color.g, color.b)
-    }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-    geometry.computeVertexNormals()
-    return geometry
-  }, [accent])
-  const fieldGeometry = useMemo(() => {
-    const positions: number[] = []
-    for (let index = 0; index < 520; index += 1) {
-      const t = index / 519
-      const y = -0.94 + t * 1.88
-      const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(y / 1.02, 2)))
-      const sample = ((index * 103) % 521) / 520
-      const radius = envelope * Math.pow(sample, index % 5 === 0 ? 2.5 : 1.55) * 0.86
-      const angle = index * 2.399963 + Math.sin(index * 0.31) * 0.22
-      positions.push(Math.cos(angle) * radius + y * 0.14, y, Math.sin(angle) * radius * 0.68)
-    }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    return geometry
-  }, [])
+  const manifestationGeometry = useMemo(() => focusManifestationGeometry(accent), [accent])
+  const filamentGeometry = useMemo(focusManifestationFilaments, [])
+  const fieldGeometry = useMemo(focusMemoryFieldGeometry, [])
   const cradleGeometry = useMemo(() => {
     const columns = 64
     const rows = 30
@@ -477,26 +510,37 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     return geometry
   }, [accent])
   const cradleMaps = useMemo(createMineralMaps, [])
-  useEffect(() => () => { seedGeometry.dispose(); fieldGeometry.dispose(); cradleGeometry.dispose(); cradleMaps.forEach((texture) => texture.dispose()) }, [cradleGeometry, cradleMaps, fieldGeometry, seedGeometry])
+  useEffect(() => () => {
+    manifestationGeometry.dispose()
+    filamentGeometry.dispose()
+    fieldGeometry.dispose()
+    cradleGeometry.dispose()
+    cradleMaps.forEach((texture) => texture.dispose())
+  }, [cradleGeometry, cradleMaps, fieldGeometry, filamentGeometry, manifestationGeometry])
   useFrame(({ clock }, delta) => {
     if (!group.current) return
-    const wanted = hovered ? 1.018 : reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * .7) * 0.004
+    const wanted = hovered ? 1.018 : reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * .66) * 0.006
     const nextScale = THREE.MathUtils.lerp(group.current.scale.x, wanted, 1 - Math.exp(-5.5 * delta))
     group.current.scale.setScalar(nextScale)
-    if (!reducedMotion) group.current.rotation.y = Math.sin(clock.elapsedTime * 0.14) * 0.012
+    if (!reducedMotion) {
+      group.current.rotation.y = Math.sin(clock.elapsedTime * 0.13) * 0.010
+      if (field.current) field.current.rotation.y = Math.sin(clock.elapsedTime * .17) * .05
+    }
   })
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
     event.stopPropagation()
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
-  return <group ref={group} position={[0, 0, -1.72]} name="focus-memory-aperture" userData={{ artRevision: 'v217-single-rooted-manifestation-no-clone-cluster' }}>
-    <mesh geometry={cradleGeometry} receiveShadow castShadow name="focus-v216-memory-root-cradle"><meshStandardMaterial map={cradleMaps[0]} normalMap={cradleMaps[1]} roughnessMap={cradleMaps[2]} normalScale={new THREE.Vector2(.42,.42)} color="#3d5048" vertexColors roughness={.94}/></mesh>
-    <points geometry={fieldGeometry}><pointsMaterial color={light} size={0.014} transparent opacity={memory ? 0.28 : 0.12} depthWrite={false} sizeAttenuation /></points>
-    <mesh geometry={seedGeometry} position={[-.04,-.46,.02]} rotation={[.02,-.18,-.03]} scale={[.82,.72,.82]} onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)} castShadow receiveShadow name="focus-v217-single-connected-memory-manifestation">
-      <meshStandardMaterial vertexColors color={hovered ? '#8fa69b' : '#728078'} emissive={accent} emissiveIntensity={hovered ? .045 : .018} roughness={.96} metalness={0}/>
+  return <group ref={group} position={[0, 0, -1.72]} name="focus-memory-aperture" userData={{ artRevision: 'v249-grounded-mineral-light-memory-manifestation' }}>
+    <mesh geometry={cradleGeometry} receiveShadow castShadow name="focus-v249-memory-root-cradle"><meshStandardMaterial map={cradleMaps[0]} normalMap={cradleMaps[1]} roughnessMap={cradleMaps[2]} normalScale={new THREE.Vector2(.42,.42)} color="#3d5048" vertexColors roughness={.94}/></mesh>
+    <points ref={field} geometry={fieldGeometry} position={[0,-.12,.02]}><pointsMaterial color={light} size={0.018} transparent opacity={memory ? 0.38 : 0.14} depthWrite={false} sizeAttenuation /></points>
+    <lineSegments geometry={filamentGeometry} position={[0,-.12,.02]}><lineBasicMaterial color={light} transparent opacity={memory ? .42 : .16} /></lineSegments>
+    <mesh geometry={manifestationGeometry} position={[-.03,-.40,.01]} rotation={[.02,-.18,-.03]} scale={[.78,.82,.78]} onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)} castShadow receiveShadow name="focus-v249-grounded-living-memory-manifestation">
+      <meshStandardMaterial vertexColors color={hovered ? '#8ca79a' : '#6f857a'} emissive={accent} emissiveIntensity={hovered ? .10 : .055} roughness={.82} metalness={0}/>
     </mesh>
-    <pointLight color={accent} intensity={memory ? 0.22 : 0.08} distance={3.6} decay={2} />
+    <pointLight position={[-.10,.10,.34]} color={accent} intensity={memory ? 0.38 : 0.10} distance={4.2} decay={2} />
+    <pointLight position={[.70,.35,-.25]} color={light} intensity={memory ? .20 : .06} distance={3.2} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
   </group>
 }
@@ -510,11 +554,11 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
     <color attach="background" args={['#071513']} />
     <fog attach="fog" args={['#13211e', 8.5, 30]} />
-    <ambientLight intensity={0.30} color="#d8efff" />
-    <hemisphereLight args={[light, '#07100e', 0.40]} />
-    <directionalLight position={[5, 8, 7]} intensity={1.28} color={light} castShadow={profile.shadows} />
-    <pointLight position={[0, .35, -1.7]} intensity={.72} color={accent} distance={8} decay={2} />
-    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={1.05} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
+    <ambientLight intensity={0.34} color="#d8efff" />
+    <hemisphereLight args={[light, '#07100e', 0.44]} />
+    <directionalLight position={[5, 8, 7]} intensity={1.32} color={light} castShadow={profile.shadows} />
+    <pointLight position={[0, .35, -1.7]} intensity={.78} color={accent} distance={8} decay={2} />
+    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={1.08} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
     <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
     <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
     <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} />
@@ -599,12 +643,12 @@ export default function FocusChamberClient() {
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const boundedCadence = !rendererClassified || softwareRenderer || profile.reducedMotion
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-filled-memory-field-no-ring-cage" data-focus-visual-revision="v217-weathered-vault-single-rooted-memory-formation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-grounded-mineral-light-memory-manifestation" data-focus-visual-revision="v249-grounded-mineral-light-memory-manifestation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
     <div className="focusCanvas" aria-label="Explorable Focus chamber. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
-      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .9; setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .94; setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS OBSERVATORY'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Chamber threshold'}</small><strong>{description}</strong></div></header>
     <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral Focus observatory'}><span className="apertureOrbit apertureOrbitOuter" aria-hidden="true" /><span className="apertureOrbit apertureOrbitInner" aria-hidden="true" /></section>
