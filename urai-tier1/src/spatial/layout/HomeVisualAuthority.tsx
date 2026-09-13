@@ -24,15 +24,15 @@ function hasColorTexture(object: THREE.Object3D) {
   return materials.some((material) => material instanceof THREE.MeshStandardMaterial && Boolean(material.map))
 }
 
-function livingHeartGeometryV252() {
+function livingHeartGeometryV253() {
   const geometry = new THREE.SphereGeometry(1, 88, 64)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const deepTissue = new THREE.Color('#281c22')
-  const livingTissue = new THREE.Color('#65413f')
-  const liftedTissue = new THREE.Color('#8c6255')
-  const rememberedTissue = new THREE.Color('#b9856c')
-  const cooledMemory = new THREE.Color('#4c6c63')
+  const deepTissue = new THREE.Color('#241317')
+  const livingTissue = new THREE.Color('#6d3432')
+  const liftedTissue = new THREE.Color('#a65e4c')
+  const rememberedTissue = new THREE.Color('#d49570')
+  const cooledMemory = new THREE.Color('#70433f')
 
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index)
@@ -89,7 +89,7 @@ function livingHeartGeometryV252() {
   return geometry
 }
 
-function scarTubeV252() {
+function scarTubeV253() {
   const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-.08, .70, .57),
     new THREE.Vector3(-.15, .52, .61),
@@ -102,7 +102,7 @@ function scarTubeV252() {
   return new THREE.TubeGeometry(curve, 60, .014, 8, false)
 }
 
-function filamentTubesV252() {
+function filamentTubesV253() {
   return Array.from({ length: 12 }, (_, trace) => {
     const points: THREE.Vector3[] = []
     const side = trace < 6 ? -1 : 1
@@ -121,7 +121,7 @@ function filamentTubesV252() {
   })
 }
 
-function rootTendrilsV252() {
+function rootTendrilsV253() {
   return Array.from({ length: 8 }, (_, index) => {
     const angle = -.25 + index * (Math.PI * 2 / 8)
     const radius = 1.0 + (index % 3) * .22
@@ -135,13 +135,13 @@ function rootTendrilsV252() {
   })
 }
 
-function memoryFieldV252() {
+function memoryFieldV253() {
   const count = 280
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
-  const cool = new THREE.Color('#76a99d')
-  const warm = new THREE.Color('#d19a78')
-  const ember = new THREE.Color('#e0b08a')
+  const cool = new THREE.Color('#a9685b')
+  const warm = new THREE.Color('#d89a70')
+  const ember = new THREE.Color('#efbf8f')
 
   for (let index = 0; index < count; index++) {
     const historyPoint = index < 154
@@ -176,16 +176,16 @@ function memoryFieldV252() {
   return geometry
 }
 
-function LiteralOrbAuthorityV252() {
+function LiteralOrbAuthorityV253() {
   const root = useRef<THREE.Group>(null)
   const fieldRef = useRef<THREE.Points>(null)
   const reducedMotion = useRef(false)
   const y = height(ORB.x, ORB.z)
-  const heart = useMemo(livingHeartGeometryV252, [])
-  const scar = useMemo(scarTubeV252, [])
-  const filaments = useMemo(filamentTubesV252, [])
-  const field = useMemo(memoryFieldV252, [])
-  const filamentPalette = ['#b47d67', '#75998f', '#c18d70', '#668c83', '#d0a07a', '#8a6a62']
+  const heart = useMemo(livingHeartGeometryV253, [])
+  const scar = useMemo(scarTubeV253, [])
+  const filaments = useMemo(filamentTubesV253, [])
+  const field = useMemo(memoryFieldV253, [])
+  const filamentPalette = ['#c98268', '#d79a72', '#b9685c', '#e1ad80', '#c47c61', '#98605c']
   const memoryNodes = useMemo(() => [
     [-.11, .49, .62, .040], [-.05, .30, .65, .030], [-.16, .10, .63, .036],
     [-.06, -.12, .58, .026], [-.10, -.34, .50, .032], [.04, .38, .60, .024],
@@ -212,7 +212,7 @@ function LiteralOrbAuthorityV252() {
     if (fieldRef.current) fieldRef.current.rotation.y = t * .018
   })
 
-  return <group ref={root} position={[ORB.x, y + 1.04, ORB.z]} rotation={[.02, -.10, -.045]} scale={[1.30, 1.30, 1.22]} name="home-v252-literal-living-memory-heart" userData={{ artRevision: 'v252-continuous-clefted-heart-sanctuary', visualIntent: 'continuous-asymmetric-living-heart-with-readable-cleft-taper-embedded-history-and-grounded-memory-roots' }}>
+  return <group ref={root} position={[ORB.x, y + 1.04, ORB.z]} rotation={[.02, -.10, -.045]} scale={[1.30, 1.30, 1.22]} name="home-v253-literal-living-memory-heart" userData={{ artRevision: 'v253-continuous-clefted-heart-sanctuary', visualIntent: 'continuous-asymmetric-living-heart-with-readable-cleft-taper-embedded-history-and-grounded-memory-roots' }}>
     <mesh geometry={heart} raycast={() => null} receiveShadow castShadow>
       <meshStandardMaterial vertexColors color="#ffffff" emissive="#2a1318" emissiveIntensity={.075} roughness={.69} metalness={0} />
     </mesh>
@@ -224,98 +224,133 @@ function LiteralOrbAuthorityV252() {
     </mesh>)}
     {memoryNodes.map(([x, yy, z, scale], index) => <mesh key={`node-${index}`} position={[x, yy, z]} scale={scale} raycast={() => null}>
       <sphereGeometry args={[1, 12, 10]} />
-      <meshStandardMaterial color={index % 2 ? '#78a69b' : '#d6a17e'} emissive={index % 2 ? '#4e8177' : '#a9624f'} emissiveIntensity={.48} roughness={.48} metalness={0} />
+      <meshStandardMaterial color={index % 2 ? '#d48b70' : '#e3ab80'} emissive={index % 2 ? '#8d4b43' : '#a9624f'} emissiveIntensity={.48} roughness={.48} metalness={0} />
     </mesh>)}
     <points ref={fieldRef} geometry={field} raycast={() => null}>
       <pointsMaterial vertexColors size={.027} sizeAttenuation transparent opacity={.54} depthWrite={false} />
     </points>
     <pointLight position={[-.30, .46, .84]} color="#d69b7f" intensity={.62} distance={2.8} decay={2} />
-    <pointLight position={[.38, .18, .72]} color="#72a89d" intensity={.36} distance={2.4} decay={2} />
+    <pointLight position={[.38, .18, .72]} color="#d08b72" intensity={.28} distance={2.4} decay={2} />
   </group>
 }
 
-function GroundedOrbRootsV252() {
+function GroundedOrbRootsV253() {
   const y = height(ORB.x, ORB.z)
-  const roots = useMemo(rootTendrilsV252, [])
+  const roots = useMemo(rootTendrilsV253, [])
   useEffect(() => () => roots.forEach((geometry) => geometry.dispose()), [roots])
 
-  return <group position={[ORB.x, y + .015, ORB.z]} name="home-v252-orb-grounded-memory-roots" userData={{ visualOnly: true }}>
+  return <group position={[ORB.x, y + .015, ORB.z]} name="home-v253-orb-grounded-memory-roots" userData={{ visualOnly: true }}>
     {roots.map((geometry, index) => <mesh key={index} geometry={geometry} raycast={() => null}>
       <meshStandardMaterial color={index % 3 === 0 ? '#5b4038' : '#38433b'} emissive={index % 3 === 0 ? '#3a211f' : '#17251f'} emissiveIntensity={.08} roughness={.92} metalness={0} />
     </mesh>)}
   </group>
 }
 
-function SanctuaryDressingV252() {
-  const lanternStem = useMemo(() => new THREE.CylinderGeometry(.09, .14, .54, 8), [])
-  const lanternCore = useMemo(() => new THREE.DodecahedronGeometry(.095, 0), [])
-  const standingStone = useMemo(() => new THREE.DodecahedronGeometry(.72, 1), [])
-  const leftSpire = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-4.95, height(-4.95, -11.2) + .10, -11.2),
-    new THREE.Vector3(-4.58, 1.10, -10.9),
-    new THREE.Vector3(-4.18, 2.25, -10.4),
-    new THREE.Vector3(-3.52, 3.22, -9.75),
-    new THREE.Vector3(-2.86, 3.70, -9.20),
-  ]), 52, .13, 7, false), [])
-  const rightSpire = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-    new THREE.Vector3(5.28, height(5.28, -11.55) + .10, -11.55),
-    new THREE.Vector3(4.92, 1.03, -11.15),
-    new THREE.Vector3(4.55, 2.02, -10.55),
-    new THREE.Vector3(4.02, 2.86, -9.92),
-    new THREE.Vector3(3.47, 3.28, -9.36),
-  ]), 52, .12, 7, false), [])
+function SanctuaryDressingV253() {
+  const lanternStem = useMemo(() => new THREE.CylinderGeometry(.055, .09, .44, 7), [])
+  const lanternCore = useMemo(() => new THREE.IcosahedronGeometry(.075, 1), [])
+  const trunk = useMemo(() => new THREE.CylinderGeometry(.12, .23, 1.65, 7), [])
+  const crown = useMemo(() => new THREE.IcosahedronGeometry(.62, 2), [])
+  const cairn = useMemo(() => new THREE.IcosahedronGeometry(.34, 1), [])
+  const steppingStone = useMemo(() => new THREE.IcosahedronGeometry(.42, 1), [])
+  const fireflies = useMemo(() => {
+    const count = 180
+    const positions = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      const side = i % 2 ? -1 : 1
+      const lane = 2.8 + ((i * 37) % 70) / 10
+      const z = 2.8 - ((i * 53) % 170) / 10
+      const x = side * lane + Math.sin(i * 2.17) * 1.1
+      const y = height(x, z) + .28 + ((i * 29) % 33) / 16
+      positions.set([x, y, z], i * 3)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    return geometry
+  }, [])
 
   const lanterns = useMemo(() => [
-    [-2.20, 2.20, .96], [2.18, 1.38, .92], [-2.48, -.55, .92], [2.42, -1.32, 1.02],
-    [-2.70, -3.48, .96], [2.72, -4.22, 1.05], [-2.95, -5.88, .92], [2.98, -6.40, .98],
+    [-1.82, 2.05, .92], [1.86, 1.42, .90], [-2.12, -.70, .92], [2.10, -1.46, .96],
+    [-2.28, -3.56, .94], [2.30, -4.20, .96], [-2.40, -6.42, .91], [2.44, -7.10, .94],
+    [-2.58, -9.18, .88], [2.60, -9.72, .90],
   ] as const, [])
-  const stones = useMemo(() => [
-    [-5.72, 1.45, .62, 1.34, .72, -.20], [5.88, .62, .72, 1.48, .70, .24],
-    [-6.20, -2.10, .66, 1.72, .75, .32], [6.34, -2.92, .58, 1.30, .66, -.25],
-    [-5.62, -5.10, .54, 1.56, .64, .17], [5.74, -5.84, .62, 1.66, .72, -.18],
-    [-5.10, -8.82, .72, 2.02, .80, .22], [5.32, -9.18, .64, 1.88, .74, -.26],
-    [-4.30, -12.18, .58, 1.56, .64, .15], [4.60, -12.48, .66, 1.72, .72, -.12],
+
+  const trees = useMemo(() => [
+    [-6.7,2.7,.92,-.18],[-7.5,-.3,1.08,.14],[-6.6,-3.4,.82,-.24],[-7.2,-6.5,1.02,.20],[-6.4,-9.8,.88,-.10],[-5.7,-12.7,.96,.16],
+    [6.8,2.2,.98,.16],[7.6,-.8,.88,-.18],[6.9,-3.9,1.06,.22],[7.4,-6.9,.90,-.15],[6.5,-10.2,1.0,.12],[5.8,-13.1,.92,-.16],
+    [-9.2,-2.2,.72,.25],[9.0,-2.8,.76,-.22],[-8.5,-8.6,.80,-.14],[8.6,-9.1,.78,.18],
   ] as const, [])
+
+  const cairns = useMemo(() => [
+    [-4.8,1.2,.54],[-5.3,-1.9,.48],[-4.9,-5.0,.56],[-5.1,-8.2,.50],[-4.6,-11.1,.52],
+    [4.9,.5,.50],[5.4,-2.5,.56],[5.0,-5.7,.48],[5.2,-8.7,.54],[4.7,-11.5,.50],
+  ] as const, [])
+
+  const pathStones = useMemo(() => Array.from({length: 15}, (_, i) => {
+    const z = 4.0 - i * 1.25
+    const x = Math.sin(i * 1.17) * .42
+    const scale = .62 + (i % 3) * .06
+    return [x, z, scale, (i % 2 ? .09 : -.08)] as const
+  }), [])
 
   useEffect(() => () => {
-    lanternStem.dispose()
-    lanternCore.dispose()
-    standingStone.dispose()
-    leftSpire.dispose()
-    rightSpire.dispose()
-  }, [lanternCore, lanternStem, leftSpire, rightSpire, standingStone])
+    lanternStem.dispose(); lanternCore.dispose(); trunk.dispose(); crown.dispose(); cairn.dispose(); steppingStone.dispose(); fireflies.dispose()
+  }, [cairn, crown, fireflies, lanternCore, lanternStem, steppingStone, trunk])
 
-  return <group name="home-v252-authored-sanctuary-dressing" userData={{ visualOnly: true, interactionOwner: false }}>
-    {lanterns.map(([x, z, scale], index) => {
-      const y = height(x, z)
-      return <group key={`lantern-${index}`} position={[x, y, z]} scale={scale}>
-        <mesh geometry={lanternStem} position={[0, .27, 0]} rotation={[.02, 0, index % 2 ? .05 : -.04]} raycast={() => null} castShadow>
-          <meshStandardMaterial color="#403b32" roughness={.94} metalness={0} />
-        </mesh>
-        <mesh geometry={lanternCore} position={[0, .66, 0]} raycast={() => null}>
-          <meshStandardMaterial color={index % 2 ? '#d3a27a' : '#76a69b'} emissive={index % 2 ? '#9c5d46' : '#42776f'} emissiveIntensity={.58} roughness={.48} metalness={0} />
-        </mesh>
-        <pointLight position={[0, .68, 0]} color={index % 2 ? '#dba37d' : '#78aea2'} intensity={.34} distance={2.65} decay={2} />
-      </group>
-    })}
+  return <group name="home-v253-authored-sanctuary-dressing" userData={{ visualOnly: true, interactionOwner: false, composition: 'layered-lantern-grove-cairn-path' }}>
+    <hemisphereLight args={['#718889','#1a1714',.36]} />
 
-    {stones.map(([x, z, sx, sy, sz, rz], index) => {
-      const y = height(x, z)
-      return <mesh key={`stone-${index}`} geometry={standingStone} position={[x, y + sy * .48, z]} scale={[sx, sy, sz]} rotation={[.03 * (index % 3), .18 * index, rz]} raycast={() => null} castShadow receiveShadow>
-        <meshStandardMaterial color={index % 2 ? '#3a443a' : '#454238'} roughness={.96} metalness={0} />
+    {pathStones.map(([x,z,scale,rz], index) => {
+      const y = height(x,z)
+      return <mesh key={`path-${index}`} geometry={steppingStone} position={[x,y+.025,z]} scale={[scale,.08,scale*.82]} rotation={[0,index*.38,rz]} raycast={() => null} receiveShadow>
+        <meshStandardMaterial color={index%2 ? '#514b40' : '#48463f'} roughness={.97} metalness={0} />
       </mesh>
     })}
 
-    <mesh geometry={leftSpire} raycast={() => null} castShadow>
-      <meshStandardMaterial color="#323d35" emissive="#101a16" emissiveIntensity={.06} roughness={.95} metalness={0} />
-    </mesh>
-    <mesh geometry={rightSpire} raycast={() => null} castShadow>
-      <meshStandardMaterial color="#3f4036" emissive="#1b1814" emissiveIntensity={.05} roughness={.95} metalness={0} />
-    </mesh>
+    {lanterns.map(([x,z,scale], index) => {
+      const y = height(x,z)
+      const warm = index % 3 !== 0
+      return <group key={`lantern-${index}`} position={[x,y,z]} scale={scale}>
+        <mesh geometry={lanternStem} position={[0,.22,0]} raycast={() => null} castShadow><meshStandardMaterial color="#35312b" roughness={.92} /></mesh>
+        <mesh geometry={lanternCore} position={[0,.52,0]} raycast={() => null}>
+          <meshStandardMaterial color={warm?'#e4a276':'#b78d77'} emissive={warm?'#c06948':'#82554b'} emissiveIntensity={.66} roughness={.38} />
+        </mesh>
+        <pointLight position={[0,.54,0]} color={warm?'#e4a276':'#c48675'} intensity={.28} distance={2.25} decay={2} />
+      </group>
+    })}
 
-    <pointLight position={[0, 1.12, -4.45]} color="#c38c6f" intensity={.72} distance={10.5} decay={2} />
-    <pointLight position={[-3.9, 1.18, -8.9]} color="#789b8e" intensity={.44} distance={7.0} decay={2} />
-    <pointLight position={[4.0, 1.34, -9.2]} color="#b98669" intensity={.42} distance={7.2} decay={2} />
+    {trees.map(([x,z,scale,yaw], index) => {
+      const y=height(x,z)
+      const crownTint = index%3===0 ? '#2f4337' : index%3===1 ? '#344b3e' : '#3f4937'
+      return <group key={`tree-${index}`} position={[x,y,z]} scale={scale} rotation={[0,yaw,0]}>
+        <mesh geometry={trunk} position={[0,.78,0]} rotation={[0,0,index%2?.055:-.045]} raycast={() => null} castShadow>
+          <meshStandardMaterial color="#3d3129" roughness={1} />
+        </mesh>
+        <mesh geometry={crown} position={[index%2?.16:-.13,1.95,0]} scale={[.86,1.16,.82]} raycast={() => null} castShadow receiveShadow>
+          <meshStandardMaterial color={crownTint} roughness={.96} emissive="#0c1711" emissiveIntensity={.05} />
+        </mesh>
+        <mesh geometry={crown} position={[index%2?-.26:.28,2.35,.05]} scale={[.62,.82,.58]} raycast={() => null} castShadow receiveShadow>
+          <meshStandardMaterial color={index%2?'#3c523f':'#40523e'} roughness={.97} />
+        </mesh>
+      </group>
+    })}
+
+    {cairns.map(([x,z,scale], index) => {
+      const y=height(x,z)
+      return <group key={`cairn-${index}`} position={[x,y,z]} rotation={[0,index*.71,0]}>
+        {[0,1,2].map(level => <mesh key={level} geometry={cairn} position={[level*.035-.03,.13+level*.20,0]} scale={[scale*(1-level*.16),.42-level*.07,scale*(.92-level*.14)]} raycast={() => null} castShadow receiveShadow>
+          <meshStandardMaterial color={level===2?'#66584b':index%2?'#4c5047':'#514a42'} roughness={.98} />
+        </mesh>)}
+      </group>
+    })}
+
+    <points geometry={fireflies} raycast={() => null}>
+      <pointsMaterial color="#d9b982" size={.024} sizeAttenuation transparent opacity={.34} depthWrite={false} />
+    </points>
+
+    <pointLight position={[0,1.25,-4.4]} color="#d58f69" intensity={.62} distance={11.5} decay={2} />
+    <pointLight position={[-4.8,2.1,-7.8]} color="#9a765e" intensity={.25} distance={8.5} decay={2} />
+    <pointLight position={[4.7,2.0,-8.4]} color="#bd8063" intensity={.24} distance={8.5} decay={2} />
   </group>
 }
 
@@ -328,12 +363,12 @@ function SanctuaryDressingV252() {
  * V234 scan sheets are suppressed while their sculpted support geometry,
  * apertures and authored lighting remain.
  *
- * V252 replaces the rejected segmented teal V251 Orb with one continuous,
- * deeply clefted and strongly tapered living-memory heart. The history scar,
- * branching traces and memory nodes hug the tissue, while grounded root
- * tendrils and visual-only sanctuary landmarks anchor the Orb in the authored
- * world. Every added surface is visual-only and cannot take navigation or
- * pointer ownership from the governed semantic Orb and destination controls.
+ * V253 replaces the rejected V252 prototype dressing and cool surface patches
+ * with one continuous, deeply clefted and strongly tapered living-memory heart.
+ * The history scar, branching traces and memory nodes hug the tissue, while a
+ * layered lantern grove, path stones, cairns and fireflies anchor the Orb in
+ * the authored world. Every added surface is visual-only and cannot take
+ * navigation or pointer ownership from governed semantic controls.
  */
 export function HomeVisualAuthority() {
   const { scene } = useThree()
@@ -399,8 +434,8 @@ export function HomeVisualAuthority() {
   }, [scene])
 
   return <>
-    <SanctuaryDressingV252 />
-    <GroundedOrbRootsV252 />
-    <LiteralOrbAuthorityV252 />
+    <SanctuaryDressingV253 />
+    <GroundedOrbRootsV253 />
+    <LiteralOrbAuthorityV253 />
   </>
 }
