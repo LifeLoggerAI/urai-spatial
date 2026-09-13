@@ -1,57 +1,66 @@
 import * as THREE from 'three'
 
 // Canonical selected-memory manifestation geometry.
-// The memory is approached from Life Map as a luminous celestial object, but it
-// resolves in Focus as an open, fractured memory field rather than a closed rock,
-// sphere, cage, spike cluster or flower. Each authored fragment leaves deliberate
-// negative space so the selected memory reads as something unfolding, not a boulder.
-const MEMORY_FRAGMENTS = [
-  [-2.58, .47, .84, -.08, -.02, .08],
-  [-1.46, .38, .91, .05, .02, -.04],
-  [-.34, .44, .78, -.02, -.04, .11],
-  [.82, .36, .88, .07, .01, -.08],
-  [1.91, .42, .81, -.05, .04, .03],
+// Focus is the selected memory star resolving into an open field of suspended,
+// non-concentric memory ribbons. Nothing shares a floor root and nothing closes
+// into a sphere, flower, cage, spike cluster or boulder. The negative center is
+// intentional: the remembered moment occupies the space between the fragments.
+const MEMORY_RIBBONS = [
+  [-2.55, .24, .76, 1.34, .34, -.12],
+  [-.72, .04, .92, 1.08, .28, .18],
+  [.82, .38, .70, 1.18, .30, -.20],
+  [2.34, -.18, .84, .92, .24, .14],
 ] as const
 
 export function createFocusStrata() {
-  return MEMORY_FRAGMENTS.map(([centerPhi, halfWidth, baseRadius, offsetX, offsetZ, phase], fragment) => {
+  return MEMORY_RIBBONS.map(([centerPhi, yCenter, baseRadius, span, bandWidth, tilt], fragment) => {
     const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
-    const rows = 34, columns = 22
+    const rows = 38, columns = 14
 
     for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
       const v = row / rows
       const u = column / columns
+      const along = v * 2 - 1
       const across = u * 2 - 1
-      const middle = Math.sin(v * Math.PI)
-      const shoulder = Math.pow(Math.max(0, middle), .72)
-      const width = halfWidth * (.30 + shoulder * .70)
-      const phi = centerPhi + across * width + .055 * Math.sin(v * 7.1 + fragment)
+      const taper = Math.pow(Math.sin(v * Math.PI), .55)
+      const historyWave = Math.sin(v * 12.6 + across * 4.4 + fragment * 1.73)
+      const fineWave = Math.sin(v * 27.4 - across * 9.2 + fragment * .81)
+      const theta = centerPhi + along * span * .5 + .09 * Math.sin(v * Math.PI * 2 + fragment)
+      const radius = baseRadius
+        + .10 * Math.sin(v * Math.PI * 1.7 + fragment * .92)
+        + historyWave * .022
+        + fineWave * .009
+      const width = bandWidth * (.25 + .75 * taper)
+      const ribbonOffset = across * width
+      const fold = across * .09 * Math.sin(v * Math.PI * 3.1 + fragment)
 
-      // A fragment begins close to the memory core, expands through a broad middle,
-      // then curls away again. The open center and large angular gaps are intentional.
-      const historyWave = Math.sin(v * 11.8 + across * 5.6 + fragment * 1.91)
-      const fineWave = Math.sin(v * 24.2 - across * 12.4 + fragment * .77)
-      const asymmetry = .08 * Math.sin(v * Math.PI * 1.65 + fragment * .83 + phase)
-      const radial = baseRadius * (.28 + shoulder * .78 + v * .10 + asymmetry)
-        + historyWave * .025 + fineWave * .011
-      const lateral = across * (.10 + shoulder * .18)
-      const curl = .18 * Math.pow(v, 1.7) - .08 * Math.pow(1 - v, 2)
-
-      const x = offsetX + Math.cos(phi) * radial + Math.cos(phi + Math.PI / 2) * lateral
-      const z = offsetZ + Math.sin(phi) * radial * .78 + Math.sin(phi + Math.PI / 2) * lateral * .72 - curl
-      const y = -1.02 + v * 1.92 + .18 * shoulder + .08 * Math.sin(across * Math.PI + fragment * .9)
+      // Tangent/normal decomposition keeps each fragment ribbon-like rather than
+      // petal-like. Vertical centers differ so the fragments float independently.
+      const radialX = Math.cos(theta)
+      const radialZ = Math.sin(theta)
+      const tangentX = -radialZ
+      const tangentZ = radialX
+      const x = radialX * radius + tangentX * ribbonOffset + .06 * Math.sin(v * 7.3 + fragment)
+      const z = radialZ * radius * .78 + tangentZ * ribbonOffset * .68 + fold
+      const y = yCenter
+        + along * tilt
+        + .28 * Math.sin(v * Math.PI + fragment * .46)
+        + across * .10
+        + .045 * historyWave
 
       positions.push(x, y, z)
-      uvs.push(u * 1.7, v * 1.9)
+      uvs.push(u * 1.8, v * 2.2)
 
-      const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 14)
-      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(v * 7.4 + across * 4.2 + fragment))), 18)
-      const edge = Math.pow(Math.abs(across), 1.6)
-      const core = new THREE.Color(fragment % 2 ? '#a9e5e1' : '#d6f2ea')
-      const memory = new THREE.Color(fragment % 3 === 0 ? '#ffd19a' : '#8edfff')
-      const shadow = new THREE.Color('#254b55')
-      const color = shadow.clone().lerp(core, .48 + shoulder * .30).lerp(memory, Math.min(.82, vein * .54 + hotVein * .46))
-      color.multiplyScalar(.88 + shoulder * .13 - edge * .10)
+      const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 13)
+      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(v * 6.8 + across * 3.8 + fragment))), 17)
+      const edge = Math.pow(Math.abs(across), 1.5)
+      const core = new THREE.Color(fragment % 2 ? '#b6eee7' : '#d9f6ef')
+      const memory = new THREE.Color(fragment % 3 === 0 ? '#ffc786' : '#82dcff')
+      const shadow = new THREE.Color('#1d4350')
+      const color = shadow.clone()
+        .lerp(core, .56 + taper * .24)
+        .lerp(memory, Math.min(.86, vein * .55 + hotVein * .45))
+      color.multiplyScalar(.94 + taper * .10 - edge * .12)
       colors.push(color.r, color.g, color.b)
     }
 
