@@ -231,12 +231,12 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
   return <group position={[LIFE_MAP.x, y + .12, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v249-life-map-rooted-celestial-ascent" onClick={activate} userData={{ artRevision: 'v249-rooted-celestial-ascent', visualIntent: 'asymmetric-rooted-ascent-opening-upward-into-lineage-and-constellation-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'vertical-rooted-celestial-ascent' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="02" position={[-.30, -.24, -1.00]} rotation={[.10, .82, -.16]} scale={[.68, 1.02, .64]} />
-      <ScannedRock variant="01" position={[.24, .06, -1.10]} rotation={[-.12, -.58, .18]} scale={[.54, 1.20, .52]} />
+      <ScannedRock variant="02" position={[-.38, -.48, -1.12]} rotation={[.34, 1.18, -.28]} scale={[.50, .70, .58]} />
+      <ScannedRock variant="01" position={[.32, -.42, -1.24]} rotation={[-.28, -.96, .24]} scale={[.44, .78, .48]} />
     </Suspense>
     <mesh geometry={path} position={[0, -.10, .10]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#565b4e" roughness={1} /></mesh>
-    <lineSegments visible={false} geometry={lineage} position={[0, .04, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={0} /></lineSegments>
-    <points geometry={stars}><pointsMaterial vertexColors size={.018} sizeAttenuation transparent opacity={.54} depthWrite={false} /></points>
+    <lineSegments geometry={lineage} position={[0, .04, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.42} /></lineSegments>
+    <points geometry={stars}><pointsMaterial vertexColors size={.018} sizeAttenuation transparent opacity={.60} depthWrite={false} /></points>
     <pointLight position={[0, .78, -1.12]} color="#8fc9c0" intensity={.34} distance={2.7} decay={2} />
   </group>
 }

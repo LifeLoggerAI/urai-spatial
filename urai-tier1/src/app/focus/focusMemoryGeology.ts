@@ -2,14 +2,17 @@ import * as THREE from 'three'
 
 // Original URAI geometry and material source. No downloaded imagery or scan UVs.
 // Separate broken strata leave actual air between the memory's folded interior.
+// V258 keeps the V251 authority but narrows and lowers each stratum so the
+// selected memory reads as an inhabitable mineral-light manifestation rather
+// than one opaque wall across the Focus chamber.
 const STRATA = [
-  [-1.04, .10, 2.88, .64, -.22, -.22],
-  [-.70, -.36, 3.46, .55, -.46, .18],
-  [-.28, -.64, 3.02, .50, -.16, .38],
-  [.28, -.58, 2.40, .48, .44, .19],
-  [.78, -.24, 2.06, .56, .42, -.10],
-  [.96, .32, 1.58, .59, .22, -.32],
-  [-.58, .48, 1.76, .48, -.55, -.23],
+  [-.78, .10, 1.86, .36, -.18, -.16],
+  [-.52, -.42, 2.10, .32, -.28, .16],
+  [-.20, -.68, 1.74, .28, -.12, .30],
+  [.18, -.62, 1.58, .27, .28, .16],
+  [.54, -.34, 1.46, .30, .26, -.08],
+  [.68, .10, 1.34, .31, .14, -.22],
+  [-.42, .40, 1.42, .27, -.32, -.16],
 ]
 
 export function createFocusStrata() {
@@ -18,17 +21,17 @@ export function createFocusStrata() {
     const rows = 54, columns = 18
     for (let face = 0; face < 2; face++) for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
       const t = row / rows, s = column / columns, across = s * 2 - 1
-      const crown = .12 * Math.sin(s * 14 + plate * 3) + .07 * Math.sin(s * 31 + plate)
-      const taper = .86 - .31 * t + .20 * Math.sin(t * 4.7 + plate)
-      const root = .38 * Math.exp(-t * 12)
-      const grain = .024 * Math.sin(s * 63 + t * 5 + plate) + .017 * Math.sin(s * 147 - t * 13)
-      const fracture = .07 * Math.sin(t * 22 + s * 3 + plate) * Math.sin(s * 11 + plate)
+      const crown = .09 * Math.sin(s * 14 + plate * 3) + .05 * Math.sin(s * 31 + plate)
+      const taper = .76 - .38 * t + .15 * Math.sin(t * 4.7 + plate)
+      const root = .24 * Math.exp(-t * 12)
+      const grain = .020 * Math.sin(s * 63 + t * 5 + plate) + .014 * Math.sin(s * 147 - t * 13)
+      const fracture = .055 * Math.sin(t * 22 + s * 3 + plate) * Math.sin(s * 11 + plate)
       const x = cx + lean * t * t + across * (width * taper + root)
-      const y = -1.47 + t * (height + crown) + .03 * Math.sin(s * 19 + t * 32)
-      const z = cz + turn * t + .22 * across * across + grain + fracture + (face ? -.12 : .12) * (1 - .45 * t)
+      const y = -1.43 + t * (height + crown) + .025 * Math.sin(s * 19 + t * 32)
+      const z = cz + turn * t + .16 * across * across + grain + fracture + (face ? -.075 : .075) * (1 - .45 * t)
       positions.push(x, y, z); uvs.push(s * 1.7, t * 3.2)
-      const shade = .68 + .23 * s + .09 * Math.sin(t * 38 + plate)
-      const c = new THREE.Color(plate % 3 === 0 ? '#c4b698' : plate % 3 === 1 ? '#a99f86' : '#807e68').multiplyScalar(shade)
+      const shade = .72 + .19 * s + .09 * Math.sin(t * 38 + plate)
+      const c = new THREE.Color(plate % 3 === 0 ? '#9daa8f' : plate % 3 === 1 ? '#7f9084' : '#687f79').multiplyScalar(shade)
       colors.push(c.r, c.g, c.b)
     }
     const stride = columns + 1, layer = stride * (rows + 1)

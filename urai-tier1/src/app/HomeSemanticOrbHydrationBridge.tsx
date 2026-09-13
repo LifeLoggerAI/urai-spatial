@@ -18,11 +18,14 @@ export default function HomeSemanticOrbHydrationBridge() {
 
       // This lightweight boundary owns Home's semantic Orb activation so the
       // control never waits on the much heavier spatial-world hydration path.
-      // Capture-phase ownership also prevents the later Home runtime boundary
-      // from dispatching the same Orb-open request a second time.
+      // Keep the pointer event itself bounded: production-motion render work
+      // must not hold the native click open while the Orb companion hydrates.
+      // Capture ownership still prevents the later Home runtime boundary from
+      // dispatching the same request a second time.
       event.preventDefault()
       event.stopPropagation()
-      requestUraiWorldOrbOpen(source)
+      const returnFocusTo = source
+      window.setTimeout(() => requestUraiWorldOrbOpen(returnFocusTo), 0)
     }
 
     document.addEventListener('click', activateSemanticOrb, true)
