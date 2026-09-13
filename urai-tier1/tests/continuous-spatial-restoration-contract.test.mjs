@@ -112,7 +112,7 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
   assert.match(worldEvents, /if \(scene\.phase !== 'ASCENT'\) scene\.enterLifeMap\(\)/)
   assert.match(worldEvents, /window\.dispatchEvent\(new CustomEvent<UraiWorldTravelRequest>\(URAI_HOME_ASCENT_EVENT/)
   assert.match(worldEvents, /return\s*\n\s*}/)
-  assert.match(homeProduction, /transition==='life-map'/)
+  assert.match(homeProduction, /transition\s*===\s*'life-map'/)
   assert.match(homeProduction, /setProgress\(t\)/)
   assert.match(homeProduction, /cameraCheckpoint:'home-sky-ascent-complete'/)
   assert.match(homeProduction, /data-home-camera-mode=\{transition!=='none'\?transition:dragging\?'look':'embodied-third-person'\}/)
@@ -123,7 +123,7 @@ test('Home Life Map entry is one canonical sky ascent transaction with one camer
 })
 
 test('Home Ground entry is a physical environmental descent rather than a floating menu portal', () => {
-  assert.match(homeProduction, /transition==='ground'/)
+  assert.match(homeProduction, /transition\s*===\s*'ground'/)
   assert.match(homeProduction, /home-ground-environmental-threshold/)
   assert.match(homeProduction, /destination:'infrastructure-hub'/)
   assert.match(homeProduction, /cameraCheckpoint:'home-ground-descent'/)
