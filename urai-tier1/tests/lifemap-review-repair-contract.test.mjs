@@ -33,20 +33,29 @@ test('reduced motion forces an in-flight selected journey to arrival', () => {
   assert.match(scene, /if \(profile\.reducedMotion\) \{\s*journeyToken\.current \+= 1;\s*setPhase\("arrival"\);\s*return;/s)
 })
 
-test('selected arrival preserves surrounding personal-universe geography instead of isolating one node', () => {
-  assert.match(overlay, /life-map-v249-personal-universe-geography/)
+test('selected arrival preserves readable surrounding geography instead of isolating or monumenting one node', () => {
+  assert.match(overlay, /life-map-v250-personal-universe-geography/)
   assert.match(overlay, /surrounding-geography-remains-visible-through-selection-and-arrival/)
-  assert.match(overlay, /nodes\.map\(\(node\)=>/)
+  assert.match(overlay, /nodes\.map\(\(node,index\)=>/)
   assert.doesNotMatch(overlay, /const visibleNodes=arrival&&selected\?\[selected\]:nodes/)
-  assert.match(overlay, /life-map-v249-grounded-memory-places/)
-  assert.match(overlay, /all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context/)
+  assert.match(overlay, /life-map-v250-grounded-memory-places/)
+  assert.match(overlay, /low-wide-memory-sanctuaries-preserve-context-and-never-become-monoliths/)
+  assert.match(overlay, /scale=\{\[scale,active\?\.78:\.58,scale\*\.92\]\}/)
 })
 
 test('retired hidden Life Map visual owners lose pointer authority and restore it only on cleanup', () => {
-  assert.match(overlay, /const raycasts=useRef\(new Map<THREE\.Object3D,RaycastFn>\(\)\)/)
+  assert.match(overlay, /const \{scene\}=useThree\(\);const hidden=useRef\(new Set<THREE\.Object3D>\(\)\),raycasts=useRef\(new Map<THREE\.Object3D,RaycastFn>\(\)\)/)
   assert.match(overlay, /object\.raycast=\(\)=>undefined/)
   assert.match(overlay, /child\.raycast=\(\)=>undefined/)
   assert.match(overlay, /raycasts\.current\.forEach\(\(raycast,object\)=>\{object\.raycast=raycast\}\)/)
+})
+
+test('portrait overview camera moves geography into the frame instead of spending the viewport on sky', () => {
+  assert.match(layoutSource, /scale: portrait \? \[\.58, \.96, \.94\]/)
+  assert.match(layoutSource, /const overlook = portrait \? 3\.7 : 7\.1/)
+  assert.match(layoutSource, /const retreat = portrait \? \.88 : 1\.14/)
+  assert.match(layoutSource, /portrait \? 1\.38 : \.65/)
+  assert.match(layoutSource, /portrait \? 2\.0 : 1\.2/)
 })
 
 test('Founder proof samples retained WebGL canvas pixels only', () => {
