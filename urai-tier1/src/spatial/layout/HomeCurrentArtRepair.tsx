@@ -192,17 +192,17 @@ function lineageGeometry() {
 
 function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
-  const path = useMemo(() => wornPathGeometry(2.75, .30, .13), [])
+  const path = useMemo(() => wornPathGeometry(2.75, .34, .12), [])
   useEffect(() => () => path.dispose(), [path])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
-  return <group position={[GROUND.x, y + .14, GROUND.z]} rotation={[0, -.10, 0]} name="home-v249-ground-geological-descent" onClick={activate} userData={{ artRevision: 'v249-integrated-ground-descent', visualIntent: 'low-lateral-eroded-cleft-descending-into-terrain', semanticOwner: 'home-current-ground-geological-descent', morphology: 'low-geological-descent-cleft' }}>
+  return <group position={[GROUND.x, y + .18, GROUND.z]} rotation={[0, -.10, 0]} name="home-v249-ground-geological-descent" onClick={activate} userData={{ artRevision: 'v249-integrated-ground-descent', visualIntent: 'low-lateral-eroded-cleft-descending-into-terrain', semanticOwner: 'home-current-ground-geological-descent', morphology: 'low-geological-descent-cleft' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="01" position={[-.50, -.50, -1.04]} rotation={[.26, 1.12, -.20]} scale={[1.26, .72, 1.10]} />
-      <ScannedRock variant="02" position={[.40, -.56, -1.18]} rotation={[-.18, -.90, .12]} scale={[1.02, .60, .96]} />
+      <ScannedRock variant="01" position={[-.66, -.30, -.82]} rotation={[.14, 1.22, -.42]} scale={[1.44, .88, 1.20]} />
+      <ScannedRock variant="02" position={[.56, -.36, -.94]} rotation={[-.10, -1.04, .30]} scale={[1.24, .76, 1.08]} />
     </Suspense>
-    <mesh geometry={path} position={[0, -.14, .16]} rotation={[.10, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#645443" roughness={1} /></mesh>
-    <pointLight position={[-.08, -.24, -1.26]} color="#c77954" intensity={.38} distance={2.2} decay={2} />
-    <pointLight position={[.28, -.36, -1.48]} color="#755a45" intensity={.14} distance={1.5} decay={2} />
+    <mesh geometry={path} position={[0, -.12, .28]} rotation={[.14, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#645443" roughness={1} /></mesh>
+    <pointLight position={[-.10, -.18, -1.06]} color="#c77954" intensity={.44} distance={2.4} decay={2} />
+    <pointLight position={[.30, -.30, -1.34]} color="#755a45" intensity={.18} distance={1.7} decay={2} />
   </group>
 }
 
@@ -229,15 +229,15 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   }, [])
   useEffect(() => () => { path.dispose(); lineage.dispose(); stars.dispose() }, [path, lineage, stars])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
-  return <group position={[LIFE_MAP.x, y + .12, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v249-life-map-rooted-celestial-ascent" onClick={activate} userData={{ artRevision: 'v249-rooted-celestial-ascent', visualIntent: 'asymmetric-rooted-ascent-opening-upward-into-lineage-and-constellation-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'vertical-rooted-celestial-ascent' }}>
+  return <group position={[LIFE_MAP.x, y + .10, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v249-life-map-rooted-celestial-ascent" onClick={activate} userData={{ artRevision: 'v249-rooted-celestial-ascent', visualIntent: 'asymmetric-rooted-ascent-opening-upward-into-lineage-and-constellation-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'vertical-rooted-celestial-ascent' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="02" position={[-.38, -.48, -1.12]} rotation={[.34, 1.18, -.28]} scale={[.50, .70, .58]} />
-      <ScannedRock variant="01" position={[.32, -.42, -1.24]} rotation={[-.28, -.96, .24]} scale={[.44, .78, .48]} />
+      <ScannedRock variant="02" position={[-.48, -.74, -1.26]} rotation={[1.12, .72, -.58]} scale={[.72, .34, .80]} />
+      <ScannedRock variant="01" position={[.42, -.78, -1.38]} rotation={[1.04, -.66, .50]} scale={[.64, .30, .72]} />
     </Suspense>
-    <mesh geometry={path} position={[0, -.10, .10]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#565b4e" roughness={1} /></mesh>
-    <lineSegments geometry={lineage} position={[0, .04, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.42} /></lineSegments>
-    <points geometry={stars}><pointsMaterial vertexColors size={.018} sizeAttenuation transparent opacity={.60} depthWrite={false} /></points>
-    <pointLight position={[0, .78, -1.12]} color="#8fc9c0" intensity={.34} distance={2.7} decay={2} />
+    <mesh geometry={path} position={[0, -.12, .12]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#565b4e" roughness={1} /></mesh>
+    <lineSegments geometry={lineage} position={[0, .06, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.60} /></lineSegments>
+    <points geometry={stars}><pointsMaterial vertexColors size={.021} sizeAttenuation transparent opacity={.70} depthWrite={false} /></points>
+    <pointLight position={[0, .78, -1.12]} color="#8fc9c0" intensity={.38} distance={2.9} decay={2} />
   </group>
 }
 
