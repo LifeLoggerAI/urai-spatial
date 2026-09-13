@@ -24,7 +24,9 @@ function connectionGeometry(nodes: LifeMapNode[], selected: LifeMapNode | null) 
       if (incident || overviewContext) candidates.push({ source, sourceIndex, target: target.node, targetIndex: target.index })
     })
   })
-  const visible = candidates.slice(0, selected ? 3 : 4)
+  // Relationships are context, never the Life Map's primary visual language. Overview
+  // carries no explicit graph edges; arrival may reveal one local relationship only.
+  const visible = selected ? candidates.slice(0, 1) : []
   visible.forEach(({ source, sourceIndex, target, targetIndex }) => {
     const start = new THREE.Vector3(...lifeMapLocalPoint(source, sourceIndex)), end = new THREE.Vector3(...lifeMapLocalPoint(target, targetIndex)), mid = start.clone().lerp(end, .5)
     const separation = start.distanceTo(end)
@@ -32,7 +34,7 @@ function connectionGeometry(nodes: LifeMapNode[], selected: LifeMapNode | null) 
     mid.z -= Math.min(1.2, separation * .025)
     const samples = new THREE.QuadraticBezierCurve3(start, mid, end).getPoints(14), aColor = new THREE.Color(source.aura), bColor = new THREE.Color(target.aura)
     for (let index = 0; index < samples.length - 1; index += 1) {
-      const a = samples[index], b = samples[index + 1], color = aColor.clone().lerp(bColor, index / (samples.length - 1)), boost = selected ? .34 : .22
+      const a = samples[index], b = samples[index + 1], color = aColor.clone().lerp(bColor, index / (samples.length - 1)), boost = .10
       positions.push(a.x, a.y + .055, a.z, b.x, b.y + .055, b.z)
       colors.push(color.r * boost, color.g * boost, color.b * boost, color.r * boost, color.g * boost, color.b * boost)
     }
@@ -81,8 +83,8 @@ function HistoryConstellation({ nodes, selected, reducedMotion }: { nodes: LifeM
   const root = useRef<THREE.Group>(null), links = useMemo(() => connectionGeometry(nodes, selected), [nodes, selected]), beacons = useMemo(() => beaconGeometry(nodes), [nodes])
   useEffect(() => () => { links.dispose(); beacons.dispose() }, [links, beacons])
   useFrame(({ clock }) => { if (root.current && !reducedMotion) root.current.position.y = Math.sin(clock.elapsedTime * .09) * .008 })
-  return <group ref={root} name="life-map-v255-contextual-history-constellation" userData={{ visualOnly: true, interactionOwner: false, relationshipPolicy: selected ? 'selected-memory-only-max-three' : 'cross-chapter-context-max-four' }}>
-    <lineSegments geometry={links} raycast={() => null}><lineBasicMaterial vertexColors transparent opacity={selected ? .11 : .055} depthWrite={false} /></lineSegments>
+  return <group ref={root} name="life-map-v255-contextual-history-constellation" userData={{ visualOnly: true, interactionOwner: false, relationshipPolicy: selected ? 'selected-memory-only-max-one-subtle' : 'overview-no-explicit-graph-edges' }}>
+    <lineSegments geometry={links} raycast={() => null}><lineBasicMaterial vertexColors transparent opacity={selected ? .025 : 0} depthWrite={false} /></lineSegments>
     <points geometry={beacons} raycast={() => null}><pointsMaterial vertexColors size={.030} transparent opacity={.30} depthWrite={false} sizeAttenuation /></points>
   </group>
 }
@@ -92,7 +94,7 @@ function SelectedHistory({ node, index, reducedMotion }: { node: LifeMapNode; in
   useEffect(() => () => { history.dispose(); particles.dispose() }, [history, particles])
   useFrame(({ clock }) => { if (root.current && !reducedMotion) root.current.rotation.y = Math.sin(clock.elapsedTime * .08) * .010 })
   return <group ref={root} position={point} name="life-map-v255-selected-history-sanctuary" userData={{ visualOnly: true, interactionOwner: false, presentationRevision: 'v255-arrival-inside-history', visualRepair: 'restrained-local-history-only' }}>
-    <lineSegments geometry={history} raycast={() => null}><lineBasicMaterial color={node.aura} transparent opacity={.13} depthWrite={false} /></lineSegments>
+    <lineSegments geometry={history} raycast={() => null}><lineBasicMaterial color={node.aura} transparent opacity={.06} depthWrite={false} /></lineSegments>
     <points geometry={particles} raycast={() => null}><pointsMaterial vertexColors size={.021} transparent opacity={reducedMotion ? .13 : .18} depthWrite={false} sizeAttenuation /></points>
     <pointLight position={[-.7, .50, .48]} color={node.aura} intensity={.12} distance={3.2} decay={2} />
   </group>
