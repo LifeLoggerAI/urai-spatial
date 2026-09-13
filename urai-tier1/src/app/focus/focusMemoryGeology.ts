@@ -1,18 +1,18 @@
 import * as THREE from 'three'
 
 // Original URAI geometry and material source. No downloaded imagery or scan UVs.
-// Separate broken strata leave actual air between the memory's folded interior.
-// V258 keeps the V251 authority but narrows and lowers each stratum so the
-// selected memory reads as an inhabitable mineral-light manifestation rather
-// than one opaque wall across the Focus chamber.
+// V259 keeps the V251 Focus authority while turning the selected memory from
+// dark geology into a low, open mineral-memory bloom: separated leaves, real
+// negative space, and bright embedded vein language without spheres/cages.
 const STRATA = [
-  [-.78, .10, 1.86, .36, -.18, -.16],
-  [-.52, -.42, 2.10, .32, -.28, .16],
-  [-.20, -.68, 1.74, .28, -.12, .30],
-  [.18, -.62, 1.58, .27, .28, .16],
-  [.54, -.34, 1.46, .30, .26, -.08],
-  [.68, .10, 1.34, .31, .14, -.22],
-  [-.42, .40, 1.42, .27, -.32, -.16],
+  [-.70, .08, 1.30, .20, -.14, -.14],
+  [-.46, -.30, 1.48, .18, -.18, .12],
+  [-.20, -.48, 1.22, .15, -.08, .24],
+  [.08, -.50, 1.12, .14, .16, .18],
+  [.34, -.38, 1.28, .16, .18, .06],
+  [.58, -.10, 1.18, .18, .12, -.16],
+  [-.34, .30, 1.08, .14, -.20, -.12],
+  [.26, .26, 1.02, .13, .18, .10],
 ]
 
 export function createFocusStrata() {
@@ -21,17 +21,24 @@ export function createFocusStrata() {
     const rows = 54, columns = 18
     for (let face = 0; face < 2; face++) for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
       const t = row / rows, s = column / columns, across = s * 2 - 1
-      const crown = .09 * Math.sin(s * 14 + plate * 3) + .05 * Math.sin(s * 31 + plate)
-      const taper = .76 - .38 * t + .15 * Math.sin(t * 4.7 + plate)
-      const root = .24 * Math.exp(-t * 12)
-      const grain = .020 * Math.sin(s * 63 + t * 5 + plate) + .014 * Math.sin(s * 147 - t * 13)
-      const fracture = .055 * Math.sin(t * 22 + s * 3 + plate) * Math.sin(s * 11 + plate)
+      const crown = .055 * Math.sin(s * 14 + plate * 3) + .025 * Math.sin(s * 31 + plate)
+      const taper = .70 - .44 * t + .10 * Math.sin(t * 4.7 + plate)
+      const root = .12 * Math.exp(-t * 12)
+      const grain = .012 * Math.sin(s * 63 + t * 5 + plate) + .008 * Math.sin(s * 147 - t * 13)
+      const fractureWave = Math.sin(t * 24 + s * 4 + plate) * Math.sin(s * 13 + plate * .7)
+      const fracture = .026 * fractureWave
       const x = cx + lean * t * t + across * (width * taper + root)
-      const y = -1.43 + t * (height + crown) + .025 * Math.sin(s * 19 + t * 32)
-      const z = cz + turn * t + .16 * across * across + grain + fracture + (face ? -.075 : .075) * (1 - .45 * t)
+      const y = -1.40 + t * (height + crown) + .018 * Math.sin(s * 19 + t * 32)
+      const z = cz + turn * t + .085 * across * across + grain + fracture + (face ? -.038 : .038) * (1 - .42 * t)
       positions.push(x, y, z); uvs.push(s * 1.7, t * 3.2)
-      const shade = .72 + .19 * s + .09 * Math.sin(t * 38 + plate)
-      const c = new THREE.Color(plate % 3 === 0 ? '#9daa8f' : plate % 3 === 1 ? '#7f9084' : '#687f79').multiplyScalar(shade)
+
+      // Embedded pale veins stay part of the material rather than becoming an
+      // external cable/cage. They brighten fracture history inside each leaf.
+      const vein = Math.pow(Math.max(0, 1 - Math.abs(fractureWave)), 10)
+      const heightLight = .18 * t
+      const base = new THREE.Color(plate % 3 === 0 ? '#9fc5b4' : plate % 3 === 1 ? '#b9cbb5' : '#8fb9b2')
+      const history = new THREE.Color(plate % 2 ? '#e7d5ad' : '#c5e6dc')
+      const c = base.lerp(history, Math.min(.76, vein * .68 + heightLight)).multiplyScalar(.78 + .12 * s)
       colors.push(c.r, c.g, c.b)
     }
     const stride = columns + 1, layer = stride * (rows + 1)
@@ -58,17 +65,20 @@ export function createFocusSurfaceMaps(): [THREE.Texture, THREE.Texture, THREE.T
   const hash = (x:number,y:number) => { const v = Math.sin(x*127.1+y*311.7)*43758.5453; return v-Math.floor(v) }
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
     const u=x/size,v=y/size, grain=hash(x,y), vein=Math.abs(Math.sin(u*92 + Math.sin(v*19)*1.4 + Math.sin(v*47)*.23))
-    const crack=vein<.09 ? .22*(1-vein/.09):0
+    const history=vein<.075 ? 1-vein/.075 : 0
     const layer=.5+.5*Math.sin(v*143+Math.sin(u*24)*.7)
-    const value=.42+grain*.12+layer*.12-crack
-    h[y*size+x]=value
-    const i=(y*size+x)*4, tone=145+value*100-crack*180
-    rgba.set([tone,tone*.94,tone*.81,255],i)
-    rough.set([255,Math.min(255,205+grain*48-layer*14),0,255],i)
+    const value=.48+grain*.10+layer*.08
+    h[y*size+x]=value-history*.025
+    const i=(y*size+x)*4
+    const r=Math.min(255,126+value*88+history*74)
+    const g=Math.min(255,148+value*92+history*72)
+    const b=Math.min(255,136+value*86+history*54)
+    rgba.set([r,g,b,255],i)
+    rough.set([255,Math.min(255,218+grain*30-layer*12),0,255],i)
   }
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
-    const dx=(h[y*size+(x+1)%size]-h[y*size+(x+size-1)%size])*2.8
-    const dy=(h[((y+1)%size)*size+x]-h[((y+size-1)%size)*size+x])*2.8
+    const dx=(h[y*size+(x+1)%size]-h[y*size+(x+size-1)%size])*2.1
+    const dy=(h[((y+1)%size)*size+x]-h[((y+size-1)%size)*size+x])*2.1
     const n=new THREE.Vector3(-dx,-dy,1).normalize()
     normals.set([(n.x*.5+.5)*255,(n.y*.5+.5)*255,(n.z*.5+.5)*255,255],(y*size+x)*4)
   }
