@@ -31,9 +31,6 @@ function THREE_LERP(a: number, b: number, t: number): number {
 }
 
 export function lifeMapTerrainHeight(x: number, z: number): number {
-  // Exact visible geography authority. Chapter territories own the large-scale
-  // silhouette; asymmetric shelves, cuts, banks and multiscale erosion keep
-  // them from collapsing into one smooth tabletop at overview distance.
   const gaussian = (cx: number, cz: number, sx: number, sz: number) =>
     Math.exp(-(((x - cx) / sx) ** 2 + ((z - cz) / sz) ** 2))
   const warpX = x + (valueNoise2D(x * .11 + 5.4, z * .09 - 2.7) - .5) * 1.72
@@ -108,20 +105,20 @@ export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
 
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {
   if (selected) {
-    // Arrival keeps surrounding lived geography materially present instead of
-    // collapsing into an isolated artifact zoom.
+    // Keep the selected memory intimate without turning it into a giant prop;
+    // retain surrounding geography as the spatial context for Focus/Replay.
     return {
-      scale: portrait ? [1.14, 1.18, 1.02] : [1.22, 1.24, 1.12],
-      position: portrait ? [0, -.04, 1.58] : [0, -.08, 1.02],
+      scale: portrait ? [.96, 1.02, .98] : [1.08, 1.10, 1.08],
+      position: portrait ? [0, -.72, 1.18] : [0, -.54, .62],
     }
   }
 
-  // Portrait keeps chronology shallow enough for artifact-envelope fit while
-  // deliberately amplifying geological relief so the world reads as inhabited
-  // terrain rather than a thin runway between dead sky and empty foreground.
+  // V251 literal-pixel repair: preserve horizontal and chronological breadth in
+  // portrait instead of compressing the world into a miniature runway. Relief
+  // stays natural while a lower camera makes geography, not dead sky, own frame.
   return portrait
-    ? { scale: [.94, 2.20, .72], position: [0, -.18, 3.65] }
-    : { scale: [1.24, 1.28, .86], position: [0, -.30, .88] }
+    ? { scale: [1.16, 1.34, 1.08], position: [0, -.94, 2.10] }
+    : { scale: [1.42, 1.18, 1.02], position: [0, -.82, .74] }
 }
 
 export function lifeMapWorldPoint(node: LifeMapNode, index: number, portrait: boolean): Point3 {
@@ -135,8 +132,8 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const points = nodes.map((node, index) => lifeMapLocalPoint(node, index).map((value, axis) => value * stage.scale[axis] + stage.position[axis]) as Point3)
     .filter(point => point.every(Number.isFinite))
   if (!points.length) return portrait
-    ? { position: [0, 18.5, 31.0], target: [0, -3.6, -15.5] }
-    : { position: [0, 7.6, 14.2], target: [0, -.8, -17.4] }
+    ? { position: [0, 10.8, 24.0], target: [0, -4.1, -17.8] }
+    : { position: [0, 5.5, 13.6], target: [0, -1.4, -19.2] }
 
   const min: Point3 = [Infinity, Infinity, Infinity]
   const max: Point3 = [-Infinity, -Infinity, -Infinity]
@@ -152,13 +149,10 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
       Math.abs(min[0] - target[0]) + 2.35 * stage.scale[0],
       Math.abs(max[0] - target[0]) + 2.35 * stage.scale[0],
     )
-    // Full artifact-envelope fit remains governed by distance. Use the safe
-    // horizontal allowance instead of the previous over-conservative retreat;
-    // the independent framing contract still verifies every envelope corner.
-    const forward = Math.max(27, halfWidth / (horizontalTan * .79))
+    const forward = Math.max(22, halfWidth / (horizontalTan * .88))
     return {
-      position: [target[0], target[1] + 18.5, target[2] + forward],
-      target: [target[0], target[1] - .42, target[2] - .95],
+      position: [target[0], target[1] + 10.8, target[2] + forward],
+      target: [target[0], target[1] - 1.02, target[2] - 3.10],
     }
   }
 
@@ -166,12 +160,12 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const horizontalTan = verticalTan * Math.max(aspect, .2)
   let distance = 8
   for (const point of points) {
-    const horizontalFit = (Math.abs(point[0] - target[0]) + 2.35 * stage.scale[0]) / (horizontalTan * .78)
-    const verticalFit = (Math.abs(point[1] - target[1]) + 2.35 * stage.scale[1]) / (verticalTan * .76)
+    const horizontalFit = (Math.abs(point[0] - target[0]) + 2.35 * stage.scale[0]) / (horizontalTan * .82)
+    const verticalFit = (Math.abs(point[1] - target[1]) + 2.35 * stage.scale[1]) / (verticalTan * .80)
     distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
   return {
-    position: [target[0], target[1] + 7.6, target[2] + distance],
-    target: [target[0], target[1] - .50, target[2] - 1.55],
+    position: [target[0], target[1] + 5.6, target[2] + distance],
+    target: [target[0], target[1] - .88, target[2] - 3.10],
   }
 }
