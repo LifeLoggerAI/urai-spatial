@@ -51,7 +51,7 @@ test('retired hidden Life Map visual owners lose pointer authority and restore i
 })
 
 test('portrait overview camera moves geography into the frame instead of spending the viewport on sky', () => {
-  assert.match(layoutSource, /scale: portrait \? \[\.58, \.96, \.94\]/)
+  assert.match(layoutSource, /\? \{ scale: \[\.58, \.96, \.94\], position: \[0, -\.16, \.92\] \}/)
   assert.match(layoutSource, /const overlook = portrait \? 3\.7 : 7\.1/)
   assert.match(layoutSource, /const retreat = portrait \? \.88 : 1\.14/)
   assert.match(layoutSource, /portrait \? 1\.38 : \.65/)
