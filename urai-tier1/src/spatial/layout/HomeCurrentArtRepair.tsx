@@ -30,10 +30,13 @@ function RetireSupersededShapes() {
     'home-current-atmospheric-depth-field', 'home-v226-ground-inhabited-hearth',
     'home-v226-life-map-lineage-observatory', 'home-v226-rooted-single-living-memory-presence',
   ]), [])
+  const retainedFernIds = useMemo(() => new Set([1, 4, 9, 13, 18, 22, 27, 31, 34, 39, 42, 47, 51, 55, 59, 64]), [])
 
   useFrame(() => {
     scene.traverse((object) => {
-      if (!exact.has(object.name) || !object.visible) return
+      const fernMatch = /^home-scanned-fern-(\d+)$/.exec(object.name)
+      const retireFern = fernMatch ? !retainedFernIds.has(Number(fernMatch[1])) : false
+      if ((!exact.has(object.name) && !retireFern) || !object.visible) return
       object.visible = false
       suppressRaycast(object, raycasts.current)
       object.traverse((child) => suppressRaycast(child, raycasts.current))
@@ -121,12 +124,12 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
       const materials = sources.map((source) => {
         const material = source.clone()
         if (material instanceof THREE.MeshStandardMaterial) {
-          material.roughness = Math.max(.9, material.roughness)
+          material.roughness = Math.max(.95, material.roughness)
           material.metalness = 0
-          material.color.offsetHSL(0, -.05, .12)
-          material.emissive = new THREE.Color('#202b29')
-          material.emissiveIntensity = .10
-          material.envMapIntensity = .72
+          material.color.offsetHSL(0, -.08, -.12)
+          material.emissive = new THREE.Color('#0b1110')
+          material.emissiveIntensity = .015
+          material.envMapIntensity = .18
         }
         return material
       })
@@ -139,7 +142,7 @@ function ScannedRock({ variant, position, rotation, scale }: { variant: '01' | '
     const materials = Array.isArray(object.material) ? object.material : [object.material]
     materials.forEach((material) => material.dispose())
   }), [model])
-  return <group position={position} rotation={rotation} scale={[scale[0] * .33, scale[1] * .33, scale[2] * .33]}><primitive object={model} /></group>
+  return <group position={position} rotation={rotation} scale={[scale[0] * .24, scale[1] * .24, scale[2] * .24]}><primitive object={model} /></group>
 }
 
 function wornPathGeometry(length = 3.4, startWidth = .46, endWidth = .22) {
@@ -194,14 +197,12 @@ function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
   return <group position={[GROUND.x, y + .14, GROUND.z]} rotation={[0, -.10, 0]} name="home-v249-ground-geological-descent" onClick={activate} userData={{ artRevision: 'v249-integrated-ground-descent', visualIntent: 'low-lateral-eroded-cleft-descending-into-terrain', semanticOwner: 'home-current-ground-geological-descent', morphology: 'low-geological-descent-cleft' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="01" position={[-.54, -.36, -.92]} rotation={[.32, 1.24, -.28]} scale={[1.72, .92, 1.38]} />
-      <ScannedRock variant="02" position={[.42, -.42, -1.04]} rotation={[-.22, -1.02, .14]} scale={[1.25, .78, 1.18]} />
-      <ScannedRock variant="02" position={[-.08, -.56, -1.32]} rotation={[.10, .34, -.08]} scale={[1.16, .55, .92]} />
-      <ScannedRock variant="01" position={[.68, -.18, -.78]} rotation={[.16, -.72, .18]} scale={[.78, .62, .90]} />
+      <ScannedRock variant="01" position={[-.50, -.50, -1.04]} rotation={[.26, 1.12, -.20]} scale={[1.26, .72, 1.10]} />
+      <ScannedRock variant="02" position={[.40, -.56, -1.18]} rotation={[-.18, -.90, .12]} scale={[1.02, .60, .96]} />
     </Suspense>
     <mesh geometry={path} position={[0, -.14, .16]} rotation={[.10, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#645443" roughness={1} /></mesh>
-    <pointLight position={[-.08, -.24, -1.26]} color="#c77954" intensity={.62} distance={2.4} decay={2} />
-    <pointLight position={[.28, -.36, -1.48]} color="#755a45" intensity={.28} distance={1.6} decay={2} />
+    <pointLight position={[-.08, -.24, -1.26]} color="#c77954" intensity={.38} distance={2.2} decay={2} />
+    <pointLight position={[.28, -.36, -1.48]} color="#755a45" intensity={.14} distance={1.5} decay={2} />
   </group>
 }
 
@@ -230,14 +231,13 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
   return <group position={[LIFE_MAP.x, y + .12, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v249-life-map-rooted-celestial-ascent" onClick={activate} userData={{ artRevision: 'v249-rooted-celestial-ascent', visualIntent: 'asymmetric-rooted-ascent-opening-upward-into-lineage-and-constellation-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'vertical-rooted-celestial-ascent' }}>
     <Suspense fallback={null}>
-      <ScannedRock variant="02" position={[-.34, -.18, -.92]} rotation={[.12, .88, -.18]} scale={[.82, 1.42, .72]} />
-      <ScannedRock variant="01" position={[.27, .18, -1.04]} rotation={[-.14, -.64, .22]} scale={[.62, 1.78, .58]} />
-      <ScannedRock variant="01" position={[-.17, .64, -1.16]} rotation={[.26, .34, .28]} scale={[.48, 1.04, .48]} />
+      <ScannedRock variant="02" position={[-.30, -.24, -1.00]} rotation={[.10, .82, -.16]} scale={[.68, 1.02, .64]} />
+      <ScannedRock variant="01" position={[.24, .06, -1.10]} rotation={[-.12, -.58, .18]} scale={[.54, 1.20, .52]} />
     </Suspense>
     <mesh geometry={path} position={[0, -.10, .10]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#565b4e" roughness={1} /></mesh>
-    <lineSegments geometry={lineage} position={[0, .04, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.46} /></lineSegments>
-    <points geometry={stars}><pointsMaterial vertexColors size={.022} sizeAttenuation transparent opacity={.76} depthWrite={false} /></points>
-    <pointLight position={[0, .78, -1.12]} color="#8fc9c0" intensity={.64} distance={3.2} decay={2} />
+    <lineSegments visible={false} geometry={lineage} position={[0, .04, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={0} /></lineSegments>
+    <points geometry={stars}><pointsMaterial vertexColors size={.018} sizeAttenuation transparent opacity={.54} depthWrite={false} /></points>
+    <pointLight position={[0, .78, -1.12]} color="#8fc9c0" intensity={.34} distance={2.7} decay={2} />
   </group>
 }
 
@@ -353,12 +353,12 @@ function LivingMemoryHeartV234({ state, reducedMotion, onOrb }: { state: OrbStat
   const glow = warning ? '#d77d70' : privacy ? '#78a9a2' : '#93c2b9'
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOrb() }
   return <group ref={root} position={[ORB.x, y + .94, ORB.z]} rotation={[.04, -.25, -.075]} name="home-v249-organic-living-memory-presence" onClick={activate} userData={{ artRevision: 'v249-organic-living-memory-presence', visualIntent: 'single-matte-asymmetric-folded-history-bearing-presence-with-readable-interior-life', semanticOwner: 'home-current-orb-surface-memory', materialLanguage: 'matte-memory-tissue-scar-filaments-localized-field' }}>
-    <mesh geometry={outer} scale={[1.04, 1.10, 1.02]} receiveShadow><meshStandardMaterial vertexColors color="#718d86" emissive={glow} emissiveIntensity={.10 + e * .34} roughness={.72} metalness={0} /></mesh>
-    <lineSegments geometry={filaments} scale={[1.04, 1.10, 1.02]}><lineBasicMaterial color={glow} transparent opacity={.46 + e * .28} /></lineSegments>
-    <primitive object={scarLine} scale={[1.04, 1.10, 1.02]}><lineBasicMaterial color="#d7e2d7" transparent opacity={.58 + e * .20} /></primitive>
-    <points ref={fieldRef} geometry={field} scale={[1.04, 1.10, 1.02]}><pointsMaterial vertexColors size={.032} transparent opacity={.54 + e * .20} depthWrite={false} /></points>
-    <pointLight color={glow} intensity={.30 + e * .52} distance={3.1} decay={2} />
-    <pointLight position={[-.10, .10, .34]} color="#d8c6a2" intensity={.12 + e * .15} distance={1.7} decay={2} />
+    <mesh geometry={outer} scale={[1.04, 1.10, 1.02]} receiveShadow><meshStandardMaterial vertexColors color="#718d86" emissive={glow} emissiveIntensity={.06 + e * .18} roughness={.76} metalness={0} /></mesh>
+    <lineSegments geometry={filaments} scale={[1.04, 1.10, 1.02]}><lineBasicMaterial color={glow} transparent opacity={.20 + e * .15} /></lineSegments>
+    <primitive object={scarLine} scale={[1.04, 1.10, 1.02]}><lineBasicMaterial color="#d7e2d7" transparent opacity={.42 + e * .12} /></primitive>
+    <points ref={fieldRef} geometry={field} scale={[1.04, 1.10, 1.02]}><pointsMaterial vertexColors size={.028} transparent opacity={.34 + e * .12} depthWrite={false} /></points>
+    <pointLight color={glow} intensity={.18 + e * .28} distance={2.6} decay={2} />
+    <pointLight position={[-.10, .10, .34]} color="#d8c6a2" intensity={.08 + e * .08} distance={1.5} decay={2} />
   </group>
 }
 
