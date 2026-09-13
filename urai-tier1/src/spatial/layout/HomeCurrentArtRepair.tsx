@@ -83,6 +83,7 @@ function RetireNearMemoryBankSlabs() {
 function SuppressLegacyShadowArtifacts() {
   const { scene } = useThree()
   const changed = useRef(new Map<THREE.Mesh, boolean>())
+  const hiddenLegacyScanFaces = useRef(new Set<THREE.Mesh>())
   useFrame(() => {
     for (const groupName of ['home-v229-textured-inhabited-valley-and-distant-ridge', 'home-v226-weathered-memory-banks']) {
       const group = scene.getObjectByName(groupName)
@@ -93,13 +94,29 @@ function SuppressLegacyShadowArtifacts() {
       })
     }
     scene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh) || !object.castShadow) return
+      if (!(object instanceof THREE.Mesh)) return
       if (object.name !== 'rock_face_01' && object.name !== 'rock_face_02') return
+      let ancestor: THREE.Object3D | null = object.parent
+      let currentAuthority = false
+      while (ancestor) {
+        if (ancestor.name === 'home-current-unified-visual-authority') { currentAuthority = true; break }
+        ancestor = ancestor.parent
+      }
+      if (!currentAuthority) {
+        if (object.visible) {
+          object.visible = false
+          hiddenLegacyScanFaces.current.add(object)
+        }
+        return
+      }
+      if (!object.castShadow) return
       if (!changed.current.has(object)) changed.current.set(object, object.castShadow)
       object.castShadow = false
     })
   })
   useEffect(() => () => {
+    hiddenLegacyScanFaces.current.forEach((object) => { object.visible = true })
+    hiddenLegacyScanFaces.current.clear()
     changed.current.forEach((castShadow, object) => { object.castShadow = castShadow })
     changed.current.clear()
   }, [])
