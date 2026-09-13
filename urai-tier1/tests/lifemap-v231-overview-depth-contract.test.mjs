@@ -15,18 +15,18 @@ test('overview consumes the authored five-band memory geography instead of legac
   for (const depth of ['-3.8', '-8.9', '-12.8', '-19.2', '-24.6']) assert.match(authoredLayout, new RegExp(depth.replace('.', '\\.')))
 })
 
-test('overview uses compact desktop and portrait projection without changing selected staging', () => {
-  assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[1\.04, 1\.02, 1\.04\] : \[1\.08, 1\.08, 1\.08\]/)
-  assert.match(layout, /position: portrait \? \[0, -\.08, \.58\] : \[0, -\.14, \.72\]/)
-  assert.match(layout, /portrait\s*\? \{ scale: \[\.46, \.82, \.92\], position: \[0, -\.42, \.3\] \}/)
+test('overview uses the V250 portrait projection while preserving indexed selected staging authority', () => {
+  assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[1\.08, 1\.04, 1\.08\] : \[1\.08, 1\.08, 1\.08\]/)
+  assert.match(layout, /position: portrait \? \[0, -\.26, \.84\] : \[0, -\.14, \.72\]/)
+  assert.match(layout, /portrait\s*\n\s*\? \{ scale: \[\.58, \.96, \.94\], position: \[0, -\.16, \.92\] \}/)
   assert.match(layout, /: \{ scale: \[1\.18, 1\.12, 1\], position: \[0, -\.55, 0\] \}/)
-  assert.match(layout, /Overview geography is authored in five depth bands/)
 })
 
-test('overview camera preserves the artifact envelope and authored depth target', () => {
+test('overview camera fills portrait with authored geography while preserving the desktop envelope', () => {
   assert.match(layout, /2\.2 \* stage\.scale\[0\]/)
-  assert.match(layout, /const overlook = portrait \? 5\.2 : 7\.1/)
-  assert.match(layout, /target: \[target\[0\], target\[1\] - \.65, target\[2\] - 1\.2\]/)
+  assert.match(layout, /const overlook = portrait \? 3\.7 : 7\.1/)
+  assert.match(layout, /const retreat = portrait \? \.88 : 1\.14/)
+  assert.match(layout, /target: \[target\[0\], target\[1\] - \(portrait \? 1\.38 : \.65\), target\[2\] - \(portrait \? 2\.0 : 1\.2\)\]/)
 })
 
 test('selected world-point authority remains tied to selected staging', () => {
