@@ -1,74 +1,31 @@
 import * as THREE from 'three'
 
-// Canonical selected-memory manifestation geometry.
-// Focus is the same selected memory star resolving into a broken mineral-light
-// threshold: narrow interrupted segments with a large luminous center. It must
-// read as a passage into the remembered moment, never as floating cloth, seaweed,
-// a flower, a boulder, a crystal cluster or a generic sculptural object.
-const MEMORY_APERTURE_ARCS = [
-  [-2.98, -2.42, 1.42, 1.06, .032, -.040],
-  [-2.18, -1.56, 1.49, 1.10, .028, .035],
-  [-1.20, -.62, 1.55, 1.12, .030, -.018],
-  [-.34, .24, 1.53, 1.10, .026, .042],
-  [.58, 1.18, 1.47, 1.08, .031, -.030],
-  [1.50, 2.10, 1.43, 1.04, .027, .050],
-  [2.38, 2.91, 1.39, 1.02, .030, -.012],
+// Canonical selected-memory threshold. Focus is not a ring, cage, rock, flower,
+// ribbon or portal prop: it is the selected stellar memory resolving into a
+// sparse field of light around a large open center that Replay can be entered through.
+const MEMORY_THRESHOLD_POINTS = [
+  [-1.34, .76, -.06], [-.92, 1.12, .02], [-.38, 1.30, -.03], [.26, 1.24, .03], [.82, 1.02, -.04], [1.24, .58, .02],
+  [1.42, .06, -.03], [1.25, -.48, .03], [.78, -.90, -.04], [.24, -1.08, .02], [-.40, -1.04, -.03], [-.96, -.78, .03], [-1.32, -.30, -.04],
 ] as const
 
 export function createFocusStrata() {
-  return MEMORY_APERTURE_ARCS.map(([startAngle, endAngle, radiusX, radiusY, bandWidth, depthBias], fragment) => {
-    const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
-    const rows = 28, columns = 3
-
-    for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
-      const v = row / rows
-      const u = column / columns
-      const across = u * 2 - 1
-      const taper = Math.pow(Math.sin(v * Math.PI), .72)
-      const historyWave = Math.sin(v * 11.7 + across * 3.1 + fragment * 1.37)
-      const fineWave = Math.sin(v * 23.9 - across * 6.4 + fragment * .81)
-      const theta = THREE.MathUtils.lerp(startAngle, endAngle, v)
-      const width = bandWidth * (.32 + .68 * taper)
-      const radialOffset = across * width
-      const localRadiusX = radiusX + radialOffset + historyWave * .010 + fineWave * .004
-      const localRadiusY = radiusY + radialOffset * .76 + historyWave * .008
-
-      // Keep the frame nearly camera-facing and shallow so it reads as an
-      // interrupted threshold around an open center instead of separate ribbons.
-      const x = Math.cos(theta) * localRadiusX + .018 * Math.sin(v * 7.2 + fragment)
-      const y = Math.sin(theta) * localRadiusY + .020 * Math.sin(v * 5.4 + fragment * .7)
-      const z = depthBias
-        + .060 * Math.sin(theta * 2.0 + fragment * .5)
-        + .018 * Math.sin(v * Math.PI * 2.0 + across)
-
-      positions.push(x, y, z)
-      uvs.push(u * 1.2, v * 2.4)
-
-      const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 18)
-      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(v * 5.7 + fragment * .9))), 20)
-      const edge = Math.pow(Math.abs(across), 1.5)
-      const mineral = new THREE.Color(fragment % 2 ? '#9dc9c8' : '#c2d8cf')
-      const memory = new THREE.Color(fragment % 2 ? '#86dfff' : '#f2c18a')
-      const shadow = new THREE.Color('#244149')
-      const color = shadow.clone()
-        .lerp(mineral, .58 + taper * .20)
-        .lerp(memory, Math.min(.92, vein * .64 + hotVein * .48))
-      color.multiplyScalar(.92 + taper * .08 - edge * .12)
-      colors.push(color.r, color.g, color.b)
+  return MEMORY_THRESHOLD_POINTS.map(([cx, cy, cz], fragment) => {
+    const count = 18
+    const positions = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 3)
+    const warm = new THREE.Color('#fff4dc')
+    const cool = new THREE.Color(fragment % 3 === 0 ? '#a9dcff' : '#d8efff')
+    for (let i = 0; i < count; i += 1) {
+      const angle = i * 2.39996323 + fragment * .73
+      const radius = .035 + Math.sqrt((i + .5) / count) * (.16 + (fragment % 4) * .014)
+      const depth = (Math.sin(i * 1.71 + fragment) * .5 + .5) * .10
+      positions.set([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius * .72, cz + depth], i * 3)
+      const color = cool.clone().lerp(warm, .24 + ((i + fragment) % 5) * .09)
+      colors.set([color.r, color.g, color.b], i * 3)
     }
-
-    const stride = columns + 1
-    for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
-      const a = row * stride + column, b = a + 1, c = a + stride, d = c + 1
-      indices.push(a, b, c, b, d, c)
-    }
-
     const result = new THREE.BufferGeometry()
-    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    result.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-    result.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-    result.setIndex(indices)
-    result.computeVertexNormals()
+    result.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    result.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     result.computeBoundingSphere()
     return result
   })
