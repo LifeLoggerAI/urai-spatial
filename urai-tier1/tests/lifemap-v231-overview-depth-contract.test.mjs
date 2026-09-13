@@ -15,20 +15,20 @@ test('overview consumes the authored five-band memory geography instead of legac
   for (const depth of ['-3.8', '-8.9', '-12.8', '-19.2', '-24.6']) assert.match(authoredLayout, new RegExp(depth.replace('.', '\\.')))
 })
 
-test('overview keeps selected staging stable while portrait gets deliberate world occupancy', () => {
-  assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[1\.14, 1\.18, 1\.02\] : \[1\.22, 1\.24, 1\.12\]/)
-  assert.match(layout, /position: portrait \? \[0, -\.04, 1\.58\] : \[0, -\.08, 1\.02\]/)
-  assert.match(layout, /portrait\s*\? \{ scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\] \}/)
-  assert.match(layout, /: \{ scale: \[1\.24, 1\.28, \.86\], position: \[0, -\.30, \.88\] \}/)
+test('overview keeps selected staging intimate while portrait preserves inhabited world breadth', () => {
+  assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[\.96, 1\.02, \.98\] : \[1\.08, 1\.10, 1\.08\]/)
+  assert.match(layout, /position: portrait \? \[0, -\.72, 1\.18\] : \[0, -\.54, \.62\]/)
+  assert.match(layout, /portrait\s*\? \{ scale: \[1\.16, 1\.34, 1\.08\], position: \[0, -\.94, 2\.10\] \}/)
+  assert.match(layout, /: \{ scale: \[1\.42, 1\.18, 1\.02\], position: \[0, -\.82, \.74\] \}/)
   assert.doesNotMatch(layout, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
-test('portrait overview camera preserves the artifact envelope while composing chronology downward', () => {
+test('portrait overview camera preserves the artifact envelope while reducing dead sky', () => {
   assert.match(layout, /2\.35 \* stage\.scale\[0\]/)
-  assert.match(layout, /const forward = Math\.max\(27, halfWidth \/ \(horizontalTan \* \.79\)\)/)
-  assert.match(layout, /target\[1\] \+ 18\.5/)
-  assert.match(layout, /target\[1\] - \.42/)
-  assert.match(layout, /target\[2\] - \.95/)
+  assert.match(layout, /const forward = Math\.max\(22, halfWidth \/ \(horizontalTan \* \.88\)\)/)
+  assert.match(layout, /target\[1\] \+ 10\.8/)
+  assert.match(layout, /target\[1\] - 1\.02/)
+  assert.match(layout, /target\[2\] - 3\.10/)
   assert.doesNotMatch(layout, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
