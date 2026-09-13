@@ -15,12 +15,12 @@ const ORB_MODEL = '/assets/urai/generated/models/urai-orb-avatar-v1.glb'
 const PORTAL_MODEL = '/assets/urai/generated/models/portal-ring-master-v1.glb'
 const HUMAN = '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb'
 const FERN_MODEL = '/assets/urai/home-production/cc0/polyhaven-fern-02-geometry-v1.glb'
-const SPAWN = new THREE.Vector3(0, 0.04, 8.2)
-const ORB = new THREE.Vector3(0, 1.72, -2.55)
-const GROUND = new THREE.Vector3(-5.8, 0, -8.8)
-const LIFE_MAP = new THREE.Vector3(5.8, 0, -8.8)
-const BOUNDS = { minX: -11.5, maxX: 11.5, minZ: -13.5, maxZ: 9.1 }
-const DEFAULT_YAW = 0
+const SPAWN = new THREE.Vector3(2.35, 0.04, 7.9)
+const ORB = new THREE.Vector3(0, 1.62, -2.65)
+const GROUND = new THREE.Vector3(-5.2, 0, -8.4)
+const LIFE_MAP = new THREE.Vector3(5.2, 0, -8.4)
+const BOUNDS = { minX: -10.5, maxX: 10.5, minZ: -12.5, maxZ: 8.5 }
+const DEFAULT_YAW = 0.18
 const ORB_CLIPS: Record<OrbState, string> = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
   thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
@@ -76,6 +76,14 @@ function cloneAuthoredModel(source: THREE.Object3D) {
     object.receiveShadow = true
   })
   return clone
+}
+
+function cloneSanctuary(source: THREE.Object3D) {
+  const root = cloneAuthoredModel(source)
+  root.visible = false
+  root.userData.retainedForGovernedCompatibilityOnly = true
+  root.userData.visibleWorldOwner = 'home-aaa-procedural-sanctuary'
+  return root
 }
 
 function makeTerrainGeometry() {
@@ -270,7 +278,7 @@ function makeOrbFieldGeometry() {
 
 function RitualFloor({ target }: { target: MutableRefObject<THREE.Vector3 | null> }) {
   const sanctuary = useGLTF(SANCTUARY)
-  const authored = useMemo(() => cloneAuthoredModel(sanctuary.scene), [sanctuary.scene])
+  const authored = useMemo(() => cloneSanctuary(sanctuary.scene), [sanctuary.scene])
   const terrain = useMemo(makeTerrainGeometry, [])
   const path = useMemo(makePathGeometry, [])
   const slab = useMemo(() => makeOrganicSlab(2.7, 42, 61), [])
@@ -554,8 +562,8 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
     camera.near = 0.1
     camera.far = 240
     camera.updateProjectionMatrix()
-    camera.position.set(0.15, 1.68, 8.35)
-    camera.lookAt(0, 1.25, -2.6)
+    camera.position.set(2.42, 1.72, 8.12)
+    camera.lookAt(0.42, 1.38, -2.9)
   }, [camera])
 
   useFrame(({ clock }, delta) => {
@@ -568,8 +576,8 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
         camera.lookAt(0, 10 + t * 22, -20 - t * 24)
         useSceneStore.getState().setProgress(t)
       } else {
-        camera.position.lerp(new THREE.Vector3(-5.8, -2.2, -14.2), 1 - Math.pow(0.002, delta))
-        camera.lookAt(-5.8, -1.0, -16)
+        camera.position.lerp(new THREE.Vector3(-5.2, -2.2, -13.5), 1 - Math.pow(0.002, delta))
+        camera.lookAt(-5.2, -1, -15)
       }
       if (t >= 1 && !issued.current) { issued.current = true; onTransitionComplete() }
       return
@@ -577,14 +585,14 @@ function PlayerRig({ input, yaw, pitch, target, avatar, onNearby, transition, re
 
     started.current = null
     issued.current = false
-    stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: pos.current, velocity: velocity.current, target, bounds: BOUNDS, speed: 2.65, acceleration: 8, deceleration: 11 })
+    stepEmbodiedMotion({ delta, input, yaw: yaw.current, position: pos.current, velocity: velocity.current, target, bounds: BOUNDS, speed: 2.7, acceleration: 8, deceleration: 11 })
     if (avatar.current) { avatar.current.position.copy(pos.current); avatar.current.rotation.y = yaw.current + Math.PI }
     const portrait = size.height > size.width
-    const backDistance = portrait ? 0.12 : 0.2
-    const eyeHeight = portrait ? 1.5 : 1.64
+    const backDistance = portrait ? 0.14 : 0.24
+    const eyeHeight = portrait ? 1.53 : 1.66
     const desired = pos.current.clone().add(new THREE.Vector3(Math.sin(yaw.current) * backDistance, eyeHeight, Math.cos(yaw.current) * backDistance))
     camera.position.lerp(desired, 1 - Math.pow(0.00065, delta))
-    const look = pos.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current) * 10.5, 1.38 + pitch.current, -Math.cos(yaw.current) * 10.5))
+    const look = pos.current.clone().add(new THREE.Vector3(-Math.sin(yaw.current) * 9.6, 1.42 + pitch.current, -Math.cos(yaw.current) * 9.6))
     camera.lookAt(look)
     const candidates: readonly [Nearby, THREE.Vector3, number][] = [['orb',ORB,2.5],['ground',GROUND,2.8],['life-map',LIFE_MAP,2.8]]
     let next: Nearby = null
@@ -650,7 +658,7 @@ export function HomeWorldProductionSacred({ onOrbOpen = requestUraiWorldOrbOpen,
   const [orbState, setOrbState] = useState<OrbState>('idle')
   const [transition, setTransition] = useState<'none' | 'ground' | 'life-map'>('none')
   const yaw = useRef(DEFAULT_YAW)
-  const pitch = useRef(-0.03)
+  const pitch = useRef(-0.035)
   const target = useRef<THREE.Vector3 | null>(null)
   const avatar = useRef<THREE.Group | null>(null)
   const markSceneReady = useCallback(() => setSceneReady(true), [])
@@ -659,8 +667,8 @@ export function HomeWorldProductionSacred({ onOrbOpen = requestUraiWorldOrbOpen,
   const ground = useCallback(() => { if (transition !== 'none') return; target.current = null; setOrbState('transition'); setTransition('ground') }, [transition])
   const lifeMap = useCallback(() => { if (transition !== 'none') return; target.current = null; setOrbState('transition'); setTransition('life-map'); useSceneStore.getState().enterLifeMap() }, [transition])
   const interact = useCallback(() => { if (nearby === 'orb') openOrb(); else if (nearby === 'ground') ground(); else if (nearby === 'life-map') lifeMap() }, [nearby, openOrb, ground, lifeMap])
-  const input = useMovementInput({ enabled: transition === 'none', onInteract: interact, onReset: () => { target.current = SPAWN.clone(); yaw.current = DEFAULT_YAW; pitch.current = -0.03 } })
-  const look = useDragLook({ yaw, pitch, enabled: transition === 'none', sensitivity: 0.003, minPitch: -0.46, maxPitch: 0.5, onDragState: setDragging })
+  const input = useMovementInput({ enabled: transition === 'none', onInteract: interact, onReset: () => { target.current = SPAWN.clone(); yaw.current = DEFAULT_YAW; pitch.current = -0.035 } })
+  const look = useDragLook({ yaw,pitch,enabled: transition === 'none',sensitivity:0.003,minPitch:-0.46,maxPitch:0.5,onDragState:setDragging })
 
   useEffect(() => {
     const rm = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -730,7 +738,7 @@ export function HomeWorldProductionSacred({ onOrbOpen = requestUraiWorldOrbOpen,
     style={{ position: 'relative', overflow: 'hidden', background: '#17353c' }}
     {...look}
   >
-    <Canvas className={styles.canvas} dpr={[1, 1.35]} shadows camera={{ position: [0.15, 1.68, 8.35], fov: 43, near: 0.1, far: 240 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => {
+    <Canvas className={styles.canvas} dpr={[1, 1.35]} shadows camera={{ position: [2.42, 1.72, 8.12], fov: 43, near: 0.1, far: 240 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => {
       gl.outputColorSpace = THREE.SRGBColorSpace
       gl.toneMapping = THREE.ACESFilmicToneMapping
       gl.toneMappingExposure = 1.22
