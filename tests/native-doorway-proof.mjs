@@ -56,6 +56,11 @@ async function activate(page, target, method) {
 async function resolveTarget(page, doorway) {
   const target = page.getByTestId(doorway.testId)
   await target.waitFor({ state: 'visible', timeout: 45000 })
+  await page.waitForFunction((testId) => {
+    const node = document.querySelector(`[data-testid="${testId}"]`)
+    if (!node) return false
+    return Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
+  }, doorway.testId, { timeout: 45000 })
   const ownership = await target.evaluate((node) => {
     const nav = node.closest('nav.home-semantic-navigation')
     return {
