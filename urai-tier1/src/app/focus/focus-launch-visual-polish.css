@@ -1,0 +1,62 @@
+/* Final retained-pixel convergence: let the governed authored Focus artwork establish place identity while the live WebGL chamber supplies explorable depth and interaction. */
+.focusWorld .focusBackdrop {
+  display: block !important;
+  position: absolute;
+  inset: -3%;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--focus-asset);
+  background-size: cover;
+  background-position: center 46%;
+  background-repeat: no-repeat;
+  opacity: 0.62;
+  filter: saturate(0.78) contrast(1.08) brightness(0.52);
+  transform: scale(1.035);
+}
+
+.focusWorld .focusCanvas {
+  z-index: 1;
+  background: transparent;
+}
+
+.focusWorld .focusCanvas canvas {
+  opacity: 0.66;
+  filter: saturate(0.74) contrast(1.06) brightness(0.76);
+}
+
+.focusWorld .focusFog {
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at 58% 57%, rgba(2, 10, 9, 0.36) 0 10%, transparent 34%),
+    linear-gradient(90deg, rgba(1, 5, 8, 0.24), transparent 34% 74%, rgba(1, 5, 8, 0.16)),
+    linear-gradient(180deg, rgba(1, 4, 10, 0.08), rgba(1, 4, 10, 0.2) 62%, rgba(1, 4, 10, 0.72));
+  mix-blend-mode: normal;
+}
+
+.focusWorld .focusHeading,
+.focusWorld .memoryMeaning,
+.focusWorld .focusControls,
+.focusWorld .focusHelp,
+.focusWorld .focusStatus,
+.focusWorld .webglRecovery {
+  position: absolute;
+}
+
+@media (max-width: 760px) {
+  .focusWorld .focusBackdrop {
+    inset: -2%;
+    background-position: center 42%;
+    opacity: 0.58;
+    filter: saturate(0.76) contrast(1.06) brightness(0.5);
+  }
+
+  .focusWorld .focusCanvas canvas {
+    opacity: 0.62;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focusWorld .focusBackdrop {
+    transform: none;
+  }
+}
