@@ -16,20 +16,20 @@ test('overview consumes the authored five-band memory geography instead of legac
 })
 
 test('overview keeps selected staging stable while portrait gets deliberate world occupancy', () => {
-  assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[1\.04, 1\.02, 1\.04\] : \[1\.08, 1\.08, 1\.08\]/)
-  assert.match(layout, /position: portrait \? \[0, -\.08, \.58\] : \[0, -\.14, \.72\]/)
-  assert.match(layout, /portrait\s*\? \{ scale: \[\.58, 1\.02, 1\.18\], position: \[0, -\.54, 1\.18\] \}/)
-  assert.match(layout, /: \{ scale: \[1\.18, 1\.12, 1\], position: \[0, -\.42, \.36\] \}/)
-  assert.doesNotMatch(layout, /scale: \[\.46, \.82, \.92\]/)
+  assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[\.98, 1\.08, \.92\] : \[1\.12, 1\.12, 1\.06\]/)
+  assert.match(layout, /position: portrait \? \[0, -\.10, 1\.36\] : \[0, -\.14, \.92\]/)
+  assert.match(layout, /portrait\s*\? \{ scale: \[\.82, 1\.08, \.86\], position: \[0, -\.46, 2\.0\] \}/)
+  assert.match(layout, /: \{ scale: \[1\.24, 1\.18, \.92\], position: \[0, -\.42, \.66\] \}/)
+  assert.doesNotMatch(layout, /scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
 test('portrait overview camera preserves the artifact envelope while composing chronology downward', () => {
-  assert.match(layout, /2\.2 \* stage\.scale\[0\]/)
-  assert.match(layout, /const forward = Math\.max\(39, halfWidth \/ \(horizontalTan \* \.78\)\)/)
-  assert.match(layout, /target\[1\] \+ 31/)
-  assert.match(layout, /target\[1\] - 1\.10/)
-  assert.match(layout, /target\[2\] - 2\.2/)
-  assert.doesNotMatch(layout, /scale: \[\.46, \.82, \.92\]/)
+  assert.match(layout, /2\.35 \* stage\.scale\[0\]/)
+  assert.match(layout, /const forward = Math\.max\(30, halfWidth \/ \(horizontalTan \* \.68\)\)/)
+  assert.match(layout, /target\[1\] \+ 23/)
+  assert.match(layout, /target\[1\] - \.72/)
+  assert.match(layout, /target\[2\] - 1\.4/)
+  assert.doesNotMatch(layout, /scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
 test('visible terrain authority uses authored masses plus non-periodic weathering instead of repeated bands', () => {
@@ -37,6 +37,7 @@ test('visible terrain authority uses authored masses plus non-periodic weatherin
   assert.match(layout, /const outcrops/)
   assert.match(layout, /const livedCuts/)
   assert.match(layout, /const authoredScars/)
+  assert.match(layout, /const lateralBanks/)
   assert.match(layout, /const warpX/)
   assert.match(layout, /function valueNoise2D/)
   assert.doesNotMatch(layout, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
