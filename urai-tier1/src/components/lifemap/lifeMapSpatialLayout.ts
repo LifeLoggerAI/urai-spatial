@@ -5,7 +5,7 @@ type Point3 = [number, number, number]
 
 export function lifeMapTerrainHeight(x: number, z: number): number {
   // V256 visible geography authority: asymmetric chapter landforms, cuts, and
-  // outcrops replace the longitudinal shoulder field that still read as smooth
+  // outcrops replace the prior longitudinal terrain field that read as smooth
   // repeated ridges in exact-head retained pixels.
   const gaussian = (cx: number, cz: number, sx: number, sz: number) =>
     Math.exp(-(((x - cx) / sx) ** 2 + ((z - cz) / sz) ** 2))
