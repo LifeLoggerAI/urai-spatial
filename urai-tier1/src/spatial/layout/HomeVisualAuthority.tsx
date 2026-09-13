@@ -24,45 +24,61 @@ function hasColorTexture(object: THREE.Object3D) {
   return materials.some((material) => material instanceof THREE.MeshStandardMaterial && Boolean(material.map))
 }
 
-function livingHeartGeometryV251() {
-  const geometry = new THREE.SphereGeometry(1, 72, 52)
+function livingHeartGeometryV252() {
+  const geometry = new THREE.SphereGeometry(1, 88, 64)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const deepTissue = new THREE.Color('#203a34')
-  const livingTissue = new THREE.Color('#4b6d62')
-  const liftedTissue = new THREE.Color('#70897a')
-  const rememberedTissue = new THREE.Color('#9a735f')
+  const deepTissue = new THREE.Color('#281c22')
+  const livingTissue = new THREE.Color('#65413f')
+  const liftedTissue = new THREE.Color('#8c6255')
+  const rememberedTissue = new THREE.Color('#b9856c')
+  const cooledMemory = new THREE.Color('#4c6c63')
 
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index)
     const ny = position.getY(index)
     const nz = position.getZ(index)
     const angle = Math.atan2(nz, nx)
-    const upper = THREE.MathUtils.smoothstep(ny, .16, .94)
-    const lower = THREE.MathUtils.smoothstep(-ny, .02, .98)
-    const front = THREE.MathUtils.smoothstep(nz, -.12, .92)
-    const taper = THREE.MathUtils.lerp(.15, 1, THREE.MathUtils.smoothstep(ny, -.98, .12))
-    const shoulderNarrow = THREE.MathUtils.lerp(1, .61, upper)
-    const skin = .026 * Math.sin(angle * 3.1 + ny * 5.4) + .011 * Math.sin(angle * 7.6 - ny * 9.2)
-    const memoryFold = Math.exp(-(((nx + .07) / .29) ** 2 + ((nz - .50) / .24) ** 2)) * (.28 + front * .72)
-    const radial = 1 + skin + memoryFold * .045
+    const upper = THREE.MathUtils.smoothstep(ny, .10, .96)
+    const lower = THREE.MathUtils.smoothstep(-ny, -.02, .98)
+    const front = THREE.MathUtils.smoothstep(nz, -.18, .94)
+    const taper = THREE.MathUtils.lerp(.08, 1, THREE.MathUtils.smoothstep(ny, -.98, .18))
+    const lobeBand = Math.exp(-(((ny - .48) / .40) ** 2)) * upper
+    const cleft = Math.exp(-((nx / .20) ** 2)) * THREE.MathUtils.smoothstep(ny, .28, .98)
+    const leftLobe = Math.exp(-(((nx + .38) / .34) ** 2 + ((ny - .50) / .42) ** 2)) * upper
+    const rightLobe = Math.exp(-(((nx - .30) / .40) ** 2 + ((ny - .45) / .44) ** 2)) * upper
+    const anteriorFold = Math.exp(-(((nx + .09) / .34) ** 2 + ((nz - .48) / .26) ** 2)) * (.18 + .82 * front)
+    const skin = .032 * Math.sin(angle * 3.1 + ny * 6.2) + .014 * Math.sin(angle * 7.4 - ny * 10.1)
+    const radial = 1 + skin + .10 * leftLobe + .06 * rightLobe + .045 * anteriorFold
 
-    let x = nx * radial * .70 * taper * shoulderNarrow
-    x += ny * .035 - lower * .018
-    let z = nz * radial * .57 * taper * (1 - upper * .08)
-    z += memoryFold * .018
-    let y = ny * 1.04
-    y -= lower * (.20 + .13 * lower)
-    y -= upper * .075
-    position.setXYZ(index, x, y, z)
+    let x = nx * radial * (.80 - .12 * upper) * taper
+    x += Math.sign(nx || 1) * lobeBand * (.08 + .055 * Math.abs(nz))
+    x += ny * .055 - lower * .025
 
-    const altitude = THREE.MathUtils.clamp((y + 1.26) / 2.34, 0, 1)
-    const tissueNoise = THREE.MathUtils.clamp(.5 + .5 * Math.sin(angle * 4.0 + ny * 7.6), 0, 1)
-    const remembered = THREE.MathUtils.clamp(memoryFold * .58 + front * .09, 0, 1)
+    let z = nz * radial * (.62 + .04 * lobeBand) * taper
+    z += .045 * anteriorFold
+
+    let y = ny * 1.13
+    y += .13 * leftLobe + .065 * rightLobe
+    y -= .31 * cleft
+    y -= lower * (.25 + .17 * lower)
+
+    const twist = (ny + .10) * .10
+    const cos = Math.cos(twist)
+    const sin = Math.sin(twist)
+    const tx = x * cos - z * sin
+    const tz = x * sin + z * cos
+    position.setXYZ(index, tx, y, tz)
+
+    const altitude = THREE.MathUtils.clamp((y + 1.35) / 2.58, 0, 1)
+    const tissueNoise = THREE.MathUtils.clamp(.5 + .5 * Math.sin(angle * 4.6 + ny * 8.4 + nz * 2.1), 0, 1)
+    const memory = THREE.MathUtils.clamp(cleft * .28 + anteriorFold * .52 + front * .08, 0, 1)
+    const cool = THREE.MathUtils.clamp((1 - front) * .18 + tissueNoise * .06, 0, .24)
     const color = deepTissue.clone()
-      .lerp(livingTissue, .36 + altitude * .22)
-      .lerp(liftedTissue, tissueNoise * .10 + front * .05)
-      .lerp(rememberedTissue, remembered * .22)
+      .lerp(livingTissue, .42 + altitude * .23)
+      .lerp(liftedTissue, tissueNoise * .16 + leftLobe * .06)
+      .lerp(rememberedTissue, memory * .32)
+      .lerp(cooledMemory, cool)
     colors.set([color.r, color.g, color.b], index * 3)
   }
 
@@ -73,127 +89,233 @@ function livingHeartGeometryV251() {
   return geometry
 }
 
-function scarTubeV251() {
+function scarTubeV252() {
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-.07, .61, .50),
-    new THREE.Vector3(-.13, .45, .54),
-    new THREE.Vector3(-.08, .27, .56),
-    new THREE.Vector3(-.14, .08, .55),
-    new THREE.Vector3(-.07, -.11, .52),
-    new THREE.Vector3(-.10, -.30, .46),
-    new THREE.Vector3(-.04, -.47, .37),
+    new THREE.Vector3(-.08, .70, .57),
+    new THREE.Vector3(-.15, .52, .61),
+    new THREE.Vector3(-.08, .31, .64),
+    new THREE.Vector3(-.16, .08, .62),
+    new THREE.Vector3(-.07, -.14, .57),
+    new THREE.Vector3(-.12, -.36, .49),
+    new THREE.Vector3(-.03, -.58, .36),
   ])
-  return new THREE.TubeGeometry(curve, 52, .009, 7, false)
+  return new THREE.TubeGeometry(curve, 60, .014, 8, false)
 }
 
-function filamentTubesV251() {
-  return Array.from({ length: 8 }, (_, trace) => {
+function filamentTubesV252() {
+  return Array.from({ length: 12 }, (_, trace) => {
     const points: THREE.Vector3[] = []
-    const direction = trace < 4 ? -1 : 1
-    const branch = trace < 4 ? trace : trace - 4
-    for (let step = 0; step <= 22; step++) {
-      const t = step / 22
-      const startY = -.35 + (branch % 3) * .07
-      const endY = .43 - (branch % 2) * .08
+    const side = trace < 6 ? -1 : 1
+    const branch = trace % 6
+    for (let step = 0; step <= 26; step++) {
+      const t = step / 26
+      const startY = -.48 + (branch % 3) * .08
+      const endY = .54 - (branch % 2) * .11
       const y = THREE.MathUtils.lerp(startY, endY, t)
-      const divergence = direction * t * (.055 + branch * .026)
-      const x = -.075 + divergence + Math.sin(t * 6.4 + trace * .71) * (.009 + t * .007)
-      const z = .485 + Math.sin(t * Math.PI + trace * .48) * .030 + Math.sin(t * 4.0 + trace) * .008
+      const divergence = side * Math.pow(t, .82) * (.045 + branch * .026)
+      const x = -.085 + divergence + Math.sin(t * 7.0 + trace * .63) * (.008 + t * .007)
+      const z = .548 + Math.sin(t * Math.PI + trace * .31) * .028 + Math.sin(t * 5.2 + trace) * .007
       points.push(new THREE.Vector3(x, y, z))
     }
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 44, .0035 + (trace % 2) * .0008, 6, false)
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 52, .0038 + (trace % 3) * .0007, 6, false)
   })
 }
 
-function memoryFieldV251() {
-  const count = 240
+function rootTendrilsV252() {
+  return Array.from({ length: 8 }, (_, index) => {
+    const angle = -.25 + index * (Math.PI * 2 / 8)
+    const radius = 1.0 + (index % 3) * .22
+    const points = [
+      new THREE.Vector3(0, .07, 0),
+      new THREE.Vector3(Math.cos(angle) * radius * .33, .045, Math.sin(angle) * radius * .33),
+      new THREE.Vector3(Math.cos(angle + .13) * radius * .69, .025, Math.sin(angle + .13) * radius * .69),
+      new THREE.Vector3(Math.cos(angle - .09) * radius, .018, Math.sin(angle - .09) * radius),
+    ]
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 28, .025 - (index % 2) * .004, 6, false)
+  })
+}
+
+function memoryFieldV252() {
+  const count = 280
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
-  const cool = new THREE.Color('#6fa194')
-  const warm = new THREE.Color('#b4876f')
+  const cool = new THREE.Color('#76a99d')
+  const warm = new THREE.Color('#d19a78')
+  const ember = new THREE.Color('#e0b08a')
+
   for (let index = 0; index < count; index++) {
-    const historyPoint = index < 88
+    const historyPoint = index < 154
     let x: number
     let y: number
     let z: number
     if (historyPoint) {
-      const t = (index + .5) / 88
-      y = -.47 + t * 1.06
-      x = -.08 + Math.sin(index * 1.61) * (.035 + .022 * Math.sin(t * Math.PI))
-      z = .44 + Math.cos(index * 2.03) * .095 + Math.sin(t * 6.6) * .025
+      const t = (index + .5) / 154
+      y = -.58 + t * 1.37
+      const side = index % 2 ? -1 : 1
+      const branch = ((index * 17) % 29) / 29
+      x = -.09 + side * (.025 + branch * .17) * Math.pow(t, .82) + Math.sin(index * 1.47) * .018
+      z = .53 + Math.cos(index * 2.07) * .075 + Math.sin(t * 8.4) * .018
     } else {
-      const t = (index - 88 + .5) / (count - 88)
-      y = -.72 + ((index * 29) % (count - 88)) / (count - 89) * 1.44
-      const orbit = index * 2.39996323 + .16 * Math.sin(index * .17)
-      const radius = .58 + Math.pow(t, .70) * .30
-      x = Math.cos(orbit) * radius * (.74 - .08 * Math.abs(y)) - .035
-      z = Math.sin(orbit) * radius * .34 + .04 * Math.sin(index * .41)
+      const t = (index - 154 + .5) / (count - 154)
+      const orbit = index * 2.39996323
+      const radius = .72 + Math.pow(t, .76) * .26
+      y = -.72 + ((index * 23) % 126) / 125 * 1.50
+      x = Math.cos(orbit) * radius * .67 - .03
+      z = Math.sin(orbit) * radius * .30 + .02 * Math.sin(index * .37)
     }
     positions.set([x, y, z], index * 3)
-    const warmMix = historyPoint ? .34 + .34 * ((index % 9) / 8) : .10 + .25 * ((index % 17) / 16)
-    const color = cool.clone().lerp(warm, warmMix)
+    const color = historyPoint
+      ? cool.clone().lerp(warm, .34 + .50 * ((index % 13) / 12)).lerp(ember, index % 11 === 0 ? .28 : 0)
+      : cool.clone().lerp(warm, .12 + .22 * ((index % 17) / 16))
     colors.set([color.r, color.g, color.b], index * 3)
   }
+
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   return geometry
 }
 
-function LiteralOrbAuthorityV251() {
+function LiteralOrbAuthorityV252() {
   const root = useRef<THREE.Group>(null)
   const fieldRef = useRef<THREE.Points>(null)
   const reducedMotion = useRef(false)
   const y = height(ORB.x, ORB.z)
-  const heart = useMemo(livingHeartGeometryV251, [])
-  const lobe = useMemo(() => new THREE.SphereGeometry(1, 64, 48), [])
-  const scar = useMemo(scarTubeV251, [])
-  const filaments = useMemo(filamentTubesV251, [])
-  const field = useMemo(memoryFieldV251, [])
-  const filamentPalette = ['#789d92', '#a37d69', '#6e9489', '#aa8870']
+  const heart = useMemo(livingHeartGeometryV252, [])
+  const scar = useMemo(scarTubeV252, [])
+  const filaments = useMemo(filamentTubesV252, [])
+  const field = useMemo(memoryFieldV252, [])
+  const filamentPalette = ['#b47d67', '#75998f', '#c18d70', '#668c83', '#d0a07a', '#8a6a62']
+  const memoryNodes = useMemo(() => [
+    [-.11, .49, .62, .040], [-.05, .30, .65, .030], [-.16, .10, .63, .036],
+    [-.06, -.12, .58, .026], [-.10, -.34, .50, .032], [.04, .38, .60, .024],
+  ] as const, [])
 
   useEffect(() => {
     reducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     return () => {
       heart.dispose()
-      lobe.dispose()
       scar.dispose()
       filaments.forEach((geometry) => geometry.dispose())
       field.dispose()
     }
-  }, [field, filaments, heart, lobe, scar])
+  }, [field, filaments, heart, scar])
 
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion.current) return
     const t = clock.elapsedTime
-    root.current.rotation.y = -.12 + Math.sin(t * .17) * .025
-    root.current.rotation.z = -.055 + Math.sin(t * .21) * .008
-    root.current.position.y = y + .94 + Math.sin(t * .31) * .015
-    if (fieldRef.current) fieldRef.current.rotation.y = t * .020
+    root.current.rotation.y = -.10 + Math.sin(t * .17) * .035
+    root.current.rotation.z = -.045 + Math.sin(t * .21) * .010
+    const pulse = 1 + Math.sin(t * .70) * .007
+    root.current.scale.set(1.30 * pulse, 1.30 * pulse, 1.22 * pulse)
+    root.current.position.y = y + 1.04 + Math.sin(t * .31) * .014
+    if (fieldRef.current) fieldRef.current.rotation.y = t * .018
   })
 
-  return <group ref={root} position={[ORB.x, y + .94, ORB.z]} rotation={[.025, -.12, -.055]} scale={[1.16, 1.16, 1.08]} name="home-v251-literal-living-memory-heart" userData={{ artRevision: 'v251-literal-heart-history-authority', visualIntent: 'unmistakable-asymmetric-living-heart-with-embedded-branching-history-and-localized-memory-field' }}>
-    <mesh geometry={heart} raycast={() => null} receiveShadow>
-      <meshStandardMaterial vertexColors color="#6d7d72" emissive="#142e2a" emissiveIntensity={.045} roughness={.82} metalness={0} />
-    </mesh>
-    <mesh geometry={lobe} position={[-.27, .47, -.015]} rotation={[.02, .08, .14]} scale={[.48, .47, .43]} raycast={() => null} receiveShadow>
-      <meshStandardMaterial color="#49695f" emissive="#17332e" emissiveIntensity={.045} roughness={.80} metalness={0} />
-    </mesh>
-    <mesh geometry={lobe} position={[.27, .43, .01]} rotation={[-.01, -.09, -.16]} scale={[.54, .49, .45]} raycast={() => null} receiveShadow>
-      <meshStandardMaterial color="#3f6258" emissive="#13322c" emissiveIntensity={.05} roughness={.79} metalness={0} />
+  return <group ref={root} position={[ORB.x, y + 1.04, ORB.z]} rotation={[.02, -.10, -.045]} scale={[1.30, 1.30, 1.22]} name="home-v252-literal-living-memory-heart" userData={{ artRevision: 'v252-continuous-clefted-heart-sanctuary', visualIntent: 'continuous-asymmetric-living-heart-with-readable-cleft-taper-embedded-history-and-grounded-memory-roots' }}>
+    <mesh geometry={heart} raycast={() => null} receiveShadow castShadow>
+      <meshStandardMaterial vertexColors color="#ffffff" emissive="#2a1318" emissiveIntensity={.075} roughness={.69} metalness={0} />
     </mesh>
     <mesh geometry={scar} raycast={() => null}>
-      <meshStandardMaterial color="#b98c73" emissive="#5b4037" emissiveIntensity={.08} roughness={.72} metalness={0} />
+      <meshStandardMaterial color="#d49a80" emissive="#9a554a" emissiveIntensity={.24} roughness={.60} metalness={0} />
     </mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} raycast={() => null}>
-      <meshStandardMaterial color={filamentPalette[index % filamentPalette.length]} emissive={filamentPalette[index % filamentPalette.length]} emissiveIntensity={.06} transparent opacity={.38} roughness={.76} metalness={0} depthWrite={false} />
+      <meshStandardMaterial color={filamentPalette[index % filamentPalette.length]} emissive={filamentPalette[index % filamentPalette.length]} emissiveIntensity={.16} transparent opacity={.64} roughness={.62} metalness={0} depthWrite={false} />
+    </mesh>)}
+    {memoryNodes.map(([x, yy, z, scale], index) => <mesh key={`node-${index}`} position={[x, yy, z]} scale={scale} raycast={() => null}>
+      <sphereGeometry args={[1, 12, 10]} />
+      <meshStandardMaterial color={index % 2 ? '#78a69b' : '#d6a17e'} emissive={index % 2 ? '#4e8177' : '#a9624f'} emissiveIntensity={.48} roughness={.48} metalness={0} />
     </mesh>)}
     <points ref={fieldRef} geometry={field} raycast={() => null}>
-      <pointsMaterial vertexColors size={.022} sizeAttenuation transparent opacity={.46} depthWrite={false} />
+      <pointsMaterial vertexColors size={.027} sizeAttenuation transparent opacity={.54} depthWrite={false} />
     </points>
-    <pointLight position={[-.35, .45, .70]} color="#b98d72" intensity={.28} distance={2.0} decay={2} />
-    <pointLight position={[.32, .18, .60]} color="#78a99b" intensity={.20} distance={1.8} decay={2} />
-    <pointLight position={[-.06, -.32, .46]} color="#806a5b" intensity={.10} distance={1.2} decay={2} />
+    <pointLight position={[-.30, .46, .84]} color="#d69b7f" intensity={.62} distance={2.8} decay={2} />
+    <pointLight position={[.38, .18, .72]} color="#72a89d" intensity={.36} distance={2.4} decay={2} />
+  </group>
+}
+
+function GroundedOrbRootsV252() {
+  const y = height(ORB.x, ORB.z)
+  const roots = useMemo(rootTendrilsV252, [])
+  useEffect(() => () => roots.forEach((geometry) => geometry.dispose()), [roots])
+
+  return <group position={[ORB.x, y + .015, ORB.z]} name="home-v252-orb-grounded-memory-roots" userData={{ visualOnly: true }}>
+    {roots.map((geometry, index) => <mesh key={index} geometry={geometry} raycast={() => null}>
+      <meshStandardMaterial color={index % 3 === 0 ? '#5b4038' : '#38433b'} emissive={index % 3 === 0 ? '#3a211f' : '#17251f'} emissiveIntensity={.08} roughness={.92} metalness={0} />
+    </mesh>)}
+  </group>
+}
+
+function SanctuaryDressingV252() {
+  const lanternStem = useMemo(() => new THREE.CylinderGeometry(.09, .14, .54, 8), [])
+  const lanternCore = useMemo(() => new THREE.DodecahedronGeometry(.095, 0), [])
+  const standingStone = useMemo(() => new THREE.DodecahedronGeometry(.72, 1), [])
+  const leftSpire = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-4.95, height(-4.95, -11.2) + .10, -11.2),
+    new THREE.Vector3(-4.58, 1.10, -10.9),
+    new THREE.Vector3(-4.18, 2.25, -10.4),
+    new THREE.Vector3(-3.52, 3.22, -9.75),
+    new THREE.Vector3(-2.86, 3.70, -9.20),
+  ]), 52, .13, 7, false), [])
+  const rightSpire = useMemo(() => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+    new THREE.Vector3(5.28, height(5.28, -11.55) + .10, -11.55),
+    new THREE.Vector3(4.92, 1.03, -11.15),
+    new THREE.Vector3(4.55, 2.02, -10.55),
+    new THREE.Vector3(4.02, 2.86, -9.92),
+    new THREE.Vector3(3.47, 3.28, -9.36),
+  ]), 52, .12, 7, false), [])
+
+  const lanterns = useMemo(() => [
+    [-2.20, 2.20, .96], [2.18, 1.38, .92], [-2.48, -.55, .92], [2.42, -1.32, 1.02],
+    [-2.70, -3.48, .96], [2.72, -4.22, 1.05], [-2.95, -5.88, .92], [2.98, -6.40, .98],
+  ] as const, [])
+  const stones = useMemo(() => [
+    [-5.72, 1.45, .62, 1.34, .72, -.20], [5.88, .62, .72, 1.48, .70, .24],
+    [-6.20, -2.10, .66, 1.72, .75, .32], [6.34, -2.92, .58, 1.30, .66, -.25],
+    [-5.62, -5.10, .54, 1.56, .64, .17], [5.74, -5.84, .62, 1.66, .72, -.18],
+    [-5.10, -8.82, .72, 2.02, .80, .22], [5.32, -9.18, .64, 1.88, .74, -.26],
+    [-4.30, -12.18, .58, 1.56, .64, .15], [4.60, -12.48, .66, 1.72, .72, -.12],
+  ] as const, [])
+
+  useEffect(() => () => {
+    lanternStem.dispose()
+    lanternCore.dispose()
+    standingStone.dispose()
+    leftSpire.dispose()
+    rightSpire.dispose()
+  }, [lanternCore, lanternStem, leftSpire, rightSpire, standingStone])
+
+  return <group name="home-v252-authored-sanctuary-dressing" userData={{ visualOnly: true, interactionOwner: false }}>
+    {lanterns.map(([x, z, scale], index) => {
+      const y = height(x, z)
+      return <group key={`lantern-${index}`} position={[x, y, z]} scale={scale}>
+        <mesh geometry={lanternStem} position={[0, .27, 0]} rotation={[.02, 0, index % 2 ? .05 : -.04]} raycast={() => null} castShadow>
+          <meshStandardMaterial color="#403b32" roughness={.94} metalness={0} />
+        </mesh>
+        <mesh geometry={lanternCore} position={[0, .66, 0]} raycast={() => null}>
+          <meshStandardMaterial color={index % 2 ? '#d3a27a' : '#76a69b'} emissive={index % 2 ? '#9c5d46' : '#42776f'} emissiveIntensity={.58} roughness={.48} metalness={0} />
+        </mesh>
+        <pointLight position={[0, .68, 0]} color={index % 2 ? '#dba37d' : '#78aea2'} intensity={.34} distance={2.65} decay={2} />
+      </group>
+    })}
+
+    {stones.map(([x, z, sx, sy, sz, rz], index) => {
+      const y = height(x, z)
+      return <mesh key={`stone-${index}`} geometry={standingStone} position={[x, y + sy * .48, z]} scale={[sx, sy, sz]} rotation={[.03 * (index % 3), .18 * index, rz]} raycast={() => null} castShadow receiveShadow>
+        <meshStandardMaterial color={index % 2 ? '#3a443a' : '#454238'} roughness={.96} metalness={0} />
+      </mesh>
+    })}
+
+    <mesh geometry={leftSpire} raycast={() => null} castShadow>
+      <meshStandardMaterial color="#323d35" emissive="#101a16" emissiveIntensity={.06} roughness={.95} metalness={0} />
+    </mesh>
+    <mesh geometry={rightSpire} raycast={() => null} castShadow>
+      <meshStandardMaterial color="#3f4036" emissive="#1b1814" emissiveIntensity={.05} roughness={.95} metalness={0} />
+    </mesh>
+
+    <pointLight position={[0, 1.12, -4.45]} color="#c38c6f" intensity={.72} distance={10.5} decay={2} />
+    <pointLight position={[-3.9, 1.18, -8.9]} color="#789b8e" intensity={.44} distance={7.0} decay={2} />
+    <pointLight position={[4.0, 1.34, -9.2]} color="#b98669" intensity={.42} distance={7.2} decay={2} />
   </group>
 }
 
@@ -206,13 +328,12 @@ function LiteralOrbAuthorityV251() {
  * V234 scan sheets are suppressed while their sculpted support geometry,
  * apertures and authored lighting remain.
  *
- * The V251 living-memory heart is a visual-only outer authority: raycasting is
- * disabled on every added surface so the existing V249 Orb remains the sole
- * interaction owner. The literal-pixel polish keeps a compact tapered body and
- * two distinct asymmetric upper lobes instead of folding one sphere into a
- * handle-like cleft, keeps the history scar and branching filaments close to
- * the tissue, and quiets the memory field so no lower shield, rear loop, or
- * cable-bundle silhouette dominates desktop, mobile, or reduced motion.
+ * V252 replaces the rejected segmented teal V251 Orb with one continuous,
+ * deeply clefted and strongly tapered living-memory heart. The history scar,
+ * branching traces and memory nodes hug the tissue, while grounded root
+ * tendrils and visual-only sanctuary landmarks anchor the Orb in the authored
+ * world. Every added surface is visual-only and cannot take navigation or
+ * pointer ownership from the governed semantic Orb and destination controls.
  */
 export function HomeVisualAuthority() {
   const { scene } = useThree()
@@ -277,5 +398,9 @@ export function HomeVisualAuthority() {
     }
   }, [scene])
 
-  return <LiteralOrbAuthorityV251 />
+  return <>
+    <SanctuaryDressingV252 />
+    <GroundedOrbRootsV252 />
+    <LiteralOrbAuthorityV252 />
+  </>
 }
