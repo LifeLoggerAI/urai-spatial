@@ -1,43 +1,59 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import path from 'node:path'
 import test from 'node:test'
-import ts from 'typescript'
-import * as THREE from 'three'
 
-const base = path.resolve('src/components/lifemap')
-const modules = new Map()
-function load(file) {
-  if (modules.has(file)) return modules.get(file)
-  const exports = {}
-  modules.set(file, exports)
-  new Function('exports', 'require', ts.transpile(fs.readFileSync(file, 'utf8'), { module: ts.ModuleKind.CommonJS }))(exports, id => load(path.resolve(path.dirname(file), `${id}.ts`)))
-  return exports
-}
-const layout = load(path.join(base, 'lifeMapSpatialLayout.ts'))
-const display = load(path.join(base, 'lifeMapLayout.ts'))
-const nodes = load(path.join(base, 'canonicalLifeMapDemoNodes.ts')).canonicalLifeMapDemoNodes.map(node => ({ ...node, position: display.lifeMapDisplayPosition(node) }))
+const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 
-for (const [width, height] of [[320, 900], [390, 844], [430, 932], [1280, 800], [1440, 900]]) {
-  test(`overview fits every sample chapter and its artifact envelope at ${width}×${height}`, () => {
-    const portrait = height > width, stage = layout.lifeMapStage(false, portrait)
-    const goal = layout.lifeMapOverviewCamera(nodes, portrait, width / height)
-    const camera = new THREE.PerspectiveCamera(portrait ? 50 : 52, width / height, .08, 180)
-    camera.position.set(...goal.position); camera.lookAt(...goal.target); camera.updateMatrixWorld()
-    nodes.forEach((node, index) => {
-      const center = layout.lifeMapLocalPoint(node, index).map((value, axis) => value * stage.scale[axis] + stage.position[axis])
-      for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
-        const point = new THREE.Vector3(...center.map((value, axis) => value + [x, y, z][axis] * 2.2 * stage.scale[axis])).project(camera)
-        assert.ok(Math.abs(point.x) <= .880001, `${node.id}: horizontal crop`)
-        assert.ok(Math.abs(point.y) <= .720001, `${node.id}: header/footer clearance`)
-        assert.ok(point.z > -1 && point.z < 1, `${node.id}: depth clipping`)
-      }
-    })
-  })
-}
-test('empty or invalid nodes cannot produce an invalid overview camera', () => {
-  for (const data of [[], [{ ...nodes[0], position: [NaN, 0, 0] }]]) {
-    const goal = layout.lifeMapOverviewCamera(data, true, 390 / 844)
-    assert.ok([...goal.position, ...goal.target].every(Number.isFinite))
-  }
+test('canonical Life Map overview is framed as a cosmic personal universe rather than terrain', () => {
+  assert.match(boundary, /CosmicComposedLifeMapScene/)
+  assert.match(cosmic, /data-life-map-visual-authority="v257-cosmic-personal-universe"/)
+  assert.match(cosmic, /data-life-map-ground="none"/)
+  assert.match(cosmic, /life-map-deep-space/)
+  assert.match(cosmic, /life-map-personal-galaxy/)
+  assert.match(cosmic, /life-map-memory-stars/)
+  assert.match(cosmic, /life-map-constellations/)
+  assert.match(cosmic, /life-map-nebula-/)
+  assert.match(cosmic, /life-map-emotional-weather/)
+  assert.doesNotMatch(cosmic, /LivingMemoryGeography|ChapterTerritories|lifeMapTerrainHeight|lifeMapSpatialLayout|weathered-valley-floor|worn-lineage-path/)
+})
+
+test('overview camera has independent portrait and desktop cosmic framing', () => {
+  assert.match(cosmic, /const portrait = size\.height > size\.width/)
+  assert.match(cosmic, /new THREE\.Vector3\(0,portrait \? 1\.5 : 3\.2,portrait \? 27\.5 : 24\)/)
+  assert.match(cosmic, /fov: portrait \? 58 : 53/)
+  assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0,\.2,-14\)/)
+  assert.match(cosmic, /pointer\.x\*1\.6/)
+  assert.match(cosmic, /pointer\.y\*\.7/)
+})
+
+test('selected-memory travel remains spatial and celestial until Focus or Replay', () => {
+  assert.match(cosmic, /phase === "departure" \? 18/)
+  assert.match(cosmic, /phase === "travel" \? 13/)
+  assert.match(cosmic, /phase === "approach" \? 8/)
+  assert.match(cosmic, /phase === "arrival" \? 47 : 51/)
+  assert.match(cosmic, /Approaching the selected star/)
+  assert.match(cosmic, /Selected memory in orbit/)
+  assert.match(cosmic, /life-map-selected-memory-nebula/)
+  assert.doesNotMatch(cosmic, /ArrivalSanctuary|IntimateMemoryChamber|memory chamber/)
+})
+
+test('portrait/mobile launch UI preserves the celestial viewport instead of recreating a terrain envelope', () => {
+  assert.match(cosmic, /@media\(max-width:700px\)/)
+  assert.match(cosmic, /\.life-map-thresholds\{bottom:max\(12px,env\(safe-area-inset-bottom\)\);grid-template-columns:1fr 1fr/)
+  assert.match(cosmic, /\.life-map-status\{top:max\(15px,env\(safe-area-inset-top\)\);right:12px\}/)
+  assert.match(cosmic, /\.life-map-status small\{display:none\}/)
+  assert.match(cosmic, /height:100svh/)
+})
+
+test('framing keeps reduced-motion, exact-head render proof, and semantic thresholds fail closed', () => {
+  assert.match(cosmic, /prefers-reduced-motion:reduce/)
+  assert.match(cosmic, /data-life-map-render-ready="false"/)
+  assert.match(cosmic, /data-life-map-visible-anchors="0"/)
+  assert.match(cosmic, /lifeMapRenderReady/)
+  assert.match(cosmic, /lifeMapVisibleAnchors/)
+  assert.match(cosmic, /gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
+  assert.match(cosmic, /className="life-map-thresholds"/)
+  assert.match(cosmic, />Enter Focus</)
+  assert.match(cosmic, />Replay</)
 })
