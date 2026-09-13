@@ -32,11 +32,11 @@ const routes = [
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
     paths: ['/life-map', '/life-map/'],
-    markers: [/Inside your memory field\./i, /Thirty-four private stars/i, /Double click \/ Enter Focus/i],
+    markers: [/URAI Life Map/i, /step inside your private constellation/i, /urai-r3f-canonical-lifemap/i],
   },
   {
     paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
-    markers: [/Selected memory chamber/i, /The Quiet Reset/i, /Enter Replay/i],
+    markers: [/urai-final-focus-chamber/i, /Selected memory chamber\./i],
   },
   {
     paths: [
@@ -52,16 +52,17 @@ const routes = [
   },
   {
     paths: ['/passport', '/passport/'],
-    markers: [/Your life stays yours\./i, /ownership vault/i, /private by default/i],
+    markers: [/passport-ownership-vault/i, /UrAi Passport/i, /Ownership key/i],
+    forbidden: [/urai-final-passport-vault/i, /Your life stays yours\./i],
   },
   {
     paths: ['/privacy-controls', '/privacy-controls/'],
-    markers: [/URAI Privacy Controls/i, /Choose what the world can hold\./i, /Human approval before real-world action/i],
-    forbidden: [/Home threshold/i, /Ground route Real-life world/i],
+    markers: [/consent-sanctuary/i, /UrAi Consent Sanctuary/i, /Choose what the world may hold\./i, /Enforcement:/i],
+    forbidden: [/privacy-consent-console/i, /Choose what the world can hold\./i, /Home threshold/i],
   },
   {
     paths: ['/location-map', '/location-map/'],
-    markers: [/Emotional weather over private places\./i, /symbolic atlas/i, /Global emotional weather legend/i],
+    markers: [/premium-emotional-weather-atlas/i],
   },
   {
     paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
@@ -69,7 +70,8 @@ const routes = [
   },
   {
     paths: ['/status', '/status/'],
-    markers: [/Routes implemented\. Production certification pending\./i, /Launch spine/i, /Certification boundary/i],
+    markers: [/urai-final-status-control-room/i, /Launch locked\. Proof before expansion\./i, /fingerprint-gated/i, /Production certification remains hidden until the protected fingerprint is validated\./i],
+    forbidden: [/Pending proof/i, /World online\. Route matrix visible\./i],
   },
   {
     paths: ['/api/system/deploy-proof'],
@@ -111,7 +113,7 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'user-agent': 'urai-live-smoke/4.1',
+          'user-agent': 'urai-live-smoke/4.2',
           accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
         },
         redirect: 'follow',
