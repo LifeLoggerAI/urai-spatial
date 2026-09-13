@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
@@ -9,6 +10,7 @@ import {
   requestUraiWorldReturn,
   requestUraiWorldTravel,
   URAI_WORLD_ORB_OPEN_EVENT,
+  type UraiWorldOrbOpenDetail,
 } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
@@ -69,6 +71,7 @@ export function PersistentWorldCompanion() {
   const current = definitionForDestination(world.destination)
   const menuRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLButtonElement>(null)
+  const externalActivatorRef = useRef<HTMLElement | null>(null)
   const restoreFocusRef = useRef(false)
   const primaryDestinations = useMemo(() => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
   const secondaryDestinations = useMemo(() => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]), [])
@@ -88,14 +91,21 @@ export function PersistentWorldCompanion() {
     }
   }, [])
 
+  const publishCompanionAttention = useCallback(() => {
+    window.queueMicrotask(() => {
+      publishOrbState('attention', 'companion')
+      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+    })
+  }, [])
+
   const toggleCompanion = useCallback(() => {
     if (open) closeCompanion(true)
     else {
+      externalActivatorRef.current = null
       setOpen(true)
-      publishOrbState('attention', 'companion')
-      window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue: 'orb-confirm' } }))
+      publishCompanionAttention()
     }
-  }, [closeCompanion, open])
+  }, [closeCompanion, open, publishCompanionAttention])
 
   const toggleAudio = useCallback(() => {
     const enabled = !audioEnabled
@@ -105,13 +115,17 @@ export function PersistentWorldCompanion() {
   }, [audioEnabled])
 
   useEffect(() => {
-    const openCompanion = () => {
-      setOpen(true)
-      publishOrbState('attention', 'companion')
+    const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
+      externalActivatorRef.current = event.detail.returnFocusTo ?? null
+      // External semantic Home controls dispatch a native window event. Commit the
+      // accessibility state synchronously so heavy spatial formation work cannot
+      // leave the visible companion stale/aria-hidden after an intentional click.
+      flushSync(() => setOpen(true))
+      publishCompanionAttention()
     }
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
     return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
-  }, [])
+  }, [publishCompanionAttention])
 
   useEffect(() => {
     if (phase !== 'idle') closeCompanion(false)
@@ -126,7 +140,10 @@ export function PersistentWorldCompanion() {
     }
     if (restoreFocusRef.current) {
       restoreFocusRef.current = false
-      orbRef.current?.focus()
+      const activator = externalActivatorRef.current
+      externalActivatorRef.current = null
+      if (activator?.isConnected) activator.focus()
+      else orbRef.current?.focus()
     }
   }, [open])
 
