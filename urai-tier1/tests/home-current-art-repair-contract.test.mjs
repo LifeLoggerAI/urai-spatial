@@ -54,7 +54,7 @@ test('Orb is one matte organic asymmetric state-aware living-memory presence wit
   assert.match(art, /function memoryScarGeometry\(/)
   assert.match(art, /const stateIntensity: Record<OrbState, number>/)
   assert.match(art, /reducedMotion\) return/)
-  assert.match(art, /roughness=\{\.72\} metalness=\{0\}/)
+  assert.match(art, /roughness=\{\.76\} metalness=\{0\}/)
   assert.doesNotMatch(art, /wireframe/)
   assert.doesNotMatch(art, /THREE\.DoubleSide/)
   assert.doesNotMatch(art, /<meshBasicMaterial/)
