@@ -11,8 +11,9 @@ test('current Home mounts one explicit unified visual authority and declares the
   assert.match(owner, /<HomeCurrentArtRepair orbState=\{p\.orbState\} reducedMotion=\{p\.reducedMotion\}/)
   assert.match(art, /home-current-unified-visual-authority/)
   assert.match(art, /v249-systemic-organic-convergence/)
-  assert.equal(authority.artRevision, 'v249-systemic-organic-convergence')
+  assert.equal(authority.artRevision, 'v254-launch-sanctuary-depth')
   assert.ok(authority.runtimeAssets.includes('HomeCurrentArtRepair.tsx'))
+  assert.ok(authority.runtimeAssets.includes('HomeLaunchSanctuaryV254.tsx'))
 })
 
 test('retired hidden Home visual owners cannot keep invisible pointer authority', () => {
