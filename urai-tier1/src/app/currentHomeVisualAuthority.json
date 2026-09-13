@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai-home-visual-authority-1",
   "rendererOwner": "HomeWorldProductionV223.tsx",
-  "artRevision": "v249-systemic-organic-convergence",
+  "artRevision": "v254-launch-sanctuary-depth",
   "worldIdentifier": "v226-rooted-inhabited-memory-sanctuary",
   "proofSchema": "urai-home-state-proof-7",
   "runtimeAssets": [
@@ -10,6 +10,8 @@
     "HomeWorldProductionV225PolishV3.tsx",
     "HomeCurrentArtRepair.tsx",
     "HomeVisualAuthority.tsx",
+    "HomeAtmosphericSky.tsx",
+    "HomeLaunchSanctuaryV254.tsx",
     "rock-tile-floor/rock-tile-floor-diff-1k.webp",
     "polyhaven-v48/fern_02/asset.gltf",
     "polyhaven-v48/rock_face_01/asset.gltf",

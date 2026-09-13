@@ -18,17 +18,29 @@ if (!Array.isArray(authority.runtimeAssets) || authority.runtimeAssets.length < 
 if (new Set(authority.runtimeAssets).size !== authority.runtimeAssets.length) fail('runtimeAssets contains duplicate entries')
 if (!authority.runtimeAssets.includes(authority.rendererOwner)) fail('runtimeAssets does not include rendererOwner')
 if (!authority.runtimeAssets.includes('HomeVisualAuthority.tsx')) fail('runtimeAssets does not include HomeVisualAuthority.tsx')
+if (!authority.runtimeAssets.includes('HomeAtmosphericSky.tsx')) fail('runtimeAssets does not include HomeAtmosphericSky.tsx')
+if (!authority.runtimeAssets.includes('HomeLaunchSanctuaryV254.tsx')) fail('runtimeAssets does not include HomeLaunchSanctuaryV254.tsx')
 if (authority.runtimeAssets.includes('HomeWorldProductionV225PolishV2.tsx')) fail('superseded V225PolishV2 cannot be a current runtime asset')
 
 const layoutRoot = path.join(repoRoot, 'urai-tier1/src/spatial/layout')
+const spatialAssetsRoot = path.join(repoRoot, 'urai-tier1/src/spatial/assets')
 const assetRoot = path.join(repoRoot, 'urai-tier1/public/assets/urai/home-production/cc0')
 for (const asset of authority.runtimeAssets) {
-  const candidate = asset.endsWith('.tsx') ? path.join(layoutRoot, asset) : path.join(assetRoot, asset)
-  try {
-    await access(candidate)
-  } catch {
-    fail(`declared runtime asset is missing: ${asset}`)
+  let candidates
+  if (asset.endsWith('.tsx')) {
+    candidates = [path.join(layoutRoot, asset), path.join(spatialAssetsRoot, asset)]
+  } else {
+    candidates = [path.join(assetRoot, asset)]
   }
+  let found = false
+  for (const candidate of candidates) {
+    try {
+      await access(candidate)
+      found = true
+      break
+    } catch {}
+  }
+  if (!found) fail(`declared runtime asset is missing: ${asset}`)
 }
 
 const ownerModule = path.basename(authority.rendererOwner, '.tsx')
@@ -54,10 +66,12 @@ for (const token of [
   if (!renderer.includes(token)) fail(`renderer does not preserve atmospheric visual-authority chain token: ${token}`)
 }
 
-const atmosphere = await readFile(path.join(repoRoot, 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'), 'utf8')
+const atmosphere = await readFile(path.join(spatialAssetsRoot, 'HomeAtmosphericSky.tsx'), 'utf8')
 for (const token of [
   "import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'",
+  "import { HomeLaunchSanctuaryV254 } from './HomeLaunchSanctuaryV254'",
   '<HomeVisualAuthority />',
+  '<HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />',
 ]) {
   if (!atmosphere.includes(token)) fail(`atmosphere does not mount final visual authority token: ${token}`)
 }
@@ -65,9 +79,8 @@ for (const token of [
 const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
 for (const token of [
   'object.visible = false',
-  'previousRaycast.set(object, object.raycast)',
-  'object.raycast = () => {}',
-  'object.raycast = raycast',
+  'previousRaycast.set(object, object.raycast)', 'object.raycast = () => {}',
+ 'object.raycast = raycast',
   '!isTransparentInteractionSurface(object)',
   'const setSubtreeOff = (object: THREE.Object3D) => {',
   'object.traverse((child) => disableRaycast(child))',
