@@ -4,9 +4,6 @@ import { lifeMapDisplayPosition } from './lifeMapLayout'
 type Point3 = [number, number, number]
 
 export function lifeMapTerrainHeight(x: number, z: number): number {
-  // Keep interaction, camera framing, and the visible geography on one height
-  // authority. This is deliberately identical to memoryValleyHeight in the
-  // rendered world rather than a second approximation that can float nodes.
   const distanceFromPath = Math.abs(x - (.58 * Math.sin((z + 5.5) * .17) + .18 * Math.sin(z * .51)))
   const shoulder = Math.max(0, distanceFromPath - 2.7)
   const deepTime = Math.max(0, Math.min(1, (-z - 2) / 39))
@@ -18,10 +15,6 @@ export function lifeMapTerrainHeight(x: number, z: number): number {
 }
 
 export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
-  // The semantic memory graph already owns an authored five-band geography.
-  // Use that authority directly instead of re-projecting the retired shallow
-  // coordinate field into a ribbon. The -3.4 offset keeps authored chapter
-  // centers aligned with the production territory landmarks.
   const [x, y, z] = lifeMapDisplayPosition(node)
   const worldZ = z - 3.4
   const narrativeLift = Math.max(-.12, Math.min(.34, y * .08))
@@ -31,16 +24,12 @@ export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {
   if (selected) {
     return {
-      scale: portrait ? [1.04, 1.02, 1.04] : [1.08, 1.08, 1.08],
-      position: portrait ? [0, -.08, .58] : [0, -.14, .72],
+      scale: portrait ? [1.08, 1.04, 1.08] : [1.08, 1.08, 1.08],
+      position: portrait ? [0, -.26, .84] : [0, -.14, .72],
     }
   }
-
-  // Overview geography is authored in five depth bands. Projection only
-  // applies a gentle portrait compression; it must not manufacture composition
-  // by stretching memories into a wide ribbon.
   return portrait
-    ? { scale: [.46, .82, .92], position: [0, -.42, .3] }
+    ? { scale: [.58, .96, .94], position: [0, -.16, .92] }
     : { scale: [1.18, 1.12, 1], position: [0, -.55, 0] }
 }
 
@@ -62,17 +51,16 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const target = min.map((value, axis) => (value + max[axis]) / 2) as Point3
   const verticalTan = Math.tan((portrait ? 50 : 52) * Math.PI / 360)
   const horizontalTan = verticalTan * Math.max(aspect, .2)
-  // Include the artifact envelope, not just its center, so portrait fitting
-  // retains every chapter while preserving the authored near/deep ordering.
   let distance = 8
   for (const point of points) {
     const horizontalFit = (Math.abs(point[0] - target[0]) + 2.2 * stage.scale[0]) / (horizontalTan * .88)
     const verticalFit = (Math.abs(point[1] - target[1]) + 2.2 * stage.scale[1]) / (verticalTan * .72)
     distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
-  // A level camera turned the terrain into edge-on black ribbons. The elevated
-  // overlook keeps the authored route, contact points, and depth bands legible
-  // without flattening the world into an infographic.
-  const overlook = portrait ? 5.2 : 7.1
-  return { position: [target[0], target[1] + overlook, target[2] + distance * 1.14], target: [target[0], target[1] - .65, target[2] - 1.2] }
+  const overlook = portrait ? 3.7 : 7.1
+  const retreat = portrait ? .88 : 1.14
+  return {
+    position: [target[0], target[1] + overlook, target[2] + distance * retreat],
+    target: [target[0], target[1] - (portrait ? 1.38 : .65), target[2] - (portrait ? 2.0 : 1.2)],
+  }
 }
