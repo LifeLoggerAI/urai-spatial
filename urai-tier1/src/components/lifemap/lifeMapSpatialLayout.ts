@@ -67,7 +67,7 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const points = nodes.map((node, index) => lifeMapLocalPoint(node, index).map((value, axis) => value * stage.scale[axis] + stage.position[axis]) as Point3)
     .filter(point => point.every(Number.isFinite))
   if (!points.length) return portrait
-    ? { position: [0, 7.1, 14.8], target: [0, -1.15, -13.5] }
+    ? { position: [0, 6.3, 22.5], target: [0, -1.0, -15.5] }
     : { position: [0, 7.0, 18.2], target: [0, -1.0, -18] }
 
   const min: Point3 = [Infinity, Infinity, Infinity]
@@ -76,29 +76,24 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
     min[axis] = Math.min(min[axis], point[axis])
     max[axis] = Math.max(max[axis], point[axis])
   }
-  const center = min.map((value, axis) => (value + max[axis]) / 2) as Point3
-
-  if (portrait) {
-    const depth = Math.max(10, max[2] - min[2])
-    const width = Math.max(5, max[0] - min[0])
-    const distance = Math.min(25, Math.max(17.5, depth * .54 + width * .62 + 7.2))
-    // Aim into the near/mid chronology so terrain occupies the frame while deep
-    // chapters still remain visible as a destination rather than shrinking all
-    // memories into a tiny strip beneath dead sky.
-    const target: Point3 = [center[0] * .45, center[1] - .78, center[2] + depth * .08]
-    return { position: [target[0], target[1] + 7.5, target[2] + distance], target: [target[0], target[1] - .62, target[2] - 2.8] }
-  }
-
-  const verticalTan = Math.tan(52 * Math.PI / 360)
+  const target = min.map((value, axis) => (value + max[axis]) / 2) as Point3
+  const verticalTan = Math.tan((portrait ? 50 : 52) * Math.PI / 360)
   const horizontalTan = verticalTan * Math.max(aspect, .2)
+
+  // Fit the full 2.2-unit artifact envelope required by the production framing
+  // contract. Portrait density comes from the larger authored stage, not from
+  // cropping semantic memories offscreen.
   let distance = 8
   for (const point of points) {
-    const horizontalFit = (Math.abs(point[0] - center[0]) + 2.0 * stage.scale[0]) / (horizontalTan * .91)
-    const verticalFit = (Math.abs(point[1] - center[1]) + 1.9 * stage.scale[1]) / (verticalTan * .78)
-    distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - center[2] + 1.8 * stage.scale[2])
+    const horizontalFit = (Math.abs(point[0] - target[0]) + 2.2 * stage.scale[0]) / (horizontalTan * .88)
+    const verticalFit = (Math.abs(point[1] - target[1]) + 2.2 * stage.scale[1]) / (verticalTan * .72)
+    distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
+
+  const overlook = portrait ? 5.35 : 7.1
+  const depthAim = portrait ? 1.75 : 1.2
   return {
-    position: [center[0], center[1] + 7.2, center[2] + distance * 1.04],
-    target: [center[0], center[1] - .72, center[2] - 2.0],
+    position: [target[0], target[1] + overlook, target[2] + distance * (portrait ? 1.10 : 1.14)],
+    target: [target[0], target[1] - .65, target[2] - depthAim],
   }
 }

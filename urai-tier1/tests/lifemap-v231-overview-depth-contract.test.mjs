@@ -23,11 +23,12 @@ test('overview keeps selected staging stable while portrait gets deliberate worl
   assert.doesNotMatch(layout, /scale: \[\.46, \.82, \.92\]/)
 })
 
-test('portrait overview camera is explicitly composed instead of fitting every chapter into a tiny world', () => {
-  assert.match(layout, /if \(portrait\) \{/)
-  assert.match(layout, /const distance = Math\.min\(25, Math\.max\(17\.5,/)
-  assert.match(layout, /target\[2\] - 2\.8/)
-  assert.doesNotMatch(layout, /const overlook = portrait \? 5\.2 : 7\.1/)
+test('portrait overview camera fits the full semantic artifact envelope without returning to a tiny stage', () => {
+  assert.match(layout, /2\.2 \* stage\.scale\[0\]/)
+  assert.match(layout, /2\.2 \* stage\.scale\[1\]/)
+  assert.match(layout, /const overlook = portrait \? 5\.35 : 7\.1/)
+  assert.match(layout, /portrait \? 1\.10 : 1\.14/)
+  assert.doesNotMatch(layout, /scale: \[\.46, \.82, \.92\]/)
 })
 
 test('visible terrain authority uses broad chapter masses instead of repeated terrace bands', () => {
