@@ -14,7 +14,8 @@ test('canonical Life Map overview is framed as a cosmic personal universe rather
   assert.match(cosmic, /life-map-memory-stars/)
   assert.match(cosmic, /life-map-constellations/)
   assert.match(cosmic, /life-map-nebula-/)
-  assert.match(cosmic, /life-map-emotional-weather/)
+  assert.match(cosmic, /life-map-nebula-veil-/)
+  assert.doesNotMatch(cosmic, /Sparkles/)
   assert.doesNotMatch(cosmic, /LivingMemoryGeography|ChapterTerritories|lifeMapTerrainHeight|lifeMapSpatialLayout|weathered-valley-floor|worn-lineage-path/)
 })
 
@@ -28,9 +29,10 @@ test('overview camera has independent portrait and desktop cosmic framing', () =
 })
 
 test('selected-memory travel remains spatial and celestial until Focus or Replay', () => {
-  assert.match(cosmic, /phase === "departure" \? 18/)
-  assert.match(cosmic, /phase === "travel" \? 13/)
-  assert.match(cosmic, /phase === "approach" \? 8/)
+  assert.match(cosmic, /phase === "departure" \? 20/)
+  assert.match(cosmic, /phase === "travel" \? 16/)
+  assert.match(cosmic, /phase === "approach" \? 13/)
+  assert.match(cosmic, /portrait \? 12 : 10\.5/)
   assert.match(cosmic, /phase === "arrival" \? 47 : 51/)
   assert.match(cosmic, /Approaching the selected star/)
   assert.match(cosmic, /Selected memory in orbit/)

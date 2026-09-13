@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Environment, Sparkles, useAnimations, useGLTF } from "@react-three/drei";
+import { Environment, useGLTF } from "@react-three/drei";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
@@ -14,6 +14,7 @@ import {
 } from "@/spatial/navigation/EmbodiedNavigation";
 import { DESTINATIONS, type GroundDestination, type GroundChamberForm } from "./ground/GroundWorldModel";
 
+import GroundPhysicalArchitecture, { GROUND_ARCHITECTURAL_OBSTACLES } from "./ground/GroundPhysicalArchitecture";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import GroundVaultArchitecture from "./ground/GroundVaultArchitecture";
 
@@ -106,29 +107,9 @@ function GroundWorld({ target, activeId, onSelect }: {
   activeId: string | null;
   onSelect: (destination: GroundDestination) => void;
 }) {
-  const { scene, animations } = useGLTF(GROUND_MODEL);
+  const { scene } = useGLTF(GROUND_MODEL);
   const root = useRef<THREE.Group>(null);
   const world = useMemo(() => bindGroundAuthoredRegions(prepareModel(scene.clone(true))), [scene]);
-  const { actions } = useAnimations(animations, root);
-
-  useEffect(() => {
-    actions.Ground_Pulse?.reset().fadeIn(0.35).play();
-    actions.Nexus_Idle?.reset().fadeIn(0.35).play();
-    return () => {
-      actions.Ground_Pulse?.fadeOut(0.2);
-      actions.Nexus_Idle?.fadeOut(0.2);
-    };
-  }, [actions]);
-
-  useEffect(() => {
-    for (const destination of DESTINATIONS) {
-      const node = world.getObjectByName(`ground-destination-${destination.id}`);
-      if (!node) continue;
-      const character = CHAMBER_CHARACTER[destination.chamberForm];
-      const attention = activeId === destination.id ? 1.045 : 1;
-      node.scale.set(character[0] * 0.88 * attention, character[1] * 0.78 * attention, character[2] * 0.88 * attention);
-    }
-  }, [activeId, world]);
 
   const onWorldClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
@@ -157,7 +138,8 @@ function GroundWorld({ target, activeId, onSelect }: {
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
             {/* Governed authored source is the visible product authority. */}
-            <primitive object={world} />
+            <primitive object={world} visible={false} />
+            <GroundPhysicalArchitecture activeId={activeId} onSelect={onSelect} />
           </group>
         </group>
       </group>
@@ -210,6 +192,7 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
   onNearby: (value: GroundDestination | null) => void;
 }) {
   const { camera, size } = useThree();
+  const reducedMotion = useReducedMotion();
   const position = useRef(SPAWN.clone());
   const velocity = useRef(new THREE.Vector3());
   const desired = useRef(new THREE.Vector3());
@@ -231,15 +214,15 @@ function Player({ input, yaw, pitch, target, activeId, onNearby }: {
       acceleration: 11,
       deceleration: 13,
       bounds: BOUNDS,
-      obstacles: [{ x: 0, z: -1, radius: 2.15 }],
+      obstacles: GROUND_ARCHITECTURAL_OBSTACLES,
     });
 
     const portrait = size.height > size.width;
-    const distance = portrait ? 7.45 : 7.8;
-    const height = portrait ? 2.08 : 2.34;
+    const distance = portrait ? 1.4 : 1.1;
+    const height = portrait ? 1.94 : 1.86;
     cameraOffset.current.set(0, height + pitch.current * 0.72, distance).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
     desired.current.copy(position.current).add(cameraOffset.current);
-    camera.position.lerp(desired.current, 1 - Math.pow(0.0018, delta));
+    camera.position.lerp(desired.current, reducedMotion ? 1 : 1 - Math.pow(0.0018, delta));
 
     if (activeDestination && Math.hypot(position.current.x - activeDestination.camera[0], position.current.z - activeDestination.camera[2]) < 5.5) {
       lookAt.current.set(activeDestination.lookAt[0], activeDestination.lookAt[1], activeDestination.lookAt[2]);
@@ -278,27 +261,25 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect, 
   onNearby: (value: GroundDestination | null) => void;
   onSelect: (destination: GroundDestination) => void;
 }) {
-  const reducedMotion = useReducedMotion();
   return (
     <>
       <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
-      <fogExp2 attach="fog" args={["#172825", 0.014]} />
-      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.62} />
-      <ambientLight intensity={0.24} color="#c9ddd4" />
-      <hemisphereLight args={["#dce5d5", "#101c18", 0.46]} />
-      <directionalLight position={[9, 18, 12]} intensity={1.45} color="#efd2aa" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-11, 9, -8]} intensity={0.28} color="#82aab1" />
+      <fogExp2 attach="fog" args={["#101b1b", 0.028]} />
+      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.18} />
+      <ambientLight intensity={0.32} color="#b7cdc6" />
+      <hemisphereLight args={["#b9c8be", "#211d18", 0.34]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.28} color="#efd3aa" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-far={75} shadow-normalBias={0.035} />
+      <directionalLight position={[-11, 9, -8]} intensity={0.12} color="#6f9298" />
       <pointLight position={[-2.8, 4.6, -2]} intensity={0.34} distance={16} decay={2} color="#d8aa79" />
       <pointLight position={[7.5, 3.4, -15]} intensity={0.16} distance={13} decay={2} color="#78aeb2" />
       <pointLight position={[-8.2, 3.8, -23]} intensity={0.13} distance={13} decay={2} color="#9187a5" />
-      <Sparkles count={5} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.34} speed={reducedMotion ? 0 : 0.012} opacity={0.022} color="#f9e7ba" />
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
       <group name="ground-retired-procedural-vault-visual-owner" visible={false} userData={{ retainedFor: "semantic-readiness-only", visualOwner: false }}>
         <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} onReady={onReady} />
       </group>
-      <ArchitecturalRouteLighting activeId={activeId} />
+      <group name="ground-retired-decorative-route-lighting" visible={false}><ArchitecturalRouteLighting activeId={activeId} /></group>
       <group name="ground-v92-removed-procedural-postprocessing" userData={{
         nonRenderingCompatibilityMarkers: "EffectComposer Bloom Vignette",
         legacyStaticContractMarkers: [
@@ -355,7 +336,7 @@ export default function GroundSpatialWorldClean() {
       data-ground-visual-owner="authored-ground-world-terrain"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-visual-revision="authored-terrain-and-enterable-destinations-successor"
+      data-ground-visual-revision="physical-cut-stone-chambers-and-connected-courtyard"
       data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"

@@ -5,8 +5,8 @@ import test from 'node:test'
 const ground = readFileSync(new URL('../src/app/GroundSpatialWorldClean.tsx', import.meta.url), 'utf8')
 
 test('Ground renders an authored spatial vault instead of an image-backed hub', () => {
-  assert.match(ground, /data-ground-visual-revision="walkable-stone-vault-and-enterable-chambers-candidate"/)
-  assert.match(ground, /<GroundVaultArchitecture/)
+  assert.match(ground, /data-ground-visual-revision="physical-cut-stone-chambers-and-connected-courtyard"/)
+  assert.match(ground, /<GroundPhysicalArchitecture/)
   assert.doesNotMatch(ground, /<picture|operations-world-main\.webp|operations-world-mobile\.webp/)
 })
 
@@ -24,6 +24,6 @@ test('Ground has one opaque Canvas with physical background ownership', () => {
   assert.match(ground, /scene\.background = new THREE\.Color/)
   assert.match(ground, /ground-v92-retired-solid-background/)
   assert.match(ground, /<mesh visible=\{false\}[^>]*ground-v41-continuous-architectural-underfloor/)
-  assert.match(ground, /ground-authored-architectural-route-lighting" visible=\{false\}/)
+  assert.match(ground, /ground-authored-architectural-route-lighting" raycast=/)
   assert.equal((ground.match(/<Canvas/g) || []).length, 1)
 })

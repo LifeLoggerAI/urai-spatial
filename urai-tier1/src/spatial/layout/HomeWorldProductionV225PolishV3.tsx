@@ -168,8 +168,14 @@ function inhabitedSurfaceGeometry() {
     const vz=iz/nz,z=6.4-vz*26.2
     for(let ix=0;ix<=nx;ix++){
       const vx=ix/nx,x=-13.5+vx*27
-      const relief=.052*Math.sin(x*1.72+z*.91)+.034*Math.cos(x*3.86-z*1.54)+.017*Math.sin(x*7.1+z*4.3)
-      const y=height(x,z)+relief*(.32+.68*Math.min(1,Math.abs(x)/7.5))+.032
+      // A worn central route stays close to the shared walking datum. Broken
+      // bedding and shallow runoff collect on its shoulders, not under the feet.
+      const pathX=.30*Math.sin((z+2.4)*.22)+.09*Math.sin((z-1)*.63)
+      const shoulder=THREE.MathUtils.smoothstep(Math.abs(x-pathX),1.0,4.8)
+      const bedding=Math.abs(Math.sin(z*1.86+x*.43+soilVariation(x*.34,z*.34)*2.4))
+      const fracture=Math.pow(1-Math.abs(Math.sin(x*2.3-z*.62)),12)
+      const relief=(bedding*.12-fracture*.075)*shoulder + (soilVariation(x*2.2,z*2.2)-.5)*.042
+      const y=height(x,z)+relief+.032
       positions.push(x,y,z)
       // Smooth, bounded domain variation breaks identical tile alignment without
       // discontinuities, extra texture fetches, or animated shader work.
@@ -190,18 +196,25 @@ function inhabitedSurfaceGeometry() {
 }
 
 function distantRidgeGeometry() {
-  const nx=132,nz=34,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
-  const shadow=new THREE.Color('#58674f'),stone=new THREE.Color('#8a977d'),warm=new THREE.Color('#908568')
+  const nx=160,nz=48,positions:number[]=[],uvs:number[]=[],colors:number[]=[],indices:number[]=[]
+  const shadow=new THREE.Color('#626455'),stone=new THREE.Color('#a89d83'),cool=new THREE.Color('#727f76')
+  // Different geological events across one continuous escarpment: a broken
+  // western shelf, low saddle behind the memory, and a steeper eastern fault.
+  // Linear landmarks intentionally retain fracture edges instead of Gaussian hills.
+  const profile: [number,number][]=[[-13.5,3.1],[-11.8,3.4],[-10.9,2.75],[-9.7,2.9],[-8.9,1.9],[-7.2,2.15],[-6.3,1.35],[-4.8,1.6],[-3.4,.74],[-1.6,.52],[.4,.68],[1.5,1.82],[2.1,2.55],[3.2,2.42],[4.0,1.48],[5.8,1.75],[7.3,2.62],[8.8,2.38],[9.3,3.06],[11.0,3.28],[12.2,2.8],[13.5,3.52]]
+  const crest=(x:number)=>{const next=profile.findIndex(p=>p[0]>=x);if(next<=0)return profile[0][1];const a=profile[next-1],b=profile[next];return THREE.MathUtils.lerp(a[1],b[1],(x-a[0])/(b[0]-a[0]))}
   for(let iz=0;iz<=nz;iz++){
     const v=iz/nz,z=-14.8-v*12.8
     for(let ix=0;ix<=nx;ix++){
       const u=ix/nx,x=-13.5+u*27
-      const peaks=2.25*Math.exp(-Math.pow((x+6.2)/3.0,2))+3.05*Math.exp(-Math.pow((x-2.4)/3.5,2))+1.55*Math.exp(-Math.pow((x-9.6)/2.0,2))
-      const crags=.28*Math.sin(x*1.34)+.17*Math.sin(x*2.91+.8)+.09*Math.cos(x*5.2)
-      const rise=Math.sin(v*Math.PI*.82)*(peaks+crags)+v*(1-v)*(.14+.12*Math.sin(x*.67))
-      const y=height(x,z)+rise-.035+Math.sin(v*Math.PI)*(.14*Math.sin(x*.81+v*5.2)+.07*Math.cos(x*1.73-v*7.1))
-      positions.push(x,y,z);uvs.push(u*7,v*5)
-      const c=shadow.clone().lerp(stone,.22+.42*v).lerp(warm,.07*(.5+.5*Math.sin(x*.7+v*8)))
+      const rise=THREE.MathUtils.smoothstep(v,0,.74)
+      const ledge=Math.floor(v*7+soilVariation(x*.35,v*3)*.55)/7
+      const fractured=soilVariation(x*1.17,v*5.8)-.5
+      const drainage=Math.pow(1-Math.abs(Math.sin(x*1.04+v*.8)),10)*.34
+      const y=height(x,z)+crest(x)*rise+(.24*ledge+.19*fractured-drainage)*Math.sin(v*Math.PI)-.05
+      positions.push(x,y,z);uvs.push(u*9,v*6)
+      const band=.5+.5*Math.sin(v*36+x*.24)
+      const c=shadow.clone().lerp(stone,.20+.40*band).lerp(cool,.26*v)
       colors.push(c.r,c.g,c.b)
     }
   }
@@ -242,12 +255,16 @@ function ScannedRockFace({ variant, x, z, turn, scale }: { variant: '01' | '02';
       }
       geometry.computeVertexNormals()
       object.geometry = geometry
+      // Scan exposure must share the weathered valley's material response.
+      const sourceMaterials=Array.isArray(object.material)?object.material:[object.material]
+      const materials=sourceMaterials.map(source=>{const material=source.clone();if(material instanceof THREE.MeshStandardMaterial){material.color.multiply(new THREE.Color('#aba896'));material.roughness=.96;material.metalness=0;}return material})
+      object.material=Array.isArray(object.material)?materials:materials[0]
       object.castShadow = true
       object.receiveShadow = true
     })
     return copy
   }, [asset.scene,scale,turn,x,z])
-  useEffect(() => () => model.traverse(object => { if(object instanceof THREE.Mesh) object.geometry.dispose() }),[model])
+  useEffect(() => () => model.traverse(object => { if(object instanceof THREE.Mesh){object.geometry.dispose();(Array.isArray(object.material)?object.material:[object.material]).forEach(material=>material.dispose())} }),[model])
   return <primitive object={model} position={[x, height(x, z) - .72, z]} rotation={[0,turn,0]} scale={scale}/>
 }
 
@@ -260,13 +277,19 @@ function breakSoilRepetition(shader: Parameters<THREE.MeshStandardMaterial['onBe
     vec2 sanctuarySoilOffset(vec2 cell) {
       return fract(sin(vec2(dot(cell,vec2(127.1,311.7)),dot(cell,vec2(269.5,183.3))))*43758.5453);
     }
+    vec4 sanctuaryRockIsland(vec2 uv) {
+      // Inspected rock_face_01 island: x=.48-.60, image y=.36-.48.
+      // Texture coordinates flip image Y; all taps stay clear of atlas gutters.
+      vec2 folded=1.0-abs(fract(uv*.5)*2.0-1.0);
+      return texture2D(map,vec2(.48,.52)+folded*vec2(.12,.12));
+    }
     vec4 sanctuarySoilSample(vec2 uv) {
       vec2 cell=floor(uv), blend=fract(uv);
       blend=blend*blend*(3.0-2.0*blend);
-      vec4 a=texture2D(map,uv+sanctuarySoilOffset(cell));
-      vec4 b=texture2D(map,uv+sanctuarySoilOffset(cell+vec2(1.0,0.0)));
-      vec4 c=texture2D(map,uv+sanctuarySoilOffset(cell+vec2(0.0,1.0)));
-      vec4 d=texture2D(map,uv+sanctuarySoilOffset(cell+vec2(1.0,1.0)));
+      vec4 a=sanctuaryRockIsland(uv+sanctuarySoilOffset(cell));
+      vec4 b=sanctuaryRockIsland(uv+sanctuarySoilOffset(cell+vec2(1.0,0.0)));
+      vec4 c=sanctuaryRockIsland(uv+sanctuarySoilOffset(cell+vec2(0.0,1.0)));
+      vec4 d=sanctuaryRockIsland(uv+sanctuarySoilOffset(cell+vec2(1.0,1.0)));
       return mix(mix(a,b,blend.x),mix(c,d,blend.x),blend.y);
     }
     #endif

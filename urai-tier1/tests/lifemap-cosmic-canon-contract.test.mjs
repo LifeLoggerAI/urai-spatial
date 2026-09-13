@@ -15,7 +15,8 @@ test('canonical Life Map route uses the cosmic personal-universe visual owner', 
   assert.match(cosmic, /life-map-constellations/)
   assert.match(cosmic, /life-map-memory-stars/)
   assert.match(cosmic, /life-map-selected-memory-nebula/)
-  assert.match(cosmic, /life-map-emotional-weather/)
+  assert.match(cosmic, /life-map-nebula-veil-/)
+  assert.doesNotMatch(cosmic, /Sparkles/)
 })
 
 test('cosmic Life Map cannot silently regress to a terrestrial overview owner', () => {

@@ -25,22 +25,18 @@ test('home telemetry synchronizes from mutations and input without perpetual doc
 })
 
 test('Focus focal authority is a grounded living-memory manifestation, not the rejected giant dark icosahedron', () => {
-  assert.match(focus, /function focusManifestationGeometry\(accent: string\)/)
-  assert.match(focus, /new THREE\.SphereGeometry\(1, 72, 48\)/)
-  assert.match(focus, /function focusManifestationFilaments\(\)/)
-  assert.match(focus, /function focusMemoryBranches\(\)/)
-  assert.match(focus, /new THREE\.TubeGeometry/)
-  assert.match(focus, /function focusMemoryFieldGeometry\(\)/)
-  assert.match(focus, /focus-v249-grounded-living-memory-manifestation/)
-  assert.match(focus, /v250-living-memory-tree-manifestation/)
+  assert.match(focus, /createFocusStrata, createFocusSurfaceMaps/)
+  assert.match(focus, /focus-v251-grounded-living-memory-manifestation/)
+  assert.match(focus, /v251-fractured-rooted-memory-strata/)
   assert.doesNotMatch(focus, /new THREE\.IcosahedronGeometry\(/)
+  assert.doesNotMatch(focus, /new THREE\.SphereGeometry\(1, 72, 48\)/)
   assert.doesNotMatch(focus, /focus-v217-single-connected-memory-manifestation/)
 })
 
 test('Focus convergence preserves Replay activation, selected-memory semantics, reduced motion, and retired geometry pointer safety', () => {
   assert.match(focus, /if \(memory\) onActivate\(\)/)
   assert.match(focus, /aria-label=\{memory \? `Open Replay for \$\{memory\.title\}`/)
-  assert.match(focus, /reducedMotion \? 1 : 1 \+ Math\.sin/)
+  assert.doesNotMatch(focus, /reducedMotion \? 1 : 1 \+ Math\.sin/)
   assert.match(focus, /object\.raycast = \(\) => undefined/)
   assert.match(focus, /requestUraiWorldTravel\(\{ destination: 'replay'/)
   assert.match(focus, /requestUraiWorldReturn\(\)/)

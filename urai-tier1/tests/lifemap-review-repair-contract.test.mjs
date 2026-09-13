@@ -120,10 +120,9 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
 })
 
 test('Focus final composition keeps the live chamber dominant and rejects the obsolete dark obstruction path', () => {
-  assert.match(focusSource, /focus-v249-grounded-living-memory-manifestation/)
-  assert.match(focusSource, /focus-v249-memory-root-cradle/)
-  assert.match(focusSource, /function focusManifestationFilaments\(\)/)
-  assert.match(focusSource, /function focusMemoryFieldGeometry\(\)/)
+  assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
+  assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
+  assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
   assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1;[\s\S]*brightness\(1\.22\)/)
   assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: 0\.10;/)

@@ -29,7 +29,8 @@
 
 @media (max-width: 700px) {
   .focus-spatial-aperture-button {
-    top: calc(50vh + 128px) !important;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 
