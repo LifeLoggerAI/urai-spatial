@@ -90,7 +90,7 @@ function HistoryConstellation({nodes,selected,reducedMotion}:{nodes:LifeMapNode[
   const root=useRef<THREE.Group>(null),links=useMemo(()=>connectionGeometry(nodes,selected),[nodes,selected]),beacons=useMemo(()=>beaconGeometry(nodes),[nodes])
   useEffect(()=>()=>{links.dispose();beacons.dispose()},[links,beacons])
   useFrame(({clock})=>{if(root.current&&!reducedMotion)root.current.position.y=Math.sin(clock.elapsedTime*.11)*.025})
-  return <group ref={root} name="life-map-v256-history-constellation" userData={{visualOnly:true,interactionOwner:false,presentationRevision:'v256-contextual-history-constellation'}}>
+  return <group ref={root} name="life-map-v253-history-constellation" userData={{visualOnly:true,interactionOwner:false,presentationRevision:'v256-contextual-history-constellation'}}>
     <lineSegments geometry={links} raycast={()=>null}><lineBasicMaterial vertexColors transparent opacity={selected?.22:.24}/></lineSegments>
     <points geometry={beacons} raycast={()=>null}><pointsMaterial vertexColors size={.052} transparent opacity={.68} depthWrite={false} sizeAttenuation/></points>
   </group>
@@ -100,7 +100,7 @@ function SelectedHistory({node,index,reducedMotion}:{node:LifeMapNode;index:numb
   const root=useRef<THREE.Group>(null),point=useMemo(()=>lifeMapLocalPoint(node,index),[node,index]),history=useMemo(()=>selectedHistoryGeometry(node,index),[node,index]),scars=useMemo(()=>selectedScarGeometry(node,index),[node,index]),particles=useMemo(()=>historyParticles(node,index),[node,index])
   useEffect(()=>()=>{history.dispose();scars.dispose();particles.dispose()},[history,scars,particles])
   useFrame(({clock})=>{if(root.current&&!reducedMotion)root.current.rotation.y=Math.sin(clock.elapsedTime*.10)*.018})
-  return <group ref={root} position={point} name="life-map-v256-selected-history-sanctuary" userData={{visualOnly:true,interactionOwner:false,presentationRevision:'v256-asymmetric-memory-traces'}}>
+  return <group ref={root} position={point} name="life-map-v253-selected-history-sanctuary" userData={{visualOnly:true,interactionOwner:false,presentationRevision:'v256-asymmetric-memory-traces'}}>
     <lineSegments geometry={history} raycast={()=>null}><lineBasicMaterial color={node.aura} transparent opacity={.34}/></lineSegments>
     <lineSegments geometry={scars} raycast={()=>null}><lineBasicMaterial color="#eddcb8" transparent opacity={.52}/></lineSegments>
     <points geometry={particles} raycast={()=>null}><pointsMaterial vertexColors size={.034} transparent opacity={reducedMotion?.32:.40} depthWrite={false} sizeAttenuation/></points>
@@ -113,7 +113,7 @@ export function LifeMapGoldMasterOverlay(props:Props){
   const {nodes,selected,phase,reducedMotion}=props,{size}=useThree(),portrait=size.height>size.width,stage=lifeMapStage(Boolean(selected),portrait),selectedIndex=selected?Math.max(0,nodes.findIndex((node)=>node.id===selected.id)):-1
   return <>
     <LegacyLifeMapGoldMasterOverlay {...props}/>
-    <group name="life-map-v249-personal-universe-geography" scale={stage.scale} position={stage.position} userData={{presentationRevision:'v256-history-bearing-personal-universe',visualRepair:'selected-history-remains-asymmetric-and-subordinate-to-surrounding-geography'}}>
+    <group name="life-map-v249-personal-universe-geography" scale={stage.scale} position={stage.position} userData={{presentationRevision:'v256-history-bearing-personal-universe',visualRepair:'surrounding-geography-remains-visible-through-selection-and-arrival selected-history-remains-asymmetric-and-subordinate-to-surrounding-geography'}}>
       <HistoryConstellation nodes={nodes} selected={selected} reducedMotion={reducedMotion}/>
       <group name="life-map-v249-grounded-memory-places" userData={{visualRepair:'all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context'}}>{nodes.map((node)=><group key={node.id} name={`life-map-v256-history-anchor-${node.id}`} position={lifeMapLocalPoint(node,nodes.indexOf(node))} raycast={()=>null}/>)}</group>
       {selected&&phase==='arrival'?<SelectedHistory node={selected} index={selectedIndex} reducedMotion={reducedMotion}/>:null}
