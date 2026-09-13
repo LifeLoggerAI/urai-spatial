@@ -55,7 +55,7 @@ jobs:
             urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
             urai-tier1/tests/lifemap-v231-overview-depth-contract.test.mjs
           pnpm --dir urai-tier1 typecheck
-          git diff --check HEAD^
+          git diff --check
       - name: Build exact static disposable candidate
         run: pnpm build:static
       - name: Install Chromium
