@@ -1,4 +1,4 @@
-name: PR1177 Disposable V250 Source Gate
+name: PR1177 Disposable V250 Final Pixel Dispatch
 
 on:
   push:
@@ -8,49 +8,43 @@ on:
       - '.github/workflows/pr1177-exact-head-proof-dispatch.yml'
 
 permissions:
+  actions: write
   contents: read
 
 concurrency:
-  group: pr1177-v250-source-gate
+  group: pr1177-v250-final-pixel-dispatch
   cancel-in-progress: false
 
 env:
   EXPECTED_HEAD: 316a2caa8585236d2f5dda5c61ae5d6516870873
+  TARGET_BRANCH: steward/pr1177-v250-pixel-convergence-20260913
 
 jobs:
-  compact-source:
+  dispatch-proofs:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
-      - name: Checkout exact disposable candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify exact disposable branch head and dispatch retained-pixel proofs
+        uses: actions/github-script@v7
         with:
-          ref: ${{ env.EXPECTED_HEAD }}
-          fetch-depth: 1
-          persist-credentials: false
-          show-progress: false
-      - name: Prove exact clean candidate
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
-        with:
-          version: 10.0.0
-          run_install: false
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - name: Install exact lockfile
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile
-      - name: Run compact exact-head contract matrix
-        run: corepack pnpm --dir urai-tier1 run test:unit
-      - name: Prove source cleanliness
-        run: git diff --check
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const expected = process.env.EXPECTED_HEAD;
+            const targetBranch = process.env.TARGET_BRANCH;
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: targetBranch });
+            if (branch.data.commit.sha !== expected) {
+              core.setFailed(`Disposable branch moved: expected ${expected}, got ${branch.data.commit.sha}`);
+              return;
+            }
+            const dispatches = [
+              ['continuous-spatial-visual-proof.yml', { verification_sha: expected }],
+              ['lifemap-founder-visual-proof.yml', { verification_sha: expected }],
+              ['home-state-proof.yml', {}],
+              ['portal-orb-exact-proof.yml', {}],
+              ['accessibility-performance-evidence.yml', { verification_sha: expected }],
+            ];
+            for (const [workflow_id, inputs] of dispatches) {
+              await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id, ref: targetBranch, inputs });
+              core.info(`dispatched ${workflow_id} for ${expected}`);
+            }
