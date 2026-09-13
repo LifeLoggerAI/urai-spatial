@@ -2,55 +2,58 @@ import * as THREE from 'three'
 
 // Canonical selected-memory manifestation geometry.
 // Focus is the same selected memory star resolving into a broken mineral-light
-// aperture: a large open center, thin irregular rim segments and history veins.
-// It must read as a threshold into the remembered moment, never as floating cloth,
+// threshold: narrow interrupted segments with a large luminous center. It must
+// read as a passage into the remembered moment, never as floating cloth, seaweed,
 // a flower, a boulder, a crystal cluster or a generic sculptural object.
 const MEMORY_APERTURE_ARCS = [
-  [-2.86, -1.76, 1.48, 1.10, .105, -.035],
-  [-1.47, -.34, 1.58, 1.18, .090, .045],
-  [.10, 1.22, 1.52, 1.14, .100, -.020],
-  [1.48, 2.76, 1.42, 1.07, .088, .055],
+  [-2.98, -2.42, 1.42, 1.06, .032, -.040],
+  [-2.18, -1.56, 1.49, 1.10, .028, .035],
+  [-1.20, -.62, 1.55, 1.12, .030, -.018],
+  [-.34, .24, 1.53, 1.10, .026, .042],
+  [.58, 1.18, 1.47, 1.08, .031, -.030],
+  [1.50, 2.10, 1.43, 1.04, .027, .050],
+  [2.38, 2.91, 1.39, 1.02, .030, -.012],
 ] as const
 
 export function createFocusStrata() {
   return MEMORY_APERTURE_ARCS.map(([startAngle, endAngle, radiusX, radiusY, bandWidth, depthBias], fragment) => {
     const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
-    const rows = 48, columns = 8
+    const rows = 28, columns = 3
 
     for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
       const v = row / rows
       const u = column / columns
       const across = u * 2 - 1
-      const taper = Math.pow(Math.sin(v * Math.PI), .62)
-      const historyWave = Math.sin(v * 15.4 + across * 4.8 + fragment * 1.91)
-      const fineWave = Math.sin(v * 31.2 - across * 8.7 + fragment * .73)
+      const taper = Math.pow(Math.sin(v * Math.PI), .72)
+      const historyWave = Math.sin(v * 11.7 + across * 3.1 + fragment * 1.37)
+      const fineWave = Math.sin(v * 23.9 - across * 6.4 + fragment * .81)
       const theta = THREE.MathUtils.lerp(startAngle, endAngle, v)
-      const width = bandWidth * (.26 + .74 * taper)
+      const width = bandWidth * (.32 + .68 * taper)
       const radialOffset = across * width
-      const localRadiusX = radiusX + radialOffset + historyWave * .018 + fineWave * .007
-      const localRadiusY = radiusY + radialOffset * .72 + historyWave * .012
+      const localRadiusX = radiusX + radialOffset + historyWave * .010 + fineWave * .004
+      const localRadiusY = radiusY + radialOffset * .76 + historyWave * .008
 
-      // The aperture lives mostly in the camera-facing x/y plane. Depth is shallow
-      // and irregular so the rim feels spatial without turning into detached slabs.
-      const x = Math.cos(theta) * localRadiusX + .035 * Math.sin(v * 8.3 + fragment)
-      const y = Math.sin(theta) * localRadiusY + .055 * Math.sin(v * 6.1 + fragment * .6) + across * .025
+      // Keep the frame nearly camera-facing and shallow so it reads as an
+      // interrupted threshold around an open center instead of separate ribbons.
+      const x = Math.cos(theta) * localRadiusX + .018 * Math.sin(v * 7.2 + fragment)
+      const y = Math.sin(theta) * localRadiusY + .020 * Math.sin(v * 5.4 + fragment * .7)
       const z = depthBias
-        + .13 * Math.sin(theta * 2.0 + fragment * .7)
-        + .045 * Math.sin(v * Math.PI * 3.0 + across * 1.8)
+        + .060 * Math.sin(theta * 2.0 + fragment * .5)
+        + .018 * Math.sin(v * Math.PI * 2.0 + across)
 
       positions.push(x, y, z)
-      uvs.push(u * 1.4, v * 2.8)
+      uvs.push(u * 1.2, v * 2.4)
 
-      const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 15)
-      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(v * 7.2 + across * 4.1 + fragment))), 18)
-      const edge = Math.pow(Math.abs(across), 1.35)
-      const mineral = new THREE.Color(fragment % 2 ? '#8fc9c6' : '#badbd4')
-      const memory = new THREE.Color(fragment % 2 ? '#7fdcff' : '#f0bd83')
-      const shadow = new THREE.Color('#17333a')
+      const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 18)
+      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(v * 5.7 + fragment * .9))), 20)
+      const edge = Math.pow(Math.abs(across), 1.5)
+      const mineral = new THREE.Color(fragment % 2 ? '#9dc9c8' : '#c2d8cf')
+      const memory = new THREE.Color(fragment % 2 ? '#86dfff' : '#f2c18a')
+      const shadow = new THREE.Color('#244149')
       const color = shadow.clone()
-        .lerp(mineral, .46 + taper * .28)
-        .lerp(memory, Math.min(.88, vein * .58 + hotVein * .46))
-      color.multiplyScalar(.86 + taper * .12 - edge * .18)
+        .lerp(mineral, .58 + taper * .20)
+        .lerp(memory, Math.min(.92, vein * .64 + hotVein * .48))
+      color.multiplyScalar(.92 + taper * .08 - edge * .12)
       colors.push(color.r, color.g, color.b)
     }
 
