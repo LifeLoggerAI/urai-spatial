@@ -116,10 +116,11 @@ export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Poi
     }
   }
 
-  // Portrait is intentionally wider and shallower than chronology depth. The
-  // camera owns the fit while the world itself occupies the viewport.
+  // Portrait keeps chronology shallow enough for artifact-envelope fit while
+  // deliberately amplifying geological relief so the world reads as inhabited
+  // terrain rather than a thin runway between dead sky and empty foreground.
   return portrait
-    ? { scale: [.94, 1.24, .72], position: [0, -.18, 3.65] }
+    ? { scale: [.94, 2.20, .72], position: [0, -.18, 3.65] }
     : { scale: [1.24, 1.28, .86], position: [0, -.30, .88] }
 }
 
@@ -151,10 +152,10 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
       Math.abs(min[0] - target[0]) + 2.35 * stage.scale[0],
       Math.abs(max[0] - target[0]) + 2.35 * stage.scale[0],
     )
-    // Full artifact-envelope fit remains governed by distance. The lower
-    // camera/target pair removes the dead-sky composition without shrinking
-    // the world back into the rejected runway treatment.
-    const forward = Math.max(27, halfWidth / (horizontalTan * .68))
+    // Full artifact-envelope fit remains governed by distance. Use the safe
+    // horizontal allowance instead of the previous over-conservative retreat;
+    // the independent framing contract still verifies every envelope corner.
+    const forward = Math.max(27, halfWidth / (horizontalTan * .79))
     return {
       position: [target[0], target[1] + 18.5, target[2] + forward],
       target: [target[0], target[1] - .42, target[2] - .95],
