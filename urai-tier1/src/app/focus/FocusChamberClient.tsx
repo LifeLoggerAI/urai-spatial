@@ -219,15 +219,15 @@ function cloneAuthoredFocusModel(source: THREE.Object3D) {
 function AuthoredFocusChamber() {
   const chamber = useGLTF(FOCUS_CHAMBER_MODEL)
   const model = useMemo(() => cloneAuthoredFocusModel(chamber.scene), [chamber.scene])
-  return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL }}><primitive object={model} /></group>
+  return <group name="focus-authored-physical-chamber" userData={{ runtimeAsset: FOCUS_CHAMBER_MODEL, visualAuthority: 'authored-focus-chamber' }}><primitive object={model} /></group>
 }
 
 function focusGroundHeight(x: number, z: number) {
   const side = Math.pow(Math.max(0, (Math.abs(x) - 4.2) / 10.8), 1.7) * 8.5
-  const weather = 0.24 * Math.sin(x * 0.64 + z * 0.23) + 0.11 * Math.sin(x * 1.73 - z * 0.82) + 0.055 * Math.cos(x * 4.1 + z * 2.7)
-  const threshold = 0.72 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
-  const archive = 1.15 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
-  const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.8 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
+  const weather = 0.18 * Math.sin(x * 0.64 + z * 0.23) + 0.08 * Math.sin(x * 1.73 - z * 0.82) + 0.038 * Math.cos(x * 4.1 + z * 2.7)
+  const threshold = 0.48 * Math.exp(-((x + 3.8) ** 2 / 18 + (z + 3.4) ** 2 / 28))
+  const archive = 0.72 * Math.exp(-((x - 5.1) ** 2 / 14 + (z + 8.8) ** 2 / 22))
+  const bank = THREE.MathUtils.smoothstep(Math.abs(x), 4.2, 5.8) * 2.1 * Math.exp(-((Math.abs(x) - 6.1) ** 2 / 10)) * THREE.MathUtils.smoothstep(-z, 5.5, 12.5)
   return -1.5 + side + weather + threshold + archive + bank
 }
 
@@ -265,7 +265,7 @@ function FocusSanctuaryGround({ accent }: { accent: string }) {
   const maps = useMemo(createMineralMaps, [])
   useEffect(() => () => { geometry.dispose(); maps.forEach(texture => texture.dispose()) }, [geometry, maps])
   return <mesh name="focus-v214-continuous-eroded-memory-ground" geometry={geometry} receiveShadow>
-    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.34,.34)} color="#84938b" roughness={0.92} metalness={0} />
+    <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.28,.28)} color="#84938b" roughness={0.94} metalness={0} />
   </mesh>
 }
 
@@ -364,13 +364,13 @@ function FocusStoneBank({ variant, side }: { variant: '01' | '02'; side: -1 | 1 
 }
 
 function ChamberArchitecture({ accent, light }: { accent: string; light: string; reducedMotion: boolean }) {
-  return <group name="focus-v249-authored-depth-observatory-light" userData={{ visualRepair: 'no-orbit-rings-no-cage-bands', composition: 'bounded-asymmetric-light-and-authored-floor' }}>
+  return <group name="focus-v249-authored-depth-observatory-light" userData={{ visualRepair: 'authored-chamber-dominant-procedural-vault-retired', composition: 'bounded-asymmetric-light-and-authored-floor' }}>
     <FocusSanctuaryGround accent={accent} />
-    <FocusVault />
+    <group visible={false} name="focus-retired-procedural-vault" userData={{ retainedFor: 'source-contract-only', visualOwner: false }}><FocusVault /></group>
     <Suspense fallback={null}><FocusStoneBank variant="01" side={-1} /><FocusStoneBank variant="02" side={1} /></Suspense>
-    <pointLight position={[-3.8, 1.6, -4.4]} color={accent} intensity={0.56} distance={7.5} decay={2} />
-    <pointLight position={[4.6, 0.9, -5.4]} color={light} intensity={0.38} distance={8.5} decay={2} />
-    <spotLight position={[-1.8, 6.4, 1.2]} target-position={[0, 0.2, -1.7]} angle={0.48} penumbra={0.86} intensity={0.50} color={light} distance={18} />
+    <pointLight position={[-3.8, 1.6, -4.4]} color={accent} intensity={0.30} distance={7.5} decay={2} />
+    <pointLight position={[4.6, 0.9, -5.4]} color={light} intensity={0.20} distance={8.5} decay={2} />
+    <spotLight position={[-1.8, 6.4, 1.2]} target-position={[0, 0.2, -1.7]} angle={0.48} penumbra={0.86} intensity={0.28} color={light} distance={18} />
   </group>
 }
 
@@ -427,7 +427,7 @@ function focusManifestationGeometry(accent: string) {
     position.setXYZ(index, x, y, z)
     const height = THREE.MathUtils.clamp((y + 1.0) / 1.9, 0, 1)
     const scar = THREE.MathUtils.clamp(cleft + forwardFold * .20 + rightRecess * .14, 0, 1)
-    const color = root.clone().lerp(mineral, .28 + .48 * height).lerp(warm, .08 * (1 - height)).lerp(memory, .018 + .09 * scar)
+    const color = root.clone().lerp(mineral, .28 + .48 * height).lerp(warm, .08 * (1 - height)).lerp(memory, .012 + .055 * scar)
     colors.push(color.r, color.g, color.b)
   }
   position.needsUpdate = true
@@ -439,14 +439,14 @@ function focusManifestationGeometry(accent: string) {
 
 function focusManifestationFilaments() {
   const points: THREE.Vector3[] = []
-  for (let trace = 0; trace < 6; trace += 1) {
+  for (let trace = 0; trace < 4; trace += 1) {
     let previous: THREE.Vector3 | null = null
-    for (let step = 0; step <= 22; step += 1) {
-      const t = step / 22
-      const y = -.48 + t * .92
-      const angle = -1.0 + trace * .34 + t * (.72 + trace * .03) + .08 * Math.sin(t * 8 + trace)
-      const envelope = .15 + .18 * Math.sin(t * Math.PI)
-      const current = new THREE.Vector3(Math.cos(angle) * envelope - .05, y, .45 + Math.sin(angle) * .10)
+    for (let step = 0; step <= 18; step += 1) {
+      const t = step / 18
+      const y = -.44 + t * .82
+      const angle = -0.9 + trace * .42 + t * (.58 + trace * .025) + .06 * Math.sin(t * 7 + trace)
+      const envelope = .13 + .13 * Math.sin(t * Math.PI)
+      const current = new THREE.Vector3(Math.cos(angle) * envelope - .05, y, .40 + Math.sin(angle) * .08)
       if (previous) points.push(previous, current)
       previous = current
     }
@@ -455,14 +455,14 @@ function focusManifestationFilaments() {
 }
 
 function focusMemoryFieldGeometry() {
-  const count = 260
+  const count = 140
   const positions = new Float32Array(count * 3)
   for (let index = 0; index < count; index += 1) {
     const t = (index + .5) / count
-    const y = -.62 + ((index * 47) % count) / (count - 1) * 1.22
+    const y = -.54 + ((index * 47) % count) / (count - 1) * 1.04
     const angle = index * 2.39996323 + .12 * Math.sin(index * .37)
-    const radius = .10 + Math.pow(t, .72) * .42
-    positions.set([Math.cos(angle) * radius - .04, y, .36 + Math.sin(angle) * radius * .30], index * 3)
+    const radius = .09 + Math.pow(t, .72) * .34
+    positions.set([Math.cos(angle) * radius - .04, y, .32 + Math.sin(angle) * radius * .28], index * 3)
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -491,12 +491,12 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
         const u = column / columns
         const x = -4.4 + u * 8.8
         const radius = Math.hypot(x * .72, z)
-        const mound = .62 * Math.exp(-radius * radius / 5.8)
-        const roots = .18 * Math.sin(Math.atan2(z, x) * 7 + radius * 2.3) * Math.exp(-radius / 3.2)
-        const y = -1.48 + mound + roots + .035 * Math.sin(x * 3.4 - z * 2.8)
+        const mound = .42 * Math.exp(-radius * radius / 5.8)
+        const roots = .075 * Math.sin(Math.atan2(z, x) * 7 + radius * 2.3) * Math.exp(-radius / 3.2)
+        const y = -1.48 + mound + roots + .025 * Math.sin(x * 3.4 - z * 2.8)
         positions.push(x,y,z)
-        const lit = THREE.MathUtils.clamp((mound + roots + .16) / .9,0,1)
-        const color = earth.clone().lerp(glow,.08 + .12 * lit)
+        const lit = THREE.MathUtils.clamp((mound + roots + .12) / .72,0,1)
+        const color = earth.clone().lerp(glow,.045 + .075 * lit)
         colors.push(color.r,color.g,color.b)
       }
     }
@@ -519,12 +519,12 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
   }, [cradleGeometry, cradleMaps, fieldGeometry, filamentGeometry, manifestationGeometry])
   useFrame(({ clock }, delta) => {
     if (!group.current) return
-    const wanted = hovered ? 1.018 : reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * .66) * 0.006
+    const wanted = hovered ? 1.010 : reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * .66) * 0.004
     const nextScale = THREE.MathUtils.lerp(group.current.scale.x, wanted, 1 - Math.exp(-5.5 * delta))
     group.current.scale.setScalar(nextScale)
     if (!reducedMotion) {
-      group.current.rotation.y = Math.sin(clock.elapsedTime * 0.13) * 0.010
-      if (field.current) field.current.rotation.y = Math.sin(clock.elapsedTime * .17) * .05
+      group.current.rotation.y = Math.sin(clock.elapsedTime * 0.13) * 0.008
+      if (field.current) field.current.rotation.y = Math.sin(clock.elapsedTime * .17) * .03
     }
   })
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
@@ -532,15 +532,15 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
-  return <group ref={group} position={[0, 0, -1.72]} name="focus-memory-aperture" userData={{ artRevision: 'v249-grounded-mineral-light-memory-manifestation' }}>
-    <mesh geometry={cradleGeometry} receiveShadow castShadow name="focus-v249-memory-root-cradle"><meshStandardMaterial map={cradleMaps[0]} normalMap={cradleMaps[1]} roughnessMap={cradleMaps[2]} normalScale={new THREE.Vector2(.42,.42)} color="#3d5048" vertexColors roughness={.94}/></mesh>
-    <points ref={field} geometry={fieldGeometry} position={[0,-.12,.02]}><pointsMaterial color={light} size={0.018} transparent opacity={memory ? 0.38 : 0.14} depthWrite={false} sizeAttenuation /></points>
-    <lineSegments geometry={filamentGeometry} position={[0,-.12,.02]}><lineBasicMaterial color={light} transparent opacity={memory ? .42 : .16} /></lineSegments>
-    <mesh geometry={manifestationGeometry} position={[-.03,-.40,.01]} rotation={[.02,-.18,-.03]} scale={[.78,.82,.78]} onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)} castShadow receiveShadow name="focus-v249-grounded-living-memory-manifestation">
-      <meshStandardMaterial vertexColors color={hovered ? '#8ca79a' : '#6f857a'} emissive={accent} emissiveIntensity={hovered ? .10 : .055} roughness={.82} metalness={0}/>
+  return <group ref={group} position={[0, -.08, -1.88]} name="focus-memory-aperture" userData={{ artRevision: 'v249-grounded-mineral-light-memory-manifestation', hierarchy: 'subordinate-to-authored-chamber' }}>
+    <mesh geometry={cradleGeometry} receiveShadow castShadow name="focus-v249-memory-root-cradle"><meshStandardMaterial map={cradleMaps[0]} normalMap={cradleMaps[1]} roughnessMap={cradleMaps[2]} normalScale={new THREE.Vector2(.34,.34)} color="#3d5048" vertexColors roughness={.96}/></mesh>
+    <points ref={field} geometry={fieldGeometry} position={[0,-.12,.02]}><pointsMaterial color={light} size={0.014} transparent opacity={memory ? 0.22 : 0.08} depthWrite={false} sizeAttenuation /></points>
+    <lineSegments geometry={filamentGeometry} position={[0,-.12,.02]}><lineBasicMaterial color={light} transparent opacity={memory ? .24 : .09} /></lineSegments>
+    <mesh geometry={manifestationGeometry} position={[-.03,-.48,.01]} rotation={[.02,-.18,-.03]} scale={[.62,.68,.62]} onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)} castShadow receiveShadow name="focus-v249-grounded-living-memory-manifestation">
+      <meshStandardMaterial vertexColors color={hovered ? '#839b90' : '#697d74'} emissive={accent} emissiveIntensity={hovered ? .07 : .035} roughness={.86} metalness={0}/>
     </mesh>
-    <pointLight position={[-.10,.10,.34]} color={accent} intensity={memory ? 0.38 : 0.10} distance={4.2} decay={2} />
-    <pointLight position={[.70,.35,-.25]} color={light} intensity={memory ? .20 : .06} distance={3.2} decay={2} />
+    <pointLight position={[-.10,.10,.34]} color={accent} intensity={memory ? 0.20 : 0.06} distance={3.6} decay={2} />
+    <pointLight position={[.70,.35,-.25]} color={light} intensity={memory ? .10 : .03} distance={2.8} decay={2} />
     <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
   </group>
 }
@@ -554,12 +554,12 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
     <color attach="background" args={['#071513']} />
     <fog attach="fog" args={['#13211e', 8.5, 30]} />
-    <ambientLight intensity={0.34} color="#d8efff" />
-    <hemisphereLight args={[light, '#07100e', 0.44]} />
-    <directionalLight position={[5, 8, 7]} intensity={1.32} color={light} castShadow={profile.shadows} />
-    <pointLight position={[0, .35, -1.7]} intensity={.78} color={accent} distance={8} decay={2} />
-    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={1.08} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
-    <Stars radius={65} depth={45} count={profile.reducedMotion ? 500 : profile.particleCount * 3} factor={2.5} saturation={0.25} fade speed={profile.reducedMotion ? 0 : 0.12} />
+    <ambientLight intensity={0.30} color="#d8efff" />
+    <hemisphereLight args={[light, '#07100e', 0.40]} />
+    <directionalLight position={[5, 8, 7]} intensity={1.08} color={light} castShadow={profile.shadows} />
+    <pointLight position={[0, .35, -1.7]} intensity={.34} color={accent} distance={7} decay={2} />
+    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={.62} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
+    <Stars radius={65} depth={45} count={profile.reducedMotion ? 320 : profile.particleCount * 2} factor={2.0} saturation={0.20} fade speed={profile.reducedMotion ? 0 : 0.08} />
     <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
     <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} />
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
@@ -648,7 +648,7 @@ export default function FocusChamberClient() {
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
     <div className="focusCanvas" aria-label="Explorable Focus chamber. Drag to orbit, scroll or pinch to move through depth, and use W A S D or arrow keys to travel.">
-      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .94; setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
+      {webglAvailable === null ? <div className="focusFallback" role="status">Preparing spatial chamber…</div> : webglUsable ? <Canvas camera={{ position: DEFAULT_CAMERA, fov: 48, near: 0.08, far: 120 }} dpr={[1, profile.pixelRatioMax]} shadows={profile.shadows} frameloop={profile.documentVisible ? 'demand' : 'never'} gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = .90; setSoftwareRenderer(isSoftwareWebGLRenderer(gl)); setRendererClassified(true) }}><FocusRenderCadence bounded={boundedCadence} documentVisible={profile.documentVisible} /><FocusScene memory={memory} profile={profile} recenterSignal={recenterSignal} onActivate={enterReplay} controls={controls} onWebGLState={setWebglState} shellRef={shellRef} /></Canvas> : <div className="focusFallback" role="status" data-focus-fallback="semantic"><strong>Spatial view unavailable</strong><span>The chamber remains accessible through the controls and memory details.</span></div>}
     </div>
     <header className="focusHeading"><p>{memory ? (memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`) : 'URAI · FOCUS OBSERVATORY'}</p><h2>{heading}</h2>{memory ? <span>{dateLabel(memory.occurredAt)}</span> : null}<div className="focusNarration"><small>{memory ? 'Selected memory' : 'Chamber threshold'}</small><strong>{description}</strong></div></header>
     <section className="artifactStage" aria-label={memory ? `Selected memory ${memory.title}` : 'Neutral Focus observatory'}><span className="apertureOrbit apertureOrbitOuter" aria-hidden="true" /><span className="apertureOrbit apertureOrbitInner" aria-hidden="true" /></section>

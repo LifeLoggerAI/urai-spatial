@@ -38,12 +38,11 @@ const CHAMBER_CHARACTER: Record<GroundChamberForm, readonly [number, number, num
 function liftedMaterial(material: THREE.Material) {
   const clone = material.clone();
   if (clone instanceof THREE.MeshStandardMaterial) {
-    clone.color.multiplyScalar(0.72);
-    clone.emissive.set("#020706");
-    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, 0.018);
-    clone.roughness = Math.max(clone.roughness, 0.88);
-    clone.metalness = Math.min(clone.metalness, 0.045);
-    clone.envMapIntensity = 0.32;
+    clone.color.multiplyScalar(0.92);
+    clone.emissiveIntensity = Math.min(clone.emissiveIntensity, 0.08);
+    clone.roughness = THREE.MathUtils.clamp(clone.roughness * 0.94 + 0.03, 0.52, 0.94);
+    clone.metalness = Math.min(clone.metalness, 0.12);
+    clone.envMapIntensity = Math.max(clone.envMapIntensity, 0.78);
     clone.needsUpdate = true;
   }
   return clone;
@@ -52,14 +51,13 @@ function liftedMaterial(material: THREE.Material) {
 function prepareModel(source: THREE.Object3D) {
   source.traverse((object) => {
     if (object.name.startsWith("ground-dimensional-path-")) {
-      object.visible = false;
-      return;
+      object.userData.uraiVisibleAuthoredPath = true;
     }
     if (/(?:nexus-(?:orbit|spoke|pedestal|core|halo|beacon)|destination-(?:plinth|vase)|rainbow-spoke)/i.test(object.name)) {
       object.visible = false;
       return;
     }
-    if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.42);
+    if (object.name.endsWith("-signal-rune")) object.scale.multiplyScalar(0.34);
     if (!(object instanceof THREE.Mesh)) return;
     object.material = Array.isArray(object.material)
       ? object.material.map(liftedMaterial)
@@ -77,9 +75,10 @@ function prepareModel(source: THREE.Object3D) {
     root.position.y = Math.min(root.position.y, 0.12);
     root.userData.uraiChamberForm = destination.chamberForm;
     root.userData.uraiLayer = destination.layer;
-    root.userData.uraiRetiredVisualRole = "v150-provenance-only-destination-mass";
-    root.visible = false;
+    root.userData.uraiVisualRole = "authored-visible-destination-mass";
+    root.visible = true;
   }
+  source.userData.uraiVisualAuthority = "governed-ground-world-terrain";
   return source;
 }
 
@@ -126,7 +125,7 @@ function GroundWorld({ target, activeId, onSelect }: {
       const node = world.getObjectByName(`ground-destination-${destination.id}`);
       if (!node) continue;
       const character = CHAMBER_CHARACTER[destination.chamberForm];
-      const attention = activeId === destination.id ? 1.07 : 1;
+      const attention = activeId === destination.id ? 1.045 : 1;
       node.scale.set(character[0] * 0.88 * attention, character[1] * 0.78 * attention, character[2] * 0.88 * attention);
     }
   }, [activeId, world]);
@@ -153,12 +152,12 @@ function GroundWorld({ target, activeId, onSelect }: {
   };
 
   return (
-    <group ref={root} name="ground-continuity-architectural-shell" userData={{ runtimeAsset: GROUND_MODEL, semanticOwner: "ground-continuity-architectural-shell" }} onClick={onWorldClick}>
+    <group ref={root} name="ground-continuity-architectural-shell" userData={{ runtimeAsset: GROUND_MODEL, semanticOwner: "ground-continuity-architectural-shell", visibleAuthority: "governed-authored-terrain" }} onClick={onWorldClick}>
       <group name="ground-walkable-path-network" userData={{ authoredNodeFamily: "path-bridge-* engraved-path-*" }}>
         <group name="ground-central-nexus" userData={{ authoredNodeFamily: "ground-central-nexus nexus-core" }}>
           <group name="ground-workforce-and-council-presences" userData={{ authoredNodeFamily: "ground-destination-council council-* workforce-*" }}>
-            {/* Governed source identity; visible geometry is owned by GroundVaultArchitecture. */}
-            <primitive object={world} visible={false} />
+            {/* Governed authored source is the visible product authority. */}
+            <primitive object={world} />
           </group>
         </group>
       </group>
@@ -183,19 +182,19 @@ function ArchitecturalRouteLighting({ activeId }: { activeId: string | null }) {
     };
   }), []);
 
-  return <group name="ground-authored-architectural-route-lighting" visible={false} raycast={() => null}>
+  return <group name="ground-authored-architectural-route-lighting" raycast={() => null}>
     {routes.map(({ destination, position, rotationY, length }) => {
       const active = activeId === destination.id;
       return <mesh key={destination.id} position={position} rotation={[0, rotationY, 0]} receiveShadow>
-        <boxGeometry args={[active ? 0.52 : 0.34, 0.025, length]} />
+        <boxGeometry args={[active ? 0.42 : 0.28, 0.018, length]} />
         <meshStandardMaterial
           color={destination.color}
           emissive={destination.color}
-          emissiveIntensity={active ? 0.7 : 0.14}
-          roughness={0.72}
-          metalness={0.08}
+          emissiveIntensity={active ? 0.30 : 0.07}
+          roughness={0.82}
+          metalness={0.03}
           transparent
-          opacity={active ? 0.34 : 0.11}
+          opacity={active ? 0.16 : 0.055}
         />
       </mesh>;
     })}
@@ -283,20 +282,22 @@ function GroundScene({ input, yaw, pitch, target, activeId, onNearby, onSelect, 
   return (
     <>
       <group name="ground-v92-retired-solid-background" userData={{ legacyStaticContractMarker: '<color attach="background" args={["#263937"]} />' }} />
-      <fogExp2 attach="fog" args={["#172825", 0.018]} />
-      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.44} />
-      <ambientLight intensity={0.2} color="#c9ddd4" />
-      <hemisphereLight args={["#dce5d5", "#101c18", 0.38]} />
-      <directionalLight position={[9, 18, 12]} intensity={1.25} color="#efd2aa" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[-11, 9, -8]} intensity={0.2} color="#82aab1" />
-      <pointLight position={[-2.8, 4.6, -2]} intensity={0.56} distance={16} decay={2} color="#d8aa79" />
-      <pointLight position={[7.5, 3.4, -15]} intensity={0.22} distance={13} decay={2} color="#78aeb2" />
-      <pointLight position={[-8.2, 3.8, -23]} intensity={0.18} distance={13} decay={2} color="#9187a5" />
-      <Sparkles count={8} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.42} speed={reducedMotion ? 0 : 0.018} opacity={0.032} color="#f9e7ba" />
+      <fogExp2 attach="fog" args={["#172825", 0.014]} />
+      <Environment files="/assets/urai/home-production/cc0/environment/studio-small-08-1k.hdr" background={false} environmentIntensity={0.62} />
+      <ambientLight intensity={0.24} color="#c9ddd4" />
+      <hemisphereLight args={["#dce5d5", "#101c18", 0.46]} />
+      <directionalLight position={[9, 18, 12]} intensity={1.45} color="#efd2aa" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight position={[-11, 9, -8]} intensity={0.28} color="#82aab1" />
+      <pointLight position={[-2.8, 4.6, -2]} intensity={0.34} distance={16} decay={2} color="#d8aa79" />
+      <pointLight position={[7.5, 3.4, -15]} intensity={0.16} distance={13} decay={2} color="#78aeb2" />
+      <pointLight position={[-8.2, 3.8, -23]} intensity={0.13} distance={13} decay={2} color="#9187a5" />
+      <Sparkles count={5} scale={[28, 7, 36]} position={[0, 2.5, -12]} size={0.34} speed={reducedMotion ? 0 : 0.012} opacity={0.022} color="#f9e7ba" />
       <mesh visible={false} rotation={[-Math.PI/2,0,0]} position={[0,-0.16,-11]} receiveShadow name="ground-v41-continuous-architectural-underfloor" userData={{treatment:"v41-depth-fog-continuity-no-horizontal-band"}}><planeGeometry args={[64,88]}/><meshPhysicalMaterial color="#27332f" roughness={0.82} metalness={0.03} clearcoat={0.035} clearcoatRoughness={0.78} envMapIntensity={0.94}/></mesh>
       <Player input={input} yaw={yaw} pitch={pitch} target={target} activeId={activeId} onNearby={onNearby} />
       <GroundWorld target={target} activeId={activeId} onSelect={onSelect} />
-      <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} onReady={onReady} />
+      <group name="ground-retired-procedural-vault-visual-owner" visible={false} userData={{ retainedFor: "semantic-readiness-only", visualOwner: false }}>
+        <GroundVaultArchitecture activeId={activeId} onSelect={onSelect} onReady={onReady} />
+      </group>
       <ArchitecturalRouteLighting activeId={activeId} />
       <group name="ground-v92-removed-procedural-postprocessing" userData={{
         nonRenderingCompatibilityMarkers: "EffectComposer Bloom Vignette",
@@ -351,10 +352,10 @@ export default function GroundSpatialWorldClean() {
       className="ground-spatial-root"
       aria-label="URAI Ground embodied private infrastructure"
       data-testid="urai-ground-private-workforce-world"
-      data-ground-visual-owner="shared-continuity-architecture"
+      data-ground-visual-owner="authored-ground-world-terrain"
       data-ground-runtime-owner="final-glb-infrastructure-world"
       data-ground-runtime-assets="ground-world-terrain-v1.glb"
-      data-ground-visual-revision="walkable-stone-vault-and-enterable-chambers-candidate"
+      data-ground-visual-revision="authored-terrain-and-enterable-destinations-successor"
       data-ground-no-compositing-bands="true" data-ground-compositing-treatment="v41-depth-fog-continuity-no-horizontal-band"
       data-ground-exploration="walkable"
       data-ground-pointer-lock="false"
@@ -373,7 +374,7 @@ export default function GroundSpatialWorldClean() {
           scene.background = new THREE.Color("#101d20");
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 0.76;
+          gl.toneMappingExposure = 0.84;
         }}
       >
         <GroundScene
