@@ -18,14 +18,14 @@ test('overview consumes the authored five-band memory geography instead of legac
 test('overview keeps selected staging stable while portrait gets deliberate world occupancy', () => {
   assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[1\.14, 1\.18, 1\.02\] : \[1\.22, 1\.24, 1\.12\]/)
   assert.match(layout, /position: portrait \? \[0, -\.04, 1\.58\] : \[0, -\.08, 1\.02\]/)
-  assert.match(layout, /portrait\s*\? \{ scale: \[\.94, 1\.24, \.72\], position: \[0, -\.18, 3\.65\] \}/)
+  assert.match(layout, /portrait\s*\? \{ scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\] \}/)
   assert.match(layout, /: \{ scale: \[1\.24, 1\.28, \.86\], position: \[0, -\.30, \.88\] \}/)
   assert.doesNotMatch(layout, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
 test('portrait overview camera preserves the artifact envelope while composing chronology downward', () => {
   assert.match(layout, /2\.35 \* stage\.scale\[0\]/)
-  assert.match(layout, /const forward = Math\.max\(27, halfWidth \/ \(horizontalTan \* \.68\)\)/)
+  assert.match(layout, /const forward = Math\.max\(27, halfWidth \/ \(horizontalTan \* \.79\)\)/)
   assert.match(layout, /target\[1\] \+ 18\.5/)
   assert.match(layout, /target\[1\] - \.42/)
   assert.match(layout, /target\[2\] - \.95/)
