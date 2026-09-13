@@ -47,8 +47,10 @@
 }
 
 @media (max-width: 700px) {
+  /* Preserve the base mobile 31svh caption clearance. The previous 24svh
+     override pulled the caption into the playback controls on portrait phones. */
   .replayWorld .caption {
-    bottom: 24svh;
+    bottom: 31svh;
   }
 
   .replayWorld .controls,
