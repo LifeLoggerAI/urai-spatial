@@ -50,10 +50,10 @@ test('retired hidden Life Map visual owners lose pointer authority and restore i
   assert.match(overlay, /raycasts\.current\.forEach\(\(raycast,object\)=>\{object\.raycast=raycast\}\)/)
 })
 
-test('portrait overview camera moves geography into the frame instead of spending the viewport on sky', () => {
+test('portrait overview camera moves geography into the frame without cropping its authored envelope', () => {
   assert.match(layoutSource, /\? \{ scale: \[\.58, \.96, \.94\], position: \[0, -\.16, \.92\] \}/)
   assert.match(layoutSource, /const overlook = portrait \? 3\.7 : 7\.1/)
-  assert.match(layoutSource, /const retreat = portrait \? \.88 : 1\.14/)
+  assert.match(layoutSource, /const retreat = portrait \? 1\.18 : 1\.14/)
   assert.match(layoutSource, /portrait \? 1\.38 : \.65/)
   assert.match(layoutSource, /portrait \? 2\.0 : 1\.2/)
 })
