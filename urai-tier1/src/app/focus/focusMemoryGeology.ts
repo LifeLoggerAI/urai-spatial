@@ -1,48 +1,57 @@
 import * as THREE from 'three'
 
 // Canonical selected-memory manifestation geometry.
-// The memory is a celestial body approached from Life Map, not a flower seated on
-// the chamber floor. These authored shell sectors form one irregular luminous body
-// while preserving an asymmetric silhouette and non-repeating memory/history veins.
-const SHELL_SECTORS = [
-  [-Math.PI, -2.08, 1.08, .08, -.05],
-  [-2.16, -1.04, 1.14, -.06, .04],
-  [-1.12, -.04, 1.05, .04, -.03],
-  [-.12, .98, 1.16, -.04, .05],
-  [.90, 2.03, 1.07, .07, -.02],
-  [1.95, Math.PI, 1.12, -.05, .03],
+// The memory is approached from Life Map as a luminous celestial object, but it
+// resolves in Focus as an open, fractured memory field rather than a closed rock,
+// sphere, cage, spike cluster or flower. Each authored fragment leaves deliberate
+// negative space so the selected memory reads as something unfolding, not a boulder.
+const MEMORY_FRAGMENTS = [
+  [-2.58, .47, .84, -.08, -.02, .08],
+  [-1.46, .38, .91, .05, .02, -.04],
+  [-.34, .44, .78, -.02, -.04, .11],
+  [.82, .36, .88, .07, .01, -.08],
+  [1.91, .42, .81, -.05, .04, .03],
 ] as const
 
 export function createFocusStrata() {
-  return SHELL_SECTORS.map(([phiStart, phiEnd, baseRadius, offsetX, offsetZ], sector) => {
+  return MEMORY_FRAGMENTS.map(([centerPhi, halfWidth, baseRadius, offsetX, offsetZ, phase], fragment) => {
     const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
-    const rows = 34, columns = 28
+    const rows = 34, columns = 22
 
     for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
       const v = row / rows
       const u = column / columns
-      const theta = THREE.MathUtils.lerp(.18, Math.PI - .18, v)
-      const phi = THREE.MathUtils.lerp(phiStart, phiEnd, u)
-      const historyWave = Math.sin(theta * 8.4 + phi * 5.1 + sector * 1.73)
-      const fineWave = Math.sin(theta * 17.2 - phi * 9.6 + sector * .83)
-      const lobe = .10 * Math.sin(theta * 2.6 + sector * .71) * Math.cos(phi * 1.8 - sector)
-      const cleft = -.12 * Math.exp(-((Math.cos(phi + .62) / .26) ** 2)) * Math.pow(Math.sin(theta), 2.2)
-      const radius = baseRadius * (1 + lobe + historyWave * .025 + fineWave * .012 + cleft)
-      const equatorStretch = 1 + .12 * Math.pow(Math.sin(theta), 2)
-      const x = offsetX + Math.sin(theta) * Math.cos(phi) * radius * equatorStretch
-      const y = .08 + Math.cos(theta) * radius * 1.08 + .06 * Math.sin(phi * 2.1 + sector)
-      const z = offsetZ + Math.sin(theta) * Math.sin(phi) * radius * .92
+      const across = u * 2 - 1
+      const middle = Math.sin(v * Math.PI)
+      const shoulder = Math.pow(Math.max(0, middle), .72)
+      const width = halfWidth * (.30 + shoulder * .70)
+      const phi = centerPhi + across * width + .055 * Math.sin(v * 7.1 + fragment)
+
+      // A fragment begins close to the memory core, expands through a broad middle,
+      // then curls away again. The open center and large angular gaps are intentional.
+      const historyWave = Math.sin(v * 11.8 + across * 5.6 + fragment * 1.91)
+      const fineWave = Math.sin(v * 24.2 - across * 12.4 + fragment * .77)
+      const asymmetry = .08 * Math.sin(v * Math.PI * 1.65 + fragment * .83 + phase)
+      const radial = baseRadius * (.28 + shoulder * .78 + v * .10 + asymmetry)
+        + historyWave * .025 + fineWave * .011
+      const lateral = across * (.10 + shoulder * .18)
+      const curl = .18 * Math.pow(v, 1.7) - .08 * Math.pow(1 - v, 2)
+
+      const x = offsetX + Math.cos(phi) * radial + Math.cos(phi + Math.PI / 2) * lateral
+      const z = offsetZ + Math.sin(phi) * radial * .78 + Math.sin(phi + Math.PI / 2) * lateral * .72 - curl
+      const y = -1.02 + v * 1.92 + .18 * shoulder + .08 * Math.sin(across * Math.PI + fragment * .9)
+
       positions.push(x, y, z)
-      uvs.push(u * 1.6, v * 1.8)
+      uvs.push(u * 1.7, v * 1.9)
 
       const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 14)
-      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(theta * 4.2 + phi * 3.7 + sector))), 18)
-      const core = new THREE.Color(sector % 2 ? '#bfe9e8' : '#d8f7f5')
-      const memory = new THREE.Color(sector % 3 === 0 ? '#ffd7a0' : '#9eeaff')
-      const shadow = new THREE.Color('#315b68')
-      const rim = Math.pow(Math.sin(theta), .7)
-      const color = shadow.clone().lerp(core, .60 + rim * .24).lerp(memory, Math.min(.78, vein * .58 + hotVein * .42))
-      color.multiplyScalar(.92 + .10 * Math.sin(u * Math.PI))
+      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(v * 7.4 + across * 4.2 + fragment))), 18)
+      const edge = Math.pow(Math.abs(across), 1.6)
+      const core = new THREE.Color(fragment % 2 ? '#a9e5e1' : '#d6f2ea')
+      const memory = new THREE.Color(fragment % 3 === 0 ? '#ffd19a' : '#8edfff')
+      const shadow = new THREE.Color('#254b55')
+      const color = shadow.clone().lerp(core, .48 + shoulder * .30).lerp(memory, Math.min(.82, vein * .54 + hotVein * .46))
+      color.multiplyScalar(.88 + shoulder * .13 - edge * .10)
       colors.push(color.r, color.g, color.b)
     }
 
