@@ -16,19 +16,19 @@ function nodeSeed(node: LifeMapNode, index: number) {
 }
 
 function depthGeometry() {
-  const count = 620
+  const count = 820
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
-  const cool = new THREE.Color('#bfe9ff')
-  const warm = new THREE.Color('#ffe2b6')
-  const violet = new THREE.Color('#cfc5ff')
+  const cool = new THREE.Color('#cceeff')
+  const warm = new THREE.Color('#ffe6bd')
+  const violet = new THREE.Color('#d7ceff')
   for (let index = 0; index < count; index += 1) {
-    const radius = 6 + Math.pow(seeded(index + 41, 2), .58) * 30
+    const radius = 4.5 + Math.pow(seeded(index + 41, 2), .58) * 32
     const angle = seeded(index + 41, 3) * Math.PI * 2
-    const depth = 6 - seeded(index + 41, 4) * 76
-    positions.set([Math.cos(angle) * radius, (seeded(index + 41, 5) - .5) * 30, depth], index * 3)
-    const base = index % 7 === 0 ? warm : index % 5 === 0 ? violet : cool
-    const color = base.clone().multiplyScalar(.44 + seeded(index + 41, 6) * .56)
+    const depth = 7 - seeded(index + 41, 4) * 82
+    positions.set([Math.cos(angle) * radius, (seeded(index + 41, 5) - .5) * 34, depth], index * 3)
+    const base = index % 9 === 0 ? warm : index % 6 === 0 ? violet : cool
+    const color = base.clone().multiplyScalar(.40 + seeded(index + 41, 6) * .60)
     colors.set([color.r, color.g, color.b], index * 3)
   }
   const geometry = new THREE.BufferGeometry()
@@ -39,16 +39,16 @@ function depthGeometry() {
 
 function memoryMotes(node: LifeMapNode, index: number, active: boolean) {
   const seed = nodeSeed(node, index)
-  const count = active ? 30 : 14
+  const count = active ? 48 : 20
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const aura = new THREE.Color(node.aura)
-  const white = new THREE.Color('#fff8e8')
+  const white = new THREE.Color('#fffaf0')
   for (let mote = 0; mote < count; mote += 1) {
     const angle = mote * 2.39996323 + seeded(seed, mote) * .9
-    const radius = .14 + Math.sqrt((mote + .5) / count) * (active ? .95 : .58)
-    positions.set([Math.cos(angle) * radius, (seeded(seed + mote, 11) - .5) * (active ? 1.25 : .72), Math.sin(angle) * radius], mote * 3)
-    const color = aura.clone().lerp(white, .25 + seeded(seed + mote, 12) * .45)
+    const radius = .13 + Math.sqrt((mote + .5) / count) * (active ? 1.28 : .72)
+    positions.set([Math.cos(angle) * radius, (seeded(seed + mote, 11) - .5) * (active ? 1.55 : .88), Math.sin(angle) * radius], mote * 3)
+    const color = aura.clone().lerp(white, .30 + seeded(seed + mote, 12) * .48)
     colors.set([color.r, color.g, color.b], mote * 3)
   }
   const geometry = new THREE.BufferGeometry()
@@ -64,16 +64,27 @@ function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNo
   useEffect(() => () => motes.dispose(), [motes])
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion) return
-    const pulse = 1 + Math.sin(clock.elapsedTime * .62 + index * .83) * (active ? .035 : .018)
+    const pulse = 1 + Math.sin(clock.elapsedTime * .54 + index * .83) * (active ? .028 : .012)
     root.current.scale.setScalar(pulse)
   })
-  const core = active ? .15 : .09
-  return <group ref={root} position={point} name={`life-map-v258-stellar-memory-${node.id}`} userData={{ visualOnly: true, interactionOwner: false, presentation: 'stellar-memory-not-node-graph' }} raycast={() => null}>
-    <mesh raycast={() => null}><sphereGeometry args={[core, 20, 16]} /><meshBasicMaterial color="#fffdf4" toneMapped={false} /></mesh>
-    <mesh scale={active ? 3.5 : 2.8} raycast={() => null}><sphereGeometry args={[core, 16, 12]} /><meshBasicMaterial color={node.aura} transparent opacity={active ? .20 : .12} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} /></mesh>
-    <mesh scale={active ? 6.8 : 5.4} raycast={() => null}><sphereGeometry args={[core, 14, 10]} /><meshBasicMaterial color={node.aura} transparent opacity={active ? .06 : .034} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} /></mesh>
-    <points geometry={motes} raycast={() => null}><pointsMaterial vertexColors size={active ? .036 : .023} transparent opacity={active ? .72 : .40} depthWrite={false} sizeAttenuation /></points>
-    <pointLight color={node.aura} intensity={active ? 3.2 : .72} distance={active ? 8.8 : 4.4} decay={2} />
+  const core = active ? .28 : .12
+  return <group ref={root} position={point} renderOrder={120} name={`life-map-v259-stellar-memory-${node.id}`} userData={{ visualOnly: true, interactionOwner: false, presentation: 'white-hot-memory-star-over-semantic-hit-target' }} raycast={() => null}>
+    <mesh renderOrder={123} raycast={() => null}>
+      <sphereGeometry args={[core, 24, 18]} />
+      <meshBasicMaterial color="#fffdf7" depthTest={false} depthWrite={false} toneMapped={false} />
+    </mesh>
+    <mesh renderOrder={122} scale={active ? 3.2 : 3.0} raycast={() => null}>
+      <sphereGeometry args={[core, 20, 14]} />
+      <meshBasicMaterial color={node.aura} transparent opacity={active ? .34 : .22} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
+    </mesh>
+    <mesh renderOrder={121} scale={active ? 6.3 : 5.8} raycast={() => null}>
+      <sphereGeometry args={[core, 18, 12]} />
+      <meshBasicMaterial color={node.aura} transparent opacity={active ? .10 : .055} blending={THREE.AdditiveBlending} depthTest={false} depthWrite={false} toneMapped={false} />
+    </mesh>
+    <points renderOrder={124} geometry={motes} raycast={() => null}>
+      <pointsMaterial vertexColors size={active ? .052 : .030} transparent opacity={active ? .84 : .54} depthTest={false} depthWrite={false} sizeAttenuation />
+    </points>
+    <pointLight color={node.aura} intensity={active ? 4.1 : 1.0} distance={active ? 10.5 : 5.0} decay={2} />
   </group>
 }
 
@@ -82,11 +93,11 @@ export function LifeMapStellarField({ nodes, selected, reducedMotion }: { nodes:
   const geometry = useMemo(depthGeometry, [])
   useEffect(() => () => geometry.dispose(), [geometry])
   useFrame(({ clock }) => {
-    if (root.current && !reducedMotion) root.current.rotation.z = Math.sin(clock.elapsedTime * .012) * .006
+    if (root.current && !reducedMotion) root.current.rotation.z = Math.sin(clock.elapsedTime * .010) * .004
   })
-  return <group name="life-map-v258-stellar-visual-authority" userData={{ visualOnly: true, interactionOwner: false, visualRepair: 'deep-layered-personal-galaxy' }} raycast={() => null}>
-    <points ref={root} geometry={geometry} name="life-map-v258-deep-personal-galaxy" raycast={() => null}>
-      <pointsMaterial vertexColors size={.058} transparent opacity={.78} depthWrite={false} sizeAttenuation />
+  return <group name="life-map-v259-stellar-visual-authority" userData={{ visualOnly: true, interactionOwner: false, visualRepair: 'memory-stars-visually-authoritative-over-semantic-geology' }} raycast={() => null}>
+    <points ref={root} geometry={geometry} name="life-map-v259-deep-personal-galaxy" raycast={() => null}>
+      <pointsMaterial vertexColors size={.052} transparent opacity={.72} depthWrite={false} sizeAttenuation />
     </points>
     {nodes.map((node, index) => <StellarMemory key={node.id} node={node} index={index} active={selected?.id === node.id} reducedMotion={reducedMotion} />)}
   </group>
