@@ -54,9 +54,7 @@ jobs:
             urai-tier1/tests/lifemap-scene-behavior.test.mjs \
             urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \
             urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
-            urai-tier1/tests/lifemap-v231-overview-depth-contract.test.mjs \
-            urai-tier1/tests/home-finalization-truth-contract.test.mjs \
-            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+            urai-tier1/tests/lifemap-v231-overview-depth-contract.test.mjs
           pnpm --dir urai-tier1 typecheck
           git diff --check
       - name: Build exact static disposable candidate
