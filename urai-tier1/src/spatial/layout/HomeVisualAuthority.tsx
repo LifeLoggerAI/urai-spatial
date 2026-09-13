@@ -24,50 +24,60 @@ function hasColorTexture(object: THREE.Object3D) {
   return materials.some((material) => material instanceof THREE.MeshStandardMaterial && Boolean(material.map))
 }
 
-function livingHeartGeometryV250() {
-  const geometry = new THREE.SphereGeometry(1, 72, 52)
+function livingHeartGeometryV251() {
+  const geometry = new THREE.SphereGeometry(1, 76, 56)
   const position = geometry.getAttribute('position') as THREE.BufferAttribute
   const colors = new Float32Array(position.count * 3)
-  const base = new THREE.Color('#233b37')
-  const tissue = new THREE.Color('#4d6f68')
-  const history = new THREE.Color('#8d7466')
+  const deepTissue = new THREE.Color('#17342f')
+  const livingTissue = new THREE.Color('#547b6f')
+  const liftedTissue = new THREE.Color('#8aa38d')
+  const rememberedTissue = new THREE.Color('#b98b6d')
 
   for (let index = 0; index < position.count; index++) {
     const nx = position.getX(index)
     const ny = position.getY(index)
     const nz = position.getZ(index)
-    const upper = THREE.MathUtils.smoothstep(ny, -.15, .9)
-    const lower = THREE.MathUtils.smoothstep(-ny, .05, .98)
     const angle = Math.atan2(nz, nx)
+    const upper = THREE.MathUtils.smoothstep(ny, -.10, .92)
+    const lower = THREE.MathUtils.smoothstep(-ny, .02, .98)
+    const lobeBand = Math.exp(-(((ny - .48) / .43) ** 2)) * upper
+    const side = Math.abs(nx) < .015 ? (Math.sin(angle) >= 0 ? 1 : -1) : Math.sign(nx)
 
-    const cleftAxis = (nx + .04) * .92 + (nz - .10) * .32
-    const cleft = Math.exp(-(cleftAxis * cleftAxis) / .022) * upper
-    const leftLobe = Math.exp(-(((nx + .38) / .45) ** 2 + ((nz - .10) / .60) ** 2)) * upper
-    const rightLobe = Math.exp(-(((nx - .28) / .58) ** 2 + ((nz + .08) / .64) ** 2)) * upper
-    const rightNotch = Math.exp(-(((nx - .48) / .24) ** 2 + ((nz - .12) / .32) ** 2)) * upper
-    const anteriorFold = Math.exp(-(((nz - .58) / .21) ** 2 + ((nx + .08) / .58) ** 2)) * (.25 + upper * .75)
-    const historyFold = Math.exp(-(((nx + .12) / .22) ** 2 + ((nz - .48) / .18) ** 2)) * (.25 + upper * .75)
-    const skin = .055 * Math.sin(angle * 3.15 + ny * 5.7) + .022 * Math.sin(angle * 7.4 - ny * 10.1)
-    const taper = THREE.MathUtils.lerp(.22, 1, THREE.MathUtils.smoothstep(ny, -.94, -.02))
-    const radial = 1 + skin + .26 * leftLobe + .10 * rightLobe - .18 * rightNotch + .18 * anteriorFold
+    const cleftAxis = (nx + .015) * .98 + (nz - .09) * .15
+    const cleft = Math.exp(-(cleftAxis * cleftAxis) / .016) * THREE.MathUtils.smoothstep(ny, .14, .94)
+    const leftLobe = Math.exp(-(((nx + .36) / .39) ** 2 + ((nz - .03) / .62) ** 2)) * upper
+    const rightLobe = Math.exp(-(((nx - .27) / .47) ** 2 + ((nz + .03) / .64) ** 2)) * upper
+    const rightNotch = Math.exp(-(((nx - .50) / .22) ** 2 + ((nz - .06) / .30) ** 2)) * upper
+    const anteriorFold = Math.exp(-(((nz - .56) / .22) ** 2 + ((nx + .08) / .54) ** 2)) * (.20 + upper * .80)
+    const historyFold = Math.exp(-(((nx + .10) / .20) ** 2 + ((nz - .45) / .21) ** 2)) * (.20 + upper * .80)
+    const skin = .040 * Math.sin(angle * 3.2 + ny * 6.1) + .018 * Math.sin(angle * 8.1 - ny * 10.8)
+    const strongLowerTaper = THREE.MathUtils.lerp(.08, 1, THREE.MathUtils.smoothstep(ny, -.98, .18))
+    const radial = 1 + skin + .24 * leftLobe + .12 * rightLobe - .18 * rightNotch + .12 * anteriorFold
 
-    let x = nx * radial * .68 * taper + ny * .16 - .12 - upper * .055
-    let z = nz * radial * .69 * taper + .13 * anteriorFold - .055 * rightNotch
-    const twist = (ny + .06) * .48
+    let x = nx * radial * .66 * strongLowerTaper
+    x += side * lobeBand * (.12 + .10 * Math.abs(nz))
+    x += ny * .11 - .08 - upper * .025 - lower * .12
+    let z = nz * radial * .66 * strongLowerTaper + .10 * anteriorFold - .045 * rightNotch
+
+    const twist = (ny + .04) * .32
     const cos = Math.cos(twist)
     const sin = Math.sin(twist)
     const tx = x * cos - z * sin
     const tz = x * sin + z * cos
-    x = tx - lower * .10
+    x = tx
     z = tz
 
-    let y = ny * 1.22 - .34 * cleft + .17 * leftLobe - .07 * rightNotch + .10 * anteriorFold
-    y -= lower * (.20 + .19 * lower)
+    let y = ny * 1.18 - .53 * cleft + .19 * leftLobe + .09 * rightLobe - .06 * rightNotch + .08 * anteriorFold
+    y -= lower * (.22 + .24 * lower)
     position.setXYZ(index, x, y, z)
 
-    const altitude = THREE.MathUtils.clamp((y + 1.35) / 2.65, 0, 1)
-    const remembered = THREE.MathUtils.clamp(cleft * .65 + historyFold + anteriorFold * .24, 0, 1)
-    const color = base.clone().lerp(tissue, .24 + altitude * .42).lerp(history, remembered * .46)
+    const altitude = THREE.MathUtils.clamp((y + 1.35) / 2.62, 0, 1)
+    const remembered = THREE.MathUtils.clamp(cleft * .58 + historyFold + anteriorFold * .22, 0, 1)
+    const tissueNoise = THREE.MathUtils.clamp(.5 + .5 * Math.sin(angle * 4.3 + ny * 8.6 + Math.sin(angle * 2.1)), 0, 1)
+    const color = deepTissue.clone()
+      .lerp(livingTissue, .34 + altitude * .30)
+      .lerp(liftedTissue, tissueNoise * .18 + upper * .08)
+      .lerp(rememberedTissue, remembered * .40)
     colors.set([color.r, color.g, color.b], index * 3)
   }
 
@@ -78,52 +88,66 @@ function livingHeartGeometryV250() {
   return geometry
 }
 
-function scarTubeV250() {
+function scarTubeV251() {
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-.05, .79, .72),
-    new THREE.Vector3(-.18, .57, .76),
-    new THREE.Vector3(-.07, .34, .78),
-    new THREE.Vector3(-.17, .10, .75),
-    new THREE.Vector3(-.05, -.13, .70),
-    new THREE.Vector3(-.12, -.37, .62),
-    new THREE.Vector3(-.04, -.60, .49),
+    new THREE.Vector3(-.04, .77, .66),
+    new THREE.Vector3(-.16, .58, .69),
+    new THREE.Vector3(-.08, .37, .71),
+    new THREE.Vector3(-.17, .14, .68),
+    new THREE.Vector3(-.06, -.08, .65),
+    new THREE.Vector3(-.12, -.31, .58),
+    new THREE.Vector3(-.04, -.53, .46),
   ])
-  return new THREE.TubeGeometry(curve, 48, .024, 7, false)
+  return new THREE.TubeGeometry(curve, 52, .016, 7, false)
 }
 
-function filamentTubesV250() {
-  return Array.from({ length: 7 }, (_, trace) => {
+function filamentTubesV251() {
+  return Array.from({ length: 10 }, (_, trace) => {
     const points: THREE.Vector3[] = []
-    for (let step = 0; step <= 20; step++) {
-      const t = step / 20
-      const y = -.62 + t * 1.27
-      const angle = -.95 + trace * .30 + t * (.78 + trace * .035) + .11 * Math.sin(t * 8 + trace)
-      const envelope = .18 + .20 * Math.sin(t * Math.PI)
-      points.push(new THREE.Vector3(
-        Math.cos(angle) * envelope + (trace - 3) * .018 - .05,
-        y,
-        .72 + Math.sin(angle) * .10,
-      ))
+    const direction = trace < 5 ? -1 : 1
+    const branch = trace < 5 ? trace : trace - 5
+    for (let step = 0; step <= 24; step++) {
+      const t = step / 24
+      const startY = -.46 + (branch % 3) * .09
+      const endY = .56 - (branch % 2) * .12
+      const y = THREE.MathUtils.lerp(startY, endY, t)
+      const divergence = direction * t * (.10 + branch * .045)
+      const x = -.07 + divergence + Math.sin(t * 7.2 + trace * .77) * (.018 + t * .014)
+      const emergence = Math.sin(t * Math.PI * 2 + trace * .73)
+      const z = .53 + emergence * .12 + Math.sin(t * 3.5 + trace) * .025
+      points.push(new THREE.Vector3(x, y, z))
     }
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 42, .010 + (trace % 3) * .003, 6, false)
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 48, .0055 + (trace % 3) * .0015, 6, false)
   })
 }
 
-function memoryFieldV250() {
-  const count = 280
+function memoryFieldV251() {
+  const count = 320
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
-  const cool = new THREE.Color('#86c9bd')
-  const warm = new THREE.Color('#d8b78e')
+  const cool = new THREE.Color('#79b7a8')
+  const warm = new THREE.Color('#d0a47b')
   for (let index = 0; index < count; index++) {
-    const t = (index + .5) / count
-    const y = -.92 + ((index * 31) % count) / (count - 1) * 1.84
-    const angle = index * 2.39996323 + .28 * Math.sin(index * .19)
-    const radius = .72 + Math.pow(t, .62) * .46
-    const x = Math.cos(angle) * radius * (.82 - .12 * Math.abs(y)) - .06
-    const z = Math.sin(angle) * radius * .46 + .10 * Math.sin(index * .43)
+    const historyPoint = index < 118
+    let x: number
+    let y: number
+    let z: number
+    if (historyPoint) {
+      const t = (index + .5) / 118
+      y = -.55 + t * 1.35
+      x = -.10 + Math.sin(index * 1.73) * (.055 + .035 * Math.sin(t * Math.PI))
+      z = .48 + Math.cos(index * 2.11) * .20 + Math.sin(t * 7.4) * .045
+    } else {
+      const t = (index - 118 + .5) / (count - 118)
+      y = -.90 + ((index * 31) % (count - 118)) / (count - 119) * 1.80
+      const angle = index * 2.39996323 + .24 * Math.sin(index * .19)
+      const radius = .67 + Math.pow(t, .66) * .40
+      x = Math.cos(angle) * radius * (.80 - .10 * Math.abs(y)) - .05
+      z = Math.sin(angle) * radius * .42 + .08 * Math.sin(index * .43)
+    }
     positions.set([x, y, z], index * 3)
-    const color = cool.clone().lerp(warm, .12 + .55 * ((index % 19) / 18))
+    const warmMix = historyPoint ? .42 + .40 * ((index % 11) / 10) : .12 + .38 * ((index % 19) / 18)
+    const color = cool.clone().lerp(warm, warmMix)
     colors.set([color.r, color.g, color.b], index * 3)
   }
   const geometry = new THREE.BufferGeometry()
@@ -132,15 +156,16 @@ function memoryFieldV250() {
   return geometry
 }
 
-function LiteralOrbAuthorityV250() {
+function LiteralOrbAuthorityV251() {
   const root = useRef<THREE.Group>(null)
   const fieldRef = useRef<THREE.Points>(null)
   const reducedMotion = useRef(false)
   const y = height(ORB.x, ORB.z)
-  const heart = useMemo(livingHeartGeometryV250, [])
-  const scar = useMemo(scarTubeV250, [])
-  const filaments = useMemo(filamentTubesV250, [])
-  const field = useMemo(memoryFieldV250, [])
+  const heart = useMemo(livingHeartGeometryV251, [])
+  const scar = useMemo(scarTubeV251, [])
+  const filaments = useMemo(filamentTubesV251, [])
+  const field = useMemo(memoryFieldV251, [])
+  const filamentPalette = ['#82aa9f', '#b99573', '#739b91', '#c1a17d', '#8eb5a8']
 
   useEffect(() => {
     reducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -155,27 +180,28 @@ function LiteralOrbAuthorityV250() {
   useFrame(({ clock }) => {
     if (!root.current || reducedMotion.current) return
     const t = clock.elapsedTime
-    root.current.rotation.y = -.28 + Math.sin(t * .17) * .035
-    root.current.rotation.z = -.09 + Math.sin(t * .21) * .010
-    root.current.position.y = y + .94 + Math.sin(t * .31) * .018
-    if (fieldRef.current) fieldRef.current.rotation.y = t * .025
+    root.current.rotation.y = -.12 + Math.sin(t * .17) * .025
+    root.current.rotation.z = -.055 + Math.sin(t * .21) * .008
+    root.current.position.y = y + .94 + Math.sin(t * .31) * .015
+    if (fieldRef.current) fieldRef.current.rotation.y = t * .020
   })
 
-  return <group ref={root} position={[ORB.x, y + .94, ORB.z]} rotation={[.04, -.28, -.09]} scale={[1.13, 1.18, 1.10]} name="home-v250-literal-living-memory-heart" userData={{ artRevision: 'v250-literal-history-authority', visualIntent: 'asymmetric-living-memory-heart-with-externalized-scar-filaments-and-localized-memory-field' }}>
+  return <group ref={root} position={[ORB.x, y + .94, ORB.z]} rotation={[.025, -.12, -.055]} scale={[1.16, 1.16, 1.08]} name="home-v251-literal-living-memory-heart" userData={{ artRevision: 'v251-literal-heart-history-authority', visualIntent: 'unmistakable-asymmetric-living-heart-with-embedded-branching-history-and-localized-memory-field' }}>
     <mesh geometry={heart} raycast={() => null} receiveShadow>
-      <meshStandardMaterial vertexColors color="#55756d" emissive="#244d48" emissiveIntensity={.11} roughness={.84} metalness={0} />
+      <meshStandardMaterial vertexColors color="#66887d" emissive="#183d37" emissiveIntensity={.07} roughness={.76} metalness={0} />
     </mesh>
     <mesh geometry={scar} raycast={() => null}>
-      <meshStandardMaterial color="#d6bca6" emissive="#8d6054" emissiveIntensity={.34} roughness={.56} metalness={0} />
+      <meshStandardMaterial color="#c7a080" emissive="#6f4a3f" emissiveIntensity={.17} roughness={.62} metalness={0} />
     </mesh>
     {filaments.map((geometry, index) => <mesh key={index} geometry={geometry} raycast={() => null}>
-      <meshBasicMaterial color={index % 2 ? '#b7d9cf' : '#d7c39e'} transparent opacity={.72} />
+      <meshStandardMaterial color={filamentPalette[index % filamentPalette.length]} emissive={filamentPalette[index % filamentPalette.length]} emissiveIntensity={.16} transparent opacity={.54} roughness={.68} metalness={0} depthWrite={false} />
     </mesh>)}
     <points ref={fieldRef} geometry={field} raycast={() => null}>
-      <pointsMaterial vertexColors size={.036} sizeAttenuation transparent opacity={.62} depthWrite={false} />
+      <pointsMaterial vertexColors size={.031} sizeAttenuation transparent opacity={.66} depthWrite={false} />
     </points>
-    <pointLight position={[-.34, .30, .80]} color="#d6b08d" intensity={.42} distance={2.4} decay={2} />
-    <pointLight position={[.42, -.10, .52]} color="#73bbae" intensity={.28} distance={2.2} decay={2} />
+    <pointLight position={[-.40, .48, .76]} color="#d0a47d" intensity={.46} distance={2.3} decay={2} />
+    <pointLight position={[.36, .18, .64]} color="#82b9aa" intensity={.34} distance={2.0} decay={2} />
+    <pointLight position={[-.08, -.38, .52]} color="#927b65" intensity={.18} distance={1.4} decay={2} />
   </group>
 }
 
@@ -188,11 +214,13 @@ function LiteralOrbAuthorityV250() {
  * V234 scan sheets are suppressed while their sculpted support geometry,
  * apertures and authored lighting remain.
  *
- * The V250 living-memory heart is a visual-only outer authority: raycasting is
+ * The V251 living-memory heart is a visual-only outer authority: raycasting is
  * disabled on every added surface so the existing V249 Orb remains the sole
- * interaction owner. This keeps navigation semantics unchanged while making
- * history, scar, filaments and the localized memory field legible in retained
- * desktop/mobile/reduced-motion pixels.
+ * interaction owner. V251 deepens the two-lobe cleft/taper silhouette, embeds
+ * thinner branching history filaments through the tissue, and concentrates the
+ * localized memory field around scar history so those features survive literal
+ * desktop/mobile/reduced-motion inspection without reverting to crystal-shell,
+ * wireframe, generic glowing-sphere, or cable-strip language.
  */
 export function HomeVisualAuthority() {
   const { scene } = useThree()
@@ -257,5 +285,5 @@ export function HomeVisualAuthority() {
     }
   }, [scene])
 
-  return <LiteralOrbAuthorityV250 />
+  return <LiteralOrbAuthorityV251 />
 }
