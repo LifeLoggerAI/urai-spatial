@@ -1,17 +1,19 @@
-/* Final retained-pixel convergence: let the governed authored Focus artwork establish place identity while the live WebGL chamber supplies explorable depth and interaction. */
+/* V255 retained-pixel convergence: the live WebGL chamber owns the image.
+   The governed backdrop remains atmospheric context only; it must not flatten
+   the selected-memory manifestation into a generic dark still. */
 .focusWorld .focusBackdrop {
   display: block !important;
   position: absolute;
-  inset: -3%;
+  inset: -2%;
   z-index: 0;
   pointer-events: none;
   background-image: var(--focus-asset);
   background-size: cover;
-  background-position: center 46%;
+  background-position: center 48%;
   background-repeat: no-repeat;
-  opacity: 0.62;
-  filter: saturate(0.78) contrast(1.08) brightness(0.52);
-  transform: scale(1.035);
+  opacity: 0.20;
+  filter: saturate(0.70) contrast(1.02) brightness(0.72);
+  transform: scale(1.018);
 }
 
 .focusWorld .focusCanvas {
@@ -20,16 +22,16 @@
 }
 
 .focusWorld .focusCanvas canvas {
-  opacity: 0.66;
-  filter: saturate(0.74) contrast(1.06) brightness(0.76);
+  opacity: 0.98;
+  filter: saturate(0.94) contrast(1.01) brightness(1.08);
 }
 
 .focusWorld .focusFog {
   z-index: 2;
   background:
-    radial-gradient(ellipse at 58% 57%, rgba(2, 10, 9, 0.36) 0 10%, transparent 34%),
-    linear-gradient(90deg, rgba(1, 5, 8, 0.24), transparent 34% 74%, rgba(1, 5, 8, 0.16)),
-    linear-gradient(180deg, rgba(1, 4, 10, 0.08), rgba(1, 4, 10, 0.2) 62%, rgba(1, 4, 10, 0.72));
+    radial-gradient(ellipse at 50% 55%, transparent 0 18%, rgba(4, 14, 12, 0.06) 47%, rgba(2, 8, 8, 0.18) 100%),
+    linear-gradient(90deg, rgba(1, 5, 8, 0.12), transparent 27% 78%, rgba(1, 5, 8, 0.10)),
+    linear-gradient(180deg, rgba(1, 4, 10, 0.03), transparent 46%, rgba(1, 4, 10, 0.34));
   mix-blend-mode: normal;
 }
 
@@ -44,14 +46,21 @@
 
 @media (max-width: 760px) {
   .focusWorld .focusBackdrop {
-    inset: -2%;
-    background-position: center 42%;
-    opacity: 0.58;
-    filter: saturate(0.76) contrast(1.06) brightness(0.5);
+    inset: -1%;
+    background-position: center 44%;
+    opacity: 0.16;
+    filter: saturate(0.68) contrast(1.01) brightness(0.74);
   }
 
   .focusWorld .focusCanvas canvas {
-    opacity: 0.62;
+    opacity: 1;
+    filter: saturate(0.96) contrast(1.0) brightness(1.10);
+  }
+
+  .focusWorld .focusFog {
+    background:
+      radial-gradient(ellipse at 50% 56%, transparent 0 20%, rgba(3, 12, 10, 0.08) 56%, rgba(2, 8, 8, 0.16)),
+      linear-gradient(180deg, rgba(1, 4, 10, 0.02), transparent 52%, rgba(1, 4, 10, 0.30));
   }
 }
 
