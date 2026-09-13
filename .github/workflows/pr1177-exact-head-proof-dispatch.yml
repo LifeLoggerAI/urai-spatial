@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  EXPECTED_HEAD: af5a382bdabda3bef1902e68b75bd9a6efbe46e8
+  EXPECTED_HEAD: 8482c21990c6c6ee18912f6674875864d40e13a5
   TARGET_BRANCH: steward/pr1177-v250-pixel-convergence-20260913
 
 jobs:
