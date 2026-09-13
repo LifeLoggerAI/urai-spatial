@@ -1,4 +1,4 @@
-name: PR1177 Disposable V256 Life Map Proof
+name: PR1177 Disposable V256 Spatial Proof
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/pr1177-v256-disposable-lifemap-proof.yml'
       - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css'
 
 permissions:
   contents: read
@@ -18,7 +19,7 @@ env:
 jobs:
   source-and-pixels:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Checkout exact disposable candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -45,7 +46,7 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Run Life Map contracts and typecheck
+      - name: Run targeted contracts and typecheck
         run: |
           set -euo pipefail
           node --test \
@@ -53,33 +54,48 @@ jobs:
             urai-tier1/tests/lifemap-scene-behavior.test.mjs \
             urai-tier1/tests/lifemap-semantic-owner-contract.test.mjs \
             urai-tier1/tests/lifemap-review-repair-contract.test.mjs \
-            urai-tier1/tests/lifemap-v231-overview-depth-contract.test.mjs
+            urai-tier1/tests/lifemap-v231-overview-depth-contract.test.mjs \
+            urai-tier1/tests/home-finalization-truth-contract.test.mjs \
+            urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
           pnpm --dir urai-tier1 typecheck
           git diff --check
       - name: Build exact static disposable candidate
         run: pnpm build:static
       - name: Install Chromium
         run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
-      - name: Capture exact disposable Founder matrix
+      - name: Start exact disposable candidate
         run: |
-          set -euo pipefail
-          mkdir -p artifacts/lifemap-v256-disposable
-          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > artifacts/lifemap-v256-disposable/http-server.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          mkdir -p artifacts/lifemap-v256-disposable artifacts/home-v256-disposable
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > artifacts/home-v256-disposable/http-server.log 2>&1 &
+          echo $! > /tmp/urai-proof-server.pid
           for attempt in $(seq 1 60); do
-            curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null && break
+            curl --fail --silent http://127.0.0.1:4173/home/ >/dev/null && curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null && exit 0
             sleep 1
           done
+          exit 1
+      - name: Capture exact disposable Founder matrix
+        run: |
           URAI_PROOF_BASE=http://127.0.0.1:4173 \
           URAI_PROOF_DIR=artifacts/lifemap-v256-disposable \
           URAI_EXACT_HEAD="$GITHUB_SHA" \
           node scripts/run-with-ci-webgl.mjs scripts/run-lifemap-founder-proof-fixed.mjs
+      - name: Capture exact disposable Home matrix
+        run: |
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=artifacts/home-v256-disposable \
+          URAI_EXACT_HEAD="$GITHUB_SHA" \
+          node scripts/run-with-ci-webgl.mjs scripts/capture-natural-home-orb-proof.mjs
+      - name: Stop local server
+        if: always()
+        run: |
+          test ! -f /tmp/urai-proof-server.pid || kill "$(cat /tmp/urai-proof-server.pid)" 2>/dev/null || true
       - name: Upload disposable exact-head evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: pr1177-v256-lifemap-proof-${{ github.sha }}
-          path: artifacts/lifemap-v256-disposable
+          name: pr1177-v256-spatial-proof-${{ github.sha }}
+          path: |
+            artifacts/lifemap-v256-disposable
+            artifacts/home-v256-disposable
           if-no-files-found: error
           retention-days: 30
