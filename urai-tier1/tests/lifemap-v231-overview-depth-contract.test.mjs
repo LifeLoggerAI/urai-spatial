@@ -18,24 +18,25 @@ test('overview consumes the authored five-band memory geography instead of legac
 test('overview keeps selected staging stable while portrait gets deliberate world occupancy', () => {
   assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[1\.04, 1\.02, 1\.04\] : \[1\.08, 1\.08, 1\.08\]/)
   assert.match(layout, /position: portrait \? \[0, -\.08, \.58\] : \[0, -\.14, \.72\]/)
-  assert.match(layout, /portrait\s*\? \{ scale: \[\.78, \.90, \.88\], position: \[0, -\.68, \.72\] \}/)
+  assert.match(layout, /portrait\s*\? \{ scale: \[\.58, 1\.02, 1\.18\], position: \[0, -\.68, \.72\] \}/)
   assert.match(layout, /: \{ scale: \[1\.18, 1\.12, 1\], position: \[0, -\.55, 0\] \}/)
   assert.doesNotMatch(layout, /scale: \[\.46, \.82, \.92\]/)
 })
 
-test('portrait overview camera fits the full semantic artifact envelope without returning to a tiny stage', () => {
+test('portrait overview camera preserves the artifact envelope while composing chronology downward', () => {
   assert.match(layout, /2\.2 \* stage\.scale\[0\]/)
-  assert.match(layout, /2\.2 \* stage\.scale\[1\]/)
-  assert.match(layout, /const overlook = portrait \? 5\.35 : 7\.1/)
-  assert.match(layout, /portrait \? 1\.10 : 1\.14/)
+  assert.match(layout, /const forward = Math\.max\(55, halfWidth \/ \(horizontalTan \* \.78\)\)/)
+  assert.match(layout, /target\[1\] \+ 30/)
+  assert.match(layout, /target\[2\] - 5\.5/)
   assert.doesNotMatch(layout, /scale: \[\.46, \.82, \.92\]/)
 })
 
-test('visible terrain authority uses broad chapter masses instead of repeated terrace bands', () => {
+test('visible terrain authority uses asymmetric chapter masses instead of repeated terrace bands', () => {
   assert.match(layout, /const chapterMasses/)
+  assert.match(layout, /const outcrops/)
   assert.match(layout, /const livedCuts/)
-  assert.doesNotMatch(layout, /Math\.tanh/)
-  assert.doesNotMatch(layout, /terraces/)
+  assert.match(layout, /const warpX/)
+  assert.doesNotMatch(layout, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
 })
 
 test('selected world-point authority remains tied to selected staging', () => {

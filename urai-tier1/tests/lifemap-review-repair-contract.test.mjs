@@ -53,7 +53,7 @@ test('retired hidden Life Map visual owners lose pointer authority and restore i
   assert.match(legacyOverlay, /raycasts\.current\.forEach\(\(raycast, object\) => \{ object\.raycast = raycast \}\)/)
 })
 
-test('V255 semantic memory families cannot collapse back to one repeated manifestation', () => {
+test('V256 semantic memory families cannot collapse back to one repeated manifestation', () => {
   assert.match(legacyOverlay, /function semanticFamilyParts\(/)
   for (const family of ['memory', 'season', 'ritual', 'forecast', 'threshold', 'relationship', 'recovery']) {
     assert.match(legacyOverlay, new RegExp(`node\\.type === '${family}'`))
@@ -64,13 +64,14 @@ test('V255 semantic memory families cannot collapse back to one repeated manifes
   assert.doesNotMatch(legacyOverlay, /nodes\.map\([^)]*=>\s*<mesh[^>]*<sphereGeometry/s)
 })
 
-test('V255 visible terrain authority rejects repeated procedural terrace banding', () => {
-  assert.match(legacyOverlay, /life-map-v255-authored-memory-terrain/)
+test('V256 visible terrain authority rejects repeated procedural terrace banding', () => {
+  assert.match(legacyOverlay, /life-map-v256-authored-memory-terrain/)
   assert.match(legacyOverlay, /visualAuthority: 'authored-chapter-geography'/)
-  assert.match(legacyOverlay, /life-map-v255-authored-chapter-territories/)
+  assert.match(legacyOverlay, /life-map-v256-authored-chapter-territories/)
   assert.match(layoutSource, /const chapterMasses/)
+  assert.match(layoutSource, /const outcrops/)
   assert.match(layoutSource, /const livedCuts/)
-  assert.doesNotMatch(layoutSource, /Math\.tanh|terraces/)
+  assert.doesNotMatch(layoutSource, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
 })
 
 test('relationship language is sparse, contextual, and selected-memory aware', () => {
@@ -83,12 +84,11 @@ test('relationship language is sparse, contextual, and selected-memory aware', (
 })
 
 test('portrait overview is a composed world view rather than tiny geography under dead sky', () => {
-  assert.match(layoutSource, /scale: \[\.78, \.90, \.88\]/)
+  assert.match(layoutSource, /scale: \[\.58, 1\.02, 1\.18\]/)
   assert.match(layoutSource, /2\.2 \* stage\.scale\[0\]/)
-  assert.match(layoutSource, /2\.2 \* stage\.scale\[1\]/)
-  assert.match(layoutSource, /2\.2 \* stage\.scale\[2\]/)
-  assert.match(layoutSource, /const overlook = portrait \? 5\.35 : 7\.1/)
-  assert.match(layoutSource, /const depthAim = portrait \? 1\.75 : 1\.2/)
+  assert.match(layoutSource, /const forward = Math\.max\(55, halfWidth \/ \(horizontalTan \* \.78\)\)/)
+  assert.match(layoutSource, /target\[1\] \+ 30/)
+  assert.match(layoutSource, /target\[2\] - 5\.5/)
   assert.doesNotMatch(layoutSource, /scale: \[\.46, \.82, \.92\]/)
 })
 
@@ -111,14 +111,13 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-
 test('Focus final composition keeps the live chamber dominant and rejects the obsolete dark obstruction path', () => {
   assert.match(focusSource, /focus-v249-grounded-living-memory-manifestation/)
   assert.match(focusSource, /focus-v249-memory-root-cradle/)
   assert.match(focusSource, /function focusManifestationFilaments\(\)/)
   assert.match(focusSource, /function focusMemoryFieldGeometry\(\)/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
-  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 0\.98;[\s\S]*brightness\(1\.08\)/)
-  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: 0\.20;/)
-  assert.doesNotMatch(focusPolish, /opacity: 0\.66|brightness\(0\.76\)/)
+  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1;[\s\S]*brightness\(1\.22\)/)
+  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: 0\.10;/)
+  assert.doesNotMatch(focusPolish, /opacity: 0\.66|brightness\(0\.76\)|brightness\(1\.08\)/)
 })
