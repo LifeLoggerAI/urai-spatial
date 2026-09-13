@@ -128,7 +128,9 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
       Math.abs(min[0] - target[0]) + 2.35 * stage.scale[0],
       Math.abs(max[0] - target[0]) + 2.35 * stage.scale[0],
     )
-    const forward = Math.max(30, halfWidth / (horizontalTan * .82))
+    // Preserve the wider portrait geography while restoring the canonical
+    // 0.88 NDC artifact envelope. Distance, not stage compression, owns fit.
+    const forward = Math.max(30, halfWidth / (horizontalTan * .68))
     return {
       position: [target[0], target[1] + 23, target[2] + forward],
       target: [target[0], target[1] - .72, target[2] - 1.4],
@@ -139,12 +141,12 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const horizontalTan = verticalTan * Math.max(aspect, .2)
   let distance = 8
   for (const point of points) {
-    const horizontalFit = (Math.abs(point[0] - target[0]) + 2.35 * stage.scale[0]) / (horizontalTan * .90)
+    const horizontalFit = (Math.abs(point[0] - target[0]) + 2.35 * stage.scale[0]) / (horizontalTan * .78)
     const verticalFit = (Math.abs(point[1] - target[1]) + 2.35 * stage.scale[1]) / (verticalTan * .76)
     distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
   return {
-    position: [target[0], target[1] + 8.2, target[2] + distance * .92],
+    position: [target[0], target[1] + 8.2, target[2] + distance],
     target: [target[0], target[1] - .64, target[2] - 1.8],
   }
 }
