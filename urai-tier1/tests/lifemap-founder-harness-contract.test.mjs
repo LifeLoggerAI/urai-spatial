@@ -129,14 +129,18 @@ test('restored Life Map route preserves URL identity but commits arrival only af
   assert.doesNotMatch(scene, /useState<JourneyPhase>\(selectedId \? "arrival" : "overview"\)/)
 })
 
-test('route boundary repairs direct-entry selection with a bounded canonical retry and requires a healthy authored world', () => {
+test('route boundary repairs direct-entry selection with a bounded and paced canonical retry and requires a healthy authored world', () => {
   assert.match(routeBoundary, /const initial = new URLSearchParams\(window\.location\.search\)/)
   assert.match(routeBoundary, /if \(initial\.get\('overview'\) === '1'\) return/)
   assert.match(routeBoundary, /const nodeId = initial\.get\('node'\) \|\| initial\.get\('memoryId'\)/)
   assert.match(routeBoundary, /const MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS = 4/)
+  assert.match(routeBoundary, /const DIRECT_ROUTE_REPAIR_INTERVAL_MS = 500/)
   assert.match(routeBoundary, /let repairAttempts = 0/)
-  assert.match(routeBoundary, /if \(repairAttempts >= MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS\) return false/)
+  assert.match(routeBoundary, /let nextRepairAt = 0/)
+  assert.match(routeBoundary, /repairAttempts >= MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS/)
+  assert.match(routeBoundary, /now < nextRepairAt/)
   assert.match(routeBoundary, /repairAttempts \+= 1/)
+  assert.match(routeBoundary, /nextRepairAt = now \+ DIRECT_ROUTE_REPAIR_INTERVAL_MS/)
   assert.match(routeBoundary, /if \(phase === 'arrival'\)/)
   assert.match(routeBoundary, /root\.querySelector\('\.life-map-thresholds'\)/)
   assert.match(routeBoundary, /if \(phase === 'overview'\)/)
