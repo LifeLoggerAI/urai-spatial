@@ -21,6 +21,12 @@ const requiredFocusedTests = [
   'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
 
+const systemicVisualConvergenceTests = [
+  'tests/home-current-art-repair-contract.test.mjs',
+  'tests/lifemap-review-repair-contract.test.mjs',
+  'tests/focus-review-regression-contract.test.mjs',
+]
+
 test('both focused unit runners include critical Spatial public contract tests', () => {
   for (const testPath of requiredFocusedTests) {
     assert.ok(focusedRunnerSource.includes(`'${testPath}'`), `focused unit runner must include ${testPath}`)
@@ -30,4 +36,10 @@ test('both focused unit runners include critical Spatial public contract tests',
 
 test('compact unit runner includes the V101 retained-pixel repair contract', () => {
   assert.ok(compactRunnerSource.includes("'tests/home-v88-retained-pixel-repair-contract.test.mjs'"))
+})
+
+test('compact CI executes the systemic Home, Life Map, and Focus convergence regressions', () => {
+  for (const testPath of systemicVisualConvergenceTests) {
+    assert.ok(compactRunnerSource.includes(`'${testPath}'`), `compact unit runner must include ${testPath}`)
+  }
 })
