@@ -73,6 +73,8 @@ test('visible terrain authority rejects repeated procedural banding in source an
   assert.match(layoutSource, /const livedCuts/)
   assert.match(layoutSource, /const authoredScars/)
   assert.match(layoutSource, /const lateralBanks/)
+  assert.match(layoutSource, /const chapterShelves/)
+  assert.match(layoutSource, /const ravines/)
   assert.match(layoutSource, /function valueNoise2D/)
   assert.doesNotMatch(layoutSource, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
   assert.doesNotMatch(layoutSource, /weathering\s*=\s*\n\s*\.16 \* Math\.sin/)
@@ -88,13 +90,13 @@ test('relationship language is sparse, contextual, and selected-memory aware', (
 })
 
 test('portrait overview is a composed world view rather than tiny geography under dead sky', () => {
-  assert.match(layoutSource, /scale: \[\.82, 1\.08, \.86\], position: \[0, -\.46, 2\.0\]/)
+  assert.match(layoutSource, /scale: \[\.94, 1\.24, \.72\], position: \[0, -\.18, 3\.65\]/)
   assert.match(layoutSource, /2\.35 \* stage\.scale\[0\]/)
-  assert.match(layoutSource, /const forward = Math\.max\(30, halfWidth \/ \(horizontalTan \* \.68\)\)/)
-  assert.match(layoutSource, /target\[1\] \+ 23/)
-  assert.match(layoutSource, /target\[1\] - \.72/)
-  assert.match(layoutSource, /target\[2\] - 1\.4/)
-  assert.doesNotMatch(layoutSource, /scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
+  assert.match(layoutSource, /const forward = Math\.max\(27, halfWidth \/ \(horizontalTan \* \.68\)\)/)
+  assert.match(layoutSource, /target\[1\] \+ 18\.5/)
+  assert.match(layoutSource, /target\[1\] - \.42/)
+  assert.match(layoutSource, /target\[2\] - \.95/)
+  assert.doesNotMatch(layoutSource, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
 test('V255 history enrichment remains visual-only and preserves legacy semantic ownership', () => {

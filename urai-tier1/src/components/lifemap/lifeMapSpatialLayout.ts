@@ -31,73 +31,96 @@ function THREE_LERP(a: number, b: number, t: number): number {
 }
 
 export function lifeMapTerrainHeight(x: number, z: number): number {
-  // Visible geography authority: chapter masses, scars, cuts and lateral banks
-  // must remain legible from overview scale instead of collapsing into a slab.
+  // Exact visible geography authority. Chapter territories own the large-scale
+  // silhouette; asymmetric shelves, cuts, banks and multiscale erosion keep
+  // them from collapsing into one smooth tabletop at overview distance.
   const gaussian = (cx: number, cz: number, sx: number, sz: number) =>
     Math.exp(-(((x - cx) / sx) ** 2 + ((z - cz) / sz) ** 2))
-  const warpX = x + (valueNoise2D(x * .11 + 5.4, z * .09 - 2.7) - .5) * 1.36
-  const warpZ = z + (valueNoise2D(x * .08 - 7.2, z * .10 + 4.1) - .5) * 1.82
+  const warpX = x + (valueNoise2D(x * .11 + 5.4, z * .09 - 2.7) - .5) * 1.72
+  const warpZ = z + (valueNoise2D(x * .08 - 7.2, z * .10 + 4.1) - .5) * 2.16
+
   const chapterMasses =
-    1.75 * gaussian(-6.8, -8.0, 4.0, 5.3)
-    + 1.25 * gaussian(-2.0, -14.2, 3.2, 4.4)
-    + 1.65 * gaussian(5.4, -20.6, 4.1, 5.5)
-    + 1.15 * gaussian(1.6, -29.2, 3.6, 6.1)
-    + 1.55 * gaussian(-4.8, -37.0, 4.5, 6.7)
+    3.20 * gaussian(-7.0, -7.4, 3.35, 4.45)
+    + 2.55 * gaussian(-1.8, -13.4, 2.65, 3.75)
+    + 3.45 * gaussian(5.6, -20.0, 3.45, 4.55)
+    + 2.70 * gaussian(1.3, -28.5, 2.95, 5.05)
+    + 3.15 * gaussian(-5.0, -36.4, 3.75, 5.55)
+
   const outcrops =
-    1.05 * gaussian(-8.9, -13.2, 2.0, 3.0)
-    + .88 * gaussian(7.7, -25.4, 2.2, 3.4)
-    + .80 * gaussian(-6.0, -31.5, 1.9, 3.7)
-    + .72 * gaussian(4.4, -8.4, 1.8, 2.7)
-    + .58 * gaussian(8.4, -36.2, 2.0, 3.1)
-  const livedCuts =
-    .98 * gaussian(-2.5, -10.8, 1.6, 3.0)
-    + .82 * gaussian(3.0, -24.4, 1.9, 3.4)
-    + .70 * gaussian(-.4, -34.0, 1.5, 4.0)
-    + .46 * gaussian(-7.1, -20.0, 1.4, 2.8)
-  const authoredScars =
-    .46 * gaussian(7.2, -10.0, 1.2, 5.2)
-    - .44 * gaussian(-7.0, -24.0, 1.4, 5.7)
-    + .36 * gaussian(5.8, -33.0, 1.1, 4.2)
+    1.55 * gaussian(-9.4, -12.6, 1.55, 2.35)
+    + 1.28 * gaussian(8.1, -25.1, 1.75, 2.55)
+    + 1.20 * gaussian(-6.5, -31.8, 1.45, 2.85)
+    + 1.02 * gaussian(4.8, -8.2, 1.38, 2.15)
+    + .92 * gaussian(8.8, -36.0, 1.55, 2.55)
+    + .74 * gaussian(-10.3, -22.4, 1.40, 2.90)
+
   const lateralBanks =
-    .62 * gaussian(-10.6, -20.0, 4.2, 17.0)
-    + .48 * gaussian(10.1, -25.0, 4.6, 15.0)
-  const weathering =
-    (valueNoise2D(warpX * .31 + 12.0, warpZ * .29 - 8.0) - .5) * .26
-    + (valueNoise2D(warpX * .67 - 3.0, warpZ * .59 + 9.0) - .5) * .125
-    + (valueNoise2D(warpX * 1.41 + 2.0, warpZ * 1.23 - 1.0) - .5) * .052
+    1.28 * gaussian(-11.0, -18.5, 3.10, 12.5)
+    + .96 * gaussian(10.6, -26.4, 3.35, 11.2)
+    + .66 * gaussian(-9.0, -37.4, 2.60, 7.2)
+
+  const livedCuts =
+    1.55 * gaussian(-2.7, -10.8, 1.22, 2.65)
+    + 1.38 * gaussian(3.1, -24.1, 1.42, 3.05)
+    + 1.14 * gaussian(-.5, -33.6, 1.18, 3.50)
+    + .86 * gaussian(-7.2, -19.8, 1.12, 2.45)
+    + .72 * gaussian(6.8, -15.2, 1.00, 2.35)
+
+  const authoredScars =
+    .82 * gaussian(7.3, -10.1, .92, 4.50)
+    - .76 * gaussian(-7.2, -24.0, 1.08, 5.10)
+    + .66 * gaussian(5.8, -33.0, .88, 3.70)
+    - .48 * gaussian(1.4, -17.0, .86, 3.40)
+
+  const chapterShelves =
+    .58 * gaussian(-4.8, -17.2, 5.2, 2.05)
+    - .52 * gaussian(1.4, -17.9, 3.0, 1.55)
+    + .62 * gaussian(3.6, -31.0, 4.8, 2.10)
+    - .46 * gaussian(-2.4, -30.8, 2.5, 1.55)
+
+  const erosionA = valueNoise2D(warpX * .30 + 12.0, warpZ * .28 - 8.0) - .5
+  const erosionB = valueNoise2D(warpX * .69 - 3.0, warpZ * .61 + 9.0) - .5
+  const erosionC = valueNoise2D(warpX * 1.53 + 2.0, warpZ * 1.31 - 1.0) - .5
+  const weathering = erosionA * .46 + erosionB * .22 + erosionC * .085
+  const ravines = Math.max(0, .44 - Math.abs(erosionB)) * .72 * (gaussian(-1.0, -22, 10.5, 20) + .32)
   const deepTime = Math.max(0, Math.min(1, (-z - 3) / 40))
-  const valley = .58 * gaussian(.2, -22, 4.0, 20)
-  return -4.28
-    + chapterMasses * 1.08
+  const chronologyValley = 1.06 * gaussian(.1, -22, 3.35, 18.5)
+
+  return -4.78
+    + chapterMasses
     + outcrops
     + lateralBanks
-    - livedCuts * .92
-    - valley
+    + chapterShelves
+    - livedCuts * 1.08
+    - chronologyValley
+    - ravines
     + authoredScars
     + weathering
-    + deepTime * .34
+    + deepTime * .44
 }
 
 export function lifeMapLocalPoint(node: LifeMapNode, _index: number): Point3 {
   const [x, y, z] = lifeMapDisplayPosition(node)
   const worldZ = z - 3.4
   const narrativeLift = Math.max(-.12, Math.min(.34, y * .08))
-  return [x, lifeMapTerrainHeight(x, worldZ) + .58 + narrativeLift, worldZ]
+  return [x, lifeMapTerrainHeight(x, worldZ) + .62 + narrativeLift, worldZ]
 }
 
 export function lifeMapStage(selected: boolean, portrait: boolean): { scale: Point3; position: Point3 } {
   if (selected) {
+    // Arrival keeps surrounding lived geography materially present instead of
+    // collapsing into an isolated artifact zoom.
     return {
-      scale: portrait ? [.98, 1.08, .92] : [1.12, 1.12, 1.06],
-      position: portrait ? [0, -.10, 1.36] : [0, -.14, .92],
+      scale: portrait ? [1.14, 1.18, 1.02] : [1.22, 1.24, 1.12],
+      position: portrait ? [0, -.04, 1.58] : [0, -.08, 1.02],
     }
   }
 
-  // Portrait keeps chronology readable without compressing the world into a
-  // runway: widen the authored landscape and reduce excessive Z-depth.
+  // Portrait is intentionally wider and shallower than chronology depth. The
+  // camera owns the fit while the world itself occupies the viewport.
   return portrait
-    ? { scale: [.82, 1.08, .86], position: [0, -.46, 2.0] }
-    : { scale: [1.24, 1.18, .92], position: [0, -.42, .66] }
+    ? { scale: [.94, 1.24, .72], position: [0, -.18, 3.65] }
+    : { scale: [1.24, 1.28, .86], position: [0, -.30, .88] }
 }
 
 export function lifeMapWorldPoint(node: LifeMapNode, index: number, portrait: boolean): Point3 {
@@ -111,8 +134,8 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
   const points = nodes.map((node, index) => lifeMapLocalPoint(node, index).map((value, axis) => value * stage.scale[axis] + stage.position[axis]) as Point3)
     .filter(point => point.every(Number.isFinite))
   if (!points.length) return portrait
-    ? { position: [0, 23.0, 32.0], target: [0, -4.8, -17.0] }
-    : { position: [0, 8.2, 15.0], target: [0, -1.0, -18.0] }
+    ? { position: [0, 18.5, 31.0], target: [0, -3.6, -15.5] }
+    : { position: [0, 7.6, 14.2], target: [0, -.8, -17.4] }
 
   const min: Point3 = [Infinity, Infinity, Infinity]
   const max: Point3 = [-Infinity, -Infinity, -Infinity]
@@ -128,12 +151,13 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
       Math.abs(min[0] - target[0]) + 2.35 * stage.scale[0],
       Math.abs(max[0] - target[0]) + 2.35 * stage.scale[0],
     )
-    // Preserve the wider portrait geography while restoring the canonical
-    // 0.88 NDC artifact envelope. Distance, not stage compression, owns fit.
-    const forward = Math.max(30, halfWidth / (horizontalTan * .68))
+    // Full artifact-envelope fit remains governed by distance. The lower
+    // camera/target pair removes the dead-sky composition without shrinking
+    // the world back into the rejected runway treatment.
+    const forward = Math.max(27, halfWidth / (horizontalTan * .68))
     return {
-      position: [target[0], target[1] + 23, target[2] + forward],
-      target: [target[0], target[1] - .72, target[2] - 1.4],
+      position: [target[0], target[1] + 18.5, target[2] + forward],
+      target: [target[0], target[1] - .42, target[2] - .95],
     }
   }
 
@@ -146,7 +170,7 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
     distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
   return {
-    position: [target[0], target[1] + 8.2, target[2] + distance],
-    target: [target[0], target[1] - .64, target[2] - 1.8],
+    position: [target[0], target[1] + 7.6, target[2] + distance],
+    target: [target[0], target[1] - .50, target[2] - 1.55],
   }
 }
