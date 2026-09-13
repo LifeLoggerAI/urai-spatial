@@ -1,6 +1,14 @@
 import './materialize-accessibility-performance-current-v4.mjs'
 import { readFile, writeFile } from 'node:fs/promises'
 
+function replaceExact(source, from, to, expectedCount, label) {
+  const count = source.split(from).length - 1
+  if (count !== expectedCount) {
+    throw new Error(`${label} expected ${expectedCount} audited occurrence(s); found ${count}`)
+  }
+  return source.split(from).join(to)
+}
+
 function replaceRegex(source, pattern, replacement, expectedCount, label) {
   const count = [...source.matchAll(pattern)].length
   if (count !== expectedCount) {
@@ -8,6 +16,24 @@ function replaceRegex(source, pattern, replacement, expectedCount, label) {
   }
   return source.replace(pattern, replacement)
 }
+
+const homeSource = await readFile('urai-tier1/src/spatial/layout/HomeWorldProductionSacred.tsx', 'utf8')
+const governedCameraOwner = "data-home-camera-mode={transition!=='none'?transition:dragging?'look':'embodied-third-person'}"
+if (!homeSource.includes(governedCameraOwner)) {
+  throw new Error('Sacred Home governed embodied-third-person camera contract changed')
+}
+
+const embodiedPath = 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'
+const embodiedInput = await readFile(embodiedPath, 'utf8')
+const embodiedOutput = replaceExact(
+  embodiedInput,
+  "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied-first-person')",
+  "    await expect(home).toHaveAttribute('data-home-camera-mode', 'embodied-third-person')",
+  1,
+  'current governed Sacred Home camera mode',
+)
+await writeFile(embodiedPath, embodiedOutput)
+console.log(`Materialized current governed Home camera proof at ${embodiedPath}`)
 
 const path = 'urai-tier1/tests/accessibility-performance-spatial-visual.spec.ts'
 const input = await readFile(path, 'utf8')
