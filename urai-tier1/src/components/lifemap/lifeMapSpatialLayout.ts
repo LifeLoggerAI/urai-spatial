@@ -58,7 +58,7 @@ export function lifeMapOverviewCamera(nodes: LifeMapNode[], portrait: boolean, a
     distance = Math.max(distance, Math.max(horizontalFit, verticalFit) + point[2] - target[2] + 2.2 * stage.scale[2])
   }
   const overlook = portrait ? 3.7 : 7.1
-  const retreat = portrait ? .88 : 1.14
+  const retreat = portrait ? 1.18 : 1.14
   return {
     position: [target[0], target[1] + overlook, target[2] + distance * retreat],
     target: [target[0], target[1] - (portrait ? 1.38 : .65), target[2] - (portrait ? 2.0 : 1.2)],
