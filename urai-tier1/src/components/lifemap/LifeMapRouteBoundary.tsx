@@ -5,7 +5,7 @@ import './lifeMapMobileTravelDensity.css'
 import './lifeMapSemanticNavigatorOwnership.css'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import ComposedLifeMapScene from './ComposedLifeMapScene'
+import ComposedLifeMapScene from './CosmicComposedLifeMapScene'
 import LifeMapSemanticNavigator from './LifeMapSemanticNavigator'
 import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMapSelection'
 
