@@ -25,7 +25,7 @@ test('overview uses the V250 portrait projection while preserving indexed select
 test('overview camera fills portrait with authored geography while preserving the desktop envelope', () => {
   assert.match(layout, /2\.2 \* stage\.scale\[0\]/)
   assert.match(layout, /const overlook = portrait \? 3\.7 : 7\.1/)
-  assert.match(layout, /const retreat = portrait \? \.88 : 1\.14/)
+  assert.match(layout, /const retreat = portrait \? 1\.18 : 1\.14/)
   assert.match(layout, /target: \[target\[0\], target\[1\] - \(portrait \? 1\.38 : \.65\), target\[2\] - \(portrait \? 2\.0 : 1\.2\)\]/)
 })
 
