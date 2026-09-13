@@ -1,0 +1,100 @@
+name: PR1177 Exact Head Proof Dispatch
+
+on:
+  push:
+    branches:
+      - steward/pr1177-proof-dispatch-20260912
+    paths:
+      - '.github/workflows/pr1177-exact-head-proof-dispatch.yml'
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr1177-exact-head-proof-dispatch
+  cancel-in-progress: false
+
+env:
+  EXPECTED_HEAD: 11c4626eaad39a64dea5d2fe4bea779be45fa0d9
+  TARGET_BRANCH: home-final-v24-certify-20260826
+
+jobs:
+  compact-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact PR candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXPECTED_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Run compact exact-head contract matrix
+        run: corepack pnpm --dir urai-tier1 run test:unit
+      - name: Prove source cleanliness
+        run: git diff --check
+
+  dispatch-proofs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Verify live PR head and dispatch exact-head proof workflows
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const expected = process.env.EXPECTED_HEAD;
+            const targetBranch = process.env.TARGET_BRANCH;
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number: 1177 });
+            if (pr.data.head.sha !== expected) {
+              core.setFailed(`PR #1177 moved: expected ${expected}, got ${pr.data.head.sha}`);
+              return;
+            }
+            if (pr.data.head.ref !== targetBranch) {
+              core.setFailed(`Unexpected PR branch ${pr.data.head.ref}`);
+              return;
+            }
+            const dispatches = [
+              ['continuous-spatial-visual-proof.yml', { verification_sha: expected }],
+              ['accessibility-performance-evidence.yml', { verification_sha: expected }],
+              ['lifemap-founder-visual-proof.yml', { verification_sha: expected }],
+              ['home-state-proof.yml', {}],
+              ['portal-orb-exact-proof.yml', {}],
+              ['native-doorway-proof.yml', {}],
+              ['mirror-release-proof.yml', {}],
+            ];
+            for (const [workflow_id, inputs] of dispatches) {
+              await github.rest.actions.createWorkflowDispatch({
+                owner,
+                repo,
+                workflow_id,
+                ref: targetBranch,
+                inputs,
+              });
+              core.info(`dispatched ${workflow_id} for ${expected}`);
+            }
