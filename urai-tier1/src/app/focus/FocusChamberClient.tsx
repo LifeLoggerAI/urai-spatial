@@ -15,8 +15,8 @@ import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/
 
 // V249 convergence authority: a grounded mineral-light living-memory manifestation inhabits a continuous weathered chamber.
 
-const DEFAULT_CAMERA: [number, number, number] = [0, 1.45, 8.2]
-const DEFAULT_TARGET: [number, number, number] = [0, 0.45, -1.3]
+const DEFAULT_CAMERA: [number, number, number] = [0, 1.35, 6.6]
+const DEFAULT_TARGET: [number, number, number] = [0, 0.18, -1.75]
 const CAMERA_LIMIT = 8.8
 const FOCUS_CHAMBER_MODEL = '/assets/urai/generated/models/focus-memory-chamber-v1.glb'
 
@@ -443,10 +443,10 @@ function focusManifestationFilaments() {
     let previous: THREE.Vector3 | null = null
     for (let step = 0; step <= 18; step += 1) {
       const t = step / 18
-      const y = -.44 + t * .82
+      const y = -.54 + t * 1.12
       const angle = -0.9 + trace * .42 + t * (.58 + trace * .025) + .06 * Math.sin(t * 7 + trace)
-      const envelope = .13 + .13 * Math.sin(t * Math.PI)
-      const current = new THREE.Vector3(Math.cos(angle) * envelope - .05, y, .40 + Math.sin(angle) * .08)
+      const envelope = .24 + .24 * Math.sin(t * Math.PI)
+      const current = new THREE.Vector3(Math.cos(angle) * envelope - .05, y, .42 + Math.sin(angle) * .14)
       if (previous) points.push(previous, current)
       previous = current
     }
@@ -455,14 +455,14 @@ function focusManifestationFilaments() {
 }
 
 function focusMemoryFieldGeometry() {
-  const count = 140
+  const count = 180
   const positions = new Float32Array(count * 3)
   for (let index = 0; index < count; index += 1) {
     const t = (index + .5) / count
-    const y = -.54 + ((index * 47) % count) / (count - 1) * 1.04
+    const y = -.76 + ((index * 47) % count) / (count - 1) * 1.46
     const angle = index * 2.39996323 + .12 * Math.sin(index * .37)
-    const radius = .09 + Math.pow(t, .72) * .34
-    positions.set([Math.cos(angle) * radius - .04, y, .32 + Math.sin(angle) * radius * .28], index * 3)
+    const radius = .16 + Math.pow(t, .72) * .62
+    positions.set([Math.cos(angle) * radius - .04, y, .34 + Math.sin(angle) * radius * .34], index * 3)
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -532,16 +532,16 @@ function MemoryAperture({ memory, accent, light, reducedMotion, onActivate }: { 
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
-  return <group ref={group} position={[0, -.08, -1.88]} name="focus-memory-aperture" userData={{ artRevision: 'v249-grounded-mineral-light-memory-manifestation', hierarchy: 'subordinate-to-authored-chamber' }}>
+  return <group ref={group} position={[0, .02, -1.88]} name="focus-memory-aperture" userData={{ artRevision: 'v249-grounded-mineral-light-memory-manifestation', hierarchy: 'subordinate-to-authored-chamber' }}>
     <mesh geometry={cradleGeometry} receiveShadow castShadow name="focus-v249-memory-root-cradle"><meshStandardMaterial map={cradleMaps[0]} normalMap={cradleMaps[1]} roughnessMap={cradleMaps[2]} normalScale={new THREE.Vector2(.34,.34)} color="#3d5048" vertexColors roughness={.96}/></mesh>
-    <points ref={field} geometry={fieldGeometry} position={[0,-.12,.02]}><pointsMaterial color={light} size={0.014} transparent opacity={memory ? 0.22 : 0.08} depthWrite={false} sizeAttenuation /></points>
-    <lineSegments geometry={filamentGeometry} position={[0,-.12,.02]}><lineBasicMaterial color={light} transparent opacity={memory ? .24 : .09} /></lineSegments>
-    <mesh geometry={manifestationGeometry} position={[-.03,-.48,.01]} rotation={[.02,-.18,-.03]} scale={[.62,.68,.62]} onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)} castShadow receiveShadow name="focus-v249-grounded-living-memory-manifestation">
-      <meshStandardMaterial vertexColors color={hovered ? '#839b90' : '#697d74'} emissive={accent} emissiveIntensity={hovered ? .07 : .035} roughness={.86} metalness={0}/>
+    <points ref={field} geometry={fieldGeometry} position={[0,-.04,.02]}><pointsMaterial color={light} size={0.022} transparent opacity={memory ? 0.30 : 0.10} depthWrite={false} sizeAttenuation /></points>
+    <lineSegments geometry={filamentGeometry} position={[0,-.04,.02]}><lineBasicMaterial color={light} transparent opacity={memory ? .34 : .11} /></lineSegments>
+    <mesh geometry={manifestationGeometry} position={[-.03,-.34,.01]} rotation={[.02,-.18,-.03]} scale={[1.18,1.30,1.18]} onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)} castShadow receiveShadow name="focus-v249-grounded-living-memory-manifestation">
+      <meshStandardMaterial vertexColors color={hovered ? '#839b90' : '#697d74'} emissive={accent} emissiveIntensity={hovered ? .10 : .055} roughness={.86} metalness={0}/>
     </mesh>
-    <pointLight position={[-.10,.10,.34]} color={accent} intensity={memory ? 0.20 : 0.06} distance={3.6} decay={2} />
-    <pointLight position={[.70,.35,-.25]} color={light} intensity={memory ? .10 : .03} distance={2.8} decay={2} />
-    <Html center position={[0, -1.28, 0]} transform distanceFactor={7.6}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
+    <pointLight position={[-.10,.18,.40]} color={accent} intensity={memory ? 0.42 : 0.08} distance={5.2} decay={2} />
+    <pointLight position={[.84,.46,-.22]} color={light} intensity={memory ? .20 : .04} distance={4.0} decay={2} />
+    <Html center position={[0, -1.52, 0]} transform distanceFactor={7.2}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Open Replay for ${memory.title}` : 'Select a memory in Life Map to open Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
   </group>
 }
 
@@ -553,18 +553,18 @@ function FocusScene({ memory, profile, recenterSignal, onActivate, controls, onW
     <Suspense fallback={null}><FocusAssetsReady shellRef={shellRef} /></Suspense>
     <WebGLRecoveryBridge onStateChange={onWebGLState} />
     <color attach="background" args={['#071513']} />
-    <fog attach="fog" args={['#13211e', 8.5, 30]} />
-    <ambientLight intensity={0.30} color="#d8efff" />
-    <hemisphereLight args={[light, '#07100e', 0.40]} />
+    <fog attach="fog" args={['#13211e', 7.4, 28]} />
+    <ambientLight intensity={0.32} color="#d8efff" />
+    <hemisphereLight args={[light, '#07100e', 0.42]} />
     <directionalLight position={[5, 8, 7]} intensity={1.08} color={light} castShadow={profile.shadows} />
-    <pointLight position={[0, .35, -1.7]} intensity={.34} color={accent} distance={7} decay={2} />
-    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={.62} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
+    <pointLight position={[0, .38, -1.7]} intensity={.52} color={accent} distance={8.5} decay={2} />
+    <spotLight position={[-2.8, 6.8, 3]} target-position={[0, -.18, -1.72]} color={light} intensity={.72} distance={20} angle={.34} penumbra={.9} castShadow={profile.shadows} />
     <Stars radius={65} depth={45} count={profile.reducedMotion ? 320 : profile.particleCount * 2} factor={2.0} saturation={0.20} fade speed={profile.reducedMotion ? 0 : 0.08} />
     <Suspense fallback={null}><AuthoredFocusChamber /></Suspense>
     <ChamberArchitecture accent={accent} light={light} reducedMotion={profile.reducedMotion} />
     <MemoryTraces memory={memory} accent={accent} reducedMotion={profile.reducedMotion} />
     <MemoryAperture memory={memory} accent={accent} light={light} reducedMotion={profile.reducedMotion} onActivate={onActivate} />
-    <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={3.4} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
+    <OrbitControls ref={controls} makeDefault enableDamping={!profile.reducedMotion} dampingFactor={0.07} enablePan={false} enableZoom minDistance={2.9} maxDistance={11.5} zoomSpeed={0.55} rotateSpeed={0.32} minPolarAngle={0.58} maxPolarAngle={1.9} target={DEFAULT_TARGET} />
     <FocusCameraRig controls={controls} recenterSignal={recenterSignal} shellRef={shellRef} />
   </>
 }
@@ -643,7 +643,7 @@ export default function FocusChamberClient() {
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const boundedCadence = !rendererClassified || softwareRenderer || profile.reducedMotion
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-grounded-mineral-light-memory-manifestation" data-focus-visual-revision="v249-grounded-mineral-light-memory-manifestation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.450" data-focus-camera-z="8.200" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-grounded-mineral-light-memory-manifestation" data-focus-visual-revision="v249-grounded-mineral-light-memory-manifestation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.350" data-focus-camera-z="6.600" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
