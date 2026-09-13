@@ -101,11 +101,11 @@ function ribGeometry(side: -1 | 1, zBand: number, lift: number, seed: number) {
   const indices: number[] = []
   for (let step = 0; step <= segments; step++) {
     const t = step / segments
-    const x = side * THREE.MathUtils.lerp(7.8, 1.05, t)
-    const z = zBand - t * 1.5 + Math.sin(t * Math.PI * 2 + seed) * .14
-    const y = height(x, z) + .20 + Math.sin(t * Math.PI) * lift + t * .18
-    const width = THREE.MathUtils.lerp(.58, .28, t)
-    const thick = THREE.MathUtils.lerp(.30, .18, t)
+    const x = side * THREE.MathUtils.lerp(8.9, 2.7, t)
+    const z = zBand - t * 1.05 + Math.sin(t * Math.PI * 2 + seed) * .12
+    const y = height(x, z) + .16 + Math.sin(t * Math.PI) * lift + t * .10
+    const width = THREE.MathUtils.lerp(.42, .18, t)
+    const thick = THREE.MathUtils.lerp(.22, .10, t)
     positions.push(x, y - thick, z - width, x, y - thick, z + width, x, y + thick, z - width, x, y + thick, z + width)
     if (step < segments) {
       const a = step * 4, b = a + 1, c = a + 2, d = a + 3, e = a + 4, f = a + 5, g = a + 6, h = a + 7
@@ -120,14 +120,14 @@ function ribGeometry(side: -1 | 1, zBand: number, lift: number, seed: number) {
 }
 
 function GrownStoneRibs() {
-  const ribs = useMemo(() => [-1.8,-5.8,-9.6,-13.4].flatMap((z, index) => [
-    ribGeometry(-1, z, 3.3 + index * .18, index + .2),
-    ribGeometry(1, z-.32, 3.0 + index * .22, index + 1.7),
+  const ribs = useMemo(() => [-5.8,-13.6].flatMap((z, index) => [
+    ribGeometry(-1, z, 2.2 + index * .12, index + .2),
+    ribGeometry(1, z-.44, 1.95 + index * .14, index + 1.7),
   ]), [])
   useEffect(() => () => ribs.forEach((geometry) => geometry.dispose()), [ribs])
   return <group name="home-v254-grown-stone-rib-architecture" userData={{ visualOnly: true, interactionOwner: false }}>
     {ribs.map((geometry, index) => <mesh key={index} geometry={geometry} raycast={() => null} receiveShadow>
-      <meshStandardMaterial color={index % 4 < 2 ? '#504f45' : '#54594d'} emissive="#141814" emissiveIntensity={.035} roughness={.98} metalness={0} />
+      <meshStandardMaterial color={index % 2 ? '#62695f' : '#67665c'} emissive="#1d211d" emissiveIntensity={.045} roughness={.98} metalness={0} />
     </mesh>)}
   </group>
 }
