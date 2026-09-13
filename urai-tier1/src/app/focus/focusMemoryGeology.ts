@@ -1,77 +1,61 @@
 import * as THREE from 'three'
 
-// Original URAI geometry and material source. No downloaded imagery or scan UVs.
-// V262 broadens the selected-memory bloom and deepens its layered geology so it
-// reads as an authored memory formation at arrival scale instead of a small flower.
-const PETALS = [
-  [-2.76, 1.42, .82, .40, .14, -.16, -.08],
-  [-2.18, 1.56, .90, .48, .20, -.12, -.12],
-  [-1.54, 1.44, .84, .44, .16, -.02, -.16],
-  [-.88, 1.30, .78, .36, .18, .08, -.06],
-  [-.18, 1.50, .88, .46, .14, .14, .04],
-  [.52, 1.34, .76, .34, .18, .08, .14],
-  [1.24, 1.26, .70, .32, .13, -.02, .16],
-  [1.92, 1.38, .78, .38, .19, -.10, .10],
-  [2.52, 1.24, .68, .30, .12, -.14, -.02],
-]
+// Canonical selected-memory manifestation geometry.
+// The memory is a celestial body approached from Life Map, not a flower seated on
+// the chamber floor. These authored shell sectors form one irregular luminous body
+// while preserving an asymmetric silhouette and non-repeating memory/history veins.
+const SHELL_SECTORS = [
+  [-Math.PI, -2.08, 1.08, .08, -.05],
+  [-2.16, -1.04, 1.14, -.06, .04],
+  [-1.12, -.04, 1.05, .04, -.03],
+  [-.12, .98, 1.16, -.04, .05],
+  [.90, 2.03, 1.07, .07, -.02],
+  [1.95, Math.PI, 1.12, -.05, .03],
+] as const
 
 export function createFocusStrata() {
-  return PETALS.map(([angle, length, width, arc, tipRise, offsetX, offsetZ], plate) => {
+  return SHELL_SECTORS.map(([phiStart, phiEnd, baseRadius, offsetX, offsetZ], sector) => {
     const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
-    const rows = 46, columns = 26
-    const radialX = Math.cos(angle), radialZ = Math.sin(angle)
-    const lateralX = -radialZ, lateralZ = radialX
+    const rows = 34, columns = 28
 
-    for (let face = 0; face < 2; face++) for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
-      const t = row / rows, s = column / columns, across = s * 2 - 1
-      const open = Math.pow(Math.sin(Math.PI * Math.min(.999, Math.max(.001, t))), .54)
-      const tipTaper = 1 - .38 * Math.pow(t, 2.15)
-      const breadth = width * (.12 + .88 * open) * tipTaper
-      const lateral = across * breadth
-      const radial = .08 + length * t
-      const cup = .14 * Math.sin(Math.PI * t) * (1 - across * across)
-      const edgeCurl = .072 * across * across * Math.sin(Math.PI * t)
-      const sweep = .10 * Math.sin(Math.PI * t + plate * .49)
-      const grain = .010 * Math.sin(s * 47 + t * 9 + plate) + .006 * Math.sin(s * 113 - t * 13)
-      const veinWave = Math.sin(t * 18 + s * 6 + plate * .65) * Math.sin(s * 10 - t * 2.4 + plate)
-      const veinRelief = .013 * veinWave
-      const fracture = .018 * Math.sin(t * 31 + plate * 1.9) * (1 - Math.abs(across))
-      const thickness = .030 + .020 * (1 - t)
-
-      const x = offsetX + radialX * (radial + sweep) + lateralX * lateral
-      const z = offsetZ + radialZ * (radial + sweep) + lateralZ * lateral + grain
-      const y = -1.22 + arc * Math.sin(Math.PI * t) + tipRise * t * t + cup + edgeCurl + veinRelief + fracture + (face ? -thickness : thickness)
+    for (let row = 0; row <= rows; row++) for (let column = 0; column <= columns; column++) {
+      const v = row / rows
+      const u = column / columns
+      const theta = THREE.MathUtils.lerp(.18, Math.PI - .18, v)
+      const phi = THREE.MathUtils.lerp(phiStart, phiEnd, u)
+      const historyWave = Math.sin(theta * 8.4 + phi * 5.1 + sector * 1.73)
+      const fineWave = Math.sin(theta * 17.2 - phi * 9.6 + sector * .83)
+      const lobe = .10 * Math.sin(theta * 2.6 + sector * .71) * Math.cos(phi * 1.8 - sector)
+      const cleft = -.12 * Math.exp(-((Math.cos(phi + .62) / .26) ** 2)) * Math.pow(Math.sin(theta), 2.2)
+      const radius = baseRadius * (1 + lobe + historyWave * .025 + fineWave * .012 + cleft)
+      const equatorStretch = 1 + .12 * Math.pow(Math.sin(theta), 2)
+      const x = offsetX + Math.sin(theta) * Math.cos(phi) * radius * equatorStretch
+      const y = .08 + Math.cos(theta) * radius * 1.08 + .06 * Math.sin(phi * 2.1 + sector)
+      const z = offsetZ + Math.sin(theta) * Math.sin(phi) * radius * .92
       positions.push(x, y, z)
-      uvs.push(s * 1.55, t * 2.55)
+      uvs.push(u * 1.6, v * 1.8)
 
-      const vein = Math.pow(Math.max(0, 1 - Math.abs(veinWave)), 12)
-      const edgeShade = Math.pow(Math.abs(across), 1.7)
-      const base = new THREE.Color(plate % 3 === 0 ? '#88a39f' : plate % 3 === 1 ? '#b7b29d' : '#748f94')
-      const history = new THREE.Color(plate % 2 ? '#f1ca8c' : '#d8eee5')
-      const shadow = new THREE.Color('#2b4042')
-      const c = base.clone().lerp(history, Math.min(.78, vein * .70 + t * .10)).lerp(shadow, edgeShade * .18)
-      c.multiplyScalar(.90 + .08 * s)
-      colors.push(c.r, c.g, c.b)
+      const vein = Math.pow(Math.max(0, 1 - Math.abs(historyWave)), 14)
+      const hotVein = Math.pow(Math.max(0, 1 - Math.abs(Math.sin(theta * 4.2 + phi * 3.7 + sector))), 18)
+      const core = new THREE.Color(sector % 2 ? '#bfe9e8' : '#d8f7f5')
+      const memory = new THREE.Color(sector % 3 === 0 ? '#ffd7a0' : '#9eeaff')
+      const shadow = new THREE.Color('#315b68')
+      const rim = Math.pow(Math.sin(theta), .7)
+      const color = shadow.clone().lerp(core, .60 + rim * .24).lerp(memory, Math.min(.78, vein * .58 + hotVein * .42))
+      color.multiplyScalar(.92 + .10 * Math.sin(u * Math.PI))
+      colors.push(color.r, color.g, color.b)
     }
 
-    const stride = columns + 1, layer = stride * (rows + 1)
-    for (let face = 0; face < 2; face++) for (let row = 0; row < rows; row++) for (let col = 0; col < columns; col++) {
-      const a = face * layer + row * stride + col, b = a + 1, c = a + stride, d = c + 1
-      if (face) indices.push(a,c,b,b,c,d); else indices.push(a,b,c,b,d,c)
-    }
-    for (let row = 0; row < rows; row++) for (const col of [0, columns]) {
-      const a = row * stride + col, b = a + stride
-      indices.push(a,b,a+layer,b,b+layer,a+layer)
-    }
-    for (const row of [0, rows]) for (let col = 0; col < columns; col++) {
-      const a = row * stride + col, b = a+1
-      indices.push(a,a+layer,b,b,a+layer,b+layer)
+    const stride = columns + 1
+    for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
+      const a = row * stride + column, b = a + 1, c = a + stride, d = c + 1
+      indices.push(a, b, c, b, d, c)
     }
 
     const result = new THREE.BufferGeometry()
-    result.setAttribute('position',new THREE.Float32BufferAttribute(positions,3))
-    result.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2))
-    result.setAttribute('color',new THREE.Float32BufferAttribute(colors,3))
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    result.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+    result.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
     result.setIndex(indices)
     result.computeVertexNormals()
     result.computeBoundingSphere()
@@ -80,24 +64,24 @@ export function createFocusStrata() {
 }
 
 export function createFocusSurfaceMaps(): [THREE.Texture, THREE.Texture, THREE.Texture] {
-  const size = 512, h = new Float32Array(size * size), rgba = new Uint8Array(size*size*4), normals = new Uint8Array(rgba.length), rough = new Uint8Array(rgba.length)
+  const size = 512, h = new Float32Array(size * size), rgba = new Uint8Array(size * size * 4), normals = new Uint8Array(rgba.length), rough = new Uint8Array(rgba.length)
   const hash = (x:number,y:number) => { const v = Math.sin(x*127.1+y*311.7)*43758.5453; return v-Math.floor(v) }
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
     const u=x/size,v=y/size, grain=hash(x,y), vein=Math.abs(Math.sin(u*66 + Math.sin(v*15)*1.15 + Math.sin(v*37)*.18))
     const history=vein<.09 ? 1-vein/.09 : 0
     const layer=.5+.5*Math.sin(v*82+Math.sin(u*16)*.46)
-    const value=.56+grain*.06+layer*.05
-    h[y*size+x]=value-history*.016
+    const value=.62+grain*.05+layer*.035
+    h[y*size+x]=value-history*.010
     const i=(y*size+x)*4
-    const r=Math.min(255,128+value*82+history*92)
-    const g=Math.min(255,134+value*86+history*74)
-    const b=Math.min(255,128+value*84+history*64)
+    const r=Math.min(255,142+value*88+history*92)
+    const g=Math.min(255,154+value*92+history*78)
+    const b=Math.min(255,160+value*96+history*68)
     rgba.set([r,g,b,255],i)
-    rough.set([255,Math.min(255,220+grain*26-layer*9),0,255],i)
+    rough.set([255,Math.min(255,178+grain*34-layer*10),0,255],i)
   }
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
-    const dx=(h[y*size+(x+1)%size]-h[y*size+(x+size-1)%size])*1.6
-    const dy=(h[((y+1)%size)*size+x]-h[((y+size-1)%size)*size+x])*1.6
+    const dx=(h[y*size+(x+1)%size]-h[y*size+(x+size-1)%size])*1.25
+    const dy=(h[((y+1)%size)*size+x]-h[((y+size-1)%size)*size+x])*1.25
     const n=new THREE.Vector3(-dx,-dy,1).normalize()
     normals.set([(n.x*.5+.5)*255,(n.y*.5+.5)*255,(n.z*.5+.5)*255,255],(y*size+x)*4)
   }
