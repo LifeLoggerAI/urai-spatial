@@ -143,6 +143,16 @@
   }
 }
 
+@media (max-width: 700px) and (orientation: portrait) {
+  .canvas {
+    inset: auto !important;
+    left: -18% !important;
+    top: -21% !important;
+    width: 136% !important;
+    height: 136% !important;
+  }
+}
+
 @media (max-width: 700px) {
   .brand {
     top: max(14px, env(safe-area-inset-top));
