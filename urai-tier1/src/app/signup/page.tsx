@@ -1,10 +1,7 @@
-import LoginClient from '../login/LoginClient'
+import { redirect } from 'next/navigation'
 
-export const metadata = {
-  title: 'URAI - Create Your Private World',
-  description: 'Create your private URAI account through the configured Firebase identity provider.',
-}
+export const metadata = { title: 'UrAi Sign Up', description: 'Open the canonical UrAi identity entry for a new or returning account.' }
 
-export default function SignupPage() {
-  return <LoginClient intent="signup" />
+export default function SignupCompatibilityPage() {
+  redirect('/login?from=signup')
 }
