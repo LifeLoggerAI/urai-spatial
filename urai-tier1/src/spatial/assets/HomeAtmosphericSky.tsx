@@ -1,9 +1,37 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'
+
+function RetireSupersededV249Orb() {
+  const { scene } = useThree()
+
+  useEffect(() => {
+    const legacy = scene.getObjectByName('home-v249-organic-living-memory-presence')
+    if (!legacy) return
+
+    const wasVisible = legacy.visible
+    const previousRaycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
+    legacy.visible = false
+    legacy.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return
+      const materials = Array.isArray(object.material) ? object.material : [object.material]
+      const transparentHitSurface = materials.some((material) => material instanceof THREE.MeshBasicMaterial && material.transparent && material.opacity === 0)
+      if (transparentHitSurface) return
+      previousRaycasts.set(object, object.raycast)
+      object.raycast = () => {}
+    })
+
+    return () => {
+      legacy.visible = wasVisible
+      previousRaycasts.forEach((raycast, object) => { object.raycast = raycast })
+    }
+  }, [scene])
+
+  return null
+}
 
 /** Distant authored atmosphere plus the final Home scene visual-ownership guard. */
 export function HomeAtmosphericSky({ reducedMotion }: { reducedMotion: boolean }) {
@@ -78,6 +106,7 @@ export function HomeAtmosphericSky({ reducedMotion }: { reducedMotion: boolean }
   })
 
   return <>
+    <RetireSupersededV249Orb />
     <HomeVisualAuthority />
     <mesh ref={mesh} name="home-authored-distant-atmosphere" renderOrder={-100} material={material}>
       <sphereGeometry args={[74, 48, 32]} />
