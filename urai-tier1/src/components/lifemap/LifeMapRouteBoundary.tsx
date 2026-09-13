@@ -12,6 +12,7 @@ import { LIFE_MAP_SELECTION_EVENT, type LifeMapSelectionDetail } from './lifeMap
 const overviewActionLabels = new Set(['Overview', 'Open semantic overview'])
 const MIN_DIRECT_ROUTE_RENDER_ANCHORS = 8
 const MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS = 4
+const DIRECT_ROUTE_REPAIR_INTERVAL_MS = 500
 
 export default function LifeMapRouteBoundary() {
   const router = useRouter()
@@ -95,10 +96,13 @@ export default function LifeMapRouteBoundary() {
     let cancelled = false
     let frame = 0
     let repairAttempts = 0
+    let nextRepairAt = 0
 
     const requestCanonicalSelection = () => {
-      if (repairAttempts >= MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS) return false
+      const now = performance.now()
+      if (repairAttempts >= MAX_DIRECT_ROUTE_REPAIR_ATTEMPTS || now < nextRepairAt) return false
       repairAttempts += 1
+      nextRepairAt = now + DIRECT_ROUTE_REPAIR_INTERVAL_MS
       const detail: LifeMapSelectionDetail = { nodeId, source: 'semantic' }
       window.dispatchEvent(new CustomEvent<LifeMapSelectionDetail>(LIFE_MAP_SELECTION_EVENT, { detail }))
       return true
@@ -121,10 +125,10 @@ export default function LifeMapRouteBoundary() {
       }
 
       // A direct browser entry can hydrate its URL identity after the scene's first render.
-      // If the real authored world is already healthy but still in overview, issue a bounded
-      // canonical selection retry until the semantic action surface proves that the selection
-      // transaction was observed. The bound prevents event storms while closing the mount-order
-      // race where a one-shot request can precede the production world's selection listener.
+      // If the real authored world is already healthy but still in overview, issue a bounded,
+      // paced canonical selection retry until the semantic action surface proves that the
+      // selection transaction was observed. Pacing preserves the event-storm bound while
+      // preventing all four attempts from being spent before the production listener mounts.
       if (phase === 'overview') {
         const renderReady = root.dataset.lifeMapRenderReady === 'true'
         const visibleAnchors = Number(root.dataset.lifeMapVisibleAnchors || '0')
