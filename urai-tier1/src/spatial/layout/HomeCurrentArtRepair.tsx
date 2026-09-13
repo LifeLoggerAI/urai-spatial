@@ -173,17 +173,110 @@ function wornPathGeometry(length = 3.4, startWidth = .46, endWidth = .22) {
 
 function lineageGeometry() {
   const points: THREE.Vector3[] = []
-  for (let branch = 0; branch < 5; branch++) {
+  for (let branch = 0; branch < 7; branch++) {
     let previous: THREE.Vector3 | null = null
-    for (let step = 0; step <= 15; step++) {
-      const t = step / 15
-      const spread = (branch - 2) * (.08 + t * .06)
+    for (let step = 0; step <= 18; step++) {
+      const t = step / 18
+      const spread = (branch - 3) * (.045 + t * .075)
       const current = new THREE.Vector3(
-        spread + Math.sin(t * 5 + branch) * .025,
-        -.22 + t * 1.5,
-        -.74 - t * .38 + Math.cos(t * 4 + branch) * .025,
+        spread + Math.sin(t * 6.2 + branch * .77) * (.018 + t * .034),
+        -.18 + t * 1.72,
+        -.78 - t * .46 + Math.cos(t * 4.8 + branch * .63) * (.025 + t * .022),
       )
       if (previous) points.push(previous, current)
+      if (step === 8 || step === 12 || step === 15) {
+        const fork = new THREE.Vector3(
+          current.x + (branch % 2 ? 1 : -1) * (.08 + t * .10),
+          current.y + .10 + t * .05,
+          current.z - .04 - t * .04,
+        )
+        points.push(current, fork)
+      }
+      previous = current
+    }
+  }
+  return new THREE.BufferGeometry().setFromPoints(points)
+}
+
+function groundShoulderGeometry(side: -1 | 1) {
+  const rows = 12, columns = 5
+  const positions: number[] = [], colors: number[] = [], indices: number[] = []
+  const deep = new THREE.Color('#26251f'), weathered = new THREE.Color('#5a5040')
+  for (let row = 0; row <= rows; row++) {
+    const t = row / rows
+    const z = -1.18 + t * 2.74
+    const inner = .18 + .035 * Math.sin(t * 8.1 + (side < 0 ? .8 : 2.3))
+    const outer = .96 + .10 * Math.sin(t * 4.7 + (side < 0 ? 1.2 : .35))
+    const ridge = (side < 0 ? .44 : .34) * (.64 + .36 * Math.sin(Math.PI * t))
+    for (let column = 0; column <= columns; column++) {
+      const u = column / columns
+      const x = side * THREE.MathUtils.lerp(inner, outer, u)
+      const erosion = .035 * Math.sin(row * 1.71 + column * 2.27 + (side < 0 ? .4 : 1.8))
+      const y = -.18 + (1 - u) * ridge + erosion - .045 * t
+      positions.push(x, y, z)
+      const color = deep.clone().lerp(weathered, .22 + .34 * (1 - u) + .09 * Math.sin(row * .9 + column))
+      colors.push(color.r, color.g, color.b)
+    }
+  }
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const a = row * (columns + 1) + column
+      const b = a + 1
+      const c = a + columns + 1
+      const d = c + 1
+      if (side > 0) indices.push(a, c, b, b, c, d)
+      else indices.push(a, b, c, b, d, c)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function groundCleftGeometry() {
+  const segments = 30, positions: number[] = [], colors: number[] = [], indices: number[] = []
+  const deep = new THREE.Color('#171b18'), warm = new THREE.Color('#594435')
+  for (let index = 0; index <= segments; index++) {
+    const t = index / segments
+    const z = -1.14 + t * 2.72
+    const center = .025 * Math.sin(t * 9.2) - .018 * Math.sin(t * 3.6)
+    const width = .16 + .035 * Math.sin(Math.PI * t) + .018 * Math.sin(index * 1.27)
+    const descent = -.31 - .12 * t - .07 * Math.sin(Math.PI * t)
+    for (const side of [-1, 1] as const) {
+      positions.push(center + side * width, descent + .012 * side * Math.sin(index * .83), z)
+      const color = deep.clone().lerp(warm, .16 + .18 * t + .05 * Math.sin(index * .61 + side))
+      colors.push(color.r, color.g, color.b)
+    }
+    if (index < segments) {
+      const a = index * 2, b = a + 1, c = a + 2, d = a + 3
+      indices.push(a, c, b, b, c, d)
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function rootedBaseGeometry() {
+  const points: THREE.Vector3[] = []
+  for (let root = 0; root < 11; root++) {
+    const angle = -.25 + root * .58
+    let previous = new THREE.Vector3(0, -.13, -.72)
+    for (let step = 1; step <= 10; step++) {
+      const t = step / 10
+      const radius = t * (.52 + .12 * Math.sin(root * 1.37))
+      const current = new THREE.Vector3(
+        Math.cos(angle + .17 * Math.sin(t * 4 + root)) * radius,
+        -.15 + .025 * Math.sin(step * 1.23 + root) + .035 * t,
+        -.72 + Math.sin(angle + .12 * Math.cos(t * 5 + root)) * radius * .58 + t * .12,
+      )
+      points.push(previous, current)
       previous = current
     }
   }
@@ -193,33 +286,40 @@ function lineageGeometry() {
 function GroundThresholdV234({ onGround }: { onGround: () => void }) {
   const y = height(GROUND.x, GROUND.z)
   const path = useMemo(() => wornPathGeometry(2.75, .34, .12), [])
-  useEffect(() => () => path.dispose(), [path])
+  const leftShoulder = useMemo(() => groundShoulderGeometry(-1), [])
+  const rightShoulder = useMemo(() => groundShoulderGeometry(1), [])
+  const cleft = useMemo(groundCleftGeometry, [])
+  useEffect(() => () => { path.dispose(); leftShoulder.dispose(); rightShoulder.dispose(); cleft.dispose() }, [cleft, leftShoulder, path, rightShoulder])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onGround() }
-  return <group position={[GROUND.x, y + .18, GROUND.z]} rotation={[0, -.10, 0]} name="home-v249-ground-geological-descent" onClick={activate} userData={{ artRevision: 'v249-integrated-ground-descent', visualIntent: 'low-lateral-eroded-cleft-descending-into-terrain', semanticOwner: 'home-current-ground-geological-descent', morphology: 'low-geological-descent-cleft' }}>
+  return <group position={[GROUND.x, y + .12, GROUND.z]} rotation={[0, -.10, 0]} name="home-v249-ground-geological-descent" onClick={activate} userData={{ artRevision: 'v249-integrated-ground-descent', visualIntent: 'low-lateral-eroded-cleft-descending-into-terrain', semanticOwner: 'home-current-ground-geological-descent', morphology: 'low-geological-descent-cleft' }}>
+    <mesh geometry={leftShoulder} receiveShadow><meshStandardMaterial vertexColors roughness={1} metalness={0} /></mesh>
+    <mesh geometry={rightShoulder} receiveShadow><meshStandardMaterial vertexColors roughness={1} metalness={0} /></mesh>
+    <mesh geometry={cleft} receiveShadow><meshStandardMaterial vertexColors roughness={1} metalness={0} /></mesh>
     <Suspense fallback={null}>
-      <ScannedRock variant="01" position={[-.66, -.30, -.82]} rotation={[.14, 1.22, -.42]} scale={[1.44, .88, 1.20]} />
-      <ScannedRock variant="02" position={[.56, -.36, -.94]} rotation={[-.10, -1.04, .30]} scale={[1.24, .76, 1.08]} />
+      <ScannedRock variant="01" position={[-.88, -.43, -.76]} rotation={[1.32, .36, -.62]} scale={[.58, .20, .66]} />
+      <ScannedRock variant="02" position={[.82, -.48, -.58]} rotation={[1.38, -.42, .54]} scale={[.46, .18, .52]} />
     </Suspense>
-    <mesh geometry={path} position={[0, -.12, .28]} rotation={[.14, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#645443" roughness={1} /></mesh>
-    <pointLight position={[-.10, -.18, -1.06]} color="#c77954" intensity={.44} distance={2.4} decay={2} />
-    <pointLight position={[.30, -.30, -1.34]} color="#755a45" intensity={.18} distance={1.7} decay={2} />
+    <mesh geometry={path} position={[0, -.22, .14]} rotation={[.18, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#514538" roughness={1} /></mesh>
+    <pointLight position={[-.10, -.22, -.84]} color="#b76d4f" intensity={.34} distance={2.0} decay={2} />
+    <pointLight position={[.28, -.34, -1.20]} color="#655040" intensity={.14} distance={1.5} decay={2} />
   </group>
 }
 
 function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
   const y = height(LIFE_MAP.x, LIFE_MAP.z)
   const path = useMemo(() => wornPathGeometry(2.45, .22, .08), [])
+  const roots = useMemo(rootedBaseGeometry, [])
   const lineage = useMemo(lineageGeometry, [])
   const stars = useMemo(() => {
-    const count = 120, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
+    const count = 150, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3)
     const warm = new THREE.Color('#cbb98f'), cool = new THREE.Color('#83b9b2')
     for (let index = 0; index < count; index++) {
       const t = (index + .5) / count
       const angle = index * 2.39996323
-      const radius = .08 + Math.sqrt(t) * .54
-      const yy = .14 + t * 1.7
-      positions.set([Math.cos(angle) * radius, yy, -.86 - Math.sin(angle) * radius * .38], index * 3)
-      const color = warm.clone().lerp(cool, .22 + .55 * ((index % 13) / 12))
+      const radius = .08 + Math.sqrt(t) * .70
+      const yy = .12 + t * 1.92
+      positions.set([Math.cos(angle) * radius, yy, -.90 - Math.sin(angle) * radius * .44], index * 3)
+      const color = warm.clone().lerp(cool, .20 + .60 * ((index % 13) / 12))
       colors.set([color.r, color.g, color.b], index * 3)
     }
     const geometry = new THREE.BufferGeometry()
@@ -227,17 +327,14 @@ function LifeMapThresholdV234({ onLifeMap }: { onLifeMap: () => void }) {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     return geometry
   }, [])
-  useEffect(() => () => { path.dispose(); lineage.dispose(); stars.dispose() }, [path, lineage, stars])
+  useEffect(() => () => { path.dispose(); roots.dispose(); lineage.dispose(); stars.dispose() }, [lineage, path, roots, stars])
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onLifeMap() }
   return <group position={[LIFE_MAP.x, y + .10, LIFE_MAP.z]} rotation={[0, .08, 0]} name="home-v249-life-map-rooted-celestial-ascent" onClick={activate} userData={{ artRevision: 'v249-rooted-celestial-ascent', visualIntent: 'asymmetric-rooted-ascent-opening-upward-into-lineage-and-constellation-depth', semanticOwner: 'home-current-life-map-rooted-ascent', morphology: 'vertical-rooted-celestial-ascent' }}>
-    <Suspense fallback={null}>
-      <ScannedRock variant="02" position={[-.48, -.74, -1.26]} rotation={[1.12, .72, -.58]} scale={[.72, .34, .80]} />
-      <ScannedRock variant="01" position={[.42, -.78, -1.38]} rotation={[1.04, -.66, .50]} scale={[.64, .30, .72]} />
-    </Suspense>
-    <mesh geometry={path} position={[0, -.12, .12]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#565b4e" roughness={1} /></mesh>
-    <lineSegments geometry={lineage} position={[0, .06, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.60} /></lineSegments>
-    <points geometry={stars}><pointsMaterial vertexColors size={.021} sizeAttenuation transparent opacity={.70} depthWrite={false} /></points>
-    <pointLight position={[0, .78, -1.12]} color="#8fc9c0" intensity={.38} distance={2.9} decay={2} />
+    <mesh geometry={path} position={[0, -.12, .12]} rotation={[-.09, 0, 0]} receiveShadow><meshStandardMaterial vertexColors color="#4a5147" roughness={1} /></mesh>
+    <lineSegments geometry={roots}><lineBasicMaterial color="#667a6d" transparent opacity={.54} /></lineSegments>
+    <lineSegments geometry={lineage} position={[0, .05, 0]}><lineBasicMaterial color="#a8cbc4" transparent opacity={.72} /></lineSegments>
+    <points geometry={stars}><pointsMaterial vertexColors size={.024} sizeAttenuation transparent opacity={.78} depthWrite={false} /></points>
+    <pointLight position={[0, .92, -1.16]} color="#8fc9c0" intensity={.42} distance={3.2} decay={2} />
   </group>
 }
 
