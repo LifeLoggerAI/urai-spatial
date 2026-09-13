@@ -115,11 +115,6 @@ async function resolveTarget(page, doorway) {
   const target = page.getByTestId(doorway.testId)
   const nav = page.locator('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
   await target.waitFor({ state: 'visible', timeout: 45000 })
-  await page.waitForFunction((testId) => {
-    const node = document.querySelector(`[data-testid="${testId}"]`)
-    if (!node) return false
-    return Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
-  }, doorway.testId, { timeout: 45000 })
   await nav.waitFor({ state: 'visible', timeout: 45000 })
   const owner = await nav.getAttribute('data-home-navigation-owner')
   const nonDominant = await nav.getAttribute('data-home-navigation-non-dominant')
@@ -127,6 +122,8 @@ async function resolveTarget(page, doorway) {
   if (nonDominant !== 'true') throw new Error('semantic target owner is not declared non-dominant')
   const accessibleName = await target.getAttribute('aria-label')
   if (accessibleName !== doorway.name) throw new Error(`unexpected accessible name ${accessibleName}`)
+  const tagName = await target.evaluate((node) => node.tagName)
+  if (tagName !== 'A') throw new Error(`semantic target must be a browser-native anchor; found ${tagName || 'unknown'}`)
   const href = await target.getAttribute('href')
   if (href !== doorway.href) throw new Error(`semantic target must own native href ${doorway.href}; found ${href || 'none'}`)
   const visibleLegacyDoorways = await page.locator('.urai-final-home-doorways:visible').count()
@@ -189,7 +186,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 15, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 16, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, nativeAnchorActivationDoesNotRequireReactClickHandler: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))

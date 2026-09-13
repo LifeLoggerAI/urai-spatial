@@ -10,6 +10,7 @@ test('semantic destinations are browser-native anchors', () => {
   assert.match(homeRuntime, /data-testid="home-semantic-life-map" href=\{HOME_SEMANTIC_DESTINATIONS\.lifeMap\.travelHref\}/)
   assert.doesNotMatch(homeRuntime, /directHomeSemanticTravel/)
   assert.match(proof, /semantic target must own native href/)
+  assert.match(proof, /semantic target must be a browser-native anchor/)
 })
 
 test('keyboard doorway activation proves native Tab focus followed by native Enter', () => {
@@ -39,10 +40,11 @@ test('pointer and touch use page-context DOM geometry and real browser-coordinat
   assert.match(proof, /await page\.waitForURL[\s\S]*record\.targetOwnsHitPoint = true/)
 })
 
-test('doorway activation waits for the React click handler to hydrate', () => {
-  assert.match(proof, /page\.waitForFunction/)
-  assert.match(proof, /key\.startsWith\('__reactProps'\)/)
-  assert.match(proof, /typeof node\[key\]\?\.onClick === 'function'/)
+test('native doorway activation does not depend on a synthetic React click-handler hydration shim', () => {
+  assert.doesNotMatch(proof, /__reactProps/)
+  assert.doesNotMatch(proof, /page\.waitForFunction/)
+  assert.match(proof, /nativeAnchorActivationDoesNotRequireReactClickHandler: true/)
+  assert.match(proof, /tagName !== 'A'/)
 })
 
 test('semantic navigation stays statically opacity-bounded and runtime footprint-bounded', () => {
