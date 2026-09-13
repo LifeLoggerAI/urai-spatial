@@ -32,11 +32,11 @@ const routes = [
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
     paths: ['/life-map', '/life-map/'],
-    markers: [/DISCLOSED SAMPLE · NOT YOUR MEMORIES/i, /No private memory data is mounted/i, /Open disclosed sample/i],
+    markers: [/URAI Life Map/i, /step inside your private constellation/i, /urai-r3f-canonical-lifemap/i],
   },
   {
     paths: ['/focus?memoryId=quiet-reset', '/focus/?memoryId=quiet-reset'],
-    markers: [/Selected memory chamber/i, /Opening selected memory|Memory unavailable|Neutral observatory/i, /Return to Life Map/i],
+    markers: [/urai-final-focus-chamber/i, /Selected memory chamber\./i],
   },
   {
     paths: [
@@ -52,16 +52,17 @@ const routes = [
   },
   {
     paths: ['/passport', '/passport/'],
-    markers: [/URAI PASSPORT/i, /Your life remains in your possession\./i, /Ownership services are not configured|Sign in to open your private Ownership Vault|Owner-scoped records loaded/i],
+    markers: [/passport-ownership-vault/i, /UrAi Passport/i, /Ownership key/i],
+    forbidden: [/urai-final-passport-vault/i, /Your life stays yours\./i],
   },
   {
     paths: ['/privacy-controls', '/privacy-controls/'],
-    markers: [/URAI CONSENT SANCTUARY/i, /Choose what the world may hold\./i, /permission service is not configured|Sign in to inspect or change private consent state|Enforcement/i],
-    forbidden: [/Home threshold/i, /Ground route Real-life world/i],
+    markers: [/consent-sanctuary/i, /UrAi Consent Sanctuary/i, /Choose what the world may hold\./i, /Enforcement:/i],
+    forbidden: [/privacy-consent-console/i, /Choose what the world can hold\./i, /Home threshold/i],
   },
   {
     paths: ['/location-map', '/location-map/'],
-    markers: [/URAI · Private emotional geography/i, /Your places stay closed until you open them\./i, /disclosed sample atlas/i],
+    markers: [/premium-emotional-weather-atlas/i],
   },
   {
     paths: ['/spatial/ar-vr', '/spatial/ar-vr/'],
@@ -69,7 +70,8 @@ const routes = [
   },
   {
     paths: ['/status', '/status/'],
-    markers: [/Production certification remains hidden until the protected fingerprint is validated\./i, /Launch spine/i, /Certification boundary/i],
+    markers: [/urai-final-status-control-room/i, /Launch locked\. Proof before expansion\./i, /fingerprint-gated/i, /Production certification remains hidden until the protected fingerprint is validated\./i],
+    forbidden: [/Pending proof/i, /World online\. Route matrix visible\./i],
   },
   {
     paths: ['/api/system/deploy-proof'],
@@ -111,7 +113,7 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'user-agent': 'urai-live-smoke/4.1',
+          'user-agent': 'urai-live-smoke/4.2',
           accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
         },
         redirect: 'follow',

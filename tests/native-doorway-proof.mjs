@@ -115,6 +115,11 @@ async function resolveTarget(page, doorway) {
   const target = page.getByTestId(doorway.testId)
   const nav = page.locator('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
   await target.waitFor({ state: 'visible', timeout: 45000 })
+  await page.waitForFunction((testId) => {
+    const node = document.querySelector(`[data-testid="${testId}"]`)
+    if (!node) return false
+    return Object.keys(node).some((key) => key.startsWith('__reactProps') && typeof node[key]?.onClick === 'function')
+  }, doorway.testId, { timeout: 45000 })
   await nav.waitFor({ state: 'visible', timeout: 45000 })
   const owner = await nav.getAttribute('data-home-navigation-owner')
   const nonDominant = await nav.getAttribute('data-home-navigation-non-dominant')

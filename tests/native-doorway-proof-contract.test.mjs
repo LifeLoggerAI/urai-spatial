@@ -39,6 +39,12 @@ test('pointer and touch use page-context DOM geometry and real browser-coordinat
   assert.match(proof, /await page\.waitForURL[\s\S]*record\.targetOwnsHitPoint = true/)
 })
 
+test('doorway activation waits for the React click handler to hydrate', () => {
+  assert.match(proof, /page\.waitForFunction/)
+  assert.match(proof, /key\.startsWith\('__reactProps'\)/)
+  assert.match(proof, /typeof node\[key\]\?\.onClick === 'function'/)
+})
+
 test('semantic navigation stays statically opacity-bounded and runtime footprint-bounded', () => {
   assert.match(homeRuntime, /\.urai-home-spatial-runtime-layer>\.home-semantic-navigation\{[^}]*width:48px;[^}]*opacity:\.015\}/)
   assert.match(proof, /data-home-navigation-non-dominant/)
