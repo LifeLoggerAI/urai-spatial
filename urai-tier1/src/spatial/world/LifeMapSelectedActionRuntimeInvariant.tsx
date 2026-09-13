@@ -77,7 +77,12 @@ export function LifeMapSelectedActionRuntimeInvariant() {
 
     apply()
     const observer = new MutationObserver(apply)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true })
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-life-map-mode'],
+    })
     window.addEventListener('resize', apply)
     window.addEventListener('orientationchange', apply)
 
