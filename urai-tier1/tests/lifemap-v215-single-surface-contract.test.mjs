@@ -39,7 +39,10 @@ test('Life Map selection routing cannot let stale overview state cancel the jour
 })
 
 test('Focus formation is rooted in its vault and Replay preserves readable organic-edged media', () => {
-  assert.match(focus, /V249 convergence authority: a grounded mineral-light living-memory manifestation inhabits a continuous weathered chamber/)
+  assert.match(focus, /V250 convergence authority: the selected living-memory manifestation owns the/)
+  assert.match(focus, /function focusMemoryBranches\(\)/)
+  assert.match(focus, /new THREE\.TubeGeometry/)
+  assert.match(focus, /v250-living-memory-tree-manifestation/)
   assert.match(focus, /focus-v249-grounded-living-memory-manifestation/)
   assert.match(focus, /focus-v249-memory-root-cradle/)
   assert.match(focus, /focus-v216-continuous-weathered-vault/)
