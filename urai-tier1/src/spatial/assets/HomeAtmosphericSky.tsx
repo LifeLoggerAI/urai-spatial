@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { HomeVisualAuthority } from '../layout/HomeVisualAuthority'
+import { HomeLaunchSanctuaryV254 } from './HomeLaunchSanctuaryV254'
 
 function RetireSupersededV249Orb() {
   const { scene } = useThree()
@@ -119,6 +120,7 @@ export function HomeAtmosphericSky({ reducedMotion }: { reducedMotion: boolean }
   return <>
     <RetireSupersededV249Orb />
     <HomeVisualAuthority />
+    <HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />
     <mesh ref={mesh} name="home-authored-distant-atmosphere" renderOrder={-100} material={material}>
       <sphereGeometry args={[74, 48, 32]} />
     </mesh>
