@@ -12,21 +12,32 @@ function RetireSupersededV249Orb() {
     const legacy = scene.getObjectByName('home-v249-organic-living-memory-presence')
     if (!legacy) return
 
-    const wasVisible = legacy.visible
-    const previousRaycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
-    legacy.visible = false
+    const colorWrite = new Map<THREE.Material, boolean>()
+    const castShadow = new Map<THREE.Mesh, boolean>()
+    const hidden = new Map<THREE.Object3D, boolean>()
+
     legacy.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return
-      const materials = Array.isArray(object.material) ? object.material : [object.material]
-      const transparentHitSurface = materials.some((material) => material instanceof THREE.MeshBasicMaterial && material.transparent && material.opacity === 0)
-      if (transparentHitSurface) return
-      previousRaycasts.set(object, object.raycast)
-      object.raycast = () => {}
+      if (object instanceof THREE.Mesh) {
+        castShadow.set(object, object.castShadow)
+        object.castShadow = false
+        const materials = Array.isArray(object.material) ? object.material : [object.material]
+        materials.forEach((material) => {
+          if (!colorWrite.has(material)) colorWrite.set(material, material.colorWrite)
+          material.colorWrite = false
+        })
+        return
+      }
+
+      if (object !== legacy && (object instanceof THREE.Line || object instanceof THREE.Points || object instanceof THREE.Light)) {
+        hidden.set(object, object.visible)
+        object.visible = false
+      }
     })
 
     return () => {
-      legacy.visible = wasVisible
-      previousRaycasts.forEach((raycast, object) => { object.raycast = raycast })
+      colorWrite.forEach((value, material) => { material.colorWrite = value })
+      castShadow.forEach((value, object) => { object.castShadow = value })
+      hidden.forEach((value, object) => { object.visible = value })
     }
   }, [scene])
 
