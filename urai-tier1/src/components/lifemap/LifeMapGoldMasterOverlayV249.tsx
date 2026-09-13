@@ -24,22 +24,28 @@ function memoryBody(seed:number,aura:string,active:boolean){
   const position=geometry.getAttribute('position') as THREE.BufferAttribute
   const colors=new Float32Array(position.count*3)
   const deep=new THREE.Color('#203331'),mid=new THREE.Color('#6f8d83'),warm=new THREE.Color('#d8b28a'),accent=new THREE.Color(aura)
+  const bias=(seeded(seed,5)-.5)*.16
   for(let index=0;index<position.count;index++){
     const nx=position.getX(index),ny=position.getY(index),nz=position.getZ(index),angle=Math.atan2(nz,nx)
     const upper=THREE.MathUtils.smoothstep(ny,-.05,.92),lower=THREE.MathUtils.smoothstep(-ny,.10,.98)
-    const cleft=Math.exp(-((nx/.23)**2))*THREE.MathUtils.smoothstep(ny,.18,.96)
-    const lobeA=Math.exp(-(((nx+.32)/.40)**2+((ny-.40)/.48)**2)),lobeB=Math.exp(-(((nx-.30)/.42)**2+((ny-.36)/.50)**2))
-    const skin=.032*Math.sin(angle*5.2+ny*8.0+seed*.017)+.014*Math.sin(angle*10.1-ny*12.2)
-    const taper=THREE.MathUtils.lerp(.40,1,THREE.MathUtils.smoothstep(ny,-.96,.12))
-    let x=nx*(.68+.05*(seed%4))*taper*(1+skin+.10*lobeA+.07*lobeB)
-    let z=nz*(.55+.03*((seed+2)%4))*taper*(1+skin*.65)
-    let y=ny*(active?.90:.82)+.10*lobeA+.06*lobeB-.26*cleft-lower*.16
-    x+=upper*.045
-    const twist=(ny+.12)*(.08+(seeded(seed,12)-.5)*.13),cos=Math.cos(twist),sin=Math.sin(twist)
+    const cleftCenter=-.18+bias
+    const cleft=Math.exp(-(((nx-cleftCenter)/.19)**2))*THREE.MathUtils.smoothstep(ny,.22,.96)
+    const dominant=Math.exp(-(((nx+.36-bias)/.44)**2+((ny-.38)/.50)**2))
+    const shoulder=Math.exp(-(((nx-.22-bias)/.34)**2+((ny-.28)/.46)**2))
+    const notch=Math.exp(-(((nx-.42-bias)/.20)**2+((ny-.18)/.24)**2))
+    const fold=Math.exp(-(((nx+.06)/.28)**2+((ny+.10)/.30)**2))
+    const skin=.034*Math.sin(angle*5.2+ny*8.0+seed*.017)+.015*Math.sin(angle*10.1-ny*12.2)
+    const taper=THREE.MathUtils.lerp(.46,1,THREE.MathUtils.smoothstep(ny,-.96,.10))
+    let x=nx*(.70+.04*(seed%4))*taper*(1+skin+.16*dominant+.025*shoulder-.16*notch)
+    let z=nz*(.57+.025*((seed+2)%4))*taper*(1+skin*.62+.05*dominant-.03*notch)
+    let y=ny*(active?.87:.81)+.13*dominant+.025*shoulder-.24*cleft-.11*notch-.10*fold-lower*.11
+    x+=upper*(-.035+.10*dominant-.08*shoulder)+.08*Math.sin((ny+.35)*2.3+seed*.003)
+    z+=.055*dominant-.035*shoulder
+    const twist=(ny+.14)*(.12+(seeded(seed,12)-.5)*.15),cos=Math.cos(twist),sin=Math.sin(twist)
     const tx=x*cos-z*sin,tz=x*sin+z*cos
     position.setXYZ(index,tx,y,tz)
-    const altitude=THREE.MathUtils.clamp((y+1.05)/2.1,0,1),fissure=THREE.MathUtils.clamp(cleft*.78+Math.abs(skin)*5.4,0,1)
-    const color=deep.clone().lerp(mid,.28+.42*altitude).lerp(warm,.08+.18*upper).lerp(accent,(active?.13:.07)+fissure*(active?.24:.16))
+    const altitude=THREE.MathUtils.clamp((y+1.05)/2.1,0,1),fissure=THREE.MathUtils.clamp(cleft*.62+notch*.28+fold*.20+Math.abs(skin)*4.6,0,1)
+    const color=deep.clone().lerp(mid,.22+.38*altitude).lerp(warm,.06+.12*upper+.08*dominant).lerp(accent,(active?.10:.06)+fissure*(active?.18:.13))
     colors.set([color.r,color.g,color.b],index*3)
   }
   position.needsUpdate=true
@@ -111,10 +117,10 @@ function MemoryPlace({node,index,active,reducedMotion,onSelect,arrival}:{node:Li
   const scale=active?(arrival?.64:.70):(arrival?.48:.54),lift=active?(arrival?.58:.60):(arrival?.18:.26)
   return <group position={point} name={`life-map-v254-memory-place-${node.id}`} userData={{artRevision:'v256-contextual-memory-geography',visualRepair:'selected-memory-remains-intimate-with-surrounding-geography',semanticNode:node.id}} onClick={activate}>
     <group ref={root} position={[0,lift,0]} scale={scale}>
-      <mesh geometry={body} castShadow receiveShadow><meshStandardMaterial vertexColors color="#ffffff" emissive={node.aura} emissiveIntensity={active?.20:.12} roughness={.64} metalness={0}/></mesh>
-      {roots.map((geometry,rootIndex)=><mesh key={rootIndex} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={rootIndex%2?'#ddb184':node.aura} emissive={node.aura} emissiveIntensity={active?.18:.10} roughness={.76} transparent opacity={active?.46:.40}/></mesh>)}
-      <points geometry={motes} raycast={()=>null}><pointsMaterial color={node.aura} size={active?.042:.032} transparent opacity={active?.54:.44} depthWrite={false} sizeAttenuation/></points>
-      <pointLight position={[0,.42,.32]} color={node.aura} intensity={active?.82:.32} distance={active?4.8:3.2} decay={2}/>
+      <mesh geometry={body} castShadow receiveShadow><meshStandardMaterial vertexColors color="#ffffff" emissive={node.aura} emissiveIntensity={active?.15:.10} roughness={.72} metalness={0}/></mesh>
+      {roots.map((geometry,rootIndex)=><mesh key={rootIndex} geometry={geometry} raycast={()=>null}><meshStandardMaterial color={rootIndex%2?'#ddb184':node.aura} emissive={node.aura} emissiveIntensity={active?.14:.08} roughness={.80} transparent opacity={active?.40:.34}/></mesh>)}
+      <points geometry={motes} raycast={()=>null}><pointsMaterial color={node.aura} size={active?.038:.030} transparent opacity={active?.48:.40} depthWrite={false} sizeAttenuation/></points>
+      <pointLight position={[-.24,.38,.34]} color={node.aura} intensity={active?.58:.26} distance={active?4.2:3.0} decay={2}/>
     </group>
   </group>
 }
