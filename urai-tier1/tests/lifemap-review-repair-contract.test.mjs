@@ -90,9 +90,9 @@ test('relationship language is sparse, contextual, and selected-memory aware', (
 })
 
 test('portrait overview is a composed world view rather than tiny geography under dead sky', () => {
-  assert.match(layoutSource, /scale: \[\.94, 1\.24, \.72\], position: \[0, -\.18, 3\.65\]/)
+  assert.match(layoutSource, /scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\]/)
   assert.match(layoutSource, /2\.35 \* stage\.scale\[0\]/)
-  assert.match(layoutSource, /const forward = Math\.max\(27, halfWidth \/ \(horizontalTan \* \.68\)\)/)
+  assert.match(layoutSource, /const forward = Math\.max\(27, halfWidth \/ \(horizontalTan \* \.79\)\)/)
   assert.match(layoutSource, /target\[1\] \+ 18\.5/)
   assert.match(layoutSource, /target\[1\] - \.42/)
   assert.match(layoutSource, /target\[2\] - \.95/)
