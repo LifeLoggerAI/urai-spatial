@@ -2,9 +2,11 @@ import { useEffect, useMemo } from 'react'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 
-// Governed Poly Haven CC0 source. Home deliberately samples it above paving
-// scale so the source contributes mineral grain rather than readable blocks.
-export const SANCTUARY_SOIL_ALBEDO = '/assets/urai/home-production/cc0/rock-tile-floor/rock-tile-floor-diff-1k.webp'
+// Governed Poly Haven CC0 rock scan; hashes and source URLs are retained in
+// operations/assets/home-v48-production-asset-provenance.json. This is a UV
+// atlas, not a tileable image: the visible terrain shader samples only inspected
+// interior rock islands, never the stretched atlas gutters.
+export const SANCTUARY_SOIL_ALBEDO = '/assets/urai/home-production/cc0/polyhaven-v48/rock_face_01/textures/rock_face_01_diff_1k.jpg'
 
 export function useSanctuarySoilTexture() {
   const source = useTexture(SANCTUARY_SOIL_ALBEDO)
@@ -12,12 +14,9 @@ export function useSanctuarySoilTexture() {
     const copy = source.clone()
     copy.colorSpace = THREE.SRGBColorSpace
     copy.wrapS = copy.wrapT = THREE.RepeatWrapping
-    // The terrain shader already cross-blends deterministic offsets. Raising the
-    // source frequency prevents individual scan blocks from becoming landscape
-    // scale pavers while retaining authored close-range mineral definition.
-    copy.repeat.set(1.42, 1.56)
-    copy.center.set(.5, .5)
-    copy.rotation = .31
+    // Sampling frequency belongs to the authored terrain UVs. Keep this matrix
+    // neutral so the terrain's explicit atlas-island bounds remain auditable.
+    copy.repeat.set(1, 1)
     copy.anisotropy = 8
     copy.needsUpdate = true
     return copy
