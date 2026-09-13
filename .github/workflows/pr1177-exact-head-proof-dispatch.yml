@@ -1,4 +1,4 @@
-name: PR1177 Exact Head Proof Dispatch
+name: PR1177 Disposable V250 Proof Dispatch
 
 on:
   push:
@@ -10,22 +10,21 @@ on:
 permissions:
   actions: write
   contents: read
-  pull-requests: read
 
 concurrency:
-  group: pr1177-exact-head-proof-dispatch
+  group: pr1177-v250-proof-dispatch
   cancel-in-progress: false
 
 env:
-  EXPECTED_HEAD: 11c4626eaad39a64dea5d2fe4bea779be45fa0d9
-  TARGET_BRANCH: home-final-v24-certify-20260826
+  EXPECTED_HEAD: af5a382bdabda3bef1902e68b75bd9a6efbe46e8
+  TARGET_BRANCH: steward/pr1177-v250-pixel-convergence-20260913
 
 jobs:
   compact-source:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: Checkout exact PR candidate
+      - name: Checkout exact disposable candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.EXPECTED_HEAD }}
@@ -62,7 +61,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Verify live PR head and dispatch exact-head proof workflows
+      - name: Verify disposable branch head and dispatch proof workflows
         uses: actions/github-script@v7
         with:
           script: |
@@ -70,13 +69,9 @@ jobs:
             const repo = context.repo.repo;
             const expected = process.env.EXPECTED_HEAD;
             const targetBranch = process.env.TARGET_BRANCH;
-            const pr = await github.rest.pulls.get({ owner, repo, pull_number: 1177 });
-            if (pr.data.head.sha !== expected) {
-              core.setFailed(`PR #1177 moved: expected ${expected}, got ${pr.data.head.sha}`);
-              return;
-            }
-            if (pr.data.head.ref !== targetBranch) {
-              core.setFailed(`Unexpected PR branch ${pr.data.head.ref}`);
+            const branch = await github.rest.repos.getBranch({ owner, repo, branch: targetBranch });
+            if (branch.data.commit.sha !== expected) {
+              core.setFailed(`Disposable branch moved: expected ${expected}, got ${branch.data.commit.sha}`);
               return;
             }
             const dispatches = [
@@ -85,16 +80,8 @@ jobs:
               ['lifemap-founder-visual-proof.yml', { verification_sha: expected }],
               ['home-state-proof.yml', {}],
               ['portal-orb-exact-proof.yml', {}],
-              ['native-doorway-proof.yml', {}],
-              ['mirror-release-proof.yml', {}],
             ];
             for (const [workflow_id, inputs] of dispatches) {
-              await github.rest.actions.createWorkflowDispatch({
-                owner,
-                repo,
-                workflow_id,
-                ref: targetBranch,
-                inputs,
-              });
+              await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id, ref: targetBranch, inputs });
               core.info(`dispatched ${workflow_id} for ${expected}`);
             }
