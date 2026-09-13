@@ -1,4 +1,4 @@
-name: PR1177 Disposable V250 Proof Dispatch
+name: PR1177 Disposable V250 Source Gate
 
 on:
   push:
@@ -8,16 +8,14 @@ on:
       - '.github/workflows/pr1177-exact-head-proof-dispatch.yml'
 
 permissions:
-  actions: write
   contents: read
 
 concurrency:
-  group: pr1177-v250-proof-dispatch
+  group: pr1177-v250-source-gate
   cancel-in-progress: false
 
 env:
-  EXPECTED_HEAD: 8482c21990c6c6ee18912f6674875864d40e13a5
-  TARGET_BRANCH: steward/pr1177-v250-pixel-convergence-20260913
+  EXPECTED_HEAD: 316a2caa8585236d2f5dda5c61ae5d6516870873
 
 jobs:
   compact-source:
@@ -56,32 +54,3 @@ jobs:
         run: corepack pnpm --dir urai-tier1 run test:unit
       - name: Prove source cleanliness
         run: git diff --check
-
-  dispatch-proofs:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Verify disposable branch head and dispatch proof workflows
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const expected = process.env.EXPECTED_HEAD;
-            const targetBranch = process.env.TARGET_BRANCH;
-            const branch = await github.rest.repos.getBranch({ owner, repo, branch: targetBranch });
-            if (branch.data.commit.sha !== expected) {
-              core.setFailed(`Disposable branch moved: expected ${expected}, got ${branch.data.commit.sha}`);
-              return;
-            }
-            const dispatches = [
-              ['continuous-spatial-visual-proof.yml', { verification_sha: expected }],
-              ['accessibility-performance-evidence.yml', { verification_sha: expected }],
-              ['lifemap-founder-visual-proof.yml', { verification_sha: expected }],
-              ['home-state-proof.yml', {}],
-              ['portal-orb-exact-proof.yml', {}],
-            ];
-            for (const [workflow_id, inputs] of dispatches) {
-              await github.rest.actions.createWorkflowDispatch({ owner, repo, workflow_id, ref: targetBranch, inputs });
-              core.info(`dispatched ${workflow_id} for ${expected}`);
-            }
