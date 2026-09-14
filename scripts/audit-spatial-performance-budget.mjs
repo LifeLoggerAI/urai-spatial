@@ -52,9 +52,9 @@ forbidMatch('Life Map boundary remounts on query identity', boundary, /useSearch
 
 for (const marker of ['pixelRatioMax', 'antialias', 'reducedMotion', 'tier', 'documentVisible']) requireMatch(`Active cosmic Life Map consumes ${marker}`, lifeMap, new RegExp(`profile\\.${marker}`))
 requireMatch('Active cosmic Life Map single Canvas', lifeMap, /<Canvas/)
-requireMatch('Active cosmic Life Map bounded DPR', lifeMap, /dpr=\{\[1,profile\.pixelRatioMax\]\}/)
+requireMatch('Active cosmic Life Map bounded DPR', lifeMap, /dpr=\{\[1,\s*profile\.pixelRatioMax\]\}/)
 requireMatch('Active cosmic Life Map visibility-aware frameloop', lifeMap, /frameloop=\{profile\.documentVisible \? "always" : "never"\}/)
-requireMatch('Active cosmic Life Map high-performance preference', lifeMap, /powerPreference:"high-performance"/)
+requireMatch('Active cosmic Life Map high-performance preference', lifeMap, /powerPreference:\s*"high-performance"/)
 requireMatch('Active cosmic Life Map explicit demo identity', lifeMap, /params\.get\("demo"\) === "1"/)
 requireMatch('Active cosmic Life Map adaptive low star tier', lifeMap, /tier === "low" \? 650/)
 requireMatch('Active cosmic Life Map adaptive medium star tier', lifeMap, /tier === "medium" \? 1100/)
@@ -77,8 +77,11 @@ requireMatch('Active cosmic Life Map portrait-aware camera', lifeMap, /size\.hei
 requireMatch('Active cosmic Life Map layout-safe initial camera placement', lifeMap, /useLayoutEffect/)
 requireMatch('Active cosmic Life Map phase timing is bounded', lifeMap, /PHASE_MS\[phase\]/)
 requireMatch('Active cosmic Life Map declares no ground owner', lifeMap, /data-life-map-ground="none"/)
-requireMatch('Active cosmic Life Map declares cosmic visual authority', lifeMap, /data-life-map-visual-authority="v257-cosmic-personal-universe"/)
-for (const marker of ['life-map-deep-space', 'life-map-personal-galaxy', 'life-map-nebula-', 'life-map-constellations', 'life-map-memory-stars', 'life-map-selected-memory-nebula', 'life-map-emotional-weather']) requireMatch(`Active cosmic Life Map ${marker}`, lifeMap, new RegExp(marker))
+requireMatch('Active cosmic Life Map declares stellar visual authority', lifeMap, /data-life-map-visual-authority="v260-deep-stellar-personal-universe"/)
+for (const marker of ['life-map-deep-space', 'life-map-deep-stellar-field', 'life-map-nebula-veil-', 'life-map-constellations', 'life-map-memory-stars', 'life-map-selected-memory-dust', 'life-map-emotional-weather']) requireMatch(`Active cosmic Life Map ${marker}`, lifeMap, new RegExp(marker))
+requireMatch('Active cosmic Life Map explicitly retires graph edges', lifeMap, /v260-no-explicit-graph-edges/)
+requireMatch('Active cosmic Life Map stars identify non-graph visual authority', lifeMap, /stellar-memory-not-node-graph/)
+forbidMatch('Active cosmic Life Map cannot render graph edge primitives', lifeMap, /<Line\b|lineSegments|dodecahedronGeometry|icosahedronGeometry/)
 forbidMatch('Active cosmic Life Map cannot own terrain', lifeMap, /LivingMemoryGeography|memoryValley|ChapterTerritories|lifeMapTerrainHeight|weathered-valley-floor|worn-lineage-path/)
 forbidMatch('Active cosmic Life Map cannot import terrain layout owner', lifeMap, /lifeMapSpatialLayout/)
 forbidMatch('Active cosmic Life Map cannot retain high-resolution generated canvases', lifeMap, /canvas\.width\s*=\s*768|canvas\.height\s*=\s*768/)
@@ -116,19 +119,6 @@ if (budget) {
 }
 if (oversized.length) failures.push(`${oversized.length} spatial assets exceed their single-file budget.`)
 
-const report = {
-  ok: failures.length === 0,
-  budgetId: budget?.budgetId ?? null,
-  integrationState: failures.length === 0 ? 'integrated' : 'failed',
-  activeProductionRoute: '/life-map',
-  activeLifeMapPath,
-  activeLifeMapBoundaryPath,
-  activeLifeMapWrapperPath,
-  visualSystemPath,
-  isolationPath,
-  resourceLifeMapPath,
-  failures,
-  oversized,
-}
+const report = { ok: failures.length === 0, budgetId: budget?.budgetId ?? null, integrationState: failures.length === 0 ? 'integrated' : 'failed', activeProductionRoute: '/life-map', activeLifeMapPath, activeLifeMapBoundaryPath, activeLifeMapWrapperPath, visualSystemPath, isolationPath, resourceLifeMapPath, failures, oversized }
 console.log(JSON.stringify(report, null, 2))
 if (failures.length) process.exitCode = 1
