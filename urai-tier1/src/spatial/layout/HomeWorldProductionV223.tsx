@@ -16,15 +16,36 @@ type Nearby='orb'|'ground'|'life-map'|null
 type Transition='none'|'ground'|'life-map'
 type Props={onOrbOpen?:()=>void;webglAvailable?:boolean}
 
-function Cadence({active}:{active:boolean}){
-  const{invalidate,setFrameloop}=useThree()
+function isSoftwareWebGLRenderer(gl:THREE.WebGLRenderer){
+  const context=gl.getContext()
+  const debugInfo=context.getExtension('WEBGL_debug_renderer_info') as {UNMASKED_RENDERER_WEBGL?:number}|null
+  const renderer=debugInfo?.UNMASKED_RENDERER_WEBGL?context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL):context.getParameter(context.RENDERER)
+  return /swiftshader|llvmpipe|lavapipe|software|microsoft basic render/i.test(String(renderer||''))
+}
+
+function Cadence({reducedMotion}:{reducedMotion:boolean}){
+  const{gl,invalidate,setFrameloop}=useThree()
   useEffect(()=>{
-    if(!active){setFrameloop('always');return}
+    const softwareRenderer=isSoftwareWebGLRenderer(gl)
+    const constrained=reducedMotion||softwareRenderer
+    if(!constrained){setFrameloop('always');return}
     setFrameloop('demand')
-    const id=window.setInterval(invalidate,280)
-    invalidate()
-    return()=>window.clearInterval(id)
-  },[active,invalidate,setFrameloop])
+    let disposed=false
+    const bootstrap=[0,40,80,120,180,260].map((delay)=>window.setTimeout(()=>{if(!disposed)invalidate()},delay))
+    const intervalMs=reducedMotion?280:100
+    let cadenceTimer=0
+    const renderNext=()=>{
+      if(disposed)return
+      invalidate()
+      cadenceTimer=window.setTimeout(renderNext,intervalMs)
+    }
+    cadenceTimer=window.setTimeout(renderNext,intervalMs)
+    return()=>{
+      disposed=true
+      bootstrap.forEach((timer)=>window.clearTimeout(timer))
+      window.clearTimeout(cadenceTimer)
+    }
+  },[gl,invalidate,reducedMotion,setFrameloop])
   return null
 }
 
@@ -105,7 +126,7 @@ function Scene(p:{input:MovementInput;yaw:MutableRefObject<number>;pitch:Mutable
   }
   useEffect(()=>p.onReady(),[p])
   return <>
-    <Cadence active={p.reducedMotion}/>
+    <Cadence reducedMotion={p.reducedMotion}/>
     <color attach="background" args={['#10272a']}/>
     <fogExp2 attach="fog" args={['#294946',.0145]}/>
     <HomeAtmosphericSky reducedMotion={p.reducedMotion}/>
