@@ -140,6 +140,17 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
     max-width: 150px !important;
   }
 
+  /* The canonical CinematicReplayClient owns this native return control. Pin it
+   * directly to the phone safe-area band so shell/route offsets cannot clip the
+   * 48px target above the viewport. */
+  .urai-world-runtime[data-world-destination='replay'] .replayWorld .unwind {
+    position: fixed !important;
+    top: max(14px, env(safe-area-inset-top)) !important;
+    left: max(14px, env(safe-area-inset-left)) !important;
+    margin: 0 !important;
+    z-index: 40 !important;
+  }
+
   .urai-world-runtime[data-world-destination='replay'] [data-testid='urai-replay-meta-panel'] {
     top: max(78px, calc(env(safe-area-inset-top) + 62px)) !important;
     right: 12px !important;
