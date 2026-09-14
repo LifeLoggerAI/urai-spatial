@@ -142,11 +142,12 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 
   /* The canonical CinematicReplayClient owns this native return control. Pin it
    * directly to the phone safe-area band so shell/route offsets cannot clip the
-   * 48px target above the viewport. */
+   * 48px target above the viewport, and keep it opposite the left-owned heading. */
   .urai-world-runtime[data-world-destination='replay'] .replayWorld .unwind {
     position: fixed !important;
     top: max(14px, env(safe-area-inset-top)) !important;
-    left: max(14px, env(safe-area-inset-left)) !important;
+    left: auto !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
     margin: 0 !important;
     z-index: 40 !important;
   }
