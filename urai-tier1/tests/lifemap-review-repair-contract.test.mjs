@@ -114,12 +114,16 @@ test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(workflow, /lifemap-review-repair-contract\.test\.mjs/)
 })
 
-test('Focus final composition keeps the live chamber dominant and rejects the obsolete dark obstruction path', () => {
+test('Focus final composition makes authentic selected-memory media own the threshold while retiring obsolete contour dominance', () => {
   assert.match(focusSource, /focus-v251-grounded-living-memory-manifestation/)
   assert.match(focusSource, /createFocusStrata, createFocusSurfaceMaps/)
   assert.doesNotMatch(focusSource, /focus-v249-memory-root-cradle/)
   assert.doesNotMatch(focusSource, /new THREE\.IcosahedronGeometry\(|<torusGeometry|<ringGeometry|wireframe/)
-  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1;[\s\S]*brightness\(1\.22\)/)
-  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: 0\.10;/)
-  assert.doesNotMatch(focusPolish, /opacity: 0\.66|brightness\(0\.76\)|brightness\(1\.08\)/)
+  assert.match(focusPolish, /V265 retained-pixel convergence/)
+  assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*opacity: \.82;[\s\S]*brightness\(\.82\)/)
+  assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.30;[\s\S]*brightness\(\.72\);[\s\S]*mix-blend-mode: screen;/)
+  assert.match(focusPolish, /@media \(max-width: 760px\) \{[\s\S]*\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.22;[\s\S]*brightness\(\.66\)/)
+  assert.match(focusPolish, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.focusWorld \.focusBackdrop \{ transform: none; \}/)
+  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*?opacity: 1;[\s\S]*?\}/)
+  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*?opacity: 0\.10;[\s\S]*?\}/)
 })

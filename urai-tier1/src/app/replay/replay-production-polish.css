@@ -12,6 +12,7 @@
 }
 
 .replayWorld header {
+  top: max(18px, env(safe-area-inset-top)) !important;
   max-width: min(300px, 28vw) !important;
   opacity: .78;
 }
@@ -19,7 +20,7 @@
 .replayWorld header p,
 .replayWorld header span { opacity: .72; }
 .replayWorld .unwind {
-  min-height: 44px;
+  min-height: 48px;
   opacity: .62;
   background: rgba(2,7,12,.42) !important;
   backdrop-filter: blur(8px);
@@ -66,7 +67,7 @@
 .replayWorld .controls:focus-within { opacity: .96; }
 .replayWorld .controls button {
   min-width: 58px !important;
-  min-height: 44px !important;
+  min-height: 48px !important;
   background: linear-gradient(135deg, color-mix(in srgb,var(--replay-light) 84%,transparent), color-mix(in srgb,var(--replay-accent) 78%,transparent)) !important;
 }
 .replayWorld .controls output { opacity: .72; }
@@ -103,6 +104,8 @@
     transform-origin: 50% 46%;
   }
   .replayWorld header {
+    left: max(14px, env(safe-area-inset-left)) !important;
+    top: max(14px, env(safe-area-inset-top)) !important;
     max-width: 220px !important;
     opacity: .70;
   }

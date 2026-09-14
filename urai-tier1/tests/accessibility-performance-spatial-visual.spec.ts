@@ -107,7 +107,10 @@ test.describe('URAI visual ownership and containment evidence', () => {
       return { memoryId: url.searchParams.get('memoryId'), node: url.searchParams.get('node') }
     }, { timeout: 15_000 }).toEqual({ memoryId: 'quiet-reset', node: 'quiet-reset' })
 
-    await page.keyboard.press('o')
+    const overview = actions.getByRole('button', { name: /overview$/i })
+    await overview.focus()
+    await expect(overview).toBeFocused()
+    await overview.press('Enter')
     await expect.poll(() => new URL(page.url()).searchParams.get('overview')).toBe('1')
     await expect(actions).toHaveCount(0)
   })
