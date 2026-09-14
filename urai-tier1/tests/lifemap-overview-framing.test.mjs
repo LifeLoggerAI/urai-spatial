@@ -27,7 +27,7 @@ test('overview camera has independent portrait and desktop deep-space framing', 
   assert.match(cosmic, /const portrait = size\.height > size\.width/)
   assert.match(cosmic, /new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
   assert.match(cosmic, /fov: portrait \? 57 : 52/)
-  assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0, \.15, -17\)/)
+  assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0, portrait \? -3\.8 : \.15, -17\)/)
   assert.match(cosmic, /pointer\.x \* 1\.1/)
   assert.match(cosmic, /pointer\.y \* \.45/)
 })
