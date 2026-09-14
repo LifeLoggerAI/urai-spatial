@@ -192,4 +192,4 @@ jobs:
           name: lifemap-founder-visual-proof-${{ env.URAI_EXACT_HEAD }}
           path: artifacts/lifemap-founder-proof
           if-no-files-found: error
-          retention-days: 365
+          retention-days: 90
