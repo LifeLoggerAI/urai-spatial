@@ -16,9 +16,11 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.match(cosmic, /life-map-nebula-veil-/)
   assert.match(cosmic, /v260-no-explicit-graph-edges/)
   assert.match(cosmic, /stellar-memory-not-node-graph/)
+  assert.match(cosmic, /spriteMaterial/)
   assert.doesNotMatch(cosmic, /Sparkles/)
   assert.doesNotMatch(cosmic, /LivingMemoryGeography|ChapterTerritories|lifeMapTerrainHeight|lifeMapSpatialLayout|weathered-valley-floor|worn-lineage-path/)
   assert.doesNotMatch(cosmic, /<Line\b|lineSegments|dodecahedronGeometry|icosahedronGeometry/)
+  assert.doesNotMatch(cosmic, /scale=\{active \? 10\.8|scale=\{active \? 5\.4/)
 })
 
 test('overview camera has independent portrait and desktop deep-space framing', () => {
@@ -44,7 +46,7 @@ test('selected-memory travel remains spatial and celestial until Focus or Replay
 
 test('portrait/mobile launch UI preserves the celestial viewport instead of recreating a terrain envelope', () => {
   assert.match(cosmic, /@media\(max-width:700px\)/)
-  assert.match(cosmic, /\.life-map-thresholds\{bottom:max\(10px,env\(safe-area-inset-bottom\)\)/)
+  assert.match(cosmic, /\.life-map-thresholds\{bottom:max\(10px,env\(safe-area-inset-bottom\)\)!important/)
   assert.match(cosmic, /\.life-map-status\{top:max\(12px,env\(safe-area-inset-top\)\);right:12px\}/)
   assert.match(cosmic, /\.life-map-status small\{display:none\}/)
   assert.match(cosmic, /height:100svh/)
@@ -58,6 +60,7 @@ test('framing keeps reduced-motion, exact-head render proof, and semantic thresh
   assert.match(cosmic, /lifeMapVisibleAnchors/)
   assert.match(cosmic, /gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
   assert.match(cosmic, /className="life-map-thresholds"/)
-  assert.match(cosmic, />Focus</)
+  assert.match(cosmic, />Enter Focus</)
   assert.match(cosmic, />Replay</)
+  assert.match(cosmic, /flex-direction:row!important/)
 })
