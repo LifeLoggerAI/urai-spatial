@@ -124,6 +124,6 @@ test('Focus final composition makes authentic selected-memory media own the thre
   assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.30;[\s\S]*brightness\(\.72\);[\s\S]*mix-blend-mode: screen;/)
   assert.match(focusPolish, /@media \(max-width: 760px\) \{[\s\S]*\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: \.22;[\s\S]*brightness\(\.66\)/)
   assert.match(focusPolish, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.focusWorld \.focusBackdrop \{ transform: none; \}/)
-  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*?opacity: 1;[\s\S]*?\}/)
-  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusBackdrop \{[\s\S]*?opacity: 0\.10;[\s\S]*?\}/)
+  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusCanvas canvas \{[^}]*opacity: 1;[^}]*\}/)
+  assert.doesNotMatch(focusPolish, /\.focusWorld \.focusBackdrop \{[^}]*opacity: 0\.10;[^}]*\}/)
 })
