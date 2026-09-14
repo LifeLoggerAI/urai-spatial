@@ -140,12 +140,12 @@ async function openDemoReplay(page, baseUrl) {
 async function validateReplay(page, report, screenshotName) {
   const proof = page.getByTestId('urai-replay-surface').first();
   const client = page.getByTestId('cinematic-replay-client').first();
-  const controls = page.locator('[aria-label="Replay controls"]').first();
-  const productControls = page.locator('[aria-label="Replay memory controls"]').first();
+  const controls = client.locator('[aria-label="Replay controls"]').first();
+  const productControls = client.locator('[aria-label="Replay memory controls"]').first();
   const companion = page.getByRole('button', { name: /Orb travel controls/i }).first();
-  const heading = page.locator('.replayWorld header h1').first();
-  const caption = page.locator('.caption').first();
-  const unwind = page.locator('.unwind').first();
+  const heading = client.locator('header h1').first();
+  const caption = client.locator('.caption').first();
+  const unwind = client.locator('.unwind').first();
 
   await proof.waitFor({ state: 'attached', timeout: 30000 });
   await expectAttribute(proof, 'data-replay-phase', 'replay_playing');
