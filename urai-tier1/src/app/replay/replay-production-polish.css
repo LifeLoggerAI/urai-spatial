@@ -1,78 +1,146 @@
-/* Replay is a memory theater first. Product controls remain fully reachable, but
-   recede until the user points at or focuses them so the memory owns the frame. */
-.replayWorld .controls {
-  padding: 7px 10px;
-  border-color: rgba(235, 251, 255, .09);
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(2, 7, 14, .34), rgba(7, 18, 26, .20));
-  box-shadow: 0 14px 46px rgba(0, 0, 0, .18), inset 0 1px rgba(255, 255, 255, .025);
-  backdrop-filter: blur(10px) saturate(1.02);
-  opacity: .34;
-  transition: opacity 180ms ease, background-color 180ms ease;
+/* V265 Replay convergence: the memory is the environment. Product transport stays
+   fully reachable, but the spatial canvas is allowed to fill and slightly crop the
+   viewport so authentic memory media dominates instead of reading as a player card. */
+.replayWorld .replaySpatialCanvas {
+  transform: scale(1.16);
+  transform-origin: 50% 48%;
 }
 
-.replayWorld .controls:hover,
-.replayWorld .controls:focus-within {
-  opacity: .96;
+.replayWorld .replayAtmosphere {
+  background:
+    radial-gradient(ellipse at 50% 46%, transparent 0 46%, rgba(0,0,0,.08) 68%, rgba(0,0,0,.48) 100%) !important;
 }
 
-.replayWorld .replayProduct {
-  border-color: rgba(235, 251, 255, .07);
-  background: linear-gradient(90deg, rgba(2, 7, 14, .30), rgba(7, 18, 26, .18));
-  box-shadow: 0 12px 40px rgba(0, 0, 0, .16), inset 0 1px rgba(255, 255, 255, .025);
-  backdrop-filter: blur(9px) saturate(1.02);
-  opacity: .16;
-  transition: opacity 180ms ease;
+.replayWorld header {
+  max-width: min(300px, 28vw) !important;
+  opacity: .78;
 }
-
-.replayWorld .replayProduct:hover,
-.replayWorld .replayProduct:focus-within {
-  opacity: .94;
+.replayWorld header h1 { font-size: clamp(1.08rem, 2.5vw, 2rem) !important; }
+.replayWorld header p,
+.replayWorld header span { opacity: .72; }
+.replayWorld .unwind {
+  min-height: 44px;
+  opacity: .62;
+  background: rgba(2,7,12,.42) !important;
+  backdrop-filter: blur(8px);
 }
-
-.replayWorld .replayProduct > button {
-  border-color: rgba(235, 251, 255, .10);
-  background: linear-gradient(145deg, rgba(16, 39, 53, .48), rgba(7, 19, 30, .34));
-}
+.replayWorld .unwind:hover,
+.replayWorld .unwind:focus-visible { opacity: 1; }
 
 .replayWorld .caption {
-  bottom: clamp(214px, 24svh, 270px);
-  text-shadow: 0 2px 22px rgba(0, 0, 0, .85);
+  bottom: clamp(118px, 16svh, 168px) !important;
+  width: min(680px, 74vw) !important;
+  opacity: .56;
+  text-shadow: 0 2px 22px rgba(0,0,0,.9);
+  transition: opacity 180ms ease;
+}
+.replayWorld .caption:hover,
+.replayWorld .caption:focus-within { opacity: .9; }
+.replayWorld .caption strong {
+  margin-top: 5px !important;
+  font-size: clamp(.98rem, 2.25vw, 1.72rem) !important;
+  line-height: 1.08 !important;
+  font-weight: 500 !important;
+}
+.replayWorld .caption span {
+  margin-top: 5px !important;
+  max-width: 520px !important;
+  font-size: 10px !important;
+  opacity: .78;
+}
+
+.replayWorld .controls {
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+  width: min(520px, calc(100vw - 34px)) !important;
+  padding: 4px 7px !important;
+  gap: 8px !important;
+  border-color: rgba(235,251,255,.06) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, rgba(2,7,14,.20), rgba(7,18,26,.10)) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,.12) !important;
+  backdrop-filter: blur(8px) saturate(1.02) !important;
+  opacity: .12;
+  transition: opacity 180ms ease, background-color 180ms ease;
+}
+.replayWorld .controls:hover,
+.replayWorld .controls:focus-within { opacity: .96; }
+.replayWorld .controls button {
+  min-width: 58px !important;
+  min-height: 44px !important;
+  background: linear-gradient(135deg, color-mix(in srgb,var(--replay-light) 84%,transparent), color-mix(in srgb,var(--replay-accent) 78%,transparent)) !important;
+}
+.replayWorld .controls output { opacity: .72; }
+
+.replayWorld .replayProduct {
+  border-color: rgba(235,251,255,.05);
+  background: linear-gradient(90deg, rgba(2,7,14,.18), rgba(7,18,26,.08));
+  box-shadow: 0 8px 28px rgba(0,0,0,.10), inset 0 1px rgba(255,255,255,.02);
+  backdrop-filter: blur(8px) saturate(1.02);
+  opacity: .06;
+  transition: opacity 180ms ease;
+}
+.replayWorld .replayProduct:hover,
+.replayWorld .replayProduct:focus-within { opacity: .94; }
+.replayWorld .replayProduct > button {
+  border-color: rgba(235,251,255,.08);
+  background: linear-gradient(145deg, rgba(16,39,53,.34), rgba(7,19,30,.22));
 }
 
 .replayWorld .transcript {
-  border-color: rgba(235, 251, 255, .09);
-  background: rgba(2, 7, 14, .32);
-  backdrop-filter: blur(10px);
+  border-color: rgba(235,251,255,.07);
+  background: rgba(2,7,14,.22);
+  backdrop-filter: blur(8px);
+  opacity: .34;
+  transition: opacity 180ms ease;
 }
+.replayWorld .transcript:hover,
+.replayWorld .transcript:focus-within,
+.replayWorld .transcript[open] { opacity: .96; }
 
 @media (max-width: 700px) {
-  /* Preserve the base mobile 31svh caption clearance. The previous 24svh
-     override pulled the caption into the playback controls on portrait phones. */
-  .replayWorld .caption {
-    bottom: 31svh;
+  .replayWorld .replaySpatialCanvas {
+    transform: scale(1.24);
+    transform-origin: 50% 46%;
   }
-
+  .replayWorld header {
+    max-width: 220px !important;
+    opacity: .70;
+  }
+  .replayWorld .caption {
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 80px)) !important;
+    width: 76vw !important;
+    opacity: .48;
+  }
+  .replayWorld .caption strong { font-size: 1.05rem !important; }
+  .replayWorld .caption span {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .replayWorld .controls,
   .replayWorld .replayProduct {
     left: 14px;
     right: 14px;
-    width: auto;
+    width: auto !important;
     transform: none;
   }
-
-  .replayWorld .controls { opacity: .28; }
-  .replayWorld .replayProduct { opacity: .10; }
-
+  .replayWorld .controls { opacity: .10; }
+  .replayWorld .replayProduct { opacity: .04; }
   .replayWorld .transcript {
-    max-width: 156px;
+    top: max(72px, calc(env(safe-area-inset-top) + 66px));
+    right: 12px;
+    max-width: 142px;
+    opacity: .24;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .replayWorld .replaySpatialCanvas { transform: scale(1.14); }
   .replayWorld .controls,
   .replayWorld .replayProduct,
-  .replayWorld .transcript {
+  .replayWorld .transcript,
+  .replayWorld .caption {
     backdrop-filter: none;
     transition: none;
   }
