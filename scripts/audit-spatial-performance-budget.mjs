@@ -72,7 +72,7 @@ requireMatch('Active cosmic Life Map render-proof object publication', lifeMap, 
 requireMatch('Active cosmic Life Map render-proof call publication', lifeMap, /lifeMapRenderCalls/)
 requireMatch('Active cosmic Life Map render-proof thresholds', lifeMap, /gl\.info\.render\.calls > 0 && objects > 20 && anchors >= 8/)
 requireMatch('Active cosmic Life Map ACES tone mapping', lifeMap, /ACESFilmicToneMapping/)
-requireMatch('Active cosmic Life Map bounded exposure', lifeMap, /toneMappingExposure = 1\.06/)
+requireMatch('Active cosmic Life Map bounded exposure', lifeMap, /toneMappingExposure = 1\.08/)
 requireMatch('Active cosmic Life Map portrait-aware camera', lifeMap, /size\.height > size\.width/)
 requireMatch('Active cosmic Life Map layout-safe initial camera placement', lifeMap, /useLayoutEffect/)
 requireMatch('Active cosmic Life Map phase timing is bounded', lifeMap, /PHASE_MS\[phase\]/)
