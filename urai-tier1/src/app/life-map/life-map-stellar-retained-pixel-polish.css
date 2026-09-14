@@ -1,4 +1,4 @@
-/* V266 retained-pixel convergence.
+/* V267 retained-pixel convergence.
    The WebGL stellar volume remains the visual owner. This CSS layer adds a
    restrained far-field particulate and galactic-dust veil so overview,
    departure, travel, approach, arrival and portrait captures retain real
@@ -43,10 +43,24 @@
   mask-image: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,.84) 0 58%, rgba(0,0,0,.98) 100%);
 }
 
+/* During selected travel the camera moves away from the overview's densest
+   WebGL cloud. Keep the same restrained galaxy language, but carry broad,
+   asymmetric galactic weather through the transition so the universe does not
+   collapse into one navy luminance band between isolated memory stars. */
 .life-map-root[data-life-map-phase="departure"]::before,
 .life-map-root[data-life-map-phase="travel"]::before,
-.life-map-root[data-life-map-phase="approach"]::before {
-  opacity: .60;
+.life-map-root[data-life-map-phase="approach"]::before,
+.life-map-root[data-life-map-phase="arrival"]::before {
+  background-image:
+    radial-gradient(circle at center, rgba(235,248,255,.96) 0 .9px, transparent 1.45px),
+    radial-gradient(circle at center, rgba(255,229,194,.80) 0 .76px, transparent 1.26px),
+    radial-gradient(circle at center, rgba(180,214,255,.76) 0 .72px, transparent 1.2px),
+    radial-gradient(ellipse at 18% 26%, rgba(70,126,170,.38) 0, rgba(39,83,126,.20) 23%, transparent 49%),
+    radial-gradient(ellipse at 78% 32%, rgba(128,88,158,.35) 0, rgba(77,58,121,.18) 25%, transparent 50%),
+    radial-gradient(ellipse at 35% 76%, rgba(48,116,145,.31) 0, rgba(31,77,108,.15) 27%, transparent 51%),
+    radial-gradient(ellipse at 74% 76%, rgba(111,135,177,.26) 0, rgba(66,83,131,.12) 22%, transparent 47%),
+    radial-gradient(ellipse at 50% 49%, rgba(55,86,130,.20) 0, transparent 43%),
+    linear-gradient(116deg, rgba(16,34,61,.05) 4%, rgba(49,91,129,.18) 24%, transparent 43%, rgba(103,69,130,.16) 66%, rgba(36,72,112,.10) 86%, transparent 98%);
   background-size:
     53px 51px,
     89px 83px,
@@ -55,11 +69,24 @@
     100% 100%,
     100% 100%,
     100% 100%,
+    100% 100%,
     100% 100%;
+  background-position:
+    5px 11px,
+    29px 43px,
+    83px 19px,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
+  opacity: .78;
+  filter: blur(.08px) contrast(1.18) saturate(1.12) brightness(1.06);
 }
 
 .life-map-root[data-life-map-phase="arrival"]::before {
-  opacity: .54;
+  opacity: .74;
 }
 
 /* Selected memory arrival remains a luminous threshold inside the same deep
@@ -90,8 +117,20 @@
   }
   .life-map-root[data-life-map-phase="departure"]::before,
   .life-map-root[data-life-map-phase="travel"]::before,
-  .life-map-root[data-life-map-phase="approach"]::before { opacity: .56; }
-  .life-map-root[data-life-map-phase="arrival"]::before { opacity: .52; }
+  .life-map-root[data-life-map-phase="approach"]::before,
+  .life-map-root[data-life-map-phase="arrival"]::before {
+    opacity: .70;
+    background-size:
+      43px 41px,
+      71px 67px,
+      109px 101px,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
