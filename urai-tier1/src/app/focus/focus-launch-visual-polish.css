@@ -1,6 +1,6 @@
-/* V256 retained-pixel convergence: the live WebGL chamber owns the image.
-   The governed backdrop remains atmospheric context only; it must not flatten
-   the selected-memory manifestation into a generic dark still. */
+/* V264 retained-pixel convergence: the live WebGL chamber owns the image.
+   The backdrop stays atmospheric, the selected-memory threshold remains central,
+   and product chrome recedes until the user asks for it. */
 .focusWorld .focusBackdrop {
   display: block !important;
   position: absolute;
@@ -11,24 +11,20 @@
   background-size: cover;
   background-position: center 48%;
   background-repeat: no-repeat;
-  opacity: 0.10;
-  filter: saturate(0.62) contrast(1.01) brightness(0.66);
+  opacity: 0.075;
+  filter: saturate(0.58) contrast(1.01) brightness(0.62);
   transform: scale(1.018);
 }
 
 .focusWorld .focusCanvas { z-index: 1; background: transparent; }
-
-.focusWorld .focusCanvas canvas {
-  opacity: 1;
-  filter: saturate(0.98) contrast(0.98) brightness(1.22);
-}
+.focusWorld .focusCanvas canvas { opacity: 1; filter: saturate(0.92) contrast(1.01) brightness(1.12); }
 
 .focusWorld .focusFog {
   z-index: 2;
   background:
-    radial-gradient(ellipse at 50% 55%, transparent 0 18%, rgba(4, 14, 12, 0.06) 47%, rgba(2, 8, 8, 0.10) 100%),
-    linear-gradient(90deg, rgba(1, 5, 8, 0.12), transparent 27% 78%, rgba(1, 5, 8, 0.10)),
-    linear-gradient(180deg, rgba(1, 4, 10, 0.03), transparent 46%, rgba(1, 4, 10, 0.22));
+    radial-gradient(ellipse at 50% 52%, transparent 0 24%, rgba(4, 14, 12, 0.035) 52%, rgba(2, 8, 8, 0.09) 100%),
+    linear-gradient(90deg, rgba(1, 5, 8, 0.09), transparent 24% 80%, rgba(1, 5, 8, 0.08)),
+    linear-gradient(180deg, rgba(1, 4, 10, 0.02), transparent 48%, rgba(1, 4, 10, 0.18));
   mix-blend-mode: normal;
 }
 
@@ -39,24 +35,73 @@
 .focusWorld .focusStatus,
 .focusWorld .webglRecovery { position: absolute; }
 
+/* Keep context legible without letting interface panels become the scene. */
+.focusWorld .focusHeading { width: min(350px, 34vw) !important; }
+.focusWorld .focusHeading h2 { font-size: clamp(2.1rem, 4.1vw, 4.8rem) !important; max-width: 10ch !important; }
+.focusWorld .focusHeading > span { opacity: .72; }
+.focusWorld .focusNarration {
+  max-width: 340px !important;
+  margin-top: 14px !important;
+  padding: 10px 12px !important;
+  background: linear-gradient(90deg, rgba(2,7,12,.48), rgba(2,7,12,0)) !important;
+  backdrop-filter: blur(8px) !important;
+}
+.focusWorld .focusNarration strong { font-size: clamp(.92rem, 1.25vw, 1.12rem) !important; line-height: 1.34 !important; font-weight: 500 !important; }
+
+.focusWorld .memoryMeaning {
+  width: min(420px, 34vw) !important;
+  padding: 10px 12px !important;
+  border-color: color-mix(in srgb,var(--memory-light) 12%,transparent) !important;
+  background: linear-gradient(135deg,rgba(2,7,12,.58),rgba(2,7,12,.20)) !important;
+  backdrop-filter: blur(10px) !important;
+}
+.focusWorld .memoryMeaning p { margin-bottom: 7px !important; font-size: 11px !important; }
+.focusWorld .memoryMeaning dt { font-size: 8px !important; opacity: .78; }
+.focusWorld .memoryMeaning dd { font-size: 10px !important; }
+
+.focusWorld .focusControls {
+  opacity: .70;
+  padding: 5px !important;
+  background: rgba(2,7,12,.46) !important;
+  border-color: rgba(215,246,255,.12) !important;
+  backdrop-filter: blur(10px) !important;
+  transition: opacity 160ms ease;
+}
+.focusWorld .focusControls:hover,
+.focusWorld .focusControls:focus-within { opacity: 1; }
+.focusWorld .focusControls button { min-height: 44px !important; }
+.focusWorld .focusStatus { opacity: .56; background: rgba(2,7,12,.42) !important; }
+.focusWorld .focusHelp { opacity: .56; background: rgba(2,7,12,.48) !important; backdrop-filter: blur(10px) !important; }
+.focusWorld .focusHelp:hover,
+.focusWorld .focusHelp:focus-within,
+.focusWorld .focusHelp[open] { opacity: 1; }
+.focusWorld .focus-spatial-aperture-button { background: rgba(3,12,20,.62) !important; border-color: rgba(220,248,255,.20) !important; min-height: 44px !important; }
+
 @media (max-width: 760px) {
   .focusWorld .focusBackdrop {
     inset: -1%;
     background-position: center 44%;
-    opacity: 0.08;
-    filter: saturate(0.62) contrast(1.0) brightness(0.68);
+    opacity: 0.055;
+    filter: saturate(0.58) contrast(1.0) brightness(0.64);
   }
-
-  .focusWorld .focusCanvas canvas {
-    opacity: 1;
-    filter: saturate(0.98) contrast(0.98) brightness(1.24);
-  }
-
+  .focusWorld .focusCanvas canvas { opacity: 1; filter: saturate(0.92) contrast(1.01) brightness(1.14); }
   .focusWorld .focusFog {
     background:
-      radial-gradient(ellipse at 50% 56%, transparent 0 20%, rgba(3, 12, 10, 0.08) 56%, rgba(2, 8, 8, 0.16)),
-      linear-gradient(180deg, rgba(1, 4, 10, 0.02), transparent 52%, rgba(1, 4, 10, 0.30));
+      radial-gradient(ellipse at 50% 54%, transparent 0 25%, rgba(3, 12, 10, 0.05) 58%, rgba(2, 8, 8, 0.13)),
+      linear-gradient(180deg, rgba(1, 4, 10, 0.02), transparent 54%, rgba(1, 4, 10, 0.24));
   }
+  .focusWorld .focusHeading { left: 14px !important; top: 14px !important; width: min(68vw,300px) !important; }
+  .focusWorld .focusHeading h2 { font-size: clamp(2rem, 10vw, 3.25rem) !important; }
+  .focusWorld .focusNarration { max-width: min(64vw,300px) !important; margin-top: 8px !important; padding: 8px 10px !important; }
+  .focusWorld .focusNarration strong { font-size: .92rem !important; }
+  .focusWorld .memoryMeaning { left: 14px !important; bottom: max(78px,calc(env(safe-area-inset-bottom) + 68px)) !important; width: min(72vw,340px) !important; max-height: 92px !important; overflow: auto; }
+  .focusWorld .focusControls { left: 12px !important; right: 12px !important; bottom: max(10px,env(safe-area-inset-bottom)) !important; }
+  .focusWorld .focusHelp { right: 12px !important; top: 92px !important; }
+  .focusWorld .focusStatus { left: 50% !important; top: 12px !important; transform: translateX(-50%) !important; }
 }
 
-@media (prefers-reduced-motion: reduce) { .focusWorld .focusBackdrop { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .focusWorld .focusBackdrop { transform: none; }
+  .focusWorld .focusControls,
+  .focusWorld .focusHelp { transition: none; backdrop-filter: none !important; }
+}
