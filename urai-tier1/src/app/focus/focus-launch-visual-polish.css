@@ -11,7 +11,7 @@
   background-size: cover;
   background-position: center 48%;
   background-repeat: no-repeat;
-  opacity: 0.075;
+  opacity: 0.10;
   filter: saturate(0.58) contrast(1.01) brightness(0.62);
   transform: scale(1.018);
 }
