@@ -5,23 +5,25 @@ import test from 'node:test'
 const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
 
-test('canonical Life Map route uses the cosmic personal-universe visual owner', () => {
+test('canonical Life Map route uses the deep-stellar personal-universe visual owner', () => {
   assert.match(boundary, /CosmicComposedLifeMapScene/)
-  assert.match(cosmic, /data-life-map-visual-authority="v257-cosmic-personal-universe"/)
+  assert.match(cosmic, /data-life-map-visual-authority="v260-deep-stellar-personal-universe"/)
   assert.match(cosmic, /data-life-map-ground="none"/)
-  assert.match(cosmic, /life-map-personal-galaxy/)
   assert.match(cosmic, /life-map-deep-space/)
-  assert.match(cosmic, /life-map-nebula-/)
-  assert.match(cosmic, /life-map-constellations/)
-  assert.match(cosmic, /life-map-memory-stars/)
-  assert.match(cosmic, /life-map-selected-memory-nebula/)
+  assert.match(cosmic, /life-map-deep-stellar-field/)
+  assert.match(cosmic, /life-map-emotional-weather/)
   assert.match(cosmic, /life-map-nebula-veil-/)
+  assert.match(cosmic, /life-map-constellations/)
+  assert.match(cosmic, /retiredVisualRole: "v260-no-explicit-graph-edges"/)
+  assert.match(cosmic, /life-map-memory-stars/)
+  assert.match(cosmic, /life-map-selected-memory-dust/)
   assert.doesNotMatch(cosmic, /Sparkles/)
 })
 
-test('cosmic Life Map cannot silently regress to a terrestrial overview owner', () => {
+test('cosmic Life Map cannot silently regress to a terrestrial or graph overview owner', () => {
   assert.doesNotMatch(cosmic, /LivingMemoryGeography|memoryValley|ChapterTerritories|lifeMapTerrainHeight|weathered-valley-floor|worn-lineage-path/)
   assert.doesNotMatch(cosmic, /from "\.\/lifeMapSpatialLayout"/)
+  assert.doesNotMatch(cosmic, /<line>|<lineSegments>|LineSegments|CatmullRomCurve3|TubeGeometry/)
 })
 
 test('cosmic visual-owner replacement preserves exact-head proof and route semantics', () => {
@@ -42,8 +44,9 @@ test('cosmic visual-owner replacement preserves exact-head proof and route seman
 })
 
 test('memory selection stays celestial until Focus or Replay is entered', () => {
-  assert.match(cosmic, /Selected memory in orbit/)
-  assert.match(cosmic, /Approaching the selected star/)
-  assert.match(cosmic, /life-map-selected-memory-nebula/)
+  assert.match(cosmic, /Memory selected/)
+  assert.match(cosmic, /Approaching memory/)
+  assert.match(cosmic, /life-map-selected-memory-dust/)
+  assert.match(cosmic, /stellar-memory-not-node-graph/)
   assert.doesNotMatch(cosmic, /IntimateMemoryChamber|ArrivalSanctuary|memory chamber/)
 })
