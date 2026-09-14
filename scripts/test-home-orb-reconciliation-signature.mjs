@@ -3,7 +3,7 @@ import test from 'node:test'
 import { assertExactHomeOrbOpenTransportFailure } from './lib/home-orb-reconciliation-signature.mjs'
 
 const exactHead = '9ff97275f08f6b8e41f2fe92510659767d296d26'
-const predicate = `TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Open URAI Orb companion' }).first()\n    - locator resolved to <button data-testid="home-semantic-orb">Open URAI Orb companion</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable`
+const predicate = `TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Open URAI Orb companion' }).first()\n    - locator resolved to <button data-testid="home-semantic-orb">Open URAI Orb companion</button>\n  - attempting click action\n    - waiting for element to be visible, enabled and stable\n    - element is visible, enabled and stable`
 
 function fixture(overrides = {}) {
   return {
