@@ -1,0 +1,78 @@
+/* V265 retained-pixel convergence.
+   The WebGL stellar volume remains the visual owner. This CSS layer is only a
+   restrained far-field particulate veil so departure/travel frames retain
+   distributed depth instead of collapsing into a few isolated bright anchors. */
+.life-map-root::before {
+  content: "";
+  position: absolute;
+  inset: -4%;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at center, rgba(226,242,255,.88) 0 0.65px, transparent .95px),
+    radial-gradient(circle at center, rgba(255,234,204,.72) 0 0.55px, transparent .9px),
+    radial-gradient(circle at center, rgba(178,211,255,.66) 0 0.5px, transparent .85px),
+    radial-gradient(ellipse at 34% 47%, rgba(70,106,145,.11), transparent 28%),
+    radial-gradient(ellipse at 69% 42%, rgba(99,72,125,.09), transparent 25%);
+  background-size:
+    83px 79px,
+    137px 131px,
+    191px 173px,
+    100% 100%,
+    100% 100%;
+  background-position:
+    11px 17px,
+    47px 61px,
+    103px 29px,
+    0 0,
+    0 0;
+  opacity: .34;
+  filter: blur(.08px);
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,.78) 0 66%, rgba(0,0,0,.96) 100%);
+}
+
+.life-map-root[data-life-map-phase="departure"]::before,
+.life-map-root[data-life-map-phase="travel"]::before,
+.life-map-root[data-life-map-phase="approach"]::before {
+  opacity: .46;
+  background-size:
+    73px 71px,
+    121px 117px,
+    173px 157px,
+    100% 100%,
+    100% 100%;
+}
+
+.life-map-root[data-life-map-phase="arrival"]::before {
+  opacity: .38;
+}
+
+/* Selected memory arrival should read as a luminous threshold, not a node card. */
+.life-map-root[data-life-map-phase="arrival"]::after {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(224,242,255,.035) 0 12%, transparent 31%),
+    radial-gradient(ellipse at 34% 48%,rgba(31,66,96,.075),transparent 31%),
+    radial-gradient(ellipse at 72% 41%,rgba(72,48,92,.06),transparent 29%),
+    radial-gradient(circle at 50% 48%,transparent 0 62%,rgba(0,0,0,.08) 82%,rgba(0,0,0,.34) 100%) !important;
+}
+
+@media (max-width: 700px) {
+  .life-map-root::before {
+    inset: -6%;
+    opacity: .30;
+    background-size:
+      69px 67px,
+      113px 109px,
+      157px 149px,
+      100% 100%,
+      100% 100%;
+  }
+  .life-map-root[data-life-map-phase="departure"]::before,
+  .life-map-root[data-life-map-phase="travel"]::before,
+  .life-map-root[data-life-map-phase="approach"]::before { opacity: .40; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-map-root::before { transform: none; }
+}
