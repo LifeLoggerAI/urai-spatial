@@ -17,7 +17,7 @@
 }
 
 .focusWorld .focusCanvas { z-index: 1; background: transparent; }
-.focusWorld .focusCanvas canvas { opacity: 1; filter: saturate(0.92) contrast(1.01) brightness(1.12); }
+.focusWorld .focusCanvas canvas { opacity: 1; filter: saturate(0.92) contrast(1.01) brightness(1.22); }
 
 .focusWorld .focusFog {
   z-index: 2;
