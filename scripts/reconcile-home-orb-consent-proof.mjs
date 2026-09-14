@@ -124,10 +124,10 @@ const failure = JSON.parse(await readFile(path.join(outputDir, 'runner-failure.j
 assertExactHomeOrbOpenTransportFailure({ failure, exactHead })
 
 const reconciliation = {
-  schemaVersion: 'urai-home-orb-open-reconciliation-1',
+  schemaVersion: 'urai-home-orb-open-reconciliation-2',
   exactHead,
   originalFailure: 'playwright-pointer-transport-timeout-after-visible-enabled-stable-semantic-orb-control',
-  interactionAuthority: 'canonical semantic BUTTON HTMLElement.click -> companion attention -> keyboard consent -> enabled Send -> ordinary Send click',
+  interactionAuthority: 'canonical semantic BUTTON HTMLElement.click -> URAI world Orb-open event -> single hydrated PersistentWorldCompanion owner -> keyboard consent -> enabled Send -> ordinary Send click',
   visualGate: {
     source: 'retained-canvas-png',
     minimumViewportCoverage: 0.82,
@@ -188,10 +188,12 @@ try {
   const owner = await waitForHomeReady(page)
 
   const openOrb = page.getByRole('button', { name: 'Open URAI Orb companion' }).first()
+  const companionOrb = page.locator('button[data-world-target="orb-controls"]').first()
   assert(await page.locator('button[data-testid="home-semantic-orb"]').count() === 1, 'canonical semantic Orb control is not unique')
+  assert(await page.locator('button[data-world-target="orb-controls"]').count() === 1, 'canonical PersistentWorldCompanion Orb owner is not unique')
   assert(await openOrb.isVisible(), 'canonical semantic Orb control is not visible')
   assert(await openOrb.isEnabled(), 'canonical semantic Orb control is not enabled')
-  assert(await page.locator('html[data-home-semantic-orb-bridge="ready"]').count() === 1, 'semantic Orb hydration bridge is not ready')
+  assert(await companionOrb.isEnabled(), 'canonical PersistentWorldCompanion Orb owner is not hydrated')
   await openOrb.evaluate((node) => {
     if (!(node instanceof HTMLButtonElement)) throw new Error('canonical semantic Orb target is not a button')
     node.click()
