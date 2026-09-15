@@ -4,6 +4,7 @@ import { useLayoutEffect } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { HomeOrbReliquaryV286 } from './HomeOrbReliquaryV286'
+import { HomeOrbSurfacePolishV290 } from './HomeOrbSurfacePolishV290'
 import { ORB, height } from '../layout/HomeWorldProductionV223Geometry'
 
 const V287_COMPANION_X = 1.02
@@ -11,22 +12,20 @@ const V287_COMPANION_Z = .72
 const RETIRED_RELIQUARY_NAME = 'home-v286-biomorphic-memory-reliquary'
 const GROUNDED_RELIQUARY_NAME = 'home-v288-grounded-biomorphic-memory-reliquary'
 const FALLBACK_INTERACTION_OWNER = 'home-gold-companion'
+const V290_VISIBLE_SHELL_OWNER = 'home-v290-biomorphic-shell-authority'
 
 /**
- * V288 integration adapter carrying the V289 Orb polish authority.
+ * V288 integration adapter carrying the V290 Orb visual authority.
  *
- * V287 legitimately moved Home to a cinematic third-person composition with a
- * grounded companion interaction owner. That rewrite accidentally retired the
- * accepted V286 reliquary pixels and exposed a three-sphere fallback instead.
- * This adapter preserves V287 camera / Ground / broad-sky ownership while
- * moving the visible reliquary to the grounded companion anchor.
- *
- * V289 refines that same reliquary identity without changing ownership: the
- * fallback group remains the sole pointer/touch owner while the visible
- * fractured mineral reliquary remains visual-only and raycast-disabled.
+ * V286 remains the distributed internal memory-world owner and Ground-trace
+ * owner. V290 replaces only the coarse shell pixels with a smooth, materially
+ * richer fractured-mineral surface. The invisible V287 companion remains the
+ * sole pointer/touch owner. This keeps art, memory-state behavior, and semantic
+ * interaction independently governed.
  */
 export function HomeOrbGroundedV288() {
-  const { scene } = useThree()
+  const { scene, size } = useThree()
+  const portrait = size.height > size.width
 
   useLayoutEffect(() => {
     const legacyY = height(ORB.x, ORB.z)
@@ -38,13 +37,34 @@ export function HomeOrbGroundedV288() {
       opacity: number
     }>()
     const lightState = new Map<THREE.Light, boolean>()
-    const rootState = new Map<THREE.Object3D, { name: string; position: THREE.Vector3 }>()
+    const rootState = new Map<THREE.Object3D, { name: string; position: THREE.Vector3; scale: THREE.Vector3 }>()
+
+    const rememberObject = (object: THREE.Object3D) => {
+      if (!rootState.has(object)) rootState.set(object, {
+        name: object.name,
+        position: object.position.clone(),
+        scale: object.scale.clone(),
+      })
+    }
+
+    const hideMaterial = (material: THREE.Material) => {
+      if (!materialState.has(material)) materialState.set(material, {
+        colorWrite: material.colorWrite,
+        depthWrite: material.depthWrite,
+        transparent: material.transparent,
+        opacity: material.opacity,
+      })
+      material.colorWrite = false
+      material.depthWrite = false
+      material.transparent = true
+      material.opacity = 0
+    }
 
     const reconcile = () => {
       const reliquary = scene.getObjectByName(GROUNDED_RELIQUARY_NAME)
         ?? scene.getObjectByName(RETIRED_RELIQUARY_NAME)
       if (reliquary) {
-        if (!rootState.has(reliquary)) rootState.set(reliquary, { name: reliquary.name, position: reliquary.position.clone() })
+        rememberObject(reliquary)
         reliquary.name = GROUNDED_RELIQUARY_NAME
         reliquary.position.set(
           V287_COMPANION_X - ORB.x,
@@ -53,11 +73,28 @@ export function HomeOrbGroundedV288() {
         )
         reliquary.userData = {
           ...reliquary.userData,
-          artRevision: 'v289-grounded-biomorphic-memory-reliquary-aaa-convergence',
-          integrationAuthority: 'v287-cinematic-home-plus-v288-grounding-plus-v289-reliquary-polish',
+          artRevision: 'v290-grounded-biomorphic-memory-reliquary-shell-polish',
+          integrationAuthority: 'v287-cinematic-home-plus-v288-grounding-plus-v290-shell-polish',
+          visibleShellAuthority: V290_VISIBLE_SHELL_OWNER,
           visualOnly: true,
           interactionOwner: false,
         }
+
+        // Keep V286's internal memory world aligned with the slightly tighter
+        // V290 hero silhouette while its original coarse shell is suppressed.
+        reliquary.traverse((object) => {
+          if (object.name.startsWith('home-v286-reliquary-state-')) {
+            rememberObject(object)
+            object.position.y = legacyY + (portrait ? 1.15 : 1.12)
+            object.scale.set(...(portrait ? [1.38, 1.44, 1.30] : [1.18, 1.24, 1.10] as const))
+          }
+          if (object instanceof THREE.Mesh && object.name.startsWith('home-v286-weathered-shell-plate-')) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material]
+            materials.forEach(hideMaterial)
+            object.castShadow = false
+            object.receiveShadow = false
+          }
+        })
       }
 
       const fallback = scene.getObjectByName(FALLBACK_INTERACTION_OWNER)
@@ -68,23 +105,12 @@ export function HomeOrbGroundedV288() {
         groundedCompanion: true,
         interactionOwner: true,
         fallbackVisualOwner: false,
-        visualAuthority: GROUNDED_RELIQUARY_NAME,
+        visualAuthority: V290_VISIBLE_SHELL_OWNER,
       }
       fallback.traverse((object) => {
         if (object instanceof THREE.Mesh) {
           const materials = Array.isArray(object.material) ? object.material : [object.material]
-          for (const material of materials) {
-            if (!materialState.has(material)) materialState.set(material, {
-              colorWrite: material.colorWrite,
-              depthWrite: material.depthWrite,
-              transparent: material.transparent,
-              opacity: material.opacity,
-            })
-            material.colorWrite = false
-            material.depthWrite = false
-            material.transparent = true
-            material.opacity = 0
-          }
+          materials.forEach(hideMaterial)
         } else if (object instanceof THREE.Light) {
           if (!lightState.has(object)) lightState.set(object, object.visible)
           object.visible = false
@@ -107,9 +133,13 @@ export function HomeOrbGroundedV288() {
       rootState.forEach((state, object) => {
         object.name = state.name
         object.position.copy(state.position)
+        object.scale.copy(state.scale)
       })
     }
-  }, [scene])
+  }, [portrait, scene])
 
-  return <HomeOrbReliquaryV286 />
+  return <>
+    <HomeOrbReliquaryV286 />
+    <HomeOrbSurfacePolishV290 />
+  </>
 }
