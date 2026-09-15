@@ -19,6 +19,7 @@ const ground = read('src/app/GroundSpatialWorldCanon.tsx')
 const groundRoute = read('src/app/ground/page.tsx')
 const groundContract = read('src/spatial/world/homeGroundContract.ts')
 const gateway = read('src/spatial/world/GroundGateway.tsx')
+const worldEvents = read('src/spatial/world/worldEvents.ts')
 const navigationCss = read('src/spatial/world/worldNavigation.css')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const travel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
@@ -92,6 +93,16 @@ test('Ground is first-person, mapped from Home, explorable, collision-aware and 
   assert.doesNotMatch(ground, /router\.push\("\/home\?returnFrom=ground"\)|GroundPhysicalArchitecture|ground-destination-compass/)
   has(groundRoute, 'GroundSpatialWorldCanon')
   assert.doesNotMatch(groundRoute, /GroundFocusContainment|GroundCheckpointRestoreSignal|GroundSpatialWorldClean/)
+})
+
+test('every Ground Return path converges on the canonical unwind owner', () => {
+  for (const marker of [
+    "pathname === '/ground' || pathname.startsWith('/ground/')",
+    "window.dispatchEvent(new CustomEvent('urai:ground-unwind'",
+    "reason: 'accessible-control'",
+  ]) has(worldEvents, marker)
+  assert.match(gateway, /router\.push\(`\$\{target\.pathname\}\$\{target\.search\}`\)/)
+  assert.doesNotMatch(gateway, /requestUraiWorldTravel/)
 })
 
 test('Ground gateway is semantic fallback only and old portal visuals are retired', () => {
