@@ -72,7 +72,11 @@ function RetireLegacyHomeHotspots() {
     const hidden = new Map<THREE.Object3D, boolean>()
     const raycasts = new Map<THREE.Object3D, THREE.Object3D['raycast']>()
     const retire = () => scene.traverse((object) => {
-      if (object.name === 'home-gold-companion' || object.name === 'home-visible-user-avatar') return
+      if (
+        object.name === 'home-gold-companion'
+        || object.name === 'home-visible-user-avatar'
+        || object.name === 'home-v288-grounded-biomorphic-memory-reliquary'
+      ) return
       if (!legacyHotspotPatterns.some((pattern) => pattern.test(object.name))) return
       if (!hidden.has(object)) hidden.set(object, object.visible)
       object.visible = false
