@@ -9,19 +9,24 @@ const historicalV225 = readFileSync(new URL('../src/spatial/layout/HomeWorldProd
 const legacyRuntime = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV70.tsx', import.meta.url), 'utf8')
 const legacyArt = readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV76.tsx', import.meta.url), 'utf8')
 const owner = readFileSync(new URL('../src/app/AssetDrivenHomeWorld.tsx', import.meta.url), 'utf8')
+const authority = JSON.parse(readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('V226 is the single authoritative Home visual owner while predecessor art remains historical provenance', () => {
+test('V287 is the current cinematic Home authority while historical geometry remains provenance only', () => {
   has(currentRuntime, 'export function HomeWorldProductionV223')
   has(currentRuntime, 'data-home-visual-ownership="single-canvas-three-dimensional-geometry"')
-  has(currentRuntime, 'HomeV225PolishV3')
-  has(owner, 'data-home-canvas-owner="home-world-production-v223-movement-v226-visual-single-authority"')
-  has(owner, "for (const version of ['76','125','126','176','219','220','221','222','223','224','225'])")
-  has(owner, "world.setAttribute('data-home-v225-art-layer', 'superseded-v3-visual-owner')")
+  has(currentRuntime, 'data-home-embodied-self="visible-cinematic-avatar"')
+  has(currentRuntime, 'data-home-movement="camera-look-world-surface-selection"')
+  has(currentRuntime, 'home-visible-user-avatar')
+  has(currentRuntime, 'home-gold-companion')
+  has(owner, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
+  has(owner, "world.setAttribute('data-home-v223-art-layer', 'cinematic-threshold-runtime-authority')")
   has(owner, "world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')")
   has(owner, 'data-home-v226-retained-pixel-rebuild="active"')
   has(owner, 'data-home-v225-retained-pixel-rebuild="superseded"')
+  assert.equal(authority.artRevision, 'v287-cinematic-lived-world-threshold')
+  assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal((currentRuntime.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(currentGeometry, /<Canvas/)
   assert.doesNotMatch(currentVisual, /<Canvas/)
@@ -29,7 +34,7 @@ test('V226 is the single authoritative Home visual owner while predecessor art r
   assert.match(legacyArt, /export function HomeV76Sanctuary/)
 })
 
-test('V225 base geometry remains covered beneath the V226 rooted sanctuary successor', () => {
+test('historical V225 physical geometry remains available without owning current Home interaction', () => {
   for (const marker of [
     'function sculptedFloorGeometry(', 'function strataGeometry(', 'function memoryRib(',
     'home-v225-sculpted-sanctuary-floor', 'home-v225-authored-memory-valley', 'export function Escarpment(',
@@ -42,26 +47,30 @@ test('V225 base geometry remains covered beneath the V226 rooted sanctuary succe
   assert.match(currentGeometry, /normalMap=\{maps\[1\]\}/)
   assert.match(currentGeometry, /roughnessMap=\{maps\[2\]\}/)
   assert.doesNotMatch(currentGeometry, /<torusGeometry|<RoundedBox|useGLTF\(|IcosahedronGeometry/)
+  assert.doesNotMatch(currentRuntime, /import \{[^}]*\bGROUND\b[^}]*\} from '\.\/HomeWorldProductionV223Geometry'/)
+  assert.doesNotMatch(currentRuntime, /import \{[^}]*\bLIFE_MAP\b[^}]*\} from '\.\/HomeWorldProductionV223Geometry'/)
 })
 
-test('V226 Orb is one integrated asymmetric living-memory presence with governed states and embedded veins', () => {
-  for (const marker of ['function organicOrbGeometry(', 'function LivingMemoryPresence(', 'home-v226-rooted-single-living-memory-presence', 'function vein(']) has(currentVisual, marker)
-  for (const state of ['dormant','idle','attention','listening','thinking','speaking','guiding','reflecting','calming','privacy','warning','transition']) has(currentVisual, `${state}:`)
-  assert.match(currentGeometry, /export const ORB\s*=\s*new THREE\.Vector3\(-\.45,\s*1\.03,\s*-7\.45\)/)
-  assert.match(owner, /const HOME_ORB = \{ x: -\.45, z: -7\.45 \} as const/)
+test('V287 Orb is a grounded companion beside the visible user with governed state output', () => {
+  for (const marker of ['function OrbCompanion(', 'home-gold-companion', "semanticOwner: 'orb'", 'groundedCompanion: true', 'COMPANION_POSITION']) has(currentRuntime, marker)
   assert.match(currentRuntime, /data-home-orb-state=\{orbState\}/)
-  assert.match(currentRuntime, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState,reducedMotion,true\)\.animation\}/)
-  assert.match(currentVisual, /new THREE\.TubeGeometry\(/)
-  assert.doesNotMatch(currentVisual, /octahedronGeometry|IcosahedronGeometry|<torusGeometry/)
+  assert.match(currentRuntime, /data-home-orb-clip=\{resolveOrbSensoryOutput\(orbState, reducedMotion, true\)\.animation\}/)
+  assert.match(currentRuntime, /event\.stopPropagation\(\); onOrb\(\)/)
+  assert.match(currentRuntime, /const groundY = height\(COMPANION_POSITION\.x, COMPANION_POSITION\.z\)/)
+  assert.doesNotMatch(owner, /const HOME_ORB = \{ x: -\.45, z: -7\.45 \} as const/)
+  assert.doesNotMatch(owner, /home-orb-physical-portal|Orb portal|orb portal/i)
 })
 
-test('V226 keeps bounded rendering, real traversal and fail-closed pixel certification', () => {
+test('V287 keeps bounded rendering, progress-driven Ground/Sky traversal and fail-closed pixel certification', () => {
   assert.match(currentRuntime, /dpr=\{1\}/)
-  assert.match(currentRuntime, /cameraCheckpoint:'home-ground-descent'/)
-  assert.match(currentRuntime, /cameraCheckpoint:'home-sky-ascent-complete'/)
-  assert.match(currentRuntime, /reducedMotion\?720:1800/)
+  assert.match(currentRuntime, /cameraCheckpoint: 'ground-first-person-arrival'/)
+  assert.match(currentRuntime, /cameraCheckpoint: 'home-sky-ascent-complete'/)
+  assert.match(currentRuntime, /t >= \.995 && !completed\.current/)
+  assert.match(currentRuntime, /data-home-ground-entry="physical-world-surface"/)
+  assert.match(currentRuntime, /data-home-life-map-entry="visible-sky-broad-interaction"/)
+  assert.doesNotMatch(currentRuntime, /setTimeout\([^\n]*transition[^\n]*ground/)
+  assert.doesNotMatch(currentRuntime, /MobileMovementPad|stepEmbodiedMotion|useMovementInput/)
   has(owner, "world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')")
   has(owner, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  has(owner, "world.setAttribute('data-home-final-art-revision', 'v226-retained-pixels-pending')")
   assert.doesNotMatch(`${currentRuntime}\n${currentGeometry}\n${currentVisual}\n${owner}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
