@@ -507,7 +507,7 @@ function MemoryArtifact({ node, index, selected, phase, reducedMotion, onSelect 
   const root = useRef<THREE.Group>(null);
   const active = selected?.id === node.id;
   const related = Boolean(selected && (selected.connectedTo.includes(node.id) || node.connectedTo.includes(selected.id)));
-  const visible = !selected || active || (related && phase !== "arrival");
+  const visible = !selected || phase !== "arrival" || active || related;
   const importance = artifactImportance(node);
   const chapter = chapterForNode(node, index);
   const semanticLabel = artifactFamilyLabel(node);
