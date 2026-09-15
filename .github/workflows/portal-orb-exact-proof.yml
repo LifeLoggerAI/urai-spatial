@@ -12,8 +12,10 @@ on:
       - 'urai-tier1/src/app/currentHomeVisualAuthority.json'
       - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
+      - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
       - 'urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
       - 'urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
+      - 'urai-tier1/src/spatial/assets/HomeOrbSurfacePolishV290.tsx'
       - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
   pull_request:
     branches: [main, home-final-v24-certify-20260826]
@@ -29,6 +31,7 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css'
+      - 'urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
       - 'urai-tier1/src/spatial/assets/**'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp'
@@ -60,7 +63,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Verify V289 reliquary polish plus V288 grounding and broad-sky authority
+      - name: Verify V290 shell polish plus V288 grounding and broad-sky authority
         run: |
           set -euo pipefail
           home='urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
@@ -69,14 +72,19 @@ jobs:
           visual='urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
           adapter='urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
           reliquary='urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
+          shell='urai-tier1/src/spatial/assets/HomeOrbSurfacePolishV290.tsx'
+          navigation='urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx'
           authority='urai-tier1/src/app/currentHomeVisualAuthority.json'
           state='urai-tier1/src/app/home/orbStateController.ts'
-          grep -Fq 'v289-cinematic-lived-world-grounded-reliquary-aaa-convergence' "$authority"
-          grep -Fq 'v289-grounded-biomorphic-reliquary-aaa-convergence' "$authority"
+          grep -Fq 'v290-cinematic-lived-world-grounded-reliquary-shell-polish' "$authority"
+          grep -Fq 'v290-grounded-biomorphic-reliquary-smooth-mineral-shell' "$authority"
+          grep -Fq 'HomeOrbSurfacePolishV290.tsx' "$authority"
           grep -Fq 'cinematic-lived-world-threshold' "$authority"
           grep -Fq 'HomeOrbGroundedV288' "$visual"
           grep -Fq 'home-v288-grounded-biomorphic-memory-reliquary' "$adapter"
-          grep -Fq 'v289-grounded-biomorphic-memory-reliquary-aaa-convergence' "$adapter"
+          grep -Fq 'v290-grounded-biomorphic-memory-reliquary-shell-polish' "$adapter"
+          grep -Fq 'home-v290-biomorphic-shell-authority' "$shell"
+          grep -Fq 'opaque-high-roughness-weathered-mineral' "$shell"
           grep -Fq 'fallbackVisualOwner: false' "$adapter"
           grep -Fq 'material.colorWrite = false' "$adapter"
           grep -Fq 'interactionOwner: true' "$adapter"
@@ -88,6 +96,8 @@ jobs:
           grep -Fq 'raycast={() => null}' "$reliquary"
           grep -Fq 'URAI_ORB_VISUAL_CANON' "$state"
           grep -Fq 'RETIRED_VISUAL_TOKENS' "$state"
+          grep -Fq 'DRAG_LOOK_THRESHOLD_PX = 5' "$navigation"
+          grep -Fq 'Do not capture on pointer-down' "$navigation"
           if grep -Fq 'home-v253-literal-living-memory-heart' "$reliquary"; then
             echo 'Retired heart Orb authority returned to current reliquary source' >&2
             exit 1
