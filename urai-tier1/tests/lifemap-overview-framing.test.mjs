@@ -10,6 +10,7 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.match(cosmic, /data-life-map-visual-authority="v260-deep-stellar-personal-universe"/)
   assert.match(cosmic, /data-life-map-art-revision="v279-departure-volumetric-bridge"/)
   assert.match(cosmic, /data-life-map-overview-authority="v280-data-derived-personal-universe-regions"/)
+  assert.match(cosmic, /data-life-map-overview-polish="v281-literal-pixel-authored-geography"/)
   assert.match(cosmic, /life-map-overview-personal-universe-regions/)
   assert.match(cosmic, /data-derived-personal-universe-geography/)
   assert.match(cosmic, /node\.eraId \|\| node\.clusterId \|\| node\.type/)
@@ -32,26 +33,27 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.doesNotMatch(cosmic, /scale=\{active \? 10\.8|scale=\{active \? 5\.4/)
 })
 
-test('overview camera is tighter and independent from selected-memory travel origin', () => {
+test('V281 overview camera is tighter and independent from selected-memory travel origin', () => {
   assert.match(cosmic, /const portrait = size\.height > size\.width/)
-  assert.match(cosmic, /const overview = new THREE\.Vector3\(0, portrait \? \.9 : 2\.2, portrait \? 21\.5 : 22\.5\)/)
-  assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0, portrait \? -\.35 : \.15, portrait \? -21 : -19\)/)
-  assert.match(cosmic, /fov: portrait \? 44 : 47/)
+  assert.match(cosmic, /const overview = new THREE\.Vector3\(0, portrait \? \.65 : 1\.55, portrait \? 18\.5 : 19\.5\)/)
+  assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0, portrait \? -\.45 : \.10, portrait \? -26 : -25\)/)
+  assert.match(cosmic, /fov: portrait \? 42 : 44/)
   assert.match(cosmic, /travelOrigin\s*=\s*new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
   assert.match(cosmic, /dir = travelOrigin\.clone\(\)\.sub\(target\)\.normalize\(\)/)
   assert.match(cosmic, /pointer\.x \* 1\.1/)
   assert.match(cosmic, /pointer\.y \* \.45/)
 })
 
-test('overview memory destinations remain stellar but have readable hierarchy', () => {
-  assert.match(cosmic, /const outer = active \? 1\.08 : related \? \.82 : \.74/)
-  assert.match(cosmic, /const mid = active \? \.52 : related \? \.40 : \.36/)
-  assert.match(cosmic, /const hot = active \? \.20 : related \? \.17 : \.16/)
-  assert.match(cosmic, /active \? \.20 : related \? \.19 : \.17/)
-  assert.match(cosmic, /active \? \.50 : related \? \.44 : \.40/)
-  assert.match(cosmic, /active \? \.94 : related \? \.91 : \.90/)
-  assert.match(cosmic, /active \? \.24 : related \? \.07 : \.024/)
-  assert.match(cosmic, /overviewWeather = phase === "overview" \? \.56 : 1/)
+test('V281 overview memory destinations remain stellar with explicit overview hierarchy', () => {
+  assert.match(cosmic, /const overviewBoost = overview \? 1\.48 : 1/)
+  assert.match(cosmic, /const outer = \(active \? 1\.08 : related \? \.82 : \.74\) \* overviewBoost/)
+  assert.match(cosmic, /const mid = \(active \? \.52 : related \? \.40 : \.36\) \* overviewBoost/)
+  assert.match(cosmic, /const hot = \(active \? \.20 : related \? \.17 : \.16\) \* \(overview \? 1\.24 : 1\)/)
+  assert.match(cosmic, /active \? \.20 : related \? \.19 : overview \? \.25 : \.17/)
+  assert.match(cosmic, /active \? \.50 : related \? \.44 : overview \? \.48 : \.40/)
+  assert.match(cosmic, /active \? \.94 : related \? \.91 : overview \? \.94 : \.90/)
+  assert.match(cosmic, /active \? \.24 : related \? \.07 : overview \? \.036 : \.024/)
+  assert.match(cosmic, /overviewWeather = phase === "overview" \? \.38 : 1/)
   assert.match(cosmic, /fog attach="fog" args=\{\["#020611", 78, 170\]\}/)
 })
 
