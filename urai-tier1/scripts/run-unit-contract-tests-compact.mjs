@@ -25,6 +25,7 @@ const tests = [
   'tests/home-cohesion-contract.test.mjs',
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/home-ground-lifemap-art-bible-contract.test.mjs',
+  'tests/home-sky-lifemap-threshold-contract.test.mjs',
   'tests/home-presence-geometry-motion.test.mjs',
   'tests/home-relic-machine-realism-contract.test.mjs',
   'tests/home-v88-retained-pixel-repair-contract.test.mjs',

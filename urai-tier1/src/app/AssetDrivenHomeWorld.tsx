@@ -6,11 +6,10 @@ import { HomeWorldProductionV223 as HomeWorldProduction } from '@/spatial/layout
 import currentHomeVisualAuthority from './currentHomeVisualAuthority.json'
 
 type Props = { onOrbOpen: () => void; webglAvailable: true }
-type PortalDestination = 'ground' | 'life-map'
+type PortalDestination = 'ground'
 const HOME_SPAWN = { x: 0, z: 4.6 } as const
 const HOME_ORB = { x: -.45, z: -7.45 } as const
 const HOME_GROUND = { x: -4.85, z: -8.25 } as const
-const HOME_LIFE_MAP = { x: 4.85, z: -8.25 } as const
 const LEGACY_V126_FINAL_ART_MARKER = ['data-home-final-art-revision', 'v126-retained-pixels-pending'] as const
 const LEGACY_V176_AUTHORITY_MARKER = 'v176-recollection-sanctuary'
 const V226_RUNTIME_ASSETS = currentHomeVisualAuthority.runtimeAssets.join(' ')
@@ -24,7 +23,8 @@ function synchronizeCanonicalHomeTelemetry(world: HTMLElement) {
   world.dataset.homeDistance = distance(HOME_SPAWN)
   world.dataset.homeDistanceOrb = distance(HOME_ORB)
   world.dataset.homeDistanceGround = distance(HOME_GROUND)
-  world.dataset.homeDistanceLifeMap = distance(HOME_LIFE_MAP)
+  world.dataset.homeDistanceLifeMap = 'sky-threshold'
+  world.dataset.homeLifeMapThreshold = 'visible-sky-broad-interaction'
 }
 
 export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Props) {
@@ -44,14 +44,14 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
 
     const stagePortalLifecycle = (world: HTMLElement) => {
       const sequence = world.dataset.homePortalSequence ?? 'idle'
-      if (sequence === 'idle') {
+      if (sequence === 'idle' || sequence.startsWith('life-map:')) {
         if (lifecycleDestination) clearLifecycleTimers()
         lifecycleDestination = null
         return
       }
-      const match = /^(ground|life-map):traversal$/.exec(sequence)
+      const match = /^ground:traversal$/.exec(sequence)
       if (!match) return
-      const destination = match[1] as PortalDestination
+      const destination: PortalDestination = 'ground'
       if (lifecycleDestination === destination) return
       lifecycleDestination = destination
       clearLifecycleTimers()
@@ -101,17 +101,18 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v126-final-art-contract', LEGACY_V126_FINAL_ART_MARKER.join(':'))
       world.setAttribute('data-home-visible-world', currentHomeVisualAuthority.worldIdentifier)
-      world.setAttribute('data-home-visual-repair', 'v226-after-literal-a42bd5d-rejection')
-      world.setAttribute('data-home-physical-base', 'continuous-weathered-memory-valley-rooted-canopy-integrated-ground-life-map-and-orb')
+      world.setAttribute('data-home-visual-repair', 'sky-threshold-successor-after-localized-lifemap-rejection')
+      world.setAttribute('data-home-physical-base', 'continuous-weathered-memory-valley-rooted-canopy-ground-orb-and-celestial-sky-threshold')
       world.setAttribute('data-home-visual-grade', 'v226-literal-pixel-candidate-not-certified')
       world.setAttribute('data-home-final-art-revision', 'v226-retained-pixels-pending')
       world.setAttribute('data-home-live-art-revision', currentHomeVisualAuthority.artRevision)
       world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')
-      world.setAttribute('data-home-scanned-composition', 'v226-dimensional-rooted-sanctuary-ground-observatory-integrated-living-memory-presence')
-      world.setAttribute('data-home-runtime-assets', V226_RUNTIME_ASSETS)
+      world.setAttribute('data-home-scanned-composition', 'grounded-home-with-broad-celestial-life-map-threshold-and-living-memory-presence')
+      world.setAttribute('data-home-runtime-assets', `${V226_RUNTIME_ASSETS} HomeAtmosphericSky.tsx`)
       world.setAttribute('data-home-governed-identity-assets', 'v226-direct-runtime-topology historical-v191-glbs-unmounted')
-      world.setAttribute('data-home-visible-production-assets', 'v226-weathered-memory-banks v226-rooted-inhabited-canopy v226-ground-inhabited-hearth v226-life-map-lineage-observatory v226-rooted-single-living-memory-presence')
+      world.setAttribute('data-home-visible-production-assets', 'v226-weathered-memory-banks v226-rooted-inhabited-canopy v226-ground-inhabited-hearth home-sky-life-map-threshold v226-rooted-single-living-memory-presence')
       world.setAttribute('data-home-animation-owner', 'v226-rooted-living-memory-presence')
+      world.setAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
       world.setAttribute('data-home-audio', 'production-opus-consent-controlled')
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
@@ -127,10 +128,6 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       stagePortalLifecycle(world)
     }
 
-    // Player position changes arrive at render cadence. Keep that hot path to
-    // the four derived distance markers only; the previous implementation
-    // re-stamped the complete ownership/a11y contract and rescanned canvases on
-    // every movement mutation, creating avoidable main-thread/WebGL contention.
     const observer = new MutationObserver((records) => {
       const activeWorld = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
       if (!activeWorld) return
@@ -164,5 +161,5 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     }
   }, [])
 
-  return <div ref={ownerRef} data-home-authored-region-contract="true" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-route-owner="asset-driven-sacred-home" data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-physical-portal" data-home-forge-scenery="suppressed" data-home-v76-retained-pixel-rebuild="superseded" data-home-v125-retained-pixel-rebuild="superseded" data-home-v126-retained-pixel-rebuild="superseded" data-home-v176-retained-pixel-rebuild="superseded" data-home-v219-retained-pixel-rebuild="superseded" data-home-v220-retained-pixel-rebuild="superseded" data-home-v221-retained-pixel-rebuild="superseded" data-home-v222-retained-pixel-rebuild="superseded" data-home-v223-retained-pixel-rebuild="superseded" data-home-v224-retained-pixel-rebuild="superseded" data-home-v225-retained-pixel-rebuild="superseded" data-home-v226-retained-pixel-rebuild="active" data-home-canvas-owner="home-world-production-v223-movement-v226-visual-single-authority" style={{display:'contents'}}><HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable}/></div>
+  return <div ref={ownerRef} data-home-authored-region-contract="true" data-home-visible-world="moonlit-sacred-tech-sanctuary" data-home-route-owner="asset-driven-sacred-home" data-home-spatial-regions="home-authored-terrain home-mountain-horizon home-living-vegetation home-sanctuary-pavilion home-life-map-sky-threshold" data-home-forge-scenery="suppressed" data-home-v76-retained-pixel-rebuild="superseded" data-home-v125-retained-pixel-rebuild="superseded" data-home-v126-retained-pixel-rebuild="superseded" data-home-v176-retained-pixel-rebuild="superseded" data-home-v219-retained-pixel-rebuild="superseded" data-home-v220-retained-pixel-rebuild="superseded" data-home-v221-retained-pixel-rebuild="superseded" data-home-v222-retained-pixel-rebuild="superseded" data-home-v223-retained-pixel-rebuild="superseded" data-home-v224-retained-pixel-rebuild="superseded" data-home-v225-retained-pixel-rebuild="superseded" data-home-v226-retained-pixel-rebuild="active" data-home-canvas-owner="home-world-production-v223-movement-v226-visual-single-authority" style={{display:'contents'}}><HomeWorldProduction onOrbOpen={onOrbOpen} webglAvailable={webglAvailable}/></div>
 }
