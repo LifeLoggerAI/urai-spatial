@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { LIFE_MAP, height } from './HomeWorldProductionV223Geometry'
 
@@ -51,6 +52,105 @@ function buildConstellationBranches(side: -1 | 1) {
     }
   }
   return new THREE.BufferGeometry().setFromPoints(points)
+}
+
+function firstStandardMaterial(mesh: THREE.Mesh) {
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+  return materials.find((material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial) ?? null
+}
+
+function TerrainNaturalismRepair() {
+  const { scene } = useThree()
+  const restoreRef = useRef<(() => void) | null>(null)
+
+  useFrame(() => {
+    if (restoreRef.current) return
+
+    const terrain = scene.getObjectByName('home-v229-textured-inhabited-valley-and-distant-ridge')
+    if (!terrain) return
+
+    const meshes = terrain.children.filter((child): child is THREE.Mesh => child instanceof THREE.Mesh)
+    if (meshes.length < 2) return
+
+    const [surface, ridge] = meshes
+    const positions = surface.geometry.getAttribute('position')
+    const surfaceMaterial = firstStandardMaterial(surface)
+    const ridgeMaterial = firstStandardMaterial(ridge)
+    if (!(positions instanceof THREE.BufferAttribute) || !surfaceMaterial || !ridgeMaterial) return
+
+    const originalPositions = Float32Array.from(positions.array as ArrayLike<number>)
+    const originalSurfaceColor = surfaceMaterial.color.clone()
+    const originalRidgeColor = ridgeMaterial.color.clone()
+    const originalSurfaceNormalScale = surfaceMaterial.normalScale.clone()
+    const originalRidgeNormalScale = ridgeMaterial.normalScale.clone()
+    const originalSurfaceRoughness = surfaceMaterial.roughness
+    const originalRidgeRoughness = ridgeMaterial.roughness
+    const originalSurfaceEnvMapIntensity = surfaceMaterial.envMapIntensity
+    const originalRidgeEnvMapIntensity = ridgeMaterial.envMapIntensity
+    const previousTerrainMarker = terrain.userData.uraiTerrainNaturalism
+
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = positions.getX(index)
+      const z = positions.getZ(index)
+      const pathX = 0.30 * Math.sin((z + 2.4) * 0.22) + 0.09 * Math.sin((z - 1) * 0.63)
+      const lane = Math.abs(x - pathX)
+      const shoulder = THREE.MathUtils.smoothstep(lane, 0.95, 4.9)
+      const broadWeather = 0.018 * Math.sin(x * 0.61 + z * 0.27)
+        + 0.012 * Math.cos(x * 0.43 - z * 0.52)
+      const mineralBreakup = 0.007 * Math.sin(x * 1.37 + z * 0.83)
+        + 0.005 * Math.cos(x * 2.08 - z * 1.19)
+      positions.setY(index, height(x, z) + 0.032 + shoulder * (broadWeather + mineralBreakup))
+    }
+
+    positions.needsUpdate = true
+    surface.geometry.computeVertexNormals()
+    surface.geometry.computeBoundingBox()
+    surface.geometry.computeBoundingSphere()
+
+    surfaceMaterial.color.set('#a49b89')
+    surfaceMaterial.normalScale.set(0.18, 0.18)
+    surfaceMaterial.roughness = 0.89
+    surfaceMaterial.envMapIntensity = 0.68
+    surfaceMaterial.needsUpdate = true
+
+    ridgeMaterial.color.set('#65736b')
+    ridgeMaterial.normalScale.set(0.23, 0.23)
+    ridgeMaterial.roughness = 0.94
+    ridgeMaterial.envMapIntensity = 0.56
+    ridgeMaterial.needsUpdate = true
+
+    terrain.userData.uraiTerrainNaturalism = 'aaa-v255-broad-weathered-ground-no-corrugated-relief'
+
+    restoreRef.current = () => {
+      ;(positions.array as Float32Array).set(originalPositions)
+      positions.needsUpdate = true
+      surface.geometry.computeVertexNormals()
+      surface.geometry.computeBoundingBox()
+      surface.geometry.computeBoundingSphere()
+
+      surfaceMaterial.color.copy(originalSurfaceColor)
+      surfaceMaterial.normalScale.copy(originalSurfaceNormalScale)
+      surfaceMaterial.roughness = originalSurfaceRoughness
+      surfaceMaterial.envMapIntensity = originalSurfaceEnvMapIntensity
+      surfaceMaterial.needsUpdate = true
+
+      ridgeMaterial.color.copy(originalRidgeColor)
+      ridgeMaterial.normalScale.copy(originalRidgeNormalScale)
+      ridgeMaterial.roughness = originalRidgeRoughness
+      ridgeMaterial.envMapIntensity = originalRidgeEnvMapIntensity
+      ridgeMaterial.needsUpdate = true
+
+      if (previousTerrainMarker === undefined) delete terrain.userData.uraiTerrainNaturalism
+      else terrain.userData.uraiTerrainNaturalism = previousTerrainMarker
+    }
+  })
+
+  useEffect(() => () => {
+    restoreRef.current?.()
+    restoreRef.current = null
+  }, [])
+
+  return null
 }
 
 function CelestialAscent() {
@@ -104,6 +204,7 @@ export function HomeAAAVisualRepair() {
     <group name="home-aaa-visual-repair-v1">
       <hemisphereLight color="#a7c2b8" groundColor="#18201c" intensity={0.18} />
       <directionalLight position={[-5.5, 7.2, 3.6]} color="#b6c8bd" intensity={0.24} />
+      <TerrainNaturalismRepair />
       <CelestialAscent />
     </group>
   )
