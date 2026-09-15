@@ -15,12 +15,9 @@ const currentHomeVisual = read('src/spatial/layout/HomeWorldProductionV225Polish
 const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 const groundOwner = read('src/app/GroundSpatialWorldClean.tsx')
-const groundModel = read('src/app/ground/GroundWorldModel.ts')
-const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const lifeMapWorld = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const homeGraph = `${homeRuntime}\n${assetHome}\n${homeEntry}\n${currentHome}\n${currentHomeGeometry}\n${historicalV225}\n${currentHomeVisual}`
-const groundGraph = `${groundOwner}\n${groundModel}\n${atmosphereCss}`
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
@@ -71,7 +68,6 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
     'home-v226-ground-inhabited-hearth','home-v226-life-map-lineage-observatory','home-v226-root-cradle','home-v226-rooted-single-living-memory-presence',
     'home-v230-scanned-grounded-fern-grove','polyhaven-v48/fern_02/asset.gltf','home-v230-life-map-asymmetric-root-threshold',
   ]) has(currentHomeVisual, marker)
-  // Only the provenance-recorded rock scans may augment the authored terrain.
   assert.equal((currentHomeVisual.match(/useGLTF\(/g) ?? []).length, 2)
   assert.ok(currentHomeVisual.includes('polyhaven-v48/rock_face_${variant}/asset.gltf'))
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
@@ -80,8 +76,6 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
   assert.doesNotMatch(currentHomeVisual, /RoundedBox|octahedronGeometry|torusGeometry|IcosahedronGeometry/)
   assert.doesNotMatch(`${currentHomeGeometry}\n${historicalV225}\n${currentHomeVisual}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
   assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
-
-  // Historical source remains covered without being treated as current visual authority.
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeArt, /export function HomeV76Sanctuary/)
   assert.match(homeArt, /home-v126-orb-memory-motes/)
@@ -114,13 +108,26 @@ test('Home keeps governed Orb states, reduced motion, and real traversal semanti
   assert.doesNotMatch(currentHomeVisual, /scale=\{\[\.66,1\.12,\.76\]\}/)
 })
 
-test('Ground remains one embodied cinematic infrastructure world', () => {
-  for (const marker of ['data-ground-exploration="walkable"','data-ground-pointer-lock="false"','ground-walkable-navigation-surface','ground-walkable-path-network','ground-central-nexus','ground-enterable-threshold-','stepEmbodiedMotion','useMovementInput','MobileMovementPad']) has(groundGraph, marker)
-  for (const form of ['pavilion','sanctuary','council','transit','restorative','archive','reflection','vault','observatory','aperture','theater']) assert.ok(groundModel.includes(`"${form}"`) || groundModel.includes(`'${form}'`), `missing Ground chamber form: ${form}`)
-  assert.match(groundOwner, /scene\.background = new THREE\.Color/)
+test('Ground is a true first-person lived world with privacy-safe place authority', () => {
+  for (const marker of [
+    'data-ground-exploration="first-person"',
+    'data-ground-pointer-lock="false"',
+    'data-ground-runtime-owner="first-person-lived-world"',
+    'data-ground-camera="eye-level-terrain-following"',
+    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-place-layer="consent-aware-empty-by-default"',
+    'data-ground-private-location-mounted="false"',
+    'ground-visible-traversable-terrain',
+    'stepEmbodiedMotion',
+    'useMovementInput',
+    'MobileMovementPad',
+  ]) has(groundOwner, marker)
+  for (const profile of ['temperate','urban','woodland','arid','coastal']) has(groundOwner, `id: "${profile}"`)
+  assert.match(groundOwner, /const EYE_HEIGHT = 1\.69/)
+  assert.match(groundOwner, /surfaceY \+ EYE_HEIGHT/)
   assert.match(groundOwner, /alpha: false/)
-  assert.doesNotMatch(groundOwner, /<picture/)
-  assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
+  assert.doesNotMatch(groundOwner, /GroundPhysicalArchitecture|GroundVaultArchitecture|ground-destination-compass|ground-central-nexus|ground-enterable-threshold-/)
+  assert.doesNotMatch(groundOwner, /data-ground-visual-owner="authored-provider-art"/)
 })
 
 test('Life Map remains layered, semantic, private by default, and mounts a connected inhabited sanctuary without retired slab presentation', () => {
