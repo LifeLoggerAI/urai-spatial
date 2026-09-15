@@ -1,10 +1,11 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
-import { requestUraiWorldTravel } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
 
 export function GroundGateway() {
+  const router = useRouter()
   const { world, phase } = useUraiWorldState()
   const isHome = world.destination === 'home'
   const disabled = !isHome || phase !== 'idle'
@@ -12,25 +13,21 @@ export function GroundGateway() {
   const enterGround = useCallback(() => {
     if (disabled) return
 
-    // This control is an accessibility/fallback bridge only. Sighted pointer/touch
-    // ownership belongs to the rendered Home terrain. When this semantic bridge is
-    // used, the world router keeps the canonical Ground route available even if the
-    // WebGL scene cannot provide a physical hit point.
-    requestUraiWorldTravel({
-      destination: 'infrastructure-hub',
-      href: '/ground?from=home-ground-semantic',
-      entryPortal: 'home-ground',
-      cameraCheckpoint: 'ground-first-person-arrival',
-      context: {
-        memoryId: world.memoryId,
-        threadId: world.threadId,
-        personId: world.personId,
-        placeId: world.placeId,
-        replayManifestId: world.replayManifestId,
-        privacyMode: world.privacyMode,
-      },
-    })
-  }, [disabled, world])
+    // This control is an accessibility/renderer-failure bridge only. Sighted
+    // pointer/touch ownership belongs to rendered Home terrain. It deliberately
+    // bypasses the generic world-transition controller so the obsolete second
+    // Ground transition can never reappear behind the semantic path.
+    const target = new URL('/ground', window.location.origin)
+    target.searchParams.set('from', 'home-ground-semantic')
+    target.searchParams.set('cameraCheckpoint', 'ground-first-person-arrival')
+    if (world.memoryId) target.searchParams.set('memoryId', world.memoryId)
+    if (world.threadId) target.searchParams.set('thread', world.threadId)
+    if (world.personId) target.searchParams.set('personId', world.personId)
+    if (world.placeId) target.searchParams.set('placeId', world.placeId)
+    if (world.replayManifestId) target.searchParams.set('manifestId', world.replayManifestId)
+    if (world.privacyMode) target.searchParams.set('privacyMode', world.privacyMode)
+    router.push(`${target.pathname}${target.search}`)
+  }, [disabled, router, world])
 
   if (!isHome) return null
 
