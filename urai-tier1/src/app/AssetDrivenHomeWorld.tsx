@@ -44,9 +44,10 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
       world.setAttribute('data-home-audio', 'production-opus-consent-controlled')
       world.setAttribute('data-home-v223-art-layer', 'cinematic-threshold-runtime-authority')
-      world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')
+      world.setAttribute('data-home-v288-certification', 'fresh-exact-head-pixels-required')
       world.setAttribute('data-home-v225-retained-pixel-rebuild', 'superseded')
-      world.setAttribute('data-home-v226-retained-pixel-rebuild', 'active')
+      world.setAttribute('data-home-v226-retained-pixel-rebuild', 'superseded')
+      world.setAttribute('data-home-v288-retained-pixel-rebuild', 'active')
 
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
@@ -74,7 +75,8 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
     data-home-spatial-regions="home-physical-world home-visible-user-avatar home-grounded-companion home-life-map-sky-threshold"
     data-home-forge-scenery="suppressed"
     data-home-v225-retained-pixel-rebuild="superseded"
-    data-home-v226-retained-pixel-rebuild="active"
+    data-home-v226-retained-pixel-rebuild="superseded"
+    data-home-v288-retained-pixel-rebuild="active"
     data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"
     style={{ display: 'contents' }}
   >

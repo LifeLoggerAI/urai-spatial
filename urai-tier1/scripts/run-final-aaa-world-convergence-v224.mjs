@@ -6,17 +6,23 @@ const source = await readFile(target, 'utf8')
 
 for (const marker of [
   "const activeHomeProduction = read('src/spatial/layout/HomeWorldProductionV223.tsx')",
-  "const activeHomeVisual = read('src/spatial/layout/HomeWorldProductionV225PolishV3.tsx')",
-  "world\\.setAttribute\\('data-home-v226-certification', 'fresh-exact-head-pixels-required'\\)",
-  "world\\.setAttribute\\('data-home-animation-owner', 'v226-rooted-living-memory-presence'\\)",
+  "const currentHomeVisualAuthority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))",
+  "const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')",
+  "v288-cinematic-lived-world-grounded-reliquary",
+  "v288-grounded-biomorphic-reliquary",
+  "data-home-v288-certification",
+  "data-home-v288-retained-pixel-rebuild",
+  "physical-world-surface",
+  "visible-sky-broad-interaction",
 ]) {
-  if (!source.includes(marker)) throw new Error(`V226 convergence marker missing: ${marker}`)
+  if (!source.includes(marker)) throw new Error(`V288 convergence marker missing: ${marker}`)
 }
 
 for (const obsolete of [
-  "'data-home-v223-certification', 'fresh-exact-head-pixels-required'",
-  "'data-home-v225-certification', 'fresh-exact-head-pixels-required'",
-  "'data-home-animation-owner', 'v225-asymmetric-veined-living-memory-presence'",
+  "data-home-v226-certification",
+  "data-home-v226-retained-pixel-rebuild=\"active\"",
+  "v226-rooted-living-memory-presence",
+  "<HomeV225PolishV3 orbState={p.orbState}",
 ]) {
   if (source.includes(obsolete)) throw new Error(`Obsolete convergence authority re-entered: ${obsolete}`)
 }
