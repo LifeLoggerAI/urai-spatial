@@ -161,3 +161,49 @@
 @media (prefers-reduced-motion: reduce) {
   .life-map-root::before { transform: none; }
 }
+
+/* V275 full-matrix retained-pixel repair.
+   V274 improved the desktop departure frame, but exact-head proof showed the
+   shared failure was broader: travel, approach, arrival and narrow portrait
+   views still collapsed into a smooth low-information field. Keep point-stars
+   exclusively WebGL-owned; increase only the already-authorized broad galactic
+   weather contrast so real stellar landmarks sit inside readable depth layers. */
+.life-map-root::before {
+  opacity: .91;
+  filter: contrast(1.36) saturate(1.11) brightness(1.13);
+}
+
+.life-map-root[data-life-map-phase="departure"]::before {
+  opacity: .98;
+  filter: contrast(1.34) saturate(1.14) brightness(1.16);
+}
+
+.life-map-root[data-life-map-phase="travel"]::before {
+  opacity: 1;
+  filter: contrast(1.48) saturate(1.18) brightness(1.17);
+}
+
+.life-map-root[data-life-map-phase="approach"]::before {
+  opacity: .98;
+  filter: contrast(1.43) saturate(1.16) brightness(1.15);
+}
+
+.life-map-root[data-life-map-phase="arrival"]::before {
+  opacity: .96;
+  filter: contrast(1.40) saturate(1.14) brightness(1.14);
+}
+
+@media (max-width: 700px) {
+  .life-map-root::before {
+    opacity: .96;
+    filter: contrast(1.43) saturate(1.13) brightness(1.16);
+  }
+
+  .life-map-root[data-life-map-phase="departure"]::before,
+  .life-map-root[data-life-map-phase="travel"]::before,
+  .life-map-root[data-life-map-phase="approach"]::before,
+  .life-map-root[data-life-map-phase="arrival"]::before {
+    opacity: .99;
+    filter: contrast(1.52) saturate(1.18) brightness(1.18);
+  }
+}
