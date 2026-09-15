@@ -36,6 +36,8 @@ const MOVEMENT_KEYS = new Set([
   'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight',
 ])
 
+const DRAG_LOOK_THRESHOLD_PX = 5
+
 // The motion kernel is called once per rendered frame. Reusing scratch vectors keeps
 // locomotion allocation-free while the active realm owns the only motion call.
 const MOTION_REQUESTED = new THREE.Vector3()
@@ -87,6 +89,7 @@ export function useMovementInput({
       if (event.code === 'KeyR') {
         callbacksRef.current.onReset?.()
         return
+
       }
       if (event.code === 'Escape' && callbacksRef.current.onEscape) {
         event.preventDefault()
@@ -140,31 +143,66 @@ export function useDragLook({
   maxPitch?: number
   onDragState?: (dragging: boolean) => void
 }): DragLookHandlers {
-  const drag = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const drag = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    x: number
+    y: number
+    active: boolean
+    captured: boolean
+  } | null>(null)
 
   const onPointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (!enabled || event.button !== 0) return
     if (event.target instanceof Element && event.target.closest('button,a,input,textarea,select,summary,[data-movement-ui="true"]')) return
-    drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
-    try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer capture is best effort */ }
-    onDragState?.(true)
-  }, [enabled, onDragState])
+    // Do not capture on pointer-down. A normal click must be allowed to finish on
+    // the Three.js target (sky, Orb, Ground). Capture begins only after genuine
+    // drag intent crosses the threshold below.
+    drag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: event.clientX,
+      y: event.clientY,
+      active: false,
+      captured: false,
+    }
+  }, [enabled])
 
   const onPointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (!drag.current || drag.current.pointerId !== event.pointerId) return
-    const dx = event.clientX - drag.current.x
-    const dy = event.clientY - drag.current.y
-    drag.current.x = event.clientX
-    drag.current.y = event.clientY
+    const current = drag.current
+    if (!current || current.pointerId !== event.pointerId) return
+
+    const totalDx = event.clientX - current.startX
+    const totalDy = event.clientY - current.startY
+    if (!current.active && Math.hypot(totalDx, totalDy) < DRAG_LOOK_THRESHOLD_PX) return
+
+    if (!current.active) {
+      current.active = true
+      onDragState?.(true)
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+        current.captured = true
+      } catch { /* pointer capture is best effort */ }
+    }
+
+    const dx = event.clientX - current.x
+    const dy = event.clientY - current.y
+    current.x = event.clientX
+    current.y = event.clientY
     yaw.current -= dx * sensitivity
     pitch.current = THREE.MathUtils.clamp(pitch.current - dy * sensitivity, minPitch, maxPitch)
-  }, [maxPitch, minPitch, pitch, sensitivity, yaw])
+  }, [maxPitch, minPitch, onDragState, pitch, sensitivity, yaw])
 
   const end = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (!drag.current || drag.current.pointerId !== event.pointerId) return
+    const current = drag.current
+    if (!current || current.pointerId !== event.pointerId) return
     drag.current = null
-    try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
-    onDragState?.(false)
+    if (current.captured) {
+      try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* browser may already release */ }
+    }
+    if (current.active) onDragState?.(false)
   }, [onDragState])
 
   return { onPointerDown, onPointerMove, onPointerUp: end, onPointerCancel: end }
