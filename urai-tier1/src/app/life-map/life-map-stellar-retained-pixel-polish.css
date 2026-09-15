@@ -1,97 +1,54 @@
-/* V267 retained-pixel convergence.
-   The WebGL stellar volume remains the visual owner. This CSS layer adds a
-   restrained far-field particulate and galactic-dust veil so overview,
-   departure, travel, approach, arrival and portrait captures retain real
-   distributed luminance structure instead of collapsing into a nearly flat
-   dark field between a few bright anchors. */
+/* V269 literal-pixel convergence.
+   The WebGL stellar volume is the only star owner. This route layer must never
+   synthesize tiled point-stars: repeated CSS dots flatten the personal universe
+   into wallpaper and compete with real memory-star hierarchy. CSS contributes
+   only broad, non-repeating galactic weather and depth separation. */
 .life-map-root::before {
   content: "";
   position: absolute;
-  inset: -5%;
+  inset: -6%;
   z-index: 1;
   pointer-events: none;
-  background-image:
-    radial-gradient(circle at center, rgba(232,246,255,.94) 0 .9px, transparent 1.45px),
-    radial-gradient(circle at center, rgba(255,233,201,.78) 0 .75px, transparent 1.25px),
-    radial-gradient(circle at center, rgba(184,214,255,.72) 0 .7px, transparent 1.18px),
-    radial-gradient(ellipse at 20% 32%, rgba(72,118,162,.21) 0, rgba(42,77,122,.11) 21%, transparent 43%),
-    radial-gradient(ellipse at 77% 37%, rgba(116,82,145,.20) 0, rgba(71,54,111,.10) 23%, transparent 44%),
-    radial-gradient(ellipse at 43% 76%, rgba(46,103,128,.18) 0, rgba(35,75,106,.08) 24%, transparent 46%),
-    radial-gradient(ellipse at 69% 72%, rgba(116,130,168,.12) 0, transparent 36%),
-    linear-gradient(118deg, transparent 8%, rgba(44,79,112,.085) 27%, transparent 47%, rgba(97,66,121,.075) 67%, transparent 91%);
-  background-size:
-    61px 59px,
-    101px 97px,
-    149px 137px,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%;
-  background-position:
-    7px 13px,
-    31px 47px,
-    89px 23px,
-    0 0,
-    0 0,
-    0 0,
-    0 0,
-    0 0;
-  opacity: .50;
-  filter: blur(.06px) contrast(1.06);
+  background:
+    radial-gradient(ellipse at 17% 32%, rgba(66,126,167,.24) 0, rgba(38,80,119,.13) 22%, transparent 49%),
+    radial-gradient(ellipse at 74% 35%, rgba(119,83,148,.22) 0, rgba(75,56,112,.12) 24%, transparent 51%),
+    radial-gradient(ellipse at 39% 73%, rgba(49,111,139,.20) 0, rgba(31,76,106,.095) 25%, transparent 49%),
+    radial-gradient(ellipse at 82% 72%, rgba(112,131,169,.15) 0, rgba(57,77,116,.07) 22%, transparent 43%),
+    radial-gradient(ellipse at 50% 49%, rgba(62,91,130,.105) 0, rgba(39,64,101,.045) 35%, transparent 58%),
+    linear-gradient(121deg, transparent 7%, rgba(44,83,118,.10) 25%, transparent 45%, rgba(99,68,124,.09) 66%, rgba(39,76,112,.055) 82%, transparent 95%);
+  background-repeat: no-repeat;
+  opacity: .62;
+  filter: contrast(1.08) saturate(1.05);
   mix-blend-mode: screen;
-  mask-image: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,.84) 0 58%, rgba(0,0,0,.98) 100%);
+  mask-image: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,.82) 0 55%, rgba(0,0,0,.96) 82%, rgba(0,0,0,1) 100%);
 }
 
-/* During selected travel the camera moves away from the overview's densest
-   WebGL cloud. Keep the same restrained galaxy language, but carry broad,
-   asymmetric galactic weather through the transition so the universe does not
-   collapse into one navy luminance band between isolated memory stars. */
+/* Selected travel carries stronger asymmetric weather through camera motion,
+   but still leaves every point-star to WebGL. The broad clouds keep depth while
+   the real memory stars remain the only crisp luminous landmarks. */
 .life-map-root[data-life-map-phase="departure"]::before,
 .life-map-root[data-life-map-phase="travel"]::before,
 .life-map-root[data-life-map-phase="approach"]::before,
 .life-map-root[data-life-map-phase="arrival"]::before {
-  background-image:
-    radial-gradient(circle at center, rgba(235,248,255,.96) 0 .9px, transparent 1.45px),
-    radial-gradient(circle at center, rgba(255,229,194,.80) 0 .76px, transparent 1.26px),
-    radial-gradient(circle at center, rgba(180,214,255,.76) 0 .72px, transparent 1.2px),
-    radial-gradient(ellipse at 18% 26%, rgba(70,126,170,.38) 0, rgba(39,83,126,.20) 23%, transparent 49%),
-    radial-gradient(ellipse at 78% 32%, rgba(128,88,158,.35) 0, rgba(77,58,121,.18) 25%, transparent 50%),
-    radial-gradient(ellipse at 35% 76%, rgba(48,116,145,.31) 0, rgba(31,77,108,.15) 27%, transparent 51%),
-    radial-gradient(ellipse at 74% 76%, rgba(111,135,177,.26) 0, rgba(66,83,131,.12) 22%, transparent 47%),
-    radial-gradient(ellipse at 50% 49%, rgba(55,86,130,.20) 0, transparent 43%),
-    linear-gradient(116deg, rgba(16,34,61,.05) 4%, rgba(49,91,129,.18) 24%, transparent 43%, rgba(103,69,130,.16) 66%, rgba(36,72,112,.10) 86%, transparent 98%);
-  background-size:
-    53px 51px,
-    89px 83px,
-    131px 121px,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%;
-  background-position:
-    5px 11px,
-    29px 43px,
-    83px 19px,
-    0 0,
-    0 0,
-    0 0,
-    0 0,
-    0 0,
-    0 0;
-  opacity: .78;
-  filter: blur(.08px) contrast(1.18) saturate(1.12) brightness(1.06);
+  background:
+    radial-gradient(ellipse at 16% 25%, rgba(70,130,174,.39) 0, rgba(39,85,129,.21) 24%, transparent 51%),
+    radial-gradient(ellipse at 79% 31%, rgba(132,91,160,.36) 0, rgba(78,59,122,.19) 25%, transparent 52%),
+    radial-gradient(ellipse at 34% 77%, rgba(48,119,149,.32) 0, rgba(31,79,111,.16) 28%, transparent 53%),
+    radial-gradient(ellipse at 76% 76%, rgba(113,139,181,.27) 0, rgba(66,85,133,.13) 23%, transparent 49%),
+    radial-gradient(ellipse at 52% 49%, rgba(57,91,137,.22) 0, rgba(35,61,101,.08) 31%, transparent 47%),
+    radial-gradient(ellipse at 47% 17%, rgba(71,105,145,.14) 0, transparent 36%),
+    linear-gradient(116deg, rgba(16,34,61,.055) 4%, rgba(49,94,133,.19) 24%, transparent 43%, rgba(106,72,133,.17) 66%, rgba(37,76,116,.11) 86%, transparent 98%);
+  background-repeat: no-repeat;
+  opacity: .79;
+  filter: contrast(1.16) saturate(1.10) brightness(1.04);
 }
 
 .life-map-root[data-life-map-phase="arrival"]::before {
   opacity: .74;
 }
 
-/* Selected memory arrival remains a luminous threshold inside the same deep
-   galaxy rather than a flat node card. Asymmetric dust banks add depth around
-   the selected memory without obscuring the canonical actions. */
+/* Arrival keeps a luminous pocket around the selected memory while retaining
+   the same deep galaxy language rather than introducing a flat card or halo. */
 .life-map-root[data-life-map-phase="arrival"]::after {
   background:
     radial-gradient(circle at 50% 50%, rgba(224,242,255,.055) 0 11%, transparent 30%),
@@ -103,33 +60,30 @@
 
 @media (max-width: 700px) {
   .life-map-root::before {
-    inset: -7%;
-    opacity: .47;
-    background-size:
-      47px 45px,
-      79px 73px,
-      119px 109px,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%;
+    inset: -9%;
+    opacity: .58;
+    background:
+      radial-gradient(ellipse at 31% 37%, rgba(61,119,161,.24) 0, rgba(37,77,117,.13) 23%, transparent 50%),
+      radial-gradient(ellipse at 78% 31%, rgba(116,80,145,.21) 0, rgba(70,52,108,.11) 24%, transparent 50%),
+      radial-gradient(ellipse at 47% 67%, rgba(45,105,134,.20) 0, rgba(29,72,104,.09) 26%, transparent 50%),
+      radial-gradient(ellipse at 72% 79%, rgba(105,127,167,.14) 0, transparent 43%),
+      linear-gradient(126deg, transparent 8%, rgba(42,80,116,.10) 28%, transparent 49%, rgba(92,64,119,.085) 70%, transparent 94%);
+    background-repeat: no-repeat;
   }
+
   .life-map-root[data-life-map-phase="departure"]::before,
   .life-map-root[data-life-map-phase="travel"]::before,
   .life-map-root[data-life-map-phase="approach"]::before,
   .life-map-root[data-life-map-phase="arrival"]::before {
-    opacity: .70;
-    background-size:
-      43px 41px,
-      71px 67px,
-      109px 101px,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%;
+    opacity: .72;
+    background:
+      radial-gradient(ellipse at 28% 29%, rgba(67,127,171,.34) 0, rgba(39,83,126,.18) 25%, transparent 52%),
+      radial-gradient(ellipse at 78% 35%, rgba(126,87,154,.31) 0, rgba(75,57,119,.16) 25%, transparent 52%),
+      radial-gradient(ellipse at 43% 73%, rgba(47,114,145,.28) 0, rgba(30,76,108,.13) 27%, transparent 51%),
+      radial-gradient(ellipse at 73% 78%, rgba(109,134,177,.22) 0, transparent 47%),
+      radial-gradient(ellipse at 48% 49%, rgba(54,86,130,.18) 0, transparent 45%),
+      linear-gradient(119deg, rgba(15,33,59,.04) 4%, rgba(48,91,130,.16) 27%, transparent 46%, rgba(99,69,128,.14) 69%, transparent 96%);
+    background-repeat: no-repeat;
   }
 }
 
