@@ -18,13 +18,22 @@ for (const marker of [
   if (!source.includes(marker)) throw new Error(`V288 convergence marker missing: ${marker}`)
 }
 
-for (const obsolete of [
-  "data-home-v226-certification",
+for (const retirementAssertion of [
+  "assert.doesNotMatch(assetHome, /data-home-v226-certification/)",
+  "assert.match(assetHome, /data-home-v226-retained-pixel-rebuild=\"superseded\"/)",
+  "assert.match(assetHome, /data-home-v288-retained-pixel-rebuild=\"active\"/)",
+  "assert.doesNotMatch(activeHomeProduction, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)",
+]) {
+  if (!source.includes(retirementAssertion)) throw new Error(`V288 fail-closed retirement assertion missing: ${retirementAssertion}`)
+}
+
+for (const obsoletePositiveAuthority of [
+  "assert.match(assetHome, /data-home-v226-certification/)",
   "data-home-v226-retained-pixel-rebuild=\"active\"",
   "v226-rooted-living-memory-presence",
   "<HomeV225PolishV3 orbState={p.orbState}",
 ]) {
-  if (source.includes(obsolete)) throw new Error(`Obsolete convergence authority re-entered: ${obsolete}`)
+  if (source.includes(obsoletePositiveAuthority)) throw new Error(`Obsolete convergence authority re-entered positively: ${obsoletePositiveAuthority}`)
 }
 
 const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', 'tests/final-aaa-world-convergence-contract.test.mjs'], {
