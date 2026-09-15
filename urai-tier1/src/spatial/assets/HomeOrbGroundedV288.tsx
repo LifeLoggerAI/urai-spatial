@@ -13,17 +13,17 @@ const GROUNDED_RELIQUARY_NAME = 'home-v288-grounded-biomorphic-memory-reliquary'
 const FALLBACK_INTERACTION_OWNER = 'home-gold-companion'
 
 /**
- * V288 integration adapter.
+ * V288 integration adapter carrying the V289 Orb polish authority.
  *
  * V287 legitimately moved Home to a cinematic third-person composition with a
  * grounded companion interaction owner. That rewrite accidentally retired the
  * accepted V286 reliquary pixels and exposed a three-sphere fallback instead.
  * This adapter preserves V287 camera / Ground / broad-sky ownership while
- * moving the existing V286 visual authority to the new companion anchor.
+ * moving the visible reliquary to the grounded companion anchor.
  *
- * The fallback group remains the sole pointer/touch owner. Its meshes keep
- * their raycasts but stop writing pixels or depth; its point lights are hidden.
- * The V286 reliquary remains visual-only/raycast-disabled.
+ * V289 refines that same reliquary identity without changing ownership: the
+ * fallback group remains the sole pointer/touch owner while the visible
+ * fractured mineral reliquary remains visual-only and raycast-disabled.
  */
 export function HomeOrbGroundedV288() {
   const { scene } = useThree()
@@ -53,8 +53,8 @@ export function HomeOrbGroundedV288() {
         )
         reliquary.userData = {
           ...reliquary.userData,
-          artRevision: 'v288-grounded-biomorphic-memory-reliquary',
-          integrationAuthority: 'v287-cinematic-home-plus-v286-reliquary',
+          artRevision: 'v289-grounded-biomorphic-memory-reliquary-aaa-convergence',
+          integrationAuthority: 'v287-cinematic-home-plus-v288-grounding-plus-v289-reliquary-polish',
           visualOnly: true,
           interactionOwner: false,
         }
