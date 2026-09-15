@@ -8,6 +8,7 @@ const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRoute
 test('canonical Life Map overview is framed as a deep stellar personal universe rather than terrain or graph grammar', () => {
   assert.match(boundary, /CosmicComposedLifeMapScene/)
   assert.match(cosmic, /data-life-map-visual-authority="v260-deep-stellar-personal-universe"/)
+  assert.match(cosmic, /data-life-map-art-revision="v272-authored-overview-occupancy"/)
   assert.match(cosmic, /data-life-map-ground="none"/)
   assert.match(cosmic, /life-map-deep-space/)
   assert.match(cosmic, /life-map-deep-stellar-field/)
@@ -23,13 +24,25 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.doesNotMatch(cosmic, /scale=\{active \? 10\.8|scale=\{active \? 5\.4/)
 })
 
-test('overview camera has independent portrait and desktop deep-space framing', () => {
+test('overview camera is tighter and independent from selected-memory travel origin', () => {
   assert.match(cosmic, /const portrait = size\.height > size\.width/)
-  assert.match(cosmic, /new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
-  assert.match(cosmic, /fov: portrait \? 57 : 52/)
-  assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0, portrait \? -3\.8 : \.15, -17\)/)
+  assert.match(cosmic, /const overview = new THREE\.Vector3\(0, portrait \? \.9 : 2\.2, portrait \? 21\.5 : 22\.5\)/)
+  assert.match(cosmic, /const targetOverview = new THREE\.Vector3\(0, portrait \? -\.35 : \.15, portrait \? -21 : -19\)/)
+  assert.match(cosmic, /fov: portrait \? 44 : 47/)
+  assert.match(cosmic, /const travelOrigin = new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
+  assert.match(cosmic, /dir = travelOrigin\.clone\(\)\.sub\(target\)\.normalize\(\)/)
   assert.match(cosmic, /pointer\.x \* 1\.1/)
   assert.match(cosmic, /pointer\.y \* \.45/)
+})
+
+test('overview memory destinations remain stellar but have readable hierarchy', () => {
+  assert.match(cosmic, /const outer = active \? 1\.08 : related \? \.76 : \.62/)
+  assert.match(cosmic, /const mid = active \? \.52 : related \? \.37 : \.31/)
+  assert.match(cosmic, /const hot = active \? \.20 : related \? \.16 : \.145/)
+  assert.match(cosmic, /active \? \.20 : related \? \.18 : \.13/)
+  assert.match(cosmic, /active \? \.50 : related \? \.42 : \.34/)
+  assert.match(cosmic, /active \? \.94 : related \? \.90 : \.88/)
+  assert.match(cosmic, /fog attach="fog" args=\{\["#020611", 78, 170\]\}/)
 })
 
 test('selected-memory travel remains spatial and celestial until Focus or Replay', () => {
