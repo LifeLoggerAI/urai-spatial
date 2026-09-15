@@ -86,7 +86,8 @@ export function HomeOrbGroundedV288() {
           if (object.name.startsWith('home-v286-reliquary-state-')) {
             rememberObject(object)
             object.position.y = legacyY + (portrait ? 1.15 : 1.12)
-            object.scale.set(...(portrait ? [1.38, 1.44, 1.30] : [1.18, 1.24, 1.10] as const))
+            if (portrait) object.scale.set(1.38, 1.44, 1.30)
+            else object.scale.set(1.18, 1.24, 1.10)
           }
           if (object instanceof THREE.Mesh && object.name.startsWith('home-v286-weathered-shell-plate-')) {
             const materials = Array.isArray(object.material) ? object.material : [object.material]
