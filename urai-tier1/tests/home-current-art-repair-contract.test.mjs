@@ -3,85 +3,91 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const owner = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
-const art = fs.readFileSync(new URL('../src/spatial/layout/HomeCurrentArtRepair.tsx', import.meta.url), 'utf8')
-const aaa = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
+const currentRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeCurrentArtRepair.tsx', import.meta.url), 'utf8')
+const aaaRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
+const visualAuthority = fs.readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
+const groundedOrb = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbGroundedV288.tsx', import.meta.url), 'utf8')
+const reliquary = fs.readFileSync(new URL('../src/spatial/assets/HomeOrbReliquaryV286.tsx', import.meta.url), 'utf8')
+const sky = fs.readFileSync(new URL('../src/spatial/assets/HomeAtmosphericSky.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
-test('current Home mounts one explicit unified visual authority and declares the exact revision', () => {
-  assert.match(owner, /import \{HomeCurrentArtRepair\} from '\.\/HomeCurrentArtRepair'/)
-  assert.match(owner, /<HomeCurrentArtRepair orbState=\{p\.orbState\} reducedMotion=\{p\.reducedMotion\}/)
-  assert.match(art, /home-current-unified-visual-authority/)
-  assert.match(art, /v249-systemic-organic-convergence/)
-  assert.equal(authority.artRevision, 'v271-open-celestial-gateway')
-  assert.ok(authority.runtimeAssets.includes('HomeCurrentArtRepair.tsx'))
-  assert.ok(authority.runtimeAssets.includes('HomeLaunchSanctuaryV254.tsx'))
-  assert.ok(authority.runtimeAssets.includes('HomeAAAVisualRepair.tsx'))
+test('current Home authority is V288 cinematic world plus grounded biomorphic reliquary', () => {
+  assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
+  assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
+  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeAtmosphericSky.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx']) {
+    assert.ok(authority.runtimeAssets.includes(asset), `missing V288 runtime asset ${asset}`)
+  }
+  assert.doesNotMatch(JSON.stringify(authority.runtimeAssets), /HomeLaunchSanctuaryV254\.tsx|HomeWorldProductionV225PolishV2\.tsx/)
+  assert.match(visualAuthority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
+  assert.match(visualAuthority, /<HomeOrbGroundedV288 \/>/)
 })
 
-test('retired hidden Home visual owners cannot keep invisible pointer authority', () => {
-  assert.match(art, /function suppressRaycast\(/)
-  assert.match(art, /object\.raycast = \(\) => undefined/)
-  assert.match(art, /object\.traverse\(\(child\) => suppressRaycast\(child, raycasts\.current\)\)/)
-  assert.match(art, /raycasts\.current\.forEach\(\(raycast, object\) => \{ object\.raycast = raycast \}\)/)
+test('V249 and V281 localized repair modules remain historical inert provenance', () => {
+  assert.match(currentRepair, /Historical V249 localized destination art is retained only as repository/)
+  assert.match(currentRepair, /broad visible atmosphere for Life Map, and V288 for Orb pixels/)
+  assert.match(currentRepair, /export function HomeCurrentArtRepair/)
+  assert.match(currentRepair, /return null/)
+  assert.doesNotMatch(currentRepair, /home-v249-ground-geological-descent|home-v249-life-map-rooted-celestial-ascent|home-v249-organic-living-memory-presence|function suppressRaycast\(/)
+
+  assert.match(aaaRepair, /Historical V281 repair overlays are retired from current Home authority/)
+  assert.match(aaaRepair, /physical-world Ground \/ broad-sky Life Map interaction canon/)
+  assert.match(aaaRepair, /export function HomeAAAVisualRepair/)
+  assert.match(aaaRepair, /return null/)
+  assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('Ground is a low geological descent rather than an arch, ring, membrane, or slab portal', () => {
-  assert.match(art, /home-v249-ground-geological-descent/)
-  assert.match(art, /low-geological-descent-cleft/)
-  assert.match(art, /low-lateral-eroded-cleft-descending-into-terrain/)
-  assert.match(art, /ScannedRock/)
-  assert.doesNotMatch(art, /apertureGeometry/)
-  assert.doesNotMatch(art, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry|TubeGeometry|function membrane\(/)
+test('retired localized Home hotspot owners are hidden and stripped of raycast authority in the live owner', () => {
+  assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
+  assert.match(owner, /object\.visible = false/)
+  assert.match(owner, /object\.raycast = \(\) => undefined/)
+  assert.match(owner, /child\.raycast = \(\) => undefined/)
+  assert.match(owner, /object\.name === 'home-v288-grounded-biomorphic-memory-reliquary'/)
+  assert.match(owner, /object\.name === 'home-gold-companion'/)
+  assert.match(owner, /object\.name === 'home-visible-user-avatar'/)
 })
 
-test('Life Map threshold is a distinct rooted celestial ascent, not a copy of Ground morphology', () => {
-  assert.match(art, /home-v249-life-map-rooted-celestial-ascent/)
-  assert.match(art, /vertical-rooted-celestial-ascent/)
-  assert.match(art, /rooted-ascent-opening-upward-into-lineage-and-constellation-depth/)
-  assert.match(art, /function lineageGeometry\(/)
-  assert.match(art, /points geometry=\{stars\}/)
-  assert.doesNotMatch(art, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry|TubeGeometry|function membrane\(/)
-  const groundMorphology = art.match(/morphology: '([^']*ground[^']*|low-geological-descent-cleft)'/)?.[1]
-  const lifeMapMorphology = art.match(/morphology: '(vertical-rooted-celestial-ascent)'/)?.[1]
-  assert.ok(groundMorphology && lifeMapMorphology)
-  assert.notEqual(groundMorphology, lifeMapMorphology)
+test('Ground is owned by the physical world surface and Life Map by the broad visible sky', () => {
+  for (const marker of [
+    'data-home-ground-entry="physical-world-surface"',
+    'data-home-life-map-entry="visible-sky-broad-interaction"',
+    'data-home-distance-ground="world-surface"',
+    'data-home-distance-life-map="sky-threshold"',
+    'data-home-portal-sequence="idle"',
+    "cameraCheckpoint: 'ground-first-person-arrival'",
+    "cameraCheckpoint: 'home-sky-ascent'",
+    "cameraCheckpoint: 'home-sky-ascent-complete'",
+  ]) assert.match(owner, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.match(owner, /event\.point\.clone\(\)/)
+  assert.match(owner, /<HomeAtmosphericSky reducedMotion=\{reducedMotion\} active=\{transition === 'life-map'\} onLifeMap=\{onLifeMap\} \/>/)
+  assert.doesNotMatch(owner, /nearby\s*===?\s*['"]life-map['"]|HOME_LIFE_MAP|home-life-map-physical-portal/)
 })
 
-test('AAA Life Map ascent stays open volumetric space and cannot regress to a dark construction plane', () => {
-  assert.match(aaa, /aaa-celestial-ascent-v3-gold-master-depth/)
-  assert.match(aaa, /rooted-threshold-expanding-upward-into-open-deep-personal-constellation-space/)
-  assert.match(aaa, /constructionPlane: 'none'/)
-  assert.match(aaa, /buildCelestialVolume/)
-  assert.match(aaa, /THREE\.AdditiveBlending/)
-  const from = aaa.indexOf('function CelestialAscent')
-  const to = aaa.indexOf('export function HomeAAAVisualRepair', from)
-  assert.notEqual(from, -1)
-  assert.notEqual(to, -1)
-  const ascent = aaa.slice(from, to)
-  assert.match(ascent, /home-aaa-life-map-celestial-ascent/)
-  assert.match(ascent, /home-aaa-v281-celestial-weather-depth/)
-  assert.match(ascent, /home-aaa-v281-rooted-ascent-ribbons/)
-  assert.doesNotMatch(ascent, /circleGeometry|CircleGeometry|planeGeometry|PlaneGeometry/)
-  assert.doesNotMatch(ascent, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry/)
-  assert.doesNotMatch(ascent, /constructionPlane:\s*'[^n][^o][^n][^e]'/)
+test('visible sky is the canonical broad Life Map interaction surface and localized gateways are retired', () => {
+  assert.match(sky, /function RetireLocalizedLifeMapGateways\(\)/)
+  assert.match(sky, /name="home-sky-life-map-threshold"/)
+  assert.match(sky, /threshold: 'broad-visible-sky'/)
+  assert.match(sky, /localGroundPortal: false/)
+  assert.match(sky, /event\.ray\.direction\.y > \.015/)
+  assert.match(sky, /raycast=\{skyRaycast\}/)
+  assert.match(sky, /onClick=\{activateSky\}/)
+  assert.match(sky, /object\.raycast = \(\) => undefined/)
+  assert.doesNotMatch(sky, /HomeLaunchSanctuaryV254|home-v249-life-map-rooted-celestial-ascent/)
 })
 
-test('Orb is one matte organic asymmetric state-aware living-memory presence with readable interior life', () => {
-  assert.match(art, /home-v249-organic-living-memory-presence/)
-  assert.match(art, /single-matte-asymmetric-folded-history-bearing-presence-with-readable-interior-life/)
-  assert.match(art, /new THREE\.SphereGeometry\(1, 96, 64\)/)
-  assert.match(art, /function memoryFieldGeometry\(/)
-  assert.match(art, /function memoryFilamentGeometry\(/)
-  assert.match(art, /function memoryScarGeometry\(/)
-  assert.match(art, /const stateIntensity: Record<OrbState, number>/)
-  assert.match(art, /reducedMotion\) return/)
-  assert.match(art, /roughness=\{\.76\} metalness=\{0\}/)
-  assert.doesNotMatch(art, /wireframe/)
-  assert.doesNotMatch(art, /THREE\.DoubleSide/)
-  assert.doesNotMatch(art, /<meshBasicMaterial/)
-  assert.doesNotMatch(art, /<sphereGeometry/)
-  assert.doesNotMatch(art, /renderOrder=/)
-  assert.doesNotMatch(art, /depthTest=\{false\}/)
-  assert.doesNotMatch(art, /new THREE\.IcosahedronGeometry/)
-  assert.doesNotMatch(art, /v248-translucent-living-memory-field/)
+test('V288 Orb keeps authored reliquary pixels while fallback geometry is interaction-only', () => {
+  assert.match(groundedOrb, /HomeOrbReliquaryV286/)
+  assert.match(groundedOrb, /home-v288-grounded-biomorphic-memory-reliquary/)
+  assert.match(groundedOrb, /home-gold-companion/)
+  assert.match(groundedOrb, /interactionOwner: true/)
+  assert.match(groundedOrb, /interactionOwner: false/)
+  assert.match(groundedOrb, /fallbackVisualOwner: false/)
+  assert.match(groundedOrb, /material\.colorWrite = false/)
+  assert.match(groundedOrb, /material\.depthWrite = false/)
+  assert.match(groundedOrb, /material\.opacity = 0/)
+  assert.doesNotMatch(groundedOrb, /fallbackVisualOwner:\s*true/)
+  for (const marker of ['plateSpecsV286','reliquaryPlateGeometryV286','home-v286-layered-internal-memory-world','home-v286-embedded-memory-filament','home-v286-localized-memory-field']) {
+    assert.match(reliquary, new RegExp(marker))
+  }
+  assert.match(reliquary, /raycast=\{\(\) => null\}/)
 })
