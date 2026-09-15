@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 const orb = readFileSync(new URL('../src/spatial/assets/HomeOrbReliquaryV286.tsx', import.meta.url), 'utf8')
+const adapter = readFileSync(new URL('../src/spatial/assets/HomeOrbGroundedV288.tsx', import.meta.url), 'utf8')
 const authority = readFileSync(new URL('../src/spatial/layout/HomeVisualAuthority.tsx', import.meta.url), 'utf8')
 const inventory = JSON.parse(readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 const workflow = readFileSync(new URL('../../.github/workflows/portal-orb-exact-proof.yml', import.meta.url), 'utf8')
 
-test('V286 is one biomorphic layered reliquary rather than a heart, sphere, crystal, or blob authority', () => {
+test('V286 remains the authored biomorphic layered reliquary rather than a heart, sphere, crystal, or blob authority', () => {
   assert.match(orb, /home-v286-biomorphic-memory-reliquary/)
   assert.match(orb, /reliquaryPlateGeometryV286/)
   assert.match(orb, /plateSpecsV286/)
@@ -45,19 +46,31 @@ test('V286 grounds through restrained inlaid traces instead of visible root tube
   assert.doesNotMatch(orb, /orbiting|rotating halo|memoryLoop|rootTendrils/)
 })
 
-test('current Home authority mounts V286 and no longer mounts the rejected V253 Orb render owner', () => {
-  assert.match(authority, /import \{ HomeOrbReliquaryV286 \} from '\.\.\/assets\/HomeOrbReliquaryV286'/)
-  assert.match(authority, /<HomeOrbReliquaryV286 \/>/)
-  assert.match(authority, /home-v253-authored-sanctuary-dressing/)
+test('current Home authority mounts the V288 grounded adapter which preserves V286 pixels and retires V253', () => {
+  assert.match(authority, /import \{ HomeOrbGroundedV288 \} from '\.\.\/assets\/HomeOrbGroundedV288'/)
+  assert.match(authority, /<HomeOrbGroundedV288 \/>/)
+  assert.match(adapter, /import \{ HomeOrbReliquaryV286 \} from '\.\/HomeOrbReliquaryV286'/)
+  assert.match(adapter, /return <HomeOrbReliquaryV286 \/>/)
+  assert.match(adapter, /home-v288-grounded-biomorphic-memory-reliquary/)
+  assert.match(adapter, /fallbackVisualOwner: false/)
+  assert.match(adapter, /material\.colorWrite = false/)
+  assert.match(adapter, /material\.depthWrite = false/)
+  assert.match(adapter, /material\.opacity = 0/)
   assert.doesNotMatch(authority, /livingHeartGeometryV253|home-v253-literal-living-memory-heart|<GroundedOrbRootsV253|<LiteralOrbAuthorityV253/)
   assert.ok(inventory.runtimeAssets.includes('HomeOrbReliquaryV286.tsx'))
-  assert.equal(inventory.orbVisualAuthority, 'v286-biomorphic-memory-reliquary')
+  assert.ok(inventory.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
+  assert.equal(inventory.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
 })
 
-test('normal exact-head Portal/Orb proof watches and rejects regression away from V286', () => {
+test('normal exact-head Portal/Orb proof watches and rejects regression away from V288 grounded reliquary authority', () => {
   assert.match(workflow, /HomeOrbReliquaryV286\.tsx/)
-  assert.match(workflow, /Verify V286 biomorphic Orb authority/)
-  assert.match(workflow, /home-v286-biomorphic-memory-reliquary/)
-  assert.match(workflow, /livingHeart\|living-memory-heart/)
-  assert.match(workflow, /Retired V253 heart\/root render authority remains mounted/)
+  assert.match(workflow, /HomeOrbGroundedV288\.tsx/)
+  assert.match(workflow, /Verify V288 grounded reliquary plus V287 lived-world and broad-sky authority/)
+  assert.match(workflow, /home-v288-grounded-biomorphic-memory-reliquary/)
+  assert.match(workflow, /fallbackVisualOwner: false/)
+  assert.match(workflow, /material\.colorWrite = false/)
+  assert.match(workflow, /interactionOwner: true/)
+  assert.match(workflow, /interactionOwner: false/)
+  assert.match(workflow, /home-v253-literal-living-memory-heart/)
+  assert.match(workflow, /Retired heart Orb authority returned to current reliquary source/)
 })
