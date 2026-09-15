@@ -11,7 +11,7 @@ function fail(message) {
 }
 
 if (authority.schemaVersion !== 'urai-home-visual-authority-1') fail(`unsupported schema ${String(authority.schemaVersion)}`)
-for (const field of ['rendererOwner', 'artRevision', 'worldIdentifier', 'proofSchema']) {
+for (const field of ['rendererOwner', 'artRevision', 'worldIdentifier', 'proofSchema', 'orbVisualAuthority']) {
   if (typeof authority[field] !== 'string' || !authority[field].trim()) fail(`missing ${field}`)
 }
 if (!Array.isArray(authority.runtimeAssets) || authority.runtimeAssets.length < 4) fail('runtimeAssets must contain the current renderer/art inventory')
@@ -19,6 +19,8 @@ if (new Set(authority.runtimeAssets).size !== authority.runtimeAssets.length) fa
 if (!authority.runtimeAssets.includes(authority.rendererOwner)) fail('runtimeAssets does not include rendererOwner')
 if (!authority.runtimeAssets.includes('HomeVisualAuthority.tsx')) fail('runtimeAssets does not include HomeVisualAuthority.tsx')
 if (!authority.runtimeAssets.includes('HomeAtmosphericSky.tsx')) fail('runtimeAssets does not include HomeAtmosphericSky.tsx')
+if (authority.orbVisualAuthority !== 'v286-biomorphic-memory-reliquary') fail(`unexpected Orb visual authority ${String(authority.orbVisualAuthority)}`)
+if (!authority.runtimeAssets.includes('HomeOrbReliquaryV286.tsx')) fail('runtimeAssets does not include HomeOrbReliquaryV286.tsx')
 if (!authority.runtimeAssets.includes('HomeLaunchSanctuaryV254.tsx')) fail('runtimeAssets does not include HomeLaunchSanctuaryV254.tsx')
 if (authority.runtimeAssets.includes('HomeWorldProductionV225PolishV2.tsx')) fail('superseded V225PolishV2 cannot be a current runtime asset')
 
@@ -80,14 +82,40 @@ const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthorit
 for (const token of [
   'object.visible = false',
   'previousRaycast.set(object, object.raycast)', 'object.raycast = () => {}',
- 'object.raycast = raycast',
+  'object.raycast = raycast',
   '!isTransparentInteractionSurface(object)',
   'const setSubtreeOff = (object: THREE.Object3D) => {',
   'object.traverse((child) => disableRaycast(child))',
   "if (object.name === 'home-v226-root-cradle') {",
   'setSubtreeOff(object)',
+  "import { HomeOrbReliquaryV286 } from '../assets/HomeOrbReliquaryV286'",
+  '<HomeOrbReliquaryV286 />',
 ]) {
-  if (!visualAuthority.includes(token)) fail(`visual ownership guard missing fail-closed interaction token: ${token}`)
+  if (!visualAuthority.includes(token)) fail(`visual ownership guard missing fail-closed interaction/current Orb token: ${token}`)
+}
+if (/livingHeartGeometryV253|home-v253-literal-living-memory-heart|<GroundedOrbRootsV253\s*\/>|<LiteralOrbAuthorityV253\s*\/>/.test(visualAuthority)) {
+  fail('retired V253 heart/root render authority remains mounted or present in the current Home visual authority')
+}
+
+const orbAuthority = await readFile(path.join(spatialAssetsRoot, 'HomeOrbReliquaryV286.tsx'), 'utf8')
+for (const token of [
+  'home-v286-biomorphic-memory-reliquary',
+  'reliquaryPlateGeometryV286',
+  'reliquaryFilamentGeometriesV286',
+  'reliquaryGroundTracesV286',
+  'memoryFieldV286',
+  'stateVisualsV286',
+  'home-v286-layered-internal-memory-world',
+  'home-v286-localized-memory-field',
+  'interactionOwner: false',
+]) {
+  if (!orbAuthority.includes(token)) fail(`V286 Orb authority missing token: ${token}`)
+}
+if (/livingHeart|living-memory-heart|new THREE\.SphereGeometry|<sphereGeometry|wireframe|DoubleSide/.test(orbAuthority)) {
+  fail('V286 Orb regressed to retired heart/sphere/crystal-style authority')
+}
+if (/root\.current\.scale\.set|fieldRef\.current\.rotation|rotation\.y\s*=\s*t\s*\*/.test(orbAuthority)) {
+  fail('V286 Orb regressed to whole-object pulsing or orbiting field motion')
 }
 
 process.stdout.write(`${JSON.stringify({
@@ -98,4 +126,5 @@ process.stdout.write(`${JSON.stringify({
   worldIdentifier: authority.worldIdentifier,
   proofSchema: authority.proofSchema,
   runtimeAssets: authority.runtimeAssets,
+  orbAuthority: 'v286-biomorphic-memory-reliquary',
 }, null, 2)}\nCURRENT_HOME_VISUAL_AUTHORITY_OK\n`)
