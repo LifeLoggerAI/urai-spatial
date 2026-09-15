@@ -24,10 +24,14 @@ export const HOME_GROUND_TIMING = {
   homeAvatarRestoreReducedMs: 280,
 } as const
 
+// Literal HomeV225 inhabitedSurfaceGeometry domain:
+// x = -13.5 .. +13.5, z = 6.4 - v*26.2 => +6.4 .. -19.8.
+// Keep this synchronized with the rendered Home terrain rather than a guessed
+// symmetric or absolute-size domain; selected-point continuity depends on it.
 export const HOME_GROUND_BOUNDS = {
   minX: -13.5,
   maxX: 13.5,
-  minZ: -26.2,
+  minZ: -19.8,
   maxZ: 6.4,
 } as const
 
