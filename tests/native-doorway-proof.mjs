@@ -19,8 +19,21 @@ const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
 async function settleRenderedDestination(page, doorway) {
   if (doorway.destination === '/ground') {
-    const readyGround = page.locator('[data-testid="urai-ground-private-workforce-world"][data-ground-ready="true"]')
-    await readyGround.waitFor({ state: 'visible', timeout: 45000 })
+    const ground = page.locator('[data-testid="urai-ground-private-workforce-world"]')
+    await ground.waitFor({ state: 'visible', timeout: 45000 })
+    const canvas = ground.locator('canvas').first()
+    await canvas.waitFor({ state: 'visible', timeout: 45000 })
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="urai-ground-private-workforce-world"]')
+      const surface = root?.querySelector('canvas')
+      if (!(root instanceof HTMLElement) || !(surface instanceof HTMLCanvasElement)) return false
+      const box = surface.getBoundingClientRect()
+      return root.dataset.groundVisualOwner === 'shared-continuity-architecture'
+        && box.width >= 240
+        && box.height >= 240
+        && surface.width > 0
+        && surface.height > 0
+    }, null, { timeout: 45000, polling: 50 })
   }
   await page.waitForTimeout(1200)
 }
@@ -186,7 +199,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 16, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, nativeAnchorActivationDoesNotRequireReactClickHandler: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 17, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, persistentVisibleShortcutPillsForbidden: true, semanticNavigationRequired: true, semanticNavigationOwner: 'runtime-boundary', nativeSemanticDestinationAnchorsRequired: true, nativeAnchorActivationDoesNotRequireReactClickHandler: true, fallbackNavigationParityRequired: true, spatialPointerAndTouchCoveredByBrowserCoordinates: true, keyboardNavigationCoveredByBrowserTabAndEnter: true, nonDominanceMeasuredByDeclaredOwnershipOpacityAndViewportFootprint: true, nonDominanceOpacitySourceContract: '.015', renderedDestinationRequiredBeforeCapture: true, groundRenderedOwnerContract: 'shared-continuity-architecture-plus-visible-canvas', pageContextDomGeometryRequired: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
