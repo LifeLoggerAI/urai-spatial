@@ -9,7 +9,7 @@ const receipt = JSON.parse(await readFile(receiptPath, 'utf8'))
 const MIN_VARIANCE = 8
 const MIN_NON_DARK_RATIO = .12
 const MIN_LUMINANCE_RANGE = 20
-const MIN_ENTROPY = .75
+const MIN_ENTROPY = 1.2
 const MIN_EDGE_DENSITY = .03
 const MIN_OCCUPIED_QUADRANTS = 3
 
@@ -92,25 +92,14 @@ if (blockingEvents.length) {
 
 if ((receipt.captures || []).length < 28) throw new Error(`Founder proof retained fewer than 28 captures: ${(receipt.captures || []).length}`)
 
-const originalError = String(receipt.error || '')
-const normalizedLegacyByteFailure = false
-const normalizedLegacyEntropyFailure = !receipt.passed && (
-  /high-resolution Founder capture lacks distributed retained-pixel detail:/.test(originalError)
-  || /retained pixels lack meaningful luminance entropy/.test(originalError)
-)
-const normalizedLegacyProofFailure = normalizedLegacyEntropyFailure
-if (!receipt.passed && !normalizedLegacyProofFailure) {
-  throw new Error(`Founder runner failed for a non-normalizable reason: ${originalError || 'unknown failure'}`)
+if (!receipt.passed) {
+  throw new Error(`Founder runner failed: ${String(receipt.error || 'unknown failure')}`)
 }
 
 const verdict = {
-  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-2',
+  schemaVersion: 'urai-lifemap-founder-retained-png-verdict-3',
   exactHead: receipt.exactHead,
-  runnerPassed: Boolean(receipt.passed),
-  normalizedLegacyByteFailure,
-  normalizedLegacyEntropyFailure,
-  normalizedLegacyProofFailure,
-  originalError: originalError || null,
+  runnerPassed: true,
   acceptance: 'pass',
   thresholds: {
     minimumVariance: MIN_VARIANCE,
@@ -125,4 +114,4 @@ const verdict = {
 }
 
 await writeFile(verdictPath, JSON.stringify(verdict, null, 2))
-console.log(`URAI_FOUNDER_RETAINED_PNG_VERDICT_OK ${JSON.stringify({ exactHead: receipt.exactHead, runnerPassed: Boolean(receipt.passed), normalizedLegacyEntropyFailure })}`)
+console.log(`URAI_FOUNDER_RETAINED_PNG_VERDICT_OK ${JSON.stringify({ exactHead: receipt.exactHead, runnerPassed: true })}`)
