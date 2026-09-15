@@ -8,7 +8,7 @@ const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRoute
 test('canonical Life Map overview is framed as a deep stellar personal universe rather than terrain or graph grammar', () => {
   assert.match(boundary, /CosmicComposedLifeMapScene/)
   assert.match(cosmic, /data-life-map-visual-authority="v260-deep-stellar-personal-universe"/)
-  assert.match(cosmic, /data-life-map-art-revision="v278-selected-journey-volume"/)
+  assert.match(cosmic, /data-life-map-art-revision="v279-departure-volumetric-bridge"/)
   assert.match(cosmic, /data-life-map-ground="none"/)
   assert.match(cosmic, /life-map-deep-space/)
   assert.match(cosmic, /life-map-deep-stellar-field/)
