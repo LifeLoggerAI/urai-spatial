@@ -19,7 +19,8 @@ on:
       - 'urai-tier1/src/app/currentHomeVisualAuthority.json'
       - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
       - 'urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts'
-      - 'playwright.accessibility.config.ts'
+      - 'urai-tier1/tests/home-ground-history.spec.ts'
+      - 'playwright.home-ground.config.ts'
       - '.github/workflows/home-ground-canon-proof.yml'
   workflow_dispatch:
 
@@ -78,18 +79,15 @@ jobs:
             sleep 1
           done
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/home-ground-canon-proof node scripts/capture-home-ground-canon-proof.mjs
-      - name: Run focused accessibility browser contract
+      - name: Run focused accessibility and history browser contracts
         run: |
           pnpm --dir urai-tier1 exec playwright test \
-            --config=../playwright.accessibility.config.ts \
-            accessibility-performance-embodied-exploration.spec.ts \
+            --config=../playwright.home-ground.config.ts \
             --project=chromium
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: home-ground-canon-proof-${{ env.URAI_EXACT_HEAD }}
-          path: |
-            artifacts/home-ground-canon-proof
-            artifacts/accessibility-performance
+          path: artifacts/home-ground-canon-proof
           if-no-files-found: error
           retention-days: 90
