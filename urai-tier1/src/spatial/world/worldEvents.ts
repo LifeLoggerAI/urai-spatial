@@ -40,9 +40,6 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
 }
 
 function commitHardFallback(href: string) {
-  // Commit exactly one browser-history entry. The previous pushState + reload
-  // sequence could race the client router and leave duplicate destination
-  // entries, causing one Back action to remain on the destination route.
   window.location.assign(href)
 }
 
@@ -76,9 +73,6 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
     return
   }
 
-  // The completed Home sky ascent owns a real closing phase before route handoff.
-  // This is intentionally bound at the canonical travel boundary so the phase is
-  // committed before either the client router or hard fallback can tear Home down.
   markHomeAscentClosing(request)
 
   const now = Date.now()
@@ -114,6 +108,15 @@ export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
 
 export function requestUraiWorldReturn() {
   if (typeof window === 'undefined') return
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (pathname === '/ground' || pathname.startsWith('/ground/')) {
+    // Ground has one spatial parent and one unwind owner. Orb-companion Return,
+    // accessibility Return, and other shell callers must not bypass the first-
+    // person extraction by invoking the generic reverse-travel controller.
+    dispatchSpatialAudioCue('transition')
+    window.dispatchEvent(new CustomEvent('urai:ground-unwind', { detail: { reason: 'accessible-control' } }))
+    return
+  }
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
 }
@@ -121,10 +124,6 @@ export function requestUraiWorldReturn() {
 export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) {
   if (typeof window === 'undefined') return
   pendingOrbOpenDetail = { returnFocusTo }
-  // Keep the native semantic button as the single activation owner. Dispatch on
-  // the next task so React/flushSync companion work cannot hold the browser's
-  // native pointer transport open, while the pending detail keeps pre-hydration
-  // activation lossless for the companion's existing pending-request consumer.
   window.setTimeout(() => {
     const detail = pendingOrbOpenDetail ?? { returnFocusTo }
     dispatchSpatialAudioCue('orb-confirm')
@@ -132,11 +131,6 @@ export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) {
   }, 0)
 }
 
-/**
- * Atomically consumes an Orb-open request made before the companion hydrated.
- * Keeping this at the event boundary makes activation lossless without adding a
- * second document click owner or dispatching the request twice.
- */
 export function takePendingUraiWorldOrbOpen() {
   const detail = pendingOrbOpenDetail
   pendingOrbOpenDetail = null
