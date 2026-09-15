@@ -68,14 +68,15 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       }, closingDelay))
     }
 
-    const hardenHomeOwnership = () => {
+    const hardenCanvasOwnership = () => {
       owner.querySelectorAll('canvas').forEach((canvas) => {
-        canvas.setAttribute('aria-hidden', 'true')
-        canvas.setAttribute('role', 'presentation')
-        canvas.setAttribute('tabindex', '-1')
+        if (canvas.getAttribute('aria-hidden') !== 'true') canvas.setAttribute('aria-hidden', 'true')
+        if (canvas.getAttribute('role') !== 'presentation') canvas.setAttribute('role', 'presentation')
+        if (canvas.getAttribute('tabindex') !== '-1') canvas.setAttribute('tabindex', '-1')
       })
-      const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-      if (!world) return
+    }
+
+    const applyStaticHomeOwnership = (world: HTMLElement) => {
       const query = new URLSearchParams(window.location.search)
       const reviewMode = query.get('homeAssetReview') === '1'
       const privateFixture = query.get('homePrivateFixture') === '1'
@@ -112,22 +113,54 @@ export default function AssetDrivenHomeWorld({ onOrbOpen, webglAvailable }: Prop
       world.setAttribute('data-home-visible-production-assets', 'v226-weathered-memory-banks v226-rooted-inhabited-canopy v226-ground-inhabited-hearth v226-life-map-lineage-observatory v226-rooted-single-living-memory-presence')
       world.setAttribute('data-home-animation-owner', 'v226-rooted-living-memory-presence')
       world.setAttribute('data-home-audio', 'production-opus-consent-controlled')
-      synchronizeCanonicalHomeTelemetry(world)
-      stagePortalLifecycle(world)
       if (reviewOrbState !== appliedReviewOrbState) {
         appliedReviewOrbState = reviewOrbState
         publishOrbState(reviewOrbState ?? 'idle', 'system')
       }
     }
 
-    hardenHomeOwnership()
-    const observer = new MutationObserver(hardenHomeOwnership)
+    const world = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+    if (world) {
+      hardenCanvasOwnership()
+      applyStaticHomeOwnership(world)
+      synchronizeCanonicalHomeTelemetry(world)
+      stagePortalLifecycle(world)
+    }
+
+    // Player position changes arrive at render cadence. Keep that hot path to
+    // the four derived distance markers only; the previous implementation
+    // re-stamped the complete ownership/a11y contract and rescanned canvases on
+    // every movement mutation, creating avoidable main-thread/WebGL contention.
+    const observer = new MutationObserver((records) => {
+      const activeWorld = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!activeWorld) return
+      let playerMoved = false
+      let portalChanged = false
+      let childChanged = false
+      for (const record of records) {
+        if (record.type === 'childList') childChanged = true
+        if (record.type === 'attributes' && (record.attributeName === 'data-home-player-x' || record.attributeName === 'data-home-player-z')) playerMoved = true
+        if (record.type === 'attributes' && record.attributeName === 'data-home-portal-sequence') portalChanged = true
+      }
+      if (childChanged) hardenCanvasOwnership()
+      if (playerMoved) synchronizeCanonicalHomeTelemetry(activeWorld)
+      if (portalChanged) stagePortalLifecycle(activeWorld)
+    })
     observer.observe(owner, { attributes: true, attributeFilter: ['data-home-player-x','data-home-player-z','data-home-portal-sequence'], childList: true, subtree: true })
-    window.addEventListener('popstate', hardenHomeOwnership)
+
+    const refreshStaticAuthority = () => {
+      const activeWorld = owner.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
+      if (!activeWorld) return
+      hardenCanvasOwnership()
+      applyStaticHomeOwnership(activeWorld)
+      synchronizeCanonicalHomeTelemetry(activeWorld)
+      stagePortalLifecycle(activeWorld)
+    }
+    window.addEventListener('popstate', refreshStaticAuthority)
     return () => {
       clearLifecycleTimers()
       observer.disconnect()
-      window.removeEventListener('popstate', hardenHomeOwnership)
+      window.removeEventListener('popstate', refreshStaticAuthority)
     }
   }, [])
 
