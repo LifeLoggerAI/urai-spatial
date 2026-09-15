@@ -48,7 +48,7 @@ test('Life Map threshold is a distinct rooted celestial ascent, not a copy of Gr
 })
 
 test('AAA Life Map ascent stays open volumetric space and cannot regress to a dark construction plane', () => {
-  assert.match(aaa, /aaa-celestial-ascent-v2-open-volume/)
+  assert.match(aaa, /aaa-celestial-ascent-v3-gold-master-depth/)
   assert.match(aaa, /rooted-threshold-expanding-upward-into-open-deep-personal-constellation-space/)
   assert.match(aaa, /constructionPlane: 'none'/)
   assert.match(aaa, /buildCelestialVolume/)
