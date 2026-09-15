@@ -30,6 +30,14 @@ const requiredRouteHints = [
   'lifemap',
 ]
 
+function hasCssDeclaration(block, property, value) {
+  return block
+    .split(';')
+    .map((declaration) => declaration.trim())
+    .filter(Boolean)
+    .some((declaration) => declaration === `${property}:${value}`)
+}
+
 test('orb companion preserves required home unwind route commands', () => {
   assert.match(source, /const HOME_ROUTE_COMMANDS = \[/)
   for (const command of requiredHomeCommands) {
@@ -83,19 +91,19 @@ test('Orb conversation disclosure remains a real pointer hit target above the sp
   const summaryCss = conversationCss.match(/\.panel summary\{([^}]*)\}/)?.[1] ?? ''
   const bodyCss = conversationCss.match(/\.body\{([^}]*)\}/)?.[1] ?? ''
 
-  assert.match(panelCss, /position:relative;/)
-  assert.match(panelCss, /z-index:1;/)
-  assert.match(panelCss, /isolation:isolate;/)
-  assert.match(panelCss, /pointer-events:auto;/)
+  assert.ok(hasCssDeclaration(panelCss, 'position', 'relative'))
+  assert.ok(hasCssDeclaration(panelCss, 'z-index', '1'))
+  assert.ok(hasCssDeclaration(panelCss, 'isolation', 'isolate'))
+  assert.ok(hasCssDeclaration(panelCss, 'pointer-events', 'auto'))
 
-  assert.match(summaryCss, /position:relative;/)
-  assert.match(summaryCss, /z-index:2;/)
-  assert.match(summaryCss, /pointer-events:auto;/)
-  assert.match(summaryCss, /touch-action:manipulation;/)
-  assert.match(summaryCss, /transform:translateZ\(0\);/)
+  assert.ok(hasCssDeclaration(summaryCss, 'position', 'relative'))
+  assert.ok(hasCssDeclaration(summaryCss, 'z-index', '2'))
+  assert.ok(hasCssDeclaration(summaryCss, 'pointer-events', 'auto'))
+  assert.ok(hasCssDeclaration(summaryCss, 'touch-action', 'manipulation'))
+  assert.ok(hasCssDeclaration(summaryCss, 'transform', 'translateZ(0)'))
 
-  assert.match(bodyCss, /position:relative;/)
-  assert.match(bodyCss, /z-index:1;/)
-  assert.match(bodyCss, /pointer-events:auto;/)
+  assert.ok(hasCssDeclaration(bodyCss, 'position', 'relative'))
+  assert.ok(hasCssDeclaration(bodyCss, 'z-index', '1'))
+  assert.ok(hasCssDeclaration(bodyCss, 'pointer-events', 'auto'))
   assert.match(conversationSource, /<summary>Talk with Orb<\/summary>/)
 })
