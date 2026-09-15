@@ -1,4 +1,4 @@
-/* V269 literal-pixel convergence.
+/* V270 literal-pixel convergence.
    The WebGL stellar volume is the only star owner. This route layer must never
    synthesize tiled point-stars: repeated CSS dots flatten the personal universe
    into wallpaper and compete with real memory-star hierarchy. CSS contributes
@@ -43,6 +43,24 @@
   filter: contrast(1.16) saturate(1.10) brightness(1.04);
 }
 
+/* Departure is the one-frame visual hinge between the calm overview and the
+   brighter selected journey. Keep that hinge luminously distributed from the
+   first authoritative selected frame so the world never collapses into a dark
+   interstitial. These are broad asymmetric weather fields only: WebGL still
+   owns every crisp star and memory landmark. */
+.life-map-root[data-life-map-phase="departure"]::before {
+  background:
+    radial-gradient(ellipse at 13% 23%, rgba(78,145,190,.48) 0, rgba(43,94,139,.27) 27%, transparent 55%),
+    radial-gradient(ellipse at 82% 28%, rgba(145,96,173,.43) 0, rgba(86,63,131,.23) 27%, transparent 55%),
+    radial-gradient(ellipse at 28% 78%, rgba(52,129,159,.38) 0, rgba(31,85,116,.19) 29%, transparent 55%),
+    radial-gradient(ellipse at 78% 76%, rgba(126,151,194,.34) 0, rgba(70,91,142,.17) 26%, transparent 52%),
+    radial-gradient(ellipse at 51% 49%, rgba(68,107,156,.31) 0, rgba(39,70,113,.13) 34%, transparent 52%),
+    radial-gradient(ellipse at 45% 13%, rgba(82,120,163,.21) 0, transparent 40%),
+    linear-gradient(114deg, rgba(18,41,72,.09) 2%, rgba(55,106,148,.25) 24%, rgba(34,67,110,.07) 43%, rgba(117,77,143,.22) 65%, rgba(45,89,131,.16) 84%, transparent 99%);
+  opacity: .90;
+  filter: contrast(1.12) saturate(1.12) brightness(1.12);
+}
+
 .life-map-root[data-life-map-phase="arrival"]::before {
   opacity: .74;
 }
@@ -84,6 +102,19 @@
       radial-gradient(ellipse at 48% 49%, rgba(54,86,130,.18) 0, transparent 45%),
       linear-gradient(119deg, rgba(15,33,59,.04) 4%, rgba(48,91,130,.16) 27%, transparent 46%, rgba(99,69,128,.14) 69%, transparent 96%);
     background-repeat: no-repeat;
+  }
+
+  .life-map-root[data-life-map-phase="departure"]::before {
+    opacity: .84;
+    background:
+      radial-gradient(ellipse at 24% 26%, rgba(76,143,188,.43) 0, rgba(43,93,137,.23) 27%, transparent 55%),
+      radial-gradient(ellipse at 81% 32%, rgba(140,94,169,.39) 0, rgba(82,61,127,.20) 27%, transparent 55%),
+      radial-gradient(ellipse at 39% 76%, rgba(52,125,157,.35) 0, rgba(32,82,114,.17) 29%, transparent 54%),
+      radial-gradient(ellipse at 76% 79%, rgba(121,147,190,.29) 0, transparent 50%),
+      radial-gradient(ellipse at 48% 50%, rgba(65,101,150,.25) 0, transparent 49%),
+      linear-gradient(118deg, rgba(17,39,69,.07) 3%, rgba(54,102,144,.22) 27%, transparent 47%, rgba(112,76,139,.19) 69%, rgba(43,84,126,.12) 88%, transparent 98%);
+    background-repeat: no-repeat;
+    filter: contrast(1.10) saturate(1.10) brightness(1.10);
   }
 }
 
