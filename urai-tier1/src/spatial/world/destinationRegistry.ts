@@ -22,13 +22,14 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     environmentalForm: 'sky-ground-avatar-orb',
   },
   'infrastructure-hub': {
+    // Compatibility id retained while the public /ground authority is the lived physical world.
     id: 'infrastructure-hub',
-    label: 'Hidden Infrastructure',
+    label: 'Ground',
     href: '/ground',
-    layer: 'infrastructure-world',
-    entryPortal: 'ground-gateway',
-    cameraCheckpoint: 'infrastructure-arrival',
-    environmentalForm: 'underground-network',
+    layer: 'living-world',
+    entryPortal: 'home-ground',
+    cameraCheckpoint: 'ground-first-person-arrival',
+    environmentalForm: 'lived-physical-world',
     deepLinkAliases: ['/infrastructure'],
   },
   'life-map': {
