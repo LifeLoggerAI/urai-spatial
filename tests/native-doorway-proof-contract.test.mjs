@@ -40,11 +40,14 @@ test('pointer and touch use page-context DOM geometry and real browser-coordinat
   assert.match(proof, /await page\.waitForURL[\s\S]*record\.targetOwnsHitPoint = true/)
 })
 
-test('native doorway activation does not depend on a synthetic React click-handler hydration shim', () => {
-  assert.doesNotMatch(proof, /__reactProps/)
-  assert.doesNotMatch(proof, /page\.waitForFunction/)
+test('native doorway activation stays browser-native while rendered destination settlement is allowed', () => {
+  assert.doesNotMatch(proof, /__reactProps|__reactFiber/)
+  assert.doesNotMatch(proof, /dispatchEvent\(new MouseEvent|target\.evaluate\([\s\S]*\.click\(/)
   assert.match(proof, /nativeAnchorActivationDoesNotRequireReactClickHandler: true/)
   assert.match(proof, /tagName !== 'A'/)
+  assert.match(proof, /async function settleRenderedDestination/)
+  assert.match(proof, /page\.waitForFunction\(\(\) => \{[\s\S]*data-testid="urai-ground-private-workforce-world"[\s\S]*groundVisualOwner === 'shared-continuity-architecture'/)
+  assert.match(proof, /groundRenderedOwnerContract: 'shared-continuity-architecture-plus-visible-canvas'/)
 })
 
 test('semantic navigation stays statically opacity-bounded and runtime footprint-bounded', () => {

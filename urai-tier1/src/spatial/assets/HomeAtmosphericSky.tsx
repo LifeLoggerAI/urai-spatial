@@ -110,7 +110,8 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
         sky=mix(sky,uCloud,band*.28);
         vec3 sunDir=normalize(vec3(-.68,.16,-.72));float sunDot=max(0.,dot(d,sunDir));sky+=uWarm*(pow(sunDot,10.)*.12+pow(sunDot,96.)*.34);
         sky+=mix(uMid,uWarm,.18)*uFocus*(.018+.045*e);
-        gl_FragColor=vec4(sky,1.);#include <colorspace_fragment>
+        gl_FragColor=vec4(sky,1.);
+        #include <colorspace_fragment>
       }`,
   }), [])
 

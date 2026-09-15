@@ -20,7 +20,7 @@ const cases = [
   { id: 'reduced-motion-sky', viewport: { width: 1440, height: 900 }, point: [.50, .18], expected: 'SKY_ASCENT', reducedMotion: 'reduce' },
 ]
 
-const receipt = { schemaVersion: 'urai-home-sky-interaction-proof-3', exactHead, capturedAt: new Date().toISOString(), cases: [], errors: [] }
+const receipt = { schemaVersion: 'urai-home-sky-interaction-proof-4', exactHead, capturedAt: new Date().toISOString(), cases: [], errors: [] }
 
 for (const spec of cases) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
@@ -34,6 +34,17 @@ for (const spec of cases) {
     const owner = page.locator('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
     await owner.waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
+    await page.evaluate(() => {
+      const root = document.querySelector('.urai-asset-home-world')
+      window.__uraiSkyPhaseTrace = root ? [root.getAttribute('data-home-scene-phase')] : []
+      window.__uraiSkyTraceObserver?.disconnect?.()
+      if (root) {
+        window.__uraiSkyTraceObserver = new MutationObserver(() => {
+          window.__uraiSkyPhaseTrace.push(root.getAttribute('data-home-scene-phase'))
+        })
+        window.__uraiSkyTraceObserver.observe(root, { attributes: true, attributeFilter: ['data-home-scene-phase'] })
+      }
+    })
     const canvas = owner.locator('canvas')
     const box = await canvas.boundingBox()
     if (!box) throw new Error('Home canvas has no interaction bounds')
@@ -43,15 +54,24 @@ for (const spec of cases) {
     else await page.mouse.click(x, y)
 
     if (spec.expected === 'SKY_ASCENT') {
-      await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-scene-phase') === 'SKY_ASCENT', null, { timeout: 1200 })
+      await page.waitForFunction(() => {
+        const root = document.querySelector('.urai-asset-home-world')
+        const trace = window.__uraiSkyPhaseTrace || []
+        return trace.includes('SKY_ASCENT')
+          && root?.getAttribute('data-home-input-locked') === 'true'
+          && root?.getAttribute('data-home-transition-sequence') === 'life-map:traversal'
+          && root?.getAttribute('data-home-portal-sequence') === 'idle'
+      }, null, { timeout: 6_000, polling: 25 })
       record.scenePhase = await owner.getAttribute('data-home-scene-phase')
+      record.phaseTrace = await page.evaluate(() => window.__uraiSkyPhaseTrace || [])
+      record.observedSkyAscent = record.phaseTrace.includes('SKY_ASCENT')
       record.inputLocked = await owner.getAttribute('data-home-input-locked')
       record.transitionSequence = await owner.getAttribute('data-home-transition-sequence')
       record.portalSequence = await owner.getAttribute('data-home-portal-sequence')
       record.cameraMode = await owner.getAttribute('data-home-camera-mode')
       await page.waitForTimeout(spec.reducedMotion === 'reduce' ? 80 : 180)
       await page.screenshot({ path: path.join(outputDir, `${spec.id}-${exactHead.slice(0,12)}.png`), animations: 'disabled', caret: 'hide' })
-      record.passed = record.scenePhase === 'SKY_ASCENT'
+      record.passed = record.observedSkyAscent === true
         && record.inputLocked === 'true'
         && record.transitionSequence === 'life-map:traversal'
         && record.portalSequence === 'idle'
@@ -60,10 +80,11 @@ for (const spec of cases) {
     } else {
       await page.waitForTimeout(300)
       record.scenePhase = await owner.getAttribute('data-home-scene-phase')
+      record.phaseTrace = await page.evaluate(() => window.__uraiSkyPhaseTrace || [])
       record.inputLocked = await owner.getAttribute('data-home-input-locked')
       record.transitionSequence = await owner.getAttribute('data-home-transition-sequence')
       record.portalSequence = await owner.getAttribute('data-home-portal-sequence')
-      record.passed = record.scenePhase !== 'SKY_ASCENT'
+      record.passed = !record.phaseTrace.includes('SKY_ASCENT')
         && record.transitionSequence !== 'life-map:traversal'
         && record.portalSequence === 'idle'
         && pageErrors.length === 0
