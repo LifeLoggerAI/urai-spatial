@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const route = fs.readFileSync(new URL('../src/app/focus/page.tsx', import.meta.url), 'utf8')
+const compatibilityRoute = fs.readFileSync(new URL('../src/app/focus/session/[sessionId]/page.tsx', import.meta.url), 'utf8')
 const focusState = fs.readFileSync(new URL('../src/spatial/scene/focusState.ts', import.meta.url), 'utf8')
 const focusRuntime = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
 const lifeMapWorld = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
@@ -13,6 +14,14 @@ test('public Focus route describes the selected-memory spatial experience rather
   assert.match(route, /title: 'URAI Focus'/)
   assert.match(route, /close-range selected-memory experience/)
   assert.doesNotMatch(route, /Deep Work|Focus Session|mission cockpit|task timer|app blocking/i)
+})
+
+test('legacy session-shaped compatibility route does not expose productivity Focus language', () => {
+  assert.match(compatibilityRoute, /Selected memory unavailable/)
+  assert.match(compatibilityRoute, /This memory cannot be opened in Focus/)
+  assert.match(compatibilityRoute, /redirect\(resolution\.star\.focusHref\)/)
+  assert.doesNotMatch(compatibilityRoute, />Focus session unavailable</i)
+  assert.doesNotMatch(compatibilityRoute, />This focus session/i)
 })
 
 test('neutral Focus Observatory remains distinct from selected-memory Focus', () => {
