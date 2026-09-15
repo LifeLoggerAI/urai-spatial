@@ -14,6 +14,7 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.match(cosmic, /data-life-map-landmark-revision="v282-authored-celestial-landmarks"/)
   assert.match(cosmic, /data-life-map-landmark-polish="v283-volumetric-celestial-islands"/)
   assert.match(cosmic, /data-life-map-landmark-acceptance="v284-stellar-memory-archipelagos"/)
+  assert.match(cosmic, /data-life-map-portrait-overview="v285-vertical-territory-composition"/)
   assert.match(cosmic, /life-map-overview-personal-universe-regions/)
   assert.match(cosmic, /data-derived-personal-universe-geography/)
   assert.match(cosmic, /node\.eraId \|\| node\.clusterId \|\| node\.type/)
@@ -69,6 +70,20 @@ test('V284 overview memory destinations remain stellar archipelagos with volumet
   assert.match(cosmic, /computeVertexNormals\(\)/)
   assert.match(cosmic, /fog attach="fog" args=\{\["#020611", 78, 170\]\}/)
   assert.doesNotMatch(cosmic, /phase === "arrival" \? 6\.1/)
+})
+
+test('V285 portrait overview expands data-derived territory hierarchy vertically without returning to wallpaper or monolithic blobs', () => {
+  assert.match(cosmic, /const \{ size \} = useThree\(\);\n  const portrait = size\.height > size\.width;/)
+  assert.match(cosmic, /const portraitBand = portrait \? \(index - 2\.5\) \* 2\.65/)
+  assert.match(cosmic, /rawCenter\[0\] \* \(portrait \? \.34 : \.54\)/)
+  assert.match(cosmic, /rawCenter\[1\] \* \(portrait \? \.72 : \.52\)/)
+  assert.match(cosmic, /portraitAuthority: portrait \? "v285-vertical-territory-composition"/)
+  assert.match(cosmic, /const count = 132/)
+  assert.match(cosmic, /Math\.min\(\.28, strength \* \.16\)/)
+  assert.match(cosmic, /opacity=\{\.90\}/)
+  assert.match(cosmic, /spread=\{region\.spread \* \(portrait \? 1\.48 : 1\.30\)\}/)
+  assert.match(cosmic, /opacity=\{portrait \? \.62 : \.54\}/)
+  assert.doesNotMatch(cosmic, /const count = 500|const count = 1000/)
 })
 
 test('selected-memory travel remains spatial, volumetric, and celestial until Focus or Replay', () => {
