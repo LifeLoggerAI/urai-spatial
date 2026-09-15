@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urai.app/schemas/intelligence-eval-corpus-v1.schema.json",
+  "title": "URAI synthetic intelligence evaluation corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "corpusId",
+    "containsPrivateUserData",
+    "cases"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "corpusId": {
+      "type": "string",
+      "pattern": "^urai-intelligence-synthetic-v[0-9]+$"
+    },
+    "containsPrivateUserData": {
+      "const": false
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 14,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "family",
+        "severity",
+        "syntheticContext",
+        "userPrompt",
+        "expectedInvariants",
+        "forbiddenOutcomes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "family": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "P0",
+            "P1"
+          ]
+        },
+        "syntheticContext": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "content"
+            ],
+            "properties": {
+              "source": {
+                "enum": [
+                  "user-report",
+                  "sensor-summary",
+                  "memory-record",
+                  "system-state",
+                  "provider-result"
+                ]
+              },
+              "content": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "userPrompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedInvariants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "forbiddenOutcomes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
