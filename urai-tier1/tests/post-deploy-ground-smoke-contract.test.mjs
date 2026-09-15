@@ -6,111 +6,70 @@ const smoke = fs.readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
 const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mjs', 'utf8')
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
 const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
-const groundModel = fs.readFileSync('src/app/ground/GroundWorldModel.ts', 'utf8')
-const groundGraph = `${ground}\n${groundModel}`
-const canonicalGround = ground.replace(/\r\n/g, '\n').replace(/"/g, "'").replace(/\s+/g, ' ').trim()
-
-const obsoleteTitle = 'Street-level city world'
-const retiredSmokeCopy = [
-  'Your private workforce.',
-  'Six chambers active · private by default',
-]
 
 const expectedGroundMarkers = [
-  'URAI Ground embodied private infrastructure',
-  'ground-spatial-root',
-  'ground-destination-compass',
-  'data-ground-destination',
-  'data-ground-visual-owner="authored-ground-world-terrain"',
-  'data-ground-runtime-owner="final-glb-infrastructure-world"',
-  'data-ground-runtime-assets="ground-world-terrain-v1.glb"',
-  'data-ground-no-compositing-bands="true"',
-  'data-ground-exploration="walkable"',
-  'data-ground-pointer-lock="false"',
-  'data-testid="urai-ground-walkable-surface"',
-  'ground-continuity-architectural-shell',
-  'ground-walkable-navigation-surface',
-  'ground-walkable-path-network',
-  'ground-central-nexus',
-  'ground-enterable-threshold-',
-  'ground-workforce-and-council-presences',
+  'urai-ground-lived-world',
+  'ground-lived-world-v1',
+  'first-person-lived-world',
+  'eye-level-terrain-following',
+  'data-ground-exploration="first-person"',
+  'data-ground-collision="visible-terrain-heightfield"',
+  'data-ground-place-layer="consent-aware-empty-by-default"',
+  'data-ground-private-location-mounted="false"',
+  'ground-visible-traversable-terrain',
   'stepEmbodiedMotion',
   'useMovementInput',
   'useDragLook',
   'MobileMovementPad',
-  'Reception',
-  'Privacy Sanctuary',
-  'Council',
-  'Logistics',
-  'Wellness',
-  'Archive',
-  'Reflection Realm',
-  'Ownership Vault',
-  'Consent Sanctuary',
-  'Emotional Atlas',
-  'Focus Chamber',
-  'Replay Theater',
 ]
 
-const liveGroundMarkers = [
-  ['walkable-first-person-ground-layer', groundPage],
-  ['urai-ground-private-workforce-world', ground],
-  ['ground-destination-compass', ground],
-  ['data-ground-destination', ground],
-  ['URAI Ground embodied private infrastructure', ground],
-]
-
-const liveGroundVisualCopy = [
-  'URAI GROUND',
-  'Private infrastructure beneath the living world',
+const retiredGroundMarkers = [
+  'urai-ground-private-workforce-world',
+  'ground-destination-compass',
+  'data-ground-destination',
+  'ground-central-nexus',
+  'ground-enterable-threshold-',
+  'ground-workforce-and-council-presences',
   'Walk deeper. Approach a chamber.',
-  'Reception',
-  'Archive',
+  'Private infrastructure beneath the living world',
 ]
 
-test('post-deploy Ground smoke remains tied to the live embodied destination world', () => {
+test('post-deploy Ground smoke is tied to the live first-person lived-world authority', () => {
+  assert.ok(groundPage.includes('walkable-first-person-ground-layer'))
   for (const marker of expectedGroundMarkers) {
-    assert.ok(groundGraph.includes(marker), `missing embodied Ground marker: ${marker}`)
+    assert.ok(ground.includes(marker), `missing lived-world Ground marker: ${marker}`)
   }
 
-  for (const [marker, sourceOwner] of liveGroundMarkers) {
-    assert.ok(sourceOwner.includes(marker), `Ground source owner is missing live marker: ${marker}`)
-    assert.ok(smoke.includes(`'${marker}'`), `post-deploy smoke is missing live Ground marker: ${marker}`)
+  for (const marker of ['walkable-first-person-ground-layer', 'urai-ground-lived-world', 'ground-lived-world-v1', 'first-person-lived-world', 'eye-level-terrain-following']) {
+    assert.ok(smoke.includes(`'${marker}'`), `post-deploy smoke is missing current Ground marker: ${marker}`)
   }
 
   assert.match(smoke, /\['\/ground', \['walkable-first-person-ground-layer'/)
-  assert.match(smoke, /\['Street-level city world'\]/)
 })
 
-test('Ground screenshot audit requires current visible world copy', () => {
-  for (const copy of liveGroundVisualCopy) {
-    assert.ok(groundGraph.includes(copy), `Ground source graph is missing current visual copy: ${copy}`)
-    assert.ok(visualAudit.includes(`'${copy}'`), `visual audit is missing current Ground copy: ${copy}`)
+test('Ground visual audit traceability names current authority and retires chamber copy', () => {
+  for (const marker of ['urai-ground-lived-world', 'ground-lived-world-v1', 'first-person-lived-world', 'eye-level-terrain-following']) {
+    assert.ok(visualAudit.includes(`'${marker}'`), `visual audit is missing current Ground marker: ${marker}`)
   }
-  assert.ok(!visualAudit.includes("'PRIVATE COUNCIL'"))
-  assert.ok(!visualAudit.includes("'Nothing acts without you'"))
+  for (const marker of retiredGroundMarkers) {
+    assert.ok(!ground.includes(marker), `retired Ground authority returned to runtime: ${marker}`)
+  }
 })
 
-test('obsolete Ground copy, provider wallpaper ownership and opaque blockouts are rejected', () => {
-  assert.doesNotMatch(groundGraph, new RegExp(obsoleteTitle))
-  for (const copy of retiredSmokeCopy) {
-    assert.ok(!groundGraph.includes(copy), `retired Ground copy returned to the source graph: ${copy}`)
-    assert.ok(!smoke.includes(`'${copy}'`), `post-deploy smoke still requires retired Ground copy: ${copy}`)
+test('Ground keeps visible terrain as traversal and location data fail-closed', () => {
+  assert.match(ground, /name="ground-visible-traversable-terrain"[\s\S]*onClick=\{onTerrainClick\}/)
+  assert.match(ground, /event\.delta > 8/)
+  assert.match(ground, /data-ground-private-location-mounted="false"/)
+  assert.match(ground, /href="\/location-map\/geographic\/"/)
+  assert.match(ground, /href="\/privacy-controls"/)
+  assert.doesNotMatch(ground, /requestPointerLock|sprint|jump|crouch/i)
+  assert.doesNotMatch(ground, /ground-walkable-navigation-surface|GroundPhysicalArchitecture|GroundVaultArchitecture/)
+  assert.match(ground, /min-width:48px;min-height:48px/)
+  assert.match(ground, /safe-area-inset-bottom/)
+})
+
+test('live smoke rejects retired chamber-hub authority', () => {
+  for (const marker of ['URAI Ground embodied private infrastructure', 'ground-destination-compass', 'Walk deeper. Approach a chamber.', 'Street-level city world']) {
+    assert.ok(smoke.includes(`'${marker}'`), `smoke must explicitly forbid retired Ground marker: ${marker}`)
   }
-  assert.match(canonicalGround, /DESTINATIONS\.map/)
-  assert.match(canonicalGround, /ground-enterable-threshold-/)
-  assert.match(canonicalGround, /ground-workforce-and-council-presences/)
-  assert.match(canonicalGround, /ground-continuity-architectural-shell/)
-  assert.doesNotMatch(groundGraph, /data-ground-visual-owner="authored-provider-art"/)
-  assert.doesNotMatch(groundGraph, /ground-authored-art|--ground-provider-|assetCssStack\(groundAssets\./)
-  assert.doesNotMatch(canonicalGround, /requestPointerLock|sprint|jump|crouch/i)
-  assert.match(canonicalGround, /aria-current=\{activeId\s*===\s*destination\.id\s*\?\s*'location'\s*:\s*undefined\}/)
-  assert.match(canonicalGround, /min-height:48px/)
-  assert.doesNotMatch(canonicalGround, /min-height:44px/)
-  assert.match(canonicalGround, /scrollIntoView\(\{\s*block:\s*'nearest',\s*inline:\s*'nearest',?\s*\}\)/)
-  assert.doesNotMatch(canonicalGround, /padding-inline:12px 210px/)
-  assert.match(canonicalGround, /scroll-padding-inline-start:max\(14px,env\(safe-area-inset-left\)\)/)
-  assert.match(canonicalGround, /scroll-padding-inline-end:max\(14px,env\(safe-area-inset-right\)\)/)
-  assert.match(canonicalGround, /overflow-x:auto/)
-  assert.match(canonicalGround, /safe-area-inset-bottom/)
 })
