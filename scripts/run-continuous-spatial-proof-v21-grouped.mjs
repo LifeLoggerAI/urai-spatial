@@ -115,6 +115,23 @@ const fallbackSemanticTarget = `    semanticButtons: await semantic.getByRole('b
 const fallbackSemanticReplacement = `    semanticButtons: await semantic.locator('[data-testid^="home-semantic-"]').count(),`
 if (original.split(fallbackSemanticTarget).length - 1 !== 1) throw new Error('Home fallback semantic destination contract changed')
 
+const fallbackScreenshotTarget = `  const screenshot = path.join(outputDir, \`home-no-webgl-fallback-\${exactHead.slice(0, 12)}.png\`)
+  await page.screenshot({ path: screenshot })`
+const fallbackScreenshotReplacement = `  const screenshot = path.join(outputDir, \`home-no-webgl-fallback-\${exactHead.slice(0, 12)}.png\`)
+  let fallbackScreenshotError = null
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await page.screenshot({ path: screenshot, timeout: 20_000 })
+      fallbackScreenshotError = null
+      break
+    } catch (error) {
+      fallbackScreenshotError = error
+      if (attempt === 0) await waitFrames(page, 2)
+    }
+  }
+  if (fallbackScreenshotError) throw fallbackScreenshotError`
+if (original.split(fallbackScreenshotTarget).length - 1 !== 1) throw new Error('Home fallback screenshot contract changed')
+
 const editableFocusTarget = `      const editableControl = page.locator('.home-discreet-controls button').first()`
 const editableFocusReplacement = `      const editableControl = page.locator('[data-testid="home-semantic-orb"]').first()`
 if (original.split(editableFocusTarget).length - 1 !== 1) throw new Error('Home editable-focus regression contract changed')
@@ -177,6 +194,7 @@ const patchedPrefix = original
   .replace(discreetControlsTarget, semanticOwnershipReplacement)
   .replace(discreetPassTarget, semanticPassReplacement)
   .replace(fallbackSemanticTarget, fallbackSemanticReplacement)
+  .replace(fallbackScreenshotTarget, fallbackScreenshotReplacement)
   .replace(editableFocusTarget, editableFocusReplacement)
   .replace(editableFocusActionTarget, editableFocusActionReplacement)
   .replace(editableFocusVerifyTarget, editableFocusVerifyReplacement)
@@ -189,6 +207,7 @@ const requiredSemanticGuards = [
   ['fallback visibility guard', 'record.fallbackVisible'],
   ['fallback semantic destination count', 'record.semanticButtons !== 3'],
   ['semantic destination locator', '[data-testid^="home-semantic-"]'],
+  ['fallback screenshot bounded retry', 'fallbackScreenshotError'],
   ['interaction proof failure guard', 'Home interaction proof failed for'],
   ['stable canvas geometry measurement', 'target.getBoundingClientRect()'],
   ['ancestor-aware loading visibility', "node.checkVisibility"],

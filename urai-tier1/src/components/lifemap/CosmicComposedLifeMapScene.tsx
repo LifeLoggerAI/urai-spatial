@@ -11,9 +11,9 @@ import type { LifeMapNode } from "./lifeMapData";
 import { artifactFamilyLabel, resolveArtifactFamily } from "./lifeMapVisualSystem";
 import { LIFE_MAP_SELECTION_EVENT, readLifeMapSelection } from "./lifeMapSelection";
 
-// V283 retained-pixel repair: preserve V280/V281 data-derived overview authority and
-// V279 selected journey while replacing V282 translucent canopy sheets with closed,
-// asymmetrical celestial-island volumes that remain visual-only and raycast-disabled.
+// V284 retained-pixel repair: preserve V280/V281 data-derived overview authority,
+// V279 selected journey, and V283 visual-only closed volumes while breaking the
+// rejected monolithic blobs into sparse stellar archipelagos with deliberate voids.
 const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
 const PHASE_MS = { departure: 620, travel: 980, approach: 880 } as const;
 type Phase = "overview" | "departure" | "travel" | "approach" | "arrival";
@@ -116,27 +116,26 @@ const NEBULA_FRAGMENT = `uniform vec3 colorA;uniform vec3 colorB;uniform float s
 function NebulaVeil({ position, scale, rotation = 0, colors, opacity = .18, seed = 1 }: { position: Point3; scale: [number, number]; rotation?: number; colors: [string, string]; opacity?: number; seed?: number }) { const uniforms = useMemo(() => ({ colorA: { value: new THREE.Color(colors[0]) }, colorB: { value: new THREE.Color(colors[1]) }, seed: { value: seed }, opacity: { value: opacity } }), [colors, opacity, seed]); return <mesh name={`life-map-nebula-veil-${seed}`} position={position} rotation={[0, 0, rotation]} scale={[scale[0], scale[1], 1]} renderOrder={-2}><planeGeometry args={[1, 1]} /><shaderMaterial vertexShader={NEBULA_VERTEX} fragmentShader={NEBULA_FRAGMENT} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>; }
 
 function buildCelestialCanopyGeometry(seed: number, span: number, rise: number) {
-  const geometry = new THREE.SphereGeometry(1, 28, 18);
+  const geometry = new THREE.SphereGeometry(1, 20, 14);
   const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
   const colors = new Float32Array(positions.count * 3);
-  const cool = new THREE.Color("#3f7f91"), warm = new THREE.Color("#9e775d"), pearl = new THREE.Color("#c7d8d2");
-  const sx = span * .46, sy = Math.max(1.7, rise * .92), sz = span * .24;
+  const cool = new THREE.Color("#5d8894"), warm = new THREE.Color("#a78c70"), pearl = new THREE.Color("#d6e6df");
+  const sx = span * .15, sy = Math.max(.46, rise * .58), sz = span * .10;
   const direction = new THREE.Vector3();
   for (let i = 0; i < positions.count; i += 1) {
     direction.set(positions.getX(i), positions.getY(i), positions.getZ(i)).normalize();
     const longitude = Math.atan2(direction.z, direction.x);
     const latitude = Math.asin(THREE.MathUtils.clamp(direction.y, -1, 1));
-    const broad = 1 + Math.sin(longitude * 3.1 + seed) * .14 + Math.sin(latitude * 4.7 - seed * .63) * .10;
-    const fine = 1 + Math.sin(longitude * 7.3 + latitude * 5.1 + seed * 1.71) * .055;
-    const crown = .90 + Math.max(0, direction.y) * .18;
-    const radial = broad * fine * crown;
-    const x = direction.x * sx * radial * (1 + Math.sin(latitude * 2.3 + seed) * .08);
-    const y = direction.y * sy * radial + Math.sin(longitude * 2.2 + seed) * rise * .09;
-    const z = direction.z * sz * radial + Math.sin(longitude * 1.7 - seed) * span * .045 + direction.y * span * .035;
+    const broad = 1 + Math.sin(longitude * 2.7 + seed) * .24 + Math.sin(latitude * 4.1 - seed * .63) * .15;
+    const fine = 1 + Math.sin(longitude * 6.9 + latitude * 4.8 + seed * 1.71) * .09;
+    const radial = broad * fine;
+    const x = direction.x * sx * radial * (1 + Math.sin(latitude * 2.1 + seed) * .12);
+    const y = direction.y * sy * radial + Math.sin(longitude * 2.0 + seed) * rise * .07;
+    const z = direction.z * sz * radial + Math.sin(longitude * 1.8 - seed) * span * .024 + direction.y * span * .018;
     positions.setXYZ(i, x, y, z);
     const height = THREE.MathUtils.clamp(direction.y * .5 + .5, 0, 1);
-    const ridge = Math.abs(Math.sin(longitude * 2.4 + seed)) * .28;
-    const color = cool.clone().lerp(warm, .16 + height * .42).lerp(pearl, ridge * .46);
+    const ridge = Math.abs(Math.sin(longitude * 2.6 + seed)) * .34;
+    const color = cool.clone().lerp(warm, .14 + height * .36).lerp(pearl, ridge * .50);
     colors.set([color.r, color.g, color.b], i * 3);
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
@@ -146,28 +145,36 @@ function buildCelestialCanopyGeometry(seed: number, span: number, rise: number) 
 }
 
 function CelestialRegionCanopy({ position, palette, index, spread, rotation = 0, opacity = .90 }: { position: Point3; palette: [string, string]; index: number; spread: number; rotation?: number; opacity?: number }) {
-  const geometry = useMemo(() => buildCelestialCanopyGeometry(2.8 + index * 1.37, spread, spread * .34), [index, spread]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  return <group name={`life-map-v283-celestial-island-${index}`} position={position} rotation={[.12 * Math.sin(index), rotation, (index % 2 ? 1 : -1) * .11]} raycast={() => null} userData={{ visualRole: "data-derived-volumetric-celestial-island", pointWallpaper: false, graphEdges: false, interactionOwner: false }}>
-    <mesh name={`life-map-v282-celestial-canopy-${index}`} geometry={geometry} raycast={() => null}>
-      <meshStandardMaterial vertexColors color={palette[0]} emissive={palette[1]} emissiveIntensity={.24} transparent={opacity < .995} opacity={opacity} depthWrite roughness={.66} metalness={.06} side={THREE.FrontSide} />
-    </mesh>
-    <mesh geometry={geometry} scale={[.72, .72, .72]} raycast={() => null}>
-      <meshBasicMaterial color={palette[1]} transparent opacity={Math.min(.26, opacity * .28)} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} side={THREE.FrontSide} />
-    </mesh>
+  const fragments = useMemo(() => Array.from({ length: 5 }, (_, fragment) => {
+    const seed = index * 17 + fragment * 31;
+    const angle = fragment * 2.399963229728653 + seeded(seed, 3.7) * .62;
+    const radius = spread * (.12 + fragment * .055 + seeded(seed, 4.9) * .06);
+    const fragmentSpread = spread * (.18 + seeded(seed, 6.1) * .075);
+    return {
+      geometry: buildCelestialCanopyGeometry(2.8 + index * 1.37 + fragment * .83, fragmentSpread, fragmentSpread * .46),
+      offset: [Math.cos(angle) * radius, (seeded(seed, 7.3) - .5) * spread * .28, Math.sin(angle) * radius * .42 - fragment * spread * .055] as Point3,
+      rotation: [Math.sin(seed) * .24, angle * .23, Math.cos(seed * .7) * .22] as Point3,
+    };
+  }), [index, spread]);
+  useEffect(() => () => fragments.forEach((fragment) => fragment.geometry.dispose()), [fragments]);
+  return <group name={`life-map-v283-celestial-island-${index}`} position={position} rotation={[.12 * Math.sin(index), rotation, (index % 2 ? 1 : -1) * .11]} raycast={() => null} userData={{ visualRole: "data-derived-volumetric-celestial-island", visualAcceptance: "v284-stellar-memory-archipelago", pointWallpaper: false, graphEdges: false, interactionOwner: false }}>
+    {fragments.map((fragment, fragmentIndex) => <mesh key={fragmentIndex} name={fragmentIndex === 0 ? `life-map-v282-celestial-canopy-${index}` : `life-map-v284-archipelago-fragment-${index}-${fragmentIndex}`} geometry={fragment.geometry} position={fragment.offset} rotation={fragment.rotation} raycast={() => null}>
+      <meshStandardMaterial vertexColors color="#eef4ef" emissive={fragmentIndex % 2 ? palette[1] : palette[0]} emissiveIntensity={.16} transparent opacity={Math.min(.48, opacity * (.42 + fragmentIndex * .015))} depthWrite={false} roughness={.78} metalness={.02} side={THREE.FrontSide} />
+    </mesh>)}
   </group>;
 }
 
 function SelectedMemoryFormation({ point, aura, phase, index }: { point: Point3; aura: string; phase: Phase; index: number }) {
   const base = new THREE.Color(aura), cool = base.clone().lerp(new THREE.Color("#7fc6c8"), .46), warm = base.clone().lerp(new THREE.Color("#d6ad79"), .38);
   const palette: [string, string] = [`#${cool.getHexString()}`, `#${warm.getHexString()}`];
-  const scale = phase === "arrival" ? 6.1 : phase === "approach" ? 5.3 : phase === "travel" ? 4.5 : 3.8;
-  return <group name="life-map-v282-selected-memory-celestial-formation" userData={{ visualRole: "selected-memory-authored-volumetric-formation", interactionOwner: false, pointWallpaper: false, journeyPhase: phase }} raycast={() => null}>
-    <CelestialRegionCanopy position={[point[0] - scale * .30, point[1] + scale * .10, point[2] - .8]} palette={palette} index={30 + index} spread={scale} rotation={-.38} opacity={.94} />
-    <CelestialRegionCanopy position={[point[0] + scale * .30, point[1] - scale * .12, point[2] - 2.8]} palette={[palette[1], palette[0]]} index={60 + index} spread={scale * .76} rotation={.46} opacity={.84} />
-    <CelestialRegionCanopy position={[point[0] - scale * .04, point[1] + scale * .32, point[2] - 5.0]} palette={palette} index={90 + index} spread={scale * .52} rotation={.08} opacity={.72} />
-    <pointLight position={[point[0] - .8, point[1] + .9, point[2] + 1.2]} color={aura} intensity={phase === "arrival" ? 1.3 : .82} distance={14} decay={2} />
-    <pointLight position={[point[0] + 1.6, point[1] - .4, point[2] - 3.2]} color="#e2c49b" intensity={.42} distance={10} decay={2} />
+  const scale = phase === "arrival" ? 3.2 : phase === "approach" ? 2.8 : phase === "travel" ? 2.4 : 2.0;
+  return <group name="life-map-v282-selected-memory-celestial-formation" userData={{ visualRole: "selected-memory-authored-volumetric-formation", visualAcceptance: "v284-selected-memory-stellar-archipelago", interactionOwner: false, pointWallpaper: false, journeyPhase: phase }} raycast={() => null}>
+    <CelestialTerritoryStars position={point} palette={palette} index={120 + index} spread={scale * 2.1} strength={1.08} />
+    <CelestialRegionCanopy position={[point[0] - scale * .42, point[1] + scale * .12, point[2] - .6]} palette={palette} index={30 + index} spread={scale} rotation={-.38} opacity={.72} />
+    <CelestialRegionCanopy position={[point[0] + scale * .46, point[1] - scale * .18, point[2] - 2.4]} palette={[palette[1], palette[0]]} index={60 + index} spread={scale * .72} rotation={.46} opacity={.62} />
+    <CelestialRegionCanopy position={[point[0] - scale * .08, point[1] + scale * .48, point[2] - 4.2]} palette={palette} index={90 + index} spread={scale * .48} rotation={.08} opacity={.52} />
+    <pointLight position={[point[0] - .8, point[1] + .9, point[2] + 1.2]} color={aura} intensity={phase === "arrival" ? .84 : .58} distance={11} decay={2} />
+    <pointLight position={[point[0] + 1.6, point[1] - .4, point[2] - 3.2]} color="#e2c49b" intensity={.28} distance={9} decay={2} />
   </group>;
 }
 
@@ -180,6 +187,30 @@ function OverviewRegionBeacon({ position, palette, strength, index }: { position
     <sprite scale={[strength * .94, strength * .68, 1]}><spriteMaterial map={halo} color={palette[1]} transparent opacity={.38} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></sprite>
     <sprite scale={[strength * .25, strength * .25, 1]}><spriteMaterial map={core} color="#fff6df" transparent opacity={.88} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></sprite>
   </group>;
+}
+
+function CelestialTerritoryStars({ position, palette, index, spread, strength }: { position: Point3; palette: [string, string]; index: number; spread: number; strength: number }) {
+  const disc = useMemo(() => makeDiscTexture(3.1, true), []);
+  const geometry = useMemo(() => {
+    const count = 96, positions = new Float32Array(count * 3), colors = new Float32Array(count * 3);
+    const cool = new THREE.Color(palette[0]), warm = new THREE.Color(palette[1]), pearl = new THREE.Color("#fff7e6");
+    for (let i = 0; i < count; i += 1) {
+      const seed = index * 137 + i * 29;
+      const arc = i % 3;
+      const t = (Math.floor(i / 3) + .5) / Math.ceil(count / 3);
+      const angle = arc * 2.05 + (t - .5) * (1.42 + arc * .16) + seeded(seed, 2.7) * .22;
+      const radius = spread * (.16 + Math.pow(t, .68) * (.34 + arc * .08));
+      const x = Math.cos(angle) * radius + (seeded(seed, 4.1) - .5) * spread * .10;
+      const y = Math.sin(angle * 1.7) * spread * .10 + (seeded(seed, 5.3) - .5) * spread * .22;
+      const z = -Math.sin(angle) * radius * .34 + (seeded(seed, 6.9) - .5) * spread * .26;
+      positions.set([x, y, z], i * 3);
+      const color = (i % 11 === 0 ? pearl : cool.clone().lerp(warm, .18 + seeded(seed, 8.1) * .62)).multiplyScalar(.70 + seeded(seed, 9.7) * .30);
+      colors.set([color.r, color.g, color.b], i * 3);
+    }
+    const result = new THREE.BufferGeometry(); result.setAttribute("position", new THREE.BufferAttribute(positions, 3)); result.setAttribute("color", new THREE.BufferAttribute(colors, 3)); return result;
+  }, [index, palette, spread]);
+  useEffect(() => () => { geometry.dispose(); disc.dispose(); }, [disc, geometry]);
+  return <points name={`life-map-v284-territory-stars-${index}`} position={position} geometry={geometry} raycast={() => null} userData={{ visualRole: "data-derived-stellar-territory", pointWallpaper: false, graphEdges: false, interactionOwner: false }}><pointsMaterial map={disc} alphaTest={.02} vertexColors size={Math.max(.12, Math.min(.24, strength * .14))} transparent opacity={.82} depthWrite={false} blending={THREE.AdditiveBlending} sizeAttenuation /></points>;
 }
 
 function PortraitOverviewDepth({ phase }: { phase: Phase }) {
@@ -218,7 +249,7 @@ function OverviewRegions({ nodes, phase }: { nodes: LifeMapNode[]; phase: Phase 
         const layoutRadius = 7.4 + index * 1.85 + Math.min(4.6, Math.sqrt(bucket.points.length) * 1.45);
         const center: Point3 = [rawCenter[0] * .54 + Math.cos(layoutAngle) * layoutRadius, rawCenter[1] * .52 + Math.sin(layoutAngle) * layoutRadius * .48, THREE.MathUtils.clamp(rawCenter[2] + 11 + index * .75, -38, -18)];
         const side = (seeded(regionSeed, 2.9) - .5) * 6.4, lift = (seeded(regionSeed, 5.1) - .5) * 4.8, depth = 4 + seeded(regionSeed, 7.3) * 5.5;
-        const spread = 6.9 + Math.min(4.8, Math.sqrt(bucket.points.length) * 2.0);
+        const spread = 5.2 + Math.min(3.6, Math.sqrt(bucket.points.length) * 1.55);
         const secondary: Point3 = [center[0] + side, center[1] + lift, center[2] - depth], tertiary: Point3 = [center[0] - side * .42, center[1] - lift * .32, center[2] + 2.2], beacon: Point3 = [center[0], center[1], center[2] + 1.8];
         const strength = 1.14 + Math.min(.62, bucket.points.length * .075);
         return { key: bucket.key, center, secondary, tertiary, beacon, spread, strength, palette: palettes[index % palettes.length], seed: 14.2 + index * .83 };
@@ -227,11 +258,12 @@ function OverviewRegions({ nodes, phase }: { nodes: LifeMapNode[]; phase: Phase 
   if (phase !== "overview" || regions.length === 0) return null;
   return <group name="life-map-overview-personal-universe-regions" userData={{ visualRole: "data-derived-personal-universe-geography", pointWallpaper: false, graphEdges: false }}>
     {regions.map((region, index) => <group key={region.key} name={`life-map-overview-region-${index}`} userData={{ regionKey: region.key, visualRole: "personal-universe-region" }}>
-      <NebulaVeil position={region.center} scale={[region.spread * 1.25, region.spread * .72]} rotation={(index % 2 ? 1 : -1) * (.12 + index * .025)} colors={region.palette} opacity={.13} seed={region.seed} />
-      <NebulaVeil position={region.secondary} scale={[region.spread, region.spread * .56]} rotation={(index % 2 ? -1 : 1) * (.18 + index * .02)} colors={[region.palette[1], region.palette[0]]} opacity={.08} seed={region.seed + .37} />
-      <NebulaVeil position={region.tertiary} scale={[region.spread * .68, region.spread * .40]} rotation={(index % 2 ? 1 : -1) * (.31 + index * .017)} colors={region.palette} opacity={.05} seed={region.seed + .71} />
-      <CelestialRegionCanopy position={region.center} palette={region.palette} index={index} spread={region.spread} rotation={(index % 2 ? 1 : -1) * .28} opacity={.92} />
-      <CelestialRegionCanopy position={region.secondary} palette={[region.palette[1], region.palette[0]]} index={index + 10} spread={region.spread * .62} rotation={(index % 2 ? -1 : 1) * .43} opacity={.80} />
+      <NebulaVeil position={region.center} scale={[region.spread * 1.45, region.spread * .82]} rotation={(index % 2 ? 1 : -1) * (.12 + index * .025)} colors={region.palette} opacity={.10} seed={region.seed} />
+      <NebulaVeil position={region.secondary} scale={[region.spread * 1.05, region.spread * .62]} rotation={(index % 2 ? -1 : 1) * (.18 + index * .02)} colors={[region.palette[1], region.palette[0]]} opacity={.055} seed={region.seed + .37} />
+      <NebulaVeil position={region.tertiary} scale={[region.spread * .72, region.spread * .44]} rotation={(index % 2 ? 1 : -1) * (.31 + index * .017)} colors={region.palette} opacity={.035} seed={region.seed + .71} />
+      <CelestialTerritoryStars position={region.center} palette={region.palette} index={index} spread={region.spread * 1.30} strength={region.strength} />
+      <CelestialRegionCanopy position={region.center} palette={region.palette} index={index} spread={region.spread * .80} rotation={(index % 2 ? 1 : -1) * .28} opacity={.54} />
+      <CelestialRegionCanopy position={region.secondary} palette={[region.palette[1], region.palette[0]]} index={index + 10} spread={region.spread * .48} rotation={(index % 2 ? -1 : 1) * .43} opacity={.42} />
       <OverviewRegionBeacon position={region.beacon} palette={region.palette} strength={region.strength} index={index} />
     </group>)}
   </group>;
@@ -263,12 +295,12 @@ function SelectedTravelWeather({ node, index, phase }: { node: LifeMapNode; inde
       <NebulaVeil position={departureBridge.deep} scale={[66, 38]} rotation={.10} colors={["#163d53", "#545b6c"]} opacity={.38} seed={13.47} />
     </group> : null}
     <SelectedMemoryFormation point={point} aura={node.aura} phase={phase} index={index} />
-    <NebulaVeil position={[point[0] - 9, point[1] + 5, point[2] - 6]} scale={[52, 30]} rotation={-.25} colors={["#1b5365", "#76635a"]} opacity={strength} seed={3.11} />
-    <NebulaVeil position={[point[0] + 10, point[1] - 5, point[2] - 11]} scale={[56, 33]} rotation={.21} colors={["#1a4d60", "#64586a"]} opacity={strength * .92} seed={4.37} />
-    <NebulaVeil position={[point[0] - 3, point[1] - 1, point[2] - 21]} scale={[70, 38]} rotation={-.09} colors={["#17485a", "#705b55"]} opacity={strength * .86} seed={5.73} />
-    <NebulaVeil position={[point[0] + 4, point[1] + 8, point[2] - 30]} scale={[80, 44]} rotation={.10} colors={["#174052", "#5b596c"]} opacity={strength * .76} seed={6.41} />
-    <NebulaVeil position={[point[0] - 14, point[1] - 8, point[2] - 40]} scale={[88, 50]} rotation={-.16} colors={["#14394d", "#62534e"]} opacity={strength * .68} seed={7.03} />
-    <NebulaVeil position={[point[0] + 16, point[1] + 10, point[2] - 50]} scale={[96, 54]} rotation={.15} colors={["#12364b", "#51576a"]} opacity={strength * .60} seed={7.61} />
+    <NebulaVeil position={[point[0] - 9, point[1] + 5, point[2] - 6]} scale={[52, 30]} rotation={-.25} colors={["#1b5365", "#76635a"]} opacity={strength * .76} seed={3.11} />
+    <NebulaVeil position={[point[0] + 10, point[1] - 5, point[2] - 11]} scale={[56, 33]} rotation={.21} colors={["#1a4d60", "#64586a"]} opacity={strength * .70} seed={4.37} />
+    <NebulaVeil position={[point[0] - 3, point[1] - 1, point[2] - 21]} scale={[70, 38]} rotation={-.09} colors={["#17485a", "#705b55"]} opacity={strength * .64} seed={5.73} />
+    <NebulaVeil position={[point[0] + 4, point[1] + 8, point[2] - 30]} scale={[80, 44]} rotation={.10} colors={["#174052", "#5b596c"]} opacity={strength * .56} seed={6.41} />
+    <NebulaVeil position={[point[0] - 14, point[1] - 8, point[2] - 40]} scale={[88, 50]} rotation={-.16} colors={["#14394d", "#62534e"]} opacity={strength * .48} seed={7.03} />
+    <NebulaVeil position={[point[0] + 16, point[1] + 10, point[2] - 50]} scale={[96, 54]} rotation={.15} colors={["#12364b", "#51576a"]} opacity={strength * .42} seed={7.61} />
   </group>;
 }
 function SelectedMemoryDust({ node, index }: { node: LifeMapNode; index: number }) {
@@ -320,5 +352,5 @@ export default function ComposedLifeMapScene() {
   const destinationHref = useCallback((route: "focus" | "replay") => { if (!selected) return "/life-map"; const next = withIdentity(new URLSearchParams()); next.set("memoryId", selected.id); next.set("node", selected.id); next.set("returnNode", selected.id); next.set("artifactFamily", resolveArtifactFamily(selected)); next.set("from", "life-map"); return `/${route}?${next.toString()}`; }, [selected, withIdentity]);
   useEffect(() => { if (!overviewRequested) return; journey.current += 1; setSelectedId(null); setPhase("overview"); }, [overviewRequested]); useEffect(() => { if (overviewRequested || !queryNode || !nodes.length) return; const node = nodes.find((candidate) => candidate.id === queryNode); if (!node || selectedId === node.id) return; journey.current += 1; setSelectedId(node.id); setPhase("arrival"); }, [nodes, overviewRequested, queryNode, selectedId]); useEffect(() => { const handler = (event: KeyboardEvent) => { if (event.defaultPrevented || event.key !== "Escape" || (event.target instanceof HTMLElement && event.target.matches("input,textarea,select,[role='textbox']"))) return; event.preventDefault(); if (selectedId) overview(); else router.push("/home"); }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, [overview, router, selectedId]); useEffect(() => () => { document.body.style.cursor = ""; }, []);
   const recovery = webglState !== "ready", showThresholds = Boolean(selected && phase === "arrival");
-  return <main className="life-map-root" data-testid="urai-true-3d-life-map" data-spatial-visible="true" data-life-map-source={sourceMode} data-life-map-phase={phase} data-life-map-mode={selected ? "selected" : "overview"} data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"} data-life-map-production-world="true" data-life-map-visual-authority="v260-deep-stellar-personal-universe" data-life-map-art-revision="v279-departure-volumetric-bridge" data-life-map-overview-authority="v280-data-derived-personal-universe-regions" data-life-map-overview-polish="v281-literal-pixel-authored-geography" data-life-map-landmark-revision="v282-authored-celestial-landmarks" data-life-map-landmark-polish="v283-volumetric-celestial-islands" data-life-map-ground="none" data-life-map-render-ready="false" data-life-map-visible-anchors="0" data-life-map-visible-objects="0" data-life-map-render-calls="0" data-life-map-render-triangles="0" data-webgl-state={webglState} data-software-renderer={software === null ? "detecting" : software ? "true" : "false"} data-home-companion-owned="false"><h1 className="sr-only">URAI Life Map private universe</h1><Canvas camera={{ position: [0, 2.4, 27], fov: 54, near: .06, far: 190 }} dpr={[1, profile.pixelRatioMax]} frameloop={profile.documentVisible ? "always" : "never"} gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }} onCreated={({ gl }) => { setSoftware(isSoftwareRenderer(gl)); gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.08; gl.outputColorSpace = THREE.SRGBColorSpace; gl.setClearColor("#020611", 1); }}><CosmicWorld nodes={nodes} selected={selected} selectedIndex={selectedIndex} phase={phase} reducedMotion={profile.reducedMotion} tier={profile.tier} onSelect={selectNode} onWebGLState={setWebglState} /></Canvas><header className="life-map-title"><span>URAI · LIFE MAP</span><strong>{selected ? selected.locked ? "Protected memory" : selected.title : "Your universe"}</strong><em>{truthLabel(sourceMode)}</em></header><div className="life-map-status" role="status" aria-live="polite"><span>{loading ? "Opening" : phaseLabel(phase)}</span><small>{selected ? `${artifactFamilyLabel(selected)} · ${selected.dateLabel}` : "Memories in space"}</small></div>{showThresholds ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}><button className="focus-threshold" onClick={() => router.push(destinationHref("focus"))}><strong>Enter Focus</strong></button><button className="replay-threshold" disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}><strong>Replay</strong></button><button className="overview-return" onClick={overview}>Overview</button></nav> : null}{recovery ? <section className="life-map-recovery" role="status" aria-live="assertive"><h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2><p>Your selected memory, privacy state, and return position remain preserved.</p><button onClick={overview}>Open semantic overview</button><button onClick={() => router.push("/home")}>Return Home</button></section> : null}<style jsx>{`.life-map-root{position:fixed;inset:0;z-index:100;overflow:hidden;background:#020611;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate;width:100vw;height:100svh}.life-map-root:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at 27% 43%,rgba(38,84,116,.12),transparent 29%),radial-gradient(ellipse at 76% 37%,rgba(76,78,92,.08),transparent 28%),radial-gradient(circle at 50% 48%,transparent 0 60%,rgba(0,0,0,.08) 82%,rgba(0,0,0,.36) 100%)}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important}.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0)}.life-map-title{position:absolute;z-index:12;top:max(18px,env(safe-area-inset-top));left:max(20px,env(safe-area-inset-left));display:grid;gap:3px;pointer-events:none;text-shadow:0 8px 30px #000}.life-map-title span,.life-map-title em{font:750 9px/1.2 Inter;letter-spacing:.19em;text-transform:uppercase;color:rgba(220,241,255,.68);font-style:normal}.life-map-title strong{font:650 clamp(18px,2.6vw,30px)/1 Inter;letter-spacing:-.035em;max-width:16ch}.life-map-status{position:absolute;z-index:12;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));display:grid;justify-items:end;gap:3px;text-shadow:0 6px 20px #000;pointer-events:none}.life-map-status span{font:750 9px/1 Inter;letter-spacing:.15em;text-transform:uppercase;color:rgba(236,248,255,.78)}.life-map-status small{font-size:9px;color:rgba(220,240,251,.48)}.life-map-thresholds{position:absolute!important;z-index:16;left:50%!important;right:auto!important;top:auto!important;bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px))!important;transform:translateX(-50%)!important;display:flex!important;flex-direction:row!important;grid-template-columns:none!important;gap:8px;align-items:center;width:auto!important}.life-map-thresholds button,.life-map-recovery button{min-height:46px;border:1px solid rgba(220,248,255,.18);border-radius:999px;background:rgba(2,8,18,.58);color:#f8fbff;padding:0 18px;font-weight:800;cursor:pointer;backdrop-filter:blur(12px)}.life-map-thresholds .focus-threshold{border-color:rgba(190,236,255,.34)}.life-map-thresholds .replay-threshold{border-color:rgba(248,224,182,.28)}.life-map-thresholds .overview-return{min-height:40px;padding:0 14px;font-size:10px;color:rgba(240,248,255,.72)}.life-map-thresholds button:disabled{opacity:.32}.life-map-thresholds button:focus-visible,.life-map-recovery button:focus-visible{outline:3px solid #dff8ff;outline-offset:3px}.life-map-recovery{position:absolute;z-index:30;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.92)}@media(max-width:700px){.life-map-title{top:max(12px,env(safe-area-inset-top));left:12px}.life-map-title strong{font-size:20px}.life-map-title em{font-size:8px}.life-map-status{top:max(12px,env(safe-area-inset-top));right:12px}.life-map-status small{display:none}.life-map-thresholds{bottom:max(10px,env(safe-area-inset-bottom))!important;width:calc(100vw - 24px)!important;justify-content:center}.life-map-thresholds button{min-height:44px;padding:0 14px;flex:0 1 32%}.life-map-thresholds .overview-return{flex:0 0 auto}}@media(prefers-reduced-motion:reduce){.life-map-root *{transition:none!important;animation:none!important}.life-map-thresholds button,.life-map-recovery button{backdrop-filter:none}}@media(forced-colors:active){.life-map-thresholds button,.life-map-recovery button{border:2px solid CanvasText;background:Canvas;color:CanvasText}}`}</style></main>;
+  return <main className="life-map-root" data-testid="urai-true-3d-life-map" data-spatial-visible="true" data-life-map-source={sourceMode} data-life-map-phase={phase} data-life-map-mode={selected ? "selected" : "overview"} data-life-map-scale={selected ? phase === "arrival" ? "intimate" : "regional" : "cosmic"} data-life-map-production-world="true" data-life-map-visual-authority="v260-deep-stellar-personal-universe" data-life-map-art-revision="v279-departure-volumetric-bridge" data-life-map-overview-authority="v280-data-derived-personal-universe-regions" data-life-map-overview-polish="v281-literal-pixel-authored-geography" data-life-map-landmark-revision="v282-authored-celestial-landmarks" data-life-map-landmark-polish="v283-volumetric-celestial-islands" data-life-map-landmark-acceptance="v284-stellar-memory-archipelagos" data-life-map-ground="none" data-life-map-render-ready="false" data-life-map-visible-anchors="0" data-life-map-visible-objects="0" data-life-map-render-calls="0" data-life-map-render-triangles="0" data-webgl-state={webglState} data-software-renderer={software === null ? "detecting" : software ? "true" : "false"} data-home-companion-owned="false"><h1 className="sr-only">URAI Life Map private universe</h1><Canvas camera={{ position: [0, 2.4, 27], fov: 54, near: .06, far: 190 }} dpr={[1, profile.pixelRatioMax]} frameloop={profile.documentVisible ? "always" : "never"} gl={{ antialias: profile.antialias, powerPreference: "high-performance", alpha: false }} onCreated={({ gl }) => { setSoftware(isSoftwareRenderer(gl)); gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.08; gl.outputColorSpace = THREE.SRGBColorSpace; gl.setClearColor("#020611", 1); }}><CosmicWorld nodes={nodes} selected={selected} selectedIndex={selectedIndex} phase={phase} reducedMotion={profile.reducedMotion} tier={profile.tier} onSelect={selectNode} onWebGLState={setWebglState} /></Canvas><header className="life-map-title"><span>URAI · LIFE MAP</span><strong>{selected ? selected.locked ? "Protected memory" : selected.title : "Your universe"}</strong><em>{truthLabel(sourceMode)}</em></header><div className="life-map-status" role="status" aria-live="polite"><span>{loading ? "Opening" : phaseLabel(phase)}</span><small>{selected ? `${artifactFamilyLabel(selected)} · ${selected.dateLabel}` : "Memories in space"}</small></div>{showThresholds ? <nav className="life-map-thresholds" aria-label="Selected memory actions" data-family={resolveArtifactFamily(selected!)}><button className="focus-threshold" onClick={() => router.push(destinationHref("focus"))}><strong>Enter Focus</strong></button><button className="replay-threshold" disabled={!selected!.replayAvailable || selected!.locked} onClick={() => router.push(destinationHref("replay"))}><strong>Replay</strong></button><button className="overview-return" onClick={overview}>Overview</button></nav> : null}{recovery ? <section className="life-map-recovery" role="status" aria-live="assertive"><h2>{webglState === "lost" ? "Visual field paused safely" : "Restoring visual field"}</h2><p>Your selected memory, privacy state, and return position remain preserved.</p><button onClick={overview}>Open semantic overview</button><button onClick={() => router.push("/home")}>Return Home</button></section> : null}<style jsx>{`.life-map-root{position:fixed;inset:0;z-index:100;overflow:hidden;background:#020611;color:#f8fbff;font-family:Inter,system-ui;isolation:isolate;width:100vw;height:100svh}.life-map-root:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at 27% 43%,rgba(38,84,116,.12),transparent 29%),radial-gradient(ellipse at 76% 37%,rgba(76,78,92,.08),transparent 28%),radial-gradient(circle at 50% 48%,transparent 0 60%,rgba(0,0,0,.08) 82%,rgba(0,0,0,.36) 100%)}.life-map-root :global(canvas){position:absolute!important;inset:0;width:100%!important;height:100%!important}.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0)}.life-map-title{position:absolute;z-index:12;top:max(18px,env(safe-area-inset-top));left:max(20px,env(safe-area-inset-left));display:grid;gap:3px;pointer-events:none;text-shadow:0 8px 30px #000}.life-map-title span,.life-map-title em{font:750 9px/1.2 Inter;letter-spacing:.19em;text-transform:uppercase;color:rgba(220,241,255,.68);font-style:normal}.life-map-title strong{font:650 clamp(18px,2.6vw,30px)/1 Inter;letter-spacing:-.035em;max-width:16ch}.life-map-status{position:absolute;z-index:12;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));display:grid;justify-items:end;gap:3px;text-shadow:0 6px 20px #000;pointer-events:none}.life-map-status span{font:750 9px/1 Inter;letter-spacing:.15em;text-transform:uppercase;color:rgba(236,248,255,.78)}.life-map-status small{font-size:9px;color:rgba(220,240,251,.48)}.life-map-thresholds{position:absolute!important;z-index:16;left:50%!important;right:auto!important;top:auto!important;bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px))!important;transform:translateX(-50%)!important;display:flex!important;flex-direction:row!important;grid-template-columns:none!important;gap:8px;align-items:center;width:auto!important}.life-map-thresholds button,.life-map-recovery button{min-height:46px;border:1px solid rgba(220,248,255,.18);border-radius:999px;background:rgba(2,8,18,.58);color:#f8fbff;padding:0 18px;font-weight:800;cursor:pointer;backdrop-filter:blur(12px)}.life-map-thresholds .focus-threshold{border-color:rgba(190,236,255,.34)}.life-map-thresholds .replay-threshold{border-color:rgba(248,224,182,.28)}.life-map-thresholds .overview-return{min-height:40px;padding:0 14px;font-size:10px;color:rgba(240,248,255,.72)}.life-map-thresholds button:disabled{opacity:.32}.life-map-thresholds button:focus-visible,.life-map-recovery button:focus-visible{outline:3px solid #dff8ff;outline-offset:3px}.life-map-recovery{position:absolute;z-index:30;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;padding:24px;text-align:center;background:rgba(1,3,10,.92)}@media(max-width:700px){.life-map-title{top:max(12px,env(safe-area-inset-top));left:12px}.life-map-title strong{font-size:20px}.life-map-title em{font-size:8px}.life-map-status{top:max(12px,env(safe-area-inset-top));right:12px}.life-map-status small{display:none}.life-map-thresholds{bottom:max(10px,env(safe-area-inset-bottom))!important;width:calc(100vw - 24px)!important;justify-content:center}.life-map-thresholds button{min-height:44px;padding:0 14px;flex:0 1 32%}.life-map-thresholds .overview-return{flex:0 0 auto}}@media(prefers-reduced-motion:reduce){.life-map-root *{transition:none!important;animation:none!important}.life-map-thresholds button,.life-map-recovery button{backdrop-filter:none}}@media(forced-colors:active){.life-map-thresholds button,.life-map-recovery button{border:2px solid CanvasText;background:Canvas;color:CanvasText}}`}</style></main>;
 }
