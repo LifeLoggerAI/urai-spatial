@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 
@@ -11,12 +11,32 @@ if (!authority.rendererOwner || !authority.artRevision || !authority.worldIdenti
 if (!Array.isArray(authority.runtimeAssets) || authority.runtimeAssets.length < 4 || !authority.runtimeAssets.includes(authority.rendererOwner)) {
   throw new Error('Home visual authority runtime asset inventory is incomplete')
 }
+if (authority.artRevision !== 'v288-cinematic-lived-world-grounded-reliquary') {
+  throw new Error(`Home state proof expected V288 authority; received ${authority.artRevision}`)
+}
 
-const result = spawnSync(process.execPath, ['scripts/capture-home-state-proof.mjs'], {
-  cwd: process.cwd(),
-  env: process.env,
-  encoding: 'utf8',
-})
+const capturePath = new URL('./capture-home-state-proof.mjs', import.meta.url)
+const generatedPath = new URL('./.capture-home-state-proof-v288.generated.mjs', import.meta.url)
+const original = await readFile(capturePath, 'utf8')
+const stalePredicate = "record.movement === 'walk-keyboard-click-touch'"
+const currentPredicate = "record.movement === 'camera-look-world-surface-selection'"
+if (original.split(stalePredicate).length - 1 !== 1) {
+  throw new Error('Home state proof movement predicate changed; refusing an ambiguous derived proof')
+}
+const derived = original.replace(stalePredicate, currentPredicate)
+
+await writeFile(generatedPath, derived, 'utf8')
+let result
+try {
+  result = spawnSync(process.execPath, ['scripts/.capture-home-state-proof-v288.generated.mjs'], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: 'utf8',
+  })
+} finally {
+  await rm(generatedPath, { force: true }).catch(() => {})
+}
+
 if (result.stdout) process.stdout.write(result.stdout)
 if (result.stderr) process.stderr.write(result.stderr)
 if (result.status !== 0) {
@@ -28,9 +48,14 @@ if (result.status !== 0) {
     failingRecord = receipt.errors?.[0] ?? null
   } catch {}
   await writeFile(path.join(outputDir, 'runner-failure.json'), `${JSON.stringify({
-    schemaVersion: 'urai-home-state-runner-failure-1',
+    schemaVersion: 'urai-home-state-runner-failure-2',
     exactHead: process.env.URAI_EXACT_HEAD || 'local',
     authority,
+    derivedProof: {
+      source: 'capture-home-state-proof.mjs',
+      replacement: `${stalePredicate} -> ${currentPredicate}`,
+      reason: 'Home is cinematic and no longer owns embodied locomotion',
+    },
     exitStatus: result.status,
     signal: result.signal,
     failedPredicate: failingRecord?.error || failingRecord?.id || 'capture-process-failed-before-receipt',
