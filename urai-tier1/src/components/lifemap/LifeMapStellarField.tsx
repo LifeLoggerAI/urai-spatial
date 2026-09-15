@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import {
+  HOME_SKY_CONTINUITY_SEED,
+  HOME_SKY_PRECURSOR_COUNT,
+  homeSkyContinuityIds,
+  homeSkyContinuitySample,
+} from '@/spatial/visual/homeSkyContinuity'
 import type { LifeMapNode } from './lifeMapData'
 import { lifeMapLocalPoint } from './lifeMapSpatialLayout'
 
@@ -51,6 +57,40 @@ function depthGeometry() {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  return geometry
+}
+
+/**
+ * The 31 Home precursor lights reappear here with the same deterministic IDs
+ * and angular ordering. The surrounding Life Map field grows around them, so
+ * Home -> Life Map reads as disclosure of pre-existing depth rather than a
+ * replacement starfield.
+ */
+function homeSkyContinuityGeometry() {
+  const positions = new Float32Array(HOME_SKY_PRECURSOR_COUNT * 3)
+  const colors = new Float32Array(HOME_SKY_PRECURSOR_COUNT * 3)
+  const pearl = new THREE.Color('#e9e3cf')
+  const paleTeal = new THREE.Color('#a9c8c2')
+
+  for (let index = 0; index < HOME_SKY_PRECURSOR_COUNT; index += 1) {
+    const sample = homeSkyContinuitySample(index)
+    const radial = 4.8 + sample.radialBias * 10.8
+    const x = Math.cos(sample.azimuth) * radial
+    const y = (Math.sin(sample.elevation) - .50) * 11.5
+    const z = -7.5 - sample.depth * 27 - radial * .74
+    positions.set([x, y, z], index * 3)
+    const color = paleTeal.clone().lerp(pearl, .38 + sample.temperature * .48)
+    colors.set([color.r, color.g, color.b], index * 3)
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geometry.userData = {
+    source: 'home-sky-memory-precursors',
+    continuitySeed: HOME_SKY_CONTINUITY_SEED,
+    continuityIds: homeSkyContinuityIds(),
+  }
   return geometry
 }
 
@@ -159,8 +199,9 @@ function StellarMemory({ node, index, active, reducedMotion }: { node: LifeMapNo
 export function LifeMapStellarField({ nodes, selected, reducedMotion }: { nodes: LifeMapNode[]; selected: LifeMapNode | null; reducedMotion: boolean }) {
   const root = useRef<THREE.Points>(null)
   const geometry = useMemo(depthGeometry, [])
+  const continuity = useMemo(homeSkyContinuityGeometry, [])
   const threads = useMemo(galaxyThreadsGeometry, [])
-  useEffect(() => () => { geometry.dispose(); threads.dispose() }, [geometry, threads])
+  useEffect(() => () => { geometry.dispose(); continuity.dispose(); threads.dispose() }, [continuity, geometry, threads])
   useFrame(({ clock }) => {
     if (root.current && !reducedMotion) {
       root.current.rotation.z = Math.sin(clock.elapsedTime * .010) * .004
@@ -168,6 +209,9 @@ export function LifeMapStellarField({ nodes, selected, reducedMotion }: { nodes:
     }
   })
   return <group name="life-map-v259-stellar-visual-authority" userData={{ visualOnly: true, interactionOwner: false, visualRepair: 'memory-stars-visually-authoritative-over-semantic-geology', goldMasterRevision: 'v280-layered-personal-galaxy-depth' }} raycast={() => null}>
+    <points geometry={continuity} name="life-map-home-sky-continuity-anchors" raycast={() => null} renderOrder={116} userData={{ continuitySeed: HOME_SKY_CONTINUITY_SEED, precursorCount: HOME_SKY_PRECURSOR_COUNT, revealedFromHome: true }}>
+      <pointsMaterial vertexColors size={.066} transparent opacity={.62} depthWrite={false} sizeAttenuation />
+    </points>
     <points ref={root} geometry={geometry} name="life-map-v259-deep-personal-galaxy" raycast={() => null}>
       <pointsMaterial vertexColors size={.060} transparent opacity={.80} depthWrite={false} sizeAttenuation />
     </points>
