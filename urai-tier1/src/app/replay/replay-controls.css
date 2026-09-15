@@ -119,8 +119,45 @@
   outline-offset: 3px;
 }
 
+/* Literal retained-pixel repair: reserve distinct caption, transport, and owner-control bands. */
+.replayWorld .caption {
+  z-index: 21 !important;
+  bottom: max(300px, calc(env(safe-area-inset-bottom) + 294px)) !important;
+  box-sizing: border-box;
+  width: min(820px, calc(100vw - 40px)) !important;
+  padding-inline: 12px;
+  pointer-events: none;
+}
+
+.replayWorld .caption strong {
+  margin-top: 6px;
+}
+
+.replayWorld .caption span {
+  margin-top: 6px;
+  max-width: 620px;
+}
+
 @media (max-width: 700px) {
+  .replayWorld .caption {
+    bottom: max(292px, calc(env(safe-area-inset-bottom) + 286px)) !important;
+    width: calc(100vw - 28px) !important;
+    padding-inline: 8px;
+  }
+
+  .replayWorld .caption strong {
+    font-size: clamp(1.15rem, 6vw, 1.45rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  .replayWorld .caption span {
+    margin-top: 5px;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
   .replayWorld .replayProduct {
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)) !important;
     gap: 4px;
     padding: 6px;
   }
@@ -133,6 +170,12 @@
   .replayWorld .replayHistory summary {
     padding: 0 5px;
     font-size: 11px;
+  }
+}
+
+@media (max-height: 720px) {
+  .replayWorld .caption {
+    bottom: max(264px, calc(env(safe-area-inset-bottom) + 258px)) !important;
   }
 }
 
