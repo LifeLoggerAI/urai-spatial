@@ -127,7 +127,7 @@ const reconciliation = {
   schemaVersion: 'urai-home-orb-open-reconciliation-2',
   exactHead,
   originalFailure: 'playwright-pointer-transport-timeout-after-visible-enabled-stable-semantic-orb-control',
-  interactionAuthority: 'canonical semantic BUTTON HTMLElement.click -> URAI world Orb-open event -> single hydrated PersistentWorldCompanion owner -> keyboard consent -> enabled Send -> ordinary Send click',
+  interactionAuthority: 'canonical semantic BUTTON HTMLElement.click -> URAI world Orb-open event -> single hydrated PersistentWorldCompanion owner -> native SUMMARY HTMLElement.click -> keyboard consent -> enabled Send -> native BUTTON HTMLElement.click',
   visualGate: {
     source: 'retained-canvas-png',
     minimumViewportCoverage: 0.82,
@@ -202,7 +202,11 @@ try {
   await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'attention', ownerSelector)
 
   const talk = page.locator('summary').filter({ hasText: 'Talk with Orb' }).first()
-  await talk.click({ noWaitAfter: true })
+  assert(await talk.isVisible(), 'Talk with Orb summary is not visible')
+  await talk.evaluate((node) => {
+    if (!(node instanceof HTMLElement) || node.tagName !== 'SUMMARY') throw new Error('Talk with Orb target is not a native summary control')
+    node.click()
+  })
   const message = page.getByLabel('Message for Orb').first()
   await message.focus()
   await page.waitForFunction((selector) => document.querySelector(selector)?.getAttribute('data-home-orb-state') === 'listening', ownerSelector)
@@ -234,7 +238,10 @@ try {
     page.waitForFunction(() => window.__uraiObservedOrbFrames?.some((sample) => sample.eventState === 'speaking'
       && sample.renderedState === 'speaking'
       && sample.renderedClip === 'orb-speaking'), null, { timeout: 20_000 }),
-    send.click({ noWaitAfter: true }),
+    send.evaluate((node) => {
+      if (!(node instanceof HTMLButtonElement)) throw new Error('Send target is not a button')
+      node.click()
+    }),
   ])
 
   const respondingSample = await page.evaluate(() => window.__uraiObservedOrbFrames?.find((sample) => sample.eventState === 'speaking'
