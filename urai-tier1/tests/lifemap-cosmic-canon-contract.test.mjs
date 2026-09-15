@@ -28,7 +28,7 @@ test('cosmic Life Map cannot silently regress to a terrestrial or graph overview
 })
 
 test('retained route polish cannot synthesize repeated CSS star wallpaper over WebGL', () => {
-  assert.match(stellarPolish, /V271 literal-pixel convergence/)
+  assert.match(stellarPolish, /V274 literal-pixel convergence/)
   assert.match(stellarPolish, /overview-depth-extension-v271/)
   assert.match(stellarPolish, /WebGL stellar volume is the only star owner/)
   assert.match(stellarPolish, /background-repeat:\s*no-repeat/)
