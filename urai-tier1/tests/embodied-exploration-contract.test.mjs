@@ -18,8 +18,9 @@ const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 const travel = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 
-test('shared movement kernel preserves stable embodied controls and bounded motion', () => {
+test('shared movement kernel preserves stable embodied controls and bounded motion without Home coordinate ownership', () => {
   for (const marker of ['useMovementInput','stepEmbodiedMotion','MovementBounds','THREE.MathUtils.clamp']) has(travel, marker)
+  assert.doesNotMatch(travel, /embodied-motion-kernel-v66|homeDistanceLifeMap|homeDistanceGround|spawnX\s*=\s*4\.45/)
 })
 
 test('Home keeps one V223 Canvas owner while predecessor art remains historical provenance', () => {
@@ -70,7 +71,17 @@ test('Historical V70 telemetry and destination authority remain reproducible aft
 })
 
 test('Ground and Life Map keep their canonical embodied contracts', () => {
-  for (const marker of ['function GroundWorld(','stepEmbodiedMotion({','useMovementInput({','router.push(destination.href)','data-ground-exploration="walkable"']) has(ground, marker)
+  for (const marker of [
+    'function LivedGroundWorld(',
+    'function FirstPersonPlayer(',
+    'stepEmbodiedMotion({',
+    'useMovementInput({',
+    'data-ground-exploration="first-person"',
+    'data-ground-camera="eye-level-terrain-following"',
+    'data-ground-collision="visible-terrain-heightfield"',
+    'data-ground-private-location-mounted="false"',
+  ]) has(ground, marker)
+  assert.doesNotMatch(ground, /GroundPhysicalArchitecture|ground-destination-compass|router\.push\(destination\.href\)/)
   for (const marker of ['SpatialLifeMapCanonical','LifeMapRouteBoundary','requestUraiWorldReturn','data-private-memory-mounted="false"','data-life-map-access={mode}']) has(lifeMap, marker)
 })
 
