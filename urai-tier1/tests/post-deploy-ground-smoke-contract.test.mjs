@@ -6,6 +6,7 @@ const smoke = fs.readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
 const visualAudit = fs.readFileSync('../scripts/run-live-visual-audit-current.mjs', 'utf8')
 const groundPage = fs.readFileSync('src/app/ground/page.tsx', 'utf8')
 const ground = fs.readFileSync('src/app/GroundSpatialWorldClean.tsx', 'utf8')
+const embodiedNavigation = fs.readFileSync('src/spatial/navigation/EmbodiedNavigation.tsx', 'utf8')
 
 const expectedGroundMarkers = [
   'urai-ground-lived-world',
@@ -56,7 +57,7 @@ test('Ground visual audit traceability names current authority and retires chamb
   }
 })
 
-test('Ground keeps visible terrain as traversal and location data fail-closed', () => {
+test('Ground keeps visible terrain as traversal and shared mobile controls remain safe-area aware', () => {
   assert.match(ground, /name="ground-visible-traversable-terrain"[\s\S]*onClick=\{onTerrainClick\}/)
   assert.match(ground, /event\.delta > 8/)
   assert.match(ground, /data-ground-private-location-mounted="false"/)
@@ -65,7 +66,8 @@ test('Ground keeps visible terrain as traversal and location data fail-closed', 
   assert.doesNotMatch(ground, /requestPointerLock|sprint|jump|crouch/i)
   assert.doesNotMatch(ground, /ground-walkable-navigation-surface|GroundPhysicalArchitecture|GroundVaultArchitecture/)
   assert.match(ground, /min-width:48px;min-height:48px/)
-  assert.match(ground, /safe-area-inset-bottom/)
+  assert.match(ground, /<MobileMovementPad input=\{input\} label="Ground first-person movement controls" \/>/)
+  assert.match(embodiedNavigation, /\.urai-mobile-movement\{[\s\S]*bottom:max\(82px,calc\(env\(safe-area-inset-bottom\) \+ 72px\)\)/)
 })
 
 test('live smoke rejects retired chamber-hub authority', () => {
