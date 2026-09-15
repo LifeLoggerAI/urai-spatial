@@ -19,6 +19,7 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeAAAVisualRepair.tsx'
       - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
       - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
+      - 'urai-tier1/tests/home-sky-lifemap-threshold-contract.test.mjs'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
       - 'urai-tier1/tests/home-v88-retained-pixel-repair-contract.test.mjs'
       - 'urai-tier1/tests/embodied-exploration-contract.test.mjs'
@@ -66,6 +67,7 @@ jobs:
         working-directory: urai-tier1
         run: |
           node --test --test-concurrency=1 tests/home-ground-lifemap-art-bible-contract.test.mjs
+          node --test --test-concurrency=1 tests/home-sky-lifemap-threshold-contract.test.mjs
           node --test --test-concurrency=1 tests/home-relic-machine-realism-contract.test.mjs
           node --test --test-concurrency=1 tests/home-v88-retained-pixel-repair-contract.test.mjs
           node --test --test-concurrency=1 tests/embodied-exploration-contract.test.mjs

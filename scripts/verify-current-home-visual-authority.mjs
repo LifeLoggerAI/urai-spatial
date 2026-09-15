@@ -55,17 +55,29 @@ for (const token of [
   'currentHomeVisualAuthority.worldIdentifier',
   'currentHomeVisualAuthority.artRevision',
   'currentHomeVisualAuthority.runtimeAssets.join',
+  'home-life-map-sky-threshold',
+  'visible-sky-broad-interaction',
 ]) {
   if (!runtime.includes(token)) fail(`runtime does not consume structured authority token: ${token}`)
 }
+if (runtime.includes('HOME_LIFE_MAP')) fail('runtime restores a localized Life Map ground coordinate')
+if (runtime.includes('home-life-map-physical-portal')) fail('runtime restores the retired physical Life Map portal contract')
 if (/PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/.test(runtime)) fail('runtime contains an unearned visual certification marker')
 
 const renderer = await readFile(path.join(layoutRoot, authority.rendererOwner), 'utf8')
 for (const token of [
   "import { HomeAtmosphericSky } from '@/spatial/assets/HomeAtmosphericSky'",
-  '<HomeAtmosphericSky reducedMotion={p.reducedMotion}/>',
+  '<HomeAtmosphericSky reducedMotion={p.reducedMotion}',
+  "active={p.transition==='life-map'}",
+  'onLifeMap={p.onLifeMap}',
+  "cameraCheckpoint:'home-sky-ascent'",
+  "cameraCheckpoint:'home-sky-ascent-complete'",
+  "router.prefetch('/life-map/')",
 ]) {
-  if (!renderer.includes(token)) fail(`renderer does not preserve atmospheric visual-authority chain token: ${token}`)
+  if (!renderer.includes(token)) fail(`renderer does not preserve atmospheric/ascent authority token: ${token}`)
+}
+for (const retired of ["['life-map',LIFE_MAP", "nearby==='life-map'", 'The path rises into your Life Map']) {
+  if (renderer.includes(retired)) fail(`renderer restores retired localized Life Map behavior: ${retired}`)
 }
 
 const atmosphere = await readFile(path.join(spatialAssetsRoot, 'HomeAtmosphericSky.tsx'), 'utf8')
@@ -74,8 +86,16 @@ for (const token of [
   "import { HomeLaunchSanctuaryV254 } from './HomeLaunchSanctuaryV254'",
   '<HomeVisualAuthority />',
   '<HomeLaunchSanctuaryV254 reducedMotion={reducedMotion} />',
+  'RetireLocalizedLifeMapGateways',
+  'name="home-sky-life-map-threshold"',
+  'home-sky-memory-star-foreshadowing',
+  "threshold: 'broad-visible-sky'",
+  'localGroundPortal: false',
+  'event.ray.direction.y > .015',
+  'onClick={activateSky}',
+  'object.raycast = () => undefined',
 ]) {
-  if (!atmosphere.includes(token)) fail(`atmosphere does not mount final visual authority token: ${token}`)
+  if (!atmosphere.includes(token)) fail(`atmosphere does not preserve canonical sky-threshold token: ${token}`)
 }
 
 const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
@@ -127,4 +147,5 @@ process.stdout.write(`${JSON.stringify({
   proofSchema: authority.proofSchema,
   runtimeAssets: authority.runtimeAssets,
   orbAuthority: 'v286-biomorphic-memory-reliquary',
+  lifeMapEntryAuthority: 'visible-sky-broad-interaction',
 }, null, 2)}\nCURRENT_HOME_VISUAL_AUTHORITY_OK\n`)
