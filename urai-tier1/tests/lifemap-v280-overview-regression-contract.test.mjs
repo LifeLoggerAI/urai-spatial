@@ -25,11 +25,13 @@ test('V280 overview owns data-derived celestial regions without wallpaper or gra
   assert.doesNotMatch(overview, /<points\b|pointsMaterial|StellarDepthField|<line\b|lineSegments|ChapterTerritories|memoryValley/)
 })
 
-test('V280 preserves V279 departure bridge and makes overview landmarks more legible without inflating active state', () => {
+test('V280 preserves V279 departure authority while V281 owns the overview hierarchy without active-state drift', () => {
   assert.match(cosmic, /data-life-map-art-revision="v279-departure-volumetric-bridge"/)
   assert.match(cosmic, /life-map-departure-selected-memory-volumetric-bridge/)
-  assert.match(cosmic, /const overviewWeather = phase === "overview" \? \.56 : 1/)
-  assert.match(cosmic, /const outer = active \? 1\.08 : related \? \.82 : \.74/)
-  assert.match(cosmic, /const mid = active \? \.52 : related \? \.40 : \.36/)
-  assert.match(cosmic, /const hot = active \? \.20 : related \? \.17 : \.16/)
+  assert.match(cosmic, /data-life-map-overview-polish="v281-literal-pixel-authored-geography"/)
+  assert.match(cosmic, /const overviewWeather = phase === "overview" \? \.38 : 1/)
+  assert.match(cosmic, /const overviewBoost = overview \? 1\.48 : 1/)
+  assert.match(cosmic, /const outer = \(active \? 1\.08 : related \? \.82 : \.74\) \* overviewBoost/)
+  assert.match(cosmic, /const mid = \(active \? \.52 : related \? \.40 : \.36\) \* overviewBoost/)
+  assert.match(cosmic, /const hot = \(active \? \.20 : related \? \.17 : \.16\) \* \(overview \? 1\.24 : 1\)/)
 })
