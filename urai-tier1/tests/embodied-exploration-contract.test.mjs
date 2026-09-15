@@ -23,13 +23,18 @@ test('shared movement kernel preserves stable embodied controls and bounded moti
   assert.doesNotMatch(travel, /embodied-motion-kernel-v66|homeDistanceLifeMap|homeDistanceGround|spawnX\s*=\s*4\.45/)
 })
 
-test('Home keeps one V223 Canvas owner while predecessor art remains historical provenance', () => {
+test('Home keeps one V223 cinematic Canvas owner while predecessor art remains historical provenance', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
   has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
   has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
   has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
-  has(activeHomeRuntime3d, 'data-home-visible-world="v226-rooted-inhabited-memory-sanctuary"')
+  has(activeHomeRuntime3d, 'data-home-visible-world="cinematic-lived-world-threshold"')
+  has(activeHomeRuntime3d, 'data-home-embodied-self="visible-cinematic-avatar"')
+  has(activeHomeRuntime3d, 'data-home-movement="camera-look-world-surface-selection"')
+  has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
+  has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
+  assert.doesNotMatch(activeHomeRuntime3d, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
@@ -85,6 +90,6 @@ test('Ground and Life Map keep their canonical embodied contracts', () => {
   for (const marker of ['SpatialLifeMapCanonical','LifeMapRouteBoundary','requestUraiWorldReturn','data-private-memory-mounted="false"','data-life-map-access={mode}']) has(lifeMap, marker)
 })
 
-test('travel infrastructure keeps movement input and virtual controls', () => {
+test('travel infrastructure keeps movement input and virtual controls for Ground and other embodied realms', () => {
   for (const marker of ['useMovementInput','stepEmbodiedMotion','setVirtualMovement','clearVirtualMovement']) has(travel, marker)
 })
