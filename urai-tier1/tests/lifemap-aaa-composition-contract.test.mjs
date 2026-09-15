@@ -5,6 +5,7 @@ import test from 'node:test'
 const read = (relativePath) => fs.readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const world = read('src/components/lifemap/LifeMapProductionWorld.tsx')
 const scene = read('src/components/lifemap/ComposedLifeMapScene.tsx')
+const cosmicScene = read('src/components/lifemap/CosmicComposedLifeMapScene.tsx')
 const navigator = read('src/components/lifemap/LifeMapSemanticNavigator.tsx')
 const selectionBroker = read('src/components/lifemap/lifeMapSelection.ts')
 
@@ -112,4 +113,14 @@ test('capable hardware receives a bounded high-fidelity Life Map path', () => {
   assert.match(scene, /adaptiveProfile\.tier === "high" \? 1\.5 : 1\.25/)
   assert.match(scene, /postprocessing: softwareRenderer === false && adaptiveProfile\.tier === "high" && !adaptiveProfile\.reducedMotion/)
   assert.match(scene, /shadows: softwareRenderer === false && adaptiveProfile\.tier === "high" && !adaptiveProfile\.reducedMotion/)
+})
+
+test('selected departure owns a real volumetric bridge without point-wallpaper or journey-wide drift', () => {
+  assert.match(cosmicScene, /data-life-map-art-revision="v279-departure-volumetric-bridge"/)
+  assert.match(cosmicScene, /life-map-departure-selected-memory-volumetric-bridge/)
+  assert.match(cosmicScene, /visualRole: "departure-selected-memory-volumetric-bridge", pointWallpaper: false, journeyPhase: "departure"/)
+  assert.match(cosmicScene, /if \(phase !== "departure"\) return null/)
+  assert.match(cosmicScene, /const center = target\.clone\(\)\.addScaledVector\(dir, 11\.5\)/)
+  for (const seed of ['11.37', '12.11', '12.83', '13.47']) assert.match(cosmicScene, new RegExp(`seed=\\{${seed.replace('.', '\\.') }\\}`))
+  assert.doesNotMatch(cosmicScene, /departure-selected-memory-volumetric-bridge[\s\S]*<points/)
 })
