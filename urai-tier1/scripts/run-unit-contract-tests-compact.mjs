@@ -54,6 +54,7 @@ const tests = [
   'tests/replay-operations-contract.test.mjs',
   'tests/replay-product-controls-contract.test.mjs',
   'tests/replay-mobile-control-clearance-contract.test.mjs',
+  'tests/replay-final-rail-authority-contract.test.mjs',
   'tests/route-owner-exclusivity-contract.test.mjs',
   'tests/security-boundary-contract.test.mjs',
   'tests/selected-memory-production-contract.test.mjs',
