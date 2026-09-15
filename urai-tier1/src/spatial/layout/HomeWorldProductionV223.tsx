@@ -18,7 +18,9 @@ type Transition = 'none' | 'ground' | 'life-map'
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 
-const HOME_FOCUS = new THREE.Vector3(0, 1.05, -1.15)
+// Frame the lived world with the canonical 55-65% visible sky while retaining
+// the established camera radius/FOV and letting Ground remain physically present.
+const HOME_FOCUS = new THREE.Vector3(0, 3.85, -1.15)
 const AVATAR_POSITION = new THREE.Vector3(-.28, 0, 1.0)
 const COMPANION_POSITION = new THREE.Vector3(1.02, 0, .72)
 
