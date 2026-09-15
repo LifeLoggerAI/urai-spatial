@@ -33,7 +33,7 @@ for (const token of ["import { HomeAtmosphericSky } from '@/spatial/assets/HomeA
 for (const retired of ["nearby==='life-map'","nearby === 'life-map'",'HOME_LIFE_MAP','useMovementInput','MobileMovementPad','data-home-movement="walk-keyboard-click-touch"']) if (renderer.includes(retired)) fail(`renderer restored retired Home ownership: ${retired}`)
 
 const visualAuthority = await readFile(path.join(layoutRoot, 'HomeVisualAuthority.tsx'), 'utf8')
-for (const token of ["import { HomeOrbGroundedV288 } from '../assets/HomeOrbGroundedV288'",'<HomeOrbGroundedV288 />','Current Home authority is deliberately narrow']) if (!visualAuthority.includes(token)) fail(`visual authority missing ${token}`)
+for (const token of ["import { HomeOrbGroundedV288 } from '../assets/HomeOrbGroundedV288'",'<HomeOrbGroundedV288 />','export function HomeVisualAuthority()']) if (!visualAuthority.includes(token)) fail(`visual authority missing ${token}`)
 for (const retired of ['SanctuaryDressingV253','IcosahedronGeometry','CylinderGeometry','object.visible = false','object.raycast = () => {}']) if (visualAuthority.includes(retired)) fail(`visual authority restored retired dressing/mutation: ${retired}`)
 
 const currentRepair = await readFile(path.join(layoutRoot, 'HomeCurrentArtRepair.tsx'), 'utf8')
