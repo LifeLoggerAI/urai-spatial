@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const owner = fs.readFileSync(new URL('../src/spatial/layout/HomeWorldProductionV223.tsx', import.meta.url), 'utf8')
 const art = fs.readFileSync(new URL('../src/spatial/layout/HomeCurrentArtRepair.tsx', import.meta.url), 'utf8')
+const aaa = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 const authority = JSON.parse(fs.readFileSync(new URL('../src/app/currentHomeVisualAuthority.json', import.meta.url), 'utf8'))
 
 test('current Home mounts one explicit unified visual authority and declares the exact revision', () => {
@@ -11,7 +12,7 @@ test('current Home mounts one explicit unified visual authority and declares the
   assert.match(owner, /<HomeCurrentArtRepair orbState=\{p\.orbState\} reducedMotion=\{p\.reducedMotion\}/)
   assert.match(art, /home-current-unified-visual-authority/)
   assert.match(art, /v249-systemic-organic-convergence/)
-  assert.equal(authority.artRevision, 'v255-life-map-celestial-ascent')
+  assert.equal(authority.artRevision, 'v271-open-celestial-gateway')
   assert.ok(authority.runtimeAssets.includes('HomeCurrentArtRepair.tsx'))
   assert.ok(authority.runtimeAssets.includes('HomeLaunchSanctuaryV254.tsx'))
   assert.ok(authority.runtimeAssets.includes('HomeAAAVisualRepair.tsx'))
@@ -44,6 +45,17 @@ test('Life Map threshold is a distinct rooted celestial ascent, not a copy of Gr
   const lifeMapMorphology = art.match(/morphology: '(vertical-rooted-celestial-ascent)'/)?.[1]
   assert.ok(groundMorphology && lifeMapMorphology)
   assert.notEqual(groundMorphology, lifeMapMorphology)
+})
+
+test('AAA Life Map ascent stays open volumetric space and cannot regress to a dark construction plane', () => {
+  assert.match(aaa, /aaa-celestial-ascent-v2-open-volume/)
+  assert.match(aaa, /rooted-threshold-expanding-upward-into-open-deep-personal-constellation-space/)
+  assert.match(aaa, /constructionPlane: 'none'/)
+  assert.match(aaa, /buildCelestialVolume/)
+  assert.match(aaa, /THREE\.AdditiveBlending/)
+  assert.doesNotMatch(aaa, /circleGeometry|CircleGeometry/)
+  assert.doesNotMatch(aaa, /meshBasicMaterial/)
+  assert.doesNotMatch(aaa, /TorusGeometry|torusGeometry|RingGeometry|ringGeometry/)
 })
 
 test('Orb is one matte organic asymmetric state-aware living-memory presence with readable interior life', () => {
