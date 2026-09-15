@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai-home-visual-authority-1",
   "rendererOwner": "HomeWorldProductionV223.tsx",
-  "artRevision": "v254-launch-sanctuary-depth",
+  "artRevision": "v255-life-map-celestial-ascent",
   "worldIdentifier": "v226-rooted-inhabited-memory-sanctuary",
   "proofSchema": "urai-home-state-proof-7",
   "runtimeAssets": [
@@ -9,6 +9,7 @@
     "HomeWorldProductionV223Geometry.tsx",
     "HomeWorldProductionV225PolishV3.tsx",
     "HomeCurrentArtRepair.tsx",
+    "HomeAAAVisualRepair.tsx",
     "HomeVisualAuthority.tsx",
     "HomeAtmosphericSky.tsx",
     "HomeLaunchSanctuaryV254.tsx",
