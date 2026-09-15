@@ -33,12 +33,13 @@ function normalizedPathname(url: string) {
 test.describe('Cinematic Home and first-person Ground accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
-  test('Home exposes cinematic world semantics, three keyboard destinations, and no movement pad', async ({ page }) => {
+  test('Home exposes cinematic world semantics, three route controls, direct Avatar semantics, and no movement pad', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
     await waitForHomeWorld(home)
     await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person|cinematic-look/)
+    await expect(home).toHaveAttribute('data-home-avatar-entry', 'visible-user-avatar')
 
     const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     const orb = direct.getByRole('button', { name: 'Open URAI Orb companion' })
@@ -49,23 +50,31 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
       await target.evaluate((element: HTMLElement) => element.focus())
       await expect(target).toBeFocused()
     }
+    const avatar = page.getByRole('button', { name: 'Interact with your Home embodiment' })
+    await expect(avatar).toHaveCount(1)
+    await avatar.focus()
+    await expect(avatar).toBeFocused()
     await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('Ground is first-person, keyboard/touch navigable, privacy-safe, and keeps direct Home/place controls focusable', async ({ page }) => {
+  test('Ground is first-person, keyboard/touch navigable, privacy-safe, collision-aware, and keeps direct Home/place controls focusable', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
+    const route = page.getByTestId('walkable-first-person-ground-layer')
+    await expect(route).toHaveAttribute('data-ground-canon', 'home-ground-continuity-v1')
+    await expect(route).toHaveAttribute('data-ground-place-layer', 'consent-aware-empty-by-default')
+    await expect(route).toHaveAttribute('data-ground-private-location-mounted', 'false')
+
     const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
     await expect(ground).toBeVisible({ timeout: 30_000 })
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
     await expect(ground).toHaveAttribute('data-ground-camera', 'eye-level-terrain-following')
-    await expect(ground).toHaveAttribute('data-ground-collision', 'visible-terrain-heightfield')
-    await expect(ground).toHaveAttribute('data-ground-place-layer', 'consent-aware-empty-by-default')
-    await expect(ground).toHaveAttribute('data-ground-private-location-mounted', 'false')
+    await expect(ground).toHaveAttribute('data-ground-collision', 'terrain-slope-step-and-authored-obstacles')
+    await expect(ground).toHaveAttribute('data-ground-movement', 'hybrid-continuous-target-walk')
     await expect(ground.locator('canvas')).toBeVisible({ timeout: 30_000 })
 
     await page.keyboard.down('w')
