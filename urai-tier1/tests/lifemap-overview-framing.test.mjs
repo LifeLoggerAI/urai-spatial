@@ -12,6 +12,7 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.match(cosmic, /data-life-map-overview-authority="v280-data-derived-personal-universe-regions"/)
   assert.match(cosmic, /data-life-map-overview-polish="v281-literal-pixel-authored-geography"/)
   assert.match(cosmic, /data-life-map-landmark-revision="v282-authored-celestial-landmarks"/)
+  assert.match(cosmic, /data-life-map-landmark-polish="v283-volumetric-celestial-islands"/)
   assert.match(cosmic, /life-map-overview-personal-universe-regions/)
   assert.match(cosmic, /data-derived-personal-universe-geography/)
   assert.match(cosmic, /node\.eraId \|\| node\.clusterId \|\| node\.type/)
@@ -45,7 +46,7 @@ test('V281 overview camera is tighter and independent from selected-memory trave
   assert.match(cosmic, /pointer\.y \* \.45/)
 })
 
-test('V282 overview memory destinations remain stellar with explicit authored hierarchy', () => {
+test('V283 overview memory destinations remain stellar with volumetric authored hierarchy', () => {
   assert.match(cosmic, /const overviewBoost = overview \? 1\.48 : 1/)
   assert.match(cosmic, /const outer = \(active \? 1\.08 : related \? \.82 : \.74\) \* overviewBoost/)
   assert.match(cosmic, /const mid = \(active \? \.52 : related \? \.40 : \.36\) \* overviewBoost/)
@@ -55,8 +56,12 @@ test('V282 overview memory destinations remain stellar with explicit authored hi
   assert.match(cosmic, /active \? \.94 : related \? \.91 : overview \? \.94 : \.90/)
   assert.match(cosmic, /active \? \.24 : related \? \.07 : overview \? \.036 : \.024/)
   assert.match(cosmic, /overviewWeather = phase === "overview" \? \.38 : 1/)
-  assert.match(cosmic, /life-map-v282-celestial-canopy-/)
-  assert.match(cosmic, /data-derived-celestial-landmark/)
+  assert.match(cosmic, /life-map-v283-celestial-island-/)
+  assert.match(cosmic, /data-derived-volumetric-celestial-island/)
+  assert.match(cosmic, /interactionOwner: false/)
+  assert.match(cosmic, /raycast=\{\(\) => null\}/)
+  assert.match(cosmic, /buildCelestialCanopyGeometry/)
+  assert.match(cosmic, /computeVertexNormals\(\)/)
   assert.match(cosmic, /fog attach="fog" args=\{\["#020611", 78, 170\]\}/)
 })
 
