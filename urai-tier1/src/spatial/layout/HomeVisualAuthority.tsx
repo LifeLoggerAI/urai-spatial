@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { height } from './HomeWorldProductionV223Geometry'
-import { HomeOrbReliquaryV286 } from '../assets/HomeOrbReliquaryV286'
+import { HomeOrbGroundedV288 } from '../assets/HomeOrbGroundedV288'
 
 function hasAncestor(object: THREE.Object3D, name: string) {
   for (let current = object.parent; current; current = current.parent) {
@@ -136,10 +136,10 @@ function SanctuaryDressingV253() {
 /**
  * Current Home ownership guard.
  *
- * V286 retires the former V253 Orb render authority entirely. This module now
- * owns only sanctuary dressing plus fail-closed suppression of superseded Home
- * surfaces. The canonical Orb visuals live in HomeOrbReliquaryV286 while the
- * established transparent V226 interaction surface remains the sole pointer / touch owner.
+ * V288 preserves V287 cinematic Home/Ground/sky-threshold ownership and mounts
+ * the V286 biomorphic reliquary through a grounded integration adapter. The
+ * V287 fallback companion remains the pointer/touch owner but cannot paint
+ * pixels; the reliquary remains visual-only and cannot steal interaction.
  */
 export function HomeVisualAuthority() {
   const { scene } = useThree()
@@ -206,6 +206,6 @@ export function HomeVisualAuthority() {
 
   return <>
     <SanctuaryDressingV253 />
-    <HomeOrbReliquaryV286 />
+    <HomeOrbGroundedV288 />
   </>
 }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai-home-visual-authority-1",
   "rendererOwner": "HomeWorldProductionV223.tsx",
-  "artRevision": "v287-cinematic-lived-world-threshold",
+  "artRevision": "v288-cinematic-lived-world-grounded-reliquary",
   "worldIdentifier": "cinematic-lived-world-threshold",
   "proofSchema": "urai-home-state-proof-7",
   "runtimeAssets": [
@@ -13,11 +13,12 @@
     "HomeVisualAuthority.tsx",
     "HomeAtmosphericSky.tsx",
     "HomeOrbReliquaryV286.tsx",
+    "HomeOrbGroundedV288.tsx",
     "HomeLaunchSanctuaryV254.tsx",
     "rock-tile-floor/rock-tile-floor-diff-1k.webp",
     "polyhaven-v48/fern_02/asset.gltf",
     "polyhaven-v48/rock_face_01/asset.gltf",
     "polyhaven-v48/rock_face_02/asset.gltf"
   ],
-  "orbVisualAuthority": "v287-grounded-companion-fallback-over-retired-v286-hotspot"
+  "orbVisualAuthority": "v288-grounded-biomorphic-reliquary"
 }
