@@ -8,7 +8,7 @@ const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRoute
 test('canonical Life Map overview is framed as a deep stellar personal universe rather than terrain or graph grammar', () => {
   assert.match(boundary, /CosmicComposedLifeMapScene/)
   assert.match(cosmic, /data-life-map-visual-authority="v260-deep-stellar-personal-universe"/)
-  assert.match(cosmic, /data-life-map-art-revision="v277-portrait-asymmetric-volume"/)
+  assert.match(cosmic, /data-life-map-art-revision="v278-selected-journey-volume"/)
   assert.match(cosmic, /data-life-map-ground="none"/)
   assert.match(cosmic, /life-map-deep-space/)
   assert.match(cosmic, /life-map-deep-stellar-field/)
@@ -48,7 +48,7 @@ test('overview memory destinations remain stellar but have readable hierarchy', 
   assert.match(cosmic, /fog attach="fog" args=\{\["#020611", 78, 170\]\}/)
 })
 
-test('selected-memory travel remains spatial and celestial until Focus or Replay', () => {
+test('selected-memory travel remains spatial, volumetric, and celestial until Focus or Replay', () => {
   assert.match(cosmic, /phase === "departure" \? 21/)
   assert.match(cosmic, /phase === "travel" \? 16\.5/)
   assert.match(cosmic, /phase === "approach" \? 12\.5/)
@@ -57,6 +57,11 @@ test('selected-memory travel remains spatial and celestial until Focus or Replay
   assert.match(cosmic, /Approaching memory/)
   assert.match(cosmic, /Memory selected/)
   assert.match(cosmic, /life-map-selected-memory-dust/)
+  assert.match(cosmic, /life-map-selected-travel-weather/)
+  assert.match(cosmic, /selected-memory-asymmetric-volumetric-depth/)
+  assert.match(cosmic, /journeyPhase: phase/)
+  assert.match(cosmic, /phase === "departure" \? \.70 : phase === "travel" \? \.82 : phase === "approach" \? \.72 : \.66/)
+  assert.match(cosmic, /scale=\{\[96, 54\]\}/)
   assert.doesNotMatch(cosmic, /ArrivalSanctuary|IntimateMemoryChamber|memory chamber/)
 })
 
