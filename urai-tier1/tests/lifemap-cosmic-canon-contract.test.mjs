@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
 const cosmic = fs.readFileSync(new URL('../src/components/lifemap/CosmicComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const stellarPolish = fs.readFileSync(new URL('../src/app/life-map/life-map-stellar-retained-pixel-polish.css', import.meta.url), 'utf8')
 
 test('canonical Life Map route uses the deep-stellar personal-universe visual owner', () => {
   assert.match(boundary, /CosmicComposedLifeMapScene/)
@@ -24,6 +25,15 @@ test('cosmic Life Map cannot silently regress to a terrestrial or graph overview
   assert.doesNotMatch(cosmic, /LivingMemoryGeography|memoryValley|ChapterTerritories|lifeMapTerrainHeight|weathered-valley-floor|worn-lineage-path/)
   assert.doesNotMatch(cosmic, /from "\.\/lifeMapSpatialLayout"/)
   assert.doesNotMatch(cosmic, /<line>|<lineSegments>|LineSegments|CatmullRomCurve3|TubeGeometry/)
+})
+
+test('retained route polish cannot synthesize repeated CSS star wallpaper over WebGL', () => {
+  assert.match(stellarPolish, /V269 literal-pixel convergence/)
+  assert.match(stellarPolish, /WebGL stellar volume is the only star owner/)
+  assert.match(stellarPolish, /background-repeat:\s*no-repeat/)
+  assert.doesNotMatch(stellarPolish, /background-size\s*:/)
+  assert.doesNotMatch(stellarPolish, /61px 59px|101px 97px|149px 137px|47px 45px|79px 73px|119px 109px/)
+  assert.doesNotMatch(stellarPolish, /radial-gradient\(circle at center,[^\n]*0 \.\d+px,[^\n]*transparent \d+\.\d+px\)/)
 })
 
 test('cosmic visual-owner replacement preserves exact-head proof and route semantics', () => {

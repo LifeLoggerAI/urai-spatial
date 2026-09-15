@@ -25,6 +25,7 @@ const requiredFocusedTests = [
 const systemicVisualConvergenceTests = [
   'tests/home-current-art-repair-contract.test.mjs',
   'tests/lifemap-review-repair-contract.test.mjs',
+  'tests/lifemap-cosmic-canon-contract.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/replay-final-rail-authority-contract.test.mjs',
 ]

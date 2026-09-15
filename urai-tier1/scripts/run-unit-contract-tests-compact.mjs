@@ -31,6 +31,7 @@ const tests = [
   'tests/home-v197-authored-place-contract.test.mjs',
   'tests/home-v91-portrait-composition-contract.test.mjs',
   'tests/lifemap-cinematic-contract.test.mjs',
+  'tests/lifemap-cosmic-canon-contract.test.mjs',
   'tests/lifemap-overview-framing.test.mjs',
   'tests/lifemap-mobile-travel-density-contract.test.mjs',
   'tests/lifemap-deep-link-controls-contract.test.mjs',
