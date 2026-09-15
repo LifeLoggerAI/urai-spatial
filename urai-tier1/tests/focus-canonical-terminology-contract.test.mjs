@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const route = fs.readFileSync(new URL('../src/app/focus/page.tsx', import.meta.url), 'utf8')
+const compatibilityRoute = fs.readFileSync(new URL('../src/app/focus/session/[sessionId]/page.tsx', import.meta.url), 'utf8')
+const focusState = fs.readFileSync(new URL('../src/spatial/scene/focusState.ts', import.meta.url), 'utf8')
+const focusRuntime = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+const lifeMapWorld = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
+const selectedMemory = fs.readFileSync(new URL('../src/spatial/memory/selectedMemoryContract.ts', import.meta.url), 'utf8')
+const canon = fs.readFileSync(new URL('../../docs/FOCUS_CANONICAL_TERMINOLOGY_LOCK.md', import.meta.url), 'utf8')
+
+test('public Focus route describes the selected-memory spatial experience rather than historical productivity Focus', () => {
+  assert.match(route, /title: 'URAI Focus'/)
+  assert.match(route, /close-range selected-memory experience/)
+  assert.doesNotMatch(route, /Deep Work|Focus Session|mission cockpit|task timer|app blocking/i)
+})
+
+test('legacy session-shaped compatibility route does not expose productivity Focus language', () => {
+  assert.match(compatibilityRoute, /Selected memory unavailable/)
+  assert.match(compatibilityRoute, /This memory cannot be opened in Focus/)
+  assert.match(compatibilityRoute, /redirect\(resolution\.star\.focusHref\)/)
+  assert.doesNotMatch(compatibilityRoute, />Focus session unavailable</i)
+  assert.doesNotMatch(compatibilityRoute, />This focus session/i)
+})
+
+test('neutral Focus Observatory remains distinct from selected-memory Focus', () => {
+  assert.match(focusRuntime, /directEntry \? 'Focus Observatory'/)
+  assert.match(focusRuntime, /memory\?\.title \?\? \(directEntry \? 'Focus Observatory'/)
+  assert.match(canon, /Focus Observatory.*reserved for safe neutral direct entry/s)
+})
+
+test('generic neighboring graph entities use Related Context language', () => {
+  assert.match(focusState, /label: 'Related Context Preview'/)
+  assert.match(focusState, /A related Life Map node is previewed/)
+  assert.doesNotMatch(focusState, /label: 'Related Memory Preview'/)
+})
+
+test('existing Life Map and Focus state machines remain authoritative', () => {
+  assert.match(lifeMapWorld, /LifeMapJourneyPhase = "overview" \| "departure" \| "travel" \| "approach" \| "arrival"/)
+  for (const phase of ['entering_focus', 'loading_focus_data', 'focus_ready', 'focus_node_hovered', 'focus_node_selected', 'focus_detail_open', 'focus_recentering', 'exiting_focus', 'focus_empty', 'focus_error']) {
+    assert.match(focusState, new RegExp(`'${phase}'`))
+  }
+})
+
+test('Memory Star identity and Replay manifest remain part of selected-memory authority', () => {
+  assert.match(selectedMemory, /export type SelectedMemoryStar/)
+  assert.match(selectedMemory, /star: SelectedMemoryStar/)
+  assert.match(selectedMemory, /replayManifest: SelectedMemoryReplayManifest/)
+  assert.match(focusRuntime, /memoryId: memory\.id/)
+  assert.match(focusRuntime, /manifestId: memory\.replayManifest\.id/)
+  assert.match(focusRuntime, /node: memory\.star\.id/)
+})
+
+test('internal chamber and aperture names may remain while the public Replay action stays Enter Replay', () => {
+  assert.match(focusRuntime, /FOCUS_CHAMBER_MODEL = '\/assets\/urai\/generated\/models\/focus-memory-chamber-v1\.glb'/)
+  assert.match(focusRuntime, /function MemoryAperture/)
+  assert.match(focusRuntime, /entryPortal: 'focus-memory-aperture'/)
+  assert.match(focusRuntime, />\{memory \? 'Enter Replay' : 'Awaiting a selected star'\}<\/button>/)
+})
+
+test('historical productivity Focus language is explicitly non-governing', () => {
+  assert.match(canon, /productivity-session concept is explicitly non-governing/)
+  assert.match(canon, /Deep Focus/)
+  assert.match(canon, /Deep Work/)
+  assert.match(canon, /Close Inspection/)
+  assert.match(canon, /Enter Replay/)
+})
