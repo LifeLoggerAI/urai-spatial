@@ -79,8 +79,23 @@ test('Orb voice can be stopped after the AI response finishes', () => {
 })
 
 test('Orb conversation disclosure remains a real pointer hit target above the spatial canvas', () => {
-  assert.match(conversationCss, /\.panel\{[^}]*position:relative;[^}]*z-index:1;[^}]*isolation:isolate;[^}]*pointer-events:auto;/)
-  assert.match(conversationCss, /\.panel summary\{[^}]*position:relative;[^}]*z-index:2;[^}]*pointer-events:auto;[^}]*touch-action:manipulation;[^}]*transform:translateZ\(0\);/)
-  assert.match(conversationCss, /\.body\{[^}]*position:relative;[^}]*z-index:1;[^}]*pointer-events:auto;/)
+  const panelCss = conversationCss.match(/\.panel\{([^}]*)\}/)?.[1] ?? ''
+  const summaryCss = conversationCss.match(/\.panel summary\{([^}]*)\}/)?.[1] ?? ''
+  const bodyCss = conversationCss.match(/\.body\{([^}]*)\}/)?.[1] ?? ''
+
+  assert.match(panelCss, /position:relative;/)
+  assert.match(panelCss, /z-index:1;/)
+  assert.match(panelCss, /isolation:isolate;/)
+  assert.match(panelCss, /pointer-events:auto;/)
+
+  assert.match(summaryCss, /position:relative;/)
+  assert.match(summaryCss, /z-index:2;/)
+  assert.match(summaryCss, /pointer-events:auto;/)
+  assert.match(summaryCss, /touch-action:manipulation;/)
+  assert.match(summaryCss, /transform:translateZ\(0\);/)
+
+  assert.match(bodyCss, /position:relative;/)
+  assert.match(bodyCss, /z-index:1;/)
+  assert.match(bodyCss, /pointer-events:auto;/)
   assert.match(conversationSource, /<summary>Talk with Orb<\/summary>/)
 })
