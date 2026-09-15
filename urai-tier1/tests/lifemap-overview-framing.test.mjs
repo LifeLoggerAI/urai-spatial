@@ -29,7 +29,7 @@ test('overview camera is tighter and independent from selected-memory travel ori
   assert.match(cosmic, /const overview = new THREE\.Vector3\(0, portrait \? \.9 : 2\.2, portrait \? 21\.5 : 22\.5\)/)
   assert.match(cosmic, /targetOverview = new THREE\.Vector3\(0, portrait \? -\.35 : \.15, portrait \? -21 : -19\)/)
   assert.match(cosmic, /fov: portrait \? 44 : 47/)
-  assert.match(cosmic, /const travelOrigin = new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
+  assert.match(cosmic, /travelOrigin\s*=\s*new THREE\.Vector3\(0, portrait \? 1\.2 : 2\.7, portrait \? 29 : 25\.5\)/)
   assert.match(cosmic, /dir = travelOrigin\.clone\(\)\.sub\(target\)\.normalize\(\)/)
   assert.match(cosmic, /pointer\.x \* 1\.1/)
   assert.match(cosmic, /pointer\.y \* \.45/)
