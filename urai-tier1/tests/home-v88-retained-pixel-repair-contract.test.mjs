@@ -62,9 +62,10 @@ test('historical V185 traversal gates remain regression-covered without claiming
 test('V288 remains explicitly uncertified until literal exact-head retained pixels pass', () => {
   assert.match(finalizer, /home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /embodied-exploration-contract\.test\.mjs/)
-  has(telemetry, "world.setAttribute('data-home-v226-certification', 'fresh-exact-head-pixels-required')")
+  has(telemetry, "world.setAttribute('data-home-v288-certification', 'fresh-exact-head-pixels-required')")
   has(telemetry, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  has(telemetry, 'data-home-v226-retained-pixel-rebuild="active"')
+  has(telemetry, 'data-home-v288-retained-pixel-rebuild="active"')
+  has(telemetry, 'data-home-v226-retained-pixel-rebuild="superseded"')
   has(telemetry, 'data-home-v225-retained-pixel-rebuild="superseded"')
   has(currentRuntime, 'data-home-visual-grade="current-literal-pixel-candidate-not-certified"')
   assert.doesNotMatch(`${currentRuntime}\n${historicalRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}\n${groundedOrb}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
