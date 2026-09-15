@@ -11,6 +11,7 @@ test('canonical Life Map overview is framed as a deep stellar personal universe 
   assert.match(cosmic, /data-life-map-art-revision="v279-departure-volumetric-bridge"/)
   assert.match(cosmic, /data-life-map-overview-authority="v280-data-derived-personal-universe-regions"/)
   assert.match(cosmic, /data-life-map-overview-polish="v281-literal-pixel-authored-geography"/)
+  assert.match(cosmic, /data-life-map-landmark-revision="v282-authored-celestial-landmarks"/)
   assert.match(cosmic, /life-map-overview-personal-universe-regions/)
   assert.match(cosmic, /data-derived-personal-universe-geography/)
   assert.match(cosmic, /node\.eraId \|\| node\.clusterId \|\| node\.type/)
@@ -44,7 +45,7 @@ test('V281 overview camera is tighter and independent from selected-memory trave
   assert.match(cosmic, /pointer\.y \* \.45/)
 })
 
-test('V281 overview memory destinations remain stellar with explicit overview hierarchy', () => {
+test('V282 overview memory destinations remain stellar with explicit authored hierarchy', () => {
   assert.match(cosmic, /const overviewBoost = overview \? 1\.48 : 1/)
   assert.match(cosmic, /const outer = \(active \? 1\.08 : related \? \.82 : \.74\) \* overviewBoost/)
   assert.match(cosmic, /const mid = \(active \? \.52 : related \? \.40 : \.36\) \* overviewBoost/)
@@ -54,6 +55,8 @@ test('V281 overview memory destinations remain stellar with explicit overview hi
   assert.match(cosmic, /active \? \.94 : related \? \.91 : overview \? \.94 : \.90/)
   assert.match(cosmic, /active \? \.24 : related \? \.07 : overview \? \.036 : \.024/)
   assert.match(cosmic, /overviewWeather = phase === "overview" \? \.38 : 1/)
+  assert.match(cosmic, /life-map-v282-celestial-canopy-/)
+  assert.match(cosmic, /data-derived-celestial-landmark/)
   assert.match(cosmic, /fog attach="fog" args=\{\["#020611", 78, 170\]\}/)
 })
 
@@ -69,7 +72,8 @@ test('selected-memory travel remains spatial, volumetric, and celestial until Fo
   assert.match(cosmic, /life-map-selected-travel-weather/)
   assert.match(cosmic, /selected-memory-asymmetric-volumetric-depth/)
   assert.match(cosmic, /journeyPhase: phase/)
-  assert.match(cosmic, /phase === "departure" \? \.70 : phase === "travel" \? \.82 : phase === "approach" \? \.72 : \.66/)
+  assert.match(cosmic, /phase === "departure" \? \.52 : phase === "travel" \? \.60 : phase === "approach" \? \.54 : \.48/)
+  assert.match(cosmic, /life-map-v282-selected-memory-celestial-formation/)
   assert.match(cosmic, /scale=\{\[96, 54\]\}/)
   assert.doesNotMatch(cosmic, /ArrivalSanctuary|IntimateMemoryChamber|memory chamber/)
 })
