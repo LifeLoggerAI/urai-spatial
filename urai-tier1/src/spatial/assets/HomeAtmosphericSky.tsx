@@ -152,6 +152,7 @@ function makeStarMaterial() {
     depthWrite: false,
     depthTest: true,
     toneMapped: false,
+    vertexColors: true,
     uniforms: {
       uTime: { value: 0 },
       uFocus: { value: 0 },
