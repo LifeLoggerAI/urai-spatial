@@ -1,10 +1,13 @@
-/* V271 literal-pixel convergence.
+/* V274 literal-pixel convergence.
    The WebGL stellar volume is the only star owner. This route layer must never
    synthesize tiled point-stars: repeated CSS dots flatten the personal universe
    into wallpaper and compete with real memory-star hierarchy. CSS contributes
    only broad, non-repeating galactic weather and depth separation.
    overview-depth-extension-v271 keeps the overview volumetric across the full
-   viewport instead of collapsing into a thin mid-screen stellar band. */
+   viewport instead of collapsing into a thin mid-screen stellar band.
+   V274 strengthens the selected-memory travel corridor with broad asymmetric
+   luminance structure so the camera move reads as an intentional approach,
+   without adding synthetic point-stars or weakening retained-pixel thresholds. */
 .life-map-root::before {
   content: "";
   position: absolute;
@@ -47,11 +50,9 @@
   filter: contrast(1.16) saturate(1.10) brightness(1.04);
 }
 
-/* Departure is the one-frame visual hinge between the calm overview and the
-   brighter selected journey. Keep that hinge luminously distributed from the
-   first authoritative selected frame so the world never collapses into a dark
-   interstitial. These are broad asymmetric weather fields only: WebGL still
-   owns every crisp star and memory landmark. */
+/* Departure is the visual hinge between the calm overview and the selected
+   journey. Keep that hinge luminously distributed from the first selected
+   frame so the world never collapses into a dark interstitial. */
 .life-map-root[data-life-map-phase="departure"]::before {
   background:
     radial-gradient(ellipse at 13% 23%, rgba(78,145,190,.48) 0, rgba(43,94,139,.27) 27%, transparent 55%),
@@ -63,6 +64,24 @@
     linear-gradient(114deg, rgba(18,41,72,.09) 2%, rgba(55,106,148,.25) 24%, rgba(34,67,110,.07) 43%, rgba(117,77,143,.22) 65%, rgba(45,89,131,.16) 84%, transparent 99%);
   opacity: .90;
   filter: contrast(1.12) saturate(1.12) brightness(1.12);
+}
+
+/* V274: once travel begins, establish a readable luminous corridor around the
+   camera target plus offset pockets at different scales. This adds distributed
+   luminance structure to the real 3D star field rather than manufacturing crisp
+   CSS points, and makes the selected memory visually command the journey. */
+.life-map-root[data-life-map-phase="travel"]::before {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(173,215,241,.23) 0, rgba(72,128,165,.19) 15%, rgba(39,78,119,.075) 26%, transparent 39%),
+    radial-gradient(ellipse at 12% 18%, rgba(82,155,202,.55) 0, rgba(43,96,143,.29) 25%, transparent 49%),
+    radial-gradient(ellipse at 87% 27%, rgba(155,101,185,.49) 0, rgba(88,62,137,.26) 24%, transparent 50%),
+    radial-gradient(ellipse at 23% 82%, rgba(54,137,169,.42) 0, rgba(31,87,120,.20) 28%, transparent 53%),
+    radial-gradient(ellipse at 79% 79%, rgba(137,163,207,.37) 0, rgba(72,94,147,.18) 25%, transparent 50%),
+    radial-gradient(ellipse at 42% 18%, rgba(99,137,177,.27) 0, transparent 33%),
+    radial-gradient(ellipse at 61% 70%, rgba(68,118,151,.22) 0, transparent 31%),
+    linear-gradient(118deg, rgba(16,38,70,.08) 2%, rgba(61,117,160,.29) 23%, rgba(30,61,103,.06) 42%, rgba(126,81,151,.25) 64%, rgba(48,96,140,.18) 83%, transparent 99%);
+  opacity: .96;
+  filter: contrast(1.30) saturate(1.16) brightness(1.13);
 }
 
 .life-map-root[data-life-map-phase="arrival"]::before {
@@ -122,6 +141,20 @@
       linear-gradient(118deg, rgba(17,39,69,.07) 3%, rgba(54,102,144,.22) 27%, transparent 47%, rgba(112,76,139,.19) 69%, rgba(43,84,126,.12) 88%, transparent 98%);
     background-repeat: no-repeat;
     filter: contrast(1.10) saturate(1.10) brightness(1.10);
+  }
+
+  .life-map-root[data-life-map-phase="travel"]::before {
+    opacity: .88;
+    background:
+      radial-gradient(ellipse at 50% 49%, rgba(167,211,239,.21) 0, rgba(66,121,160,.17) 15%, transparent 38%),
+      radial-gradient(ellipse at 18% 19%, rgba(79,150,198,.49) 0, rgba(43,94,141,.26) 26%, transparent 52%),
+      radial-gradient(ellipse at 84% 29%, rgba(148,98,180,.44) 0, rgba(84,62,133,.23) 26%, transparent 52%),
+      radial-gradient(ellipse at 31% 81%, rgba(54,132,164,.38) 0, rgba(32,84,117,.18) 29%, transparent 54%),
+      radial-gradient(ellipse at 79% 79%, rgba(129,155,199,.32) 0, transparent 50%),
+      radial-gradient(ellipse at 48% 17%, rgba(92,130,171,.24) 0, transparent 37%),
+      linear-gradient(120deg, rgba(17,39,70,.07) 2%, rgba(58,109,154,.26) 26%, transparent 45%, rgba(119,78,146,.22) 68%, rgba(44,88,130,.14) 87%, transparent 99%);
+    background-repeat: no-repeat;
+    filter: contrast(1.23) saturate(1.14) brightness(1.12);
   }
 }
 
