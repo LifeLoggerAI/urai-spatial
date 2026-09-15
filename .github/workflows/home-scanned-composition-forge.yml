@@ -16,6 +16,7 @@ on:
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx'
       - 'urai-tier1/src/spatial/layout/HomeCurrentArtRepair.tsx'
+      - 'urai-tier1/src/spatial/layout/HomeAAAVisualRepair.tsx'
       - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
       - 'urai-tier1/tests/home-ground-lifemap-art-bible-contract.test.mjs'
       - 'urai-tier1/tests/home-relic-machine-realism-contract.test.mjs'
