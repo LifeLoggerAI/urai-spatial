@@ -75,7 +75,7 @@ test('Home is one coherent Sacred-Tech 3D environment with V226 visible art and 
   assert.match(currentHomeVisual, /useGLTF\(FERN_MODEL\)/)
   assert.doesNotMatch(currentHomeVisual, /RoundedBox|octahedronGeometry|torusGeometry|IcosahedronGeometry/)
   assert.doesNotMatch(`${currentHomeGeometry}\n${historicalV225}\n${currentHomeVisual}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
-  assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
+  assert.match(groundGateway, /aria-label="Enter your physical Ground world"/)
   assert.match(homeProduction, /export function HomeWorldProductionV70/)
   assert.match(homeArt, /export function HomeV76Sanctuary/)
   assert.match(homeArt, /home-v126-orb-memory-motes/)
