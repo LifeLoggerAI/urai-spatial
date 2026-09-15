@@ -10,7 +10,10 @@ on:
       - 'scripts/run-with-ci-webgl.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/currentHomeVisualAuthority.json'
+      - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
+      - 'urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
+      - 'urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
       - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
   pull_request:
     branches: [main]
@@ -23,6 +26,7 @@ on:
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/currentHomeVisualAuthority.json'
+      - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css'
       - 'urai-tier1/src/spatial/assets/**'
@@ -56,15 +60,32 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Verify V287 lived-world and broad-sky Life Map authority
+      - name: Verify V288 grounded reliquary plus V287 lived-world and broad-sky authority
         run: |
           set -euo pipefail
           home='urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
           sky='urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
           asset='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+          visual='urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
+          adapter='urai-tier1/src/spatial/assets/HomeOrbGroundedV288.tsx'
+          reliquary='urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
           authority='urai-tier1/src/app/currentHomeVisualAuthority.json'
-          grep -Fq 'v287-cinematic-lived-world-threshold' "$authority"
+          grep -Fq 'v288-cinematic-lived-world-grounded-reliquary' "$authority"
+          grep -Fq 'v288-grounded-biomorphic-reliquary' "$authority"
           grep -Fq 'cinematic-lived-world-threshold' "$authority"
+          grep -Fq 'HomeOrbGroundedV288' "$visual"
+          grep -Fq 'home-v288-grounded-biomorphic-memory-reliquary' "$adapter"
+          grep -Fq 'fallbackVisualOwner: false' "$adapter"
+          grep -Fq 'material.colorWrite = false' "$adapter"
+          grep -Fq 'interactionOwner: true' "$adapter"
+          grep -Fq 'interactionOwner: false' "$adapter"
+          grep -Fq 'plateSpecsV286' "$reliquary"
+          grep -Fq 'home-v286-layered-internal-memory-world' "$reliquary"
+          grep -Fq 'raycast={() => null}' "$reliquary"
+          if grep -Fq 'home-v253-literal-living-memory-heart' "$reliquary"; then
+            echo 'Retired heart Orb authority returned to current reliquary source' >&2
+            exit 1
+          fi
           grep -Fq 'home-visible-user-avatar' "$home"
           grep -Fq 'home-gold-companion' "$home"
           grep -Fq 'RetireLegacyHomeHotspots' "$home"
