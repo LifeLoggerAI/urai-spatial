@@ -2,7 +2,7 @@
   position: absolute !important;
   z-index: 20 !important;
   left: 50% !important;
-  bottom: max(102px, calc(env(safe-area-inset-bottom) + 96px)) !important;
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 90px)) !important;
   transform: translateX(-50%) !important;
   box-sizing: border-box;
   width: min(700px, calc(100vw - 28px)) !important;
@@ -80,20 +80,87 @@
 
 .replayWorld .replayOperationStatus {
   position: absolute !important;
-  z-index: 19 !important;
+  z-index: 22 !important;
   left: 50% !important;
   right: auto !important;
-  bottom: max(164px, calc(env(safe-area-inset-bottom) + 158px)) !important;
+  bottom: max(160px, calc(env(safe-area-inset-bottom) + 154px)) !important;
   transform: translateX(-50%) !important;
   width: max-content;
   max-width: calc(100vw - 32px);
   margin: 0;
   padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(2, 7, 14, 0.76);
-  color: rgba(255, 255, 255, 0.82);
+  background: rgba(2, 7, 14, 0.82);
+  color: rgba(255, 255, 255, 0.86);
   font-size: 11px;
   text-align: center;
+}
+
+/* Route-stable Replay composition: caption -> transport -> owner controls -> safe edge. */
+.replayWorld > .caption {
+  position: absolute !important;
+  z-index: 21 !important;
+  left: 50% !important;
+  top: auto !important;
+  bottom: max(286px, calc(env(safe-area-inset-bottom) + 280px)) !important;
+  transform: translateX(-50%) !important;
+  box-sizing: border-box;
+  width: min(820px, calc(100vw - 40px)) !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+  text-align: center !important;
+  pointer-events: none;
+}
+
+.replayWorld > .caption small,
+.replayWorld > .caption strong,
+.replayWorld > .caption span {
+  position: static !important;
+  transform: none !important;
+}
+
+.replayWorld > .caption strong {
+  display: block !important;
+  margin-top: 6px !important;
+}
+
+.replayWorld > .caption span {
+  display: block !important;
+  margin: 6px auto 0 !important;
+  max-width: 620px;
+}
+
+.replayWorld > .controls {
+  position: absolute !important;
+  z-index: 20 !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: max(190px, calc(env(safe-area-inset-bottom) + 184px)) !important;
+  transform: translateX(-50%) !important;
+  box-sizing: border-box !important;
+  width: min(680px, calc(100vw - 32px)) !important;
+  min-height: 64px;
+  margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 24px !important;
+  background: rgba(2, 7, 14, 0.78) !important;
+  backdrop-filter: blur(16px);
+}
+
+.replayWorld > .controls button {
+  min-width: 72px;
+  min-height: 44px;
+}
+
+.replayWorld > .controls input {
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
 .replayWorld .replayCorrection {
@@ -114,46 +181,39 @@
 }
 
 .replayWorld .replayProduct :is(button, summary):focus-visible,
-.replayWorld .replayCorrection :is(button, textarea):focus-visible {
+.replayWorld .replayCorrection :is(button, textarea):focus-visible,
+.replayWorld > .controls button:focus-visible,
+.replayWorld > .controls input:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
 
-/* Literal retained-pixel repair: reserve distinct caption, transport, and owner-control bands. */
-.replayWorld .caption {
-  z-index: 21 !important;
-  bottom: max(300px, calc(env(safe-area-inset-bottom) + 294px)) !important;
-  box-sizing: border-box;
-  width: min(820px, calc(100vw - 40px)) !important;
-  padding-inline: 12px;
-  pointer-events: none;
-}
-
-.replayWorld .caption strong {
-  margin-top: 6px;
-}
-
-.replayWorld .caption span {
-  margin-top: 6px;
-  max-width: 620px;
-}
-
 @media (max-width: 700px) {
-  .replayWorld .caption {
-    bottom: max(292px, calc(env(safe-area-inset-bottom) + 286px)) !important;
+  .replayWorld > .caption {
+    bottom: max(300px, calc(env(safe-area-inset-bottom) + 294px)) !important;
     width: calc(100vw - 28px) !important;
-    padding-inline: 8px;
+    padding-inline: 8px !important;
   }
 
-  .replayWorld .caption strong {
+  .replayWorld > .caption strong {
     font-size: clamp(1.15rem, 6vw, 1.45rem) !important;
     line-height: 1.08 !important;
   }
 
-  .replayWorld .caption span {
-    margin-top: 5px;
+  .replayWorld > .caption span {
+    margin-top: 5px !important;
     font-size: 11px;
     line-height: 1.35;
+  }
+
+  .replayWorld > .controls {
+    bottom: max(196px, calc(env(safe-area-inset-bottom) + 190px)) !important;
+    gap: 8px !important;
+    padding: 9px 10px !important;
+  }
+
+  .replayWorld > .controls button {
+    min-width: 64px;
   }
 
   .replayWorld .replayProduct {
@@ -174,14 +234,28 @@
 }
 
 @media (max-height: 720px) {
-  .replayWorld .caption {
-    bottom: max(264px, calc(env(safe-area-inset-bottom) + 258px)) !important;
+  .replayWorld > .caption {
+    bottom: max(246px, calc(env(safe-area-inset-bottom) + 240px)) !important;
+  }
+
+  .replayWorld > .controls {
+    bottom: max(164px, calc(env(safe-area-inset-bottom) + 158px)) !important;
+    min-height: 58px;
+  }
+
+  .replayWorld .replayOperationStatus {
+    bottom: max(150px, calc(env(safe-area-inset-bottom) + 144px)) !important;
+  }
+
+  .replayWorld .replayProduct {
+    bottom: max(78px, calc(env(safe-area-inset-bottom) + 72px)) !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .replayWorld .replayProduct,
-  .replayWorld .replayCorrection {
+  .replayWorld .replayCorrection,
+  .replayWorld > .controls {
     scroll-behavior: auto;
     backdrop-filter: none;
   }
@@ -189,7 +263,8 @@
 
 @media (forced-colors: active) {
   .replayWorld .replayProduct,
-  .replayWorld .replayCorrection {
-    border: 2px solid CanvasText;
+  .replayWorld .replayCorrection,
+  .replayWorld > .controls {
+    border: 2px solid CanvasText !important;
   }
 }
