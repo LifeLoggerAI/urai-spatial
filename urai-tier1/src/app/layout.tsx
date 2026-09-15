@@ -56,6 +56,7 @@ import './native-doorway-final-fix.css'
 import './location-map-header-evidence-fix.css'
 import './urai-production-system.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
+import UraiLocaleRuntime from '@/i18n/UraiLocaleRuntime'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -87,8 +88,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      dir="ltr"
       data-urai-domain="app"
       data-urai-surface="spatial"
+      data-urai-locale="en"
+      data-urai-direction="ltr"
       data-urai-preview={previewMode ? 'true' : 'false'}
       data-urai-preview-channel={previewMode ? previewChannel : undefined}
     >
@@ -100,6 +104,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-production-certification={previewMode ? 'not-certified-preview' : 'fingerprint-gated'}
         style={{ margin: 0, background: '#07101a', overflowX: 'hidden' }}
       >
+        <UraiLocaleRuntime />
         {previewMode ? (
           <div
             role="status"
