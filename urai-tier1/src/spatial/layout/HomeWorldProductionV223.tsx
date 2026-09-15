@@ -18,9 +18,10 @@ type Transition = 'none' | 'ground' | 'life-map'
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 
-// Frame the lived world with the canonical 55-65% visible sky while retaining
-// the established camera radius/FOV and letting Ground remain physically present.
-const HOME_FOCUS = new THREE.Vector3(0, 3.85, -1.15)
+// Sky-dominant framing is achieved by the camera system, not by cropping the world:
+// human-height eye, slightly longer radius, gentle upward look. This preserves roughly
+// 55-60% visible atmosphere while keeping the grounded Orb fully inside the frame.
+const HOME_FOCUS = new THREE.Vector3(0, 3.05, -1.15)
 const AVATAR_POSITION = new THREE.Vector3(-.28, 0, 1.0)
 const COMPANION_POSITION = new THREE.Vector3(1.02, 0, .72)
 
@@ -198,10 +199,10 @@ function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onCom
     }
 
     if (transition === 'none') {
-      const radius = portrait ? 8.35 : 7.65
+      const radius = portrait ? 9.70 : 9.00
       const focus = look.current.set(HOME_FOCUS.x, height(HOME_FOCUS.x, HOME_FOCUS.z) + HOME_FOCUS.y, HOME_FOCUS.z)
       const orbitYaw = THREE.MathUtils.clamp(yaw.current, -.34, .34)
-      const cameraY = (portrait ? 2.85 : 2.58) + THREE.MathUtils.clamp(pitch.current, -.28, .25) * 2.1
+      const cameraY = (portrait ? 2.00 : 1.75) + THREE.MathUtils.clamp(pitch.current, -.28, .25) * 2.1
       desired.current.set(focus.x + Math.sin(orbitYaw) * radius, cameraY, focus.z + Math.cos(orbitYaw) * radius)
       camera.position.lerp(desired.current, 1 - Math.pow(.0009, delta))
       camera.lookAt(focus)
@@ -385,7 +386,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       dpr={1}
       shadows
       frameloop={reducedMotion ? 'demand' : 'always'}
-      camera={{ position: [0, 2.58, 7.65], fov: 52, near: .1, far: 125 }}
+      camera={{ position: [0, 1.75, 7.85], fov: 52, near: .1, far: 125 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace
