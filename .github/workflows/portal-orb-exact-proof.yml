@@ -6,24 +6,26 @@ on:
       - '.github/workflows/portal-orb-exact-proof.yml'
       - '.github/workflows/launch-verification.yml'
       - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/capture-home-sky-interaction-proof.mjs'
       - 'scripts/run-with-ci-webgl.mjs'
-      - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
-      - 'urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
+      - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+      - 'urai-tier1/src/app/currentHomeVisualAuthority.json'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
+      - 'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
   pull_request:
     branches: [main]
     paths:
-      - 'scripts/capture-natural-home-orb-proof.mjs'
-      - 'scripts/run-with-ci-webgl.mjs'
       - '.github/workflows/portal-orb-exact-proof.yml'
       - '.github/workflows/launch-verification.yml'
+      - 'scripts/capture-natural-home-orb-proof.mjs'
+      - 'scripts/capture-home-sky-interaction-proof.mjs'
+      - 'scripts/run-with-ci-webgl.mjs'
       - 'urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
-      - 'urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
-      - 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx'
-      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV76.tsx'
+      - 'urai-tier1/src/app/currentHomeVisualAuthority.json'
+      - 'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
       - 'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css'
       - 'urai-tier1/src/spatial/assets/**'
-      - 'urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp'
       - 'urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp'
   workflow_dispatch:
@@ -54,30 +56,31 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
           test -z "$(git status --porcelain --untracked-files=all)"
-      - name: Verify V286 biomorphic Orb authority is bound to exact-head proof
+      - name: Verify V287 lived-world and broad-sky Life Map authority
         run: |
           set -euo pipefail
-          authority='urai-tier1/src/spatial/assets/HomeOrbReliquaryV286.tsx'
-          ownership='urai-tier1/src/spatial/layout/HomeVisualAuthority.tsx'
-          grep -Fq 'home-v286-biomorphic-memory-reliquary' "$authority"
-          grep -Fq 'reliquaryPlateGeometryV286' "$authority"
-          grep -Fq 'reliquaryFilamentGeometriesV286' "$authority"
-          grep -Fq 'reliquaryGroundTracesV286' "$authority"
-          grep -Fq 'memoryFieldV286' "$authority"
-          grep -Fq 'stateVisualsV286' "$authority"
-          grep -Fq 'home-v286-layered-internal-memory-world' "$authority"
-          grep -Fq 'home-v286-localized-memory-field' "$authority"
-          grep -Fq 'interactionOwner: false' "$authority"
-          grep -Fq "import { HomeOrbReliquaryV286 } from '../assets/HomeOrbReliquaryV286'" "$ownership"
-          grep -Fq '<HomeOrbReliquaryV286 />' "$ownership"
-          grep -Fq 'home-v253-authored-sanctuary-dressing' "$ownership"
-          grep -Fq 'layered-lantern-grove-cairn-path' "$ownership"
-          if grep -Eq 'livingHeart|living-memory-heart|SphereGeometry\(|<sphereGeometry|wireframe|DoubleSide' "$authority"; then
-            echo 'V286 Orb regressed to retired heart/sphere/crystal-style authority' >&2
+          home='urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx'
+          sky='urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx'
+          asset='urai-tier1/src/app/AssetDrivenHomeWorld.tsx'
+          authority='urai-tier1/src/app/currentHomeVisualAuthority.json'
+          grep -Fq 'v287-cinematic-lived-world-threshold' "$authority"
+          grep -Fq 'cinematic-lived-world-threshold' "$authority"
+          grep -Fq 'home-visible-user-avatar' "$home"
+          grep -Fq 'home-gold-companion' "$home"
+          grep -Fq 'RetireLegacyHomeHotspots' "$home"
+          grep -Fq "data-home-ground-entry=\"physical-world-surface\"" "$home"
+          grep -Fq "data-home-life-map-entry=\"visible-sky-broad-interaction\"" "$home"
+          grep -Fq "data-home-portal-sequence=\"idle\"" "$home"
+          grep -Fq 'home-sky-life-map-threshold' "$sky"
+          grep -Fq "threshold: 'broad-visible-sky'" "$sky"
+          grep -Fq 'localGroundPortal: false' "$sky"
+          grep -Fq 'home-life-map-sky-threshold' "$asset"
+          if grep -Fq 'home-life-map-physical-portal' "$asset"; then
+            echo 'Localized Life Map ground portal returned to live Home authority' >&2
             exit 1
           fi
-          if grep -Eq 'livingHeartGeometryV253|home-v253-literal-living-memory-heart|<GroundedOrbRootsV253|<LiteralOrbAuthorityV253' "$ownership"; then
-            echo 'Retired V253 heart/root render authority remains mounted in current Home authority' >&2
+          if grep -Eq "nearby.?===.?['\"]life-map['\"]|HOME_LIFE_MAP" "$home" "$asset"; then
+            echo 'Fixed/proximity Life Map ownership returned to live Home authority' >&2
             exit 1
           fi
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
@@ -91,7 +94,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install exact lockfile
         run: pnpm install --frozen-lockfile
-      - name: Validate authored Home and Orb assets
+      - name: Validate authored Home assets
         run: node scripts/verify-home-finalization-authored-assets.mjs
       - name: Build exact static candidate
         env:
@@ -103,7 +106,8 @@ jobs:
           pnpm --dir urai-tier1 exec playwright install --with-deps chromium
           node --check scripts/run-with-ci-webgl.mjs
           node --check scripts/capture-natural-home-orb-proof.mjs
-      - name: Capture exact desktop, mobile, reduced-motion, natural-threshold and Orb proof
+          node --check scripts/capture-home-sky-interaction-proof.mjs
+      - name: Capture exact Home, Orb, broad-sky interaction and reduced-motion proof
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-portal-orb-http.log 2>&1 &
           server_pid=$!
@@ -111,6 +115,8 @@ jobs:
           for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:4173/home/ >/dev/null && break; sleep 1; done
           URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/portal-orb-proof \
             node scripts/run-with-ci-webgl.mjs scripts/capture-natural-home-orb-proof.mjs
+          URAI_PROOF_BASE=http://127.0.0.1:4173 URAI_PROOF_DIR=artifacts/portal-orb-proof \
+            node scripts/run-with-ci-webgl.mjs scripts/capture-home-sky-interaction-proof.mjs
       - name: Retain exact proof
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

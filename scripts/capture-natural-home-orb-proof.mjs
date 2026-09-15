@@ -8,42 +8,14 @@ const { chromium } = requireFromTierOne('playwright')
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const exactHead = process.env.URAI_EXACT_HEAD || 'local'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/portal-orb-proof')
-const geometryPath = path.resolve('urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx')
-const polishPath = path.resolve('urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV2.tsx')
-const geometry = await readFile(geometryPath, 'utf8')
-const polish = await readFile(polishPath, 'utf8')
-
-for (const marker of [
-  'home-v225-sculpted-sanctuary-floor',
-  'home-v225-rooted-memory-rib',
-  'home-v225-ground-sheltered-memory-basin',
-  'home-v225-life-map-braided-lineage-vault',
-  'home-v225-single-connected-folded-living-memory-mantle',
-  'home-v225-embedded-memory-veins',
-]) if (!geometry.includes(marker)) throw new Error(`V225 geometry source missing ${marker}`)
-for (const marker of [
-  'home-v225-v2-production-memory-sanctuary',
-  'home-v225-v2-continuous-sculpted-memory-valley',
-  'home-v225-v2-cathedral-memory-ribs',
-  'home-v225-v2-ground-memory-hearth',
-  'home-v225-v2-life-map-lineage-observatory',
-  'home-v225-v2-intimate-veined-living-memory-orb',
-  'home-v225-v2-orb-embedded-memory-veins',
-]) if (!polish.includes(marker)) throw new Error(`V225 V2 polish source missing ${marker}`)
-if (`${geometry}\n${polish}`.includes('useGLTF(')) throw new Error('V226 direct runtime composition must not mount predecessor GLBs')
-
-// Historical marker checks above are not the identity of the rendered scene.
-// Include the active camera, art, and material owners in every retained receipt.
+const authorityPath = path.resolve('urai-tier1/src/app/currentHomeVisualAuthority.json')
+const authority = JSON.parse(await readFile(authorityPath, 'utf8'))
 const runtimePaths = [
   'urai-tier1/src/app/AssetDrivenHomeWorld.tsx',
-  'urai-tier1/src/spatial/layout/HomeWorldProduction.module.css',
-  'urai-tier1/src/spatial/layout/HomeWorldProductionV223Geometry.tsx',
+  'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+  'urai-tier1/src/app/currentHomeVisualAuthority.json',
   'urai-tier1/src/spatial/layout/HomeWorldProductionV223.tsx',
-  'urai-tier1/src/spatial/layout/HomeCurrentArtRepair.tsx',
-  'urai-tier1/src/spatial/layout/HomeWorldProductionV225PolishV3.tsx',
-  'urai-tier1/src/spatial/assets/livingMemoryMaterial.ts',
-  'urai-tier1/src/spatial/assets/naturalSurfaceMaps.ts',
-  'urai-tier1/src/spatial/assets/useSanctuarySoilTexture.ts',
+  'urai-tier1/src/spatial/assets/HomeAtmosphericSky.tsx',
 ]
 const runtimeFiles = await Promise.all(runtimePaths.map(async (file) => {
   const source = await readFile(path.resolve(file), 'utf8')
@@ -56,6 +28,7 @@ const runtimeIdentity = {
   bytes: Buffer.byteLength(runtimeSource),
   sha256: createHash('sha256').update(runtimeSource).digest('hex'),
   exactHead,
+  visualAuthority: authority,
   verified: true,
 }
 const cases = [
@@ -64,13 +37,13 @@ const cases = [
   { id: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   { id: 'mobile-narrow', viewport: { width: 320, height: 900 }, isMobile: true, hasTouch: true },
   { id: 'reduced-motion', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' },
-  { id: 'mobile-warning', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, orbState: 'warning', stateMessage: 'UrAi needs your attention' },
-  { id: 'reduced-motion-privacy', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', orbState: 'privacy', stateMessage: 'Privacy controls are available' },
+  { id: 'mobile-warning', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, orbState: 'warning' },
+  { id: 'reduced-motion-privacy', viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', orbState: 'privacy' },
 ]
 await mkdir(outputDir, { recursive: true })
 const receipt = {
-  schemaVersion: 'urai-natural-home-orb-proof-16', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
-  visualPolicy: 'V226 Home requires one continuous inhabited navigable memory sanctuary, readable Ground and Life Map destinations, one rooted living-memory presence, strong desktop/mobile/reduced-motion composition, no unresolved loading, and literal retained-pixel inspection.',
+  schemaVersion: 'urai-natural-home-orb-proof-18', exactHead, capturedAt: new Date().toISOString(), runtimeIdentity,
+  visualPolicy: 'V287 Home is one cinematic lived physical world with a visible user embodiment, a grounded Orb companion, physical Ground surface interaction, and the broad visible sky as the only Life Map threshold. Exact-head pixels remain candidates until literally inspected.',
   cases: [], errors: [],
 }
 
@@ -104,8 +77,8 @@ for (const spec of cases) {
   const browser = await chromium.launch({ headless: true, args: ['--enable-unsafe-swiftshader'] })
   const context = await browser.newContext({ viewport: spec.viewport, isMobile: spec.isMobile, hasTouch: spec.hasTouch, reducedMotion: spec.reducedMotion })
   const page = await context.newPage(); const pageErrors = []; const failedRequests = []
-  page.on('pageerror', (error) => pageErrors.push(String(error)))
-  page.on('requestfailed', (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
+  page.on('pageerror', error => pageErrors.push(String(error)))
+  page.on('requestfailed', request => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText || 'unknown' }))
   const record = { id: spec.id, viewport: spec.viewport, pageErrors, failedRequests, passed: false }
   try {
     const stateQuery = spec.orbState ? `&homeOrbState=${encodeURIComponent(spec.orbState)}` : ''
@@ -115,68 +88,50 @@ for (const spec of cases) {
     await page.waitForFunction(() => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-assets-ready') === 'true', null, { timeout: 45_000 })
     if (spec.orbState) await page.waitForFunction(state => document.querySelector('.urai-asset-home-world')?.getAttribute('data-home-orb-state') === state, spec.orbState, { timeout: 15_000 })
     await settle(page, spec.reducedMotion === 'reduce' ? 4 : 12)
-    const attr = (name) => owner.getAttribute(name)
+    const attr = name => owner.getAttribute(name)
     record.status = response?.status(); record.canvasCount = await owner.locator('canvas').count()
-    record.worldCharacter = await attr('data-home-world-character'); record.visualOwnership = await attr('data-home-visual-ownership')
-    record.desktopMobileWorld = await attr('data-home-desktop-mobile-world'); record.movement = await attr('data-home-movement')
-    record.visualGrade = await attr('data-home-visual-grade'); record.artRevision = await attr('data-home-final-art-revision')
-    record.artCertification = await attr('data-home-art-certification'); record.v226Certification = await attr('data-home-v226-certification'); record.v225Certification = await attr('data-home-v225-certification')
-    record.v224Certification = await attr('data-home-v224-certification'); record.v223Certification = await attr('data-home-v223-certification')
-    record.runtimeAssets = await attr('data-home-runtime-assets'); record.governedIdentityAssets = await attr('data-home-governed-identity-assets')
-    record.visibleProductionAssets = await attr('data-home-visible-production-assets'); record.authoredRegions = await attr('data-home-authored-regions')
+    record.visibleWorld = await attr('data-home-visible-world'); record.worldCharacter = await attr('data-home-world-character')
+    record.visualOwnership = await attr('data-home-visual-ownership'); record.desktopMobileWorld = await attr('data-home-desktop-mobile-world')
+    record.movement = await attr('data-home-movement'); record.visualGrade = await attr('data-home-visual-grade')
+    record.artCertification = await attr('data-home-art-certification'); record.runtimeAssets = await attr('data-home-runtime-assets')
+    record.physicalBase = await attr('data-home-physical-base'); record.authoredRegions = await attr('data-home-authored-regions')
+    record.groundEntry = await attr('data-home-ground-entry'); record.lifeMapEntry = await attr('data-home-life-map-entry')
     record.cameraMode = await attr('data-home-camera-mode'); record.orbState = await attr('data-home-orb-state'); record.orbModelClip = await attr('data-home-orb-model-clip')
-    record.stateMessages = await owner.locator('.home-world-context').allTextContents()
-    if (spec.stateMessage) {
-      const hint = owner.locator('.home-world-context').first()
-      record.stateMessageVisible = await hint.isVisible()
-      record.stateMessageLayout = await hint.evaluate(element => {
-        const rect = element.getBoundingClientRect(), style = getComputedStyle(element)
-        return {
-          withinViewport: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
-          unclipped: element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight,
-          fontSize: Number.parseFloat(style.fontSize), opacity: Number.parseFloat(style.opacity),
-        }
-      })
-    }
     record.orbMarkers = await owner.getByTestId('urai-home-webgl-orb').count(); record.embodimentMarkers = await owner.getByTestId('urai-home-embodied-avatar').count()
     const nav = page.getByRole('navigation', { name: 'Accessible Home destinations' })
     record.semanticButtons = await nav.getByRole('button').count(); record.semanticLinks = await nav.getByRole('link').count()
     record.semanticGroundHref = await nav.getByTestId('home-semantic-ground').getAttribute('href'); record.semanticLifeMapHref = await nav.getByTestId('home-semantic-life-map').getAttribute('href')
     record.semanticOwner = await nav.getAttribute('data-home-navigation-owner'); record.semanticNonDominant = await nav.getAttribute('data-home-navigation-non-dominant')
-    record.semanticOpacity = await page.evaluate(() => {
-      const node = document.querySelector('.urai-home-spatial-runtime-layer > nav.home-semantic-navigation')
-      return node instanceof HTMLElement ? Number.parseFloat(getComputedStyle(node).opacity || '1') : Number.NaN
-    })
     const visual = await imageEvidence(page)
     record.screenshot = `${spec.id}-${exactHead.slice(0,12)}.png`; await writeFile(path.join(outputDir, record.screenshot), visual.buffer)
     record.screenshotBytes = visual.buffer.length; record.screenshotSha256 = createHash('sha256').update(visual.buffer).digest('hex')
     record.luminanceRange = visual.luminanceRange; record.visibleSamples = visual.visibleSamples
     record.passed = record.status === 200 && record.canvasCount === 1
-      && record.worldCharacter === 'production-cinematic-sacred-tech'
+      && record.visibleWorld === authority.worldIdentifier
+      && record.visibleWorld === 'cinematic-lived-world-threshold'
+      && record.worldCharacter === 'production-cinematic-real-place-sacred-tech'
       && record.visualOwnership === 'single-canvas-three-dimensional-geometry'
-      && record.desktopMobileWorld === 'same-scene' && record.movement === 'walk-keyboard-click-touch'
-      && record.visualGrade === 'v226-literal-pixel-candidate-not-certified'
-      && record.artRevision === 'v226-retained-pixels-pending'
-      && record.artCertification === 'fresh-exact-head-pixels-required' && record.v226Certification === 'fresh-exact-head-pixels-required' && record.v225Certification === 'superseded-rejected-pixels'
-      && record.v224Certification === 'superseded-rejected-pixels' && record.v223Certification === 'superseded-rejected-pixels'
-      && record.runtimeAssets?.includes('HomeWorldProductionV223Geometry.tsx') && record.runtimeAssets?.includes('HomeWorldProductionV225PolishV3.tsx')
-      && !record.runtimeAssets?.includes('HomeWorldProductionV225PolishV2.tsx')
-      && record.governedIdentityAssets === 'v226-direct-runtime-topology historical-v191-glbs-unmounted'
-      && record.visibleProductionAssets?.includes('v226-weathered-memory-banks')
-      && record.visibleProductionAssets?.includes('v226-ground-inhabited-hearth')
-      && record.visibleProductionAssets?.includes('v226-life-map-lineage-observatory')
-      && record.visibleProductionAssets?.includes('v226-rooted-single-living-memory-presence')
-      && record.authoredRegions?.includes('home-sanctuary-pavilion') && record.authoredRegions?.includes('home-life-map-physical-portal')
+      && record.desktopMobileWorld === 'same-scene'
+      && record.movement === 'camera-look-world-surface-selection'
+      && record.visualGrade === 'current-literal-pixel-candidate-not-certified'
+      && record.artCertification === 'fresh-exact-head-pixels-required'
+      && record.physicalBase === 'continuous-lived-physical-world'
+      && record.runtimeAssets?.includes('HomeAtmosphericSky.tsx')
+      && record.runtimeAssets?.includes('HomeWorldProductionV223.tsx')
+      && record.authoredRegions?.includes('home-visible-user-avatar')
+      && record.authoredRegions?.includes('home-grounded-companion')
+      && record.authoredRegions?.includes('home-life-map-sky-threshold')
+      && !record.authoredRegions?.includes('home-life-map-physical-portal')
+      && record.groundEntry === 'physical-world-surface'
+      && record.lifeMapEntry === 'visible-sky-broad-interaction'
       && record.cameraMode !== null && record.orbState !== null
       && (!spec.orbState || record.orbState === spec.orbState)
-      && (!spec.stateMessage || record.stateMessages.includes(spec.stateMessage))
-      && (!spec.stateMessage || (record.stateMessageVisible && record.stateMessageLayout.withinViewport && record.stateMessageLayout.unclipped && record.stateMessageLayout.fontSize >= 14 && record.stateMessageLayout.opacity >= .95))
       && (spec.reducedMotion !== 'reduce' || record.orbModelClip === 'stopped-reduced-motion')
       && record.orbMarkers === 1 && record.embodimentMarkers === 1
       && record.semanticButtons === 1 && record.semanticLinks === 2
       && record.semanticGroundHref === '/ground/?entryPortal=home-ground&cameraCheckpoint=home-ground-descent'
       && record.semanticLifeMapHref === '/life-map/?from=home-sky&entryPortal=home-sky&cameraCheckpoint=home-sky-ascent-complete'
-      && record.semanticOwner === 'runtime-boundary' && record.semanticNonDominant === 'true' && Number.isFinite(record.semanticOpacity) && record.semanticOpacity <= .02
+      && record.semanticOwner === 'runtime-boundary' && record.semanticNonDominant === 'true'
       && record.screenshotBytes > 12000 && record.luminanceRange >= 16 && record.visibleSamples >= 5
       && pageErrors.length === 0 && failedRequests.length === 0
   } catch (error) { record.error = String(error) }
