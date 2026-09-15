@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/lib/orb-companion-contract.ts', import.meta.url), 'utf8')
 const conversationSource = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const conversationCss = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.module.css', import.meta.url), 'utf8')
 const voiceClientSource = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
 
@@ -75,4 +76,11 @@ test('Orb voice can be stopped after the AI response finishes', () => {
   assert.match(conversationSource, /voiceAborter\.current\?\.abort\(\)/)
   assert.match(conversationSource, /activeAudio\.pause\(\)/)
   assert.match(conversationSource, /window\.speechSynthesis\.cancel\(\)/)
+})
+
+test('Orb conversation disclosure remains a real pointer hit target above the spatial canvas', () => {
+  assert.match(conversationCss, /\.panel\{[^}]*position:relative;[^}]*z-index:1;[^}]*isolation:isolate;[^}]*pointer-events:auto;/)
+  assert.match(conversationCss, /\.panel summary\{[^}]*position:relative;[^}]*z-index:2;[^}]*pointer-events:auto;[^}]*touch-action:manipulation;[^}]*transform:translateZ\(0\);/)
+  assert.match(conversationCss, /\.body\{[^}]*position:relative;[^}]*z-index:1;[^}]*pointer-events:auto;/)
+  assert.match(conversationSource, /<summary>Talk with Orb<\/summary>/)
 })
