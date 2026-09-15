@@ -32,9 +32,9 @@ const retiredLifeMapNames = [
 ]
 
 const CLOUD_LAYERS = [
-  { name: 'home-sky-lower-distant-vapor', radius: 61, start: .015, end: .30, opacity: .16, scale: 3.2, windX: .0030, windZ: .0005, warm: .48 },
-  { name: 'home-sky-primary-stratiform-clouds', radius: 67, start: .11, end: .66, opacity: .25, scale: 4.8, windX: .0075, windZ: .0018, warm: .26 },
-  { name: 'home-sky-high-memory-filaments', radius: 72, start: .38, end: .90, opacity: .10, scale: 7.0, windX: .0110, windZ: -.0012, warm: .08 },
+  { name: 'home-sky-lower-distant-vapor', radius: 61, start: .015, end: .30, opacity: .14, scale: 3.2, windX: .0030, windZ: .0005, warm: .42 },
+  { name: 'home-sky-primary-stratiform-clouds', radius: 67, start: .09, end: .72, opacity: .34, scale: 4.8, windX: .0075, windZ: .0018, warm: .22 },
+  { name: 'home-sky-high-memory-filaments', radius: 72, start: .40, end: .93, opacity: .10, scale: 7.0, windX: .0110, windZ: -.0012, warm: .06 },
 ] as const
 
 const ORB_X = 1.02
@@ -197,7 +197,7 @@ function makeStarMaterial() {
         if(r>.5) discard;
         float core=1.0-smoothstep(.10,.43,r);
         float halo=(1.0-smoothstep(.25,.5,r))*.20;
-        float horizonExtinction=smoothstep(.12,.42,vElevation);
+        float horizonExtinction=smoothstep(.08,.34,vElevation);
         float period=.48+fract(vPhase*.173)*.95;
         float scint=1.0+sin(uTime*period+vPhase)*(.055*vScintillation*uMotion);
         float classGain=vClass<.5?.64:vClass<1.5?.80:vClass<2.5?.94:1.0;
@@ -226,9 +226,9 @@ function makeAtmosphereMaterial() {
       uTemperatureBias: { value: 0 },
       uZenith: { value: new THREE.Color('#071319') },
       uHigh: { value: new THREE.Color('#173746') },
-      uMid: { value: new THREE.Color('#4c7074') },
-      uHorizon: { value: new THREE.Color('#b2a88f') },
-      uWarm: { value: new THREE.Color('#e0aa7d') },
+      uMid: { value: new THREE.Color('#3f6669') },
+      uHorizon: { value: new THREE.Color('#7f897d') },
+      uWarm: { value: new THREE.Color('#c98f68') },
       uCool: { value: new THREE.Color('#789b9a') },
     },
     vertexShader: `
@@ -245,31 +245,31 @@ function makeAtmosphereMaterial() {
       void main(){
         vec3 d=normalize(vDirection);
         float e=clamp(d.y,0.0,1.0);
-        float lower=smoothstep(-.035,.30,d.y);
-        float canopy=smoothstep(.26,.64,e);
-        float zen=smoothstep(.66,.98,e);
+        float lower=smoothstep(-.02,.17,d.y);
+        float canopy=smoothstep(.20,.56,e);
+        float zen=smoothstep(.60,.96,e);
         vec3 sky=mix(uHorizon,uMid,lower);
         sky=mix(sky,uHigh,canopy);
         sky=mix(sky,uZenith,zen);
 
-        float horizonPath=exp(-e*(4.4+uClarity*1.8));
-        float aerosol=horizonPath*(.42+uAerosol*.78);
-        sky=mix(sky,uHorizon,clamp(aerosol*.34,0.0,.46));
-        sky+=uCool*(.020+.030*(1.0-e))*uClarity;
+        float horizonPath=exp(-e*(5.6+uClarity*2.0));
+        float aerosol=horizonPath*(.36+uAerosol*.70);
+        sky=mix(sky,uHorizon,clamp(aerosol*.18,0.0,.30));
+        sky+=uCool*(.016+.026*(1.0-e))*uClarity;
 
         vec3 sourceDir=normalize(vec3(-.68,.16,-.72));
         float mu=max(0.0,dot(d,sourceDir));
-        float mie=pow(mu,9.0)*.055+pow(mu,68.0)*.12;
-        float warmEnvelope=(1.0-smoothstep(.34,.72,e))*uHorizonTransmission;
-        sky+=uWarm*(mie+warmEnvelope*.026);
-        sky+=uWarm*uTemperatureBias*warmEnvelope*.16;
+        float mie=pow(mu,9.0)*.040+pow(mu,68.0)*.080;
+        float warmEnvelope=(1.0-smoothstep(.16,.38,e))*uHorizonTransmission;
+        sky+=uWarm*(mie+warmEnvelope*.015);
+        sky+=uWarm*uTemperatureBias*warmEnvelope*.11;
 
-        float focusEnvelope=smoothstep(.26,.92,e);
-        sky+=mix(uMid,uWarm,.16)*uFocus*(.010+.020*focusEnvelope);
+        float focusEnvelope=smoothstep(.24,.90,e);
+        sky+=mix(uMid,uWarm,.12)*uFocus*(.009+.018*focusEnvelope);
 
         // Ascent is atmospheric extinction falling away, not a portal or crossfade.
         vec3 cosmicDepth=mix(vec3(.022,.055,.067),vec3(.006,.018,.024),zen);
-        float ascentReveal=uActive*smoothstep(.30,.98,e)*.72;
+        float ascentReveal=uActive*smoothstep(.26,.96,e)*.72;
         sky=mix(sky,cosmicDepth,ascentReveal);
         sky*=uTimeLuminance;
 
@@ -301,9 +301,9 @@ function makeCloudMaterial(layer: typeof CLOUD_LAYERS[number]) {
       uScale: { value: layer.scale },
       uWind: { value: new THREE.Vector2(layer.windX, layer.windZ) },
       uWarmWeight: { value: layer.warm },
-      uPearl: { value: new THREE.Color('#d1d5ca') },
-      uCool: { value: new THREE.Color('#7d9694') },
-      uWarm: { value: new THREE.Color('#d7b28f') },
+      uPearl: { value: new THREE.Color('#c4cbc3') },
+      uCool: { value: new THREE.Color('#647f80') },
+      uWarm: { value: new THREE.Color('#b98d6d') },
     },
     vertexShader: `
       varying vec3 vDirection;
@@ -343,14 +343,14 @@ function makeCloudMaterial(layer: typeof CLOUD_LAYERS[number]) {
         float erosion=noise(p*2.27+vec3(5.2,-1.7,2.6));
         float coherence=mix(noise(p*.47+8.0),macro,uWindCoherence);
         float field=macro*.70+erosion*.17+coherence*.13;
-        float threshold=mix(.73,.53,uCloudCover);
-        float density=smoothstep(threshold,threshold+.105,field);
+        float threshold=mix(.62,.44,uCloudCover);
+        float density=smoothstep(threshold,threshold+.115,field);
         density*=band;
 
         vec3 sourceDir=normalize(vec3(-.68,.16,-.72));
         float light=max(0.0,dot(d,sourceDir));
-        vec3 cloud=mix(uCool,uPearl,.52+.28*uClarity);
-        cloud=mix(cloud,uWarm,pow(light,7.0)*uWarmWeight*.44);
+        vec3 cloud=mix(uCool,uPearl,.50+.24*uClarity);
+        cloud=mix(cloud,uWarm,pow(light,7.0)*uWarmWeight*.36);
         float edge=smoothstep(.02,.42,density);
         float alpha=edge*uOpacity*(1.0-uActive*.58);
         if(alpha<.004) discard;
@@ -569,12 +569,12 @@ export function HomeAtmosphericSky({ reducedMotion, active = false, onLifeMap }:
 
     // Scene fog is the shared aerial-perspective bridge between physical Ground and sky.
     if (scene.fog instanceof THREE.FogExp2) {
-      const densityTarget = active ? .0045 : .0105 + current.aerosolDensity * .010 - current.clarity * .0025
+      const densityTarget = active ? .0045 : .0100 + current.aerosolDensity * .009 - current.clarity * .0025
       scene.fog.density = THREE.MathUtils.damp(scene.fog.density, densityTarget, 1.3, delta)
       fogTargetColor.setRGB(
-        .15 + current.horizonTransmission * .10,
-        .27 + current.clarity * .08,
-        .26 + current.clarity * .07,
+        .13 + current.horizonTransmission * .08,
+        .25 + current.clarity * .075,
+        .25 + current.clarity * .075,
       )
       scene.fog.color.lerp(fogTargetColor, 1 - Math.pow(.05, delta))
     }
