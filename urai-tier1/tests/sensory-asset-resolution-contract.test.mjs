@@ -98,11 +98,12 @@ test('loading animation timing is relative to the mounted sensory layer', () => 
   assert.doesNotMatch(sensoryLayer, /\(clock\.elapsedTime \* 1000\) \/ loadingDurationMs/)
 })
 
-test('production audio remains consent-controlled beside the live V223 Home owner', () => {
+test('production audio remains consent-controlled beside the live V288 Home owner', () => {
   const liveHome = `${homeRouteOwner}\n${homeWorldEntry}\n${homeWorld}`
   assert.match(homeRouteOwner, /HomeWorldProduction/)
   assert.match(homeWorldEntry, /export \{ HomeWorldProductionV223 as HomeWorldProduction \} from '\.\/HomeWorldProductionV223'/)
-  assert.match(homeWorld, /data-home-visible-world="v226-rooted-inhabited-memory-sanctuary"/)
+  assert.match(homeWorld, /data-home-visible-world="cinematic-lived-world-threshold"/)
+  assert.doesNotMatch(homeWorld, /data-home-visible-world="v226-rooted-inhabited-memory-sanctuary"/)
   assert.match(historicalHomeWorld, /export function HomeWorldProductionV70/)
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
