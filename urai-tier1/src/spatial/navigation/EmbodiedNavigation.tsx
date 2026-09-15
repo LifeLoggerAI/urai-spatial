@@ -259,39 +259,8 @@ export function stepEmbodiedMotion({
     remainingDelta -= stepDelta
   }
 
-  const moving = velocity.lengthSq() > 0.0025
-  if (typeof document !== 'undefined') {
-    const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-    if (owner) {
-      // These diagnostics are part of the Home interaction contract. Keep them in
-      // lockstep with HomeWorldProductionFinal's canonical V66 coordinates so
-      // proof, accessibility telemetry, and runtime proximity describe one world.
-      const spawnX = 4.45
-      const spawnZ = 3.15
-      owner.dataset.homeInputOwner = 'window-capture-movement'
-      owner.dataset.homeTelemetryOwner = 'embodied-motion-kernel-v66'
-      owner.dataset.homeInputReady = 'true'
-      const assetsReady = owner.dataset.homeAssetsReady === 'true'
-      owner.dataset.homeInteractionReady = assetsReady ? 'true' : 'false'
-      owner.dataset.homeReady = 'false'
-      owner.dataset.homePlayerX = position.x.toFixed(3)
-      owner.dataset.homePlayerZ = position.z.toFixed(3)
-      owner.dataset.homeDistance = Math.hypot(position.x - spawnX, position.z - spawnZ).toFixed(3)
-      owner.dataset.homeDistanceOrb = Math.hypot(position.x, position.z + 7.25).toFixed(3)
-      owner.dataset.homeDistanceGround = Math.hypot(position.x + 5.2, position.z + 8.4).toFixed(3)
-      owner.dataset.homeDistanceLifeMap = Math.hypot(position.x - 5.2, position.z + 8.4).toFixed(3)
-      owner.dataset.homeMoving = moving ? 'true' : 'false'
-      owner.dataset.homePressedKeys = [...input.keys.current].sort().join(',')
-      owner.dataset.homeMovementVector = `${strafeInput.toFixed(3)},${forwardInput.toFixed(3)}`
-      const renderedFrames = Number.parseInt(owner.dataset.homeRenderedFrames || '0', 10)
-      const nextRenderedFrames = Number.isFinite(renderedFrames) ? renderedFrames + 1 : 1
-      owner.dataset.homeRenderedFrames = String(nextRenderedFrames)
-      owner.dataset.homeReady = assetsReady && nextRenderedFrames >= 3 ? 'true' : 'false'
-    }
-  }
-
   return {
-    moving,
+    moving: velocity.lengthSq() > 0.0025,
     hasTarget: target.current !== null,
   }
 }
