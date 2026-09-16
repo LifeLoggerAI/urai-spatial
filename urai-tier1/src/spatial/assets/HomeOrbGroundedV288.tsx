@@ -10,20 +10,27 @@ const V287_COMPANION_X = 1.02
 const V287_COMPANION_Z = .72
 const RETIRED_RELIQUARY_NAME = 'home-v286-biomorphic-memory-reliquary'
 const GROUNDED_RELIQUARY_NAME = 'home-v288-grounded-biomorphic-memory-reliquary'
-const FALLBACK_INTERACTION_OWNER = 'home-gold-companion'
+const FALLBACK_INTERACTION_OWNER_NAMES = new Set(['home-gold-companion', 'home-living-memory-orb'])
+
+function findInteractionOwner(scene: THREE.Scene) {
+  let owner: THREE.Object3D | null = null
+  scene.traverse((object) => {
+    if (owner) return
+    if (!FALLBACK_INTERACTION_OWNER_NAMES.has(object.name)) return
+    if (object.userData?.interactionOwner === false) return
+    if (object.userData?.semanticOwner !== 'orb') return
+    owner = object
+  })
+  return owner
+}
 
 /**
  * V288 integration adapter.
  *
- * V287 legitimately moved Home to a cinematic third-person composition with a
- * grounded companion interaction owner. That rewrite accidentally retired the
- * accepted V286 reliquary pixels and exposed a three-sphere fallback instead.
- * This adapter preserves V287 camera / Ground / broad-sky ownership while
- * moving the existing V286 visual authority to the new companion anchor.
- *
- * The fallback group remains the sole pointer/touch owner. Its meshes keep
- * their raycasts but stop writing pixels or depth; its point lights are hidden.
- * The V286 reliquary remains visual-only/raycast-disabled.
+ * Home's current active runtime owns Orb semantics, speech/VAD timing and pointer
+ * interaction. Those mechanics are retained, but their fallback sphere/rings/
+ * fragments are interaction-only and must never become canonical pixels.
+ * V286 remains the accepted grounded biomorphic reliquary visual authority.
  */
 export function HomeOrbGroundedV288() {
   const { scene } = useThree()
@@ -38,14 +45,19 @@ export function HomeOrbGroundedV288() {
       opacity: number
     }>()
     const lightState = new Map<THREE.Light, boolean>()
-    const rootState = new Map<THREE.Object3D, { name: string; position: THREE.Vector3 }>()
+    const rootState = new Map<THREE.Object3D, { name: string; position: THREE.Vector3; visible: boolean }>()
 
     const reconcile = () => {
       const reliquary = scene.getObjectByName(GROUNDED_RELIQUARY_NAME)
         ?? scene.getObjectByName(RETIRED_RELIQUARY_NAME)
       if (reliquary) {
-        if (!rootState.has(reliquary)) rootState.set(reliquary, { name: reliquary.name, position: reliquary.position.clone() })
+        if (!rootState.has(reliquary)) rootState.set(reliquary, {
+          name: reliquary.name,
+          position: reliquary.position.clone(),
+          visible: reliquary.visible,
+        })
         reliquary.name = GROUNDED_RELIQUARY_NAME
+        reliquary.visible = true
         reliquary.position.set(
           V287_COMPANION_X - ORB.x,
           companionY - legacyY,
@@ -54,13 +66,13 @@ export function HomeOrbGroundedV288() {
         reliquary.userData = {
           ...reliquary.userData,
           artRevision: 'v288-grounded-biomorphic-memory-reliquary',
-          integrationAuthority: 'v287-cinematic-home-plus-v286-reliquary',
+          integrationAuthority: 'current-home-interaction-plus-v286-reliquary',
           visualOnly: true,
           interactionOwner: false,
         }
       }
 
-      const fallback = scene.getObjectByName(FALLBACK_INTERACTION_OWNER)
+      const fallback = findInteractionOwner(scene)
       if (!fallback) return
       fallback.userData = {
         ...fallback.userData,
@@ -93,7 +105,7 @@ export function HomeOrbGroundedV288() {
     }
 
     reconcile()
-    const timers = [40, 120, 280, 520].map((delay) => window.setTimeout(reconcile, delay))
+    const timers = [40, 120, 280, 520, 720].map((delay) => window.setTimeout(reconcile, delay))
 
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer))
@@ -107,9 +119,15 @@ export function HomeOrbGroundedV288() {
       rootState.forEach((state, object) => {
         object.name = state.name
         object.position.copy(state.position)
+        object.visible = state.visible
       })
     }
   }, [scene])
 
-  return <HomeOrbReliquaryV286 />
+  return <group
+    name="home-living-memory-orb"
+    userData={{ semanticOwner: 'orb-visual', interactionOwner: false, visualAuthority: GROUNDED_RELIQUARY_NAME }}
+  >
+    <HomeOrbReliquaryV286 />
+  </group>
 }
