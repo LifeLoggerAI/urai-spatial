@@ -60,7 +60,7 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('Ground is first-person, keyboard/touch navigable, privacy-safe, collision-aware, and keeps direct Home/place controls focusable', async ({ page }) => {
+  test('Ground is first-person, collision-aware, physically ready, and exposes Orb/discovery semantics', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
     const route = page.getByTestId('walkable-first-person-ground-layer')
@@ -72,9 +72,13 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
     await expect(ground).toBeVisible({ timeout: 30_000 })
     await expect(ground).toHaveAttribute('data-ground-pointer-lock', 'false')
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
+    await expect(ground).toHaveAttribute('data-ground-world-ready', 'true')
+    await expect(ground).toHaveAttribute('data-ground-camera-ready', 'true')
     await expect(ground).toHaveAttribute('data-ground-camera', 'eye-level-terrain-following')
     await expect(ground).toHaveAttribute('data-ground-collision', 'terrain-slope-step-and-authored-obstacles')
+    await expect(ground).toHaveAttribute('data-ground-boundary', 'terrain-rise-scanned-geology-before-safety-clamp')
     await expect(ground).toHaveAttribute('data-ground-movement', 'hybrid-continuous-target-walk')
+    await expect(ground).toHaveAttribute('data-ground-orb', 'available')
     await expect(ground.locator('canvas')).toBeVisible({ timeout: 30_000 })
 
     await page.keyboard.down('w')
@@ -89,6 +93,19 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
       expect(rect!.width).toBeGreaterThanOrEqual(48)
       expect(rect!.height).toBeGreaterThanOrEqual(48)
     }
+
+    const nearby = page.getByRole('button', { name: 'Describe nearby Ground places' })
+    await nearby.focus()
+    await expect(nearby).toBeFocused()
+    await nearby.click()
+
+    const summonOrb = page.getByRole('button', { name: 'Summon Ground Orb' })
+    await summonOrb.focus()
+    await expect(summonOrb).toBeFocused()
+    await summonOrb.click()
+    await expect(ground).toHaveAttribute('data-ground-orb', 'summoned-physical')
+    const dismissOrb = page.getByRole('button', { name: 'Dismiss Ground Orb' })
+    await expect(dismissOrb).toBeVisible()
 
     const home = page.getByRole('button', { name: 'Return Home' })
     await home.focus()
@@ -125,6 +142,15 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
       expect(rect!.y).toBeGreaterThanOrEqual(0)
       expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)
     }
+    for (const name of ['Summon Ground Orb', 'Describe nearby Ground places', 'Return Home']) {
+      const button = page.getByRole('button', { name })
+      const rect = await button.boundingBox()
+      expect(rect).not.toBeNull()
+      expect(rect!.width).toBeGreaterThanOrEqual(48)
+      expect(rect!.height).toBeGreaterThanOrEqual(48)
+      expect(rect!.x).toBeGreaterThanOrEqual(0)
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)
+    }
     const forward = pad.getByRole('button', { name: 'Move forward' })
     await forward.dispatchEvent('pointerdown', { pointerId: 1, button: 0, buttons: 1, pointerType: 'touch', isPrimary: true })
     await page.waitForTimeout(600)
@@ -144,7 +170,9 @@ test.describe('Cinematic Home and first-person Ground accessibility evidence', (
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
     const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
     await expect(ground).toHaveAttribute('data-ground-ready', 'true', { timeout: 45_000 })
+    await expect(ground).toHaveAttribute('data-ground-world-ready', 'true')
     await expect(page.getByRole('group', { name: 'Ground first-person movement controls' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Summon Ground Orb' })).toBeVisible()
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
   })
 
