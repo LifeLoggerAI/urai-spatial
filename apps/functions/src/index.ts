@@ -8,3 +8,4 @@ export { createPossibleFuture, generatePossibleFutureBranches, getPossibleFuture
 export { calibratePossibleFutureOutcome } from './scenarioCalibration'
 export { getAILedgerEntries, ledgerScenarioCreated, ledgerScenarioOutcomeObserved } from './aiLedgerOperations'
 export { getGlobalEmotionalFieldSnapshot, submitGlobalEmotionalFieldContribution, revokePendingGlobalFieldContribution } from './globalEmotionalFieldAggregation'
+export { aggregateGlobalEmotionalField, expireGlobalEmotionalFieldIntake, publishGlobalEmotionalFieldBatch } from './globalEmotionalFieldPublication'
