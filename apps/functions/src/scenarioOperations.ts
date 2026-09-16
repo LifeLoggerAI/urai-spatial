@@ -38,6 +38,10 @@ function asStringArray(value: unknown, max = 64) {
   if (!Array.isArray(value)) return []
   return value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0).slice(0, max)
 }
+function evidenceIdsFromBasis(basis: FirebaseFirestore.DocumentData | undefined) {
+  const refs = Array.isArray(basis?.evidenceRefs) ? basis.evidenceRefs : []
+  return new Set(refs.map((entry: unknown) => entry && typeof entry === 'object' ? String((entry as Record<string, unknown>).id ?? '') : '').filter(Boolean))
+}
 
 export const createPossibleFuture = functions.https.onCall(async (data, context) => {
   const ownerId = uid(context)
@@ -45,10 +49,14 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
   const question = boundedQuestion(data?.question)
   const originRealm = String(data?.originRealm ?? 'home')
   if (!ALLOWED_ORIGINS.has(originRealm)) throw new functions.https.HttpsError('invalid-argument', 'Invalid origin realm.')
+  const evidenceRefs = Array.isArray(data?.evidenceRefs) ? data.evidenceRefs.slice(0, 128) : []
+  const assumptionOnly = data?.assumptionOnly === true
+  if (!evidenceRefs.length && !assumptionOnly) {
+    throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_REQUIRES_AUTHORIZED_EVIDENCE_OR_EXPLICIT_ASSUMPTION_ONLY')
+  }
   const scenarioId = opaque('scn_')
   const basisId = opaque('basis_')
   const returnToken = String(data?.returnToken ?? opaque('return_')).slice(0, 120)
-  const evidenceRefs = Array.isArray(data?.evidenceRefs) ? data.evidenceRefs.slice(0, 128) : []
   const excludedEvidence = Array.isArray(data?.excludedEvidence) ? data.excludedEvidence.slice(0, 128) : []
   const permissionReceiptIds = asStringArray(data?.permissionReceiptIds)
   const now = fv.serverTimestamp()
@@ -61,17 +69,17 @@ export const createPossibleFuture = functions.https.onCall(async (data, context)
     tx.create(ref, {
       schemaVersion: 1, id: scenarioId, ownerId, question, status: 'awaiting-assumptions', originRealm,
       returnToken, cameraCheckpoint: typeof data?.cameraCheckpoint === 'string' ? data.cameraCheckpoint : null,
-      basisId, basisRevision: 1, timeHorizon: data?.timeHorizon ?? { amount: 1, unit: 'month' },
+      basisId, basisRevision: 1, assumptionOnly, timeHorizon: data?.timeHorizon ?? { amount: 1, unit: 'month' },
       branchIds: [], consentSnapshotIds: permissionReceiptIds, receiptIds: [receiptId], purpose: SCENARIO_PURPOSE,
-      createdAt: now, updatedAt: now,
+      truthKind: 'scenario', createdAt: now, updatedAt: now,
     })
     tx.create(ref.collection('basis').doc('current'), {
       schemaVersion: 1, id: basisId, ownerId, revision: 1, worldRevision: String(data?.worldRevision ?? 'unknown'),
-      capturedAt: now, evidenceRefs, excludedEvidence, permissionReceiptIds, immutable: true,
+      capturedAt: now, evidenceRefs, excludedEvidence, permissionReceiptIds, assumptionOnly, immutable: true,
     })
-    tx.create(receiptRef, { receiptId, ownerId, kind: 'scenario-create', domain: 'possible-futures', purpose: SCENARIO_PURPOSE, scenarioId, operationId: op, result: 'created', createdAt: now, updatedAt: now })
+    tx.create(receiptRef, { receiptId, ownerId, kind: 'scenario-create', domain: 'possible-futures', purpose: SCENARIO_PURPOSE, scenarioId, operationId: op, assumptionOnly, result: 'created', createdAt: now, updatedAt: now })
   })
-  return { scenarioId, basisId, basisRevision: 1, status: 'awaiting-assumptions', receiptId }
+  return { scenarioId, basisId, basisRevision: 1, status: 'awaiting-assumptions', assumptionOnly, receiptId }
 })
 
 export const generatePossibleFutureBranches = functions.https.onCall(async (data, context) => {
@@ -79,16 +87,17 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
   const op = operationId(data?.operationId)
   const scenarioId = ensureScenarioId(data?.scenarioId)
   const ref = scenarioRef(ownerId, scenarioId)
-  const snapshot = await ref.get()
-  if (!snapshot.exists) throw new functions.https.HttpsError('not-found', 'Scenario not found.')
+  const [snapshot, basisSnapshot] = await Promise.all([ref.get(), ref.collection('basis').doc('current').get()])
+  if (!snapshot.exists || !basisSnapshot.exists) throw new functions.https.HttpsError('not-found', 'Scenario basis not found.')
   const scenario = snapshot.data() ?? {}
   if (Number(data?.expectedRevision) !== Number(scenario.basisRevision)) throw new functions.https.HttpsError('aborted', 'SCENARIO_BASIS_REVISION_CONFLICT')
+  const allowedEvidence = evidenceIdsFromBasis(basisSnapshot.data())
   const manualBranches = Array.isArray(data?.manualBranches) ? data.manualBranches.slice(0, BRANCH_LIMIT) : []
   if (!manualBranches.length) {
     const receiptId = stableReceipt(ownerId, op, 'scenario-provider-unavailable')
     await Promise.all([
       ref.set({ status: 'awaiting-assumptions', updatedAt: fv.serverTimestamp() }, { merge: true }),
-      db.doc(`scenarioProviderReceipts/${receiptId}`).set({ receiptId, ownerId, scenarioId, operationId: op, providerState: scenarioProviderState, validationResult: 'provider-unavailable', createdAt: fv.serverTimestamp() }),
+      db.doc(`scenarioProviderReceipts/${receiptId}`).set({ receiptId, ownerId, scenarioId, operationId: op, providerState: scenarioProviderState, validationResult: 'provider-unavailable', retryCount: 0, createdAt: fv.serverTimestamp() }),
     ])
     return { status: 'provider-unavailable', manualScenarioAvailable: true, retryCount: 0, receiptId }
   }
@@ -97,11 +106,17 @@ export const generatePossibleFutureBranches = functions.https.onCall(async (data
   manualBranches.forEach((branch: unknown, index: number) => {
     if (!branch || typeof branch !== 'object') throw new functions.https.HttpsError('invalid-argument', 'Manual branches must be objects.')
     const item = branch as Record<string, unknown>
+    const evidenceRefIds = asStringArray(item.evidenceRefIds)
+    for (const evidenceRefId of evidenceRefIds) {
+      if (!allowedEvidence.has(evidenceRefId)) throw new functions.https.HttpsError('failed-precondition', 'SCENARIO_BRANCH_EVIDENCE_OUTSIDE_BASIS')
+    }
+    const summary = String(item.summary ?? '').trim()
+    if (!summary) throw new functions.https.HttpsError('invalid-argument', 'Manual branch summary is required.')
     const branchId = opaque('br_')
     branchIds.push(branchId)
     batch.create(ref.collection('branches').doc(branchId), {
       id: branchId, ownerId, scenarioId, truthKind: 'scenario', label: String(item.label ?? `Branch ${index + 1}`).slice(0, 80),
-      summary: String(item.summary ?? '').slice(0, 4000), assumptionIds: asStringArray(item.assumptionIds), evidenceRefIds: asStringArray(item.evidenceRefIds),
+      summary: summary.slice(0, 4000), assumptionIds: asStringArray(item.assumptionIds), evidenceRefIds,
       uncertainty: asStringArray(item.uncertainty), source: 'manual-scenario', createdAt: fv.serverTimestamp(), updatedAt: fv.serverTimestamp(),
     })
   })
