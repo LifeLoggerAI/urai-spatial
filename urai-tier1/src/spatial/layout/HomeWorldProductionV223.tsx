@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useAnimations, useGLTF } from '@react-three/drei'
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import * as THREE from 'three'
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { useDragLook } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
@@ -57,7 +58,7 @@ const ORB_EFFECT_BUDGET: Record<SpatialQualityTier, { motes: number; filaments: 
 }
 
 function cloneAuthoredModel(source: THREE.Object3D) {
-  const root = source.clone(true)
+  const root = cloneSkeleton(source)
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return
     object.material = Array.isArray(object.material)
@@ -67,6 +68,14 @@ function cloneAuthoredModel(source: THREE.Object3D) {
     object.receiveShadow = true
   })
   return root
+}
+
+function disposeClonedMaterials(root: THREE.Object3D) {
+  root.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return
+    const materials = Array.isArray(object.material) ? object.material : [object.material]
+    materials.forEach((material) => material.dispose())
+  })
 }
 
 function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
@@ -162,12 +171,13 @@ function VisibleHomeAvatar({ reducedMotion }: { reducedMotion: boolean }) {
   }, [actions, reducedMotion])
 
   useEffect(() => () => { Object.values(actions).forEach((action) => action?.stop()) }, [actions])
+  useEffect(() => () => disposeClonedMaterials(model), [model])
 
   return <group
     name="home-visible-user-avatar"
     position={[AVATAR_POSITION.x, groundY, AVATAR_POSITION.z]}
     rotation={[0, Math.PI, 0]}
-    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath' }}
+    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath', cloneStrategy: 'skeleton-safe' }}
   >
     <primitive object={model} scale={.72} />
   </group>
@@ -258,6 +268,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
     activeAction.current = next
   }, [actions, reducedMotion, state])
   useEffect(() => () => { Object.values(actions).forEach((action) => action?.stop()) }, [actions])
+  useEffect(() => () => disposeClonedMaterials(authoredOrb), [authoredOrb])
 
   useFrame(({ clock }, delta) => {
     if (!root.current) return
