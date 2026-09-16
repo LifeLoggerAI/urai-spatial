@@ -1,0 +1,92 @@
+feature: personalized-lived-world
+repo: LifeLoggerAI/urai-spatial
+owner: URAI Privacy + Spatial
+privacyGovernanceVersion: 0.1.0-draft
+status: source_boundary_implemented_runtime_data_producer_blocked
+lastReviewed: 2026-09-16
+sourceEvidence:
+  - docs/URAI_PERSONALIZED_LIVED_WORLD_AUTHORITY_V1.md
+  - urai-tier1/src/spatial/lived-world/livedWorldGraph.ts
+  - urai-tier1/src/spatial/lived-world/reconstructionPolicy.ts
+  - LifeLoggerAI/urai-privacy/docs/CONSENT_TIERS.md
+  - LifeLoggerAI/urai-privacy/functions/src/consent-decision.ts
+
+summary:
+  purpose: Reconstruct a user's terrestrial lived world from authorized source-backed places, objects, vehicles, routes, memories and bounded person-presences.
+  userBenefit: Lets users spatially recognize and explore where their life happened without presenting generated detail as observed memory.
+  implementationStatus: provenance_and_mount_policy_source_implemented_private_data_producer_not_activated
+
+dataProcessing:
+  collectedFields:
+    - name: lived_world_location_context
+      collectionOrTable: not_activated
+      dataClass: L4
+      source: user_or_explicit_connected_source
+      purpose: location.context
+      consentTier: C3
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: lived_world_sensitive_association
+      collectionOrTable: not_activated
+      dataClass: L4
+      source: model_or_user_confirmed
+      purpose: inference.sensitive
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: person_presence_identity_material
+      collectionOrTable: not_activated
+      dataClass: L5
+      source: user_or_explicit_connected_source
+      purpose: biometric.identity
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: lived_world_reconstruction_authority
+      collectionOrTable: not_activated
+      dataClass: L4
+      sourceFields:
+        - lived_world_location_context
+        - lived_world_sensitive_association
+        - person_presence_identity_material
+      purpose: user-facing source/provenance/confidence/fidelity decision
+      consentTier: C3
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - lived_world.source_authorized
+    - lived_world.reconstruction_mounted
+    - lived_world.reconstruction_degraded
+    - lived_world.user_corrected
+    - lived_world.person_suppressed
+    - lived_world.consent_revoked
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: pending_independent_privacy_governance_review
+  decision: blocked_from_private_data_activation
+  notes: Source/runtime policy is intentionally fail-closed. No private lived-world producer, person likeness pipeline, or autobiographical geometry store is authorized by this manifest. Location is C3; sensitive emotional inference is separately C4; biometric person identity is separately C5. User memory ownership does not waive third-party rights.
