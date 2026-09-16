@@ -59,13 +59,15 @@ test('current candidate Home advances to visible Avatar plus governed Orb and pe
     'useHomeExperienceController',
     'HOME_WALK_SPEED',
     'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    '<MobileMovementPad input={movementInput} label="Move through Home" />',
+    "const movementInput = useMovementInput({ enabled: firstPerson && transition === 'none' && !homeState.inputLocked })",
   ]) has(renderer, marker)
   assert.match(renderer, /<HomeEmbodiedAvatar/)
   assert.match(embodiedAvatar, /const idle = actions\.idle_breath/)
   assert.match(embodiedAvatar, /idle\.reset\(\)\.setLoop\(THREE\.LoopRepeat, Infinity\)/)
   assert.doesNotMatch(renderer, /privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
-  assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]|MobileMovementPad/)
+  assert.doesNotMatch(renderer, /HOME_LIFE_MAP|nearby\s*===\s*['"]life-map['"]/)
 })
 
 test('rendering stays bounded and Orb state/reduced-motion telemetry remains exact-head proofable', () => {
