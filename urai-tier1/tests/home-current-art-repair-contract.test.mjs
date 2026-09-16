@@ -37,14 +37,15 @@ test('V249 and V281 localized repair modules remain historical inert provenance'
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
 
-test('retired localized Home hotspot owners are hidden and stripped of raycast authority in the live owner', () => {
+test('retired localized Home hotspot and avatar owners are hidden and stripped of raycast authority in the live owner', () => {
   assert.match(owner, /function RetireLegacyHomeHotspots\(\)/)
   assert.match(owner, /object\.visible = false/)
   assert.match(owner, /object\.raycast = \(\) => undefined/)
   assert.match(owner, /child\.raycast = \(\) => undefined/)
   assert.match(owner, /object\.name === 'home-v288-grounded-biomorphic-memory-reliquary'/)
   assert.match(owner, /object\.name === 'home-gold-companion'/)
-  assert.match(owner, /object\.name === 'home-visible-user-avatar'/)
+  assert.match(owner, /\/home-visible-user-avatar\//)
+  assert.doesNotMatch(owner, /function VisibleUserAvatar|<VisibleUserAvatar|object\.name === 'home-visible-user-avatar'/)
 })
 
 test('Ground is owned by the physical world surface and Life Map by the broad visible sky', () => {
