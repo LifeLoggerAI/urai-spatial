@@ -35,7 +35,8 @@ test('Focus focal authority is a grounded living-memory manifestation, not the r
 
 test('Focus convergence preserves Replay activation, selected-memory semantics, reduced motion, and retired geometry pointer safety', () => {
   assert.match(focus, /if \(memory\) onActivate\(\)/)
-  assert.match(focus, /aria-label=\{memory \? `Open Replay for \$\{memory\.title\}`/)
+  assert.match(focus, /aria-label=\{memory \? `Enter Replay for \$\{memory\.title\}`/)
+  assert.doesNotMatch(focus, /Open Replay for/)
   assert.doesNotMatch(focus, /reducedMotion \? 1 : 1 \+ Math\.sin/)
   assert.match(focus, /object\.raycast = \(\) => undefined/)
   assert.match(focus, /requestUraiWorldTravel\(\{ destination: 'replay'/)
