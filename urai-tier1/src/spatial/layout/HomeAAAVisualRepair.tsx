@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { HOME_PASSPORT_ORIGIN_CAPTURE_EVENT } from '@/spatial/home/homeExperienceState'
+import { HomeGlobalEmotionalFieldEarth } from '@/spatial/home/HomeGlobalEmotionalFieldEarth'
 
 function openPassport() {
   window.dispatchEvent(new Event(HOME_PASSPORT_ORIGIN_CAPTURE_EVENT))
@@ -167,7 +168,17 @@ function HomePassportOwnershipObject() {
  * passport-book, portal and pedestal language. Before travel it asks the Home
  * controller to persist the exact live FP origin so semantic return restores the
  * prior camera/state rather than generic Home.
+ *
+ * Global Emotional Field Earth is mounted as a separate first-person physical
+ * candidate and currently receives only the truthful fail-closed `unavailable`
+ * state. It does not reuse private map terrain, invent aggregate activity, expose
+ * individual dots, or claim an active publication provider.
  */
 export function HomeAAAVisualRepair() {
-  return <HomePassportOwnershipObject />
+  return (
+    <>
+      <HomePassportOwnershipObject />
+      <HomeGlobalEmotionalFieldEarth state="unavailable" />
+    </>
+  )
 }
