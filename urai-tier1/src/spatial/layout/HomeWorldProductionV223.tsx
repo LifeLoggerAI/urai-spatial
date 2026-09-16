@@ -18,11 +18,9 @@ type Transition = 'none' | 'ground' | 'life-map'
 type Props = { onOrbOpen?: () => void; webglAvailable?: boolean }
 type TransitionTarget = { point: THREE.Vector3; normal?: THREE.Vector3 }
 
-// Sky-dominant framing is achieved by the camera system, not by cropping the world:
-// human-height eye, slightly longer radius, gentle upward look. This preserves roughly
-// 55-60% visible atmosphere while keeping the grounded Orb fully inside the frame.
+// Home is first-person: the camera is the user's presence. Sky-dominant framing is
+// achieved by the camera system, not by a third-person avatar or by cropping the world.
 const HOME_FOCUS = new THREE.Vector3(0, 3.05, -1.15)
-const AVATAR_POSITION = new THREE.Vector3(-.28, 0, 1.0)
 const COMPANION_POSITION = new THREE.Vector3(1.02, 0, .72)
 
 function isSoftwareWebGLRenderer(gl: THREE.WebGLRenderer) {
@@ -63,11 +61,13 @@ const legacyHotspotPatterns = [
   /home-orb-/,
   /memory-reliquary/,
   /home-v249-organic-living-memory-presence/,
+  /home-visible-user-avatar/,
 ]
 
 /**
- * The canonical Home no longer exposes localized Ground/Orb destination sculptures.
- * Retire only obsolete hotspot owners; the physical terrain, vegetation and skyline stay live.
+ * The canonical Home no longer exposes localized Ground/Orb destination sculptures
+ * or any third-person user avatar. Retire obsolete hotspot owners; the physical
+ * terrain, grounded Orb companion, vegetation and skyline stay live.
  */
 function RetireLegacyHomeHotspots() {
   const { scene } = useThree()
@@ -77,7 +77,6 @@ function RetireLegacyHomeHotspots() {
     const retire = () => scene.traverse((object) => {
       if (
         object.name === 'home-gold-companion'
-        || object.name === 'home-visible-user-avatar'
         || object.name === 'home-v288-grounded-biomorphic-memory-reliquary'
       ) return
       if (!legacyHotspotPatterns.some((pattern) => pattern.test(object.name))) return
@@ -99,31 +98,6 @@ function RetireLegacyHomeHotspots() {
     }
   }, [scene])
   return null
-}
-
-function VisibleUserAvatar({ reducedMotion }: { reducedMotion: boolean }) {
-  const root = useRef<THREE.Group>(null)
-  const groundY = height(AVATAR_POSITION.x, AVATAR_POSITION.z)
-  useFrame(({ clock }) => {
-    if (!root.current || reducedMotion) return
-    const t = clock.elapsedTime
-    root.current.position.y = groundY + Math.sin(t * .72) * .004
-    root.current.rotation.z = Math.sin(t * .43) * .004
-  })
-  return <group
-    ref={root}
-    name="home-visible-user-avatar"
-    position={[AVATAR_POSITION.x, groundY, AVATAR_POSITION.z]}
-    rotation={[0, .08, 0]}
-    userData={{ semanticOwner: 'visible-user-avatar', privacyPreserving: true, productionFallback: 'procedural-until-governed-avatar-glb' }}
-  >
-    <mesh position={[-.14, .46, 0]} castShadow receiveShadow><cylinderGeometry args={[.105, .12, .9, 12]} /><meshStandardMaterial color="#252a29" roughness={.88} /></mesh>
-    <mesh position={ [.14, .46, 0]} castShadow receiveShadow><cylinderGeometry args={[.105, .12, .9, 12]} /><meshStandardMaterial color="#252a29" roughness={.88} /></mesh>
-    <mesh position={[0, 1.14, 0]} scale={[.48, .72, .28]} castShadow receiveShadow><sphereGeometry args={[.62, 24, 18]} /><meshStandardMaterial color="#343b38" roughness={.82} /></mesh>
-    <mesh position={[-.42, 1.13, .01]} rotation={[0, 0, -.09]} castShadow><cylinderGeometry args={[.075, .09, .86, 10]} /><meshStandardMaterial color="#343b38" roughness={.84} /></mesh>
-    <mesh position={[ .42, 1.13, .01]} rotation={[0, 0,  .09]} castShadow><cylinderGeometry args={[.075, .09, .86, 10]} /><meshStandardMaterial color="#343b38" roughness={.84} /></mesh>
-    <mesh position={[0, 1.78, 0]} castShadow receiveShadow><sphereGeometry args={[.22, 24, 18]} /><meshStandardMaterial color="#8a7567" roughness={.72} /></mesh>
-  </group>
 }
 
 function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
@@ -270,7 +244,6 @@ function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbSta
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
     <RetireLegacyHomeHotspots />
-    <VisibleUserAvatar reducedMotion={reducedMotion} />
     <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
     <CameraRig yaw={yaw} pitch={pitch} transition={transition} target={transitionTarget} reducedMotion={reducedMotion} owner={owner} onComplete={onComplete} />
   </>
@@ -354,7 +327,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-physical-base="continuous-lived-physical-world"
     data-home-visual-ownership="single-canvas-three-dimensional-geometry"
     data-home-desktop-mobile-world="same-scene"
-    data-home-embodied-self="visible-cinematic-avatar"
+    data-home-embodied-self="first-person-viewpoint-no-avatar"
     data-home-movement="camera-look-world-surface-selection"
     data-home-pointer-lock="false"
     data-home-assets-ready={ready ? 'true' : 'false'}
@@ -365,7 +338,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-distance-life-map="sky-threshold"
     data-home-ground-entry="physical-world-surface"
     data-home-life-map-entry="visible-sky-broad-interaction"
-    data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'cinematic-look' : 'cinematic-third-person'}
+    data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'cinematic-look' : 'first-person-viewpoint'}
     data-home-scene-phase={phase}
     data-home-transition-sequence={transition === 'none' ? 'idle' : `${transition}:traversal`}
     data-home-portal-sequence="idle"
@@ -375,8 +348,8 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion' : resolveOrbSensoryOutput(orbState, reducedMotion, true).animation}
     data-home-visual-grade="current-literal-pixel-candidate-not-certified"
     data-home-art-certification="fresh-exact-head-pixels-required"
-    data-home-scanned-composition="visible-user-grounded-companion-physical-world-and-broad-sky-threshold"
-    data-home-authored-regions="home-physical-world home-visible-user-avatar home-grounded-companion home-life-map-sky-threshold"
+    data-home-scanned-composition="first-person-grounded-companion-physical-world-and-broad-sky-threshold"
+    data-home-authored-regions="home-physical-world home-grounded-companion home-life-map-sky-threshold"
     data-testid="home-visible-navigable-sanctuary-world"
     style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#10272a' }}
     {...look}
@@ -400,8 +373,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       <Scene yaw={yaw} pitch={pitch} transition={transition} transitionTarget={transitionTarget} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markReady} owner={worldRef} onComplete={completeTransition} />
     </Canvas>
     <span className="sr-only" role="status" aria-live="polite">{transition === 'ground' ? 'Entering your physical Ground world.' : transition === 'life-map' ? 'Ascending into your Life Map.' : ''}</span>
-    <span className="sr-only" data-testid="urai-home-webgl-orb">The Orb companion is physically grounded beside your visible Home presence.</span>
-    <span className="sr-only" data-testid="urai-home-embodied-avatar">Your privacy-preserving visible Home embodiment is present in the physical world.</span>
+    <span className="sr-only" data-testid="urai-home-webgl-orb">The Orb companion is physically grounded beside your Home viewpoint.</span>
   </main>
 }
 
