@@ -19,11 +19,27 @@ async function waitForHomeWorld(home: Locator) {
   await expect(home).toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar')
   await expect(home).toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person')
   await expect(home).toHaveAttribute('data-home-movement', 'camera-look-world-surface-selection')
+  await expect(home).toHaveAttribute('data-home-first-person-body', 'none-non-xr')
   await expect(home).toHaveAttribute('data-home-ground-entry', 'physical-world-surface')
   await expect(home).toHaveAttribute('data-home-life-map-entry', 'visible-sky-broad-interaction')
   await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person(?:-look)?/)
   await expect(home).toHaveAttribute('data-home-orb-runtime-asset', '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
   await expect(home).toHaveAttribute('data-home-avatar-runtime-asset', '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
+}
+
+async function enterFirstPersonHome(page: Page, home: Locator) {
+  const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
+  const avatar = direct.getByRole('button', { name: 'Enter first-person Home through your Avatar' })
+  await avatar.focus()
+  await expect(avatar).toBeFocused()
+  await avatar.press('Enter')
+  await expect(home).toHaveAttribute('data-home-stable-state', 'AVATAR_HOME_FIRST_PERSON', { timeout: 10_000 })
+  await expect(home).toHaveAttribute('data-home-embodied-self', 'camera-only-avatar-embodied-first-person')
+  await expect(home).toHaveAttribute('data-home-presence-presentation', 'avatar-hidden-camera-first-person')
+  await expect(home).toHaveAttribute('data-home-movement', 'persistent-first-person-keyboard-mobile-camera-look')
+  await expect(home).toHaveAttribute('data-home-first-person-body', 'none-non-xr')
+  await expect(home).toHaveAttribute('data-home-camera-mode', /avatar-home-first-person(?:-look)?/)
+  return page.getByRole('group', { name: 'Move through Home' })
 }
 
 async function enableLifeMapDemo(page: Page) {
@@ -34,28 +50,42 @@ function normalizedPathname(url: string) {
   return new URL(url).pathname.replace(/\/+$/, '') || '/'
 }
 
-test.describe('Visible-avatar Home and first-person Ground accessibility evidence', () => {
+test.describe('Two-mode Home and first-person Ground accessibility evidence', () => {
   test.describe.configure({ timeout: 300_000 })
 
-  test('Home exposes visible-avatar world semantics, three keyboard destinations, and no synthetic movement pad', async ({ page }) => {
+  test('Home exposes visible Avatar presentation plus keyboard-accessible persistent first-person embodiment', async ({ page }) => {
     const errors = await collectRuntimeErrors(page)
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
     await waitForHomeWorld(home)
-    await expect(home).toHaveAttribute('data-home-camera-mode', /cinematic-third-person(?:-look)?/)
     await expect(home).not.toHaveAttribute('data-home-embodied-self', 'first-person-viewpoint-no-avatar')
 
     const direct = page.getByRole('navigation', { name: 'Accessible Home destinations' })
+    const avatar = direct.getByRole('button', { name: 'Enter first-person Home through your Avatar' })
     const orb = direct.getByRole('button', { name: 'Open URAI Orb companion' })
     const ground = direct.getByRole('link', { name: 'Open Ground directly' })
     const lifeMap = direct.getByRole('link', { name: 'Open Life Map directly' })
-    await expect(direct.locator('button, a[href]')).toHaveCount(3)
-    for (const target of [orb, ground, lifeMap]) {
+    await expect(direct.locator('button, a[href]')).toHaveCount(4)
+    for (const target of [avatar, orb, ground, lifeMap]) {
       await target.evaluate((element: HTMLElement) => element.focus())
       await expect(target).toBeFocused()
     }
-    await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
+
+    const movement = await enterFirstPersonHome(page, home)
+    await expect(movement).toBeVisible()
+    for (const name of ['Move forward', 'Move left', 'Move backward', 'Move right']) {
+      const button = movement.getByRole('button', { name })
+      const rect = await button.boundingBox()
+      expect(rect).not.toBeNull()
+      expect(rect!.width).toBeGreaterThanOrEqual(48)
+      expect(rect!.height).toBeGreaterThanOrEqual(48)
+    }
     expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
+
+    await page.keyboard.press('Escape')
+    await expect(home).toHaveAttribute('data-home-stable-state', 'HOME_PRESENTATION', { timeout: 10_000 })
+    await expect(home).toHaveAttribute('data-home-embodied-self', 'visible-cinematic-avatar')
+    await expect(home).toHaveAttribute('data-home-presence-presentation', 'visible-avatar-third-person')
     expect(errors.pageErrors).toEqual([])
     expect(errors.consoleErrors).toEqual([])
   })
@@ -99,11 +129,26 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     expect(errors.consoleErrors).toEqual([])
   })
 
-  test('mobile Ground controls remain contained and touch-sized while Home remains uncluttered', async ({ page }) => {
+  test('mobile Home embodiment and Ground controls remain contained and touch-sized', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 873 })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
-    await waitForHomeWorld(page.locator(homeOwnerSelector))
-    await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
+    const home = page.locator(homeOwnerSelector)
+    await waitForHomeWorld(home)
+    const homePad = await enterFirstPersonHome(page, home)
+    await expect(homePad).toBeVisible()
+    for (const name of ['Move forward', 'Move left', 'Move backward', 'Move right']) {
+      const button = homePad.getByRole('button', { name })
+      const rect = await button.boundingBox()
+      expect(rect).not.toBeNull()
+      expect(rect!.width).toBeGreaterThanOrEqual(48)
+      expect(rect!.height).toBeGreaterThanOrEqual(48)
+      expect(rect!.x).toBeGreaterThanOrEqual(0)
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(393)
+      expect(rect!.y).toBeGreaterThanOrEqual(0)
+      expect(rect!.y + rect!.height).toBeLessThanOrEqual(873)
+    }
+    await page.keyboard.press('Escape')
+    await expect(home).toHaveAttribute('data-home-stable-state', 'HOME_PRESENTATION', { timeout: 10_000 })
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
     const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
@@ -129,13 +174,15 @@ test.describe('Visible-avatar Home and first-person Ground accessibility evidenc
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth + 1)
   })
 
-  test('reduced motion preserves Home semantic access and Ground first-person controls without pointer lock', async ({ page }) => {
+  test('reduced motion preserves responsive first-person Home access and Ground controls without pointer lock', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/home/', { waitUntil: 'domcontentloaded' })
     const home = page.locator(homeOwnerSelector)
     await waitForHomeWorld(home)
     await expect(page.getByRole('navigation', { name: 'Accessible Home destinations' })).toBeVisible()
-    await expect(page.getByRole('group', { name: 'Home movement controls' })).toHaveCount(0)
+    const movement = await enterFirstPersonHome(page, home)
+    await expect(movement).toBeVisible()
+    expect(await page.evaluate(() => document.pointerLockElement)).toBeNull()
 
     await page.goto('/ground/', { waitUntil: 'domcontentloaded' })
     const ground = page.locator('.ground-spatial-root[data-ground-exploration="first-person"]').first()
