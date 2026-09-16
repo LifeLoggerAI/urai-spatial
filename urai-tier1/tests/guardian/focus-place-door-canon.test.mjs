@@ -10,7 +10,7 @@ const focusPageFile = join(app, "src/app/focus/page.tsx");
 const focusClientFile = join(app, "src/app/focus/FocusChamberClient.tsx");
 const memoryStarFile = join(app, "src/spatial/memory/memoryStarSchema.ts");
 
-assert.equal(existsSync(doorFile), true, "FocusPlaceDoor module must remain available for place-capable memory stars.");
+assert.equal(existsSync(doorFile), true, "FocusPlaceDoor module must remain available for explicitly disclosed demo/provenance use.");
 assert.equal(existsSync(focusPageFile), true, "Focus route must exist.");
 assert.equal(existsSync(focusClientFile), true, "Final focus chamber client must exist.");
 assert.equal(existsSync(memoryStarFile), true, "Memory star schema must exist.");
@@ -20,9 +20,13 @@ const focusPage = readFileSync(focusPageFile, "utf8");
 const focusClient = readFileSync(focusClientFile, "utf8");
 const memoryStar = readFileSync(memoryStarFile, "utf8");
 
-assert.match(door, /Enter Place/, "FocusPlaceDoor must expose its place action for place-capable stars.");
-assert.match(door, /canEnterMemoryPlace/, "FocusPlaceDoor must check whether the star can enter a place.");
-assert.match(door, /enterPlaceHref/, "FocusPlaceDoor must use enterPlaceHref.");
+assert.match(door, /explicitDemo = searchParams\?\.get\('demo'\) === '1'/, "Bundled symbolic place door must require explicit demo mode.");
+assert.match(door, /star\.privacyState === 'demo' && !explicitDemo/, "Demo star place door must stay hidden in ordinary Focus.");
+assert.match(door, /data-place-door-authority="explicit-demo-only"/, "Focus demo place door must disclose its authority.");
+assert.match(door, /Enter Sample Place/, "Explicit demo mode may retain a clearly labelled sample-place action.");
+assert.match(door, /bundled demo data, not reconstructed personal memory/, "Focus must distinguish sample place data from autobiography.");
+assert.match(door, /canEnterMemoryPlace/, "FocusPlaceDoor must still validate place capability inside explicit demo mode.");
+assert.match(door, /enterPlaceHref/, "Explicit demo door may use the sample enterPlaceHref.");
 assert.match(focusPage, /FocusChamberClient/, "Focus route must render the final focus chamber client owner.");
 assert.match(focusClient, /useSelectedMemory\(\)/, "Final Focus chamber must resolve the authenticated selected-memory contract.");
 assert.match(focusClient, /aria-label=\{memory \? `Enter Replay for \$\{memory\.title\}`/, "Final Focus chamber must expose the canonical accessible Enter Replay action.");
@@ -43,6 +47,6 @@ assert.equal(hasCommittedDebounce, true, "Final Focus chamber must debounce an a
 assert.match(focusClient, /requestUraiWorldReturn\(\)/, "Final Focus chamber must retain deterministic world return.");
 assert.match(focusClient, /data-focus-spatial="explorable-observatory"/, "Final Focus chamber must expose the spatial observatory contract.");
 assert.match(focusClient, /<OrbitControls/, "Final Focus chamber must retain bounded pointer and touch exploration.");
-assert.match(memoryStar, /canEnterMemoryPlace/, "Memory star schema must define canEnterMemoryPlace.");
+assert.match(memoryStar, /canEnterMemoryPlace/, "Memory star schema may retain demo/provenance place capability without making it ordinary autobiography.");
 
-console.log("URAI focus place doorway canon passed: place door remains available and authenticated Focus uses the spatial selected-memory Enter Replay contract.");
+console.log("URAI focus place doorway canon passed: ordinary Focus hides demo place doors; explicit demo mode remains disclosed while authenticated Focus uses canonical Replay.");
