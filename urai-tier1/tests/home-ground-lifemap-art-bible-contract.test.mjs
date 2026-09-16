@@ -83,7 +83,7 @@ test('Home runtime exposes the governed Avatar and current Orb candidate while p
   assert.equal(currentHomeVisualAuthority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.match(homeEntry, /HomeWorldProductionV223 as HomeWorldProduction/)
-  assert.match(groundGateway, /aria-label="Enter your physical Ground world"/)
+  assert.match(groundGateway, /aria-label="Enter Ground — explore your physical lived world in first person"/)
   assert.match(homeRuntime, /aria-label="Open Life Map directly"/)
   assert.match(homeRuntime, /aria-label="Open Ground directly"/)
 })
