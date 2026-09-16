@@ -67,7 +67,20 @@ test('Home Life Map is the broad visible sky and preserves one canonical ascent 
 })
 
 test('Home Ground entry remains a physical world-surface descent into the lived first-person Ground', () => {
-  for (const marker of ['data-home-ground-entry="physical-world-surface"','event.point.clone()',"destination: 'infrastructure-hub'","cameraCheckpoint: 'ground-first-person-arrival'"]) has(renderer, marker)
+  for (const marker of [
+    'data-home-ground-entry="physical-world-surface"',
+    'event.point.clone()',
+    "destination: 'infrastructure-hub'",
+    "cameraCheckpoint: 'ground-first-person-arrival'",
+    'GROUND_DESCENT_TOTAL_MS',
+    'GROUND_REDUCED_MOTION_TOTAL_MS',
+    'groundDescentPhaseAt',
+    'home-avatar-camera-approach',
+    'home-avatar-eye-transfer',
+    'data-home-ground-cinematic-phase',
+    'culled-before-eye-plane',
+    'event.delta > 4',
+  ]) has(renderer, marker)
   for (const marker of ['data-ground-exploration="first-person-no-visible-body"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following-no-authored-bob"','data-ground-collision="terrain-plus-authored-obstacle-field"','data-ground-place-layer="consent-aware-empty-by-default"','data-ground-visible-avatar="false"','data-ground-visible-hands="false"','ground-visible-traversable-terrain','surfaceY + GROUND_EYE_HEIGHT_M']) has(ground, marker)
   has(groundGateway, 'data-ground-gateway="semantic-access-only"')
   has(groundGateway, 'aria-label="Enter Ground — explore your physical lived world in first person"')
@@ -83,7 +96,8 @@ test('Home interaction and accessibility ownership stays visible-avatar, cinemat
   has(renderer, 'name="home-visible-user-avatar"')
   has(renderer, '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
   has(renderer, "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'")
-  assert.match(renderer, /data-home-camera-mode=\{transition !== 'none' \? transition : dragging \? 'cinematic-third-person-look' : 'cinematic-third-person'\}/)
+  assert.match(renderer, /data-home-camera-mode=\{transition === 'ground' && groundPhase \? groundPhase/)
+  assert.match(renderer, /visible=\{!hiddenForEmbodiment\}/)
   assert.doesNotMatch(renderer, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
   assert.doesNotMatch(renderer, /useMovementInput|MobileMovementPad|stepEmbodiedMotion/)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
