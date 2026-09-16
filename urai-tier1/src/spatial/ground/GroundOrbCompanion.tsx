@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type MutableRefObject } from 'react'
+import { useLayoutEffect, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { requestUraiWorldReturn } from '@/spatial/world/worldEvents'
 import { GroundReturnWorldBridge } from './GroundReturnWorldBridge'
@@ -37,6 +37,10 @@ function relativeDirection(yaw: number, fromX: number, fromZ: number, toX: numbe
  * ordinary first-person Ground visually free of a companion model. It also owns
  * the reverse material/world bridge so Home, Escape, and the visible return action
  * all enter one deterministic return path rather than raw route navigation.
+ *
+ * Layout effect is deliberate: return capture, hidden semantic Orb state, and the
+ * corrected live-region wording are installed before paint so there is no first-
+ * frame route or accessibility race with legacy fallback markup.
  */
 export function GroundOrbCompanion(props: {
   playerPosition: MutableRefObject<THREE.Vector3>
@@ -45,7 +49,7 @@ export function GroundOrbCompanion(props: {
   obstacles: readonly { x: number; z: number; radius: number }[]
   reducedMotion: boolean
 }) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const fallback = document.querySelector<HTMLButtonElement>('.urai-world-companion__orb')
     const liveRegion = document.querySelector<HTMLElement>('.ground-spatial-root [role="status"]')
     const returnButton = document.querySelector<HTMLButtonElement>('.ground-home-return')
