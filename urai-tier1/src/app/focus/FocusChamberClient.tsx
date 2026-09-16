@@ -399,19 +399,19 @@ function MemoryAperture({ memory, accent, onActivate }: { memory: SelectedMemory
   const portrait = size.height > size.width
   const [hovered, setHovered] = useState(false)
   const strata = useMemo(createFocusStrata, [])
-  const maps = useMemo(createFocusSurfaceMaps, [])
-  useEffect(() => () => { strata.forEach(geometry => geometry.dispose()); maps.forEach(texture => texture.dispose()) }, [strata, maps])
+  useEffect(() => () => { strata.forEach(geometry => geometry.dispose()) }, [strata])
   const pointer = (event: ThreeEvent<PointerEvent>, state: boolean) => {
     event.stopPropagation()
     setHovered(state)
     document.body.style.cursor = state && memory ? 'pointer' : ''
   }
+  // V269 memory material is intentionally independent from terrain maps.
   // Stillness is intentional. Hover changes only surface response, never geometry,
   // scale, camera or idle motion; reduced motion receives the same stable world.
-  return <group position={[portrait ? .02 : .25, 0, -1.56]} name="focus-memory-aperture" userData={{ artRevision: 'v251-fractured-rooted-memory-strata', hierarchy: 'selected-memory-dominant-with-authored-chamber-context' }}>
-    <group scale={portrait ? [.66, .78, .78] : [1, 1, 1]} position={[0, portrait ? -.32 : 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
+  return <group position={[portrait ? .02 : .25, 0, -1.56]} name="focus-memory-aperture" userData={{ artRevision: 'v269-living-luminous-memory-lamella', hierarchy: 'selected-memory-dominant-with-authored-chamber-context', materialAuthority: 'vertex-energy-not-mineral-terrain-map' }}>
+    <group scale={portrait ? [.92, 1.0, 1.0] : [1.25, 1.12, 1.08]} position={[0, portrait ? -.28 : 0, 0]} name="focus-v251-grounded-living-memory-manifestation" onClick={(event) => { event.stopPropagation(); if (memory) onActivate() }} onPointerOver={(event) => pointer(event, true)} onPointerOut={(event) => pointer(event, false)}>
       {strata.map((geometry,index) => <mesh key={index} geometry={geometry} castShadow receiveShadow name={`focus-authored-fractured-stratum-${index}`}>
-        <meshStandardMaterial map={maps[0]} normalMap={maps[1]} roughnessMap={maps[2]} normalScale={new THREE.Vector2(.72,.72)} vertexColors color={hovered ? '#fff5df' : '#e6dcc5'} emissive={accent} emissiveIntensity={hovered ? .009 : 0} roughness={.94} metalness={0} side={THREE.DoubleSide} />
+        <meshStandardMaterial vertexColors color={hovered ? '#ffffff' : '#d8f8ff'} emissive={accent} emissiveIntensity={hovered ? .34 : .20} roughness={.36} metalness={.035} side={THREE.DoubleSide} />
       </mesh>)}
     </group>
     <Html center position={[0, -1.56, .48]} transform distanceFactor={6.4}><button type="button" className="focus-spatial-aperture-button" disabled={!memory} onClick={onActivate} aria-label={memory ? `Enter Replay for ${memory.title}` : 'Select a memory in Life Map to enter Replay'}>{memory ? 'Enter Replay' : 'Awaiting a selected star'}</button></Html>
@@ -515,7 +515,7 @@ export default function FocusChamberClient() {
   const webglUsable = webglAvailable === true && webglState !== 'failed'
   const boundedCadence = !rendererClassified || softwareRenderer || profile.reducedMotion
 
-  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-dominant-living-memory-tree-manifestation" data-focus-visual-revision="v251-fractured-rooted-memory-strata" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.180" data-focus-camera-z="5.100" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
+  return <main ref={shellRef} className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-focus-composition="authored-floor-with-dominant-living-memory-tree-manifestation" data-focus-visual-revision="v269-luminous-memory-material-separation" data-focus-spatial="explorable-observatory" data-focus-movement="walk-keyboard-orbit-touch" data-focus-pointer-lock="false" data-focus-camera-x="0.000" data-focus-camera-y="1.180" data-focus-camera-z="5.100" data-focus-distance="0.000" data-focus-moving="false" data-memory-status={result.status} data-chamber-state={chamberState} data-webgl-state={webglState} data-canonical-asset={focusAssets.primary.src} data-focus-physical-asset={FOCUS_CHAMBER_MODEL} data-spatial-quality={profile.tier} data-software-renderer={!rendererClassified ? 'detecting' : softwareRenderer ? 'true' : 'false'} data-render-cadence={boundedCadence ? 'bounded-demand-4fps' : 'continuous'} data-memory-id={memory?.id} data-manifest-id={memory?.replayManifest.id} data-star-id={memory?.star.id} data-node={memory?.star.id}>
     <h1 className="srOnly">URAI Focus spatial memory observatory</h1>
     <div className="focusBackdrop" aria-hidden="true" />
     <div className="focusFog" aria-hidden="true" />
