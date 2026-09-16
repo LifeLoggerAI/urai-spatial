@@ -13,6 +13,7 @@ const narratorPlayback = fs.readFileSync(new URL("../src/spatial/narrator/narrat
 const checkoutRoute = fs.readFileSync(new URL("../src/app/api/stripe/create-checkout-session/route.ts", import.meta.url), "utf8");
 const firebaseUser = fs.readFileSync(new URL("../src/lib/server/firebase-user.ts", import.meta.url), "utf8");
 const approvedReturnUrl = fs.readFileSync(new URL("../src/lib/server/approved-return-url.ts", import.meta.url), "utf8");
+const passportVault = fs.readFileSync(new URL("../src/app/passport/PassportVaultClient.tsx", import.meta.url), "utf8");
 
 test("static provider paths cannot shadow authenticated Firebase rewrites", () => {
   for (const route of staticProviderRoutes) assert.equal(fs.existsSync(route), false);
@@ -55,4 +56,12 @@ test("Stripe checkout permits only the configured application origin", () => {
   assert.match(approvedReturnUrl, /resolved\.origin !== approvedOrigin\.origin/);
   assert.match(approvedReturnUrl, /resolved\.username \|\| resolved\.password/);
   assert.doesNotMatch(checkoutRoute, /const redirectBase = returnUrl \|\| appUrl/);
+});
+
+test("Passport static render fails closed and sample identity requires explicit demo mode", () => {
+  assert.match(passportVault, /const \[snapshot, setSnapshot\] = useState<SnapshotPayload>\(\{\}\)/);
+  assert.match(passportVault, /const explicitDemo = params\.get\('demo'\) === '1'/);
+  assert.match(passportVault, /if \(explicitDemo\) \{\s*setSnapshot\(toDemoPayload\(\)\)/);
+  assert.match(passportVault, /Demo data was not substituted\./);
+  assert.doesNotMatch(passportVault, /useState<SnapshotPayload>\(\(\) => toDemoPayload\(\)\)/);
 });
