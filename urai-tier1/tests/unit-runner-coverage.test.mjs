@@ -27,6 +27,7 @@ const systemicVisualConvergenceTests = [
   'tests/orb-v286-biomorphic-reliquary-contract.test.mjs',
   'tests/lifemap-review-repair-contract.test.mjs',
   'tests/lifemap-cosmic-canon-contract.test.mjs',
+  'tests/lifemap-stable-geography-contract.test.mjs',
   'tests/focus-review-regression-contract.test.mjs',
   'tests/replay-final-rail-authority-contract.test.mjs',
 ]
@@ -42,7 +43,7 @@ test('compact unit runner includes the V101 retained-pixel repair contract', () 
   assert.ok(compactRunnerSource.includes("'tests/home-v88-retained-pixel-repair-contract.test.mjs'"))
 })
 
-test('compact CI executes the systemic Home, Orb, Life Map, Focus, and Replay convergence regressions', () => {
+test('compact CI executes the systemic Home, Orb, Life Map, Focus, Replay, and stable-geography regressions', () => {
   for (const testPath of systemicVisualConvergenceTests) {
     assert.ok(compactRunnerSource.includes(`'${testPath}'`), `compact unit runner must include ${testPath}`)
   }
