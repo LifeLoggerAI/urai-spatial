@@ -12,6 +12,7 @@ const controller = read('src/spatial/world/WorldTransitionController.tsx')
 const gateway = read('src/spatial/world/GroundGateway.tsx')
 const home = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const bridge = read('src/spatial/ground/GroundOrbCompanion.tsx')
+const legacyWorld = read('src/app/world/page.tsx')
 const css = read('src/spatial/world/worldNavigation.css')
 
 test('Ground descent and return are realm-owned rather than generic aperture/tunnel travel', () => {
@@ -39,4 +40,9 @@ test('Ground Home action uses world return state and no follower Orb is rendered
   assert.match(bridge, /groundOrbMode = 'semantic-invocation-only'/)
   assert.match(bridge, /no follower Orb is rendered/)
   assert.match(bridge, /return null/)
+})
+
+test('legacy /world no longer exposes the retired council/chamber Ground product', () => {
+  assert.match(legacyWorld, /redirect\('\/ground\?from=legacy-world'\)/)
+  assert.doesNotMatch(legacyWorld, /GroundWorldExperience|council avatars|ground-world\.css/i)
 })
