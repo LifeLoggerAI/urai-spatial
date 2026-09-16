@@ -7,6 +7,7 @@ import { publishOrbState } from '@/app/home/orbStateController'
 import OrbConversationPanel from '@/spatial/orb/OrbConversationPanel'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
+  publishUraiWorldOrbClose,
   requestUraiWorldReturn,
   requestUraiWorldTravel,
   takePendingUraiWorldOrbOpen,
@@ -81,6 +82,7 @@ export function PersistentWorldCompanion() {
     restoreFocusRef.current = restoreFocus
     setOpen(false)
     publishOrbState('idle', 'companion')
+    publishUraiWorldOrbClose()
   }, [])
 
   useEffect(() => {
@@ -119,9 +121,6 @@ export function PersistentWorldCompanion() {
     const openCompanion = (event: CustomEvent<UraiWorldOrbOpenDetail>) => {
       const request = takePendingUraiWorldOrbOpen() ?? event.detail
       externalActivatorRef.current = request.returnFocusTo ?? null
-      // External semantic Home controls dispatch a native window event. Commit the
-      // accessibility state synchronously so heavy spatial formation work cannot
-      // leave the visible companion stale/aria-hidden after an intentional click.
       flushSync(() => setOpen(true))
       publishCompanionAttention()
     }
@@ -165,6 +164,7 @@ export function PersistentWorldCompanion() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       event.preventDefault()
+      event.stopImmediatePropagation()
       closeCompanion(true)
     }
     window.addEventListener('keydown', onKeyDown, true)
