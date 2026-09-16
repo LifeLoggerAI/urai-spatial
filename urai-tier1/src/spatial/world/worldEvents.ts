@@ -112,8 +112,9 @@ export function requestUraiWorldReturn() {
   if (pathname === '/ground' || pathname.startsWith('/ground/')) {
     // Ground has one spatial parent and one unwind owner. Orb-companion Return,
     // accessibility Return, and other shell callers must not bypass the first-
-    // person extraction by invoking the generic reverse-travel controller.
-    dispatchSpatialAudioCue('transition')
+    // person extraction by invoking the generic reverse-travel controller. Ground
+    // also intentionally skips the generic `transition` audio cue because that
+    // asset is portal-coded; Ground unwind is environmental + haptic instead.
     window.dispatchEvent(new CustomEvent('urai:ground-unwind', { detail: { reason: 'accessible-control' } }))
     return
   }
