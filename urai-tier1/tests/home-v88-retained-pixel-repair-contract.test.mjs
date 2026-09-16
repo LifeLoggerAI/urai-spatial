@@ -31,10 +31,13 @@ test('historical V185 destinations remain regression-covered and visibly retired
   assert.doesNotMatch(historicalArt, /<ringGeometry|<torusGeometry|<RoundedBox/)
 })
 
-test('V288 Orb authority is the grounded biomorphic reliquary while fixed V226 proximity is historical only', () => {
+test('V288 remains the certified Orb predecessor while the current authored Orb candidate stays fail-closed', () => {
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
-  assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  assert.ok(authority.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
+  assert.equal(authority.lastCertifiedPredecessor.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
+  assert.ok(authority.lastCertifiedPredecessor.runtimeAssets.includes('HomeOrbGroundedV288.tsx'))
+  assert.equal(authority.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.currentRuntimeCandidate.orbVisualAuthority, 'authored-living-memory-orb-candidate')
+  assert.equal(authority.currentRuntimeCandidate.certified, false)
   has(visualAuthority, "import { HomeOrbGroundedV288 } from '../assets/HomeOrbGroundedV288'")
   has(visualAuthority, '<HomeOrbGroundedV288 />')
   for (const marker of ['v288-grounded-biomorphic-memory-reliquary','HomeOrbReliquaryV286','home-gold-companion','fallbackVisualOwner: false','interactionOwner: true','interactionOwner: false']) has(groundedOrb, marker)
@@ -59,7 +62,7 @@ test('historical V185 traversal gates remain regression-covered without claiming
   assert.doesNotMatch(currentRuntime, /\['orb',\s*ORB|\['ground',\s*GROUND|\['life-map',\s*LIFE_MAP/)
 })
 
-test('V288 remains explicitly uncertified until literal exact-head retained pixels pass', () => {
+test('current Home candidate remains explicitly uncertified until literal exact-head retained pixels pass', () => {
   assert.match(finalizer, /home-v88-retained-pixel-repair-contract\.test\.mjs/)
   assert.match(finalizer, /embodied-exploration-contract\.test\.mjs/)
   has(telemetry, "world.setAttribute('data-home-v288-certification', 'fresh-exact-head-pixels-required')")
@@ -68,5 +71,6 @@ test('V288 remains explicitly uncertified until literal exact-head retained pixe
   has(telemetry, 'data-home-v226-retained-pixel-rebuild="superseded"')
   has(telemetry, 'data-home-v225-retained-pixel-rebuild="superseded"')
   has(currentRuntime, 'data-home-visual-grade="current-literal-pixel-candidate-not-certified"')
+  assert.equal(authority.currentRuntimeCandidate.certified, false)
   assert.doesNotMatch(`${currentRuntime}\n${historicalRuntime}\n${historicalArt}\n${currentGeometry}\n${telemetry}\n${groundedOrb}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
