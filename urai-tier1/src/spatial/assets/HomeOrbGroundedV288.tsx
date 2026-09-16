@@ -10,18 +10,17 @@ const V287_COMPANION_X = 1.02
 const V287_COMPANION_Z = .72
 const RETIRED_RELIQUARY_NAME = 'home-v286-biomorphic-memory-reliquary'
 const GROUNDED_RELIQUARY_NAME = 'home-v288-grounded-biomorphic-memory-reliquary'
-const FALLBACK_INTERACTION_OWNER_NAMES = new Set(['home-gold-companion', 'home-living-memory-orb'])
+const FALLBACK_INTERACTION_OWNER_NAMES = ['home-gold-companion', 'home-living-memory-orb'] as const
 
-function findInteractionOwner(scene: THREE.Scene) {
-  let owner: THREE.Object3D | null = null
-  scene.traverse((object) => {
-    if (owner) return
-    if (!FALLBACK_INTERACTION_OWNER_NAMES.has(object.name)) return
-    if (object.userData?.interactionOwner === false) return
-    if (object.userData?.semanticOwner !== 'orb') return
-    owner = object
-  })
-  return owner
+function findInteractionOwner(scene: THREE.Scene): THREE.Object3D | null {
+  for (const name of FALLBACK_INTERACTION_OWNER_NAMES) {
+    const object = scene.getObjectByName(name)
+    if (!object) continue
+    if (object.userData?.interactionOwner === false) continue
+    if (object.userData?.semanticOwner !== 'orb') continue
+    return object
+  }
+  return null
 }
 
 /**
