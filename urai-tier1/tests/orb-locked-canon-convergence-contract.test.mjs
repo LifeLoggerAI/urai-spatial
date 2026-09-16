@@ -9,6 +9,7 @@ const root = path.resolve(here, '..')
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
 
 const home = read('src/spatial/layout/HomeWorldProductionSacred.tsx')
+const currentHome = read('src/spatial/layout/HomeWorldProductionV223.tsx')
 const conversation = read('src/spatial/orb/OrbConversationPanel.tsx')
 
 test('Home preserves the locked Avatar + Orb + Ground + Sky authority', () => {
@@ -44,6 +45,25 @@ test('Orb persistent motion remains state-aware and reduced-motion safe', () => 
   assert.match(home, /sensory\.light\.intensity/)
   assert.match(home, /state === 'privacy' \? 0\.022/)
   assert.match(home, /state === 'warning' \? '#cf9b65'/)
+})
+
+test('Current Home never retires descendants of the canonical Avatar or living-memory Orb', () => {
+  assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-visible-user-avatar'\]\)/)
+  assert.match(currentHome, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
+  assert.match(currentHome, /while \(current\)/)
+  assert.match(currentHome, /CURRENT_HOME_PRESENCE_ROOTS\.has\(current\.name\)/)
+  assert.match(currentHome, /current = current\.parent/)
+  assert.match(currentHome, /if \(isInsideCurrentHomePresence\(object\)\) return/)
+  assert.match(currentHome, /name="home-orb-authored-core"/)
+  assert.match(currentHome, /name="home-orb-non-spherical-core"/)
+  assert.match(currentHome, /name="home-orb-stabilizer-ring-1"/)
+})
+
+test('Authored model cloning preserves single-material and multi-material shape', () => {
+  assert.match(currentHome, /object\.material = Array\.isArray\(object\.material\)/)
+  assert.match(currentHome, /object\.material\.map\(\(material\) => material\.clone\(\)\)/)
+  assert.match(currentHome, /: object\.material\.clone\(\)/)
+  assert.doesNotMatch(currentHome, /Array\.isArray\(source\)/)
 })
 
 test('Conversation speaking state is bound to actual playback rather than streamed text deltas', () => {
