@@ -11,6 +11,7 @@ import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbS
 import { useDragLook } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { GROUND_LANDSCAPE_FOV_DEG, GROUND_PORTRAIT_FOV_DEG } from '@/spatial/ground/groundCanon'
+import { HomeGroundMaterialBridge } from '@/spatial/ground/HomeGroundMaterialBridge'
 import { GROUND_DESCENT_TOTAL_MS, GROUND_REDUCED_MOTION_TOTAL_MS, groundDescentPhaseAt, type GroundDescentPhase } from '@/spatial/ground/groundTransitionTimeline'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
@@ -186,14 +187,18 @@ function VisibleHomeAvatar({ reducedMotion, groundPhase }: { reducedMotion: bool
     name="home-visible-user-avatar"
     visible={!hiddenForEmbodiment}
     position={[AVATAR_POSITION.x, groundY, AVATAR_POSITION.z]}
-    rotation={[0, Math.PI, 0]}
-    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath', cloneStrategy: 'skeleton-safe', nearCameraRule: 'hidden-before-avatar-eye-plane-crossing' }}
+    rotation={[groundPhase === 'ground-recognition' ? .018 : 0, Math.PI, 0]}
+    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath', cloneStrategy: 'skeleton-safe', nearCameraRule: 'hidden-before-avatar-eye-plane-crossing', groundAcknowledgement: 'subtle-posture-shift' }}
   >
     <primitive object={model} scale={.72} />
   </group>
 }
 
-function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reducedMotion: boolean; onOrb: () => void }) {
+function orbHiddenForGroundPhase(phase: GroundDescentPhase | null) {
+  return phase === 'ground-surface-crossing' || phase === 'ground-spatial-fold' || phase === 'ground-world-reveal' || phase === 'ground-arrival-handoff' || phase === 'ground-first-person'
+}
+
+function OrbCompanion({ state, reducedMotion, groundPhase, onOrb }: { state: OrbState; reducedMotion: boolean; groundPhase: GroundDescentPhase | null; onOrb: () => void }) {
   const root = useRef<THREE.Group>(null)
   const fieldShell = useRef<THREE.Mesh>(null)
   const authoredCore = useRef<THREE.Group>(null)
@@ -218,6 +223,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   const effectBudget = ORB_EFFECT_BUDGET[quality.tier]
   const groundY = height(ORB_POSITION.x, ORB_POSITION.z)
   const sensory = useMemo(() => resolveOrbSensoryOutput(state, reducedMotion, true), [state, reducedMotion])
+  const hiddenForMaterialCrossing = orbHiddenForGroundPhase(groundPhase)
 
   useEffect(() => {
     const listener = (event: CustomEvent<OrbSpeechClockDetail>) => {
@@ -343,6 +349,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
 
   return <group
     ref={root}
+    visible={!hiddenForMaterialCrossing}
     name="home-living-memory-orb"
     position={[ORB_POSITION.x, groundY + 1.52, ORB_POSITION.z]}
     onClick={activate}
@@ -353,6 +360,7 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
       modelClip: ORB_CLIPS[state],
       stateMotion: 'one-shot-entry-plus-persistent-organic-runtime',
       speechEmbodiment: 'actual-playback-clock-with-rms-when-available',
+      groundOwnership: hiddenForMaterialCrossing ? 'home-owned-not-rendered-after-surface-crossing' : 'home-owned-visible',
       qualityTier: quality.tier,
       moteCeiling: effectBudget.motes,
       filamentCeiling: effectBudget.filaments,
@@ -486,10 +494,6 @@ function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onCom
         look.current.set(hit.x, hit.y - .05, hit.z - .25)
         camera.lookAt(look.current)
       } else {
-        // Until the dedicated volumetric strata renderer is present, hold the
-        // camera inside the near-surface material envelope instead of exposing a
-        // terrain underside or black void. The deterministic phase clock still
-        // advances through crossing/fold/reveal and routes only at the final handoff.
         const t = phaseProgress(elapsedMs, 1100, 1560)
         camera.position.lerpVectors(surfaceApproach, surfaceCommit, t)
         look.current.set(hit.x, hit.y - .18, hit.z - .52)
@@ -553,8 +557,9 @@ function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbSta
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
     <RetireLegacyHomeHotspots />
+    <HomeGroundMaterialBridge phase={groundPhase} target={transitionTarget} reducedMotion={reducedMotion} />
     <VisibleHomeAvatar reducedMotion={reducedMotion} groundPhase={groundPhase} />
-    <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
+    <OrbCompanion state={orbState} reducedMotion={reducedMotion} groundPhase={groundPhase} onOrb={onOrb} />
     <CameraRig yaw={yaw} pitch={pitch} transition={transition} target={transitionTarget} reducedMotion={reducedMotion} owner={owner} onComplete={onComplete} onGroundPhase={onGroundPhase} />
   </>
 }
