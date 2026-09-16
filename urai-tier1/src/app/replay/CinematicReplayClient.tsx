@@ -8,7 +8,7 @@ import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import { createMineralMaps } from '@/spatial/assets/naturalSurfaceMaps'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
-import type { SelectedMemory, SelectedMemoryMedia } from '@/spatial/memory/selectedMemoryContract'
+import type { SelectedMemory, SelectedMemoryMedia, SelectedMemoryReplaySegment } from '@/spatial/memory/selectedMemoryContract'
 import { useAdaptiveSpatialQuality } from '@/spatial/performance/useAdaptiveSpatialQuality'
 import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { ReplayProductControls } from './ReplayProductControls'
@@ -16,7 +16,38 @@ import { ReplayProductControls } from './ReplayProductControls'
 const REPLAY_ENVIRONMENT_MODEL = '/assets/urai/generated/models/replay-memory-environment-v1.glb'
 const REPLAY_SCREEN_POSITION: [number, number, number] = [0, 0.42, -4.2]
 
+type ReplayTruthLevel = 'recorded' | 'context' | 'inferred' | 'unknown'
+type ReplayPhaseId = SelectedMemoryReplaySegment['id']
+
+const PHASE_VISUALS: Record<ReplayPhaseId, { ambient: number; fill: number; source: number; fogNear: number; fogFar: number }> = {
+  memory: { ambient: 0.26, fill: 0.5, source: 3.2, fogNear: 10, fogFar: 34 },
+  emotion: { ambient: 0.22, fill: 0.43, source: 2.75, fogNear: 9, fogFar: 29 },
+  pattern: { ambient: 0.24, fill: 0.47, source: 3.0, fogNear: 10, fogFar: 31 },
+  return: { ambient: 0.28, fill: 0.54, source: 2.2, fogNear: 12, fogFar: 36 },
+}
+
 function clamp(value: number, max: number) { return Math.max(0, Math.min(max, value)) }
+
+function activeReplaySegment(memory: SelectedMemory, progressMs: number) {
+  return memory.replayManifest.segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs)
+    ?? memory.replayManifest.segments.at(-1)
+}
+
+function truthCue(memory: SelectedMemory, phase: ReplayPhaseId | undefined): { level: ReplayTruthLevel; label: string; detail: string } {
+  if (phase === 'memory') {
+    if (memory.sourceMedia.length) {
+      return { level: 'recorded', label: 'Recorded source', detail: 'Captured media is shown as source evidence.' }
+    }
+    return { level: 'context', label: 'Memory context', detail: 'No visual recording is available; Replay remains bounded to known memory context.' }
+  }
+  if (phase === 'emotion') {
+    return { level: 'inferred', label: 'URAI interpretation', detail: 'Emotional context is interpretive and is not presented as recorded fact.' }
+  }
+  if (phase === 'pattern') {
+    return { level: 'inferred', label: 'Possible pattern', detail: 'Pattern language is provisional and may be corrected by the memory owner.' }
+  }
+  return { level: 'context', label: 'Return', detail: 'Interpretation recedes while the selected memory identity remains intact.' }
+}
 
 function prepareReplayModel(source: THREE.Object3D) {
   const clone = source.clone(true)
@@ -54,20 +85,21 @@ function ReplayCameraRig({ progress, reducedMotion }: { progress: number; reduce
   return null
 }
 
-function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | undefined; playing: boolean }) {
+function MemoryMediaSurface({ media, playing, progressMs, muteVideo }: { media: SelectedMemoryMedia | undefined; playing: boolean; progressMs: number; muteVideo: boolean }) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const renderedMediaFrames = useRef(0)
   useEffect(() => { renderedMediaFrames.current = 0 }, [texture])
   useFrame(({ gl }) => {
     const owner = gl.domElement.closest('[data-testid="cinematic-replay-client"]')
-    if (!texture || gl.info.render.calls === 0) {
+    if (gl.info.render.calls === 0) {
       owner?.setAttribute('data-replay-render-ready', 'false')
       return
     }
     renderedMediaFrames.current++
     if (renderedMediaFrames.current >= 2) owner?.setAttribute('data-replay-render-ready', 'true')
   })
+
   const surfaceGeometry = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(13.8, 7.4, 72, 36)
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute
@@ -89,13 +121,12 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
     let localVideo: HTMLVideoElement | null = null
 
     setTexture(null)
-    const sourceUrl = media?.url ?? replayAssets.primary.src
-    const sourceKind = media?.kind ?? 'image'
+    if (!media || media.kind === 'audio') return () => { disposed = true }
 
-    if (sourceKind === 'image') {
+    if (media.kind === 'image') {
       const loader = new THREE.TextureLoader()
       loader.setCrossOrigin('anonymous')
-      loader.load(sourceUrl, (loaded) => {
+      loader.load(media.url, (loaded) => {
         if (disposed) {
           loaded.dispose()
           return
@@ -107,12 +138,12 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
       })
     }
 
-    if (sourceKind === 'video') {
+    if (media.kind === 'video') {
       const video = document.createElement('video')
-      video.src = sourceUrl
+      video.src = media.url
       video.crossOrigin = 'anonymous'
       video.playsInline = true
-      video.muted = true
+      video.muted = muteVideo
       video.loop = false
       video.preload = 'metadata'
       localVideo = video
@@ -132,21 +163,24 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
       if (videoRef.current === localVideo) videoRef.current = null
       localTexture?.dispose()
     }
-  }, [media])
+  }, [media, muteVideo])
 
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
     if (playing) void video.play().catch(() => undefined)
-    else video.pause()
-  }, [playing])
+    else {
+      video.pause()
+      if (Number.isFinite(video.duration)) video.currentTime = Math.min(video.duration, progressMs / 1000)
+    }
+  }, [playing, progressMs])
 
   return (
-    <group name="replay-v149-curved-memory-horizon" userData={{ visualRepair: 'no-flat-fog-card-or-portal-ring' }}>
+    <group name="replay-v149-curved-memory-horizon" userData={{ visualRepair: 'no-flat-fog-card-or-portal-ring', truthRole: media ? 'recorded-source' : 'unknown-kept-unbuilt' }}>
       <mesh position={REPLAY_SCREEN_POSITION} geometry={surfaceGeometry}>
         {texture
           ? <shaderMaterial
-              uniforms={{ uMap: { value: texture }, uPlaying: { value: playing ? 1 : 0 } }}
+              uniforms={{ uMap: { value: texture } }}
               vertexShader={`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
               fragmentShader={`
                 uniform sampler2D uMap;
@@ -164,7 +198,7 @@ function MemoryMediaSurface({ media, playing }: { media: SelectedMemoryMedia | u
               `}
               transparent depthWrite={false} toneMapped={false} side={THREE.DoubleSide}
             />
-          : <meshStandardMaterial color="#06131c" emissive="#1f8094" emissiveIntensity={0.08} roughness={0.92} metalness={0.01} side={THREE.DoubleSide} />}
+          : <meshStandardMaterial color="#111b19" emissive="#1c2c29" emissiveIntensity={0.025} roughness={0.98} metalness={0} side={THREE.DoubleSide} />}
       </mesh>
     </group>
   )
@@ -261,25 +295,27 @@ function ReplayTimelineField({ memory, progress }: { memory: SelectedMemory; pro
   </group>
 }
 
-function ReplaySpatialScene({ memory, playing, progressMs }: { memory: SelectedMemory; playing: boolean; progressMs: number }) {
+function ReplaySpatialScene({ memory, playing, progressMs, muteVideo }: { memory: SelectedMemory; playing: boolean; progressMs: number; muteVideo: boolean }) {
   const gltf = useGLTF(REPLAY_ENVIRONMENT_MODEL)
   const model = useMemo(() => prepareReplayModel(gltf.scene), [gltf.scene])
   const reducedMotion = useReducedMotion()
   const progress = memory.replayManifest.durationMs > 0 ? progressMs / memory.replayManifest.durationMs : 0
   const media = memory.sourceMedia.find((item) => item.kind === 'video' || item.kind === 'image')
+  const phase = activeReplaySegment(memory, progressMs)?.id ?? 'memory'
+  const visuals = PHASE_VISUALS[phase]
 
   return (
     <>
       <color attach="background" args={[memory.visuals.sky]} />
-      <fog attach="fog" args={[memory.visuals.sky, 10, 34]} />
-      <ambientLight intensity={0.26} />
-      <hemisphereLight intensity={0.5} color={memory.visuals.light} groundColor={memory.visuals.ground} />
+      <fog attach="fog" args={[memory.visuals.sky, visuals.fogNear, visuals.fogFar]} />
+      <ambientLight intensity={visuals.ambient} />
+      <hemisphereLight intensity={visuals.fill} color={memory.visuals.light} groundColor={memory.visuals.ground} />
       <directionalLight position={[-4, 7, 6]} intensity={1.3} color={memory.visuals.light} castShadow />
       <directionalLight position={[4, 2, -3]} intensity={0.42} color={memory.visuals.accent} />
-      <pointLight position={[0, 1.4, -4.6]} intensity={3.4} distance={14} color={memory.visuals.accent} />
+      <pointLight position={[0, 1.4, -4.6]} intensity={visuals.source} distance={14} color={memory.visuals.accent} />
       <primitive object={model} name="replay-memory-environment-v1" />
       <ReplayMemoryGeography accent={memory.visuals.accent}/>
-      <MemoryMediaSurface media={media} playing={playing} />
+      <MemoryMediaSurface media={media} playing={playing} progressMs={progressMs} muteVideo={muteVideo} />
       <ReplayTimelineField memory={memory} progress={progress} />
       <ReplayCameraRig progress={progress} reducedMotion={reducedMotion} />
     </>
@@ -309,9 +345,12 @@ export default function CinematicReplayClient() {
   const quality = useAdaptiveSpatialQuality()
   const [playing, setPlaying] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const duration = memory?.replayManifest.durationMs ?? 1
   const segments = memory?.replayManifest.segments ?? []
   const active = useMemo(() => segments.find((segment) => progressMs >= segment.startsAtMs && progressMs < segment.startsAtMs + segment.durationMs) ?? segments.at(-1), [progressMs, segments])
+  const truth = useMemo(() => memory ? truthCue(memory, active?.id) : null, [active?.id, memory])
+  const recordedAudioUrl = memory?.replayManifest.audioUrl ?? memory?.sourceMedia.find((item) => item.kind === 'audio')?.url
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
   const chooseMemory = useCallback(() => requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/', entryPortal: 'replay-memory-horizon', cameraCheckpoint: 'life-map-overview' }), [])
 
@@ -324,6 +363,20 @@ export default function CinematicReplayClient() {
     }), reducedMotion ? 250 : 100)
     return () => window.clearInterval(tick)
   }, [duration, memory, playing, reducedMotion])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) {
+      const desired = progressMs / 1000
+      if (Math.abs(audio.currentTime - desired) > .35) audio.currentTime = desired
+      void audio.play().catch(() => undefined)
+    } else {
+      audio.pause()
+      const desired = progressMs / 1000
+      if (Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, desired)
+    }
+  }, [playing, progressMs])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -356,26 +409,34 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v216-weathered-memory-cove-with-organic-media-manifestation">
+  const setTimeline = (next: number) => {
+    setProgressMs(next)
+    const audio = audioRef.current
+    if (audio && Number.isFinite(audio.duration)) audio.currentTime = Math.min(audio.duration, next / 1000)
+  }
+
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src} data-replay-spatial-owner="r3f-memory-theater" data-replay-environment={REPLAY_ENVIRONMENT_MODEL} data-replay-composition="v217-source-first-weathered-memory-cove" data-replay-camera="anchored-first-person-witness" data-replay-truth={truth?.level ?? 'unknown'}>
     <Canvas className="replaySpatialCanvas" shadows={quality.shadows} dpr={[1, quality.pixelRatioMax]} frameloop={quality.documentVisible ? 'always' : 'never'} camera={{ position: [0, 0.42, 8.4], fov: 46, near: 0.05, far: 120 }} gl={{ antialias: quality.antialias, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05 }}>
-      <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} />
+      <ReplaySpatialScene memory={memory} playing={playing} progressMs={progressMs} muteVideo={Boolean(recordedAudioUrl)} />
     </Canvas>
     <div className="replayAtmosphere" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>← Focus</button></header>
-    <section className="caption" aria-live="polite"><small>{active?.label ?? 'Replay'}</small><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
+    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span><button className="unwind" type="button" onClick={unwind}>Focus</button></header>
+    <section className="caption" aria-live="polite" data-truth-level={truth?.level ?? 'unknown'}><div className="captionMeta"><small>{active?.label ?? 'Replay'}</small>{truth ? <b>{truth.label}</b> : null}</div><strong>{active?.caption ?? memory.narrator.replay}</strong><span>{active?.narratorLine ?? memory.narrator.replay}</span></section>
     <section className="controls" aria-label="Replay controls">
       <button type="button" onClick={() => { if (progressMs >= duration) setProgressMs(0); setPlaying((value) => !value) }} aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? 'Pause' : 'Play'}</button>
-      <input type="range" min={0} max={duration} step={100} value={progressMs} onChange={(event) => setProgressMs(Number(event.currentTarget.value))} aria-label={`Replay timeline, ${percent} percent complete`} />
+      <input type="range" min={0} max={duration} step={100} value={progressMs} onChange={(event) => setTimeline(Number(event.currentTarget.value))} aria-label={`Replay timeline, ${percent} percent complete`} />
       <output>{percent}%</output>
     </section>
     <ReplayProductControls memory={memory} />
+    <details className="truthGuide"><summary>Truth</summary><div><strong>{truth?.label ?? 'Replay context'}</strong><p>{truth?.detail ?? 'Unknown information remains visually unresolved rather than being fabricated.'}</p><ul><li><b>Recorded</b> uses captured source media.</li><li><b>Context</b> remains less specific than recorded evidence.</li><li><b>Interpretation</b> is provisional and correctable.</li><li><b>Unknown</b> stays unbuilt.</li></ul></div></details>
     {memory.replayManifest.transcript ? <details className="transcript"><summary>Transcript</summary><p>{memory.replayManifest.transcript}</p></details> : null}
+    {recordedAudioUrl ? <audio ref={audioRef} src={recordedAudioUrl} preload="metadata" data-replay-recorded-audio="true" /> : null}
     <style>{replayCss}</style>
   </main>
 }
 
 const stateCss = `.replayState{position:fixed;inset:0;overflow:hidden;display:grid;place-items:center;padding:24px;background:#02060d;color:#fff;isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayState:after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 0 22%,rgba(1,5,12,.28) 48%,rgba(1,5,12,.8) 100%);pointer-events:none}.replayState section{z-index:2;text-align:center;max-width:620px;padding:28px 30px;border:1px solid rgba(220,248,255,.12);border-radius:28px;background:linear-gradient(145deg,rgba(2,8,16,.7),rgba(2,8,16,.24));backdrop-filter:blur(18px);text-shadow:0 3px 24px #000}.replayState section p{margin:0 0 9px;color:#c9f7ff;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayState section h1{margin:0;font:500 clamp(1.7rem,4.6vw,3.6rem)/1.02 var(--font-sans);letter-spacing:-.045em}.replayState section span{display:block;max-width:520px;margin:12px auto 0;color:rgba(235,247,255,.72);font-size:13px;line-height:1.55}.replayState button{min-height:48px;margin-top:20px;padding:0 22px;border-radius:999px;border:1px solid rgba(210,248,255,.32);background:linear-gradient(135deg,#dffbff,#8fe5ef);color:#041019;font-weight:900}.replayState button:focus-visible{outline:3px solid #fff;outline-offset:4px}@media(max-width:700px){.replayState section{max-width:calc(100vw - 32px);padding:24px 20px}}@media(prefers-reduced-motion:reduce){.replayState section{backdrop-filter:none}}@media(forced-colors:active){.replayState section,.replayState button{border:2px solid CanvasText}}`
 
-const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 30%,rgba(0,0,0,.12) 58%,rgba(0,0,0,.78) 100%);pointer-events:none}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.replayWorld header p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:clamp(280px,32svh,350px);transform:translateX(-50%);width:min(820px,86vw);text-align:center;text-shadow:0 3px 30px #000}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.caption strong{display:block;margin-top:8px;font:500 clamp(1.25rem,4vw,2.8rem)/1.08 var(--font-sans);letter-spacing:-.035em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.controls{position:absolute;z-index:7;left:50%;bottom:max(180px,calc(env(safe-area-inset-bottom) + 174px));transform:translateX(-50%);width:min(680px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.22);border-radius:24px;background:rgba(2,7,14,.74);backdrop-filter:blur(16px)}.controls button{min-width:72px;min-height:44px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--replay-light),var(--replay-accent));color:#041019;font-weight:900}.controls input{width:100%;min-height:44px}.controls output{min-width:42px;font-size:12px}.transcript{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.transcript p{margin:8px 0 0;line-height:1.5}.unwind{display:block;min-height:44px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.controls button:focus-visible,.unwind:focus-visible,.transcript summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:31svh;width:90vw}.caption strong{font-size:1.35rem}.caption span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.transcript{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.unwind{margin-top:9px}.controls{grid-template-columns:auto 1fr auto;padding:9px 10px}.controls button{min-width:64px}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(prefers-reduced-motion:reduce){.controls{backdrop-filter:none}}@media(forced-colors:active){.controls,.unwind,.transcript{border:2px solid CanvasText}}`
+const replayCss = `.replayWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:var(--replay-sky);isolation:isolate}.replaySpatialCanvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}.replayAtmosphere{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,transparent 0 30%,rgba(0,0,0,.12) 58%,rgba(0,0,0,.78) 100%);pointer-events:none}.replayWorld header{position:absolute;z-index:5;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.replayWorld header p{margin:0;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.replayWorld header h1{margin:5px 0;font-size:clamp(1.25rem,4vw,2.4rem);line-height:.95}.replayWorld header span{font-size:11px;color:rgba(255,255,255,.7)}.caption{position:absolute;z-index:5;left:50%;bottom:clamp(280px,32svh,350px);transform:translateX(-50%);width:min(820px,86vw);text-align:center;text-shadow:0 3px 30px #000}.captionMeta{display:flex;justify-content:center;align-items:center;gap:8px}.caption small{display:block;color:var(--replay-light);font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.captionMeta b{padding:4px 7px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(2,7,12,.5);color:rgba(255,255,255,.78);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.caption[data-truth-level=inferred] .captionMeta b{border-style:dashed}.caption[data-truth-level=context] .captionMeta b{opacity:.78}.caption strong{display:block;margin-top:8px;font:500 clamp(1.25rem,4vw,2.8rem)/1.08 var(--font-sans);letter-spacing:-.035em}.caption span{display:block;margin:8px auto 0;max-width:620px;font-size:12px;color:rgba(255,255,255,.72)}.controls{position:absolute;z-index:7;left:50%;bottom:max(180px,calc(env(safe-area-inset-bottom) + 174px));transform:translateX(-50%);width:min(680px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,255,255,.22);border-radius:24px;background:rgba(2,7,14,.74);backdrop-filter:blur(16px)}.controls button{min-width:72px;min-height:44px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--replay-light),var(--replay-accent));color:#041019;font-weight:900}.controls input{width:100%;min-height:44px}.controls output{min-width:42px;font-size:12px}.transcript,.truthGuide{position:absolute;z-index:8;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));max-width:340px;padding:8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(2,7,14,.7);font-size:12px}.truthGuide{top:max(66px,calc(env(safe-area-inset-top) + 60px));max-width:300px}.transcript p,.truthGuide p{margin:8px 0 0;line-height:1.5}.truthGuide ul{margin:9px 0 2px;padding-left:18px;color:rgba(255,255,255,.76);line-height:1.5}.truthGuide li+li{margin-top:4px}.unwind{display:block;min-height:44px;margin-top:10px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.controls button:focus-visible,.unwind:focus-visible,.transcript summary:focus-visible,.truthGuide summary:focus-visible{outline:3px solid #fff;outline-offset:3px}@media(max-width:700px){.caption{bottom:31svh;width:90vw}.caption strong{font-size:1.35rem}.caption span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.transcript,.truthGuide{top:max(76px,calc(env(safe-area-inset-top) + 70px));right:14px;bottom:auto;max-width:180px}.truthGuide{top:max(124px,calc(env(safe-area-inset-top) + 118px))}.unwind{margin-top:9px}.controls{grid-template-columns:auto 1fr auto;padding:9px 10px}.controls button{min-width:64px}.replayWorld header{max-width:250px}.replayWorld header h1{font-size:1.35rem}}@media(max-height:720px){.caption{bottom:28svh}}@media(prefers-reduced-motion:reduce){.controls{backdrop-filter:none}}@media(forced-colors:active){.controls,.unwind,.transcript,.truthGuide{border:2px solid CanvasText}}`
 
 useGLTF.preload(REPLAY_ENVIRONMENT_MODEL)
