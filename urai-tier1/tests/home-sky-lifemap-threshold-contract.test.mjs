@@ -29,7 +29,6 @@ test('Home Life Map entry is owned by the broad visible sky, never a localized g
 })
 
 test('sky activation uses progress-driven ascent before route handoff', () => {
-  assert.match(home, /cameraCheckpoint: 'home-sky-ascent'/)
   assert.match(home, /cameraCheckpoint: 'home-sky-ascent-complete'/)
   assert.match(home, /setTransition\('life-map'\)/)
   assert.match(home, /requestUraiWorldTravel\(\{ destination: 'life-map'/)
@@ -39,6 +38,7 @@ test('sky activation uses progress-driven ascent before route handoff', () => {
   assert.match(home, /router\.prefetch\('\/ground\/'\)/)
   assert.match(home, /router\.prefetch\('\/life-map\/'\)/)
   assert.match(home, /const duration = reducedMotion \? \.32 : 1\.65/)
+  assert.doesNotMatch(home, /cameraCheckpoint: 'home-sky-ascent'(?!-complete)/)
   assert.doesNotMatch(home, /setTimeout\([^\n]*life-map/)
   assert.match(runtime, /aria-label="Open Life Map directly"/)
   assert.match(runtime, /data-webgl-ready="false"/)
