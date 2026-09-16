@@ -9,6 +9,8 @@ const focusRuntime = fs.readFileSync(new URL('../src/app/focus/FocusChamberClien
 const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
 const explicitDemoMemory = fs.readFileSync(new URL('../src/spatial/memory/explicitDemoMemory.ts', import.meta.url), 'utf8')
 const selectedMemory = fs.readFileSync(new URL('../src/spatial/memory/selectedMemoryContract.ts', import.meta.url), 'utf8')
+const worldTransition = fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
+const worldNavigation = fs.readFileSync(new URL('../src/spatial/world/worldNavigation.css', import.meta.url), 'utf8')
 const canon = fs.readFileSync(new URL('../../docs/FOCUS_CANONICAL_TERMINOLOGY_LOCK.md', import.meta.url), 'utf8')
 
 test('public Focus route describes selected-memory Focus rather than productivity Focus', () => {
@@ -78,6 +80,16 @@ test('live fractured WebGL Focus remains the visible pixel authority', () => {
   assert.match(focusPolish, /\.focusWorld \.focusBackdrop \{\s*display: none !important;/)
   assert.match(focusPolish, /\.focusWorld \.focusCanvas canvas \{[\s\S]*opacity: 1 !important;[\s\S]*filter: none !important;[\s\S]*mix-blend-mode: normal !important;/)
   assert.doesNotMatch(focusPolish, /background-image:[\s\S]*var\(--focus-asset\)/)
+})
+
+test('Focus and Replay crossings are destination-aware and cannot render the shared portal tunnel', () => {
+  assert.match(worldTransition, /pendingTravel/)
+  assert.match(worldTransition, /data-to=\{pendingTravel\?\.destination \?\? world\.destination\}/)
+  assert.match(worldNavigation, /data-to='focus'[\s\S]*\.urai-world-transition__aperture[\s\S]*display: none/)
+  assert.match(worldNavigation, /data-to='replay'[\s\S]*\.urai-world-transition__aperture[\s\S]*display: none/)
+  assert.match(worldNavigation, /urai-memory-depth-crossing/)
+  const memoryCrossing = worldNavigation.slice(worldNavigation.indexOf("data-to='focus'"))
+  assert.doesNotMatch(memoryCrossing, /repeating-radial-gradient[^}]*urai-memory-depth-crossing/)
 })
 
 test('explicit demo narration stays canonical and does not reintroduce chamber product copy', () => {
