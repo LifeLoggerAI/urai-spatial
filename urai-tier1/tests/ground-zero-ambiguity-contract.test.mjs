@@ -12,6 +12,7 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
 const canon = read('src/spatial/ground/groundCanon.ts')
 const orbBridge = read('src/spatial/ground/GroundOrbCompanion.tsx')
+const materialBridge = read('src/spatial/ground/HomeGroundMaterialBridge.tsx')
 const navigation = read('src/spatial/navigation/EmbodiedNavigation.tsx')
 const hapticRegistry = read('src/spatial/haptics/hapticCueRegistry.ts')
 const hapticRuntime = read('src/spatial/haptics/HapticRuntime.tsx')
@@ -72,9 +73,9 @@ test('Ground renders no follower Orb while preserving semantic UrAi access', () 
     "fallback.style.opacity = '0'",
     "fallback.addEventListener('focus', reveal)",
     'no follower Orb is rendered',
-    'return null',
+    'GroundReturnWorldBridge',
   ]) has(orbBridge, marker)
-  assert.doesNotMatch(orbBridge, /ground-physical-orb|single-ground-world-orb|preferredDistanceM|catchupDistanceM|icosahedronGeometry|pointLight/)
+  assert.doesNotMatch(orbBridge, /ground-physical-orb|single-ground-world-orb|preferredDistanceM|catchupDistanceM|icosahedronGeometry|pointLight|urai-orb-avatar-v1\.glb|useGLTF/)
   assert.doesNotMatch(canon, /GROUND_ORB|orbCoherence/)
 })
 
@@ -98,9 +99,10 @@ test('Ground retains accessible coarse-pointer movement and filmic rendering', (
   ]) has(ground, marker)
 })
 
-test('Ground haptics use semantic activation and arrival cues instead of portal spectacle', () => {
+test('Ground haptics use semantic activation, material crossing and arrival cues instead of portal spectacle', () => {
   for (const marker of [
     "'ground-activation': { id: 'ground-activation'",
+    "'ground-crossing': { id: 'ground-crossing'",
     "'ground-arrival': { id: 'ground-arrival'",
     "'memory-ready': { id: 'memory-ready'",
     "'replay-commit': { id: 'replay-commit'",
@@ -110,5 +112,7 @@ test('Ground haptics use semantic activation and arrival cues instead of portal 
     "request?.href?.startsWith('/ground')",
     "executeHapticCue('ground-arrival')",
   ]) has(hapticRuntime, marker)
+  has(materialBridge, "phase === 'ground-surface-crossing'")
+  has(materialBridge, "requestHapticCue('ground-crossing', 'home-ground-material-bridge')")
   assert.doesNotMatch(hapticRuntime, /if \(isGroundTravel\(request\)\)[\s\S]{0,220}executeHapticCue\('portal-open'\)/)
 })
