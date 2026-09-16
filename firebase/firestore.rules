@@ -147,6 +147,22 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Possible Futures and the AI activity ledger are trusted-server-write surfaces.
+      // A user may inspect their own records, but untrusted clients cannot create,
+      // rewrite or delete Scenario truth or ledger evidence directly.
+      match /scenarios/{scenarioId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+        match /{scenarioDocument=**} {
+          allow read: if isSelf(uid) || isAdmin();
+          allow write: if false;
+        }
+      }
+      match /aiLedger/{entryId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+
       match /homeWorld/{docId} {
         allow read: if isSelf(uid) || isAdmin();
         allow create, update: if isAdmin() || (docId == 'state' && isValidHomeWorldStateWrite(uid));
@@ -243,11 +259,18 @@ service cloud.firestore {
       }
     }
 
-    // Trusted queues and durable receipts are never client-readable or client-writable.
+    // Trusted queues, aggregate working sets and durable receipts are never client-readable or client-writable.
     match /privacyEnforcementJobs/{docId} { allow read, write: if false; }
     match /providerRevocationQueue/{docId} { allow read, write: if false; }
     match /deletionQueue/{docId} { allow read, write: if false; }
     match /deletionReceipts/{docId} { allow read, write: if false; }
+    match /scenarioJobs/{docId} { allow read, write: if false; }
+    match /scenarioProviderReceipts/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldIntake/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldBatches/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldCells/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldRiskAssessments/{docId} { allow read, write: if false; }
+    match /globalEmotionalFieldPublicationReceipts/{docId} { allow read, write: if false; }
     match /spatial/{doc=**} { allow read, write: if isAdmin(); }
     match /{document=**} { allow read, write: if false; }
   }
