@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process'
 const PACK_PATH = 'operations/assets/generated-receipts/urai-final-glb-pack-v1.json'
 const CAPTURE_PROOF_PATH = 'scripts/capture-home-state-proof.mjs'
 const OLD_VISIBLE_WORLD = 'authored-coherent-three-dimensional-sanctuary'
-const CURRENT_VISIBLE_WORLD = 'moonlit-sacred-tech-sanctuary'
+const CURRENT_VISIBLE_WORLD = 'v226-rooted-inhabited-memory-sanctuary'
 
 const configs = [
   {

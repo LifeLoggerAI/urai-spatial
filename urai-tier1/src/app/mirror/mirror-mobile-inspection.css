@@ -1,6 +1,106 @@
+/* Keep context and the exit reachable while evidence scrolls underneath. */
+.mirrorInspection .mirrorInspectionHeader {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  margin: -16px -16px 12px;
+  padding: 16px 16px 10px;
+  background: rgba(3, 16, 27, .88);
+  border-bottom: 1px solid #dffaff28;
+  backdrop-filter: blur(12px);
+}
+
+.mirrorInspectionHeader p {
+  margin: 0;
+  padding-right: 54px;
+  color: #9ceef4;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.mirrorInspection {
+  scroll-padding-top: 104px;
+}
+
+.mirrorWorld .mirrorInspection > .fragmentStatus {
+  margin: 10px 0 0;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
   display: none !important;
   pointer-events: none !important;
+}
+
+/* Preserve the chamber as the dominant visual. The evidence inspector is a
+   translucent instrument at the edge of the world, never a dashboard slab. */
+.mirrorWorld::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 57%, transparent 0 34%, rgba(1, 5, 9, .06) 60%, rgba(1, 4, 8, .46) 100%),
+    linear-gradient(90deg, rgba(1, 6, 10, .24), transparent 24% 76%, rgba(1, 6, 10, .20));
+}
+
+.mirrorWorld .mirrorInspection {
+  right: max(24px, env(safe-area-inset-right)) !important;
+  top: max(86px, calc(env(safe-area-inset-top) + 66px)) !important;
+  width: min(332px, 27vw) !important;
+  max-height: calc(100svh - 238px) !important;
+  padding: 16px !important;
+  border-radius: 24px 24px 24px 9px !important;
+  background: linear-gradient(150deg, rgba(5, 24, 30, .60), rgba(3, 13, 23, .42)) !important;
+  box-shadow:
+    0 28px 92px rgba(0, 0, 0, .38),
+    -18px 15px 64px rgba(71, 204, 210, .05),
+    inset 0 1px rgba(235, 255, 255, .07) !important;
+  backdrop-filter: blur(14px) saturate(1.04) !important;
+}
+
+.mirrorWorld .mirrorInspection h2 {
+  font-size: 1.72rem !important;
+}
+
+.mirrorWorld .mirrorInspection > strong {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mirrorWorld .mirrorInspection dl {
+  gap: 7px !important;
+  margin: 13px 0 !important;
+}
+
+.mirrorWorld .mirrorInspection dl div {
+  padding: 8px !important;
+  background: rgba(255,255,255,.035) !important;
+}
+
+.mirrorWorld .mirrorPatternRail {
+  gap: 5px !important;
+  padding: 4px !important;
+  background: rgba(3, 16, 27, .52) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.mirrorWorld .mirrorPatternRail button {
+  min-width: 124px !important;
+  min-height: 48px !important;
+  padding: 6px 10px !important;
+  background: rgba(10, 27, 37, .54) !important;
+}
+
+.mirrorWorld .mirrorPatternRail button[aria-pressed='true'] {
+  background: linear-gradient(135deg, rgba(223,252,255,.92), rgba(168,230,232,.88)) !important;
 }
 
 @media (max-width: 760px) {
@@ -9,13 +109,12 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
     pointer-events: none !important;
   }
 
+  .mirrorWorld:has(.mirrorInspection) .mirrorIdentity,
   .mirrorWorld:has(.mirrorInspection) .urai-mobile-movement,
   .mirrorWorld:has(.mirrorInspection) .mirrorOrb {
     display: none !important;
   }
 
-  /* React Three Fiber owns a full-viewport host div around the canvas. Disable
-     pointer ownership on both layers while the semantic inspector is active. */
   .mirrorWorld:has(.mirrorInspection) > div,
   .mirrorWorld:has(.mirrorInspection) canvas {
     pointer-events: none !important;
@@ -31,5 +130,40 @@ body:has(.mirrorWorld .mirrorInspection) .urai-movement-help {
     position: relative;
     z-index: 101;
     pointer-events: auto;
+  }
+
+  .mirrorWorld .mirrorInspection {
+    left: 16px !important;
+    right: 16px !important;
+    top: max(42px, calc(env(safe-area-inset-top) + 28px)) !important;
+    bottom: max(226px, calc(env(safe-area-inset-bottom) + 220px)) !important;
+    width: auto !important;
+    max-height: none !important;
+    padding: 16px 16px 28px !important;
+    scrollbar-gutter: stable;
+    mask-image: linear-gradient(to bottom, transparent 0, #000 15px, #000 calc(100% - 24px), transparent 100%);
+    border-radius: 22px 22px 10px 10px !important;
+    background: linear-gradient(180deg, rgba(4, 20, 28, .72), rgba(3, 13, 23, .50)) !important;
+    backdrop-filter: blur(12px) saturate(1.02) !important;
+  }
+
+  .mirrorWorld .mirrorInspection::after {
+    content: 'Scroll for complete evidence';
+    position: static;
+    display: block;
+    margin-top: 18px;
+    padding: 8px 0 2px;
+    color: #9ceef4;
+    background: linear-gradient(90deg, transparent, rgba(3, 13, 23, .72) 18% 82%, transparent);
+    font: 800 9px/1.2 system-ui;
+    letter-spacing: .14em;
+    text-align: center;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .mirrorWorld:has(.mirrorInspection) .mirrorPatternRail,
+  .mirrorWorld:has(.mirrorInspection) .mirrorAnnouncement {
+    display: none !important;
   }
 }

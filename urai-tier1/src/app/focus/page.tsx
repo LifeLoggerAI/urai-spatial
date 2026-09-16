@@ -1,5 +1,6 @@
 import FinalFocusChamber from './FocusChamberClient'
 import './focus-stable-controls.css'
+import './focus-launch-visual-polish.css'
 
 export const metadata = {
   title: 'URAI Focus',

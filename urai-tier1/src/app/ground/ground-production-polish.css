@@ -11,10 +11,13 @@
 }
 
 .ground-spatial-root .ground-directory button {
-  width: 44px !important;
+  width: auto !important;
   min-width: 44px !important;
   min-height: 44px !important;
-  border-radius: 50% !important;
+  border-radius: 999px !important;
+  padding: 0 10px !important;
+  gap: 7px !important;
+  flex: 0 0 auto !important;
 }
 
 .ground-spatial-root .ground-directory button > span {
@@ -103,4 +106,75 @@
   .ground-spatial-root .ground-directory,
   .ground-spatial-root .urai-mobile-movement { border: 1px solid CanvasText; }
   .ground-spatial-root .urai-mobile-movement button::before { border-color: ButtonText; }
+}
+
+.ground-spatial-root .ground-directory strong {
+  max-width: 140px;
+  opacity: 1;
+  font-size: 11px;
+}
+
+/* Portrait has separate rows for destinations and movement. A narrow rail
+   beside the pad also collided with the persistent companion button. */
+@media (max-width: 700px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root .ground-directory {
+    left: max(14px, env(safe-area-inset-left)) !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+    bottom: max(132px, calc(env(safe-area-inset-bottom) + 122px)) !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    padding: 5px 8px !important;
+    scroll-padding-inline: 10px !important;
+    mask-image: none !important;
+    background: linear-gradient(90deg, rgba(5, 20, 24, .7), rgba(5, 20, 24, .46));
+    backdrop-filter: blur(8px);
+  }
+  .ground-spatial-root .ground-directory button {
+    width: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+  .ground-spatial-root .ground-directory strong {
+    max-width: 0 !important;
+    opacity: 0 !important;
+  }
+  .ground-spatial-root .ground-directory button:is(:focus-visible,[aria-current='location']) {
+    width: auto !important;
+    padding: 0 11px !important;
+    gap: 7px !important;
+  }
+  .ground-spatial-root .ground-directory button:is(:focus-visible,[aria-current='location']) strong {
+    max-width: 116px !important;
+    opacity: .9 !important;
+  }
+  .ground-spatial-root .ground-prompt {
+    bottom: max(194px, calc(env(safe-area-inset-bottom) + 184px)) !important;
+    box-sizing: border-box;
+    max-width: calc(100vw - 28px);
+    white-space: normal !important;
+    text-align: center;
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+    letter-spacing: .02em !important;
+    text-transform: none !important;
+    color: #eef7f4 !important;
+    background: rgba(5, 20, 24, .62) !important;
+  }
+  .ground-spatial-root .ground-brand strong { white-space: normal !important; }
+  .ground-spatial-root .urai-mobile-movement {
+    grid-template-columns: repeat(3, 44px) !important;
+    grid-template-rows: repeat(2, 44px) !important;
+  }
+  .ground-spatial-root .urai-mobile-movement button {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .ground-spatial-root[data-ground-camera-mode='look'] .ground-directory,
+  .ground-spatial-root[data-ground-camera-mode='look'] .ground-prompt {
+    opacity: .22;
+    pointer-events: none;
+  }
 }

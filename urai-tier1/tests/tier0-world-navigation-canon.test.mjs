@@ -34,14 +34,17 @@ test('Tier-0 canon defines the required persistent-world destinations', () => {
   assert.match(worldTypes, /transition/)
 })
 
-test('Ground is the canonical gateway to Hidden Infrastructure', () => {
-  assert.match(registry, /href:\s*['"]\/ground['"]/)
-  assert.match(registry, /entryPortal:\s*['"]ground-gateway['"]/)
-  assert.match(registry, /environmentalForm:\s*['"]underground-network['"]/)
+test('Ground is the lived physical world while retaining its compatibility destination id', () => {
+  assert.match(registry, /id:\s*['"]infrastructure-hub['"][\s\S]*label:\s*['"]Ground['"][\s\S]*href:\s*['"]\/ground['"][\s\S]*layer:\s*['"]living-world['"]/)
+  assert.match(registry, /entryPortal:\s*['"]home-ground['"]/)
+  assert.match(registry, /cameraCheckpoint:\s*['"]ground-first-person-arrival['"]/)
+  assert.match(registry, /environmentalForm:\s*['"]lived-physical-world['"]/)
   assert.match(registry, /\[\s*['"]\/ground['"]\s*,\s*['"]infrastructure-hub['"]\s*\]/)
   assert.match(gateway, /destination:\s*['"]infrastructure-hub['"]/)
-  assert.match(gateway, /href:\s*['"]\/ground\?from=ground-gateway['"]/)
-  assert.match(gateway, /Open the ground and descend into Hidden Infrastructure/)
+  assert.match(gateway, /href:\s*['"]\/ground\?from=home-ground['"]/)
+  assert.match(gateway, /Enter your physical Ground world/)
+  assert.match(gateway, /data-ground-gateway=['"]lived-physical-world['"]/)
+  assert.doesNotMatch(gateway, /Hidden Infrastructure|private infrastructure world|Enter below/)
   assert.match(gateway, /type=['"]button['"]/)
 })
 
