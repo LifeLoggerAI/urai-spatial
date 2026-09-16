@@ -7,28 +7,21 @@ export const URAI_WORLD_ORB_OPEN_EVENT = 'urai:world-orb-open'
 export const URAI_WORLD_ORB_CLOSE_EVENT = 'urai:world-orb-close'
 export const URAI_HOME_ASCENT_EVENT = 'urai:home-ascent'
 
-export type UraiWorldOrbOpenDetail = {
-  returnFocusTo?: HTMLElement
-}
-
+export type UraiWorldOrbOpenDetail = { returnFocusTo?: HTMLElement }
 let pendingOrbOpenDetail: UraiWorldOrbOpenDetail | null = null
-
 const WORLD_TRAVEL_DEBOUNCE_MS = 1500
 const WORLD_TRAVEL_FALLBACK_MS = 2400
 const WORLD_TRAVEL_OBSERVE_MS = 50
 let lastTravelFingerprint = ''
 let lastTravelAt = 0
 
-function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') {
-  window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } }))
-}
+function dispatchSpatialAudioCue(cue: 'transition' | 'orb-confirm' | 'error') { window.dispatchEvent(new CustomEvent('urai:audio-cue', { detail: { cue } })) }
 
 function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (!request.href || typeof window === 'undefined') return request.href
   const target = new URL(request.href, window.location.origin)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-
   const context = request.context
   if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -40,14 +33,15 @@ function buildFallbackHref(request: UraiWorldTravelRequest) {
   if (context?.originRealm) target.searchParams.set('originRealm', context.originRealm)
   if (context?.returnToken) target.searchParams.set('returnToken', context.returnToken)
   if (context?.reconstructionFidelity) target.searchParams.set('fidelity', context.reconstructionFidelity)
-
+  if (context?.scenarioId) target.searchParams.set('scenario', context.scenarioId)
+  if (context?.scenarioBranchId) target.searchParams.set('branch', context.scenarioBranchId)
+  if (context?.scenarioBasisRevision !== undefined) target.searchParams.set('basisRevision', String(context.scenarioBasisRevision))
+  if (context?.truthMode) target.searchParams.set('truthMode', context.truthMode)
+  if (context?.scenarioOrigin) target.searchParams.set('scenarioOrigin', context.scenarioOrigin)
   return `${target.pathname}${target.search}${target.hash}`
 }
 
-function commitHardFallback(href: string) {
-  window.location.assign(href)
-}
-
+function commitHardFallback(href: string) { window.location.assign(href) }
 function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
   if (request.destination !== 'life-map') return false
   if (request.entryPortal !== 'home-sky' || request.cameraCheckpoint !== 'home-sky-ascent') return false
@@ -55,95 +49,38 @@ function shouldBeginHomeAscent(request: UraiWorldTravelRequest) {
   if (pathname !== '/' && pathname !== '/home') return false
   return Boolean(document.querySelector('.urai-asset-home-world canvas'))
 }
-
 function markHomeAscentClosing(request: UraiWorldTravelRequest) {
   if (request.destination !== 'life-map') return
   if (request.entryPortal !== 'home-sky' || request.cameraCheckpoint !== 'home-sky-ascent-complete') return
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
   if (pathname !== '/' && pathname !== '/home') return
   const owner = document.querySelector<HTMLElement>('.urai-asset-home-world[data-home-primary-owner="asset-driven"]')
-  if (!owner) return
-  if (owner.getAttribute('data-home-portal-sequence') !== 'life-map:traversal') return
+  if (!owner || owner.getAttribute('data-home-portal-sequence') !== 'life-map:traversal') return
   owner.setAttribute('data-home-portal-sequence', 'life-map:closing')
 }
 
 export function requestUraiWorldTravel(request: UraiWorldTravelRequest) {
   if (typeof window === 'undefined') return
-
   if (shouldBeginHomeAscent(request)) {
-    const scene = useSceneStore.getState()
-    if (scene.phase !== 'ASCENT') scene.enterLifeMap()
-    dispatchSpatialAudioCue('transition')
-    window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_HOME_ASCENT_EVENT, { detail: request }))
-    return
+    const scene = useSceneStore.getState(); if (scene.phase !== 'ASCENT') scene.enterLifeMap()
+    dispatchSpatialAudioCue('transition'); window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_HOME_ASCENT_EVENT, { detail: request })); return
   }
-
   markHomeAscentClosing(request)
-
-  const now = Date.now()
-  const fingerprint = JSON.stringify(request)
+  const now = Date.now(); const fingerprint = JSON.stringify(request)
   if (fingerprint === lastTravelFingerprint && now - lastTravelAt < WORLD_TRAVEL_DEBOUNCE_MS) return
-  lastTravelFingerprint = fingerprint
-  lastTravelAt = now
+  lastTravelFingerprint = fingerprint; lastTravelAt = now
   dispatchSpatialAudioCue('transition')
   window.dispatchEvent(new CustomEvent<UraiWorldTravelRequest>(URAI_WORLD_TRAVEL_EVENT, { detail: request }))
-
-  const fallbackHref = buildFallbackHref(request)
-  if (!fallbackHref) return
+  const fallbackHref = buildFallbackHref(request); if (!fallbackHref) return
   const targetPathname = new URL(fallbackHref, window.location.origin).pathname.replace(/\/+$/, '') || '/'
-
-  let settled = false
-  let observer = 0
-  const fallback = window.setTimeout(() => {
-    if (settled) return
-    settled = true
-    if (observer) window.clearInterval(observer)
-    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
-    if (currentPathname !== targetPathname) commitHardFallback(fallbackHref)
-  }, WORLD_TRAVEL_FALLBACK_MS)
-
-  observer = window.setInterval(() => {
-    const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
-    if (currentPathname !== targetPathname) return
-    settled = true
-    window.clearTimeout(fallback)
-    window.clearInterval(observer)
-  }, WORLD_TRAVEL_OBSERVE_MS)
+  let settled = false; let observer = 0
+  const fallback = window.setTimeout(() => { if (settled) return; settled = true; if (observer) window.clearInterval(observer); const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'; if (currentPathname !== targetPathname) commitHardFallback(fallbackHref) }, WORLD_TRAVEL_FALLBACK_MS)
+  observer = window.setInterval(() => { const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'; if (currentPathname !== targetPathname) return; settled = true; window.clearTimeout(fallback); window.clearInterval(observer) }, WORLD_TRAVEL_OBSERVE_MS)
 }
 
-export function requestUraiWorldReturn() {
-  if (typeof window === 'undefined') return
-  dispatchSpatialAudioCue('transition')
-  window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT))
-}
+export function requestUraiWorldReturn() { if (typeof window === 'undefined') return; dispatchSpatialAudioCue('transition'); window.dispatchEvent(new Event(URAI_WORLD_RETURN_EVENT)) }
+export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) { if (typeof window === 'undefined') return; pendingOrbOpenDetail = { returnFocusTo }; window.setTimeout(() => { const detail = pendingOrbOpenDetail ?? { returnFocusTo }; dispatchSpatialAudioCue('orb-confirm'); window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail })) }, 0) }
+export function publishUraiWorldOrbClose() { if (typeof window === 'undefined') return; window.dispatchEvent(new Event(URAI_WORLD_ORB_CLOSE_EVENT)) }
+export function takePendingUraiWorldOrbOpen() { const detail = pendingOrbOpenDetail; pendingOrbOpenDetail = null; return detail }
 
-export function requestUraiWorldOrbOpen(returnFocusTo?: HTMLElement) {
-  if (typeof window === 'undefined') return
-  pendingOrbOpenDetail = { returnFocusTo }
-  window.setTimeout(() => {
-    const detail = pendingOrbOpenDetail ?? { returnFocusTo }
-    dispatchSpatialAudioCue('orb-confirm')
-    window.dispatchEvent(new CustomEvent<UraiWorldOrbOpenDetail>(URAI_WORLD_ORB_OPEN_EVENT, { detail }))
-  }, 0)
-}
-
-export function publishUraiWorldOrbClose() {
-  if (typeof window === 'undefined') return
-  window.dispatchEvent(new Event(URAI_WORLD_ORB_CLOSE_EVENT))
-}
-
-export function takePendingUraiWorldOrbOpen() {
-  const detail = pendingOrbOpenDetail
-  pendingOrbOpenDetail = null
-  return detail
-}
-
-declare global {
-  interface WindowEventMap {
-    [URAI_WORLD_TRAVEL_EVENT]: CustomEvent<UraiWorldTravelRequest>
-    [URAI_WORLD_RETURN_EVENT]: Event
-    [URAI_WORLD_ORB_OPEN_EVENT]: CustomEvent<UraiWorldOrbOpenDetail>
-    [URAI_WORLD_ORB_CLOSE_EVENT]: Event
-    [URAI_HOME_ASCENT_EVENT]: CustomEvent<UraiWorldTravelRequest>
-  }
-}
+declare global { interface WindowEventMap { [URAI_WORLD_TRAVEL_EVENT]: CustomEvent<UraiWorldTravelRequest>; [URAI_WORLD_RETURN_EVENT]: Event; [URAI_WORLD_ORB_OPEN_EVENT]: CustomEvent<UraiWorldOrbOpenDetail>; [URAI_WORLD_ORB_CLOSE_EVENT]: Event; [URAI_HOME_ASCENT_EVENT]: CustomEvent<UraiWorldTravelRequest> } }
