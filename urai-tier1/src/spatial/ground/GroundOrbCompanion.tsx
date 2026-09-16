@@ -33,7 +33,9 @@ export function GroundOrbCompanion(_props: {
       ) ?? ''
     }
     const observer = liveRegion ? new MutationObserver(normalizeStatus) : null
-    observer?.observe(liveRegion, { childList: true, characterData: true, subtree: true })
+    if (liveRegion && observer) {
+      observer.observe(liveRegion, { childList: true, characterData: true, subtree: true })
+    }
     normalizeStatus()
 
     const reveal = () => { if (fallback) fallback.style.opacity = '1' }
