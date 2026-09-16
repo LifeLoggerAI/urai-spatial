@@ -3,9 +3,29 @@ import { lifeMapDisplayPosition } from './lifeMapLayout'
 
 type Point3 = [number, number, number]
 
+export const LIFE_MAP_LAYOUT_VERSION = 3
+export const LIFE_MAP_SEED_VERSION = 1
+
 function hash2(x: number, z: number): number {
   const value = Math.sin(x * 127.1 + z * 311.7 + 17.13) * 43758.5453123
   return value - Math.floor(value)
+}
+
+function hashString(value: string, salt: number): number {
+  let hash = (2166136261 ^ salt) >>> 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619) >>> 0
+  }
+  return hash >>> 0
+}
+
+function stableUnit(node: LifeMapNode, salt: number): number {
+  // Stable geography must not depend on array/query order. Era/cluster identity is
+  // intentionally part of the placement key because moving a memory to a newly
+  // governed chapter is an explicit semantic relocation; ordinary data reorder is not.
+  const key = `${LIFE_MAP_LAYOUT_VERSION}:${LIFE_MAP_SEED_VERSION}:${node.id}:${node.eraId || 'unassigned-era'}:${node.clusterId || 'unassigned-cluster'}`
+  return hashString(key, salt) / 0xffffffff
 }
 
 function smoothCell(value: number): number {
@@ -97,15 +117,15 @@ export function lifeMapTerrainHeight(x: number, z: number): number {
 }
 
 // Memory identity is celestial. The authored terrain remains a lower historical
-// stratum, but memory stars are no longer projected onto that terrain. Each
-// chapter occupies genuine x/y/z volume with deterministic irregularity so the
-// overview reads as an explorable personal cosmos rather than a node graph laid
-// across a valley.
-export function lifeMapLocalPoint(node: LifeMapNode, index: number): Point3 {
+// stratum, but memory stars are no longer projected onto that terrain. Placement
+// is derived exclusively from stable semantic identity; the retained index
+// argument is compatibility-only and deliberately cannot move the universe when
+// query order changes.
+export function lifeMapLocalPoint(node: LifeMapNode, _index = 0): Point3 {
   const [x, y, z] = lifeMapDisplayPosition(node)
-  const jitterX = (hash2(index + x * .37, z * .19 + 3.1) - .5) * 3.8
-  const jitterY = (hash2(index * .73 + y * .29, x * .41 - 1.7) - .5) * 5.4
-  const jitterZ = (hash2(index * 1.13 + z * .17, y * .53 + 7.9) - .5) * 9.0
+  const jitterX = (stableUnit(node, 101) - .5) * 3.8
+  const jitterY = (stableUnit(node, 211) - .5) * 5.4
+  const jitterZ = (stableUnit(node, 307) - .5) * 9.0
   return [
     x * 1.72 + jitterX,
     y * 1.34 + jitterY + 1.8,
