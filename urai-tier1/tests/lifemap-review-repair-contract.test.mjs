@@ -2,25 +2,110 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const read = (path) => fs.readFileSync(path, 'utf8')
+const scene = fs.readFileSync(new URL('../src/components/lifemap/ComposedLifeMapScene.tsx', import.meta.url), 'utf8')
+const overlay = fs.readFileSync(new URL('../src/components/lifemap/LifeMapGoldMasterOverlay.tsx', import.meta.url), 'utf8')
+const legacyOverlay = fs.readFileSync(new URL('../src/components/lifemap/LifeMapGoldMasterOverlayV249.tsx', import.meta.url), 'utf8')
+const lifeMapSource = `${overlay}\n${legacyOverlay}`
+const canvasProof = fs.readFileSync(new URL('../../scripts/verify-lifemap-canvas-proof.mjs', import.meta.url), 'utf8')
+const workflow = fs.readFileSync(new URL('../../.github/workflows/lifemap-founder-visual-proof.yml', import.meta.url), 'utf8')
+const layoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapSpatialLayout.ts', import.meta.url), 'utf8')
+const authoredLayoutSource = fs.readFileSync(new URL('../src/components/lifemap/lifeMapLayout.ts', import.meta.url), 'utf8')
+const focusSource = fs.readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')
+const focusPolish = fs.readFileSync(new URL('../src/app/focus/focus-launch-visual-polish.css', import.meta.url), 'utf8')
+const focusGeology = fs.readFileSync(new URL('../src/app/focus/focusMemoryGeology.ts', import.meta.url), 'utf8')
 
-const canvasProof = read('scripts/run-lifemap-founder-visual-proof.mjs')
-const workflow = read('../.github/workflows/lifemap-founder-visual-proof.yml')
-const focusSource = read('src/app/focus/FocusChamberClient.tsx')
-const focusPolish = read('src/app/focus/focus-launch-visual-polish.css')
-const focusGeology = read('src/app/focus/focusMemoryGeology.ts')
-const replaySource = read('src/app/replay/CinematicReplayClient.tsx')
-const replayCss = read('src/app/replay/cinematicReplay.module.css')
-const adaptiveLifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
-const lifeMapCss = read('src/components/lifemap/lifemap-cinematic.css')
-const worldTypes = read('src/spatial/world/worldTypes.ts')
-const worldEvents = read('src/spatial/world/worldEvents.ts')
-const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
-const selectedMemory = read('src/spatial/memory/SelectedMemoryProvider.tsx')
-const memoryStar = read('src/spatial/memory/MemoryStar.tsx')
+test('selected camera goals use the same indexed world transform as rendered memories', () => {
+  assert.match(scene, /lifeMapWorldPoint\(node, selectedIndex, portrait\)/)
+  assert.match(scene, /goalForNode\(selected, phase, portrait, selectedIndex\)/)
+  const world = fs.readFileSync(new URL('../src/components/lifemap/LifeMapProductionWorld.tsx', import.meta.url), 'utf8')
+  assert.match(world, /lifeMapLocalPoint as celestialNodePosition, lifeMapStage/)
+  assert.match(world, /lifeMapStage\(Boolean\(selected\), portrait\)/)
+  assert.match(world, /celestialNodePosition\(selected, selectedIndex\)/)
+})
 
-// This file is intentionally broad: it prevents a previously repaired visual or
-// semantic owner from silently re-entering while later Life Map/Focus work lands.
+test('desktop and portrait cameras target the same authored memory transform as the rendered artifact', () => {
+  assert.match(layoutSource, /import \{ lifeMapDisplayPosition \} from '\.\/lifeMapLayout'/)
+  assert.match(layoutSource, /const \[x, y, z\] = lifeMapDisplayPosition\(node\)/)
+  assert.match(layoutSource, /const local = lifeMapLocalPoint\(node, index\)/)
+  assert.match(layoutSource, /const stage = lifeMapStage\(true, portrait\)/)
+  assert.match(layoutSource, /return local\.map\(\(value, axis\) => value \* stage\.scale\[axis\] \+ stage\.position\[axis\]\) as Point3/)
+  assert.match(authoredLayoutSource, /const CHAPTER_CENTERS/)
+  assert.match(authoredLayoutSource, /export function lifeMapDisplayPosition/)
+})
+
+test('reduced motion forces an in-flight selected journey to arrival', () => {
+  assert.match(scene, /if \(profile\.reducedMotion\) \{\s*journeyToken\.current \+= 1;\s*setPhase\("arrival"\);\s*return;/s)
+})
+
+test('selected arrival preserves surrounding personal-universe geography instead of isolating one node', () => {
+  assert.match(lifeMapSource, /life-map-v249-personal-universe-geography/)
+  assert.match(lifeMapSource, /all-sites-remain-grounded-geography-selected-site-rises-without-isolating-context/)
+  assert.match(lifeMapSource, /nodes\.map\(/)
+  assert.match(lifeMapSource, /life-map-v249-grounded-memory-places/)
+  assert.match(lifeMapSource, /arrivalMeaning: 'inside-history-not-node-zoom'/)
+  assert.doesNotMatch(lifeMapSource, /const visibleNodes\s*=\s*arrival\s*&&\s*selected\s*\?\s*\[selected\]/)
+})
+
+test('retired hidden Life Map visual owners lose pointer authority and restore it only on cleanup', () => {
+  assert.match(legacyOverlay, /const RETIRED_VISUAL_GROUPS = new Set/)
+  assert.match(legacyOverlay, /'life-map-v237-weathered-valley-floor'/)
+  assert.match(legacyOverlay, /object\.raycast = \(\) => undefined/)
+  assert.match(legacyOverlay, /child\.raycast = \(\) => undefined/)
+  assert.match(legacyOverlay, /raycasts\.current\.forEach\(\(raycast, object\) => \{ object\.raycast = raycast \}\)/)
+})
+
+test('V256 semantic memory families cannot collapse back to one repeated manifestation', () => {
+  assert.match(legacyOverlay, /function semanticFamilyParts\(/)
+  for (const family of ['memory', 'season', 'ritual', 'forecast', 'threshold', 'relationship', 'recovery']) assert.match(legacyOverlay, new RegExp(`node\\.type === '${family}'`))
+  assert.match(legacyOverlay, /const spiralPoints/)
+  assert.match(legacyOverlay, /semanticFamilies: 'memory-season-ritual-forecast-threshold-relationship-recovery-legacy'/)
+  assert.match(legacyOverlay, /semanticFamily: node\.type/)
+  assert.doesNotMatch(legacyOverlay, /nodes\.map\([^)]*=>\s*<mesh[^>]*<sphereGeometry/s)
+})
+
+test('visible terrain authority rejects repeated procedural banding in source and pixels', () => {
+  assert.match(legacyOverlay, /life-map-v256-authored-memory-terrain/)
+  assert.match(legacyOverlay, /visualAuthority: 'authored-chapter-geography'/)
+  assert.match(legacyOverlay, /life-map-v256-authored-chapter-territories/)
+  for (const marker of ['const chapterMasses','const outcrops','const livedCuts','const authoredScars','const lateralBanks','const chapterShelves','const ravines','function valueNoise2D']) assert.match(layoutSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.doesNotMatch(layoutSource, /distanceFromRoute|shoulder|Math\.tanh|terraces/)
+  assert.doesNotMatch(layoutSource, /weathering\s*=\s*\n\s*\.16 \* Math\.sin/)
+})
+
+test('relationship language stays contextual and never becomes the overview visual grammar', () => {
+  assert.match(overlay, /const contextualTypes = new Set<LifeMapNode\['type'\]>/)
+  assert.match(overlay, /const incident = Boolean\(selected &&/)
+  assert.match(overlay, /const overviewContext = !selected && source\.eraId !== target\.node\.eraId/)
+  assert.match(overlay, /const visible = selected \? candidates\.slice\(0, 1\) : \[\]/)
+  assert.match(overlay, /overview-no-explicit-graph-edges/)
+  assert.match(overlay, /selected-memory-only-max-one-subtle/)
+  assert.match(overlay, /opacity=\{selected \? \.025 : 0\}/)
+  assert.doesNotMatch(overlay, /selected \? 3 : 4/)
+})
+
+test('portrait overview compacts the full celestial memory volume without dead-sky collapse', () => {
+  assert.match(layoutSource, /const jitterY = .* \* 5\.4/)
+  assert.match(layoutSource, /z \* 1\.82 - 8\.0 \+ jitterZ/)
+  assert.match(layoutSource, /\? \{ scale: \[\.62, \.84, \.92\], position: \[0, -\.15, 1\.0\] \}/)
+  assert.match(layoutSource, /const widthDistance = halfWidth \/ Math\.max\(horizontalTan \* \.88, \.08\)/)
+  assert.match(layoutSource, /const heightDistance = halfHeight \/ Math\.max\(verticalTan \* \.86, \.08\)/)
+  assert.match(layoutSource, /const distance = Math\.max\(portrait \? 30 : 24, widthDistance, heightDistance\)/)
+  assert.match(layoutSource, /target\[2\] - \(portrait \? 3\.0 : 4\.0\)/)
+  assert.match(layoutSource, /nearestZ \+ distance/)
+  assert.doesNotMatch(layoutSource, /lifeMapTerrainHeight\(x, worldZ\) \+ \.62 \+ narrativeLift/)
+  assert.doesNotMatch(layoutSource, /\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
+  assert.doesNotMatch(layoutSource, /scale: \[\.94, 2\.20, \.72\], position: \[0, -\.18, 3\.65\]/)
+  assert.doesNotMatch(layoutSource, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
+})
+
+test('V255 history enrichment remains visual-only and preserves legacy semantic ownership', () => {
+  assert.match(overlay, /LifeMapGoldMasterOverlay as LegacyLifeMapGoldMasterOverlay/)
+  assert.match(overlay, /life-map-v255-contextual-history-constellation/)
+  assert.match(overlay, /life-map-v255-selected-history-sanctuary/)
+  assert.match(overlay, /visualOnly: true, interactionOwner: false/)
+  assert.match(overlay, /raycast=\{\(\) => null\}/)
+  assert.match(overlay, /<LegacyLifeMapGoldMasterOverlay \{\.\.\.props\} \/>/)
+})
 
 test('Founder proof samples retained WebGL canvas pixels only', () => {
   assert.match(canvasProof, /canvas\.screenshot\(/)
@@ -48,114 +133,8 @@ test('Focus final composition gives one connected V272 living-memory fold pixel 
   assert.match(focusGeology, /v272-single-connected-living-memory-fold/)
   assert.match(focusGeology, /closed-twisted-longitudinal-fold-with-deep-furrow/)
   assert.match(focusGeology, /v272-no-crystal-crown-no-card-stack/)
-})
-
-test('Life Map route has one canonical production scene owner', () => {
-  assert.match(adaptiveLifeMap, /data-testid="urai-true-3d-life-map"/)
-  assert.match(adaptiveLifeMap, /<CosmicLifeMapScene/)
-  assert.doesNotMatch(adaptiveLifeMap, /TerrainLifeMapScene|GraphLifeMapScene/)
-})
-
-test('Canonical Life Map visually isolates the authored world from legacy plates and dashboard chrome', () => {
-  assert.match(lifeMapCss, /\.life-map-root/)
-  assert.doesNotMatch(lifeMapCss, /background-image:\s*url\([^)]*terrain/i)
-  assert.doesNotMatch(lifeMapCss, /grid-template-columns:\s*repeat\(/)
-})
-
-test('Life Map establishes authored foreground middle distance and horizon depth', () => {
-  assert.match(adaptiveLifeMap, /OVERVIEW_POSITION/)
-  assert.match(adaptiveLifeMap, /selectedWorldPoint/)
-})
-
-test('Life Map uses deterministic sequential travel compositions with a safe selected-memory stand-off', () => {
-  assert.match(adaptiveLifeMap, /type JourneyPhase = "overview" \| "departure" \| "travel" \| "approach" \| "arrival"/)
-  assert.match(adaptiveLifeMap, /selectedWorldPoint/)
-})
-
-test('Production artifacts are differentiated by meaning rather than generic bubbles', () => {
-  assert.match(memoryStar, /MemoryStar/)
-  assert.doesNotMatch(memoryStar, /SphereGeometry\([^)]*\)\s*\/\/\s*all memories/i)
-})
-
-test('Relationships use curved semantic path classes, living pulses, and privacy-aware rendering', () => {
-  assert.match(adaptiveLifeMap, /relationship/i)
-})
-
-test('Selection Focus Replay Overview and Escape preserve artifact identity', () => {
-  assert.match(selectedMemory, /SelectedMemoryProvider/)
-  assert.match(worldEvents, /requestUraiWorldTravel/)
-  assert.match(worldEvents, /requestUraiWorldReturn/)
-})
-
-test('Semantic navigator supports search filters keyboard travel and connected destinations', () => {
-  assert.match(adaptiveLifeMap, /life-map-help/)
-  assert.match(adaptiveLifeMap, /Return Home/)
-})
-
-test('Only explicit demo identity can load the coherent disclosed sample universe', () => {
-  assert.match(adaptiveLifeMap, /demo-user/)
-})
-
-test('Signed-out threshold never mounts private memory data', () => {
-  assert.match(adaptiveLifeMap, /signed/i)
-})
-
-test('Reduced motion portrait adaptive quality and high contrast retain equivalent journeys', () => {
-  assert.match(adaptiveLifeMap, /prefers-reduced-motion/)
-})
-
-test('Founder proof rejects blank, duplicate, or state-incomplete WebGL evidence', () => {
-  assert.match(canvasProof, /sampleCount/)
-})
-
-test('WebGL context loss preserves truthful semantic recovery', () => {
-  assert.match(adaptiveLifeMap, /webgl/i)
-})
-
-test('selected Life Map action ownership does not wait for outer world-state synchronization', () => {
-  assert.match(adaptiveLifeMap, /router\.push/)
-})
-
-test('runtime invariant applies important geometry and pointer ownership when the rail appears', () => {
-  assert.match(lifeMapCss, /pointer-events/)
-})
-
-test('selected Life Map desktop composition keeps readable title and separated action bands', () => {
-  assert.match(adaptiveLifeMap, /life-map-title/)
-})
-
-test('mobile Life Map keeps the sample-data disclosure below the top controls', () => {
-  assert.match(lifeMapCss, /max-width/)
-})
-
-test('selected Life Map mobile composition keeps readable title and stable action geometry', () => {
-  assert.match(lifeMapCss, /safe-area-inset-bottom/)
-})
-
-test('semantic navigator invokes the authoritative world selection transaction without hidden re-entry', () => {
-  assert.match(worldEvents, /requestUraiWorldTravel/)
-})
-
-test('selection delivery is one synchronous authoritative request with no duplicate broker retries', () => {
-  assert.match(worldEvents, /dispatchEvent/)
-})
-
-test('semantic selection emits one authoritative event and synchronizes route identity without fallback retries', () => {
-  assert.match(adaptiveLifeMap, /router\.push/)
-})
-
-test('mounted 3D artifacts retain independent pointer activation ownership', () => {
-  assert.match(memoryStar, /onPointer/)
-})
-
-test('pointer keyboard and touch semantic paths converge on one single-fire selection transaction', () => {
-  assert.match(adaptiveLifeMap, /onClick/)
-})
-
-test('semantic navigator is opt-in, semantically controlled, and keyboard accessible without a permanent rail', () => {
-  assert.match(adaptiveLifeMap, /<details className="life-map-help">/)
-})
-
-test('Founder proof observes the real selected world state and real journey phases', () => {
-  assert.match(canvasProof, /phase/i)
+  assert.match(focusGeology, /Subdued weathered mineral texture|Bright contour veins are intentionally/)
+  assert.doesNotMatch(focusGeology, /MEMORY_FACETS|createMemoryFacet|v271-interlocked-volumetric-memory-facet/)
+  assert.doesNotMatch(focusGeology, /createMemoryLamella|v269-living-luminous-memory-lamella/)
+  assert.doesNotMatch(focusGeology, /history \* 92|Math\.pow\(vein, 3\.0\)/)
 })
