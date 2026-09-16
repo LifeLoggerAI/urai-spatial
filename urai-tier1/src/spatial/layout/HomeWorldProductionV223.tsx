@@ -10,6 +10,8 @@ import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js'
 import { resolveOrbSensoryOutput, URAI_ORB_STATE_EVENT, type OrbState, type OrbStateEventDetail } from '@/app/home/orbStateController'
 import { useDragLook } from '@/spatial/navigation/EmbodiedNavigation'
 import { useAdaptiveSpatialQuality, type SpatialQualityTier } from '@/spatial/performance/useAdaptiveSpatialQuality'
+import { GROUND_LANDSCAPE_FOV_DEG, GROUND_PORTRAIT_FOV_DEG } from '@/spatial/ground/groundCanon'
+import { GROUND_DESCENT_TOTAL_MS, GROUND_REDUCED_MOTION_TOTAL_MS, groundDescentPhaseAt, type GroundDescentPhase } from '@/spatial/ground/groundTransitionTimeline'
 import { ORB_SPEECH_CLOCK_EVENT, type OrbSpeechClockDetail } from '@/spatial/orb/orbSpeechClock'
 import { requestUraiWorldOrbOpen, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { height } from './HomeWorldProductionV223Geometry'
@@ -27,6 +29,7 @@ const HUMAN_MODEL = '/assets/urai/generated/human-makehuman-v4/home-human-makehu
 const HOME_FOCUS = new THREE.Vector3(0, 3.05, -1.15)
 const ORB_POSITION = new THREE.Vector3(1.02, 0, .72)
 const AVATAR_POSITION = new THREE.Vector3(-.72, 0, 5.95)
+const AVATAR_EYE_OFFSET_Y = 1.56
 const ORB_CLIPS: Record<OrbState, string> = {
   dormant: 'Orb_Resting', idle: 'Orb_Idle', attention: 'Orb_Attention', listening: 'Orb_Listening',
   thinking: 'Orb_Thinking', speaking: 'Orb_Speaking', guiding: 'Orb_Guiding', reflecting: 'Orb_Reflecting',
@@ -157,11 +160,17 @@ function RetireLegacyHomeHotspots() {
   return null
 }
 
-function VisibleHomeAvatar({ reducedMotion }: { reducedMotion: boolean }) {
+function avatarHiddenForGroundPhase(phase: GroundDescentPhase | null) {
+  if (!phase) return false
+  return phase !== 'ground-recognition' && phase !== 'home-avatar-camera-approach'
+}
+
+function VisibleHomeAvatar({ reducedMotion, groundPhase }: { reducedMotion: boolean; groundPhase: GroundDescentPhase | null }) {
   const human = useGLTF(HUMAN_MODEL)
   const model = useMemo(() => cloneAuthoredModel(human.scene), [human.scene])
   const { actions } = useAnimations(human.animations, model)
   const groundY = height(AVATAR_POSITION.x, AVATAR_POSITION.z)
+  const hiddenForEmbodiment = avatarHiddenForGroundPhase(groundPhase)
 
   useEffect(() => {
     const idle = actions.idle_breath
@@ -175,9 +184,10 @@ function VisibleHomeAvatar({ reducedMotion }: { reducedMotion: boolean }) {
 
   return <group
     name="home-visible-user-avatar"
+    visible={!hiddenForEmbodiment}
     position={[AVATAR_POSITION.x, groundY, AVATAR_POSITION.z]}
     rotation={[0, Math.PI, 0]}
-    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath', cloneStrategy: 'skeleton-safe' }}
+    userData={{ semanticOwner: 'user-avatar', presentation: 'visible-home-avatar-third-person', runtimeAsset: HUMAN_MODEL, animation: reducedMotion ? 'still-reduced-motion' : 'idle_breath', cloneStrategy: 'skeleton-safe', nearCameraRule: 'hidden-before-avatar-eye-plane-crossing' }}
   >
     <primitive object={model} scale={.72} />
   </group>
@@ -371,7 +381,13 @@ function OrbCompanion({ state, reducedMotion, onOrb }: { state: OrbState; reduce
   </group>
 }
 
-function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onComplete }: {
+function phaseProgress(elapsedMs: number, startMs: number, endMs: number) {
+  if (elapsedMs <= startMs) return 0
+  if (elapsedMs >= endMs) return 1
+  return THREE.MathUtils.smoothstep((elapsedMs - startMs) / (endMs - startMs), 0, 1)
+}
+
+function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onComplete, onGroundPhase }: {
   yaw: MutableRefObject<number>
   pitch: MutableRefObject<number>
   transition: Transition
@@ -379,6 +395,7 @@ function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onCom
   reducedMotion: boolean
   owner: MutableRefObject<HTMLElement | null>
   onComplete: (transition: Exclude<Transition, 'none'>) => void
+  onGroundPhase: (phase: GroundDescentPhase | null) => void
 }) {
   const { camera, size } = useThree()
   const elapsed = useRef(0)
@@ -386,19 +403,26 @@ function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onCom
   const completed = useRef(false)
   const desired = useRef(new THREE.Vector3())
   const look = useRef(new THREE.Vector3())
+  const lastGroundPhase = useRef<GroundDescentPhase | null>(null)
 
   useEffect(() => {
     elapsed.current = 0
     completed.current = false
     start.current.copy(camera.position)
-  }, [camera, transition])
+    lastGroundPhase.current = transition === 'ground' ? 'ground-recognition' : null
+    onGroundPhase(lastGroundPhase.current)
+  }, [camera, onGroundPhase, transition])
 
   useFrame((_, delta) => {
     const portrait = size.height > size.width
     const shell = owner.current
     if (camera instanceof THREE.PerspectiveCamera) {
-      const desiredFov = transition === 'none' ? (portrait ? 58 : 52) : transition === 'life-map' ? (portrait ? 64 : 50) : (portrait ? 60 : 48)
-      camera.fov = THREE.MathUtils.damp(camera.fov, desiredFov, 7, delta)
+      const desiredFov = transition === 'none'
+        ? (portrait ? 58 : 52)
+        : transition === 'life-map'
+          ? (portrait ? 64 : 50)
+          : (portrait ? GROUND_PORTRAIT_FOV_DEG : GROUND_LANDSCAPE_FOV_DEG)
+      camera.fov = THREE.MathUtils.damp(camera.fov, desiredFov, transition === 'ground' ? 5 : 7, delta)
       camera.updateProjectionMatrix()
     }
 
@@ -416,15 +440,68 @@ function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onCom
 
     elapsed.current += Math.min(delta, .08)
     if (transition === 'ground') {
-      const duration = reducedMotion ? .24 : 1.58
-      const t = THREE.MathUtils.smoothstep(Math.min(1, elapsed.current / duration), 0, 1)
+      const totalMs = reducedMotion ? GROUND_REDUCED_MOTION_TOTAL_MS : GROUND_DESCENT_TOTAL_MS
+      const elapsedMs = Math.min(totalMs, elapsed.current * 1000)
+      const phase = groundDescentPhaseAt(elapsedMs, reducedMotion)
+      if (phase !== lastGroundPhase.current) {
+        lastGroundPhase.current = phase
+        onGroundPhase(phase)
+      }
       const hit = target.current?.point ?? new THREE.Vector3(0, height(0, -1), -1)
-      const end = desired.current.set(hit.x, hit.y - (reducedMotion ? .02 : .34), hit.z + (reducedMotion ? .55 : .16))
-      camera.position.lerpVectors(start.current, end, t)
-      look.current.set(hit.x, hit.y - .24, hit.z - .42)
-      camera.lookAt(look.current)
-      if (shell) shell.dataset.homeTransitionProgress = t.toFixed(3)
-      if (t >= .995 && !completed.current) { completed.current = true; onComplete('ground') }
+      const avatarEye = new THREE.Vector3(AVATAR_POSITION.x, height(AVATAR_POSITION.x, AVATAR_POSITION.z) + AVATAR_EYE_OFFSET_Y, AVATAR_POSITION.z + .04)
+      const surfaceApproach = new THREE.Vector3(hit.x, hit.y + .56, hit.z + .72)
+      const surfaceCommit = new THREE.Vector3(hit.x, hit.y + .16, hit.z + .22)
+
+      if (reducedMotion) {
+        const totalT = Math.min(1, elapsedMs / totalMs)
+        const eyeT = phaseProgress(elapsedMs, 70, 195)
+        const surfaceT = phaseProgress(elapsedMs, 195, 350)
+        if (elapsedMs < 195) camera.position.lerpVectors(start.current, avatarEye, eyeT)
+        else camera.position.lerpVectors(avatarEye, surfaceCommit, surfaceT)
+        look.current.lerpVectors(
+          new THREE.Vector3(avatarEye.x, avatarEye.y, avatarEye.z - 2),
+          new THREE.Vector3(hit.x, hit.y, hit.z),
+          totalT,
+        )
+        camera.lookAt(look.current)
+      } else if (elapsedMs < 180) {
+        const t = phaseProgress(elapsedMs, 0, 180)
+        desired.current.copy(start.current).lerp(avatarEye, t * .06)
+        camera.position.copy(desired.current)
+        look.current.lerpVectors(HOME_FOCUS, avatarEye, t * .16)
+        camera.lookAt(look.current)
+      } else if (elapsedMs < 550) {
+        const t = phaseProgress(elapsedMs, 180, 550)
+        camera.position.lerpVectors(start.current, avatarEye, t)
+        look.current.lerpVectors(HOME_FOCUS, new THREE.Vector3(avatarEye.x, avatarEye.y, avatarEye.z - 2), t)
+        camera.lookAt(look.current)
+      } else if (elapsedMs < 720) {
+        camera.position.copy(avatarEye)
+        const t = phaseProgress(elapsedMs, 550, 720)
+        look.current.lerpVectors(new THREE.Vector3(avatarEye.x, avatarEye.y, avatarEye.z - 2), hit, t)
+        camera.lookAt(look.current)
+      } else if (elapsedMs < 1100) {
+        const t = phaseProgress(elapsedMs, 720, 1100)
+        camera.position.lerpVectors(avatarEye, surfaceApproach, t)
+        look.current.set(hit.x, hit.y - .05, hit.z - .25)
+        camera.lookAt(look.current)
+      } else {
+        // Until the dedicated volumetric strata renderer is present, hold the
+        // camera inside the near-surface material envelope instead of exposing a
+        // terrain underside or black void. The deterministic phase clock still
+        // advances through crossing/fold/reveal and routes only at the final handoff.
+        const t = phaseProgress(elapsedMs, 1100, 1560)
+        camera.position.lerpVectors(surfaceApproach, surfaceCommit, t)
+        look.current.set(hit.x, hit.y - .18, hit.z - .52)
+        camera.lookAt(look.current)
+      }
+
+      if (shell) {
+        shell.dataset.homeTransitionProgress = Math.min(1, elapsedMs / totalMs).toFixed(3)
+        shell.dataset.homeGroundCinematicPhase = phase
+        shell.dataset.homeGroundAvatarGeometry = avatarHiddenForGroundPhase(phase) ? 'culled-before-eye-plane' : 'visible'
+      }
+      if (elapsedMs >= totalMs && !completed.current) { completed.current = true; onComplete('ground') }
       return
     }
 
@@ -440,13 +517,15 @@ function CameraRig({ yaw, pitch, transition, target, reducedMotion, owner, onCom
   return null
 }
 
-function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbState, onOrb, onGround, onLifeMap, onReady, owner, onComplete }: {
+function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbState, groundPhase, onGroundPhase, onOrb, onGround, onLifeMap, onReady, owner, onComplete }: {
   yaw: MutableRefObject<number>
   pitch: MutableRefObject<number>
   transition: Transition
   transitionTarget: MutableRefObject<TransitionTarget | null>
   reducedMotion: boolean
   orbState: OrbState
+  groundPhase: GroundDescentPhase | null
+  onGroundPhase: (phase: GroundDescentPhase | null) => void
   onOrb: () => void
   onGround: (point: THREE.Vector3) => void
   onLifeMap: () => void
@@ -457,7 +536,7 @@ function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbSta
   const retiredLocalDestination = useCallback(() => {}, [])
   const physicalWorldClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
-    if (event.delta > 8 || transition !== 'none') return
+    if (event.delta > 4 || transition !== 'none') return
     onGround(event.point.clone())
   }, [onGround, transition])
   useEffect(() => onReady(), [onReady])
@@ -474,9 +553,9 @@ function Scene({ yaw, pitch, transition, transitionTarget, reducedMotion, orbSta
     <HomeCurrentArtRepair orbState={orbState} reducedMotion={reducedMotion} onOrb={retiredLocalDestination} onGround={retiredLocalDestination} onLifeMap={retiredLocalDestination} />
     <HomeAAAVisualRepair />
     <RetireLegacyHomeHotspots />
-    <VisibleHomeAvatar reducedMotion={reducedMotion} />
+    <VisibleHomeAvatar reducedMotion={reducedMotion} groundPhase={groundPhase} />
     <OrbCompanion state={orbState} reducedMotion={reducedMotion} onOrb={onOrb} />
-    <CameraRig yaw={yaw} pitch={pitch} transition={transition} target={transitionTarget} reducedMotion={reducedMotion} owner={owner} onComplete={onComplete} />
+    <CameraRig yaw={yaw} pitch={pitch} transition={transition} target={transitionTarget} reducedMotion={reducedMotion} owner={owner} onComplete={onComplete} onGroundPhase={onGroundPhase} />
   </>
 }
 
@@ -488,6 +567,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const [reducedMotion, setReducedMotion] = useState(false)
   const [orbState, setOrbState] = useState<OrbState>('idle')
   const [transition, setTransition] = useState<Transition>('none')
+  const [groundPhase, setGroundPhase] = useState<GroundDescentPhase | null>(null)
   const yaw = useRef(0)
   const pitch = useRef(.02)
   const transitionTarget = useRef<TransitionTarget | null>(null)
@@ -501,12 +581,14 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
   const openGround = useCallback((point: THREE.Vector3) => {
     if (transition !== 'none') return
     transitionTarget.current = { point }
+    setGroundPhase('ground-recognition')
     setOrbState('transition')
     setTransition('ground')
   }, [transition])
   const openLifeMap = useCallback(() => {
     if (transition !== 'none') return
     transitionTarget.current = null
+    setGroundPhase(null)
     setOrbState('transition')
     setTransition('life-map')
     requestUraiWorldTravel({ destination: 'life-map', href: '/life-map/?from=home-sky', entryPortal: 'home-sky', cameraCheckpoint: 'home-sky-ascent' })
@@ -537,6 +619,7 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
       if (event.key !== 'Escape' || transition === 'none') return
       event.preventDefault()
       setTransition('none')
+      setGroundPhase(null)
       transitionTarget.current = null
       setOrbState('idle')
     }
@@ -570,8 +653,10 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
     data-home-distance-life-map="sky-threshold"
     data-home-ground-entry="physical-world-surface"
     data-home-life-map-entry="visible-sky-broad-interaction"
-    data-home-camera-mode={transition !== 'none' ? transition : dragging ? 'cinematic-third-person-look' : 'cinematic-third-person'}
+    data-home-camera-mode={transition === 'ground' && groundPhase ? groundPhase : transition !== 'none' ? transition : dragging ? 'cinematic-third-person-look' : 'cinematic-third-person'}
     data-home-scene-phase={phase}
+    data-home-ground-cinematic-phase={groundPhase ?? 'none'}
+    data-home-ground-cinematic-duration-ms={reducedMotion ? GROUND_REDUCED_MOTION_TOTAL_MS : GROUND_DESCENT_TOTAL_MS}
     data-home-transition-sequence={transition === 'none' ? 'idle' : `${transition}:traversal`}
     data-home-portal-sequence="idle"
     data-home-input-locked={transition !== 'none' ? 'true' : 'false'}
@@ -604,11 +689,11 @@ export function HomeWorldProductionV223({ onOrbOpen = requestUraiWorldOrbOpen, w
         setCanvasReady(true)
       }}
     >
-      <Scene yaw={yaw} pitch={pitch} transition={transition} transitionTarget={transitionTarget} reducedMotion={reducedMotion} orbState={orbState} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markReady} owner={worldRef} onComplete={completeTransition} />
+      <Scene yaw={yaw} pitch={pitch} transition={transition} transitionTarget={transitionTarget} reducedMotion={reducedMotion} orbState={orbState} groundPhase={groundPhase} onGroundPhase={setGroundPhase} onOrb={openOrb} onGround={openGround} onLifeMap={openLifeMap} onReady={markReady} owner={worldRef} onComplete={completeTransition} />
     </Canvas>
-    <span className="sr-only" role="status" aria-live="polite">{transition === 'ground' ? 'Entering your physical Ground world.' : transition === 'life-map' ? 'Ascending into your Life Map.' : ''}</span>
+    <span className="sr-only" role="status" aria-live="polite">{transition === 'ground' ? `Entering your physical Ground world. ${groundPhase ?? 'ground-recognition'}.` : transition === 'life-map' ? 'Ascending into your Life Map.' : ''}</span>
     <span className="sr-only" data-testid="urai-home-webgl-orb">The authored living-memory Orb is physically present in Home and preserves semantic state behavior.</span>
-    <span className="sr-only" data-testid="urai-home-embodied-avatar">Your visible Home Avatar is present in the world; first-person embodiment resumes in Ground, Life Map, Focus, and Replay where those experiences call for it.</span>
+    <span className="sr-only" data-testid="urai-home-embodied-avatar">Your visible Home Avatar is present in the world. Ground entry moves through the Avatar eye position before first-person lived-world exploration; ordinary first-person Ground renders no hands or follower Avatar.</span>
   </main>
 }
 
