@@ -51,6 +51,19 @@ test('Current Orb persistent motion remains state-aware and reduced-motion safe'
   assert.match(currentHome, /const expressiveEnergy = reducedMotion \? 0/)
 })
 
+test('Current Home Orb rests barely above terrain with no external support authority', () => {
+  assert.match(currentHome, /const ORB_FIELD_RADIUS = \.5/)
+  assert.match(currentHome, /const ORB_FIELD_Y_SCALE = 1\.04/)
+  assert.match(currentHome, /const ORB_GROUND_CLEARANCE = \.015/)
+  assert.match(currentHome, /const ORB_REST_CENTER_OFFSET = ORB_FIELD_RADIUS \* ORB_FIELD_Y_SCALE \+ ORB_GROUND_CLEARANCE/)
+  assert.match(currentHome, /const baseY = groundY \+ ORB_REST_CENTER_OFFSET/)
+  assert.match(currentHome, /position=\{\[ORB_POSITION\.x, groundY \+ ORB_REST_CENTER_OFFSET, ORB_POSITION\.z\]\}/)
+  assert.match(currentHome, /groundRelationship: 'self-supported-near-ground-no-external-support'/)
+  assert.match(currentHome, /data-home-orb-ground-relationship="self-supported-near-ground-no-external-support"/)
+  assert.match(currentHome, /<sphereGeometry args=\{\[ORB_FIELD_RADIUS,effectBudget\.membraneSegments,effectBudget\.membraneSegments\]\}/)
+  assert.doesNotMatch(currentHome, /groundY \+ 1\.52/)
+})
+
 test('Current Home never retires descendants of the canonical Avatar or living-memory Orb', () => {
   assert.match(currentHome, /const CURRENT_HOME_PRESENCE_ROOTS = new Set\(\['home-living-memory-orb', 'home-visible-user-avatar'\]\)/)
   assert.match(currentHome, /function isInsideCurrentHomePresence\(object: THREE\.Object3D\)/)
