@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import test from 'node:test'
 import {
   GLOBAL_EMOTIONAL_FIELD_DEFAULT_MINIMUM_COHORT,
@@ -6,6 +7,9 @@ import {
   evaluateGlobalEmotionalFieldCell,
   evaluatePersonalEmotionalWeather,
 } from '../src/spatial/lived-world/globalEmotionalField.ts'
+
+const earth = fs.readFileSync(new URL('../src/spatial/home/HomeGlobalEmotionalFieldEarth.tsx', import.meta.url), 'utf8')
+const homeRepair = fs.readFileSync(new URL('../src/spatial/layout/HomeAAAVisualRepair.tsx', import.meta.url), 'utf8')
 
 const c8 = (status = 'granted') => ({
   purpose: GLOBAL_EMOTIONAL_FIELD_PURPOSE,
@@ -104,4 +108,17 @@ test('personal emotional weather remains private and requires explicit C4 sensit
     weather,
   })
   assert.equal(allowed?.state, 'private-pattern')
+})
+
+test('Home mounts a separate first-person Earth candidate fail-closed with no invented aggregate activity', () => {
+  assert.match(homeRepair, /HomeGlobalEmotionalFieldEarth/)
+  assert.match(homeRepair, /<HomeGlobalEmotionalFieldEarth state="unavailable" \/>/)
+  assert.match(earth, /semanticOwner: 'global-emotional-field-earth'/)
+  assert.match(earth, /privateMapReuse: false/)
+  assert.match(earth, /individualDots: false/)
+  assert.match(earth, /exactLocationExposure: false/)
+  assert.match(earth, /providerState: 'not-activated'/)
+  assert.match(earth, /visibility: 'first-person-only'/)
+  assert.match(earth, /No emotional activity is inferred or fabricated/)
+  assert.doesNotMatch(earth, /LocationMap|private.*pin|userDot|individual.*location/i)
 })
