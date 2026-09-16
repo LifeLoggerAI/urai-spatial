@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/lib/orb-companion-contract.ts', import.meta.url), 'utf8')
 const conversationSource = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.tsx', import.meta.url), 'utf8')
+const speechClockSource = fs.readFileSync(new URL('../src/spatial/orb/orbSpeechClock.ts', import.meta.url), 'utf8')
 const conversationCss = fs.readFileSync(new URL('../src/spatial/orb/OrbConversationPanel.module.css', import.meta.url), 'utf8')
 const voiceClientSource = fs.readFileSync(new URL('../src/spatial/narrator/elevenlabsClient.ts', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
@@ -78,12 +79,59 @@ test('live Orb replies use the external natural voice path before device fallbac
   assert.match(conversationSource, /Allow Orb replies and narrator lines to use the configured natural external voice provider/)
 })
 
+test('Orb audible speaking begins from actual playback instead of streamed text or text-only timing', () => {
+  const deltaBlock = conversationSource.match(/if \(providerEvent\.type === 'delta'\) \{([\s\S]*?)\} else if/)?.[1] ?? ''
+  assert.match(deltaBlock, /setStreamedText/)
+  assert.doesNotMatch(deltaBlock, /publishConversationState\('speaking'/)
+  assert.match(conversationSource, /await audio\.play\(\)/)
+  assert.match(conversationSource, /beginSpeakingClock\('natural'\)/)
+  assert.match(conversationSource, /utterance\.onstart = \(\) => handlers\.onStart\(\)/)
+  assert.match(conversationSource, /utterance\.onboundary/)
+  assert.match(speechClockSource, /export const ORB_SPEECH_CLOCK_EVENT = 'urai:orb-speech-clock'/)
+  assert.match(speechClockSource, /export const ORB_RESPONSE_ANTICIPATION_MS = 380/)
+  const textOnly = conversationSource.match(/const playTextOnlyResponse = async[\s\S]*?\n  }\n\n  const playDeviceVoice/)?.[0] ?? ''
+  assert.match(textOnly, /source: 'text'/)
+  assert.doesNotMatch(textOnly, /beginSpeakingClock\('text'\)|publishConversationState\('speaking'/)
+})
+
+test('natural voice analysis is local, optional, and does not double-route audio', () => {
+  assert.match(conversationSource, /createMediaElementSource\(audio\)/)
+  assert.match(conversationSource, /const analyser = context\.createAnalyser\(\)/)
+  assert.match(conversationSource, /source\.connect\(analyser\)/)
+  assert.match(conversationSource, /analyser\.connect\(context\.destination\)/)
+  assert.match(conversationSource, /getFloatTimeDomainData\(samples\)/)
+  assert.match(conversationSource, /amplitude: rms/)
+  assert.match(conversationSource, /if \(voiceAnalyser\.current\) return/)
+  assert.match(conversationSource, /stopNaturalVoiceAnalysis\(\)/)
+})
+
 test('Orb voice can be stopped after the AI response finishes', () => {
   assert.match(conversationSource, /const \[voicePlaying, setVoicePlaying\] = useState\(false\)/)
   assert.match(conversationSource, /disabled=\{!busy && !voicePlaying\}/)
   assert.match(conversationSource, /voiceAborter\.current\?\.abort\(\)/)
   assert.match(conversationSource, /activeAudio\.pause\(\)/)
   assert.match(conversationSource, /window\.speechSynthesis\.cancel\(\)/)
+  assert.match(conversationSource, /phase: 'cancel'/)
+})
+
+test('Orb local microphone VAD is explicit, ephemeral, and supports barge-in without transcription claims', () => {
+  assert.match(conversationSource, /navigator\.mediaDevices\?\.getUserMedia/)
+  assert.match(conversationSource, /echoCancellation: true/)
+  assert.match(conversationSource, /noiseSuppression: true/)
+  assert.match(conversationSource, /autoGainControl: true/)
+  assert.match(conversationSource, /getFloatTimeDomainData/)
+  assert.match(conversationSource, /const VAD_THRESHOLD = 0\.035/)
+  assert.match(conversationSource, /const BARGE_IN_HOLD_MS = 70/)
+  assert.match(conversationSource, /if \(wasSpeaking\) \{\s*stopVoice\(false\)/)
+  assert.match(conversationSource, /publishConversationState\('listening'\)/)
+  assert.match(conversationSource, /Microphone audio is not uploaded or transcribed by this control/)
+  assert.doesNotMatch(conversationSource, /MediaRecorder|FormData\(\).*microphone|fetch\([^)]*microphone/i)
+})
+
+test('textarea focus does not masquerade as acoustic Listening without an active microphone session', () => {
+  const focusBlock = conversationSource.match(/onFocus=\{\(\) => \{([\s\S]*?)\}\}/)?.[1] ?? ''
+  assert.match(focusBlock, /micActiveRef\.current \? 'listening' : 'attention'/)
+  assert.doesNotMatch(focusBlock, /publishConversationState\('listening'\)/)
 })
 
 test('Orb conversation disclosure remains a real pointer hit target above the spatial canvas', () => {

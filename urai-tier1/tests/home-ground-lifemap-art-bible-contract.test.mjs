@@ -16,26 +16,32 @@ const lifeMap = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('Home is a first-person cinematic threshold with a grounded Orb companion, physical-world Ground and broad-sky Life Map', () => {
+test('Home is a visible-Avatar cinematic threshold with the living-memory Orb, physical-world Ground and broad-sky Life Map', () => {
   for (const marker of [
-    'data-home-embodied-self="first-person-viewpoint-no-avatar"',
+    'data-home-embodied-self="visible-cinematic-avatar"',
+    'data-home-presence-presentation="visible-avatar-third-person"',
     'data-home-movement="camera-look-world-surface-selection"',
     'data-home-ground-entry="physical-world-surface"',
     'data-home-life-map-entry="visible-sky-broad-interaction"',
     'data-home-camera-mode=',
-    'first-person-viewpoint',
-    'home-gold-companion',
+    'cinematic-third-person',
+    'home-visible-user-avatar',
+    'home-living-memory-orb',
+    '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
+    '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb',
     'physicalWorldClick',
     'event.point.clone()',
   ]) has(currentHome, marker)
 
-  // Fail closed on active avatar ownership while allowing retirement/compatibility
-  // strings that exist specifically to hide legacy avatar geometry.
-  assert.doesNotMatch(currentHome, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b/)
-  assert.doesNotMatch(currentHome, /data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
+  assert.match(currentHome, /function\s+VisibleHomeAvatar\s*\(\{ reducedMotion \}/)
+  assert.match(currentHome, /<VisibleHomeAvatar reducedMotion=\{reducedMotion\} \/>/)
+  assert.match(currentHome, /const idle = actions\.idle_breath/)
+  assert.match(currentHome, /setLoop\(THREE\.LoopOnce, 1\)/)
+  assert.match(currentHome, /clampWhenFinished = true/)
+  assert.doesNotMatch(currentHome, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
+  assert.doesNotMatch(currentHome, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(currentHome, /stepEmbodiedMotion|useMovementInput|MobileMovementPad/)
   assert.doesNotMatch(currentHome, /nearby==='ground'|nearby === 'ground'/)
-  assert.doesNotMatch(currentHome, /data-home-embodied-self="privacy-preserving-first-person"/)
   assert.doesNotMatch(currentHome, /data-home-movement="walk-keyboard-click-touch"/)
   assert.doesNotMatch(currentHome, /The path descends/)
   assert.doesNotMatch(currentHome, /from '\.\/HomeWorldProductionV223Geometry'.*GROUND/)
@@ -57,12 +63,14 @@ test('Home sky is the canonical broad Life Map threshold and localized Home-side
   assert.doesNotMatch(currentHome, /LIFE_MAP/)
 })
 
-test('Home runtime and metadata no longer advertise portal-hub, third-person avatar or Home-locomotion ownership', () => {
+test('Home runtime exposes the visible Avatar and governed Orb candidate without restoring portal-hub or locomotion ownership', () => {
   assert.match(assetHome, /cinematic-home-ground-threshold-convergence/)
   assert.match(assetHome, /continuous-lived-physical-world/)
-  assert.match(assetHome, /home-physical-world home-grounded-companion home-life-map-sky-threshold/)
-  assert.doesNotMatch(assetHome, /home-visible-user-avatar/)
+  assert.match(assetHome, /home-physical-world home-visible-avatar home-living-memory-orb home-life-map-sky-threshold/)
+  assert.match(currentHome, /home-visible-user-avatar/)
+  assert.match(currentHome, /home-living-memory-orb/)
   assert.doesNotMatch(assetHome, /HOME_GROUND|HOME_SPAWN|stagePortalLifecycle|PortalDestination/)
+  // Keep the last certified V288 metadata until fresh candidate pixels are accepted.
   assert.equal(currentHomeVisualAuthority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(currentHomeVisualAuthority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
   assert.equal(currentHomeVisualAuthority.worldIdentifier, 'cinematic-lived-world-threshold')

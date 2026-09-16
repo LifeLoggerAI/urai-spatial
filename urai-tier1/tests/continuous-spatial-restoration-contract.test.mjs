@@ -29,27 +29,32 @@ const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-s
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('current Home is the single cinematic V288 authority with retained exact-head certification boundaries', () => {
+test('current Home candidate uses one cinematic owner while certified V288 metadata remains fail-closed', () => {
   for (const marker of ['HomeSpatialRuntimeLayer','spatial-runtime-restoration.css','continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   has(homeRuntime, 'AssetDrivenHomeWorld')
   has(assetHome, 'HomeWorldProductionV223')
   has(assetHome, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
   has(assetHome, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  has(assetHome, "world.setAttribute('data-home-scanned-composition', 'first-person-grounded-companion-physical-world-and-broad-sky-threshold')")
+  has(assetHome, "world.setAttribute('data-home-scanned-composition', 'visible-avatar-living-memory-orb-physical-ground-and-broad-sky-threshold')")
+  has(assetHome, 'data-home-spatial-regions="home-physical-world home-visible-avatar home-living-memory-orb home-life-map-sky-threshold"')
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
-  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx','HomeAtmosphericSky.tsx']) assert.ok(authority.runtimeAssets.includes(asset), `missing current runtime asset ${asset}`)
+  for (const asset of ['HomeWorldProductionV223.tsx','HomeVisualAuthority.tsx','HomeOrbReliquaryV286.tsx','HomeOrbGroundedV288.tsx','HomeAtmosphericSky.tsx']) assert.ok(authority.runtimeAssets.includes(asset), `missing certified predecessor runtime asset ${asset}`)
   assert.equal((renderer.match(/<Canvas/g) ?? []).length, 1)
   assert.doesNotMatch(`${assetHome}\n${renderer}`, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)
 })
 
-test('V288 biomorphic reliquary owns Orb pixels while V287 grounded fallback owns pointer and touch only', () => {
+test('V288 biomorphic reliquary remains certified predecessor evidence while the current candidate Orb advances separately', () => {
   has(visualAuthority, '<HomeOrbGroundedV288 />')
   for (const marker of ['v288-grounded-biomorphic-memory-reliquary','home-gold-companion','fallbackVisualOwner: false','material.colorWrite = false','material.depthWrite = false','material.opacity = 0','interactionOwner: true','interactionOwner: false']) has(groundedOrb, marker)
   for (const marker of ['plateSpecsV286','reliquaryPlateGeometryV286','home-v286-layered-internal-memory-world','home-v286-embedded-memory-filament','home-v286-localized-memory-field']) has(reliquary, marker)
   assert.match(reliquary, /raycast=\{\(\) => null\}/)
   assert.doesNotMatch(reliquary, /home-v253-literal-living-memory-heart|livingHeartGeometryV253/)
+  has(renderer, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
+  has(renderer, 'name="home-living-memory-orb"')
+  has(renderer, 'setLoop(THREE.LoopOnce, 1)')
+  assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
 })
 
 test('Home Life Map is the broad visible sky and preserves one canonical ascent transaction', () => {
@@ -69,11 +74,16 @@ test('Home Ground entry remains a physical world-surface descent into the lived 
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
-test('Home interaction and accessibility ownership stays first-person and bounded', () => {
+test('Home interaction and accessibility ownership stays visible-avatar, cinematic-third-person and bounded', () => {
   has(renderer, 'data-testid="urai-home-webgl-orb"')
-  has(renderer, 'data-home-embodied-self="first-person-viewpoint-no-avatar"')
+  has(renderer, 'data-home-embodied-self="visible-cinematic-avatar"')
+  has(renderer, 'data-home-presence-presentation="visible-avatar-third-person"')
+  has(renderer, 'name="home-visible-user-avatar"')
+  has(renderer, '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
   has(renderer, "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'")
-  assert.doesNotMatch(renderer, /function\s+VisibleUserAvatar\s*\(|<VisibleUserAvatar\b|data-home-embodied-self=["']visible-cinematic-avatar["']|data-home-camera-mode=["']cinematic-third-person["']|name=["']urai-home-embodied-avatar["']/)
+  assert.match(renderer, /data-home-camera-mode=\{transition !== 'none' \? transition : dragging \? 'cinematic-third-person-look' : 'cinematic-third-person'\}/)
+  assert.doesNotMatch(renderer, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
+  assert.doesNotMatch(renderer, /useMovementInput|MobileMovementPad|stepEmbodiedMotion/)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')
   has(homeRuntime, 'webglcontextrestored')
