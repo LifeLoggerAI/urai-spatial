@@ -32,7 +32,7 @@ test('Home authority keeps V288 as the certified predecessor while the authored 
   assert.match(visualAuthority, /<HomeOrbGroundedV288 \/>/)
 })
 
-test('V249 and V281 localized destination overlays stay retired while V288 is provenance-only in the current candidate scene', () => {
+test('retired localized Home overlays stay retired while first-person Passport ownership remains the active AAA repair surface', () => {
   assert.match(currentRepair, /Historical V249 localized destination art is retained only as repository/)
   assert.match(currentRepair, /broad visible atmosphere for Life Map, and the authored living-memory Orb/)
   assert.match(currentRepair, /V288 remains certified predecessor provenance/)
@@ -40,11 +40,16 @@ test('V249 and V281 localized destination overlays stay retired while V288 is pr
   assert.match(currentRepair, /return null/)
   assert.doesNotMatch(currentRepair, /home-v249-ground-geological-descent|home-v249-life-map-rooted-celestial-ascent|home-v249-organic-living-memory-presence|function suppressRaycast\(/)
 
-  assert.match(aaaRepair, /Historical V281 localized Ground\/ascent overlays remain retired/)
-  assert.match(aaaRepair, /V288 remains[\s\S]*last certified Orb predecessor/)
-  assert.match(aaaRepair, /authored living-memory Orb[\s\S]*owns current pixels/)
+  assert.match(aaaRepair, /Historical V281 localized Ground\/ascent overlays[\s\S]*remain retired/)
+  assert.match(aaaRepair, /predecessor V288 Orb[\s\S]*remain retired/)
+  assert.match(aaaRepair, /authored living-memory Orb[\s\S]*keeps current Orb pixels/)
+  assert.match(aaaRepair, /function HomePassportOwnershipObject/)
+  assert.match(aaaRepair, /visibility: 'first-person-only'/)
+  assert.match(aaaRepair, /backendAuthority: 'existing-passport-vault'/)
+  assert.match(aaaRepair, /visualStatus: 'candidate-requires-literal-pixel-acceptance'/)
+  assert.match(aaaRepair, /HOME_PASSPORT_ORIGIN_CAPTURE_EVENT/)
   assert.match(aaaRepair, /export function HomeAAAVisualRepair/)
-  assert.match(aaaRepair, /return null/)
+  assert.match(aaaRepair, /return <HomePassportOwnershipObject \/>/)
   assert.doesNotMatch(aaaRepair, /HomeOrbGroundedV288|<HomeOrbGroundedV288/)
   assert.doesNotMatch(aaaRepair, /aaa-celestial-ascent-v3-gold-master-depth|home-aaa-life-map-celestial-ascent|home-aaa-v281-rooted-ascent-ribbons|buildCelestialVolume/)
 })
