@@ -10,12 +10,14 @@ import * as THREE from 'three'
 // centerline, changing cross-section, restrained physical energy and enough
 // continuous surface density to avoid a generic low-poly game-artifact read.
 //
-// V273 literal-pixel refinement keeps that V272 topology contract but responds to
-// the exact-head 39c6458 retained pack: the prior fold still read as a dark upright
-// soft rock and exposed a hard flat cap. The release-facing form now reclines along
-// a wandering horizontal centerline, tapers to near-point ends, keeps its cleft on
-// the arrival-camera face, broadens into two continuous asymmetric shoulders, and
-// lifts the weathered mineral energy without returning to cyan/white emissive art.
+// V273 reclined the form and removed the prior upright-rock / flat-cap read, but
+// exact-head retained pixels still read as a clam/mouth because a camera-facing
+// full-width cleft split two similarly sized lobes. V274 keeps one watertight
+// phenomenon but replaces that bilateral mouth seam with a partial, migrating,
+// diagonal fold: one dominant mass, one subordinate shoulder, uneven depth and a
+// branch scar that fades before both ends. The silhouette must not resolve into
+// two opposing lips even when viewed front-on.
+//
 // The form must read as one held memory phenomenon. It must not regress into a
 // crystal crown/shard cluster, boulder, sphere/orb, flower, portal, ring, cage,
 // doorway, sheet fan, stack of cards or generic game pickup.
@@ -42,7 +44,7 @@ function livingMemoryVertexColor(section: number, radial: number, t: number, fur
   const color = deep.clone()
     .lerp(mineral, .48 + phase * .25)
     .lerp(weathered, .22 + .16 * (1 - edge))
-  if (scar > .24) color.lerp(deep, .18 + scar * .22)
+  if (scar > .24) color.lerp(deep, .14 + scar * .17)
   if (ridge > .42) color.lerp(weathered, .20 + ridge * .08)
   color.lerp(warm, .060 * strata * (1 - scar))
   color.lerp(litMineral, .16 + .08 * (1 - edge) + .05 * ridge)
@@ -67,22 +69,25 @@ function createLivingMemoryFold() {
     const endTaper = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .58)
     const shoulder = Math.pow(Math.max(0, Math.sin(u * Math.PI)), .36)
 
-    // Recline the longitudinal axis across the frame. This removes the retained
-    // upright-boulder read while keeping one closed connected phenomenon.
-    const centerX = t * .96 + .10 * Math.sin(t * 2.75) + .045 * Math.sin(t * 6.1)
-    const centerY = -.10 + .17 * Math.cos(t * 1.48) - .055 * t + .035 * Math.sin(t * 4.2)
-    const centerZ = -.07 + .11 * Math.sin(t * 1.72) - .035 * Math.cos(t * 4.4)
+    // Keep the body reclined, but make the spine itself rise/fall and shift in
+    // depth so the arrival view does not project to one symmetrical horizontal
+    // shell silhouette.
+    const centerX = t * .98 + .11 * Math.sin(t * 2.55) + .045 * Math.sin(t * 6.1)
+    const centerY = -.06 + .20 * Math.sin(t * 1.42 + .34) - .105 * t + .038 * Math.sin(t * 4.4)
+    const centerZ = -.08 + .13 * Math.sin(t * 1.66) - .050 * Math.cos(t * 4.15) + .035 * t
     sectionCenters.push(new THREE.Vector3(centerX, centerY, centerZ))
 
-    const height = .024 + endTaper * (.42 + .055 * Math.sin(section * .29))
-    const depth = .022 + endTaper * (.275 + .030 * Math.cos(section * .31))
-    const twist = .10 * Math.sin(t * 2.2) + .055 * Math.sin(t * 5.1)
+    const height = .024 + endTaper * (.43 + .058 * Math.sin(section * .29))
+    const depth = .022 + endTaper * (.285 + .034 * Math.cos(section * .31))
+    const twist = .13 * Math.sin(t * 2.15) + .07 * Math.sin(t * 5.0) + .08 * t
 
-    // Arrival camera is on positive Z. Keep the primary cleft visible on that face
-    // instead of letting the twist rotate it out of view.
-    const furrowAngle = Math.PI * .5 - twist + .055 * Math.sin(t * 2.0)
-    const secondaryFurrowAngle = furrowAngle + Math.PI * .62 + .08 * Math.sin(t * 2.7)
-    const ridgeAngle = furrowAngle + Math.PI
+    // V274: the primary fold migrates diagonally across the camera-facing side
+    // and fades before the tips. It is intentionally not a continuous mouth seam.
+    const furrowAngle = Math.PI * .34 + .39 * t - twist + .12 * Math.sin(t * 2.6)
+    const secondaryFurrowAngle = furrowAngle + Math.PI * .57 + .24 * Math.sin(t * 1.8 + .6)
+    const ridgeAngle = furrowAngle + Math.PI * .82
+    const primaryWindow = Math.exp(-Math.pow((t - .08) / .74, 4)) * (.66 + .20 * Math.sin(t * 2.8 + .7))
+    const branchWindow = Math.exp(-Math.pow((t + .30) / .44, 2))
 
     for (let radial = 0; radial < MEMORY_RENDER_RING_POINTS; radial += 1) {
       const radialU = radial / MEMORY_RENDER_RING_POINTS
@@ -90,31 +95,34 @@ function createLivingMemoryFold() {
       const furrowDistance = wrappedAngleDistance(angle, furrowAngle)
       const secondaryFurrowDistance = wrappedAngleDistance(angle, secondaryFurrowAngle)
       const ridgeDistance = wrappedAngleDistance(angle, ridgeAngle)
-      const furrow = Math.exp(-Math.pow(furrowDistance / .24, 2))
-      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .27, 2)) * (.36 + .28 * shoulder)
-      const ridge = Math.exp(-Math.pow(ridgeDistance / .42, 2))
+      const furrow = Math.exp(-Math.pow(furrowDistance / .25, 2)) * Math.max(0, primaryWindow)
+      const secondaryFurrow = Math.exp(-Math.pow(secondaryFurrowDistance / .30, 2)) * (.18 + .18 * shoulder) * branchWindow
+      const ridge = Math.exp(-Math.pow(ridgeDistance / .48, 2))
 
-      // Two shoulders remain part of the same cross-section; there are no discrete
-      // shards, leaves, cards or lamellae.
-      const broadLobe = 1
-        + .23 * Math.cos((angle - furrowAngle) * 2)
-        + .075 * Math.sin(angle * 3 + t * 2.4)
-        + .035 * Math.cos(angle * 5 - t * 3.1)
+      // V274 deliberately removes the near-bilateral cos(2a) shoulder pair. A
+      // first-harmonic bias creates one dominant mass; smaller higher-frequency
+      // variation keeps the material alive without constructing two opposing lips.
+      const dominantMass = 1
+        + .20 * Math.cos(angle - furrowAngle - .88)
+        + .085 * t * Math.sin(angle + .42)
+        + .050 * Math.sin(angle * 3 + t * 2.35)
+        + .026 * Math.cos(angle * 5 - t * 3.0)
       const tissue = 1
         + .035 * Math.sin(angle * 7 + section * .22)
         + .020 * Math.cos(angle * 11 - section * .17)
         + .011 * Math.sin(angle * 17 + section * .09)
       const longitudinalRill = .014 * endTaper * Math.sin(section * 1.25 + angle * 5.6)
         + .008 * endTaper * Math.cos(section * .58 - angle * 11.0)
-      const asymmetricFold = .055 * endTaper * Math.sin(angle * 2 - t * 3.7)
-        + .022 * endTaper * Math.sin(angle * 4 + t * 2.5)
-      const pinch = Math.max(.34, 1 - .54 * furrow - .18 * secondaryFurrow)
+      const asymmetricFold = .068 * endTaper * Math.sin(angle - t * 2.9 + .8)
+        + .034 * endTaper * Math.sin(angle * 2.6 + t * 2.2)
+        + .018 * endTaper * t * Math.cos(angle * 4.1)
+      const pinch = Math.max(.52, 1 - .29 * furrow - .10 * secondaryFurrow)
 
-      const localY = Math.cos(angle) * height * broadLobe * tissue * pinch + asymmetricFold
-      const localZ = Math.sin(angle) * depth * (1 + .16 * ridge)
-        - furrow * depth * .64
-        - secondaryFurrow * depth * .17
-        + ridge * depth * .10
+      const localY = Math.cos(angle) * height * dominantMass * tissue * pinch + asymmetricFold
+      const localZ = Math.sin(angle) * depth * (1 + .18 * ridge)
+        - furrow * depth * .34
+        - secondaryFurrow * depth * .12
+        + ridge * depth * .13
         + longitudinalRill
 
       const y = centerY + localY * Math.cos(twist) - localZ * Math.sin(twist)
@@ -140,8 +148,8 @@ function createLivingMemoryFold() {
   }
 
   // The end rings already taper almost to points. Cap them at the actual section
-  // centers so the arrival camera cannot see the previous broad flat rectangular
-  // cut while the mesh remains watertight.
+  // centers so the arrival camera cannot see a broad flat rectangular cut while
+  // the mesh remains watertight.
   const startCap = positions.length / 3
   const start = sectionCenters[0]
   positions.push(start.x, start.y, start.z)
@@ -174,7 +182,7 @@ function createLivingMemoryFold() {
   geometry.userData.focusLiteralPixelRepair = 'v272-no-crystal-crown-no-card-stack'
   geometry.userData.focusSilhouetteRule = 'one-coherent-memory-phenomenon-not-discrete-objects'
   geometry.userData.focusSurfaceDensity = `${MEMORY_RENDER_SECTIONS}x${MEMORY_RENDER_RING_POINTS}-continuous-tactile-surface`
-  geometry.userData.focusLiteralPixelRefinement = 'v273-reclined-tapered-camera-facing-fold-no-flat-cap-no-standing-boulder'
+  geometry.userData.focusLiteralPixelRefinement = 'v274-partial-diagonal-fold-one-dominant-mass-no-bilateral-mouth-seam'
   return geometry
 }
 
