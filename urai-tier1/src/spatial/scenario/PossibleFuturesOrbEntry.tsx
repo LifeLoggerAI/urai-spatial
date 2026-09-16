@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useUraiWorldState } from '@/spatial/world/WorldStateProvider'
+import type { UraiOriginRealm } from '@/spatial/world/worldTypes'
+
+const DIRECT_SCENARIO_ORIGINS = new Set<UraiOriginRealm>(['home','life-map','focus','replay','passport','mirror','council','possible-futures'])
+
+function scenarioOriginFor(destination: string, inherited?: UraiOriginRealm): UraiOriginRealm {
+  if (inherited) return inherited
+  if (destination === 'infrastructure-hub') return 'ground'
+  if (DIRECT_SCENARIO_ORIGINS.has(destination as UraiOriginRealm)) return destination as UraiOriginRealm
+  return 'home'
+}
 
 /**
  * Companion-owned Scenario doorway. It appears only while the persistent Orb
@@ -42,7 +52,7 @@ export function PossibleFuturesOrbEntry() {
         privacyMode: world.privacyMode,
         reconstructionFidelity: world.reconstructionFidelity,
         truthMode: 'scenario',
-        scenarioOrigin: world.originRealm ?? (world.destination === 'infrastructure-hub' ? 'ground' : world.destination),
+        scenarioOrigin: scenarioOriginFor(world.destination, world.originRealm),
         originRealm: world.originRealm,
         returnToken: world.returnToken,
       },
