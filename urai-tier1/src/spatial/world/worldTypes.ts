@@ -10,6 +10,7 @@ export const URAI_DESTINATIONS = [
   'location-map',
   'focus',
   'replay',
+  'possible-futures',
 ] as const
 
 export type UraiDestination = (typeof URAI_DESTINATIONS)[number]
