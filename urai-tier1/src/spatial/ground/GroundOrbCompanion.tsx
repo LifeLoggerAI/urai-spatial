@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type MutableRefObject } from 'react'
+import { useLayoutEffect, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 
 /**
@@ -15,7 +15,7 @@ export function GroundOrbCompanion(_props: {
   obstacles: readonly { x: number; z: number; radius: number }[]
   reducedMotion: boolean
 }) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const fallback = document.querySelector<HTMLButtonElement>('.urai-world-companion__orb')
     const liveRegion = document.querySelector<HTMLElement>('.ground-spatial-root [role="status"]')
     const previous = fallback ? {
