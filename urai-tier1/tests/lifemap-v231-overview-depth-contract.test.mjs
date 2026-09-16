@@ -20,11 +20,12 @@ test('overview consumes the authored five-band memory identity as true celestial
   for (const depth of ['-3.8', '-8.9', '-12.8', '-19.2', '-24.6']) assert.match(authoredLayout, new RegExp(depth.replace('.', '\\.')))
 })
 
-test('overview keeps selected staging intimate while portrait preserves celestial breadth', () => {
+test('overview keeps selected staging intimate while portrait compacts only the overview envelope', () => {
   assert.match(layout, /if \(selected\) \{[\s\S]*scale: portrait \? \[\.92, \.92, \.92\] : \[1, 1, 1\]/)
   assert.match(layout, /position: portrait \? \[0, -\.15, \.55\] : \[0, 0, \.25\]/)
-  assert.match(layout, /portrait\s*\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
+  assert.match(layout, /return portrait\s*\n\s*\? \{ scale: \[\.62, \.84, \.92\], position: \[0, -\.15, 1\.0\] \}/)
   assert.match(layout, /: \{ scale: \[1, 1, 1\], position: \[0, 0, \.4\] \}/)
+  assert.doesNotMatch(layout, /portrait\s*\? \{ scale: \[\.92, \.92, \.92\], position: \[0, -\.2, 1\.0\] \}/)
   assert.doesNotMatch(layout, /scale: \[\.82, 1\.08, \.86\]|scale: \[\.58, 1\.02, 1\.18\]|scale: \[\.46, \.82, \.92\]/)
 })
 
@@ -33,9 +34,10 @@ test('overview camera derives distance from the complete 3D artifact envelope', 
   assert.match(layout, /const halfHeight = Math\.max\(Math\.abs\(min\[1\] - target\[1\]\), Math\.abs\(max\[1\] - target\[1\]\)\) \+ 3\.6/)
   assert.match(layout, /const widthDistance = halfWidth \/ Math\.max\(horizontalTan \* \.88, \.08\)/)
   assert.match(layout, /const heightDistance = halfHeight \/ Math\.max\(verticalTan \* \.86, \.08\)/)
-  assert.match(layout, /const distance = Math\.max\(portrait \? 34 : 24, widthDistance, heightDistance\)/)
-  assert.match(layout, /position: \[target\[0\], target\[1\] \+ \(portrait \? 2\.4 : 1\.8\), nearestZ \+ distance\]/)
-  assert.match(layout, /target: \[target\[0\], target\[1\], target\[2\] - 4\.0\]/)
+  assert.match(layout, /const distance = Math\.max\(portrait \? 30 : 24, widthDistance, heightDistance\)/)
+  assert.match(layout, /position: \[target\[0\], target\[1\] \+ \(portrait \? 2\.0 : 1\.8\), nearestZ \+ distance\]/)
+  assert.match(layout, /target: \[target\[0\], target\[1\], target\[2\] - \(portrait \? 3\.0 : 4\.0\)\]/)
+  assert.doesNotMatch(layout, /const distance = Math\.max\(portrait \? 34 : 24, widthDistance, heightDistance\)/)
 })
 
 test('historical lower-stratum terrain authority uses authored masses plus non-periodic weathering instead of repeated bands', () => {

@@ -240,11 +240,12 @@ try {
 
       const canonicalTarget = canonicalRedirectTargets.get(route);
       if (canonicalTarget) {
-        await page.waitForURL(`${baseUrl}${canonicalTarget}`, {
-          waitUntil: 'domcontentloaded',
+        const expectedUrl = `${baseUrl}${canonicalTarget}`;
+        await page.waitForFunction((expected) => window.location.href === expected, expectedUrl, {
+          polling: 50,
           timeout: 60_000,
         });
-        if (page.url() !== `${baseUrl}${canonicalTarget}`) {
+        if (page.url() !== expectedUrl) {
           throw new Error(`Spatial diagnostic canonical redirect failed: ${route} -> ${page.url()}`);
         }
       }

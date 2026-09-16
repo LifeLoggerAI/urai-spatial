@@ -26,6 +26,9 @@ function prefersReducedMotion() {
 }
 
 function transitionDuration(destination: UraiDestination) {
+  // Home owns the authored Ground descent. Once that choreography completes, route
+  // immediately instead of layering the legacy global aperture/tunnel on top.
+  if (destination === 'infrastructure-hub') return 40
   if (prefersReducedMotion()) return 260
   if (destination === 'replay' || destination === 'location-map') return 1900
   return 1100
@@ -75,11 +78,15 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
-function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
-  if (destination === 'focus') return 'life-map'
+function canonicalReturnDestination(
+  destination: UraiDestination,
+  previousDestination?: UraiDestination,
+): UraiDestination {
   if (destination === 'replay') return 'focus'
+  if (destination === 'focus') return 'life-map'
+  if (destination === 'life-map') return 'home'
   if (destination === 'infrastructure-hub') return 'home'
-  return 'infrastructure-hub'
+  return previousDestination ?? 'home'
 }
 
 export function WorldTransitionController() {
@@ -138,7 +145,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
+    const destination = canonicalReturnDestination(currentWorld.destination, currentWorld.previousDestination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
@@ -182,17 +189,21 @@ export function WorldTransitionController() {
     }
   }, [clearTimer, executeTravel, reverseTravel])
 
+  const groundOwned = pendingTravel?.destination === 'infrastructure-hub'
   return (
     <div
       className="urai-world-transition"
       data-phase={phase}
       data-from={world.destination}
       data-to={pendingTravel?.destination ?? world.destination}
+      data-ground-visual-owner={groundOwned ? 'home-authored-descent' : 'none'}
       aria-hidden="true"
     >
-      <span className="urai-world-transition__surface" />
-      <span className="urai-world-transition__aperture" />
-      <span className="urai-world-transition__depth" />
+      {!groundOwned ? <>
+        <span className="urai-world-transition__surface" />
+        <span className="urai-world-transition__aperture" />
+        <span className="urai-world-transition__depth" />
+      </> : null}
     </div>
   )
 }
