@@ -8,9 +8,12 @@ const fieldSource = fs.readFileSync(new URL('../src/spatial/lived-world/globalEm
 const contextSource = fs.readFileSync(new URL('../src/spatial/lived-world/groundMemoryContext.ts', import.meta.url), 'utf8')
 const boundarySource = fs.readFileSync(new URL('../src/app/ground/GroundPersonalizationBoundary.tsx', import.meta.url), 'utf8')
 const geographicBridge = fs.readFileSync(new URL('../src/app/ground/GroundGeographicLivedWorldBridge.tsx', import.meta.url), 'utf8')
+const semanticReturnBridge = fs.readFileSync(new URL('../src/app/ground/GroundSemanticReturnBridge.tsx', import.meta.url), 'utf8')
 const groundPage = fs.readFileSync(new URL('../src/app/ground/page.tsx', import.meta.url), 'utf8')
 const worldTypes = fs.readFileSync(new URL('../src/spatial/world/worldTypes.ts', import.meta.url), 'utf8')
 const worldEvents = fs.readFileSync(new URL('../src/spatial/world/worldEvents.ts', import.meta.url), 'utf8')
+const worldState = fs.readFileSync(new URL('../src/spatial/world/WorldStateProvider.tsx', import.meta.url), 'utf8')
+const worldTransition = fs.readFileSync(new URL('../src/spatial/world/WorldTransitionController.tsx', import.meta.url), 'utf8')
 const passportPage = fs.readFileSync(new URL('../src/app/passport/page.tsx', import.meta.url), 'utf8')
 const publicGoodCard = fs.readFileSync(new URL('../src/app/passport/GlobalEmotionalFieldConsentCard.tsx', import.meta.url), 'utf8')
 const privacyClient = fs.readFileSync(new URL('../src/lib/privacy/operationalPrivacyClient.ts', import.meta.url), 'utf8')
@@ -88,6 +91,19 @@ test('Ground memory handoff preserves place, memory, provenance, fidelity and ex
   assert.ok(worldEvents.includes("target.searchParams.set('originRealm', context.originRealm)"))
   assert.ok(worldEvents.includes("target.searchParams.set('returnToken', context.returnToken)"))
   assert.ok(worldEvents.includes("target.searchParams.set('fidelity', context.reconstructionFidelity)"))
+  for (const marker of ["params.get('originRealm')", "params.get('returnToken')", "params.get('eraId')", "params.get('fidelity')"]) assert.ok(worldState.includes(marker), `world route hydration missing ${marker}`)
+  assert.ok(worldTransition.includes("currentWorld.originRealm === 'ground'"))
+  assert.ok(worldTransition.includes("destination === 'focus' ? 'infrastructure-hub'"))
+})
+
+test('Ground return controls delegate to the shared one-layer semantic return stack', () => {
+  assert.ok(groundPage.includes('GroundSemanticReturnBridge'))
+  assert.ok(semanticReturnBridge.includes('requestUraiWorldReturn()'))
+  assert.ok(semanticReturnBridge.includes("target.closest('.ground-home-return')"))
+  assert.ok(semanticReturnBridge.includes("event.key !== 'Escape'"))
+  assert.ok(semanticReturnBridge.includes("pathname !== '/ground'"))
+  assert.ok(semanticReturnBridge.includes("addEventListener('click', onClickCapture, true)"))
+  assert.ok(semanticReturnBridge.includes("addEventListener('keydown', onKeyDownCapture, true)"))
 })
 
 test('Ground route mounts the fail-closed personalization boundary and retires stale compass/checkpoint owners', () => {
