@@ -12,6 +12,7 @@ const has = (source, marker) => assert.equal(source.includes(marker), true, `mis
 const homeGraph = read('src/app/AssetDrivenHomeWorld.tsx')
 const homeRuntime = read('src/spatial/layout/HomeWorldProduction.tsx')
 const activeHomeRuntime3d = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const homeRuntime3d = read('src/spatial/layout/HomeWorldProductionV70.tsx')
 const homeArt = read('src/spatial/layout/HomeWorldProductionV76.tsx')
 const ground = read('src/app/GroundSpatialWorldClean.tsx')
@@ -28,25 +29,34 @@ test('shared drag-look preserves click ownership until pointer motion proves a d
   assert.doesNotMatch(travel, /drag\.current = \{ pointerId: event\.pointerId, x: event\.clientX, y: event\.clientY \}\s*\n\s*try \{ event\.currentTarget\.setPointerCapture/)
 })
 
-test('Home keeps one V223 cinematic Canvas owner with visible Avatar, authored living-memory Orb, physical Ground and broad Sky ascent', () => {
+test('Home keeps one V223 Canvas owner with visible Avatar presentation, click embodiment, authored Orb, physical Ground and broad Sky ascent', () => {
   has(homeRuntime, 'HomeWorldProductionV223 as HomeWorldProduction')
-  has(activeHomeRuntime3d, 'export function HomeWorldProductionV223')
-  has(activeHomeRuntime3d, 'URAI_ORB_STATE_EVENT')
-  has(activeHomeRuntime3d, 'resolveOrbSensoryOutput')
-  has(activeHomeRuntime3d, 'data-home-visible-world="cinematic-lived-world-threshold"')
-  has(activeHomeRuntime3d, 'data-home-embodied-self="visible-cinematic-avatar"')
-  has(activeHomeRuntime3d, 'data-home-presence-presentation="visible-avatar-third-person"')
-  has(activeHomeRuntime3d, 'data-home-ground-entry="physical-world-surface"')
-  has(activeHomeRuntime3d, 'data-home-life-map-entry="visible-sky-broad-interaction"')
-  has(activeHomeRuntime3d, 'home-visible-user-avatar')
-  has(activeHomeRuntime3d, 'home-living-memory-orb')
-  has(activeHomeRuntime3d, '/assets/urai/generated/models/urai-orb-avatar-v1.glb')
-  has(activeHomeRuntime3d, '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
-  has(activeHomeRuntime3d, 'THREE.LoopOnce')
-  has(activeHomeRuntime3d, 'clampWhenFinished = true')
-  has(activeHomeRuntime3d, 'const idle = actions.idle_breath')
+  for (const marker of [
+    'export function HomeWorldProductionV223',
+    'URAI_ORB_STATE_EVENT',
+    'resolveOrbSensoryOutput',
+    'data-home-visible-world="cinematic-lived-world-threshold"',
+    'visible-cinematic-avatar',
+    'camera-only-first-person-home',
+    'visible-avatar-third-person',
+    'hidden-exterior-avatar-first-person',
+    'data-home-ground-entry="physical-world-surface"',
+    'data-home-life-map-entry="visible-sky-broad-interaction"',
+    'urai-home-user-avatar',
+    'home-living-memory-orb',
+    '/assets/urai/generated/models/urai-orb-avatar-v1.glb',
+    'HOME_AVATAR_MODEL',
+    'THREE.LoopOnce',
+    'clampWhenFinished = true',
+    'useHomeExperienceController',
+    'homeApi.activateAvatar()',
+    'HOME_WALK_SPEED',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+  ]) has(activeHomeRuntime3d, marker)
+  has(embodiedAvatar, 'const idle = actions.idle_breath')
   assert.equal((activeHomeRuntime3d.match(/<Canvas/g) ?? []).length, 1)
-  assert.doesNotMatch(activeHomeRuntime3d, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
+  assert.doesNotMatch(activeHomeRuntime3d, /privacy-preserving-first-person/)
+  assert.doesNotMatch(activeHomeRuntime3d, /first-person-hand|fps-hand|player-hands|weapon-rig/i)
   assert.doesNotMatch(activeHomeRuntime3d, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
   assert.doesNotMatch(homeArt, /<Canvas/)
   assert.doesNotMatch(homeGraph, /PRODUCTION CERTIFIED|retained-pixel-pass|pixel-certified/)

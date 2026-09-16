@@ -10,6 +10,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const assetHome = read('src/app/AssetDrivenHomeWorld.tsx')
 const authority = JSON.parse(read('src/app/currentHomeVisualAuthority.json'))
 const renderer = read('src/spatial/layout/HomeWorldProductionV223.tsx')
+const embodiedAvatar = read('src/spatial/home/HomeEmbodiedAvatar.tsx')
 const visualAuthority = read('src/spatial/layout/HomeVisualAuthority.tsx')
 const groundedOrb = read('src/spatial/assets/HomeOrbGroundedV288.tsx')
 const reliquary = read('src/spatial/assets/HomeOrbReliquaryV286.tsx')
@@ -29,14 +30,12 @@ const hostStableProof = read('../scripts/run-continuous-spatial-proof-v18-host-s
 
 const has = (source, marker) => assert.ok(source.includes(marker), `missing marker: ${marker}`)
 
-test('current Home candidate uses one cinematic owner while certified V288 metadata remains fail-closed', () => {
+test('current Home candidate uses one cinematic/embodied owner while certified V288 metadata remains fail-closed', () => {
   for (const marker of ['HomeSpatialRuntimeLayer','spatial-runtime-restoration.css','continuous-spatial-proof-defects.css']) assert.match(template, new RegExp(marker.replace('.', '\\.')))
   has(homeRuntime, 'AssetDrivenHomeWorld')
   has(assetHome, 'HomeWorldProductionV223')
   has(assetHome, 'data-home-canvas-owner="home-world-production-v223-cinematic-threshold-authority"')
   has(assetHome, "world.setAttribute('data-home-art-certification', 'fresh-exact-head-pixels-required')")
-  has(assetHome, "world.setAttribute('data-home-scanned-composition', 'visible-avatar-living-memory-orb-physical-ground-and-broad-sky-threshold')")
-  has(assetHome, 'data-home-spatial-regions="home-physical-world home-visible-avatar home-living-memory-orb home-life-map-sky-threshold"')
   assert.equal(authority.artRevision, 'v288-cinematic-lived-world-grounded-reliquary')
   assert.equal(authority.worldIdentifier, 'cinematic-lived-world-threshold')
   assert.equal(authority.orbVisualAuthority, 'v288-grounded-biomorphic-reliquary')
@@ -57,9 +56,9 @@ test('V288 biomorphic reliquary remains certified predecessor evidence while the
   assert.doesNotMatch(renderer, /next\.reset\(\)\.setLoop\(THREE\.LoopRepeat\s*,\s*Infinity\)/)
 })
 
-test('Home Life Map is the broad visible sky and preserves one canonical ascent transaction', () => {
+test('Home Life Map is the broad visible sky and commits one canonical ascent transaction after choreography', () => {
   for (const marker of ['name="home-sky-life-map-threshold"',"threshold: 'broad-visible-sky'",'localGroundPortal: false','event.ray.direction.y > .015','onClick={activateSky}']) has(sky, marker)
-  for (const marker of ["cameraCheckpoint: 'home-sky-ascent'","cameraCheckpoint: 'home-sky-ascent-complete'",'data-home-life-map-entry="visible-sky-broad-interaction"']) has(renderer, marker)
+  for (const marker of ["cameraCheckpoint: 'home-sky-ascent-complete'",'data-home-life-map-entry="visible-sky-broad-interaction"','homeApi.activateSky()','homeApi.commitDestination']) has(renderer, marker)
   assert.match(sceneStore, /enterLifeMap:/)
   assert.match(worldEvents, /home-sky-ascent/)
   assert.match(worldEvents, /home-sky-ascent-complete/)
@@ -67,23 +66,29 @@ test('Home Life Map is the broad visible sky and preserves one canonical ascent 
 })
 
 test('Home Ground entry remains a physical world-surface descent into the lived first-person Ground', () => {
-  for (const marker of ['data-home-ground-entry="physical-world-surface"','event.point.clone()',"destination: 'infrastructure-hub'","cameraCheckpoint: 'ground-first-person-arrival'"]) has(renderer, marker)
+  for (const marker of ['data-home-ground-entry="physical-world-surface"','event.point.clone()',"destination: 'infrastructure-hub'","cameraCheckpoint: 'ground-first-person-arrival'",'homeApi.activateGround()']) has(renderer, marker)
   for (const marker of ['data-ground-exploration="first-person"','data-ground-runtime-owner="first-person-lived-world"','data-ground-camera="eye-level-terrain-following"','data-ground-collision="visible-terrain-heightfield"','data-ground-place-layer="consent-aware-empty-by-default"','ground-visible-traversable-terrain','surfaceY + EYE_HEIGHT']) has(ground, marker)
   has(groundGateway, 'aria-label="Enter your physical Ground world"')
   has(groundGateway, "cameraCheckpoint: world.cameraCheckpoint ?? 'home-ground-descent'")
   assert.doesNotMatch(ground, /ground-central-nexus|ground-destination-compass|GroundPhysicalArchitecture|GroundVaultArchitecture/)
 })
 
-test('Home interaction and accessibility ownership stays visible-avatar, cinematic-third-person and bounded', () => {
-  has(renderer, 'data-testid="urai-home-webgl-orb"')
-  has(renderer, 'data-home-embodied-self="visible-cinematic-avatar"')
-  has(renderer, 'data-home-presence-presentation="visible-avatar-third-person"')
-  has(renderer, 'name="home-visible-user-avatar"')
-  has(renderer, '/assets/urai/generated/human-makehuman-v4/home-human-makehuman-v4.glb')
-  has(renderer, "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'")
-  assert.match(renderer, /data-home-camera-mode=\{transition !== 'none' \? transition : dragging \? 'cinematic-third-person-look' : 'cinematic-third-person'\}/)
-  assert.doesNotMatch(renderer, /first-person-viewpoint-no-avatar|privacy-preserving-first-person/)
-  assert.doesNotMatch(renderer, /useMovementInput|MobileMovementPad|stepEmbodiedMotion/)
+test('Home interaction/accessibility ownership supports visible presentation and camera-only first-person embodiment', () => {
+  for (const marker of [
+    'data-testid="urai-home-webgl-orb"',
+    'visible-cinematic-avatar',
+    'camera-only-first-person-home',
+    'visible-avatar-third-person',
+    'hidden-exterior-avatar-first-person',
+    'urai-home-user-avatar',
+    'HOME_AVATAR_MODEL',
+    'data-home-non-xr-body-policy="camera-only-no-hands-body-rig"',
+    'useHomeExperienceController',
+    'AvatarSelfView',
+    "data-home-orb-model-clip={reducedMotion ? 'stopped-reduced-motion'",
+  ]) has(renderer, marker)
+  has(embodiedAvatar, 'cloneSkeleton')
+  assert.doesNotMatch(renderer, /privacy-preserving-first-person|first-person-hand|fps-hand|player-hands|weapon-rig/i)
   has(homeRuntime, 'requestUraiWorldOrbOpen')
   has(homeRuntime, 'webglcontextlost')
   has(homeRuntime, 'webglcontextrestored')
